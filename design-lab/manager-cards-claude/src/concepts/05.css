@@ -1,0 +1,223 @@
+/* 05 PAVÉ — every selector scoped under .c05. Dark app ground is the default;
+   the light ground (.app-light, or the gallery's day ground) overrides the lift shadow
+   and the compact row's slab. */
+
+.c05 {
+  --c05-shadow: #000;
+  --c05-shadow-a: 0.72;
+  --c05-lx: 0;
+  /* compact row slab (dark ground) */
+  --c05-slab: oklch(0.22 0.03 260);
+  --c05-slab-band: oklch(0.15 0.03 260);
+  --c05-slab-edge: color-mix(in oklab, oklch(0.97 0.01 250) 9%, transparent);
+  --c05-ink: oklch(0.97 0.01 250);
+  --c05-muted: oklch(0.76 0.02 258);
+  --c05-brass: #d8bd78;
+  --c05-pool: rgb(115 237 250 / 0.16);
+  --c05-me-edge: rgb(115 237 250 / 0.5);
+}
+.app-light .c05,
+:root[data-ground="day"] .c05 {
+  --c05-shadow: #0c3164;
+  --c05-shadow-a: 0.34;
+  --c05-slab: #ffffff;
+  --c05-slab-band: #d6dbe2;
+  --c05-slab-edge: oklch(0.88 0.008 250);
+  --c05-ink: oklch(0.16 0.03 260);
+  --c05-muted: oklch(0.45 0.02 258);
+  --c05-brass: #7d5f22;
+  --c05-pool: rgb(0 163 238 / 0.13);
+  --c05-me-edge: rgb(12 49 100 / 0.32);
+}
+.app-dark .c05,
+:root[data-ground="day"] .app-dark .c05 {
+  --c05-shadow: #000;
+  --c05-shadow-a: 0.72;
+  --c05-slab: oklch(0.22 0.03 260);
+  --c05-slab-band: oklch(0.15 0.03 260);
+  --c05-slab-edge: color-mix(in oklab, oklch(0.97 0.01 250) 9%, transparent);
+  --c05-ink: oklch(0.97 0.01 250);
+  --c05-muted: oklch(0.76 0.02 258);
+  --c05-brass: #d8bd78;
+  --c05-pool: rgb(115 237 250 / 0.16);
+  --c05-me-edge: rgb(115 237 250 / 0.5);
+}
+
+/* ---------- full card ---------- */
+.c05.c05-card {
+  display: block;
+  width: 100%;
+  line-height: 0;
+}
+.c05.c05-card > .c05-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.c05 .c05-svg text {
+  font-kerning: normal;
+}
+.c05 .c05-rake rect {
+  transform: translateX(calc(var(--c05-lx, 0) * 90px));
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* LEGEND: the grind (only rendered when o.motion is on) */
+.c05 .c05-grind {
+  animation: c05-grind 900ms cubic-bezier(0.45, 0.05, 0.25, 1) 260ms both;
+}
+.c05 .c05-edge {
+  animation-name: c05-grind-edge;
+}
+.c05 .c05-flow {
+  animation: none;
+}
+.c05 svg:has(.c05-cover) .c05-flow {
+  animation: c05-flow 320ms ease-out 1180ms both;
+}
+@keyframes c05-grind {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(var(--c05-dir, 1) * 392px)); }
+}
+@keyframes c05-grind-edge {
+  0% { transform: translateX(0); opacity: 0; }
+  8% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateX(calc(var(--c05-dir, 1) * 384px)); opacity: 0; }
+}
+@keyframes c05-flow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c05 .c05-cover,
+  .c05 .c05-edge { display: none; }
+  .c05 .c05-grind,
+  .c05 .c05-flow,
+  .c05 svg:has(.c05-cover) .c05-flow { animation: none; }
+  .c05 .c05-rake rect { transition: none; }
+}
+
+/* ---------- token ---------- */
+.c05.c05-tok {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+  vertical-align: middle;
+}
+.c05.c05-tok svg {
+  display: block;
+}
+
+/* ---------- compact row: a slab in the league's pavement ---------- */
+.c05.c05-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px 72px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+  max-width: 358px;
+  height: 64px;
+  padding: 0 14px 3px;
+  box-sizing: border-box;
+  color: var(--c05-ink);
+  background: var(--c05-slab);
+  /* the slab's own side: a 3px band at the bottom, the cut corners of a cast block */
+  box-shadow: inset 0 -3px 0 var(--c05-slab-band), inset 0 0 0 1px var(--c05-slab-edge);
+  clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
+  font-family: "Manrope", sans-serif;
+}
+.c05.c05-row.is-me {
+  background:
+    radial-gradient(90px 46px at 76px 48%, var(--c05-pool), transparent 72%),
+    var(--c05-slab);
+  box-shadow: inset 0 -3px 0 var(--c05-slab-band), inset 0 0 0 1px var(--c05-me-edge);
+}
+.c05.c05-row[dir="rtl"].is-me {
+  background:
+    radial-gradient(90px 46px at calc(100% - 76px) 48%, var(--c05-pool), transparent 72%),
+    var(--c05-slab);
+}
+.c05 .c05-row-rank {
+  font: 800 22px/1 "Big Shoulders Display", sans-serif;
+  color: var(--c05-muted);
+  text-align: center;
+}
+.c05 .c05-row-tok {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  line-height: 0;
+}
+.c05 .c05-row-id {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.c05 .c05-row-id b {
+  font: 800 20px/1.05 "Big Shoulders Display", sans-serif;
+  letter-spacing: 0.07em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c05 .c05-row-id b.ar {
+  font: 700 16px/1.7 "Alexandria", "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0;
+  margin-block: -6px -4px;
+}
+.c05 .c05-row-id small {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font: 700 10.5px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.12em;
+  color: var(--c05-muted);
+}
+.c05.c05-row[dir="rtl"] .c05-row-id small {
+  font: 600 11px/1.5 "Alexandria", "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0;
+}
+.c05 .c05-row-id small i {
+  font-style: normal;
+}
+.c05.c05-row[data-tier="CHAMPION"] .c05-row-id small i,
+.c05.c05-row[data-tier="LEGEND"] .c05-row-id small i {
+  color: var(--c05-brass);
+}
+.c05 .c05-row-f {
+  font: 600 12px/1 "Reem Kufi", sans-serif;
+  letter-spacing: 0;
+  color: var(--c05-muted);
+}
+.c05 .c05-row-pts {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.c05 .c05-row-pts b {
+  font: 800 17px/1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c05 .c05-row-pts small {
+  font: 700 9.5px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.14em;
+  color: var(--c05-muted);
+}
+.c05.c05-row[dir="rtl"] .c05-row-pts small {
+  font: 600 10.5px/1.4 "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0;
+}
+
+/* ---------- share ---------- */
+.c05.c05-share {
+  width: 360px;
+  height: 640px;
+  line-height: 0;
+  background: #070c16;
+}
+.c05.c05-share > svg {
+  display: block;
+}

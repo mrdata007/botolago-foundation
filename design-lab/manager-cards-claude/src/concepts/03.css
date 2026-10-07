@@ -1,0 +1,264 @@
+/* 03 FLOCAGE — a bench jacket on a dressing-room hook. Dark ground is the default;
+   the light ground drops the rim and lets a soft wall shadow carry the edge. */
+
+/* ---------- ground tokens ---------- */
+.c03 {
+  --c03-rim: #737b86;
+  --c03-lit: #3e5f92;
+  --c03-lit-o: 0.9;
+  --c03-drop: drop-shadow(0 1.4cqi 2.2cqi rgba(0, 0, 0, 0.6));
+  --c03-row-bg: #121b29;
+  --c03-row-rail: #26334a;
+  --c03-row-ink: #f0f6fc;
+  --c03-row-muted: #a9b2be;
+  --c03-row-line: rgba(240, 246, 252, 0.08);
+  --c03-me-bg: linear-gradient(180deg, rgba(230, 211, 163, 0.16), rgba(230, 211, 163, 0.03) 70%), #172234;
+}
+.app-light .c03,
+:root[data-ground="day"] .c03 {
+  --c03-rim: transparent;
+  --c03-lit: #3e5f92;
+  --c03-lit-o: 0.55;
+  --c03-drop: drop-shadow(0 1.8cqi 2.2cqi rgba(12, 49, 100, 0.26));
+  --c03-row-bg: #ffffff;
+  --c03-row-rail: #dfe4ea;
+  --c03-row-ink: #060d1a;
+  --c03-row-muted: #4e5661;
+  --c03-row-line: rgba(12, 49, 100, 0.08);
+  --c03-me-bg: linear-gradient(180deg, rgba(176, 141, 87, 0.2), rgba(176, 141, 87, 0.04) 70%), #fbf8f1;
+}
+.app-dark .c03,
+:root[data-ground] .app-dark .c03 {
+  --c03-rim: #737b86;
+  --c03-lit: #3e5f92;
+  --c03-lit-o: 0.9;
+  --c03-drop: drop-shadow(0 1.4cqi 2.2cqi rgba(0, 0, 0, 0.6));
+  --c03-row-bg: #121b29;
+  --c03-row-rail: #26334a;
+  --c03-row-ink: #f0f6fc;
+  --c03-row-muted: #a9b2be;
+  --c03-row-line: rgba(240, 246, 252, 0.08);
+  --c03-me-bg: linear-gradient(180deg, rgba(230, 211, 163, 0.16), rgba(230, 211, 163, 0.03) 70%), #172234;
+}
+
+.c03 svg { display: block; overflow: visible; }
+.c03 .c03-rim { fill: none; stroke: var(--c03-rim); stroke-width: 2px; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.c03 .c03-lit { fill: none; stroke: var(--c03-lit); stroke-opacity: var(--c03-lit-o); stroke-width: 3; stroke-linecap: round; }
+
+/* ---------- full card ---------- */
+.c03.c03-card { display: block; width: 100%; position: relative; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.c03.c03-card > .c03-svg { width: 100%; height: auto; filter: var(--c03-drop); }
+.c03.c03--thumb > .c03-svg { filter: none; }
+
+/* tap: a damped 4° pendulum on the hook */
+.c03 .c03-swing { transform-box: view-box; transform-origin: 150px 4px; }
+.c03 .c03-swing.c03-swinging { animation: c03-swing 900ms cubic-bezier(0.22, 1.1, 0.36, 1) both; }
+@keyframes c03-swing {
+  0% { transform: rotate(0deg); }
+  18% { transform: rotate(4deg); }
+  40% { transform: rotate(-2.6deg); }
+  60% { transform: rotate(1.4deg); }
+  80% { transform: rotate(-0.6deg); }
+  100% { transform: rotate(0deg); }
+}
+
+/* LEGEND: one raking light sweeps across the back */
+.c03 .c03-sweep { opacity: 0; }
+.c03.c03--motion.c03--legend .c03-sweep,
+.c03.c03--revealed.c03--legend .c03-sweep { animation: c03-sweep 1600ms cubic-bezier(0.2, 0.7, 0.2, 1) 500ms 1 both; }
+@keyframes c03-sweep {
+  0% { opacity: 0; transform: skewX(-18deg) translateX(0); }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: skewX(-18deg) translateX(380px); }
+}
+
+/* the press: a dark platen comes down over the back, then lifts */
+.c03.c03-card::after {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 34%;
+  height: 34%;
+  border-radius: 2.4cqi;
+  background: linear-gradient(180deg, #2a2f36, #121417);
+  box-shadow: 0 2cqi 4cqi rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translateY(-60%) scale(1.04);
+  pointer-events: none;
+}
+.c03.c03--pressing::after { animation: c03-platen 1200ms cubic-bezier(0.22, 1.1, 0.36, 1) forwards; }
+@keyframes c03-platen {
+  0% { opacity: 0; transform: translateY(-60%) scale(1.04); }
+  27% { opacity: 0.94; transform: translateY(0) scale(1); }
+  100% { opacity: 0.94; transform: translateY(0) scale(1); }
+}
+.c03.c03--lifted::after { animation: c03-lift 400ms cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+@keyframes c03-lift {
+  from { opacity: 0.94; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-70%); }
+}
+.c03.c03--pressing > .c03-svg { filter: var(--c03-drop) brightness(0.72); transition: filter 320ms; }
+.c03 .c03-film { cursor: grab; }
+.c03 .c03-film-gone { transition: opacity 240ms, transform 240ms; opacity: 0; transform: translate(-18px, 26px) rotate(-8deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .c03 .c03-swing.c03-swinging,
+  .c03.c03--motion .c03-sweep,
+  .c03.c03--revealed .c03-sweep,
+  .c03.c03--pressing::after,
+  .c03.c03--lifted::after,
+  .c03.c03-row.is-me.c03--motion .c03-tok { animation: none !important; }
+}
+
+/* ---------- token ---------- */
+.c03.c03-tok { display: inline-grid; place-items: center; line-height: 0; vertical-align: middle; }
+
+/* ---------- compact card: a peg on the rail ---------- */
+.c03.c03-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px 44px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+  max-width: 358px;
+  height: 64px;
+  padding-inline: 10px 14px;
+  border-radius: 12px;
+  background: var(--c03-row-bg);
+  color: var(--c03-row-ink);
+  box-shadow: inset 0 0 0 1px var(--c03-row-line);
+  overflow: hidden;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+/* the rail the jacket hangs from */
+.c03.c03-row::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 4px;
+  background: var(--c03-row-rail);
+}
+.c03.c03-row.is-me { background: var(--c03-me-bg); box-shadow: inset 0 0 0 1px rgba(176, 141, 87, 0.45); }
+.c03.c03-row.is-me::before { background: linear-gradient(90deg, #8a6a3a, #e6d3a3 45%, #b08d57); }
+.c03-row .c03-row-rank {
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 20px;
+  padding-inline: 4px;
+  border-radius: 10px;
+  background: linear-gradient(160deg, #eef1f5, #c3cad3);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.18), 0 1px 1px rgba(0, 0, 0, 0.18);
+  color: #0c3164;
+  font: 800 12px/1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c03-row.is-me .c03-row-rank { background: linear-gradient(160deg, #f3e6c4, #c9a86a 60%, #a07c46); color: #2a1d0c; }
+.c03-row .c03-row-tok { align-self: start; padding-top: 1px; display: grid; justify-items: center; }
+.c03-row.is-me .c03-row-tok .c03-tok { filter: drop-shadow(0 0 6px rgba(230, 211, 163, 0.35)); }
+.c03-row.is-me.c03--motion .c03-tok { transform-origin: 50% 0; animation: c03-rowswing 900ms cubic-bezier(0.22, 1.1, 0.36, 1) 300ms both; }
+@keyframes c03-rowswing {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(4deg); }
+  55% { transform: rotate(-2deg); }
+  80% { transform: rotate(0.8deg); }
+  100% { transform: rotate(0); }
+}
+.c03-row .c03-row-id { min-width: 0; display: grid; gap: 4px; }
+.c03-row .c03-row-name {
+  font: 800 17px/1.1 "Changa", sans-serif;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c03-row[dir="rtl"] .c03-row-name { letter-spacing: 0; line-height: 1.5; font-weight: 700; margin-block: -4px -3px; }
+.c03-row .c03-row-sub { display: flex; align-items: center; gap: 7px; min-width: 0; white-space: nowrap; }
+.c03 .c03-row-tier {
+  font: normal 800 9.5px/1 "Manrope", sans-serif;
+  letter-spacing: 0.08em;
+  padding: 3px 5px 3px;
+  border-radius: 2px;
+  background: #0c3164;
+  color: #e9e2cf;
+  outline: 1px dashed rgba(233, 226, 207, 0.55);
+  outline-offset: -2px;
+}
+.c03[dir="rtl"] .c03-row-tier { font: normal 700 10.5px/1.3 "Noto Sans Arabic", sans-serif; letter-spacing: 0; padding: 1px 6px 2px; }
+.c03 .c03-row-tier--homa { background: transparent; color: var(--c03-row-muted); outline: 1px dashed currentColor; outline-offset: -1px; }
+.c03 .c03-row-tier--stade { background: #142c55; color: #eef2f6; outline-color: transparent; }
+.c03 .c03-row-tier--champion { background: #ece6d6; color: #0c3164; outline-color: #b8975a; }
+.c03 .c03-row-tier--legend { background: #0e2347; color: #e3c98c; outline: 1px solid #b08d57; outline-offset: -3px; box-shadow: 0 0 0 1px #b08d57; }
+.c03-row .c03-row-ovr { font: 800 12px/1 "Manrope", sans-serif; font-variant-numeric: tabular-nums; color: var(--c03-row-ink); }
+.c03-row .c03-row-ovr small { font-size: 10px; font-weight: 700; color: var(--c03-row-muted); letter-spacing: 0.04em; }
+.c03-row .c03-row-f {
+  font: 800 9px/1 "Manrope", sans-serif;
+  padding: 3px 4px;
+  border-radius: 1.5px;
+  background: #ece6d6;
+  color: #0c3164;
+  outline: 1px dashed #b8975a;
+  outline-offset: -2px;
+}
+.c03-row .c03-row-f::before { content: "F·"; }
+.c03-row .c03-row-pts { display: grid; justify-items: end; gap: 3px; }
+.c03-row .c03-row-pts b { font: 800 18px/1 "Manrope", sans-serif; font-variant-numeric: tabular-nums; }
+.c03-row .c03-row-pts small { font: 700 9.5px/1 "Manrope", "Noto Sans Arabic", sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c03-row-muted); }
+.c03-row[dir="rtl"] .c03-row-pts small { letter-spacing: 0; font-size: 11px; line-height: 1.2; }
+
+/* ---------- share: the dressing room ---------- */
+.c03.c03-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #0a1a33;
+  color: #f3f5f8;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+  --c03-rim: #737b86;
+  --c03-lit-o: 0.9;
+}
+.c03-share .c03-share-bg { position: absolute; inset: 0; }
+.c03-share .c03-share-logo { position: absolute; top: 24px; inset-inline-start: 20px; width: 104px; }
+.c03-share .c03-share-jacket {
+  position: absolute;
+  top: 117px;
+  left: 48px;
+  width: 264px;
+  container-type: inline-size;
+}
+.c03-share .c03-share-jacket .c03.c03-card > .c03-svg { filter: drop-shadow(9px 16px 2.5px rgba(1, 6, 16, 0.72)); }
+.c03-share .c03-share-jacket .c03 { --c03-rim: #737b86; --c03-lit-o: 0.9; }
+.c03-share .c03-share-fig {
+  position: absolute;
+  bottom: -70px;
+  inset-inline-end: -26px;
+  width: 196px;
+  height: 236px;
+  filter: drop-shadow(0 -2px 10px rgba(110, 150, 220, 0.18));
+}
+.c03-share .c03-share-cap {
+  position: absolute;
+  inset-inline-start: 22px;
+  bottom: 30px;
+  width: 196px;
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+.c03-share .c03-share-handle { font: 700 13px/1 "Manrope", sans-serif; color: #9fb4d6; }
+.c03-share .c03-share-name { font: 800 46px/0.95 "Changa", sans-serif; letter-spacing: 0.03em; color: #f3f5f8; }
+.c03-share[dir="rtl"] .c03-share-name { letter-spacing: 0; line-height: 1.45; margin-block: -10px -8px; }
+.c03-share .c03-share-line { display: flex; align-items: center; gap: 9px; }
+.c03-share .c03-share-line .c03-row-tier { font-size: 11px; padding: 4px 6px; }
+.c03-share[dir="rtl"] .c03-share-line .c03-row-tier { font-size: 12px; padding: 1px 7px 3px; }
+.c03-share .c03-share-ovr { font: 800 15px/1 "Manrope", sans-serif; font-variant-numeric: tabular-nums; }
+.c03-share .c03-share-ovr small { font-size: 11px; font-weight: 700; color: #9fb4d6; letter-spacing: 0.05em; }
+.c03-share .c03-share-meta { display: flex; gap: 6px; font: 600 11px/1.4 "Manrope", "Noto Sans Arabic", sans-serif; color: #7f8ea6; font-variant-numeric: tabular-nums; }
+.c03-share .c03-share-meta > span { opacity: 0.5; }
