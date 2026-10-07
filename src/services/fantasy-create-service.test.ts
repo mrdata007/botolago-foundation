@@ -253,3 +253,15 @@ describe("fantasy-create-service — save payload", () => {
     expect(Object.keys(prices)).toHaveLength(15);
   });
 });
+
+describe("a damaged first-squad draft in browser storage", () => {
+  it("is not a draft, so nothing reads its slots", async () => {
+    const { isCreateDraft } = await import("./fantasy-create-draft");
+    expect(isCreateDraft({ teamName: "X", slots: Array.from({ length: 15 }, () => null) })).toBe(
+      false,
+    );
+    expect(
+      isCreateDraft({ teamName: "X", slots: Array.from({ length: 15 }, (_, i) => ({ slot: i })) }),
+    ).toBe(true);
+  });
+});

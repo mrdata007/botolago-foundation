@@ -26,7 +26,14 @@ export function accountDraftKey(uid: string): FantasyDraftKey {
 export function isCreateDraft(v: unknown): v is CreateTeamDraft {
   if (!v || typeof v !== "object") return false;
   const d = v as Partial<CreateTeamDraft>;
-  return typeof d.teamName === "string" && Array.isArray(d.slots) && d.slots.length === 15;
+  // Every slot an object: a stale or damaged draft in browser storage must be
+  // ignored, never read (the hub reads it on its own to offer "Reprendre").
+  return (
+    typeof d.teamName === "string" &&
+    Array.isArray(d.slots) &&
+    d.slots.length === 15 &&
+    d.slots.every((slot) => typeof slot === "object" && slot !== null)
+  );
 }
 
 /**
