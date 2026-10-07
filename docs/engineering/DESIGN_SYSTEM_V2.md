@@ -453,10 +453,18 @@ answer onto six kit tokens on that element, and children inherit them:
   dark). When the two fills are within ΔEok 10 in EITHER theme
   (Wydad–Tétouan 3.4 / 2.9, Berkane–Hassania 4.4 / 3.8, Maghreb Fès–DCHE
   10.9 / 9.2), home keeps its colour and away takes its own second colour if
-  that clears 10 in both themes, else the ink, else a neutral slate. A split
+  that clears 10, else the ink, else a neutral slate, in the theme(s) that
+  clash only. A split
   header, a stat bar or an H2H bar must use the pair, never two independent
   `clubStyle(club)` calls — and a crest on the away side takes the pair's
   palette too (`<ClubCrest club={…} palette={away} />`).
+- **Surface** (`clubFillShows`): a fill within ΔEok 10 of the page or the
+  card of its theme is treated like a clash and takes the same ladder in that
+  theme only: its second colour, then the ink (the ink itself is not
+  measured). Zemamra's white kit (0.00 from the light card) paints its green
+  in light; FAR's black (0.03 from the dark page) paints its red in dark. The
+  Pépites share images, which paint their own navy ground, use the palette
+  before this rule (`clubPaletteBeforeSurfaces`).
 
 `club-palette.test.ts` sweeps every kit-table colour through all of this in
 both themes, and parses `styles.css` so the token values the palette measures

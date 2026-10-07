@@ -390,7 +390,8 @@ A floodlit navy and white base, one spring-to-sky action gradient used with inte
 ### Tertiary
 
 - **Club colours** (no fixed value): every club's fill, on-fill text, edge, foreground, tint and band colours are computed per club by the club palette (`src/lib/club-palette.ts`) and reach components only through `clubStyle()` and `clubMatchPalettes()`. They appear as 4px edge bars on match rows and news cards, as crest and player discs, and as the two halves of the match header.
-  - When two clubs clash (a perceptual difference under 0.10), the away side switches to its second colour, then to navy, and last to a neutral slate (#5a667d).
+  - When two clubs clash (a perceptual difference under 0.10), the away side switches to its second colour, then to navy, and last to a neutral slate (#5a667d), in the theme where they clash.
+  - A fill under 0.10 from the page or the card it sits on is treated the same way, in that theme only: Zemamra's white kit paints its green in light, FAR's black its red in dark.
   - Production has no club colours yet (BG-0112), so every club renders from the hand-made kits table in `src/lib/kits.ts` (for example Wydad #c8102e, Raja #0a8f3a). **[Unverified]** whether those values match each club's official colours.
 
 ### Neutral

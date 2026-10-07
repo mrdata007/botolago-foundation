@@ -114,7 +114,8 @@ describe("ClubCrest — the Option A disc", () => {
 
   it("paints a passed palette instead of the club's own (the clash-resolved away side)", () => {
     // Wydad at home, Tétouan away: the fills paint ΔE 3.4 apart, so the away
-    // side becomes Tétouan's white second kit. The crest sets `data-club` on
+    // side takes Tétouan's second kit (white in dark; the ink in light, where
+    // white would vanish into the card). The crest sets `data-club` on
     // its own root, so without the palette it would stay Tétouan red.
     const TETOUAN = club({
       name: { fr: "Moghreb Tétouan", ar: "Moghreb Tétouan" },
