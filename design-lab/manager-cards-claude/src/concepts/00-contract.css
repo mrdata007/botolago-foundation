@@ -1,0 +1,15 @@
+/* Contract example: scale everything from the container width (cqi). */
+.c00 { container-type: inline-size; aspect-ratio: 5 / 7; background: #ddd; color: #333; border-radius: 4cqi; padding: 6cqi; display: grid; gap: 2cqi; font-family: "Manrope", sans-serif; }
+.c00[dir="rtl"] { font-family: "Noto Sans Arabic", sans-serif; }
+.c00 > * { font-size: 4cqi; }
+.c00-logo { width: 40cqi; }
+.c00-ovr { font: 800 20cqi/1 "Changa", sans-serif; }
+.c00-ovr small { font-size: 4cqi; }
+.c00-av { height: 30cqi; }
+.c00-name { font: 800 10cqi/1 "Changa", sans-serif; }
+.c00-stats { display: flex; gap: 4cqi; list-style: none; margin: 0; padding: 0; }
+.c00-stats li { display: grid; }
+.c00-token { height: var(--s); width: var(--s); border-radius: 50%; background: #999; color: #fff; display: grid; place-items: center; font: 800 calc(var(--s) * 0.42) / 1 "Changa", sans-serif; }
+.c00-row { display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 12px; background: #eee; color: #222; border-radius: 10px; }
+.c00-row b { flex: 1; }
+.c00-share { width: 360px; height: 640px; background: #333; display: grid; place-items: center; }

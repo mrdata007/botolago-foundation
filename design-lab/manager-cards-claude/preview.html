@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Concept preview · Manager Card lab</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="src/fonts.css" />
+    <link rel="stylesheet" href="src/app-context.css" />
+    <link rel="stylesheet" href="src/preview.css" />
+    <script src="src/brand.js"></script>
+    <script src="src/kit.js"></script>
+    <script src="src/contexts.js"></script>
+  </head>
+  <body>
+    <main id="out"><p>Loading. Open with <code>?c=01-slug</code>.</p></main>
+    <script>
+      (function () {
+        const q = new URLSearchParams(location.search);
+        const slug = q.get("c");
+        const v = q.get("v") ? "-" + q.get("v") : "";
+        if (!slug) return;
+        const css = document.createElement("link");
+        css.rel = "stylesheet";
+        css.href = `src/concepts/${slug}${v}.css`;
+        document.head.appendChild(css);
+        const js = document.createElement("script");
+        js.src = `src/concepts/${slug}${v}.js`;
+        js.onload = () => document.fonts.ready.then(() => render(MC.concepts[MC.concepts.length - 1]));
+        js.onerror = () => (document.getElementById("out").textContent = "Concept file not found: " + js.src);
+        document.head.appendChild(js);
+
+        function section(title, body, cls = "") {
+          return `<section class="pv ${cls}" data-shot="${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}"><h2>${title}</h2>${body}</section>`;
+        }
+        function render(c) {
+          const lat = { lang: "lat", motion: false };
+          const ar = { lang: "ar", motion: false };
+          let h = `<header class="pv-head"><b>${String(c.n).padStart(2, "0")} ${MC.esc(c.name)}</b> <span>${c.category}</span><p>${MC.esc(c.philosophy)}</p></header>`;
+          h += section(
+            "Full card PRO",
+            `<div class="pv-grounds">` +
+              `<div class="app-dark pv-ground"><div class="pv-full" style="width:360px">${c.full(MC.ALI, lat)}</div></div>` +
+              `<div class="app-light pv-ground"><div class="pv-full" style="width:360px">${c.full(MC.ALI, lat)}</div></div>` +
+              `<div class="app-dark pv-ground" dir="rtl" lang="ar"><div class="pv-full" style="width:360px">${c.full(MC.ALI, ar)}</div></div>` +
+              `</div>`,
+          );
+          h += section(
+            "Tier evolution",
+            `<div class="app-dark pv-ground pv-tiers">` +
+              MC.TIERS.map((t) => `<figure><div class="pv-full" style="width:200px">${c.full(MC.withTier(t), lat)}</div><figcaption>${t}</figcaption></figure>`).join("") +
+              `</div>`,
+          );
+          h += section(
+            "Token ladder",
+            `<div class="app-light pv-ground">${MC.ctxLadder(c, lat)}</div><div class="app-dark pv-ground">${MC.ctxLadder(c, lat)}</div>`,
+          );
+          h += section(
+            "Leaderboard in the app",
+            `<div class="pv-grounds">` +
+              `<div class="app-light pv-ground pv-phone">${MC.ctxRankCard(c, { ...lat, tokenH: 44 })}</div>` +
+              `<div class="app-dark pv-ground pv-phone">${MC.ctxRankCard(c, { ...lat, tokenH: 44 })}</div>` +
+              `<div class="app-dark pv-ground pv-phone" dir="rtl" lang="ar">${MC.ctxRankCard(c, { ...ar, tokenH: 44 })}</div>` +
+              `</div>`,
+          );
+          h += section(
+            "Compact card rows",
+            `<div class="pv-grounds">` +
+              `<div class="app-light pv-ground pv-phone pv-rows">${MC.ctxRows(c, lat)}</div>` +
+              `<div class="app-dark pv-ground pv-phone pv-rows">${MC.ctxRows(c, lat)}</div>` +
+              `<div class="app-dark pv-ground pv-phone pv-rows" dir="rtl" lang="ar">${MC.ctxRows(c, ar)}</div>` +
+              `</div>`,
+          );
+          h += section(
+            "Mini identity",
+            `<div class="pv-grounds">` +
+              `<div class="app-light pv-ground pv-phone pv-stack">${MC.ctxMini(c, { ...lat, miniH: 28 })}</div>` +
+              `<div class="app-dark pv-ground pv-phone pv-stack">${MC.ctxMini(c, { ...lat, miniH: 24 })}</div>` +
+              `<div class="app-dark pv-ground pv-phone pv-stack" dir="rtl" lang="ar">${MC.ctxMini(c, { ...ar, miniH: 28 })}</div>` +
+              `</div>`,
+          );
+          h += section(
+            "Share image",
+            `<div class="pv-grounds"><div class="pv-share">${c.share(MC.ALI, lat)}</div><div class="pv-share" dir="rtl" lang="ar">${c.share(MC.ALI, ar)}</div></div>`,
+          );
+          document.getElementById("out").innerHTML = h;
+          document.documentElement.dataset.ready = "1";
+        }
+      })();
+    </script>
+  </body>
+</html>
