@@ -36,7 +36,7 @@
 .onb .m49-read .m49-ovr + .onb-chip { margin-block-start: 14px; }
 .onb .m49-note { margin-block-start: 10px; color: var(--ui-on-surface-muted); font: 600 14px/var(--ui-leading-copy) var(--onb-body); text-wrap: pretty; }
 .onb .m49-name { font-family: var(--onb-display); font-weight: 800; color: var(--ui-on-surface); }
-.onb .m49-hero .onb-hero__label { text-wrap: balance; }
+.onb .m49-hero .onb-hero__label { text-wrap: pretty; }
 .onb .m49-more { display: grid; grid-template-rows: 1fr; }
 .onb .m49-more__in { min-height: 0; }
 .onb .m49-line { margin-block-start: 14px; color: var(--ui-on-surface-muted); font: 600 14px/var(--ui-leading-copy) var(--onb-body); text-wrap: pretty; }

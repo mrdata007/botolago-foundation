@@ -558,7 +558,7 @@
       ONB.section(env.t("app.my_leagues"), "") +
       group("app.general_leagues", [
         env.t("app.overall"),
-        `${env.t("app.gameweek")} ${env.ctx.nextGw ?? 5}`,
+        `${env.t("app.gameweek")} ${ONB.num(env.ctx.nextGw ?? 5, env)}`,
       ]) +
       group("app.private_leagues", [bar(110, 14)]) +
       `<div class="onb-btnrow" style="margin-block-start:12px">${ONB.button(env.t("app.join_leagues"), { kind: "soft" })}${ONB.button(env.t("app.configure_leagues"), { kind: "soft" })}</div>`
