@@ -178,6 +178,7 @@
       `<linearGradient id="${u}-st" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#E9EDF0"/><stop offset=".5" stop-color="#A9B1B8"/><stop offset="1" stop-color="#6C747B"/></linearGradient>` +
       /* chalk-grain hatching for the form bars */
       `<pattern id="${u}-hc" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(-52)"><path d="M0 1.3H2.6" stroke="${C.chalk}" stroke-width="1.15"/></pattern>` +
+      `<pattern id="${u}-hh" width="7.5" height="7.5" patternUnits="userSpaceOnUse" patternTransform="rotate(-38)"><path d="M0 3.75H7.5" stroke="${C.chalk}" stroke-width="3"/></pattern>` +
       `<pattern id="${u}-hs" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(-52)"><path d="M0 1.3H2.6" stroke="${C.sky}" stroke-width="1.3"/></pattern>`;
     if (!pine) {
       /* moulded frame: diffuse light on the blurred frame alpha, varnish sheen from CHAMPION */
@@ -271,7 +272,7 @@
           `<path d="${A.seam}" fill="none" stroke="${st.seam || st.line}" stroke-width="${st.sw * 0.8}" stroke-linecap="round"/>` +
           `<path d="${A.hood}" fill="${st.fill}"/>` +
           (st.hatch
-            ? `<path d="${A.hood}" fill="${st.line}" fill-opacity=".22"/><path d="${A.hood}" fill="url(#${st.u}-hc)" ${s}/>`
+            ? `<path d="${A.hood}" fill="${st.line}" fill-opacity=".22"/><path d="${A.hood}" fill="url(#${st.u}-hh)" ${s}/>`
             : `<path d="${A.hood}" fill="${st.line}" fill-opacity="${st.hair || 0.6}" ${s}/>`) +
           `<g stroke="${st.fill}" stroke-width="${st.sw * 0.9}" fill="none" stroke-linecap="round">${hs}</g>`;
       }
@@ -422,14 +423,15 @@
     const tierWord = S.tiers[tier];
     if (!thumb) {
       const head = ar ? HEAD.ar : HEAD.lat;
-      const hfs = ar ? 14 : 12;
+      const hfs = ar ? 14 : enamel ? 11 : 12;
       const hwt = ar ? 700 : 800;
       const pad = enamel ? 6 : 0;
       const hx1 = X(46 + pad);
       const hw1 = tw(head, hwt, hfs, "Changa", ls);
       const hdot = hx1 + dir * (hw1 + 7);
       const hx2 = hdot + dir * 7;
-      const hw2 = tw(p.season, 800, 12, "Changa", ls);
+      const sfs0 = enamel && !ar ? 11 : 12;
+      const hw2 = tw(p.season, 800, sfs0, "Changa", ls);
       const hEnd = hx2 + dir * hw2;
       const hy = enamel ? 74 : 70;
       const ha = (x, w, fs, extra = "") => `x="${r2(x)}" y="${hy}" text-anchor="${AS}" class="c06-ch" font-weight="${w}" font-size="${fs}" letter-spacing="${ls}"${extra}`;
@@ -449,9 +451,14 @@
         s += `<polygon points="${pts(ar ? mirrorPts(band) : band)}" fill="${C.blue}"/>`;
         s += `<text ${ha(hx1, hwt, hfs)} fill="${C.enamel}">${esc(head)}</text>`;
         s += `<circle cx="${r2(hdot + dir * 0.5)}" cy="${hy - 4}" r="1.6" fill="${C.enamel}"/>`;
-        s += `<text ${ha(hx2, 800, 12, ' direction="ltr"')} fill="${C.enamel}">${esc(p.season)}</text>`;
-        const tfs = ar ? 13 : 10.5;
-        s += `<text x="${X(248)}" y="${ar ? 74.5 : 73.5}" text-anchor="${AE}" class="c06-ch" font-weight="800" font-size="${tfs}" letter-spacing="${ar ? 0 : 1.6}" fill="${C.enamel}">${esc(tierWord)}</text>`;
+        s += `<text ${ha(hx2, 800, sfs0, ' direction="ltr"')} fill="${C.enamel}">${esc(p.season)}</text>`;
+        /* the tier on its own enamel plate, so the band never reads "2026/27 CHAMPION" as a title */
+        const tfs = ar ? 12.5 : 9.5;
+        const tls2 = ar ? 0 : 1.2;
+        const pw = tw(tierWord, 800, tfs, "Changa", tls2) + 12;
+        const px = ar ? X(251) : X(251) - pw;
+        s += `<rect x="${r2(px)}" y="60" width="${r2(pw)}" height="19" rx="3" fill="${C.enamel}"/>`;
+        s += `<text x="${r2(px + pw / 2 + (ar ? 0 : tls2 / 2))}" y="${ar ? 74.2 : 73.4}" text-anchor="middle" class="c06-ch" font-weight="800" font-size="${tfs}" letter-spacing="${tls2}" fill="${C.blue}">${esc(tierWord)}</text>`;
       } else if (gold) {
         /* LEGEND: the tier rides on the topper; the glass carries a gilded line */
         s += gilt(ha(hx1, hwt, hfs), esc(head), false);

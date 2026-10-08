@@ -111,13 +111,14 @@
     let figure, figBridges;
     if (A.hood) {
       figure = `<g transform="${FIG}"><path d="${A.torso}"/><path d="${A.collar}"/><path d="${A.hood}"/></g>`;
-      // the hood stays one clean hole (a seam down it reads as a dome); the rim bridge separates
-      // hood from jacket, and the jacket keeps its yoke and centre-back seams
-      const rim = "M58 171C78 159 122 159 142 171";
+      // the hood stays one clean hole that flows into the shoulders (a seam down it, or a rim
+      // all the way across, reads as a dome or a bell); a short bridge marks the back of the
+      // hood's rim, and the jacket keeps its yoke and centre-back seams
+      const rim = "M78 164C90 160.5 110 160.5 122 164";
       figBridges = legend
         ? /* bridgeless: the rim and the seams float as islands, held only by the screen mesh */
-          `<g transform="${FIG}" fill="none" stroke="#000" stroke-linecap="round"><path d="M70 167C82 161 118 161 130 167" stroke-width="${r2(1.6 * k)}"/><path d="M30 211C70 198 130 198 170 211" stroke-width="${r2(1.8 * k)}"/><path d="M100 213V234" stroke-width="${r2(1.6 * k)}"/></g>`
-        : `<g transform="${FIG}" fill="none" stroke="#000"><path d="${rim}" stroke-width="${bwA}"/>` +
+          `<g transform="${FIG}" fill="none" stroke="#000" stroke-linecap="round"><path d="M80 164C90 161 110 161 120 164" stroke-width="${r2(1.6 * k)}"/><path d="M30 211C70 198 130 198 170 211" stroke-width="${r2(1.8 * k)}"/><path d="M100 213V234" stroke-width="${r2(1.6 * k)}"/></g>`
+        : `<g transform="${FIG}" fill="none" stroke="#000"><path d="${rim}" stroke-width="${bwA}" stroke-linecap="round"/>` +
           `<path d="${yoke}" stroke-width="${bwA}"/><path d="M100 205V246" stroke-width="${bwA}"/></g>`;
     } else {
       // older kit without the hood: bare head, nape and collar bridges

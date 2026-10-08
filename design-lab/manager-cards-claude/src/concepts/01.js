@@ -35,7 +35,7 @@
   const BALL = { x: 318, y: 15, r: 9 }; // LEGEND: the ball still lodged in the corner of the net
   const BAG = "M290 30C296 18 304 6.5 316 5.2C326 4.2 331.5 11 331 18C330.5 26 326.5 34 320 44V30Z";
   const LAMP = { x: 352, y: 7 }; // LEGEND floodlight head, entering from the top-end corner
-  const FIG = { x: -22, y: 154, w: 114, h: 136.8 }; // the manager, cropped by the bottom edge
+  const FIG = { x: -8, y: 150, w: 98, h: 117.6 }; // the manager: head and shoulders, cropped at the chest by the bottom edge
   const POST_END = 314; // centre of the end post (the footing sits under it)
 
   const project = (P) => {
@@ -212,8 +212,8 @@
   const concrete = (id, seed = 17) =>
     `<filter id="${id}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">` +
     `<feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="3" seed="${seed}" result="n"/>` +
-    `<feDiffuseLighting in="n" surfaceScale="2" diffuseConstant="1.18" lighting-color="#ffffff" result="l"><feDistantLight azimuth="225" elevation="56"/></feDiffuseLighting>` +
-    `<feComposite in="SourceGraphic" in2="l" operator="arithmetic" k1="1.04" k2="0" k3="0" k4="0" result="m"/>` +
+    `<feDiffuseLighting in="n" surfaceScale="2" diffuseConstant="1.1" lighting-color="#ffffff" result="l"><feDistantLight azimuth="225" elevation="56"/></feDiffuseLighting>` +
+    `<feComposite in="SourceGraphic" in2="l" operator="arithmetic" k1="0.42" k2="0.66" k3="0" k4="0" result="m"/>` +
     `<feComposite in="m" in2="SourceAlpha" operator="in"/></filter>`;
   /** Chalk strokes (lines only): rough edge plus a grain that keeps about 85% of the stroke. */
   const chalkLine = (id) =>
@@ -376,7 +376,7 @@
         chalkText(`${u}-chalkt`) +
         lin(`${u}-canvas`, [[0, "#3d6f9f"], [0.5, "#2f5d8a"], [1, "#24496f"]], 0, 1) +
         grain(`${u}-weave`, "0.9 0.9", 0.5, 0.78, 21, 1) +
-        grain(`${u}-breeze`, 0.35, 0.7, 0.62, 41, 3) +
+        grain(`${u}-breeze`, 0.85, 0.42, 0.8, 41, 2) +
         `<radialGradient id="${u}-lamp" cx="150" cy="96" r="150" gradientTransform="translate(150 96) scale(1 .72) translate(-150 -96)" gradientUnits="userSpaceOnUse">${stops([[0, "var(--c01-lamp)", 0.17], [0.55, "var(--c01-lamp)", 0.06], [1, "var(--c01-lamp)", 0]])}</radialGradient>` +
         `<clipPath id="${u}-wall"><rect width="${VW}" height="228"/></clipPath>`;
     if (tk === "stade")
@@ -384,7 +384,7 @@
         paint(`${u}-paintV`, "0.7 0.05", "0.9 0.02", 8, -1.7, 1.75) +
         paint(`${u}-paintH`, "0.05 0.7", "0.02 0.9", 3, -1.0, 1.44) +
         paint(`${u}-paint84`, "0.5 0.5", "0.04 0.9", 5, -1.2, 1.62, 1.4) +
-        grain(`${u}-breeze`, 0.35, 0.7, 0.62, 41, 3);
+        grain(`${u}-breeze`, 0.85, 0.42, 0.8, 41, 2);
     return d;
   }
 
@@ -727,7 +727,7 @@
     // atmosphere behind the goal
     if (tk === "homa") {
       out += `<rect width="${VW}" height="228" fill="url(#${u}-lamp)"/>`;
-      out += `<g clip-path="url(#${u}-wall)" class="c01-cast"><g transform="translate(40 -4) skewX(-12)">${MC.avatar({ x: 40, y: 104, w: 150, h: 180, torso: "#000", collar: false, neck: "#000", skin: "#000", hair: "#000", seam: false })}</g></g>`;
+      out += `<g clip-path="url(#${u}-wall)" class="c01-cast"><g transform="matrix(1 0 -.16 1 36.5 0)">${MC.avatar({ x: 52, y: 88.5, w: 124, h: 148.8, torso: "#000", collar: false, neck: "#000", skin: "#000", hair: "#000", seam: false })}</g></g>`;
     }
     if (tk === "stade") out += wall(u, thumb);
     if (tk === "legend" && !opts.noLamp && !thumb) out += beam(u);

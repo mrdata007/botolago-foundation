@@ -2,7 +2,8 @@
    Dark app ground is the default; light ground overrides below. */
 
 /* ---------- ground tokens ---------- */
-.c02 {
+.c02,
+:root .app-light .app-dark .c02 {
   --c02-ball-hi: #eef2f6;
   --c02-ball: #e3e8ee;
   --c02-ball-lo: #c3ccd6;
@@ -16,6 +17,13 @@
   --c02-champ-ring: #c3cad2;
   --c02-mini-dot: #f4fbff;
   --c02-air-ink: #c9d3e0;
+  --c02-homa-cres: #c9cfd8;
+  --c02-stade-line: #9bdbfd;
+  --c02-lowcres: #f4fbff;
+  --c02-lring: #f4fbff;
+  --c02-flare: #f4fbff;
+  --c02-tpanel: #b4bec9;
+  --c02-tpanel-pearl: #cbd5e1;
   /* rows */
   --c02-surface: #121b29;
   --c02-text: #f0f6fc;
@@ -23,6 +31,7 @@
   --c02-wedge: color-mix(in oklab, #9bdbfd 15%, transparent);
   --c02-wedge-edge: color-mix(in oklab, #9bdbfd 34%, transparent);
   --c02-row-edge: color-mix(in oklab, #f0f6fc 10%, transparent);
+  --c02-row-ball: #e3e8ee;
 }
 .app-light .c02,
 :root[data-ground="day"] .c02,
@@ -40,12 +49,20 @@
   --c02-champ-ring: #6e7782;
   --c02-mini-dot: #001c49;
   --c02-air-ink: #0c3164;
+  --c02-homa-cres: #aeb5be;
+  --c02-stade-line: #0c3164;
+  --c02-lowcres: #0c3164;
+  --c02-lring: #001c49;
+  --c02-flare: #0c3164;
+  --c02-tpanel: #d6dde7;
+  --c02-tpanel-pearl: #dce4ee;
   --c02-surface: #ffffff;
   --c02-text: #060d1a;
   --c02-muted: #4e5661;
   --c02-wedge: color-mix(in oklab, #0c3164 12%, transparent);
   --c02-wedge-edge: color-mix(in oklab, #0c3164 26%, transparent);
   --c02-row-edge: color-mix(in oklab, #0c3164 9%, transparent);
+  --c02-row-ball: #ffffff;
 }
 :root .app-dark .c02 {
   --c02-ball-hi: #eef2f6;
@@ -61,12 +78,20 @@
   --c02-champ-ring: #c3cad2;
   --c02-mini-dot: #f4fbff;
   --c02-air-ink: #c9d3e0;
+  --c02-homa-cres: #c9cfd8;
+  --c02-stade-line: #9bdbfd;
+  --c02-lowcres: #f4fbff;
+  --c02-lring: #f4fbff;
+  --c02-flare: #f4fbff;
+  --c02-tpanel: #b4bec9;
+  --c02-tpanel-pearl: #cbd5e1;
   --c02-surface: #121b29;
   --c02-text: #f0f6fc;
   --c02-muted: #a9b2be;
   --c02-wedge: color-mix(in oklab, #9bdbfd 15%, transparent);
   --c02-wedge-edge: color-mix(in oklab, #9bdbfd 34%, transparent);
   --c02-row-edge: color-mix(in oklab, #f0f6fc 10%, transparent);
+  --c02-row-ball: #e3e8ee;
 }
 
 /* ---------- the card object ---------- */
@@ -74,7 +99,7 @@
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 400 / 150;
+  aspect-ratio: 400 / 190;
   -webkit-tap-highlight-color: transparent;
 }
 .c02 .c02-svg {
@@ -130,6 +155,14 @@
 .c02 .c02-s-balllo {
   stop-color: var(--c02-ball-lo);
 }
+.c02 .c02-s-flare {
+  stop-color: var(--c02-flare);
+  stop-opacity: 0.95;
+}
+.c02 .c02-s-flare0 {
+  stop-color: var(--c02-flare);
+  stop-opacity: 0;
+}
 
 /* ball */
 .c02 .c02-lift {
@@ -137,6 +170,9 @@
 }
 .c02 .c02-ring {
   stroke: var(--c02-ring);
+}
+.c02 .c02-lring {
+  stroke: var(--c02-lring);
 }
 .c02 .c02-seam {
   stroke: var(--c02-seam);
@@ -168,10 +204,16 @@
 }
 .c02 .c02-unit {
   fill: #4e5661;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
 }
 .c02 .c02-founder-26 {
   fill: #ffffff;
+}
+.c02 .c02-tpanel {
+  fill: var(--c02-tpanel);
+}
+.c02 .c02-tpanel.is-pearl {
+  fill: var(--c02-tpanel-pearl);
 }
 .c02 .c02-ball-back {
   opacity: 0;
@@ -188,6 +230,9 @@
 .c02 .c02-rim {
   stroke: var(--c02-rim);
 }
+.c02 .c02-rim-share {
+  stroke: #737b86;
+}
 .c02 .c02-alu-edge {
   stroke: var(--c02-alu-edge);
 }
@@ -197,8 +242,7 @@
 .c02 .c02-chalkline {
   stroke: #d5dae0;
 }
-.c02 .c02-blade-pro,
-.c02 .c02-blade-stade {
+.c02 .c02-blade-pro {
   fill: #b6c1d1;
 }
 .c02 .c02-blade-pro.is-best,
@@ -215,13 +259,26 @@
   fill: #eef1f4;
 }
 .c02 .c02-beam {
-  fill: #b9f4fb;
+  fill: #dbe7f3;
 }
 .c02 .c02-beam.is-best {
   fill: #ffffff;
 }
 .c02 .c02-crescent {
   fill: #0151fc;
+}
+.c02 .c02-cres-chalk {
+  fill: var(--c02-homa-cres);
+}
+.c02 .c02-cres-line {
+  stroke: var(--c02-stade-line);
+}
+.c02 .c02-lowcres {
+  fill: var(--c02-lowcres);
+}
+.c02 .c02-stencil {
+  fill: #dfe6ee;
+  opacity: 0.3;
 }
 
 /* stat labels inside the roots */
@@ -250,7 +307,7 @@
   fill: #ffffff;
 }
 .c02 .c02-arc-homa {
-  fill: #eef1f4;
+  fill: #2b3038;
 }
 .c02 .c02-arc-stade {
   fill: var(--c02-air-ink);
@@ -281,6 +338,9 @@
   stroke-width: 1.4px;
   stroke-linejoin: round;
 }
+.c02 .c02-nz-stade .c02-meta {
+  fill: #b9c4d2;
+}
 .c02 .c02-nz-champion .c02-name {
   fill: #001c49;
 }
@@ -295,7 +355,7 @@
   fill: #3a434d;
 }
 .c02 .c02-nz-legend .c02-tier {
-  fill: #73edfa;
+  fill: #f4fbff;
 }
 .c02 .c02-nz-legend .c02-meta {
   fill: #b5cde6;
@@ -304,6 +364,31 @@
 /* thumb: keep the silhouette and the 84 */
 .c02.c02--thumb .c02-lift {
   opacity: 0.6;
+}
+
+/* ---------- size-aware text (the slot is an inline-size container) ---------- */
+@container (max-width: 279.98px) {
+  .c02 .c02-slab-t,
+  .c02 .c02-season,
+  .c02 .c02-arc-words {
+    display: none;
+  }
+  .c02 .c02-sval {
+    font-size: 13.5px;
+  }
+  .c02 .c02-nz .c02-tier {
+    font-size: 12px;
+    letter-spacing: 0.05em;
+  }
+  .c02 .c02-nz .c02-bot {
+    font-size: 10.5px;
+  }
+}
+@container (max-width: 199.98px) {
+  .c02 .c02-slab,
+  .c02 .c02-bot {
+    display: none;
+  }
 }
 
 /* ---------- motion (only when o.motion; never under reduced motion) ---------- */
@@ -384,11 +469,9 @@
 @keyframes c02-dot {
   from {
     opacity: 0;
-    transform: translateX(-6px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }
 @keyframes c02-breathe {
@@ -398,7 +481,7 @@
     opacity: 1;
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.06);
     opacity: 0.8;
   }
 }
@@ -449,7 +532,7 @@
   width: 100%;
   max-width: 358px;
   min-height: 64px;
-  padding: 6px 14px 6px 8px;
+  padding-block: 6px;
   padding-inline: 8px 14px;
   box-sizing: border-box;
   border-radius: 14px;
@@ -507,12 +590,14 @@
   letter-spacing: 0.08em;
   color: var(--c02-muted);
 }
+/* founder: a tiny ball with the blue notch in its rim, as on the token */
 .c02 .c02-row-f {
   display: inline-block;
-  width: 9px;
-  height: 9px;
-  background: #0151fc;
-  clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 92% 88%, #0151fc 0 36%, transparent 37%), var(--c02-row-ball);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c02-muted) 70%, transparent);
 }
 .c02.c02-row[dir="rtl"] .c02-row-who b {
   font: 800 17px/1.5 "Changa", "Noto Sans Arabic", sans-serif;

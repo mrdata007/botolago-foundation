@@ -357,7 +357,7 @@
 .c04-share[dir="rtl"] .c04-sh-plate,
 .c04-share[dir="rtl"] .c04-sh-cast > div {
   transform-origin: 0% 0%;
-  transform: perspective(1300px) rotate(5deg) rotate3d(3, -2, 0, -35deg);
+  transform: perspective(1300px) rotate(5deg) rotate3d(3, -2, 0, 35deg);
 }
 .c04-share[dir="rtl"] .c04-sh-cast {
   translate: -10px 10px;

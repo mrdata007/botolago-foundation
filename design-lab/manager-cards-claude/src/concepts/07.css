@@ -84,27 +84,37 @@
   font-weight: 700;
 }
 
-/* Arabic tier name, embroidered over the knit */
+/* Arabic tier name, satin-stitch embroidery over the knit (size set on the SVG text) */
 .c07 .c07-emb {
   font-family: "Changa", "Noto Sans Arabic", sans-serif;
   font-weight: 700;
-  font-size: 25px;
   letter-spacing: 0;
 }
 
-/* LEGEND: woven lurex on satin */
+/* LEGEND: the 84 woven in gold thread on the jacquard */
 .c07 .c07-legend-ovr {
   font-family: "Changa", sans-serif;
   font-weight: 800;
 }
-.c07 .c07-legend-word {
-  font-family: "Changa", sans-serif;
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.34em;
+/* LEGEND's label: navy damask woven in gold thread */
+.c07--legend .c07-lb,
+.c07--legend .c07-lb-k,
+.c07--legend .c07-lb-meta {
+  fill: #d9c48a;
 }
-.c07 .c07-legend-word-ar {
-  font-size: 21px;
+.c07--legend .c07-lb-season,
+.c07--legend .c07-lb-v,
+.c07--legend .c07-lb-gold {
+  fill: #f1d98a;
+}
+.c07 .c07-lb-name {
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  fill: #14305e;
+}
+.c07 .c07-lb-ar.c07-lb-name {
+  font-size: 8px;
   letter-spacing: 0;
 }
 
@@ -117,7 +127,7 @@
   .c07--motion .c07-shine {
     animation: c07-shine 5.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0.6s infinite;
   }
-  .c07--motion.c07--legend .c07-satin {
+  .c07--motion.c07--legend .c07-jacq {
     animation: c07-pull 900ms steps(28, end) 200ms both;
   }
 }
@@ -384,10 +394,11 @@
 .c07-row--champion .c07-row-scarf::before {
   border-block: 2px solid #dce2e9;
 }
+/* LEGEND: HD woven jacquard (a fine navy twill), gold binding */
 .c07-row--legend .c07-row-scarf::before {
   background:
-    repeating-linear-gradient(-62deg, rgba(255, 255, 255, 0.07) 0 1px, transparent 1px 3px),
-    linear-gradient(115deg, #0b1f45, #173873 32%, #2d5aa8 46%, #15336c 54%, #0e2550 80%, #1b3e7c);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.2)),
+    repeating-linear-gradient(-63deg, #284a83 0 0.7px, #163563 0.7px 1.4px);
   border-block: 2px solid #d7b256;
 }
 .c07-row--legend .c07-row-live {
@@ -399,13 +410,12 @@
 .c07-row .c07-row-gold {
   font-family: "Changa", sans-serif;
   font-weight: 800;
-  font-size: 46px;
 }
 .c07-row--homa .c07-row-scarf::before {
   clip-path: polygon(0 3%, 18% 0, 41% 4%, 63% 0, 86% 3%, 100% 0, 100% 97%, 79% 100%, 55% 96%, 33% 100%, 12% 97%, 0 100%);
 }
 
-/* ---------- share ---------- */
+/* ---------- share: the scarf on a terrace barrier under a floodlight ---------- */
 .c07-share {
   position: relative;
   width: 360px;
@@ -415,86 +425,114 @@
   color: #efe8d8;
   font-family: "Manrope", sans-serif;
 }
-.c07-sh-bg {
+.c07-sh-bg,
+.c07-sh-beams {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+}
+.c07-sh-beams {
+  mix-blend-mode: screen;
+}
+.c07-sh-logo {
+  position: absolute;
+  top: 24px;
+  inset-inline-start: 18px;
+  width: 128px;
 }
 .c07-sh-scarf {
   position: absolute;
-  top: 48px;
-  inset-inline-start: 16px;
-  width: 206px;
+  inset-inline-start: 6px;
   container-type: inline-size;
-  transform: rotate(-1.6deg);
-  transform-origin: 50% 2%;
+  transform: rotate(-0.8deg);
+  transform-origin: 6% 3%;
 }
 .c07-share[dir="rtl"] .c07-sh-scarf {
-  transform: rotate(1.6deg);
+  transform: rotate(0.8deg);
+  transform-origin: 94% 3%;
 }
 .c07-sh-col {
   position: absolute;
-  top: 24px;
-  bottom: 26px;
-  inset-inline-end: 18px;
-  width: 112px;
+  top: 110px;
+  bottom: 22px;
+  inset-inline-end: 10px;
+  width: 94px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: flex-start;
 }
-.c07-sh-logo {
-  width: 108px;
-}
 .c07-sh-cap {
-  margin: auto 0;
+  margin: 0;
   display: grid;
-  font: 800 25px/1.02 "Changa", sans-serif;
+  font: 800 21px/1.04 "Changa", sans-serif;
   letter-spacing: 0.01em;
   color: #efe8d8;
 }
 .c07-share[dir="rtl"] .c07-sh-cap {
-  font: 700 27px/1.6 "Changa", sans-serif;
+  font: 700 24px/1.55 "Changa", sans-serif;
   letter-spacing: 0;
 }
 .c07-sh-who {
   display: grid;
-  gap: 3px;
+  justify-items: start;
 }
-.c07-sh-who b {
-  font: 800 30px/1 "Changa", sans-serif;
+.c07-sh-name {
+  font: 800 40px/1 "Changa", sans-serif;
   color: #fff;
 }
-.c07-share[dir="rtl"] .c07-sh-who b {
+.c07-share[dir="rtl"] .c07-sh-name {
   font-weight: 700;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 .c07-sh-ovr {
-  font: 800 15px/1.2 "Manrope", sans-serif;
+  font: 800 78px/0.86 "Changa", sans-serif;
+  color: #efe8d8;
+  margin-top: 4px;
+  letter-spacing: -0.01em;
+}
+.c07-sh-sub {
+  margin-top: 6px;
+  font: 800 14px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.08em;
   color: #efe8d8;
 }
-.c07-sh-ovr small {
-  font-size: 10px;
-  margin-inline-start: 3px;
-  letter-spacing: 0.08em;
-  opacity: 0.8;
-}
 .c07-sh-meta {
-  font: 700 10.5px/1.35 "Manrope", "Noto Sans Arabic", sans-serif;
+  margin-top: 3px;
+  font: 700 10.5px/1.35 "Manrope", sans-serif;
   letter-spacing: 0.06em;
   color: rgba(239, 232, 216, 0.74);
   font-variant-numeric: tabular-nums;
 }
 .c07-sh-founder {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1.5px solid #e8d08a;
-  font: 800 10.5px/1.3 "Manrope", "Noto Sans Arabic", sans-serif;
-  letter-spacing: 0.14em;
-  color: #e8d08a;
+  position: relative;
+  margin-top: 9px;
+  width: 94px;
+  height: 18px;
+  display: grid;
+  place-items: center;
 }
-.c07-share[dir="rtl"] .c07-sh-meta,
-.c07-share[dir="rtl"] .c07-sh-founder {
+.c07-sh-lx {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.c07-sh-founder > span {
+  position: relative;
+  font: 800 8.6px/1 "Manrope", sans-serif;
+  letter-spacing: 0.1em;
+  color: #14305e;
+  white-space: nowrap;
+}
+.c07-share[dir="rtl"] .c07-sh-sub,
+.c07-share[dir="rtl"] .c07-sh-meta {
   letter-spacing: 0;
   font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+}
+.c07-share[dir="rtl"] .c07-sh-founder > span {
+  font: 700 10px/1.5 "Noto Sans Arabic", "Manrope", sans-serif;
+  letter-spacing: 0;
 }
