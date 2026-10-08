@@ -1,9 +1,11 @@
 /* S08 · hub hero (M4a, M11), S09 · detail sheet (M4b), S12 · provisional cleared (M7),
    S13 · tier up hero and tier down line (M8), S14 · founder hero (M9).
-   The hero is the hub's card block expanded once, an inline section and never a dialog. Its
-   choreography is one sequence: the number and the card are in the first painted frame, the object
-   plays its own "first" beat over them, and only then does the explanation (the line and the two
-   buttons) unfold below. The number, the tier word and the Provisoire chip never move.
+   The hero is the hub's card block expanded once, an inline section and never a dialog. Under
+   motion=1 it has two motions and no more: the app's 8px enter-rise on the hero (transform only,
+   so nothing is ever invisible) and the object's own beat over the number that is already there
+   ("first" for a rating, "founder" for the grant where the direction has one). The label, the
+   number, the tier word, the Provisoire chip, the line and the two buttons are in place from the
+   first frame and never move on their own, so nothing below the hero shifts.
    Every string comes from env.t(key); nothing here prints a name in a heading. */
 (function () {
   const MC = window.MC;
@@ -37,24 +39,15 @@
 .onb .m49-note { margin-block-start: 10px; color: var(--ui-on-surface-muted); font: 600 14px/var(--ui-leading-copy) var(--onb-body); text-wrap: pretty; }
 .onb .m49-name { font-family: var(--onb-display); font-weight: 800; color: var(--ui-on-surface); }
 .onb .m49-hero .onb-hero__label { text-wrap: pretty; }
-.onb .m49-more { display: grid; grid-template-rows: 1fr; }
-.onb .m49-more__in { min-height: 0; }
 .onb .m49-line { margin-block-start: 14px; color: var(--ui-on-surface-muted); font: 600 14px/var(--ui-leading-copy) var(--onb-body); text-wrap: pretty; }
 .onb .m49-more .onb-btnrow { margin-block-start: 14px; }
 
-/* The hero's choreography (motion=1 only, and only where motion is allowed): the object's own beat
-   plays first, over the number that is already there; the line and the buttons unfold after it. */
+/* The hero's enter-rise (motion=1 only, never under reduced motion): the app's 8px settle, transform
+   only, the way .m12-live does it. The object's own beat plays on the card over the same 600ms. */
 @media (prefers-reduced-motion: no-preference) {
-  .onb .m49-hero--motion .m49-more { animation: m49-unfold 380ms cubic-bezier(0.16, 1, 0.3, 1) 440ms backwards; }
-  .onb .m49-hero--motion .m49-more__in { animation: m49-clip 380ms linear 440ms backwards; }
+  .onb .m49-hero--motion { animation: m49-rise 260ms cubic-bezier(0, 0, 0.2, 1) both; }
 }
-@keyframes m49-unfold {
-  from { grid-template-rows: 0fr; visibility: hidden; }
-  to { grid-template-rows: 1fr; visibility: visible; }
-}
-@keyframes m49-clip {
-  from, to { clip-path: inset(0); }
-}
+@keyframes m49-rise { from { transform: translateY(8px); } to { transform: none; } }
 
 /* ---------- the hub block after the hero (S12): the M3 block's anatomy, with the number ---------- */
 .onb .m49-block { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 120px; padding: 16px; text-align: start; }
@@ -113,18 +106,19 @@
     }
   };
 
-  /** The hero: label and 44px close on top; card and reading; then the line and two buttons. */
-  const hero = (env, { label, read, line, primary, secondary, beat }) =>
+  /** The hero: label and 44px close on top; card and reading; then the line and two buttons.
+   * `still` is the hero seen behind a sheet: the state after a tap, so neither the rise nor the beat. */
+  const hero = (env, { label, read, line, primary, secondary, beat, still }) =>
     ONB.hero(
-      `<div class="m49-main">${env.card("full", { width: 132, beat })}<div class="m49-read">${read}</div></div>` +
-        `<div class="m49-more"><div class="m49-more__in">${line ? `<p class="m49-line">${line}</p>` : ""}` +
+      `<div class="m49-main">${env.card("full", { width: 132, beat: still ? undefined : beat })}<div class="m49-read">${read}</div></div>` +
+        `<div class="m49-more">${line ? `<p class="m49-line">${line}</p>` : ""}` +
         ONB.btnRow(
           ONB.button(primary, { kind: "primary" }),
           ONB.button(secondary, { kind: "soft" }),
         ) +
-        `</div></div>`,
+        `</div>`,
       env,
-      { label, cls: "m49-hero" + (env.o.motion ? " m49-hero--motion" : "") },
+      { label, cls: "m49-hero" + (env.o.motion && !still ? " m49-hero--motion" : "") },
     );
 
   /** The hub: the app's own blocks, the card block set right under Valeur / Banque / Rang. */
@@ -140,7 +134,7 @@
   };
 
   /* ---------- S08 · the hub hero: fresh, arrival, coalesced ---------- */
-  const heroRated = (env) => {
+  const heroRated = (env, { still = false } = {}) => {
     const p = env.p;
     const kind = env.v.key;
     const first = env.ctx.firstRating;
@@ -164,6 +158,7 @@
       primary: env.t(K + "m4.hero.detail"),
       secondary: env.t(K + "m4.hero.share"),
       beat: "first",
+      still,
     });
   };
 
@@ -275,7 +270,7 @@
     render: (env) =>
       ONB.phone(
         ONB.skeleton.hubAbove(env) +
-          `<div style="margin-block-start:14px">${heroRated(env)}</div>` +
+          `<div style="margin-block-start:14px">${heroRated(env, { still: true })}</div>` +
           `<div style="margin-block-start:24px">${ONB.skeleton.hubBelow(env)}</div>`,
         env,
         {
@@ -374,7 +369,12 @@
       line: "",
       primary: env.t(K + "m8.view"),
       secondary: env.t(K + "m4.hero.share"),
-      beat: "first",
+      // The grant is the founder part's moment: a direction that has its own beat for it plays that
+      // (Écharpe knits the cream cast-on, 2026 with it); one that does not keeps the "first" beat.
+      beat:
+        env.c && Array.isArray(env.c.beats) && env.c.beats.includes("founder")
+          ? "founder"
+          : "first",
     });
   };
 

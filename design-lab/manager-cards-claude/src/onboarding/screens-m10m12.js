@@ -5,8 +5,9 @@
    deletion dialog (src/routes/profile.tsx, DeleteAccountSection), the Fantasy column at 1440 and the
    PepitesReveal shell for the story (src/components/pepites/PepitesReveal.tsx).
    Motion (motion=1 only, nothing under prefers-reduced-motion): the number, the serial and the card
-   are in the first painted frame every time; only what explains them moves (a transform-only rise,
-   then the line and the buttons). A replay plays the object's own beat and nothing else.
+   are in the first painted frame every time. The hero or the story's frame makes the app's one 8px
+   enter-rise (transform only) and the object plays its own beat; nothing else moves, the line, the
+   buttons and the rows included. A replay plays the object's own beat and nothing else.
    Every string comes from env.t(key); no heading carries the manager's name. */
 (function () {
   const MC = window.MC;
@@ -90,14 +91,12 @@
 .onb-desktop .m12-hero .m12-read { grid-column: 2; grid-row: 2; align-self: end; }
 .onb-desktop .m12-hero .m12-more { grid-column: 2; grid-row: 3; align-self: start; }
 
-/* The closing choreography (motion=1 only): the card and the number are already there; the hero settles
-   8px (transform only, the app's enter-rise without its fade), then the line and the buttons arrive. */
+/* The closing hero's enter-rise (motion=1 only): the whole hero settles 8px (transform only, the app's
+   enter-rise without its fade); the card, the number, the line and the buttons are there from frame 0. */
 @media (prefers-reduced-motion: no-preference) {
   .onb .m12-live { animation: m12-rise 260ms cubic-bezier(0, 0, 0.2, 1) both; }
-  .onb .m12-live .m12-more { animation: m12-arrive 340ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards; }
 }
 @keyframes m12-rise { from { transform: translateY(8px); } to { transform: none; } }
-@keyframes m12-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
 /* ---------- the new season's block (S15 started): the M3 block, the counter, last season's number kept ---------- */
 .onb .m12-block { display: flex; flex-direction: column; gap: 12px; width: 100%; min-height: 120px; padding: 16px; text-align: start; }
@@ -193,10 +192,11 @@
 .onb .m18-rank .app-rank-pts { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
 .onb .m18-rank .app-rank-pts small { color: var(--ui-on-surface-muted); font: 600 11px/1.4 var(--onb-body); }
 .onb .m18-rank .app-rank-name b { font-weight: 800; }
+/* The frame makes the one 8px enter-rise (transform only); frame 1's card plays its own beat inside it. */
 @media (prefers-reduced-motion: no-preference) {
-  .onb .m18-live .m18-rise { animation: m18-rise 260ms cubic-bezier(0, 0, 0.2, 1) calc(var(--i, 0) * 70ms) backwards; }
+  .onb .m18-live .m18-stage { animation: m18-rise 260ms cubic-bezier(0, 0, 0.2, 1) both; }
 }
-@keyframes m18-rise { from { transform: translateY(10px); } to { transform: none; } }
+@keyframes m18-rise { from { transform: translateY(8px); } to { transform: none; } }
 `,
   );
 
@@ -720,7 +720,7 @@
         : MC.ltr(`${p.ovr} ${S.ovr}`) +
           (p.provisional ? " · " + env.t(K + "common.provisional") : "");
     return (
-      `<div class="app-rank-row${r.me ? " is-me" : ""} m18-rise" style="--i:${Math.abs(i - 2)}">` +
+      `<div class="app-rank-row${r.me ? " is-me" : ""}">` +
       `<span class="app-rank-pos">${ONB.num(i + 1, env)}</span>` +
       `<span class="app-rank-token" style="--token-h:28px">${tok(env, 28, { p })}</span>` +
       `<span class="app-rank-name"><b>${esc(MC.nameOf(p, env.o))}</b><small>${sub}</small></span>` +
@@ -748,7 +748,7 @@
         `<div class="m18-stage">${env.card("full", { width: 204, beat: "first" })}` +
         `<h1 class="m18-number">${mark(env, p.ovr, "md")}</h1>` +
         `<div class="m18-tierrow">${tierWord(env, p.tier)}${p.provisional ? ONB.provisionalChip(env) : ""}</div>` +
-        `<p class="onb-t-secondary onb-muted m18-rise" style="--i:1">${env.t(K + "m4.hero.fresh.line")}</p></div>`;
+        `<p class="onb-t-secondary onb-muted">${env.t(K + "m4.hero.fresh.line")}</p></div>`;
       primary = ONB.button(env.t(K + "m4.story.next"), { kind: "primary", icon: null }).replace(
         "</span></button>",
         `</span>${ICO.next()}</button>`,
@@ -759,9 +759,7 @@
         `<h1 class="m18-h">${env.t(K + "m4.sheet.heading")}</h1></div>` +
         `<p class="onb-t-secondary onb-muted">${env.t(K + "m4.sheet.line")}</p>` +
         `<div class="onb-grid2 m18-tiles">${["CAP", "SEL", "TRF", "CON"]
-          .map((k, i) =>
-            statRow(env, k).replace('class="onb-stat', `style="--i:${i}" class="m18-rise onb-stat`),
-          )
+          .map((k) => statRow(env, k))
           .join("")}</div>` +
         `<p class="onb-t-meta onb-muted">${env.t(K + "m4.sheet.footer")}</p></div>`;
       primary = ONB.button(env.t(K + "m4.story.next"), { kind: "primary", icon: null }).replace(

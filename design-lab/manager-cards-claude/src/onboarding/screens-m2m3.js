@@ -9,7 +9,8 @@
    itself: the two sheets/bars shown are the state after a tap. Motion (motion=1 only, nothing
    under prefers-reduced-motion): the M2 panel rises 8px (the app's enter-rise, transform only so
    nothing is ever invisible) while the card plays its own `make` beat; a counted round arrives as
-   the direction's `tick` beat on the hub token and the counter settles. */
+   the direction's `tick` beat on the hub token, and the counter's digit changes (k-1 to k) at the
+   instant that beat's stripe is finished. Nothing else on either screen moves. */
 (function () {
   const MC = window.MC;
   const ONB = MC.ONB;
@@ -171,13 +172,14 @@
 .onb .m23-panel__body { display: flow-root; }
 .onb .m23-panel__card { float: inline-start; width: 128px; margin-inline-end: 14px; }
 .onb .m23-panel__top { min-height: 44px; margin-block-start: -8px; align-items: flex-start; }
-.onb .m23-panel__top .onb-hero__label { padding-block-start: 8px; text-wrap: balance; }
+.onb .m23-panel__top .onb-hero__label { padding-block-start: 8px; line-height: 1.2; text-wrap: balance; }
 .onb .m23-panel__body > .m23-line { margin-block-start: 4px; }
-.onb .m23-panel__body > .m23-line--serial { clear: both; }
+/* What the card is for (the rules) reads quiet; what is yours (the serial, the invitation) reads in ink. */
 .onb .m23-line { color: var(--ui-on-surface-muted); font: 600 13px/1.45 var(--onb-body); }
 .onb[dir="rtl"] .m23-line { line-height: 1.8; }
-.onb .m23-line--lead { color: var(--ui-on-surface); font-weight: 700; }
-.onb .m23-invite { margin-block: 6px 8px; color: var(--ui-on-surface-muted); font: 600 13px/var(--ui-leading-copy) var(--onb-body); }
+.onb .m23-line--serial { color: var(--ui-on-surface); font: 800 14px/1.4 var(--onb-body); }
+.onb[dir="rtl"] .m23-line--serial { line-height: 1.75; }
+.onb .m23-invite { margin-block: 6px 8px; color: var(--ui-on-surface); font: 700 13px/var(--ui-leading-copy) var(--onb-body); text-wrap: pretty; }
 .onb .m23-panel__body + .onb-btn, .onb .m23-invite + .onb-btn { margin-block-start: 0; }
 .onb .m23-panel__body + .onb-btn { margin-block-start: 10px; }
 
@@ -185,8 +187,10 @@
 .onb .m23-hub { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 112px; padding-block: 14px; padding-inline: 16px 8px; text-align: start; }
 .onb .m23-hub__txt { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .onb .m23-hub__top { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
-.onb .m23-counter { display: inline-block; font: 800 40px/var(--ui-leading-figure) var(--onb-display); transform-origin: 0 60%; }
-.onb[dir="rtl"] .m23-counter { transform-origin: 100% 60%; }
+.onb .m23-counter { position: relative; display: inline-block; font: 800 40px/var(--ui-leading-figure) var(--onb-display); }
+.onb .m23-cnt { display: inline-block; }
+.onb .m23-cnt--was { display: none; position: absolute; inset-block-start: 0; inset-inline-start: 0; }
+.onb .m23-hub__late { display: flex; flex-direction: column; gap: 2px; }
 .onb .m23-hub__line { color: var(--ui-on-surface-muted); font: 600 13px/var(--ui-leading-copy) var(--onb-body); text-wrap: pretty; }
 .onb .m23-hub__go { flex: none; color: var(--ui-on-surface-muted); }
 
@@ -252,17 +256,18 @@
 .onb .m23-band__sub { margin-block-start: 4px; color: color-mix(in srgb, var(--ui-on-ink-plain) 78%, var(--ui-ink)); font: 600 13px/var(--ui-leading-copy) var(--onb-body); }
 .onb .m23-band__sub strong { color: var(--ui-on-ink-plain); font-weight: 800; }
 
-/* motion: the card makes itself, the panel rises, the counter settles. Never the number, the
-   name or the serial. Transform only, so nothing is ever invisible in the first frame. */
+/* motion: the panel rises 8px (the app's enter-rise, transform only) while the card plays its own
+   beat; on the hub block the counter shows the old digit until the tick beat's stripe is done, then
+   the new one (a swap of two visibilities on that beat's own length: no scale, no slide, no fade).
+   Never the number, the name or the serial. */
 @media (prefers-reduced-motion: no-preference) {
   .onb .m23-panel--motion { animation: m23-rise 280ms cubic-bezier(0, 0, 0.2, 1) both; }
-  .onb .m23-panel--motion .m23-step { animation: m23-step 360ms cubic-bezier(0.22, 1, 0.36, 1) both; animation-delay: calc(160ms + var(--i, 0) * 70ms); }
-  .onb .m23-hub--motion .m23-counter { animation: m23-settle 300ms cubic-bezier(0.22, 1.2, 0.36, 1) both; animation-delay: 40ms; }
+  .onb .m23-hub--tick .m23-cnt { animation: m23-after var(--m23-tick) steps(1, end) both; }
+  .onb .m23-hub--tick .m23-cnt--was { display: block; animation-name: m23-before; }
 }
 @keyframes m23-rise { from { transform: translateY(8px); } to { transform: none; } }
-@keyframes m23-step { from { transform: translateX(calc(var(--m23-dir, 1) * -8px)); } to { transform: none; } }
-@keyframes m23-settle { from { transform: scale(1.08); } to { transform: none; } }
-.onb[dir="rtl"] { --m23-dir: -1; }
+@keyframes m23-after { from { visibility: hidden; } to { visibility: visible; } }
+@keyframes m23-before { from { visibility: visible; } to { visibility: hidden; } }
 `,
   );
 
@@ -378,16 +383,15 @@
   const panelHtml = (env, arrival) => {
     const id = MC.uid("m23-h");
     const motion = motionOn(env);
-    // Lines arrive in turn under motion (the --i stagger); the serial line never animates.
-    const line = (key, i, lead) =>
-      `<p class="m23-line${lead ? " m23-line--lead" : ""} m23-step" style="--i:${i}">${key}</p>`;
-    const text = arrival
-      ? line(env.t(K + "m2.arrival", { k: env.p.counted }), 0, true)
-      : line(env.t(K + "m2.line1"), 0, true) + line(env.t(K + "m2.line2"), 1, false);
-    // The serial line only when there is a serial; it never animates.
+    const line = (html) => `<p class="m23-line">${html}</p>`;
+    // The rules (when the note arrives, what it measures) are quiet lines; the serial, when there is
+    // one, is the first thing under the heading and reads in ink; the invitation leads into its button.
     const serial = env.p.serial
       ? `<p class="m23-line m23-line--serial">${env.t(K + "m2.serial")}</p>`
       : "";
+    const rules = arrival
+      ? line(env.t(K + "m2.arrival", { k: env.p.counted }))
+      : line(env.t(K + "m2.line1")) + line(env.t(K + "m2.line2"));
     // The invite line only while the first counted round's deadline is ahead (nothing counted yet).
     const invite =
       !arrival && !env.p.counted
@@ -397,8 +401,8 @@
       `<section class="onb-panel onb-hero m23-panel${motion ? " m23-panel--motion" : ""}" aria-labelledby="${id}">` +
       `<div class="m23-panel__body"><div class="m23-panel__card">${env.card("full", { width: 128, beat: "make" })}</div>` +
       `<div class="onb-hero__top m23-panel__top"><h3 id="${id}" class="onb-t-sub onb-hero__label">${env.t(K + "m2.heading")}</h3>${ONB.closeButton(env, env.text(K + "common.close"))}</div>` +
-      text +
       serial +
+      rules +
       `</div>` +
       invite +
       ONB.button(env.t(K + "m2.invite_button"), { kind: "soft", full: true }) +
@@ -447,14 +451,59 @@
     }
   };
 
+  /** How long the direction's tick beat takes on the 64px token, read from the beat itself (a probe
+   * token is set off-screen and its animations measured), so the counter can change at the instant
+   * the stripe is done whatever the direction. 0 when nothing animates (reduced motion). */
+  const tickLength = (env) => {
+    try {
+      const probe = document.createElement("div");
+      probe.className = `onb app-${env.scheme}`;
+      probe.style.cssText = "position:absolute;left:-9999px;top:0;visibility:hidden";
+      probe.innerHTML = env.card("token", { size: 64, beat: "tick" });
+      document.body.appendChild(probe);
+      const end = Math.max(
+        0,
+        ...probe.getAnimations({ subtree: true }).map((a) => {
+          const t = a.effect.getComputedTiming().endTime;
+          return Number.isFinite(t) ? t : 0;
+        }),
+      );
+      probe.remove();
+      return Math.round(end);
+    } catch (e) {
+      return 0;
+    }
+  };
+
+  /** The counter: under motion it holds the digit before this round until the beat's stripe is done
+   * (an aria-hidden copy), while the real figure is in the page from the start. */
+  const counter = (env, tick) => {
+    const now = env.t(K + "m3.counter");
+    if (!tick) return `<span class="m23-counter">${now}</span>`;
+    const was = env.t(K + "m3.counter", { k: env.p.counted - 1 });
+    return `<span class="m23-counter"><span class="m23-cnt">${now}</span><span class="m23-cnt m23-cnt--was" aria-hidden="true">${was}</span></span>`;
+  };
+
   /** The block taps through to the card page: one button, no inner control. */
-  const hubBlock = (env) =>
-    `<button type="button" class="onb-surface m23-hub${motionOn(env) ? " m23-hub--motion" : ""}">` +
-    env.card("token", { size: 64, beat: "tick" }) +
-    `<span class="m23-hub__txt"><span class="m23-hub__top"><span class="m23-counter">${env.t(K + "m3.counter")}</span>` +
-    `<span class="onb-t-strong">${env.t(K + "m3.label")}</span></span>` +
-    `<span class="m23-hub__line">${hubLine(env)}</span></span>` +
-    `<span class="m23-hub__go">${ONB.icon("chevron")}</span></button>`;
+  const hubBlock = (env) => {
+    const late = env.v.key === "late";
+    // A late signer's season is over: nothing was counted just now, so no tick beat and no counter
+    // change; the plan's line leads and the count and the season sit under it.
+    const tick = !late && env.p.counted > 0 && motionOn(env) ? tickLength(env) : 0;
+    const head = late
+      ? ""
+      : `<span class="m23-hub__top">${counter(env, tick)}<span class="onb-t-strong">${env.t(K + "m3.label")}</span></span>`;
+    const body = late
+      ? `<span class="m23-hub__late"><span class="onb-t-strong">${hubLine(env)}</span>` +
+        `<span class="m23-hub__line">${env.t(K + "m3.counter")} · ${ONB.iso(env.p.season, env)}</span></span>`
+      : `<span class="m23-hub__line">${hubLine(env)}</span>`;
+    return (
+      `<button type="button" class="onb-surface m23-hub${tick ? " m23-hub--tick" : ""}"${tick ? ` style="--m23-tick:${tick}ms"` : ""}>` +
+      env.card("token", late ? { size: 64 } : { size: 64, beat: "tick" }) +
+      `<span class="m23-hub__txt">${head}${body}</span>` +
+      `<span class="m23-hub__go">${ONB.icon("chevron")}</span></button>`
+    );
+  };
 
   ONB.screen({
     id: "S06",

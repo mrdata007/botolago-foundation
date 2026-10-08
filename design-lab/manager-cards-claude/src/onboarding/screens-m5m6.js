@@ -6,8 +6,12 @@
    movement). The card adds a band above the table and, inside the name cell, a 28px mini with the
    card's state on a second line. The rows stay in the league's own points order: nothing here is
    ranked, sorted or filtered by a card number, and the band names people without their numbers.
-   The head-to-head opens from a row and carries no share. The share sheet mocks ShareImageSheet,
-   with WhatsApp first; its message is written in "tu" because the manager is the one speaking.
+   The band is the stands: the card's own night ground with a silver barrier rail along its top (as
+   the share image's) and the newly rated friends' minis hung from it; the compare hint under it is a
+   plain muted line. The head-to-head opens from a row and carries no share. The share sheet mocks
+   ShareImageSheet, with WhatsApp first; its message is written in "tu" because the manager is the
+   one speaking. The only motion is the head-to-head's bars growing from their baseline (the data
+   being measured); no card, mini or message moves.
 
    League members use MC.SAMPLES names with onboarding-style profiles: some rated, one still forming
    (2 of 3), serials drawn without a leading zero, no founder. */
@@ -165,8 +169,8 @@
   ONB.style(
     "m5m6",
     `
-.onb .m56 { --m56-dir: 1; --m56-lh: 1.4; --m56-ease: cubic-bezier(0.16, 1, 0.3, 1); }
-.onb[dir="rtl"] .m56 { --m56-dir: -1; --m56-lh: 1.65; }
+.onb .m56 { --m56-lh: 1.4; }
+.onb[dir="rtl"] .m56 { --m56-lh: 1.65; }
 .onb .m56-sr { position: absolute; top: 0; inset-inline-start: 0; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* the page: header kicker, tabs, panel */
@@ -183,13 +187,21 @@
 .onb .m56-panel .onb-alert__text { text-wrap: balance; }
 .onb .m56-panel > .m56-updated + * { margin-block-start: 12px; }
 
-/* the band: names only, one line above the table */
-.onb .m56-band { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 14px; border-radius: var(--ui-radius-card); background: var(--ui-surface); box-shadow: var(--ui-card-shadow); color: var(--ui-on-surface); }
-.onb .m56-band__minis { display: flex; flex: none; align-items: center; gap: 8px; }
+/* the band: the stands. The night ground of the share image (a dark ground in either scheme, so
+   the minis take their dark-ground rendering: app-dark), a silver barrier rail along its top (the
+   share's rail, and the minis' own rails are the same silver) and the newly rated friends' minis
+   hanging from it; names only beside them. */
+.onb .m56-band { position: relative; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 20px 14px 10px; border-radius: var(--ui-radius-card); background: linear-gradient(to bottom, var(--ui-ink-deep), var(--ui-ink) 75%); box-shadow: inset 0 0 0 1px var(--ui-ink-edge); color: var(--ui-on-ink-plain); }
+.onb .m56-band__rail { position: absolute; inset-block-start: 8px; inset-inline: 8px; height: 7px; border-radius: 999px; background: linear-gradient(to bottom, #eef2f6 0%, #c3cbd5 38%, #a9b2be 62%, #5f6773 100%); box-shadow: 0 1px 2px color-mix(in oklab, oklch(0 0 0) 55%, transparent); }
+.onb .m56-band__minis { display: flex; flex: none; align-items: flex-start; align-self: flex-start; gap: 10px; margin-block-start: -9px; }
 .onb .m56-band__mini { display: inline-flex; }
-.onb .m56-band__text { flex: 1 1 0; min-width: 0; text-wrap: balance; font: 600 13px/var(--ui-leading-copy) var(--onb-body); color: var(--ui-on-surface-muted); }
-.onb .m56-band__text b { color: var(--ui-on-surface); font-weight: 800; }
+.onb .m56-band__text { flex: 1 1 0; min-width: 0; text-wrap: balance; font: 600 13px/var(--ui-leading-copy) var(--onb-body); color: color-mix(in srgb, var(--ui-on-ink-plain) 82%, var(--ui-ink)); }
+.onb .m56-band__text b { color: var(--ui-on-ink-plain); font-weight: 800; }
 .onb .m56-names { display: block; font-size: 14px; }
+/* the compare hint: one muted line with its close, no box */
+.onb .m56-hint { display: flex; align-items: center; gap: 4px; margin-block-start: 2px; padding-inline-start: 2px; color: var(--ui-on-surface-muted); }
+.onb .m56-hint p { flex: 1 1 0; min-width: 0; font: 600 13px/var(--ui-leading-copy) var(--onb-body); text-wrap: pretty; }
+.onb .m56-panel > .m56-hint { margin-block-start: 0; }
 
 /* the standings card: the app's columns (Pos, team, J.n, Total, movement), the card's line under the name */
 .onb .m56-table { overflow: hidden; background: var(--ui-surface); border-radius: var(--ui-radius-card); box-shadow: var(--ui-card-shadow); }
@@ -277,21 +289,12 @@
 .onb .m56-shot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .onb .m56-shot .onb-card--share { box-shadow: 0 0 0 1px var(--ui-rule-strong), var(--ui-shadow-lifted); }
 
-/* motion: transform only, so no number is ever held back; none under reduced motion */
+/* motion: only the head-to-head's bars, growing from their baseline (what they show is the length,
+   so the growth is the data being measured); together, no stagger, no fade; none under reduced motion */
 @media (prefers-reduced-motion: no-preference) {
-  .onb .m56--motion .m56-band__mini { animation: m56-step 380ms var(--m56-ease) backwards; animation-delay: calc(var(--i, 0) * 90ms + 120ms); }
-  .onb .m56--motion .m56-a { animation: m56-meet 420ms var(--m56-ease) backwards; }
-  .onb .m56--motion .m56-b { animation: m56-meet-b 420ms var(--m56-ease) backwards; }
-  .onb .m56--motion .m56-bar i { animation: m56-measure 520ms var(--m56-ease) backwards; animation-delay: calc(260ms + var(--i, 0) * 70ms); }
-  .onb .m56--motion .m56-msg__img { animation: m56-land 360ms var(--m56-ease) backwards; }
-  .onb .m56--motion .m56-msg__text { animation: m56-follow 360ms var(--m56-ease) 110ms backwards; }
+  .onb .m56--motion .m56-bar i { animation: m56-measure 420ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
 }
-@keyframes m56-step { from { transform: translateX(calc(var(--m56-dir) * -14px)); } }
-@keyframes m56-meet { from { transform: translateX(calc(var(--m56-dir) * -18px)); } }
-@keyframes m56-meet-b { from { transform: translateX(calc(var(--m56-dir) * 18px)); } }
 @keyframes m56-measure { from { transform: scaleX(0); } }
-@keyframes m56-land { from { transform: translateY(16px) scale(0.985); } }
-@keyframes m56-follow { from { transform: translateY(8px); } }
 `,
   );
 
@@ -311,12 +314,11 @@
       fresh.map((m) => nameOf(env, m.p)).join(sep),
     );
     return (
-      `<div class="m56-band">` +
+      `<div class="m56-band app-dark"><span class="m56-band__rail" aria-hidden="true"></span>` +
       `<span class="m56-band__minis" aria-hidden="true">${fresh
         .slice(0, 3)
         .map(
-          (m, i) =>
-            `<span class="m56-band__mini" style="--i:${i}">${env.card("token", { size: 24, p: m.p })}</span>`,
+          (m) => `<span class="m56-band__mini">${env.card("token", { size: 28, p: m.p })}</span>`,
         )
         .join("")}</span>` +
       `<p class="m56-band__text">${env.t(K + "m5.band", { gw, names })}</p>` +
@@ -376,7 +378,7 @@
       ["app.cups", false],
     ];
     const content =
-      `<div class="m56 m56-page${overlay ? "" : motionClass(env)}">` +
+      `<div class="m56 m56-page">` +
       `<div class="m56-tabs" role="tablist" aria-label="${env.text("app.league.tab")}">${tabs
         .map(
           ([k, on]) =>
@@ -386,7 +388,7 @@
       `<section class="m56-panel" role="tabpanel">` +
       `<p class="m56-updated onb-t-meta onb-muted">${env.t("app.league.updated")} : <strong><bdi>${ONB.iso(env.pick(UPDATED), env)}</bdi></strong></p>` +
       bandHTML(env, league) +
-      ONB.alert(env.t(K + "m5.hint.compare"), env, { tone: "info", dismiss: true }) +
+      `<div class="m56-hint"><p>${env.t(K + "m5.hint.compare")}</p>${ONB.iconButton("x", env.text(K + "common.close"), { variant: "ghost" })}</div>` +
       tableHTML(env, league) +
       `<button type="button" class="m56-leave">${env.t("app.league.leave")}</button>` +
       `</section></div>`;
@@ -558,7 +560,7 @@
     const btn = (kind, label, icon) =>
       `<button type="button" class="onb-btn onb-btn--${kind} onb-btn--full">${glyph(icon)}<span>${label}</span></button>`;
     const body =
-      `<div class="m56 m56-share${motionClass(env)}">` +
+      `<div class="m56 m56-share">` +
       `<div class="m56-msg"><div class="m56-msg__img">${env.card("share", { width: 232 })}</div>` +
       `<p class="m56-msg__text">${messageHTML(env)}</p></div></div>`;
     return ONB.sheet(body, env, {
