@@ -95,6 +95,9 @@
     animation: c07-knit 120ms steps(8, end) both;
     animation-delay: calc(300ms + (4 - var(--i)) * 120ms);
   }
+  .c07--motion .c07-cast--founder .c07-co-after {
+    animation: c07-fade 240ms ease-out 900ms both;
+  }
   .c07--motion.c07--legend .c07-raise {
     animation: c07-raise 420ms cubic-bezier(0.2, 0.9, 0.25, 1.15) 180ms both;
   }
@@ -113,6 +116,14 @@
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes c07-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 @keyframes c07-raise {

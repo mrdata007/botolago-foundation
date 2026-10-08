@@ -129,21 +129,31 @@
   }
 }
 
-/* Motion. The number is always on the board; these are replays, never a gate.
-   LEGEND's first view: your fist raises the board, then one 300ms top-to-bottom scan.
-   A tap anywhere replays the scan. The tungsten founder lamp never goes out. */
+/* Motion. The number is always on the board and always readable; these are replays, never a gate.
+   LEGEND's first view: your fist raises the board, then one 300ms top-to-bottom scan: a bright line runs
+   down while the already-lit face rises from 60% to full brightness. A tap replays it. The tungsten founder
+   lamp is never touched. */
+.c09 .c09-scan {
+  opacity: 0;
+  pointer-events: none;
+}
 @media (prefers-reduced-motion: no-preference) {
   .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-obj,
   .c09.c09-card.is-replay[data-tier="LEGEND"] .c09-obj {
     animation: c09-raise 420ms cubic-bezier(0.25, 1.35, 0.45, 1) both;
   }
-  .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-lit {
-    animation: c09-scan 300ms linear 420ms both;
-  }
+  .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-lit,
   .c09.c09-card.is-replay .c09-front .c09-lit {
-    animation: c09-scan 300ms linear both;
+    animation: c09-wake 300ms linear both;
   }
-  .c09.c09-card.is-replay[data-tier="LEGEND"] .c09-front .c09-lit {
+  .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-scan,
+  .c09.c09-card.is-replay .c09-front .c09-scan {
+    animation: c09-sweep 300ms linear both;
+  }
+  .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-lit,
+  .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-scan,
+  .c09.c09-card.is-replay[data-tier="LEGEND"] .c09-front .c09-lit,
+  .c09.c09-card.is-replay[data-tier="LEGEND"] .c09-front .c09-scan {
     animation-delay: 420ms;
   }
 }
@@ -161,12 +171,28 @@
     transform: none;
   }
 }
-@keyframes c09-scan {
+@keyframes c09-wake {
   from {
-    clip-path: inset(0 0 100% 0);
+    opacity: 0.6;
   }
   to {
-    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+@keyframes c09-sweep {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  88% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(var(--c09-scan-h, 150px));
+    opacity: 0;
   }
 }
 

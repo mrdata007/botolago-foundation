@@ -8,6 +8,11 @@
   const MC = window.MC;
   const esc = MC.esc;
   const f = (n) => Math.round(n * 100) / 100;
+  /** Mixes two #rrggbb colours: t = 0 gives a, 1 gives b. */
+  const mix = (a, b, t) => {
+    const h = (c, i) => parseInt(c.slice(1 + 2 * i, 3 + 2 * i), 16);
+    return "#" + [0, 1, 2].map((i) => Math.round(h(a, i) + (h(b, i) - h(a, i)) * t).toString(16).padStart(2, "0")).join("");
+  };
 
   const C = {
     night: "#0B1A33",
@@ -48,16 +53,24 @@
   const tierOf = (p) => TIER[p.tier] || TIER.PRO;
 
   /* ---------- the shadow: the figure's outline stretched along +x ---------- */
-  // Half-widths at k = 1 for the full card's 130u shadow: 26u at the feet (legs apart), 12u at
-  // the waist, the folded-arm elbows, the shoulders, a neck and an elongated head at the far end.
+  // Body half-widths at k = 1, along the body length u (0 = feet, 1 = the neck): two legs apart
+  // (26u across the feet), the hips, a waist, the folded-arm elbows (just wider than the
+  // shoulders), sloped shoulders and a soft neck. A round head sits beyond the neck.
   const PROFILE = [
-    [0, 12.5], [0.12, 10.2], [0.26, 8.3], [0.4, 7.5], [0.5, 8.2], [0.56, 12],
-    [0.62, 13.6], [0.68, 13.4], [0.735, 12.6], [0.765, 9], [0.79, 5.2],
+    [0, 12.5], [0.1, 10.6], [0.24, 8.7], [0.37, 8.2], [0.47, 8.2], [0.56, 7.9], [0.62, 9.3],
+    [0.69, 11], [0.78, 11.2], [0.86, 11], [0.915, 10.7], [0.95, 8.8], [0.975, 5.4], [1, 4.2],
   ];
-  /** Closed outline (local coords, feet at 0,0) and the small lit gap between the legs. */
-  function personLoop(L, k) {
-    const up = PROFILE.map(([t, w]) => [t * L, w * k]);
-    const rx = 0.095 * L, ry = 7.6 * k, hc = L - rx, nw = 5.2 * k;
+  // the lit gap between the legs: open at the feet (5u half-width), closing at the crotch
+  const NOTCH = [[0.14, 3.8], [0.29, 2.2], [0.4, 0.8], [0.45, 0]];
+  /**
+   * Closed outline in local coords (feet at 0,0, the shadow along +x), L long. k scales the
+   * widths; rx is the head's half-length (default 8u on the 130u shadow), its half-width 7k.
+   */
+  function personLoop(L, k, rxIn) {
+    const rx = rxIn ?? 0.055 * L, ry = 6.3 * k;
+    const Lb = L - 1.76 * rx; // the neck slips 0.24rx into the head
+    const up = PROFILE.slice(1).map(([u, w]) => [u * Lb, w * k]);
+    const hc = L - rx, nw = PROFILE[PROFILE.length - 1][1] * k;
     const th0 = Math.PI - Math.asin(Math.min(0.98, nw / ry));
     const arc = [];
     const N = 12;
@@ -66,10 +79,20 @@
       arc.push([hc + rx * Math.cos(th), ry * Math.sin(th)]);
     }
     const lo = up.map(([x, y]) => [x, -y]).reverse();
-    const loop = [[-3 * k, 0], ...up, ...arc, ...lo];
-    // the lit gap between the legs, closing at the hips
-    const hole = [[0.02 * L, 2.6 * k], [0.2 * L, 2.5 * k], [0.33 * L, 1.3 * k], [0.4 * L, 0], [0.33 * L, -1.3 * k], [0.2 * L, -2.5 * k], [0.02 * L, -2.6 * k]];
-    return { loop, hole };
+    const foot = (s) => [[0, s * 5 * k], [-1.8 * k, s * 8.8 * k], [0, s * 12.5 * k]];
+    const notch = NOTCH.map(([u, w]) => [u * Lb, -w * k]).concat(NOTCH.slice(0, -1).reverse().map(([u, w]) => [u * Lb, w * k]));
+    const loop = [...foot(1), ...up, ...arc, ...lo, ...foot(-1).reverse(), ...notch];
+    return { loop, rx, ry, Lb, hc, th0 };
+  }
+  /** The wet highlight: a short line inside the shadow's upper edge, from the elbows to the head. */
+  function sheenPath(L, k, side) {
+    const { rx, ry, Lb, hc, th0 } = personLoop(L, k);
+    const pts = PROFILE.filter(([u]) => u >= 0.66).map(([u, w]) => [u * Lb, side * (w * k - 1.7)]);
+    for (let i = 1; i <= 3; i++) {
+      const th = th0 - ((th0 - Math.PI / 2) * i) / 3;
+      pts.push([hc + (rx - 1.7) * Math.cos(th), side * (ry - 1.7) * Math.sin(th)]);
+    }
+    return "M" + pts.map(([x, y]) => `${f(x)} ${f(y)}`).join("L");
   }
   /** A flat tapered wedge (small sizes and the thumb): no head. */
   function wedgeLoop(L, root, tip) {
@@ -86,10 +109,7 @@
     return d + "Z";
   }
   const polyPath = (pts) => "M" + pts.map(([x, y]) => `${f(x)} ${f(y)}`).join("L") + "Z";
-  function personPath(L, k) {
-    const { loop, hole } = personLoop(L, k);
-    return closedPath(loop) + polyPath(hole);
-  }
+  const personPath = (L, k, rx) => closedPath(personLoop(L, k, rx).loop);
 
   /* ---------- Changa 800 digits (proportional): measured table, not canvas ---------- */
   // per 100px: [advance, ink left, ink right], measured in Chromium on 2026-10-07.
@@ -118,20 +138,25 @@
     );
   }
   /* ================= full card ================= */
-  const VB = [420, 240];
+  const VB = [-12, 0, 444, 240]; // the panel's 420x240 frame, widened 12u each side for the plates
   const PANEL = { x: 30, y: 30, w: 360, h: 180 };
-  const F = [210, 124];
+  const F = [210, 121]; // the feet: 3u above the spec's y124, so the lower shadows clear the 84
   const CPT = { TL: [30, 30], TR: [390, 30], BR: [390, 210], BL: [30, 210] };
   // The four shadows run 130u toward the corners: (-115,-60), (115,-60), (115,60), (-115,60).
   const DIR = { TL: [-115, -60], TR: [115, -60], BR: [115, 60], BL: [-115, 60] };
   const SH_L = 130;
+  const THUMB_L = 112; // the thumbnail's flat wedges stop short of the 84
   const angOf = (c) => (Math.atan2(DIR[c][1], DIR[c][0]) * 180) / Math.PI;
 
-  /** Plate rectangle per corner: 76x28 (LEGEND 84x40, grown outward into a floodlight head). */
+  /**
+   * Plate rectangle per corner: 76x28 centred on the panel's corner, so it stands 38u out
+   * sideways and 14u up or down (LEGEND 84x40, grown outward into a floodlight head). The
+   * viewBox runs from x -12 to 432 to hold them.
+   */
   function plateBox(c, legend, faceDown) {
     const w = legend ? 84 : 76, h = legend ? 40 : 28;
     const left = c === "TL" || c === "BL", top = faceDown || c === "TL" || c === "TR";
-    const x = left ? (legend ? 0 : 4) : VB[0] - (legend ? 0 : 4) - w;
+    const x = left ? (legend ? -12 : -8) : legend ? 348 : 352;
     const y = top ? (legend ? 4 : 16) : 196;
     return { x, y, w, h, left, top };
   }
@@ -152,7 +177,7 @@
       // a new concrete lot: fine aggregate, clean saw-cut joints, a fresh chalk line
       d += grainFilter(`${u}-grain`, "0.75", 3, 3, [0.16, 0.17, 0.18], [2.6, -1.2], [-2.6, 1.12]);
       d += grainFilter(`${u}-stain`, "0.012 0.018", 3, 9, [0.3, 0.31, 0.32], [2, -0.95], [-2, 0.9]);
-      g += `<rect ${R} filter="url(#${u}-stain)" opacity=".45"/><rect ${R} filter="url(#${u}-grain)" opacity=".4"/>`;
+      g += `<rect ${R} filter="url(#${u}-stain)" opacity=".45"/><rect ${R} filter="url(#${u}-grain)" opacity=".2"/>`;
       if (flat) {
       const j = `stroke="#7E8489" stroke-width="1"`, jl = `stroke="#F4F6F8" stroke-width=".6" opacity=".55"`;
       for (const jx of [150, 270]) g += `<path d="M${jx} ${y}V${y + h}" ${j}/><path d="M${jx + 1} ${y}V${y + h}" ${jl}/>`;
@@ -162,7 +187,7 @@
     if (T.ground === "synthetic") {
       d += grainFilter(`${u}-grain`, "1.2 0.36", 2, 5, [0.05, 0.1, 0.18], [2.4, -1.1], [-2.4, 1.02]);
       d += `<filter id="${u}-crumb" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".42" numOctaves="1" seed="21" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 .071  0 0 0 0 .078  0 0 0 0 .09  14 0 0 0 -11.4"/></filter>`;
-      g += `<rect ${R} filter="url(#${u}-grain)" opacity=".24"/><rect ${R} filter="url(#${u}-crumb)" opacity=".5"/>`;
+      g += `<rect ${R} filter="url(#${u}-grain)" opacity=".24"/><rect ${R} filter="url(#${u}-crumb)" opacity=".25"/>`;
     }
     return { d, g };
   }
@@ -177,7 +202,7 @@
       if (isLed(p, c)) cool += `<circle class="c10-pool c10-k${STEP[c]}" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${u}-cool)"/>`;
       else warm += `<circle class="c10-pool c10-k${STEP[c]}" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${u}-warm)"/>`;
     }
-    return { d, g: `<g style="mix-blend-mode:multiply">${warm}</g><g style="mix-blend-mode:screen" opacity="${T.legend ? 0.7 : 0.5}">${cool}</g>` };
+    return { d, g: `<g style="mix-blend-mode:multiply">${warm}</g><g style="mix-blend-mode:screen" opacity="${T.legend ? 0.55 : 0.45}">${cool}</g>` };
   }
 
   /** A lamp plate: the club's colour, the stat in its on-colour, a lens on the edge facing the turf. */
@@ -247,26 +272,63 @@
   }
 
   /**
-   * The figure: the shared rear view, dressed in the club's bench jacket (the club colour,
-   * its light trim on the hood seams), rim-lit by the lamps on its upper edges. It stands on
-   * the feet point `at`, and its hem fades into the shadows it casts.
+   * The figure: the shared rear view, hood up, at its true proportions, dressed in the club's
+   * bench jacket. Only the hood's centre seam is drawn (in the club's light trim); the hood rim
+   * is left out, because the rim arc over the flared hem made a bell's lip. A rim light runs
+   * along the upper edges only (hood and shoulder tops). The full card fades the hem into the
+   * shadows; the share (o.coat) ends the coat on a straight hem above two feet.
    */
-  function figure(u, at, w, h, rimW, club) {
+  function figure(u, at, w, h, rimW, club, o = {}) {
+    const A = MC.AVATAR;
     const [cx, fy] = at;
     const jacket = (club && club.primary) || C.figure;
     const trim = (club && club.secondary) || C.seam;
-    const box = { x: cx - w / 2, y: fy + h * 0.12 - h, w, h, preserve: "none" };
-    let s = `<linearGradient id="${u}-hemg" gradientUnits="userSpaceOnUse" x1="0" y1="${f(box.y)}" x2="0" y2="${f(box.y + h)}"><stop offset=".88" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+    const sc = h / 240;
+    const box = { x: cx - w / 2, y: o.coat ? fy - 226 * sc : fy + h * 0.12 - h, w, h };
+    const Y = (ay) => f(box.y + ay * sc); // avatar y -> scene y
+    const pos = `x="${f(box.x)}" y="${f(box.y)}" width="${f(w)}" height="${f(h)}" viewBox="${A.viewBox}" preserveAspectRatio="xMidYMax meet"`;
+    let s = "";
+    // rim light on the upper edges only: full at the hood, gone by mid-shoulder
+    s += `<linearGradient id="${u}-rimg" gradientUnits="userSpaceOnUse" x1="0" y1="${Y(150)}" x2="0" y2="${Y(232)}"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".45" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+    s += `<mask id="${u}-rim" maskUnits="userSpaceOnUse" x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(h + 8)}"><rect x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(h + 8)}" fill="url(#${u}-rimg)"/></mask>`;
+    const rim = `<g mask="url(#${u}-rim)" opacity=".8">${MC.avatar({ ...box, torso: C.lens, seam: false, stroke: C.lens, strokeWidth: f((rimW * 2) / sc) })}</g>`;
+    // the full card's high camera sees the hood lit from above and the shoulders a step darker
+    // under it; the share's low camera sees the figure against the towers, so it is backlit
+    const body = o.coat
+      ? MC.avatar({ ...box, torso: mix(jacket, C.night, 0.5), hoodFill: mix(jacket, C.night, 0.36), seam: false })
+      : MC.avatar({ ...box, torso: mix(jacket, C.night, 0.38), hoodFill: mix(jacket, "#FFFFFF", 0.1), seam: false });
+    const seam = `<svg ${pos} aria-hidden="true" focusable="false"><path d="${A.hoodSeam}" stroke="${trim}" stroke-width="${f(Math.max(2.5, 0.7 / sc))}" stroke-linecap="round" fill="none" opacity=".85"/></svg>`;
+    if (o.coat) {
+      // the share: the coat ends on a straight hem at avatar y 226, above the feet
+      s += `<clipPath id="${u}-coat"><rect x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(fy - box.y + 4)}"/></clipPath>`;
+      s += `<g clip-path="url(#${u}-coat)">${rim}${body}${seam}</g>`;
+      return s;
+    }
+    s += `<linearGradient id="${u}-hemg" gradientUnits="userSpaceOnUse" x1="0" y1="${f(box.y)}" x2="0" y2="${f(box.y + h)}"><stop offset=".93" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
     s += `<mask id="${u}-hem" maskUnits="userSpaceOnUse" x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(h + 8)}"><rect x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(h + 8)}" fill="url(#${u}-hemg)"/></mask>`;
-    s += `<g mask="url(#${u}-hem)">`;
-    s += `<g opacity=".85">${MC.avatar({ ...box, torso: "#FFFFFF", seam: false, stroke: "#FFFFFF", strokeWidth: f((rimW * 2 * 200) / w) })}</g>`;
-    s += MC.avatar({ ...box, torso: jacket, seam: trim, collar: jacket });
-    // a little night in the jacket toward the hem, so it settles into the shadows
-    s += `<rect x="${f(box.x)}" y="${f(box.y + h * 0.7)}" width="${f(w)}" height="${f(h * 0.3)}" fill="url(#${u}-hemd)"/>`;
-    s += `</g>`;
-    s += `<linearGradient id="${u}-hemd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.night}" stop-opacity="0"/><stop offset="1" stop-color="${C.night}" stop-opacity=".55"/></linearGradient>`;
+    s += `<g mask="url(#${u}-hem)">${rim}${body}${seam}</g>`;
     return s;
   }
+
+  /**
+   * The panel's edge: the outer 14u fall off to night in straight lines (a run-off band, darkest
+   * at the wall), and the lit pitch starts crisply at the touchline.
+   */
+  function falloff(u) {
+    const st = `<stop offset="0" stop-color="${C.night}"/><stop offset=".35" stop-color="${C.night}" stop-opacity=".84"/><stop offset="1" stop-color="${C.night}" stop-opacity=".7"/>`;
+    let d = "";
+    for (const [id, x1, y1, x2, y2] of [["L", 0, 0, 1, 0], ["R", 1, 0, 0, 0], ["T", 0, 0, 0, 1], ["B", 0, 1, 0, 0]])
+      d += `<linearGradient id="${u}-f${id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${st}</linearGradient>`;
+    const g =
+      `<rect x="30" y="30" width="14" height="180" fill="url(#${u}-fL)"/><rect x="376" y="30" width="14" height="180" fill="url(#${u}-fR)"/>` +
+      `<rect x="30" y="30" width="360" height="14" fill="url(#${u}-fT)"/><rect x="30" y="196" width="360" height="14" fill="url(#${u}-fB)"/>`;
+    return { d, g };
+  }
+
+  // full-card geometry
+  const NAME_Y = 66; // the name's baseline (the top touchline sits at y44)
+  const FIFTH_L = 47; // the founder's shadow: from the feet (y121) straight up to y74
+  const OVR_Y = 194;
 
   function full(p, o = {}) {
     const S = MC.s(o);
@@ -278,20 +340,21 @@
     const box = { x: 30, y: 30, w: 360, h: 180 };
     const gr = groundDefs(u, T, box);
     const pools = lightPools(u, p, T, CPT, 170);
+    const fo = falloff(u);
 
-    let defs = gr.d + pools.d;
+    let defs = gr.d + pools.d + fo.d;
     defs += `<clipPath id="${u}-clip"><rect x="30" y="30" width="360" height="180" rx="2"/></clipPath>`;
-    defs += `<filter id="${u}-soft" color-interpolation-filters="sRGB" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3"/></filter>`;
-    defs += `<mask id="${u}-lit" maskUnits="userSpaceOnUse" x="20" y="20" width="380" height="200"><rect x="40" y="41" width="340" height="158" rx="6" fill="#fff" filter="url(#${u}-soft)"/></mask>`;
-    defs += `<radialGradient id="${u}-vig" gradientUnits="userSpaceOnUse" cx="${F[0]}" cy="${F[1]}" r="215"><stop offset=".42" stop-color="${C.night}" stop-opacity="0"/><stop offset="1" stop-color="${C.night}" stop-opacity="${T.vig}"/></radialGradient>`;
+    defs += `<radialGradient id="${u}-vig" gradientUnits="userSpaceOnUse" cx="${F[0]}" cy="${F[1] + 18}" r="215"><stop offset=".42" stop-color="${C.night}" stop-opacity="0"/><stop offset="1" stop-color="${C.night}" stop-opacity="${T.vig}"/></radialGradient>`;
+    // the brightest turf is around the 84, below the figure
+    defs += `<radialGradient id="${u}-hot" gradientUnits="userSpaceOnUse" cx="210" cy="166" r="118"><stop offset="0" stop-color="#FFFFFF" stop-opacity="${T.legend ? 0.42 : 0.34}"/><stop offset=".55" stop-color="#FFFFFF" stop-opacity=".1"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>`;
     defs += `<linearGradient id="${u}-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>`;
     defs += `<linearGradient id="${u}-steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3BCC5"/><stop offset=".5" stop-color="${C.steel}"/><stop offset="1" stop-color="#7A848E"/></linearGradient>`;
     defs += `<radialGradient id="${u}-lamp" cx=".5" cy=".45" r=".65"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="${C.lens}"/><stop offset="1" stop-color="#B9CCDA"/></radialGradient>`;
-    defs += `<radialGradient id="${u}-bloomL"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>`;
-    defs += `<radialGradient id="${u}-bloomS"><stop offset="0" stop-color="${C.sodium}" stop-opacity=".55"/><stop offset="1" stop-color="${C.sodium}" stop-opacity="0"/></radialGradient>`;
+    defs += `<radialGradient id="${u}-bloomL"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".45"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>`;
+    defs += `<radialGradient id="${u}-bloomS"><stop offset="0" stop-color="${C.sodium}" stop-opacity=".5"/><stop offset="1" stop-color="${C.sodium}" stop-opacity="0"/></radialGradient>`;
     defs += `<radialGradient id="${u}-bloomF"><stop offset="0" stop-color="${C.first}" stop-opacity=".8"/><stop offset="1" stop-color="${C.first}" stop-opacity="0"/></radialGradient>`;
     defs += `<filter id="${u}-pen" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" x="40" y="20" width="340" height="200"><feGaussianBlur stdDeviation="${SOFT.blur}"/></filter>`;
-    defs += `<filter id="${u}-contact" color-interpolation-filters="sRGB" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="2.4"/></filter>`;
+    defs += `<filter id="${u}-contact" color-interpolation-filters="sRGB" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="1.6"/></filter>`;
     if (!thumb) defs += `<filter id="${u}-paint" x="-4%" y="-20%" width="108%" height="140%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.3 0.55" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale=".55" xChannelSelector="R" yChannelSelector="G"/></filter>`;
 
     // the four shadows: shadow toward corner c is cast by the lamp opposite it
@@ -300,59 +363,64 @@
       const lamp = OPP[c];
       const led = isLed(p, lamp);
       const ink = led ? T.crisp : SOFT;
-      const d = thumb ? closedPath(wedgeLoop(SH_L, 12.5, 4)) : personPath(SH_L, 1);
-      const a = f(angOf(c));
-      let g = `<path d="${d}" fill-rule="evenodd" fill="${ink.fill}" opacity="${ink.op}"/>`;
+      const d = thumb ? closedPath(wedgeLoop(THUMB_L, 12, 3.5)) : personPath(SH_L, 1);
+      const a = angOf(c);
+      let g = `<path d="${d}" fill="${ink.fill}" opacity="${ink.op}"/>`;
       if (T.wet && led && !thumb) {
-        defs += `<clipPath id="${u}-sc${c}"><path d="${d}" clip-rule="evenodd"/></clipPath>`;
-        g += `<g clip-path="url(#${u}-sc${c})"><g class="c10-slide"><path d="${d}" transform="translate(0 -1.8)" fill="none" stroke="#E4F0F8" stroke-width=".9" opacity=".8"/></g></g>`;
+        // a short reflected highlight inside the upper edge, elbows to head; it slides on drag
+        const side = Math.cos((a * Math.PI) / 180) > 0 ? -1 : 1;
+        defs += `<clipPath id="${u}-sc${c}"><path d="${d}"/></clipPath>`;
+        g += `<g clip-path="url(#${u}-sc${c})"><g class="c10-slide"><path d="${sheenPath(SH_L, 1, side)}" fill="none" stroke="#FFFFFF" stroke-width="1" stroke-linecap="round" opacity=".4"/></g></g>`;
       }
       sh +=
         `<g class="c10-swing"><g class="c10-cast c10-k${STEP[lamp]}"${!led ? ` filter="url(#${u}-pen)"` : ""}>` +
-        `<g transform="translate(${F[0]} ${F[1]}) rotate(${a})">${g}</g></g></g>`;
+        `<g transform="translate(${F[0]} ${F[1]}) rotate(${f(a)})">${g}</g></g></g>`;
     }
-    // founder: a fifth, short, razor-sharp shadow straight up, cast by the fifth lamp
+    // founder: a fifth, short, razor-sharp shadow straight up, cast by the fifth lamp. It is a
+    // small person of its own (head, shoulders, elbows) standing clear above the hood.
     let fifthSh = "";
     if (p.founder) {
-      const d = thumb ? closedPath(wedgeLoop(52, 7, 3)) : personPath(52, 0.68);
-      fifthSh = `<g class="c10-cast c10-first c10-k5"><path d="${d}" fill-rule="evenodd" fill="${T.crisp.fill}" opacity="${Math.max(0.84, T.crisp.op)}" transform="translate(${F[0]} ${F[1]}) rotate(-90)"/></g>`;
+      const d = thumb ? closedPath(wedgeLoop(FIFTH_L, 7, 3)) : personPath(FIFTH_L, 0.62, 3.6);
+      fifthSh = `<g class="c10-cast c10-first c10-k5"><path d="${d}" fill="${T.crisp.fill}" opacity="${Math.max(0.84, T.crisp.op)}" transform="translate(${F[0]} ${F[1]}) rotate(-90)"/></g>`;
     }
 
     // lens blooms on the turf, just inside each plate
     let blooms = "";
     for (const c of CORNERS) {
       const B = plateBox(c, legend);
-      const bx = B.x + B.w / 2 + (B.left ? 10 : -10), by = B.top ? B.y + B.h + 4 : B.y - 4;
-      blooms += `<ellipse class="c10-bloom c10-k${STEP[c]}" cx="${f(bx)}" cy="${f(by)}" rx="${legend ? 62 : 50}" ry="${legend ? 22 : 16}" fill="url(#${u}-${isLed(p, c) ? "bloomL" : "bloomS"})"/>`;
+      const bx = B.x + B.w / 2 + (B.left ? 22 : -22), by = B.top ? B.y + B.h + 2 : B.y - 2;
+      blooms += `<ellipse class="c10-bloom c10-k${STEP[c]}" cx="${f(bx)}" cy="${f(by)}" rx="${legend ? 52 : 42}" ry="${legend ? 16 : 12}" fill="url(#${u}-${isLed(p, c) ? "bloomL" : "bloomS"})"/>`;
     }
     if (p.founder) blooms += `<ellipse class="c10-bloom c10-k5" cx="210" cy="196" rx="40" ry="12" fill="url(#${u}-bloomF)"/>`;
 
-    // the paint: name, the 84, the touchline lettering
+    // the paint: the touchline, the name, the 84, the touchline lettering
     const sc = ovrScale(p);
-    const ovrSize = (thumb ? 74 : 64) * sc;
+    const ovrSize = 64 * sc;
     const m = ink(p.ovr);
-    const ovrX = 210 + m.dx * ovrSize;
-    const ovrY = thumb ? 194 : 192;
-    let paint = `<text class="c10-ovr" x="${f(ovrX)}" y="${ovrY}" direction="ltr" text-anchor="start" font-family="Changa, sans-serif" font-weight="800" font-size="${f(ovrSize)}" fill="${C.tunnel}"${thumb ? "" : ` filter="url(#${u}-paint)"`}>${p.ovr}</text>`;
+    // optically centred 1u left: the 4's stem is the heavy side, and it is the side the
+    // lower-right shadow passes closest to at the end of a drag
+    const ovrX = (sc < 1 ? 210 : 209) + m.dx * ovrSize;
+    let paint = `<rect class="c10-line" x="44.6" y="44.6" width="330.8" height="150.8" fill="none" stroke="#FFFFFF" stroke-width="1.2" opacity=".55"/>`;
+    paint += `<text class="c10-ovr" x="${f(ovrX)}" y="${OVR_Y}" direction="ltr" text-anchor="start" font-family="Changa, sans-serif" font-weight="800" font-size="${f(ovrSize)}" fill="${C.tunnel}"${thumb ? "" : ` filter="url(#${u}-paint)"`}>${p.ovr}</text>`;
     let lettering = "";
     if (!thumb) {
       const name = esc(MC.nameOf(p, o));
       const tierWord = esc(S.tiers[p.tier]);
       paint +=
-        `<text class="c10-name" x="210" y="62" text-anchor="middle" direction="${ar ? "rtl" : "ltr"}" filter="url(#${u}-paint)">` +
+        `<text class="c10-name" x="210" y="${NAME_Y}" text-anchor="middle" direction="${ar ? "rtl" : "ltr"}" filter="url(#${u}-paint)">` +
         `<tspan font-family="Changa, sans-serif" font-weight="800" font-size="26" fill="${C.logo}">${name}</tspan>` +
         (ar
           ? `<tspan dx="-6" font-family="Changa, Noto Sans Arabic, sans-serif" font-weight="700" font-size="13" fill="${C.tunnel}">${tierWord}</tspan>`
           : `<tspan dx="6" font-family="Manrope, sans-serif" font-weight="800" font-size="12" letter-spacing="1.1" fill="${C.tunnel}">${tierWord}</tspan>`) +
         `</text>`;
       // the ID and the season, stencilled in line paint on the run-off along the top touchline
-      const lf = `font-family="Manrope, sans-serif" font-weight="700" font-size="9" fill="#F4FBFF" fill-opacity=".72" style="font-variant-numeric:tabular-nums"`;
+      const lf = `font-family="Manrope, sans-serif" font-weight="700" font-size="9" fill="#F4FBFF" fill-opacity=".76" style="font-variant-numeric:tabular-nums"`;
       lettering += `<g class="c10-letter">`;
       lettering += ar
-        ? `<text x="210" y="40.6" text-anchor="middle" direction="rtl" ${lf}><tspan direction="ltr" unicode-bidi="embed" letter-spacing=".9">${esc(p.id)}</tspan><tspan dx="-14" font-family="Noto Sans Arabic, sans-serif" font-size="9.4">${esc(S.country)}</tspan><tspan dx="-14" direction="ltr" unicode-bidi="embed" letter-spacing=".9">${esc(p.season)}</tspan></text>`
-        : `<text x="210" y="40.6" text-anchor="middle" ${lf} letter-spacing=".9">${esc(p.id)}<tspan dx="14">${esc(S.country)}</tspan><tspan dx="14">${esc(p.season)}</tspan></text>`;
+        ? `<text x="210" y="40.4" text-anchor="middle" direction="rtl" ${lf}><tspan direction="ltr" unicode-bidi="embed" letter-spacing=".9">${esc(p.id)}</tspan><tspan dx="-14" font-family="Noto Sans Arabic, sans-serif" font-size="9.4">${esc(S.country)}</tspan><tspan dx="-14" direction="ltr" unicode-bidi="embed" letter-spacing=".9">${esc(p.season)}</tspan></text>`
+        : `<text x="210" y="40.4" text-anchor="middle" ${lf} letter-spacing=".9">${esc(p.id)}<tspan dx="14">${esc(S.country)}</tspan><tspan dx="14">${esc(p.season)}</tspan></text>`;
       lettering += `</g>`;
-      lettering += `<text class="c10-meaning" x="210" y="40.6" text-anchor="middle" direction="${ar ? "rtl" : "ltr"}" font-family="${ar ? "Noto Sans Arabic, sans-serif" : "Manrope, sans-serif"}" font-weight="700" font-size="${ar ? 9.6 : 9}" fill="#F4FBFF"></text>`;
+      lettering += `<text class="c10-meaning" x="210" y="40.4" text-anchor="middle" direction="${ar ? "rtl" : "ltr"}" font-family="${ar ? "Noto Sans Arabic, sans-serif" : "Manrope, sans-serif"}" font-weight="700" font-size="${ar ? 9.6 : 9}" fill="#F4FBFF"></text>`;
     }
 
     // plates last: they sit over the panel corners and make the outline
@@ -361,15 +429,14 @@
     if (p.founder) plates += fifthPlate(u, p, 210, 210, 60, 24, !thumb, 13);
 
     const svg =
-      `<svg class="c10-scene" viewBox="0 0 420 240" aria-hidden="true" focusable="false"><defs>${defs}</defs>` +
+      `<svg class="c10-scene" viewBox="${VB.join(" ")}" aria-hidden="true" focusable="false"><defs>${defs}</defs>` +
       `<rect class="c10-rim" x="29.5" y="29.5" width="361" height="181" rx="2.5" fill="none" vector-effect="non-scaling-stroke"/>` +
       `<g clip-path="url(#${u}-clip)">` +
-      `<rect x="30" y="30" width="360" height="180" fill="${C.night}"/>` +
-      `<g class="c10-turf" mask="url(#${u}-lit)">${gr.g}${pools.g}<rect x="30" y="30" width="360" height="180" fill="url(#${u}-vig)"/><g class="c10-paint">${paint}</g></g>` +
+      `<g class="c10-turf">${gr.g}${pools.g}<rect x="30" y="30" width="360" height="180" fill="url(#${u}-vig)"/>` +
+      `<rect x="30" y="30" width="360" height="180" fill="url(#${u}-hot)" style="mix-blend-mode:screen"/><g style="mix-blend-mode:screen">${blooms}</g>${fo.g}<g class="c10-paint">${paint}</g></g>` +
       `<g class="c10-shadows" style="mix-blend-mode:multiply">${sh}${fifthSh}</g>` +
-      `<ellipse cx="${F[0]}" cy="${F[1] + 2}" rx="24" ry="8" fill="#06142B" opacity=".5" filter="url(#${u}-contact)"/>` +
-      figure(u, F, 44, 53, 0.85, p.club) +
-      `<g style="mix-blend-mode:screen">${blooms}</g>` +
+      `<ellipse cx="${F[0]}" cy="${F[1] + 1}" rx="15" ry="4.6" fill="#06142B" opacity=".55" filter="url(#${u}-contact)"/>` +
+      figure(u, F, 28.4, 34, 0.7, p.club) +
       lettering +
       `</g>` +
       plates +
@@ -438,24 +505,25 @@
     d += `<radialGradient id="${u}-v" gradientUnits="userSpaceOnUse" cx="${x0 + Wt / 2}" cy="${y0 + Ht * 0.45}" r="${f(Wt * 0.62)}"><stop offset=".45" stop-color="${C.night}" stop-opacity="0"/><stop offset="1" stop-color="${C.night}" stop-opacity="${f(Math.min(0.45, T.vig + 0.1))}"/></radialGradient>`;
     g += `<rect ${lit} fill="url(#${u}-v)"/>`;
 
-    // shadows and the figure (44px and up)
-    const cx = x0 + Wt / 2;
-    if (!mini) {
-      const hy = y0 + Ht * 0.34;
-      const Lw = Wt * 0.21, rw = Math.max(1.4, S0 * 0.036), tip = Math.max(0.5, S0 * 0.011);
-      let w = `<g style="mix-blend-mode:multiply">`;
-      for (const c of CORNERS) w += `<path d="${closedPath(wedgeLoop(Lw, rw, tip))}" transform="translate(${f(cx)} ${f(hy)}) rotate(${f(angOf(c))})" fill="${T.crisp.fill}" opacity="${f(Math.min(0.95, T.crisp.op + 0.1))}"/>`;
-      if (p.founder) w += `<path d="${closedPath(wedgeLoop(Lw * 0.42, rw * 0.6, tip))}" transform="translate(${f(cx)} ${f(hy)}) rotate(-90)" fill="${T.crisp.fill}" opacity=".95"/>`;
-      g += w + `</g>`;
-      // the manager, seen from straight above: a dot where the shadows meet
-      g += `<circle cx="${f(cx)}" cy="${f(hy)}" r="${f(Math.max(1.6, S0 * 0.042))}" fill="${C.figure}"/>`;
-    }
-
     // the 84
+    const cx = x0 + Wt / 2;
     const sc = ovrScale(p);
     const fs = (mini ? Ht * 0.47 : S0 * 0.26) * sc;
     const m = ink(p.ovr);
-    const base = mini ? y0 + Ht / 2 + fs * 0.32 : y0 + Ht - e - (Ht - 2 * e) * 0.1;
+    const base = mini ? y0 + Ht / 2 + fs * 0.32 : y0 + Ht - e - (Ht - 2 * e) * 0.08;
+
+    // the four shadows (44px and up): short crisp wedges meeting at the feet, no hub mark. They
+    // are sized to the room above the digits, so the lower tips stay 1.5px clear of the 84.
+    if (!mini) {
+      const SIN = Math.sin((27.55 * Math.PI) / 180);
+      const rw = S0 * 0.024, tip = Math.max(0.45, S0 * 0.009);
+      const top = y0 + e + 0.6, room = base - 0.72 * fs - 1.5 - top;
+      const Lw = Math.min(Wt * 0.21, (room - 2 * rw) / (2 * SIN));
+      const hy = top + rw + Lw * SIN;
+      let w = `<g style="mix-blend-mode:multiply">`;
+      for (const c of CORNERS) w += `<path d="${closedPath(wedgeLoop(Lw, rw, tip))}" transform="translate(${f(cx)} ${f(hy)}) rotate(${f(angOf(c))})" fill="${T.crisp.fill}" opacity="${f(Math.min(0.95, T.crisp.op + 0.1))}"/>`;
+      g += w + `</g>`;
+    }
     g += `<text x="${f(cx + m.dx * fs)}" y="${f(base)}" direction="ltr" text-anchor="start" font-family="Changa, sans-serif" font-weight="800" font-size="${f(fs)}" fill="${C.tunnel}">${p.ovr}</text>`;
     g += `<rect class="c10-rim" x="${f(x0 - 0.5)}" y="${f(y0 - 0.5)}" width="${Wt + 1}" height="${Ht + 1}" rx="${mini ? 1.8 : 2.4}" fill="none"/>`;
 
@@ -500,7 +568,7 @@
       `<div class="c10 c10--row t-${p.tier}${me ? " is-me" : ""}" dir="${S.dir}" lang="${ar ? "ar" : "en"}" role="img" aria-label="${esc((o.rank ? o.rank + ". " : "") + MC.label(p, o) + (o.pts != null ? ", " + o.pts + " " + S.pts : ""))}">` +
       `<span class="c10r-rank">${MC.ltr(o.rank ?? "")}</span>` +
       `<span class="c10r-tok">${token(p, { ...o, size: 64, mini: false })}</span>` +
-      `<span class="c10r-id"><b>${esc(MC.nameOf(p, o))}${yr ? `<i><bdi dir="ltr">·${yr}</bdi></i>` : ""}</b><small>${esc(S.tiers[p.tier])}</small></span>` +
+      `<span class="c10r-id"><b>${esc(MC.nameOf(p, o))}${yr ? `<i>·${MC.ltr(yr)}</i>` : ""}</b><small>${esc(S.tiers[p.tier])}</small></span>` +
       `<span class="c10r-pts">${MC.ltr(o.pts ?? "")}<small>${esc(S.pts)}</small></span>` +
       `</div>`
     );
@@ -552,17 +620,25 @@
     d += `<radialGradient id="${u}-bloomS"><stop offset="0" stop-color="${C.sodium}" stop-opacity=".6"/><stop offset="1" stop-color="${C.sodium}" stop-opacity="0"/></radialGradient>`;
     d += `<radialGradient id="${u}-bloomF"><stop offset="0" stop-color="${C.first}" stop-opacity=".85"/><stop offset="1" stop-color="${C.first}" stop-opacity="0"/></radialGradient>`;
 
-    // the four shadows, the figure's outline on the plane, projected
+    // the four shadows, the figure's outline on the plane, projected. Every shadow is rooted
+    // at the same two feet (on the X axis, either side of the feet point): near the root the
+    // width runs along X, then turns to the shadow's own cross direction by a third of its length.
     const Lp = 1.25, kp = Lp / SH_L;
+    const { loop } = personLoop(Lp, kp);
     let sh = "";
     for (const c of CORNERS) {
       const [tx, tz] = SH_TOWERS[c];
       const n = Math.hypot(tx, tz), dx = -tx / n, dz = -tz / n; // away from the tower
-      const { loop, hole } = personLoop(Lp, kp);
-      const to = ([s, w]) => PJ(s * dx - w * dz, s * dz + w * dx);
+      const px = -dz, pz = dx; // the shadow's cross direction
+      const sg = px >= 0 ? 1 : -1;
+      const to = ([s, w]) => {
+        const b = Math.min(1, Math.max(0, s / (Lp * 0.34)));
+        const ex = sg * (1 - b) + px * b, ez = pz * b;
+        return PJ(s * dx + w * ex, s * dz + w * ez);
+      };
       const led = isLed(p, c);
       const inkS = led ? T.crisp : SOFT;
-      sh += `<path d="${closedPath(loop.map(to))}${polyPath(hole.map(to))}" fill-rule="evenodd" fill="${inkS.fill}" opacity="${inkS.op}"${led ? "" : ` filter="url(#${u}-pen)"`}/>`;
+      sh += `<path d="${closedPath(loop.map(to))}" fill="${inkS.fill}" opacity="${inkS.op}"${led ? "" : ` filter="url(#${u}-pen)"`}/>`;
     }
 
     // towers: pole from the ground to the plate
@@ -583,6 +659,10 @@
       plates += `<g transform="translate(${f(qx - (B.x + B.w / 2) * kx)} ${f(qy - (B.y + B.h / 2) * kx)}) scale(${kx})">${plate(u, p, o, c, legend, true, true)}</g>`;
     }
 
+    // below the bench coat's hem, two legs in silhouette (the figure is backlit by the towers)
+    const legC = mix((p.club && p.club.primary) || C.figure, C.night, 0.62);
+    const leg = (sg) => `<path d="M${f(Fs[0] + sg * 16)} ${f(Fs[1] - 18)}L${f(Fs[0] + sg * 4.5)} ${f(Fs[1] - 18)}L${f(Fs[0] + sg * 5.6)} ${f(Fs[1] - 1)}L${f(Fs[0] + sg * 11.6)} ${f(Fs[1] - 1)}Z" fill="${legC}"/>`;
+    const legs = leg(-1) + leg(1);
     // the 84 in the lit gap, the figure from behind, the fifth plate on the near touchline
     const sc = ovrScale(p);
     const ovrSize = 110 * sc;
@@ -604,8 +684,11 @@
       `<rect x="0" y="${f(nearY - 22)}" width="360" height="22" fill="url(#${u}-near)"/>` +
       ovr +
       `<g style="mix-blend-mode:multiply">${sh}</g>` +
-      `<ellipse cx="${Fs[0]}" cy="${Fs[1] + 2}" rx="40" ry="9" fill="#06142B" opacity=".5" filter="url(#${u}-contact)"/>` +
-      figure(u, Fs, 92, 110, 1.6, p.club) +
+      `<ellipse cx="${Fs[0]}" cy="${Fs[1] + 1}" rx="30" ry="5" fill="#06142B" opacity=".45" filter="url(#${u}-contact)"/>` +
+      legs +
+      figure(u, [Fs[0], Fs[1] - 15], 92, 110, 1.4, p.club, { coat: true }) +
+      `<path d="M${Fs[0] - 18} ${f(Fs[1] + 0.8)}H${Fs[0] + 18}" stroke="#06142B" stroke-width="1.8" stroke-linecap="round"/>` +
+      `<ellipse cx="${Fs[0] - 8.5}" cy="${Fs[1] - 0.8}" rx="5.4" ry="2.5" fill="#0A1426"/><ellipse cx="${Fs[0] + 8.5}" cy="${Fs[1] - 0.8}" rx="5.4" ry="2.5" fill="#0A1426"/>` +
       towers +
       `<g style="mix-blend-mode:screen">${blooms}</g>` +
       `<rect x="0" y="${f(nearY)}" width="360" height="${f(640 - nearY)}" fill="${C.night}"/>` +
@@ -621,14 +704,15 @@
       svg +
       `<div class="c10s-logo">${MC.logo("wordmark", { variant: "light", label: false })}</div>` +
       `<div class="c10s-foot">` +
-      `<p class="c10s-who"><b>${esc(MC.nameOf(p, o))}</b>${yr ? `<bdi dir="ltr" class="c10s-yr">·${yr}</bdi>` : ""}</p>` +
+      `<p class="c10s-who"><b>${esc(MC.nameOf(p, o))}</b>${yr ? `<span class="c10s-yr">·${MC.ltr(yr)}</span>` : ""}</p>` +
       `<p class="c10s-meta"><span>${esc(S.tiers[p.tier])}</span><bdi dir="ltr">@${esc(p.name.lat.toLowerCase())}</bdi><span>${esc(sample)}</span></p>` +
       `</div></div>`
     );
   }
 
   /* ================= interaction ================= */
-  // Drag swings the four lights up to 8 degrees: the four shadows pivot around the feet, the
+  // Drag swings the four lights up to 6 degrees (the most that keeps 1.5u of turf between a
+  // lower shadow and the 84): the four shadows pivot around the feet, the
   // founder's shadow alone stays put. Tap a lamp plate to light it and read what its stat means.
   function mount(el, o = {}) {
     if (!el || !el.classList || !el.classList.contains("c10--card") || el.dataset.c10Mounted) return;
@@ -645,7 +729,7 @@
       raf = Math.abs(target - cur) > 0.02 ? requestAnimationFrame(apply) : 0;
     };
     const go = (deg) => {
-      target = Math.max(-8, Math.min(8, deg));
+      target = Math.max(-6, Math.min(6, deg));
       if (!raf) raf = requestAnimationFrame(apply);
     };
     if (!reduce) {
@@ -658,7 +742,7 @@
         if (startX == null) return;
         const dx = e.clientX - startX;
         if (Math.abs(dx) > 4) moved = true;
-        go(base + (dx / el.getBoundingClientRect().width) * 32);
+        go(base + (dx / el.getBoundingClientRect().width) * 24);
       });
       const end = () => {
         startX = null;

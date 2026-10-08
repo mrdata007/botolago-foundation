@@ -63,7 +63,6 @@
     });
   const polar = (cx, cy, r, deg) => [cx + r * Math.cos((deg * Math.PI) / 180), cy + r * Math.sin((deg * Math.PI) / 180)];
   const poly = (pts) => "M" + pts.map(P).join("L") + "Z";
-  const bestStat = (p) => MC.STATS.reduce((a, k) => (p.stats[k] > p.stats[a] ? k : a), MC.STATS[0]);
   /** The user's club colours (the lab's placeholder club; white when no club is set). */
   const clubOf = (p) => ({ a: (p.club && p.club.primary) || "#FFFFFF", b: (p.club && p.club.secondary) || "#FFFFFF" });
 
@@ -72,46 +71,59 @@
   const C = { x: 224, y: 94, r: 70 };
   const AL = Math.hypot(0.547, 0.837);
   const AX = [-0.547 / AL, 0.837 / AL]; // the chord, from the ball toward the tip (bottom-start), 56.8°
-  const NM = [AX[1], -AX[0]]; // across the chord, toward the trail's lower-end edge
   const AX_DEG = (Math.atan2(AX[1], AX[0]) * 180) / Math.PI;
-  /* The axis is the shot's arc: the same chord, bowed 13u toward the upper-start side, so the ball
-     arrives flatter than it left (48° at the ball, 66° at the tip). */
-  const S_BASE = 365;
-  const SAG = 13;
-  const T_BASE = [C.x + AX[0] * S_BASE, C.y + AX[1] * S_BASE];
-  const QC = [(C.x + T_BASE[0]) / 2 - NM[0] * 2 * SAG, (C.y + T_BASE[1]) / 2 - NM[1] * 2 * SAG];
   const unit = (v) => {
     const m = Math.hypot(v[0], v[1]) || 1;
     return [v[0] / m, v[1] / m];
   };
-  const D0 = unit([QC[0] - C.x, QC[1] - C.y]);
-  const D1 = unit([T_BASE[0] - QC[0], T_BASE[1] - QC[1]]);
-  function axis(s) {
-    if (s <= 0) return { p: [C.x + D0[0] * s, C.y + D0[1] * s], d: D0 };
-    if (s >= S_BASE) return { p: [T_BASE[0] + D1[0] * (s - S_BASE), T_BASE[1] + D1[1] * (s - S_BASE)], d: D1 };
-    const t = s / S_BASE;
-    const u = 1 - t;
-    const p = [u * u * C.x + 2 * u * t * QC[0] + t * t * T_BASE[0], u * u * C.y + 2 * u * t * QC[1] + t * t * T_BASE[1]];
-    const d = unit([2 * u * (QC[0] - C.x) + 2 * t * (T_BASE[0] - QC[0]), 2 * u * (QC[1] - C.y) + 2 * t * (T_BASE[1] - QC[1])]);
-    return { p, d };
+  /** The shot's arc from the ball centre to `tip`: the chord bowed `sag` toward the upper-start side,
+      so the ball arrives flatter than it left. s runs from 0 (ball centre) to S (the tip). */
+  function makeAxis(tip, sag) {
+    const S = Math.hypot(tip[0] - C.x, tip[1] - C.y);
+    const ax = [(tip[0] - C.x) / S, (tip[1] - C.y) / S];
+    const nm = [ax[1], -ax[0]]; // across the chord, toward the trail's lower-end edge
+    const qc = [(C.x + tip[0]) / 2 - nm[0] * 2 * sag, (C.y + tip[1]) / 2 - nm[1] * 2 * sag];
+    const d0 = unit([qc[0] - C.x, qc[1] - C.y]);
+    const d1 = unit([tip[0] - qc[0], tip[1] - qc[1]]);
+    function axis(s) {
+      if (s <= 0) return { p: [C.x + d0[0] * s, C.y + d0[1] * s], d: d0 };
+      if (s >= S) return { p: [tip[0] + d1[0] * (s - S), tip[1] + d1[1] * (s - S)], d: d1 };
+      const t = s / S;
+      const u = 1 - t;
+      const p = [u * u * C.x + 2 * u * t * qc[0] + t * t * tip[0], u * u * C.y + 2 * u * t * qc[1] + t * t * tip[1]];
+      const d = unit([2 * u * (qc[0] - C.x) + 2 * t * (tip[0] - qc[0]), 2 * u * (qc[1] - C.y) + 2 * t * (tip[1] - qc[1])]);
+      return { p, d };
+    }
+    const at = (s, off = 0) => {
+      const a = axis(s);
+      return [a.p[0] + a.d[1] * off, a.p[1] - a.d[0] * off];
+    };
+    const ang = (s) => {
+      const d = axis(s).d;
+      return (Math.atan2(d[1], d[0]) * 180) / Math.PI;
+    };
+    return { S, at, ang };
   }
-  const at = (s, off = 0) => {
-    const a = axis(s);
-    return [a.p[0] + a.d[1] * off, a.p[1] - a.d[0] * off];
-  };
-  const angAt = (s) => {
-    const d = axis(s).d;
-    return (Math.atan2(d[1], d[0]) * 180) / Math.PI;
-  };
-  /** Trail geometry: w(s) = 128 − 124·(s−36)/L, s measured from the ball centre. LEGEND is 30% longer. */
+  /* The trail. Base: the chord to (24,400), bowed 13u (48° at the ball, 66° at the tip), with
+     w(s) = 128 − 124·(s−36)/329, s measured from the ball centre.
+     LEGEND (full card): its own blade, reaching the bottom-start corner at (10,414) on a stronger
+     bow (26u), fuller in the body and tapering to a 4u point, so the outline change is designed,
+     not a crop. The tokens keep the literal 30% extension (see swoosh()). */
   const GEO = (legend) => {
-    const L = 329 * (legend ? 1.3 : 1);
-    const a1 = -124 / L;
-    const a0 = 128 - a1 * 36;
-    return { legend, L, a0, a1, sTip: 36 + L, w: (s) => a0 + a1 * s };
+    const A = legend ? makeAxis([10, 414], 26) : makeAxis([C.x + AX[0] * 365, C.y + AX[1] * 365], 13);
+    const sTip = A.S;
+    const L = sTip - 36;
+    const w = legend
+      ? (s) => {
+          const t = (s - 36) / L; // t < 0 under the ball: the curve simply carries on
+          return 4 + 124 * (1 - t) * (1 + 0.55 * t);
+        }
+      : (s) => 128 - (124 * (s - 36)) / L;
+    return { legend, L, sTip, w, at: A.at, ang: A.ang };
   };
   const G_BASE = GEO(false);
   const G_LEG = GEO(true);
+  const geoOf = (tier) => (tier === "LEGEND" ? G_LEG : G_BASE);
   /** The trail's two edges as polylines (sampled once per geometry). */
   const EDGES = new Map();
   function edges(g) {
@@ -119,8 +131,8 @@
       const U = [];
       const Lo = [];
       for (let s = 0; s <= g.sTip + 0.01; s += 2.5) {
-        U.push(at(s, -g.w(s) / 2));
-        Lo.push(at(s, g.w(s) / 2));
+        U.push(g.at(s, -g.w(s) / 2));
+        Lo.push(g.at(s, g.w(s) / 2));
       }
       EDGES.set(g, { U, L: Lo });
     }
@@ -154,12 +166,12 @@
     const Lo = [];
     for (let i = 0; i <= N; i++) {
       const s = s0 + ((g.sTip - s0) * i) / N;
-      U.push(at(s, -g.w(s) / 2));
-      Lo.push(at(s, g.w(s) / 2));
+      U.push(g.at(s, -g.w(s) / 2));
+      Lo.push(g.at(s, g.w(s) / 2));
     }
-    const tip = at(g.sTip + 2.6, 0);
+    const tip = g.at(g.sTip + 2.6, 0);
     const R0 = r2(Math.hypot(U[0][0] - C.x, U[0][1] - C.y));
-    const front = at(-R0, 0);
+    const front = g.at(-R0, 0);
     // the root closes round the front of the ball (hidden under it), so the trail's edges stay tangent
     const d =
       "M" + U.map(P).join("L") + `Q${P(tip)} ${P(Lo[N])}L` + Lo.slice(0, N).reverse().map(P).join("L") +
@@ -176,8 +188,8 @@
       const s = s0 + (s1 - s0) * t;
       const th = T * Math.pow(Math.sin(Math.PI * Math.pow(t, 0.62)), 0.85);
       const base = g.w(s) / 2 + gap + bow * Math.sin(Math.PI * t);
-      A.push(at(s, -base));
-      B.push(at(s, -(base + th)));
+      A.push(g.at(s, -base));
+      B.push(g.at(s, -(base + th)));
     }
     return "M" + A.map(P).join("L") + "L" + B.reverse().map(P).join("L") + "Z";
   }
@@ -189,7 +201,7 @@
   ];
   const CRES_COUNT = { HOMA: 0, STADE: 1, PRO: 2, CHAMPION: 3, LEGEND: 2 };
   const BAND = [52, 62];
-  const STAT_S = { lat: [205, 222, 239, 256], ar: [201, 221.5, 242, 262.5] };
+  const STAT_S = { lat: [205, 222, 239, 256], ar: [194, 211, 228, 245] };
   const LANE_S0 = 268;
   // the figure: the shared avatar from behind, cropped by the bottom edge, pointing at the ball
   const FIG = { x: 64, y: 331, w: 84, h: 100.8 };
@@ -225,8 +237,8 @@
       `<feComposite in="SourceGraphic" in2="s2" operator="arithmetic" k1="0" k2="1" k3="0.5" k4="0"/></filter>`;
     if (tier === "PRO") {
       // Floodlight Navy at the root fading to Tunnel Navy at the tip: the colour of motion
-      const a = at(40);
-      const b = at(G_BASE.sTip);
+      const a = G_BASE.at(40);
+      const b = G_BASE.at(G_BASE.sTip);
       d += `<linearGradient id="${id}-gtrail" gradientUnits="userSpaceOnUse" x1="${r2(a[0])}" y1="${r2(a[1])}" x2="${r2(b[0])}" y2="${r2(b[1])}"><stop offset="0" stop-color="#0C3164"/><stop offset="1" stop-color="#001C49"/></linearGradient>`;
     }
     if (tier === "HOMA") {
@@ -255,8 +267,8 @@
     }
     if (tier === "LEGEND") {
       // a matte white blade: a faint fall-off across it, one polished leading edge
-      const u = at(150, -60);
-      const l = at(150, 60);
+      const u = G_LEG.at(150, -60);
+      const l = G_LEG.at(150, 60);
       d +=
         `<linearGradient id="${id}-gblade" gradientUnits="userSpaceOnUse" x1="${r2(u[0])}" y1="${r2(u[1])}" x2="${r2(l[0])}" y2="${r2(l[1])}">` +
         `<stop offset="0" class="c02-s-blade-hi"/><stop offset="0.45" class="c02-s-blade"/><stop offset="1" class="c02-s-blade-lo"/></linearGradient>`;
@@ -267,7 +279,7 @@
   /* ---------- the trail and its swooshes ---------- */
   function trailLayer(id, p, tier, opts = {}) {
     const legend = tier === "LEGEND";
-    const g = legend ? G_LEG : G_BASE;
+    const g = geoOf(tier);
     const path = trailPath(g);
     const club = clubOf(p);
     let out = "";
@@ -286,37 +298,37 @@
     else if (tier === "CHAMPION") body = `<path d="${path}" class="c02-rubber"/><path d="${path}" fill="url(#${id}-ridge)" opacity="0.9"/>`;
     else if (legend) body = `<path d="${path}" fill="url(#${id}-gblade)"/>`;
     else body = `<path d="${path}" fill="url(#${id}-gtrail)"/>`;
-    out += `<g${legend ? ` clip-path="url(#${id}-cframe)"` : ""}>` + body;
+    out += `<g>` + body;
     // the club band at the root (only its two ends show beside the ball)
     const b0 = BAND[0];
     const b1 = BAND[1];
-    const band = (s0, s1) => poly([at(s0, -g.w(s0) / 2 - 1), at(s1, -g.w(s1) / 2 - 1), at(s1, g.w(s1) / 2 + 1), at(s0, g.w(s0) / 2 + 1)]);
+    const band = (s0, s1) => poly([g.at(s0, -g.w(s0) / 2 - 1), g.at(s1, -g.w(s1) / 2 - 1), g.at(s1, g.w(s1) / 2 + 1), g.at(s0, g.w(s0) / 2 + 1)]);
     out += `<g clip-path="url(#${id}-ctrail)"><path d="${band(b0, b1)}" fill="${club.b}"/><path d="${band(b0 + 1.6, b1 - 1.6)}" fill="${club.a}"/></g>`;
     // lanes: four equal lanes run on to the tip; their length never encodes a value
     if (!opts.thumb) {
-      const sEnd = Math.min(g.sTip - 6, legend ? 392 : 1e9);
+      const sEnd = g.sTip - (legend ? 14 : 6);
       const lanes = legend ? [-1, 1] : [-1, 0, 1];
       lanes.forEach((k) => {
         const pts = [];
         for (let i = 0; i <= 12; i++) {
           const s = LANE_S0 + ((sEnd - LANE_S0) * i) / 12;
-          pts.push(at(s, (k * g.w(s)) / 4));
+          pts.push(g.at(s, (k * g.w(s)) / 4));
         }
         out += `<path d="M${pts.map(P).join("L")}" class="c02-lane c02-lane-${tier.toLowerCase()}" pathLength="1"${tier === "HOMA" ? ` filter="url(#${id}-chalk)"` : ""}/>`;
       });
     }
     // material details
     if (tier === "HOMA") {
-      // the patch outlined in fresh chalk, 2.5u inside its clean-cut edge
+      // the patch outlined in fresh chalk, 2u inside its clean-cut edge
       const s0 = 30;
       const sT = g.sTip - 3;
-      const e = (s, k) => at(s, k * (g.w(s) / 2 - 2.6));
+      const e = (s, k) => g.at(s, k * (g.w(s) / 2 - 2));
       const side = (k) => Array.from({ length: 21 }, (_, i) => e(s0 + ((sT - s0) * i) / 20, k));
-      out += `<path d="M${side(-1).map(P).join("L")}L${P(at(g.sTip - 1, 0))}L${side(1).reverse().map(P).join("L")}" class="c02-chalk-line" filter="url(#${id}-chalk)"/>`;
+      out += `<path d="M${side(-1).map(P).join("L")}L${P(g.at(g.sTip - 1, 0))}L${side(1).reverse().map(P).join("L")}" class="c02-chalk-line" filter="url(#${id}-chalk)"/>`;
     }
     if (legend) {
       // one polished leading edge, a soft fall-off on the other
-      const line = (o) => "M" + Array.from({ length: 25 }, (_, i) => at(4 + ((g.sTip - 4) * i) / 24, -g.w(4 + ((g.sTip - 4) * i) / 24) / 2 + o)).map(P).join("L");
+      const line = (o) => "M" + Array.from({ length: 25 }, (_, i) => g.at(4 + ((g.sTip - 4) * i) / 24, -g.w(4 + ((g.sTip - 4) * i) / 24) / 2 + o)).map(P).join("L");
       out += `<path d="${line(1.1)}" class="c02-blade-edge" fill="none"/>`;
       out += `<path d="${line(3.2)}" class="c02-blade-bevel" fill="none"/>`;
     }
@@ -328,6 +340,7 @@
   /** LEGEND: one debossed dimple per gameweek played (the sample's seven are an example). */
   function dimples(id, o) {
     const ar = MC.isAr(o);
+    const at = G_LEG.at;
     let g = `<g class="c02-dimples">`;
     const n = 7;
     for (let i = 0; i < n; i++) {
@@ -343,7 +356,7 @@
     }
     // the sample's count is not real data: say so on the object
     const t = at(278 + n * 10 + 8, 0);
-    g += `<text x="${r2(t[0])}" y="${r2(t[1])}" font-size="${ar ? 7 : 6}" text-anchor="middle" dominant-baseline="central" transform="rotate(${r2(angAt(278 + n * 10 + 8) - 180)} ${r2(t[0])} ${r2(t[1])})" class="${ar ? "c02-t-ar" : "c02-t-lab c02-track"} c02-example">${ar ? "مثال" : "EXEMPLE"}</text>`;
+    g += `<text x="${r2(t[0])}" y="${r2(t[1])}" font-size="${ar ? 7 : 6}" text-anchor="middle" dominant-baseline="central" transform="rotate(${r2(G_LEG.ang(278 + n * 10 + 8) - 180)} ${r2(t[0])} ${r2(t[1])})" class="${ar ? "c02-t-ar" : "c02-t-lab c02-track"} c02-example">${ar ? "مثال" : "EXEMPLE"}</text>`;
     return g + `</g>`;
   }
 
@@ -443,144 +456,208 @@
   }
 
   /* ---------- the words on the trail ---------- */
+  const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
   function initialForm(name) {
     const parts = name.split(/[\s-]+/).filter(Boolean);
     return parts.length > 1 ? `${parts[0][0]}. ${parts[parts.length - 1]}` : name;
   }
-  /** Name and tier inline on one baseline, centred in the trail at s≈90; a long name drops the tier to a second line. */
-  function nameLine(g, p, o, tier) {
+  /** Arabic has no initials: keep the first word, or the first two after عبد / أبو (so «عبد الرحمن»). */
+  function shortAr(name) {
+    const w = name.split(/\s+/).filter(Boolean);
+    if (w.length < 2) return name;
+    return /^(عبد|أبو|ابو)$/.test(w[0]) ? `${w[0]} ${w[1]}` : w[0];
+  }
+  /** The 84 on the trail's thick end. opts.k scales it (the share); opts.overhang lets it break the lower-end edge. */
+  function ovrBox(g, p, opts = {}) {
+    const k = opts.k || 1;
+    const c = g.at(opts.s || 150);
+    const fs = 60 * k * (String(p.ovr).length > 2 ? 0.82 : 1);
+    const m = measure(String(p.ovr), F_NUM, fs);
+    const h = m.a + m.d;
+    const w = m.r - m.l;
+    let cx;
+    if (opts.overhang) {
+      // bigger than its trail: the 8's shoulder may kiss the upper-start edge, and the 4's bar may
+      // break the lower-end edge by up to 10u (white on the darkened night)
+      const lo = edgeX(g, c[1] - h * 0.25, -1) - 1 + w / 2;
+      const hi = edgeX(g, c[1] + h * 0.25, 1) + 10 - w / 2;
+      cx = lo <= hi ? clamp(c[0], lo, hi) : (lo + hi) / 2;
+    } else {
+      const rm = room(g, c[1] - h / 2, c[1] + h / 2, 4, 3);
+      cx = clamp(rm.c, c[0] - 6, c[0] + 6);
+    }
+    return { cx, cy: c[1], fs, k, top: c[1] - h / 2, bot: c[1] + h / 2 };
+  }
+  /** Name and tier inline on one baseline at s≈90; a long name takes its short form, then drops the
+      tier to a line beneath. Every word is kept inside the trail, off the ball and above the 84. */
+  function nameLine(g, p, o, tier, ovr) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    let name = MC.nameOf(p, o);
-    if (!ar && name.length > 10) name = initialForm(name);
+    const full = MC.nameOf(p, o);
     const tierTxt = S.tiers[tier];
     const TF = ar ? F_AR : F_LAB;
     const track = ar ? 0 : 0.08;
-    const N0 = ar ? 30 : 32;
+    const padS = tier === "HOMA" ? 5.5 : 5; // upper-start edge (HOMA: clear of the chalk line)
+    const padE = 9; // lower-end edge: clear of the club band's ends beside the ball
     const gap = ar ? 7 : 6;
-    const mid = at(90)[1];
-    const floor84 = at(150)[1] - measure("84", F_NUM, 60).a / 2 - 4;
+    const N0 = ar ? 30 : 32;
+    const mid = g.at(90)[1];
+    // nothing below these: the ink (descenders) and the baseline, above the 84's top; the enlarged
+    // share numeral gets more air under the baseline
+    const floor = ovr.top - (ovr.k > 1 ? 3 : 4);
+    const floorB = ovr.top - (ovr.k > 1 ? 7 : 4);
     const ballR = (y) => {
       const dy = y - C.y;
       const rr = C.r + 3;
-      return Math.abs(dy) < rr ? C.x - Math.sqrt(rr * rr - dy * dy) : Infinity;
+      return Math.abs(dy) < rr ? C.x - Math.sqrt(rr * rr - dy * dy) - 5 : Infinity;
     };
-    const metrics = (n) => {
+    // the club band's ends show beside the ball: every word stays 4u past the band's far edge
+    const bp = g.at(BAND[1]);
+    const bq = g.at(BAND[1] + 1);
+    const bd = unit([bq[0] - bp[0], bq[1] - bp[1]]);
+    const bandR = (y) => bp[0] + (4 - (y - bp[1]) * bd[1]) / bd[0];
+    /** Room for a box from `top` to `bot`: the slanted edges bind at its top-start and bottom-end
+        corners; the ball and the band's end bind at its top-end corner. */
+    const span = (top, bot) => ({ L: edgeX(g, top, -1) + padS, R: Math.min(edgeX(g, bot, 1) - padE, ballR(top), bandR(top)) });
+    const nm = (name, n) => {
       const m = measure(name, F_NUM, n);
-      return { w: m.w, asc: ar ? n * 0.62 : m.a, desc: ar ? n * 0.42 : 0 };
+      return { w: m.w, asc: m.a, desc: m.d };
     };
-    /** Does name (size n) + tier (size t) fit inline at baseline yb? Returns the placement. */
-    function inline(n, t, yb) {
-      const nm = metrics(n);
-      const tw = textW(tierTxt, TF, t, track);
-      const tAsc = ar ? t * 0.62 : t * 0.72;
-      const nTop = yb - nm.asc;
-      const tTop = yb - tAsc;
-      const pad = 5;
-      const nR = Math.min(edgeX(g, yb + nm.desc, 1), ballR(nTop)) - pad;
-      const tR = Math.min(edgeX(g, yb + (ar ? t * 0.3 : 0), 1), ballR(tTop)) - pad;
-      const nL = edgeX(g, nTop, -1) + pad;
-      const tL = edgeX(g, tTop, -1) + pad;
-      const total = nm.w + gap + tw;
-      if (yb + nm.desc > floor84) return null;
+    const tm = (t) => {
+      const m = measure(tierTxt, TF, t, track);
+      return { w: m.w, asc: m.a, desc: m.d };
+    };
+    function inline(name, n, t, yb) {
+      const a = nm(name, n);
+      const b = tm(t);
+      if (yb > floorB || Math.max(yb + a.desc, yb + b.desc) > floor) return null;
+      const sn = span(yb - a.asc, yb + a.desc);
+      const st = span(yb - b.asc, yb + b.desc);
+      const total = a.w + gap + b.w;
       if (!ar) {
         // [name][tier]
-        const lo = nL;
-        const hi = Math.min(nR - nm.w, tR - total);
+        const lo = sn.L;
+        const hi = Math.min(sn.R - a.w, st.R - total);
         if (hi < lo) return null;
-        const x0 = Math.min(Math.max((nL + tR - total) / 2, lo), hi);
-        return { n, t, yb, nx: x0 + nm.w / 2, tx: x0 + nm.w + gap + tw / 2 };
+        const x0 = clamp((sn.L + st.R - total) / 2, lo, hi);
+        return { name, n, t, yb, nx: x0 + a.w / 2, tx: x0 + a.w + gap + b.w / 2 };
       }
       // RTL: [tier][name] from left to right
-      const lo = Math.max(tL, nL - tw - gap);
-      const hi = nR - total;
+      const lo = Math.max(st.L, sn.L - b.w - gap);
+      const hi = Math.min(sn.R - total, st.R - b.w);
       if (hi < lo) return null;
-      const x0 = Math.min(Math.max((tL + nR - total) / 2, lo), hi);
-      return { n, t, yb, tx: x0 + tw / 2, nx: x0 + tw + gap + nm.w / 2 };
+      const x0 = clamp((st.L + sn.R - total) / 2, lo, hi);
+      return { name, n, t, yb, tx: x0 + b.w / 2, nx: x0 + b.w + gap + a.w / 2 };
     }
+    function stacked(name, n, t) {
+      const a = nm(name, n);
+      const b = tm(t);
+      for (const dyb of [0, 2, 4, 6, 8, 10, -2, -4, -6]) {
+        const yb = mid + a.asc / 2 + dyb;
+        const sn = span(yb - a.asc, yb + a.desc);
+        if (a.w > sn.R - sn.L) continue;
+        const ty = yb + a.desc + b.asc + 2.5;
+        if (ty > floorB || ty + b.desc > floor) continue;
+        const st = span(ty - b.asc, ty + b.desc);
+        if (b.w > st.R - st.L) continue;
+        const nx = (sn.L + sn.R) / 2;
+        // the tier hangs from the name's start (Latin) or its right end (Arabic), inside the trail
+        const want = ar ? nx + a.w / 2 - b.w / 2 : nx - a.w / 2 + b.w / 2;
+        return { name, n, t, yb, nx, ty, tx: clamp(want, st.L + b.w / 2, st.R - b.w / 2) };
+      }
+      return null;
+    }
+    const names = ar ? [full, shortAr(full)].filter((v, i, A) => A.indexOf(v) === i) : [full.length > 10 ? initialForm(full) : full];
     let best = null;
-    for (let n = N0; n >= 18 && !best; n -= 1) {
-      const t = n >= 26 ? (ar ? 12 : 11) : ar ? 11 : 10;
-      for (let dyb = -4; dyb <= 12 && !best; dyb += 2) best = inline(n, t, mid + metrics(n).asc / 2 + dyb);
+    names.forEach((name, i) => {
+      for (let n = N0; n >= 18 && !best; n -= 1) {
+        const t = n >= 26 ? (ar ? 12 : 11) : ar ? 11 : 10;
+        for (let dyb = -4; dyb <= 12 && !best; dyb += 2) best = inline(name, n, t, mid + nm(name, n).asc / 2 + dyb);
+      }
+      const nFloor = i === names.length - 1 ? 12 : 18;
+      for (let n = 26; n >= nFloor && !best; n -= 1) best = stacked(name, n, ar ? 10 : 9);
+    });
+    if (!best) {
+      // last resort: the shortest form on the lowest line the 84 allows (the widest), sized to it,
+      // the tier beneath; both clamped inside the trail
+      const name = names[names.length - 1];
+      const t = ar ? 9 : 8;
+      const b = tm(t);
+      const a0 = nm(name, 12);
+      const yb = Math.min(floor - b.desc, floorB) - b.asc - 2 - a0.desc;
+      const sn = span(yb - a0.asc, yb + a0.desc);
+      const n = clamp((12 * (sn.R - sn.L)) / a0.w, 8, 12);
+      const a = nm(name, n);
+      const ty = yb + a.desc + b.asc + 2;
+      const st = span(ty - b.asc, ty + b.desc);
+      const nx = (sn.L + sn.R) / 2;
+      const want = ar ? nx + a.w / 2 - b.w / 2 : nx - a.w / 2 + b.w / 2;
+      best = { name, n, t, yb, nx, ty, tx: clamp(want, st.L + b.w / 2, Math.max(st.L + b.w / 2, st.R - b.w / 2)) };
     }
     const cls = `c02-nz c02-nz-${tier.toLowerCase()}`;
-    const nameT = (x, y, n) =>
-      ar
-        ? `<text x="${r2(x)}" y="${r2(y)}" font-size="${r2(n)}" text-anchor="middle" class="c02-t-arname c02-name">${esc(name)}</text>`
-        : `<text x="${r2(x)}" y="${r2(y)}" font-size="${r2(n)}" text-anchor="middle" class="c02-t-name c02-name" direction="ltr">${esc(name)}</text>`;
-    const tierT = (x, y, t) =>
-      ar
-        ? `<text x="${r2(x)}" y="${r2(y)}" font-size="${r2(t)}" text-anchor="middle" class="c02-t-ar c02-tier">${esc(tierTxt)}</text>`
-        : `<text x="${r2(x)}" y="${r2(y)}" font-size="${r2(t)}" text-anchor="middle" class="c02-t-lab c02-track c02-tier" direction="ltr">${esc(tierTxt)}</text>`;
-    if (best) return `<g class="${cls}">${nameT(best.nx, best.yb, best.n)}${tierT(best.tx, best.yb, best.t)}</g>`;
-    // fallback for a long name: the name alone on the line, the tier small beneath it
-    let n = 26;
-    let yb = mid;
-    let place = null;
-    for (; n >= 14 && !place; n -= 1) {
-      const nm = metrics(n);
-      for (let dyb = -2; dyb <= 10 && !place; dyb += 2) {
-        yb = mid + nm.asc / 2 + dyb;
-        const L = edgeX(g, yb - nm.asc, -1) + 5;
-        const R = Math.min(edgeX(g, yb + nm.desc, 1), ballR(yb - nm.asc)) - 5;
-        if (nm.w <= R - L) place = { nx: (L + R) / 2, w: nm.w, L, R };
-      }
-    }
-    n += 1;
-    if (!place) {
-      const nm = metrics(n);
-      place = { nx: at(90)[0], w: nm.w };
-    }
-    const t = ar ? 10 : 9;
-    const ty = yb + (ar ? 14 : 11.5);
-    const tw = textW(tierTxt, TF, t, track);
-    const tL = edgeX(g, ty - t * 0.72, -1) + 5;
-    const tx = ar ? place.nx + place.w / 2 - tw / 2 : Math.max(place.nx - place.w / 2, tL) + tw / 2;
-    return `<g class="${cls}">${nameT(place.nx, yb, n)}${tierT(tx, ty, t)}</g>`;
+    const nameT = ar
+      ? `<text x="${r2(best.nx)}" y="${r2(best.yb)}" font-size="${r2(best.n)}" text-anchor="middle" class="c02-t-arname c02-name">${esc(best.name)}</text>`
+      : `<text x="${r2(best.nx)}" y="${r2(best.yb)}" font-size="${r2(best.n)}" text-anchor="middle" class="c02-t-name c02-name" direction="ltr">${esc(best.name)}</text>`;
+    const ty = best.ty != null ? best.ty : best.yb;
+    const tierT = ar
+      ? `<text x="${r2(best.tx)}" y="${r2(ty)}" font-size="${r2(best.t)}" text-anchor="middle" class="c02-t-ar c02-tier">${esc(tierTxt)}</text>`
+      : `<text x="${r2(best.tx)}" y="${r2(ty)}" font-size="${r2(best.t)}" text-anchor="middle" class="c02-t-lab c02-track c02-tier" direction="ltr">${esc(tierTxt)}</text>`;
+    return `<g class="${cls}">${nameT}${tierT}</g>`;
   }
-  /** The 84 on the trail's thick end, white on the trail (ink on the LEGEND blade). */
-  function ovrMark(g, p) {
-    const c = at(150);
-    const big = String(p.ovr).length > 2;
-    let fs = big ? 60 * 0.82 : 60;
-    const m = measure(String(p.ovr), F_NUM, fs);
-    const rm = room(g, c[1] - m.a / 2, c[1] + m.a / 2, 4, 3);
-    const cx = Math.min(Math.max(rm.c, c[0] - 6), c[0] + 6);
-    return `<g class="c02-ovrg">${numText(p.ovr, cx, c[1], fs, "c02-ovr")}</g>`;
-  }
-  /** Four horizontal stat lines stepping down the trail, one size for all four. */
-  function statLines(g, p, o, tier) {
+  /** Four horizontal stat lines stepping down the trail at one shared size. Latin rows are centred in
+      their chord; Arabic rows are right-aligned to it. A block that does not fit moves up the trail
+      (never into the 84) before its size drops. */
+  function statLines(g, p, o, tier, ovr) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    const ss = ar ? STAT_S.ar : STAT_S.lat;
-    const gap = ar ? 4 : 4.2;
-    const rows = MC.STATS.map((k, i) => ({ c: at(ss[i]), lab: S.stats[k], val: String(p.stats[k]) }));
-    const geom = (r, fs) => {
-      const asc = ar ? fs * 0.66 : fs * 0.72;
-      const desc = ar ? fs * 0.36 : 0;
-      const lw = ar ? textW(r.lab, F_AR, fs) : textW(r.lab, F_LAB, fs, 0.06);
-      const vw = textW(r.val, F_LAB, fs);
-      const rm = room(g, r.c[1] - asc / 2 - (ar ? 1 : 0), r.c[1] + asc / 2 + desc, ar ? 3 : 2.5, 3);
-      return { lw, vw, rm, fit: (fs * rm.w) / (lw + gap + vw) };
-    };
+    const ss0 = ar ? STAT_S.ar : STAT_S.lat;
+    const gap = ar ? 3 : 4.2;
+    // HOMA keeps clear of its chalk line; Arabic rows sit flush to the lower-end edge, so they get more air
+    const pad = tier === "HOMA" ? 5.5 : ar ? 4.5 : 2.5;
     const base = ar ? 11 : 12;
-    const fs = Math.max(ar ? 9 : 10, Math.min(base, ...rows.map((r) => geom(r, base).fit)));
+    const fsFloor = ar ? 9 : 10;
+    const top0 = ovr.bot + 6;
+    const geom = (k, s, fs) => {
+      const c = g.at(s);
+      const lab = S.stats[k];
+      const val = String(p.stats[k]);
+      const lm = ar ? measure(lab, F_AR, fs) : measure(lab, F_LAB, fs, 0.06);
+      const vw = textW(val, F_LAB, fs);
+      const yb = c[1] + (ar ? fs * 0.3 : fs * 0.36);
+      const top = yb - (ar ? Math.max(lm.a, fs * 0.72) : fs * 0.72);
+      const bot = yb + (ar ? lm.d : 0);
+      const rm = room(g, top, bot, pad, 3);
+      return { lab, val, lw: lm.w, vw, yb, top, rm, tot: lm.w + gap + vw };
+    };
+    const rowsAt = (ss, fs) => MC.STATS.map((k, i) => geom(k, ss[i], fs));
+    let pick = null;
+    for (const ds of [0, -3, -6, -9, -12]) {
+      const ss = ss0.map((s) => s + ds);
+      let got = null;
+      for (let fs = base; fs >= fsFloor - 1e-6 && !got; fs -= 0.25) {
+        const rows = rowsAt(ss, fs);
+        if (rows[0].top < top0) break; // would rise into the 84
+        if (rows.every((r) => r.tot <= r.rm.w + 0.01)) got = { fs, rows };
+      }
+      if (got && (!pick || got.fs > pick.fs + 1e-6)) pick = got;
+      if (pick && pick.fs >= base) break;
+    }
+    if (!pick) pick = { fs: fsFloor, rows: rowsAt(ss0, fsFloor), over: true };
+    const fs = pick.fs;
     let out = `<g class="c02-stats c02-stats-${tier.toLowerCase()}">`;
-    rows.forEach((r) => {
-      const { lw, vw, rm } = geom(r, fs);
-      const yb = r.c[1] + (ar ? fs * 0.3 : fs * 0.36);
-      const tot = lw + gap + vw;
+    pick.rows.forEach((r) => {
       if (ar) {
-        // right-aligned within the chord: the label reads first, the value (LTR) after it
-        const xr = Math.min(rm.R, rm.c + tot / 2 + 6);
+        // right-aligned in the chord: the label reads first, the value (LTR) after it
+        // (a row that cannot fit even at the floor splits its overflow between the two edges)
+        const xr = r.tot <= r.rm.w ? r.rm.R : r.rm.R + (r.tot - r.rm.w) / 2;
         out +=
-          `<text x="${r2(xr - lw / 2)}" y="${r2(yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-ar c02-slab">${esc(r.lab)}</text>` +
-          `<text x="${r2(xr - lw - gap - vw / 2)}" y="${r2(yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-lab c02-sval" direction="ltr">${r.val}</text>`;
+          `<text x="${r2(xr - r.lw / 2)}" y="${r2(r.yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-ar c02-slab">${esc(r.lab)}</text>` +
+          `<text x="${r2(xr - r.lw - gap - r.vw / 2)}" y="${r2(r.yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-lab c02-sval" direction="ltr">${r.val}</text>`;
       } else {
-        const x0 = rm.c - tot / 2;
+        const x0 = r.rm.c - r.tot / 2;
         out +=
-          `<text x="${r2(x0 + lw / 2)}" y="${r2(yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-lab c02-slab c02-track-s" direction="ltr">${esc(r.lab)}</text>` +
-          `<text x="${r2(x0 + lw + gap + vw / 2)}" y="${r2(yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-lab c02-sval" direction="ltr">${r.val}</text>`;
+          `<text x="${r2(x0 + r.lw / 2)}" y="${r2(r.yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-lab c02-slab c02-track-s" direction="ltr">${esc(r.lab)}</text>` +
+          `<text x="${r2(x0 + r.lw + gap + r.vw / 2)}" y="${r2(r.yb)}" font-size="${r2(fs)}" text-anchor="middle" class="c02-t-lab c02-sval" direction="ltr">${r.val}</text>`;
       }
     });
     return out + `</g>`;
@@ -588,12 +665,13 @@
 
   /** The whole comet, in card units (shared by the card and the share image). */
   function comet(id, p, o, tier, opts = {}) {
-    const g = tier === "LEGEND" ? G_LEG : G_BASE;
+    const g = geoOf(tier);
+    const ovr = ovrBox(g, p, opts.ovr);
     let svg = "";
     svg += trailLayer(id, p, tier, opts);
     if (tier === "LEGEND" && !opts.thumb) svg += dimples(id, o);
-    if (!opts.thumb) svg += nameLine(g, p, o, tier) + statLines(g, p, o, tier);
-    svg += ovrMark(g, p);
+    if (!opts.thumb) svg += nameLine(g, p, o, tier, ovr) + statLines(g, p, o, tier, ovr);
+    svg += `<g class="c02-ovrg">${numText(p.ovr, ovr.cx, ovr.cy, ovr.fs, "c02-ovr")}</g>`;
     svg += ballLayer(id, p, o, tier, { thumb: opts.thumb, back: opts.back });
     return svg;
   }
@@ -605,7 +683,7 @@
     const id = MC.uid(PFX);
     const tier = p.tier;
     const thumb = !!o.thumb;
-    const g = tier === "LEGEND" ? G_LEG : G_BASE;
+    const g = geoOf(tier);
     const extra = `<clipPath id="${id}-ctrail"><path d="${trailPath(g)}"/></clipPath>`;
     let svg = defs(id, tier, extra);
     if (!thumb) svg += figureLayer(id, { clip: `${id}-cfig` });
@@ -622,7 +700,7 @@
      swooshes above it), the lower edge nearly flat (room for the 84 on the root).
      Compact (44–80px): nominal 80 → 80×35, units are half-pixels (viewBox height 70).
      Mini (24–32px): the spec's 32×18 sits at the 28px slot, units are quarter-pixels (height 72). */
-  const TK = { H: 70, ball: { x: 125, y: 35, r: 34 }, head: 32, ua: -118, uc: [62, 13], tip: [2, 53], tipW: 3, lc: [56, 69], la: 112, num: [62, 50], fs: 36 };
+  const TK = { H: 70, ball: { x: 125, y: 35, r: 34 }, head: 32, ua: -118, uc: [62, 13], tip: [2, 53], tipW: 3, lc: [56, 69], la: 112, num: [56, 50], fs: 36 };
   const MN = { H: 76, ball: { x: 101, y: 48, r: 26 }, head: 25, ua: -128, uc: [34, 25], tip: [1, 61], tipW: 4, lc: [40, 77], la: 112, num: [47, 56.5], fs: 40 };
   const qpt = (a, c, b, t) => {
     const u = 1 - t;
@@ -754,11 +832,14 @@
       g += `<path d="${swooshCrescent(f, c.t0, c.t1, c.gap, c.T)}" class="c02-cres ${cls[i]}"${i === 2 ? ` fill="${club.a}"` : ""}/>`;
     }
     g += `<path d="${f.path}" ${trailFill(id, tier)}/>`;
-    // club band: a stripe across the trail where it leaves the ball (44px and up)
+    // the club collar (44px and up): a 12u band following the ball's rim where the trail leaves it,
+    // 9u of the club's primary between 1.5u edges of its secondary (about 2.5px of colour at 44px)
     if (!mini) {
-      const x1 = f.b.x - f.b.r - 1;
-      const x0 = x1 - 7;
-      g += `<g clip-path="url(#${id}-tt)"><rect x="${r2(x0)}" y="0" width="7" height="${T.H}" fill="${club.b}"/><rect x="${r2(x0 + 1.6)}" y="0" width="3.8" height="${T.H}" fill="${club.a}"/></g>`;
+      const rc = f.b.r + 6;
+      g +=
+        `<g clip-path="url(#${id}-tt)" fill="none">` +
+        `<circle cx="${r2(f.b.x)}" cy="${r2(f.b.y)}" r="${r2(rc)}" stroke="${club.b}" stroke-width="12"/>` +
+        `<circle cx="${r2(f.b.x)}" cy="${r2(f.b.y)}" r="${r2(rc)}" stroke="${club.a}" stroke-width="9"/></g>`;
     }
     g += `<path d="${f.path}" fill="none" class="c02-trail-rim${legend ? " is-blade" : ""}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     // the 84 rides the trail's root
@@ -797,11 +878,12 @@
     const ar = MC.isAr(o);
     const id = MC.uid(PFX);
     const tier = p.tier;
-    const g = tier === "LEGEND" ? G_LEG : G_BASE;
-    // the card itself, scaled 1.2 and set into the frame: its bottom edge becomes the touchline
-    const k = 1.2;
-    const OX = -2;
-    const OY = 40;
+    const g = geoOf(tier);
+    // the card itself at 1.34, its ball bleeding off the top-end corner (the founder strike kept in
+    // frame); the card's bottom edge becomes the touchline he points from
+    const k = 1.34;
+    const OX = -20;
+    const OY = -40;
     const TOUCH = OY + VB.h * k;
     const HZ = 446;
     // keep every stripe inside the 360px frame (Sutherland–Hodgman against x = 0 and x = 360)
@@ -834,29 +916,45 @@
     }
     const extra =
       `<clipPath id="${id}-ctrail"><path d="${trailPath(g)}"/></clipPath>` +
-      `<linearGradient id="${id}-gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#001233"/><stop offset="0.7" stop-color="#000A1E"/><stop offset="1" stop-color="#000814"/></linearGradient>`;
+      `<linearGradient id="${id}-gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#001233"/><stop offset="0.7" stop-color="#000A1E"/><stop offset="1" stop-color="#000814"/></linearGradient>` +
+      `<linearGradient id="${id}-gbeam" gradientUnits="userSpaceOnUse" x1="330" y1="240" x2="120" y2="560"><stop offset="0" stop-color="#9BDBFD" stop-opacity="0.13"/><stop offset="1" stop-color="#9BDBFD" stop-opacity="0"/></linearGradient>`;
     let svg = defs(id, tier, extra);
     svg += `<rect width="360" height="640" fill="url(#${id}-gsky)"/>`;
-    // two floodlights: lamp banks with flat halos, no glow
-    [
-      [186, 30, 0.85],
-      [318, 22, 1],
-    ].forEach(([x, y, s]) => {
-      svg += `<circle cx="${x}" cy="${y}" r="${r2(58 * s)}" fill="#9BDBFD" fill-opacity="0.05"/><circle cx="${x}" cy="${y}" r="${r2(34 * s)}" fill="#9BDBFD" fill-opacity="0.07"/>`;
-      const w = 30 * s;
-      const h = 14 * s;
-      svg += `<rect x="${r2(x - w / 2)}" y="${r2(y - h / 2)}" width="${r2(w)}" height="${r2(h)}" rx="${r2(2.5 * s)}" fill="#0C3164"/>`;
-      for (let i = 0; i < 4; i++)
-        for (let j = 0; j < 2; j++) svg += `<circle cx="${r2(x - w / 2 + (w / 4) * (i + 0.5))}" cy="${r2(y - h / 2 + (h / 2) * (j + 0.5))}" r="${r2(2.4 * s)}" fill="#EAF6FF"/>`;
-    });
-    // the perspective pitch, then the touchline he stands at
+    // the perspective pitch below the horizon
     svg += `<rect x="0" y="${HZ}" width="360" height="${640 - HZ}" fill="#000C24"/>`;
     svg += `<g fill="hsl(214 90% 55% / .13)">${stripes}</g>`;
     svg += `<path d="M0 ${HZ}H360" stroke="#9BDBFD" stroke-opacity="0.28" stroke-width="1"/>`;
+    let beams = "";
+    let masts = "";
+    // two floodlight masts on the far touchline, right of the shot: a thin pylon, a tilted lamp
+    // bank facing the pitch, and a faint beam falling across it (flat, no halo, no glow)
+    [
+      { base: [338, HZ], top: [332, 236], head: 30, tilt: -22, beam: [[96, 640], [300, 640]] },
+      { base: [268, HZ], top: [265, 336], head: 19, tilt: -16, beam: [[150, 640], [262, 640]] },
+    ].forEach((m) => {
+      const hw = m.head / 2;
+      const hh = m.head * 0.24;
+      const a = (m.tilt * Math.PI) / 180;
+      const rotp = (dx, dy) => [m.top[0] + dx * Math.cos(a) - dy * Math.sin(a), m.top[1] + dx * Math.sin(a) + dy * Math.cos(a)];
+      const face = [rotp(-hw, -hh), rotp(hw, -hh), rotp(hw, 0), rotp(-hw, 0)];
+      beams += `<path d="${poly([face[3], face[2], m.beam[1], m.beam[0]])}" fill="url(#${id}-gbeam)"/>`;
+      const bw = m.head / 12;
+      masts += `<path d="${poly([[m.base[0] - bw, m.base[1]], [m.base[0] + bw, m.base[1]], [m.top[0] + bw * 0.4, m.top[1] + 2], [m.top[0] - bw * 0.4, m.top[1] + 2]])}" fill="#1A365E"/>`;
+      // the bank: a dark frame on the mast head, its lit face one bar of lamps split by thin mullions
+      masts += `<path d="${poly([rotp(-hw - 1.5, -hh - 1.5), rotp(hw + 1.5, -hh - 1.5), rotp(hw + 1.5, 2.5), rotp(-hw - 1.5, 2.5)])}" fill="#1A365E"/>`;
+      masts += `<path d="${poly(face)}" fill="#EAF6FF" fill-opacity="0.9"/>`;
+      let mull = "";
+      for (let i = 1; i < 6; i++) mull += `M${P(rotp(-hw + (m.head / 6) * i, -hh))}L${P(rotp(-hw + (m.head / 6) * i, 0))}`;
+      masts += `<path d="${mull}" stroke="#1A365E" stroke-width="${r2(m.head / 32)}" fill="none"/>`;
+    });
+    svg += beams + masts;
+    // the touchline he stands at
     svg += `<path d="M0 ${r2(TOUCH)}H360" stroke="#EAF6FF" stroke-opacity="0.55" stroke-width="2"/>`;
     svg += `<g transform="translate(${OX} ${OY}) scale(${k})">`;
     svg += figureLayer(id, { clip: `${id}-cfig`, fill: "#000A1E", seam: "#0C3164" });
-    svg += comet(id, p, o, tier, { share: true });
+    // the 84 is the hero here: 1.25× on the card's size (a 65px cap, about 10% of the frame); it may
+    // break the trail's lower-end edge, white on the darkened night
+    svg += comet(id, p, o, tier, { share: true, ovr: { k: 1.25, s: 146, overhang: true } });
     svg += `</g>`;
     const yr = p.founder ? ` ·${String(p.founder).slice(-2)}` : "";
     return (
@@ -912,7 +1010,7 @@
     ],
     belonging: [
       "Your card is your shot. Friends compare a number on a trail, and the trail itself tells everyone the tier before they read it: chalk on concrete, flat paint, the full logo, moulded rubber, a white blade.",
-      "In a ranking your mark is a ball with your 84 on its trail, and the swooshes above it count your tier, so a table reads like a set of shots. Your own 'My position' card carries the same object with your club's stripe on it.",
+      "In a ranking your mark is a ball with your 84 on its trail, and the swooshes above it count your tier, so a table reads like a set of shots. Your own 'My position' card carries the same object with your club's colours as a collar round the ball.",
       "Founders carry a struck piece of the ball itself, and '·26' follows their name in rows and on the share, the way supporter groups carry their founding year.",
       "LEGEND's dimples are your season, pressed in one per gameweek played. It is calm enough for a 38-year-old: no glow, no metal, no reveal.",
     ],
@@ -922,39 +1020,39 @@
       "In rows and on the share the year follows the name, 'ALI ·26', in Logo Blue. The back of the ball (long-press) reads FOUNDER 2026 with the ID and the season. With motion on, the strike plays a 120ms die-press once; it never gates anything.",
     ],
     small: [
-      "44–80px: the same object flying flat (80×35 at 80, 44×19 at 44): the ball with its rim panels and founder panel, a tapered trail carrying the 84 in Changa 800 on its root, a club-colour stripe where the trail leaves the ball, and the tier's swooshes above. No figure, no lanes, no filter texture.",
-      "24–32px: the mini (32×19 at the 28px slot) fits inside a ranking row's name cell: a white ball ahead, the 84 in white on a short trail, and the tier counted in swooshes above it — HOMA none, STADE one, PRO two, CHAMPION three. LEGEND inverts the trail to a white blade 30% longer, which changes the outline. The founder notch stays.",
+      "44–80px: the same object flying flat (80×35 at 80, 44×19 at 44): the ball with its rim panels and founder panel, a tapered trail carrying the 84 in Changa 800 on its root, a club collar following the ball's rim where the trail leaves it (the club's primary between thin edges of its secondary: about 2.5px of colour at 44px, 4.5px at 80px), and the tier's swooshes above. No figure, no lanes, no filter texture.",
+      "24–32px: the mini (32×19 at the 28px slot) fits inside a ranking row's name cell: a white ball ahead, the 84 in white on a short trail, and the tier counted in swooshes above it — HOMA none, STADE one, PRO two, CHAMPION three. LEGEND inverts the trail to a white blade 30% longer, which changes the outline; on the light ground the blade carries an ink keyline, so the top tier is never the faintest mark in a light ranking. The founder notch stays. The mini carries no club colour except CHAMPION's third swoosh.",
       "The full card is size-aware: below 260px the ball's second print line and the LEGEND 'EXEMPLE' tag drop, below 220px the printed code drops, and below 170px the stats and the figure drop. The thumb keeps the comet, the swooshes, the ball and the 84.",
     ],
     rtl: [
       "The comet never mirrors: the ball always flies to the right, as in the logo, and the figure stays where the shot began.",
-      "Inside it the words follow the language: علي in Changa 800, upright, with the tier (محترف) inline to its left on the same baseline. The stat lines use the kit's labels (القائد، التشكيلة، الانتقالات، الثبات) in Noto Sans Arabic 700, right-aligned in each chord at one shared size, with their digits kept left-to-right. The ball prints المغرب with the season.",
-      "No letter-spacing anywhere in Arabic. A long name shrinks to a floor and then drops the tier onto a line beneath; nothing runs under the ball or into the 84.",
+      "Inside it the words follow the language: علي in Changa 800, upright, with the tier (محترف) inline to its left on the same baseline. The stat lines use the kit's labels (القائد، التشكيلة، الانتقالات، الثبات) in Noto Sans Arabic 700, each right-aligned to the trail's lower-end edge at one shared size, with their digits kept left-to-right; the Arabic block sits higher in the trail than the Latin one, where the chord is wider, and a block that would not fit moves up (never into the 84) before its size drops. The ball prints المغرب with the season.",
+      "No letter-spacing anywhere in Arabic. Arabic has no initials: a name that does not fit at 18u keeps its first word, or its first two after عبد or أبو (so عبد الرحمن), then drops the tier onto a line beneath, clamped inside the trail. Nothing runs under the ball, over the club band's ends or into the 84.",
     ],
     tiers: {
       HOMA: "'Craie'. A patch of fresh concrete cut to the full comet outline, outlined and laned in clean white chalk, with chalk-white words; a new white ball with ink panels; no swooshes and no light. Raw, never poor.",
       STADE: "'Peinte'. The trail painted flat Floodlight Navy, one Logo-Blue swoosh, and a flat white ball.",
       PRO: "'Logo'. Floodlight Navy fading to Tunnel Navy toward the tip, the Logo-Blue swoosh plus the ink swoosh outside it (the logo's full grammar), and one soft top light on the ball.",
       CHAMPION: "'Caoutchouc'. The trail is moulded matte graphite rubber with fine grip ridges every 4u, three swooshes (the third in the club's colour), and a sheen on the ball that follows tilt. No metal.",
-      LEGEND: "'Lame'. The trail becomes a matte white blade with one polished leading edge, 30% longer so it runs off the card's bottom edge — the outline change. Ink words, a Logo-Blue tier word, and one debossed dimple per gameweek played (the sample's seven are marked EXEMPLE). No glow, no gold, no halo.",
+      LEGEND: "'Lame'. The trail becomes a matte white blade with one polished leading edge — the outline change: on the card it has its own geometry, fuller in the body and on a stronger arc, tapering to a point in the bottom-start corner; the tokens stretch it 30%. Ink words, a Logo-Blue tier word, and one debossed dimple per gameweek played (the sample's seven are marked EXEMPLE). On the light ground the blade is shaded and held by an ink keyline with an ink leading edge. No glow, no gold, no halo.",
     },
     legend: [
       "The strike, as an optional replay: the 84 holds its place from the first frame. With motion on, a contact frame squashes the ball (0.92 × 1.06), it flies to rest along the arc on the hero ease, and the dimples press in one by one, 20ms apart. Then stillness. Under reduced motion the final state shows.",
-      "It is the only outline that runs off the card, so a LEGEND reads as a white blade even as a 28px mini in a ranking. Tapping any card pulls the ball back and springs it forward while the lanes redraw; a long-press turns the ball over to its provenance.",
+      "It is the only outline that reaches the card's corner, and as a token the blade runs 30% longer, so a LEGEND reads as a white blade even as a 28px mini in a ranking. Tapping any card pulls the ball back and springs it forward while the lanes redraw; a long-press turns the ball over to its provenance.",
     ],
     advantages: [
       "The strongest small-size object of the set: a ball and a trail with the 84 on it hold at 28px inside a ranking name cell on both grounds, and the swoosh count gives the tier.",
       "Owned by the brand: a ball in flight with swooshes is BotolaGO's own story, not FUT, Sorare, a bank card or a ticket, and it needs no frame.",
       "The stats are four calm lines, not bars: comparable at a glance, and they cannot be misread as progress to 100.",
-      "One object from 24px to the poster: the share is the card itself standing over a night pitch, its bottom edge becoming the touchline he points from.",
-      "The club colour shows on every token, and the ID, season and founder year each have a native carrier on the ball.",
+      "One object from 24px to the poster: the share is the card itself, enlarged so its ball bleeds off the top-end corner, standing over a night pitch with two floodlight masts; its bottom edge becomes the touchline he points from, and the 84 (a 65px cap, about 10% of the frame) is the loudest thing in it.",
+      "The club colour shows on every compact token as a collar at the ball (and as CHAMPION's third swoosh), and the ID, season and founder year each have a native carrier on the ball.",
     ],
     risks: [
       "Its grammar echoes the logo's flight (a ball with swooshes). It never uses or alters the logo file — the swooshes are drawn from scratch and the wordmark appears only as MC.logo() — but the owner should say yes before anything is built on it.",
       "It sits in the ⚽💨 sports-clip-art family, and a comet can be read as a tadpole; the ball's panels and the swooshes reduce this but do not remove it. It is also the least 'Moroccan street' slot: the local layer lives in HOMA's chalk and concrete, not in the PRO face.",
-      "The portrait card leaves its bottom-end corner empty, and the LEGEND blade is cropped by the frame. The flat token and the diagonal card still need testing with users as one object.",
-      "On the share the 84 is about 7% of the frame height, not the 11% asked for, because it has to stay inside the trail.",
-      "One dimple per gameweek fits about twelve weeks on the blade; a full season needs a second row or a finer pitch. The pointing arm is drawn onto the shared figure and is small in the 200px tier strip.",
+      "The portrait card leaves its bottom-end corner empty. The club band at the root lies mostly under the ball, so only its two ends show, and with a pale club secondary they can read as tape. The flat token and the diagonal card still need testing with users as one object.",
+      "On the share the 84 is about 10% of the frame (not the 11% asked for) and breaks the trail's lower-end edge to get there; the LEGEND blade's point leaves the frame at the bottom-start. The delta ghost and the 1:1 variant are not built, nor is the rank-rise flight in rows.",
+      "One dimple per gameweek fits about eleven weeks on the blade; a full season needs a second row or a finer pitch. The pointing arm is drawn onto the shared figure and is small in the 200px tier strip.",
     ],
     gridWidth: 250,
     detailWidth: 380,

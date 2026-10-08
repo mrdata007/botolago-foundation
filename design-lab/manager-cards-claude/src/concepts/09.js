@@ -27,6 +27,7 @@
     cuff: "#2B2F35",
     ti: "#8D96A0",
     glass: "#030405",
+    light: "#FFF7EA", // LEGEND's figures: the white-hot core of continuous light
     paint: "#0E1013", // HOMA's new black enamel
     paintW: "#F2EEE6", // sign-writer's white
     card: "#141619", // STADE's flip cards
@@ -131,8 +132,8 @@
     Z: "###|..#|.#.|#..|###",
     0: "###|#.#|#.#|#.#|###",
     1: ".#.|##.|.#.|.#.|###",
-    2: "##.|..#|.#.|#..|###",
-    3: "##.|..#|.#.|..#|##.",
+    2: "###|..#|###|#..|###",
+    3: "###|..#|.##|..#|###",
     4: "#.#|#.#|###|..#|..#",
     5: "###|#..|##.|..#|##.",
     6: ".##|#..|###|#.#|###",
@@ -202,25 +203,29 @@
     return g.measureText(String(t)).width / SC;
   }
   const memo = new Map();
-  /** Samples a string into cells whose reference glyph is `rows` cells tall. aa: three brightness levels. */
+  /** Samples a string into cells whose reference glyph is `rows` cells tall. aa: three brightness levels.
+      desc: rows kept below the baseline. em: set the em in cells instead, and keep the string's own measured
+      ascent and descent (Arabic: Changa's ي runs half an em below the baseline, with its dots under it). */
   function sample(text, weight, family, rows, opt = {}) {
     const ref = opt.ref || "H";
     const sx = opt.sx || 1;
     const aa = !!opt.aa;
     const over = opt.over != null ? opt.over : 1;
-    const key = [text, weight, family, rows, sx, aa, ref, over].join("|");
+    const key = [text, weight, family, rows, sx, aa, ref, over, opt.desc, opt.em, opt.thr].join("|");
     if (memo.has(key)) return memo.get(key);
-    const em = rows / capOf(weight, family, ref);
+    const em = opt.em || rows / capOf(weight, family, ref);
     const g = ctx();
     const font = `${weight} ${em * SC}px "${family}"`;
     g.font = font;
     const m = g.measureText(text);
     const L = m.actualBoundingBoxLeft;
     const R = m.actualBoundingBoxRight;
-    const above = rows + over;
+    const above = opt.em ? Math.ceil(m.actualBoundingBoxAscent / SC + 0.25) : rows + over;
+    const desc = opt.em ? Math.ceil(m.actualBoundingBoxDescent / SC + 0.25) : opt.desc || 0;
+    const tall = above + desc;
     const cols = Math.max(1, Math.ceil(((L + R) * sx) / SC)) + 2;
     const W = cols * SC;
-    const H = above * SC;
+    const H = tall * SC;
     cv.width = W;
     cv.height = H;
     g.font = font;
@@ -232,19 +237,19 @@
     const cells = [];
     let lo = Infinity;
     let hi = -1;
-    for (let r = 0; r < above; r++)
+    for (let r = 0; r < tall; r++)
       for (let c = 0; c < cols; c++) {
         let s = 0;
         for (let y = r * SC; y < (r + 1) * SC; y++) for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
         s /= SC * SC * 255;
-        const a = aa ? (s >= 0.6 ? 1 : s >= 0.36 ? 0.6 : s >= 0.16 ? 0.28 : 0) : s >= (opt.thr || 0.5) ? 1 : 0;
+        const a = aa ? (s >= 0.5 ? 1 : s >= 0.3 ? 0.75 : s >= 0.15 ? 0.4 : 0) : s >= (opt.thr || 0.5) ? 1 : 0;
         if (a) {
           cells.push([c, r, a]);
           lo = Math.min(lo, c);
           hi = Math.max(hi, c);
         }
       }
-    const out = { w: hi >= lo ? hi - lo + 1 : 0, h: above, base: above, cells: cells.map(([c, r, a]) => [c - lo, r, a]) };
+    const out = { w: hi >= lo ? hi - lo + 1 : 0, h: tall, base: above, cells: cells.map(([c, r, a]) => [c - lo, r, a]) };
     if (ready(font, text)) memo.set(key, out);
     return out;
   }
@@ -275,10 +280,59 @@
         let s = 0;
         for (let y = r * SC; y < (r + 1) * SC; y++) for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
         s /= SC * SC * 255;
-        const a = aa ? (s >= 0.55 ? 1 : s >= 0.3 ? 0.6 : s >= 0.14 ? 0.28 : 0) : s >= 0.38 ? 1 : 0;
+        const a = aa ? (s >= 0.5 ? 1 : s >= 0.28 ? 0.75 : s >= 0.14 ? 0.4 : 0) : s >= 0.38 ? 1 : 0;
         if (a) cells.push([c, r, a]);
       }
     const out = { w: cols, h: rows + 1, base: rows + 1, cells };
+    memo.set(key, out);
+    return out;
+  }
+
+  /** The shared figure (MC.AVATAR, hood up) as LED cells in a box `cols` x `rows` (200:240): its outline lit
+      like a rim, the hood seam and hem at half light, the body a faint glow, so it never reads as a solid bust. */
+  function avatarCells(cols, rows) {
+    const key = "av|" + cols + "|" + rows;
+    if (memo.has(key)) return memo.get(key);
+    const A = MC.AVATAR;
+    const g = ctx();
+    const W = cols * SC;
+    const H = rows * SC;
+    const kx = W / 200;
+    const ky = H / 240;
+    const layer = (draw) => {
+      cv.width = W;
+      cv.height = H;
+      g.setTransform(kx, 0, 0, ky, 0, 0);
+      g.fillStyle = g.strokeStyle = "#000";
+      g.lineJoin = g.lineCap = "round";
+      draw();
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      return g.getImageData(0, 0, W, H).data;
+    };
+    const body = layer(() => {
+      g.fill(new Path2D(A.torso));
+      g.fill(new Path2D(A.hood));
+    });
+    const seam = layer(() => {
+      g.lineWidth = (SC * 0.9) / kx;
+      [A.hoodSeam, A.hoodRim, A.seam].forEach((d) => g.stroke(new Path2D(d)));
+    });
+    const cov = (d, c, r) => {
+      let s = 0;
+      for (let y = r * SC; y < (r + 1) * SC; y++) for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
+      return s / (SC * SC * 255);
+    };
+    const inn = new Uint8Array(cols * rows);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) inn[r * cols + c] = cov(body, c, r) >= 0.45 ? 1 : 0;
+    const at = (c, r) => (r >= rows ? 1 : c < 0 || c >= cols || r < 0 ? 0 : inn[r * cols + c]);
+    const cells = [];
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) {
+        if (!at(c, r)) continue;
+        const edge = !at(c - 1, r) || !at(c + 1, r) || !at(c, r - 1) || !at(c, r + 1);
+        cells.push([c, r, edge ? 0.85 : cov(seam, c, r) >= 0.3 ? 0.45 : 0.13]);
+      }
+    const out = { w: cols, h: rows, base: rows, cells };
     memo.set(key, out);
     return out;
   }
@@ -344,6 +398,10 @@
   /** Draws a face: the field of unlit LEDs, then each lit colour as round dots (and as solid cells for small sizes). */
   function ledRender(u, L, F, extra = {}, solidOnly = false) {
     const { P, X, Y } = L;
+    const dotR = L.dotR || 0.46;
+    const core = L.core || 0.34;
+    const rimStop = L.rimStop || 0.78;
+    const rimOp = L.rimOp || 0.35;
     const W = f(F.cols * P);
     const H = f(F.rows * P);
     let defs = "";
@@ -367,8 +425,8 @@
             const i = pats.size;
             pats.set(colour, i);
             defs +=
-              `<radialGradient id="${u}-r${i}"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".34" stop-color="${colour}"/><stop offset=".78" stop-color="${colour}"/><stop offset="1" stop-color="${colour}" stop-opacity=".35"/></radialGradient>` +
-              `<pattern id="${u}-p${i}" width="${P}" height="${P}" patternUnits="userSpaceOnUse" x="${X}" y="${Y}"><circle cx="${P / 2}" cy="${P / 2}" r="${f(P * 0.46)}" fill="url(#${u}-r${i})"/></pattern>`;
+              `<radialGradient id="${u}-r${i}"><stop offset="0" stop-color="#fff" stop-opacity="${L.coreOp || 0.9}"/><stop offset="${core}" stop-color="${colour}"/><stop offset="${rimStop}" stop-color="${colour}"/><stop offset="1" stop-color="${colour}" stop-opacity="${rimOp}"/></radialGradient>` +
+              `<pattern id="${u}-p${i}" width="${P}" height="${P}" patternUnits="userSpaceOnUse" x="${X}" y="${Y}"><circle cx="${P / 2}" cy="${P / 2}" r="${f(P * dotR)}" fill="url(#${u}-r${i})"/></pattern>`;
           }
           const cid = `${u}-c${n++}`;
           defs += `<clipPath id="${cid}"><path d="${d}"/></clipPath>`;
@@ -385,12 +443,14 @@
     return { defs, html };
   }
 
-  /* LED geometry. PRO runs the founder lamp's own 3u pitch: a 4u grid cannot hold the four-stat line. */
+  /* LED geometry. PRO runs the founder lamp's own 3u pitch: a 4u grid cannot hold the four-stat line.
+     nameRows: the Latin name's cap height in cells; nameAr / arEm: the Arabic name's baseline row and em in cells. */
   const LEDT = {
-    PRO: { P: 3, X: 13, Y: 17, cols: 98, rows: 50, m: 2, name: 9, big: 36, stat: 46, bigRows: 20 },
-    CHAMPION: { P: 2, X: 12, Y: 17, cols: 148, rows: 75, m: 4, name: 14, big: 55, stat: 69, bigRows: 30 },
-    /* the share: dots of 3.4u (over 10px at export), the 84 on 33 rows, the stats move to the perimeter board */
-    SHARE: { P: 3.4, X: 12.1, Y: 17, cols: 87, rows: 44, m: 2, name: 9, big: 44, stat: 0, bigRows: 33 },
+    PRO: { P: 3, X: 13, Y: 17, cols: 98, rows: 50, m: 2, name: 9, nameRows: 7, nameAr: 10, arEm: 11, big: 36, stat: 46, bigRows: 20 },
+    /* the full matrix: fatter dots with a larger white core, so its light is the brightest of the LED tiers */
+    CHAMPION: { P: 2, X: 12, Y: 17, cols: 148, rows: 75, m: 4, name: 14, nameRows: 11, nameAr: 14, arEm: 15, big: 55, stat: 69, bigRows: 30, dotR: 0.55, core: 0.45, coreOp: 1, rimStop: 0.86, rimOp: 0.8 },
+    /* the share: 3.4u dots (10.7px at export), the 84 on 36 rows (20% of the story), the stats on the stand's ribbon board */
+    SHARE: { P: 3.4, X: 12.1, Y: 17, cols: 87, rows: 44, m: 2, name: 7, nameRows: 7, nameAr: 7, arEm: 10, big: 44, stat: 0, bigRows: 36 },
   };
   const xOf = (L, col) => L.X + col * L.P;
   const yOf = (L, row) => L.Y + row * L.P;
@@ -399,7 +459,8 @@
   function TX(kind, aa) {
     if (aa)
       return {
-        name: (t) => sample(t, "700", "Changa", kind === "SHARE" ? 8 : 11, { aa: true }),
+        name: (t) => sample(t, "800", "Changa", LEDT[kind].nameRows, { aa: true }),
+        nameAr: (t) => sample(t, "800", "Changa", 0, { aa: true, em: LEDT[kind].arEm }),
         tier: (t) => sample(t, "600", "Changa", kind === "SHARE" ? 6 : 8, { aa: true }),
         small: (t) => sample(t, "600", "Changa", 6, { aa: true, sx: 0.94 }),
         unit: (t) => sample(t, "600", "Changa", kind === "SHARE" ? 6 : 8, { aa: true }),
@@ -412,7 +473,8 @@
         unitGap: 5,
       };
     return {
-      name: (t) => bit(t, G57, true),
+      name: (t) => sample(t, "800", "Changa", LEDT[kind].nameRows, { thr: 0.42 }),
+      nameAr: (t) => sample(t, "800", "Changa", 0, { em: LEDT[kind].arEm, thr: 0.34 }),
       tier: (t) => bit(t, G57),
       small: (t) => bit(t, F35),
       unit: (t) => (kind === "SHARE" ? bit(t, G57) : bit(t, F35)),
@@ -448,12 +510,9 @@
       if (yr) line(F, [{ g: T.lamp("·" + yr), c: K.tung, cls: "lamp" }], r.c0 + r.W + T.lampGap, L.name, "start");
       line(F, [{ g: T.tier(S.tiers[p.tier]), c: K.warm }], endC, L.name, "end");
     } else {
-      const size = kind === "SHARE" ? 30 : 28;
-      const right = xOf(L, endC + 1);
-      const nw = textW(nm, size, 400, "Handjet");
-      extra.lit += hj(right, yOf(L, L.name), nm, size, "end");
-      if (yr) line(F, [{ g: T.lamp(yr + "·"), c: K.tung, cls: "lamp" }], Math.floor((right - nw - 5 - L.X) / L.P) - 1, L.name, "end");
-      extra.lit += hj(xOf(L, L.m), yOf(L, L.name), S.tiers[p.tier], kind === "SHARE" ? 22 : 21, "start");
+      const r = line(F, [{ g: T.nameAr(nm), c: K.warm }], endC, L.nameAr, "end");
+      if (yr) line(F, [{ g: T.lamp(yr + "·"), c: K.tung, cls: "lamp" }], r.c0 - T.lampGap - 1, L.nameAr, "end");
+      extra.lit += hj(xOf(L, L.m), yOf(L, L.nameAr), S.tiers[p.tier], kind === "SHARE" ? 21 : 21, "start");
     }
     line(F, [{ g: T.big(String(p.ovr)), c: K.warm, gap: T.unitGap }, { g: T.unit(S.ovr), c: K.warm, a: 0.62 }], mid, L.big, "center");
     if (L.stat) {
@@ -469,7 +528,8 @@
     return { F, extra };
   }
 
-  /** The back: a four-row stat column, the club crest, and the season record (the sample is labelled). */
+  /** The back: a four-row stat column and the season record at the start; the shared figure, hood up and
+      cropped by the bezel, in the end half with a small club crest; the sample is labelled. */
   function ledBack(p, o, kind, aa) {
     const L = LEDT[kind];
     const T = TX(kind, aa);
@@ -478,9 +538,9 @@
     const ar = MC.isAr(o);
     const extra = { lit: "" };
     const champ = kind === "CHAMPION";
-    const lineH = champ ? 14 : 10;
-    const first = champ ? 13 : 9;
-    const colW = champ ? 62 : 40;
+    const lineH = champ ? 13 : 9;
+    const first = champ ? 12 : 8;
+    const colW = champ ? 58 : 40;
     MC.STATS.forEach((k, i) => {
       const base = first + i * lineH;
       const val = T.val(String(p.stats[k]));
@@ -492,20 +552,24 @@
         line(F, [{ g: val, c: K.warm }], L.cols - 1 - L.m - colW, base, "start");
       }
     });
-    const crest = crestCells(champ ? 40 : 27, aa);
-    const cBase = first + (champ ? 36 : 25);
-    line(F, [{ g: crest, c: K.warm, a: 0.9 }], ar ? L.m + 6 : L.cols - 1 - L.m - 6, cBase, ar ? "start" : "end");
-    /* season record: thirty gameweeks, the sample's first seven lit */
-    const recBase = L.rows - (champ ? 4 : 2);
-    const mw = champ ? 2 : 1;
+    /* the figure: off-centre in the end half, its hood lit at the rim, cut by the bezel at the bottom and the end */
+    const aw = champ ? 60 : 40;
+    const ah = (aw * 6) / 5;
+    const aTop = champ ? 12 : 8;
+    const ax = ar ? (champ ? -6 : -4) : L.cols - aw + (champ ? 6 : 4);
+    put(F, avatarCells(aw, ah), ax, aTop, K.warm, 1, "lit");
+    const crest = crestCells(champ ? 21 : 14, aa);
+    line(F, [{ g: crest, c: K.warm, a: 0.8 }], ar ? L.m : L.cols - 1 - L.m, champ ? 23 : 16, ar ? "start" : "end");
+    /* season record: thirty gameweeks, the sample's first seven lit, labelled above */
+    const recBase = L.rows - (champ ? 3 : 1);
     const mh = champ ? 7 : 5;
-    const recW = 30 * (mw + 1) - 1;
     for (let i = 0; i < 30; i++) {
-      const c0 = ar ? L.cols - L.m - (i + 1) * (mw + 1) + 1 : L.m + i * (mw + 1);
-      block(F, c0, recBase - mh, mw, mh, K.warm, i < 7 ? 1 : 0.16);
+      const c0 = ar ? L.cols - L.m - (i + 1) * 2 + 1 : L.m + i * 2;
+      block(F, c0, recBase - mh, 1, mh, K.warm, i < 7 ? 1 : 0.16);
     }
-    if (!ar) line(F, [{ g: T.small("EXEMPLE"), c: K.warm, a: 0.45 }], L.m + recW + 4, recBase, "start");
-    else extra.lit += hj(xOf(L, L.cols - L.m - recW - 4), yOf(L, recBase), "مثال", 15, "end", 0.5);
+    const exBase = recBase - mh - (champ ? 4 : 2);
+    if (!ar) line(F, [{ g: T.small("EXEMPLE"), c: K.warm, a: 0.3 }], L.m, exBase, "start");
+    else extra.lit += hj(xOf(L, L.cols - L.m), yOf(L, exBase), "مثال", 15, "end", 0.5);
     return { F, extra };
   }
 
@@ -739,8 +803,9 @@
   }
 
   /* ---------- frames ---------- */
+  const bezel = (tier) => (tier === "LEGEND" ? 3 : tier === "HOMA" ? 8 : 12);
   function frameSVG(u, tier, thumb) {
-    const B = tier === "LEGEND" || tier === "HOMA" ? 8 : 12;
+    const B = bezel(tier);
     const stops = {
       HOMA: [
         [0, "#DDE2E6"],
@@ -770,11 +835,11 @@
         [1, "#7E8791"],
       ],
       LEGEND: [
-        [0, "#E6EBF0"],
-        [0.035, K.ti],
-        [0.5, "#737C87"],
-        [0.965, "#5F6873"],
-        [1, "#4A535D"],
+        [0, "#F4F6F8"],
+        [0.02, "#B7BFC8"],
+        [0.5, K.ti],
+        [0.98, "#5F6873"],
+        [1, "#3A424C"],
       ],
     };
     const st = stops[tier] || stops.STADE;
@@ -784,7 +849,7 @@
       s += `<pattern id="${u}-ms" width="6" height="1.6" patternUnits="userSpaceOnUse"><rect width="6" height=".7" fill="#fff" opacity=".06"/><rect y=".8" width="6" height=".4" fill="#000" opacity=".04"/></pattern><rect width="320" height="180" fill="url(#${u}-ms)"/>`;
     if (!thumb && tier === "HOMA")
       s += `<pattern id="${u}-zn" width="9" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(18)"><rect width="4.6" height="3.4" fill="#fff" opacity=".07"/><rect x="4.6" y="3.4" width="4.4" height="3.6" fill="#000" opacity=".04"/></pattern><rect width="320" height="180" fill="url(#${u}-zn)"/>`;
-    const ch = tier === "LEGEND" ? 1.4 : tier === "HOMA" ? 1.2 : 2.4;
+    const ch = tier === "LEGEND" ? 1.1 : tier === "HOMA" ? 1.2 : 2.4;
     const cham =
       tier === "CHAMPION"
         ? ["#1A1F25", "#FFFFFF", "#3C444E", "#E9EDF1"]
@@ -820,8 +885,8 @@
   }
   /** The logo printed on the top rail, unmodified, and the ID line engraved into the bottom rail. */
   function railsSVG(p, o, tier, thumb) {
-    if (thumb) return "";
-    const B = tier === "LEGEND" || tier === "HOMA" ? 8 : 12;
+    if (thumb || tier === "LEGEND") return "";
+    const B = bezel(tier);
     let s = "";
     if (tier !== "HOMA") {
       const h = B === 12 ? 6.2 : 4.6;
@@ -888,31 +953,38 @@
       `<text x="${f(x + w + gap)}" y="${c.y}" font-family="Changa" font-weight="600" font-size="${c.unitSize}" fill="${ink}"${c.shade ? "" : ` fill-opacity="${c.unitOp}"`}>${esc(S.ovr)}</text>`;
     return c.shade ? `<g transform="translate(2.2 2.2)">${t(c.shade)}</g>` + t(c.ink) : t(c.ink);
   }
-  /** The back of a painted, printed or glass board: stat column, crest, season record. */
+  /** The back of a painted, printed or glass board: stat column and season record at the start; the shared
+      figure, hood up, rim-lit and cut by the bezel, in the end half with a small crest; the sample is labelled.
+      c.fig: the figure's colours in this tier's medium; c.clip: the face it is cut by. */
   function vecBack(p, o, c) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
     let s = "";
     MC.STATS.forEach((k, i) => {
-      const y = f(c.y0 + 24 + i * 25);
+      const y = f(c.y0 + 23 + i * 24);
       s += ar
         ? `<text x="${c.x1}" y="${y}" font-family="Changa" font-weight="700" font-size="16" text-anchor="end" fill="${c.ink}" fill-opacity="${c.labOp}">${esc(S.stats[k])}</text><text x="${c.x1 - 122}" y="${y}" font-family="Changa" font-weight="800" font-size="21" fill="${c.ink}">${p.stats[k]}</text>`
         : `<text x="${c.x0}" y="${y}" font-family="Changa" font-weight="700" font-size="16" letter-spacing="1" fill="${c.ink}" fill-opacity="${c.labOp}">${esc(S.stats[k])}</text><text x="${c.x0 + 112}" y="${y}" font-family="Changa" font-weight="800" font-size="21" text-anchor="end" fill="${c.ink}">${p.stats[k]}</text>`;
     });
-    const cw = 46;
-    s += `<g transform="translate(${ar ? c.x0 + 12 : c.x1 - cw - 12} ${c.y0 + 10})" opacity=".9">${MC.crest({ mono: c.ink, w: cw, h: 55 })}</g>`;
-    const ry = c.y1 - 22;
+    /* the figure, off-centre in the end half; it runs past the face and the bezel cuts it */
+    const fw = 118;
+    const fh = (fw * 6) / 5;
+    const fx = ar ? c.cl.x - 12 : c.cl.x + c.cl.w - fw + 12;
+    const fy = c.cl.y + c.cl.h + 4 - fh;
+    s += `<clipPath id="${c.u}-fc"><rect x="${c.cl.x}" y="${c.cl.y}" width="${c.cl.w}" height="${c.cl.h}"/></clipPath>`;
+    s += `<g clip-path="url(#${c.u}-fc)">${MC.avatar({ x: f(fx), y: f(fy), w: fw, h: f(fh), hood: true, ...c.fig })}</g>`;
+    const cw = 24;
+    s += `<g transform="translate(${ar ? c.x0 : c.x1 - cw} ${c.y0 + 6})" opacity=".85">${MC.crest({ mono: c.ink, w: cw, h: 29 })}</g>`;
+    const ry = c.y1 - 24;
     const mw = 3;
     const mg = 2.2;
-    const recW = 30 * mw + 29 * mg;
     for (let i = 0; i < 30; i++) {
       const x = ar ? c.x1 - (i + 1) * mw - i * mg : c.x0 + i * (mw + mg);
       s += `<rect x="${f(x)}" y="${ry}" width="${mw}" height="10" fill="${c.ink}" fill-opacity="${i < 7 ? 1 : 0.18}"/>`;
     }
-    const ex = ar ? "مثال" : "EXEMPLE";
     s += ar
-      ? `<text x="${f(c.x1 - recW - 8)}" y="${ry + 9}" font-family="Changa" font-weight="600" font-size="11" text-anchor="end" fill="${c.ink}" fill-opacity=".55">${ex}</text>`
-      : `<text x="${f(c.x0 + recW + 8)}" y="${ry + 9}" font-family="Manrope" font-weight="700" font-size="8" letter-spacing=".8" fill="${c.ink}" fill-opacity=".55">${ex}</text>`;
+      ? `<text x="${c.x1}" y="${ry - 7}" font-family="Changa" font-weight="600" font-size="11" text-anchor="end" fill="${c.ink}" fill-opacity=".55">مثال</text>`
+      : `<text x="${c.x0}" y="${ry - 7}" font-family="Manrope" font-weight="700" font-size="8" letter-spacing=".8" fill="${c.ink}" fill-opacity=".55">EXEMPLE</text>`;
     return s;
   }
 
@@ -934,38 +1006,55 @@
       railsSVG(p, o, tier, thumb)
     );
   }
-  /** LEGEND: dead-front smoked glass in a thin titanium frame; everything is continuous warm light. */
+  /** LEGEND: frameless dead-front smoked glass, edge to edge inside a 3u polished titanium lip.
+      Everything on it is continuous light: a white-hot core, a tight bloom and a wide one. */
   function legendBoard(p, o, u, side, thumb, opt) {
     let s = frameSVG(u, "LEGEND", thumb);
     s +=
       lg(`${u}-gf`, [
-        [0, "#07080A"],
+        [0, "#08090B"],
         [0.5, K.glass],
         [1, "#010102"],
-      ]) + `<rect x="8" y="8" width="304" height="164" fill="url(#${u}-gf)"/>`;
-    s += `<filter id="${u}-bl" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.8"/></filter>`;
-    s += `<radialGradient id="${u}-pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${K.warm}" stop-opacity=".15"/><stop offset=".6" stop-color="${K.warm}" stop-opacity=".045"/><stop offset="1" stop-color="${K.warm}" stop-opacity="0"/></radialGradient>`;
-    if (side !== "back") s += `<ellipse cx="160" cy="${opt.share ? 112 : 98}" rx="150" ry="${opt.share ? 74 : 58}" fill="url(#${u}-pool)"/>`;
+      ]) + `<rect x="3" y="3" width="314" height="174" fill="url(#${u}-gf)"/>`;
+    s +=
+      `<filter id="${u}-bl" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.6"/></filter>` +
+      `<filter id="${u}-bw" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="5.6"/></filter>`;
+    s += `<radialGradient id="${u}-pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${K.warm}" stop-opacity=".17"/><stop offset=".6" stop-color="${K.warm}" stop-opacity=".05"/><stop offset="1" stop-color="${K.warm}" stop-opacity="0"/></radialGradient>`;
+    if (side !== "back") s += `<ellipse cx="160" cy="${opt.share ? 112 : 100}" rx="156" ry="${opt.share ? 76 : 62}" fill="url(#${u}-pool)"/>`;
     if (side === "back") {
-      s += vecBack(p, o, { x0: 24, x1: 296, y0: 10, y1: 170, ink: K.warm, labOp: 0.55 });
+      s += vecBack(p, o, { u, x0: 22, x1: 298, y0: 10, y1: 172, ink: K.warm, labOp: 0.55, cl: { x: 3, y: 3, w: 314, h: 174 }, fig: { torso: "#17191D", seam: "rgba(244,237,224,.36)", rim: K.warm } });
     } else {
-      const nr = nameRow(p, o, { x0: 22, x1: 298, y: 46, size: 27, ink: K.warm, lamp: K.tung, tierSize: 13, tierLs: 2.4, tierW: 600, tierOp: 0.72 });
-      const br = opt.share ? bigRow(p, o, { cx: 160, y: 162, size: 128, unitSize: 22, unitOp: 0.7, ink: K.warm }) : bigRow(p, o, { cx: 160, y: 127, size: 90, unitSize: 17, unitOp: 0.7, ink: K.warm });
-      const st = opt.share ? "" : statsText(p, o, { cx: 160, y: 157, size: 14.5, family: "Changa", weight: 600, valWeight: 700, fill: K.warm, labOp: 0.5, valOp: 0.92, maxW: 276 });
-      const bloom = thumb ? "" : `<g filter="url(#${u}-bl)" opacity=".9">${nr.lit}${br}</g>`;
+      const nr = opt.share
+        ? nameRow(p, o, { x0: 20, x1: 300, y: 36, size: 22, ink: K.light, lamp: K.tung, tierSize: 11, tierLs: 2.2, tierW: 600, tierOp: 0.72 })
+        : nameRow(p, o, { x0: 20, x1: 300, y: 46, size: 28, ink: K.light, lamp: K.tung, tierSize: 13, tierLs: 2.4, tierW: 600, tierOp: 0.72 });
+      const br = opt.share
+        ? bigRow(p, o, { cx: 160, y: 168, size: f(121 / capOf("800", "Changa", "8")), unitSize: 22, unitOp: 0.72, ink: K.light })
+        : bigRow(p, o, { cx: 160, y: 131, size: 96, unitSize: 18, unitOp: 0.72, ink: K.light });
+      const st = opt.share ? "" : statsText(p, o, { cx: 160, y: 159, size: 15, family: "Changa", weight: 600, valWeight: 700, fill: K.warm, labOp: 0.55, valOp: 0.95, maxW: 284 });
+      /* the light: a wide warm halo under a tight bloom under the white-hot figures */
+      const glow = (str, op) => str.replace(/fill="[^"]+"/g, `fill="${K.warm}"`).replace(/fill-opacity="[^"]+"/g, `fill-opacity="${op}"`);
+      const bloom = thumb ? "" : `<g filter="url(#${u}-bw)" opacity=".35">${glow(nr.lit + br, 1)}</g><g filter="url(#${u}-bl)" opacity=".9">${glow(nr.lit + br, 1)}</g>`;
       s +=
         `<g class="c09-lit">${bloom}${nr.lit}${br}${st}</g>` +
         `<g class="c09-lamp">${thumb ? "" : `<g filter="url(#${u}-bl)" opacity=".8">${nr.lamp}</g>`}${nr.lamp}</g>`;
     }
-    s += onStrip(10, 10, 300) + glassSVG(u, 8, 8, 304, 164);
-    /* the glass edge: polished, lit at the top, and warm where the light inside reaches it */
+    s += onStrip(5, 5, 310) + glassSVG(u, 3, 3, 314, 174);
+    /* the logo is printed on the glass, as supplied (light), the only mark above the name */
+    if (!thumb) {
+      const w = 32;
+      s += `<g transform="translate(${160 - w / 2} 10)">${MC.logo("wordmark", { variant: "light", w, h: f(w / MC.LOGO_RATIO.wordmark), label: false })}</g>`;
+    }
+    /* the glass edge: polished, lit at the top, and warm where the light inside spills onto its foot */
     s +=
-      `<path d="M8.6 171.4V8.6H311.4" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width=".9"/><path d="M311.4 8.6V171.4H8.6" fill="none" stroke="#000" stroke-opacity=".6" stroke-width=".9"/>` +
-      (side !== "back" ? lg(`${u}-sp`, [[0, K.warm, 0], [0.5, K.warm, 0.32], [1, K.warm, 0]], H_) + `<rect x="60" y="170.6" width="200" height="1.4" fill="url(#${u}-sp)"/>` : "");
+      `<path d="M3.5 176.5V3.5H316.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width=".8"/><path d="M316.5 3.5V176.5H3.5" fill="none" stroke="#000" stroke-opacity=".6" stroke-width=".8"/>` +
+      (side !== "back" ? lg(`${u}-sp`, [[0, K.warm, 0], [0.5, K.warm, 0.6], [1, K.warm, 0]], H_) + `<rect x="40" y="175.4" width="240" height="1.6" fill="url(#${u}-sp)"/>` : "");
     /* the ID is laser-etched into the glass, frosted, along its foot */
-    if (!thumb && !opt.share) s += engrave(160, 168, idLine(p, o), { size: 6.4, w: 600, anchor: "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
-    if (!thumb && opt.share) s += engrave(160, 168, idLine(p, o), { size: 6.4, w: 600, anchor: "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
-    return s + railsSVG(p, o, "LEGEND", thumb);
+    if (!thumb) {
+      const ar = MC.isAr(o);
+      const back = side === "back";
+      s += engrave(back ? (ar ? 298 : 22) : 160, 172.4, idLine(p, o), { size: 6.2, w: 600, anchor: back ? (ar ? "end" : "start") : "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
+    }
+    return s;
   }
   /** HOMA: a new steel board, black enamel, digits painted by a sign-writer; a bare galvanised hem. */
   function homaBoard(p, o, u, side, thumb, opt) {
@@ -984,12 +1073,15 @@
     if (!thumb)
       s += `<filter id="${u}-br" x="-2%" y="-6%" width="104%" height="112%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".55 .9" numOctaves="2" seed="3" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale=".9" xChannelSelector="R" yChannelSelector="G"/></filter>`;
     if (side === "back") {
-      s += `<g${brush}>${vecBack(p, o, { x0: 24, x1: 296, y0: 10, y1: 170, ink: K.paintW, labOp: 0.6 })}</g>`;
+      s += `<g${brush}>${vecBack(p, o, { u, x0: 24, x1: 296, y0: 10, y1: 170, ink: K.paintW, labOp: 0.6, cl: { x: 8, y: 8, w: 304, h: 164 }, fig: { torso: "#30353C", seam: "#6B737D", rim: K.paintW } })}</g>`;
       return s + railsSVG(p, o, "HOMA", thumb);
     }
     const shade = "#4A535D";
-    const nr = nameRow(p, o, { x0: 22, x1: 298, y: 48, size: 29, ink: K.paintW, lamp: K.tung, tierSize: 14, tierLs: 1.4, shade });
-    const br = opt.share ? bigRow(p, o, { cx: 160, y: 162, size: 128, unitSize: 22, unitOp: 0.75, ink: K.paintW, shade }) : bigRow(p, o, { cx: 160, y: 127, size: 90, unitSize: 17, unitOp: 0.75, ink: K.paintW, shade });
+    const nr = opt.share
+      ? nameRow(p, o, { x0: 20, x1: 300, y: 38, size: 22, ink: K.paintW, lamp: K.tung, tierSize: 12, tierLs: 1.4, shade })
+      : nameRow(p, o, { x0: 22, x1: 298, y: 48, size: 29, ink: K.paintW, lamp: K.tung, tierSize: 14, tierLs: 1.4, shade });
+    /* in the share the 84 is 20% of the story's height: 121u of digit on this 336px board */
+    const br = opt.share ? bigRow(p, o, { cx: 160, y: 166, size: f(121 / capOf("800", "Changa", "8")), unitSize: 22, unitOp: 0.75, ink: K.paintW, shade }) : bigRow(p, o, { cx: 160, y: 127, size: 90, unitSize: 17, unitOp: 0.75, ink: K.paintW, shade });
     const st = opt.share ? "" : statsText(p, o, { cx: 160, y: 157, size: 15, family: "Changa", weight: 700, valWeight: 800, fill: K.paintW, labOp: 0.6, maxW: 278 });
     s += `<g class="c09-lit"${brush}>${nr.lit}${br}${st}</g><g class="c09-lamp"${brush}>${nr.lamp}</g>`;
     /* a fresh BotolaGO decal, the logo exactly as supplied */
@@ -1023,7 +1115,7 @@
       (hinge ? `<path d="M${f(x)} ${f(y + h / 2)}H${f(x + w)}" stroke="#000" stroke-width="1.4"/><path d="M${f(x)} ${f(y + h / 2 + 1)}H${f(x + w)}" stroke="#fff" stroke-opacity=".16" stroke-width=".6"/>` : "");
     const ring = (x, y) => `<path d="M${f(x - 2.4)} ${f(y + 2)}A2.4 3.2 0 1 1 ${f(x + 2.4)} ${f(y + 2)}" fill="none" stroke="url(#${u}-pol)" stroke-width="1.6"/>`;
     if (side === "back") {
-      s += card(18, 18, 284, 144, false) + vecBack(p, o, { x0: 30, x1: 290, y0: 14, y1: 166, ink: K.paintW, labOp: 0.6 });
+      s += card(18, 18, 284, 144, false) + vecBack(p, o, { u, x0: 30, x1: 290, y0: 14, y1: 166, ink: K.paintW, labOp: 0.6, cl: { x: 18, y: 18, w: 284, h: 144 }, fig: { torso: "#2C3036", seam: "#5E666F", rim: K.paintW } });
       return s + railsSVG(p, o, "STADE", thumb);
     }
     const nm = MC.nameOf(p, o);
@@ -1051,9 +1143,9 @@
     /* the number cards hang from a rail on rings; OVR is a small card on the same baseline */
     const digits = String(p.ovr).split("");
     const big = opt.share;
-    const cw = big ? 66 : 50;
-    const chh = big ? 104 : 70;
-    const cy = big ? 58 : 58;
+    const cw = big ? 74 : 50;
+    const chh = big ? 112 : 70;
+    const cy = big ? 54 : 58;
     const ow = 34;
     const gw = digits.length * cw + (digits.length - 1) * 5 + 6 + ow;
     const x0 = 160 - gw / 2;
@@ -1071,17 +1163,30 @@
     lit += card(ox, cy + chh - 18, ow, 18, false) + `<text x="${f(ox + ow / 2)}" y="${f(cy + chh - 5.2)}" font-family="Changa" font-weight="600" font-size="11" text-anchor="middle" fill="${K.paintW}" fill-opacity=".75">${esc(S.ovr)}</text>`;
     /* four stat cards along the foot */
     if (!opt.share) {
-      const sw = 66;
+      /* card widths follow their content in Arabic (الانتقالات is long); Latin cards are equal */
       const sg = 7;
-      const sx0 = 160 - (4 * sw + 3 * sg) / 2;
+      const lab11 = (k) => textW(S.stats[k], 11, 700, "Changa");
+      const val14 = (k) => textW(String(p.stats[k]), 14, 800, "Changa");
+      let ws = MC.STATS.map((k) => (ar ? Math.max(56, lab11(k) + val14(k) + 20) : 66));
+      const room = 284 - 3 * sg;
+      const tot = ws.reduce((a2, b2) => a2 + b2, 0);
+      const fit = tot > room ? room / tot : 1;
+      ws = ws.map((w) => w * fit);
+      let xx = 160 - (ws.reduce((a2, b2) => a2 + b2, 0) + 3 * sg) / 2;
+      const xs = [];
+      (ar ? [3, 2, 1, 0] : [0, 1, 2, 3]).forEach((i) => {
+        xs[i] = xx;
+        xx += ws[i] + sg;
+      });
       MC.STATS.forEach((k, i) => {
-        const x = ar ? sx0 + (3 - i) * (sw + sg) : sx0 + i * (sw + sg);
+        const x = f(xs[i]);
+        const sw = f(ws[i]);
         const lab = S.stats[k];
-        const lsz = ar ? f(Math.min(11, (11 * (sw - 16 - textW(String(p.stats[k]), 14, 800, "Changa") - 4)) / textW(lab, 11, 700, "Changa"))) : 10.5;
+        const lsz = ar ? f(Math.min(11, (11 * (sw - 20 - val14(k))) / lab11(k))) : 10.5;
         lit += card(x, 137, sw, 21, false);
         lit += ar
-          ? `<text x="${x + sw - 6}" y="152" font-family="Changa" font-weight="700" font-size="${lsz}" text-anchor="end" fill="${K.paintW}" fill-opacity=".62">${esc(lab)}</text><text x="${x + 6}" y="152.6" font-family="Changa" font-weight="800" font-size="14" fill="${K.paintW}">${p.stats[k]}</text>`
-          : `<text x="${x + 7}" y="152" font-family="Changa" font-weight="700" font-size="${lsz}" letter-spacing=".8" fill="${K.paintW}" fill-opacity=".62">${esc(lab)}</text><text x="${x + sw - 7}" y="152.6" font-family="Changa" font-weight="800" font-size="14" text-anchor="end" fill="${K.paintW}">${p.stats[k]}</text>`;
+          ? `<text x="${f(x + sw - 6)}" y="152" font-family="Changa" font-weight="700" font-size="${lsz}" text-anchor="end" fill="${K.paintW}" fill-opacity=".62">${esc(lab)}</text><text x="${f(x + 6)}" y="152.6" font-family="Changa" font-weight="800" font-size="14" fill="${K.paintW}">${p.stats[k]}</text>`
+          : `<text x="${f(x + 7)}" y="152" font-family="Changa" font-weight="700" font-size="${lsz}" letter-spacing=".8" fill="${K.paintW}" fill-opacity=".62">${esc(lab)}</text><text x="${f(x + sw - 7)}" y="152.6" font-family="Changa" font-weight="800" font-size="14" text-anchor="end" fill="${K.paintW}">${p.stats[k]}</text>`;
       });
     }
     s += `<g class="c09-lit">${lit}</g><g class="c09-lamp">${lamp}</g>`;
@@ -1100,6 +1205,16 @@
     else if (tier === "STADE") s += stadeBoard(p, o, u, side, thumb, opt);
     else if (tier === "LEGEND") s += legendBoard(p, o, u, side, thumb, opt);
     else s += ledBoard(p, o, u, tier, side, thumb, opt);
+    /* the power-on scan (a replay only): a bright line runs down over a face that is already lit */
+    if (side === "front" && !thumb && !opt.share) {
+      const B = bezel(tier);
+      s +=
+        lg(`${u}-scn`, [
+          [0, K.warm, 0],
+          [0.7, K.warm, 0.22],
+          [1, "#fff", 0.85],
+        ]) + `<g class="c09-scan" style="--c09-scan-h:${180 - 2 * B - 10}px"><rect x="${B}" y="${B}" width="${320 - 2 * B}" height="10" fill="url(#${u}-scn)"/></g>`;
+    }
     s += `</g>`;
     const hand = handSVG(u, y0, opt);
     s += `<g class="c09-hand">${side === "back" ? `<g transform="matrix(-1 0 0 1 320 0)">${hand}</g>` : hand}</g>`;
@@ -1118,8 +1233,8 @@
     const ph = Math.round(s * (v === 1 ? 0.54 : 0.5));
     const pw = Math.round(ph * (v === 0 ? 1.85 : 16 / 9));
     const col = v === 0 ? 0 : v === 1 ? 3 : 4;
-    const grip = Math.round((s - ph - col) / 1.3);
-    const ext = s - ph - col - grip;
+    /* the telescope: LEGEND's board stands this much higher than the rest; at 24–32px it is 45% longer, so the step shows in a column */
+    const ext = Math.max(2, Math.round((s - ph - col) * (v === 0 ? 0.36 : 0.23)));
     const top = LG ? 0 : ext;
     const by = top + ph;
     const gw = v === 0 ? (s >= 32 ? 5 : 4) : v === 1 ? 5 : s >= 72 ? 7 : 6;
@@ -1142,10 +1257,10 @@
     const gp = `M${gx} ${gTop}V${s - endR}a${f(gw / 2)} ${endR} 0 0 0 ${gw} 0V${gTop}Z`;
     let g = `<path d="${gp}" fill="${club.primary}"/><path d="${gp}" fill="url(#${u}-c)"/>`;
     if (LG) {
-      const tw = Math.max(2, gw - (v === 0 ? 1 : 2));
+      const tw = Math.max(2, gw - 2);
       g += `<rect x="${(pw - tw) / 2}" y="${by}" width="${tw}" height="${gTop - by}" fill="${K.ti}"/><rect x="${(pw - tw) / 2}" y="${by}" width="${tw}" height="${gTop - by}" fill="url(#${u}-c)"/>`;
     }
-    const bulge = p.founder ? (v === 0 ? 2.5 : col) : 0;
+    const bulge = p.founder ? (v === 0 ? 3 : col) : 0;
     const rt = v === 0 ? 1 : v === 1 ? 1.2 : 1.6;
     const rs = v === 0 ? 2 : v === 1 ? 2.6 : 3.4;
     const r0 = (LG ? gTop : by + bulge) + (v === 0 ? 1 : 1.5);
@@ -1156,7 +1271,7 @@
     /* the founder's collar: wider than the grip, bright band */
     if (p.founder) {
       const cw = v === 0 ? gw + 2 : v === 1 ? 8 : 11;
-      const ch = v === 0 ? 2.5 : col;
+      const ch = v === 0 ? 3 : col;
       g +=
         `<rect x="${(pw - cw) / 2}" y="${by}" width="${cw}" height="${ch}" fill="${K.steel}"/>` +
         `<rect x="${(pw - cw) / 2}" y="${f(by + ch * 0.25)}" width="${cw}" height="${f(Math.max(1, ch * 0.5))}" fill="${K.band}"/>` +
@@ -1165,7 +1280,7 @@
     } else if (v) g += `<rect x="${gx}" y="${by}" width="${gw}" height="${col}" fill="#000" opacity=".25"/>`;
     /* the board */
     const frameFill = { HOMA: "#BCC3CA", STADE: `url(#${u}-al)`, PRO: `url(#${u}-al)`, CHAMPION: `url(#${u}-po)`, LEGEND: K.ti }[tier];
-    const fr = tier === "LEGEND" || tier === "HOMA" ? Math.max(1, rim * 0.75) : rim;
+    const fr = tier === "LEGEND" ? 1 : tier === "HOMA" ? Math.max(1, rim * 0.75) : rim;
     const fx = fr;
     const fy = top + fr;
     const fw = pw - 2 * fr;
@@ -1191,9 +1306,10 @@
     if (tier === "CHAMPION" && v) b += `<rect x="${fx + 0.5}" y="${fy + 0.5}" width="${fw - 1}" height="${fh - 1}" fill="none" stroke="#F2F5F8" stroke-opacity=".55" stroke-width=".6"/>`;
     if (v === 2 && (tier === "PRO" || tier === "CHAMPION"))
       b += `<pattern id="${u}-ul" width="${tier === "PRO" ? 2 : 1.5}" height="${tier === "PRO" ? 2 : 1.5}" patternUnits="userSpaceOnUse" x="${fx}" y="${fy}"><circle cx=".75" cy=".75" r=".5" fill="${K.unlit}"/></pattern><rect x="${fx}" y="${fy + 1.4}" width="${fw}" height="${fh - 1.4}" fill="url(#${u}-ul)"/>`;
-    if (LG && v === 2) b += `<filter id="${u}-gl" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.2"/></filter><text x="${pw / 2}" y="${ty}" font-family="Changa" font-weight="800" font-size="${fs}" text-anchor="middle" fill="${ink}" opacity=".6" filter="url(#${u}-gl)">${digits}</text>`;
-    b += `<text x="${pw / 2}" y="${ty}" font-family="Changa" font-weight="800" font-size="${fs}" text-anchor="middle" fill="${ink}">${digits}</text>`;
-    if (tier === "STADE") b += `<path d="M${fx} ${f(fy + fh / 2)}H${fx + fw}" stroke="${K.card}" stroke-width="${v === 0 ? 0.8 : 1}"/><path d="M${fx} ${f(fy + fh / 2 + (v === 0 ? 0.7 : 0.9))}H${fx + fw}" stroke="#fff" stroke-opacity=".3" stroke-width=".5"/>`;
+    /* LEGEND's figures are light, not paint: a warm bloom from 44px up, a white-hot core */
+    if (LG && v >= 1) b += `<filter id="${u}-gl" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${v === 2 ? 1.3 : 0.9}"/></filter><text x="${pw / 2}" y="${ty}" font-family="Changa" font-weight="800" font-size="${fs}" text-anchor="middle" fill="${K.warm}" opacity=".85" filter="url(#${u}-gl)">${digits}</text>`;
+    b += `<text x="${pw / 2}" y="${ty}" font-family="Changa" font-weight="800" font-size="${fs}" text-anchor="middle" fill="${LG ? K.light : ink}">${digits}</text>`;
+    if (tier === "STADE" && v) b += `<path d="M${fx} ${f(fy + fh / 2)}H${fx + fw}" stroke="#000" stroke-opacity=".7" stroke-width=".6"/>`;
     b += `<rect class="c09-edge" x=".3" y="${top + 0.3}" width="${pw - 0.6}" height="${ph - 0.6}" fill="none" stroke-width=".6"/>`;
     const S = MC.s(o);
     const label = `${MC.nameOf(p, o)}, ${p.ovr} OVR, ${S.tiers[tier]}${p.founder ? ", " + S.founderLine : ""}`;
@@ -1207,64 +1323,85 @@
     const u = MC.uid(ID + "s");
     const k = 336 / 320;
     const bx = 12;
-    const by = 92;
-    const X = (x) => f(bx + x * k);
-    const Y = (y) => f(by + y * k);
+    const by = 130;
+    const X = (x) => +f(bx + x * k);
+    const Y = (y) => +f(by + y * k);
     const y0 = p.tier === "LEGEND" ? 250 : 220;
     const boardSvg = `<svg x="${bx}" y="${by}" width="336" height="${f(340 * k)}" viewBox="0 0 320 340" overflow="visible">${board(p, o, u + "b", "front", { share: true, noSleeve: true })}</svg>`;
-    /* the perimeter board on the horizon carries the four stats, in two halves either side of the collar */
+    /* the ribbon board along the stand's fascia carries all four stats on one line, at a 10px export pitch */
     const P = 3.4;
     const cols = 104;
     const F = Face(cols, 5);
-    const stripY = 286;
-    const Lp = { P, X: f(180 - (cols * P) / 2), Y: stripY + 5.5 };
+    const ribY = 72;
+    const Lp = { P, X: f(180 - (cols * P) / 2), Y: ribY + 5.5 };
     const extra = { lit: "" };
-    const half = (ks) => {
-      const segs = [];
-      ks.forEach((key, i) => {
-        segs.push({ g: bit(S.stats[key], F35), c: K.warm, a: 0.55, gap: 2 });
-        segs.push({ g: bit(String(p.stats[key]), F35), c: K.warm, gap: i < ks.length - 1 ? 4 : 0 });
-      });
-      return segs;
-    };
     if (!ar) {
-      line(F, half(["CAP", "SEL"]), 43, 5, "end");
-      line(F, half(["TRF", "CON"]), 61, 5, "start");
-    } else {
-      extra.lit +=
-        statsText(p, o, { keys: ["CAP", "SEL"], cx: 282, y: stripY + 21, size: 15, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 136, handjet: true }) +
-        statsText(p, o, { keys: ["TRF", "CON"], cx: 80, y: stripY + 21, size: 15, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 136, handjet: true });
-    }
+      const segs = [];
+      MC.STATS.forEach((key, i) => {
+        segs.push({ g: bit(S.stats[key], F35), c: K.warm, a: 0.55, gap: 2 });
+        segs.push({ g: bit(String(p.stats[key]), F35), c: K.warm, gap: i < 3 ? 6 : 0 });
+      });
+      line(F, segs, Math.round((cols - 1) / 2), 5, "center");
+    } else extra.lit += statsText(p, o, { cx: 180, y: ribY + 20.5, size: 16, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 320, handjet: true });
     const led = ledRender(u + "p", Lp, F, extra);
-    /* mowing stripes run to a vanishing point above the stand */
-    let stripes = "";
-    for (let i = -9; i < 9; i++) stripes += `<path d="M${180 + i * 24} 314L${180 + (i + 1) * 24} 314L${180 + (i + 1) * 150} 640L${180 + i * 150} 640Z" fill="${i % 2 ? "#17482B" : "#123B23"}"/>`;
+    /* mowing bands, wider as they come towards the camera */
+    const g0 = 364;
+    let bands = "";
+    for (let i = 0, N = 7; i < N; i++) {
+      const a = g0 + (640 - g0) * Math.pow(i / N, 1.45);
+      const b = g0 + (640 - g0) * Math.pow((i + 1) / N, 1.45);
+      bands += `<rect y="${f(a)}" width="360" height="${f(b - a + 0.5)}" fill="${i % 2 ? "#17482B" : "#123B23"}"/>`;
+    }
     let steps = "";
-    for (let y = 206; y < 284; y += 8) steps += `<path d="M0 ${y}H360" stroke="#1B1F25" stroke-width="1.2"/>`;
-    /* you, from behind and off-centre: the shared figure, hood up, rim-lit by the floodlights, arm raised to the grip */
-    const fig = MC.avatar({ x: 4, y: 446, w: 214, h: 257, hood: true, torso: "#262A30", seam: "#3E444C", rim: "rgba(244,237,224,.5)" });
-    const sleeve = sleeveSVG(u, [X(190), Y(y0 + 62)], [184, 672], f(13 * k), 30);
+    for (let y = 106; y < 352; y += 8) steps += `<path d="M0 ${y}H360" stroke="#1B1F25" stroke-width="1.2"/>`;
+    /* you, from behind and off-centre: the shared figure, hood up, rim-lit by the floodlights, its shoulders in frame.
+       It is placed as an image so the frame's start edge crops it (300 x 360 at 1.3x, 60px of it off the frame). */
+    const figSvg = MC.avatar({ hood: true, torso: "#262A30", seam: "#3E444C", rim: "rgba(244,237,224,.75)", preserve: "xMaxYMin slice" }).replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    const fig = `<image x="0" y="340" width="200" height="312" preserveAspectRatio="xMaxYMin slice" href="data:image/svg+xml,${encodeURIComponent(figSvg)}"/>`;
+    /* the raised arm: shoulder, elbow out to the side, forearm up to the fist (the cuff meets the hand on the grip) */
+    const W = [X(190), Y(y0 + 62)];
+    const E = [258, 522];
+    const Sh = [158, 590];
+    const tube = (a, b, wa, wb) => {
+      const dx = b[0] - a[0];
+      const dy = b[1] - a[1];
+      const l = Math.hypot(dx, dy);
+      const n = [dy / l, -dx / l];
+      const q = (c, w, t) => `${f(c[0] + n[0] * w * t)} ${f(c[1] + n[1] * w * t)}`;
+      return { d: `M${q(a, wa, 1)}L${q(b, wb, 1)}L${q(b, wb, -1)}L${q(a, wa, -1)}Z`, top: `M${q(a, wa, 1)}L${q(b, wb, 1)}` };
+    };
+    const up = tube(Sh, E, 22, 17.5);
+    const arm =
+      lg(`${u}-ua`, [
+        [0, "#33383F"],
+        [0.5, "#262A30"],
+        [1, "#1A1D21"],
+      ]) +
+      `<path d="${up.d}" fill="url(#${u}-ua)"/>` +
+      `<path d="${up.top}" stroke="rgba(244,237,224,.6)" stroke-width="2" stroke-linecap="round"/>` +
+      `<circle cx="${E[0]}" cy="${E[1]}" r="17.5" fill="#262A30"/>` +
+      `<path d="M${E[0] - 12} ${E[1] - 12.6}A17.5 17.5 0 0 1 ${E[0] + 17.3} ${E[1] + 2.5}" fill="none" stroke="rgba(244,237,224,.6)" stroke-width="2" stroke-linecap="round"/>` +
+      sleeveSVG(u, W, E, f(13 * k), 16.5);
     const logoW = 116;
     const logo = `<g transform="translate(${ar ? 360 - 22 - logoW : 22} 28)">${MC.logo("wordmark", { variant: "light", w: logoW, h: f(logoW / MC.LOGO_RATIO.wordmark), label: false })}</g>`;
     const handle = `<text x="${ar ? 22 : 338}" y="45" font-family="Manrope" font-weight="800" font-size="15" text-anchor="${ar ? "start" : "end"}" fill="#fff">@ali</text>`;
     const yr = yearOf(p);
     const nm = MC.nameOf(p, o);
     const tierT = S.tiers[p.tier];
-    /* caption at the bottom end: name with its year, tier, then the ID and the sample label */
+    /* one caption line at the bottom end: the name with its year, the tier, and the sample label (the ID is on the board) */
+    const cy = 618;
     let caption;
     if (!ar) {
-      caption =
-        `<text x="338" y="594" font-family="Changa" font-weight="800" font-size="19" text-anchor="end" fill="${K.warm}">${esc(nm)}${yr ? `<tspan fill="${K.tung}" font-size="13"> ·${yr}</tspan>` : ""}<tspan fill-opacity=".7" font-weight="600" font-size="15">  ${esc(tierT)}</tspan></text>` +
-        `<text x="338" y="613" font-family="Manrope" font-weight="700" font-size="10" letter-spacing=".3" text-anchor="end" fill="#C3CAD2">${esc(p.id)}  ·  Exemple</text>`;
+      caption = `<text x="338" y="${cy}" font-family="Changa" font-weight="800" font-size="19" text-anchor="end" fill="${K.warm}">${esc(nm)}${yr ? `<tspan fill="${K.tung}" font-size="13"> ·${yr}</tspan>` : ""}<tspan fill-opacity=".72" font-weight="600" font-size="14">  ${esc(tierT)}  ·  Exemple</tspan></text>`;
     } else {
       const nw = textW(nm, 19, 800, "Changa");
-      const yw = yr ? textW(yr + "·", 13, 800, "Changa") : 0;
+      const yw = yr ? textW(yr + "·", 13, 800, "Changa") + 4 : 0;
+      const tw = textW(tierT, 15, 600, "Changa");
       caption =
-        `<text x="338" y="596" font-family="Changa" font-weight="800" font-size="19" text-anchor="end" fill="${K.warm}">${esc(nm)}</text>` +
-        (yr ? `<text x="${f(338 - nw - 4)}" y="596" font-family="Changa" font-weight="800" font-size="13" text-anchor="end" fill="${K.tung}">${yr}·</text>` : "") +
-        `<text x="${f(338 - nw - yw - 12)}" y="596" font-family="Changa" font-weight="600" font-size="16" text-anchor="end" fill="${K.warm}" fill-opacity=".7">${esc(tierT)}</text>` +
-        `<text x="338" y="615" font-family="Changa" font-weight="600" font-size="11" text-anchor="end" fill="#C3CAD2">مثال</text>` +
-        `<text x="${f(338 - textW("مثال", 11, 600, "Changa") - 8)}" y="615" font-family="Manrope" font-weight="700" font-size="10" text-anchor="end" fill="#C3CAD2">${esc(p.id)}  ·</text>`;
+        `<text x="338" y="${cy}" font-family="Changa" font-weight="800" font-size="19" text-anchor="end" fill="${K.warm}">${esc(nm)}</text>` +
+        (yr ? `<text x="${f(338 - nw - 4)}" y="${cy}" font-family="Changa" font-weight="800" font-size="13" text-anchor="end" fill="${K.tung}">${yr}·</text>` : "") +
+        `<text x="${f(338 - nw - yw - 10)}" y="${cy}" font-family="Changa" font-weight="600" font-size="15" text-anchor="end" fill="${K.warm}" fill-opacity=".72">${esc(tierT)}</text>` +
+        `<text x="${f(338 - nw - yw - tw - 16)}" y="${cy}" font-family="Changa" font-weight="600" font-size="13" text-anchor="end" fill="${K.warm}" fill-opacity=".72">مثال  ·</text>`;
     }
     return (
       `<div class="c09 c09-share" dir="${S.dir}" lang="${ar ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}">` +
@@ -1279,24 +1416,30 @@
         [0, "#000", 0.5],
         [0.25, "#000", 0.08],
         [0.75, "#000", 0.12],
-        [1, "#000", 0.55],
+        [1, "#000", 0.6],
       ]) +
       led.defs +
       `</defs>` +
-      `<rect width="360" height="314" fill="url(#${u}-sky)"/>` +
+      `<rect width="360" height="${g0}" fill="url(#${u}-sky)"/>` +
       `<circle cx="${ar ? 40 : 320}" cy="10" r="230" fill="url(#${u}-fl)"/>` +
-      `<rect y="200" width="360" height="86" fill="#0E1114"/>${steps}` +
-      `<rect y="${stripY}" width="360" height="28" fill="#050607"/><rect y="${stripY}" width="360" height="1.4" fill="#3A4048"/><rect y="${stripY + 26.6}" width="360" height="1.4" fill="#1B1F24"/>` +
+      /* the stand: its fascia ribbon board, then the terrace steps down to the perimeter wall */
+      `<rect y="${ribY - 6}" width="360" height="${352 - ribY + 6}" fill="#0E1114"/>${steps}` +
+      `<rect y="${ribY}" width="360" height="28" fill="#050607"/><rect y="${ribY}" width="360" height="1.4" fill="#3A4048"/><rect y="${ribY + 26.6}" width="360" height="1.4" fill="#1B1F24"/>` +
       led.html +
-      `<rect y="314" width="360" height="326" fill="#143D25"/>${stripes}<rect y="314" width="360" height="326" fill="url(#${u}-gr)"/>` +
-      `<path d="M0 452L360 441L360 444.6L0 456Z" fill="#E9ECE6" opacity=".85"/>` +
-      /* the dugout's edge: its curved roof and its glass, at the start of the frame */
-      `<g${ar ? ' transform="matrix(-1 0 0 1 360 0)"' : ""}><path d="M0 330C30 331 52 344 58 372L62 520L0 520Z" fill="#fff" opacity=".045"/>` +
-      `<path d="M0 322C36 323 62 338 68 370L72 522H62L58 372C52 344 30 331 0 330Z" fill="#1E2227"/>` +
-      `<path d="M0 322C36 323 62 338 68 370L72 522" fill="none" stroke="#C3CAD2" stroke-opacity=".35" stroke-width="1"/></g>` +
+      `<rect y="352" width="360" height="12" fill="#07090B"/><rect y="352" width="360" height="1" fill="#2A3038"/>` +
+      `<rect y="${g0}" width="360" height="${640 - g0}" fill="#143D25"/>${bands}<rect y="${g0}" width="360" height="${640 - g0}" fill="url(#${u}-gr)"/>` +
+      `<path d="M0 482L360 476V479.4L0 485.6Z" fill="#E9ECE6" opacity=".85"/>` +
+      /* the dugout's edge at the end of the frame: its curved roof and its glass */
+      `<g transform="matrix(-1 0 0 1 360 36)">` +
+      `<rect x="0" y="372" width="56" height="148" fill="#0C0E11"/>` +
+      `<rect x="2" y="420" width="17" height="24" rx="3" fill="#2E343B"/><rect x="24" y="420" width="17" height="24" rx="3" fill="#2E343B"/><rect x="0" y="444" width="52" height="5" fill="#22272D"/>` +
+      `<path d="M0 330C30 331 52 344 58 372L62 520L0 520Z" fill="#DDE6EE" opacity=".09"/>` +
+      `<path d="M8 338C30 342 46 356 50 380" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="2.2" stroke-linecap="round"/>` +
+      `<path d="M0 322C36 323 62 338 68 370L72 522H62L58 372C52 344 30 331 0 330Z" fill="#2A2F35"/>` +
+      `<path d="M0 322C36 323 62 338 68 370L72 522" fill="none" stroke="#C3CAD2" stroke-opacity=".45" stroke-width="1"/></g>` +
       boardSvg +
       `<g>${fig}</g>` +
-      sleeve +
+      arm +
       logo +
       handle +
       caption +
@@ -1314,15 +1457,66 @@
     category: "youth",
     philosophy: "Your card is the board the fourth official raises, held up in your own hand: the one object in football whose job is to show one number to the whole stadium at once.",
     philosophyAr: "بطاقتك هي اللوحة التي يرفعها الحكم الرابع، وأنت من يمسكها: الشيء الوحيد في كرة القدم الذي وُجد ليُري الملعب كله رقمًا واحدًا في لحظة واحدة.",
-    idea: [],
-    belonging: [],
-    founderMark: [],
-    small: [],
-    rtl: [],
-    tiers: { HOMA: "", STADE: "", PRO: "", CHAMPION: "", LEGEND: "" },
-    legend: [],
-    advantages: [],
-    risks: [],
+    idea: [
+      "The card is the board the fourth official raises, held in your own hand: a 16:9 face in a frame, a collar, a long centred paddle and your fist round the grip, with the cuff of a bench jacket leaving the frame at the bottom corner. Painted solid, it reads as a board held up before a single character is read. The board never mirrors.",
+      "Every tier uses the same three rows. Row A is identity: the name, the founder's ·26 and the tier at the end. Row B is the 84 with OVR beside it on the same baseline. Row C is all four stats on one fixed line, so a screenshot always carries the whole card. There is no previous-gameweek row: the app has no previous overall yet, so that line appears only once two real values exist.",
+      "On the LED tiers the light is computed, not textured: every string becomes a grid of cells, and each LED is on or off over a field of unlit LEDs. PRO runs a 5×7 and a 3×5 board font on a 3u grid. That is the founder lamp's own pitch; a 4u grid cannot hold the four-stat line. CHAMPION's full matrix samples Changa at 2u with three brightness levels, so its curves survive. Where a dot would fall under two device pixels, the cells turn solid.",
+      "Each colour has one meaning. Warm-white LEDs carry identity and figures. Tungsten carries the founder year and nothing else. Cyan appears only as the 2u strip that says the board is on. No amber, no navy, and no glow below LEGEND.",
+      "Swipe and the board turns over. The back carries the four stats as a column, the placeholder club crest, and a thirty-gameweek season record whose first seven marks are the labelled sample (EXEMPLE / مثال).",
+    ],
+    belonging: [
+      "Your number's going up. Every board in the league goes up in the same minute at gameweek close, so a group chat compares one moment.",
+      "A 15-year-old knows this object from every broadcast. The tiers form a technology ladder anyone can read from across a leaderboard: painted steel, flip cards, LED, full matrix, then dead-front glass held highest.",
+      "The fist is yours. You are the one holding it up, and in the share you stand at the touchline, seen from behind, with the board raised.",
+      "The founder lamp is the first light on the board and it never goes out. The year sits after the name, the way supporter groups carry theirs: ALI ·26.",
+      "A screenshot always shows the whole card: name, year, tier, 84 and all four stats on the front.",
+    ],
+    founderMark: [
+      "A knurled steel collar where the grip meets the board. It is 40u wide against the 28u grip, so a founder's outline differs from everyone else's. Its polished band carries 26 laser-engraved at 10.5u on the front, with FOUNDER and the BOT number wrapping round the cylinder.",
+      "On the face, ·26 follows the name, readable at arm's length. It is a tungsten lamp on the LED tiers that stays lit while the scan replays. HOMA paints it, STADE prints it on the name card, and LEGEND lights it in the glass.",
+      "At 24–32px the collar survives as a 3px steel bulge, wider than the stem, directly under the panel. In rows the name reads ALI ·26.",
+      "Later cohorts get a plain rubber collar flush with the grip and no tungsten cell.",
+    ],
+    small: [
+      "56–80px: the board on its club-colour paddle. The 84 is solid Changa 800 in warm white. PRO and CHAMPION add the cyan on-strip and a faint field of unlit LEDs. Founders get the steel collar, and the stem carries one rib per tier step.",
+      "44–52px (row(), the My position card): the same board on a shorter grip. The club colour is the grip itself, and the club's second colour forms its ribs.",
+      "24–32px, inside a ranking row's name cell: a panel 22×12 to 30×16 with a 1px rim, the 84 in solid Changa 800, and a stem at least 75% of the panel height, so it does not read as a monitor. The tier is the rib count on the stem: none for HOMA, one to three for STADE to CHAMPION, four for LEGEND. LEGEND's handle is also 30% longer, so in any column its board stands higher.",
+      "Thumbnails drop engravings, dots and filters and keep the whole outline, hand included.",
+    ],
+    rtl: [
+      "The object never mirrors: frame, collar, grip and your right hand stay put. The content does: the name and its 26· sit at the right, the tier at the left, the stats read from the right, and the season record fills from the right.",
+      "On the LED tiers, Arabic is set solid in Handjet, thickened by a hairline stroke. The lab's copy of Handjet has no element axes, so a dot mask would merge the dots of ي. HOMA, STADE, LEGEND and every row set علي in Changa 800.",
+      "The 84 OVR group stays centred and left to right. Digits are Western and run left to right everywhere. No letter-spacing on Arabic.",
+      "The bottom rail reads المغرب · 2026/27 · BOT #004821, with Manrope supplying the digits. The sample record on the back says مثال.",
+    ],
+    tiers: {
+      HOMA: "A new steel board in black enamel with a visible brush direction, a bare galvanised hem and four rivets. Every figure is hand-painted by a sign-writer in white Changa with a grey drop shade, and the founder year in tungsten paint. A fresh BotolaGO decal sits at the top, and the ID is stamped into the hem. Full outline, 0 ribs.",
+      STADE: "Flip cards. Black number cards hang on rings from a polished rail inside a brushed aluminium frame, each split by its hinge line. The name, the tier, OVR and the four stats are smaller cards. 1 rib.",
+      PRO: "Warm-white LEDs behind black acrylic in a brushed aluminium frame: a 5×7 and a 3×5 board font on a 3u grid, the 84 sampled into 20 rows, one 4% reflection band and the cyan on-strip. 2 ribs.",
+      CHAMPION: "A double-sided full matrix: a 2u pitch with three brightness levels, so the brand face keeps its curves. A mirror-polished frame with a bright chamfer, and a 5u visible edge under the board. 3 ribs.",
+      LEGEND: "Dead-front smoked glass in a thin satin-titanium frame with a polished lip. No pixels: the name, the 84 and the stats line are continuous warm light with a 2px bloom and a pool of light on the glass, and the ID is etched into its foot. A telescopic titanium extension makes the handle 30% longer. 4 ribs.",
+    },
+    legend: [
+      "On the first open after reaching LEGEND, with motion on, your fist raises the board from below on a 420ms spring with a hand's wobble. The tungsten 26 is already lit. Then the face powers on in one 300ms top-to-bottom scan that lands on the final values.",
+      "No gesture is needed to see the number: the scan plays by itself, and a tap only replays it. Under reduced motion the lit board simply shows. There is one scan and no flashing.",
+      "In every ranking the LEGEND board stands higher than the rest, because its handle is longer, and the stats line stays on its front.",
+    ],
+    advantages: [
+      "The outline, a 16:9 board on a long centred paddle, survives from 400px to 24px, and nothing else in this slate or in card games has it.",
+      "A built-in weekly ritual: the object exists to show one number at one moment.",
+      "Every stat is on the front at every tier, so a screenshot is complete.",
+      "The tiers are physical technologies (paint, cards, LED, matrix, glass) plus a rib count on the stem, so they read in greyscale and without colour.",
+      "Arabic in a shop-sign face is local, not translated. The colour law (warm figures, tungsten founder, one cyan on-strip) fits the app.",
+    ],
+    risks: [
+      "The board belongs to the substitution, so 'remplaçant' teasing is possible. Copy has to frame the IN ('ton numéro entre').",
+      "A sign on a stick in a raised hand can read as a placard. The guard is the pitch-level share with the touchline and the dugout, and the share never shows a crowd.",
+      "On the LED tiers, Arabic is solid Handjet because the lab's font has no element axes. Production should vendor the full Handjet and set Arabic in dots.",
+      "LED text is sampled from fonts at render time and cached per string. Production should ship pre-built cell grids.",
+      "Handjet is not a brand face. The card shows the shared figure's hand in one skin tone only: skin-tone and gloved variants are specified but not built.",
+      "Several features are specified but not built: a previous-gameweek row and the 'Changement' share, which need a previous overall that does not exist yet; the collar ceremony; and a friend's board raised beside yours.",
+      "Several boards in a list could recall an odds screen. Rows therefore carry the board only as a small token, with points in the app's own type.",
+    ],
     gridWidth: 252,
     detailWidth: 400,
 

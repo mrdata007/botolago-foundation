@@ -89,7 +89,7 @@
     sq: { fig: sqW(31.1, 31.1), ball: sqW(34, -9), carab: sqW(-34, -2) },
     rn: { fig: rnW(38), ball: rnW(-14), carab: rnW(196) },
   };
-  const ROT = { fig: -26, ball: -52 };
+  const ROT = { fig: -30, ball: -52 };
   // The half-plane where the band runs in FRONT of the fob, before it dives into the eyelet.
   function frontClip(founder) {
     const t = founder ? [COS, SIN] : [0.819, 0.574];
@@ -212,7 +212,7 @@
       `<path d="${faceD()}" fill-rule="evenodd" fill="#d9e8f5" fill-opacity=".16"/>` +
       `<path d="${pearD(5)}${holeD(15)}" fill-rule="evenodd" fill="${c.secondary}"/>` +
       (thumb ? "" : `<path d="${pearD(5)}${holeD(15)}" fill-rule="evenodd" fill="url(#${id}-ht)" mask="url(#${id}-hm)" opacity=".55"/>`) +
-      `<g fill="none" stroke="${c.primary}" stroke-width="1.5"><path d="${pearD(10)}" mask="url(#${id}-km)"/><circle cx="130" cy="112" r="19.5"/></g>` +
+      `<g fill="none" stroke="${c.primary}" stroke-width="1.4"><path d="${pearD(8.4)}" mask="url(#${id}-km)"/><circle cx="130" cy="112" r="19.5"/></g>` +
       `<path d="${pearD(3.6)}" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width=".6"/>` +
       `<path d="${faceD()}" fill="none" stroke="#f1f7fc" stroke-opacity=".85" stroke-width=".9"/>` +
       `<circle cx="130" cy="112" r="15" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width=".6"/>` +
@@ -383,7 +383,7 @@
     const sw = sufW(nfs);
     const total = nw + sw;
     const x0 = 130 - total / 2;
-    const ny = 278;
+    const ny = 284;
     const nameX = ar ? x0 + sw : x0;
     const sufX = ar ? x0 : x0 + nw + nfs * 0.14;
     s +=
@@ -391,18 +391,18 @@
       (yy ? `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" ${paint} fill-opacity=".74">${esc(yy)}</text>` : "");
 
     // the 84: engraved at the centre of the bulb like a room number, ink-centred in a fixed slot
-    const fs = p.ovr >= 100 ? 88 : 108;
+    const fs = p.ovr >= 100 ? 82 : 100;
     const m = meas("800 100px Changa", String(p.ovr));
     const x84 = m ? r2(130 - (((m.r - m.l) / 2) * fs) / 100) : 130;
-    s += `<text x="${x84}" y="382" ${m ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" ${paint}>${esc(p.ovr)}</text>`;
+    s += `<text x="${x84}" y="370" ${m ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" ${paint}>${esc(p.ovr)}</text>`;
 
     // the BotolaGO ID, season and country, engraved round the bottom like a hotel fob's return line
     if (!thumb) {
-      const sp = ` font-family="Manrope, Noto Sans Arabic, sans-serif" font-weight="700" font-size="6.3" ${paint} fill-opacity=".7"`;
+      const sp = ` font-family="Manrope, Noto Sans Arabic, sans-serif" font-weight="700" font-size="6" ${paint} fill-opacity=".72"`;
       const lat = `${p.id} · ${p.season} · `;
       s += ar
-        ? `<text${sp} direction="rtl"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle">${esc(S.country)} · ${esc(p.season)} · <tspan letter-spacing="1">${esc(p.id)}</tspan></textPath></text>`
-        : `<text${sp} letter-spacing="1"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle">${esc(lat + S.country)}</textPath></text>`;
+        ? `<text${sp} direction="rtl"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle">${esc(S.country)} · ${esc(p.season)} · <tspan letter-spacing=".6">${esc(p.id)}</tspan></textPath></text>`
+        : `<text${sp} letter-spacing=".6"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle">${esc(lat + S.country)}</textPath></text>`;
     }
     return `<g${thumb || !ink.filter ? "" : ` filter="url(#${id}-ink)"`}>${s}</g>`;
   }
@@ -448,13 +448,34 @@
 
   // The first charm and the only permanent one: the shared manager figure, seen from behind,
   // hood up, cut from steel with its seams engraved.
+  // A pointy-top hexagon: one panel of a ball, hung from its top vertex.
+  const hexD = (r, cy) =>
+    "M" +
+    [0, 1, 2, 3, 4, 5]
+      .map((i) => {
+        const a = ((-90 + i * 60) * Math.PI) / 180;
+        return `${r2(r * Math.cos(a))} ${r2(cy + r * Math.sin(a))}`;
+      })
+      .join("L") +
+    "Z";
   function figureCharm(id, at, rot) {
+    const A = MC.AVATAR;
+    const cy = 29.6;
+    const fig = `translate(-10.6 16.6) scale(.12)`;
     return (
       `<g transform="translate(${at[0]} ${at[1]}) rotate(${rot})"><g class="c03-sw">` +
       `<circle r="4.4" fill="none" stroke="#59626d" stroke-width="2.4"/><circle r="4.4" fill="none" stroke="url(#${id}-st)" stroke-width="1.6"/>` +
-      `<circle cy="9.2" r="2.5" fill="none" stroke="url(#${id}-st)" stroke-width="1.5"/>` +
-      `<rect x="-1.3" y="11" width="2.6" height="7" rx="1" fill="url(#${id}-st)"/>` +
-      MC.avatar({ x: -16, y: 11.4, w: 32, h: 38.4, torso: `url(#${id}-fg)`, hoodFill: `url(#${id}-fh)`, seam: "#39424c", stroke: "#3b444e", strokeWidth: 4.5 }) +
+      `<circle cy="9.6" r="2.5" fill="none" stroke="url(#${id}-st)" stroke-width="1.5"/>` +
+      `<clipPath id="${id}-fi"><path d="${hexD(14.2, cy)}"/></clipPath>` +
+      `<mask id="${id}-fm" maskUnits="userSpaceOnUse" x="-22" y="8" width="44" height="46">` +
+      `<path d="${hexD(17.4, cy)}" fill="#fff" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>` +
+      `<g clip-path="url(#${id}-fi)"><g transform="${fig}"><path d="${A.torso}"/><path d="${A.hood}"/>` +
+      `<g fill="none" stroke="#fff" stroke-width="8.5"><path d="${A.hoodSeam}"/><path d="${A.hoodRim}"/><path d="${A.seam}"/></g></g></g>` +
+      `</mask>` +
+      `<rect x="-20" y="10" width="40" height="40" fill="url(#${id}-fg)" mask="url(#${id}-fm)"/>` +
+      `<g clip-path="url(#${id}-fi)"><g transform="${fig}" fill="none" stroke="#2f363e" stroke-width="5.5" stroke-linejoin="round" mask="url(#${id}-fm)"><path d="${A.torso}"/><path d="${A.hood}"/></g></g>` +
+      `<path d="${hexD(17.4, cy)}" fill="none" stroke="#3b444e" stroke-width="2.2" stroke-linejoin="round" stroke-opacity=".9"/>` +
+      `<path d="${hexD(16.6, cy)}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".55" stroke-linejoin="round"/>` +
       `</g></g>`
     );
   }
@@ -521,7 +542,7 @@
     const defs =
       defsCommon(id, founder) +
       F.defs +
-      `<path id="${id}-rp" d="M34 322A96 74 0 0 0 226 322"/>`;
+      `<path id="${id}-rp" d="M31 322A99 77 0 0 0 229 322"/>`;
     const charms =
       ballCharm(id, at.ball, ROT.ball) +
       figureCharm(id, at.fig, ROT.fig) +
@@ -593,7 +614,9 @@
         `<path d="${pearD(12)}${holeD(22)}" fill-rule="evenodd" fill="${T.body}"/>` +
         `<path class="c03-clear" d="${TF}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     } else if (T.nickel) {
-      face = `<path d="${TF}" fill-rule="evenodd" fill="url(#${id}-nk)"/><path d="${pearD(13)}${holeD(24)}" fill-rule="evenodd" fill="${T.body}"/>`;
+      face =
+        `<path d="${TF}" fill-rule="evenodd" fill="url(#${id}-nk)"/><path d="${pearD(13)}${holeD(24)}" fill-rule="evenodd" fill="${T.body}"/>` +
+        `<path d="M-10 247Q130 229 270 247L270 263Q130 245 -10 263Z" fill="${c.secondary}" clip-path="url(#${id}-ec)"/>`;
     } else {
       face = `<path d="${TF}" fill-rule="evenodd" fill="${T.sheen ? `url(#${id}-sh)` : T.body}"/>`;
       if (T.line) face += `<path d="${pearD(14)}" fill="none" stroke="${T.line}" stroke-width="5" mask="url(#${id}-mk)"/><circle cx="130" cy="112" r="24" fill="none" stroke="${T.line}" stroke-width="5"/>`;
@@ -602,7 +625,7 @@
     const ringS = founder
       ? `<g transform="translate(${SQ.x} ${SQ.y}) rotate(${TILT})"><path d="${rrect(42, 17)}${rrect(26, 3)}" fill-rule="evenodd" fill="url(#${id}-rg)"/><path class="c03-rimr" d="${rrect(42, 17)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/></g>`
       : `<g transform="translate(${RN.x} ${RN.y})"><path d="${circ(40)}${circ(24)}" fill-rule="evenodd" fill="url(#${id}-rg)"/><path class="c03-rimr" d="${circ(40)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/></g>`;
-    const fig = `<g transform="translate(${at.fig[0]} ${at.fig[1]}) rotate(${ROT.fig})"><circle r="6" fill="none" stroke="#a9b2be" stroke-width="4"/><path transform="translate(-20 8) scale(.2)" d="${MC.AVATAR.torso}${MC.AVATAR.hood}" fill="url(#${id}-st)" stroke="#4a535e" stroke-width="10"/></g>`;
+    const fig = `<g transform="translate(${at.fig[0]} ${at.fig[1]}) rotate(${ROT.fig})"><circle r="6" fill="none" stroke="#a9b2be" stroke-width="4"/><path d="${hexD(17.4, 28)}" fill="url(#${id}-st)" stroke="#4a535e" stroke-width="2.4" stroke-linejoin="round"/></g>`;
     const ball = showBall ? `<g transform="translate(${at.ball[0]} ${at.ball[1]}) rotate(${ROT.ball})"><path d="M0 3V18" stroke="#a9b2be" stroke-width="5"/><circle cy="29" r="10.5" fill="url(#${id}-bl)" stroke="#525b66" stroke-width="2"/></g>` : "";
     const carab = tk === "LEGEND" ? `<g transform="translate(${at.carab[0]} ${at.carab[1]}) rotate(-36) scale(.95)"><path d="M-9 -4C-9 1 -4 4 1 4C7 4 11 0 11 -7L11 -46C11 -53 6 -57 0 -57C-6 -57 -9 -53 -9 -47Z" fill="none" stroke="#2f363e" stroke-width="11"/><path d="M-9 -4C-9 1 -4 4 1 4C7 4 11 0 11 -7L11 -46C11 -53 6 -57 0 -57C-6 -57 -9 -53 -9 -47Z" fill="none" stroke="#c4ccd5" stroke-width="7"/></g>` : "";
     const m = meas("800 100px Changa", String(p.ovr));
@@ -616,7 +639,8 @@
       `<radialGradient id="${id}-bl" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#aab3be"/><stop offset="1" stop-color="#5b6470"/></radialGradient>` +
       `<linearGradient id="${id}-sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a423c"/><stop offset=".4" stop-color="#1e1b19"/><stop offset="1" stop-color="#100e0d"/></linearGradient>` +
       `<linearGradient id="${id}-nk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset=".35" stop-color="#9aa3ae"/><stop offset=".6" stop-color="#e3e8ed"/><stop offset="1" stop-color="#7a8491"/></linearGradient>` +
-      `<mask id="${id}-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="260" height="420"><rect width="260" height="420" fill="#fff"/><circle cx="130" cy="112" r="24" fill="#000"/></mask>`;
+      `<mask id="${id}-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="260" height="420"><rect width="260" height="420" fill="#fff"/><circle cx="130" cy="112" r="24" fill="#000"/></mask>` +
+      `<clipPath id="${id}-ec"><path d="${pearD(13)}"/></clipPath>`;
     const vbW = 46;
     return (
       `<svg viewBox="0 0 ${vbW} 80" width="${r2((size * vbW) / 80)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false"><defs>${defs}</defs>` +
@@ -634,6 +658,7 @@
   };
   const MHOLE = (oy = 0) => `M11.1 ${r2(5.3 + oy)}A1.1 1.1 0 1 0 8.9 ${r2(5.3 + oy)}A1.1 1.1 0 1 0 11.1 ${r2(5.3 + oy)}Z`;
   function miniToken(p, o, size) {
+    const mid = MC.uid("c03m");
     const tk = MC.TIERS.includes(p.tier) ? p.tier : "PRO";
     const c = p.club;
     const T = TOK[tk](c);
@@ -649,8 +674,15 @@
     const FP = MPEAR() + MHOLE();
     let face;
     if (T.clear) face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/><path class="c03-clear" d="${MPEAR()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
-    else if (T.nickel) face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/><path d="${MPEAR()}" fill="none" stroke="#c9d0d8" stroke-width="1.1"/>`;
-    else face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` + (T.stitch ? `<path d="${MPEAR()}" fill="none" stroke="#7d5a3a" stroke-width=".7"/>` : "");
+    else if (T.nickel)
+      face =
+        `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` +
+        `<path d="M1 11.2Q10 9.6 19 11.2V12.6Q10 11 1 12.6Z" fill="${c.secondary}" clip-path="url(#${mid}-mc)"/>` +
+        `<path d="${MPEAR()}" fill="none" stroke="#c9d0d8" stroke-width="1.2"/>`;
+    else
+      face =
+        `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` +
+        (T.line ? `<path d="M10 3.9A1.4 1.4 0 0 1 11.3 5.2L11.3 8.4C11.3 11.4 16.5 11.8 16.5 14.5A6.5 3.4 0 0 1 3.5 14.5C3.5 11.8 8.7 11.4 8.7 8.4L8.7 5.2" fill="none" stroke="${T.line}" stroke-width=".55" stroke-opacity=".9"/>` : "") + (T.stitch ? `<path d="${MPEAR()}" fill="none" stroke="#7d5a3a" stroke-width=".7"/>` : "");
     const ringS = founder
       ? `<g transform="translate(14.4 4.2) rotate(${TILT})"><path class="c03-mr" d="${rrect(3, 1)}" fill="none" stroke-width="1.35"/></g>`
       : `<circle class="c03-mr" cx="14.4" cy="4.4" r="3.1" fill="none" stroke-width="1.3"/>`;
@@ -663,6 +695,7 @@
     const nx = m ? r2(10 - (((m.r - m.l) / 2) * fs) / 100) : 10;
     return (
       `<svg viewBox="0 0 22 24" width="${r2((size * 22) / 24)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false">` +
+      (T.nickel ? `<defs><clipPath id="${mid}-mc"><path d="${MPEAR()}"/></clipPath></defs>` : "") +
       ply +
       face +
       `<path class="c03-rim" d="${MPEAR()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
@@ -718,8 +751,10 @@
     const A = art(p, { ...o, thumb: false }, id + "a", { swing: -7, noCaption: true });
     const sc = 1;
     const tx = 180 - 130 * sc;
-    const slot = { x: r2(tx + 158.6 * sc), y: 146 };
-    const ty = r2(slot.y - 49.8 * sc);
+    // the zip pull takes the ring by its free top corner, so the founder stamp stays readable
+    const hook = p.founder ? sqW(-32, -32) : rnW(-118);
+    const slot = { x: r2(tx + hook[0] * sc), y: 139 };
+    const ty = r2(slot.y - hook[1] * sc);
     const handle = "@" + String(p.key || p.name.lat).toLowerCase();
     const yy = p.founder ? "·" + String(p.founder).slice(2) : "";
     // zip coil teeth along y=118
@@ -847,7 +882,7 @@
     ],
     belonging: [
       "'Show me your ring.' A founder ring is square; every later cohort's is round. You can tell a 2026 founder across a leaderboard without reading a word, and nobody can ever get that ring again.",
-      "Charms only add. The manager figure is the first, permanent charm; one more is struck for each completed season; and the steel ball (shown as an example) passes each gameweek to whoever leads the mini-league, then moves on. Friends compare what is hanging off their ring, not just their number.",
+      "Charms only add. The first and only permanent one is the manager figure, cut through a hexagonal steel plate (one panel of a ball) with the hood seam left as a bridge; one more is struck for each completed season; and the steel ball (shown as an example) passes each gameweek to whoever leads the mini-league, then moves on. Friends compare what is hanging off their ring, not just their number.",
       "Teenagers want the leather fob and the carabiner; adults respect bakelite and leather. Neither looks like a game skin, which keeps it wearable for the 35-year-old Fantasy veteran and still covetable at 15.",
       "Screenshot value comes from the object, not the template: a keyring on your actual bag, mid-swing, is a photo people already take. The share image is exactly that photo.",
     ],

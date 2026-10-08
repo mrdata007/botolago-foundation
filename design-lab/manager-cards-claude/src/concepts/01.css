@@ -12,6 +12,10 @@
   --c01-line: #e3e8ee;
   --c01-net: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 55%, transparent);
   --c01-knot: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 45%, #ffffff) 85%, transparent);
+  --c01-knot2: color-mix(in srgb, var(--c01-club2, #e9e4d6) 92%, transparent);
+  --c01-braid: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 66%, #ffffff) 58%, transparent);
+  --c01-bknot: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 58%, #ffffff) 72%, transparent);
+  --c01-blite: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 30%, #ffffff) 55%, transparent);
   --c01-steelnet: rgba(198, 208, 219, 0.42);
   --c01-rearsteel: #8f9aa5;
   --c01-rearw: #e9eef3;
@@ -38,6 +42,10 @@
   --c01-line: #f4f6f8;
   --c01-net: color-mix(in srgb, var(--c01-club, #8f9aa5) 60%, transparent);
   --c01-knot: color-mix(in srgb, var(--c01-club, #8f9aa5) 90%, transparent);
+  --c01-knot2: color-mix(in oklab, var(--c01-club2, #e9e4d6) 45%, var(--c01-club, #3b4a5e));
+  --c01-braid: color-mix(in srgb, var(--c01-club, #8f9aa5) 52%, transparent);
+  --c01-bknot: color-mix(in srgb, var(--c01-club, #8f9aa5) 70%, transparent);
+  --c01-blite: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 40%, #ffffff) 90%, transparent);
   --c01-steelnet: rgba(110, 120, 132, 0.55);
   --c01-rearsteel: #8f9aa5;
   --c01-rearw: #f2f4f6;
@@ -63,6 +71,10 @@
   --c01-line: #e3e8ee;
   --c01-net: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 55%, transparent);
   --c01-knot: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 45%, #ffffff) 85%, transparent);
+  --c01-knot2: color-mix(in srgb, var(--c01-club2, #e9e4d6) 92%, transparent);
+  --c01-braid: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 66%, #ffffff) 58%, transparent);
+  --c01-bknot: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 58%, #ffffff) 72%, transparent);
+  --c01-blite: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 30%, #ffffff) 55%, transparent);
   --c01-steelnet: rgba(198, 208, 219, 0.42);
   --c01-rearsteel: #8f9aa5;
   --c01-rearw: #e9eef3;
@@ -138,6 +150,15 @@
 .c01 .c01-steelnet { stroke: var(--c01-steelnet); }
 .c01 .c01-rearsteel { stroke: var(--c01-rearsteel); }
 .c01 .c01-rearw { stroke: var(--c01-rearw); }
+.c01 .c01-rearhi { stroke: #d5dce3; opacity: 0.7; }
+.c01 .c01-weld { fill: #a9b3bd; }
+.c01 .c01-netlite { stroke: var(--c01-blite); fill: none; }
+/* LEGEND's braided cord: deeper in the club colour, so its weight shows as body and sheen rather than glare */
+.c01 .c01-braid { stroke: var(--c01-braid); }
+.c01 .c01-bknot { stroke: var(--c01-bknot); }
+.c01 .c01-knot2 { stroke: var(--c01-knot2); }
+/* the net's clearance round the tier: the small card's larger tier label has its own twin */
+.c01 .c01-kt-big { display: none; }
 .c01 .c01-bagfill { fill: var(--c01-bagfill); }
 .c01 .c01-bagnet { stroke: var(--c01-net); }
 .c01 .c01-bagcord { stroke: var(--c01-knot); }
@@ -152,6 +173,8 @@
   .c01 .c01-slv { display: inline; }
   .c01 .c01-tier { font-size: 15px; }
   .c01 .c01-tier-ar { font-size: 16px; }
+  .c01 .c01-kt { display: none; }
+  .c01 .c01-kt-big { display: inline; }
 }
 @container (max-width: 250px) {
   .c01 .c01-fine { display: none; }

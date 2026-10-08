@@ -15,6 +15,11 @@
   --c02-blade-hi: #ffffff;
   --c02-blade: #eef1f4;
   --c02-blade-lo: #dde3ea;
+  --c02-blade-edge: #ffffff;
+  --c02-blade-rim-w: 0;
+  --c02-dimple-pit: #d6dde5;
+  --c02-dimple-sh: #8f9aa7;
+  --c02-example: #6b7480;
   --c02-cres-rim: #737b86;
   /* rows */
   --c02-surface: oklch(0.22 0.03 260);
@@ -34,10 +39,17 @@
   --c02-ring: #858d99;
   --c02-ring-blade: #858d99;
   --c02-trail-rim: rgba(0, 0, 0, 0);
-  --c02-blade-rim: #858d99;
-  --c02-blade-hi: #ffffff;
-  --c02-blade: #f4f6f8;
-  --c02-blade-lo: #e3e8ee;
+  /* LEGEND on the mist ground: a shaded blade held by an ink keyline, so the top tier is never
+     the faintest object on the light theme (keyline #0C3164 on the mist, 11.9:1) */
+  --c02-blade-rim: #0c3164;
+  --c02-blade-rim-w: 1.25;
+  --c02-blade-hi: #e6ebf0;
+  --c02-blade: #dce2e8;
+  --c02-blade-lo: #cbd3dd;
+  --c02-blade-edge: #0c3164;
+  --c02-dimple-pit: #c2cbd6;
+  --c02-dimple-sh: #6b7480;
+  --c02-example: #4e5661;
   --c02-cres-rim: rgba(0, 0, 0, 0);
   --c02-surface: #ffffff;
   --c02-text: #060d1a;
@@ -45,6 +57,21 @@
   --c02-me: color-mix(in oklab, oklch(0.88 0.11 205) 22%, #ffffff);
   --c02-row-edge: color-mix(in oklab, #0c3164 9%, transparent);
   --c02-yr: #0151fc;
+}
+/* the share is always staged on the night pitch, whatever ground it is shown on */
+.c02.c02-share,
+.app-light .c02.c02-share,
+:root[data-ground="day"] .c02.c02-share,
+:root .app-dark .app-light .c02.c02-share {
+  --c02-blade-rim: rgba(0, 0, 0, 0);
+  --c02-blade-rim-w: 0;
+  --c02-blade-hi: #ffffff;
+  --c02-blade: #eef1f4;
+  --c02-blade-lo: #dde3ea;
+  --c02-blade-edge: #ffffff;
+  --c02-dimple-pit: #d6dde5;
+  --c02-dimple-sh: #8f9aa7;
+  --c02-example: #6b7480;
 }
 :root .app-dark .c02 {
   --c02-ball-hi: #eef2f6;
@@ -58,6 +85,11 @@
   --c02-blade-hi: #ffffff;
   --c02-blade: #eef1f4;
   --c02-blade-lo: #dde3ea;
+  --c02-blade-edge: #ffffff;
+  --c02-blade-rim-w: 0;
+  --c02-dimple-pit: #d6dde5;
+  --c02-dimple-sh: #8f9aa7;
+  --c02-example: #6b7480;
   --c02-cres-rim: #737b86;
   --c02-surface: oklch(0.22 0.03 260);
   --c02-text: #f0f6fc;
@@ -190,6 +222,14 @@
 .c02 .c02-trail-rim.is-blade {
   stroke: var(--c02-blade-rim);
 }
+/* the blade's keyline: 1.25u on the card, 1.25px on the tokens (whose rim does not scale) */
+.c02.c02-card .c02-trail-rim.is-blade {
+  vector-effect: none;
+  stroke-width: var(--c02-blade-rim-w);
+}
+.c02.c02-token .c02-trail-rim.is-blade {
+  stroke-width: calc(var(--c02-blade-rim-w) * 1px);
+}
 .c02 .c02-paint {
   fill: #0c3164;
 }
@@ -203,7 +243,7 @@
   fill: var(--c02-blade);
 }
 .c02 .c02-blade-edge {
-  stroke: #ffffff;
+  stroke: var(--c02-blade-edge);
   stroke-width: 1.6;
   stroke-linecap: round;
 }
@@ -260,11 +300,11 @@
 
 /* LEGEND dimples: debossed, one per gameweek */
 .c02 .c02-dimple-pit {
-  fill: #d6dde5;
+  fill: var(--c02-dimple-pit);
 }
 .c02 .c02-dimple-sh {
   fill: none;
-  stroke: #8f9aa7;
+  stroke: var(--c02-dimple-sh);
   stroke-width: 0.8;
   stroke-linecap: round;
 }
@@ -275,7 +315,7 @@
   stroke-linecap: round;
 }
 .c02 .c02-example {
-  fill: #6b7480;
+  fill: var(--c02-example);
 }
 
 /* ---------- words on the trail ---------- */
@@ -565,6 +605,10 @@
 }
 .c02.c02-share .c02-ring {
   stroke: #737b86;
+}
+/* the share's footer chip already marks the sample; the blade's own tag would sit on the frame edge */
+.c02.c02-share .c02-example {
+  display: none;
 }
 .c02 .c02-sh-logo {
   position: absolute;

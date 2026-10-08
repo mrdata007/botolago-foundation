@@ -35,8 +35,8 @@
   const SKIN = "#b98463"; // the shared avatar's skin
   const SKIN_DK = "#8d5f45";
   const SKIN_LT = "#d2a17f";
-  const SLEEVE = "#1d2f4a"; // the shared avatar's bench jacket
-  const SLEEVE_LT = "#34507a";
+  const SLEEVE = "#2f343c"; // the bench jacket, in graphite (the shared avatar's figure, recoloured)
+  const SLEEVE_LT = "#4f5763";
   const PLAYED = 7; // sample season: J.01–J.07, labelled Exemple on the label
 
   /* ---------- geometry (viewBox units) ---------- */
@@ -49,7 +49,6 @@
   const FT = 3; // fabric top: the fold over the rail
   const CAST = { cw: 6, ch: 7, rows: 5 }; // the founder cast-on keeps one gauge at every tier
   const LABEL_W = 108;
-  const LABEL_H = 128;
   const TASSELS = { HOMA: 2, STADE: 3, PRO: 4, CHAMPION: 5, LEGEND: 3 }; // LEGEND: three at each end
 
   /* gauge: the tier ladder is the knit itself */
@@ -75,19 +74,22 @@
     9: ["###", "#.#", "###", "..#", "###"],
     " ": ["..", "..", "..", "..", ".."],
   };
-  // HOMA's hand-knitted figures: a 5×7 bitmap, each pixel two stitches by two rows
-  const F57 = {
-    0: [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."],
-    1: ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
-    2: [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"],
-    3: ["#####", "...#.", "..#..", "...#.", "....#", "#...#", ".###."],
-    4: ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."],
-    5: ["#####", "#....", "####.", "....#", "....#", "#...#", ".###."],
-    6: ["..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###."],
-    7: ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
-    8: [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
-    9: [".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."],
+  // HOMA's hand-knitted figures: a bold 5×7 chart with two-pixel stems. Each pixel is two rows
+  // high; the columns are 1-2-2-2-1 stitches wide, so a stem is three stitches (the ink weight of
+  // STADE's sampled figures) and a counter two.
+  const F57B = {
+    0: [".###.", "##.##", "##.##", "##.##", "##.##", "##.##", ".###."],
+    1: ["..##.", ".###.", "..##.", "..##.", "..##.", "..##.", ".####"],
+    2: [".###.", "##.##", "...##", "..##.", ".##..", "##...", "#####"],
+    3: ["####.", "...##", "...##", ".###.", "...##", "...##", "####."],
+    4: ["##.##", "##.##", "##.##", "#####", "...##", "...##", "...##"],
+    5: ["#####", "##...", "####.", "...##", "...##", "##.##", ".###."],
+    6: [".###.", "##...", "##...", "####.", "##.##", "##.##", ".###."],
+    7: ["#####", "...##", "...##", "..##.", "..##.", ".##..", ".##.."],
+    8: [".###.", "##.##", "##.##", ".###.", "##.##", "##.##", ".###."],
+    9: [".###.", "##.##", "##.##", ".####", "...##", "...##", ".###."],
   };
+  const F57B_COLS = [1, 2, 2, 2, 1];
   // hand-charted tier words on 5 rows, variable width (an M needs five stitches to be an M)
   const F5H = {
     H: ["#..#", "#..#", "####", "#..#", "#..#"],
@@ -96,9 +98,21 @@
     A: [".##.", "#..#", "####", "#..#", "#..#"],
     C: [".##", "#..", "#..", "#..", ".##"],
     P: ["###.", "#..#", "###.", "#...", "#..."],
+    R: ["###.", "#..#", "###.", "#.#.", "#..#"],
     I: ["###", ".#.", ".#.", ".#.", "###"],
     N: ["#..#", "##.#", "#.##", "#..#", "#..#"],
+    L: ["#..", "#..", "#..", "#..", "###"],
+    E: ["###", "#..", "##.", "#..", "###"],
+    G: [".##", "#..", "#.#", "#.#", ".##"],
+    D: ["##.", "#.#", "#.#", "#.#", "##."],
     " ": ["..", "..", "..", "..", ".."],
+  };
+  // PRO's tier word: a bold 7-row chart with two-stitch stems. The R has a square shoulder and a
+  // kicked leg, so it can never be read as an A.
+  const F7B = {
+    P: ["####.", "##.##", "##.##", "####.", "##...", "##...", "##..."],
+    R: ["####.", "##.##", "##.##", "####.", "##.#.", "##.##", "##.##"],
+    O: [".###.", "##.##", "##.##", "##.##", "##.##", "##.##", ".###."],
   };
 
   /* ---------- small utilities ---------- */
@@ -148,6 +162,15 @@
     const out = [];
     for (const row of bmp) {
       const line = [...row].map((ch) => ch.repeat(sx)).join("");
+      for (let i = 0; i < sy; i++) out.push(line);
+    }
+    return out;
+  }
+  /** Scales a bitmap with a width (in stitches) per source column and sy rows per source row. */
+  function scaleCols(bmp, widths, sy) {
+    const out = [];
+    for (const row of bmp) {
+      const line = [...row].map((ch, i) => ch.repeat(widths[i % widths.length])).join("");
       for (let i = 0; i < sy; i++) out.push(line);
     }
     return out;
@@ -277,25 +300,33 @@
 
   /* ---------- the knitted motifs ---------- */
   const CHANGA = '800 {s} "Changa"';
-  /** The 84: HOMA's hand-charted 5×7 bitmap; otherwise Changa 800 sampled at the tier's own
+  /** The 84: HOMA's bold hand chart; otherwise Changa 800 sampled at the tier's own
       resolution, condensed until it sits inside the selvedges with a margin. */
   function digitArt(ovr, tier, G, cols, hU) {
     const s2 = String(ovr);
-    if (tier === "HOMA") return scaleBmp(word(s2, F57, 1), 2, 2);
+    if (tier === "HOMA") {
+      // two figures: 8 stitches each with a two-stitch gap; three figures drop to single-stitch columns
+      const three = s2.length > 2;
+      const g2 = [...s2].map((ch) => scaleCols(F57B[ch] || F57B[0], three ? [1] : F57B_COLS, 2));
+      return g2[0].map((_, r) => g2.map((gl) => gl[r]).join(three ? "." : ".."));
+    }
     const rows = Math.round((hU || (s2.length > 2 ? 86 : 108)) / G.ch);
     const max = cols - 2 - 2 * Math.ceil(14 / G.cw);
     let b = null;
     for (let sq = 1; sq >= 0.66; sq -= 0.04) {
-      b = trim(rasterText(s2, CHANGA, rows, G.cw, G.ch, 0.46, { sq: f2(sq), ls: "0.02em" }));
+      b = trim(rasterText(s2, CHANGA, rows, G.cw, G.ch, 0.5, { sq: f2(sq), ls: "0.02em" }));
       if (bw(b) <= max) break;
     }
     return b;
   }
-  /** The tier word (Latin): sampled from Changa at 7 rows where it fits (STADE, PRO);
-      hand-charted on 5 rows for HOMA and for CHAMPION's eight letters (doubled rows). */
+  /** The tier word (Latin): sampled from Changa at 7 rows for STADE; hand-charted elsewhere:
+      HOMA on 5 rows, PRO on a bold 7-row chart, CHAMPION's eight letters on 5 rows doubled,
+      LEGEND on 5 rows. */
   function tierWordArt(tier, G, cols) {
     if (tier === "HOMA") return word("HOMA", F5H, 1);
+    if (tier === "PRO") return word("PRO", F7B, 1);
     if (tier === "CHAMPION") return scaleBmp(word("CHAMPION", F5H, 1), 1, 2);
+    if (tier === "LEGEND") return word("LEGEND", F5H, 1);
     const rows = Math.round(42 / G.ch);
     let b = null;
     for (let sq = 1; sq >= 0.7; sq -= 0.05) {
@@ -391,22 +422,19 @@
     const legEls = (legs) =>
       legs.map(([cx, cy, a, rx, ry]) => `<ellipse cx="${f2(cx)}" cy="${f2(cy)}" rx="${f2(rx)}" ry="${f2(ry)}" transform="rotate(${a} ${f2(cx)} ${f2(cy)})" fill="url(#${gid})"/>`).join("");
     if (G.kind === "g") {
-      // garter: horizontal ridges in brick bond
-      const bumps = [
-        [w / 2, h * 0.27],
-        [0, h * 0.77],
-        [w, h * 0.77],
-      ];
-      const rx = w * 0.47;
-      const ry = h * 0.24;
-      const ell = (cx, cy) => `M${f2(cx - rx)} ${f2(cy)}A${f2(rx)} ${f2(ry)} 0 1 0 ${f2(cx + rx)} ${f2(cy)}A${f2(rx)} ${f2(ry)} 0 1 0 ${f2(cx - rx)} ${f2(cy)}Z`;
-      return (
-        grad +
-        `<pattern id="${id}" width="${f2(w)}" height="${f2(h)}" patternUnits="userSpaceOnUse"${tf}>` +
-        `<path d="M0 0H${f2(w)}V${f2(h)}H0Z${bumps.map(([x, y]) => ell(x, y)).join("")}" fill="${gapC}" fill-opacity="${gapO}" fill-rule="evenodd"/>` +
-        bumps.map(([x, y]) => `<ellipse cx="${f2(x)}" cy="${f2(y)}" rx="${f2(rx)}" ry="${f2(ry)}" fill="url(#${gid})"/>`).join("") +
-        `</pattern>`
-      );
+      // garter: continuous horizontal ridges with dark troughs between them; the bumps of each
+      // ridge sit half a stitch off the row below (never ringed, so it never reads as scales)
+      let rows = "";
+      for (let r = 0; r < 2; r++) {
+        const y0 = r * h;
+        const off = r ? w / 2 : 0;
+        rows +=
+          `<rect y="${f2(y0 + h * 0.7)}" width="${f2(w)}" height="${f2(h * 0.3)}" fill="${gapC}" fill-opacity="${gapO}"/>` +
+          `<rect y="${f2(y0)}" width="${f2(w)}" height="${f2(h * 0.12)}" fill="${gapC}" fill-opacity="${f2(gapO * 0.4)}"/>` +
+          [off - w / 2, off + w / 2].map((cx) => `<ellipse cx="${f2(cx)}" cy="${f2(y0 + h * 0.4)}" rx="${f2(w * 0.5)}" ry="${f2(h * 0.28)}" fill="url(#${gid})"/>`).join("") +
+          `<rect x="${f2(off - 0.3)}" y="${f2(y0 + h * 0.18)}" width=".6" height="${f2(h * 0.45)}" fill="${gapC}" fill-opacity="${f2(gapO * 0.45)}"/>`;
+      }
+      return grad + `<pattern id="${id}" width="${f2(w)}" height="${f2(2 * h)}" patternUnits="userSpaceOnUse"${tf}>${rows}</pattern>`;
     }
     if (G.kind === "r") {
       // 1×1 rib: a raised knit column, then a sunken purl column
@@ -490,100 +518,93 @@
     return s;
   }
 
-  /** The woven label sewn on the front: the brand header, the four ratings, the ID's carrier.
-      mode "tall" (hanging tiers): a column of four lines. mode "wide" (LEGEND): a 2×2 grid, set larger. */
-  function wovenLabel(p, o, x, y, w, h, mode, thumb, ids, nameOnLabel) {
+  /** The woven label's geometry at scale k (1 on the hanging scarf). `stack` sets the foot on one
+      line per field, for a narrow label. Returns the y offsets of every line and the height. */
+  function labelLayout(w, k, stack, nameOnLabel) {
+    const pad = 9 * k;
+    const lw = Math.min(w - 2 * pad, 62 * k);
+    const lh = lw / MC.LOGO_RATIO.wordmark;
+    const logoY = 9 * k;
+    const ruleY = logoY + lh + 6 * k;
+    const sp = 14.6 * k;
+    const stats = [0, 1, 2, 3].map((i) => ruleY + 16 * k + i * sp);
+    const rule2 = stats[3] + 7 * k;
+    const mfs = Math.min(8 * k, 9.4);
+    const nfs = Math.min(6.6 * k, 8);
+    const lp = mfs * 1.32;
+    const foot = [rule2 + 4 * k + mfs];
+    for (let i = 1; i < (stack ? 3 : 2); i++) foot.push(foot[i - 1] + lp);
+    const note = foot[foot.length - 1] + nfs * 1.45;
+    const nameY = nameOnLabel ? note + lp : null;
+    const h = Math.ceil((nameY || note) + 7 * k);
+    return { pad, lw, lh, logoY, ruleY, stats, rule2, mfs, nfs, foot, note, nameY, h };
+  }
+
+  /** The woven label sewn on the front: the brand header, the four ratings in a column, and the
+      ID's carrier (ID, country, season) woven into its foot. */
+  function wovenLabel(p, o, x, y, w, k, thumb, ids, nameOnLabel, stack) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    const wide = mode === "wide";
-    const pad = wide ? 11 : 9;
-    const L = x + pad;
-    const R = x + w - pad;
+    const Lt = labelLayout(w, k, stack, nameOnLabel);
+    const h = Lt.h;
+    const L = x + Lt.pad;
+    const R = x + w - Lt.pad;
     let s = "";
     // sewn: a soft shadow, the satin, a woven border, the sewing stitches at the edges
     s += `<rect x="${f2(x + 0.8)}" y="${f2(y + 1.6)}" width="${w}" height="${h}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})"/>`;
-    s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${SATIN}"/>`;
-    if (!thumb) s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="url(#${ids.weave})"/>`;
+    s += `<rect x="${f2(x)}" y="${f2(y)}" width="${w}" height="${h}" fill="${SATIN}"/>`;
+    if (!thumb) s += `<rect x="${f2(x)}" y="${f2(y)}" width="${w}" height="${h}" fill="url(#${ids.weave})"/>`;
     s += `<rect x="${f2(x + 0.5)}" y="${f2(y + 0.5)}" width="${w - 1}" height="${h - 1}" fill="none" stroke="${SATIN_EDGE}" stroke-width="1"/>`;
     s += `<rect x="${f2(x + 3)}" y="${f2(y + 3)}" width="${w - 6}" height="${h - 6}" fill="none" stroke="#8A8170" stroke-width=".7" stroke-dasharray="2.2 1.6" opacity=".55"/>`;
     // header: the BotolaGO wordmark, unmodified (colour variant on the satin)
-    const lw = wide ? 66 : Math.min(w - 2 * pad, 62);
-    const lh = lw / MC.LOGO_RATIO.wordmark;
-    const lx = ar ? R - lw : L;
-    s += MC.logo("wordmark", { variant: "color", w: f2(lw), h: f2(lh), label: false }).replace("<svg ", `<svg x="${f2(lx)}" y="${f2(y + 9)}" `);
-    const rule = (yy) => `<path d="M${f2(L)} ${f2(yy)}H${f2(R)}" stroke="${SATIN_EDGE}" stroke-width=".8"/>`;
-    const ruleY = y + 9 + lh + 6;
-    s += rule(ruleY);
+    const lx = ar ? R - Lt.lw : L;
+    s += MC.logo("wordmark", { variant: "color", w: f2(Lt.lw), h: f2(Lt.lh), label: false }).replace("<svg ", `<svg x="${f2(lx)}" y="${f2(y + Lt.logoY)}" `);
+    const rule = (yy) => `<path d="M${f2(L)} ${f2(yy)}H${f2(R)}" stroke="${SATIN_EDGE}" stroke-width="${f2(0.8 * Math.min(k, 1.3))}"/>`;
+    s += rule(y + Lt.ruleY);
     const tx = (xx, yy, str, anchor, cls, fs, dir = "ltr") =>
-      `<text x="${f2(xx)}" y="${f2(yy)}" text-anchor="${anchor}" direction="${dir}" font-size="${fs}" class="c07-lb ${cls}">${esc(str)}</text>`;
-    if (wide && !thumb) s += tx(ar ? L : R, y + 9 + lh - 1, S.tiers[p.tier], "end", "c07-lb-tier" + (ar ? " c07-lb-ar" : ""), ar ? 12 : 10.5, ar ? "rtl" : "ltr");
-    const footY = y + h - (wide ? 26 : 33);
+      `<text x="${f2(xx)}" y="${f2(yy)}" text-anchor="${anchor}" direction="${dir}" font-size="${f2(fs)}" class="c07-lb ${cls}">${esc(str)}</text>`;
     if (thumb) {
-      for (let i = 0; i < 4; i++) {
-        const yy = ruleY + 6 + i * ((footY - ruleY - 10) / 4);
-        s += `<rect x="${f2(ar ? R - 30 : L)}" y="${f2(yy + 2)}" width="30" height="6" fill="${LABEL_SOFT}" opacity=".5"/><rect x="${f2(ar ? L : R - 16)}" y="${f2(yy)}" width="16" height="9" fill="${LABEL_INK}" opacity=".7"/>`;
-      }
+      Lt.stats.forEach((b) => {
+        const yy = y + b - 9 * k;
+        s += `<rect x="${f2(ar ? R - 30 * k : L)}" y="${f2(yy + 2 * k)}" width="${f2(30 * k)}" height="${f2(6 * k)}" fill="${LABEL_SOFT}" opacity=".5"/><rect x="${f2(ar ? L : R - 16 * k)}" y="${f2(yy)}" width="${f2(16 * k)}" height="${f2(9 * k)}" fill="${LABEL_INK}" opacity=".7"/>`;
+      });
       return s;
     }
-    // the four ratings
-    if (wide) {
-      const colW = (R - L) / 2;
-      MC.STATS.forEach((key, i) => {
-        const cx = ar ? R - colW * (i % 2) : L + colW * (i % 2);
-        const yy = ruleY + 26 + Math.floor(i / 2) * 27;
-        if (ar) {
-          s += tx(cx, yy, S.stats[key], "start", "c07-lb-k c07-lb-ar", 8.8, "rtl");
-          s += tx(cx - colW + 4, yy, String(p.stats[key]), "start", "c07-lb-v", 19);
-        } else {
-          s += tx(cx, yy, S.stats[key], "start", "c07-lb-k", 10);
-          s += tx(cx + colW - 8, yy, String(p.stats[key]), "end", "c07-lb-v", 22);
-        }
-      });
-    } else {
-      const step = (footY - 8 - ruleY - 4) / 4;
-      MC.STATS.forEach((key, i) => {
-        const yy = ruleY + 4 + step * (i + 1) - 2;
-        if (ar) {
-          s += tx(R, yy, S.stats[key], "start", "c07-lb-k c07-lb-ar", 11.5, "rtl");
-          s += tx(L, yy, String(p.stats[key]), "start", "c07-lb-v", 13);
-        } else {
-          s += tx(L, yy, S.stats[key], "start", "c07-lb-k", 10.5);
-          s += tx(R, yy, String(p.stats[key]), "end", "c07-lb-v", 13);
-        }
-      });
+    // the four ratings (the Arabic names shrink until each line fits beside its figure)
+    let akfs = 11.5 * k;
+    if (ar) {
+      const vw = ((ink("88", '800 {s} "Manrope"').right + ink("88", '800 {s} "Manrope"').left) * 13 * k) / 100;
+      const kw = Math.max(...MC.STATS.map((key) => { const m = ink(S.stats[key], '700 {s} "Noto Sans Arabic"'); return m.left + m.right; }));
+      akfs = Math.min(akfs, ((R - L - vw - 6 * k) / kw) * 100);
     }
-    s += rule(footY - 8);
-    // the ID's physical carrier: woven into the label's foot, with the season and the country
-    const f1 = footY + 3;
-    const f2y = footY + 13;
-    const f3 = footY + 22;
-    const mfs = wide ? 8.6 : 8;
-    // an RTL string anchored at the left edge ends there ("end"); at the right edge it starts there
-    const note = ar ? "مثال · J.01–J.07" : "J.01–J.07 · Exemple";
-    if (wide) {
+    MC.STATS.forEach((key, i) => {
+      const yy = y + Lt.stats[i];
       if (ar) {
-        s += tx(R, f1, p.id, "end", "c07-lb-meta", mfs);
-        s += tx(L, f1, p.season, "start", "c07-lb-meta", mfs);
-        s += tx(R, f2y, S.country, "start", "c07-lb-meta c07-lb-ar", mfs + 0.6, "rtl");
-        s += tx(L, f2y, note, "end", "c07-lb-note c07-lb-ar", 7, "rtl");
+        s += tx(R, yy, S.stats[key], "start", "c07-lb-k c07-lb-ar", akfs, "rtl");
+        s += tx(L, yy, String(p.stats[key]), "start", "c07-lb-v", 13 * k);
       } else {
-        s += tx(L, f1, p.id, "start", "c07-lb-meta", mfs);
-        s += tx(R, f1, p.season, "end", "c07-lb-meta", mfs);
-        s += tx(L, f2y, S.country, "start", "c07-lb-meta", mfs);
-        s += tx(R, f2y, note, "end", "c07-lb-note", 6.8);
+        s += tx(L, yy, S.stats[key], "start", "c07-lb-k", 10.5 * k);
+        s += tx(R, yy, String(p.stats[key]), "end", "c07-lb-v", 13 * k);
       }
-    } else if (ar) {
-      s += tx(R, f1, p.id, "end", "c07-lb-meta", mfs);
-      s += tx(R, f2y, S.country, "start", "c07-lb-meta c07-lb-ar", mfs + 0.6, "rtl");
-      s += tx(L, f2y, p.season, "start", "c07-lb-meta", mfs);
-      s += tx(R, f3, note, "start", "c07-lb-note c07-lb-ar", 7, "rtl");
+    });
+    s += rule(y + Lt.rule2);
+    // the ID's physical carrier: woven into the label's foot, with the country and the season.
+    // An RTL string anchored at the left edge ends there ("end"); at the right edge it starts there.
+    const F = Lt.foot.map((b) => y + b);
+    const mfs = Lt.mfs;
+    const note = ar ? "مثال · J.01–J.07" : "J.01–J.07 · Exemple";
+    if (ar) {
+      s += tx(R, F[0], p.id, "end", "c07-lb-meta", mfs);
+      s += tx(R, F[1], S.country, "start", "c07-lb-meta c07-lb-ar", mfs + 0.6, "rtl");
+      s += stack ? tx(R, F[2], p.season, "end", "c07-lb-meta", mfs) : tx(L, F[1], p.season, "start", "c07-lb-meta", mfs);
+      s += tx(R, y + Lt.note, note, "start", "c07-lb-note c07-lb-ar", Lt.nfs + 0.4, "rtl");
     } else {
-      s += tx(L, f1, p.id, "start", "c07-lb-meta", mfs);
-      s += tx(L, f2y, S.country, "start", "c07-lb-meta", mfs);
-      s += tx(R, f2y, p.season, "end", "c07-lb-meta", mfs);
-      s += tx(L, f3, note, "start", "c07-lb-note", 6.6);
+      s += tx(L, F[0], p.id, "start", "c07-lb-meta", mfs);
+      s += tx(L, F[1], S.country, "start", "c07-lb-meta", mfs);
+      s += stack ? tx(L, F[2], p.season, "start", "c07-lb-meta", mfs) : tx(R, F[1], p.season, "end", "c07-lb-meta", mfs);
+      s += tx(L, y + Lt.note, note, "start", "c07-lb-note", Lt.nfs);
     }
-    if (nameOnLabel) s += tx(ar ? R : L, y + h - 3, MC.nameOf(p, o), "start", "c07-lb-meta" + (ar ? " c07-lb-ar" : ""), 8, ar ? "rtl" : "ltr");
+    if (nameOnLabel) s += tx(ar ? R : L, y + Lt.nameY, MC.nameOf(p, o), "start", "c07-lb-meta" + (ar ? " c07-lb-ar" : ""), mfs, ar ? "rtl" : "ltr");
     return s;
   }
 
@@ -610,6 +631,8 @@
       rows.push(row);
     }
     s += rows.map((r, i) => `<g class="c07-co-row" style="--i:${i}">${r}</g>`).join("");
+    // the texture, cables and cast-on edge arrive once the rows are knitted (motion only)
+    s += `<g class="c07-co-after">`;
     s += `<rect x="${X0}" y="${y}" width="${FW}" height="${h}" fill="url(#${ids.cast})"/>`;
     if (founder && !thumb) {
       // two cable twists flanking the year (a rope of two strands crossing twice)
@@ -630,6 +653,7 @@
       for (let x = X0 + 3; x < X1; x += CAST.cw) d += `M${x - 2.2} ${y + h - 0.6}a2.2 1.8 0 0 0 4.4 0`;
       s += `<path d="${d}" stroke="${founder ? "#A39A86" : P.Gdk}" stroke-width="1" fill="none"/>`;
     }
+    s += `</g>`;
     void motion;
     return `<g class="c07-cast${founder ? " c07-cast--founder" : ""}">${s}</g>`;
   }
@@ -653,29 +677,41 @@
     const dg = digitArt(p.ovr, tier, G, cols);
     const wd = ar ? null : tierWordArt(tier, G, cols);
     const nm = nameArt(p, o, G, cols);
-    // rows, from the rail down
+    // rows, from the rail down. HOMA's chunky cells round its gaps down, so it is never the
+    // tallest scarf in a leaderboard.
+    const gapRows = (v) => (tier === "HOMA" ? Math.max(1, Math.floor(v / G.ch)) : rowsOf(v));
     const L = {};
-    let r = Math.ceil(((tier === "HOMA" ? 54 : 46) - FT) / G.ch);
+    let r = Math.ceil((46 - FT) / G.ch);
     L.digits = r;
     r += dg.length;
-    r += rowsOf(10);
+    // STADE: a two-row club-secondary stripe above and below the 84, one ground row from it.
+    // PRO: the 84 panel is knitted double-face reversed (secondary ground, primary figures).
+    if (tier === "STADE") {
+      L.stripes = [L.digits - 3, r + 1];
+      r += 3;
+    }
+    if (tier === "PRO") {
+      L.panel = [L.digits - 2, r + 2];
+      r += 2;
+    }
+    r += gapRows(10);
     L.word = r;
     const wRows = wd ? wd.length : rowsOf(40);
     r += wRows;
-    r += rowsOf(14);
+    r += gapRows(14);
     L.season = r;
     const bandRows = 2;
     r += PLAYED * bandRows;
-    r += rowsOf(14);
+    r += gapRows(14);
     // the name sits above the label, so the label always stands between the name and the
     // founder year: never the supporter-group "name + year" lockup
     L.name = r;
     r += nm.bmp.length;
-    r += rowsOf(14);
+    r += gapRows(14);
     L.label = r;
-    const lh = LABEL_H + (nm.onLabel ? 10 : 0);
+    const lh = labelLayout(LABEL_W, 1, false, nm.onLabel).h;
     r += Math.ceil(lh / G.ch);
-    r += rowsOf(12);
+    r += gapRows(12);
     L.rows = r;
     const yOf = (row) => FT + row * G.ch;
     const yFab = yOf(L.rows); // fabric bottom = cast-on top
@@ -685,8 +721,13 @@
 
     // the grid
     const g = grid(cols, L.rows, "G");
-    const centre = (bmp) => Math.round((cols - bw(bmp)) / 2);
-    stamp(g, dg, centre(dg), L.digits, "L");
+    const centre = (bmp) => (ar ? Math.floor : Math.ceil)((cols - bw(bmp)) / 2);
+    const fillRows = (a, b, v) => {
+      for (let i = a; i < b; i++) for (let c = 0; c < cols; c++) g[i][c] = v;
+    };
+    if (L.panel) fillRows(L.panel[0], L.panel[1], "L");
+    if (L.stripes) for (const a of L.stripes) fillRows(a, a + 2, "L");
+    stamp(g, dg, centre(dg), L.digits, L.panel ? "G" : "L");
     if (wd) stamp(g, wd, centre(wd), L.word, "L");
     stamp(g, nm.bmp, centre(nm.bmp), L.name, "L");
     for (let i = 0; i < L.rows; i++) {
@@ -713,14 +754,13 @@
       stitchPattern(ids.alt, alt) +
       `<pattern id="${ids.ridge}" width="${G.cw}" height="4" patternUnits="userSpaceOnUse" y="${FT}"><rect y="2.8" width="${G.cw}" height="1.2" fill="#000" opacity=".42"/><ellipse cx="${G.cw / 2}" cy="1.7" rx="${f2(G.cw * 0.48)}" ry="1.4" fill="#fff" opacity=".26"/></pattern>` +
       stitchPattern(ids.cast, { cw: CAST.cw, ch: CAST.ch, kind: "v", gap: 0.18, leg: 0.3 }, { gapC: "#5A4E36" }) +
-      stitchPattern(ids.knot, { ...G, kind: "v" }, { transform: "rotate(-28)" }) +
       steelGrad(ids.rail) +
       `<linearGradient id="${ids.curl}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".3"/><stop offset=".06" stop-color="#000" stop-opacity=".06"/>` +
       `<stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity="0"/><stop offset=".94" stop-color="#000" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>` +
       // the fold over the tube: lit on top, a shadow where the scarf turns down
       `<linearGradient id="${ids.fold}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".22" stop-color="#fff" stop-opacity=".08"/>` +
       `<stop offset=".5" stop-color="#000" stop-opacity=".22"/><stop offset=".72" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>` +
-      `<radialGradient id="${ids.knotG}" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></radialGradient>` +
+      `<linearGradient id="${ids.knotG}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".35" stop-color="#fff" stop-opacity=".06"/><stop offset=".7" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>` +
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="125%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.4"/></filter>` +
       `<pattern id="${ids.weave}" width="1.6" height="1.6" patternUnits="userSpaceOnUse"><rect width="1.6" height=".7" fill="#000" opacity=".04"/><rect x=".8" y=".8" width=".8" height=".8" fill="#000" opacity=".03"/></pattern>`;
     if (!thumb)
@@ -800,7 +840,7 @@
       `<rect x="0" y="${RAIL_Y}" width="${VW}" height="${RAIL_H}" rx="${RAIL_H / 2}" fill="url(#${ids.rail})"/>` +
       `<rect x=".5" y="${RAIL_Y + 0.5}" width="${VW - 1}" height="${RAIL_H - 1}" rx="${RAIL_H / 2 - 0.5}" fill="none" stroke="#4E5661" stroke-width="1" class="c07-rail-edge"/>` +
       `<path d="M6 ${RAIL_Y + 3}H${VW - 6}" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-linecap="round"/>`;
-    const knot = knotSvg(P, ids, ar, thumb);
+    const knot = knotSvg(P, ids, ar, thumb, rnd);
     const rim = `<path class="c07-rim" d="${outline}" fill="none" stroke-width="1"/>`;
 
     // Arabic tier word: satin-stitch embroidery over the knit (a stitch grid cannot hold its curves)
@@ -810,7 +850,7 @@
       emb =
         `<g${thumb ? "" : ` filter="url(#${ids.embSh})"`}><text x="${t.x}" y="${t.y}" direction="ltr" class="c07-emb" font-size="${t.fs}" fill="${thumb ? P.L : `url(#${ids.emb})`}" stroke="${mix(P.L, P.G, 0.3)}" stroke-width="1.6" stroke-dasharray="1.4 .6" paint-order="stroke">${esc(S.tiers[tier])}</text></g>`;
     }
-    const label = wovenLabel(p, o, VW / 2 - LABEL_W / 2, yOf(L.label), LABEL_W, lh, "tall", thumb, ids, nm.onLabel);
+    const label = wovenLabel(p, o, VW / 2 - LABEL_W / 2, yOf(L.label), LABEL_W, 1, thumb, ids, nm.onLabel, false);
 
     const svg =
       `<svg class="c07-svg" viewBox="0 0 ${VW} ${H}" aria-hidden="true" focusable="false" style="direction:ltr">` +
@@ -827,192 +867,223 @@
       knot +
       `</svg>`;
     const cls = `c07 c07--${tier.toLowerCase()}${thumb ? " c07--thumb" : ""}${o.motion ? " c07--motion" : ""}${P.wool ? " c07--wool" : ""}`;
-    return `<div class="${cls}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tier}">${svg}</div>`;
+    return `<div class="${cls}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tier}" data-cast="${f2(yCast)}">${svg}</div>`;
   }
 
-  /** The knot: the scarf's tail wrapped round the rail and tied, on the inline-start side.
-      A lump, a tucked lobe under it, and the tie: a strip of the same knit crossing the lump,
-      its two cream selvedges showing that it is the scarf wrapped round itself. */
-  function knotSvg(P, ids, ar, thumb) {
-    const ell = (cx, cy, rx, ry, a) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" transform="rotate(${a} ${cx} ${cy})"`;
-    const lump = [22, 24, 18, 15, -10];
-    const lobe = [13, 42, 9, 11, 14];
-    // the tie: a strip of the scarf wrapped across the bundle, a cream selvedge on each side
-    const tie = "M16 8C21 7 28 8 32 10L29 41C25 42.5 19 42 14 39.5Z";
-    const shade = (e) => `${ell(...e)} fill="url(#${ids.knotG})"/>`;
-    const tex = (e) => (thumb ? "" : `${ell(...e)} fill="url(#${ids.knot})"/>`);
-    let g = "";
-    g += `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(1.5 2.5)">${ell(...lump)} fill="#020a1c"/>${ell(...lobe)} fill="#020a1c"/></g>`;
-    g += `${ell(...lobe)} fill="${P.G}" stroke="${P.Gdk}" stroke-width=".9"/>` + tex(lobe) + shade(lobe);
-    g += `${ell(...lump)} fill="${P.G}" stroke="${P.Gdk}" stroke-width=".9"/>` + tex(lump) + shade(lump);
-    g += `<path d="${tie}" fill="#020a1c" opacity=".3" transform="translate(1.2 1)"/>`;
-    g += `<path d="${tie}" fill="${P.G}"/>` + (thumb ? "" : `<path d="${tie}" fill="url(#${ids.base})"/>`) + `<path d="${tie}" fill="url(#${ids.knotG})"/>`;
-    g += `<path d="M16 8C15 18 14.4 29 14 39.5" stroke="${CREAM}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-    g += `<path d="M32 10C31 20 30 31 29 41" stroke="${CREAM}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-    g += `<path d="${tie}" fill="none" stroke="${P.Gdk}" stroke-width=".8"/>`;
-    const grow = `translate(26 12) scale(1.3) translate(-26 -12)`;
-    return `<g class="c07-knot" transform="${ar ? `matrix(-1 0 0 1 ${VW} 0) ` : ""}${grow}">${g}</g>`;
+  /** The knot: the scarf's own tail, wrapped once round the rail on the inline-start side and
+      hanging down the overhang, with its cream and Logo Blue selvedges and two tassels at its end.
+      It makes the outline asymmetric at every size. Drawn in LTR units, mirrored for Arabic. */
+  const TAIL = { x0: 1.5, x1: 19.5, y1: 90 };
+  function knotSvg(P, ids, ar, thumb, rnd) {
+    const { x0, x1, y1 } = TAIL;
+    const top = RAIL_Y + RAIL_H - 1;
+    const sel = 3.6;
+    const strip = `M${x0} ${top}H${x1}C${x1 + 0.4} ${top + 26} ${x1 - 0.2} ${y1 - 24} ${x1 - 0.6} ${y1}H${x0 + 0.8}C${x0 + 0.4} ${y1 - 26} ${x0 - 0.4} ${top + 24} ${x0} ${top}Z`;
+    const clip = ids.knot;
+    let g = `<clipPath id="${clip}"><path d="${strip}"/></clipPath>`;
+    // the tail, hanging
+    g += `<path d="${strip}" fill="#020a1c" opacity=".4" filter="url(#${ids.soft})" transform="translate(1.6 1.4)"/>`;
+    g += `<g clip-path="url(#${clip})"><rect x="${x0 - 1}" y="${top}" width="${x1 - x0 + 2}" height="${y1 - top}" fill="${P.G}"/>`;
+    if (!thumb) g += `<rect x="${x0 - 1}" y="${top}" width="${x1 - x0 + 2}" height="${y1 - top}" fill="url(#${ids.base})"/>`;
+    g += `<rect x="${x0 - 1}" y="${top}" width="${sel + 1}" height="${y1 - top}" fill="${CREAM}"/><rect x="${x1 - sel}" y="${top}" width="${sel + 1}" height="${y1 - top}" fill="${BLUE}"/>`;
+    g += `<rect x="${x0 - 1}" y="${top}" width="${x1 - x0 + 2}" height="${y1 - top}" fill="url(#${ids.curl})"/>`;
+    g += `<rect x="${x0 - 1}" y="${top}" width="${x1 - x0 + 2}" height="10" fill="#000" opacity=".28"/></g>`;
+    g += `<path d="${strip}" fill="none" stroke="${P.Gdk}" stroke-width=".8"/>`;
+    // two tassels at its cast-off end
+    g += `<g class="c07-fringe">${tassel(x0 + 5, y1 - 2, 17, 7, P, { rnd })}${tassel(x1 - 5, y1 - 2, 19, 7, P, { rnd })}</g>`;
+    // the wrap round the tube: lit on top, in shadow underneath
+    const wy = RAIL_Y - 3;
+    const wh = RAIL_H + 6;
+    g += `<rect x="${x0 - 1.2}" y="${wy}" width="${x1 - x0 + 2.4}" height="${wh}" rx="4.5" fill="${P.G}"/>`;
+    if (!thumb) g += `<rect x="${x0 - 1.2}" y="${wy}" width="${x1 - x0 + 2.4}" height="${wh}" rx="4.5" fill="url(#${ids.base})"/>`;
+    g += `<rect x="${x0 - 1.2}" y="${wy}" width="${sel}" height="${wh}" rx="1.5" fill="${CREAM}"/><rect x="${x1 + 1.2 - sel}" y="${wy}" width="${sel}" height="${wh}" rx="1.5" fill="${BLUE}"/>`;
+    g += `<rect x="${x0 - 1.2}" y="${wy}" width="${x1 - x0 + 2.4}" height="${wh}" rx="4.5" fill="url(#${ids.knotG})"/>`;
+    g += `<rect x="${x0 - 1.2}" y="${wy}" width="${x1 - x0 + 2.4}" height="${wh}" rx="4.5" fill="none" stroke="${P.Gdk}" stroke-width=".8"/>`;
+    return `<g class="c07-knot"${ar ? ` transform="matrix(-1 0 0 1 ${VW} 0)"` : ""}>${g}</g>`;
   }
 
   /* ---------- full card: LEGEND, the scarf raised overhead ---------- */
+  /** 'Écharpe levée': the scarf lifted off the rail and held taut overhead between two fists, arms
+      rising from the bottom edge. The band across the top third carries the name with LEGEND
+      knitted under it, a cream bar, and the 84 knitted big. Each end drapes down from its fist:
+      the start end carries the season's ridges and the woven label, the other end the founder's
+      cast-on; both end in the longest hand-knotted fringe. Composed in LTR units; Arabic mirrors
+      the order (the figures stay left-to-right). */
   function fullLegend(p, o) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const P = palette(p);
     const thumb = !!o.thumb;
     const u = MC.uid(PFX);
-    const ids = { base: u + "-pb", rib: u + "-pr", alt: u + "-pa", ridge: u + "-rg", cast: u + "-pc", flap: u + "-pf", clip: u + "-cl", curl: u + "-cu", soft: u + "-sf", weave: u + "-wv", grain: u + "-gr", cuff: u + "-cf", sleeve: u + "-sl", fist: u + "-fi" };
+    const ids = { base: u + "-pb", flap: u + "-pf", cast: u + "-pc", clip: u + "-cl", curl: u + "-cu", soft: u + "-sf", weave: u + "-wv", grain: u + "-gr", cuff: u + "-cf", sleeve: u + "-sl", fist: u + "-fi", dA: u + "-da", dB: u + "-db", arms: u + "-ar", emb: u + "-em", embSh: u + "-es" };
     const C = LG.cw; // the heaviest gauge: 9u stitches
-    const rowsN = 14; // stitches across the band, selvedges included
-    const BH = rowsN * C; // 126
-    const BY = 34;
-    const H = 262;
+    const rowsN = 17; // stitches across the band, selvedges included
+    const BH = rowsN * C; // 153
+    const BY = 20;
     const mid = BY + BH / 2;
-    // knitted motifs, set along the length (the way a terrace scarf carries its words)
-    const dg = trim(rasterText(String(p.ovr), CHANGA, 10, C, C, 0.46, { ls: "0.02em" }));
-    const nm = nameArt(p, o, { cw: C, ch: C }, 24, 72);
-    const seasonW = PLAYED * 14;
-    const castW = CAST.rows * CAST.ch; // 35: the cast-on keeps its gauge, its rows now run across the band
-    const fistZone = 66;
-    const margin = 78; // room for the ends draping down beside the wrists
-    const parts = [
-      { k: "endA", w: fistZone },
-      { k: "name", w: bw(nm.bmp) * C },
-      { k: "gap", w: 24 },
-      { k: "digits", w: bw(dg) * C },
-      { k: "gap", w: 24 },
-      { k: "season", w: seasonW },
-      { k: "gap", w: 16 },
-      { k: "label", w: 170 },
-      { k: "gap", w: 12 },
-      { k: "cast", w: castW },
-      { k: "endB", w: fistZone },
-    ];
-    const len = parts.reduce((acc, pt) => acc + pt.w, 0);
-    const W = Math.ceil(len + 2 * margin);
-    const xa = margin;
-    const xb = margin + len;
-    // positions (mirrored in Arabic: the reading starts at the right)
-    let acc = xa;
-    const pos = {};
-    for (const pt of parts) {
-      if (pt.k !== "gap") pos[pt.k] = { x: ar ? W - acc - pt.w : acc, w: pt.w };
-      acc += pt.w;
-    }
-    // the grid: columns along the length
-    const cols = Math.ceil(len / C);
+    const DB = 394; // the ends' cast-off / cast-on edge
+    const H = 476;
+    // the knitted motifs
+    const three = String(p.ovr).length > 2;
+    const dg = trim(rasterText(String(p.ovr), CHANGA, three ? 11 : 13, C, C, 0.5, { sq: 0.86, ls: "0.03em" }));
+    const nm = nameArt(p, o, { cw: C, ch: C }, 40, (ar ? 7 : 8) * C);
+    const wd = ar ? null : tierWordArt("LEGEND", LG, 40);
+    const emb = ar ? placeInk(S.tiers.LEGEND, '700 {s} "Changa"', 0, 0, 30) : null;
+    const blockW = Math.max(bw(nm.bmp) * C, wd ? bw(wd) * C : emb.w + 8);
+    const blockRows = nm.bmp.length + (wd ? 1 + wd.length : 5);
+    const barZone = 6 * C; // two ground stitches, the two-stitch cream bar, two ground stitches
+    const contentW = Math.ceil((blockW + barZone + bw(dg) * C) / C) * C;
+    const gather = 46; // from the fist to where the band is at full width
+    const outer = 114; // room outside each fist for the drape
+    const fa = outer;
+    const xs = fa + gather;
+    const fb = xs + contentW + gather;
+    const W = fb + outer;
+    // logical x (reading order) to drawn x: Arabic mirrors inside the band
+    const X = (x, w) => (ar ? fa + fb - x - w : x);
+
+    // the band's stitch grid: columns along the length
+    const cols = Math.round((fb - fa) / C);
     const g = grid(cols, rowsN, "G");
     for (let c = 0; c < cols; c++) {
       g[0][c] = "C"; // the start selvedge runs along the top edge
       g[rowsN - 1][c] = "B"; // Logo Blue along the bottom edge
     }
-    const colOf = (x) => Math.round((x - xa) / C);
-    stamp(g, nm.bmp, colOf(pos.name.x), Math.round((rowsN - nm.bmp.length) / 2), "L");
-    stamp(g, dg, colOf(pos.digits.x), Math.round((rowsN - dg.length) / 2), "L");
+    const colOf = (x) => Math.round((x - fa) / C);
+    const inner = rowsN - 2;
+    const blockX = X(xs, blockW);
+    const bRow = 1 + Math.floor((inner - blockRows) / 2);
+    const nmX = blockX + (blockW - bw(nm.bmp) * C) / 2;
+    stamp(g, nm.bmp, colOf(nmX), bRow, "L");
+    if (wd) stamp(g, wd, colOf(blockX + (blockW - bw(wd) * C) / 2), bRow + nm.bmp.length + 1, "L");
+    const barX = X(xs + blockW + 2 * C, 2 * C);
+    for (let r = 1; r < rowsN - 1; r++) for (const c of [colOf(barX), colOf(barX) + 1]) g[r][c] = "C";
+    const dgW = bw(dg) * C;
+    const dgX = X(xs + contentW - dgW, dgW);
+    stamp(g, dg, colOf(dgX), 1 + Math.round((inner - dg.length) / 2), "L");
 
     let defs =
       stitchPattern(ids.base, LG, { transform: "rotate(-90)" }) +
-      stitchPattern(ids.rib, { ...LG, kind: "r" }, { transform: "rotate(-90)" }) +
-      stitchPattern(ids.alt, { ...LG, kind: "g" }, { transform: "rotate(-90)" }) +
       stitchPattern(ids.flap, LG) +
-      stitchPattern(ids.cast, { cw: CAST.cw, ch: CAST.ch, kind: "v", gap: 0.18, leg: 0.3 }, { gapC: "#5A4E36", transform: "rotate(-90)" }) +
-      `<pattern id="${ids.ridge}" width="4" height="${C}" patternUnits="userSpaceOnUse" y="${BY}"><rect x="2.6" width="1.4" height="${C}" fill="#000" opacity=".34"/><ellipse cx="1.7" cy="${C / 2}" rx="1.5" ry="${f2(C * 0.47)}" fill="#fff" opacity=".2"/></pattern>` +
+      stitchPattern(ids.cast, { cw: CAST.cw, ch: CAST.ch, kind: "v", gap: 0.18, leg: 0.3 }, { gapC: "#5A4E36" }) +
       `<linearGradient id="${ids.curl}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".26"/><stop offset=".08" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>` +
       `<linearGradient id="${ids.sleeve}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${mix(SLEEVE, "#000000", 0.35)}"/><stop offset=".45" stop-color="${SLEEVE_LT}"/><stop offset="1" stop-color="${mix(SLEEVE, "#000000", 0.45)}"/></linearGradient>` +
       `<linearGradient id="${ids.fist}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${SKIN_LT}"/><stop offset=".55" stop-color="${SKIN}"/><stop offset="1" stop-color="${SKIN_DK}"/></linearGradient>` +
-      `<pattern id="${ids.cuff}" width="3" height="10" patternUnits="userSpaceOnUse"><rect width="3" height="10" fill="${SLEEVE_LT}"/><rect width="1.3" height="10" fill="${mix(SLEEVE, "#000000", 0.25)}"/></pattern>` +
+      `<pattern id="${ids.cuff}" width="4" height="10" patternUnits="userSpaceOnUse"><rect width="4" height="10" fill="${SLEEVE_LT}"/><rect width="1.6" height="10" fill="${mix(SLEEVE, "#000000", 0.3)}"/></pattern>` +
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.6"/></filter>` +
-      `<pattern id="${ids.weave}" width="1.6" height="1.6" patternUnits="userSpaceOnUse"><rect width="1.6" height=".7" fill="#000" opacity=".04"/></pattern>`;
+      `<pattern id="${ids.weave}" width="1.6" height="1.6" patternUnits="userSpaceOnUse"><rect width="1.6" height=".7" fill="#000" opacity=".04"/></pattern>` +
+      `<clipPath id="${ids.arms}"><rect width="${W}" height="${H}"/></clipPath>`;
     if (!thumb)
       defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
+    if (ar) defs += hatch(ids.emb, P.L, mix(P.L, P.G, 0.45)) + `<filter id="${ids.embSh}" x="-10%" y="-20%" width="120%" height="150%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy=".7" stdDeviation=".4" flood-color="#020a1c" flood-opacity=".7"/></filter>`;
 
     // the band, taut between the fists and gathered into each of them
-    const fa = xa + 20; // fist centres
-    const fb = xb - 20;
-    const gat = 25;
+    const gat = 24;
     const top = BY;
     const bot = BY + BH;
     const outline =
-      `M${fa} ${mid - gat}C${fa + 20} ${mid - gat} ${fa + 26} ${top} ${fa + 48} ${top}` +
-      `H${fb - 48}C${fb - 26} ${top} ${fb - 20} ${mid - gat} ${fb} ${mid - gat}` +
-      `V${mid + gat}C${fb - 20} ${mid + gat} ${fb - 26} ${bot} ${fb - 48} ${bot}` +
-      `H${fa + 48}C${fa + 26} ${bot} ${fa + 20} ${mid + gat} ${fa} ${mid + gat}Z`;
+      `M${fa} ${mid - gat}C${fa + 22} ${mid - gat} ${fa + 28} ${top} ${fa + gather} ${top}` +
+      `H${fb - gather}C${fb - 28} ${top} ${fb - 22} ${mid - gat} ${fb} ${mid - gat}` +
+      `V${mid + gat}C${fb - 22} ${mid + gat} ${fb - 28} ${bot} ${fb - gather} ${bot}` +
+      `H${fa + gather}C${fa + 28} ${bot} ${fa + 22} ${mid + gat} ${fa} ${mid + gat}Z`;
     defs += `<clipPath id="${ids.clip}"><path d="${outline}"/></clipPath>`;
-
-    let fab = `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="${P.G}"/>` + gridRuns(g, P, xa, BY, C, C, "G");
-    fab += `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="url(#${ids.base})"/>`;
-    // the season: one band per gameweek played (J.01 nearest the name), alternating stockinette
-    // and rib, a purl ridge between them, a cream notch on the top selvedge every fifth
-    const bands = [];
-    for (let k = 0; k < PLAYED; k++) {
-      const gw = k + 1;
-      bands.push({ gw, x: ar ? pos.season.x + pos.season.w - (k + 1) * 14 : pos.season.x + k * 14, rib: gw % 2 === 0 });
-    }
-    for (const b of bands) {
-      fab +=
-        `<rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="${P.G}"/><rect x="${b.x}" y="${BY}" width="14" height="${C}" fill="${CREAM}"/>` +
-        `<rect x="${b.x}" y="${BY + BH - C}" width="14" height="${C}" fill="${BLUE}"/><rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="url(#${b.rib ? ids.rib : ids.alt})"/>`;
-      if (b.gw % 5 === 0) fab += `<rect x="${b.x}" y="${BY + C}" width="14" height="${C}" fill="${CREAM}"/><rect x="${b.x}" y="${BY + C}" width="14" height="${C}" fill="url(#${ids.base})"/>`;
-    }
-    for (const x of bands.map((b) => b.x).concat([ar ? pos.season.x : pos.season.x + pos.season.w])) fab += `<rect x="${f2(x - 2)}" y="${BY}" width="4" height="${BH}" fill="url(#${ids.ridge})"/>`;
-    // the cast-on, turned with the scarf: its rows run across the band and 2026 reads upward
-    {
-      const cx = pos.cast.x;
-      const founder = !!p.founder;
-      fab += `<rect x="${cx}" y="${BY}" width="${castW}" height="${BH}" fill="${founder ? CREAM : P.G}"/>`;
-      fab += `<rect x="${cx}" y="${BY + BH - C}" width="${castW}" height="${C}" fill="${BLUE}"/>`;
-      if (founder) {
-        const yr = word(String(p.founder), F35, 1); // 5 rows × 15 stitches
-        const yw = bw(yr) * CAST.cw;
-        const y0 = BY + (BH - yw) / 2;
-        let rs = "";
-        for (let r = 0; r < 5; r++)
-          for (let c = 0; c < yr[r].length; c++) if (yr[r][c] === "#") rs += `<rect x="${f2(cx + r * CAST.ch)}" y="${f2(y0 + yw - (c + 1) * CAST.cw)}" width="${CAST.ch + 0.04}" height="${CAST.cw + 0.04}"/>`;
-        fab += `<g fill="${P.Y}">${rs}</g>`;
-      }
-      fab += `<rect x="${cx}" y="${BY}" width="${castW}" height="${BH}" fill="url(#${ids.cast})"/>`;
-    }
+    const len = fb - fa;
+    let fab = `<rect x="${fa}" y="${BY}" width="${len}" height="${BH}" fill="${P.G}"/>` + gridRuns(g, P, fa, BY, C, C, "G");
+    fab += `<rect x="${fa}" y="${BY}" width="${len}" height="${BH}" fill="url(#${ids.base})"/>`;
     fab +=
-      `<g pointer-events="none"><rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="url(#${ids.curl})"/>` +
-      (thumb ? "" : `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" filter="url(#${ids.grain})" opacity=".5"/>`) +
+      `<g pointer-events="none"><rect x="${fa}" y="${BY}" width="${len}" height="${BH}" fill="url(#${ids.curl})"/>` +
+      (thumb ? "" : `<rect x="${fa}" y="${BY}" width="${len}" height="${BH}" filter="url(#${ids.grain})" opacity=".5"/>`) +
       `</g>`;
-    // gathered folds running into each fist
+    // gathered folds running out of each fist
     let folds = "";
     for (const [f, dir] of [
       [fa, 1],
       [fb, -1],
     ])
-      for (const dy of [-20, -8, 4, 16]) folds += `<path d="M${f2(f + dir * 6)} ${f2(mid + dy * 0.6)}C${f2(f + dir * 20)} ${f2(mid + dy * 0.9)} ${f2(f + dir * 32)} ${f2(mid + dy * 2)} ${f2(f + dir * 50)} ${f2(mid + dy * 2.8)}" stroke="#000" stroke-opacity=".3" stroke-width="1.4" fill="none"/>`;
+      for (const dy of [-20, -8, 4, 16]) folds += `<path d="M${f2(f + dir * 10)} ${f2(mid + dy * 0.7)}C${f2(f + dir * 24)} ${f2(mid + dy)} ${f2(f + dir * 36)} ${f2(mid + dy * 2.4)} ${f2(f + dir * 54)} ${f2(mid + dy * 3.4)}" stroke="#000" stroke-opacity=".3" stroke-width="1.6" fill="none"/>`;
+    // Arabic: أسطورة in satin stitch under the knitted name
+    let embSvg = "";
+    if (ar) {
+      const cy = BY + (bRow + nm.bmp.length) * C + 22;
+      const t = placeInk(S.tiers.LEGEND, '700 {s} "Changa"', blockX + blockW / 2, cy, 30);
+      embSvg = `<g${thumb ? "" : ` filter="url(#${ids.embSh})"`}><text x="${t.x}" y="${t.y}" direction="ltr" class="c07-emb" font-size="${t.fs}" fill="${thumb ? P.L : `url(#${ids.emb})`}" stroke="${mix(P.L, P.G, 0.3)}" stroke-width="1.6" stroke-dasharray="1.4 .6" paint-order="stroke">${esc(S.tiers.LEGEND)}</text></g>`;
+    }
 
-    // the ends drape down beside the wrists, each with the long hand-knotted fringe
+    // the ends, draping from each fist to the cast-off edge (side -1: left, +1: right)
     const rnd = seeded(hashStr(p.serial + "fringe-legend"));
-    const flap = (f, dir) => {
-      const d = `M${f} ${mid - 16}C${f + dir * 22} ${mid - 14} ${f + dir * 44} ${mid + 18} ${f + dir * 60} ${mid + 80}L${f + dir * 20} ${mid + 88}C${f + dir * 16} ${mid + 50} ${f + dir * 6} ${mid + 24} ${f - dir * 4} ${mid + 14}Z`;
-      let s2 = `<path d="${d}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})" transform="translate(2 3)"/>`;
-      s2 += `<path d="${d}" fill="${P.G}"/>` + (thumb ? "" : `<path d="${d}" fill="url(#${ids.flap})"/>`);
-      s2 += `<path d="M${f + dir * 16} ${mid - 12}C${f + dir * 34} ${mid + 6} ${f + dir * 48} ${mid + 36} ${f + dir * 57} ${mid + 79}" stroke="${CREAM}" stroke-width="4" fill="none"/>`;
-      s2 += `<path d="M${f + dir * 2} ${mid + 18}C${f + dir * 10} ${mid + 34} ${f + dir * 16} ${mid + 60} ${f + dir * 20} ${mid + 86}" stroke="${BLUE}" stroke-width="3.6" fill="none"/>`;
-      s2 += `<path d="${d}" fill="none" stroke="${P.Gdk}" stroke-width=".9"/>`;
+    const dw = 108; // an end, hanging, at its foot
+    const drape = (side, kind, clipId) => {
+      const f = side < 0 ? fa : fb;
+      const o2 = side; // outward
+      const inX = f - o2 * 4; // inner edge at the foot
+      const outX = inX + o2 * dw;
+      const d =
+        `M${f2(f + o2 * 10)} ${mid + 6}C${f2(f + o2 * 40)} ${mid + 14} ${f2(outX - o2 * 4)} ${mid + 50} ${f2(outX)} ${mid + 96}` +
+        `L${f2(outX + o2 * 2)} ${DB}H${f2(inX)}L${f2(inX + o2 * 1)} ${mid + 96}C${f2(inX)} ${mid + 60} ${f2(f - o2 * 16)} ${mid + 30} ${f2(f - o2 * 14)} ${mid + 14}Z`;
+      const xL = Math.min(inX, outX);
+      let s2 = `<clipPath id="${clipId}"><path d="${d}"/></clipPath>`;
+      s2 += `<path d="${d}" fill="#020a1c" opacity=".38" filter="url(#${ids.soft})" transform="translate(${2 * o2} 3)"/>`;
+      s2 += `<g clip-path="url(#${clipId})"><rect x="${f2(xL - 30)}" y="${mid}" width="${dw + 60}" height="${DB - mid}" fill="${P.G}"/>`;
+      if (!thumb) s2 += `<rect x="${f2(xL - 30)}" y="${mid}" width="${dw + 60}" height="${DB - mid}" fill="url(#${ids.flap})"/>`;
+      // the selvedges follow the long edges: cream outside, Logo Blue inside
+      s2 += `<path d="M${f2(f + o2 * 10)} ${mid + 6}C${f2(f + o2 * 40)} ${mid + 14} ${f2(outX - o2 * 4)} ${mid + 50} ${f2(outX)} ${mid + 96}L${f2(outX + o2 * 2)} ${DB}" stroke="${CREAM}" stroke-width="${C * 1.6}" fill="none"/>`;
+      s2 += `<path d="M${f2(inX)} ${DB}L${f2(inX + o2 * 1)} ${mid + 96}C${f2(inX)} ${mid + 60} ${f2(f - o2 * 16)} ${mid + 30} ${f2(f - o2 * 14)} ${mid + 14}" stroke="${BLUE}" stroke-width="${C * 1.6}" fill="none"/>`;
+      if (kind === "cast") {
+        // the founder's cast-on (or a plain one): five rows above the fringe, 2026 across them
+        const cy0 = DB - CAST.rows * CAST.ch;
+        const founder = !!p.founder;
+        s2 += `<rect x="${f2(xL - 2)}" y="${cy0}" width="${dw + 6}" height="${CAST.rows * CAST.ch}" fill="${founder ? CREAM : P.G}"/>`;
+        if (founder) {
+          const yr = word(String(p.founder), F35, 1);
+          const yx = xL + (dw + 2 - bw(yr) * CAST.cw) / 2;
+          s2 += `<g fill="${P.Y}">${bmpRects(yr, yx, cy0, CAST.cw, CAST.ch)}</g>`;
+        }
+        if (!thumb) s2 += `<rect x="${f2(xL - 2)}" y="${cy0}" width="${dw + 6}" height="${CAST.rows * CAST.ch}" fill="url(#${ids.cast})"/>`;
+        if (!thumb) {
+          let lp = "";
+          for (let x = xL + 1; x < xL + dw + 2; x += CAST.cw) lp += `M${f2(x)} ${DB - 0.6}a2.2 1.8 0 0 0 4.4 0`;
+          s2 += `<path d="${lp}" stroke="${founder ? "#A39A86" : P.Gdk}" stroke-width="1" fill="none"/>`;
+        }
+      } else {
+        // the season so far: one raised ridge per gameweek played, beside the label
+        for (let k = 0; k < PLAYED; k++) {
+          const y = mid + 50 + k * 5.4;
+          s2 += `<rect x="${f2(xL - 20)}" y="${f2(y)}" width="${dw + 40}" height="2.4" fill="#fff" opacity=".2"/><rect x="${f2(xL - 20)}" y="${f2(y + 2.4)}" width="${dw + 40}" height="1.6" fill="#000" opacity=".42"/>`;
+        }
+      }
+      s2 += `<rect x="${f2(xL - 30)}" y="${mid}" width="${dw + 60}" height="${DB - mid}" fill="url(#${ids.curl})" opacity=".6"/></g>`;
+      s2 += `<path d="${d}" fill="none" stroke="${P.Gdk}" stroke-width="1"/>`;
+      if (kind === "label") {
+        const lw = 98;
+        const k = 1.28;
+        const lh = labelLayout(lw, k, true, nm.onLabel).h;
+        const lx = xL + (dw - lw) / 2 + o2 * 2;
+        s2 += wovenLabel(p, o, f2(lx), f2(DB - 8 - lh), lw, k, thumb, ids, nm.onLabel, true);
+      }
       let fr = "";
       for (let i = 0; i < TASSELS.LEGEND; i++) {
-        const t = (i + 0.5) / TASSELS.LEGEND;
-        const x = f + dir * (22 + 36 * t);
-        const y = mid + 87 - 7 * t;
-        fr += tassel(x, y - 2, 52 + rnd() * 8, 13, P, { rnd, knotted: true, hang: dir * 3 });
+        const x = xL + (dw * (i + 0.5)) / TASSELS.LEGEND + o2 * 1.5;
+        fr += tassel(x, DB - 3, 56 + rnd() * 8, 17, P, { rnd, knotted: true, hang: o2 * 2.5 });
       }
-      return `<g class="c07-end">${fr}${s2}</g>`;
+      return `<g class="c07-fringe">${fr}</g><g class="c07-end">${s2}</g>`;
     };
-    // two fists in bench-jacket cuffs, arms raised from below: four fingers side by side round
-    // the gathered scarf, the thumb folded across them
+    // the forearms, in bench-jacket sleeves, rising from the bottom edge (lean inward toward the head)
+    const forearm = (cx, side) => {
+      const lean = -side * 62;
+      const t = mid + 32;
+      const d = `M${f2(cx - 25)} ${t}L${f2(cx + 25)} ${t}L${f2(cx + lean + 36)} ${H + 2}L${f2(cx + lean - 36)} ${H + 2}Z`;
+      let a = `<path d="${d}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})" transform="translate(2 3)"/>`;
+      a += `<path d="${d}" fill="url(#${ids.sleeve})"/>`;
+      a += `<path d="M${f2(cx + side * 6)} ${t + 30}L${f2(cx + lean + side * 12)} ${H + 2}" stroke="${mix(SLEEVE, "#000000", 0.4)}" stroke-width="1.6"/>`;
+      a += `<path d="M${f2(cx - side * 20)} ${t + 24}L${f2(cx + lean - side * 28)} ${H + 2}" stroke="#ffffff" stroke-opacity=".12" stroke-width="2"/>`;
+      a += `<path d="${d}" fill="none" class="c07-rim" stroke-width="1.2"/>`;
+      return a;
+    };
+    // two fists: four fingers curled round the gathered scarf, the thumb folded across them
     const fist = (cx, dir) => {
-      const sleeveD = `M${cx - 18} ${mid + 26}L${cx + 18} ${mid + 26}L${cx + 27 + dir * 16} ${H + 4}L${cx - 27 + dir * 16} ${H + 4}Z`;
-      let g2 = `<path d="${sleeveD}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})" transform="translate(2 3)"/>`;
-      g2 += `<path d="${sleeveD}" fill="url(#${ids.sleeve})"/>`;
-      g2 += `<path d="M${cx + dir * 4} ${mid + 44}L${cx + dir * 12} ${H + 4}" stroke="${mix(SLEEVE, "#000000", 0.35)}" stroke-width="1.4"/>`;
-      g2 += `<rect x="${cx - 14}" y="${mid + 10}" width="28" height="16" fill="${SKIN_DK}"/>`;
-      g2 += `<rect x="${cx - 20}" y="${mid + 20}" width="40" height="14" rx="4" fill="url(#${ids.cuff})" stroke="${mix(SLEEVE, "#000000", 0.4)}" stroke-width="1"/>`;
+      let g2 = `<rect x="${cx - 14}" y="${mid + 10}" width="28" height="16" fill="${SKIN_DK}"/>`;
+      g2 += `<rect x="${cx - 21}" y="${mid + 19}" width="42" height="15" rx="4" fill="url(#${ids.cuff})" stroke="${mix(SLEEVE, "#000000", 0.45)}" stroke-width="1"/>`;
       g2 += `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(1.5 2.5)"><rect x="${cx - 19}" y="${mid - 19}" width="38" height="36" rx="11" fill="#020a1c"/></g>`;
-      // the fist: a rounded block; the curled fingers show as four short knuckle bumps on top
       g2 += `<rect x="${cx - 19}" y="${mid - 12}" width="38" height="29" rx="10" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
       for (let i = 0; i < 4; i++) {
         const fx = cx - 19 + i * 9.5;
@@ -1021,26 +1092,26 @@
         g2 += `<path d="M${f2(fx + 2.6)} ${f2(ft + 3.2)}Q${f2(fx + 4.75)} ${f2(ft + 1.8)} ${f2(fx + 6.9)} ${f2(ft + 3.2)}" stroke="#fff" stroke-opacity=".4" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
         g2 += `<path d="M${f2(fx + 1.6)} ${f2(mid - 6)}Q${f2(fx + 4.75)} ${f2(mid - 4.4)} ${f2(fx + 7.9)} ${f2(mid - 6)}" stroke="${SKIN_DK}" stroke-width=".8" fill="none" opacity=".75"/>`;
       }
-      // the thumb, folded across the curled fingers from the inner side
       const ix = cx - dir * 19;
       g2 += `<path d="M${ix} ${mid + 12}C${ix - dir * 2} ${mid + 4} ${ix + dir * 2} ${mid} ${ix + dir * 9} ${mid}H${ix + dir * 25}C${ix + dir * 30} ${mid} ${ix + dir * 30} ${mid + 8} ${ix + dir * 25} ${mid + 8}H${ix + dir * 12}C${ix + dir * 8} ${mid + 8} ${ix + dir * 6} ${mid + 11} ${ix + dir * 5} ${mid + 15}Z" fill="${SKIN}" stroke="${SKIN_DK}" stroke-width="1"/>`;
       g2 += `<path d="M${ix + dir * 12} ${mid + 2.2}H${ix + dir * 24}" stroke="#fff" stroke-opacity=".3" stroke-width="1.2" stroke-linecap="round"/>`;
-      return `<g class="c07-fist" transform="rotate(${dir * 5} ${cx} ${mid})">${g2}</g>`;
+      return `<g class="c07-fist" transform="translate(${cx} ${mid}) scale(1.5) rotate(${dir * 4}) translate(${-cx} ${-mid})">${g2}</g>`;
     };
-    const label = wovenLabel(p, o, pos.label.x, BY + 6, pos.label.w, BH - 12, "wide", thumb, ids, nm.onLabel);
+    // the start end (label) hangs on the reading-start side; the cast-on end on the other
+    const startSide = ar ? 1 : -1;
     const rim = `<path class="c07-rim" d="${outline}" fill="none" stroke-width="1.2"/>`;
     const svg =
       `<svg class="c07-svg" viewBox="0 0 ${W} ${H}" aria-hidden="true" focusable="false" style="direction:ltr">` +
       `<defs>${defs}</defs>` +
+      `<g clip-path="url(#${ids.arms})"><g class="c07-fists">${forearm(fa, -1)}${forearm(fb, 1)}</g></g>` +
       `<g class="c07-raise">` +
       `<g class="c07-fabric" clip-path="url(#${ids.clip})">${fab}${folds}</g>` +
       rim +
-      label +
+      embSvg +
       `</g>` +
-      `<g class="c07-fringe">${flap(fa, -1)}${flap(fb, 1)}</g>` +
-      `<g class="c07-fists">${fist(fa, -1)}${fist(fb, 1)}</g>` +
+      `<g class="c07-fists">${drape(startSide, "label", ids.dA)}${drape(-startSide, "cast", ids.dB)}${fist(fa, -1)}${fist(fb, 1)}</g>` +
       `</svg>`;
-    const cls = `c07 c07--legend${thumb ? " c07--thumb" : ""}${o.motion ? " c07--motion" : ""}`;
+    const cls = `c07 c07--legend${thumb ? " c07--thumb" : ""}${o.motion ? " c07--motion" : ""}${P.wool ? " c07--wool" : ""}`;
     return `<div class="${cls}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="LEGEND">${svg}</div>`;
   }
 
@@ -1303,17 +1374,68 @@
     name: "Écharpe",
     nameAr: "الوشاح",
     category: "youth",
-    philosophy: "",
-    philosophyAr: "",
-    idea: [],
-    belonging: [],
-    founderMark: [],
-    small: [],
-    rtl: [],
-    tiers: {},
-    legend: [],
-    advantages: [],
-    risks: [],
+    philosophy: "Your card is your supporter's scarf, knotted over the barrier rail: the 84 at the top in your club's colours, and below it only the gameweeks you have actually played, so the scarf grows with your season.",
+    philosophyAr: "بطاقتك وشاحُ المشجّع معقودًا على حاجز المدرّج: الرقم 84 في أعلاه بألوان ناديك، وتحته الجولات التي لعبتها فعلًا فقط، فيطول الوشاح مع موسمك.",
+    idea: [
+      "The card is a knitted supporter scarf knotted over a steel crowd-barrier rail. The silhouette is the rail overhanging both sides, the knot on the inline-start side (a bundle tied with a strip of the same knit, its two cream selvedges showing), the strip, and the fringe at the foot. A cream selvedge runs down the start edge and a Logo Blue one down the end edge: that blue column is the one fixed brand place. The ground is the user's club primary and the letters its secondary; the lab's placeholder club gives a slate ground (#3b4a5e) with cream letters (#e9e4d6). With no club chosen, the scarf is undyed wool (#E8E1D0) with charcoal letters.",
+      "It reads from the rail down. The 84 is knitted big at the top, the part that hangs in front of you, sampled from Changa 800 at the tier's own gauge and condensed until it sits inside the selvedges. There is no OVR in the artwork; the accessible label carries '84 OVR'. The tier word is knitted under it.",
+      "Then the season: one band of two rows per gameweek actually played, all in the ground yarn, told apart by stitch alone: garter ridges, then 1×1 rib, alternating, with a raised purl ridge closing every band, the rib bands pulling the edges in slightly, and a cream notch on the start selvedge every fifth gameweek. Unplayed gameweeks are not knitted and there is never an empty row, so the scarf is as long as the season so far. The sample has seven bands, labelled 'J.01–J.07 · Exemple' on the label.",
+      "Below the season, the name is knitted in Changa 800, letter-spaced so the letters never fuse. Under it is the woven label sewn on the front: the BotolaGO wordmark (colour version, unmodified), the four ratings in a column (Manrope 800, tabular), and BOT #004821, MOROCCO and 2026/27 woven into its foot. Last come the founder's cream cable cast-on with 2026, and the fringe.",
+      "Every motif is rasterised once by canvas onto a stitch grid and drawn as merged colour runs, under one stitch-texture pattern per gauge. The fold over the tube, the edge curl and the fibre grain appear at full size only. Tokens and rows use flat yarn fields and solid figures, with no filters.",
+    ],
+    belonging: [
+      "The body of the scarf is the season you actually played, so no two scarves are alike and nothing is invented: bands count gameweeks played, never points. You watch your scarf grow every week.",
+      "Status lives in the knit itself. It runs from a chunky hand-knitted garter scarf at HOMA, through machine jacquard and double-face, to the finest gauge at CHAMPION. At LEGEND you lift it off the rail and hold it up. The tassels count the tier, so friends compare at a glance in any leaderboard: two, three, four, five.",
+      "It has a seasonal ritual. At season end the scarf is cast off and goes in the drawer, and next season you knot a new one. A collection is your seasons, and their lengths show how faithful you were.",
+      "It is screenshot-worthy as an object rather than a number badge. The share image hangs it on a barrier at night with the pitch blurred beyond, and a league of scarves on one rail is a picture fans already take at every stadium.",
+    ],
+    founderMark: [
+      "The cast-on: the first five rows ever knitted, just above the fringe, are cream, with two cable twists flanking 2026 knitted in the darker club yarn. They keep the same gauge at every tier and form the bright band at the scarf's foot, readable at arm's length.",
+      "The year is never knitted next to the name. The woven label always sits between the knitted name and the cast-on, so the scarf never shows the supporter-group 'name + year' lockup. Written forms elsewhere use 'ALI ·26' (the share image) or 'FOUNDER 2026' (the row).",
+      "Non-founders cast on plain, in the ground yarn, with no year.",
+      "At 24px the founder mark is a 3px cream band above the tassels, edged on the light ground so it reads as knit and not as a gap. At LEGEND it becomes a vertical cream band near the end of the raised scarf.",
+      "Ceremony 'la première maille' (motion on, replayable): the five cast-on rows knit across in turn, 120ms each, and the cables then appear. The 84 stays visible throughout; reduced motion shows the finished state.",
+    ],
+    small: [
+      "44–80px token: a hanging segment. It has a steel rail with an overhang, the knot bump on the start side, and a club-colour swatch carrying the 84 in solid Changa 800. The swatch has a cream start selvedge and a Logo Blue end selvedge, the cream cast-on band for founders, and the tassels: two, three or four, five knotted at CHAMPION. PRO keeps its dog-eared corner. Flat fields only, with no textures or filters.",
+      "24–32px mini, as it leads the name cell of the ranking card: an integer 22×24 grid scaled whole. It has a 2px rail, the knot bump, a 14px club-colour swatch with the 84 in Changa 800, a 3px cream founder band and 1px tassels counting the tier. LEGEND turns horizontal (24×11), held by two fists with arms below: the outline change.",
+      "Row (the 'My position' card): the steel rail runs along the top of the card and the 56px token hangs from it. Beside it are the name in Changa 800, the tier with FOUNDER 2026, and the points. Five rows read as stretches of barrier, each with its scarf.",
+    ],
+    rtl: [
+      "The scarf is a textile with no logo rule, so the layout mirrors. The knot moves to the right; the Logo Blue selvedge goes to the left edge; the cream selvedge and the fifth-gameweek notches go to the right; PRO's dog-ear moves to the bottom left. At LEGEND the reading order reverses, with the name at the right. The BotolaGO wordmark stays Latin and unmirrored.",
+      "علي is sampled from Changa 800 at 9 stitch rows. Its final yā is knitted without dots and the two dots are hand-placed as single stitch cells, so it never reads as على.",
+      "The Arabic tier word is satin-stitch embroidery over the knit (a thread hatch with a split-stitch outline), because Arabic does not hold at 7 stitch rows.",
+      "The label is set in Noto Sans Arabic 700, right-aligned, with المغرب in its foot. Knitted figures and every number stay left-to-right, and there is no letter-spacing on Arabic.",
+    ],
+    tiers: {
+      HOMA: "Hand-knitted chunky garter (8u stitches, 24 across) in continuous horizontal ridges: new yarn, even tension, a clean outline. The 84 is a hand-charted 5×7 bitmap (each pixel two stitches by two rows) and the word HOMA is hand-charted too. The season alternates stockinette and rib. Full silhouette, 2 tassels.",
+      STADE: "Machine jacquard at 32 stitches with flat, shallow stitches. The 84 is sampled from Changa 800 at 18 rows and the word STADE at 7. 3 tassels.",
+      PRO: "Double-face jacquard with plump stitches and the 84 at 18 rows. The bottom inline-end corner is dog-eared, showing the reverse face with its colours swapped, which changes the outline. 4 tassels.",
+      CHAMPION: "The finest gauge (4×5u, 48 stitches across): the 84 is sampled at 22 rows and gains its curves, and CHAMPION is hand-charted on 10 rows. 5 knotted tassels.",
+      LEGEND: "'Écharpe levée': lifted off the rail and held taut overhead between two fists in bench-jacket cuffs, so the card turns landscape. Heaviest gauge (9u stitches). It reads along the length: the name, the 84, the season as vertical bands, then the label (ratings 2×2, the tier word woven beside the brand). The cast-on is turned with the scarf, so 2026 reads upward. The ends drape down beside the wrists with the longest hand-knotted fringe. No gold, satin or lurex.",
+    },
+    legend: [
+      "The outline changes from hanging (rail, strip, fringe) to raised (a band held by two fists, arms from below). It is visible at 24px, where the mini turns into a horizontal swatch with two fists.",
+      "The moment (motion on, replayable, the 84 visible throughout): the fists come up from below, the scarf lifts and settles taut in 420ms, and the fringe swings once. Reduced motion shows the raised final state.",
+      "Its richness comes from the object's own physics: the heaviest gauge, the ridged gameweek bands, the long knotted fringe and the gesture itself. There is no precious metal anywhere.",
+    ],
+    advantages: [
+      "It is the supporter's own object, in your club's colours. Nothing about it reads as FUT, Sorare, an NFT or a bank card.",
+      "Honest history: the body is the gameweeks you played, so it grows with the season and every scarf is different.",
+      "The tier ladder is the knit and the tassel count, built from the object's own parts. It reads down to 24px on both grounds.",
+      "LEGEND is the stadium gesture of raising your scarf: unmistakably Moroccan terrace culture without slogans, flags or zellige.",
+      "The ratings are always on the front (the woven label), and the ID has a physical carrier woven into the label's foot.",
+    ],
+    risks: [
+      "It sits close to ultras culture: no slogans or group-like names ever, the year is never knitted beside the name, and free-text names would need moderation.",
+      "The card's height changes through the season: about 1:2.5 at J.07 (1:2.7 for HOMA's chunky gauge) and about 1:3.7 by J.30. The landscape LEGEND is about 3.8:1, so in a fixed-width slot it is small: at 360px wide it is about 94px tall, and its label figures are 7–8px.",
+      "Knitted type limits names. Nine letters or more knit only the initial, with the full name on the label. Arabic names other than علي are sampled the same way but were not hand-checked.",
+      "At 24px it is a pixel badge. The knot reads as a knot only from about 44px; below that it is a bump.",
+      "The placeholder club colour is a slate close to navy. Real club colours will change the whole look, and they need contrast rules (and red with green only when the club's own data says so).",
+      "Scarves overlap the empty-leagues and season-prize art, which needs the owner's sign-off. The fists use the shared avatar's single skin tone.",
+      "Not built yet: the league share 'Le mur des écharpes', the band that knits on at gameweek close, long-press on the label, and the multi-segment sway (the drag sway is a single pendulum from the rail). The share's knitted 84 is about 15% of the frame height, short of the 18% target.",
+      "The Arabic strings (embroidered tier words, مثال, the caption) need MSA review.",
+    ],
     gridWidth: 150,
     detailWidth: 260,
     full,

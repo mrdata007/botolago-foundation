@@ -147,8 +147,8 @@
   }
   /* The LEGEND ring: a machined steel frame at the band's end. The strap is threaded through it
      (over the near bar, under the far one) and the frame stands proud of the strap above and below. */
-  function ringGeo(g, F, rw, ov) {
-    const x0 = g.x1 - g.tx - rw * 0.45;
+  function ringGeo(g, F, rw, ov, pad) {
+    const x0 = F.xb - rw - pad;
     const r = rw * 0.42;
     const y0 = -ov;
     const y1 = F.Ht + ov;
@@ -308,10 +308,10 @@
     const s2 = B.s0 + Math.PI * B.R;
     out += place(
       B,
-      s2 + sg * -48,
-      40,
+      s2 + sg * -46,
+      8,
       phi,
-      MC.avatar({ x: -40, y: 0, w: 80, h: 96, torso: mix(club.body, "#fff", 0.72), seam: club.body, hoodFill: mix(club.body, "#fff", 0.8) }),
+      MC.avatar({ x: -50, y: 0, w: 100, h: 120, torso: mix(club.body, "#fff", 0.72), seam: club.body, hoodFill: mix(club.body, "#fff", 0.8) }),
     );
     out += place(B, s2 + sg * 44, 56, phi, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="11" fill="${K.cream}" direction="ltr" style="font-variant-numeric:tabular-nums">${MC.esc(p.id)}</text>`);
     out += place(B, s2 + sg * 44, 80, phi, `<text text-anchor="middle" font-family="Changa, 'Noto Sans Arabic', sans-serif" font-weight="800" font-size="16" fill="${fill}">${MC.esc(S.country)}</text>`);
@@ -381,9 +381,9 @@
       `<stop offset="0" stop-color="#fff" stop-opacity=".06"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>`;
     d += `<radialGradient id="${u}-gs"><stop offset="0" stop-color="#000" stop-opacity=".75"/><stop offset=".6" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>`;
     if (T.ring) {
-      const F = tabFrame(g, true, 12);
+      const F = tabFrame(g, true, 20);
       d +=
-        `<linearGradient id="${u}-steel" gradientUnits="userSpaceOnUse" x1="${f(g.x1 - g.tx - 8)}" y1="-8" x2="${f(g.x1 - g.tx + 12)}" y2="${f(F.Ht + 8)}">` +
+        `<linearGradient id="${u}-steel" gradientUnits="userSpaceOnUse" x1="${f(F.xb - 22)}" y1="-8" x2="${f(F.xb)}" y2="${f(F.Ht + 8)}">` +
         `<stop offset="0" stop-color="#59616c"/><stop offset=".18" stop-color="#e9eef3"/><stop offset=".34" stop-color="#8d97a3"/>` +
         `<stop offset=".52" stop-color="#f7f9fb"/><stop offset=".7" stop-color="#6c7581"/><stop offset=".86" stop-color="#c3cad3"/><stop offset="1" stop-color="#4c535d"/></linearGradient>`;
     }
@@ -520,8 +520,8 @@
   function tabGroup(p, o, u, T, thumb, club) {
     const founder = !!p.founder;
     const strap = T.ring;
-    const F = tabFrame(B, founder, strap ? 12 : 0);
-    const R = strap ? ringGeo(B, F, 12, 8) : null;
+    const F = tabFrame(B, founder, strap ? 20 : 0);
+    const R = strap ? ringGeo(B, F, 12, 8, 5) : null;
     const fill = strap ? mix(bodyTone(club, T), "#000", 0.22) : K.velcro;
     const edge = mix(fill, "#000", 0.4);
     const Ht = F.Ht;
@@ -647,7 +647,6 @@
       s += `<path d="${arcLine(g, g.H)}" fill="none" stroke="${mix(club.sec, "#000", 0.3)}" stroke-width="3.4"/>`;
       s += `<path d="${arcLine(g, g.H - 0.7)}" fill="none" stroke="${mix(club.sec, "#000", 0.05)}" stroke-width="1.2"/>`;
     }
-    s += tabGroup(p, o, u, T, thumb, club);
     // dark-ground rim: a lit edge so the band keeps its outline on the night ground
     s +=
       `<g class="c06-rim" fill="none" stroke="${K.rim}" stroke-linecap="round" pointer-events="none">` +
@@ -655,6 +654,7 @@
       `<path d="M${g.x0} ${g.top}V${g.top + g.H}" stroke-width="1.1" stroke-opacity=".8"/>` +
       `<path d="M${g.x1} ${g.top}V${g.top + g.H}" stroke-width="1.2"/>` +
       `<path d="${arcLine(g, g.H)}" stroke-width=".9" stroke-opacity=".45"/></g>`;
+    s += tabGroup(p, o, u, T, thumb, club);
     const svg = `<svg class="c06-svg" viewBox="0 0 ${g.W} ${g.VH}" width="100%" direction="ltr" style="direction:ltr" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">${s}</svg>`;
     return `<div class="c06 c06-full${o.motion ? " is-motion" : ""}${thumb ? " is-thumb" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(MC.label(p, o))}" data-tier="${p.tier}" data-k="${u}">${svg}</div>`;
   }
@@ -701,9 +701,11 @@
       s += `<ellipse cx="${G.cx}" cy="${G.top}" rx="${G.R}" ry="${G.ry}" fill="none" stroke="${club.sec}" stroke-width="1"/>`;
       s += `<path d="${arcLine(G, G.H)}" fill="none" stroke="${club.sec}" stroke-width="1"/>`;
     }
+    // dark-ground rim first, so it never shows through the tab
+    s += `<path d="${outlinePath(G)}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.6 : 0.75}"/>`;
     // the tab
     const F = tabFrame(G, founder, legend ? (mini ? 2.4 : 3.6) : 0);
-    const R = legend ? ringGeo(G, F, mini ? 2.6 : 3.6, mini ? 1.7 : 2.6) : null;
+    const R = legend ? ringGeo(G, F, mini ? 2.6 : 3.6, mini ? 1.7 : 2.6, mini ? 0.8 : 1.4) : null;
     const tf = legend ? mix(bodyTone(club, T), "#000", 0.25) : mini ? "#737b86" : "#5d6570";
     s += `<g transform="translate(${f(F.x)} ${f(F.y)}) skewY(${f(F.k)})">`;
     if (R) {
@@ -726,7 +728,6 @@
       s += `<path d="${F.poly}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.5 : 0.6}" stroke-opacity=".7"/>`;
     }
     s += `</g>`;
-    s += `<path d="${outlinePath(G)}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.6 : 0.75}"/>`;
     const S = MC.s(o);
     return (
       `<span class="c06 c06-tok${mini ? " is-mini" : ""}" role="img" aria-label="${MC.esc(`${p.ovr} OVR, ${S.tiers[p.tier]}${p.founder ? ", " + S.founderLine : ""}`)}" style="width:${w}px;height:${size}px">` +

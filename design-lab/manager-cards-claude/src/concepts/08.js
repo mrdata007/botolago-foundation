@@ -1,6 +1,6 @@
 /* 08 LSAQ (youth). A cluster of die-cut vinyl stickers slapped on top of each other: your
    rating on the big one, the print layers under it, and at the very bottom the first slip
-   BotolaGO ever gave you. One fixed die for everyone (a superellipse slab with the logo-ball
+   BotolaGO ever gave you. One fixed die for everyone (a superellipse slab with the logo
    tab fused to it), slapped at -6deg. One SVG in a 300 x 360 box; every selector in 08.css
    sits under .c08. */
 (function () {
@@ -15,7 +15,11 @@
   const SLAP = -6;
   const SA = 100; // slab half-width (superellipse n=4, 200 x 150)
   const SB = 75; // slab half-height
-  const TAB = { cx: 86, cy: 71, hw: 18, hh: 11, r: 6 }; // 36 x 22, fused at the bottom-end corner as an ear
+  // 36 x 22, fused at the bottom-end corner: it hangs past the slab's rounded corner, so it reads as an
+  // ear in the one-bit silhouette at every size.
+  const TAB = { cx: 94, cy: 78, hw: 18, hh: 11, r: 6 };
+  const PILL = { x: 4, y: 2, hw: 112, hh: 82 }; // LEGEND's mini: slab and tab merged into one kiss-cut lozenge
+  const MARK_W = 27; // the logo's mark on the tab (unmodified, light variant), in die units
   const KEY = 12; // white keyline round slab and tab
   const LAYERS = { HOMA: 0, STADE: 1, PRO: 2, CHAMPION: 3, LEGEND: 3 }; // the print run
   const SCREEN = { HOMA: 4.4, STADE: 3.6, PRO: 3.1, CHAMPION: 3.1, LEGEND: 2.6 }; // halftone pitch
@@ -117,7 +121,7 @@
     const dy = y - cy;
     return [dx * c - dy * s, dx * s + dy * c];
   }
-  const dieFace = (x, y) => smin(sdSE(x, y, SA, SB), sdBox(x - TAB.cx, y - TAB.cy, TAB.hw, TAB.hh, TAB.r), 9);
+  const dieFace = (x, y) => smin(sdSE(x, y, SA, SB), sdBox(x - TAB.cx, y - TAB.cy, TAB.hw, TAB.hh, TAB.r), 14);
 
   /** Marching squares: the zero contour of f over a box, as point loops. */
   function contour(f, x0, y0, x1, y1, st) {
@@ -222,25 +226,78 @@
     const pts = A.slice(0, -1).concat(B.slice(0, -1));
     return "M" + pts.map((q) => r1(q[0]) + " " + r1(q[1])).join("L") + "Z";
   }
+  /** Morphological closing of {f < 0} by a disc of radius R, as a signed field: fills every bite and
+      neck narrower than 2R, so a cluster cut as one sticker gets one smooth die line. */
+  function closeField(f, x0, y0, x1, y1, st, R) {
+    const dil = (x, y) => f(x, y) - R;
+    const seg = [];
+    for (const L of contour(dil, x0, y0, x1, y1, st)) {
+      if (L.length < 3) continue;
+      for (let i = 0; i < L.length; i++) {
+        const a = L[i];
+        const b = L[(i + 1) % L.length];
+        seg.push(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+      }
+    }
+    return (x, y) => {
+      const dv = dil(x, y);
+      if (dv > 0) return R + dv;
+      if (dv < -3 * R) return -R;
+      let m = Infinity;
+      for (let i = 0; i < seg.length; i += 4) {
+        const dx = seg[i + 2];
+        const dy = seg[i + 3];
+        let t = ((x - seg[i]) * dx + (y - seg[i + 1]) * dy) / (dx * dx + dy * dy || 1e-9);
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const ex = x - seg[i] - t * dx;
+        const ey = y - seg[i + 1] - t * dy;
+        const d2 = ex * ex + ey * ey;
+        if (d2 < m) m = d2;
+      }
+      return R - Math.sqrt(m);
+    };
+  }
   // The die (slab + tab + 12u keyline, with a fillet where the tab meets the slab): the same for everyone.
   let DIE = null;
-  const dieOutline = () => DIE || (DIE = loopPath(contour((x, y) => dieFace(x, y) - KEY, -118, -94, 118, 104, 1.25), 0.09));
+  const dieOutline = () => DIE || (DIE = loopPath(contour((x, y) => dieFace(x, y) - KEY, -118, -94, 134, 110, 1.25), 0.09));
+  /** The rotated bounding box (die units, about the slab centre) of the slab, the tab and LEGEND's lozenge. */
+  let BOX = null;
+  function dieBox() {
+    if (BOX) return BOX;
+    const co = Math.cos(SLAP * RAD);
+    const si = Math.sin(SLAP * RAD);
+    const pts = [];
+    for (let i = 0; i < 96; i++) {
+      const t = (i / 96) * 2 * Math.PI;
+      const ct = Math.cos(t);
+      const st = Math.sin(t);
+      pts.push([SA * Math.sign(ct) * Math.sqrt(Math.abs(ct)), SB * Math.sign(st) * Math.sqrt(Math.abs(st))]);
+      pts.push([PILL.x + Math.sign(ct) * (PILL.hw - PILL.hh) + PILL.hh * ct, PILL.y + PILL.hh * st]);
+    }
+    for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) pts.push([TAB.cx + sx * TAB.hw, TAB.cy + sy * TAB.hh]);
+    BOX = { l: Infinity, r: -Infinity, t: Infinity, b: -Infinity };
+    for (const [x, y] of pts) {
+      const X = x * co - y * si;
+      const Y = x * si + y * co;
+      BOX.l = Math.min(BOX.l, X);
+      BOX.r = Math.max(BOX.r, X);
+      BOX.t = Math.min(BOX.t, Y);
+      BOX.b = Math.max(BOX.b, Y);
+    }
+    return BOX;
+  }
   const SEP = sePath(SA, SB, 120);
   const SEP_S = sePath(SA, SB, 48);
   const kissCache = new Map();
+  // Arabic strips: Noto Sans Arabic has no Latin figures in the lab, so the figures come from Manrope
+  const AR_STAT = '"Noto Sans Arabic", "Manrope", sans-serif';
+  const KISSLINE = `stroke="${INK}" stroke-opacity=".17" stroke-width=".8"`;
 
-  /* ---------- the logo's ball (LOGO_BALL path), used only as a clean knockout ---------- */
-  let BALL;
-  const ballD = () => {
-    if (BALL !== undefined) return BALL;
-    const B = window.MC_BRAND && window.MC_BRAND.mark;
-    BALL = B ? B.paths.filter((q) => q.part === "ball").sort((a, b) => b.d.length - a.d.length)[0].d : null;
-    return BALL;
+  /* ---------- the logo on the tab: MC.logo's mark, light variant, untouched ---------- */
+  const tabMark = (cx, cy, w) => {
+    const h = w / MC.LOGO_RATIO.mark;
+    return `<g transform="translate(${r2(cx - w / 2)} ${r2(cy - h / 2)})" pointer-events="none">${MC.logo("mark", { variant: "light", w: r2(w), h: r2(h), label: false })}</g>`;
   };
-  const ballAt = (cx, cy, d, fill) =>
-    ballD()
-      ? `<path d="${ballD()}" fill="${fill}" transform="translate(${r2(cx)} ${r2(cy)}) scale(${(d / 193.687).toFixed(5)}) translate(-1502.743 -168.369)"/>`
-      : `<circle cx="${r2(cx)}" cy="${r2(cy)}" r="${r2(d / 2)}" fill="${fill}"/>`;
 
   /* ---------- filters ---------- */
   // Every sticker: a ~1px outer hairline (#858D99 on the mist ground; a dark separator on the dark
@@ -259,19 +316,30 @@
     `<feOffset in="SourceAlpha" dx="${r2(dx)}" dy="${r2(dy)}" result="o"/>` +
     `<feComposite in="SourceAlpha" in2="o" operator="out" result="e"/>` +
     `<feFlood flood-color="${color}" flood-opacity="${op}"/><feComposite in2="e" operator="in"/></filter>`;
-  const blurFilter = (id, s) => `<filter id="${id}" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${s}"/></filter>`;
   // CHAMPION flock: a fine velvet nap, light and dark fibres (full size only).
   const flockFilter = (id) =>
     `<filter id="${id}" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">` +
-    `<feTurbulence type="fractalNoise" baseFrequency="1.15" numOctaves="2" seed="13" result="n"/>` +
+    `<feTurbulence type="fractalNoise" baseFrequency="1.7" numOctaves="2" seed="13" result="n"/>` +
     `<feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  .9 0 0 0 -.38" result="w"/>` +
     `<feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -.9 0 0 0 .34" result="k"/>` +
     `<feMerge><feMergeNode in="k"/><feMergeNode in="w"/></feMerge></filter>`;
 
-  /* ---------- the avatar disc: a two-colour halftone screen print of the shared figure ---------- */
-  // The manager from behind, hood up, cropped off-centre: the head and one shoulder enter from
-  // the disc's bottom-start. Ink 1 is the figure; ink 2 (the club's second colour, or the paper
-  // itself at HOMA) is a halftone light from the top-start plus a rim light on the upper-start edge.
+  /* ---------- the avatar disc: a two-colour screen print of the shared figure ---------- */
+  // The manager from behind, hood up, cropped off-centre: the hood and the end-side shoulder enter
+  // from the disc's bottom-start, the start shoulder runs off the edge, and the top-end is open
+  // club-colour ground with a halftone light. Two inks: ink (the hood) and the club's second colour
+  // (the jacket's shoulders, the rim light on the hood, the light). HOMA is one ink on paper.
+  const CROP = { s: 0.42, dx: 0.36, top: 0.55, rot: 0 }; // rot: a slight lean, in degrees (mirrored in RTL) // scale (x R/52), centre offset toward the start (x R), crown above centre (x R)
+  /** The avatar's box for a disc at (cx, cy) of radius R; sg = +1 LTR, -1 RTL. */
+  const cropAt = (cx, cy, R, sg) => {
+    const s = (CROP.s * R) / 52;
+    const hx = cx - sg * CROP.dx * R;
+    const top = cy - CROP.top * R;
+    const y = top - 44 * s;
+    // the lean pivots on the figure's base
+    const tf = CROP.rot ? ` transform="rotate(${r1(sg * CROP.rot)} ${r1(hx)} ${r1(y + 240 * s)})"` : "";
+    return { s, hx, x: hx - 100 * s, y, w: 200 * s, h: 240 * s, tf };
+  };
   function discArt(u, p, c) {
     const { tier, thumb, sg, ar, S, flat } = c;
     const { x: cx, y: cy, R } = c.disc;
@@ -279,41 +347,57 @@
     const C = clubOf(p);
     const ground = home ? PAPER : tier === "CHAMPION" ? deepen(C.c, 0.15) : C.c;
     const hi = home ? PAPER : C.on;
-    const s = (0.6 * R) / 52; // close crop: the hood's crown runs off the top, the shoulders off the bottom
-    const hx = cx - sg * 0.2 * R;
-    const top = cy - 1.06 * R;
-    const pos = { x: r1(hx - 100 * s), y: r1(top - 44 * s), w: r1(200 * s), h: r1(240 * s) };
-    const fig = (q) => MC.avatar({ ...pos, rim: "none", ...q });
+    const jacket = home ? INK : hi; // the shoulders: the second ink (one ink at HOMA)
+    const B = cropAt(cx, cy, R, sg);
+    const pos = { x: r1(B.x), y: r1(B.y), w: r1(B.w), h: r1(B.h) };
+    const fig = (q) => `<g${B.tf}>${MC.avatar({ ...pos, rim: "none", seam: false, ...q })}</g>`;
+    // the hood's centre seam and its rim (no yoke seam: it would cross the printed country)
+    const seams = (col, w) =>
+      `<g${B.tf}><g transform="translate(${r2(B.x)} ${r2(B.y)}) scale(${r2(B.s * 1000) / 1000})" stroke="${col}" stroke-width="${w}" fill="none"><path d="${MC.AVATAR.hoodSeam}"/>${home ? `<path d="${MC.AVATAR.hoodRim}"/>` : ""}</g></g>`;
     const box = `x="${r1(cx - R)}" y="${r1(cy - R)}" width="${2 * R}" height="${2 * R}"`;
     let defs = `<clipPath id="${u}-cd"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath>`;
     let face = `<rect ${box} fill="${ground}"/>`;
     if (thumb) {
-      face += fig({ torso: mix(INK, hi, 0.4), hoodFill: INK, seam: ground, rim: hi });
+      face += fig({ torso: jacket, hoodFill: INK, rim: hi }) + seams(home ? hi : ground, 3);
     } else {
       const P = SCREEN[tier];
-      const lit = sg > 0 ? { x1: 20, y1: 40, x2: 175, y2: 236 } : { x1: 180, y1: 40, x2: 25, y2: 236 };
+      const dot = (id, col) =>
+        `<radialGradient id="${u}-${id}d"><stop offset="0" stop-color="${col}"/><stop offset="1" stop-color="${col}" stop-opacity="0"/></radialGradient>` +
+        `<pattern id="${u}-${id}" width="${P}" height="${P}" patternUnits="userSpaceOnUse" patternTransform="rotate(${home ? 45 : 22.5})"><rect width="${P}" height="${P}" fill="url(#${u}-${id}d)"/></pattern>`;
+      // light from the top-end, the open side of the disc
+      const lx = cx + sg * 0.75 * R;
+      const ly = cy - 0.8 * R;
       defs +=
-        `<radialGradient id="${u}-dot"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${hi}" stop-opacity="0"/></radialGradient>` +
-        `<pattern id="${u}-ht" width="${P}" height="${P}" patternUnits="userSpaceOnUse" patternTransform="rotate(${home ? 45 : 22.5})"><rect width="${P}" height="${P}" fill="url(#${u}-dot)"/></pattern>` +
+        dot("ht", hi) +
+        dot("hk", INK) +
         `<filter id="${u}-thr" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feComponentTransfer><feFuncA type="linear" slope="12" intercept="-2.6"/></feComponentTransfer></filter>` +
-        `<linearGradient id="${u}-tone" gradientUnits="userSpaceOnUse" x1="${lit.x1}" y1="${lit.y1}" x2="${lit.x2}" y2="${lit.y2}"><stop offset="0" stop-color="#fff"/><stop offset=".22" stop-color="#9a9a9a"/><stop offset=".46" stop-color="#2e2e2e"/><stop offset=".6" stop-color="#000"/></linearGradient>` +
-        `<radialGradient id="${u}-pool" gradientUnits="userSpaceOnUse" cx="${r1(cx - sg * 0.75 * R)}" cy="${r1(cy - 0.85 * R)}" r="${r1(1.25 * R)}"><stop offset="0" stop-color="#9a9a9a"/><stop offset=".5" stop-color="#3a3a3a"/><stop offset="1" stop-color="#000"/></radialGradient>` +
+        `<radialGradient id="${u}-pool" gradientUnits="userSpaceOnUse" cx="${r1(lx)}" cy="${r1(ly)}" r="${r1(1.25 * R)}"><stop offset="0" stop-color="#b8b8b8"/><stop offset=".45" stop-color="#444"/><stop offset=".8" stop-color="#000"/></radialGradient>` +
         `<mask id="${u}-mpool" maskUnits="userSpaceOnUse" ${box}><circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#${u}-pool)"/></mask>` +
-        // the jacket gets its own screen (lighter at the shoulders, solid where the country is printed), so it reads apart from the hood
-        `<linearGradient id="${u}-tt" gradientUnits="userSpaceOnUse" x1="${sg > 0 ? 60 : 140}" y1="172" x2="${sg > 0 ? 80 : 120}" y2="206"><stop offset="0" stop-color="#d8d8d8"/><stop offset=".5" stop-color="#6a6a6a"/><stop offset="1" stop-color="#000"/></linearGradient>` +
-        `<mask id="${u}-mfig" maskUnits="userSpaceOnUse" ${box}>${fig({ torso: `url(#${u}-tt)`, hoodFill: `url(#${u}-tone)`, seam: false })}</mask>` +
-        edgeLight(`${u}-rl`, sg * 1.7, 1.7, hi);
+        // the hood is lit on its end side, so it reads as a rounded form, not a flat dome
+        // (these two gradients paint inside the avatar's own viewBox, so they are in figure units)
+        `<linearGradient id="${u}-hl" gradientUnits="userSpaceOnUse" x1="${100 + sg * 70}" y1="62" x2="${100 - sg * 22}" y2="122"><stop offset="0" stop-color="#cacaca"/><stop offset=".5" stop-color="#4c4c4c"/><stop offset=".85" stop-color="#000"/></linearGradient>` +
+        `<mask id="${u}-mhood" maskUnits="userSpaceOnUse" ${box}>${fig({ torso: false, hoodFill: `url(#${u}-hl)` })}</mask>` +
+        // the shoulders fall into shadow toward the bottom-start
+        `<linearGradient id="${u}-sh" gradientUnits="userSpaceOnUse" x1="${100 + sg * 40}" y1="178" x2="${100 - sg * 70}" y2="240"><stop offset=".25" stop-color="#000"/><stop offset="1" stop-color="#9a9a9a"/></linearGradient>` +
+        `<mask id="${u}-mjk" maskUnits="userSpaceOnUse" ${box}>${fig({ torso: `url(#${u}-sh)`, hoodFill: "#000" })}</mask>` +
+        edgeLight(`${u}-rl`, -sg * 1.8, 1.6, hi);
       face += `<g filter="url(#${u}-thr)"><rect ${box} fill="url(#${u}-ht)" mask="url(#${u}-mpool)"/></g>`;
-      face += fig({ torso: INK, seam: false });
-      face += `<g filter="url(#${u}-thr)"><rect ${box} fill="url(#${u}-ht)" mask="url(#${u}-mfig)"/></g>`;
-      face += fig({ torso: false, seam: ground });
-      face += `<g filter="url(#${u}-rl)">${fig({ torso: "#000", seam: false })}</g>`;
-      // the country, set straight across the lower chord: printed on the back of the jacket
+      face += fig({ torso: jacket, hoodFill: INK });
+      if (!home) face += `<g filter="url(#${u}-thr)"><rect ${box} fill="url(#${u}-hk)" mask="url(#${u}-mjk)"/></g>`;
+      face += `<g filter="url(#${u}-thr)"><rect ${box} fill="url(#${u}-ht)" mask="url(#${u}-mhood)"/></g>`;
+      face += seams(home ? PAPER : ground, 2.5);
+      face += `<g filter="url(#${u}-rl)">${fig({ torso: false, hoodFill: "#000" })}</g>`;
+      // the country, set straight across the back of the jacket, below the hood
+      const tx = r1(B.hx + sg * 0.28 * R);
+      const ty = r1(cy + 0.8 * R);
+      const tc = home ? PAPER : INK;
       face += ar
-        ? `<text x="${cx}" y="${r1(cy + 0.8 * R)}" text-anchor="middle" font-family="Noto Sans Arabic" font-weight="700" font-size="9" fill="${hi}" direction="rtl">${esc(S.country)}</text>`
-        : `<text x="${r1(cx + 0.4)}" y="${r1(cy + 0.79 * R)}" text-anchor="middle" font-family="Manrope" font-weight="700" font-size="8" letter-spacing=".8" fill="${hi}" direction="ltr">${esc(S.country)}</text>`;
+        ? `<text x="${tx}" y="${r1(cy + 0.82 * R)}" text-anchor="middle" font-family="Noto Sans Arabic" font-weight="700" font-size="9" fill="${tc}" direction="rtl">${esc(S.country)}</text>`
+        : `<text x="${tx}" y="${ty}" text-anchor="middle" font-family="Manrope" font-weight="800" font-size="7.5" letter-spacing=".3" fill="${tc}" direction="ltr">${esc(S.country)}</text>`;
     }
-    const keyl = flat ? "" : `<g filter="url(#${u}-stk)"><circle cx="${cx}" cy="${cy}" r="${R + 9}" class="${home ? "c08-paper" : "c08-white"}"/></g>`;
+    const keyl = flat
+      ? `<circle cx="${cx}" cy="${cy}" r="${R + 9}" class="c08-white" ${KISSLINE}/>`
+      : `<g filter="url(#${u}-stk)"><circle cx="${cx}" cy="${cy}" r="${R + 9}" class="${home ? "c08-paper" : "c08-white"}"/></g>`;
     return { defs, body: keyl + `<g clip-path="url(#${u}-cd)">${face}</g>`, lam: `<circle cx="${cx}" cy="${cy}" r="${R + 9}" fill="#fff"/>` };
   }
 
@@ -330,42 +414,49 @@
     const digits = (attrs) => `<text x="0" y="${base}" text-anchor="middle" font-family="Changa" font-weight="800" font-size="${fs}" direction="ltr" ${attrs}>${esc(ovr)}</text>`;
     let defs =
       `<path id="${u}-die" d="${dieOutline()}"/><path id="${u}-se" d="${SEP}"/>` +
-      `<clipPath id="${u}-sec"><use href="#${u}-se"/></clipPath>` +
-      `<mask id="${u}-tbm" maskUnits="userSpaceOnUse" x="60" y="52" width="52" height="42"><rect x="${TAB.cx - TAB.hw}" y="${TAB.cy - TAB.hh}" width="${2 * TAB.hw}" height="${2 * TAB.hh}" rx="${TAB.r}" fill="#fff"/>${ballAt(TAB.cx + 1, TAB.cy, 15.5, "#000")}</mask>`;
+      `<clipPath id="${u}-sec"><use href="#${u}-se"/></clipPath>`;
     let face = `<use href="#${u}-se" fill="${SI.face}"/>`;
     if (SI.band) face += `<g clip-path="url(#${u}-sec)"><rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="25" fill="${SI.band}"/></g>`;
     if (home) face += `<use href="#${u}-se" fill="none" stroke="${INK}" stroke-opacity=".16" stroke-width=".8"/>`;
-    let dig = digits(`fill="${SI.ink}"`);
+    const dig = digits(`fill="${SI.ink}"`);
     if (tier === "CHAMPION" && !thumb) {
-      // flocked vinyl: fibres, and the velvet's lighter nap at every edge (slab and digits)
-      defs += flockFilter(`${u}-flk`) + blurFilter(`${u}-b4`, 4) + blurFilter(`${u}-b1`, 0.7) + `<mask id="${u}-dm" maskUnits="userSpaceOnUse" x="-110" y="-90" width="220" height="180">${digits('fill="#fff"')}</mask>`;
+      // flocked vinyl: a fine velvet nap over a deep matte face, and one crisp lighter nap edge where
+      // the light catches it (top-start). The digits stay crisp, in the club's full second colour.
+      defs += flockFilter(`${u}-flk`) + edgeLight(`${u}-nap`, c.sg * 1.2, 1.2, mix(SI.face, "#ffffff", 0.34));
       face +=
-        `<g clip-path="url(#${u}-sec)"><use href="#${u}-se" fill="none" stroke="${mix(SI.face, "#ffffff", 0.28)}" stroke-width="16" filter="url(#${u}-b4)"/>` +
-        `<rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="${2 * SB}" fill="#000" filter="url(#${u}-flk)" opacity=".5"/></g>`;
-      dig =
-        digits(`fill="${mix(SI.ink, "#000000", 0.1)}"`) +
-        `<g mask="url(#${u}-dm)">${digits(`fill="none" stroke="${mix(SI.ink, "#ffffff", 0.6)}" stroke-width="3" filter="url(#${u}-b1)"`)}</g>`;
+        `<g clip-path="url(#${u}-sec)"><rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="${2 * SB}" fill="#000" filter="url(#${u}-flk)" opacity=".25"/></g>` +
+        `<use href="#${u}-se" fill="#000" filter="url(#${u}-nap)"/>`;
     }
     if (legend && !thumb) {
-      // retroreflective sheeting: glass beads, and a sheen that answers the light (tilt or flash)
+      // retroreflective sheeting: sparse glass beads (two offset tiles, so no grid shows), and a sheen
+      // that answers the light (tilt or flash)
       const lx = c.sg > 0 ? -45 : 45;
       defs +=
-        `<pattern id="${u}-bead" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="1.2" cy="2" r=".6" fill="#fff"/><circle cx="4.6" cy="5.3" r=".6" fill="#fff"/><circle cx="5.8" cy="1.1" r=".5" fill="#7E8791"/><circle cx="2.7" cy="5.9" r=".5" fill="#7E8791"/></pattern>` +
-        `<radialGradient id="${u}-shn" gradientUnits="userSpaceOnUse" cx="${lx}" cy="-40" r="150"><stop offset="0" stop-color="#F4F8FF"/><stop offset=".45" stop-color="#E6ECF5" stop-opacity=".75"/><stop offset="1" stop-color="#E6ECF5" stop-opacity="0"/></radialGradient>`;
-      face += `<g clip-path="url(#${u}-sec)"><rect class="c08-sheen" x="-${SA}" y="-${SB}" width="${2 * SA}" height="${2 * SB}" fill="url(#${u}-shn)"/><rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="${2 * SB}" fill="url(#${u}-bead)" opacity=".55"/></g>`;
+        `<pattern id="${u}-bd1" width="13" height="13" patternUnits="userSpaceOnUse"><circle cx="2.1" cy="3.4" r=".6" fill="#fff"/><circle cx="8.7" cy="9.6" r=".6" fill="#fff"/><circle cx="10.8" cy="2.6" r=".55" fill="#59616B"/></pattern>` +
+        `<pattern id="${u}-bd2" width="17" height="17" patternUnits="userSpaceOnUse" patternTransform="rotate(23)"><circle cx="5.2" cy="1.8" r=".6" fill="#fff"/><circle cx="13.4" cy="11.2" r=".6" fill="#fff"/><circle cx="3.1" cy="13.9" r=".55" fill="#59616B"/></pattern>` +
+        `<radialGradient id="${u}-shn" gradientUnits="userSpaceOnUse" cx="${lx}" cy="-40" r="150"><stop offset="0" stop-color="#F7FAFF"/><stop offset=".45" stop-color="#E8EDF5" stop-opacity=".8"/><stop offset="1" stop-color="#E6ECF5" stop-opacity="0"/></radialGradient>`;
+      face +=
+        `<g clip-path="url(#${u}-sec)"><rect class="c08-sheen" x="-${SA}" y="-${SB}" width="${2 * SA}" height="${2 * SB}" fill="url(#${u}-shn)"/>` +
+        `<rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="${2 * SB}" fill="url(#${u}-bd1)" opacity=".18"/><rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="${2 * SB}" fill="url(#${u}-bd2)" opacity=".14"/></g>`;
     }
+    // the BotolaGO ID and the season: a printer's slug on the die's bottom keyline
+    const slug = thumb
+      ? ""
+      : `<g font-family="Manrope" font-weight="700" font-size="7.5" fill="${INK2}" style="font-variant-numeric:tabular-nums">` +
+        `<text x="-5" y="83.6" text-anchor="end" direction="ltr">${esc(p.id)}</text><text x="5" y="83.6" direction="ltr">${esc(p.season)}</text></g>`;
     const tab =
       `<g class="c08-tab"><rect x="${TAB.cx - 22}" y="${TAB.cy - 22}" width="44" height="44" fill="none" pointer-events="all"/>` +
-      `<circle cx="${TAB.cx + 1}" cy="${TAB.cy}" r="7.6" class="c08-white"/>` +
-      `<rect x="${TAB.cx - TAB.hw}" y="${TAB.cy - TAB.hh}" width="${2 * TAB.hw}" height="${2 * TAB.hh}" rx="${TAB.r}" fill="${BLUE}" mask="url(#${u}-tbm)"/></g>`;
-    const keyl = flat ? "" : `<g filter="url(#${u}-stk)"><use href="#${u}-die" class="${stock}"/></g>`;
+      `<rect x="${TAB.cx - TAB.hw}" y="${TAB.cy - TAB.hh}" width="${2 * TAB.hw}" height="${2 * TAB.hh}" rx="${TAB.r}" fill="${BLUE}"/>` +
+      tabMark(TAB.cx, TAB.cy, MARK_W) +
+      `</g>`;
+    const keyl = flat ? `<use href="#${u}-die" class="c08-white" ${KISSLINE}/>` : `<g filter="url(#${u}-stk)"><use href="#${u}-die" class="${stock}"/></g>`;
     // what the peel shows: the layer under the slab (last week's slab; '– –' with no history)
     const under = flat
       ? ""
       : `<g class="c08-under"><use href="#${u}-die" class="${stock}"/><use href="#${u}-se" fill="${mix(SI.face, "#ffffff", 0.5)}"/>` +
         `<g class="c08-ex0">${digits(`fill="${SI.ink}" fill-opacity=".45"`).replace(`>${esc(ovr)}<`, ">– –<")}</g>` +
         `<g class="c08-ex1">${digits(`fill="${SI.ink}" fill-opacity=".6"`).replace(`>${esc(ovr)}<`, ">81<")}<text x="0" y="66" text-anchor="middle" font-family="Manrope" font-weight="800" font-size="9" fill="${SI.ink}">${c.ar ? "مثال" : "Exemple"}</text></g></g>`;
-    const front = `<g class="c08-front" clip-path="url(#${u}-pc)"><g class="c08-skin">${keyl}${face}${dig}</g>${tab}</g>`;
+    const front = `<g class="c08-front" clip-path="url(#${u}-pc)"><g class="c08-skin">${keyl}${slug}${face}${dig}</g>${tab}</g>`;
     const flap = flat ? "" : `<g class="c08-flap" clip-path="url(#${u}-pc)" style="display:none"><use href="#${u}-die" fill="url(#${u}-bk)" filter="url(#${u}-stk)"/></g>`;
     defs +=
       `<clipPath id="${u}-pc" clipPathUnits="userSpaceOnUse"><polygon points="-2000,-2000 2000,-2000 2000,2000 -2000,2000"/></clipPath>` +
@@ -390,7 +481,7 @@
     const stock = home ? "c08-paper" : "c08-white";
     const c = { tier, ar, rtl, thumb, sg, S, o, flat: legend };
     c.disc = { x: X(64), y: 64, R: 52 };
-    c.slab = { x: X(170), y: 176 };
+    c.slab = { x: X(160), y: 176 };
     let defs = stickerFilter(`${u}-stk`);
     let body = "";
     const lam = [];
@@ -399,8 +490,7 @@
     const nm = MC.nameOf(p, o);
     let nfs = 28;
     let nW = measure(nm, '"Changa"', 800, nfs, ar ? 0.5 : 0.62);
-    const idW = thumb ? 0 : Math.max(measure(p.id, '"Manrope"', 700, 9, 0.62), measure(p.season, '"Manrope"', 700, 9, 0.62)) + 2;
-    const fixed = 14 + (thumb ? 0 : 10 + idW) + 14;
+    const fixed = 14 + 14; // the strip carries the name alone, so the founder slip reads right after it: ALI ·26
     const maxNW = 236 - fixed;
     if (nW > maxNW) {
       nfs = Math.max(20, (nfs * maxNW) / nW);
@@ -410,17 +500,19 @@
     if (squeeze) nW = maxNW;
     const sw = r1(fixed + nW);
     const sH = ar ? 48 : 40;
-    const strip = { x: X(22), y: 292, rot: 2 };
+    // in RTL the +2deg strip rises toward its far (left) end, so it sits 5u lower to clear the slug
+    const strip = { x: X(22), y: rtl ? 297 : 292, rot: 2 };
     /* the stat strip: one row, the tier word first */
     const statTxt = [S.tiers[tier]].concat(MC.STATS.map((k) => `${S.stats[k]} ${p.stats[k]}`)).join(" · ");
-    let tW = ar ? measure(statTxt, '"Noto Sans Arabic"', 700, 12, 0.5) : measure(statTxt, '"Manrope"', 800, 12.5, 0.6) * 1.03;
+    let tW = ar ? measure(statTxt, AR_STAT, 700, 12, 0.5) * 1.02 : measure(statTxt, '"Manrope"', 800, 12.5, 0.6) * 1.03;
     const tFit = tW > 250;
     if (tFit) tW = 250;
     const stw = r1(tW + 22);
-    const stats = { x: X(26), y: 334, rot: -1 };
+    const stats = { x: X(26), y: rtl ? 339 : 334, rot: -1 };
     const slipC = { x: sg * (sw + 6), y: 1, rot: -5 };
 
     /* LEGEND: the whole cluster kiss-cut as one sticker, one smooth outer die line */
+    let KISS = "";
     if (legend) {
       const fans = [1, 2, 3].map((k) => ({ x: c.slab.x + sg * 7 * k, y: c.slab.y - 6 * k, a: SLAP + 2 * k }));
       const key = [rtl ? 1 : 0, sw, stw, p.founder ? 1 : 0].join("|");
@@ -445,11 +537,17 @@
           d = smin(d, sdBox(lx - (sg * stw) / 2, ly, stw / 2, 14, 3), 22);
           return d - KEY;
         };
-        KP = loopPath(contour(f, -16, -16, VW + 16, VH + 16, 2), 0.12);
+        KP = loopPath(contour(closeField(f, -50, -50, VW + 50, VH + 50, 2, 26), -50, -50, VW + 50, VH + 50, 2), 0.12);
         kissCache.set(key, KP);
       }
+      KISS = KP;
       defs += `<path id="${u}-kiss" d="${KP}"/>`;
       body += `<g filter="url(#${u}-stk)"><use href="#${u}-kiss" class="c08-white"/></g>`;
+      // the print layers stay: kiss-cut lines on the one backing, fanned toward the top-end (the thickest stack)
+      for (let k = 3; k >= 1; k--) {
+        const s = fans[k - 1];
+        body += `<use href="#${u}-die" class="c08-white" ${KISSLINE} transform="translate(${s.x} ${s.y}) rotate(${s.a})"/>`;
+      }
     } else {
       /* the print layers under the slab, fanned toward the top-end, keylines only */
       for (let k = LAYERS[tier]; k >= 1; k--) {
@@ -481,26 +579,18 @@
       const yy = String(p.founder).slice(-2);
       st +=
         `<g transform="translate(${slipC.x} ${slipC.y}) rotate(${slipC.rot})"><g class="c08-slip">` +
-        (legend ? "" : `<g filter="url(#${u}-stk)"><rect x="-20" y="-20" width="40" height="40" rx="5" class="c08-white"/></g>`) +
+        (legend ? `<rect x="-20" y="-20" width="40" height="40" rx="5" class="c08-white" ${KISSLINE}/>` : `<g filter="url(#${u}-stk)"><rect x="-20" y="-20" width="40" height="40" rx="5" class="c08-white"/></g>`) +
         `<rect x="-17" y="-17" width="34" height="34" rx="3" fill="${INK}"/>` +
         `<text x="${r1(sg * 5.6)}" y="6.4" text-anchor="middle" font-family="Changa" font-weight="800" font-size="18" fill="#fff" direction="ltr">${esc(yy)}</text></g></g>`;
     }
     const sx = rtl ? -sw : 0;
     st += legend
-      ? `<rect x="${sx}" y="${-sH / 2}" width="${sw}" height="${sH}" rx="3" class="c08-white" stroke="${INK}" stroke-opacity=".14" stroke-width=".7"/>`
+      ? `<rect x="${sx}" y="${-sH / 2}" width="${sw}" height="${sH}" rx="3" class="c08-white" ${KISSLINE}/>`
       : `<g filter="url(#${u}-stk)"><rect x="${sx}" y="${-sH / 2}" width="${sw}" height="${sH}" rx="3" class="${stock}"/></g>`;
     const fit = squeeze ? ` textLength="${r1(nW)}" lengthAdjust="spacingAndGlyphs"` : "";
     st += ar
       ? `<text x="-14" y="${r1(nfs * 0.36)}" text-anchor="start" font-family="Changa" font-weight="800" font-size="${r1(nfs)}" fill="${ink}" direction="rtl"${fit}>${esc(nm)}</text>`
       : `<text x="14" y="${r1(nfs * 0.315)}" font-family="Changa" font-weight="800" font-size="${r1(nfs)}" fill="${ink}" direction="ltr"${fit}>${esc(nm)}</text>`;
-    if (!thumb) {
-      // the BotolaGO ID and the season, printed on the strip
-      const ix = rtl ? -(14 + nW + 10) : 14 + nW + 10;
-      const anchor = rtl ? "end" : "start";
-      st +=
-        `<text x="${r1(ix)}" y="-1.8" text-anchor="${anchor}" font-family="Manrope" font-weight="700" font-size="9" fill="${INK2}" direction="ltr" style="font-variant-numeric:tabular-nums">${esc(p.id)}</text>` +
-        `<text x="${r1(ix)}" y="9.4" text-anchor="${anchor}" font-family="Manrope" font-weight="700" font-size="9" fill="${INK2}" direction="ltr" style="font-variant-numeric:tabular-nums">${esc(p.season)}</text>`;
-    }
     st += `</g>`;
     body += st;
 
@@ -508,12 +598,12 @@
     let ss = `<g class="c08-stats" transform="translate(${stats.x} ${stats.y}) rotate(${stats.rot})">`;
     const tx0 = rtl ? -stw : 0;
     ss += legend
-      ? `<rect x="${tx0}" y="-14" width="${stw}" height="28" rx="3" class="c08-white" stroke="${INK}" stroke-opacity=".14" stroke-width=".7"/>`
+      ? `<rect x="${tx0}" y="-14" width="${stw}" height="28" rx="3" class="c08-white" ${KISSLINE}/>`
       : `<g filter="url(#${u}-stk)"><rect x="${tx0}" y="-14" width="${stw}" height="28" rx="3" class="${stock}"/></g>`;
     if (!thumb) {
       const tf = tFit ? ` textLength="${r1(tW)}" lengthAdjust="spacingAndGlyphs"` : "";
       ss += ar
-        ? `<text x="-11" y="4.6" text-anchor="start" font-family="Noto Sans Arabic" font-weight="700" font-size="12" fill="${ink}" direction="rtl"${tf}>${esc(statTxt)}</text>`
+        ? `<text x="-11" y="4.6" text-anchor="start" font-family='${AR_STAT}' font-weight="700" font-size="12" fill="${ink}" direction="rtl"${tf}>${esc(statTxt)}</text>`
         : `<text x="11" y="4.5" font-family="Manrope" font-weight="800" font-size="12.5" fill="${ink}" direction="ltr" style="font-variant-numeric:tabular-nums"${tf}>${esc(statTxt)}</text>`;
     }
     ss += `</g>`;
@@ -541,7 +631,7 @@
     /* LEGEND moment hooks: the die line that the cutter traces, and one flash frame */
     if (legend) {
       body +=
-        `<use href="#${u}-kiss" class="c08-cut" fill="none" stroke="${INK}" stroke-width="2.6" pathLength="1"/>` +
+        `<path d="${KISS}" class="c08-cut" fill="none" stroke="${INK}" stroke-width="2.6" pathLength="1"/>` +
         `<use href="#${u}-kiss" class="c08-flashf" fill="#fff"/>`;
     }
     return { defs, body };
@@ -564,11 +654,15 @@
     const kp = mini ? (h <= 24 ? 1.5 : 2) : Math.min(3, Math.max(1.75, h / 26)); // keyline, px
     const ep = mini ? 1.05 : h >= 64 ? 1.6 : 1.35; // edge-line pitch, px
     const hp = 0.8; // hairline, px
-    const s = (h - 2 * kp - 3 * ep - 2 * hp - 0.6 - (big ? 0.04 * h : 0)) / 160; // px per die unit
+    const B = dieBox();
+    const s = (h - 2 * kp - 3 * ep - 2 * hp - 0.6 - (big ? 0.04 * h : 0)) / (B.b - B.t); // px per die unit
     const k = 1 / s; // die units per px
-    const halfW = 101 * s + kp + hp;
-    const halfH = 80 * s + kp + hp;
-    const slipPx = mini ? (h <= 24 ? 5.4 : 6) : 34 * s + 1.2;
+    const exL = -B.l * s + kp + hp; // the die's extent from its centre, px
+    const exR = B.r * s + kp + hp;
+    const exB = B.b * s + kp + hp;
+    const slipPx = mini ? (h <= 24 ? 6.2 : 6.8) : 34 * s + 1.2;
+    const kk = mini ? 0.7 : 0.9; // the slip's own keyline, px
+    const slipOut = mini ? 0.58 : 0.44; // how much of the black slip shows past the slab's keyline
     const dd = 0.35 * h; // disc diameter at 64-80px
     let W;
     let cx;
@@ -577,24 +671,20 @@
     if (big) {
       const Ro = dd / 2;
       disc = { x: Ro + 0.5, y: Ro + 0.5, R: Ro - 0.75 * kp - hp };
-      cx = disc.x + 0.12 * Ro + halfW;
-      cy = h - halfH - 3 * ep - 0.4;
-      W = Math.ceil(cx + halfW + 0.6);
+      cx = disc.x + 0.12 * Ro + exL;
+      cy = h - exB - 3 * ep - 0.4;
     } else {
-      cx = halfW + slipPx * 0.42;
-      cy = h - halfH - 3 * ep - 0.3;
-      W = Math.ceil(cx + halfW + 0.6);
+      cx = exL + slipPx * slipOut + kk + hp + 0.3;
+      cy = h - exB - 3 * ep - 0.3;
     }
-    if (rtl) {
+    W = Math.ceil(cx + exR + 0.6);
+    if (rtl && disc) {
       // the die is never mirrored; the disc moves to the top-right
-      if (disc) {
-        disc.x = W - disc.x;
-        cx = W - cx;
-      }
+      disc.x = W - disc.x;
+      cx = W - cx;
     }
     const place = (dy) => `translate(${r2(cx)} ${r2(cy + dy)}) rotate(${SLAP}) scale(${r2(s * 1000) / 1000})`;
     // LEGEND: slab and tab merge into one smooth kiss-cut pill (the outline change)
-    const PILL = { x: 4, y: 2, hw: 112, hh: 82 };
     const pill = (attrs, m) =>
       `<rect x="${r1(PILL.x - PILL.hw - m)}" y="${r1(PILL.y - PILL.hh - m)}" width="${r1(2 * PILL.hw + 2 * m)}" height="${r1(2 * PILL.hh + 2 * m)}" rx="${r1(PILL.hh + m)}" ${attrs}/>`;
     const faceShapes = legend
@@ -612,11 +702,11 @@
       `</g>`;
     let svg = "";
     let defs = `<clipPath id="${u}-sec"><path d="${SEP_S}"/></clipPath>`;
-    // FOUNDER 2026: the first slip, a black square peeking from under the bottom-start of the stack
+    // FOUNDER 2026: the first slip, a black square peeking from under the bottom-start of the stack,
+    // far enough out that at least 3px of black shows inside its white keyline at 24px
     if (p.founder) {
-      const sc0 = cx - halfW + slipPx * 0.35;
-      const sy0 = cy + halfH * 0.5 + 3 * ep * 0.4;
-      const kk = mini ? 0.7 : 0.9;
+      const sc0 = cx - exL + slipPx * (0.5 - slipOut);
+      const sy0 = cy + B.b * s * 0.56;
       svg +=
         `<g transform="translate(${r2(sc0)} ${r2(sy0)}) rotate(-4)"><rect x="${r2(-slipPx / 2 - kk - hp)}" y="${r2(-slipPx / 2 - kk - hp)}" width="${r2(slipPx + 2 * kk + 2 * hp)}" height="${r2(slipPx + 2 * kk + 2 * hp)}" rx="1" ${fillV("var(--c08-hair)")}/>` +
         `<rect x="${r2(-slipPx / 2 - kk)}" y="${r2(-slipPx / 2 - kk)}" width="${r2(slipPx + 2 * kk)}" height="${r2(slipPx + 2 * kk)}" rx=".8" ${fillV("var(--c08-white)")}/>` +
@@ -625,21 +715,19 @@
     let discSvg = "";
     if (disc) {
       const R = disc.R;
-      const sA = (0.6 * R) / 52;
-      const hx = disc.x - (rtl ? -1 : 1) * 0.2 * R;
-      const top = disc.y - 1.06 * R;
+      const sg = rtl ? -1 : 1;
+      const A = cropAt(disc.x, disc.y, R, sg); // the same crop as the full card
       defs += `<clipPath id="${u}-cd"><circle cx="${r2(disc.x)}" cy="${r2(disc.y)}" r="${r2(R)}"/></clipPath>`;
+      // flat at this size: the figure in ink with the jacket a shade lighter, and a lit rim on its
+      // upper-end edge (the figure offset over a lit copy of itself)
+      const at = (dx, dy, q) => MC.avatar({ x: r2(A.x + dx), y: r2(A.y + dy), w: r2(A.w), h: r2(A.h), seam: false, ...q });
+      const lit = home ? INK : C.on;
       discSvg +=
         `<circle cx="${r2(disc.x)}" cy="${r2(disc.y)}" r="${r2(R + 0.75 * kp + hp)}" ${fillV("var(--c08-hair)")}/>` +
         `<circle cx="${r2(disc.x)}" cy="${r2(disc.y)}" r="${r2(R + 0.75 * kp)}" ${fillV(stockVar)}/>` +
         `<g clip-path="url(#${u}-cd)"><rect x="${r2(disc.x - R)}" y="${r2(disc.y - R)}" width="${r2(2 * R)}" height="${r2(2 * R)}" fill="${home ? PAPER : C.c}"/>` +
-        (() => {
-          // flat at this size: a cream rim light on the upper-start edge (the figure offset over itself), hood in ink, jacket a shade lighter
-          const at = (dx, dy, q) => MC.avatar({ x: r2(hx - 100 * sA + dx), y: r2(top - 44 * sA + dy), w: r2(200 * sA), h: r2(240 * sA), seam: false, ...q });
-          const lit = home ? INK : C.on;
-          const off = rtl ? -0.9 : 0.9;
-          return at(0, 0, { torso: lit, hoodFill: lit }) + at(off, 0.9, { torso: mix(INK, home ? "#9a9a9a" : C.on, 0.4), hoodFill: home ? "#3a3a3a" : INK });
-        })() +
+        at(0, 0, { torso: false, hoodFill: lit }) +
+        at(-sg * 0.9, 0.9, { torso: home ? INK : C.on, hoodFill: home ? "#3a3a3a" : INK }) +
         `</g>`;
     }
     for (let i = n; i >= 1; i--) svg += layer(i * ep);
@@ -647,8 +735,13 @@
     svg += `<g transform="${place(0)}">`;
     svg += faceShapes(paint("var(--c08-hair)"), (kp + hp) * k) + faceShapes(paint(stockVar), kp * k);
     if (legend) {
+      // reflective silver: a crisp sheen stripe under the digits, and the kiss-cut line round the face
       defs += `<clipPath id="${u}-pl">${pill("", 0)}</clipPath>`;
-      svg += pill(`fill="${SI.face}"`, 0) + `<g clip-path="url(#${u}-pl)"><rect x="-120" y="-90" width="240" height="${r1(90 - SB + 27)}" fill="${SI.band}"/></g>`;
+      svg +=
+        pill(`fill="${SI.face}"`, 0) +
+        `<g clip-path="url(#${u}-pl)"><path d="M-64 -84H-22L-78 88H-120Z" fill="#fff" fill-opacity=".85"/><path d="M-12 -84H0L-56 88H-68Z" fill="#fff" fill-opacity=".6"/>` +
+        `<rect x="-120" y="-90" width="240" height="${r1(90 - SB + 27)}" fill="${SI.band}"/></g>` +
+        pill(`fill="none" stroke="${INK}" stroke-opacity=".55" stroke-width="${r2(0.75 * k)}"`, -0.4 * k);
     } else {
       svg += `<path d="${SEP_S}" fill="${SI.face}"/>`;
       if (SI.band) svg += `<g clip-path="url(#${u}-sec)"><rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="27" fill="${SI.band}"/></g>`;
@@ -656,16 +749,10 @@
     const ovr = String(p.ovr);
     const fs = fitFs(ovr);
     svg += `<text x="0" y="${r1(0.314 * fs)}" text-anchor="middle" font-family="Changa" font-weight="800" font-size="${fs}" fill="${SI.ink}" direction="ltr">${esc(ovr)}</text>`;
-    // the Logo-Blue tab with the logo's ball knocked out (a plain white dot below 64px, none on the mini)
-    const tabR = legend ? `x="58" y="49" width="30" height="17" rx="5"` : `x="${TAB.cx - TAB.hw}" y="${TAB.cy - TAB.hh}" width="${2 * TAB.hw}" height="${2 * TAB.hh}" rx="${TAB.r}"`;
-    const tb = legend ? { x: 73, y: 57.5, d: 12 } : { x: TAB.cx + 1, y: TAB.cy, d: 16 };
-    if (big) {
-      defs += `<mask id="${u}-tbm" maskUnits="userSpaceOnUse" x="60" y="52" width="52" height="42"><rect ${tabR} fill="#fff"/>${ballAt(tb.x, tb.y, tb.d, "#000")}</mask>`;
-      svg += `<circle cx="${tb.x}" cy="${tb.y}" r="${tb.d / 2}" ${fillV("var(--c08-white)")}/><rect ${tabR} fill="${BLUE}" mask="url(#${u}-tbm)"/>`;
-    } else {
-      svg += `<rect ${tabR} fill="${BLUE}"/>`;
-      if (!mini) svg += `<circle cx="${tb.x}" cy="${tb.y}" r="${r1(Math.min(tb.d / 2 + 1, Math.max(5.5, 1.4 * k)))}" fill="#fff"/>`;
-    }
+    // the Logo-Blue tab: it carries the logo's mark (unmodified) at 64-80px, and is plain blue below that
+    const tb = legend ? { x: 69, y: 54.5, hw: 15, hh: 8.5, r: 5 } : { x: TAB.cx, y: TAB.cy, hw: TAB.hw, hh: TAB.hh, r: TAB.r };
+    svg += `<rect x="${tb.x - tb.hw}" y="${tb.y - tb.hh}" width="${2 * tb.hw}" height="${2 * tb.hh}" rx="${tb.r}" fill="${BLUE}"/>`;
+    if (big) svg += tabMark(tb.x, tb.y, 1.5 * tb.hw);
     svg += `</g>` + discSvg;
     const label = `${MC.nameOf(p, o)}, ${p.ovr} OVR, ${S.tiers[tier]}${p.founder ? ", " + S.founderLine : ""}`;
     return (
@@ -686,43 +773,44 @@
       "Your number is a die-cut sticker slapped on top of the stack: one fixed die for everyone, the print layers under it, and under everything the first slip BotolaGO ever gave you.",
     philosophyAr: "رقمك ملصق مقصوص يُلصق فوق الكومة: قالب واحد ثابت للجميع، وطبقات الطباعة تحته، وتحت كل شيء أول ملصق أعطاك إياه BotolaGO.",
     idea: [
-      "Not a card but a cluster of die-cut vinyl stickers slapped on top of each other. The number sits on one fixed die that is the same for every manager: a 200 × 150 superellipse slab with a Logo-Blue tab fused to its bottom-end corner, a 12-unit white keyline round both, slapped at −6°. The 84 is printed on it in Changa 800, and a 71 or a 47 gets exactly the same outline. The tab carries the logo's own ball, knocked out of the blue as a clean hole, so the brand sits on the die without being redrawn.",
-      "Around the slab: a round avatar sticker at the top-start, printed as a two-colour halftone of the shared hooded manager seen from behind (head and one shoulder entering from the bottom-start, rim-lit, the country printed straight across the back of the jacket); a white name strip at +2° that carries the name, the BotolaGO ID and the season; and one stat strip at −1° that reads the tier word first, then the four stats. Depth comes only from overlap, a 1px hairline and a small drop shadow.",
-      "What stays constant, and therefore what BotolaGO owns: the −6° slap, the fused ball tab, the disc bump at the top-start, and the fanned keyline edges of the layers under the slab. The slab is the club's colour with its second colour as ink, so the club the user chose is the biggest colour on the object.",
+      "Not a card but a cluster of die-cut vinyl stickers slapped on top of each other. The number sits on one fixed die that is the same for every manager: a 200 × 150 superellipse slab with a Logo-Blue tab fused to its bottom-end corner, a 12-unit white keyline round both, slapped at −6°. The 84 is printed on it in Changa 800, and a 71 or a 47 gets exactly the same outline. The tab hangs past the slab's rounded corner as an ear and carries the BotolaGO mark itself (the kit's light variant, untouched), so the brand sits on the die without being redrawn. The BotolaGO ID and the season are a printer's slug on the die's bottom keyline, where a sticker printer marks the job.",
+      "Around the slab: a round avatar sticker slapped over its top-start corner, a two-colour screen print of the shared hooded manager seen from behind, off-centre: the hood and the end-side shoulder enter from the bottom-start, the start shoulder runs off the edge, and the top-end is open club-colour ground with a halftone light. The hood is ink, lit in halftone and rim-lit on its end side, with its centre seam; the shoulders are the second ink, with the country printed straight across the back of the jacket. Then a white name strip at +2° that carries the name alone, so the founder slip reads right after it; and one stat strip at −1° that reads the tier word first, then the four stats. Depth comes only from overlap, a 1px hairline and a small drop shadow.",
+      "What stays constant, and therefore what BotolaGO owns: the −6° slap, the fused logo tab, the disc bump at the top-start, and the fanned keyline edges of the layers under the slab. The slab is the club's colour with its second colour as ink, so the club the user chose is the biggest colour on the object.",
+      "The share story, 'Le classeur', slaps the fresh cluster across the cover of a yellow school ring binder (the spine hinge and the ring mechanism's two rivets, a few blank sun-faded stickers from before), with the 84 at 140px, the stack's thickness showing under the slab, and the whole stack clear of the cover's open edge. A LEGEND share is rendered in its flash state. The colour wordmark sits top-start, because the kit's light variant draws the logo's ball in black, which would vanish on a dark cover.",
     ],
     belonging: [
       "It is the only identity in the set you can literally send: the slab, the 26 slip and the name strip are already stickers, which is how Moroccan group chats answer 'what's your number?'. A WhatsApp sticker export (512 × 512, your own stickers only, never random, never called a pack) is proposed, not built.",
       "The print run is something teens can trade on: paper, matte vinyl, gloss, flock, reflective. Each tier adds a print layer under the slab, so a CHAMPION stack is visibly thicker than a STADE one, at every size.",
       "'ALI ·26' is the founder flex nobody can get later: the year after the name, the way supporter groups carry their founding year, made from a sticker rather than a badge.",
-      "Under the slab is last week's slab: peel the ball tab and it shows. That turns weekly OVR history into something you touch, without ever hiding the current number.",
+      "Under the slab is last week's slab: peel the logo tab and it shows. That turns weekly OVR history into something you touch, without ever hiding the current number.",
     ],
     founderMark: [
       "The first slap. Every founder cluster starts with the same small square sticker, slapped down before anything else existed: 34 × 34, matte ink black, a white '26' in Changa 800 on its visible two-thirds, a 3-unit white keyline. It sits under the name strip's inline end, so the strip reads 'ALI ·26' at arm's length.",
-      "It never takes the laminate, the flock or the reflective finish; flat matte black beside a glossy or velvet stack is the tell. Later cohorts' first slips would be round and carry their own year, so 2026 stays the only square one. At 24–80px it is a black square peeking from under the bottom-start of the stack, never smaller than 4.6px.",
+      "It never takes the laminate, the flock or the reflective finish; flat matte black beside a glossy or velvet stack is the tell. Later cohorts' first slips would be round and carry their own year, so 2026 stays the only square one. At 24–80px it is a black square with a white keyline peeking from under the bottom-start of the stack (a 6.2px square at 24px, about 3.5px of black showing past the slab's keyline).",
       "Its issue ceremony, 'le premier collage', is optional and replayable: the slip slaps down in 120ms with a 2° overshoot. Everything else is applied on top of it.",
     ],
     small: [
-      "64–80px (hub team card, head-to-head): the slab at −6° with its club colour and the 84, a 3px keyline, the tab with the logo's ball, the avatar disc peeking at the top-start, the print layers as stacked edges under the slab, and the founder slip.",
-      "44–56px (the 'My position' row): the slab, the tab with a white dot, the layers and the slip. The club colour fills the slab (HOMA and LEGEND carry it as a printed band).",
-      "24–32px (inside the ranking row's name cell): the same slab with the number at about 15px, a 2px keyline, a 3px blue tab and the 26 slip as a black square. The tier is the number of 1px edge lines under the slab (HOMA 0, STADE 1, PRO 2, CHAMPION 3); LEGEND alone turns slab and tab into one smooth lozenge.",
+      "64–80px (hub team card, head-to-head): the slab at −6° with its club colour and the 84, a 3px keyline, the tab with the logo's mark, a 22–28px avatar disc slapped on the slab's top-start corner (flat, the same crop as the card: hood in ink with a cream rim, shoulders in the second ink), the print layers as stacked edges under the slab, and the founder slip.",
+      "44–56px (the 'My position' row): the slab, a plain Logo-Blue tab (the ear), the layers and the slip. The club colour fills the slab (HOMA and LEGEND carry it as a printed band).",
+      "24–32px (inside the ranking row's name cell): the same slab with the number printed at the die's own proportion (about 17px type at 28px, 14.5px at 24px), a 2px keyline, a blue tab and the 26 slip as a black square. The tier is the number of 1px edge lines under the slab (HOMA 0, STADE 1, PRO 2, CHAMPION 3); LEGEND alone turns slab and tab into one smooth silver pill with the tab printed inside it, the outline change, with a crisp white sheen stripe under the digits and an ink kiss-cut line round the face, so it reads as reflective rather than grey. Flat fills and no filters at 80px and below.",
     ],
     rtl: [
       "The die is never mirrored: the slab keeps its −6° slap and the tab stays at its bottom-right corner, and the digits stay left-to-right. The avatar disc moves to the top-right, the fanned layers to the top-left, and the strips reflow from the right edge with the founder slip under the name strip's inline end (the left), so it reads '·26 علي' in visual order.",
-      "علي is set in Changa 800 at 28 units in a 48-unit strip. The stat strip is Noto Sans Arabic 700 with the product's own labels (محترف · القائد 91 · التشكيلة 82 · الانتقالات 86 · الثبات 78), and المغرب runs across the back of the jacket. No letter-spacing on Arabic anywhere.",
+      "علي is set in Changa 800 at 28 units in a 48-unit strip. The stat strip is Noto Sans Arabic 700 with the product's own labels (محترف · القائد 91 · التشكيلة 82 · الانتقالات 86 · الثبات 78); its Western figures fall to Manrope, never to a serif. المغرب runs across the back of the jacket, and the printer's slug stays Latin and left-to-right. No letter-spacing on Arabic anywhere.",
     ],
     tiers: {
-      HOMA: "A new paper sticker, matte, crisp and cleanly cut, with toner-black digits on white paper and the club colour printed as a band across the top of the slab. The avatar is a coarse one-ink halftone. Full outline, no print layers.",
+      HOMA: "A new paper sticker, matte, crisp and cleanly cut, with toner-black digits on white paper and the club colour printed as a band across the top of the slab. The avatar is one ink on paper, the hood's rim and seam left in paper. Full outline, no print layers.",
       STADE: "Matte vinyl with a clean die-cut: the slab in the club colour, the digits in the club's second colour, a finer two-ink halftone. One print layer under the slab.",
       PRO: "Gloss laminate: one specular band at 35° with a crisp upper edge runs across every sticker except the founder slip. Two print layers.",
-      CHAMPION: "Flocked vinyl: the club colour deepened 15%, a fine velvet nap and the lighter edge velvet catches, velvet digits. Deep and matte. Three print layers.",
-      LEGEND: "Retroreflective sheeting: a silver slab with ink digits and glass-bead grain that blazes when the phone tilts toward the light or the tab is tapped (the flash). The whole cluster is kiss-cut as one sticker with one smooth outer die line round disc, slab, layers and strips, which changes the black-and-white outline. Nothing glows on its own; the stats stay on the front.",
+      CHAMPION: "Flocked vinyl: the club colour deepened 15% under a fine velvet nap, one crisp lighter nap edge where the light catches the top-start, and crisp digits in the club's full second colour. Deep and matte, never soft-focus. Three print layers.",
+      LEGEND: "Retroreflective sheeting: a silver slab with ink digits, sparse glass beads and a sheen that already lifts the top-start at rest; it brightens as the pointer nears it (the lab's stand-in for tilting the phone) and blazes when the logo tab is tapped (the flash). The whole cluster is kiss-cut as one sticker: one smooth outer die line round disc, slab, layers and strips (every bite and neck filled), with each sticker and all three print layers still showing as fine kiss-cut lines on the one backing, so LEGEND is the thickest stack and the outline change shows at 32px. Nothing glows on its own; the stats stay on the front.",
     },
     legend: [
       "On the first open after the tier-up, and replayable: a cutting line traces the one smooth die round the whole cluster (600ms), the cluster lifts as one piece and slaps down (2° overshoot), and one flash frame at 30% shows the reflective blaze once. The 84 is visible the whole time.",
-      "The adult desire has to come from restraint: one material (reflective silver), one outline change, no gold and no chrome.",
+      "The adult desire has to come from restraint: one material (reflective silver), one outline change, no gold and no chrome. LEGEND is not peelable (it is one sticker now); tapping its logo tab fires the flash instead.",
     ],
     advantages: [
-      "One fixed die: the outline is identical for every manager and every rating, so the silhouette is ownable and the 1-bit test holds from the full card down to 24px.",
+      "One fixed die: the outline is identical for every manager and every rating (a 71, a 47 and a 100 all print on the same slab), so the silhouette can be owned, and the same die is the token from 80px down to 24px.",
       "The mini is the object itself, not a code: the slab, the tab and the 26 slip survive at 24px, and the tier reads as print layers.",
       "Native to how teenagers talk (stickers in group chats, sticker-bombed binders, the Panini packet from the hanout) without zellige, flags or ultras imagery.",
       "A print-run ladder built from materials, not colours: paper, matte, gloss, flock, reflective.",
@@ -732,8 +820,9 @@
       "Stickers can read childish to users over 35; LEGEND's reflective restraint has to carry adult desire, and that is unproven.",
       "Nobody shares a 52: the share needs testing with an OVR of 47.",
       "The layers under the slab need per-gameweek OVR history to be honest about 'last week' (display only); the lab shows '– –' and a labelled Exemple.",
-      "Every app has stickers, so ownership rests on the ball tab and the −6° slap.",
-      "PRO and CHAMPION differ by finish and one layer; at 28px that is a one-line difference.",
+      "Every app has stickers, so ownership rests on the logo tab's ear and the −6° slap.",
+      "PRO and CHAMPION differ by finish and one layer; at 28px that is a one-line difference and a slightly deeper slab.",
+      "The shared hooded figure is tall in the hood; the two-ink print (ink hood, light shoulders, a lit end side) carries the person, but in the 22–28px token disc it is still mostly a dark hood over a light band.",
       "The concept name is Darija and needs the owner's sign-off (Arabic name: ملصق).",
     ],
     gridWidth: 236,
@@ -771,9 +860,11 @@
       const ar = MC.isAr(o);
       const S = MC.s(o);
       const { defs, body } = art(p, { ...o, thumb: false }, u + "a", { edges: 3 });
-      const sc = 150 / 140; // the 84 at 150px
-      const tx = r1(180 - (sc * VW) / 2);
-      const ty = 112;
+      // the 84 at 140px: at this size the whole stack (LEGEND's backing included) clears the cover's
+      // open edge by 12px, and only crosses the hinge on the spine side
+      const sc = 1;
+      const tx = ar ? 36.5 : 23.5;
+      const ty = 128;
       const L = (x) => (ar ? 360 - x : x);
       const faded = (x, y, rot, shape, fill) =>
         `<g transform="translate(${L(x)} ${y}) rotate(${ar ? -rot : rot})" filter="url(#${u}-fstk)">${shape.replace("FILL", fill)}</g>`;
@@ -796,11 +887,11 @@
         `<rect x="${L(34) - (ar ? 1.4 : 0)}" width="1.4" height="640" fill="#5a4300" fill-opacity=".35"/><rect x="${L(35.6) - (ar ? 1 : 0)}" width="1" height="640" fill="#fff" fill-opacity=".35"/>` +
         `<rect x="${L(42) - (ar ? 1.4 : 0)}" width="1.4" height="640" fill="#5a4300" fill-opacity=".3"/><rect x="${L(43.6) - (ar ? 1 : 0)}" width="1" height="640" fill="#fff" fill-opacity=".3"/>` +
         `<rect width="360" height="640" fill="url(#${u}-lit)"/>` +
-        // the spine's label pocket: a blank card under clear plastic
-        `<g transform="translate(${L(17)} 330)"><rect x="-11" y="-92" width="22" height="184" rx="3" fill="#F7F4EA"/><rect x="-11" y="-92" width="22" height="184" rx="3" fill="none" stroke="#5a4300" stroke-opacity=".3"/><rect x="${ar ? 2 : -9}" y="-88" width="7" height="176" rx="2" fill="#fff" fill-opacity=".45"/></g>` +
+        // the ring mechanism's two rivets, seen through the spine
+        [150, 490].map((y) => `<g transform="translate(${L(17)} ${y})"><circle r="6.5" fill="#5a4300" fill-opacity=".28"/><circle r="5.2" fill="#D9DCE0"/><circle r="5.2" fill="none" stroke="#7E848C" stroke-width="1"/><circle cx="-1.4" cy="-1.6" r="1.6" fill="#fff" fill-opacity=".8"/></g>`).join("") +
         // a few blank, sun-faded stickers from before
         faded(300, 92, 12, `<circle r="30" fill="#F3F0E6"/><circle r="25" fill="FILL"/>`, "#CFE2E2") +
-        faded(314, 300, -9, `<rect x="-26" y="-36" width="52" height="72" rx="6" fill="#F3F0E6"/><rect x="-21" y="-31" width="42" height="62" rx="3" fill="FILL"/>`, "#EBD9D5") +
+        faded(304, 522, -9, `<rect x="-26" y="-36" width="52" height="72" rx="6" fill="#F3F0E6"/><rect x="-21" y="-31" width="42" height="62" rx="3" fill="FILL"/>`, "#EBD9D5") +
         faded(54, 548, -14, `<rect x="-40" y="-24" width="80" height="48" rx="24" fill="#F3F0E6"/><rect x="-35" y="-19" width="70" height="38" rx="19" fill="FILL"/>`, "#DCD9EA") +
         faded(300, 596, 7, `<circle r="22" fill="#F3F0E6"/><circle r="18" fill="FILL"/>`, "#F1E7C8") +
         // your fresh cluster, slapped across it
@@ -811,7 +902,7 @@
       const gw = ar ? "الجولة 7" : "J.07";
       const handle = "@" + String(p.name.lat).toLowerCase();
       return (
-        `<div class="c08 c08-share" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${esc(MC.label(p, o))}">` +
+        `<div class="c08 c08-share${tierOf(p) === "LEGEND" ? " c08-flash" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${esc(MC.label(p, o))}">` +
         svg +
         `<div class="c08-sh-logo">${MC.logo("wordmark", { variant: "color", w: "100%" })}</div>` +
         `<div class="c08-sh-strip"><span>${MC.ltr(handle)}</span><i>·</i><span>${MC.ltr(p.id)}</span><i>·</i><span>${ar ? esc(gw) : MC.ltr(gw)}</span><i>·</i><em>${esc(ex)}</em></div>` +
@@ -819,9 +910,10 @@
       );
     },
 
-    /* Peel: drag the ball tab and the slab folds back over itself to show the layer under it
+    /* Peel: drag the logo tab and the slab folds back over itself to show the layer under it
        (last week's slab; '– –' with no history, a double-click shows a labelled Exemple).
-       Release and it slaps back in 90ms. Under reduced motion a tap toggles that layer.
+       Release and it slaps back in 90ms. Under reduced motion a tap steps that layer out, smaller,
+       into the free corner at the top-end, so the current 84 is never covered.
        LEGEND is kiss-cut as one sticker: tapping the tab fires the reflective flash instead. */
     mount(el) {
       if (!el || !el.classList || !el.classList.contains("c08-card") || el.dataset.c08m) return;
@@ -856,7 +948,8 @@
       }
       const num = el.querySelector(".c08-num");
       const front = el.querySelector(".c08-front");
-      const skin = el.querySelector(".c08-skin");
+      const under = el.querySelector(".c08-under");
+      const rtl = el.getAttribute("dir") === "rtl";
       const flap = el.querySelector(".c08-flap");
       const flapUse = flap && flap.querySelector("use");
       const poly = el.querySelector(`[id="${u}-pc"] polygon`);
@@ -914,8 +1007,13 @@
         e.preventDefault();
         e.stopPropagation();
         if (reduce) {
+          // no motion: last week's slab steps out from under, smaller, into the free corner at the
+          // top-end, so the current 84 is never covered
           shown = !shown;
-          (skin || front).style.visibility = shown ? "hidden" : "";
+          if (under) {
+            if (shown) under.setAttribute("transform", rtl ? "translate(-66 -112) scale(.5)" : "translate(66 -112) scale(.5)");
+            else under.removeAttribute("transform");
+          }
           el.classList.toggle("c08-peeling", shown);
           return;
         }

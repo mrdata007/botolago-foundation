@@ -54,7 +54,7 @@
 }
 /* LEGEND: the reflective sheen answers the light; the flash blazes it */
 .c08 .c08-sheen {
-  opacity: calc(0.3 + var(--c08-lit, 0) * 0.6);
+  opacity: calc(0.6 + var(--c08-lit, 0) * 0.4);
   transition: opacity 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 .c08.c08-flash .c08-sheen { opacity: 1; transition-duration: 40ms; }
@@ -94,7 +94,7 @@
   100% { transform: none; }
 }
 @keyframes c08-blaze {
-  0%, 100% { opacity: calc(0.3 + var(--c08-lit, 0) * 0.6); }
+  0%, 100% { opacity: calc(0.6 + var(--c08-lit, 0) * 0.4); }
   20%, 80% { opacity: 1; }
 }
 @keyframes c08-flashframe {
@@ -109,11 +109,8 @@
   flex: none;
   vertical-align: middle;
 }
+/* flat fills at 80px and below: the hairline is the edge, no filters */
 .c08.c08-tk svg { display: block; overflow: visible; direction: ltr; }
-.app-light .c08.c08-tk:not(.c08-tk--mini) svg,
-:root[data-ground="day"] .c08.c08-tk:not(.c08-tk--mini) svg { filter: drop-shadow(0 1px 1px rgba(0, 28, 73, 0.22)); }
-.app-dark .c08.c08-tk svg,
-:root[data-ground="day"] .app-dark .c08.c08-tk svg { filter: none; }
 
 /* ---------- row: the "My position" compact card; your own row is a white vinyl strip ---------- */
 .c08.c08-row {

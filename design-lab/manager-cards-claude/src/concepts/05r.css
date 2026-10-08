@@ -47,39 +47,45 @@
   font-family: "Changa", sans-serif;
   font-weight: 800;
 }
-.c05 .c05-nm tspan.c05-tr {
+.c05 .c05-tr {
   font-family: "Manrope", sans-serif;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.14em;
 }
-.c05 .c05-nm tspan.c05-tr.is-ar {
+.c05 .c05-tr.is-ar {
   font-family: "Changa", sans-serif;
   font-weight: 700;
   letter-spacing: 0;
 }
 .c05 .c05-fy {
-  font-weight: 700;
+  font-weight: 800;
 }
 .c05 .c05-fl {
   font-family: "Manrope", sans-serif;
   font-weight: 800;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.1em;
 }
 .c05 .c05-fl.is-ar {
   font-family: "Changa", sans-serif;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0;
 }
 .c05 .c05-id {
   font-family: "Manrope", sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
 }
 .c05 .c05-ct {
   font-family: "Manrope", sans-serif;
   font-weight: 700;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.12em;
+}
+/* the country is fine print: below about 220px it would be under 7px, so it goes */
+@container (max-width: 220px) {
+  .c05 .c05-ct {
+    display: none;
+  }
 }
 .c05 .c05-ct.is-ar {
   font-family: "Noto Sans Arabic", sans-serif;
@@ -104,7 +110,7 @@
 .c05 .c05-se {
   font-family: "Manrope", sans-serif;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
 }
 
 /* signature interaction (detail view, set up by mount) */
@@ -280,9 +286,9 @@
 }
 .c05 .c05-sh-card {
   position: absolute;
-  top: 104px;
-  inset-inline-start: 18px;
-  width: 210px;
+  top: 92px;
+  inset-inline-start: 14px;
+  width: 196px;
   container-type: inline-size;
   transform: rotate(-7deg);
   transform-origin: 50% 50%;
