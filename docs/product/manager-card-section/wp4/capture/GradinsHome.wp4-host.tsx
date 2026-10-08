@@ -1,5 +1,5 @@
 /**
- * WP4's capture host. NOT part of the app: `capture.sh` copies this file over
+ * WP4's capture host. NOT part of the app: `with-host.sh` copies this file over
  * `src/components/gradins/GradinsHome.tsx` for the length of a capture run and restores the real one
  * (WP3's) afterwards, so the moments can be photographed in the slot the plan gives them (section
  * 4.1) before WP3's page is merged. It composes what G1 composes around the moments: the hero slot
@@ -23,20 +23,6 @@ import { fromMyCard, guestProfile } from "@/components/manager-card/to-profile";
 import { ui, UiButton, UiPageTitle } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { useMyManagerCard, useMyManagerCardHistory } from "@/services/use-manager-card";
-import { activeRenderer } from "@/components/manager-card/active-renderer";
-import {
-  echarpeRenderer,
-  estimateAspect,
-  ready as echarpeReady,
-} from "@/components/manager-card/echarpe";
-
-// Until the section branch points the app at Écharpe (WP2's switch), the capture draws with it.
-const active = activeRenderer as { load: unknown; estimateAspect: unknown };
-active.load = async () => {
-  await echarpeReady();
-  return echarpeRenderer;
-};
-active.estimateAspect = estimateAspect;
 
 function search(): URLSearchParams {
   return new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);

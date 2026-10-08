@@ -120,7 +120,7 @@ export function HeroFrame({
  */
 export function HeroCard({ profile, beat }: { profile: CardProfile; beat: BeatName | undefined }) {
   return (
-    <div className="flex justify-center py-2" data-stage-card="">
+    <div className="flex justify-center py-2" data-hero-card="">
       <ManagerCard
         profile={profile}
         width={240}

@@ -1,5 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useSyncExternalStore,
+} from "react";
 import { toast } from "sonner";
 
 import { STEP_UP_TOAST_ID } from "@/auth/step-up-notice";
@@ -60,6 +67,8 @@ export function useMomentBlock(active: boolean): void {
   }, [active]);
 }
 
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
 export interface MomentGate {
   hero: HeroSpec | null;
   lines: LineSpec[];
@@ -103,7 +112,9 @@ export function useMomentGate(surface: GateSurface, card: MyCardDto | null): Mom
   const deadlineKnown = gameweek.isSuccess || gameweek.isError;
   const deadline = gameweek.data?.deadline ?? null;
 
-  useEffect(() => {
+  // Before the first paint, so a hero that is due is in the page's first frame with the data and
+  // never arrives a frame after it. (A no-op on the server, where nothing is ready.)
+  useIsomorphicLayoutEffect(() => {
     if (!ready || !card || !deadlineKnown) return;
     const at = deadline ? Date.parse(deadline) : Number.NaN;
     momentStore.evaluate(surface, {

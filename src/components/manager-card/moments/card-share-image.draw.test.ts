@@ -68,7 +68,7 @@ beforeEach(() => {
 });
 afterEach(() => restore?.());
 
-const t = (lang: Language) => (key: TranslationKey) => dictionaries[lang][key];
+const dict = (lang: Language) => (key: TranslationKey) => dictionaries[lang][key];
 
 function profileOf(
   id: FixtureId,
@@ -89,7 +89,7 @@ async function draw(
     profile,
     throughGameweekSeq: card.throughGameweekSeq,
     lang,
-    t: t(lang),
+    t: dict(lang),
     renderer: echarpeRenderer,
   })!;
   await renderCardShareImage(model);
@@ -137,7 +137,7 @@ describe("the picture", () => {
       profile,
       throughGameweekSeq: card.throughGameweekSeq,
       lang: "fr",
-      t: t("fr"),
+      t: dict("fr"),
       renderer: echarpeRenderer,
     })!;
     model.art = { ...model.art, svg: "<svg broken/>" };
@@ -160,7 +160,7 @@ describe("the picture", () => {
         profile,
         throughGameweekSeq: card.throughGameweekSeq,
         lang: "fr",
-        t: t("fr"),
+        t: dict("fr"),
         renderer: echarpeRenderer,
       });
       expect(blob).toBeNull();
@@ -173,7 +173,7 @@ describe("the picture", () => {
       profile,
       throughGameweekSeq: card.throughGameweekSeq,
       lang: "fr",
-      t: t("fr"),
+      t: dict("fr"),
       renderer: plainRenderer,
     });
     expect(blob?.type).toBe("image/png");
@@ -306,7 +306,7 @@ describe("the layout", () => {
       profile,
       throughGameweekSeq: card.throughGameweekSeq,
       lang: "fr",
-      t: t("fr"),
+      t: dict("fr"),
       renderer: echarpeRenderer,
     })!;
     model.art = { ...model.art, width: 760, height: 2000 };

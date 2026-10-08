@@ -9,6 +9,7 @@
 //        share     the share sheet open
 //        picture   the 1080 x 1920 share picture itself (drawn by the real module in the page)
 //        replay    the replay sheet at --replay=<index>
+//        (--plain: hero, with no hero to wait for)
 //        probe     console errors, failed requests, element rectangles, tap sizes, contrast inputs
 //
 // Env: BASE (default http://127.0.0.1:4184), PW_CORE, CHROME, OUT_DIR, STATE (a login state file).
@@ -43,7 +44,10 @@ const host = flag("host", "");
 const at = Number(flag("at", 0));
 const replay = flag("replay", "");
 const reduced = has("reduced");
-const name = flag("out", `${job}-${fixture}${host ? `-${host}` : ""}-${lang}-${theme}-${w}`);
+const name = flag(
+  "out",
+  `${job}-${fixture}${host ? `-${host}` : ""}${job === "frame" ? `-t${at}` : ""}-${lang}-${theme}-${w}`,
+);
 
 const pw = await import(PW_CORE);
 const browser = await pw.chromium.launch({ executablePath: CHROME });
