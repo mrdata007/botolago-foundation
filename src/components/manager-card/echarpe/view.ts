@@ -93,9 +93,10 @@ export function spokenName(name: string): string {
 }
 
 /**
- * The one-sentence accessible name of a card, from the app's own `cardLabel` (copy.ts) on the
- * profile as the object can show it, so what is spoken is what is drawn: a number that is out of
- * range reads as « pas encore de note », as it is drawn as a dash.
+ * The one-sentence accessible name of a card: `cardLabel` of `../copy.ts` (« Carte de manager,
+ * Ali, 84 OVR, PRO, Raja CA, Fondateur 2026, BOT #482913 ») on the profile as the object can show
+ * it, so what is spoken is what is drawn: a number that is out of range reads as « pas encore de
+ * note », as it is drawn as a dash.
  */
 export function label(profile: CardProfile, s: CardStrings): string {
   return cardLabel(cleanProfile(profile), s);

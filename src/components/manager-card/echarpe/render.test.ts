@@ -6,6 +6,7 @@ import { echarpeRenderer as R } from "./index";
 import { AR, CLUBS, FR, HOSTILE_NAMES, LANGS, PROFILES, type ProfileName } from "./test-data";
 import { groupsByClass, knitIntervals, peakOverlap, tokenise, viewBox } from "./test-markup";
 import { TASSELS } from "./geometry";
+import { cardLabel } from "../copy";
 import { esc } from "./knit";
 import { stripControls } from "./view";
 
@@ -576,6 +577,13 @@ describe("the label (the app's own sentence, copy.ts)", () => {
       "Carte de manager, KARIM, pas encore de note, aucune journée comptée sur 3, Raja Casablanca, Exemple",
     );
     expect(R.label(PROFILES.founder, FR)).toContain("Fondateur 2026");
+  });
+  it("is copy.ts's cardLabel word for word, for every profile in both languages", () => {
+    for (const name of NAMES)
+      for (const s of LANGS) {
+        const p = PROFILES[name] as CardProfile;
+        expect(R.label(p, s)).toBe(cardLabel(p, s));
+      }
   });
   it("speaks what is drawn: a number out of range is no number", () => {
     const bad = { ...PROFILES.rated, ovr: 9000, tier: "nope" as never } as CardProfile;
