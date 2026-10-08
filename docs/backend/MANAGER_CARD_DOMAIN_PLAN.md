@@ -120,6 +120,22 @@ transaction that is rolled back).
 | D11 | When it updates   | Once per finished gameweek, never during live play.                                                                                                                                                                                                                                           |
 | D12 | What counts       | Every finished week, including weeks the manager did nothing. Question: for CAP, ignore weeks before PR #376 (before that, a manager who never picked a captain got the goalkeeper by default)? Recommend yes.                                                                                |
 
+**Change to D6 and D9 (owner, 2026-10-08).** The first calibration dry run
+on production found 2 finished gameweeks and 7 teams, too few for scales and
+tiers drawn from how managers compare. The owner chose fixed scales by
+meaning instead, which work with any number of managers:
+
+- CAP: 0 maps to 1, always the best starter maps to 99.
+- SEL: half the best eleven maps to 1, the best eleven maps to 99.
+- TRF: −10 points per transfer maps to 1, 0 to 50, +10 to 99.
+- CON: never in the top half maps to 1, every week maps to 99.
+- Tiers: STADE 50+, PRO 65+, CHAMPION 80+, LEGEND 90+, HOMA below 50.
+
+This is installed as rules v1 by
+`scripts/backend/apply-manager-card-rules-v1-fixed-scales.sql`. Data-based
+scales can follow as a later rules version once there are hundreds of teams
+with five or more weeks.
+
 ### Identity
 
 | #   | Question           | Recommendation                                                                                                                                                                                                                                         |

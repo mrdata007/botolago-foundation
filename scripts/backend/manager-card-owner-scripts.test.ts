@@ -226,3 +226,49 @@ describe("manager-card-founder-grant.sql", () => {
     expect(code(founder)).not.toContain("founder_real");
   });
 });
+
+describe("rules v1 with fixed scales (owner decision 2026-10-08)", () => {
+  const dir = join(import.meta.dir);
+  const template = readFileSync(join(dir, "apply-manager-card-rules-v1.sql"), "utf8");
+  const filled = readFileSync(join(dir, "apply-manager-card-rules-v1-fixed-scales.sql"), "utf8");
+
+  test("is the reviewed template with only a header note and the config filled in", () => {
+    const rule =
+      "-- ============================================================================\n";
+    const noteEnd = filled.indexOf(rule, filled.indexOf("FILLED COPY")) + rule.length;
+    const body = filled.slice(noteEnd);
+    const config = body.match(/\$rules_v1_config\$(\{.*\})\$rules_v1_config\$/);
+    expect(config).not.toBeNull();
+    expect(body.replace(config![1], "__RULES_V1_CONFIG_JSON__")).toBe(template);
+  });
+
+  test("carries the fixed scales and tiers the owner chose", () => {
+    const config = JSON.parse(filled.match(/\$rules_v1_config\$(\{.*\})\$rules_v1_config\$/)![1]);
+    expect(config).toEqual({
+      minimum_gameweeks: 3,
+      provisional_below: 5,
+      trf_window_gameweeks: 3,
+      batch_size: 2000,
+      scales: {
+        cap: [
+          [0, 1],
+          [1, 99],
+        ],
+        sel: [
+          [0.5, 1],
+          [1, 99],
+        ],
+        trf: [
+          [-10, 1],
+          [0, 50],
+          [10, 99],
+        ],
+        con: [
+          [0, 1],
+          [1, 99],
+        ],
+      },
+      tiers: { stade: 50, pro: 65, champion: 80, legend: 90 },
+    });
+  });
+});
