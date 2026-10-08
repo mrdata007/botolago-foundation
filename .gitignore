@@ -28,6 +28,10 @@ __pycache__/
 .venv/
 .venv-*/
 
+# Tool caches created inside the checkout, e.g. Playwright's Chromium download
+# when HOME or XDG_CACHE_HOME points here (.cache/ms-playwright).
+.cache/
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
