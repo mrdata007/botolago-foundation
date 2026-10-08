@@ -1,0 +1,108 @@
+import { describe, expect, it } from "bun:test";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+/**
+ * Source rules for the Gradins screens, checked on the files themselves (plan sections 4.0 and
+ * 6.5): the card is reached through `ManagerCard`, `CardToken` and the renderer hook, never by
+ * importing a direction; the screens are loaded by the section's routes alone; logical properties
+ * only; no generic entrance.
+ */
+const HERE = import.meta.dir;
+const SRC = join(HERE, "..", "..");
+
+const sources = readdirSync(HERE)
+  .filter((name) => /\.(ts|tsx)$/.test(name) && !/\.test\./.test(name))
+  .map((name) => ({ name, text: readFileSync(join(HERE, name), "utf8") }));
+
+const code = (text: string) =>
+  text
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
+    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+function walk(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return walk(path);
+    return /\.(ts|tsx)$/.test(entry.name) ? [path] : [];
+  });
+}
+
+describe("the Gradins screens' imports", () => {
+  it("never import a card direction: the card comes through the wrappers", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(/from "[^"]*\/echarpe[/"]/);
+      expect(code(text), name).not.toMatch(/from "[^"]*plain-renderer"/);
+      expect(code(text), name).not.toMatch(/from "[^"]*active-renderer"/);
+    }
+  });
+
+  it("are imported, outside this folder and its routes, by nothing: the section loads on its own", () => {
+    const allowed = [join("src", "routes", "gradins"), join("src", "components", "gradins")];
+    const root = join(SRC, "..");
+    const offenders = walk(SRC)
+      .filter((file) => !file.includes(join("components", "gradins")))
+      .filter((file) => !/gradins[^/]*\.tsx$/.test(file) || !file.includes("routes"))
+      .filter((file) => /components\/gradins\//.test(readFileSync(file, "utf8")))
+      .map((file) => file.slice(root.length + 1))
+      .filter((file) => !allowed.some((prefix) => file.startsWith(prefix)));
+    expect(offenders).toEqual([]);
+  });
+
+  it("do not import the fixtures or the mock repository", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(/manager-card\/(fixtures|mock-repository)/);
+    }
+  });
+});
+
+describe("the Gradins screens' styling", () => {
+  it("uses logical properties only (start and end, never left and right)", () => {
+    const physical =
+      /(?:^|[\s"'`:])(?:-?(?:ml|mr|pl|pr)-|(?:left|right)-\d|text-(?:left|right)|border-[lr]\b|border-[lr]-|rounded-[lr]-|rounded-(?:tl|tr|bl|br)-)/;
+    for (const { name, text } of sources) {
+      const classes = [...code(text).matchAll(/"([^"\n]*)"/g)].map((m) => m[1]!).join("\n");
+      expect(classes, name).not.toMatch(physical);
+    }
+  });
+
+  it("letter-spaces nothing that Arabic could inherit", () => {
+    for (const { name, text } of sources) {
+      for (const match of code(text).matchAll(/(?<!ltr:)tracking-[a-z[]\S*/g)) {
+        throw new Error(`${name}: ${match[0]}`);
+      }
+    }
+  });
+
+  it("brings no generic entrance: no fade-up, slide-in, stagger or scale pop", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(
+        /enter-rise|drift-in|\bstagger\b|animate-in|fade-in|slide-in|zoom-in|animate-\[|scale-\[?1[0-9]/,
+      );
+    }
+  });
+
+  it("sets no colour literal: the club's colours come from the palette, the rest from tokens", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(/#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|oklch\(/);
+    }
+  });
+
+  it("takes no shadow, radius or letter-case outside the kit's tokens", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(/shadow-\[(?!var)|rounded-\[(?!var)|\buppercase\b/);
+    }
+  });
+});
+
+describe("the Gradins screens' words", () => {
+  it("add no dictionary key of their own: every key they read already exists", () => {
+    const fr = readFileSync(join(SRC, "i18n", "dictionary-fr.ts"), "utf8");
+    for (const { name, text } of sources) {
+      for (const match of code(text).matchAll(/\bt\("([a-z0-9_.]+)"\)/g)) {
+        expect(fr, `${name}: ${match[1]}`).toContain(`"${match[1]}"`);
+      }
+    }
+  });
+});
