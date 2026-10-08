@@ -1,0 +1,896 @@
+/* Onboarding screens: the BotolaGO app chrome a card lives in, mocked for the lab.
+   Values are copied from the app (src/styles.css tokens, ui-kit primitives, TopBar, BottomNav,
+   UiPageTitle, UiHeader, UiAlert, UiSheet, UiButton, UiStatBlock); nothing is imported.
+   Every selector is scoped under .onb. Resets use :where() so component classes keep their say.
+   Logical properties only, so Arabic mirrors. No letter-spacing on Arabic. No animation. */
+
+/* ---------- tokens ---------- */
+.onb {
+  --onb-display: "Changa", "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --onb-body: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --ui-leading-flat: 1.4;
+  --ui-leading-copy: 1.55;
+  --ui-leading-display: 1.25;
+  --ui-leading-figure: 1.1;
+  --ui-radius-control: 6px;
+  --ui-radius-track: 10px;
+  --ui-radius-card: 14px;
+  --ui-radius-sheet: 16px;
+  --ui-radius-column: 28px;
+  --ui-tap-min: 44px;
+  --ui-row-min: 48px;
+  --ui-gutter: 16px;
+  position: relative;
+  font-family: var(--onb-body);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: var(--ui-leading-copy);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+/* Arabic: the app's taller leadings and its Arabic face stack (src/styles.css, :lang(ar)). */
+.onb[dir="rtl"],
+.onb[lang="ar"] {
+  --ui-leading-flat: 1.95;
+  --ui-leading-copy: 1.9;
+  --ui-leading-display: 1.95;
+  --onb-display: "Changa", "Noto Sans Arabic", "Segoe UI Arabic", Tahoma, sans-serif;
+  --onb-body: "Noto Sans Arabic", "Changa", "Segoe UI Arabic", Tahoma, sans-serif;
+  font-family: var(--onb-body);
+}
+/* BG-0069: Arabic letterforms join, so no letter-spacing at all. */
+.onb[dir="rtl"] *,
+.onb[dir="rtl"] *::before,
+.onb[dir="rtl"] *::after,
+.onb[lang="ar"] *,
+.onb[lang="ar"] *::before,
+.onb[lang="ar"] *::after {
+  letter-spacing: normal;
+}
+
+/* Colour tokens the lab's app-context.css does not carry (values from src/styles.css). */
+.onb.app-light {
+  --ui-on-surface-faint: oklch(0.555 0.02 258);
+  --ui-rule-strong: oklch(0.64 0.02 258);
+  --ui-scrim: color-mix(in oklab, oklch(0.16 0.03 260) 45%, transparent);
+  --ui-ink-edge: transparent;
+  --ui-on-ink: oklch(0.88 0.11 205);
+  --ui-on-ink-plain: oklch(1 0 0);
+  --ui-selected: var(--ui-ink);
+  --ui-on-selected: var(--ui-on-ink-plain);
+  --ui-accent-spring: oklch(0.88 0.19 152);
+  --ui-accent-sky: oklch(0.88 0.11 205);
+  --ui-positive: oklch(0.52 0.14 150);
+  --ui-negative: oklch(0.55 0.22 355);
+  --ui-caution: oklch(0.82 0.17 80);
+  --ui-plate-figure: oklch(0.24 0.09 258);
+  --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, var(--ui-ink) 8%, transparent);
+  --ui-shadow-lifted: 0 14px 26px -16px color-mix(in oklab, var(--ui-ink-deep) 55%, transparent);
+  --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, var(--ui-ink) 28%, transparent);
+  --ui-shadow-column:
+    0 18px 40px -18px rgba(20, 30, 60, 0.22), 0 6px 14px -6px rgba(20, 30, 60, 0.1);
+}
+.onb.app-dark {
+  --ui-on-surface-faint: oklch(0.64 0.02 258);
+  --ui-rule-strong: oklch(0.52 0.02 258);
+  --ui-scrim: color-mix(in oklab, oklch(0.08 0.02 260) 68%, transparent);
+  --ui-ink-edge: oklch(0.58 0.02 258);
+  --ui-on-ink: oklch(0.88 0.11 205);
+  --ui-on-ink-plain: oklch(0.97 0.01 250);
+  --ui-selected: var(--ui-ink-fg);
+  --ui-on-selected: var(--ui-ink-deep);
+  --ui-accent-spring: oklch(0.82 0.18 152);
+  --ui-accent-sky: oklch(0.82 0.11 205);
+  --ui-positive: oklch(0.78 0.17 150);
+  --ui-negative: oklch(0.75 0.19 355);
+  --ui-caution: oklch(0.85 0.16 80);
+  --ui-plate-figure: oklch(0.36 0.09 260);
+  --ui-shadow-raised: 0 -1px 0 0 color-mix(in oklab, oklch(1 0 0) 8%, transparent);
+  --ui-shadow-lifted: 0 14px 26px -16px color-mix(in oklab, oklch(0 0 0) 75%, transparent);
+  --ui-shadow-overlay: 0 -8px 24px -8px color-mix(in oklab, oklch(0 0 0) 70%, transparent);
+  --ui-shadow-column:
+    0 0 0 1px var(--ui-rule), 0 18px 40px -18px color-mix(in oklab, oklch(0 0 0) 70%, transparent);
+}
+.onb.app-light,
+.onb.app-dark {
+  --ui-grad-action: linear-gradient(
+    to bottom,
+    var(--ui-accent-spring) 0%,
+    var(--ui-accent-sky) 100%
+  );
+  --ui-pitch-turf-a: color-mix(in srgb, var(--ui-accent-spring) 45%, var(--ui-surface));
+  --ui-pitch-turf-b: color-mix(in srgb, var(--ui-accent-sky) 45%, var(--ui-surface));
+}
+
+/* ---------- reset ---------- */
+:where(.onb) *,
+:where(.onb) *::before,
+:where(.onb) *::after {
+  box-sizing: border-box;
+}
+:where(.onb) h1,
+:where(.onb) h2,
+:where(.onb) h3,
+:where(.onb) p,
+:where(.onb) dl,
+:where(.onb) dd,
+:where(.onb) ul {
+  margin: 0;
+  padding: 0;
+}
+:where(.onb) ul {
+  list-style: none;
+}
+:where(.onb) button {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+.onb .onb-ico {
+  display: block;
+  flex: none;
+}
+/* The app mirrors lucide's arrows and chevrons under dir="rtl" (src/styles.css, BG-0150). */
+.onb[dir="rtl"] .onb-ico--dir {
+  transform: scaleX(-1);
+}
+
+/* ---------- type ramp (src/components/ui-kit/tokens.ts) ---------- */
+.onb .onb-t-title {
+  font: 800 34px/var(--ui-leading-display) var(--onb-display);
+}
+.onb .onb-t-section {
+  font: 800 22px/var(--ui-leading-display) var(--onb-display);
+}
+.onb .onb-t-header {
+  font: 800 19px/var(--ui-leading-display) var(--onb-display);
+}
+.onb .onb-t-sub {
+  font: 800 17px/var(--ui-leading-flat) var(--onb-body);
+}
+.onb .onb-t-strong {
+  font: 800 15px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-t-body {
+  font: 600 15px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-t-secondary {
+  font: 600 14px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-t-meta {
+  font: 600 13px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-t-label {
+  font: 800 12px/var(--ui-leading-flat) var(--onb-body);
+}
+.onb .onb-t-micro {
+  font: 600 11px/var(--ui-leading-flat) var(--onb-body);
+}
+/* A figure read down a column or in a tile: Manrope, tabular. */
+.onb .onb-t-stat {
+  font: 800 22px/var(--ui-leading-flat) var(--onb-body);
+  font-variant-numeric: tabular-nums;
+}
+/* A figure that stands alone (the card's number): Changa, never tabular. */
+.onb .onb-t-score {
+  font: 800 40px/var(--ui-leading-figure) var(--onb-display);
+}
+.onb .onb-t-score-hero {
+  font: 800 52px/var(--ui-leading-figure) var(--onb-display);
+}
+.onb .onb-muted {
+  color: var(--ui-on-surface-muted);
+}
+.onb .onb-faint {
+  color: var(--ui-on-surface-faint);
+}
+.onb .onb-ink {
+  color: var(--ui-ink-fg);
+}
+.onb .onb-ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* ---------- layout helpers ---------- */
+.onb .onb-gutter {
+  padding-inline: var(--ui-gutter);
+}
+/* Vertical rhythm: children are spaced by --gap (default 12px). */
+.onb .onb-flow > * + * {
+  margin-block-start: var(--gap, 12px);
+}
+.onb .onb-row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap, 12px);
+}
+.onb .onb-grow {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.onb .onb-grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.onb .onb-btnrow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ---------- phone frame ---------- */
+.onb.onb-phone {
+  display: flex;
+  flex-direction: column;
+  width: 390px;
+  height: 844px;
+  overflow: hidden;
+}
+.onb .onb-status {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding-inline: 22px;
+  direction: ltr;
+  background: var(--ui-surface);
+  color: var(--ui-on-surface);
+  font: 800 12px/1 var(--onb-body);
+}
+.onb .onb-status__icons {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+/* The top bar: wordmark at the inline start, round 44px soft buttons at the end. */
+.onb .onb-topbar {
+  flex: none;
+  padding-block: 12px 8px;
+  background: var(--ui-surface);
+  border-block-end: 1px solid var(--ui-rule);
+}
+.onb .onb-topbar__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding-inline: var(--ui-gutter);
+}
+.onb .onb-topbar__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+}
+.onb .onb-logo {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+/* The hub title band (UiPageTitle). */
+.onb .onb-titleband {
+  flex: none;
+  padding-block: 8px 12px;
+  padding-inline: var(--ui-gutter);
+  background: var(--ui-surface);
+  border-block-end: 1px solid var(--ui-rule);
+}
+.onb .onb-titleband h1 {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+/* The inner screen header (UiHeader): back pill, centred title, trailing slot. */
+.onb .onb-header {
+  flex: none;
+  padding-block: 12px;
+  padding-inline: var(--ui-gutter);
+  background: var(--ui-surface);
+  border-block-end: 1px solid var(--ui-rule);
+}
+.onb .onb-header__row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+.onb .onb-header__title {
+  min-width: 0;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.onb .onb-header__end {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.onb .onb-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+  background: var(--ui-page);
+}
+.onb .onb-scroll::-webkit-scrollbar {
+  display: none;
+}
+.onb .onb-scroll--clip {
+  overflow-y: hidden;
+}
+.onb .onb-body {
+  padding-block: 14px 24px;
+  padding-inline: var(--ui-gutter);
+}
+.onb .onb-body--bleed {
+  padding-inline: 0;
+}
+/* The bottom tab bar (BottomNav): five items, the active one carries the action-gradient pill. */
+.onb .onb-tabs {
+  flex: none;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0;
+  padding: 8px 8px;
+  background: var(--ui-surface);
+  border-block-start: 1px solid var(--ui-rule);
+  box-shadow: var(--ui-shadow-raised);
+}
+.onb .onb-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 2px;
+  border-radius: var(--ui-radius-card);
+  color: var(--ui-on-surface-muted);
+  font: 700 11px/var(--ui-leading-flat) var(--onb-body);
+}
+.onb .onb-tab[aria-current="page"] {
+  color: var(--ui-on-surface);
+  font-weight: 800;
+}
+.onb .onb-tab__pill {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 32px;
+  border-radius: 999px;
+}
+.onb .onb-tab[aria-current="page"] .onb-tab__pill {
+  background-image: var(--ui-grad-action);
+  color: var(--ui-ink-deep);
+}
+.onb .onb-tab__label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- desktop shell (1440): wide top bar and the centred Fantasy column ---------- */
+.onb.onb-desktop {
+  width: 1440px;
+  min-height: 900px;
+  background: var(--ui-page);
+}
+.onb .onb-dtop {
+  position: relative;
+  background: var(--ui-surface);
+  border-block-end: 1px solid var(--ui-rule);
+  padding-block: 12px 8px;
+}
+.onb .onb-dtop__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 1320px;
+  min-height: 44px;
+  margin-inline: auto;
+  padding-inline: var(--ui-gutter);
+}
+.onb .onb-dnav {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.onb .onb-dnav .onb-pill {
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 16px;
+  border-radius: 999px;
+  color: var(--ui-on-surface-muted);
+  font: 800 13px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-dnav .onb-pill[aria-current="page"] {
+  background: var(--ui-selected);
+  color: var(--ui-on-selected);
+}
+.onb .onb-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 256px;
+  min-height: 44px;
+  padding-inline: 14px;
+  border-radius: 999px;
+  border: 1px solid var(--ui-rule);
+  background: var(--ui-surface);
+  color: var(--ui-on-surface-faint);
+  font: 600 13px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-dcol {
+  max-width: 672px;
+  margin: 16px auto;
+  min-height: 760px;
+  border-radius: var(--ui-radius-column);
+  box-shadow: var(--ui-shadow-column);
+  overflow: hidden;
+  background: var(--ui-page);
+}
+.onb .onb-dwide {
+  max-width: 1320px;
+  margin: 24px auto;
+  padding-inline: var(--ui-gutter);
+}
+.onb .onb-dcols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+/* ---------- controls ---------- */
+.onb .onb-iconbtn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 999px;
+  background: var(--ui-surface-sunken);
+  color: var(--ui-ink-fg);
+}
+.onb .onb-iconbtn--ghost {
+  background: transparent;
+}
+.onb .onb-iconbtn--ink {
+  background: var(--ui-ink);
+  color: var(--ui-on-ink-plain);
+  box-shadow: inset 0 0 0 1px var(--ui-ink-edge);
+}
+.onb .onb-iconbtn--lang {
+  font: 800 13px/1 var(--onb-body);
+}
+.onb .onb-backpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-inline: 10px 14px;
+  border-radius: 999px;
+  background: var(--ui-surface-sunken);
+  color: var(--ui-ink-fg);
+  font: 800 15px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  min-width: 44px;
+  padding-inline: 16px;
+  border-radius: 999px;
+  font: 800 15px/var(--ui-leading-copy) var(--onb-body);
+  text-align: center;
+}
+.onb .onb-btn--full {
+  display: flex;
+  width: 100%;
+}
+.onb .onb-btn--primary {
+  background-image: var(--ui-grad-action);
+  color: var(--ui-ink-deep);
+  box-shadow: var(--ui-shadow-lifted);
+}
+.onb .onb-btn--soft {
+  background: var(--ui-surface-sunken);
+  color: var(--ui-on-surface);
+}
+.onb .onb-btn--ink {
+  background: var(--ui-ink);
+  color: var(--ui-on-ink-plain);
+  box-shadow: inset 0 0 0 1px var(--ui-ink-edge);
+}
+/* A text button is UiButton size sm: still a 44px target. */
+.onb .onb-btn--text {
+  min-height: 44px;
+  padding-inline: 12px;
+  background: transparent;
+  color: var(--ui-ink-fg);
+  font-size: 13px;
+}
+.onb .onb-chip {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 24px;
+  padding: 1px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--ui-ink-fg) 32%, transparent);
+  background: color-mix(in oklab, var(--ui-ink-fg) 9%, var(--ui-surface));
+  color: var(--ui-ink-fg);
+  font: 800 12px/var(--ui-leading-flat) var(--onb-body);
+  white-space: nowrap;
+}
+.onb .onb-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--ui-radius-control);
+  background: color-mix(in oklab, var(--onb-accent, var(--ui-ink-fg)) 14%, var(--ui-surface));
+  color: var(--ui-on-surface);
+}
+.onb .onb-alert--positive {
+  --onb-accent: var(--ui-positive);
+}
+.onb .onb-alert--caution {
+  --onb-accent: var(--ui-caution);
+}
+.onb .onb-alert--negative {
+  --onb-accent: var(--ui-negative);
+}
+.onb .onb-alert__icon {
+  margin-block-start: 2px;
+  color: var(--onb-accent, var(--ui-ink-fg));
+}
+.onb .onb-alert__text {
+  flex: 1 1 0;
+  min-width: 0;
+  color: var(--ui-on-surface-muted);
+  font: 600 14px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-alert__title {
+  color: var(--ui-on-surface);
+  font: 800 15px/var(--ui-leading-copy) var(--onb-body);
+}
+.onb .onb-alert__dismiss {
+  align-self: center;
+  margin-block: -8px;
+  margin-inline-end: -8px;
+}
+
+/* ---------- surfaces: card, hero, panel, sheet ---------- */
+.onb .onb-surface {
+  background: var(--ui-surface);
+  border-radius: var(--ui-radius-card);
+  box-shadow: var(--ui-card-shadow);
+  color: var(--ui-on-surface);
+}
+/* Hero and panel: an inline block on a screen that exists, never a dialog. */
+.onb .onb-hero {
+  background: var(--ui-surface);
+  color: var(--ui-on-surface);
+  border-radius: var(--ui-radius-sheet);
+  box-shadow: var(--ui-shadow-lifted), var(--ui-card-shadow);
+  padding-block-end: 16px;
+  padding-inline: 16px;
+}
+.onb .onb-hero__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 52px;
+  margin-inline-end: -12px;
+}
+.onb .onb-hero__label {
+  min-width: 0;
+}
+.onb .onb-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: flex-end;
+  background: var(--ui-scrim);
+}
+.onb .onb-sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  border-start-start-radius: var(--ui-radius-sheet);
+  border-start-end-radius: var(--ui-radius-sheet);
+  background: var(--ui-surface);
+  color: var(--ui-on-surface);
+  box-shadow: var(--ui-shadow-overlay);
+}
+.onb .onb-sheet__grab {
+  flex: none;
+  display: grid;
+  place-items: center;
+  height: 20px;
+}
+.onb .onb-sheet__grab span {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ui-rule-strong);
+}
+.onb .onb-sheet__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 52px;
+  padding-inline: 16px 8px;
+}
+.onb .onb-sheet__body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  padding-inline: 16px;
+}
+.onb .onb-sheet__foot {
+  flex: none;
+  padding: 12px 16px max(8px, env(safe-area-inset-bottom));
+  border-block-start: 1px solid var(--ui-rule);
+  background: var(--ui-surface);
+}
+
+/* ---------- content pieces ---------- */
+.onb .onb-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block-end: 10px;
+}
+.onb .onb-section + .onb-section {
+  margin-block-start: 24px;
+}
+.onb .onb-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 64px;
+  padding: 10px 12px;
+  background: var(--ui-surface);
+  border-radius: var(--ui-radius-card);
+  box-shadow: var(--ui-card-shadow);
+}
+.onb .onb-stat__value {
+  display: block;
+}
+.onb .onb-stat__reason {
+  color: var(--ui-on-surface-muted);
+}
+.onb .onb-list {
+  background: var(--ui-surface);
+  border-radius: var(--ui-radius-card);
+  box-shadow: var(--ui-card-shadow);
+  overflow: hidden;
+}
+.onb .onb-listrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  border-block-end: 1px solid var(--ui-rule);
+  background: transparent;
+  color: var(--ui-on-surface);
+  text-align: start;
+}
+.onb .onb-list > :last-child {
+  border-block-end: 0;
+}
+.onb .onb-disc {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--ui-surface-sunken);
+  color: var(--ui-ink-fg);
+}
+.onb .onb-disc--grad {
+  background-image: var(--ui-grad-action);
+  color: var(--ui-ink-deep);
+}
+
+/* The card slot: a container-type: inline-size box, so the direction's cqi units resolve. */
+.onb .onb-card {
+  display: block;
+  container-type: inline-size;
+}
+.onb .onb-card--token {
+  display: inline-grid;
+  place-items: center;
+  container-type: normal;
+}
+.onb .onb-card--share {
+  position: relative;
+  overflow: hidden;
+  container-type: normal;
+}
+.onb .onb-card__scaled {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 360px;
+  height: 640px;
+  transform-origin: 0 0;
+}
+.onb .onb-missing {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 8px;
+  border: 1.5px dashed var(--ui-rule-strong);
+  border-radius: 10px;
+  background: color-mix(in oklab, var(--ui-surface-sunken) 60%, transparent);
+  color: var(--ui-on-surface-muted);
+  font:
+    600 11px/1.4 "Manrope",
+    sans-serif;
+  text-align: center;
+  overflow-wrap: anywhere;
+  direction: ltr;
+}
+.onb .onb-demo-flag {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px dashed var(--ui-rule-strong);
+  border-radius: 6px;
+  color: var(--ui-on-surface-muted);
+  font:
+    700 11px/1.4 "Manrope",
+    sans-serif;
+  direction: ltr;
+}
+
+/* ---------- skeletons: the app around the card, with real labels and neutral bars ---------- */
+.onb .onb-sk {
+  display: block;
+  background: var(--ui-surface-sunken);
+  border-radius: var(--ui-radius-control);
+}
+.onb .onb-sk--pill {
+  border-radius: 999px;
+}
+.onb .onb-sk--card {
+  border-radius: var(--ui-radius-card);
+}
+/* The gradient feature cards (DeadlineCard, team card): ink-deep ink on the action gradient. */
+.onb .onb-feature {
+  padding: 16px;
+  border-radius: var(--ui-radius-sheet);
+  background-image: var(--ui-grad-action);
+  color: var(--ui-ink-deep);
+  box-shadow: var(--ui-shadow-lifted);
+}
+.onb .onb-feature .onb-sk {
+  background: color-mix(in oklab, var(--ui-ink-deep) 18%, transparent);
+}
+.onb .onb-feature__veil {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin: 12px -16px -16px;
+  text-align: center;
+  background: color-mix(in oklab, var(--ui-on-ink-plain) 55%, transparent);
+  border-end-start-radius: var(--ui-radius-sheet);
+  border-end-end-radius: var(--ui-radius-sheet);
+}
+.onb .onb-feature__veil > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+}
+.onb .onb-feature__veil > div + div {
+  border-inline-start: 1px solid color-mix(in oklab, var(--ui-ink-deep) 14%, transparent);
+}
+.onb .onb-timetile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: var(--ui-radius-card);
+  background: var(--ui-surface);
+  color: var(--ui-on-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+.onb .onb-timetile .onb-sk {
+  background: var(--ui-surface-sunken);
+}
+.onb .onb-turf {
+  position: relative;
+  border-radius: var(--ui-radius-sheet);
+  overflow: hidden;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 44px,
+      color-mix(in oklab, oklch(1 0 0) 22%, transparent) 44px 88px
+    ),
+    linear-gradient(to bottom, var(--ui-pitch-turf-a), var(--ui-pitch-turf-b));
+}
+.onb .onb-turf__rows {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding-block: 14px;
+}
+.onb .onb-turf__line {
+  display: flex;
+  justify-content: space-evenly;
+}
+.onb .onb-plate {
+  display: flex;
+  flex-direction: column;
+  width: 62px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-card-shadow);
+}
+.onb .onb-plate__shirt {
+  display: grid;
+  place-items: center;
+  height: 34px;
+}
+.onb .onb-plate__shirt i {
+  width: 24px;
+  height: 20px;
+  border-radius: 6px 6px 3px 3px;
+  background: var(--ui-surface-sunken);
+}
+.onb .onb-plate__name {
+  height: 8px;
+  margin: 0 8px 6px;
+  border-radius: 4px;
+  background: var(--ui-surface-sunken);
+}
+.onb .onb-plate__fig {
+  height: 14px;
+  background: var(--ui-plate-figure);
+}
