@@ -17,14 +17,17 @@ python3 -m http.server 4312 --bind 127.0.0.1 --directory design-lab/manager-card
 ```
 
 Then open `http://127.0.0.1:4312/` (the gallery) or
-`http://127.0.0.1:4312/preview.html?c=03` (one concept on one sheet). A server is needed
+`http://127.0.0.1:4312/preview.html?c=03` (one concept on one sheet; add `&v=v2` for a refined
+version). A server is needed
 because browsers block fonts loaded from `file://` pages.
 
 For one offline file with every font and image inlined:
 
 ```sh
 node design-lab/manager-cards-claude/build.mjs
-# → design-lab/manager-cards-claude/dist/manager-cards-claude.html (git-ignored)
+# → dist/manager-cards-claude.html          one standalone page
+# → dist/manager-card-exploration-b.html    the same page as a fragment, for publishing
+#   (dist/ is git-ignored)
 ```
 
 ## What is where
@@ -40,11 +43,11 @@ node design-lab/manager-cards-claude/build.mjs
 | `src/kit.js` | Fixed data (ALI and the sample managers), strings in Latin and Arabic, the shared avatar, crest, flag and logo helpers. |
 | `src/brand.js` | The BotolaGO logo, generated from `src/assets/brand/` by `tools/gen-brand.mjs`. |
 | `src/contexts.js`, `src/app-context.css` | The app places a card lives in: the ranking card, a comment line, a head-to-head strip, a size ladder and a silhouette test, in light and dark. |
-| `src/concepts/NN.js`, `NN.css` | One concept each. `NN-v2.*` is a refined version. `00-contract.*` is a plumbing example, not a design. |
+| `src/concepts/NN.js`, `NN.css` | One concept each. `NN-v2.*` is a refined version. `x0N-*` are the three directions cut after the critics (shown in the gallery's appendix). `00-contract.*` is a plumbing example, not a design. |
 | `src/content/review.js` | The critique, refinement and comparison content shown in the gallery. |
 | `fonts/` | Lab-local faces: copies of the product's Changa, Manrope and Noto Sans Arabic, plus six OFL display faces (licences beside each). |
 | `review/` | Screenshots: desktop, mobile, Arabic, per-concept sheets, and renders of the Codex cards taken from their own branch. |
-| `tools/capture.mjs` | Screenshot helper (needs `playwright-core` and Chromium). |
+| `tools/capture.mjs` | Screenshot helper (needs `playwright-core` and Chromium). Options for a section, an element, the colour scheme, the gallery language (`--ls=lang:ar`) and a click; it reports any element that escapes the page width. |
 
 ## The fixed sample
 
