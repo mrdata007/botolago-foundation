@@ -4880,3 +4880,17 @@ tasks:
       available for reuse in future QA passes; not cleaned up since no delete_fantasy_team RPC
       exists and deletion was not requested.
     commits_produced: 'None. This was a verification-only pass: independent re-audit found the existing implementation already matches the supplied Figma reference on every screen compared, and the one real functional finding (bounded load latency) is a working-as-designed safeguard already tracked, not a new defect requiring a fix. No discrepancy required changing the implementation.'
+  BG-0158:
+    title: Manager Card backend (OVR, tier, four stats, permanent number, founder)
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: BLOCKED # design sent to the owner 2026-10-08; waiting on decisions D1-D20 and the Codex/production questions
+    depends_on: []
+    plan: docs/backend/MANAGER_CARD_DOMAIN_PLAN.md
+    brief: docs/engineering/tasks/BG-0158/engineering-brief.yaml
+    evidence:
+      - "design only: repository facts checked against origin/main 3f9c57fc on 2026-10-08; no staging or production read"
+    remaining:
+      - "owner: answer D1-D20 in the plan's section 2"
+      - "owner: is there unpushed Codex work on the card; are 20261005130000 and 20261006143700 on production"
