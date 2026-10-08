@@ -30,7 +30,7 @@ import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { ThemeProvider } from "@/theme/provider";
 import { THEME_INIT_SCRIPT } from "@/theme/theme";
 import { DARK_MODE_ENABLED, MANAGER_CARD_BUILD } from "@/lib/feature-flags";
-import { rootBeforeLoad } from "@/services/manager-card-status";
+import { rootBeforeLoad, useManagerCardLive } from "@/services/manager-card-status";
 import {
   ANALYTICS_ACTIVE,
   SELINE_MASK_PATTERNS,
@@ -359,12 +359,32 @@ function RootComponent() {
               <Toaster />
               <NativePushBridge />
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
+              <ManagerCardLiveMarker />
             </FantasyOwnedProvider>
           </AuthProvider>
         </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * Marks `<html data-gradins="live">` while the Manager Card section is live, for CSS and for the
+ * browser tests; nothing at all while it is off (no attribute, no write, no request). The root
+ * is also what keeps the small status module in the entry chunk, so the pages that use it ask
+ * for no file of their own (`src/services/manager-card-status.ts`).
+ */
+function ManagerCardLiveMarker() {
+  const live = useManagerCardLive();
+  useEffect(() => {
+    if (!live) return;
+    const root = document.documentElement;
+    root.dataset.gradins = "live";
+    return () => {
+      delete root.dataset.gradins;
+    };
+  }, [live]);
+  return null;
 }
 
 /**

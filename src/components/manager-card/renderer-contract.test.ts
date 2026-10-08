@@ -4,7 +4,7 @@ import { FIXTURE_IDS, FIXTURES } from "@/backend/manager-card/fixtures";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 
 import { activeRenderer } from "./active-renderer";
-import { cardLabel, cardStrings, type Translate } from "./copy";
+import { cardStrings, type Translate } from "./copy";
 import { ALLOWED_CARD_TAGS, HOSTILE_NAMES, findUnsafeMarkup } from "./markup-safety";
 import { plainRenderer } from "./plain-renderer";
 import type { CardRenderer } from "./renderer";
@@ -76,10 +76,11 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
         expect(html.match(/role="img"/g)).toHaveLength(1);
         expect(html.startsWith("<")).toBe(true);
         expect(attribute(html, "dir")).toBe(lang === "ar" ? "rtl" : "ltr");
-        expect(attribute(html, "aria-label")).toBe(
-          stripControls(renderer.label(rated, STRINGS[lang])),
-        );
-        expect(renderer.label(rated, STRINGS[lang])).toBe(cardLabel(rated, STRINGS[lang]));
+        const label = renderer.label(rated, STRINGS[lang]);
+        expect(attribute(html, "aria-label")).toBe(stripControls(label));
+        // What a screen reader gets names the manager and the rating, in whatever order.
+        expect(label).toContain("Ali");
+        expect(label).toContain("84");
       }
     });
 
@@ -150,12 +151,6 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
       }
     });
 
-    it("the active renderer's estimate is a height over width for either language", () => {
-      for (const lang of ["fr", "ar"] as const) {
-        expect(activeRenderer.estimateAspect(rated, lang)).toBeGreaterThan(1);
-      }
-    });
-
     it("has a founder detail for a founder", () => {
       const founder = fromMyCard(FIXTURES.founder.card!);
       expect(
@@ -210,3 +205,22 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
 describeRendererContract("plain renderer", plainRenderer);
 const active = await activeRenderer.load();
 if (active !== plainRenderer) describeRendererContract(`active renderer (${active.id})`, active);
+
+describe("the active renderer (active-renderer.ts)", () => {
+  it("loads the renderer it names", () => {
+    expect(active.id).toBe(activeRenderer.id);
+  });
+
+  it("reserves a box close to the shape the card really has, in either language", () => {
+    for (const lang of ["fr", "ar"] as const) {
+      for (const id of ["rated", "forming1", "founder", "longNameLatin", "arabicName"] as const) {
+        const profile = fromMyCard(FIXTURES[id].card!, { sample: true });
+        const estimate = activeRenderer.estimateAspect(profile, lang);
+        const real = active.aspect(profile, STRINGS[lang]);
+        expect(estimate).toBeGreaterThan(1);
+        // A box that is far off makes the page jump when the card arrives.
+        expect(Math.abs(estimate - real) / real).toBeLessThan(0.15);
+      }
+    }
+  });
+});
