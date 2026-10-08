@@ -462,8 +462,10 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
 
   test("the preview is the development-only expression, written so Vite can replace it", () => {
     const source = stripComments(read("src/lib/feature-flags.ts"));
-    expect(source).toContain(
-      'import.meta.env.DEV === true && import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1"',
+    // Guarded for Node (the Playwright runner imports this file, where `import.meta.env` is
+    // undefined); the plain `import.meta.env.DEV` form is what Vite replaces in a build.
+    expect(source.replace(/\s+/g, " ")).toContain(
+      'typeof import.meta.env !== "undefined" && import.meta.env.DEV === true && import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1"',
     );
     // Only the plain form is replaced statically in a production build.
     expect(source).not.toContain("import.meta.env?.");
