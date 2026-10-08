@@ -491,7 +491,7 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
       source.lastIndexOf("/**", source.indexOf("export const MANAGER_CARD_ENABLED")),
       source.indexOf("export const MANAGER_CARD_ENABLED"),
     );
-    const listed = [...comment.matchAll(/^ \*   - `(src\/[^`]+)`/gm)].map((match) => match[1]!);
+    const listed = [...comment.matchAll(/^ \* {3}- `(src\/[^`]+)`/gm)].map((match) => match[1]!);
     expect(listed).toEqual([
       "src/components/shell/primary-nav.ts",
       "src/routes/__root.tsx",
