@@ -1,0 +1,27 @@
+ok   returning: × acknowledges in ONE call  (first_coalesced: [["first_rating:3c000001-0000-4000-8000-000000000001","provisional_cleared:3c000001-0000-4000-8000-000000000001"]])
+ok   returning: that call holds both keys
+ok   returning: the device cache holds them
+ok   returning: the hero's label, lines and buttons are inert; the card stays
+ok   returning: the session flag is set
+ok   returning: no console error
+ok   launchArrival: × acknowledges in ONE call  (first_arrival: [["card_created","first_rating:3c000001-0000-4000-8000-000000000001"]])
+ok   launchArrival: that call holds both keys
+ok   launchArrival: the device cache holds them
+ok   launchArrival: the hero's label, lines and buttons are inert; the card stays
+ok   launchArrival: the session flag is set
+ok   launchArrival: no console error
+ok   rated: « Partager » acknowledges (one call) and opens the share sheet
+ok   rated: nothing is acknowledged before two seconds
+ok   rated: two seconds in view acknowledges
+ok   rated: and the hero stays open
+ok   splash up: no hero yet
+ok   splash up: nothing acknowledged, no session flag
+ok   a second visit in the session: no hero
+ok   team page: × acknowledges card_created in one call  ([["card_created"]])
+ok   team page: a first rating is not a team-page moment
+ok   « Inviter des amis » opens the create-and-invite sheet
+ok   reduced motion: the hero shows
+ok   reduced motion: no animation is running
+ok   reduced motion: no beat class on the card
+ok   reduced motion: it still acknowledges
+BEHAVIOUR OK (26 checks)
