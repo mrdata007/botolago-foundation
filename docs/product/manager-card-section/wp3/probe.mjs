@@ -113,7 +113,9 @@ function measure({ lang }) {
       const t = n.textContent;
       const el = n.parentElement;
       if (!el || el.closest("svg, bdi, [dir=ltr], .sr-only") || !visible(el)) continue;
-      if (digit.test(t) && arabic.test(t))
+      // A run inside U+2066 to U+2069 is isolated already (the copy accessors write plurals so).
+      const bare = t.replace(/[\u2066-\u2068][^\u2069]*\u2069/g, "");
+      if (digit.test(bare) && arabic.test(bare))
         out.rtl.push(`digits among Arabic, not isolated: "${t.trim().slice(0, 50)}"`);
     }
   }

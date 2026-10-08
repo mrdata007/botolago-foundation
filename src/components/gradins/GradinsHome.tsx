@@ -229,7 +229,7 @@ export function OwnerHome({
         <PeopleBlock
           league={people.league}
           rows={people.rows}
-          loading={people.leaguesPending || people.standingsPending}
+          loading={people.leaguesPending || people.standingsPending || people.cardsPending}
           failed={people.leaguesError || people.standingsError}
           retry={people.retry}
           noLeague={!people.leaguesPending && !people.leaguesError && people.leagues.length === 0}

@@ -39,7 +39,7 @@ export function HistoryTable({
         {rows.map((row, index) => (
           <UiTR
             key={`${row.seasonId}-${row.gameweekSeq}`}
-            className={cn(index === rows.length - 1 && "border-b-0")}
+            className={cn("h-[var(--ui-row-min)]", index === rows.length - 1 && "border-b-0")}
           >
             <UiTD className={cn("ps-4", STANDINGS_FIGURE_CELL, ui.tone.muted)}>
               {`${t("fantasy.leagues.gw")}${row.gameweekSeq}`}

@@ -153,7 +153,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
 
         <section data-testid="gradins-tier" aria-label={copy.cardTier}>
           <SectionHeader title={copy.cardTier} />
-          <UiCard padding="md">
+          <UiCard padding="sm">
             <TierLadder card={card} />
           </UiCard>
         </section>

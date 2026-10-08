@@ -55,7 +55,7 @@ export function TierLadder({ card }: { card: MyCardDto }) {
               </span>
               <span
                 className={cn(
-                  "max-w-full truncate text-center",
+                  "whitespace-nowrap text-center",
                   ui.text.micro,
                   "[font-weight:var(--ui-weight-heavy)]",
                   here ? ui.tone.default : ui.tone.muted,

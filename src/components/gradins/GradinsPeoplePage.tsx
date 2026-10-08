@@ -112,7 +112,8 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
     void navigate({ to: "/gradins/les-votres", search: { ligue: id }, replace: true });
   };
 
-  const loading = people.leaguesPending || people.standingsPending;
+  // The table waits for the cards too, so the band and the minis arrive with the rows, not after.
+  const loading = people.leaguesPending || people.standingsPending || people.cardsPending;
   const alone = rows.length > 0 && rows.every((row) => row.own);
   const clubName = card.club ? card.club.shortName[lang] || card.club.shortName.fr : "";
 
@@ -165,11 +166,11 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
               <UiSkeleton className="h-16" />
             </div>
           ) : alone ? (
-            <UiEmptyState
-              title={
-                fill(copy.peopleAlone, { league: <PersonName>{league.name}</PersonName> }) as string
-              }
-            />
+            <UiCard padding="lg">
+              <p className={cn("text-pretty text-center", ui.text.body, ui.tone.default)}>
+                {fill(copy.peopleAlone, { league: <PersonName>{league.name}</PersonName> })}
+              </p>
+            </UiCard>
           ) : (
             <UiCard padding="none" className="overflow-hidden">
               <LeagueRows
