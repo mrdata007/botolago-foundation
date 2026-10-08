@@ -202,14 +202,16 @@
 .onb .m56-fig { padding-inline-end: 4px; }
 .onb .m56-head > :nth-child(5) { padding-inline-end: 16px; }
 .onb .m56-head > :nth-child(2) { padding-inline: 8px; }
-.onb .m56-row { position: relative; padding-block: 6px 7px; border-block-start: 1px solid var(--ui-rule); }
+.onb .m56-row { padding-block: 6px 7px; border-block-start: 1px solid var(--ui-rule); }
 .onb .m56-row.is-me { background: color-mix(in oklab, var(--ui-ink-fg) 12%, var(--ui-surface)); }
 .onb .m56-pos { padding-inline-start: 16px; font: 800 17px/var(--m56-lh) var(--onb-body); font-variant-numeric: tabular-nums; color: var(--ui-on-surface-muted); }
 .onb .m56-pos.is-top { color: var(--ui-on-surface); }
 .onb .m56-who { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 36px; padding-inline: 8px 0; }
 .onb .m56-name { flex: 1 1 0; min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; font: 800 15px/var(--m56-lh) var(--onb-body); color: var(--ui-on-surface); }
 .onb .m56-flag { position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin: -4px -6px; color: var(--ui-on-surface-muted); z-index: 1; }
+/* painted 32px, quiet until pressed; the 44px box is the target */
 .onb .m56-flag::before { content: ""; position: absolute; width: 32px; height: 32px; border-radius: 999px; }
+.onb .m56-flag:active::before { background: var(--ui-surface-sunken); }
 .onb .m56-flag .onb-ico { position: relative; }
 .onb .m56-fig { font: 600 13px/var(--m56-lh) var(--onb-body); font-variant-numeric: tabular-nums; color: var(--ui-on-surface-muted); text-align: end; }
 .onb .m56-total { font: 800 17px/var(--m56-lh) var(--onb-body); font-variant-numeric: tabular-nums; color: var(--ui-on-surface); text-align: end; }
@@ -254,21 +256,18 @@
 .onb:not([dir="rtl"]) .m56-code { letter-spacing: 0.025em; }
 .onb .m56-bar { display: flex; height: 6px; border-radius: 3px; background: var(--ui-surface-sunken); overflow: hidden; }
 .onb .m56-bar i { display: block; width: calc(var(--v) * 1%); height: 100%; border-radius: 3px; background: var(--ui-ink-fg); }
-.onb .m56-bar.is-low i { background: color-mix(in oklab, var(--ui-ink-fg) 42%, var(--ui-surface-sunken)); }
+.onb .m56-bar.is-low i { background: color-mix(in oklab, var(--ui-ink-fg) 58%, var(--ui-surface-sunken)); }
 .onb .m56-bar--me { justify-content: flex-end; }
 .onb .m56-bar--me i { transform-origin: 100% 50%; }
 .onb[dir="rtl"] .m56-bar--me i { transform-origin: 0% 50%; }
 .onb .m56-bar--them i { transform-origin: 0% 50%; }
 .onb[dir="rtl"] .m56-bar--them i { transform-origin: 100% 50%; }
-.onb .m56-bar--me { flex-direction: row; }
-.onb .m56-bar--them { flex-direction: row; }
 
 /* the share sheet: the message as it will land, then the buttons in the thumb zone */
 .onb .m56-share { display: flex; flex-direction: column; align-items: center; padding-block: 4px 10px; }
 .onb .m56-msg { display: flex; flex-direction: column; gap: 8px; width: min(100%, 248px); padding: 8px; border-radius: 16px; background: var(--ui-surface-sunken); color: var(--ui-on-surface); }
 .onb .m56-msg__img { display: flex; justify-content: center; border-radius: 10px; overflow: hidden; line-height: 0; }
 .onb .m56-msg__text { padding: 0 4px 2px; font: 600 13px/var(--ui-leading-copy) var(--onb-body); }
-.onb .m56-msg__text bdi { unicode-bidi: isolate; }
 .onb .m56-foot { display: flex; flex-direction: column; gap: 8px; }
 .onb .m56-hhero { display: flex; gap: 16px; align-items: flex-start; }
 .onb .m56-hcol { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -605,7 +604,7 @@
     render(env) {
       if (env.v.key === "image")
         return ONB.phone(
-          `<div class="m56 m56-shot">${env.card("share", { width: 360 })}<p><span class="onb-demo-flag">Share image · 1080 × 1920 · sample</span></p></div>`,
+          `<div class="m56 m56-shot">${env.card("share", { width: 360 })}<p dir="ltr"><span class="onb-demo-flag">Share image · 1080 × 1920 · sample</span></p></div>`,
           env,
           { topbar: false, nav: false, gutter: false },
         );
