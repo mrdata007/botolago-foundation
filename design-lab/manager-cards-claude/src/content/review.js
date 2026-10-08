@@ -3,6 +3,7 @@
 window.MC.REVIEW = {
   ...{
  "method": "Four independent critics scored all ten directions from the rendered evidence (full card in light, dark and Arabic; the five tiers; the silhouette test; tokens from 80 to 24px; leaderboard rows; the mini identity; the share image), each from a different seat: a brand and identity director, a 16-year-old from Casablanca, a 38-year-old Fantasy veteran, and a lead game-UI and collectibles designer. Each scored 13 criteria from 1 to 10, comparing the ten against each other. The table shows the average of the four. A judge then chose the top three and wrote the refinement briefs.",
+ "totals": {"c07": 99, "c05": 92.8, "c09": 82.8, "c03": 79.5, "c01": 74, "c08": 73, "c04": 72.3, "c10": 71, "c06": 60.8, "c02": 57.5},
  "scaleNote": "Averages of four critics. 5 = competent but forgettable, 7 = clearly good, 9 = rare. Sorted by total.",
  "scores": {
   "c07": [

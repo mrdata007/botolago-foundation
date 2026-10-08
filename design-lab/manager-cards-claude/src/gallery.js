@@ -254,20 +254,20 @@
     const rv = R();
     if (!rv.scores) return `<div class="sec"><h2>${esc(T().tabs.critique)}</h2><p>${esc(T().pending)}</p></div>`;
     const rows = originals()
-      .map((c) => ({ c, s: rv.scores[c.id] }))
+      .map((c) => ({ c, s: rv.scores[c.id], t: (rv.totals && rv.totals[c.id]) || total(rv.scores[c.id] || []) }))
       .filter((r) => r.s)
-      .sort((a, b) => total(b.s) - total(a.s));
+      .sort((a, b) => b.t - a.t);
     const cell = (v) => `<td class="sc ${v >= 8 ? "sc-hi" : v <= 5 ? "sc-lo" : ""}">${v}</td>`;
     return (
       `<div class="sec"><h2>${state.lang === "ar" ? "التقييم العدائي" : "Adversarial critique"}</h2><p>${esc(rv.method || "")}</p></div>` +
       `<div class="score-wrap"><table class="scores"><caption class="note" style="caption-side:bottom;padding:10px">${esc(rv.scaleNote || "")}</caption><thead><tr><th scope="col" style="text-align:start">Concept</th>${CRITERIA.map((k) => `<th scope="col">${esc(k)}</th>`).join("")}<th scope="col">Total /130</th></tr></thead><tbody>${rows
-        .map((r) => `<tr><th scope="row"><a href="#${r.c.id}" style="color:inherit">${num(r.c)} ${esc(nameOf(r.c))}</a></th>${r.s.map(cell).join("")}<td class="total">${total(r.s)}</td></tr>`)
+        .map((r) => `<tr><th scope="row"><a href="#${r.c.id}" style="color:inherit">${num(r.c)} ${esc(nameOf(r.c))}</a></th>${r.s.map(cell).join("")}<td class="total">${r.t.toFixed(1)}</td></tr>`)
         .join("")}</tbody></table></div>` +
       (rv.superlatives
         ? `<div class="sec"><h2>${state.lang === "ar" ? "الأفضل في كل فئة" : "Superlatives"}</h2></div><div class="supers">${rv.superlatives
             .map((s) => {
               const c = byId(s.id);
-              return `<div class="super"><div style="display:grid;place-items:center;height:64px">${c ? c.token(MC.ALI, { lang: cardLang(), size: 56 }) : ""}</div><div><b>${esc(s.label)}</b><strong>${c ? num(c) + " " + esc(nameOf(c)) : esc(s.id)}</strong><p>${esc(s.why)}</p></div></div>`;
+              return `<div class="super"><div style="display:grid;place-items:center;height:56px">${c ? c.token(MC.ALI, { lang: cardLang(), size: 48 }) : ""}</div><div><b>${esc(s.label)}</b><strong>${c ? num(c) + " " + esc(nameOf(c)) : esc(s.id)}</strong><p>${esc(s.why)}</p></div></div>`;
             })
             .join("")}</div>`
         : "") +
@@ -415,7 +415,7 @@
       `<div class="d-sec"><h3>${esc(S.adv)}</h3><ul>${(c.advantages || []).map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>` +
       `<div class="d-sec"><h3>${esc(S.risks)}</h3><ul>${(c.risks || []).map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>` +
       (scores
-        ? `<div class="d-sec"><h3>${esc(S.scores)} · ${total(scores)}/130</h3><div class="scorebars">${CRITERIA.map((k, j) => `<div><span>${esc(k)}</span><b>${scores[j]}</b><i style="--v:${scores[j]}"></i></div>`).join("")}</div>${verdict ? `<p style="margin-top:14px"><b>${esc(S.verdict)}:</b> ${esc(verdict)}</p>` : ""}</div>`
+        ? `<div class="d-sec"><h3>${esc(S.scores)} · ${((rv.totals && rv.totals[base.id]) || total(scores)).toFixed(1)}/130</h3><div class="scorebars">${CRITERIA.map((k, j) => `<div><span>${esc(k)}</span><b>${scores[j]}</b><i style="--v:${scores[j]}"></i></div>`).join("")}</div>${verdict ? `<p style="margin-top:14px"><b>${esc(S.verdict)}:</b> ${esc(verdict)}</p>` : ""}</div>`
         : "") +
       `</div></div>` +
       `<div style="grid-column:1/-1"><div class="d-sec"><h3>${esc(S.lives)}</h3><div class="lives">` +
