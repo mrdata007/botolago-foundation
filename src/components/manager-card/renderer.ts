@@ -52,4 +52,12 @@ export interface CardRenderer {
   label(profile: CardProfile, strings: CardStrings): string;
   /** Total length of a beat in ms (0 when unsupported). */
   beatMs(beat: BeatName): number;
+  /**
+   * Optional pointer behaviour for a full card the app has put in the page: the scarf's sway on a
+   * mouse or pen (never touch). `el` is the element the markup was inserted into (the card's root
+   * is its first element child). Returns the cleanup. `ManagerCard` calls it after inserting the
+   * card when the screen asks for it (`sway`, Gradins' G1 and G2) and the reader has not asked for
+   * less motion, and runs the cleanup when the markup changes or the card unmounts.
+   */
+  mount?(el: HTMLElement): () => void;
 }

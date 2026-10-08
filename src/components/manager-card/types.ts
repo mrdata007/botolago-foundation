@@ -3,6 +3,8 @@
  * docs/product/MANAGER_CARD_SECTION_PLAN.md section 6.2. Every field may be empty;
  * empty draws as the object's own empty part (never 0, never a lock).
  */
+import type { HistoryRowDto } from "@/backend/manager-card/contracts";
+
 export const TIER_CODES = ["homa", "stade", "pro", "champion", "legend"] as const;
 export type TierCode = (typeof TIER_CODES)[number];
 export const STAT_CODES = ["cap", "sel", "trf", "con"] as const;
@@ -64,4 +66,43 @@ export interface CardStrings {
     counted: (k: number, n: number) => string;
     separator: string; // ", " / "، "
   };
+}
+
+/* ------------------------------------------------------------------------------------------------
+   Moment types (plan sections 5.3 and 7.6, verbatim). The DTO types they name are the `z.infer`
+   of the schemas in `src/backend/manager-card/contracts.ts`.
+   ------------------------------------------------------------------------------------------------ */
+
+export type HeroKind =
+  | "born_new"
+  | "born_arrival"
+  | "first_fresh"
+  | "first_arrival"
+  | "first_coalesced"
+  | "tier_up"
+  | "founder"
+  | "season_closed";
+export interface HeroSpec {
+  kind: HeroKind;
+  /** Every moment key this hero acknowledges, in one call. */
+  keys: string[];
+  beat: BeatName | null;
+  gameweekSeq: number | null;
+  tier: TierCode | null;
+  /** first_coalesced only: the first rating it folds in. */
+  first: { ovr: number; gameweekSeq: number } | null;
+}
+export interface LineSpec {
+  kind: "provisional_cleared" | "season_started" | "tier_down";
+  /** Acknowledged on display; [] for tier_down (never a moment). */
+  keys: string[];
+}
+export interface ReplayItem {
+  kind: "first_rating" | "tier" | "founder" | "season";
+  seasonId: string | null;
+  gameweekSeq: number | null;
+  tier: TierCode | null;
+  beat: BeatName | null;
+  /** The stored journée the replay draws; null for founder (drawn from the current card). */
+  row: HistoryRowDto | null;
 }

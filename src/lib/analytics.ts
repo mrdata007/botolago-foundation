@@ -93,7 +93,84 @@ export type AnalyticsEvent =
   /** A new account finished its profile setup. */
   | "profile_setup_complete"
   /** The server confirmed a first Fantasy team was saved (not a draft). */
-  | "fantasy_team_created";
+  | "fantasy_team_created"
+  // Gradins and the Manager Card (plan Appendix C): names only, no properties.
+  /** The line about the card was shown above « Entrer l’effectif » on the create flow. */
+  | "card_save_line_view"
+  /** The card-born panel or hero was shown. */
+  | "card_born_view"
+  /** « Inviter des amis » tapped on the card-born panel or hero. */
+  | "card_born_invite"
+  /** The card-born panel or hero was closed. */
+  | "card_born_close"
+  /** A card-born panel for an existing manager (launch arrival) was shown. */
+  | "card_arrival_view"
+  /** The hub's card block was opened. */
+  | "card_block_open"
+  /** The captain hint was shown. */
+  | "card_hint_cap_view"
+  /** The starting-XI hint was shown. */
+  | "card_hint_sel_view"
+  /** The transfers hint was shown. */
+  | "card_hint_trf_view"
+  /** The first-rating hero was shown. */
+  | "card_first_rating_view"
+  /** « Voir le détail » tapped on the first-rating hero. */
+  | "card_first_rating_detail"
+  /** The first-rating hero was closed. */
+  | "card_first_rating_close"
+  /** The share picture was drawn for a HOMA card (a preview, not a share). */
+  | "card_share_preview_homa"
+  /** The share picture was drawn for a STADE card. */
+  | "card_share_preview_stade"
+  /** The share picture was drawn for a PRO card. */
+  | "card_share_preview_pro"
+  /** The share picture was drawn for a CHAMPION card. */
+  | "card_share_preview_champion"
+  /** The share picture was drawn for a LEGEND card. */
+  | "card_share_preview_legend"
+  /** WhatsApp was opened with the card message: an intent, not a sent message. */
+  | "card_share_whatsapp"
+  /** The system share sheet reported the card picture sent. */
+  | "card_share_native"
+  /** The card message and link were copied. */
+  | "card_share_copy"
+  /** The card picture was downloaded. */
+  | "card_share_download"
+  /** The league's new-ratings band was shown. */
+  | "card_league_band_view"
+  /** A face-à-face sheet was opened. */
+  | "card_h2h_open"
+  /** The line saying the rating is no longer provisional was shown. */
+  | "card_provisional_cleared_view"
+  /** The tier-up hero was shown. */
+  | "card_tier_up_view"
+  /** The founder hero was shown. */
+  | "card_founder_view"
+  /** The season-closed hero was shown. */
+  | "card_season_closed_view"
+  /** The new-season line was shown. */
+  | "card_season_started_view"
+  /** A replay sheet was opened. */
+  | "card_replay_open"
+  /** Gradins was opened by a visitor without an account. */
+  | "gradins_view_guest"
+  /** Gradins was opened by a signed-in account without a team. */
+  | "gradins_view_no_team"
+  /** Gradins was opened by a manager. */
+  | "gradins_view_manager"
+  /** A guest tapped a create-or-sign-in button on Gradins. */
+  | "gradins_guest_cta"
+  /** A guest tried a club's colours on the card. */
+  | "gradins_guest_club_try"
+  /** « Votre carte » was opened. */
+  | "gradins_card_view"
+  /** « Les vôtres » was opened. */
+  | "gradins_people_view"
+  /** « Vos saisons » was opened. */
+  | "gradins_seasons_view"
+  /** Pépites was opened from its tile in the Fantasy hub. */
+  | "pepites_from_fantasy";
 
 type Seline = { track: (event: string) => void; page: (path: string) => void };
 
