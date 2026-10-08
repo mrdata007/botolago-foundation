@@ -76,9 +76,30 @@ export function findViolations(
     }
     return null;
   };
+  // Code shared only between the section's own chunks (a Gradins page and a lazily loaded card
+  // component) is cut into a chunk the bundler names after one of its modules, not after the
+  // section. Such a chunk is the section's too: every chunk that imports it statically is.
+  const importers = new Map<string, Set<string>>();
+  for (const chunk of chunks) {
+    for (const target of staticImports(chunk)) {
+      if (!byName.has(target)) continue;
+      importers.set(target, (importers.get(target) ?? new Set()).add(chunk.name));
+    }
+  }
+  const section = new Set(chunks.map((c) => c.name).filter((name) => ALLOWED_CHUNK.test(name)));
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const [name, from] of importers) {
+      if (section.has(name) || holders.has(name)) continue;
+      if ([...from].every((importer) => section.has(importer) || holders.has(importer))) {
+        section.add(name);
+        grew = true;
+      }
+    }
+  }
   const violations: string[] = [];
   for (const chunk of chunks) {
-    if (ALLOWED_CHUNK.test(chunk.name) || holders.has(chunk.name)) continue;
+    if (section.has(chunk.name) || holders.has(chunk.name)) continue;
     const hit = reaches(chunk.name);
     if (hit) violations.push(`${chunk.name} imports ${hit}, which holds the Manager Card's code`);
   }
