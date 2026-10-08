@@ -21,6 +21,20 @@ describe("pageviewPath: what a page view may say about the address", () => {
     expect(pageviewPath(`${ORIGIN}/matches`)).toBe("/matches");
   });
 
+  test("Gradins: a league id and the development fixture never leave the phone", () => {
+    expect(
+      pageviewPath(
+        `${ORIGIN}/gradins/les-votres?ligue=3c000005-0000-4000-8000-000000000001&mc=rated`,
+      ),
+    ).toBe("/gradins/les-votres");
+    expect(
+      pageviewPath(`${ORIGIN}/gradins/saisons?saison=3c000001-0000-4000-8000-000000000001`),
+    ).toBe("/gradins/saisons");
+    expect(pageviewPath(`${ORIGIN}/gradins?mc=founder&utm_source=whatsapp`)).toBe(
+      "/gradins?utm_source=whatsapp",
+    );
+  });
+
   test("never sends what follows '#': an invite code, a sign-in's tokens", () => {
     const path = pageviewPath(
       `${ORIGIN}/pronostics/ligues/rejoindre#code=A1B2C3D4E5F60718293A4B5C6D7E8F90`,

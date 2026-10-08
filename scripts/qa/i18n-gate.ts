@@ -149,8 +149,17 @@ export const BASELINES: Baselines = {
   // names the feature "جواهر" in Arabic, so the title and the navigation
   // label are translated after all and both findings are gone. W1 9 -> 7,
   // W2 9 -> 7.
-  W1: 7,
-  W2: 7,
+  //
+  // Gradins (the Manager Card section, 2026-10-08): two keys read the same in
+  // both languages on purpose. `card.ovr` is the unit printed after a rating
+  // (« 84 OVR »), the same three letters in French and Arabic; `card.serial`
+  // is the format of an identifier (« BOT #482913 »), which is not
+  // translated. Two new W1 findings and the same two new W2 findings, both
+  // annotated in `src/i18n/i18n-allowlist.ts`, which never removes a count.
+  // The other 181 keys of the section all differ between the languages.
+  // W1 7 -> 9, W2 7 -> 9.
+  W1: 9,
+  W2: 9,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and

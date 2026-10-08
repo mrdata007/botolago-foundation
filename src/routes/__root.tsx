@@ -29,7 +29,8 @@ import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { ThemeProvider } from "@/theme/provider";
 import { THEME_INIT_SCRIPT } from "@/theme/theme";
-import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
+import { DARK_MODE_ENABLED, MANAGER_CARD_BUILD } from "@/lib/feature-flags";
+import { rootBeforeLoad } from "@/services/manager-card-status";
 import {
   ANALYTICS_ACTIVE,
   SELINE_MASK_PATTERNS,
@@ -210,6 +211,10 @@ function ErrorBody({ reset }: { reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // Gradins (the Manager Card section): read the database's status once per server render, before
+  // any child route's guard needs it. Registered only when the build lets Gradins exist, so with
+  // the switch off the route object is exactly what it was (`src/lib/feature-flags.ts`).
+  ...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {}),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
