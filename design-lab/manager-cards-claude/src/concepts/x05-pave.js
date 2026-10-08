@@ -742,6 +742,7 @@
     id: "x05",
     cut: true,
     cutReason: "An identity as 'the floor people walk on' gave a teenager the weakest reason to belong in the pool; 'un pavé' is a riot projectile in French; and at 24px the block read as a bow tie or a dog bone.",
+    cutReasonAr: "أن تكون هويتك «الأرض التي يمشي عليها الناس» أضعف سبب يجعل مراهقًا يريدها؛ وكلمة «pavé» بالفرنسية حجر يُرمى في أعمال الشغب؛ وعند 24 بكسل بدا الحجر كربطة عنق أو عظمة كلب.",
     n: 5,
     name: "PAVÉ",
     nameAr: "البلاطة",

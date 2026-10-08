@@ -710,24 +710,33 @@
       s += `<rect x="${f2(x - w * 0.3)}" y="${f2(top + 1)}" width="${f2(w * 0.6)}" height="3.4" rx="1.4" fill="${P.Gdk}"/>`;
       return s;
     }
-    const n = 9;
+    // matte yarn: seven strands gathered under the wrap and splaying to uneven tips. Each strand is
+    // drawn as a ply (a dashed twist over the yarn), with no outline round the bundle and no light
+    // streak, so the tassel reads as wool rather than a moulded cone.
+    const n = 7;
     const knot = opt.knotted;
-    for (let i = 0; i < n; i++) {
+    const order = [0, 6, 1, 5, 2, 4, 3]; // outer strands first, the centre on top
+    for (const i of order) {
       const t = (i - (n - 1) / 2) / ((n - 1) / 2);
-      const x0 = x + t * w * 0.22;
-      const x1 = x + t * w * 0.5 + hang + (rnd() * 2 - 1) * 0.8;
-      const l = len - rnd() * 4;
+      const x0 = x + t * w * 0.2;
+      const x1 = x + t * w * 0.62 + hang + (rnd() * 2 - 1) * 1.1;
+      const l = len - rnd() * 6;
       const kink = knot ? 9 : 4;
-      const d = `M${f2(x0)} ${f2(top + kink)}C${f2(x0 + hang * 0.1)} ${f2(top + l * 0.45)} ${f2(x1 - hang * 0.25)} ${f2(top + l * 0.75)} ${f2(x1)} ${f2(top + l)}`;
-      const yarnW = f2(Math.max(1.3, (w / n) * 1.05));
-      const light = i === 2 || i === 6;
-      s += `<path d="${d}" stroke="${P.Gdk}" stroke-width="${f2(yarnW * 1.5)}" fill="none" stroke-linecap="round" opacity=".55"/>`;
-      s += `<path d="${d}" stroke="${light ? P.S : P.G}" stroke-width="${yarnW}" fill="none" stroke-linecap="round"/>`;
+      const d = `M${f2(x0)} ${f2(top + kink)}C${f2(x0 + hang * 0.1)} ${f2(top + l * 0.4)} ${f2(x1 - hang * 0.25 - t * 0.8)} ${f2(top + l * 0.72)} ${f2(x1)} ${f2(top + l)}`;
+      const yarnW = f2(Math.max(1.4, (w / n) * 0.95));
+      s += `<path d="${d}" stroke="${P.Gdk}" stroke-width="${f2(yarnW * 1 + 0.7)}" fill="none" stroke-linecap="round" opacity=".32"/>`;
+      s += `<path d="${d}" stroke="${P.G}" stroke-width="${yarnW}" fill="none" stroke-linecap="round"/>`;
+      if (i % 2) s += `<path d="${d}" stroke="${P.Gdk}" stroke-width="${yarnW}" fill="none" stroke-linecap="round" opacity=".22"/>`;
+      s += `<path d="${d}" stroke="${P.Gdk}" stroke-width="${f2(yarnW * 0.42)}" stroke-dasharray="1.3 1.7" fill="none" opacity=".45"/>`;
     }
     if (knot) {
       s += `<ellipse cx="${f2(x)}" cy="${f2(top + 6)}" rx="${f2(w * 0.36)}" ry="4.2" fill="${P.G}" stroke="${P.Gdk}" stroke-width="1"/>`;
       s += `<path d="M${f2(x - w * 0.28)} ${f2(top + 5)}C${f2(x - 2)} ${f2(top + 2.4)} ${f2(x + 2)} ${f2(top + 9)} ${f2(x + w * 0.3)} ${f2(top + 6)}" stroke="${P.Glt}" stroke-width="1" fill="none" opacity=".8"/>`;
-    } else s += `<rect x="${f2(x - w * 0.26)}" y="${f2(top + 1)}" width="${f2(w * 0.52)}" height="3.2" rx="1.2" fill="${P.Gdk}"/>`;
+    } else {
+      // the wrap: a few turns of the second yarn round the gathered head
+      s += `<rect x="${f2(x - w * 0.26)}" y="${f2(top + 0.6)}" width="${f2(w * 0.52)}" height="4" rx="1.4" fill="${P.Gdk}"/>`;
+      s += `<path d="M${f2(x - w * 0.24)} ${f2(top + 1.8)}H${f2(x + w * 0.24)}M${f2(x - w * 0.24)} ${f2(top + 3.4)}H${f2(x + w * 0.24)}" stroke="${P.S}" stroke-width=".8" fill="none"/>`;
+    }
     return s;
   }
 
@@ -766,7 +775,7 @@
     const thumb = !!opts.thumb;
     let s = "";
     // thickness: a soft shadow, then a 1u hard edge below and to the inline end
-    s += `<rect x="${f2(x + 0.6)}" y="${f2(y + 1.6)}" width="${f2(w)}" height="${h}" fill="#020a1c" opacity=".3" filter="url(#${ids.soft})"/>`;
+    s += `<rect x="${f2(x + 0.6)}" y="${f2(y + 1.6)}" width="${f2(w)}" height="${h}" fill="#020a1c" opacity=".18" filter="url(#${ids.soft})"/>`;
     s += `<rect x="${f2(x + (ar ? -1 : 1) * k)}" y="${f2(y + 1 * k)}" width="${f2(w)}" height="${h}" fill="${mix(P.patch, "#000000", 0.45)}"/>`;
     s += `<rect x="${f2(x)}" y="${f2(y)}" width="${f2(w)}" height="${h}" fill="${P.patch}"/>`;
     if (!thumb) {
@@ -1188,8 +1197,8 @@
       `<stop offset=".55" stop-color="#000" stop-opacity=".26"/><stop offset=".78" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>` +
       `<linearGradient id="${ids.shade}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".1"/><stop offset=".12" stop-color="#000" stop-opacity=".34"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>` +
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="125%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.3"/></filter>` +
-      `<pattern id="${ids.weave}" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height=".6" fill="#000" opacity=".05"/><rect x=".7" y=".7" width=".7" height=".7" fill="#fff" opacity=".08"/></pattern>` +
-      `<pattern id="${ids.weft}" width="3" height="1.1" patternUnits="userSpaceOnUse"><rect width="3" height=".35" fill="${P.patch}" opacity=".32"/></pattern>` +
+      `<pattern id="${ids.weave}" width="2" height="2" patternUnits="userSpaceOnUse"><path d="M0 .5H1M1 1.5H2" stroke="#000" stroke-opacity=".13" stroke-width=".6"/><path d="M1.5 0V1M.5 1V2" stroke="#fff" stroke-opacity=".2" stroke-width=".6"/></pattern>` +
+      `<pattern id="${ids.weft}" width="3" height="1.1" patternUnits="userSpaceOnUse"><rect width="3" height=".42" fill="${P.patch}" opacity=".46"/></pattern>` +
       hatch(ids.satin, P.Glt, P.Gxd);
     if (binding)
       defs += `<pattern id="${ids.tape}" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.2" height="2.2" fill="${P.L}"/><rect width="1" height="2.2" fill="#000" opacity=".12"/></pattern>`;
@@ -1466,8 +1475,8 @@
       `<linearGradient id="${ids.curl}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset=".08" stop-color="#000" stop-opacity="0"/><stop offset=".88" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>` +
       `<linearGradient id="${ids.sleeve}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${mix(SLEEVE, "#000000", 0.35)}"/><stop offset=".45" stop-color="${SLEEVE_LT}"/><stop offset="1" stop-color="${mix(SLEEVE, "#000000", 0.45)}"/></linearGradient>` +
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.5"/></filter>` +
-      `<pattern id="${ids.weave}" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height=".6" fill="#000" opacity=".05"/><rect x=".7" y=".7" width=".7" height=".7" fill="#fff" opacity=".08"/></pattern>` +
-      `<pattern id="${ids.weft}" width="3" height="1.1" patternUnits="userSpaceOnUse"><rect width="3" height=".35" fill="${P.patch}" opacity=".32"/></pattern>` +
+      `<pattern id="${ids.weave}" width="2" height="2" patternUnits="userSpaceOnUse"><path d="M0 .5H1M1 1.5H2" stroke="#000" stroke-opacity=".13" stroke-width=".6"/><path d="M1.5 0V1M.5 1V2" stroke="#fff" stroke-opacity=".2" stroke-width=".6"/></pattern>` +
+      `<pattern id="${ids.weft}" width="3" height="1.1" patternUnits="userSpaceOnUse"><rect width="3" height=".42" fill="${P.patch}" opacity=".46"/></pattern>` +
       hatch(ids.satin, P.Glt, P.Gxd) +
       `<clipPath id="${ids.arms}"><rect width="${W}" height="${H}"/></clipPath>`;
     if (!thumb)

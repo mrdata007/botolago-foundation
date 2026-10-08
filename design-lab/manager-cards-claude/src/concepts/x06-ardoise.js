@@ -984,6 +984,7 @@
     id: "x06",
     cut: true,
     cutReason: "All three critics rejected it: it reads as a café menu or price board ('Plat du jour : ALI 84'); 'ardoise' is a child's school slate and, in 'avoir une ardoise', a debt; and it repeats the app's own 'standings soon' easel.",
+    cutReasonAr: "رفضه المقيّمون الثلاثة: يُقرأ كقائمة مقهى أو لوحة أسعار («طبق اليوم: علي 84»)؛ وكلمة «ardoise» تعني لوح التلميذ، وفي عبارة «avoir une ardoise» تعني دَينًا؛ ويكرر لوحة «الترتيب قريبًا» الموجودة في التطبيق.",
     n: 6,
     slug: "06-ardoise",
     name: "Ardoise",

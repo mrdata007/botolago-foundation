@@ -20,6 +20,11 @@ Each scored 13 criteria from 1 to 10 and compared the ten against each other
 the four. A judge then named the superlatives, chose the top three and wrote a refinement
 brief for each.
 
+**Read the scores as a structured design argument, not audience research.** The critics
+are Claude agents playing these four seats and scoring Claude's own concepts. Labels such as
+"most likely to appeal to teenagers" are their judgement, not a finding from real
+teenagers. The tests with Moroccan users that would settle them are listed at the end.
+
 ## Scores
 
 | Rank | Concept | Orig. | Own. | Football | Morocco | Youth | Adult | Flex | Collect. | Read. | Mobile | Social | Tiers | Brand | **Total /130** |
@@ -198,7 +203,11 @@ should remove it.
 
 ## Final top five, across both explorations
 
-Each judge ranked five of the twenty; points were 5 for a first place down to 1 for a fifth.
+This is a separate panel from the critique above: three new judges each ranked five of the
+twenty, with Claude's top three in their refined versions, so the order can differ from the
+critique table (which scored the ten first passes). Points were 5 for a first place down to
+1 for a fifth. As with the critique, the judges are Claude agents, and four of the five
+places went to Claude's own concepts.
 
 | Concept | Source | Brand | Youth | Product | Points |
 |---|---|---:|---:|---:|---:|

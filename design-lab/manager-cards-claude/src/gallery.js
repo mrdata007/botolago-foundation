@@ -22,7 +22,7 @@
       next: "Next concept",
       close: "Close",
       notesLang: "Design notes are in English.",
-      sections: { idea: "Design explanation", belonging: "Why people would care", founder: "Founder 2026 mark", small: "At small sizes", rtl: "Arabic and right-to-left", tiers: "Tier evolution", legend: "At LEGEND", adv: "Advantages", risks: "Risks", lives: "Where it lives", scores: "Critique scores", verdict: "Critic's verdict" },
+      sections: { idea: "Design explanation", belonging: "Why people would care", founder: "Founder 2026 mark", small: "At small sizes", rtl: "Arabic and right-to-left", tiers: "Tier evolution", legend: "At LEGEND", adv: "Advantages", risks: "Risks", build: "Build notes: small sizes and right-to-left", lives: "Where it lives", scores: "Critique scores", verdict: "Critic's verdict" },
       lives: { appLight: "Ranking card · light", appDark: "Ranking card · dark", rows: "Its own compact rows", mini: "Comment and head-to-head", ladder: "Token sizes", share: "Share image (story 9:16)" },
       tierNote: "ALI's data held constant; only the tier material changes.",
       version: { v1: "First pass", v2: "Refined" },
@@ -42,7 +42,7 @@
       next: "التصميم التالي",
       close: "إغلاق",
       notesLang: "ملاحظات التصميم بالإنجليزية.",
-      sections: { idea: "شرح التصميم", belonging: "لماذا سيهتم الناس", founder: "علامة العضو المؤسس 2026", small: "في الأحجام الصغيرة", rtl: "العربية والكتابة من اليمين", tiers: "تطور المستويات", legend: "في مستوى الأسطورة", adv: "المزايا", risks: "المخاطر", lives: "أين تظهر", scores: "درجات التقييم", verdict: "حكم المقيّم" },
+      sections: { idea: "شرح التصميم", belonging: "لماذا سيهتم الناس", founder: "علامة العضو المؤسس 2026", small: "في الأحجام الصغيرة", rtl: "العربية والكتابة من اليمين", tiers: "تطور المستويات", legend: "في مستوى الأسطورة", adv: "المزايا", risks: "المخاطر", build: "ملاحظات البناء: الأحجام الصغيرة والكتابة من اليمين", lives: "أين تظهر", scores: "درجات التقييم", verdict: "حكم المقيّم" },
       lives: { appLight: "بطاقة الترتيب · فاتح", appDark: "بطاقة الترتيب · داكن", rows: "صفوفها المختصرة", mini: "تعليق ومواجهة", ladder: "أحجام الشارة", share: "صورة المشاركة (قصة 9:16)" },
       tierNote: "بيانات علي ثابتة؛ تتغير مادة المستوى فقط.",
       version: { v1: "النسخة الأولى", v2: "بعد التحسين" },
@@ -123,6 +123,35 @@
     });
   }
 
+  /* Equal-area staging. The gallery's job is comparison, so a tall object and a wide one get
+     about the same area and the tile size does not decide which concept looks stronger.
+     .stage[data-fit="AREA,MAX_HEIGHT"] sizes its first child (a card or a screenshot) by its
+     own aspect ratio; phones get a larger budget. */
+  function fitStages(root) {
+    const small = matchMedia("(max-width: 760px)").matches;
+    root.querySelectorAll(".stage[data-fit]").forEach((st) => {
+      const el = st.firstElementChild;
+      if (!el) return;
+      const [area, maxH] = st.dataset.fit.split(",").map(Number);
+      const A = small ? area * 1.5 : area;
+      const H = small ? maxH * 1.25 : maxH;
+      const apply = () => {
+        const r = el.tagName === "IMG" ? el.naturalHeight / el.naturalWidth : el.offsetHeight / el.offsetWidth;
+        if (!r || !isFinite(r)) return;
+        const w = Math.max(80, Math.min(st.clientWidth - 8, H / r, Math.sqrt(A / r)));
+        el.style.width = Math.round(w) + "px";
+        el.style.maxWidth = "100%";
+      };
+      if (el.tagName === "IMG" && !el.complete) el.addEventListener("load", apply, { once: true });
+      else apply();
+    });
+  }
+  let fitTimer = 0;
+  addEventListener("resize", () => {
+    clearTimeout(fitTimer);
+    fitTimer = setTimeout(() => fitStages(document), 150);
+  });
+
   /* ---------- top bar ---------- */
   const VIEWS = ["collection", "leaderboard", "critique", "refined", "codex", "top5", "about"];
   function renderChrome() {
@@ -176,14 +205,16 @@
         .join("")}</div>` +
       `<div class="grid">${list
         .map((c) => {
+          // the refined version where one exists; the first pass stays one tap away in the detail sheet
           const v2 = refinedOf(c.id);
+          const shown = v2 || c;
           return (
             `<a class="tile" href="#${c.id}" aria-label="${esc(num(c) + " " + nameOf(c))}">` +
             `<div class="tile-head"><span class="tile-n">${num(c)}</span><span class="tile-name">${esc(nameOf(c))}</span>${catChip(c.category)}</div>` +
-            `<div class="stage" style="--card-w:${c.gridWidth || 236}px">${cardHTML(c)}</div>` +
-            `<p class="tile-phil">${esc(philOf(c))}</p>` +
-            `<div class="tile-foot">${v2 ? `<span class="badge-v2">${state.lang === "ar" ? "نسخة محسّنة" : "Refined"}</span>` : ""}<span class="tile-tok" aria-hidden="true">` +
-            [44, 28].map((h) => `<span style="display:grid;place-items:center;height:${h}px;min-width:${h}px">${c.token(MC.ALI, { lang: cardLang(), size: h, mini: h <= 32 })}</span>`).join("") +
+            `<div class="stage" data-fit="44000,330" style="--card-w:${shown.gridWidth || 236}px">${cardHTML(shown)}</div>` +
+            `<p class="tile-phil">${esc(philOf(shown))}</p>` +
+            `<div class="tile-foot">${v2 ? `<span class="badge-v2" title="${state.lang === "ar" ? "النسخة الأولى في صفحة التفاصيل" : "The first pass is in the detail sheet"}">${state.lang === "ar" ? "نسخة محسّنة" : "Refined"}</span>` : ""}<span class="tile-tok" aria-hidden="true">` +
+            [44, 28].map((h) => `<span style="display:grid;place-items:center;height:${h}px;min-width:${h}px">${shown.token(MC.ALI, { lang: cardLang(), size: h, mini: h <= 32 })}</span>`).join("") +
             `</span></div></a>`
           );
         })
@@ -198,7 +229,7 @@
               (c) =>
                 `<div class="tile tile-cut"><div class="tile-head"><span class="tile-name">${esc(nameOf(c))}</span>${catChip(c.category)}</div>` +
                 `<div class="stage" style="--card-w:${Math.round((c.gridWidth || 236) * 0.8)}px;min-height:300px">${cardHTML(c)}</div>` +
-                `<p class="tile-phil">${esc(philOf(c))}</p><p class="tile-phil" lang="en" dir="ltr"><b>Why it was cut:</b> ${esc(c.cutReason || "")}</p></div>`,
+                `<p class="tile-phil">${esc(philOf(c))}</p><p class="tile-phil"><b>${state.lang === "ar" ? "سبب الحذف:" : "Why it was cut:"}</b> ${esc((state.lang === "ar" && c.cutReasonAr) || c.cutReason || "")}</p></div>`,
             )
             .join("")}</div>`
         : "")
@@ -267,7 +298,7 @@
         ? `<div class="sec"><h2>${state.lang === "ar" ? "الأفضل في كل فئة" : "Superlatives"}</h2></div><div class="supers">${rv.superlatives
             .map((s) => {
               const c = byId(s.id);
-              return `<div class="super"><div style="display:grid;place-items:center;height:56px">${c ? c.token(MC.ALI, { lang: cardLang(), size: 48 }) : ""}</div><div><b>${esc(s.label)}</b><strong>${c ? num(c) + " " + esc(nameOf(c)) : esc(s.id)}</strong><p>${esc(s.why)}</p></div></div>`;
+              return `<div class="super"><div style="display:grid;place-items:center;height:56px">${c ? c.token(MC.ALI, { lang: cardLang(), size: 48 }) : ""}</div><div><strong>${esc(s.label)}: ${c ? num(c) + " " + esc(nameOf(c)) : esc(s.id)}</strong><p>${esc(s.why)}</p></div></div>`;
             })
             .join("")}</div>`
         : "") +
@@ -321,8 +352,8 @@
           return (
             `<article class="pair">` +
             pairCols(
-              { title: `Codex #${pr.codexRank} · ${esc(pr.codexName)}`, body: `<div class="stage" style="min-height:420px">${pr.codexImg ? `<img class="codex-img" src="${pr.codexImg}" alt="Codex ${esc(pr.codexName)} card, screenshot of PR #377">` : ""}</div>${pr.codexCompactImg ? `<img class="codex-img" style="max-width:380px;margin-top:12px" src="${pr.codexCompactImg}" alt="Codex ${esc(pr.codexName)} leaderboard identity">` : ""}` },
-              { title: c ? `Claude · ${num(c)} ${esc(nameOf(c))}` : "Claude", body: c ? `<div class="stage" style="min-height:420px;--card-w:300px">${cardHTML(c)}</div><div class="app-dark" style="padding:12px;border-radius:14px;margin-top:12px">${c.row(MC.ALI, { lang: cardLang(), rank: 3, pts: 1196, me: true })}</div>` : "" },
+              { title: `Codex #${pr.codexRank} · ${esc(pr.codexName)}`, body: `<div class="stage" data-fit="105000,460" style="min-height:420px">${pr.codexImg ? `<img class="codex-img" src="${pr.codexImg}" alt="Codex ${esc(pr.codexName)} card, screenshot of PR #377">` : ""}</div>${pr.codexCompactImg ? `<img class="codex-img" style="max-width:380px;margin-top:12px" src="${pr.codexCompactImg}" alt="Codex ${esc(pr.codexName)} leaderboard identity">` : ""}` },
+              { title: c ? `Claude · ${num(c)} ${esc(nameOf(c))}` : "Claude", body: c ? `<div class="stage" data-fit="105000,460" style="min-height:420px;--card-w:300px">${cardHTML(c)}</div><div class="app-dark" style="padding:12px;border-radius:14px;margin-top:12px">${c.row(MC.ALI, { lang: cardLang(), rank: 3, pts: 1196, me: true })}</div>` : "" },
             ) +
             `<div class="pair-notes" lang="en" dir="ltr"><div><h4>${esc(pr.title || "Verdict")}</h4>${(pr.text || []).map((t) => `<p style="margin:0 0 8px;color:var(--g-muted)">${esc(t)}</p>`).join("")}</div></div></article>`
           );
@@ -341,7 +372,8 @@
         .map((t) => {
           const c = t.source === "claude" ? byId(t.id) : null;
           const art = c ? cardHTML(c) : t.img ? `<img class="codex-img" src="${t.img}" alt="${esc(t.name)} (Codex), screenshot">` : "";
-          return `<article class="t5"><div class="t5-rank">${t.rank}</div><div class="stage" style="--card-w:200px">${art}</div><div><span class="who">${t.source === "claude" ? "Claude" : "Codex · PR #377"}</span><h3>${esc(c ? num(c) + " " + nameOf(c) : t.name)}</h3><p lang="en" dir="ltr">${esc(t.why)}</p></div></article>`;
+          const who = `${t.source === "claude" ? "Claude" : "Codex · PR #377"}${t.points != null ? ` · ${t.points} ${state.lang === "ar" ? "نقطة" : t.points === 1 ? "point" : "points"}` : ""}`;
+          return `<article class="t5"><div class="t5-rank">${t.rank}</div><div class="stage" data-fit="30000,280" style="--card-w:200px">${art}</div><div><h3>${esc(c ? num(c) + " " + nameOf(c) : t.name)} <span class="who">${esc(who)}</span></h3><p lang="en" dir="ltr">${esc(t.why)}</p></div></article>`;
         })
         .join("")}</div>` +
       (rv.top5Next ? `<div class="prose" lang="en" dir="ltr" style="margin-block-start:28px">${rv.top5Next}</div>` : "")
@@ -403,21 +435,25 @@
       `<div class="d-right"><h2 id="dTitle"><span class="d-n">${num(base)}</span> ${esc(nameOf(base))}</h2><p class="lead">${esc(philOf(c))}</p><div class="d-meta">${catChip(base.category)}</div>` +
       (ar ? `<p class="note">${esc(T().notesLang)}</p>` : "") +
       `<div lang="en" dir="ltr">` +
-      `<div class="d-sec"><h3>${esc(S.idea)}</h3>${para(c.idea)}</div>` +
-      `<div class="d-sec"><h3>${esc(S.belonging)}</h3>${para(c.belonging)}</div>` +
-      `<div class="d-sec"><h3>${esc(S.founder)}</h3>${para(c.founderMark)}</div>` +
-      `<div class="d-sec"><h3>${esc(S.tiers)}</h3><div class="tier-strip">${MC.TIERS.map(
-        (t) =>
-          `<button type="button" data-tier="${t}" aria-pressed="${state.tier === t}" aria-label="${t}"><div class="card-slot">${c.full(MC.withTier(t), { ...o, motion: false, thumb: true })}</div><span>${t}</span></button>`,
-      ).join("")}</div><div class="tier-lines">${MC.TIERS.map((t) => `<div><b>${t}</b><span>${esc((c.tiers || {})[t] || "")}</span></div>`).join("")}</div></div>` +
-      `<div class="d-sec"><h3>${esc(S.legend)}</h3>${para(c.legend)}</div>` +
-      `<div class="d-sec"><h3>${esc(S.small)}</h3>${para(c.small)}</div>` +
-      `<div class="d-sec"><h3>${esc(S.rtl)}</h3>${para(c.rtl)}</div>` +
+      // decision content first (advantages, risks, scores), then the object and its tiers;
+      // the small-size and right-to-left mechanics fold away as build notes
       `<div class="d-sec"><h3>${esc(S.adv)}</h3><ul>${(c.advantages || []).map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>` +
       `<div class="d-sec"><h3>${esc(S.risks)}</h3><ul>${(c.risks || []).map((a) => `<li>${esc(a)}</li>`).join("")}</ul></div>` +
       (scores
         ? `<div class="d-sec"><h3>${esc(S.scores)} · ${((rv.totals && rv.totals[base.id]) || total(scores)).toFixed(1)}/130</h3><div class="scorebars">${CRITERIA.map((k, j) => `<div><span>${esc(k)}</span><b>${scores[j]}</b><i style="--v:${scores[j]}"></i></div>`).join("")}</div>${verdict ? `<p style="margin-top:14px"><b>${esc(S.verdict)}:</b> ${esc(verdict)}</p>` : ""}</div>`
         : "") +
+      `<div class="d-sec"><h3>${esc(S.tiers)}</h3><div class="tier-strip">${MC.TIERS.map(
+        (t) =>
+          `<button type="button" data-tier="${t}" aria-pressed="${state.tier === t}" aria-label="${t}"><div class="card-slot">${c.full(MC.withTier(t), { ...o, motion: false, thumb: true })}</div><span>${t}</span></button>`,
+      ).join("")}</div><div class="tier-lines">${MC.TIERS.map((t) => `<div><b>${t}</b><span>${esc((c.tiers || {})[t] || "")}</span></div>`).join("")}</div></div>` +
+      `<div class="d-sec"><h3>${esc(S.idea)}</h3>${para(c.idea)}</div>` +
+      `<div class="d-sec"><h3>${esc(S.belonging)}</h3>${para(c.belonging)}</div>` +
+      `<div class="d-sec"><h3>${esc(S.founder)}</h3>${para(c.founderMark)}</div>` +
+      `<div class="d-sec"><h3>${esc(S.legend)}</h3>${para(c.legend)}</div>` +
+      `<details class="d-sec build-notes"><summary>${esc(S.build)}</summary>` +
+      `<div><h4>${esc(S.small)}</h4>${para(c.small)}</div>` +
+      `<div><h4>${esc(S.rtl)}</h4>${para(c.rtl)}</div>` +
+      `</details>` +
       `</div></div></div>` +
       `<div><div class="d-sec"><h3>${esc(S.lives)}</h3><div class="lives">` +
       `<div class="app-light" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.appLight)}</h4>${MC.ctxRankCard(c, { ...o, tokenH: 28 })}</div>` +
@@ -444,6 +480,7 @@
     const views = { collection: viewCollection, leaderboard: viewLeaderboard, critique: viewCritique, refined: viewRefined, codex: viewCodex, top5: viewTop5, about: viewAbout };
     main.innerHTML = views[v]();
     mountAll(main);
+    fitStages(main);
     const m = location.hash.match(/^#\/?(?:c\/)?(c\d\d)$/);
     const d = $("#detail");
     if (m) openDetail(m[1]);

@@ -902,6 +902,7 @@
     id: "x03",
     cut: true,
     cutReason: "At 24px the jacket reads as the shirt the Fantasy squad already uses for players, and Pépites already puts a rank number on a shirt back. Its press-and-peel ritual also held the number back behind a gesture, which reads as a scratch card.",
+    cutReasonAr: "عند 24 بكسل تُقرأ السترة كالقميص الذي تستخدمه تشكيلة الفانتازي للاعبين أصلًا، وقسم Pépites يضع رقم الترتيب على ظهر القميص. كما أن حركة الكبس والنزع كانت تحجب الرقم، فتبدو كبطاقة خدش.",
     n: 3,
     slug: "03",
     name: "Flocage",
