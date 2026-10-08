@@ -25,6 +25,7 @@ import { validateTeam } from "@/lib/team-validation";
 import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
 import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { LocalFantasyRepository, DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
 import { importLocalTeamToCloud } from "@/services/fantasy-import-service";
@@ -47,6 +48,7 @@ export function FantasyImportPrompt() {
   const owned = useFantasyOwned();
   const qc = useQueryClient();
   const nav = useNavigate();
+  const cardLive = useManagerCardLive();
 
   const isAuthenticated = status === "authenticated" && !!user?.id;
   const uid = user?.id ?? null;
@@ -132,6 +134,12 @@ export function FantasyImportPrompt() {
       },
     );
     if (res.ok) {
+      // Live: a team now exists, so the card is read fresh. Never awaited, never on the way on.
+      if (cardLive) {
+        void import("@/services/use-manager-card")
+          .then((module) => module.invalidateMyManagerCard(qc))
+          .catch(() => {});
+      }
       importDecisionService.markImported(uid);
       setPhase("success");
       setTimeout(() => setDismissed(true), 1500);
