@@ -4,7 +4,6 @@ import type { ManagerCardStatus } from "@/backend/manager-card/contracts";
 import { fixtureIdFromSearch } from "@/backend/manager-card/fixture-selection";
 import { MANAGER_CARD_BUILD } from "@/lib/feature-flags";
 import { isServerRender } from "@/lib/ssr-prefetch";
-import { managerCardService } from "./manager-card";
 import { managerCardDataMode } from "./manager-card-mode";
 
 export type { ManagerCardStatus };
@@ -16,29 +15,21 @@ export type { ManagerCardStatus };
  * never calls the function: a call to one that does not exist yet answers HTTP 404, which every
  * Chromium logs as a console error. Off, missing, failing or slow all read as off, silently.
  *
- * This module is imported by the navigation, so with the build switch off nothing in it runs
- * (`useManagerCardLive` is the constant-off hook, `rootBeforeLoad` is not registered).
+ * This module is imported by the navigation and by every inline surface, so it is kept SMALL and
+ * free of the data layer: the database read lives in `manager-card-status-server.ts`, reached by a
+ * dynamic import on the server only. The root route imports this module for every page, which puts
+ * it in the entry chunk, so with the build switch off no page asks for a file it did not ask for
+ * before (`scripts/qa/manager-card-off-bundle-gate.ts` checks that on the built output). With the
+ * switch off nothing in it runs: `useManagerCardLive` is the constant-off hook and
+ * `rootBeforeLoad` is not registered.
  */
 export const STATUS_OFF: ManagerCardStatus = { enabled: false, minRated: null, minConfirmed: null };
 export const managerCardStatusKey = ["manager-card", "status"] as const;
 
-/** How long the server waits for the database before it reads the section as off. */
-export const STATUS_TIMEOUT_MS = 800;
-/** A good answer is kept this long per server instance; a failure for much less. */
-export const STATUS_TTL_MS = 60_000;
-export const STATUS_FAILURE_TTL_MS = 10_000;
-
 /** What a development server answers when the fixture is anything but `featureOff`. */
 const DEV_STATUS_ON: ManagerCardStatus = { enabled: true, minRated: 3, minConfirmed: 5 };
 
-interface StatusReaderDeps {
-  /** The database read. It is aborted when it outlasts `timeoutMs`. */
-  read: (signal: AbortSignal) => Promise<ManagerCardStatus>;
-  now: () => number;
-  timeoutMs: number;
-}
-
-function isStatus(value: unknown): value is ManagerCardStatus {
+export function isStatus(value: unknown): value is ManagerCardStatus {
   const candidate = value as Partial<ManagerCardStatus> | null;
   return (
     typeof candidate === "object" &&
@@ -50,64 +41,21 @@ function isStatus(value: unknown): value is ManagerCardStatus {
 }
 
 /**
- * The server read, with its memo and single flight. A factory so a test can give it a clock and a
- * database; the app uses `readManagerCardStatusOnServer` below. Never throws, never logs.
- */
-export function createStatusReader(deps: StatusReaderDeps): () => Promise<ManagerCardStatus> {
-  let memo: { at: number; ttl: number; value: ManagerCardStatus } | null = null;
-  let inflight: Promise<ManagerCardStatus> | null = null;
-
-  async function fetchOnce(): Promise<ManagerCardStatus> {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      const answer = await Promise.race([
-        deps.read(controller.signal),
-        new Promise<null>((resolve) => {
-          timer = setTimeout(() => {
-            controller.abort();
-            resolve(null);
-          }, deps.timeoutMs);
-        }),
-      ]);
-      if (answer !== null && isStatus(answer)) {
-        memo = { at: deps.now(), ttl: STATUS_TTL_MS, value: answer };
-        return answer;
-      }
-    } catch {
-      // Missing function, HTTP error, malformed answer: the section is off. Silently.
-    } finally {
-      clearTimeout(timer);
-    }
-    memo = { at: deps.now(), ttl: STATUS_FAILURE_TTL_MS, value: STATUS_OFF };
-    return STATUS_OFF;
-  }
-
-  return () => {
-    if (memo && deps.now() - memo.at < memo.ttl) return Promise.resolve(memo.value);
-    inflight ??= fetchOnce().finally(() => {
-      inflight = null;
-    });
-    return inflight;
-  };
-}
-
-const serverReader = createStatusReader({
-  read: (signal) => managerCardService.status(signal),
-  now: () => Date.now(),
-  timeoutMs: STATUS_TIMEOUT_MS,
-});
-
-/**
  * Server: one read per 60 s per server instance, 800 ms at most, never throws, never logs. In a
  * development server with mock data it answers from the request's `?mc=` fixture and skips the
- * memo, so switching fixtures between page loads is never masked.
+ * memo, so switching fixtures between page loads is never masked. The database read itself is
+ * `manager-card-status-server.ts`, loaded here on first use.
  */
 export async function readManagerCardStatusOnServer(fixture?: string): Promise<ManagerCardStatus> {
   if (import.meta.env.DEV && managerCardDataMode() === "mock") {
     return fixture === "featureOff" ? STATUS_OFF : DEV_STATUS_ON;
   }
-  return serverReader();
+  try {
+    const { readStatusFromDatabase } = await import("./manager-card-status-server");
+    return await readStatusFromDatabase();
+  } catch {
+    return STATUS_OFF;
+  }
 }
 
 /**

@@ -11,6 +11,7 @@ import { useCallback } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import type { HistoryResponse, MemberCardDto, MyCardDto } from "@/backend/manager-card/contracts";
+import { MAX_ACK_KEYS } from "@/backend/manager-card/contracts";
 import { ManagerCardError, mapManagerCardError } from "@/backend/manager-card/errors";
 import { readAckedMoments, rememberAckedMoments } from "@/components/manager-card/storage";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
@@ -63,6 +64,63 @@ function ackScope(userId: string | null): string {
 }
 
 /**
+ * One read of the manager's card. A switched-off answer flips the cached status off and fails
+ * with `unavailable`. A moment this phone acknowledged that the server still lists (its call
+ * failed) is acknowledged again, silently.
+ */
+export async function fetchMyCard(
+  queryClient: QueryClient,
+  scope: string,
+  signal?: AbortSignal,
+  service: Pick<typeof managerCardService, "myCard" | "ackMoments"> = managerCardService,
+): Promise<MyCardDto | null> {
+  let answer;
+  try {
+    answer = await service.myCard(signal);
+  } catch (error) {
+    throw mapManagerCardError(error);
+  }
+  if (!answer.available) {
+    markManagerCardOff(queryClient);
+    throw new ManagerCardError("unavailable", "The Manager Card is switched off.");
+  }
+  const card = answer.card;
+  if (card) {
+    const acknowledged = new Set(readAckedMoments(scope));
+    const again = card.moments.map((moment) => moment.key).filter((key) => acknowledged.has(key));
+    if (again.length > 0) void service.ackMoments(again.slice(0, MAX_ACK_KEYS)).catch(() => {});
+  }
+  return card;
+}
+
+/**
+ * Acknowledge moments, optimistically: written to this phone first, removed from the cached card,
+ * then sent, in as many calls as the server's limit needs (one for any real hero). Never throws.
+ */
+export async function acknowledgeMoments(
+  queryClient: QueryClient,
+  scope: string,
+  keys: readonly string[],
+  service: Pick<typeof managerCardService, "ackMoments"> = managerCardService,
+): Promise<void> {
+  const unique = [...new Set(keys)];
+  if (unique.length === 0) return;
+  rememberAckedMoments(unique, scope);
+  queryClient.setQueryData<MyCardDto | null>(managerCardKeys.me(scope), (card) =>
+    card
+      ? { ...card, moments: card.moments.filter((moment) => !unique.includes(moment.key)) }
+      : card,
+  );
+  for (let from = 0; from < unique.length; from += MAX_ACK_KEYS) {
+    try {
+      await service.ackMoments(unique.slice(from, from + MAX_ACK_KEYS));
+    } catch {
+      // Retried on the next visit; an acknowledgement never breaks a page.
+    }
+  }
+}
+
+/**
  * Whether the card may be read now: the section is live, someone is signed in, and the Fantasy
  * screen has a team (a guest or a no-team account never issues a read, so no read can answer 404).
  */
@@ -95,28 +153,7 @@ export function useMyManagerCard(): UseQueryResult<MyCardDto | null, ManagerCard
     staleTime: 60_000,
     refetchOnWindowFocus: true,
     retry: retryCardRead,
-    queryFn: async ({ signal }) => {
-      let answer;
-      try {
-        answer = await managerCardService.myCard(signal);
-      } catch (error) {
-        throw mapManagerCardError(error);
-      }
-      if (!answer.available) {
-        markManagerCardOff(queryClient);
-        throw new ManagerCardError("unavailable", "The Manager Card is switched off.");
-      }
-      const card = answer.card;
-      if (card) {
-        const acknowledged = new Set(readAckedMoments(scope));
-        const again = card.moments
-          .map((moment) => moment.key)
-          .filter((key) => acknowledged.has(key));
-        if (again.length > 0)
-          void managerCardService.ackMoments(again.slice(0, 16)).catch(() => {});
-      }
-      return card;
-    },
+    queryFn: ({ signal }) => fetchMyCard(queryClient, scope, signal),
     select: (card) => {
       if (!card || card.moments.length === 0) return card;
       const acknowledged = new Set(readAckedMoments(scope));
@@ -209,22 +246,7 @@ export function useAckMoments(): (keys: readonly string[]) => Promise<void> {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const scope = ackScope(user?.id ?? null);
-  return useCallback(
-    async (keys) => {
-      const unique = [...new Set(keys)];
-      if (unique.length === 0) return;
-      rememberAckedMoments(unique, scope);
-      queryClient.setQueryData<MyCardDto | null>(managerCardKeys.me(scope), (card) =>
-        card ? { ...card, moments: card.moments.filter((m) => !unique.includes(m.key)) } : card,
-      );
-      try {
-        await managerCardService.ackMoments(unique);
-      } catch {
-        // Retried on the next visit; an acknowledgement never breaks a page.
-      }
-    },
-    [queryClient, scope],
-  );
+  return useCallback((keys) => acknowledgeMoments(queryClient, scope, keys), [queryClient, scope]);
 }
 
 /** After a first save or an import: refresh the card (never awaited, never on the critical path). */
