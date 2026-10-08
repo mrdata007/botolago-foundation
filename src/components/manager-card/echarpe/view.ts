@@ -3,6 +3,7 @@
  * integer from 1 to 99 or a dash, a serial is digits, a tier is one of the five), the strings of
  * the interface language, the yarns, and the one sentence a screen reader hears.
  */
+import { cardLabel } from "../copy";
 import { STAT_CODES, TIER_CODES } from "../types";
 import type { CardProfile, CardStrings, CardTheme, StatCode, TierCode } from "../types";
 import { esc } from "./knit";
@@ -27,7 +28,8 @@ export function cleanProfile(p: CardProfile): CardProfile {
     .trim()
     .slice(0, 12);
   return {
-    name: typeof p.name === "string" ? p.name : "",
+    // a name is 24 characters on the scarf; the label may carry a few more, never a page of them
+    name: typeof p.name === "string" ? p.name.slice(0, 80) : "",
     ovr: intIn(p.ovr, 1, 99),
     tier,
     provisional: !!p.provisional,
@@ -91,27 +93,28 @@ export function spokenName(name: string): string {
 }
 
 /**
- * The one-sentence accessible name of a card: who, the rating (or that there is none yet, and how
- * many journées are counted), the tier, the season, the serial, the founder line, the four ratings.
+ * The one-sentence accessible name of a card: `cardLabel` of `../copy.ts` (« Carte de manager,
+ * Ali, 84 OVR, PRO, Raja CA, Fondateur 2026, BOT #482913 ») on the profile as the object can show
+ * it, so what is spoken is what is drawn: a number that is out of range reads as « pas encore de
+ * note », as it is drawn as a dash.
  */
-export function cardLabel(profile: CardProfile, s: CardStrings): string {
-  const p = cleanProfile(profile);
-  const parts: string[] = [spokenName(p.name) || s.a11y.cardOf];
-  if (p.ovr == null) {
-    parts.push(s.a11y.noRating);
-    if (p.minRated) parts.push(s.a11y.counted(p.counted ?? 0, p.minRated));
-  } else parts.push(`${p.ovr} ${s.ovr}`);
-  if (p.tier) parts.push(s.tiers[p.tier]);
-  if (p.season) parts.push(p.season);
-  if (p.serial) parts.push(s.serial(p.serial));
-  if (p.founder) parts.push(s.founderLine);
-  if (p.sample) parts.push(s.sample);
-  const ratings = STAT_CODES.filter((k) => p.stats[k] != null).map(
-    (k) => `${s.stats[k]} ${p.stats[k]}`,
-  );
-  if (ratings.length) parts.push(ratings.join(s.a11y.separator));
-  return parts.join(s.a11y.separator);
+export function label(profile: CardProfile, s: CardStrings): string {
+  return cardLabel(cleanProfile(profile), s);
 }
 
-/** A label ready for an attribute. */
-export const labelAttr = (p: CardProfile, s: CardStrings): string => esc(cardLabel(p, s));
+/** What a label may not carry into an attribute: control and direction-override characters. */
+export const stripControls = (text: string): string =>
+  [...text]
+    .filter((ch) => {
+      const code = ch.codePointAt(0) as number;
+      return !(
+        code < 0x20 ||
+        (code >= 0x202a && code <= 0x202e) ||
+        (code >= 0x2066 && code <= 0x2069)
+      );
+    })
+    .join("");
+
+/** The root's aria-label, ready for an attribute. */
+export const labelAttr = (p: CardProfile, s: CardStrings): string =>
+  esc(stripControls(label(p, s)));
