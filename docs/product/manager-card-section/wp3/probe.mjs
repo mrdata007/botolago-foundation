@@ -179,11 +179,16 @@ function measure({ lang }) {
 function watchBeats() {
   window.__beats = { frames: 0, bad: [], seen: new Set() };
   const tick = () => {
-    const root = document.querySelector(".mc-echarpe[data-mc-beat]");
-    if (root) {
+    for (const root of document.querySelectorAll(".mc-echarpe[data-mc-beat]")) {
       const beat = root.getAttribute("data-mc-beat");
       window.__beats.seen.add(beat);
       window.__beats.frames += 1;
+      // A beat on a card that is not drawn (a hero carries the card and the stage's copy is
+      // hidden) is a beat spent unseen.
+      if (root.getBoundingClientRect().height === 0) {
+        window.__beats.bad.push(`${beat}: played on a card that is not drawn`);
+        continue;
+      }
       const ovr = root.querySelector('[data-mc="ovr"]');
       if (ovr) {
         const r = ovr.getBoundingClientRect();
