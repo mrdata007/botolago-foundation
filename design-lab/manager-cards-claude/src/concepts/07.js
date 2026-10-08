@@ -1128,7 +1128,7 @@
     const S = MC.s(o);
     const P = palette(p);
     const label = `${MC.nameOf(p, o)}, ${p.ovr} ${S.ovr}, ${S.tiers[tier]}${p.founder ? ", " + S.founderLine : ""}`;
-    const body = tier === "LEGEND" ? (mini ? miniLegend(p, P) : tokenLegend(p, P, s)) : mini ? miniHanging(p, P, tier) : tokenHanging(p, P, tier, s);
+    const body = tier === "LEGEND" ? (mini ? miniLegend(p, P) : tokenLegend(p, P, s)) : mini ? miniHanging(p, P, tier, ar) : tokenHanging(p, P, tier, s, ar);
     const k = mini ? s / 24 : 1;
     const W = f2(body.w * k);
     const inner = ar && !body.noMirror ? `<g transform="matrix(-1 0 0 1 ${body.w} 0)">${body.art}</g>${body.digits}` : body.art + body.digits;
@@ -1137,9 +1137,10 @@
       `<svg width="${W}" height="${s}" viewBox="0 0 ${body.w} ${body.h}" aria-hidden="true" focusable="false">${body.art && body.defs ? `<defs>${body.defs}</defs>` : ""}${inner}</svg></span>`
     );
   }
-  /** Solid Changa 800 figures centred on (cx, cy), ink height h. */
-  function solidDigits(ovr, cx, cy, h, fill) {
-    const t = placeInk(String(ovr), CHANGA, cx, cy, h);
+  /** Solid Changa 800 figures centred on (cx, cy), ink height h, never wider than maxW. */
+  function solidDigits(ovr, cx, cy, h, fill, maxW) {
+    let t = placeInk(String(ovr), CHANGA, cx, cy, h);
+    if (maxW && t.w > maxW) t = placeInk(String(ovr), CHANGA, cx, cy, (h * maxW) / t.w);
     return `<text x="${t.x}" y="${t.y}" direction="ltr" class="c07-tk-ovr" font-size="${t.fs}" fill="${fill}">${ovr}</text>`;
   }
   /** Tassels as yarn ticks: ground yarn with a letter-yarn strand, so they read on both grounds. */
@@ -1153,15 +1154,19 @@
     }
     return s;
   }
-  function tokenHanging(p, P, tier, s) {
+  /** 44–80px: a hanging segment. Rail, the scarf's tail wrapped round it on the start side, the
+      club-colour swatch with the 84, selvedges, the founder band and the tassels (the tier). Drawn
+      in LTR units; the caller mirrors the art for Arabic, so the figures are placed for `ar`. */
+  function tokenHanging(p, P, tier, s, ar) {
     const t = Math.max(3, Math.round(s * 0.075)); // rail
     const sw = Math.round(s * 0.6); // swatch
-    const oh = Math.max(6, Math.round(s * 0.17)); // rail overhang
-    const W = sw + 2 * oh;
+    const ohS = Math.max(8, Math.round(s * 0.2)); // start overhang: the tail hangs here
+    const ohE = Math.max(6, Math.round(s * 0.15));
+    const W = sw + ohS + ohE;
     const tl = Math.max(7, Math.round(s * 0.2)); // tassels
     const fb = p.founder ? Math.max(3, Math.round(s * 0.07)) : 0;
     const ry = Math.max(2, Math.round(s * 0.05));
-    const sx = oh;
+    const sx = ohS;
     const st = ry - 1; // the swatch folds over the rail
     const sb = s - tl - 1; // swatch bottom
     const edge = Math.max(1, Math.round(s * 0.028));
@@ -1183,36 +1188,43 @@
       const ex = sx + sw - ear;
       a += `<path d="M${ex} ${sb}L${sx + sw} ${sb - ear}L${ex} ${sb - ear}Z" fill="${P.L}"/><path d="M${ex} ${sb}L${sx + sw} ${sb - ear}" stroke="#020a1c" stroke-opacity=".4" stroke-width=".8"/>`;
     }
-    // knot: the bump on the start side, over the rail
-    const kr = Math.max(3, Math.round(s * 0.13));
-    const ky = ry + t * 0.8;
-    a += `<ellipse cx="${f2(sx - kr * 0.05)}" cy="${f2(ky + kr * 0.85)}" rx="${f2(kr * 0.5)}" ry="${f2(kr * 0.62)}" fill="${P.G}" stroke="${P.Gdk}" stroke-width=".8"/>`;
-    a += `<ellipse cx="${f2(sx + kr * 0.2)}" cy="${f2(ky)}" rx="${kr}" ry="${f2(kr * 0.8)}" transform="rotate(-16 ${f2(sx + kr * 0.2)} ${f2(ky)})" fill="${P.G}" stroke="${P.Gdk}" stroke-width=".8"/>`;
-    a += `<path d="M${f2(sx - kr * 0.85)} ${f2(ky - kr * 0.5)}Q${f2(sx)} ${f2(ky - kr * 0.3)} ${f2(sx + kr * 1.05)} ${f2(ky + kr * 0.45)}" stroke="${CREAM}" stroke-width="${f2(Math.max(1, kr * 0.22))}" fill="none"/>`;
+    // the knot: the scarf's own tail, wrapped round the rail and hanging down the overhang
+    const tw = Math.max(3, Math.round(s * 0.12));
+    const tx0 = f2(sx - Math.max(1.5, s * 0.035) - tw);
+    const th = f2((sb - st) * 0.45);
+    const te = Math.max(0.8, f2(tw * 0.22));
+    a += `<rect x="${tx0}" y="${f2(ry + t - 0.5)}" width="${tw}" height="${th}" fill="${P.G}" class="c07-tk-sw"/>`;
+    if (s >= 40) a += `<rect x="${tx0}" y="${f2(ry + t - 0.5)}" width="${te}" height="${th}" fill="${CREAM}"/><rect x="${f2(tx0 + tw - te)}" y="${f2(ry + t - 0.5)}" width="${te}" height="${th}" fill="${BLUE}"/>`;
+    a += `<rect x="${f2(tx0 - 0.6)}" y="${f2(ry - 1)}" width="${f2(tw + 1.2)}" height="${t + 2}" rx="1" fill="${P.G}" stroke="${P.Gdk}" stroke-width=".6"/>`;
     // tassels: the count is the tier
     const n = TASSELS[tier];
-    const tw = Math.max(2, Math.round(s * 0.05));
-    const mx = Math.max(tw, Math.round(sw * 0.14));
-    a += ticks(n, sx + mx, sx + sw - mx - (ear ? ear * 0.6 : 0), sb, tl, tw, P, tier === "CHAMPION");
+    const tsw = Math.max(2, Math.round(s * 0.05));
+    const mx = Math.max(tsw, Math.round(sw * 0.14));
+    a += ticks(n, sx + mx, sx + sw - mx - (ear ? ear * 0.6 : 0), sb, tl, tsw, P, tier === "CHAMPION");
     // the 84 in solid Changa 800
     const top = ry + t + Math.max(2, Math.round(s * 0.04));
     const h = Math.min(Math.round((sw - 2 * edge - 4) * 0.62), digitsBottom - top - 1);
-    const d = solidDigits(p.ovr, sx + sw / 2, (top + digitsBottom) / 2, h, P.L);
+    const cx = sx + sw / 2;
+    const d = solidDigits(p.ovr, ar ? W - cx : cx, (top + digitsBottom) / 2, h, P.L, sw - 2 * edge - 3);
     return { w: W, h: s, art: a, digits: d, defs: "" };
   }
-  function miniHanging(p, P, tier) {
-    // integer cells on a 22×24 grid, scaled whole: rail, knot, 14×14 swatch, cast-on band, tassels
+  /** 24–32px: integer cells on a 22×24 grid, scaled whole. Rail, the tail (a 2×6 column), a 14-cell
+      club-colour swatch with its Logo Blue end selvedge, the cream founder band, and 1-cell tassels
+      counting the tier, snapped to whole cells. */
+  function miniHanging(p, P, tier, ar) {
+    const sb = p.founder ? 15 : 17;
     let a = "";
     a += `<rect x="0" y="1" width="22" height="2" rx="1" fill="#A9B2BE"/><rect x="0" y="2.5" width="22" height=".5" fill="#4E5661"/>`;
-    a += `<rect x="4" y="0" width="14" height="${p.founder ? 15 : 17}" fill="${P.G}" class="c07-tk-sw"/>`;
-    a += `<rect x="4" y="0" width="1" height="${p.founder ? 15 : 17}" fill="${CREAM}"/><rect x="17" y="0" width="1" height="${p.founder ? 15 : 17}" fill="${BLUE}"/>`;
+    a += `<rect x="4" y="0" width="14" height="${sb}" fill="${P.G}" class="c07-tk-sw"/><rect x="17" y="0" width="1" height="${sb}" fill="${BLUE}"/>`;
     if (p.founder) a += `<rect x="4" y="15" width="14" height="3" fill="${CREAM}" class="c07-tk-cast"/><rect x="17" y="15" width="1" height="3" fill="${BLUE}"/>`;
-    // the knot bump on the start side
-    a += `<circle cx="4" cy="2.6" r="2.6" fill="${P.G}" stroke="${P.Gdk}" stroke-width=".5"/>`;
+    // the tail, wrapped round the rail on the start side
+    a += `<rect x="1" y="0" width="2" height="6" fill="${P.G}" class="c07-tk-sw"/>`;
     const n = TASSELS[tier];
-    const xs = { 2: [7, 14], 3: [6, 10.5, 15], 4: [5.5, 9, 12.5, 16], 5: [5.5, 8, 10.5, 13, 15.5] }[n];
-    for (const x of xs) a += `<rect x="${x - 0.5}" y="18" width="1" height="${tier === "CHAMPION" ? 5 : 5}" fill="${P.G}" class="c07-tk-tassel"/>${tier === "CHAMPION" ? `<rect x="${x - 1}" y="18" width="2" height="1" fill="${P.Gdk}"/>` : ""}`;
-    const d = solidDigits(p.ovr, 11, 8.6, 7.4, P.L);
+    const xs = { 2: [7, 15], 3: [6, 11, 16], 4: [5, 9, 13, 17], 5: [5, 8, 11, 14, 17] }[n];
+    for (const x of xs) a += `<rect x="${x}" y="18" width="1" height="5" fill="${P.G}" class="c07-tk-tassel"/>`;
+    // the 84, centred on the swatch between the rail and the founder band (or the swatch foot)
+    const cx = ar ? 22 - 10.5 : 10.5;
+    const d = solidDigits(p.ovr, cx, (3 + sb) / 2, 9, P.L, 12.4);
     return { w: 22, h: 24, art: a, digits: d, defs: "" };
   }
   function tokenLegend(p, P, s) {

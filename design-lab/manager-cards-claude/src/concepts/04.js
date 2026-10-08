@@ -211,16 +211,25 @@
     return est;
   }
 
-  /** Two lines for a long stamped name: at the space nearest the middle, or (Latin) a hyphen. */
-  function splitName(name, ar) {
+  /** Two lines for a long stamped name: at the space nearest the middle; a single Latin word is
+      hyphenated near the middle, between two consonants where it can (ABDER-RAHMANE). An Arabic
+      word is never broken. */
+  function splitName(name, ar, hyphenate) {
+    const mid = name.length / 2;
     const sp = [...name.matchAll(/ /g)].map((m) => m.index);
     if (sp.length) {
-      const i = sp.reduce((a, b) => (Math.abs(b - name.length / 2) < Math.abs(a - name.length / 2) ? b : a));
+      const i = sp.reduce((a, b) => (Math.abs(b - mid) < Math.abs(a - mid) ? b : a));
       return [name.slice(0, i), name.slice(i + 1)];
     }
-    if (ar || name.length < 6) return null; // an Arabic word is never broken
-    const i = Math.ceil(name.length / 2);
-    return [name.slice(0, i) + "-", name.slice(i)];
+    if (ar || !hyphenate || name.length < 8) return null;
+    const cons = (ch) => /[B-DF-HJ-NP-TV-Z]/i.test(ch);
+    let best = Math.round(mid);
+    let score = Infinity;
+    for (let i = 3; i <= name.length - 3; i++) {
+      const sc = Math.abs(i - mid) + (cons(name[i - 1]) && cons(name[i]) ? 0 : 1.6);
+      if (sc < score) [best, score] = [i, sc];
+    }
+    return [name.slice(0, best) + "-", name.slice(best)];
   }
 
   /* ------------------------------------------------------------ what is cut */
@@ -266,22 +275,24 @@
       const est = (str) => str.length * (ar ? 15 : 21);
       const w34 = textW("800 34px Changa", name, est(name));
       const fs1 = Math.min(34, (34 * NAME.w) / w34);
-      if (fs1 >= 20) {
+      // two words go to two lines below 20u; one word stays whole on one line down to 15u
+      const two = fs1 < 20 ? splitName(name, ar, fs1 < 15) : null;
+      if (!two && fs1 >= 15) {
         stamped = `<text x="${NX}" y="${ar ? 72 : 76}" ${fam} font-size="${r2(fs1)}"${dirA}>${esc(name)}</text>`;
       } else {
-        const two = splitName(name, ar);
         if (two) {
-          const wm = Math.max(...two.map((l) => textW("800 34px Changa", l, est(l))));
-          const fs2 = Math.min(22, (34 * NAME.w) / wm);
+          const ws = two.map((l) => textW("800 34px Changa", l, est(l)));
+          const fs2 = Math.min(22, (34 * NAME.w) / Math.max(...ws));
           const fsU = Math.max(15, fs2);
-          const fit = fs2 < 15 ? ` textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs"` : "";
           const y2 = ar ? 80 : 82;
           const y1 = r2(y2 - fsU * (ar ? 1.12 : 1.02));
+          // only a line still too wide at 15u is condensed to the box
+          const fit = (i) => ((ws[i] * fsU) / 34 > NAME.w + 0.5 ? ` textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs"` : "");
           stamped = two
-            .map((l, i) => `<text x="${NX}" y="${i ? y2 : y1}" ${fam} font-size="${r2(fsU)}"${dirA}${fit}>${esc(l)}</text>`)
+            .map((l, i) => `<text x="${NX}" y="${i ? y2 : y1}" ${fam} font-size="${r2(fsU)}"${dirA}${fit(i)}>${esc(l)}</text>`)
             .join("");
         } else {
-          stamped = `<text x="${NX}" y="${ar ? 72 : 76}" ${fam} font-size="20"${dirA} textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs">${esc(name)}</text>`;
+          stamped = `<text x="${NX}" y="${ar ? 72 : 76}" ${fam} font-size="15"${dirA} textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs">${esc(name)}</text>`;
         }
       }
     }

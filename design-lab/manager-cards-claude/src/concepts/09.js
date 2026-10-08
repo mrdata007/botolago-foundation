@@ -553,9 +553,9 @@
       }
     });
     /* the figure: off-centre in the end half, its hood lit at the rim, cut by the bezel at the bottom and the end */
-    const aw = champ ? 60 : 40;
+    const aw = champ ? 60 : 35;
     const ah = (aw * 6) / 5;
-    const aTop = champ ? 12 : 8;
+    const aTop = champ ? 12 : 11;
     const ax = ar ? (champ ? -6 : -4) : L.cols - aw + (champ ? 6 : 4);
     put(F, avatarCells(aw, ah), ax, aTop, K.warm, 1, "lit");
     const crest = crestCells(champ ? 21 : 14, aa);
@@ -1052,7 +1052,8 @@
     if (!thumb) {
       const ar = MC.isAr(o);
       const back = side === "back";
-      s += engrave(back ? (ar ? 298 : 22) : 160, 172.4, idLine(p, o), { size: 6.2, w: 600, anchor: back ? (ar ? "end" : "start") : "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
+      /* on the back it starts at the reading edge, clear of the figure (an Arabic line runs right to left, so its start is the right) */
+      s += engrave(back ? (ar ? 298 : 22) : 160, 172.4, idLine(p, o), { size: 6.2, w: 600, anchor: back ? "start" : "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
     }
     return s;
   }
