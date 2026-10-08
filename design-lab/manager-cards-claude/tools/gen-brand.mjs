@@ -16,7 +16,11 @@ function read(name) {
     part: /class="st0"/.test(m[1]) ? "ink" : "ball",
     d: m[1].match(/d="([^"]+)"/)[1],
   }));
-  return { viewBox, paths, dataUri: "data:image/svg+xml;base64," + Buffer.from(svg).toString("base64") };
+  return {
+    viewBox,
+    paths,
+    dataUri: "data:image/svg+xml;base64," + Buffer.from(svg).toString("base64"),
+  };
 }
 
 const brand = {

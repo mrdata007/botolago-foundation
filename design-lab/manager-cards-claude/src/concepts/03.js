@@ -9,14 +9,23 @@
   const MC = window.MC;
   const esc = MC.esc;
   const r2 = (n) => Math.round(n * 100) / 100;
-  const cub = (a, b, c, d, t) => (1 - t) ** 3 * a + 3 * t * (1 - t) ** 2 * b + 3 * t * t * (1 - t) * c + t ** 3 * d;
+  const cub = (a, b, c, d, t) =>
+    (1 - t) ** 3 * a + 3 * t * (1 - t) ** 2 * b + 3 * t * t * (1 - t) * c + t ** 3 * d;
 
   /* ------------------------------------------------------------ colour helpers */
   const rgb = (h) => {
     const s = String(h).replace("#", "");
     return [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16));
   };
-  const hx = (a) => "#" + a.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+  const hx = (a) =>
+    "#" +
+    a
+      .map((v) =>
+        Math.max(0, Math.min(255, Math.round(v)))
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("");
   const mix = (a, b, t) => {
     const A = rgb(a);
     const B = rgb(b);
@@ -126,7 +135,10 @@
     `M${-h + r} ${-h}H${h - r}A${r} ${r} 0 0 1 ${h} ${-h + r}V${h - r}A${r} ${r} 0 0 1 ${h - r} ${h}H${-h + r}A${r} ${r} 0 0 1 ${-h} ${h - r}V${-h + r}A${r} ${r} 0 0 1 ${-h + r} ${-h}Z`;
   const circ = (r) => `M${r} 0A${r} ${r} 0 1 0 ${-r} 0A${r} ${r} 0 1 0 ${r} 0Z`;
   const sqW = (x, y) => [r2(SQ.x + x * COS - y * SIN), r2(SQ.y + x * SIN + y * COS)];
-  const rnW = (deg, rr = 33.5) => [r2(RN.x + rr * Math.cos((deg * Math.PI) / 180)), r2(RN.y + rr * Math.sin((deg * Math.PI) / 180))];
+  const rnW = (deg, rr = 33.5) => [
+    r2(RN.x + rr * Math.cos((deg * Math.PI) / 180)),
+    r2(RN.y + rr * Math.sin((deg * Math.PI) / 180)),
+  ];
   // the half-disc round the eyelet where the band runs IN FRONT of the paddle (it then dives
   // through the hole and passes behind the neck)
   function frontD(rad = 46) {
@@ -136,7 +148,8 @@
   }
   // the wedge (ring-local) where the split ring's two coils overlap, from the split onward
   const wedgeD = (a0, a1, rad = 70) => {
-    const p = (a) => `${r2(rad * Math.cos((a * Math.PI) / 180))} ${r2(rad * Math.sin((a * Math.PI) / 180))}`;
+    const p = (a) =>
+      `${r2(rad * Math.cos((a * Math.PI) / 180))} ${r2(rad * Math.sin((a * Math.PI) / 180))}`;
     return `M0 0L${p(a0)}A${rad} ${rad} 0 0 1 ${p(a1)}Z`;
   };
   // where the figure tag's jump ring and LEGEND's carabiner meet each ring
@@ -220,7 +233,9 @@
         `<path d="${faceD(PLY * k)}" fill-rule="evenodd" fill="${list[k - 1]}"` +
         (tk === "STADE" && k === 1 ? ` fill-opacity=".8"` : "") +
         ` stroke="#000" stroke-opacity=".35" stroke-width=".4"/>` +
-        (k === list.length ? `<path class="c03-rim" d="${pearD(0, PLY * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` : "");
+        (k === list.length
+          ? `<path class="c03-rim" d="${pearD(0, PLY * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`
+          : "");
     }
     return s;
   }
@@ -265,12 +280,16 @@
     const body =
       `<path d="${faceD()}" fill-rule="evenodd" fill="#d9e8f5" fill-opacity=".16"/>` +
       `<path d="${pearD(5)}${holeD(16)}" fill-rule="evenodd" fill="${c.secondary}"/>` +
-      (thumb ? "" : `<path d="${pearD(5)}${holeD(16)}" fill-rule="evenodd" fill="url(#${id}-ht)" mask="url(#${id}-hm)" opacity=".55"/>`) +
+      (thumb
+        ? ""
+        : `<path d="${pearD(5)}${holeD(16)}" fill-rule="evenodd" fill="url(#${id}-ht)" mask="url(#${id}-hm)" opacity=".55"/>`) +
       `<g fill="none" stroke="${c.primary}" stroke-width="1.4"><path d="${pearD(7.6)}" mask="url(#${id}-mk)"/><circle cx="${EY.x}" cy="${EY.y}" r="19"/></g>` +
       `<path d="${pearD(3.4)}" fill="none" stroke="#fff" stroke-opacity=".38" stroke-width=".6"/>` +
       `<path d="${faceD()}" fill="none" stroke="#f1f7fc" stroke-opacity=".85" stroke-width=".9"/>` +
       `<circle cx="${EY.x}" cy="${EY.y}" r="16" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width=".6"/>` +
-      (thumb ? "" : `<path d="M10 290L250 160V192L10 322Z" fill="url(#${id}-gl)" clip-path="url(#${id}-fc)"/>`);
+      (thumb
+        ? ""
+        : `<path d="M10 290L250 160V192L10 322Z" fill="url(#${id}-gl)" clip-path="url(#${id}-fc)"/>`);
     return {
       defs,
       body,
@@ -388,13 +407,23 @@
           fDeboss(id));
     // the panel seams of an old match ball: one hexagon edge across the shoulders, its
     // neighbours running out to the edge
-    const seams = [`M88 ${WIRE_Y}H172`, `M88 ${WIRE_Y}L30 371`, `M172 ${WIRE_Y}L230 371`, `M88 ${WIRE_Y}L58 219`, `M172 ${WIRE_Y}L202 219`];
+    const seams = [
+      `M88 ${WIRE_Y}H172`,
+      `M88 ${WIRE_Y}L30 371`,
+      `M172 ${WIRE_Y}L230 371`,
+      `M88 ${WIRE_Y}L58 219`,
+      `M172 ${WIRE_Y}L202 219`,
+    ];
     const seam = (d) =>
       `<path d="${d}" stroke="#6f4a2b" stroke-width="3"/>` +
       `<path d="${d}" stroke="#2c1d11" stroke-width="1.2"/>` +
-      (thumb ? "" : `<path d="${d}" stroke="#3a2414" stroke-width="5.6" stroke-dasharray=".9 3.4" stroke-opacity=".75"/><path d="${d}" stroke="#ffe7c6" stroke-opacity=".35" stroke-width=".8" transform="translate(.6 1.1)"/>`);
+      (thumb
+        ? ""
+        : `<path d="${d}" stroke="#3a2414" stroke-width="5.6" stroke-dasharray=".9 3.4" stroke-opacity=".75"/><path d="${d}" stroke="#ffe7c6" stroke-opacity=".35" stroke-width=".8" transform="translate(.6 1.1)"/>`);
     const stitch = (d, extra = "") =>
-      (thumb ? "" : `<path d="${d}"${extra} stroke="#1c1108" stroke-opacity=".55" stroke-width="2" stroke-dasharray="3.4 2.4" transform="translate(.45 .7)"/>`) +
+      (thumb
+        ? ""
+        : `<path d="${d}"${extra} stroke="#1c1108" stroke-opacity=".55" stroke-width="2" stroke-dasharray="3.4 2.4" transform="translate(.45 .7)"/>`) +
       `<path d="${d}"${extra} stroke="#efe3cf" stroke-width="1.6" stroke-dasharray="3.4 2.4"/>`;
     const body =
       `<path d="${faceD()}" fill-rule="evenodd" fill="${thumb ? `url(#${id}-lg)` : "#c8a27a"}"${thumb ? "" : ` filter="url(#${id}-mat)"`}/>` +
@@ -416,14 +445,22 @@
     };
   }
 
-  const FACE = { HOMA: faceHoma, STADE: faceStade, PRO: facePro, CHAMPION: faceChampion, LEGEND: faceLegend };
+  const FACE = {
+    HOMA: faceHoma,
+    STADE: faceStade,
+    PRO: facePro,
+    CHAMPION: faceChampion,
+    LEGEND: faceLegend,
+  };
 
   /* ------------------------------------------------------------ the engraving */
   const CREST = { x: 119, y: 136, w: 22, h: 26.4 };
   function engraving(p, o, id, F, thumb, tk) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    const paint = (k) => `fill="${k.fill}"` + (k.stroke ? ` stroke="${k.stroke}" stroke-width="${k.sw}" paint-order="stroke"` : "");
+    const paint = (k) =>
+      `fill="${k.fill}"` +
+      (k.stroke ? ` stroke="${k.stroke}" stroke-width="${k.sw}" paint-order="stroke"` : "");
     const ink = F.ink;
     const nk = F.neck || F.ink;
     let neck = "";
@@ -460,7 +497,9 @@
       let lws = [];
       let anchor = 130;
       for (let tries = 0; tries < 10; tries++) {
-        lws = labels.map((t) => wAt(ar ? F_AR : F_MR, t, lf, ar ? 0.45 : 0.7) + (ar ? 0 : t.length * lls * lf));
+        lws = labels.map(
+          (t) => wAt(ar ? F_AR : F_MR, t, lf, ar ? 0.45 : 0.7) + (ar ? 0 : t.length * lls * lf),
+        );
         const LW = Math.max(...lws);
         const VW = Math.max(...vws);
         const B = LW + gap + VW;
@@ -490,7 +529,9 @@
           `<text x="${r2(x)}" y="${y}"${anchorEnd ? ' text-anchor="end"' : ""} font-family="Manrope, sans-serif" font-weight="800" font-size="${vf}" style="font-variant-numeric:tabular-nums" ${paint(nk)}>${val}</text>`;
         if (ar) {
           // RTL reading: the label at the right, its figure to its left, figures aligned
-          neck += vText(anchor, true) + `<text x="${r2(anchor + gap)}" y="${y}" font-family="Noto Sans Arabic, Changa, sans-serif" font-weight="700" font-size="${lf}" ${paint(nk)} fill-opacity=".74">${lab}</text>`;
+          neck +=
+            vText(anchor, true) +
+            `<text x="${r2(anchor + gap)}" y="${y}" font-family="Noto Sans Arabic, Changa, sans-serif" font-weight="700" font-size="${lf}" ${paint(nk)} fill-opacity=".74">${lab}</text>`;
         } else {
           neck +=
             `<text x="${r2(anchor)}" y="${y}" text-anchor="end" font-family="Manrope, sans-serif" font-weight="800" font-size="${lf}" letter-spacing="${r2(lls * lf)}" ${paint(nk)} fill-opacity=".74">${lab}</text>` +
@@ -520,7 +561,9 @@
     const sufX = ar ? x0 : x0 + nw + nfs * 0.14;
     bulb +=
       `<text x="${r2(nameX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="800" font-size="${r2(nfs)}" ${paint(ink)}${squeeze ? ` textLength="${r2(nw)}" lengthAdjust="spacingAndGlyphs"` : ""}>${esc(name)}</text>` +
-      (yy ? `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" ${paint(ink)} fill-opacity=".78">${esc(yy)}</text>` : "");
+      (yy
+        ? `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" ${paint(ink)} fill-opacity=".78">${esc(yy)}</text>`
+        : "");
 
     // the 84: engraved at the centre of the bulb like a room number, ink-centred in a fixed slot
     const fs = p.ovr >= 100 ? 70 : 100;
@@ -568,7 +611,9 @@
         const w = ar ? wAt(F_AR, t, ffs, 0.45) : wAt(F_MR, t, ffs, 0.66) + t.length * 0.08 * ffs;
         const fit = r2(Math.min(ffs, (ffs * 40) / Math.max(1, w)));
         const dy = ar ? r2(0.24 * fit) : r2(0.37 * fit);
-        const font = ar ? `font-family="Noto Sans Arabic, sans-serif" font-weight="700"` : `font-family="Manrope, sans-serif" font-weight="800" letter-spacing="${r2(0.08 * fit)}"`;
+        const font = ar
+          ? `font-family="Noto Sans Arabic, sans-serif" font-weight="700"`
+          : `font-family="Manrope, sans-serif" font-weight="800" letter-spacing="${r2(0.08 * fit)}"`;
         s +=
           `<g transform="translate(33.5 -3) rotate(90)">` +
           `<text x=".4" y="${r2(dy + 0.45)}" text-anchor="middle" font-size="${fit}" ${font} fill="#0b121c" fill-opacity=".7">${esc(t)}</text>` +
@@ -594,10 +639,12 @@
   // club colour (yoke and raglan seams a shade lighter), die-cut with a white margin and a clear edge,
   // the way the charms on school bags are made. (A monochrome steel cut-out of this figure reads
   // as a bell; the two-tone print is what makes it a person.)
-  const FIG_CUT = (A) => `<path d="${A.torso}"/><path d="${A.hood}"/><circle cx="100" cy="30" r="15"/>`;
+  const FIG_CUT = (A) =>
+    `<path d="${A.torso}"/><path d="${A.hood}"/><circle cx="100" cy="30" r="15"/>`;
   function figTag(id, J, thumb, c) {
     const A = MC.AVATAR;
-    const cut = (col, w, extra = "") => `<g fill="${col}" stroke="${col}" stroke-width="${w}" stroke-linejoin="round"${extra}>${FIG_CUT(A)}</g>`;
+    const cut = (col, w, extra = "") =>
+      `<g fill="${col}" stroke="${col}" stroke-width="${w}" stroke-linejoin="round"${extra}>${FIG_CUT(A)}</g>`;
     return (
       `<g transform="translate(${J[0]} ${J[1]})"><g class="c03-sw">` +
       `<g transform="translate(-25 -3.9) scale(.25)" mask="url(#${id}-th)">` +
@@ -622,7 +669,8 @@
   }
 
   // LEGEND: a heavy machined D carabiner hooked through the ring's top corner, standing above it.
-  const CAR = "M13 -14L13 -58C13 -70 7 -76 -1 -76C-10 -76 -15 -69 -15 -58L-12 -14C-12 -5 -6 0 0 0C7 0 13 -6 13 -14Z";
+  const CAR =
+    "M13 -14L13 -58C13 -70 7 -76 -1 -76C-10 -76 -15 -69 -15 -58L-12 -14C-12 -5 -6 0 0 0C7 0 13 -6 13 -14Z";
   function carabiner(id, at, rot, sc, part, lite) {
     const body =
       `<path d="${CAR}" fill="none" stroke="#2f363e" stroke-width="12" stroke-linejoin="round"/>` +
@@ -634,10 +682,16 @@
           // the gate: hinge gap at the bottom, knurled locking sleeve at the top
           `<path d="M-12.6 -21L-11.4 -19" stroke="#2f363e" stroke-width="2.2"/>` +
           `<path d="M-14.8 -55.5L-13.5 -40" stroke="#2f363e" stroke-width="12.6"/><path d="M-14.8 -55.5L-13.5 -40" stroke="#9aa4af" stroke-width="9"/>` +
-          [0, 1, 2, 3, 4, 5].map((i) => `<path d="M${r2(-19 + i * 0.11)} ${r2(-54 + i * 2.6)}h9.8" stroke="#2f363e" stroke-width="1.1"/>`).join("") +
+          [0, 1, 2, 3, 4, 5]
+            .map(
+              (i) =>
+                `<path d="M${r2(-19 + i * 0.11)} ${r2(-54 + i * 2.6)}h9.8" stroke="#2f363e" stroke-width="1.1"/>`,
+            )
+            .join("") +
           `<path d="M-18.4 -55V-41" stroke="#fff" stroke-opacity=".75" stroke-width="1"/>`);
     const tf = `translate(${at[0]} ${at[1]}) rotate(${rot}) scale(${sc})`;
-    if (part === "front") return `<g transform="${tf}"><clipPath id="${id}-cf"><rect x="-30" y="-26" width="29" height="34"/></clipPath><g clip-path="url(#${id}-cf)">${body}</g></g>`;
+    if (part === "front")
+      return `<g transform="${tf}"><clipPath id="${id}-cf"><rect x="-30" y="-26" width="29" height="34"/></clipPath><g clip-path="url(#${id}-cf)">${body}</g></g>`;
     return `<g transform="${tf}">${body}</g>`;
   }
 
@@ -648,7 +702,8 @@
     const c = p.club;
     const founder = !!p.founder;
     const F = FACE[tk](id, c, thumb);
-    const defs = defsCommon(id, founder) + F.defs + `<path id="${id}-rp" d="M47 354A83 81 0 0 0 213 354"/>`;
+    const defs =
+      defsCommon(id, founder) + F.defs + `<path id="${id}-rp" d="M47 354A83 81 0 0 0 213 354"/>`;
     const cb = founder ? CB.sq : CB.rn;
     const ringS = ring(p, o, id, thumb);
     const back =
@@ -665,7 +720,10 @@
       `</g>`;
     // the band runs over the paddle's top and dives through the eyelet
     const front = `<g clip-path="url(#${id}-fr)">${ringS.replace(/id="[^"]*-cw"/, `id="${id}-cw2"`).replace(new RegExp(`url\\(#${id}-cw\\)`, "g"), `url(#${id}-cw2)`)}</g>`;
-    const body = back + (opts.swing ? `<g transform="rotate(${opts.swing} ${EY.x} ${EY.y})">${fob}</g>` : fob) + front;
+    const body =
+      back +
+      (opts.swing ? `<g transform="rotate(${opts.swing} ${EY.x} ${EY.y})">${fob}</g>` : fob) +
+      front;
     return { defs, body, back, fob, front };
   }
 
@@ -684,7 +742,12 @@
   /* ------------------------------------------------------------ token (44–80px) and mini (24–32px) */
   // Flat materials only: no filters at token size (fifty of these sit in one list).
   const TOK = {
-    HOMA: (c) => ({ body: c.primary, num: c.secondary, line: c.secondary, collar: [c.secondary, c.primary] }),
+    HOMA: (c) => ({
+      body: c.primary,
+      num: c.secondary,
+      line: c.secondary,
+      collar: [c.secondary, c.primary],
+    }),
     STADE: (c) => ({ body: c.secondary, num: c.primary, clear: true }),
     PRO: (c) => ({ body: "#1e1b19", num: c.secondary, sheen: true }),
     CHAMPION: (c) => ({ body: "#c3cad2", num: "#e6eaee", field: c.primary }),
@@ -704,13 +767,17 @@
     const SQt = { x: r2(EY.x + 54.73 * UV[0]), y: r2(EY.y + 54.73 * UV[1]) };
     const RNt = { x: r2(EY.x + 45 * UV[0]), y: r2(EY.y + 45 * UV[1]) };
     const tW = (x, y) => [r2(SQt.x + x * COS - y * SIN), r2(SQt.y + x * SIN + y * COS)];
-    const tR = (deg, rr) => [r2(RNt.x + rr * Math.cos((deg * Math.PI) / 180)), r2(RNt.y + rr * Math.sin((deg * Math.PI) / 180))];
+    const tR = (deg, rr) => [
+      r2(RNt.x + rr * Math.cos((deg * Math.PI) / 180)),
+      r2(RNt.y + rr * Math.sin((deg * Math.PI) / 180)),
+    ];
     const TF = pearD(0) + holeD(HR);
     const list = TIER[tk].ply(c);
     let ply = "";
     for (let k = list.length; k >= 1; k--) {
       ply += `<path d="${pearD(0, step * k)}${holeD(HR, step * k)}" fill-rule="evenodd" fill="${list[k - 1]}" stroke="#000" stroke-opacity=".35" stroke-width="1.4"/>`;
-      if (k === list.length) ply += `<path class="c03-rim" d="${pearD(0, step * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+      if (k === list.length)
+        ply += `<path class="c03-rim" d="${pearD(0, step * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     }
     let face = "";
     if (T.clear) {
@@ -725,7 +792,8 @@
         `<path d="${wireD}" fill="none" stroke="#2b333d" stroke-width="3" clip-path="url(#${id}-ec)"/>`;
     } else {
       face = `<path d="${TF}" fill-rule="evenodd" fill="${T.sheen ? `url(#${id}-sh)` : T.body}"/>`;
-      if (T.line) face += `<path d="${pearD(11)}" fill="none" stroke="${T.line}" stroke-width="6" mask="url(#${id}-mk)"/>`;
+      if (T.line)
+        face += `<path d="${pearD(11)}" fill="none" stroke="${T.line}" stroke-width="6" mask="url(#${id}-mk)"/>`;
       if (T.stitch)
         face +=
           `<path d="${pearD(3.5)}" fill="none" stroke="#3a2414" stroke-width="7"/>` +
@@ -749,7 +817,17 @@
         ? `<g transform="translate(${J[0]} ${J[1]})"><g transform="translate(-25 -3.9) scale(.25)"><g fill="#6f7a87" stroke="#6f7a87" stroke-width="34" stroke-linejoin="round">${FIG_CUT(A)}</g><g fill="#fff" stroke="#fff" stroke-width="24" stroke-linejoin="round">${FIG_CUT(A)}</g><path d="${A.torso}" fill="${c.primary}"/><path d="${A.hood}" fill="#a3acb6"/><path d="${A.hoodRim}" fill="none" stroke="#5f6873" stroke-width="10"/></g>` +
           `<circle r="4.4" fill="none" stroke="#a9b2be" stroke-width="3.4"/></g>`
         : "";
-    const carab = tk === "LEGEND" ? carabiner(id, founder ? tW(-24, -24) : tR(-100, 24), founder ? -22 : -8, 0.8, "back", true) : "";
+    const carab =
+      tk === "LEGEND"
+        ? carabiner(
+            id,
+            founder ? tW(-24, -24) : tR(-100, 24),
+            founder ? -22 : -8,
+            0.8,
+            "back",
+            true,
+          )
+        : "";
     const n = String(p.ovr);
     const nfs = p.ovr >= 100 ? 72 : 112;
     const nx = inkX(n, nfs, 130);
@@ -795,16 +873,21 @@
     let ply = "";
     for (let k = list.length; k >= 1; k--) {
       ply += `<path d="${MP(step * k)}" fill="${list[k - 1]}"/>`;
-      if (k === list.length) ply += `<path class="c03-rim" d="${MP(step * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+      if (k === list.length)
+        ply += `<path class="c03-rim" d="${MP(step * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     }
     const FP = MP() + MH();
     let face;
-    if (T.clear) face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/><path class="c03-clear" d="${MP()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    if (T.clear)
+      face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/><path class="c03-clear" d="${MP()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     else if (T.field)
       face =
         `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` +
         `<path d="${pearG(GMI, 0.9)}" fill="${T.field}" clip-path="url(#${mid}-mc)"/>`;
-    else face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` + (T.stitch ? `<path d="${MP()}" fill="none" stroke="#3a2414" stroke-width=".7"/>` : "");
+    else
+      face =
+        `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` +
+        (T.stitch ? `<path d="${MP()}" fill="none" stroke="#3a2414" stroke-width=".7"/>` : "");
     const UVm = UV;
     let ringS;
     let top;
@@ -832,7 +915,9 @@
     const ny = r2(GMI.by + 0.315 * fs);
     return (
       `<svg viewBox="${MV.x} ${MV.y} ${MV.w} ${MV.h}" width="${r2((size * MV.w) / MV.h)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false">` +
-      (T.field ? `<defs><clipPath id="${mid}-mc"><path d="M0 16Q8.6 14.6 17.2 16V30H0Z"/></clipPath></defs>` : "") +
+      (T.field
+        ? `<defs><clipPath id="${mid}-mc"><path d="M0 16Q8.6 14.6 17.2 16V30H0Z"/></clipPath></defs>`
+        : "") +
       ply +
       face +
       `<path class="c03-rim" d="${MP()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
@@ -903,7 +988,8 @@
     const H = { x: 158, y: 84 };
     const ringT = `translate(${H.x} ${H.y}) scale(${sc}) rotate(${whole}) translate(${r2(-hook[0])} ${r2(-hook[1])})`;
     const fobT = `${ringT} rotate(${swing} ${EY.x} ${EY.y})`;
-    const obj = (X, pre) => `<g transform="${pre}${ringT}">${X.back}</g><g transform="${pre}${fobT}">${X.fob}</g><g transform="${pre}${ringT}">${X.front}</g>`;
+    const obj = (X, pre) =>
+      `<g transform="${pre}${ringT}">${X.back}</g><g transform="${pre}${fobT}">${X.fob}</g><g transform="${pre}${ringT}">${X.front}</g>`;
     const handle = "@" + String(p.key || p.name.lat).toLowerCase();
     const yr = p.founder ? String(p.founder).slice(2) : "";
     const yy = yr ? (ar ? yr + "·" : "·" + yr) : "";
@@ -1032,7 +1118,8 @@
     category: "safe",
     philosophy:
       "Your BotolaGO identity is the fob on your keyring: your club's crest at the neck, the 84 engraved like a room number, on a ring only 2026 founders have squared.",
-    philosophyAr: "هويتك في BotolaGO هي الميدالية المعلّقة في حلقة مفاتيحك: شعار ناديك في عنقها، ورقم 84 محفور كرقم غرفة، وحلقة مربّعة لا يحملها إلا مؤسسو 2026.",
+    philosophyAr:
+      "هويتك في BotolaGO هي الميدالية المعلّقة في حلقة مفاتيحك: شعار ناديك في عنقها، ورقم 84 محفور كرقم غرفة، وحلقة مربّعة لا يحملها إلا مؤسسو 2026.",
     idea: [
       "Not a card. The identity is a keyring fob: a long-necked paddle with a drilled hole, hung on a flat split ring, the object every Moroccan teenager already clips to a school bag and every family hangs by the door. It is carried, not displayed, which is why it belongs to you rather than to an organiser.",
       "The layout is the hotel key fob, which solved this problem decades ago: a narrow neck that carries the house crest and the house name (here, your club's crest and your tier), a wide bulb with one big engraved number (the 84), and a return line round the bottom edge (here, BOT #004821, the season and MOROCCO). The four stats are an engraved column down the neck, read top to bottom like a team sheet, not FUT's number-over-label row.",
@@ -1064,10 +1151,13 @@
     ],
     tiers: {
       HOMA: "Soft moulded PVC in the club colour, new and matte, with a raised cream rim that wraps round the eyelet, a moulded crest and raised cream lettering. One ply. The full outline, never a lesser shape: the street origin shows only in the material.",
-      STADE: "Clear injection acrylic round a printed paper insert, with a halftone vignette, a printed club keyline and a printed crest. You can see the 5u of clear plastic at the edge and one diagonal glare across it. Two plies.",
+      STADE:
+        "Clear injection acrylic round a printed paper insert, with a halftone vignette, a printed club keyline and a printed crest. You can see the 5u of clear plastic at the edge and one diagonal glare across it. Two plies.",
       PRO: "Weighted bakelite, warm black with thin oxblood veins and a soft sheen on its top-start shoulder. The crest, the 84 and every word are engraved and paint-filled in the club's colours, the way hotel fobs were made. Three plies, with the club colour sandwiched in the middle.",
-      CHAMPION: "A polished nickel blank with a bevelled border and two hard-enamel fields split by a cloisonné wire: the club's second colour in the neck (crest, tier and stats in dark raised nickel), the club colour in the bulb (the name and the 84 in raised polished nickel). Four plies.",
-      LEGEND: "Cut from vintage match-ball leather: fine-grained, edge-painted and saddle-stitched in waxed cream thread, with the panel seams of an old ball across the shoulders and a hot-stamped crest. The 84 is stamped and debossed in black ink. A heavy machined steel carabiner hooks through the ring and stands above it. No precious metal.",
+      CHAMPION:
+        "A polished nickel blank with a bevelled border and two hard-enamel fields split by a cloisonné wire: the club's second colour in the neck (crest, tier and stats in dark raised nickel), the club colour in the bulb (the name and the 84 in raised polished nickel). Four plies.",
+      LEGEND:
+        "Cut from vintage match-ball leather: fine-grained, edge-painted and saddle-stitched in waxed cream thread, with the panel seams of an old ball across the shoulders and a hot-stamped crest. The 84 is stamped and debossed in black ink. A heavy machined steel carabiner hooks through the ring and stands above it. No precious metal.",
     },
     legend: [
       "LEGEND is the only tier that changes the object's outline: a heavy machined D carabiner, knurled gate and all, hooks through the ring's top bar and stands above it, so even at 24px a LEGEND fob has a loop above its ring that nobody else's has.",

@@ -18,7 +18,15 @@
     const s = String(h).replace("#", "");
     return [0, 2, 4].map((i) => parseInt(s.slice(i, i + 2), 16));
   };
-  const hx = (a) => "#" + a.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("");
+  const hx = (a) =>
+    "#" +
+    a
+      .map((v) =>
+        Math.max(0, Math.min(255, Math.round(v)))
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("");
   const mix = (a, b, t) => {
     const A = rgb(a);
     const B = rgb(b);
@@ -66,7 +74,13 @@
         cx2d = cx2d || document.createElement("canvas").getContext("2d");
         cx2d.font = font;
         const m = cx2d.measureText(text);
-        return { w: m.width, l: m.actualBoundingBoxLeft, r: m.actualBoundingBoxRight, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent };
+        return {
+          w: m.width,
+          l: m.actualBoundingBoxLeft,
+          r: m.actualBoundingBoxRight,
+          a: m.actualBoundingBoxAscent,
+          d: m.actualBoundingBoxDescent,
+        };
       }
     } catch (e) {
       /* fall through */
@@ -135,9 +149,13 @@
     const pl = [2 * cx - pr[0], pr[1]];
     const P = (x, y) => `${r2(x)} ${r2(y)}`;
     let s = `M${P(xl, top + hw)}A${r2(rt)} ${r2(rt)} 0 0 1 ${P(xr, top + hw)}L${P(xr, bot - rb)}`;
-    s += onFlat ? `A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(cx + hw - rb, yb)}L${P(pr[0], pr[1])}` : `A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(pr[0], pr[1])}`;
+    s += onFlat
+      ? `A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(cx + hw - rb, yb)}L${P(pr[0], pr[1])}`
+      : `A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(pr[0], pr[1])}`;
     s += `A${r2(Rn)} ${r2(Rn)} 0 0 0 ${P(pl[0], pl[1])}`;
-    s += onFlat ? `L${P(cx - hw + rb, yb)}A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(xl, bot - rb)}` : `A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(xl, bot - rb)}`;
+    s += onFlat
+      ? `L${P(cx - hw + rb, yb)}A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(xl, bot - rb)}`
+      : `A${r2(rbd)} ${r2(rbd)} 0 0 1 ${P(xl, bot - rb)}`;
     return s + "Z";
   }
   const tagD = (d = 0, oy = 0) => tagG(G, d, oy);
@@ -158,7 +176,20 @@
 
   // The layout down the tag: crest, the tier band, the stat table, the name, the 84 low in the
   // tag where a hanging object carries its weight, and the return line riding the D.
-  const L = { crestY: 157, crestW: 27.5, crestH: 33, bandY: 198, bandH: 21, st0: 243, stP: 16.5, nameY: 335.5, f84: 100, b84: 426, idR: 55.5, key: 5.5 };
+  const L = {
+    crestY: 157,
+    crestW: 27.5,
+    crestH: 33,
+    bandY: 198,
+    bandH: 21,
+    st0: 243,
+    stP: 16.5,
+    nameY: 335.5,
+    f84: 100,
+    b84: 426,
+    idR: 55.5,
+    key: 5.5,
+  };
   const idArc = (R = L.idR) => {
     const a = 70 * DEG;
     const x0 = NT.x - R * Math.sin(a);
@@ -186,7 +217,10 @@
     `M${-h + r} ${-h}H${h - r}A${r} ${r} 0 0 1 ${h} ${-h + r}V${h - r}A${r} ${r} 0 0 1 ${h - r} ${h}H${-h + r}A${r} ${r} 0 0 1 ${-h} ${h - r}V${-h + r}A${r} ${r} 0 0 1 ${-h + r} ${-h}Z`;
   const circ = (r) => `M${r} 0A${r} ${r} 0 1 0 ${-r} 0A${r} ${r} 0 1 0 ${r} 0Z`;
   const sqW = (x, y, C = SQ) => [r2(C.x + x * COS - y * SIN), r2(C.y + x * SIN + y * COS)];
-  const rnW = (deg, rr, C = RN) => [r2(C.x + rr * Math.cos(deg * DEG)), r2(C.y + rr * Math.sin(deg * DEG))];
+  const rnW = (deg, rr, C = RN) => [
+    r2(C.x + rr * Math.cos(deg * DEG)),
+    r2(C.y + rr * Math.sin(deg * DEG)),
+  ];
   // the half-disc round the eyelet where the band runs IN FRONT of the tag
   function frontD(rad = 50) {
     const a = [P0[0] + rad * UV[0], P0[1] + rad * UV[1]];
@@ -224,7 +258,8 @@
     `<feMerge><feMergeNode in="lp"/><feMergeNode in="SourceGraphic"/><feMergeNode in="sh"/></feMerge></filter>`;
   // -ink for display type (crest, name, 84), -ink2 for small type, whose strokes a full-depth
   // recess shadow would swallow
-  const fEng = (id, lip = "#fff3e6", lipO = 0.16) => fEngOne(`${id}-ink`, 1, lip, lipO) + fEngOne(`${id}-ink2`, 0.4, lip, lipO);
+  const fEng = (id, lip = "#fff3e6", lipO = 0.16) =>
+    fEngOne(`${id}-ink`, 1, lip, lipO) + fEngOne(`${id}-ink2`, 0.4, lip, lipO);
   // Debossed into leather (LEGEND): pressed in, the lower lip catches light.
   const fDebOne = (fid, k) =>
     `<filter id="${fid}" x="-10%" y="-10%" width="120%" height="125%" color-interpolation-filters="sRGB">` +
@@ -239,9 +274,11 @@
   // Each returns the tag's edge (its visible thickness), its face, the tier band's strip, the
   // paint for the engraving and the crest treatment. The paint is cream on the dark materials and
   // a near-black enamel on the light ones; labels at 70% stay at 4.5:1 or better on every one.
-  const bandRect = (inset = 0) => `<rect x="${G.cx - G.hw - 2}" y="${L.bandY}" width="${2 * G.hw + 4}" height="${L.bandH}"/>`;
+  const bandRect = (inset = 0) =>
+    `<rect x="${G.cx - G.hw - 2}" y="${L.bandY}" width="${2 * G.hw + 4}" height="${L.bandH}"/>`;
   const edge = (fill, t, extra = "") =>
-    `<path d="${faceD(t)}" fill-rule="evenodd" fill="${fill}"${extra}/>` + `<path class="c03v2-rim" d="${tagD(0, t)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    `<path d="${faceD(t)}" fill-rule="evenodd" fill="${fill}"${extra}/>` +
+    `<path class="c03v2-rim" d="${tagD(0, t)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
 
   // HOMA: fresh anodised aluminium in a light slate, bead-blasted to a fine matte; every mark is
   // laser-etched dark. Light in value, so it can never be mistaken for the dark club leather.
@@ -276,7 +313,16 @@
       `<g clip-path="url(#${id}-bd)"><g fill="#93a0b0">${bandRect()}</g>` +
       `<path d="M0 ${L.bandY + 0.6}H220" stroke="#4a5460" stroke-opacity=".55" stroke-width="1.2"/>` +
       `<path d="M0 ${L.bandY + L.bandH - 0.5}H220" stroke="#f2f5f8" stroke-opacity=".75" stroke-width="1"/></g>`;
-    return { defs, under, body, band, ink, bandInk: ink, keyline: 0.3, crest: (w, h) => MC.crest({ mono: ink, w, h }) };
+    return {
+      defs,
+      under,
+      body,
+      band,
+      ink,
+      bandInk: ink,
+      keyline: 0.3,
+      crest: (w, h) => MC.crest({ mono: ink, w, h }),
+    };
   }
 
   // STADE: cream vitreous enamel fired on a pressed steel blank; the steel rim follows the D.
@@ -293,7 +339,9 @@
       `<path d="${enamel}" fill-rule="evenodd" fill="#efe8d8"/>` +
       // the glaze pools against the rim: a hairline of shadow, then the gloss
       `<path d="${enamel}" fill-rule="evenodd" fill="none" stroke="#5b5242" stroke-opacity=".28" stroke-width="1.2"/>` +
-      (thumb ? "" : `<path d="M20 110H200L20 300Z" fill="url(#${id}-gl)" clip-path="url(#${id}-en)"/>`) +
+      (thumb
+        ? ""
+        : `<path d="M20 110H200L20 300Z" fill="url(#${id}-gl)" clip-path="url(#${id}-en)"/>`) +
       `<path d="${tagD(0.7)}" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".8" clip-path="url(#${id}-tl)"/>` +
       `<clipPath id="${id}-tl"><path d="M0 0H210L0 330Z"/></clipPath>`;
     // the band: the club colour fired between two raised steel wires (cloisonné)
@@ -322,7 +370,10 @@
       `<linearGradient id="${id}-ed" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2d4f7d"/><stop offset="1" stop-color="#3e679c"/></linearGradient>` +
       `<linearGradient id="${id}-sg" gradientUnits="userSpaceOnUse" x1="40" y1="120" x2="140" y2="300"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".55" stop-color="#fff" stop-opacity=".04"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
       `<clipPath id="${id}-bd"><path d="${tagD(0.6)}"/></clipPath>` +
-      (thumb ? "" : `<filter id="${id}-gw" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3.2"/></filter>` + fEng(id));
+      (thumb
+        ? ""
+        : `<filter id="${id}-gw" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3.2"/></filter>` +
+          fEng(id));
     const under =
       `<path d="${faceD(5)}" fill-rule="evenodd" fill="url(#${id}-ed)" fill-opacity=".96"/>` +
       `<path d="${tagD(0, 5)}" fill="none" stroke="#9cc0ec" stroke-opacity=".55" stroke-width=".9" clip-path="url(#${id}-lo)"/>` +
@@ -330,7 +381,9 @@
       `<path class="c03v2-rim" d="${tagD(0, 5)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     const body =
       `<path d="${faceD()}" fill-rule="evenodd" fill="url(#${id}-rs)"/>` +
-      (thumb ? "" : `<g clip-path="url(#${id}-fc)"><path d="${tagD(1)}" fill="none" stroke="#4f80bd" stroke-opacity=".5" stroke-width="7" filter="url(#${id}-gw)"/></g>`) +
+      (thumb
+        ? ""
+        : `<g clip-path="url(#${id}-fc)"><path d="${tagD(1)}" fill="none" stroke="#4f80bd" stroke-opacity=".5" stroke-width="7" filter="url(#${id}-gw)"/></g>`) +
       `<path d="${tagD(0)}" fill="url(#${id}-sg)" clip-path="url(#${id}-tl)"/>` +
       `<path d="${tagD(0.8)}" fill="none" stroke="#d6e6fa" stroke-opacity=".55" stroke-width=".8" clip-path="url(#${id}-tl)"/>` +
       `<clipPath id="${id}-tl"><path d="M0 0H210L0 330Z"/></clipPath>` +
@@ -411,9 +464,20 @@
     const p = 44;
     const q = 64;
     const ym = (yt + yb) / 2;
-    return { TL: [cx - p, yt], TR: [cx + p, yt], R: [cx + q, ym], BR: [cx + p, yb], BL: [cx - p, yb], Lf: [cx - q, ym], yt, yb, ym };
+    return {
+      TL: [cx - p, yt],
+      TR: [cx + p, yt],
+      R: [cx + q, ym],
+      BR: [cx + p, yb],
+      BL: [cx - p, yb],
+      Lf: [cx - q, ym],
+      yt,
+      yb,
+      ym,
+    };
   })();
-  const hexD = () => `M${HX.TL.join(" ")}L${HX.TR.join(" ")}L${HX.R.map(r2).join(" ")}L${HX.BR.map(r2).join(" ")}L${HX.BL.map(r2).join(" ")}L${HX.Lf.map(r2).join(" ")}Z`;
+  const hexD = () =>
+    `M${HX.TL.join(" ")}L${HX.TR.join(" ")}L${HX.R.map(r2).join(" ")}L${HX.BR.map(r2).join(" ")}L${HX.BL.map(r2).join(" ")}L${HX.Lf.map(r2).join(" ")}Z`;
   // the third seam at each top corner, running up and out past the strap to the outline
   const HX_UP = (() => {
     const e1 = [1, 0];
@@ -423,7 +487,10 @@
     const b = [-(e1[0] + dx / l), -(e1[1] + dy / l)];
     const bl = Math.hypot(b[0], b[1]);
     const u = [b[0] / bl, b[1] / bl];
-    return { L: [r2(HX.TL[0] + u[0] * 140), r2(HX.TL[1] + u[1] * 140)], R: [r2(HX.TR[0] - u[0] * 140), r2(HX.TR[1] + u[1] * 140)] };
+    return {
+      L: [r2(HX.TL[0] + u[0] * 140), r2(HX.TL[1] + u[1] * 140)],
+      R: [r2(HX.TR[0] - u[0] * 140), r2(HX.TR[1] + u[1] * 140)],
+    };
   })();
   function faceLegend(id, c, thumb) {
     const leather = c.primary;
@@ -437,10 +504,26 @@
     // the five panels, each padded on its own: lit at its top-start, shaded into its seams
     const panels = [
       { d: hexD(), at: [84, 226], r: 80, hl: 0.03 },
-      { d: `M${H.TL.join(" ")}L${U.L.join(" ")}L-40 ${U.L[1]}V${H.ym}H${H.Lf[0]}Z`, at: [36, 200], r: 52 },
-      { d: `M${H.TR.join(" ")}L${U.R.join(" ")}L250 ${U.R[1]}V${H.ym}H${H.R[0]}Z`, at: [158, 200], r: 52 },
-      { d: `M${U.L.join(" ")}L${H.TL.join(" ")}H${H.TR[0]}L${U.R.join(" ")}V0H${U.L[0]}Z`, at: [84, 138], r: 96 },
-      { d: `M-40 ${H.ym}H${H.Lf[0]}L${H.BL.join(" ")}H${H.BR[0]}L${H.R.join(" ")}H250V500H-40Z`, at: [78, 330], r: 170 },
+      {
+        d: `M${H.TL.join(" ")}L${U.L.join(" ")}L-40 ${U.L[1]}V${H.ym}H${H.Lf[0]}Z`,
+        at: [36, 200],
+        r: 52,
+      },
+      {
+        d: `M${H.TR.join(" ")}L${U.R.join(" ")}L250 ${U.R[1]}V${H.ym}H${H.R[0]}Z`,
+        at: [158, 200],
+        r: 52,
+      },
+      {
+        d: `M${U.L.join(" ")}L${H.TL.join(" ")}H${H.TR[0]}L${U.R.join(" ")}V0H${U.L[0]}Z`,
+        at: [84, 138],
+        r: 96,
+      },
+      {
+        d: `M-40 ${H.ym}H${H.Lf[0]}L${H.BL.join(" ")}H${H.BR[0]}L${H.R.join(" ")}H250V500H-40Z`,
+        at: [78, 330],
+        r: 170,
+      },
     ];
     const padG = (k, P) =>
       `<radialGradient id="${id}-pd${k}" gradientUnits="userSpaceOnUse" cx="${P.at[0]}" cy="${P.at[1]}" r="${P.r}"><stop offset="0" stop-color="#fff" stop-opacity="${P.hl || 0.16}"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></radialGradient>`;
@@ -466,12 +549,22 @@
     // the seams as straight segments: the hexagon, the edges running up from its top corners
     // past the strap, and the short edges from its side corners out to the outline
     const segs = [
-      [H.TL, H.TR], [H.TR, H.R], [H.R, H.BR], [H.BR, H.BL], [H.BL, H.Lf], [H.Lf, H.TL],
-      [H.TL, U.L], [H.TR, U.R], [H.Lf, [10, H.Lf[1]]], [H.R, [200, H.R[1]]],
+      [H.TL, H.TR],
+      [H.TR, H.R],
+      [H.R, H.BR],
+      [H.BR, H.BL],
+      [H.BL, H.Lf],
+      [H.Lf, H.TL],
+      [H.TL, U.L],
+      [H.TR, U.R],
+      [H.Lf, [10, H.Lf[1]]],
+      [H.R, [200, H.R[1]]],
     ].map(([a, b]) => [a.map(r2), b.map(r2)]);
     // the side stubs' own stitching stops at the border stitching instead of crossing it
     const IN = 9.4;
-    const sSegs = segs.map(([a, b], i) => (i === 8 ? [a, [G.cx - G.hw + IN, b[1]]] : i === 9 ? [a, [G.cx + G.hw - IN, b[1]]] : [a, b]));
+    const sSegs = segs.map(([a, b], i) =>
+      i === 8 ? [a, [G.cx - G.hw + IN, b[1]]] : i === 9 ? [a, [G.cx + G.hw - IN, b[1]]] : [a, b],
+    );
     const off = (a, b, k) => {
       const dx = b[0] - a[0];
       const dy = b[1] - a[1];
@@ -483,15 +576,24 @@
     const line = (a, b) => `M${a[0]} ${a[1]}L${b[0]} ${b[1]}`;
     // each panel is padded: a soft shadow pools along every seam, and the panel rises toward a
     // highlight at its top-start
-    const pillow = thumb ? "" : `<g filter="url(#${id}-pw)" stroke="#000" stroke-opacity=".5" stroke-width="10">${segs.map(([a, b]) => `<path d="${line(a, b)}"/>`).join("")}</g>`;
+    const pillow = thumb
+      ? ""
+      : `<g filter="url(#${id}-pw)" stroke="#000" stroke-opacity=".5" stroke-width="10">${segs.map(([a, b]) => `<path d="${line(a, b)}"/>`).join("")}</g>`;
     const pads = panels.map((P, k) => `<path d="${P.d}" fill="url(#${id}-pd${k})"/>`).join("");
-    const grooves = segs.map(([a, b]) => `<path d="${line(a, b)}" stroke="#07090c" stroke-opacity=".75" stroke-width="1.6"/>`).join("");
+    const grooves = segs
+      .map(
+        ([a, b]) =>
+          `<path d="${line(a, b)}" stroke="#07090c" stroke-opacity=".75" stroke-width="1.6"/>`,
+      )
+      .join("");
     const stitches = sSegs
       .map(([a, b]) =>
         [-2.8, 2.8]
           .map(
             (k) =>
-              (thumb ? "" : `<path d="${off(a, b, k)}" stroke="#05070a" stroke-opacity=".6" stroke-width="1.8" stroke-dasharray="2.8 2.1" transform="translate(.35 .55)"/>`) +
+              (thumb
+                ? ""
+                : `<path d="${off(a, b, k)}" stroke="#05070a" stroke-opacity=".6" stroke-width="1.8" stroke-dasharray="2.8 2.1" transform="translate(.35 .55)"/>`) +
               `<path d="${off(a, b, k)}" stroke="${thread}" stroke-width="1.3" stroke-dasharray="2.8 2.1"/>`,
           )
           .join(""),
@@ -501,7 +603,9 @@
     const saddle = [4, 7.2]
       .map(
         (d) =>
-          (thumb ? "" : `<path d="${tagD(d)}" fill="none" stroke="#05070a" stroke-opacity=".6" stroke-width="2.3" stroke-dasharray="3.6 2.3" transform="translate(.45 .7)"/>`) +
+          (thumb
+            ? ""
+            : `<path d="${tagD(d)}" fill="none" stroke="#05070a" stroke-opacity=".6" stroke-width="2.3" stroke-dasharray="3.6 2.3" transform="translate(.45 .7)"/>`) +
           `<path d="${tagD(d)}" fill="none" stroke="${thread}" stroke-width="1.75" stroke-dasharray="3.6 2.3" stroke-linecap="round"/>`,
       )
       .join("");
@@ -530,7 +634,9 @@
     const y0 = LEG.bandY;
     const y1 = LEG.bandY + LEG.bandH;
     const band =
-      (thumb ? "" : `<g clip-path="url(#${id}-fc)"><rect x="0" y="${y1 - 1}" width="220" height="5" fill="#000" fill-opacity=".55" filter="url(#${id}-ss)"/></g>`) +
+      (thumb
+        ? ""
+        : `<g clip-path="url(#${id}-fc)"><rect x="0" y="${y1 - 1}" width="220" height="5" fill="#000" fill-opacity=".55" filter="url(#${id}-ss)"/></g>`) +
       `<g clip-path="url(#${id}-bd)"><rect x="${G.cx - G.hw - 2}" y="${y0}" width="${2 * G.hw + 4}" height="${LEG.bandH}" fill="${strap}"/>` +
       `<path d="M0 ${y0 + 0.6}H220M0 ${y1 - 0.6}H220" stroke="#120e0b" stroke-width="1.4"/>` +
       `<path d="M0 ${y0 + 1.5}H220" stroke="#fff" stroke-opacity=".16" stroke-width=".5"/>` +
@@ -544,12 +650,27 @@
       bandInk: ink,
       filter: true,
       keyline: 0,
-      lay: { bandY: LEG.bandY, bandH: LEG.bandH, st0: LEG.st0, stP: LEG.stP, tw: LEG.tw, nameTop: LEG.nameTop, idR: 58.5, tierAr: 11.5 },
+      lay: {
+        bandY: LEG.bandY,
+        bandH: LEG.bandH,
+        st0: LEG.st0,
+        stP: LEG.stP,
+        tw: LEG.tw,
+        nameTop: LEG.nameTop,
+        idR: 58.5,
+        tierAr: 11.5,
+      },
       crest: (w, h) => MC.crest({ mono: ink, w, h }),
     };
   }
 
-  const FACE = { HOMA: faceHoma, STADE: faceStade, PRO: facePro, CHAMPION: faceChampion, LEGEND: faceLegend };
+  const FACE = {
+    HOMA: faceHoma,
+    STADE: faceStade,
+    PRO: facePro,
+    CHAMPION: faceChampion,
+    LEGEND: faceLegend,
+  };
 
   /* ------------------------------------------------------------ the engraving */
   function engraving(p, o, id, F, thumb) {
@@ -563,7 +684,15 @@
     big += `<g transform="translate(${r2(G.cx - L.crestW / 2)} ${L.crestY})">${F.crest(L.crestW, L.crestH)}</g>`;
 
     // the tier, moulded into the band across the top
-    const lay = { bandY: L.bandY, bandH: L.bandH, st0: L.st0, stP: L.stP, tw: 0, nameTop: 0, ...(F.lay || {}) };
+    const lay = {
+      bandY: L.bandY,
+      bandH: L.bandH,
+      st0: L.st0,
+      stP: L.stP,
+      tw: 0,
+      nameTop: 0,
+      ...(F.lay || {}),
+    };
     const tier = S.tiers[p.tier];
     const bc = lay.bandY + lay.bandH / 2;
     if (!thumb) {
@@ -616,7 +745,8 @@
     const nameX = ar ? x0 + sw : x0;
     const sufX = ar ? x0 : x0 + nw + nfs * 0.14;
     big += `<text x="${r2(nameX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="800" font-size="${r2(nfs)}" fill="${ink}"${squeeze ? ` textLength="${r2(nw)}" lengthAdjust="spacingAndGlyphs"` : ""}>${esc(name)}</text>`;
-    if (yy) small += `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" fill="${ink}" fill-opacity=".86">${esc(yy)}</text>`;
+    if (yy)
+      small += `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" fill="${ink}" fill-opacity=".86">${esc(yy)}</text>`;
 
     // the stat table: four aligned rows, as wide as the name line so they read as one column
     // (LEGEND caps it at the width its hexagon panel can frame). Values in Manrope 700 with
@@ -634,9 +764,13 @@
           `<text x="${x}" y="${y}"${end ? ' text-anchor="end"' : ""} font-family="Manrope, sans-serif" font-weight="700" font-size="${vf}" style="font-variant-numeric:tabular-nums" fill="${ink}">${val}</text>`;
         if (ar) {
           // RTL: the Arabic label at the right edge, its figure at the left edge, figures aligned
-          small += `<text x="${xr}" y="${y}" text-anchor="end" font-family="Noto Sans Arabic, Changa, sans-serif" font-weight="600" font-size="10.5" fill="${ink}" fill-opacity=".7">${lab}</text>` + vT(xl, false);
+          small +=
+            `<text x="${xr}" y="${y}" text-anchor="end" font-family="Noto Sans Arabic, Changa, sans-serif" font-weight="600" font-size="10.5" fill="${ink}" fill-opacity=".7">${lab}</text>` +
+            vT(xl, false);
         } else {
-          small += `<text x="${xl}" y="${y}" font-family="Manrope, sans-serif" font-weight="600" font-size="10" letter-spacing=".6" fill="${ink}" fill-opacity=".7">${lab}</text>` + vT(xr, true);
+          small +=
+            `<text x="${xl}" y="${y}" font-family="Manrope, sans-serif" font-weight="600" font-size="10" letter-spacing=".6" fill="${ink}" fill-opacity=".7">${lab}</text>` +
+            vT(xr, true);
         }
       });
     }
@@ -653,7 +787,10 @@
         ? `<text${sp} direction="rtl"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle"><tspan font-family="Noto Sans Arabic, sans-serif" font-weight="700" font-size="7.4">${esc(S.country)}</tspan> · <tspan letter-spacing=".25">${esc(p.id)}</tspan></textPath></text>`
         : `<text${sp} letter-spacing=".25"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle">${esc(`${p.id} · ${S.country}`)}</textPath></text>`;
     }
-    const key = F.keyline && !thumb ? `<path d="${tagD(F.keyInset || L.key)}" fill="none" stroke="${ink}" stroke-opacity="${F.keyline}" stroke-width=".8"/>` : "";
+    const key =
+      F.keyline && !thumb
+        ? `<path d="${tagD(F.keyInset || L.key)}" fill="none" stroke="${ink}" stroke-opacity="${F.keyline}" stroke-width=".8"/>`
+        : "";
     const fl = (k) => (F.filter && !thumb ? ` filter="url(#${id}-${k})"` : "");
     return `<g${fl("ink2")}>${key}${small}</g><g${fl("ink")}>${big}</g>`;
   }
@@ -688,7 +825,8 @@
     if (!thumb) {
       const by = -(ho + hi) / 2;
       const stamp = (x, y, attrs, t) =>
-        `<text x="${r2(x + 0.35)}" y="${r2(y + 0.5)}" ${attrs} fill="#0b121c" fill-opacity=".75">${esc(t)}</text>` + `<text x="${r2(x)}" y="${r2(y)}" ${attrs} fill="#eef3f9">${esc(t)}</text>`;
+        `<text x="${r2(x + 0.35)}" y="${r2(y + 0.5)}" ${attrs} fill="#0b121c" fill-opacity=".75">${esc(t)}</text>` +
+        `<text x="${r2(x)}" y="${r2(y)}" ${attrs} fill="#eef3f9">${esc(t)}</text>`;
       // FOUNDER / عضو مؤسس stamped along the top bar, upright enough to read at arm's length
       const t = S.founder;
       if (ar) {
@@ -697,15 +835,33 @@
         if (w > 50) fs = r2((fs * 50) / w);
         const m = meas(F_AR, t);
         const base = m ? r2(by + (((m.a - m.d) / 2) * fs) / 100) : r2(by + 0.25 * fs);
-        s += stamp(0, base, `text-anchor="middle" font-family="Noto Sans Arabic, sans-serif" font-weight="700" font-size="${fs}"`, t);
+        s += stamp(
+          0,
+          base,
+          `text-anchor="middle" font-family="Noto Sans Arabic, sans-serif" font-weight="700" font-size="${fs}"`,
+          t,
+        );
       } else {
         const fs = 7.6;
         const ls = r2(0.07 * fs);
-        s += stamp(ls / 2, r2(by + 0.37 * fs), `text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing="${ls}"`, t);
+        s += stamp(
+          ls / 2,
+          r2(by + 0.37 * fs),
+          `text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing="${ls}"`,
+          t,
+        );
       }
       // 2026 stamped down the end bar
       const yfs = 8.8;
-      s += `<g transform="translate(${(ho + hi) / 2} -5) rotate(90)">` + stamp(0.25, r2(0.37 * yfs), `text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${yfs}" letter-spacing=".5"`, String(p.founder)) + `</g>`;
+      s +=
+        `<g transform="translate(${(ho + hi) / 2} -5) rotate(90)">` +
+        stamp(
+          0.25,
+          r2(0.37 * yfs),
+          `text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${yfs}" letter-spacing=".5"`,
+          String(p.founder),
+        ) +
+        `</g>`;
     }
     return s + `</g>`;
   }
@@ -714,7 +870,11 @@
   // Each charm hangs on its own jump ring at J, laid out like a keyring on a table. The club disc
   // sits in front, the enamel pin of the manager behind it, the season balls further down on a
   // bead chain. Positions are offsets from J.
-  const CH = { av: { x: 52, y: -22, r: 25 }, cl: { x: 33, y: 19, r: 29 }, ba: { x: 26, y: 105, r: 19 } };
+  const CH = {
+    av: { x: 52, y: -22, r: 25 },
+    cl: { x: 33, y: 19, r: 29 },
+    ba: { x: 26, y: 105, r: 19 },
+  };
   const unit = (x, y) => {
     const d = Math.hypot(x, y) || 1;
     return [x / d, y / d];
@@ -757,7 +917,9 @@
       `<circle r="${r - 2.6}" fill="${c.primary}"/>` +
       `<circle r="${r - 5.6}" fill="none" stroke="${ink}" stroke-width="1.3"/>` +
       `<text x="${ix != null ? ix : 0}" y="${r2(0.32 * fs)}"${ix != null ? "" : ' text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" fill="${ink}">${esc(ini)}</text>` +
-      (thumb ? "" : `<path d="M${-r + 5} ${-4}A${r - 4} ${r - 4} 0 0 1 ${-4} ${-r + 5}" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.2" stroke-linecap="round"/>`)
+      (thumb
+        ? ""
+        : `<path d="M${-r + 5} ${-4}A${r - 4} ${r - 4} 0 0 1 ${-4} ${-r + 5}" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.2" stroke-linecap="round"/>`)
     );
   }
 
@@ -802,7 +964,9 @@
       `<g clip-path="url(#${id}-pl)" fill="none" stroke="#ffffff" stroke-width="1" vector-effect="non-scaling-stroke"><g transform="${bodyT}"><path d="${A.torso}" clip-path="url(#${id}-tw)"/><path d="M198 236V330"/></g><g transform="${hoodT}"><path d="${A.hood}" clip-path="url(#${id}-hw)"/></g></g>` +
       `</g>` +
       `<circle r="${ri}" fill="none" stroke="#0e1217" stroke-opacity=".55" stroke-width=".8"/>` +
-      (thumb ? "" : `<path d="M${-ri + 3} ${-5}A${ri - 3} ${ri - 3} 0 0 1 ${-5} ${-ri + 3}" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`)
+      (thumb
+        ? ""
+        : `<path d="M${-ri + 3} ${-5}A${ri - 3} ${ri - 3} 0 0 1 ${-5} ${-ri + 3}" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`)
     );
   }
 
@@ -822,7 +986,12 @@
     const outer = [-1, 1, 2, -2]
       .map((k) => {
         const a = (-90 + k * 72) * DEG;
-        return pent(r2(r * 1.0 * Math.cos(a)), r2(cy + r * 1.05 * Math.sin(a) + r * 0.46), pr, k * 72 + 180);
+        return pent(
+          r2(r * 1.0 * Math.cos(a)),
+          r2(cy + r * 1.05 * Math.sin(a) + r * 0.46),
+          pr,
+          k * 72 + 180,
+        );
       })
       .join("");
     const by0 = r2(-r * 0.12);
@@ -848,7 +1017,9 @@
       `<path d="${band}" fill="url(#${st}-st)"/>` +
       `<path d="M${-r - 1} ${by0}Q0 ${r2(by0 + 3.4)} ${r + 1} ${by0}" fill="none" stroke="#2f363e" stroke-width=".8"/>` +
       `<path d="M${-r - 1} ${by1}Q0 ${r2(by1 + 3.4)} ${r + 1} ${by1}" fill="none" stroke="#2f363e" stroke-width=".8"/>` +
-      (thumb ? "" : `<text x="0" y="${r2((by0 + by1) / 2 + 1.6 + 0.36 * fs)}" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing=".2" fill="#151a20">${esc(season)}</text>`) +
+      (thumb
+        ? ""
+        : `<text x="0" y="${r2((by0 + by1) / 2 + 1.6 + 0.36 * fs)}" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing=".2" fill="#151a20">${esc(season)}</text>`) +
       `</g>` +
       `<circle r="${r}" fill="none" stroke="#000" stroke-opacity=".35" stroke-width=".8"/>`
     );
@@ -857,7 +1028,10 @@
   // the bead chain the season balls hang on
   function beadChain(B, thumb) {
     const C = [B[0] * 0.05, B[1] * 0.6];
-    const q = (t) => [(1 - t) ** 2 * 0 + 2 * (1 - t) * t * C[0] + t * t * B[0], (1 - t) ** 2 * 0 + 2 * (1 - t) * t * C[1] + t * t * B[1]];
+    const q = (t) => [
+      (1 - t) ** 2 * 0 + 2 * (1 - t) * t * C[0] + t * t * B[0],
+      (1 - t) ** 2 * 0 + 2 * (1 - t) * t * C[1] + t * t * B[1],
+    ];
     const pts = [];
     let last = [0, 0];
     let acc = 0;
@@ -878,7 +1052,9 @@
         .map(
           (pt) =>
             `<circle cx="${r2(pt[0])}" cy="${r2(pt[1])}" r="2.05" fill="#8b949e"/>` +
-            (thumb ? "" : `<circle cx="${r2(pt[0] - 0.6)}" cy="${r2(pt[1] - 0.6)}" r=".8" fill="#eef2f6"/>`),
+            (thumb
+              ? ""
+              : `<circle cx="${r2(pt[0] - 0.6)}" cy="${r2(pt[1] - 0.6)}" r=".8" fill="#eef2f6"/>`),
         )
         .join("")
     );
@@ -909,7 +1085,8 @@
   }
 
   /* ------------------------------------------------------------ LEGEND's carabiner */
-  const CAR = "M13 -14L13 -58C13 -70 7 -76 -1 -76C-10 -76 -15 -69 -15 -58L-12 -14C-12 -5 -6 0 0 0C7 0 13 -6 13 -14Z";
+  const CAR =
+    "M13 -14L13 -58C13 -70 7 -76 -1 -76C-10 -76 -15 -69 -15 -58L-12 -14C-12 -5 -6 0 0 0C7 0 13 -6 13 -14Z";
   function carabiner(id, at, rot, sc, part, lite) {
     const body =
       `<path d="${CAR}" fill="none" stroke="#2f363e" stroke-width="12" stroke-linejoin="round"/>` +
@@ -921,10 +1098,16 @@
           // the gate: hinge gap at the bottom, knurled locking sleeve at the top
           `<path d="M-12.6 -21L-11.4 -19" stroke="#2f363e" stroke-width="2.2"/>` +
           `<path d="M-14.8 -55.5L-13.5 -40" stroke="#2f363e" stroke-width="12.6"/><path d="M-14.8 -55.5L-13.5 -40" stroke="#9aa4af" stroke-width="9"/>` +
-          [0, 1, 2, 3, 4, 5].map((i) => `<path d="M${r2(-19 + i * 0.11)} ${r2(-54 + i * 2.6)}h9.8" stroke="#2f363e" stroke-width="1.1"/>`).join("") +
+          [0, 1, 2, 3, 4, 5]
+            .map(
+              (i) =>
+                `<path d="M${r2(-19 + i * 0.11)} ${r2(-54 + i * 2.6)}h9.8" stroke="#2f363e" stroke-width="1.1"/>`,
+            )
+            .join("") +
           `<path d="M-18.4 -55V-41" stroke="#fff" stroke-opacity=".75" stroke-width="1"/>`);
     const tf = `translate(${at[0]} ${at[1]}) rotate(${rot}) scale(${sc})`;
-    if (part === "front") return `<g transform="${tf}"><clipPath id="${id}-cf"><rect x="-30" y="-26" width="29" height="34"/></clipPath><g clip-path="url(#${id}-cf)">${body}</g></g>`;
+    if (part === "front")
+      return `<g transform="${tf}"><clipPath id="${id}-cf"><rect x="-30" y="-26" width="29" height="34"/></clipPath><g clip-path="url(#${id}-cf)">${body}</g></g>`;
     return `<g transform="${tf}">${body}</g>`;
   }
 
@@ -935,17 +1118,26 @@
     const c = p.club;
     const founder = !!p.founder;
     const F = FACE[tk](id, c, thumb);
-    const defs = defsCommon(id, founder) + F.defs + `<path id="${id}-rp" d="${idArc((F.lay && F.lay.idR) || L.idR)}"/>`;
+    const defs =
+      defsCommon(id, founder) +
+      F.defs +
+      `<path id="${id}-rp" d="${idArc((F.lay && F.lay.idR) || L.idR)}"/>`;
     const cb = founder ? CB.sq : CB.rn;
     const ringS = ring(p, o, id, thumb);
-    const reId = (s, k) => s.replace(/id="[^"]*-cw"/, `id="${id}-cw${k}"`).replace(new RegExp(`url\\(#${id}-cw\\)`, "g"), `url(#${id}-cw${k})`);
+    const reId = (s, k) =>
+      s
+        .replace(/id="[^"]*-cw"/, `id="${id}-cw${k}"`)
+        .replace(new RegExp(`url\\(#${id}-cw\\)`, "g"), `url(#${id}-cw${k})`);
     const back =
       (tk === "LEGEND" ? carabiner(id, cb.at, cb.rot, 0.92, "back", thumb) : "") +
       ringS +
       (tk === "LEGEND" ? carabiner(id, cb.at, cb.rot, 0.92, "front", thumb) : "") +
       `<g class="c03v2-charms">${charms(p, o, id, founder ? JR.sq : JR.rn, thumb)}</g>`;
     // smoked resin: the ring behind the tag shows faintly through it
-    const see = F.seeThrough && !thumb ? `<g clip-path="url(#${id}-fc)" opacity=".2">${reId(ringS, 3)}</g>` : "";
+    const see =
+      F.seeThrough && !thumb
+        ? `<g clip-path="url(#${id}-fc)" opacity=".2">${reId(ringS, 3)}</g>`
+        : "";
     const fob =
       `<g class="c03v2-fob">` +
       F.under +
@@ -957,7 +1149,10 @@
       `</g>`;
     // the band runs over the tag's top and dives through the eyelet
     const front = `<g clip-path="url(#${id}-fr)">${reId(ringS, 2)}</g>`;
-    const body = back + (opts.swing ? `<g transform="rotate(${opts.swing} ${EY.x} ${EY.y})">${fob}</g>` : fob) + front;
+    const body =
+      back +
+      (opts.swing ? `<g transform="rotate(${opts.swing} ${EY.x} ${EY.y})">${fob}</g>` : fob) +
+      front;
     return { defs, body, back, fob, front };
   }
 
@@ -978,10 +1173,34 @@
   // its D, its eyelet and its band; the club disc hangs beside it so the club colour shows at 44px.
   const TOK = {
     HOMA: () => ({ face: "#a6b3c3", side: "#5c6878", band: "#8592a2", num: "#0e1319" }),
-    STADE: (c) => ({ face: "#efe8d8", rim: "#a9b2bc", side: "#757e88", band: c.primary, num: "#1a2330" }),
-    PRO: () => ({ face: "#14233c", glow: "#3f6aa1", side: "#2d4f7d", band: "#24395a", num: "#efe7d6" }),
-    CHAMPION: () => ({ face: "#dde2e7", chamfer: "#f7f9fa", side: "#646d77", band: "#171c22", num: "#11161c" }),
-    LEGEND: (c) => ({ face: c.primary, side: "#120e0b", band: mix(c.primary, "#000000", 0.4), num: paintOn(c.primary), stitch: "#f1e6d2" }),
+    STADE: (c) => ({
+      face: "#efe8d8",
+      rim: "#a9b2bc",
+      side: "#757e88",
+      band: c.primary,
+      num: "#1a2330",
+    }),
+    PRO: () => ({
+      face: "#14233c",
+      glow: "#3f6aa1",
+      side: "#2d4f7d",
+      band: "#24395a",
+      num: "#efe7d6",
+    }),
+    CHAMPION: () => ({
+      face: "#dde2e7",
+      chamfer: "#f7f9fa",
+      side: "#646d77",
+      band: "#171c22",
+      num: "#11161c",
+    }),
+    LEGEND: (c) => ({
+      face: c.primary,
+      side: "#120e0b",
+      band: mix(c.primary, "#000000", 0.4),
+      num: paintOn(c.primary),
+      stitch: "#f1e6d2",
+    }),
   };
   const TVB = { x: 20, y: 34, w: 250, h: 448 };
 
@@ -995,13 +1214,17 @@
     const TF = tagD(0) + holeD(HR);
     const bandClip = `<clipPath id="${id}-bd"><path d="${tagD(T.rim ? 7 : 0)}"/></clipPath>`;
     let face = `<path d="${faceD(5)}" fill-rule="evenodd" fill="${T.side}"/><path class="c03v2-rim" d="${tagD(0, 5)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
-    if (T.rim) face += `<path d="${TF}" fill-rule="evenodd" fill="${T.rim}"/><path d="${tagD(7)}${holeD(HR + 5)}" fill-rule="evenodd" fill="${T.face}"/>`;
+    if (T.rim)
+      face += `<path d="${TF}" fill-rule="evenodd" fill="${T.rim}"/><path d="${tagD(7)}${holeD(HR + 5)}" fill-rule="evenodd" fill="${T.face}"/>`;
     else face += `<path d="${TF}" fill-rule="evenodd" fill="${T.face}"/>`;
-    if (T.glow) face += `<path d="${tagD(4)}" fill="none" stroke="${T.glow}" stroke-width="8" stroke-opacity=".55"/>`;
-    if (T.chamfer) face += `<path d="${tagD(3)}" fill="none" stroke="${T.chamfer}" stroke-width="5"/><path d="${tagD(6)}" fill="none" stroke="#7d8792" stroke-width="1.6"/>`;
+    if (T.glow)
+      face += `<path d="${tagD(4)}" fill="none" stroke="${T.glow}" stroke-width="8" stroke-opacity=".55"/>`;
+    if (T.chamfer)
+      face += `<path d="${tagD(3)}" fill="none" stroke="${T.chamfer}" stroke-width="5"/><path d="${tagD(6)}" fill="none" stroke="#7d8792" stroke-width="1.6"/>`;
     face += `<g clip-path="url(#${id}-bd)"><rect x="20" y="${L.bandY - 4}" width="180" height="${L.bandH + 10}" fill="${T.band}"/></g>`;
     // LEGEND: a heavy cream stitched border, thick enough to survive at 44px
-    if (T.stitch) face += `<path d="${tagD(11)}" fill="none" stroke="${T.stitch}" stroke-width="9" stroke-dasharray="17 10" stroke-linecap="round"/>`;
+    if (T.stitch)
+      face += `<path d="${tagD(11)}" fill="none" stroke="${T.stitch}" stroke-width="9" stroke-dasharray="17 10" stroke-linecap="round"/>`;
     const ringS = founder
       ? `<g transform="translate(${SQ.x} ${SQ.y}) rotate(${TILT})"><path d="${rrect(SQB.ho + 2, SQB.ro + 2)}${rrect(SQB.hi - 3, SQB.ri)}" fill-rule="evenodd" fill="url(#${id}-rg)"/><path class="c03v2-rimr" d="${rrect(SQB.ho + 2, SQB.ro + 2)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/></g>`
       : `<g transform="translate(${RN.x} ${RN.y})"><path d="${circ(42)}${circ(27)}" fill-rule="evenodd" fill="url(#${id}-rg)"/><path class="c03v2-rimr" d="${circ(42)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/></g>`;
@@ -1017,7 +1240,9 @@
       `<circle cx="${r2(D[0])}" cy="${r2(D[1])}" r="${DR}" fill="${c.secondary}"/>` +
       `<circle cx="${r2(D[0])}" cy="${r2(D[1])}" r="${DR - 8}" fill="${c.primary}"/>` +
       `<path class="c03v2-rimr" d="M${r2(D[0] + DR)} ${r2(D[1])}A${DR} ${DR} 0 1 0 ${r2(D[0] - DR)} ${r2(D[1])}A${DR} ${DR} 0 1 0 ${r2(D[0] + DR)} ${r2(D[1])}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
-      (size >= 64 ? `<text x="${dx != null ? dx : D[0]}" y="${r2(D[1] + 0.32 * dfs)}"${dx != null ? "" : ' text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${r2(dfs)}" fill="${c.secondary}">${esc(ini)}</text>` : "") +
+      (size >= 64
+        ? `<text x="${dx != null ? dx : D[0]}" y="${r2(D[1] + 0.32 * dfs)}"${dx != null ? "" : ' text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${r2(dfs)}" fill="${c.secondary}">${esc(ini)}</text>`
+        : "") +
       `<circle cx="${J[0]}" cy="${J[1]}" r="6" fill="none" stroke="#a9b2be" stroke-width="4"/>`;
     const cb = founder ? { at: sqW(-26, -26), rot: -30 } : { at: rnW(-100, 27), rot: -14 };
     const carab = tk === "LEGEND" ? carabiner(id, cb.at, cb.rot, 0.64, "back", true) : "";
@@ -1059,13 +1284,15 @@
     const bandY = 6.9;
     const mid = MC.uid("c03v2m");
     let face = `<path d="${MP(0, 0.7)}" fill="${T.side}"/>`;
-    if (T.rim) face += `<path d="${MP()}" fill="${T.rim}"/><path d="${MP(0.75)}" fill="${T.face}"/>`;
+    if (T.rim)
+      face += `<path d="${MP()}" fill="${T.rim}"/><path d="${MP(0.75)}" fill="${T.face}"/>`;
     else face += `<path d="${MP()}" fill="${T.face}"/>`;
     face += `<clipPath id="${mid}-b"><path d="${MP(T.rim ? 0.75 : 0)}"/></clipPath><rect x="0" y="${bandY}" width="13" height="2.1" fill="${T.band}" clip-path="url(#${mid}-b)"/>`;
     if (T.glow) face += `<path d="${MP(0.5)}" fill="none" stroke="${T.glow}" stroke-width=".8"/>`;
     if (T.chamfer) face += `<path d="${MP(0.45)}" fill="none" stroke="#fff" stroke-width=".7"/>`;
     // LEGEND: the heavy cream saddle stitch round the outline, about 1px at 24px
-    if (T.stitch) face += `<path d="${MP(0.62)}" fill="none" stroke="${T.stitch}" stroke-width=".88" stroke-dasharray="1.75 .8"/>`;
+    if (T.stitch)
+      face += `<path d="${MP(0.62)}" fill="none" stroke="${T.stitch}" stroke-width=".88" stroke-dasharray="1.75 .8"/>`;
     // the ring at the top-end, threaded over the tag's shoulder
     const RC = { x: 12.3, y: 4.5 };
     const ringS = founder
@@ -1114,7 +1341,9 @@
       `<path d="${tagG(g)}" fill="${T.rim || T.face}"/>` +
       (T.rim ? `<path d="${tagG(g, 0.7)}" fill="${T.face}"/>` : "") +
       `<rect x="0" y="4.4" width="10" height="1.6" fill="${T.band}"/>` +
-      (T.stitch ? `<path d="${tagG(g, 0.95)}" fill="none" stroke="${T.stitch}" stroke-width=".9" stroke-dasharray="1.4 .7"/>` : "") +
+      (T.stitch
+        ? `<path d="${tagG(g, 0.95)}" fill="none" stroke="${T.stitch}" stroke-width=".9" stroke-dasharray="1.4 .7"/>`
+        : "") +
       `<path class="c03v2-rim" d="${tagG(g)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
       `</svg>`
     );
@@ -1155,7 +1384,10 @@
       const a = cb.rot * DEG;
       const lx = -1 * 0.92;
       const ly = -71 * 0.92;
-      hook = [r2(cb.at[0] + lx * Math.cos(a) - ly * Math.sin(a)), r2(cb.at[1] + lx * Math.sin(a) + ly * Math.cos(a))];
+      hook = [
+        r2(cb.at[0] + lx * Math.cos(a) - ly * Math.sin(a)),
+        r2(cb.at[1] + lx * Math.sin(a) + ly * Math.cos(a)),
+      ];
     } else hook = founder ? sqW(-36.5, -36.5) : rnW(235, 35);
     const whole = legend ? -4 : founder ? -14 : -7;
     const swing = legend ? 2 : 5;
@@ -1165,7 +1397,8 @@
     const H = legend ? { x: 156, y: 86 } : { x: 152, y: 86 };
     const ringT = `translate(${H.x} ${H.y}) scale(${sc}) rotate(${whole}) translate(${r2(-hook[0])} ${r2(-hook[1])})`;
     const fobT = `${ringT} rotate(${swing} ${EY.x} ${EY.y})`;
-    const obj = (X, pre) => `<g transform="${pre}${ringT}">${X.back}</g><g transform="${pre}${fobT}">${X.fob}</g><g transform="${pre}${ringT}">${X.front}</g>`;
+    const obj = (X, pre) =>
+      `<g transform="${pre}${ringT}">${X.back}</g><g transform="${pre}${fobT}">${X.fob}</g><g transform="${pre}${ringT}">${X.front}</g>`;
     const handle = "@" + String(p.key || p.name.lat).toLowerCase();
     const yr = p.founder ? String(p.founder).slice(2) : "";
     const yy = yr ? (ar ? yr + "·" : "·" + yr) : "";
@@ -1330,10 +1563,13 @@
     ],
     tiers: {
       HOMA: "Fresh anodised aluminium in a light slate, bead-blasted to a fine matte, with a soft edge break. Every mark is laser-etched dark, the crest is etched in line, and the band is a machined flat a step down. Raw but new: the full outline with nothing missing, and light in value so it can never be mistaken for LEGEND's dark leather.",
-      STADE: "Cream vitreous enamel fired on a pressed steel blank, with a steel rim that follows the outline and the D. The tier band is the club colour fired between two raised steel wires, the crest is printed in the club's colours, and the type is fired black enamel.",
+      STADE:
+        "Cream vitreous enamel fired on a pressed steel blank, with a steel rim that follows the outline and the D. The tier band is the club colour fired between two raised steel wires, the crest is printed in the club's colours, and the type is fired black enamel.",
       PRO: "Clean smoked-navy translucent resin. Light enters at the edges so they glow, the visible edge thickness is a clearer, lighter navy, and the ring's hidden half shows faintly through the tag. The type is engraved and paint-filled cream, and the band is a frosted strip moulded into the resin.",
-      CHAMPION: "Solid machined steel, brushed, with a polished chamfer round the outline and the eyelet. Every mark is engraved and paint-filled in black enamel. The band is a machined groove filled black with the tier in bare steel, and the crest is an enamel inlay.",
-      LEGEND: "Hand-stitched leather in the club colour, cut in match-ball panels. A darker hexagon panel frames the stat table and nothing else; the name and the 84 sit on the plain lower panel. Every panel is padded and shaded into its seams, the seams are top-stitched in cream, the edge is burnished and painted, and two rows of heavy cream saddle stitch run round the outline. A taller strap of darker hide is sewn across for the tier, a steel grommet lines the eyelet, and every mark is debossed and paint-filled cream. A machined steel carabiner hooks through the ring. No precious metal.",
+      CHAMPION:
+        "Solid machined steel, brushed, with a polished chamfer round the outline and the eyelet. Every mark is engraved and paint-filled in black enamel. The band is a machined groove filled black with the tier in bare steel, and the crest is an enamel inlay.",
+      LEGEND:
+        "Hand-stitched leather in the club colour, cut in match-ball panels. A darker hexagon panel frames the stat table and nothing else; the name and the 84 sit on the plain lower panel. Every panel is padded and shaded into its seams, the seams are top-stitched in cream, the edge is burnished and painted, and two rows of heavy cream saddle stitch run round the outline. A taller strap of darker hide is sewn across for the tier, a steel grommet lines the eyelet, and every mark is debossed and paint-filled cream. A machined steel carabiner hooks through the ring. No precious metal.",
     },
     legend: [
       "LEGEND is the only tier that changes the outline. A machined D carabiner with a knurled locking sleeve hooks through the ring's top corner and stands above it, so even at 24px a LEGEND tag has a loop at its ring that nobody else's has.",

@@ -8,8 +8,15 @@ import { fileURLToPath } from "node:url";
 const here = dirname(fileURLToPath(import.meta.url));
 const outDir = resolve(process.argv[2] || join(here, "dist"));
 const read = (p) => readFileSync(join(here, p), "utf8");
-const mime = { ".woff2": "font/woff2", ".png": "image/png", ".jpg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml" };
-const dataUri = (abs) => `data:${mime[extname(abs)]};base64,${readFileSync(abs).toString("base64")}`;
+const mime = {
+  ".woff2": "font/woff2",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+};
+const dataUri = (abs) =>
+  `data:${mime[extname(abs)]};base64,${readFileSync(abs).toString("base64")}`;
 
 let html = read("index.html");
 
@@ -36,7 +43,9 @@ html = html.replace(/<!--build:js-->([\s\S]*?)<!--\/build:js-->/, (_, block) => 
     .filter((s) => existsSync(join(here, s)))
     .map((s) =>
       read(s)
-        .replace(/"(review\/[^"]+\.(?:png|jpg|webp))"/g, (m, p) => (existsSync(join(here, p)) ? JSON.stringify(dataUri(join(here, p))) : m))
+        .replace(/"(review\/[^"]+\.(?:png|jpg|webp))"/g, (m, p) =>
+          existsSync(join(here, p)) ? JSON.stringify(dataUri(join(here, p))) : m,
+        )
         .replace(/<\/script/gi, "<\\/script"),
     )
     .join("\n;\n");

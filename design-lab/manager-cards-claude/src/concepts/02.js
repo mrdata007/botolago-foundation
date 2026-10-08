@@ -61,10 +61,16 @@
       const a = ((rot + i * 72) * Math.PI) / 180;
       return [cx + R * Math.cos(a), cy + R * Math.sin(a)];
     });
-  const polar = (cx, cy, r, deg) => [cx + r * Math.cos((deg * Math.PI) / 180), cy + r * Math.sin((deg * Math.PI) / 180)];
+  const polar = (cx, cy, r, deg) => [
+    cx + r * Math.cos((deg * Math.PI) / 180),
+    cy + r * Math.sin((deg * Math.PI) / 180),
+  ];
   const poly = (pts) => "M" + pts.map(P).join("L") + "Z";
   /** The user's club colours (the lab's placeholder club; white when no club is set). */
-  const clubOf = (p) => ({ a: (p.club && p.club.primary) || "#FFFFFF", b: (p.club && p.club.secondary) || "#FFFFFF" });
+  const clubOf = (p) => ({
+    a: (p.club && p.club.primary) || "#FFFFFF",
+    b: (p.club && p.club.secondary) || "#FFFFFF",
+  });
 
   /* ================= the full card: one comet, rising diagonally (viewBox 300×420) ================= */
   const VB = { w: 300, h: 420 };
@@ -90,8 +96,14 @@
       if (s >= S) return { p: [tip[0] + d1[0] * (s - S), tip[1] + d1[1] * (s - S)], d: d1 };
       const t = s / S;
       const u = 1 - t;
-      const p = [u * u * C.x + 2 * u * t * qc[0] + t * t * tip[0], u * u * C.y + 2 * u * t * qc[1] + t * t * tip[1]];
-      const d = unit([2 * u * (qc[0] - C.x) + 2 * t * (tip[0] - qc[0]), 2 * u * (qc[1] - C.y) + 2 * t * (tip[1] - qc[1])]);
+      const p = [
+        u * u * C.x + 2 * u * t * qc[0] + t * t * tip[0],
+        u * u * C.y + 2 * u * t * qc[1] + t * t * tip[1],
+      ];
+      const d = unit([
+        2 * u * (qc[0] - C.x) + 2 * t * (tip[0] - qc[0]),
+        2 * u * (qc[1] - C.y) + 2 * t * (tip[1] - qc[1]),
+      ]);
       return { p, d };
     }
     const at = (s, off = 0) => {
@@ -110,7 +122,9 @@
      bow (26u), fuller in the body and tapering to a 4u point, so the outline change is designed,
      not a crop. The tokens keep the literal 30% extension (see swoosh()). */
   const GEO = (legend) => {
-    const A = legend ? makeAxis([10, 414], 26) : makeAxis([C.x + AX[0] * 365, C.y + AX[1] * 365], 13);
+    const A = legend
+      ? makeAxis([10, 414], 26)
+      : makeAxis([C.x + AX[0] * 365, C.y + AX[1] * 365], 13);
     const sTip = A.S;
     const L = sTip - 36;
     const w = legend
@@ -144,7 +158,8 @@
     for (let i = 1; i < pts.length; i++) {
       const a = pts[i - 1];
       const b = pts[i];
-      if ((a[1] - y) * (b[1] - y) <= 0 && a[1] !== b[1]) return a[0] + ((y - a[1]) / (b[1] - a[1])) * (b[0] - a[0]);
+      if ((a[1] - y) * (b[1] - y) <= 0 && a[1] !== b[1])
+        return a[0] + ((y - a[1]) / (b[1] - a[1])) * (b[0] - a[0]);
     }
     return side < 0 ? pts[pts.length - 1][0] : pts[0][0];
   }
@@ -174,7 +189,10 @@
     const front = g.at(-R0, 0);
     // the root closes round the front of the ball (hidden under it), so the trail's edges stay tangent
     const d =
-      "M" + U.map(P).join("L") + `Q${P(tip)} ${P(Lo[N])}L` + Lo.slice(0, N).reverse().map(P).join("L") +
+      "M" +
+      U.map(P).join("L") +
+      `Q${P(tip)} ${P(Lo[N])}L` +
+      Lo.slice(0, N).reverse().map(P).join("L") +
       `A${R0} ${R0} 0 0 0 ${P(front)}A${R0} ${R0} 0 0 0 ${P(U[0])}Z`;
     TRAILS.set(g, d);
     return d;
@@ -293,16 +311,24 @@
     }
     // the body, by material
     let body = "";
-    if (tier === "HOMA") body = `<path d="${path}" class="c02-concrete" filter="url(#${id}-conc)"/>`;
+    if (tier === "HOMA")
+      body = `<path d="${path}" class="c02-concrete" filter="url(#${id}-conc)"/>`;
     else if (tier === "STADE") body = `<path d="${path}" class="c02-paint"/>`;
-    else if (tier === "CHAMPION") body = `<path d="${path}" class="c02-rubber"/><path d="${path}" fill="url(#${id}-ridge)" opacity="0.9"/>`;
+    else if (tier === "CHAMPION")
+      body = `<path d="${path}" class="c02-rubber"/><path d="${path}" fill="url(#${id}-ridge)" opacity="0.9"/>`;
     else if (legend) body = `<path d="${path}" fill="url(#${id}-gblade)"/>`;
     else body = `<path d="${path}" fill="url(#${id}-gtrail)"/>`;
     out += `<g>` + body;
     // the club band at the root (only its two ends show beside the ball)
     const b0 = BAND[0];
     const b1 = BAND[1];
-    const band = (s0, s1) => poly([g.at(s0, -g.w(s0) / 2 - 1), g.at(s1, -g.w(s1) / 2 - 1), g.at(s1, g.w(s1) / 2 + 1), g.at(s0, g.w(s0) / 2 + 1)]);
+    const band = (s0, s1) =>
+      poly([
+        g.at(s0, -g.w(s0) / 2 - 1),
+        g.at(s1, -g.w(s1) / 2 - 1),
+        g.at(s1, g.w(s1) / 2 + 1),
+        g.at(s0, g.w(s0) / 2 + 1),
+      ]);
     out += `<g clip-path="url(#${id}-ctrail)"><path d="${band(b0, b1)}" fill="${club.b}"/><path d="${band(b0 + 1.6, b1 - 1.6)}" fill="${club.a}"/></g>`;
     // lanes: four equal lanes run on to the tip; their length never encodes a value
     if (!opts.thumb) {
@@ -328,7 +354,13 @@
     }
     if (legend) {
       // one polished leading edge, a soft fall-off on the other
-      const line = (o) => "M" + Array.from({ length: 25 }, (_, i) => g.at(4 + ((g.sTip - 4) * i) / 24, -g.w(4 + ((g.sTip - 4) * i) / 24) / 2 + o)).map(P).join("L");
+      const line = (o) =>
+        "M" +
+        Array.from({ length: 25 }, (_, i) =>
+          g.at(4 + ((g.sTip - 4) * i) / 24, -g.w(4 + ((g.sTip - 4) * i) / 24) / 2 + o),
+        )
+          .map(P)
+          .join("L");
       out += `<path d="${line(1.1)}" class="c02-blade-edge" fill="none"/>`;
       out += `<path d="${line(3.2)}" class="c02-blade-bevel" fill="none"/>`;
     }
@@ -370,14 +402,23 @@
     g += `<circle cx="${cx}" cy="${cy}" r="${r}" ${flat ? 'class="c02-ball-flat"' : `fill="url(#${id}-gball)"`}/>`;
     // rim panels (partial pentagons cut by the rim), in ink
     g += `<g clip-path="url(#${id}-cb)">`;
-    RIM_PANELS.forEach((q) => (g += `<path d="${poly(pent(q.c[0], q.c[1], q.R, rot(q.c)))}" class="c02-panel"/>`));
+    RIM_PANELS.forEach(
+      (q) => (g += `<path d="${poly(pent(q.c[0], q.c[1], q.R, rot(q.c)))}" class="c02-panel"/>`),
+    );
     const fv = pent(F_PANEL.c[0], F_PANEL.c[1], F_PANEL.R, rot(F_PANEL.c));
     if (p.founder) {
       // the founder strike: a die-struck Logo-Blue enamel pentagon with '26' knocked out
       g += `<g class="c02-founder"><path d="${poly(fv)}" fill="#0151FC" filter="url(#${id}-strike)"/>`;
       g += `<path d="M${P(fv[2])}L${P(fv[3])}L${P(fv[4])}" fill="none" stroke="#3D7BFF" stroke-width="0.8" stroke-linejoin="round"/>`;
       g += `<path d="M${P(fv[4])}L${P(fv[0])}L${P(fv[1])}L${P(fv[2])}" fill="none" stroke="#0039B8" stroke-width="0.8" stroke-linejoin="round"/>`;
-      if (!opts.thumb) g += numText(String(p.founder).slice(-2), F_PANEL.c[0] - 1.6, F_PANEL.c[1] - 1.2, 12, "c02-founder-26");
+      if (!opts.thumb)
+        g += numText(
+          String(p.founder).slice(-2),
+          F_PANEL.c[0] - 1.6,
+          F_PANEL.c[1] - 1.2,
+          12,
+          "c02-founder-26",
+        );
       g += `</g>`;
     } else {
       g += `<path d="${poly(fv)}" class="c02-panel"/>`;
@@ -445,10 +486,26 @@
     const T = `translate(${r2(o[0])} ${r2(o[1])}) scale(${r2(k)})`;
     // rim light: the whole figure stroked in sky behind, then the figure on top
     const rimG =
-      MC.avatar({ x: r2(box.x), y: r2(box.y), w: r2(box.w), h: r2(box.h), torso: rim, seam: false, stroke: rim, strokeWidth: sw }) +
+      MC.avatar({
+        x: r2(box.x),
+        y: r2(box.y),
+        w: r2(box.w),
+        h: r2(box.h),
+        torso: rim,
+        seam: false,
+        stroke: rim,
+        strokeWidth: sw,
+      }) +
       `<g transform="${T}" fill="${rim}" stroke="${rim}" stroke-width="${sw}" stroke-linejoin="round">` +
       `<path d="${sleeve}"/><path d="${fist}"/><path d="M${P(f0)}L${P(f1)}" stroke-width="${r2(11 + 2 * sw)}" stroke-linecap="round"/></g>`;
-    const body = MC.avatar({ x: r2(box.x), y: r2(box.y), w: r2(box.w), h: r2(box.h), torso: fill, seam });
+    const body = MC.avatar({
+      x: r2(box.x),
+      y: r2(box.y),
+      w: r2(box.w),
+      h: r2(box.h),
+      torso: fill,
+      seam,
+    });
     const armG =
       `<g transform="${T}"><path d="${sleeve}" fill="${fill}"/><path d="${cuff}" stroke="${seam}" stroke-width="5" transform="translate(${r2(-dx * 8)} ${r2(-dy * 8)})"/>` +
       `<path d="${fist}" fill="${fill}"/><path d="M${P(f0)}L${P(f1)}" stroke="${fill}" stroke-width="11" stroke-linecap="round"/></g>`;
@@ -518,7 +575,10 @@
     const bandR = (y) => bp[0] + (4 - (y - bp[1]) * bd[1]) / bd[0];
     /** Room for a box from `top` to `bot`: the slanted edges bind at its top-start and bottom-end
         corners; the ball and the band's end bind at its top-end corner. */
-    const span = (top, bot) => ({ L: edgeX(g, top, -1) + padS, R: Math.min(edgeX(g, bot, 1) - padE, ballR(top), bandR(top)) });
+    const span = (top, bot) => ({
+      L: edgeX(g, top, -1) + padS,
+      R: Math.min(edgeX(g, bot, 1) - padE, ballR(top), bandR(top)),
+    });
     const nm = (name, n) => {
       const m = measure(name, F_NUM, n);
       return { w: m.w, asc: m.a, desc: m.d };
@@ -567,12 +627,15 @@
       }
       return null;
     }
-    const names = ar ? [full, shortAr(full)].filter((v, i, A) => A.indexOf(v) === i) : [full.length > 10 ? initialForm(full) : full];
+    const names = ar
+      ? [full, shortAr(full)].filter((v, i, A) => A.indexOf(v) === i)
+      : [full.length > 10 ? initialForm(full) : full];
     let best = null;
     names.forEach((name, i) => {
       for (let n = N0; n >= 18 && !best; n -= 1) {
         const t = n >= 26 ? (ar ? 12 : 11) : ar ? 11 : 10;
-        for (let dyb = -4; dyb <= 12 && !best; dyb += 2) best = inline(name, n, t, mid + nm(name, n).asc / 2 + dyb);
+        for (let dyb = -4; dyb <= 12 && !best; dyb += 2)
+          best = inline(name, n, t, mid + nm(name, n).asc / 2 + dyb);
       }
       const nFloor = i === names.length - 1 ? 12 : 18;
       for (let n = 26; n >= nFloor && !best; n -= 1) best = stacked(name, n, ar ? 10 : 9);
@@ -592,7 +655,15 @@
       const st = span(ty - b.asc, ty + b.desc);
       const nx = (sn.L + sn.R) / 2;
       const want = ar ? nx + a.w / 2 - b.w / 2 : nx - a.w / 2 + b.w / 2;
-      best = { name, n, t, yb, nx, ty, tx: clamp(want, st.L + b.w / 2, Math.max(st.L + b.w / 2, st.R - b.w / 2)) };
+      best = {
+        name,
+        n,
+        t,
+        yb,
+        nx,
+        ty,
+        tx: clamp(want, st.L + b.w / 2, Math.max(st.L + b.w / 2, st.R - b.w / 2)),
+      };
     }
     const cls = `c02-nz c02-nz-${tier.toLowerCase()}`;
     const nameT = ar
@@ -700,15 +771,45 @@
      swooshes above it), the lower edge nearly flat (room for the 84 on the root).
      Compact (44–80px): nominal 80 → 80×35, units are half-pixels (viewBox height 70).
      Mini (24–32px): the spec's 32×18 sits at the 28px slot, units are quarter-pixels (height 72). */
-  const TK = { H: 70, ball: { x: 125, y: 35, r: 34 }, head: 32, ua: -118, uc: [62, 13], tip: [2, 53], tipW: 3, lc: [56, 69], la: 112, num: [56, 50], fs: 36 };
-  const MN = { H: 76, ball: { x: 101, y: 48, r: 26 }, head: 25, ua: -128, uc: [34, 25], tip: [1, 61], tipW: 4, lc: [40, 77], la: 112, num: [47, 56.5], fs: 40 };
+  const TK = {
+    H: 70,
+    ball: { x: 125, y: 35, r: 34 },
+    head: 32,
+    ua: -118,
+    uc: [62, 13],
+    tip: [2, 53],
+    tipW: 3,
+    lc: [56, 69],
+    la: 112,
+    num: [56, 50],
+    fs: 36,
+  };
+  const MN = {
+    H: 76,
+    ball: { x: 101, y: 48, r: 26 },
+    head: 25,
+    ua: -128,
+    uc: [34, 25],
+    tip: [1, 61],
+    tipW: 4,
+    lc: [40, 77],
+    la: 112,
+    num: [47, 56.5],
+    fs: 40,
+  };
   const qpt = (a, c, b, t) => {
     const u = 1 - t;
-    return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
+    return [
+      u * u * a[0] + 2 * u * t * c[0] + t * t * b[0],
+      u * u * a[1] + 2 * u * t * c[1] + t * t * b[1],
+    ];
   };
   const qdr = (a, c, b, t) => {
     const u = 1 - t;
-    return [2 * u * (c[0] - a[0]) + 2 * t * (b[0] - c[0]), 2 * u * (c[1] - a[1]) + 2 * t * (b[1] - c[1])];
+    return [
+      2 * u * (c[0] - a[0]) + 2 * t * (b[0] - c[0]),
+      2 * u * (c[1] - a[1]) + 2 * t * (b[1] - c[1]),
+    ];
   };
   function swoosh(T, legend) {
     const b = T.ball;
@@ -718,7 +819,10 @@
     const m = (tail + ext) / tail;
     const bx = b.x + ext;
     const sx = (x) => bx - (b.x - x) * m;
-    const hp = (deg, R = T.head) => [bx + R * Math.cos((deg * Math.PI) / 180), b.y + R * Math.sin((deg * Math.PI) / 180)];
+    const hp = (deg, R = T.head) => [
+      bx + R * Math.cos((deg * Math.PI) / 180),
+      b.y + R * Math.sin((deg * Math.PI) / 180),
+    ];
     const U0 = hp(T.ua);
     const L0 = hp(T.la);
     const Uc = [sx(T.uc[0]), T.uc[1]];
@@ -844,7 +948,13 @@
     g += `<path d="${f.path}" fill="none" class="c02-trail-rim${legend ? " is-blade" : ""}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     // the 84 rides the trail's root
     const fs = T.fs * (String(p.ovr).length > 2 ? 0.82 : 1);
-    g += numText(p.ovr, f.b.x - (T.ball.x - T.num[0]), T.num[1], fs, legend ? "c02-ovr is-ink" : tier === "HOMA" ? "c02-ovr is-chalk" : "c02-ovr");
+    g += numText(
+      p.ovr,
+      f.b.x - (T.ball.x - T.num[0]),
+      T.num[1],
+      fs,
+      legend ? "c02-ovr is-ink" : tier === "HOMA" ? "c02-ovr is-chalk" : "c02-ovr",
+    );
     g += tokenBall(id, p, tier, f.b, mini);
     // nominal size → px: compact 80 → 80×35; mini 28 → 32×18
     const pxPerU = mini ? size / 28 / 4 : size / 80 / 2; // mini 28 → 32×19, compact 80 → 80×35
@@ -893,11 +1003,16 @@
         ps.forEach((a, i) => {
           const b = ps[(i + 1) % ps.length];
           if (inside(a)) out.push(a);
-          if (inside(a) !== inside(b)) out.push([at, a[1] + ((at - a[0]) / (b[0] - a[0])) * (b[1] - a[1])]);
+          if (inside(a) !== inside(b))
+            out.push([at, a[1] + ((at - a[0]) / (b[0] - a[0])) * (b[1] - a[1])]);
         });
         return out;
       };
-      return cut(cut(pts, (q) => q[0] >= 0, 0), (q) => q[0] <= 360, 360);
+      return cut(
+        cut(pts, (q) => q[0] >= 0, 0),
+        (q) => q[0] <= 360,
+        360,
+      );
     };
     let stripes = "";
     for (let i = -9; i <= 9; i++) {
@@ -929,22 +1044,49 @@
     // two floodlight masts on the far touchline, right of the shot: a thin pylon, a tilted lamp
     // bank facing the pitch, and a faint beam falling across it (flat, no halo, no glow)
     [
-      { base: [338, HZ], top: [332, 236], head: 30, tilt: -22, beam: [[96, 640], [300, 640]] },
-      { base: [268, HZ], top: [265, 336], head: 19, tilt: -16, beam: [[150, 640], [262, 640]] },
+      {
+        base: [338, HZ],
+        top: [332, 236],
+        head: 30,
+        tilt: -22,
+        beam: [
+          [96, 640],
+          [300, 640],
+        ],
+      },
+      {
+        base: [268, HZ],
+        top: [265, 336],
+        head: 19,
+        tilt: -16,
+        beam: [
+          [150, 640],
+          [262, 640],
+        ],
+      },
     ].forEach((m) => {
       const hw = m.head / 2;
       const hh = m.head * 0.24;
       const a = (m.tilt * Math.PI) / 180;
-      const rotp = (dx, dy) => [m.top[0] + dx * Math.cos(a) - dy * Math.sin(a), m.top[1] + dx * Math.sin(a) + dy * Math.cos(a)];
+      const rotp = (dx, dy) => [
+        m.top[0] + dx * Math.cos(a) - dy * Math.sin(a),
+        m.top[1] + dx * Math.sin(a) + dy * Math.cos(a),
+      ];
       const face = [rotp(-hw, -hh), rotp(hw, -hh), rotp(hw, 0), rotp(-hw, 0)];
       beams += `<path d="${poly([face[3], face[2], m.beam[1], m.beam[0]])}" fill="url(#${id}-gbeam)"/>`;
       const bw = m.head / 12;
-      masts += `<path d="${poly([[m.base[0] - bw, m.base[1]], [m.base[0] + bw, m.base[1]], [m.top[0] + bw * 0.4, m.top[1] + 2], [m.top[0] - bw * 0.4, m.top[1] + 2]])}" fill="#1A365E"/>`;
+      masts += `<path d="${poly([
+        [m.base[0] - bw, m.base[1]],
+        [m.base[0] + bw, m.base[1]],
+        [m.top[0] + bw * 0.4, m.top[1] + 2],
+        [m.top[0] - bw * 0.4, m.top[1] + 2],
+      ])}" fill="#1A365E"/>`;
       // the bank: a dark frame on the mast head, its lit face one bar of lamps split by thin mullions
       masts += `<path d="${poly([rotp(-hw - 1.5, -hh - 1.5), rotp(hw + 1.5, -hh - 1.5), rotp(hw + 1.5, 2.5), rotp(-hw - 1.5, 2.5)])}" fill="#1A365E"/>`;
       masts += `<path d="${poly(face)}" fill="#EAF6FF" fill-opacity="0.9"/>`;
       let mull = "";
-      for (let i = 1; i < 6; i++) mull += `M${P(rotp(-hw + (m.head / 6) * i, -hh))}L${P(rotp(-hw + (m.head / 6) * i, 0))}`;
+      for (let i = 1; i < 6; i++)
+        mull += `M${P(rotp(-hw + (m.head / 6) * i, -hh))}L${P(rotp(-hw + (m.head / 6) * i, 0))}`;
       masts += `<path d="${mull}" stroke="#1A365E" stroke-width="${r2(m.head / 32)}" fill="none"/>`;
     });
     svg += beams + masts;
@@ -1001,8 +1143,10 @@
     name: "Tir",
     nameAr: "التسديدة",
     category: "safe",
-    philosophy: "Your card is your shot: the ball you struck, and the trail behind it that carries your name, your number and your four decisions.",
-    philosophyAr: "بطاقتك هي تسديدتك: الكرة التي سدّدتها، والأثر خلفها يحمل اسمك ورقمك وقراراتك الأربعة.",
+    philosophy:
+      "Your card is your shot: the ball you struck, and the trail behind it that carries your name, your number and your four decisions.",
+    philosophyAr:
+      "بطاقتك هي تسديدتك: الكرة التي سدّدتها، والأثر خلفها يحمل اسمك ورقمك وقراراتك الأربعة.",
     idea: [
       "Tir is BotolaGO's own ball in flight, made into one object with no frame. A white ball flies to the top-end of a 300×420 portrait footprint and its trail falls on a shallow arc to the bottom-start — the arc a struck ball really draws, flatter where it arrives than where it left. Swooshes ride beside the trail: Logo Blue, then ink, then (at CHAMPION) the club's colour. The outline reads as 'a shot' before a word is read, and it never mirrors.",
       "Everything that is yours rides the trail, not the ball: the club band at its root (its two ends show on either side of the ball), your name with your tier inline on one baseline, your 84 in Changa 800 on the trail's thick end, then four stat lines stepping down the flight — CAP 91, SEL 82, TRF 86, CON 78. The tail is four equal lanes; no length encodes a value, so nothing reads as an attribute bar. 'OVR' is not drawn in the artwork; it lives in the accessible label.",
@@ -1031,10 +1175,13 @@
     ],
     tiers: {
       HOMA: "'Craie'. A patch of fresh concrete cut to the full comet outline, outlined and laned in clean white chalk, with chalk-white words; a new white ball with ink panels; no swooshes and no light. Raw, never poor.",
-      STADE: "'Peinte'. The trail painted flat Floodlight Navy, one Logo-Blue swoosh, and a flat white ball.",
+      STADE:
+        "'Peinte'. The trail painted flat Floodlight Navy, one Logo-Blue swoosh, and a flat white ball.",
       PRO: "'Logo'. Floodlight Navy fading to Tunnel Navy toward the tip, the Logo-Blue swoosh plus the ink swoosh outside it (the logo's full grammar), and one soft top light on the ball.",
-      CHAMPION: "'Caoutchouc'. The trail is moulded matte graphite rubber with fine grip ridges every 4u, three swooshes (the third in the club's colour), and a sheen on the ball that follows tilt. No metal.",
-      LEGEND: "'Lame'. The trail becomes a matte white blade with one polished leading edge — the outline change: on the card it has its own geometry, fuller in the body and on a stronger arc, tapering to a point in the bottom-start corner; the tokens stretch it 30%. Ink words, a Logo-Blue tier word, and one debossed dimple per gameweek played (the sample's seven are marked EXEMPLE). On the light ground the blade is shaded and held by an ink keyline with an ink leading edge. No glow, no gold, no halo.",
+      CHAMPION:
+        "'Caoutchouc'. The trail is moulded matte graphite rubber with fine grip ridges every 4u, three swooshes (the third in the club's colour), and a sheen on the ball that follows tilt. No metal.",
+      LEGEND:
+        "'Lame'. The trail becomes a matte white blade with one polished leading edge — the outline change: on the card it has its own geometry, fuller in the body and on a stronger arc, tapering to a point in the bottom-start corner; the tokens stretch it 30%. Ink words, a Logo-Blue tier word, and one debossed dimple per gameweek played (the sample's seven are marked EXEMPLE). On the light ground the blade is shaded and held by an ink keyline with an ink leading edge. No glow, no gold, no halo.",
     },
     legend: [
       "The strike, as an optional replay: the 84 holds its place from the first frame. With motion on, a contact frame squashes the ball (0.92 × 1.06), it flies to rest along the arc on the hero ease, and the dimples press in one by one, 20ms apart. Then stillness. Under reduced motion the final state shows.",

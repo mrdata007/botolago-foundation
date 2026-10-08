@@ -5,7 +5,10 @@
 
   /** The concept's own leaderboard row (its "compact card"), for ALI and the samples. */
   MC.ctxRows = (c, o = {}) =>
-    MC.SAMPLES.map((s) => `<div class="ctx-row-slot">${c.row(MC.sample(s), { ...o, rank: s.rank, pts: s.pts, me: !!s.me })}</div>`).join("");
+    MC.SAMPLES.map(
+      (s) =>
+        `<div class="ctx-row-slot">${c.row(MC.sample(s), { ...o, rank: s.rank, pts: s.pts, me: !!s.me })}</div>`,
+    ).join("");
 
   /** The concept's mini inside the standard BotolaGO ranking card. The app keeps its row:
       rank, a ≤28px mark inside the name cell (the real row leaves ~91px for the name), points. */
@@ -54,7 +57,12 @@
   MC.ctxSilhouette = (c, o = {}) =>
     `<div class="ctx-sil">` +
     `<figure><div class="ctx-sil-card" style="width:120px">${c.full(MC.ALI, { ...o, thumb: true })}</div><figcaption>card</figcaption></figure>` +
-    [56, 44, 28].map((h) => `<figure><div class="ctx-ladder-slot" style="height:${h}px;min-width:${h}px">${c.token(MC.ALI, { ...o, size: h, mini: h <= 32 })}</div><figcaption>${h}px</figcaption></figure>`).join("") +
+    [56, 44, 28]
+      .map(
+        (h) =>
+          `<figure><div class="ctx-ladder-slot" style="height:${h}px;min-width:${h}px">${c.token(MC.ALI, { ...o, size: h, mini: h <= 32 })}</div><figcaption>${h}px</figcaption></figure>`,
+      )
+      .join("") +
     `</div>`;
 
   /** The token at every size from leaderboard to favicon, for the scalability test. */
@@ -62,7 +70,8 @@
   MC.ctxLadder = (c, o = {}) =>
     `<div class="ctx-ladder">` +
     MC.TOKEN_SIZES.map(
-      (h) => `<figure><div class="ctx-ladder-slot" style="height:${h}px;min-width:${h}px">${c.token(MC.ALI, { ...o, size: h, mini: h <= 32 })}</div><figcaption>${h}px</figcaption></figure>`,
+      (h) =>
+        `<figure><div class="ctx-ladder-slot" style="height:${h}px;min-width:${h}px">${c.token(MC.ALI, { ...o, size: h, mini: h <= 32 })}</div><figcaption>${h}px</figcaption></figure>`,
     ).join("") +
     `</div>`;
 })();

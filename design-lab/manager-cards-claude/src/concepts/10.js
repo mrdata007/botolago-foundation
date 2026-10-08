@@ -12,7 +12,16 @@
   /** Mixes two #rrggbb colours: t = 0 gives a, 1 gives b. */
   const mix = (a, b, t) => {
     const h = (c, i) => parseInt(c.slice(1 + 2 * i, 3 + 2 * i), 16);
-    return "#" + [0, 1, 2].map((i) => Math.round(h(a, i) + (h(b, i) - h(a, i)) * t).toString(16).padStart(2, "0")).join("");
+    return (
+      "#" +
+      [0, 1, 2]
+        .map((i) =>
+          Math.round(h(a, i) + (h(b, i) - h(a, i)) * t)
+            .toString(16)
+            .padStart(2, "0"),
+        )
+        .join("")
+    );
   };
 
   const C = {
@@ -44,11 +53,43 @@
 
   /* ---------- the ground, per tier ---------- */
   const TIER = {
-    HOMA: { ground: "concrete", base: "#BCC0C3", stripe: null, vig: 0.5, crisp: { fill: C.shadow, op: 0.74 } },
-    STADE: { ground: "synthetic", base: "#BAC8D3", stripe: null, vig: 0.4, crisp: { fill: C.shadow, op: 0.76 } },
-    PRO: { ground: "grass", base: "#CFDDE6", stripe: "#BCCEDA", vig: 0.3, crisp: { fill: C.shadow, op: 0.78 } },
-    CHAMPION: { ground: "wet", base: "#B6C8D5", stripe: "#A8BDCC", vig: 0.32, crisp: { fill: "#08275A", op: 0.84 }, wet: true },
-    LEGEND: { ground: "pristine", base: "#D8E3EB", stripe: "#C7D7E2", vig: 0.12, crisp: { fill: "#061736", op: 0.9 }, legend: true },
+    HOMA: {
+      ground: "concrete",
+      base: "#BCC0C3",
+      stripe: null,
+      vig: 0.5,
+      crisp: { fill: C.shadow, op: 0.74 },
+    },
+    STADE: {
+      ground: "synthetic",
+      base: "#BAC8D3",
+      stripe: null,
+      vig: 0.4,
+      crisp: { fill: C.shadow, op: 0.76 },
+    },
+    PRO: {
+      ground: "grass",
+      base: "#CFDDE6",
+      stripe: "#BCCEDA",
+      vig: 0.3,
+      crisp: { fill: C.shadow, op: 0.78 },
+    },
+    CHAMPION: {
+      ground: "wet",
+      base: "#B6C8D5",
+      stripe: "#A8BDCC",
+      vig: 0.32,
+      crisp: { fill: "#08275A", op: 0.84 },
+      wet: true,
+    },
+    LEGEND: {
+      ground: "pristine",
+      base: "#D8E3EB",
+      stripe: "#C7D7E2",
+      vig: 0.12,
+      crisp: { fill: "#061736", op: 0.9 },
+      legend: true,
+    },
   };
   const SOFT = { fill: "#33251A", op: 0.6, blur: 1.5 }; // sodium: warm, with a ~3u penumbra
   const tierOf = (p) => TIER[p.tier] || TIER.PRO;
@@ -58,20 +99,39 @@
   // (26u across the feet), the hips, a waist, the folded-arm elbows (just wider than the
   // shoulders), sloped shoulders and a soft neck. A round head sits beyond the neck.
   const PROFILE = [
-    [0, 12.5], [0.1, 10.6], [0.24, 8.7], [0.37, 8.2], [0.47, 8.2], [0.56, 7.9], [0.62, 9.3],
-    [0.69, 11], [0.78, 11.2], [0.86, 11], [0.915, 10.7], [0.95, 8.8], [0.975, 5.4], [1, 4.2],
+    [0, 12.5],
+    [0.1, 10.6],
+    [0.24, 8.7],
+    [0.37, 8.2],
+    [0.47, 8.2],
+    [0.56, 7.9],
+    [0.62, 9.3],
+    [0.69, 11],
+    [0.78, 11.2],
+    [0.86, 11],
+    [0.915, 10.7],
+    [0.95, 8.8],
+    [0.975, 5.4],
+    [1, 4.2],
   ];
   // the lit gap between the legs: open at the feet (5u half-width), closing at the crotch
-  const NOTCH = [[0.14, 3.8], [0.29, 2.2], [0.4, 0.8], [0.45, 0]];
+  const NOTCH = [
+    [0.14, 3.8],
+    [0.29, 2.2],
+    [0.4, 0.8],
+    [0.45, 0],
+  ];
   /**
    * Closed outline in local coords (feet at 0,0, the shadow along +x), L long. k scales the
    * widths; rx is the head's half-length (default 8u on the 130u shadow), its half-width 7k.
    */
   function personLoop(L, k, rxIn) {
-    const rx = rxIn ?? 0.055 * L, ry = 6.3 * k;
+    const rx = rxIn ?? 0.055 * L,
+      ry = 6.3 * k;
     const Lb = L - 1.76 * rx; // the neck slips 0.24rx into the head
     const up = PROFILE.slice(1).map(([u, w]) => [u * Lb, w * k]);
-    const hc = L - rx, nw = PROFILE[PROFILE.length - 1][1] * k;
+    const hc = L - rx,
+      nw = PROFILE[PROFILE.length - 1][1] * k;
     const th0 = Math.PI - Math.asin(Math.min(0.98, nw / ry));
     const arc = [];
     const N = 12;
@@ -80,8 +140,16 @@
       arc.push([hc + rx * Math.cos(th), ry * Math.sin(th)]);
     }
     const lo = up.map(([x, y]) => [x, -y]).reverse();
-    const foot = (s) => [[0, s * 5 * k], [-1.8 * k, s * 8.8 * k], [0, s * 12.5 * k]];
-    const notch = NOTCH.map(([u, w]) => [u * Lb, -w * k]).concat(NOTCH.slice(0, -1).reverse().map(([u, w]) => [u * Lb, w * k]));
+    const foot = (s) => [
+      [0, s * 5 * k],
+      [-1.8 * k, s * 8.8 * k],
+      [0, s * 12.5 * k],
+    ];
+    const notch = NOTCH.map(([u, w]) => [u * Lb, -w * k]).concat(
+      NOTCH.slice(0, -1)
+        .reverse()
+        .map(([u, w]) => [u * Lb, w * k]),
+    );
     const loop = [...foot(1), ...up, ...arc, ...lo, ...foot(-1).reverse(), ...notch];
     return { loop, rx, ry, Lb, hc, th0 };
   }
@@ -97,14 +165,24 @@
   }
   /** A flat tapered wedge (small sizes and the thumb): no head. */
   function wedgeLoop(L, root, tip) {
-    return [[-root * 0.4, 0], [0, root], [L * 0.94, tip], [L, 0], [L * 0.94, -tip], [0, -root]];
+    return [
+      [-root * 0.4, 0],
+      [0, root],
+      [L * 0.94, tip],
+      [L, 0],
+      [L * 0.94, -tip],
+      [0, -root],
+    ];
   }
   /** Catmull-Rom through a closed loop of points. */
   function closedPath(pts) {
     const n = pts.length;
     let d = `M${f(pts[0][0])} ${f(pts[0][1])}`;
     for (let i = 0; i < n; i++) {
-      const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+      const p0 = pts[(i - 1 + n) % n],
+        p1 = pts[i],
+        p2 = pts[(i + 1) % n],
+        p3 = pts[(i + 2) % n];
       d += `C${f(p1[0] + (p2[0] - p0[0]) / 6)} ${f(p1[1] + (p2[1] - p0[1]) / 6)} ${f(p2[0] - (p3[0] - p1[0]) / 6)} ${f(p2[1] - (p3[1] - p1[1]) / 6)} ${f(p2[0])} ${f(p2[1])}`;
     }
     return d + "Z";
@@ -114,9 +192,22 @@
 
   /* ---------- Changa 800 digits (proportional): measured table, not canvas ---------- */
   // per 100px: [advance, ink left, ink right], measured in Chromium on 2026-10-07.
-  const DIG = { 0: [67.5, 4, 64], 1: [53.5, 1, 52], 2: [59.5, 3, 56], 3: [55.6, 1, 53], 4: [62.7, 1, 60], 5: [58.9, 4, 56], 6: [61.5, 3, 58], 7: [50, 0, 48], 8: [61.6, 3, 59], 9: [61.5, 3, 58] };
+  const DIG = {
+    0: [67.5, 4, 64],
+    1: [53.5, 1, 52],
+    2: [59.5, 3, 56],
+    3: [55.6, 1, 53],
+    4: [62.7, 1, 60],
+    5: [58.9, 4, 56],
+    6: [61.5, 3, 58],
+    7: [50, 0, 48],
+    8: [61.6, 3, 59],
+    9: [61.5, 3, 58],
+  };
   function ink(text) {
-    let x = 0, l = 0, r = 0;
+    let x = 0,
+      l = 0,
+      r = 0;
     const ch = String(text).split("");
     ch.forEach((c, i) => {
       const [a, il, ir] = DIG[c] || [60, 3, 57];
@@ -155,8 +246,10 @@
    * viewBox runs from x -12 to 432 to hold them.
    */
   function plateBox(c, legend, faceDown) {
-    const w = legend ? 84 : 76, h = legend ? 40 : 28;
-    const left = c === "TL" || c === "BL", top = faceDown || c === "TL" || c === "TR";
+    const w = legend ? 84 : 76,
+      h = legend ? 40 : 28;
+    const left = c === "TL" || c === "BL",
+      top = faceDown || c === "TL" || c === "TR";
     const x = left ? (legend ? -12 : -8) : legend ? 348 : 352;
     const y = top ? (legend ? 4 : 16) : 196;
     return { x, y, w, h, left, top };
@@ -165,13 +258,22 @@
   function groundDefs(u, T, box, flat = true) {
     const { x, y, w, h } = box;
     const R = `x="${x}" y="${y}" width="${w}" height="${h}"`;
-    let d = "", g = `<rect ${R} fill="${T.base}"/>`;
+    let d = "",
+      g = `<rect ${R} fill="${T.base}"/>`;
     if (T.stripe) {
       d += `<pattern id="${u}-mow" patternUnits="userSpaceOnUse" x="${F[0] - 12}" y="0" width="48" height="40"><rect width="24" height="40" fill="${T.stripe}"/></pattern>`;
       g += `<rect ${R} fill="url(#${u}-mow)"/>`;
     }
     if (T.ground === "grass" || T.ground === "wet") {
-      d += grainFilter(`${u}-mottle`, "0.018 0.045", 3, 13, [0.05, 0.12, 0.22], [2.4, -1.12], [-2.4, 1.05]);
+      d += grainFilter(
+        `${u}-mottle`,
+        "0.018 0.045",
+        3,
+        13,
+        [0.05, 0.12, 0.22],
+        [2.4, -1.12],
+        [-2.4, 1.05],
+      );
       g += `<rect ${R} filter="url(#${u}-mottle)" opacity="${T.wet ? 0.16 : 0.12}"/>`;
     }
     if (T.ground === "concrete") {
@@ -180,13 +282,23 @@
       d += grainFilter(`${u}-stain`, "0.012 0.018", 3, 9, [0.3, 0.31, 0.32], [2, -0.95], [-2, 0.9]);
       g += `<rect ${R} filter="url(#${u}-stain)" opacity=".45"/><rect ${R} filter="url(#${u}-grain)" opacity=".2"/>`;
       if (flat) {
-      const j = `stroke="#7E8489" stroke-width="1"`, jl = `stroke="#F4F6F8" stroke-width=".6" opacity=".55"`;
-      for (const jx of [150, 270]) g += `<path d="M${jx} ${y}V${y + h}" ${j}/><path d="M${jx + 1} ${y}V${y + h}" ${jl}/>`;
-      g += `<path d="M${x} 120H${x + w}" ${j}/><path d="M${x} 121H${x + w}" ${jl}/>`;
+        const j = `stroke="#7E8489" stroke-width="1"`,
+          jl = `stroke="#F4F6F8" stroke-width=".6" opacity=".55"`;
+        for (const jx of [150, 270])
+          g += `<path d="M${jx} ${y}V${y + h}" ${j}/><path d="M${jx + 1} ${y}V${y + h}" ${jl}/>`;
+        g += `<path d="M${x} 120H${x + w}" ${j}/><path d="M${x} 121H${x + w}" ${jl}/>`;
       }
     }
     if (T.ground === "synthetic") {
-      d += grainFilter(`${u}-grain`, "1.2 0.36", 2, 5, [0.05, 0.1, 0.18], [2.4, -1.1], [-2.4, 1.02]);
+      d += grainFilter(
+        `${u}-grain`,
+        "1.2 0.36",
+        2,
+        5,
+        [0.05, 0.1, 0.18],
+        [2.4, -1.1],
+        [-2.4, 1.02],
+      );
       d += `<filter id="${u}-crumb" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".42" numOctaves="1" seed="21" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 .071  0 0 0 0 .078  0 0 0 0 .09  14 0 0 0 -11.4"/></filter>`;
       g += `<rect ${R} filter="url(#${u}-grain)" opacity=".24"/><rect ${R} filter="url(#${u}-crumb)" opacity=".25"/>`;
     }
@@ -195,15 +307,22 @@
 
   /** The light on the ground: sodium pools warm the turf, LED pools brighten it. */
   function lightPools(u, p, T, cpt, r) {
-    let d = "", warm = "", cool = "";
+    let d = "",
+      warm = "",
+      cool = "";
     d += `<radialGradient id="${u}-warm"><stop offset="0" stop-color="#FFB45C" stop-opacity=".55"/><stop offset=".55" stop-color="#FFC783" stop-opacity=".18"/><stop offset="1" stop-color="#FFD7A6" stop-opacity="0"/></radialGradient>`;
     d += `<radialGradient id="${u}-cool"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".55"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity=".12"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>`;
     for (const c of CORNERS) {
       const [cx, cy] = cpt[c];
-      if (isLed(p, c)) cool += `<circle class="c10-pool c10-k${STEP[c]}" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${u}-cool)"/>`;
-      else warm += `<circle class="c10-pool c10-k${STEP[c]}" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${u}-warm)"/>`;
+      if (isLed(p, c))
+        cool += `<circle class="c10-pool c10-k${STEP[c]}" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${u}-cool)"/>`;
+      else
+        warm += `<circle class="c10-pool c10-k${STEP[c]}" cx="${cx}" cy="${cy}" r="${r}" fill="url(#${u}-warm)"/>`;
     }
-    return { d, g: `<g style="mix-blend-mode:multiply">${warm}</g><g style="mix-blend-mode:screen" opacity="${T.legend ? 0.55 : 0.45}">${cool}</g>` };
+    return {
+      d,
+      g: `<g style="mix-blend-mode:multiply">${warm}</g><g style="mix-blend-mode:screen" opacity="${T.legend ? 0.55 : 0.45}">${cool}</g>`,
+    };
   }
 
   /** A lamp plate: the club's colour, the stat in its on-colour, a lens on the edge facing the turf. */
@@ -224,11 +343,14 @@
     let textMid;
     if (!legend) {
       const ly = B.top ? B.y + B.h - 5 : B.y + 1;
-      const lx = B.x + 3, lw = B.w - 6;
+      const lx = B.x + 3,
+        lw = B.w - 6;
       s += `<rect x="${lx}" y="${ly}" width="${lw}" height="4" rx="1" fill="#0E1622"/>`;
       if (led) {
-        const n = 6, cw = lw / n;
-        for (let i = 0; i < n; i++) s += `<rect class="c10-lens c10-k${STEP[c]}" x="${f(lx + cw * i + 0.4)}" y="${ly + 0.4}" width="${f(cw - 0.8)}" height="3.2" rx=".6" fill="${C.lens}"/>`;
+        const n = 6,
+          cw = lw / n;
+        for (let i = 0; i < n; i++)
+          s += `<rect class="c10-lens c10-k${STEP[c]}" x="${f(lx + cw * i + 0.4)}" y="${ly + 0.4}" width="${f(cw - 0.8)}" height="3.2" rx=".6" fill="${C.lens}"/>`;
       } else {
         s += `<rect class="c10-lens c10-k${STEP[c]}" x="${lx + 0.5}" y="${ly + 0.4}" width="${lw - 1}" height="3.2" rx="1.6" fill="${C.sodium}"/>`;
         s += `<rect class="c10-lens c10-k${STEP[c]}" x="${lx + 6}" y="${ly + 1.5}" width="${lw - 12}" height="1" rx=".5" fill="#FFE2B0"/>`;
@@ -236,9 +358,13 @@
       textMid = B.top ? B.y + (B.h - 5) / 2 : B.y + 5 + (B.h - 5) / 2;
     } else {
       // LEGEND: a full floodlight head, 2x4 LED lamps, on the half that faces the turf
-      const gy = B.top ? B.y + 22 : B.y + 2, gx = B.x + 4, gw = B.w - 8, gh = 16;
+      const gy = B.top ? B.y + 22 : B.y + 2,
+        gx = B.x + 4,
+        gw = B.w - 8,
+        gh = 16;
       s += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="1.4" fill="#0E1622"/>`;
-      const cw = gw / 4, ch = gh / 2;
+      const cw = gw / 4,
+        ch = gh / 2;
       for (let i = 0; i < 2; i++)
         for (let j = 0; j < 4; j++)
           s += `<rect class="c10-lens c10-k${STEP[c]}" x="${f(gx + cw * j + 0.8)}" y="${f(gy + ch * i + 0.8)}" width="${f(cw - 1.6)}" height="${f(ch - 1.6)}" rx="1" fill="url(#${u}-lamp)"/>`;
@@ -249,11 +375,13 @@
       const cx = B.x + B.w / 2;
       const base = f(textMid + 5.2);
       if (ar) {
-        s += `<text class="c10-ptxt" x="${f(cx)}" y="${base}" text-anchor="middle" direction="rtl" fill="${on}">` +
+        s +=
+          `<text class="c10-ptxt" x="${f(cx)}" y="${base}" text-anchor="middle" direction="rtl" fill="${on}">` +
           `<tspan font-family="Noto Sans Arabic, Changa, sans-serif" font-weight="700" font-size="${S.stats[k].length > 7 ? 10.5 : 11.5}" fill-opacity=".86">${esc(S.stats[k])}</tspan>` +
           `<tspan dx="-4" direction="ltr" unicode-bidi="embed" font-family="Manrope, sans-serif" font-weight="800" font-size="15" style="font-variant-numeric:tabular-nums">${v}</tspan></text>`;
       } else {
-        s += `<text class="c10-ptxt" x="${f(cx)}" y="${base}" text-anchor="middle" fill="${on}">` +
+        s +=
+          `<text class="c10-ptxt" x="${f(cx)}" y="${base}" text-anchor="middle" fill="${on}">` +
           `<tspan font-family="Manrope, sans-serif" font-weight="800" font-size="11" letter-spacing=".9" fill-opacity=".86">${esc(S.stats[k])}</tspan>` +
           `<tspan dx="4" font-family="Manrope, sans-serif" font-weight="800" font-size="15" style="font-variant-numeric:tabular-nums">${v}</tspan></text>`;
       }
@@ -268,7 +396,8 @@
     s += `<rect class="c10-plate-edge" x="${f(cx - w / 2 + 0.5)}" y="${f(cy - h / 2 + 0.5)}" width="${w - 1}" height="${h - 1}" rx="1.6" fill="none"/>`;
     s += `<rect x="${f(cx - w / 2 + 3)}" y="${f(cy - h / 2 + 1)}" width="${w - 6}" height="3.6" rx="1" fill="#0E1622"/>`;
     s += `<rect class="c10-lens c10-k5" x="${f(cx - w / 2 + 3.5)}" y="${f(cy - h / 2 + 1.4)}" width="${w - 7}" height="2.8" rx="1" fill="${C.first}"/>`;
-    if (withText) s += `<text x="${cx}" y="${f(cy + h / 2 - 5)}" text-anchor="middle" direction="ltr" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing="${f(fs * 0.06)}" fill="${C.steelInk}" style="font-variant-numeric:tabular-nums">${p.founder}</text>`;
+    if (withText)
+      s += `<text x="${cx}" y="${f(cy + h / 2 - 5)}" text-anchor="middle" direction="ltr" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing="${f(fs * 0.06)}" fill="${C.steelInk}" style="font-variant-numeric:tabular-nums">${p.founder}</text>`;
     return s + `</g>`;
   }
 
@@ -296,8 +425,18 @@
     // the full card's high camera sees the hood lit from above and the shoulders a step darker
     // under it; the share's low camera sees the figure against the towers, so it is backlit
     const body = o.coat
-      ? MC.avatar({ ...box, torso: mix(jacket, C.night, 0.5), hoodFill: mix(jacket, C.night, 0.36), seam: false })
-      : MC.avatar({ ...box, torso: mix(jacket, C.night, 0.38), hoodFill: mix(jacket, "#FFFFFF", 0.1), seam: false });
+      ? MC.avatar({
+          ...box,
+          torso: mix(jacket, C.night, 0.5),
+          hoodFill: mix(jacket, C.night, 0.36),
+          seam: false,
+        })
+      : MC.avatar({
+          ...box,
+          torso: mix(jacket, C.night, 0.38),
+          hoodFill: mix(jacket, "#FFFFFF", 0.1),
+          seam: false,
+        });
     const seam = `<svg ${pos} aria-hidden="true" focusable="false"><path d="${A.hoodSeam}" stroke="${trim}" stroke-width="${f(Math.max(2.5, 0.7 / sc))}" stroke-linecap="round" fill="none" opacity=".85"/></svg>`;
     if (o.coat) {
       // the share: the coat ends on a straight hem at avatar y 226, above the feet
@@ -318,7 +457,12 @@
   function falloff(u) {
     const st = `<stop offset="0" stop-color="${C.night}"/><stop offset=".35" stop-color="${C.night}" stop-opacity=".84"/><stop offset="1" stop-color="${C.night}" stop-opacity=".7"/>`;
     let d = "";
-    for (const [id, x1, y1, x2, y2] of [["L", 0, 0, 1, 0], ["R", 1, 0, 0, 0], ["T", 0, 0, 0, 1], ["B", 0, 1, 0, 0]])
+    for (const [id, x1, y1, x2, y2] of [
+      ["L", 0, 0, 1, 0],
+      ["R", 1, 0, 0, 0],
+      ["T", 0, 0, 0, 1],
+      ["B", 0, 1, 0, 0],
+    ])
       d += `<linearGradient id="${u}-f${id}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">${st}</linearGradient>`;
     const g =
       `<rect x="30" y="30" width="14" height="180" fill="url(#${u}-fL)"/><rect x="376" y="30" width="14" height="180" fill="url(#${u}-fR)"/>` +
@@ -356,7 +500,8 @@
     defs += `<radialGradient id="${u}-bloomF"><stop offset="0" stop-color="${C.first}" stop-opacity=".8"/><stop offset="1" stop-color="${C.first}" stop-opacity="0"/></radialGradient>`;
     defs += `<filter id="${u}-pen" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" x="40" y="20" width="340" height="200"><feGaussianBlur stdDeviation="${SOFT.blur}"/></filter>`;
     defs += `<filter id="${u}-contact" color-interpolation-filters="sRGB" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="1.6"/></filter>`;
-    if (!thumb) defs += `<filter id="${u}-paint" x="-4%" y="-20%" width="108%" height="140%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.3 0.55" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale=".55" xChannelSelector="R" yChannelSelector="G"/></filter>`;
+    if (!thumb)
+      defs += `<filter id="${u}-paint" x="-4%" y="-20%" width="108%" height="140%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.3 0.55" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale=".55" xChannelSelector="R" yChannelSelector="G"/></filter>`;
 
     // the four shadows: shadow toward corner c is cast by the lamp opposite it
     let sh = "";
@@ -389,10 +534,12 @@
     let blooms = "";
     for (const c of CORNERS) {
       const B = plateBox(c, legend);
-      const bx = B.x + B.w / 2 + (B.left ? 22 : -22), by = B.top ? B.y + B.h + 2 : B.y - 2;
+      const bx = B.x + B.w / 2 + (B.left ? 22 : -22),
+        by = B.top ? B.y + B.h + 2 : B.y - 2;
       blooms += `<ellipse class="c10-bloom c10-k${STEP[c]}" cx="${f(bx)}" cy="${f(by)}" rx="${legend ? 52 : 42}" ry="${legend ? 16 : 12}" fill="url(#${u}-${isLed(p, c) ? "bloomL" : "bloomS"})"/>`;
     }
-    if (p.founder) blooms += `<ellipse class="c10-bloom c10-k5" cx="210" cy="196" rx="40" ry="12" fill="url(#${u}-bloomF)"/>`;
+    if (p.founder)
+      blooms += `<ellipse class="c10-bloom c10-k5" cx="210" cy="196" rx="40" ry="12" fill="url(#${u}-bloomF)"/>`;
 
     // the paint: the touchline, the name, the 84, the touchline lettering
     const sc = ovrScale(p);
@@ -479,9 +626,12 @@
     const pxL = px + (mini ? 1 : Math.round(S0 * 0.03));
     const mx = legend ? pxL : px;
     const my = Math.ceil((legend ? thL - th / 2 : th / 2) + 0.5);
-    const W = Wt + 2 * mx, H = Ht + 2 * my;
-    const x0 = mx, y0 = my;
-    let d = "", g = "";
+    const W = Wt + 2 * mx,
+      H = Ht + 2 * my;
+    const x0 = mx,
+      y0 = my;
+    let d = "",
+      g = "";
 
     // the tile: night run-off, lit turf inside, a vignette to the edge
     const e = mini ? 1.6 : Math.max(2.4, S0 * 0.05);
@@ -490,7 +640,8 @@
     g += `<rect ${lit} rx="${mini ? 0.8 : 1.4}" fill="${T.base}"/>`;
     if (T.stripe && !mini) {
       const bw = (Wt - 2 * e) / 7;
-      for (let i = 1; i < 7; i += 2) g += `<rect x="${f(x0 + e + bw * i)}" y="${f(y0 + e)}" width="${f(bw)}" height="${f(Ht - 2 * e)}" fill="${T.stripe}"/>`;
+      for (let i = 1; i < 7; i += 2)
+        g += `<rect x="${f(x0 + e + bw * i)}" y="${f(y0 + e)}" width="${f(bw)}" height="${f(Ht - 2 * e)}" fill="${T.stripe}"/>`;
     }
     if (T.ground === "concrete" || T.ground === "synthetic") {
       d += `<radialGradient id="${u}-w"><stop offset="0" stop-color="#FFB45C" stop-opacity=".45"/><stop offset="1" stop-color="#FFB45C" stop-opacity="0"/></radialGradient>`;
@@ -498,7 +649,8 @@
       let pools = "";
       for (const c of CORNERS) {
         if (isLed(p, c)) continue;
-        const cx = c === "TL" || c === "BL" ? x0 : x0 + Wt, cy = c === "TL" || c === "TR" ? y0 : y0 + Ht;
+        const cx = c === "TL" || c === "BL" ? x0 : x0 + Wt,
+          cy = c === "TL" || c === "TR" ? y0 : y0 + Ht;
         pools += `<circle cx="${cx}" cy="${cy}" r="${f(Wt * 0.42)}" fill="url(#${u}-w)"/>`;
       }
       g += `<g clip-path="url(#${u}-cl)" style="mix-blend-mode:multiply">${pools}</g>`;
@@ -517,12 +669,15 @@
     // are sized to the room above the digits, so the lower tips stay 1.5px clear of the 84.
     if (!mini) {
       const SIN = Math.sin((27.55 * Math.PI) / 180);
-      const rw = S0 * 0.024, tip = Math.max(0.45, S0 * 0.009);
-      const top = y0 + e + 0.6, room = base - 0.72 * fs - 1.5 - top;
+      const rw = S0 * 0.024,
+        tip = Math.max(0.45, S0 * 0.009);
+      const top = y0 + e + 0.6,
+        room = base - 0.72 * fs - 1.5 - top;
       const Lw = Math.min(Wt * 0.21, (room - 2 * rw) / (2 * SIN));
       const hy = top + rw + Lw * SIN;
       let w = `<g style="mix-blend-mode:multiply">`;
-      for (const c of CORNERS) w += `<path d="${closedPath(wedgeLoop(Lw, rw, tip))}" transform="translate(${f(cx)} ${f(hy)}) rotate(${f(angOf(c))})" fill="${T.crisp.fill}" opacity="${f(Math.min(0.95, T.crisp.op + 0.1))}"/>`;
+      for (const c of CORNERS)
+        w += `<path d="${closedPath(wedgeLoop(Lw, rw, tip))}" transform="translate(${f(cx)} ${f(hy)}) rotate(${f(angOf(c))})" fill="${T.crisp.fill}" opacity="${f(Math.min(0.95, T.crisp.op + 0.1))}"/>`;
       g += w + `</g>`;
     }
     g += `<text x="${f(cx + m.dx * fs)}" y="${f(base)}" direction="ltr" text-anchor="start" font-family="Changa, sans-serif" font-weight="800" font-size="${f(fs)}" fill="${C.tunnel}">${p.ovr}</text>`;
@@ -530,7 +685,8 @@
 
     // the lamp tabs: club colour housing, white LED lens or amber sodium lens on the inner edge
     for (const c of CORNERS) {
-      const left = c === "TL" || c === "BL", top = c === "TL" || c === "TR";
+      const left = c === "TL" || c === "BL",
+        top = c === "TL" || c === "TR";
       const hh = legend ? thL : th;
       const out = legend ? pxL : px;
       const tx = left ? x0 - out : x0 + Wt + out - tw - (legend && !mini ? 2 : 0);
@@ -540,16 +696,23 @@
       const led = isLed(p, c);
       const lh = legend ? hh * 0.62 : mini ? hh - 1.4 : Math.max(1.5, hh * 0.45);
       const ly = top ? ty + hh - lh - (mini ? 0.7 : 0.6) : ty + (mini ? 0.7 : 0.6);
-      const lx = tx + (mini ? 0.7 : 1.2), lw = twx - (mini ? 1.4 : 2.4);
+      const lx = tx + (mini ? 0.7 : 1.2),
+        lw = twx - (mini ? 1.4 : 2.4);
       if (legend && !mini && S0 >= 56) {
         // floodlight head: 2x4 lamps
-        const cw = lw / 4, ch = lh / 2;
-        for (let i = 0; i < 2; i++) for (let j = 0; j < 4; j++) g += `<rect x="${f(lx + cw * j + 0.35)}" y="${f(ly + ch * i + 0.35)}" width="${f(cw - 0.7)}" height="${f(ch - 0.7)}" rx=".4" fill="${C.lens}"/>`;
-      } else g += `<rect x="${f(lx)}" y="${f(ly)}" width="${f(lw)}" height="${f(lh)}" rx="${f(Math.min(0.8, lh / 2))}" fill="${led ? C.lens : C.sodium}"/>`;
+        const cw = lw / 4,
+          ch = lh / 2;
+        for (let i = 0; i < 2; i++)
+          for (let j = 0; j < 4; j++)
+            g += `<rect x="${f(lx + cw * j + 0.35)}" y="${f(ly + ch * i + 0.35)}" width="${f(cw - 0.7)}" height="${f(ch - 0.7)}" rx=".4" fill="${C.lens}"/>`;
+      } else
+        g += `<rect x="${f(lx)}" y="${f(ly)}" width="${f(lw)}" height="${f(lh)}" rx="${f(Math.min(0.8, lh / 2))}" fill="${led ? C.lens : C.sodium}"/>`;
     }
     if (p.founder) {
-      const fw = Math.round(tw * 0.8), fh = th;
-      const fx = cx - fw / 2, fy = y0 + Ht - fh / 2;
+      const fw = Math.round(tw * 0.8),
+        fh = th;
+      const fx = cx - fw / 2,
+        fy = y0 + Ht - fh / 2;
       g += `<rect x="${f(fx)}" y="${f(fy)}" width="${fw}" height="${f(fh)}" rx="${mini ? 0.6 : 1}" fill="${C.steel}"/>`;
       g += `<rect x="${f(fx + 0.9)}" y="${f(fy + 0.6)}" width="${f(fw - 1.8)}" height="${f(Math.max(1.2, fh * 0.4))}" rx=".5" fill="${C.first}"/>`;
     }
@@ -593,11 +756,16 @@
     let d = "";
     // turf: the plane rectangle X -1.3..1.3, Z -1.7..4.5, mowing bands along Z
     const quad = (x1, x2, z1, z2) => polyPath([PJ(x1, z1), PJ(x2, z1), PJ(x2, z2), PJ(x1, z2)]);
-    const X0 = -1.3, X1 = 1.3, Z0 = -1.62, Z1 = 4.5;
+    const X0 = -1.3,
+      X1 = 1.3,
+      Z0 = -1.62,
+      Z1 = 4.5;
     let turf = `<path d="${quad(X0 - 3, X1 + 3, Z0, Z1)}" fill="${T.base}"/>`;
     if (T.stripe) {
-      const n = 10, bw = (X1 - X0) / n;
-      for (let i = 1; i < n; i += 2) turf += `<path d="${quad(X0 + bw * i, X0 + bw * (i + 1), Z0, Z1)}" fill="${T.stripe}"/>`;
+      const n = 10,
+        bw = (X1 - X0) / n;
+      for (let i = 1; i < n; i += 2)
+        turf += `<path d="${quad(X0 + bw * i, X0 + bw * (i + 1), Z0, Z1)}" fill="${T.stripe}"/>`;
     }
     const gr = groundDefs(u, { ...T, stripe: null }, { x: 0, y: 212, w: 360, h: 340 }, false);
     if (T.ground !== "pristine") turf += gr.g.replace(/^<rect[^>]*\/>/, "");
@@ -624,17 +792,22 @@
     // the four shadows, the figure's outline on the plane, projected. Every shadow is rooted
     // at the same two feet (on the X axis, either side of the feet point): near the root the
     // width runs along X, then turns to the shadow's own cross direction by a third of its length.
-    const Lp = 1.25, kp = Lp / SH_L;
+    const Lp = 1.25,
+      kp = Lp / SH_L;
     const { loop } = personLoop(Lp, kp);
     let sh = "";
     for (const c of CORNERS) {
       const [tx, tz] = SH_TOWERS[c];
-      const n = Math.hypot(tx, tz), dx = -tx / n, dz = -tz / n; // away from the tower
-      const px = -dz, pz = dx; // the shadow's cross direction
+      const n = Math.hypot(tx, tz),
+        dx = -tx / n,
+        dz = -tz / n; // away from the tower
+      const px = -dz,
+        pz = dx; // the shadow's cross direction
       const sg = px >= 0 ? 1 : -1;
       const to = ([s, w]) => {
         const b = Math.min(1, Math.max(0, s / (Lp * 0.34)));
-        const ex = sg * (1 - b) + px * b, ez = pz * b;
+        const ex = sg * (1 - b) + px * b,
+          ez = pz * b;
         return PJ(s * dx + w * ex, s * dz + w * ez);
       };
       const led = isLed(p, c);
@@ -643,7 +816,8 @@
     }
 
     // towers: pole from the ground to the plate
-    let towers = "", blooms = "";
+    let towers = "",
+      blooms = "";
     for (const c of CORNERS) {
       const g0 = PJ(...SH_TOWERS[c]);
       const [qx, qy] = SH_PLATES[c];
@@ -662,7 +836,8 @@
 
     // below the bench coat's hem, two legs in silhouette (the figure is backlit by the towers)
     const legC = mix((p.club && p.club.primary) || C.figure, C.night, 0.62);
-    const leg = (sg) => `<path d="M${f(Fs[0] + sg * 16)} ${f(Fs[1] - 18)}L${f(Fs[0] + sg * 4.5)} ${f(Fs[1] - 18)}L${f(Fs[0] + sg * 5.6)} ${f(Fs[1] - 1)}L${f(Fs[0] + sg * 11.6)} ${f(Fs[1] - 1)}Z" fill="${legC}"/>`;
+    const leg = (sg) =>
+      `<path d="M${f(Fs[0] + sg * 16)} ${f(Fs[1] - 18)}L${f(Fs[0] + sg * 4.5)} ${f(Fs[1] - 18)}L${f(Fs[0] + sg * 5.6)} ${f(Fs[1] - 1)}L${f(Fs[0] + sg * 11.6)} ${f(Fs[1] - 1)}Z" fill="${legC}"/>`;
     const legs = leg(-1) + leg(1);
     // the 84 in the lit gap, the figure from behind, the fifth plate on the near touchline
     const sc = ovrScale(p);
@@ -671,7 +846,10 @@
     const ovrY = 506;
     const ovr = `<text x="${f(180 + m.dx * ovrSize)}" y="${ovrY}" direction="ltr" text-anchor="start" font-family="Changa, sans-serif" font-weight="800" font-size="${f(ovrSize)}" fill="${C.tunnel}">${p.ovr}</text>`;
     const nearY = PJ(0, Z0)[1];
-    const fifth = p.founder ? `<ellipse cx="180" cy="${f(nearY - 10)}" rx="70" ry="18" fill="url(#${u}-bloomF)" style="mix-blend-mode:screen"/>` + fifthPlate(u, p, 180, nearY, 68, 26, true, 14) : "";
+    const fifth = p.founder
+      ? `<ellipse cx="180" cy="${f(nearY - 10)}" rx="70" ry="18" fill="url(#${u}-bloomF)" style="mix-blend-mode:screen"/>` +
+        fifthPlate(u, p, 180, nearY, 68, 26, true, 14)
+      : "";
     const lf = `font-family="Manrope, sans-serif" font-weight="700" font-size="10" fill="#F4FBFF" fill-opacity=".72" letter-spacing="1" style="font-variant-numeric:tabular-nums"`;
     const letterY = f(nearY + 21);
     const lettering = ar
@@ -716,13 +894,19 @@
   // lower shadow and the 84): the four shadows pivot around the feet, the
   // founder's shadow alone stays put. Tap a lamp plate to light it and read what its stat means.
   function mount(el, o = {}) {
-    if (!el || !el.classList || !el.classList.contains("c10--card") || el.dataset.c10Mounted) return;
+    if (!el || !el.classList || !el.classList.contains("c10--card") || el.dataset.c10Mounted)
+      return;
     el.dataset.c10Mounted = "1";
     const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
     const S = MC.s(o);
     const swings = el.querySelectorAll(".c10-swing");
     const slides = el.querySelectorAll(".c10-slide");
-    let target = 0, cur = 0, raf = 0, startX = null, base = 0, moved = false;
+    let target = 0,
+      cur = 0,
+      raf = 0,
+      startX = null,
+      base = 0,
+      moved = false;
     const apply = () => {
       cur += (target - cur) * 0.2;
       swings.forEach((t) => t.setAttribute("transform", `rotate(${f(cur)} ${F[0]} ${F[1]})`));
@@ -764,9 +948,15 @@
       const hit = e.target.closest && e.target.closest("[data-c10-k]");
       const k = hit && hit.getAttribute("data-c10-k");
       const same = k && hit.classList.contains("is-on");
-      el.querySelectorAll("[data-c10-k]").forEach((n) => n.classList.toggle("is-on", !same && n === hit));
+      el.querySelectorAll("[data-c10-k]").forEach((n) =>
+        n.classList.toggle("is-on", !same && n === hit),
+      );
       el.classList.toggle("has-focus", !!k && !same);
-      if (meaning) meaning.textContent = k && !same ? `${S.statsLong[k]}  ${el.querySelector(`[data-c10-k="${k}"] tspan:last-child`)?.textContent || ""}` : "";
+      if (meaning)
+        meaning.textContent =
+          k && !same
+            ? `${S.statsLong[k]}  ${el.querySelector(`[data-c10-k="${k}"] tspan:last-child`)?.textContent || ""}`
+            : "";
     });
   }
 
@@ -777,8 +967,10 @@
     name: "Quatre Ombres",
     nameAr: "أربعة ظلال",
     category: "wildcard",
-    philosophy: "Under four floodlights every player casts four shadows: that X is the BotolaGO mark, and what is yours is the light.",
-    philosophyAr: "تحت أربعة أضواء كاشفة يُلقي كل لاعب أربعة ظلال: هذا الشكل هو علامة BotolaGO، وما يخصّك أنت هو الضوء.",
+    philosophy:
+      "Under four floodlights every player casts four shadows: that X is the BotolaGO mark, and what is yours is the light.",
+    philosophyAr:
+      "تحت أربعة أضواء كاشفة يُلقي كل لاعب أربعة ظلال: هذا الشكل هو علامة BotolaGO، وما يخصّك أنت هو الضوء.",
     idea: [
       "This might be crazy. Under four floodlights every player casts four shadows, so the mark of a BotolaGO manager is that X of shadows: you, standing on lit turf. The X is constant. It is the same for every manager, set at 27.6 degrees on a landscape pitch and never mirrored, because it is the brand glyph, made only of light. What is yours is the light.",
       "The full card is a 360x180 panel of night pitch (a 444x240 viewBox) seen from the high broadcast camera: lit turf inside a white touchline, a run-off band that falls off to night over its outer 14u, and four lamp plates centred on its corners, so each stands 38u out sideways and 14u up or down. The manager stands at the hub of four shadows, seen from behind with the hood up, at the shared figure's true proportions: the hood in the club's colour lit from above, the shoulders a step darker under it, a rim light on the upper edges and only the hood's centre seam drawn. Each shadow is a person (legs apart with lit turf between them, a waist, folded-arm elbows, squared shoulders, a small round head), never a spoke, and none of them encodes a value.",
@@ -806,10 +998,13 @@
     ],
     tiers: {
       HOMA: "A new concrete lot (clean saw-cut joints, a light fine aggregate) under one LED lamp (CAP) and three sodium lamps (amber lenses, warm pools). One crisp shadow and three soft, warm ones with a penumbra of about 3u. The full outline; no motion.",
-      STADE: "Synthetic turf with sparse rubber crumb. Two LED lamps (CAP, TRF) and two sodium, so the two lower shadows are crisp and the two upper ones soft.",
+      STADE:
+        "Synthetic turf with sparse rubber crumb. Two LED lamps (CAP, TRF) and two sodium, so the two lower shadows are crisp and the two upper ones soft.",
       PRO: "Mown grass in 24u blue-grey stripes. Three LED lamps and one sodium (SEL): three crisp shadows and one soft.",
-      CHAMPION: "Wet grass after rain: darker turf and four LED lamps. Four crisp, darker shadows, each with a short reflected highlight inside its upper edge, from the elbows to the head (about a third of its length, never at the hub), that slides when you drag.",
-      LEGEND: "Razor-sharp near-black shadows on clean bright turf with nothing else on it, and the four plates grown into full floodlight heads (2x4 LED lamps) that stand further out. That outline change is visible at 28px. The stats stay on the plates. No gold, no halo, no ring.",
+      CHAMPION:
+        "Wet grass after rain: darker turf and four LED lamps. Four crisp, darker shadows, each with a short reflected highlight inside its upper edge, from the elbows to the head (about a third of its length, never at the hub), that slides when you drag.",
+      LEGEND:
+        "Razor-sharp near-black shadows on clean bright turf with nothing else on it, and the four plates grown into full floodlight heads (2x4 LED lamps) that stand further out. That outline change is visible at 28px. The stats stay on the plates. No gold, no halo, no ring.",
     },
     legend: [
       "An optional replay (the gallery's detail sheet plays it when motion is on). The screen dims around the panel, and the four heads catch one at a time, clockwise from CAP, each with a hard stepped flicker of three 60ms steps. As each head catches, its shadow snaps out from the feet. For founders the fifth light catches last with a quicker flicker, and its shadow falls. Then everything is still.",

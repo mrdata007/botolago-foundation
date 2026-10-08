@@ -10,19 +10,54 @@
   /* ---------- measured type metrics (Chromium canvas, per 1000 em) ---------- */
   // Changa 800 digits [advance, ink left, ink right]: proportional, so the OVR is set by its ink.
   const DIG = {
-    0: [675, 31, 641], 1: [535, 0, 516], 2: [595, 31, 563], 3: [556, 0, 531], 4: [627, 0, 609],
-    5: [589, 31, 563], 6: [615, 31, 594], 7: [500, 0, 484], 8: [616, 31, 594], 9: [615, 31, 594],
+    0: [675, 31, 641],
+    1: [535, 0, 516],
+    2: [595, 31, 563],
+    3: [556, 0, 531],
+    4: [627, 0, 609],
+    5: [589, 31, 563],
+    6: [615, 31, 594],
+    7: [500, 0, 484],
+    8: [616, 31, 594],
+    9: [615, 31, 594],
   };
   const CAP_H = 0.64; // Changa 800 figure height, em
   const CAPS = {
-    A: 641, B: 592, C: 510, D: 655, E: 520, F: 470, G: 575, H: 650, I: 300, J: 391, K: 618, L: 445, M: 811,
-    N: 675, O: 660, P: 590, Q: 650, R: 625, S: 577, T: 490, U: 634, V: 621, W: 929, X: 630, Y: 580, Z: 589, " ": 200,
+    A: 641,
+    B: 592,
+    C: 510,
+    D: 655,
+    E: 520,
+    F: 470,
+    G: 575,
+    H: 650,
+    I: 300,
+    J: 391,
+    K: 618,
+    L: 445,
+    M: 811,
+    N: 675,
+    O: 660,
+    P: 590,
+    Q: 650,
+    R: 625,
+    S: 577,
+    T: 490,
+    U: 634,
+    V: 621,
+    W: 929,
+    X: 630,
+    Y: 580,
+    Z: 589,
+    " ": 200,
   };
   const OVR_INK = [0.0156, 2.0216]; // Manrope 800 "OVR" ink left/right, em
   const AR_TIER_EM = { HOMA: 2.291, STADE: 2.62, PRO: 3.089, CHAMPION: 1.87, LEGEND: 3.347 }; // Noto Sans Arabic 700
   const LAT_TIER_EM = { HOMA: 3.035, STADE: 3.244, PRO: 2.078, CHAMPION: 5.456, LEGEND: 3.871 }; // Manrope 800
   const ink = (n) => {
-    let adv = 0, L = null, R = 0;
+    let adv = 0,
+      L = null,
+      R = 0;
     for (const ch of String(n)) {
       const d = DIG[ch] || DIG[0];
       if (L === null) L = adv + d[1];
@@ -33,7 +68,9 @@
   };
   /** Name size: 30u, shrinking to fit 176u (ABDELKARIM lands near 22u). */
   const nameSize = (name, ar) => {
-    const em = ar ? [...name].length * 0.62 : [...name].reduce((a, c) => a + (CAPS[c] || 600), 0) / 1000 + 0.04 * (name.length - 1);
+    const em = ar
+      ? [...name].length * 0.62
+      : [...name].reduce((a, c) => a + (CAPS[c] || 600), 0) / 1000 + 0.04 * (name.length - 1);
     return Math.max(18, Math.min(30, 176 / Math.max(em, 0.1)));
   };
 
@@ -54,11 +91,97 @@
 
   /* ---------- tiers: the garment changes, not just the number ---------- */
   const TIER = {
-    HOMA: { body: ["#55627B", "#4A5770", "#3A4660"], fabric: "heather", hook: "wire", rail: "paint", collar: "crew", num: "vinyl", flat: false, patch: "vinyl", crest: false, piping: false, label: "print", ink: "#E3E5E1", meta: "#C3C9D2", crease: "#2B3549", rib: "#3E4A62", lining: "#2E3850" },
-    STADE: { body: ["#1D3A6B", "#142C55", "#10264B"], fabric: "pique", hook: "steel", rail: "steel", collar: "stand", num: "gloss", flat: true, patch: "print", crest: false, piping: false, label: "woven", ink: C.flock, meta: C.meta, crease: C.crease, rib: "#1A3463", lining: "#0A1A36" },
-    PRO: { body: ["#1D3A6B", "#142C55", "#10264B"], fabric: "pique", hook: "brass", rail: "oak", collar: "stand", num: "flock", flat: true, patch: "woven", crest: true, piping: true, label: "woven", ink: C.flock, meta: C.meta, crease: C.crease, rib: "#1A3463", lining: "#0A1A36" },
-    CHAMPION: { body: ["#20406F", "#16305C", "#0F2448"], fabric: "quilt", hook: "brass", rail: "oak", collar: "stand", num: "twill3", flat: false, patch: "cream", crest: true, piping: true, label: "woven", ink: C.flock, meta: C.meta, crease: "#081633", rib: "#132A52", lining: "quilt" },
-    LEGEND: { body: ["#F1EBDA", "#E9E2CF", "#CFC5AC"], fabric: "melton", hook: "peg", rail: "walnut", collar: "tall", num: "twill4", flat: false, patch: "navy", crest: true, piping: true, label: "navy", ink: C.tunnel, meta: "#5F5644", crease: "#9E9378", rib: "#14284F", lining: "#0E2347", light: true },
+    HOMA: {
+      body: ["#55627B", "#4A5770", "#3A4660"],
+      fabric: "heather",
+      hook: "wire",
+      rail: "paint",
+      collar: "crew",
+      num: "vinyl",
+      flat: false,
+      patch: "vinyl",
+      crest: false,
+      piping: false,
+      label: "print",
+      ink: "#E3E5E1",
+      meta: "#C3C9D2",
+      crease: "#2B3549",
+      rib: "#3E4A62",
+      lining: "#2E3850",
+    },
+    STADE: {
+      body: ["#1D3A6B", "#142C55", "#10264B"],
+      fabric: "pique",
+      hook: "steel",
+      rail: "steel",
+      collar: "stand",
+      num: "gloss",
+      flat: true,
+      patch: "print",
+      crest: false,
+      piping: false,
+      label: "woven",
+      ink: C.flock,
+      meta: C.meta,
+      crease: C.crease,
+      rib: "#1A3463",
+      lining: "#0A1A36",
+    },
+    PRO: {
+      body: ["#1D3A6B", "#142C55", "#10264B"],
+      fabric: "pique",
+      hook: "brass",
+      rail: "oak",
+      collar: "stand",
+      num: "flock",
+      flat: true,
+      patch: "woven",
+      crest: true,
+      piping: true,
+      label: "woven",
+      ink: C.flock,
+      meta: C.meta,
+      crease: C.crease,
+      rib: "#1A3463",
+      lining: "#0A1A36",
+    },
+    CHAMPION: {
+      body: ["#20406F", "#16305C", "#0F2448"],
+      fabric: "quilt",
+      hook: "brass",
+      rail: "oak",
+      collar: "stand",
+      num: "twill3",
+      flat: false,
+      patch: "cream",
+      crest: true,
+      piping: true,
+      label: "woven",
+      ink: C.flock,
+      meta: C.meta,
+      crease: "#081633",
+      rib: "#132A52",
+      lining: "quilt",
+    },
+    LEGEND: {
+      body: ["#F1EBDA", "#E9E2CF", "#CFC5AC"],
+      fabric: "melton",
+      hook: "peg",
+      rail: "walnut",
+      collar: "tall",
+      num: "twill4",
+      flat: false,
+      patch: "navy",
+      crest: true,
+      piping: true,
+      label: "navy",
+      ink: C.tunnel,
+      meta: "#5F5644",
+      crease: "#9E9378",
+      rib: "#14284F",
+      lining: "#0E2347",
+      light: true,
+    },
   };
   const RAIL = {
     paint: { g: ["#9AA2AC", "#7A828C", "#58606A"], hi: "#C4CAD2", tok: "#7A828C" },
@@ -90,13 +213,17 @@
   /** A straight edge between two points, or (quilted) bulging 1.5u outward between channel seams. */
   function seg(xa, ya, xb, yb, seams, b, ox) {
     const at = (y) => xa + ((xb - xa) * (y - ya)) / (yb - ya);
-    const cuts = seams.filter((y) => (y - ya) * (y - yb) < 0).sort((p, q) => (ya < yb ? p - q : q - p));
+    const cuts = seams
+      .filter((y) => (y - ya) * (y - yb) < 0)
+      .sort((p, q) => (ya < yb ? p - q : q - p));
     const P = [[xa, ya], ...cuts.map((y) => [at(y), y]), [xb, yb]];
     let s = "";
     for (let i = 1; i < P.length; i++) {
       const [x0, y0] = P[i - 1];
       const [x1, y1] = P[i];
-      s += b ? `Q${f((x0 + x1) / 2 + ox * 2 * b)} ${f((y0 + y1) / 2)} ${f(x1)} ${f(y1)}` : `L${f(x1)} ${f(y1)}`;
+      s += b
+        ? `Q${f((x0 + x1) / 2 + ox * 2 * b)} ${f((y0 + y1) / 2)} ${f(x1)} ${f(y1)}`
+        : `L${f(x1)} ${f(y1)}`;
     }
     return s;
   }
@@ -107,11 +234,19 @@
       `M${c.l} 68${c.top}L${c.r} 68` +
       // right shoulder (14°), corner r3, sleeve outer edge down to the cuff
       `L277.09 90.68Q280 91.4 280.07 94.4` +
-      `L${f(sxR(130))} 130` + seg(sxR(130), 130, sxR(290), 290, SLEEVE_SEAMS, q, 1) + `L284.95 298.5Q285 300 283.5 300` +
+      `L${f(sxR(130))} 130` +
+      seg(sxR(130), 130, sxR(290), 290, SLEEVE_SEAMS, q, 1) +
+      `L284.95 298.5Q285 300 283.5 300` +
       // cuff, sleeve inner edge up to the armpit, 3u slit, body side down to the hem
-      `L247.5 300Q246 300 246 298.5L246 ${G.armpit}Q244.5 124 243 ${G.armpit}L243 300` + seg(243, 300, 243, 371, BODY_SEAMS, q, 1) + `L243 380.5Q243 382 241.5 382` +
-      `L58.5 382Q57 382 57 380.5L57 371` + seg(57, 371, 57, 300, BODY_SEAMS, q, -1) + `L57 ${G.armpit}Q55.5 124 54 ${G.armpit}L54 298.5Q54 300 52.5 300` +
-      `L16.5 300Q15 300 15.05 298.5L${f(sxL(290))} 290` + seg(sxL(290), 290, sxL(130), 130, SLEEVE_SEAMS, q, -1) + `L19.93 94.4Q20 91.4 22.91 90.68Z`
+      `L247.5 300Q246 300 246 298.5L246 ${G.armpit}Q244.5 124 243 ${G.armpit}L243 300` +
+      seg(243, 300, 243, 371, BODY_SEAMS, q, 1) +
+      `L243 380.5Q243 382 241.5 382` +
+      `L58.5 382Q57 382 57 380.5L57 371` +
+      seg(57, 371, 57, 300, BODY_SEAMS, q, -1) +
+      `L57 ${G.armpit}Q55.5 124 54 ${G.armpit}L54 298.5Q54 300 52.5 300` +
+      `L16.5 300Q15 300 15.05 298.5L${f(sxL(290))} 290` +
+      seg(sxL(290), 290, sxL(130), 130, SLEEVE_SEAMS, q, -1) +
+      `L19.93 94.4Q20 91.4 22.91 90.68Z`
     );
   }
 
@@ -126,7 +261,14 @@
     const total = wN + (Fo ? NUM.gap + wO : 0);
     const gx0 = NUM.cx - total / 2 + shift;
     const runs = [{ t: n, x: gx0 - k.L * F, F, fam: "Changa" }];
-    if (Fo) runs.push({ t: "OVR", x: gx0 + wN + NUM.gap - OVR_INK[0] * Fo, F: Fo, fam: "Manrope", ls: NUM.ls });
+    if (Fo)
+      runs.push({
+        t: "OVR",
+        x: gx0 + wN + NUM.gap - OVR_INK[0] * Fo,
+        F: Fo,
+        fam: "Manrope",
+        ls: NUM.ls,
+      });
     return { runs, k, x0: gx0, x1: gx0 + total, lastX: gx0 - k.L * F };
   }
   const txt = (r, y, a) =>
@@ -141,19 +283,35 @@
       const d = (L.d || 0) * sc;
       const tr = `transform="translate(${f(d)} ${f(d)})"`;
       const paint = (fill, w, extra = "") =>
-        txt(r, y, `${tr} fill="${fill}"${w > 0 ? ` stroke="${fill}" stroke-width="${f(w)}" stroke-linejoin="round"` : ""} ${extra}`);
+        txt(
+          r,
+          y,
+          `${tr} fill="${fill}"${w > 0 ? ` stroke="${fill}" stroke-width="${f(w)}" stroke-linejoin="round"` : ""} ${extra}`,
+        );
       if (L.cast) {
         const c = L.cast * sc;
-        s += txt(r, y, `transform="translate(${f(d + c)} ${f(d + c)})" fill="${L.castC}" fill-opacity="${L.castO}"${W ? ` stroke="${L.castC}" stroke-opacity="${L.castO}" stroke-width="${f(W)}" stroke-linejoin="round"` : ""}`);
+        s += txt(
+          r,
+          y,
+          `transform="translate(${f(d + c)} ${f(d + c)})" fill="${L.castC}" fill-opacity="${L.castO}"${W ? ` stroke="${L.castC}" stroke-opacity="${L.castO}" stroke-width="${f(W)}" stroke-linejoin="round"` : ""}`,
+        );
       }
       s += paint(L.fill, W, L.filter ? `filter="url(#${L.filter})"` : "");
       if (L.satin) {
         const sw = i === 0 ? 1.5 : 0.7;
         if (W > 0) {
-          s += txt(r, y, `${tr} fill="none" stroke="${L.satin}" stroke-width="${f(W + sw)}" stroke-dasharray=".5 .38" stroke-linejoin="round"`);
+          s += txt(
+            r,
+            y,
+            `${tr} fill="none" stroke="${L.satin}" stroke-width="${f(W + sw)}" stroke-dasharray=".5 .38" stroke-linejoin="round"`,
+          );
           s += paint(L.fill, Math.max(W - sw, 0.01));
         } else {
-          s += txt(r, y, `${tr} fill="none" stroke="${L.satin}" stroke-width="${sw}" stroke-dasharray=".5 .38" stroke-linejoin="round"`);
+          s += txt(
+            r,
+            y,
+            `${tr} fill="none" stroke="${L.satin}" stroke-width="${sw}" stroke-dasharray=".5 .38" stroke-linejoin="round"`,
+          );
         }
       }
     });
@@ -175,15 +333,20 @@
         const ax = lx + ((adv + dg[2]) / 1000) * NUM.F - 4; // stem's top-end corner
         const ay = y - CAP_H * NUM.F;
         const L = 17;
-        const A = [ax + 1.5, ay - 1], B = [ax - L, ay - 1], Cc = [ax + 1.5, ay + L + 1.5];
+        const A = [ax + 1.5, ay - 1],
+          B = [ax - L, ay - 1],
+          Cc = [ax + 1.5, ay + L + 1.5];
         const tri = `M${f(A[0])} ${f(A[1])}L${f(B[0])} ${f(B[1])}L${f(Cc[0])} ${f(Cc[1])}Z`;
         // fold matrix: reflect across B–C and foreshorten (the corner curls back at about 60°)
         const len = Math.hypot(Cc[0] - B[0], Cc[1] - B[1]);
         const d = [(Cc[0] - B[0]) / len, (Cc[1] - B[1]) / len];
         const nv = [-d[1], d[0]];
         const k = 0.5;
-        const m00 = d[0] * d[0] - k * nv[0] * nv[0], m01 = d[0] * d[1] - k * nv[0] * nv[1], m11 = d[1] * d[1] - k * nv[1] * nv[1];
-        const e = B[0] - (m00 * B[0] + m01 * B[1]), fy = B[1] - (m01 * B[0] + m11 * B[1]);
+        const m00 = d[0] * d[0] - k * nv[0] * nv[0],
+          m01 = d[0] * d[1] - k * nv[0] * nv[1],
+          m11 = d[1] * d[1] - k * nv[1] * nv[1];
+        const e = B[0] - (m00 * B[0] + m01 * B[1]),
+          fy = B[1] - (m01 * B[0] + m11 * B[1]);
         const fold = `matrix(${f(m00)} ${f(m01)} ${f(m01)} ${f(m11)} ${f(e)} ${f(fy)})`;
         const runs = g.runs;
         const face = (a) => runs.map((r) => txt(r, y, a)).join("");
@@ -205,17 +368,36 @@
       }
       case "gloss": {
         const g = numRuns(n, thumb);
-        return g.runs.map((r) => txt(r, y, `fill="url(#${u}-gloss)"`) + txt(r, y, `fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".6"`)).join("");
+        return g.runs
+          .map(
+            (r) =>
+              txt(r, y, `fill="url(#${u}-gloss)"`) +
+              txt(r, y, `fill="none" stroke="#fff" stroke-opacity=".4" stroke-width=".6"`),
+          )
+          .join("");
       }
       case "flock": {
         const g = numRuns(n, thumb, -1.1);
-        return layer(g.runs, y, { fill: `url(#${u}-twB)`, W: 3, d: 2.2 }) + layer(g.runs, y, { fill: C.flock, filter: thumb ? null : `${u}-flock` });
+        return (
+          layer(g.runs, y, { fill: `url(#${u}-twB)`, W: 3, d: 2.2 }) +
+          layer(g.runs, y, { fill: C.flock, filter: thumb ? null : `${u}-flock` })
+        );
       }
       case "twill3": {
         const g = numRuns(n, thumb, -2.2);
         return (
-          layer(g.runs, y, { fill: `url(#${u}-twN)`, W: 4, d: 4.4, satin: thumb ? null : "#3D5B8E" }) +
-          layer(g.runs, y, { fill: `url(#${u}-twB)`, W: 2, d: 2.2, satin: thumb ? null : "#6E98FF" }) +
+          layer(g.runs, y, {
+            fill: `url(#${u}-twN)`,
+            W: 4,
+            d: 4.4,
+            satin: thumb ? null : "#3D5B8E",
+          }) +
+          layer(g.runs, y, {
+            fill: `url(#${u}-twB)`,
+            W: 2,
+            d: 2.2,
+            satin: thumb ? null : "#6E98FF",
+          }) +
           layer(g.runs, y, { fill: `url(#${u}-twW)`, satin: thumb ? null : "#FFFFFF" })
         );
       }
@@ -223,9 +405,27 @@
         // LEGEND: four cut layers, depth by overlap only — cream, club slate, Logo Blue, Tunnel Navy face
         const g = numRuns(n, thumb, -3.3);
         return (
-          layer(g.runs, y, { fill: `url(#${u}-twC)`, W: 6, d: 6.6, cast: 2.4, castC: "#4A3C22", castO: ".28", satin: thumb ? null : "#A89C7C" }) +
-          layer(g.runs, y, { fill: `url(#${u}-twS)`, W: 4, d: 4.4, satin: thumb ? null : "#8F9AAE" }) +
-          layer(g.runs, y, { fill: `url(#${u}-twB)`, W: 2, d: 2.2, satin: thumb ? null : "#6E98FF" }) +
+          layer(g.runs, y, {
+            fill: `url(#${u}-twC)`,
+            W: 6,
+            d: 6.6,
+            cast: 2.4,
+            castC: "#4A3C22",
+            castO: ".28",
+            satin: thumb ? null : "#A89C7C",
+          }) +
+          layer(g.runs, y, {
+            fill: `url(#${u}-twS)`,
+            W: 4,
+            d: 4.4,
+            satin: thumb ? null : "#8F9AAE",
+          }) +
+          layer(g.runs, y, {
+            fill: `url(#${u}-twB)`,
+            W: 2,
+            d: 2.2,
+            satin: thumb ? null : "#6E98FF",
+          }) +
           layer(g.runs, y, { fill: `url(#${u}-twN)`, satin: thumb ? null : "#3B5A8C" })
         );
       }
@@ -248,9 +448,19 @@
       case "flock":
         return t(`fill="${C.flock}"${thumb ? "" : ` filter="url(#${u}-flock)"`}`);
       case "twill3":
-        return t(`fill="${C.blue}" transform="translate(1.4 1.4)"`) + t(`fill="url(#${u}-twW)"`) + (thumb ? "" : t(`fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray=".5 .38"`));
+        return (
+          t(`fill="${C.blue}" transform="translate(1.4 1.4)"`) +
+          t(`fill="url(#${u}-twW)"`) +
+          (thumb ? "" : t(`fill="none" stroke="#fff" stroke-width="1.2" stroke-dasharray=".5 .38"`))
+        );
       default:
-        return t(`fill="${C.blue}" transform="translate(1.6 1.6)"`) + t(`fill="url(#${u}-twN)"`) + (thumb ? "" : t(`fill="none" stroke="#3B5A8C" stroke-width="1.2" stroke-dasharray=".5 .38"`));
+        return (
+          t(`fill="${C.blue}" transform="translate(1.6 1.6)"`) +
+          t(`fill="url(#${u}-twN)"`) +
+          (thumb
+            ? ""
+            : t(`fill="none" stroke="#3B5A8C" stroke-width="1.2" stroke-dasharray=".5 .38"`))
+        );
     }
   }
 
@@ -284,7 +494,8 @@
     const ink$ = T.ink;
     const sep = `<tspan fill-opacity=".42"> · </tspan>`;
     if (ar) {
-      const part = (k) => `<tspan fill-opacity=".72">${E(S.stats[k])}</tspan> <tspan font-family="Manrope" font-weight="800" direction="ltr" unicode-bidi="embed">${p.stats[k]}</tspan>`;
+      const part = (k) =>
+        `<tspan fill-opacity=".72">${E(S.stats[k])}</tspan> <tspan font-family="Manrope" font-weight="800" direction="ltr" unicode-bidi="embed">${p.stats[k]}</tspan>`;
       return `<text x="150" y="106" text-anchor="middle" font-family="Noto Sans Arabic" font-weight="700" font-size="10.5" direction="rtl" fill="${ink$}">${MC.STATS.map(part).join(sep)}</text>`;
     }
     const part = (k) => `<tspan fill-opacity=".7">${k}</tspan> ${p.stats[k]}`;
@@ -296,7 +507,11 @@
     const ar = MC.isAr(o);
     const S = MC.s(o);
     const word = S.tiers[p.tier];
-    const woven = { woven: [C.patch, C.patchInk, "#8D99AB", `url(#${u}-weave)`], cream: [C.damask, C.patch, C.thread, `url(#${u}-dam)`], navy: [C.tunnel, C.ecru, "#C9BC98", `url(#${u}-weaveN)`] }[T.patch];
+    const woven = {
+      woven: [C.patch, C.patchInk, "#8D99AB", `url(#${u}-weave)`],
+      cream: [C.damask, C.patch, C.thread, `url(#${u}-dam)`],
+      navy: [C.tunnel, C.ecru, "#C9BC98", `url(#${u}-weaveN)`],
+    }[T.patch];
     let s = "";
     if (ar) {
       // Arabic: a horizontal woven tab, words upright (never rotated)
@@ -315,7 +530,8 @@
       const Fz = Math.min(8, 52 / em);
       const label = (fill, extra = "") =>
         `<text x="36" y="${f(167 + Fz * 0.36)}" transform="rotate(-90 36 167)" text-anchor="middle" font-family="Manrope" font-weight="800" font-size="${f(Fz)}" letter-spacing="${f(Fz * 0.08)}" direction="ltr" fill="${fill}" ${extra}>${E(word)}</text>`;
-      if (T.patch === "vinyl") s += thumb ? "" : `<g transform="rotate(1.2 36 167)">${label(T.ink)}</g>`;
+      if (T.patch === "vinyl")
+        s += thumb ? "" : `<g transform="rotate(1.2 36 167)">${label(T.ink)}</g>`;
       else if (T.patch === "print") s += thumb ? "" : label(C.flock, `fill-opacity=".92"`);
       else
         s +=
@@ -327,7 +543,9 @@
       s +=
         `<circle cx="264" cy="158" r="12.5" fill="${woven[3]}"/>` +
         `<circle cx="264" cy="158" r="11.9" fill="none" stroke="${woven[2]}" stroke-width="1.1" stroke-dasharray=".45 .28"/>` +
-        (thumb ? "" : `<g transform="translate(257.2 149.8)">${MC.crest({ w: 13.6, h: 16.3, fill: T.patch === "cream" ? C.patch : p.club.primary, sash: p.club.secondary, ring: T.patch === "cream" ? C.patch : p.club.secondary })}</g>`);
+        (thumb
+          ? ""
+          : `<g transform="translate(257.2 149.8)">${MC.crest({ w: 13.6, h: 16.3, fill: T.patch === "cream" ? C.patch : p.club.primary, sash: p.club.secondary, ring: T.patch === "cream" ? C.patch : p.club.secondary })}</g>`);
     }
     return s;
   }
@@ -338,7 +556,10 @@
     const ar = MC.isAr(o);
     const S = MC.s(o);
     const tw = ar ? 60.6 : 57.3;
-    const x = 62, y = 369, h = 23, w = f(31 + tw + 6);
+    const x = 62,
+      y = 369,
+      h = 23,
+      w = f(31 + tw + 6);
     let s =
       `<g class="x03-tag">` +
       `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.4" fill="url(#${u}-dam)"/>` +
@@ -362,7 +583,9 @@
       `<g class="x03-rail">` +
       `<rect class="x03-rim" x="90" y="2" width="120" height="10" rx="2.5"/>` +
       `<rect x="90" y="2" width="120" height="10" rx="2.5" fill="url(#${u}-rail)"/>` +
-      (T.rail === "oak" || T.rail === "walnut" ? `<rect x="90" y="2" width="120" height="10" rx="2.5" filter="url(#${u}-wood)" opacity=".55"/>` : "") +
+      (T.rail === "oak" || T.rail === "walnut"
+        ? `<rect x="90" y="2" width="120" height="10" rx="2.5" filter="url(#${u}-wood)" opacity=".55"/>`
+        : "") +
       `<path d="M92.5 2.9H207.5" stroke="${RAIL[T.rail].hi}" stroke-opacity=".75" stroke-width=".9" stroke-linecap="round"/>` +
       `<path d="M92 11.4H208" stroke="#000" stroke-opacity=".35" stroke-width=".8"/>` +
       `<circle cx="97" cy="7" r="1.3" fill="#000" fill-opacity=".35"/><circle cx="203" cy="7" r="1.3" fill="#000" fill-opacity=".35"/>` +
@@ -388,7 +611,9 @@
         : "M157 8V30C157 42.5 141 45 138.5 33.5";
     return (
       `<g class="x03-hook">` +
-      (T.hook === "wire" ? "" : `<rect x="151" y="3.6" width="12" height="6.8" rx="2" fill="url(#${u}-hookL)"/><circle cx="157" cy="7" r="1.1" fill="#000" fill-opacity=".4"/>`) +
+      (T.hook === "wire"
+        ? ""
+        : `<rect x="151" y="3.6" width="12" height="6.8" rx="2" fill="url(#${u}-hookL)"/><circle cx="157" cy="7" r="1.1" fill="#000" fill-opacity=".4"/>`) +
       `<path d="${d}" fill="none" stroke="url(#${u}-hookL)" stroke-width="${T.hook === "wire" ? 4.4 : 6}" stroke-linecap="round" stroke-linejoin="round"/>` +
       (T.hook === "wire" ? "" : `<circle cx="138.6" cy="32.6" r="3.7" fill="url(#${u}-hookL)"/>`) +
       `<path d="${T.hook === "wire" ? "M153.9 8V30" : "M155.3 11V30"}" stroke="${H.hi}" stroke-width=".9" stroke-linecap="round" stroke-opacity=".8"/>` +
@@ -399,7 +624,8 @@
   function loop(T) {
     const c = COLLAR[T.collar];
     const col = T.collar === "tall" ? T.rib : T.body[0];
-    if (T.hook === "peg") return `<path d="M147.5 ${c.apex + 2}V24H152.5V${c.apex + 2}Z" fill="${col}"/>`;
+    if (T.hook === "peg")
+      return `<path d="M147.5 ${c.apex + 2}V24H152.5V${c.apex + 2}Z" fill="${col}"/>`;
     return (
       `<path d="M144.5 ${c.apex + 2}L144.5 37.6Q147 33.4 149.5 37.6L149.5 ${c.apex + 2}Z" fill="${col}"/>` +
       `<path d="M144.9 37.4Q147 34.3 149.1 37.4" fill="none" stroke="#fff" stroke-opacity=".28" stroke-width=".7"/>` +
@@ -485,11 +711,16 @@
     g += `<path d="${out}" fill="url(#${u}-body)"/>`;
     g += `<g clip-path="url(#${u}-clip)">`;
     if (!thumb) {
-      if (T.fabric === "pique") g += `<rect width="300" height="420" fill="url(#${u}-piq)"${T.flat ? ` mask="url(#${u}-flat)"` : ""}/>`;
-      if (T.fabric === "heather") g += `<rect width="300" height="420" filter="url(#${u}-grain)" opacity=".18"/><rect width="300" height="420" filter="url(#${u}-grainD)" opacity=".2"/>`;
-      else if (T.fabric === "melton") g += `<rect width="300" height="420" filter="url(#${u}-grainD)" opacity=".22"/><rect width="300" height="420" filter="url(#${u}-grain)" opacity=".3"/>`;
-      else g += `<rect width="300" height="420" filter="url(#${u}-grain)" opacity=".4"/><rect width="300" height="420" filter="url(#${u}-grainD)" opacity=".45"/>`;
-      if (T.flat) g += `<rect x="66" y="206" width="168" height="104" rx="30" fill="#fff" fill-opacity=".028" filter="url(#${u}-feather)"/>`;
+      if (T.fabric === "pique")
+        g += `<rect width="300" height="420" fill="url(#${u}-piq)"${T.flat ? ` mask="url(#${u}-flat)"` : ""}/>`;
+      if (T.fabric === "heather")
+        g += `<rect width="300" height="420" filter="url(#${u}-grain)" opacity=".18"/><rect width="300" height="420" filter="url(#${u}-grainD)" opacity=".2"/>`;
+      else if (T.fabric === "melton")
+        g += `<rect width="300" height="420" filter="url(#${u}-grainD)" opacity=".22"/><rect width="300" height="420" filter="url(#${u}-grain)" opacity=".3"/>`;
+      else
+        g += `<rect width="300" height="420" filter="url(#${u}-grain)" opacity=".4"/><rect width="300" height="420" filter="url(#${u}-grainD)" opacity=".45"/>`;
+      if (T.flat)
+        g += `<rect x="66" y="206" width="168" height="104" rx="30" fill="#fff" fill-opacity=".028" filter="url(#${u}-feather)"/>`;
     }
     // quilted channels (CHAMPION): body and sleeves below the yoke
     if (T.fabric === "quilt") {
@@ -497,7 +728,9 @@
       const seams = [154, 178, 202, 226, 250, 274, 298, 322, 346];
       g +=
         `<path d="${[130, ...seams].map((y) => `M0 ${y}H300`).join("")}" stroke="${T.crease}" stroke-opacity=".7" stroke-width="1.1"/>` +
-        (thumb ? "" : `<path d="${[130, ...seams].map((y) => `M0 ${y + 1.1}H300`).join("")}" stroke="#fff" stroke-opacity=".3" stroke-width=".8" stroke-dasharray="1.5 1"/>`);
+        (thumb
+          ? ""
+          : `<path d="${[130, ...seams].map((y) => `M0 ${y + 1.1}H300`).join("")}" stroke="#fff" stroke-opacity=".3" stroke-width=".8" stroke-dasharray="1.5 1"/>`);
     }
     // drape: side shading, sleeve shading, pull folds from the loop
     g += `<rect x="57" y="0" width="186" height="420" fill="url(#${u}-side)"/>`;
@@ -512,11 +745,13 @@
     if (T.collar !== "crew") {
       // yoke seam (the shared avatar's seam, scaled to the coat): double-needle stitch
       g += `<path d="M19.6 113C90 125 210 125 280.4 113" fill="none" stroke="${T.crease}" stroke-width="1.1"/>`;
-      if (!thumb) g += `<path d="M19.7 115.4C90 127.4 210 127.4 280.3 115.4" fill="none" stroke="${T.light ? C.tunnel : "#fff"}" stroke-opacity="${T.light ? 0.3 : 0.16}" stroke-width=".5" stroke-dasharray="1.6 1"/>`;
+      if (!thumb)
+        g += `<path d="M19.7 115.4C90 127.4 210 127.4 280.3 115.4" fill="none" stroke="${T.light ? C.tunnel : "#fff"}" stroke-opacity="${T.light ? 0.3 : 0.16}" stroke-width=".5" stroke-dasharray="1.6 1"/>`;
     }
     // cuffs and hem rib
     const rib = T.light ? T.rib : null;
-    if (rib) g += `<path d="M0 290H54V300H0ZM246 290H300V300H246Z" fill="${rib}"/><rect x="57" y="371" width="186" height="11" fill="${rib}"/>`;
+    if (rib)
+      g += `<path d="M0 290H54V300H0ZM246 290H300V300H246Z" fill="${rib}"/><rect x="57" y="371" width="186" height="11" fill="${rib}"/>`;
     g += `<path d="M0 290H54V300H0ZM246 290H300V300H246Z" fill="url(#${u}-rib)"/><path d="M0 290H54M246 290H300" stroke="#000" stroke-opacity=".3" stroke-width=".8"/>`;
     g += `<rect x="57" y="371" width="186" height="11" fill="url(#${u}-rib)"/><path d="M57 371H243" stroke="#000" stroke-opacity=".3" stroke-width=".8"/>`;
     // overhead tube light on the yoke; LEGEND's raking light
@@ -528,21 +763,27 @@
       g += `<path d="M114 68L116.5 62Q150 55.5 183.5 62L186 68Q150 61.5 114 68Z" fill="${T.rib}"/><path d="M114 68L116.5 62Q150 55.5 183.5 62L186 68Q150 61.5 114 68Z" fill="url(#${u}-rib)"/>`;
     } else {
       const top = T.collar === "tall" ? "M113 49Q150 39 187 49" : "M116 56Q150 47 184 56";
-      const lining = T.collar === "tall" ? "M113 49Q150 35.5 187 49Q150 39 113 49Z" : "M116 56Q150 43.5 184 56Q150 47 116 56Z";
+      const lining =
+        T.collar === "tall"
+          ? "M113 49Q150 35.5 187 49Q150 39 113 49Z"
+          : "M116 56Q150 43.5 184 56Q150 47 116 56Z";
       g += `<path d="${lining}" fill="${T.lining === "quilt" ? `url(#${u}-quilt)` : T.lining}"/>`;
       const band = `M114 68L${top.slice(1)}L186 68Q150 ${T.collar === "tall" ? 61 : 62} 114 68Z`;
       g += `<path d="${band}" fill="${T.collar === "tall" ? T.rib : T.body[0]}"/><path d="${band}" fill="url(#${u}-rib)"/>`;
     }
     // lit top edge from the overhead tube light (shoulders)
     g += `<path class="x03-lit" d="M20 91.4L114 68M186 68L280 91.4" clip-path="url(#${u}-clip)"/>`;
-    if (T.piping) g += `<path d="M21.6 92.8L114.4 69.8M185.6 69.8L278.4 92.8" stroke="${T.light ? C.tunnel : C.slate}" stroke-width="2.2" stroke-linecap="round"/>`;
+    if (T.piping)
+      g += `<path d="M21.6 92.8L114.4 69.8M185.6 69.8L278.4 92.8" stroke="${T.light ? C.tunnel : C.slate}" stroke-width="2.2" stroke-linecap="round"/>`;
     // back-neck label and the stats line
     if (!thumb) g += neckLabel(o, T, u) + statsLine(p, o, T);
     // name and number
     g += nameMark(p, o, T, u, thumb);
     g += `<g class="x03-num">${number(p, T, u, thumb)}</g>`;
-    if (T.num === "twill4") g += `<g clip-path="url(#${u}-clip)"><rect class="x03-sweep" x="30" y="202" width="80" height="112" fill="url(#${u}-sweep)"/></g>`;
-    if (!thumb) g += `<g clip-path="url(#${u}-clip)"><rect class="x03-sheen" x="12" y="0" width="276" height="420" fill="url(#${u}-sheen)"/></g>`;
+    if (T.num === "twill4")
+      g += `<g clip-path="url(#${u}-clip)"><rect class="x03-sweep" x="30" y="202" width="80" height="112" fill="url(#${u}-sweep)"/></g>`;
+    if (!thumb)
+      g += `<g clip-path="url(#${u}-clip)"><rect class="x03-sheen" x="12" y="0" width="276" height="420" fill="url(#${u}-sheen)"/></g>`;
     // hem meta: country code, serial, season
     if (!thumb)
       g +=
@@ -579,12 +820,14 @@
   };
   const tokOutline = (collar) =>
     `M23.6 17.6${TOK.collar[collar]}L36.4 17.6L55.6 22.4L56.8 62L49.5 62L49.5 29.6Q48.5 27.2 47.5 29.6L47.5 76L12.5 76L12.5 29.6Q11.5 27.2 10.5 29.6L10.5 62L3.2 62L4.4 22.4Z`;
-  const MINI = "M13.4 6.6L13.8 4.8Q18 3.4 22.2 4.8L22.6 6.6L35.2 9.74L35.4 24.4L29.2 24.4L29.2 31.4L6.8 31.4L6.8 24.4L.6 24.4L.8 9.74Z";
+  const MINI =
+    "M13.4 6.6L13.8 4.8Q18 3.4 22.2 4.8L22.6 6.6L35.2 9.74L35.4 24.4L29.2 24.4L29.2 31.4L6.8 31.4L6.8 24.4L.6 24.4L.8 9.74Z";
 
   function tokenNum(n, T, F, cx, base, thin, mini) {
     const k = ink(n);
     const x0 = cx - (k.W * F) / 2 - k.L * F;
-    const t = (a, dx = 0) => `<text x="${f(x0 + dx)}" y="${base}" font-family="Changa" font-weight="800" font-size="${F}" direction="ltr" stroke-linejoin="round" ${a}>${n}</text>`;
+    const t = (a, dx = 0) =>
+      `<text x="${f(x0 + dx)}" y="${base}" font-family="Changa" font-weight="800" font-size="${F}" direction="ltr" stroke-linejoin="round" ${a}>${n}</text>`;
     const sc = F / 24;
     switch (T.num) {
       case "vinyl":
@@ -592,18 +835,42 @@
       case "gloss":
         return t(`fill="#EEF2F6"`);
       case "flock":
-        return t(`fill="${C.blue}" stroke="${C.blue}" stroke-width="${f(1.3 * sc)}" transform="translate(${f(0.9 * sc)} ${f(0.9 * sc)})"`, -0.4 * sc) + t(`fill="${C.flock}"`, -0.4 * sc);
+        return (
+          t(
+            `fill="${C.blue}" stroke="${C.blue}" stroke-width="${f(1.3 * sc)}" transform="translate(${f(0.9 * sc)} ${f(0.9 * sc)})"`,
+            -0.4 * sc,
+          ) + t(`fill="${C.flock}"`, -0.4 * sc)
+        );
       case "twill3":
         return (
-          t(`fill="${C.tunnel}" stroke="${C.tunnel}" stroke-width="${f(1.8 * sc)}" transform="translate(${f(1.8 * sc)} ${f(1.8 * sc)})"`, -0.9 * sc) +
-          t(`fill="${C.blue}" stroke="${C.blue}" stroke-width="${f(1 * sc)}" transform="translate(${f(0.9 * sc)} ${f(0.9 * sc)})"`, -0.9 * sc) +
+          t(
+            `fill="${C.tunnel}" stroke="${C.tunnel}" stroke-width="${f(1.8 * sc)}" transform="translate(${f(1.8 * sc)} ${f(1.8 * sc)})"`,
+            -0.9 * sc,
+          ) +
+          t(
+            `fill="${C.blue}" stroke="${C.blue}" stroke-width="${f(1 * sc)}" transform="translate(${f(0.9 * sc)} ${f(0.9 * sc)})"`,
+            -0.9 * sc,
+          ) +
           t(`fill="${C.flock}"`, -0.9 * sc)
         );
       default:
         return (
-          (thin ? "" : t(`fill="#F7F2E4" stroke="#F7F2E4" stroke-width="${f(2.4 * sc)}" transform="translate(${f(2.7 * sc)} ${f(2.7 * sc)})"`, -1.3 * sc)) +
-          t(`fill="${C.slate}" stroke="${C.slate}" stroke-width="${f(1.7 * sc)}" transform="translate(${f(1.8 * sc)} ${f(1.8 * sc)})"`, -1.3 * sc) +
-          (mini ? "" : t(`fill="${C.blue}" stroke="${C.blue}" stroke-width="${f(0.9 * sc)}" transform="translate(${f(0.9 * sc)} ${f(0.9 * sc)})"`, -1.3 * sc)) +
+          (thin
+            ? ""
+            : t(
+                `fill="#F7F2E4" stroke="#F7F2E4" stroke-width="${f(2.4 * sc)}" transform="translate(${f(2.7 * sc)} ${f(2.7 * sc)})"`,
+                -1.3 * sc,
+              )) +
+          t(
+            `fill="${C.slate}" stroke="${C.slate}" stroke-width="${f(1.7 * sc)}" transform="translate(${f(1.8 * sc)} ${f(1.8 * sc)})"`,
+            -1.3 * sc,
+          ) +
+          (mini
+            ? ""
+            : t(
+                `fill="${C.blue}" stroke="${C.blue}" stroke-width="${f(0.9 * sc)}" transform="translate(${f(0.9 * sc)} ${f(0.9 * sc)})"`,
+                -1.3 * sc,
+              )) +
           t(`fill="${C.tunnel}"`, -1.3 * sc)
         );
     }
@@ -627,13 +894,17 @@
         `<span class="x03 x03-tok x03-mini ${tierCls}" style="--h:${size}px">` +
         `<svg viewBox="0 0 36 32" width="${f(w)}" height="${size}" style="direction:ltr;overflow:visible" aria-hidden="true" focusable="false">` +
         `<rect x="3" y="0" width="30" height="${rh}" rx="${f(rh / 2)}" fill="${railC}"/>` +
-        (size >= 30 ? `<path d="M19.8 ${rh}V3.4C19.8 5.6 16.9 6.1 16.4 4.1" fill="none" stroke="${hookC}" stroke-width="1.5" stroke-linecap="round"/>` : "") +
+        (size >= 30
+          ? `<path d="M19.8 ${rh}V3.4C19.8 5.6 16.9 6.1 16.4 4.1" fill="none" stroke="${hookC}" stroke-width="1.5" stroke-linecap="round"/>`
+          : "") +
         `<path class="x03-rim" d="${MINI}"/>` +
         `<path d="${MINI}" fill="${body}"/>` +
         `<path d="M13.4 6.6L13.8 4.8Q18 3.4 22.2 4.8L22.6 6.6Q18 5.4 13.4 6.6Z" fill="${legend ? T.rib : T.body[0]}"/>` +
         `<path d="M6.8 12.4V24.4M29.2 12.4V24.4" stroke="${legend ? "#A99E83" : T.crease}" stroke-width=".9"/>` +
         tokenNum(n, T, F, 18, 20.8, true, true) +
-        (p.founder ? `<rect x="7.4" y="30.4" width="4.2" height="1.8" rx=".4" fill="${legend ? C.tunnel : C.damask}"/>` : "") +
+        (p.founder
+          ? `<rect x="7.4" y="30.4" width="4.2" height="1.8" rx=".4" fill="${legend ? C.tunnel : C.damask}"/>`
+          : "") +
         `</svg></span>`
       );
     }
@@ -642,21 +913,28 @@
     const out = tokOutline(T.collar);
     const showRail = o.rail !== false;
     let s = "";
-    if (showRail) s += `<rect class="x03-rim" x="6" y="0" width="48" height="4" rx="1"/><rect x="6" y="0" width="48" height="4" rx="1" fill="${railC}"/><path d="M7 .7H53" stroke="${RAIL[T.rail].hi}" stroke-opacity=".7" stroke-width=".6"/>`;
-    if (T.hook === "peg") s += `<rect x="28.4" y="3" width="3.2" height="2.4" fill="${hookC}"/><circle class="x03-rim" cx="30" cy="8" r="4.2"/><circle cx="30" cy="8" r="4.2" fill="${hookC}"/><circle cx="28.8" cy="6.8" r="1.3" fill="#A07E5E"/>`;
+    if (showRail)
+      s += `<rect class="x03-rim" x="6" y="0" width="48" height="4" rx="1"/><rect x="6" y="0" width="48" height="4" rx="1" fill="${railC}"/><path d="M7 .7H53" stroke="${RAIL[T.rail].hi}" stroke-opacity=".7" stroke-width=".6"/>`;
+    if (T.hook === "peg")
+      s += `<rect x="28.4" y="3" width="3.2" height="2.4" fill="${hookC}"/><circle class="x03-rim" cx="30" cy="8" r="4.2"/><circle cx="30" cy="8" r="4.2" fill="${hookC}"/><circle cx="28.8" cy="6.8" r="1.3" fill="#A07E5E"/>`;
     else
       s +=
-        (T.hook === "wire" ? `<path d="M36.6 3.4C36.6 .6 33.5 .6 33.5 2.6V7.6C33.5 12.6 27.6 13.6 26.3 9.4" fill="none" stroke="${hookC}" stroke-width="3" stroke-linecap="round"/>` : `<rect x="31.2" y=".6" width="4.6" height="3" rx="1" fill="${hookC}"/><path d="M33.5 1.8V7.6C33.5 12.6 27.6 13.6 26.3 9.4" fill="none" stroke="${hookC}" stroke-width="3" stroke-linecap="round"/><circle cx="26.4" cy="9.2" r="1.7" fill="${hookC}"/>`) +
+        (T.hook === "wire"
+          ? `<path d="M36.6 3.4C36.6 .6 33.5 .6 33.5 2.6V7.6C33.5 12.6 27.6 13.6 26.3 9.4" fill="none" stroke="${hookC}" stroke-width="3" stroke-linecap="round"/>`
+          : `<rect x="31.2" y=".6" width="4.6" height="3" rx="1" fill="${hookC}"/><path d="M33.5 1.8V7.6C33.5 12.6 27.6 13.6 26.3 9.4" fill="none" stroke="${hookC}" stroke-width="3" stroke-linecap="round"/><circle cx="26.4" cy="9.2" r="1.7" fill="${hookC}"/>`) +
         `<path d="M29 17L29 11.2Q30.4 9.4 31.8 11.2L31.8 17Z" fill="${legend ? T.rib : T.body[0]}"/>`;
     s += `<path class="x03-rim" d="${out}"/>`;
     s += `<path d="${out}" fill="${body}"/>`;
     s += `<path d="M3.2 22.4L10.5 23V62H3.2ZM56.8 22.4L49.5 23V62H56.8Z" fill="#000" fill-opacity="${legend ? 0.08 : 0.14}"/>`;
-    if (T.fabric === "quilt") s += `<path d="M3.6 37H56.4M3.6 49H56.4M12.5 67H47.5" stroke="#0A1A36" stroke-width="${thin ? 1 : 0.8}"/><path d="M3.6 37.9H56.4M3.6 49.9H56.4M12.5 67.9H47.5" stroke="#fff" stroke-opacity=".22" stroke-width=".5"/>`;
+    if (T.fabric === "quilt")
+      s += `<path d="M3.6 37H56.4M3.6 49H56.4M12.5 67H47.5" stroke="#0A1A36" stroke-width="${thin ? 1 : 0.8}"/><path d="M3.6 37.9H56.4M3.6 49.9H56.4M12.5 67.9H47.5" stroke="#fff" stroke-opacity=".22" stroke-width=".5"/>`;
     s += `<path d="${TOK.band[T.collar]}" fill="${legend ? T.rib : T.body[0]}"/>`;
-    if (T.piping && !thin) s += `<path d="M5.4 23.2L23.4 18.7M36.6 18.7L54.6 23.2" stroke="${legend ? C.tunnel : C.slate}" stroke-width="1"/>`;
+    if (T.piping && !thin)
+      s += `<path d="M5.4 23.2L23.4 18.7M36.6 18.7L54.6 23.2" stroke="${legend ? C.tunnel : C.slate}" stroke-width="1"/>`;
     s += `<path d="M3.4 59.6H10.5M49.5 59.6H56.6M12.5 73.4H47.5" stroke="${legend ? T.rib : "#000"}" stroke-opacity="${legend ? 0.9 : 0.3}" stroke-width="${legend ? 1.4 : thin ? 1.1 : 0.8}"/>`;
     s += tokenNum(n, T, 23.5, 30, 56.5, thin);
-    if (p.founder) s += `<rect x="14" y="72.6" width="11" height="6.8" rx=".8" fill="${C.damask}"/>${thin ? "" : `<rect x="14.6" y="73.2" width="9.8" height="5.6" rx=".5" fill="none" stroke="${C.thread}" stroke-width=".5" stroke-dasharray=".9 .5"/>`}`;
+    if (p.founder)
+      s += `<rect x="14" y="72.6" width="11" height="6.8" rx=".8" fill="${C.damask}"/>${thin ? "" : `<rect x="14.6" y="73.2" width="9.8" height="5.6" rx=".5" fill="none" stroke="${C.thread}" stroke-width=".5" stroke-dasharray=".9 .5"/>`}`;
     return (
       `<span class="x03 x03-tok ${tierCls}" style="--h:${size}px">` +
       `<svg viewBox="0 0 60 80" width="${f(w)}" height="${size}" style="direction:ltr" aria-hidden="true" focusable="false">${s}</svg></span>`
@@ -673,7 +951,9 @@
       `<span class="x03-row-tok">${token(p, { ...o, size: 54, mini: false, rail: false })}</span>` +
       `<span class="x03-row-id"><b class="x03-row-name">${E(MC.nameOf(p, o))}</b>` +
       `<span class="x03-row-sub"><i class="x03-chip ${tierCls}">${E(S.tiers[p.tier])}</i><bdi dir="ltr" class="x03-row-ovr">${p.ovr} <small>${S.ovr}</small></bdi>` +
-      (p.founder ? `<span class="x03-chip x03-chip--founder" title="${E(S.founderLine)}" aria-label="${E(S.founderLine)}">${MC.ltr(p.founder)}</span>` : "") +
+      (p.founder
+        ? `<span class="x03-chip x03-chip--founder" title="${E(S.founderLine)}" aria-label="${E(S.founderLine)}">${MC.ltr(p.founder)}</span>`
+        : "") +
       `</span></span>` +
       `<span class="x03-row-pts"><b>${MC.ltr(o.pts)}</b><small>${E(S.pts)}</small></span>` +
       `</div>`
@@ -685,7 +965,9 @@
   function halftoneFigure(tilt) {
     const A = MC.AVATAR;
     const hood = !!A.hood; // the shared figure wears its hood up by default
-    const parts = hood ? [A.torso, A.collar, A.hood] : [A.torso, A.collar, A.neck, A.ears, A.head, A.hair];
+    const parts = hood
+      ? [A.torso, A.collar, A.hood]
+      : [A.torso, A.collar, A.neck, A.ears, A.head, A.hair];
     const radii = [1.9, 1.68, 1.44, 1.2, 0.98, 0.76, 0.56, 0.36, 0.2];
     let pats = "";
     let bands = "";
@@ -697,7 +979,8 @@
     const fills = hood
       ? `<path d="${A.torso}" fill="#14223A"/><path d="${A.collar}" fill="#1A2B48"/><path d="${A.hood}" fill="#182842"/>`
       : `<path d="${A.torso}" fill="#14223A"/><path d="${A.collar}" fill="#1A2B48"/><path d="${A.neck}" fill="#22324F"/><path d="${A.ears}" fill="#22324F"/><path d="${A.head}" fill="#22324F"/><path d="${A.hair}" fill="#0B1424"/>`;
-    const seams = `<path d="${A.seam}"/>` + (hood ? `<path d="${A.hoodSeam}"/><path d="${A.hoodRim}"/>` : "");
+    const seams =
+      `<path d="${A.seam}"/>` + (hood ? `<path d="${A.hoodSeam}"/><path d="${A.hoodRim}"/>` : "");
     const svg =
       `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -10 240 260" width="240" height="260">` +
       `<defs><clipPath id="fig">${parts.map((d) => `<path d="${d}"/>`).join("")}</clipPath>${pats}</defs>` +
@@ -803,9 +1086,17 @@
       if (gr) gr.setAttribute("gradientTransform", `translate(${(k * 0.18).toFixed(3)} 0)`);
     });
     // press: a dark platen comes down, holds 1.2s, lifts; then a carrier film to peel
-    let timer = null, startX = 0, startY = 0, moved = false, pressing = false, film = null;
+    let timer = null,
+      startX = 0,
+      startY = 0,
+      moved = false,
+      pressing = false,
+      film = null;
     const NS = "http://www.w3.org/2000/svg";
-    const x0 = 46, y0 = 202, x1 = 254, y1 = 310;
+    const x0 = 46,
+      y0 = 202,
+      x1 = 254,
+      y1 = 310;
     const fid = MC.uid("x03f");
     function showFilm() {
       if (!press) return;
@@ -836,7 +1127,11 @@
       const cut = film.querySelector(".x03-film-cut");
       const flap = film.querySelector(".x03-film-flap");
       const grip = film.querySelector(".x03-film-grip");
-      if (cut) cut.setAttribute("points", `${x0},${y0} ${x1},${y0} ${x1},${y1} ${x0 + d},${y1} ${x0},${y1 - d}`);
+      if (cut)
+        cut.setAttribute(
+          "points",
+          `${x0},${y0} ${x1},${y0} ${x1},${y1} ${x0 + d},${y1} ${x0},${y1 - d}`,
+        );
       if (flap) flap.setAttribute("d", `M${x0} ${y1 - d}L${x0 + d} ${y1}L${x0 + d} ${y1 - d}Z`);
       if (grip) grip.setAttribute("opacity", "0");
       if (d > 0.6 * (x1 - x0)) {
@@ -875,7 +1170,8 @@
       }, 1200);
     });
     el.addEventListener("pointermove", (e) => {
-      const dx = e.clientX - startX, dy = e.clientY - startY;
+      const dx = e.clientX - startX,
+        dy = e.clientY - startY;
       if (Math.abs(dx) + Math.abs(dy) > 6) moved = true;
       if (timer && moved) {
         clearTimeout(timer);
@@ -901,15 +1197,19 @@
   MC.register({
     id: "x03",
     cut: true,
-    cutReason: "At 24px the jacket reads as the shirt the Fantasy squad already uses for players, and Pépites already puts a rank number on a shirt back. Its press-and-peel ritual also held the number back behind a gesture, which reads as a scratch card.",
-    cutReasonAr: "عند 24 بكسل تُقرأ السترة كالقميص الذي تستخدمه تشكيلة الفانتازي للاعبين أصلًا، وقسم Pépites يضع رقم الترتيب على ظهر القميص. كما أن حركة الكبس والنزع كانت تحجب الرقم، فتبدو كبطاقة خدش.",
+    cutReason:
+      "At 24px the jacket reads as the shirt the Fantasy squad already uses for players, and Pépites already puts a rank number on a shirt back. Its press-and-peel ritual also held the number back behind a gesture, which reads as a scratch card.",
+    cutReasonAr:
+      "عند 24 بكسل تُقرأ السترة كالقميص الذي تستخدمه تشكيلة الفانتازي للاعبين أصلًا، وقسم Pépites يضع رقم الترتيب على ظهر القميص. كما أن حركة الكبس والنزع كانت تحجب الرقم، فتبدو كبطاقة خدش.",
     n: 3,
     slug: "03",
     name: "Flocage",
     nameAr: "الرقم على الظهر",
     category: "safe",
-    philosophy: "Your card is your own bench coat hanging on the dressing-room rail, and the only thing that can press a new number onto its back is your season.",
-    philosophyAr: "بطاقتك هي معطفك معلّقًا على مشجب غرفة الملابس، ولا يطبع رقمًا جديدًا على ظهره إلا أداؤك في الموسم.",
+    philosophy:
+      "Your card is your own bench coat hanging on the dressing-room rail, and the only thing that can press a new number onto its back is your season.",
+    philosophyAr:
+      "بطاقتك هي معطفك معلّقًا على مشجب غرفة الملابس، ولا يطبع رقمًا جديدًا على ظهره إلا أداؤك في الموسم.",
     idea: [
       "The card is a garment, not a rectangle: the manager's own long bench coat, hung by its loop from a hook on the dressing-room rail, back to you. It joins two rituals Moroccan fans already have: having a name and number heat-pressed onto a replica at the kit shop, and the matchday photo of shirts waiting on their hooks.",
       "On BotolaGO you cannot choose the number. The press prints '84 OVR' as one run where a squad number would go, so it never reads as a shirt number. ALI sits above it. A woven back-neck label says MANAGER. The four decision stats are one printed line across the yoke. MAR, the BOT serial and the season are printed by the hem. The tier is a woven sleeve tab, the club is a woven disc on the other sleeve, and FOUNDER 2026 is a jock tag hanging below the hem.",
@@ -939,10 +1239,13 @@
     ],
     tiers: {
       HOMA: "A heather cotton training top with a crew neck, hung from a plain wire S-hook on a painted rail. One layer of matte iron-on vinyl set 1.5° off by hand, with the top corner of the last figure starting to lift. The tier word is ironed straight onto the sleeve: no patches, no piping, no crest.",
-      STADE: "A navy piqué bench jacket with a stand-up collar on a steel hook and a galvanised rail. Glossy heat-transfer vinyl with one specular streak (one clean layer), and around it a soft zone where the platen flattened the piqué. The tier is printed on the sleeve.",
+      STADE:
+        "A navy piqué bench jacket with a stand-up collar on a steel hook and a galvanised rail. Glossy heat-transfer vinyl with one specular streak (one clean layer), and around it a soft zone where the platen flattened the piqué. The tier is printed on the sleeve.",
       PRO: "The same jacket on an oak rail with a brass hook, slate club piping along the shoulders, a woven navy sleeve tab and a woven club disc. The number is matte flock (fibre grain, a soft emboss) over a Logo Blue twill layer: two layers.",
-      CHAMPION: "A channel-quilted coat: horizontal channels every 24 units, each lit at the top and shaded at the bottom, so the sleeves and lower body bulge at every seam and the outline itself ripples. Tackle twill in three layers (white over Logo Blue over Tunnel Navy), each with a satin-stitch edge, a quilted lining at the collar and a cream damask sleeve tab.",
-      LEGEND: "An ecru melton wool coat with a navy rib collar, cuffs and hem: the only light coat in the league. It hangs from a turned walnut peg on a walnut rail, which changes the top of the silhouette. The number is four cut layers stacked by hard offsets (a Tunnel Navy face over Logo Blue, club slate and cream), each satin-stitched, under one raking light. No metal and no gold anywhere.",
+      CHAMPION:
+        "A channel-quilted coat: horizontal channels every 24 units, each lit at the top and shaded at the bottom, so the sleeves and lower body bulge at every seam and the outline itself ripples. Tackle twill in three layers (white over Logo Blue over Tunnel Navy), each with a satin-stitch edge, a quilted lining at the collar and a cream damask sleeve tab.",
+      LEGEND:
+        "An ecru melton wool coat with a navy rib collar, cuffs and hem: the only light coat in the league. It hangs from a turned walnut peg on a walnut rail, which changes the top of the silhouette. The number is four cut layers stacked by hard offsets (a Tunnel Navy face over Logo Blue, club slate and cream), each satin-stitched, under one raking light. No metal and no gold anywhere.",
     },
     legend: [
       "The press. The screen dims to the dressing room. A dark platen comes down over the coat with a contact tick and holds for 1.2s while four short haptic pulses ramp, then lifts with a release thunk.",

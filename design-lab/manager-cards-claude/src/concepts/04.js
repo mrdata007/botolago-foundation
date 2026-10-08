@@ -289,9 +289,15 @@
           const y2 = ar ? 83 : 82;
           const y1 = r2(y2 - fsU * (ar ? 1.12 : 1.02));
           // only a line still too wide at 15u is condensed to the box
-          const fit = (i) => ((ws[i] * fsU) / 34 > NAME.w + 0.5 ? ` textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs"` : "");
+          const fit = (i) =>
+            (ws[i] * fsU) / 34 > NAME.w + 0.5
+              ? ` textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs"`
+              : "";
           stamped = two
-            .map((l, i) => `<text x="${NX}" y="${i ? y2 : y1}" ${fam} font-size="${r2(fsU)}"${dirA}${fit(i)}>${esc(l)}</text>`)
+            .map(
+              (l, i) =>
+                `<text x="${NX}" y="${i ? y2 : y1}" ${fam} font-size="${r2(fsU)}"${dirA}${fit(i)}>${esc(l)}</text>`,
+            )
             .join("");
         } else {
           stamped = `<text x="${NX}" y="${ar ? 72 : 76}" ${fam} font-size="15"${dirA} textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs">${esc(name)}</text>`;
@@ -616,7 +622,9 @@
     }
 
     const cls = `c04 c04--${tk.toLowerCase()}${thumb ? " c04--thumb" : ""}${o.motion && !thumb ? " c04--motion" : ""}${p.founder ? " c04--fd" : ""}`;
-    const style = o._onDark ? ` style="--c04-edgeo:0;--c04-printo:0;--c04-shc:#000;--c04-sho:.55"` : "";
+    const style = o._onDark
+      ? ` style="--c04-edgeo:0;--c04-printo:0;--c04-shc:#000;--c04-sho:.55"`
+      : "";
     return (
       `<div class="${cls}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tk}"${style}>` +
       `<div class="c04-print">${printSvg}</div>` +
@@ -725,7 +733,10 @@
     const vbY = t.clamps ? (mini ? -7.5 : -6) : -0.5;
     const vbH = VH + (thick || 0.4) + 0.6 - vbY;
     // the rim: the digit outlines stroked (in glyph units), seen only on the plate's face
-    const rimPaths = num.replace(/<path([^>]*?)\/>/g, (m, a) => `<path${a} stroke-width="${r2((2 * rimW) / sc)}"/>`);
+    const rimPaths = num.replace(
+      /<path([^>]*?)\/>/g,
+      (m, a) => `<path${a} stroke-width="${r2((2 * rimW) / sc)}"/>`,
+    );
     return (
       `<span class="c04-tok c04-tok--${tk.toLowerCase()}${mini ? " c04-tok--mini" : ""}" role="img" aria-label="${esc(`${p.ovr} ${S.ovr}, ${S.tiers[tk]}${p.founder ? ", " + S.founderLine : ""}`)}">` +
       `<svg width="${r2(vbW * k)}" height="${r2(vbH * k)}" viewBox="-1 ${r2(vbY)} ${vbW} ${r2(vbH)}" aria-hidden="true" focusable="false"><defs>${defs}</defs>` +

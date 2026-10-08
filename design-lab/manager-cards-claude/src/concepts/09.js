@@ -36,7 +36,10 @@
     skinDk: "#7f543b",
     skinLt: "#dcab87",
   };
-  const clubOf = (p) => ({ primary: (p.club && p.club.primary) || "#1B2433", secondary: (p.club && p.club.secondary) || "#C3CAD2" });
+  const clubOf = (p) => ({
+    primary: (p.club && p.club.primary) || "#1B2433",
+    secondary: (p.club && p.club.secondary) || "#C3CAD2",
+  });
   const yearOf = (p) => (p.founder ? String(p.founder).slice(2) : "");
   const isArabic = (s) => /[؀-ۿ]/.test(s);
 
@@ -55,7 +58,8 @@
     ["700 40px Noto Sans Arabic", "المغرب"],
   ];
   try {
-    if (document.fonts && document.fonts.load) FACES.forEach(([fo, t]) => document.fonts.load(fo, t).catch(() => {}));
+    if (document.fonts && document.fonts.load)
+      FACES.forEach(([fo, t]) => document.fonts.load(fo, t).catch(() => {}));
   } catch (e) {
     /* no font loading API: the canvas uses whatever face it has */
   }
@@ -164,7 +168,12 @@
       });
       x += w + (bold ? 1 : 0) + 1;
     }
-    return { w: Math.max(0, x - 1), h, base: h, cells: [...set].map((k) => [k % 1000, Math.floor(k / 1000), 1]) };
+    return {
+      w: Math.max(0, x - 1),
+      h,
+      base: h,
+      cells: [...set].map((k) => [k % 1000, Math.floor(k / 1000), 1]),
+    };
   }
 
   /* ---------- the canvas: measuring, and sampling any face into LED cells ---------- */
@@ -212,7 +221,9 @@
     const sx = opt.sx || 1;
     const aa = !!opt.aa;
     const over = opt.over != null ? opt.over : 1;
-    const key = [text, weight, family, rows, sx, aa, ref, over, opt.desc, opt.em, opt.thr].join("|");
+    const key = [text, weight, family, rows, sx, aa, ref, over, opt.desc, opt.em, opt.thr].join(
+      "|",
+    );
     if (memo.has(key)) return memo.get(key);
     const em = opt.em || rows / capOf(weight, family, ref);
     const g = ctx();
@@ -241,16 +252,32 @@
     for (let r = 0; r < tall; r++)
       for (let c = 0; c < cols; c++) {
         let s = 0;
-        for (let y = r * SC; y < (r + 1) * SC; y++) for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
+        for (let y = r * SC; y < (r + 1) * SC; y++)
+          for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
         s /= SC * SC * 255;
-        const a = aa ? (s >= 0.5 ? 1 : s >= 0.3 ? 0.75 : s >= 0.15 ? 0.4 : 0) : s >= (opt.thr || 0.5) ? 1 : 0;
+        const a = aa
+          ? s >= 0.5
+            ? 1
+            : s >= 0.3
+              ? 0.75
+              : s >= 0.15
+                ? 0.4
+                : 0
+          : s >= (opt.thr || 0.5)
+            ? 1
+            : 0;
         if (a) {
           cells.push([c, r, a]);
           lo = Math.min(lo, c);
           hi = Math.max(hi, c);
         }
       }
-    const out = { w: hi >= lo ? hi - lo + 1 : 0, h: tall, base: above, cells: cells.map(([c, r, a]) => [c - lo, r, a]) };
+    const out = {
+      w: hi >= lo ? hi - lo + 1 : 0,
+      h: tall,
+      base: above,
+      cells: cells.map(([c, r, a]) => [c - lo, r, a]),
+    };
     if (ready(font, text)) memo.set(key, out);
     return out;
   }
@@ -279,7 +306,8 @@
     for (let r = 0; r < rows + 1; r++)
       for (let c = 0; c < cols; c++) {
         let s = 0;
-        for (let y = r * SC; y < (r + 1) * SC; y++) for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
+        for (let y = r * SC; y < (r + 1) * SC; y++)
+          for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
         s /= SC * SC * 255;
         const a = aa ? (s >= 0.5 ? 1 : s >= 0.28 ? 0.75 : s >= 0.14 ? 0.4 : 0) : s >= 0.38 ? 1 : 0;
         if (a) cells.push([c, r, a]);
@@ -320,11 +348,13 @@
     });
     const cov = (d, c, r) => {
       let s = 0;
-      for (let y = r * SC; y < (r + 1) * SC; y++) for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
+      for (let y = r * SC; y < (r + 1) * SC; y++)
+        for (let x = c * SC; x < (c + 1) * SC; x++) s += d[(y * W + x) * 4 + 3];
       return s / (SC * SC * 255);
     };
     const inn = new Uint8Array(cols * rows);
-    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) inn[r * cols + c] = cov(body, c, r) >= 0.45 ? 1 : 0;
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < cols; c++) inn[r * cols + c] = cov(body, c, r) >= 0.45 ? 1 : 0;
     const at = (c, r) => (r >= rows ? 1 : c < 0 || c >= cols || r < 0 ? 0 : inn[r * cols + c]);
     const cells = [];
     for (let r = 0; r < rows; r++)
@@ -447,11 +477,58 @@
   /* LED geometry. PRO runs the founder lamp's own 3u pitch: a 4u grid cannot hold the four-stat line.
      nameRows: the Latin name's cap height in cells; nameAr / arEm: the Arabic name's baseline row and em in cells. */
   const LEDT = {
-    PRO: { P: 3, X: 13, Y: 17, cols: 98, rows: 50, m: 2, name: 9, nameRows: 7, nameAr: 10, arEm: 11, big: 36, stat: 46, bigRows: 20 },
+    PRO: {
+      P: 3,
+      X: 13,
+      Y: 17,
+      cols: 98,
+      rows: 50,
+      m: 2,
+      name: 9,
+      nameRows: 7,
+      nameAr: 10,
+      arEm: 11,
+      big: 36,
+      stat: 46,
+      bigRows: 20,
+    },
     /* the full matrix: fatter dots with a larger white core, so its light is the brightest of the LED tiers */
-    CHAMPION: { P: 2, X: 12, Y: 17, cols: 148, rows: 75, m: 4, name: 14, nameRows: 11, nameAr: 14, arEm: 15, big: 55, stat: 69, bigRows: 30, dotR: 0.55, core: 0.45, coreOp: 1, rimStop: 0.86, rimOp: 0.8 },
+    CHAMPION: {
+      P: 2,
+      X: 12,
+      Y: 17,
+      cols: 148,
+      rows: 75,
+      m: 4,
+      name: 14,
+      nameRows: 11,
+      nameAr: 14,
+      arEm: 15,
+      big: 55,
+      stat: 69,
+      bigRows: 30,
+      dotR: 0.55,
+      core: 0.45,
+      coreOp: 1,
+      rimStop: 0.86,
+      rimOp: 0.8,
+    },
     /* the share: 3.4u dots (10.7px at export), the 84 on 36 rows (20% of the story), the stats on the stand's ribbon board */
-    SHARE: { P: 3.4, X: 12.1, Y: 17, cols: 87, rows: 44, m: 2, name: 7, nameRows: 7, nameAr: 7, arEm: 10, big: 44, stat: 0, bigRows: 36 },
+    SHARE: {
+      P: 3.4,
+      X: 12.1,
+      Y: 17,
+      cols: 87,
+      rows: 44,
+      m: 2,
+      name: 7,
+      nameRows: 7,
+      nameAr: 7,
+      arEm: 10,
+      big: 44,
+      stat: 0,
+      bigRows: 36,
+    },
   };
   const xOf = (L, col) => L.X + col * L.P;
   const yOf = (L, row) => L.Y + row * L.P;
@@ -467,7 +544,13 @@
         unit: (t) => sample(t, "600", "Changa", kind === "SHARE" ? 6 : 8, { aa: true }),
         lamp: (t) => sample(t, "700", "Changa", kind === "SHARE" ? 6 : 8, { aa: true, ref: "2" }),
         val: (t) => sample(t, "700", "Changa", 10, { aa: true, ref: "8", over: 0 }),
-        big: (n) => sample(n, "800", "Changa", rowsFor(n, LEDT[kind].bigRows), { aa: true, ref: "8", over: 0, sx: 0.92 }),
+        big: (n) =>
+          sample(n, "800", "Changa", rowsFor(n, LEDT[kind].bigRows), {
+            aa: true,
+            ref: "8",
+            over: 0,
+            sx: 0.92,
+          }),
         sp: 3,
         grp: 9,
         lampGap: 4,
@@ -481,7 +564,8 @@
       unit: (t) => (kind === "SHARE" ? bit(t, G57) : bit(t, F35)),
       lamp: (t) => bit(t, F35),
       val: (t) => bit(t, G57, true),
-      big: (n) => sample(n, "800", "Changa", rowsFor(n, LEDT[kind].bigRows), { ref: "8", over: 0, sx: 0.9 }),
+      big: (n) =>
+        sample(n, "800", "Changa", rowsFor(n, LEDT[kind].bigRows), { ref: "8", over: 0, sx: 0.9 }),
       sp: 2,
       grp: 4,
       lampGap: 3,
@@ -508,14 +592,43 @@
     const nm = MC.nameOf(p, o);
     if (!ar) {
       const r = line(F, [{ g: T.name(nm), c: K.warm }], L.m, L.name, "start");
-      if (yr) line(F, [{ g: T.lamp("·" + yr), c: K.tung, cls: "lamp" }], r.c0 + r.W + T.lampGap, L.name, "start");
+      if (yr)
+        line(
+          F,
+          [{ g: T.lamp("·" + yr), c: K.tung, cls: "lamp" }],
+          r.c0 + r.W + T.lampGap,
+          L.name,
+          "start",
+        );
       line(F, [{ g: T.tier(S.tiers[p.tier]), c: K.warm }], endC, L.name, "end");
     } else {
       const r = line(F, [{ g: T.nameAr(nm), c: K.warm }], endC, L.nameAr, "end");
-      if (yr) line(F, [{ g: T.lamp(yr + "·"), c: K.tung, cls: "lamp" }], r.c0 - T.lampGap - 1, L.nameAr, "end");
-      extra.lit += hj(xOf(L, L.m), yOf(L, L.nameAr), S.tiers[p.tier], kind === "SHARE" ? 21 : 21, "start");
+      if (yr)
+        line(
+          F,
+          [{ g: T.lamp(yr + "·"), c: K.tung, cls: "lamp" }],
+          r.c0 - T.lampGap - 1,
+          L.nameAr,
+          "end",
+        );
+      extra.lit += hj(
+        xOf(L, L.m),
+        yOf(L, L.nameAr),
+        S.tiers[p.tier],
+        kind === "SHARE" ? 21 : 21,
+        "start",
+      );
     }
-    line(F, [{ g: T.big(String(p.ovr)), c: K.warm, gap: T.unitGap }, { g: T.unit(S.ovr), c: K.warm, a: 0.62 }], mid, L.big, "center");
+    line(
+      F,
+      [
+        { g: T.big(String(p.ovr)), c: K.warm, gap: T.unitGap },
+        { g: T.unit(S.ovr), c: K.warm, a: 0.62 },
+      ],
+      mid,
+      L.big,
+      "center",
+    );
     if (L.stat) {
       if (!ar) {
         const segs = [];
@@ -524,7 +637,18 @@
           segs.push({ g: T.small(String(p.stats[k])), c: K.warm, gap: T.grp });
         });
         line(F, segs, mid, L.stat, "center");
-      } else extra.lit += statsText(p, o, { cx: 160, y: yOf(L, L.stat), size: 16.5, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 278, handjet: true });
+      } else
+        extra.lit += statsText(p, o, {
+          cx: 160,
+          y: yOf(L, L.stat),
+          size: 16.5,
+          family: "Handjet",
+          weight: 400,
+          fill: K.warm,
+          labOp: 0.6,
+          maxW: 278,
+          handjet: true,
+        });
     }
     return { F, extra };
   }
@@ -560,7 +684,13 @@
     const ax = ar ? (champ ? -6 : -4) : L.cols - aw + (champ ? 6 : 4);
     put(F, avatarCells(aw, ah), ax, aTop, K.warm, 1, "lit");
     const crest = crestCells(champ ? 21 : 14, aa);
-    line(F, [{ g: crest, c: K.warm, a: 0.8 }], ar ? L.m : L.cols - 1 - L.m, champ ? 23 : 16, ar ? "start" : "end");
+    line(
+      F,
+      [{ g: crest, c: K.warm, a: 0.8 }],
+      ar ? L.m : L.cols - 1 - L.m,
+      champ ? 23 : 16,
+      ar ? "start" : "end",
+    );
     /* season record: thirty gameweeks, the sample's first seven lit, labelled above */
     const recBase = L.rows - (champ ? 3 : 1);
     const mh = champ ? 7 : 5;
@@ -582,12 +712,17 @@
     const build = (size) => {
       const lv = size * 0.32;
       const gg = size * 1.05;
-      const groups = (c.keys || MC.STATS).map((k) => ({ lab: S.stats[k], val: String(p.stats[k]) })).map((g) => ({
-        ...g,
-        lw: textW(g.lab, size, wt, c.family),
-        vw: textW(g.val, size, c.valWeight || wt, c.family),
-      }));
-      const W = groups.reduce((s, g, i) => s + g.lw + lv + g.vw + (i < groups.length - 1 ? gg : 0), 0);
+      const groups = (c.keys || MC.STATS)
+        .map((k) => ({ lab: S.stats[k], val: String(p.stats[k]) }))
+        .map((g) => ({
+          ...g,
+          lw: textW(g.lab, size, wt, c.family),
+          vw: textW(g.val, size, c.valWeight || wt, c.family),
+        }));
+      const W = groups.reduce(
+        (s, g, i) => s + g.lw + lv + g.vw + (i < groups.length - 1 ? gg : 0),
+        0,
+      );
       return { groups, W, lv, gg };
     };
     let size = c.size;
@@ -599,7 +734,9 @@
     let x = c.cx - m.W / 2;
     const seq = ar ? [...m.groups].reverse() : m.groups;
     const t = (xx, s, op, w) =>
-      c.handjet ? hj(xx, c.y, s, size, "start", op, c.fill) : `<text x="${f(xx)}" y="${f(c.y)}" font-family="${c.family}" font-weight="${w}" font-size="${f(size)}" fill="${c.fill}"${op < 1 ? ` fill-opacity="${op}"` : ""}>${esc(s)}</text>`;
+      c.handjet
+        ? hj(xx, c.y, s, size, "start", op, c.fill)
+        : `<text x="${f(xx)}" y="${f(c.y)}" font-family="${c.family}" font-weight="${w}" font-size="${f(size)}" fill="${c.fill}"${op < 1 ? ` fill-opacity="${op}"` : ""}>${esc(s)}</text>`;
     let s = "";
     seq.forEach((g, i) => {
       if (!ar) {
@@ -666,7 +803,9 @@
     const w = opt.w || 700;
     const lip = opt.lip == null ? 0.55 : opt.lip;
     return (
-      (lip ? `<text x="${f(x)}" y="${f(y + 0.5)}" font-family="${fam}" font-weight="${w}" font-size="${fs}"${a}${ls}${d} fill="${opt.lipC || "#fff"}" fill-opacity="${lip}">${esc(txt)}</text>` : "") +
+      (lip
+        ? `<text x="${f(x)}" y="${f(y + 0.5)}" font-family="${fam}" font-weight="${w}" font-size="${fs}"${a}${ls}${d} fill="${opt.lipC || "#fff"}" fill-opacity="${lip}">${esc(txt)}</text>`
+        : "") +
       `<text x="${f(x)}" y="${f(y)}" font-family="${fam}" font-weight="${w}" font-size="${fs}"${a}${ls}${d} fill="${opt.ink || K.engrave}"${opt.op ? ` fill-opacity="${opt.op}"` : ""}>${esc(txt)}</text>`
     );
   }
@@ -697,7 +836,8 @@
       s += `<rect x="144.6" y="${y}" width="30.8" height="3.2" rx="1.6" fill="${club.secondary}"/><rect x="144.6" y="${y}" width="30.8" height="3.2" rx="1.6" fill="url(#${u}-cyl)"/>`;
     }
     s += `<path class="c09-rim" d="${d}" fill="none" stroke-width=".8"/>`;
-    if (LG) s += `<rect x="145" y="235" width="30" height="7" rx="1.4" fill="url(#${u}-pol)"/><rect x="145" y="235" width="30" height="7" rx="1.4" fill="url(#${u}-cyl)"/>`;
+    if (LG)
+      s += `<rect x="145" y="235" width="30" height="7" rx="1.4" fill="url(#${u}-pol)"/><rect x="145" y="235" width="30" height="7" rx="1.4" fill="url(#${u}-cyl)"/>`;
     return s;
   }
   /** Founders: a knurled steel collar, 40u against the 28u grip, so the outline itself changes. */
@@ -880,7 +1020,10 @@
         [316, 4],
         [4, 176],
         [316, 176],
-      ].forEach(([x, y]) => (s += `<circle cx="${x}" cy="${y}" r="2.1" fill="url(#${u}-pol)"/><circle cx="${x}" cy="${y}" r="2.1" fill="none" stroke="#6E7782" stroke-width=".5"/>`));
+      ].forEach(
+        ([x, y]) =>
+          (s += `<circle cx="${x}" cy="${y}" r="2.1" fill="url(#${u}-pol)"/><circle cx="${x}" cy="${y}" r="2.1" fill="none" stroke="#6E7782" stroke-width=".5"/>`),
+      );
     s += `<rect class="c09-edge" x=".4" y=".4" width="319.2" height="179.2" fill="none" stroke-width=".8"/>`;
     return s;
   }
@@ -894,7 +1037,13 @@
       const w = h * MC.LOGO_RATIO.wordmark;
       s += `<g transform="translate(${f(160 - w / 2)} ${f((B - h) / 2)})">${MC.logo("wordmark", { variant: "color", w: f(w), h: f(h), label: false })}</g>`;
     }
-    if (tier !== "LEGEND") s += engrave(160, f(180 - B / 2 + (B === 12 ? 2.7 : 2)), idLine(p, o), { size: B === 12 ? 7.5 : 5.6, w: B === 12 ? 700 : 800, anchor: "middle", ls: ".3" });
+    if (tier !== "LEGEND")
+      s += engrave(160, f(180 - B / 2 + (B === 12 ? 2.7 : 2)), idLine(p, o), {
+        size: B === 12 ? 7.5 : 5.6,
+        w: B === 12 ? 700 : 800,
+        anchor: "middle",
+        ls: ".3",
+      });
     return s;
   }
   /** Black acrylic: one 4% diagonal band and a faint top sheen. */
@@ -909,7 +1058,8 @@
       `<rect x="${x0}" y="${y0}" width="${w}" height="1.2" fill="#000" opacity=".55"/>`
     );
   }
-  const onStrip = (x, y, w) => `<rect class="c09-on" x="${x}" y="${y}" width="${w}" height="2" fill="${K.cyan}"/>`;
+  const onStrip = (x, y, w) =>
+    `<rect class="c09-on" x="${x}" y="${y}" width="${w}" height="2" fill="${K.cyan}"/>`;
 
   /* ---------- vector rows (painted, printed or lit as continuous light) ---------- */
   function nameRow(p, o, c) {
@@ -927,16 +1077,19 @@
     const out = () => {
       if (!c.shade) return { lit, lamp };
       /* the sign-writer's drop shade: the same letters in grey, a brush-width down and to the right */
-      const sh = (str) => `<g transform="translate(1.5 1.5)">${str.replace(/fill="[^"]+"/g, `fill="${c.shade}"`)}</g>`;
+      const sh = (str) =>
+        `<g transform="translate(1.5 1.5)">${str.replace(/fill="[^"]+"/g, `fill="${c.shade}"`)}</g>`;
       return { lit: sh(lit) + lit, lamp: sh(lamp) + lamp };
     };
     if (!ar) {
       lit += `<text x="${c.x0}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${c.size}" fill="${c.ink}">${esc(nm)}</text>`;
-      if (yr) lamp += `<text x="${f(c.x0 + nw + c.size * 0.1)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${ys}" fill="${c.lamp}">·${yr}</text>`;
+      if (yr)
+        lamp += `<text x="${f(c.x0 + nw + c.size * 0.1)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${ys}" fill="${c.lamp}">·${yr}</text>`;
       lit += `<text x="${c.x1}" y="${c.y}" font-family="Changa" font-weight="${c.tierW || 700}" font-size="${c.tierSize}" text-anchor="end"${lsT} fill="${c.ink}"${tOp}>${esc(tierT)}</text>`;
     } else {
       lit += `<text x="${c.x1}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${c.size}" text-anchor="end" fill="${c.ink}">${esc(nm)}</text>`;
-      if (yr) lamp += `<text x="${f(c.x1 - nw - c.size * 0.1)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${ys}" text-anchor="end" fill="${c.lamp}">${yr}·</text>`;
+      if (yr)
+        lamp += `<text x="${f(c.x1 - nw - c.size * 0.1)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${ys}" text-anchor="end" fill="${c.lamp}">${yr}·</text>`;
       lit += `<text x="${c.x0}" y="${c.y}" font-family="Changa" font-weight="${c.tierW || 700}" font-size="${f(c.tierSize * 1.15)}" fill="${c.ink}"${tOp}>${esc(tierT)}</text>`;
     }
     return out();
@@ -1021,20 +1174,78 @@
       `<filter id="${u}-bl" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.6"/></filter>` +
       `<filter id="${u}-bw" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="5.6"/></filter>`;
     s += `<radialGradient id="${u}-pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${K.warm}" stop-opacity=".17"/><stop offset=".6" stop-color="${K.warm}" stop-opacity=".05"/><stop offset="1" stop-color="${K.warm}" stop-opacity="0"/></radialGradient>`;
-    if (side !== "back") s += `<ellipse cx="160" cy="${opt.share ? 112 : 100}" rx="156" ry="${opt.share ? 76 : 62}" fill="url(#${u}-pool)"/>`;
+    if (side !== "back")
+      s += `<ellipse cx="160" cy="${opt.share ? 112 : 100}" rx="156" ry="${opt.share ? 76 : 62}" fill="url(#${u}-pool)"/>`;
     if (side === "back") {
-      s += vecBack(p, o, { u, x0: 22, x1: 298, y0: 10, y1: 172, ink: K.warm, labOp: 0.55, cl: { x: 3, y: 3, w: 314, h: 174 }, fig: { torso: "#17191D", seam: "rgba(244,237,224,.36)", rim: K.warm } });
+      s += vecBack(p, o, {
+        u,
+        x0: 22,
+        x1: 298,
+        y0: 10,
+        y1: 172,
+        ink: K.warm,
+        labOp: 0.55,
+        cl: { x: 3, y: 3, w: 314, h: 174 },
+        fig: { torso: "#17191D", seam: "rgba(244,237,224,.36)", rim: K.warm },
+      });
     } else {
       const nr = opt.share
-        ? nameRow(p, o, { x0: 20, x1: 300, y: 36, size: 22, ink: K.light, lamp: K.tung, tierSize: 11, tierLs: 2.2, tierW: 600, tierOp: 0.72 })
-        : nameRow(p, o, { x0: 20, x1: 300, y: 46, size: 28, ink: K.light, lamp: K.tung, tierSize: 13, tierLs: 2.4, tierW: 600, tierOp: 0.72 });
+        ? nameRow(p, o, {
+            x0: 20,
+            x1: 300,
+            y: 36,
+            size: 22,
+            ink: K.light,
+            lamp: K.tung,
+            tierSize: 11,
+            tierLs: 2.2,
+            tierW: 600,
+            tierOp: 0.72,
+          })
+        : nameRow(p, o, {
+            x0: 20,
+            x1: 300,
+            y: 46,
+            size: 28,
+            ink: K.light,
+            lamp: K.tung,
+            tierSize: 13,
+            tierLs: 2.4,
+            tierW: 600,
+            tierOp: 0.72,
+          });
       const br = opt.share
-        ? bigRow(p, o, { cx: 160, y: 168, size: f(121 / capOf("800", "Changa", "8")), unitSize: 22, unitOp: 0.72, ink: K.light })
+        ? bigRow(p, o, {
+            cx: 160,
+            y: 168,
+            size: f(121 / capOf("800", "Changa", "8")),
+            unitSize: 22,
+            unitOp: 0.72,
+            ink: K.light,
+          })
         : bigRow(p, o, { cx: 160, y: 131, size: 96, unitSize: 18, unitOp: 0.72, ink: K.light });
-      const st = opt.share ? "" : statsText(p, o, { cx: 160, y: 159, size: 15, family: "Changa", weight: 600, valWeight: 700, fill: K.warm, labOp: 0.55, valOp: 0.95, maxW: 284 });
+      const st = opt.share
+        ? ""
+        : statsText(p, o, {
+            cx: 160,
+            y: 159,
+            size: 15,
+            family: "Changa",
+            weight: 600,
+            valWeight: 700,
+            fill: K.warm,
+            labOp: 0.55,
+            valOp: 0.95,
+            maxW: 284,
+          });
       /* the light: a wide warm halo under a tight bloom under the white-hot figures */
-      const glow = (str, op) => str.replace(/fill="[^"]+"/g, `fill="${K.warm}"`).replace(/fill-opacity="[^"]+"/g, `fill-opacity="${op}"`);
-      const bloom = thumb ? "" : `<g filter="url(#${u}-bw)" opacity=".35">${glow(nr.lit + br, 1)}</g><g filter="url(#${u}-bl)" opacity=".9">${glow(nr.lit + br, 1)}</g>`;
+      const glow = (str, op) =>
+        str
+          .replace(/fill="[^"]+"/g, `fill="${K.warm}"`)
+          .replace(/fill-opacity="[^"]+"/g, `fill-opacity="${op}"`);
+      const bloom = thumb
+        ? ""
+        : `<g filter="url(#${u}-bw)" opacity=".35">${glow(nr.lit + br, 1)}</g><g filter="url(#${u}-bl)" opacity=".9">${glow(nr.lit + br, 1)}</g>`;
       s +=
         `<g class="c09-lit">${bloom}${nr.lit}${br}${st}</g>` +
         `<g class="c09-lamp">${thumb ? "" : `<g filter="url(#${u}-bl)" opacity=".8">${nr.lamp}</g>`}${nr.lamp}</g>`;
@@ -1048,13 +1259,30 @@
     /* the glass edge: polished, lit at the top, and warm where the light inside spills onto its foot */
     s +=
       `<path d="M3.5 176.5V3.5H316.5" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width=".8"/><path d="M316.5 3.5V176.5H3.5" fill="none" stroke="#000" stroke-opacity=".6" stroke-width=".8"/>` +
-      (side !== "back" ? lg(`${u}-sp`, [[0, K.warm, 0], [0.5, K.warm, 0.6], [1, K.warm, 0]], H_) + `<rect x="40" y="175.4" width="240" height="1.6" fill="url(#${u}-sp)"/>` : "");
+      (side !== "back"
+        ? lg(
+            `${u}-sp`,
+            [
+              [0, K.warm, 0],
+              [0.5, K.warm, 0.6],
+              [1, K.warm, 0],
+            ],
+            H_,
+          ) + `<rect x="40" y="175.4" width="240" height="1.6" fill="url(#${u}-sp)"/>`
+        : "");
     /* the ID is laser-etched into the glass, frosted, along its foot */
     if (!thumb) {
       const ar = MC.isAr(o);
       const back = side === "back";
       /* on the back it starts at the reading edge, clear of the figure (an Arabic line runs right to left, so its start is the right) */
-      s += engrave(back ? (ar ? 298 : 22) : 160, 172.4, idLine(p, o), { size: 6.2, w: 600, anchor: back ? "start" : "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
+      s += engrave(back ? (ar ? 298 : 22) : 160, 172.4, idLine(p, o), {
+        size: 6.2,
+        w: 600,
+        anchor: back ? "start" : "middle",
+        ink: "#9AA3AD",
+        lip: 0,
+        ls: ".3",
+      });
     }
     return s;
   }
@@ -1069,7 +1297,9 @@
         [1, "#fff", 0],
       ]) +
       `<rect x="8" y="8" width="304" height="164" fill="url(#${u}-gl)"/>` +
-      (thumb ? "" : `<pattern id="${u}-bs" width="58" height="2.6" patternUnits="userSpaceOnUse"><rect width="34" height=".7" fill="#fff" opacity=".028"/><rect x="30" y="1.4" width="28" height=".6" fill="#fff" opacity=".02"/></pattern><rect x="8" y="8" width="304" height="164" fill="url(#${u}-bs)"/>`) +
+      (thumb
+        ? ""
+        : `<pattern id="${u}-bs" width="58" height="2.6" patternUnits="userSpaceOnUse"><rect width="34" height=".7" fill="#fff" opacity=".028"/><rect x="30" y="1.4" width="28" height=".6" fill="#fff" opacity=".02"/></pattern><rect x="8" y="8" width="304" height="164" fill="url(#${u}-bs)"/>`) +
       `<rect x="8" y="8" width="304" height="164" fill="none" stroke="#000" stroke-opacity=".6" stroke-width=".8"/>`;
     const brush = thumb ? "" : ` filter="url(#${u}-br)"`;
     if (!thumb)
@@ -1080,11 +1310,61 @@
     }
     const shade = "#4A535D";
     const nr = opt.share
-      ? nameRow(p, o, { x0: 20, x1: 300, y: 38, size: 22, ink: K.paintW, lamp: K.tung, tierSize: 12, tierLs: 1.4, shade })
-      : nameRow(p, o, { x0: 22, x1: 298, y: 48, size: 29, ink: K.paintW, lamp: K.tung, tierSize: 14, tierLs: 1.4, shade });
+      ? nameRow(p, o, {
+          x0: 20,
+          x1: 300,
+          y: 38,
+          size: 22,
+          ink: K.paintW,
+          lamp: K.tung,
+          tierSize: 12,
+          tierLs: 1.4,
+          shade,
+        })
+      : nameRow(p, o, {
+          x0: 22,
+          x1: 298,
+          y: 48,
+          size: 29,
+          ink: K.paintW,
+          lamp: K.tung,
+          tierSize: 14,
+          tierLs: 1.4,
+          shade,
+        });
     /* in the share the 84 is 20% of the story's height: 121u of digit on this 336px board */
-    const br = opt.share ? bigRow(p, o, { cx: 160, y: 166, size: f(121 / capOf("800", "Changa", "8")), unitSize: 22, unitOp: 0.75, ink: K.paintW, shade }) : bigRow(p, o, { cx: 160, y: 127, size: 90, unitSize: 17, unitOp: 0.75, ink: K.paintW, shade });
-    const st = opt.share ? "" : statsText(p, o, { cx: 160, y: 157, size: 15, family: "Changa", weight: 700, valWeight: 800, fill: K.paintW, labOp: 0.6, maxW: 278 });
+    const br = opt.share
+      ? bigRow(p, o, {
+          cx: 160,
+          y: 166,
+          size: f(121 / capOf("800", "Changa", "8")),
+          unitSize: 22,
+          unitOp: 0.75,
+          ink: K.paintW,
+          shade,
+        })
+      : bigRow(p, o, {
+          cx: 160,
+          y: 127,
+          size: 90,
+          unitSize: 17,
+          unitOp: 0.75,
+          ink: K.paintW,
+          shade,
+        });
+    const st = opt.share
+      ? ""
+      : statsText(p, o, {
+          cx: 160,
+          y: 157,
+          size: 15,
+          family: "Changa",
+          weight: 700,
+          valWeight: 800,
+          fill: K.paintW,
+          labOp: 0.6,
+          maxW: 278,
+        });
     s += `<g class="c09-lit"${brush}>${nr.lit}${br}${st}</g><g class="c09-lamp"${brush}>${nr.lamp}</g>`;
     /* a fresh BotolaGO decal, the logo exactly as supplied */
     if (!thumb) {
@@ -1114,10 +1394,25 @@
       `<rect x="${f(x + 0.8)}" y="${f(y + 1.6)}" width="${f(w)}" height="${f(h)}" rx="2" fill="#000" opacity=".3"/>` +
       `<rect x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" rx="2" fill="${K.card}"/>` +
       `<rect x="${f(x + 0.5)}" y="${f(y + 0.5)}" width="${f(w - 1)}" height="${f(h - 1)}" rx="1.6" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width=".7"/>` +
-      (hinge ? `<path d="M${f(x)} ${f(y + h / 2)}H${f(x + w)}" stroke="#000" stroke-width="1.4"/><path d="M${f(x)} ${f(y + h / 2 + 1)}H${f(x + w)}" stroke="#fff" stroke-opacity=".16" stroke-width=".6"/>` : "");
-    const ring = (x, y) => `<path d="M${f(x - 2.4)} ${f(y + 2)}A2.4 3.2 0 1 1 ${f(x + 2.4)} ${f(y + 2)}" fill="none" stroke="url(#${u}-pol)" stroke-width="1.6"/>`;
+      (hinge
+        ? `<path d="M${f(x)} ${f(y + h / 2)}H${f(x + w)}" stroke="#000" stroke-width="1.4"/><path d="M${f(x)} ${f(y + h / 2 + 1)}H${f(x + w)}" stroke="#fff" stroke-opacity=".16" stroke-width=".6"/>`
+        : "");
+    const ring = (x, y) =>
+      `<path d="M${f(x - 2.4)} ${f(y + 2)}A2.4 3.2 0 1 1 ${f(x + 2.4)} ${f(y + 2)}" fill="none" stroke="url(#${u}-pol)" stroke-width="1.6"/>`;
     if (side === "back") {
-      s += card(18, 18, 284, 144, false) + vecBack(p, o, { u, x0: 30, x1: 290, y0: 14, y1: 166, ink: K.paintW, labOp: 0.6, cl: { x: 18, y: 18, w: 284, h: 144 }, fig: { torso: "#2C3036", seam: "#5E666F", rim: K.paintW } });
+      s +=
+        card(18, 18, 284, 144, false) +
+        vecBack(p, o, {
+          u,
+          x0: 30,
+          x1: 290,
+          y0: 14,
+          y1: 166,
+          ink: K.paintW,
+          labOp: 0.6,
+          cl: { x: 18, y: 18, w: 284, h: 144 },
+          fig: { torso: "#2C3036", seam: "#5E666F", rim: K.paintW },
+        });
       return s + railsSVG(p, o, "STADE", thumb);
     }
     const nm = MC.nameOf(p, o);
@@ -1135,11 +1430,13 @@
     let lamp = "";
     if (!ar) {
       lit += `<text x="${nx + 8}" y="42" font-family="Changa" font-weight="800" font-size="${nSize}" fill="${K.paintW}">${esc(nm)}</text>`;
-      if (yr) lamp += `<text x="${f(nx + 8 + nw + 2)}" y="42" font-family="Changa" font-weight="800" font-size="13" fill="${K.tung}">·${yr}</text>`;
+      if (yr)
+        lamp += `<text x="${f(nx + 8 + nw + 2)}" y="42" font-family="Changa" font-weight="800" font-size="13" fill="${K.tung}">·${yr}</text>`;
       lit += `<text x="${tx + 7}" y="39.5" font-family="Changa" font-weight="700" font-size="${tSize}" letter-spacing="1.2" fill="${K.paintW}">${esc(tierT)}</text>`;
     } else {
       lit += `<text x="${nx + ncw - 8}" y="43" font-family="Changa" font-weight="800" font-size="${nSize}" text-anchor="end" fill="${K.paintW}">${esc(nm)}</text>`;
-      if (yr) lamp += `<text x="${f(nx + ncw - 8 - nw - 2)}" y="43" font-family="Changa" font-weight="800" font-size="13" text-anchor="end" fill="${K.tung}">${yr}·</text>`;
+      if (yr)
+        lamp += `<text x="${f(nx + ncw - 8 - nw - 2)}" y="43" font-family="Changa" font-weight="800" font-size="13" text-anchor="end" fill="${K.tung}">${yr}·</text>`;
       lit += `<text x="${tx + 7}" y="40" font-family="Changa" font-weight="700" font-size="${tSize}" fill="${K.paintW}">${esc(tierT)}</text>`;
     }
     /* the number cards hang from a rail on rings; OVR is a small card on the same baseline */
@@ -1162,7 +1459,9 @@
         ring(x + cw * 0.72, cy - 3);
     });
     const ox = x0 + digits.length * cw + (digits.length - 1) * 5 + 6;
-    lit += card(ox, cy + chh - 18, ow, 18, false) + `<text x="${f(ox + ow / 2)}" y="${f(cy + chh - 5.2)}" font-family="Changa" font-weight="600" font-size="11" text-anchor="middle" fill="${K.paintW}" fill-opacity=".75">${esc(S.ovr)}</text>`;
+    lit +=
+      card(ox, cy + chh - 18, ow, 18, false) +
+      `<text x="${f(ox + ow / 2)}" y="${f(cy + chh - 5.2)}" font-family="Changa" font-weight="600" font-size="11" text-anchor="middle" fill="${K.paintW}" fill-opacity=".75">${esc(S.ovr)}</text>`;
     /* four stat cards along the foot */
     if (!opt.share) {
       /* card widths follow their content in Arabic (الانتقالات is long); Latin cards are equal */
@@ -1215,7 +1514,8 @@
           [0, K.warm, 0],
           [0.7, K.warm, 0.22],
           [1, "#fff", 0.85],
-        ]) + `<g class="c09-scan" style="--c09-scan-h:${180 - 2 * B - 10}px"><rect x="${B}" y="${B}" width="${320 - 2 * B}" height="10" fill="url(#${u}-scn)"/></g>`;
+        ]) +
+        `<g class="c09-scan" style="--c09-scan-h:${180 - 2 * B - 10}px"><rect x="${B}" y="${B}" width="${320 - 2 * B}" height="10" fill="url(#${u}-scn)"/></g>`;
     }
     s += `</g>`;
     const hand = handSVG(u, y0, opt);
@@ -1268,7 +1568,8 @@
     const r0 = (LG ? gTop : by + bulge) + (v === 0 ? 1 : 1.5);
     const r1 = s - endR - 0.5;
     const step = ti ? Math.min(rs, (r1 - r0 - rt) / Math.max(1, ti - 1)) : 0;
-    for (let i = 0; i < ti; i++) g += `<rect x="${gx - (v ? 0.5 : 0)}" y="${f(r0 + i * step)}" width="${gw + (v ? 1 : 0)}" height="${rt}" fill="${club.secondary}"/>`;
+    for (let i = 0; i < ti; i++)
+      g += `<rect x="${gx - (v ? 0.5 : 0)}" y="${f(r0 + i * step)}" width="${gw + (v ? 1 : 0)}" height="${rt}" fill="${club.secondary}"/>`;
     g += `<path class="c09-rim" d="${gp}" fill="none" stroke-width=".6"/>`;
     /* the founder's collar: wider than the grip, bright band */
     if (p.founder) {
@@ -1279,15 +1580,28 @@
         `<rect x="${(pw - cw) / 2}" y="${f(by + ch * 0.25)}" width="${cw}" height="${f(Math.max(1, ch * 0.5))}" fill="${K.band}"/>` +
         `<rect x="${(pw - cw) / 2}" y="${by}" width="${cw}" height="${ch}" fill="url(#${u}-c)" opacity=".7"/>` +
         `<rect x="${(pw - cw) / 2}" y="${by}" width="${cw}" height="${ch}" fill="none" stroke="#4A535D" stroke-width=".5"/>`;
-    } else if (v) g += `<rect x="${gx}" y="${by}" width="${gw}" height="${col}" fill="#000" opacity=".25"/>`;
+    } else if (v)
+      g += `<rect x="${gx}" y="${by}" width="${gw}" height="${col}" fill="#000" opacity=".25"/>`;
     /* the board */
-    const frameFill = { HOMA: "#BCC3CA", STADE: `url(#${u}-al)`, PRO: `url(#${u}-al)`, CHAMPION: `url(#${u}-po)`, LEGEND: K.ti }[tier];
+    const frameFill = {
+      HOMA: "#BCC3CA",
+      STADE: `url(#${u}-al)`,
+      PRO: `url(#${u}-al)`,
+      CHAMPION: `url(#${u}-po)`,
+      LEGEND: K.ti,
+    }[tier];
     const fr = tier === "LEGEND" ? 1 : tier === "HOMA" ? Math.max(1, rim * 0.75) : rim;
     const fx = fr;
     const fy = top + fr;
     const fw = pw - 2 * fr;
     const fh = ph - 2 * fr;
-    const faceFill = { HOMA: K.paint, STADE: "#A3ACB6", PRO: K.face, CHAMPION: K.face, LEGEND: K.glass }[tier];
+    const faceFill = {
+      HOMA: K.paint,
+      STADE: "#A3ACB6",
+      PRO: K.face,
+      CHAMPION: K.face,
+      LEGEND: K.glass,
+    }[tier];
     let b = `<rect x="0" y="${top}" width="${pw}" height="${ph}" fill="${frameFill}"/><rect x="${fx}" y="${fy}" width="${fw}" height="${fh}" fill="${faceFill}"/>`;
     const fs = f(ph * (v === 0 ? 0.74 : 0.66));
     const ink = tier === "HOMA" || tier === "STADE" ? K.paintW : K.warm;
@@ -1301,17 +1615,22 @@
         const cwid = f(dw + 3);
         const gap = 1.2;
         const tot = digits.length * cwid + (digits.length - 1) * gap;
-        for (let i = 0; i < digits.length; i++) b += `<rect x="${f(pw / 2 - tot / 2 + i * (cwid + gap))}" y="${f(fy + 1)}" width="${cwid}" height="${f(fh - 2)}" rx=".8" fill="${K.card}"/>`;
+        for (let i = 0; i < digits.length; i++)
+          b += `<rect x="${f(pw / 2 - tot / 2 + i * (cwid + gap))}" y="${f(fy + 1)}" width="${cwid}" height="${f(fh - 2)}" rx=".8" fill="${K.card}"/>`;
       }
     }
-    if (v && (tier === "PRO" || tier === "CHAMPION" || tier === "LEGEND")) b += `<rect x="${fx + 0.6}" y="${fy + 0.6}" width="${fw - 1.2}" height="${v === 1 ? 0.8 : 1.1}" fill="${K.cyan}"/>`;
-    if (tier === "CHAMPION" && v) b += `<rect x="${fx + 0.5}" y="${fy + 0.5}" width="${fw - 1}" height="${fh - 1}" fill="none" stroke="#F2F5F8" stroke-opacity=".55" stroke-width=".6"/>`;
+    if (v && (tier === "PRO" || tier === "CHAMPION" || tier === "LEGEND"))
+      b += `<rect x="${fx + 0.6}" y="${fy + 0.6}" width="${fw - 1.2}" height="${v === 1 ? 0.8 : 1.1}" fill="${K.cyan}"/>`;
+    if (tier === "CHAMPION" && v)
+      b += `<rect x="${fx + 0.5}" y="${fy + 0.5}" width="${fw - 1}" height="${fh - 1}" fill="none" stroke="#F2F5F8" stroke-opacity=".55" stroke-width=".6"/>`;
     if (v === 2 && (tier === "PRO" || tier === "CHAMPION"))
       b += `<pattern id="${u}-ul" width="${tier === "PRO" ? 2 : 1.5}" height="${tier === "PRO" ? 2 : 1.5}" patternUnits="userSpaceOnUse" x="${fx}" y="${fy}"><circle cx=".75" cy=".75" r=".5" fill="${K.unlit}"/></pattern><rect x="${fx}" y="${fy + 1.4}" width="${fw}" height="${fh - 1.4}" fill="url(#${u}-ul)"/>`;
     /* LEGEND's figures are light, not paint: a warm bloom from 44px up, a white-hot core */
-    if (LG && v >= 1) b += `<filter id="${u}-gl" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${v === 2 ? 1.3 : 0.9}"/></filter><text x="${pw / 2}" y="${ty}" font-family="Changa" font-weight="800" font-size="${fs}" text-anchor="middle" fill="${K.warm}" opacity=".85" filter="url(#${u}-gl)">${digits}</text>`;
+    if (LG && v >= 1)
+      b += `<filter id="${u}-gl" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${v === 2 ? 1.3 : 0.9}"/></filter><text x="${pw / 2}" y="${ty}" font-family="Changa" font-weight="800" font-size="${fs}" text-anchor="middle" fill="${K.warm}" opacity=".85" filter="url(#${u}-gl)">${digits}</text>`;
     b += `<text x="${pw / 2}" y="${ty}" font-family="Changa" font-weight="800" font-size="${fs}" text-anchor="middle" fill="${LG ? K.light : ink}">${digits}</text>`;
-    if (tier === "STADE" && v) b += `<path d="M${fx} ${f(fy + fh / 2)}H${fx + fw}" stroke="#000" stroke-opacity=".7" stroke-width=".6"/>`;
+    if (tier === "STADE" && v)
+      b += `<path d="M${fx} ${f(fy + fh / 2)}H${fx + fw}" stroke="#000" stroke-opacity=".7" stroke-width=".6"/>`;
     b += `<rect class="c09-edge" x=".3" y="${top + 0.3}" width="${pw - 0.6}" height="${ph - 0.6}" fill="none" stroke-width=".6"/>`;
     const S = MC.s(o);
     const label = `${MC.nameOf(p, o)}, ${p.ovr} OVR, ${S.tiers[tier]}${p.founder ? ", " + S.founderLine : ""}`;
@@ -1344,7 +1663,18 @@
         segs.push({ g: bit(String(p.stats[key]), F35), c: K.warm, gap: i < 3 ? 6 : 0 });
       });
       line(F, segs, Math.round((cols - 1) / 2), 5, "center");
-    } else extra.lit += statsText(p, o, { cx: 180, y: ribY + 20.5, size: 16, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 320, handjet: true });
+    } else
+      extra.lit += statsText(p, o, {
+        cx: 180,
+        y: ribY + 20.5,
+        size: 16,
+        family: "Handjet",
+        weight: 400,
+        fill: K.warm,
+        labOp: 0.6,
+        maxW: 320,
+        handjet: true,
+      });
     const led = ledRender(u + "p", Lp, F, extra);
     /* mowing bands, wider as they come towards the camera */
     const g0 = 364;
@@ -1355,10 +1685,17 @@
       bands += `<rect y="${f(a)}" width="360" height="${f(b - a + 0.5)}" fill="${i % 2 ? "#17482B" : "#123B23"}"/>`;
     }
     let steps = "";
-    for (let y = 106; y < 352; y += 8) steps += `<path d="M0 ${y}H360" stroke="#1B1F25" stroke-width="1.2"/>`;
+    for (let y = 106; y < 352; y += 8)
+      steps += `<path d="M0 ${y}H360" stroke="#1B1F25" stroke-width="1.2"/>`;
     /* you, from behind and off-centre: the shared figure, hood up, rim-lit by the floodlights, its shoulders in frame.
        It is placed as an image so the frame's start edge crops it (300 x 360 at 1.3x, 60px of it off the frame). */
-    const figSvg = MC.avatar({ hood: true, torso: "#262A30", seam: "#3E444C", rim: "rgba(244,237,224,.75)", preserve: "xMaxYMin slice" }).replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
+    const figSvg = MC.avatar({
+      hood: true,
+      torso: "#262A30",
+      seam: "#3E444C",
+      rim: "rgba(244,237,224,.75)",
+      preserve: "xMaxYMin slice",
+    }).replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"');
     const fig = `<image x="0" y="340" width="200" height="312" preserveAspectRatio="xMaxYMin slice" href="data:image/svg+xml,${encodeURIComponent(figSvg)}"/>`;
     /* the raised arm: shoulder, elbow out to the side, forearm up to the fist (the cuff meets the hand on the grip) */
     const W = [X(190), Y(y0 + 62)];
@@ -1370,7 +1707,10 @@
       const l = Math.hypot(dx, dy);
       const n = [dy / l, -dx / l];
       const q = (c, w, t) => `${f(c[0] + n[0] * w * t)} ${f(c[1] + n[1] * w * t)}`;
-      return { d: `M${q(a, wa, 1)}L${q(b, wb, 1)}L${q(b, wb, -1)}L${q(a, wa, -1)}Z`, top: `M${q(a, wa, 1)}L${q(b, wb, 1)}` };
+      return {
+        d: `M${q(a, wa, 1)}L${q(b, wb, 1)}L${q(b, wb, -1)}L${q(a, wa, -1)}Z`,
+        top: `M${q(a, wa, 1)}L${q(b, wb, 1)}`,
+      };
     };
     const up = tube(Sh, E, 22, 17.5);
     const arm =
@@ -1401,7 +1741,9 @@
       const tw = textW(tierT, 15, 600, "Changa");
       caption =
         `<text x="338" y="${cy}" font-family="Changa" font-weight="800" font-size="19" text-anchor="end" fill="${K.warm}">${esc(nm)}</text>` +
-        (yr ? `<text x="${f(338 - nw - 4)}" y="${cy}" font-family="Changa" font-weight="800" font-size="13" text-anchor="end" fill="${K.tung}">${yr}·</text>` : "") +
+        (yr
+          ? `<text x="${f(338 - nw - 4)}" y="${cy}" font-family="Changa" font-weight="800" font-size="13" text-anchor="end" fill="${K.tung}">${yr}·</text>`
+          : "") +
         `<text x="${f(338 - nw - yw - 10)}" y="${cy}" font-family="Changa" font-weight="600" font-size="15" text-anchor="end" fill="${K.warm}" fill-opacity=".72">${esc(tierT)}</text>` +
         `<text x="${f(338 - nw - yw - tw - 16)}" y="${cy}" font-family="Changa" font-weight="600" font-size="13" text-anchor="end" fill="${K.warm}" fill-opacity=".72">مثال  ·</text>`;
     }
@@ -1457,8 +1799,10 @@
     name: "Panneau",
     nameAr: "لوحة الحكم الرابع",
     category: "youth",
-    philosophy: "Your card is the board the fourth official raises, held up in your own hand: the one object in football whose job is to show one number to the whole stadium at once.",
-    philosophyAr: "بطاقتك هي اللوحة التي يرفعها الحكم الرابع، وأنت من يمسكها: الشيء الوحيد في كرة القدم الذي وُجد ليُري الملعب كله رقمًا واحدًا في لحظة واحدة.",
+    philosophy:
+      "Your card is the board the fourth official raises, held up in your own hand: the one object in football whose job is to show one number to the whole stadium at once.",
+    philosophyAr:
+      "بطاقتك هي اللوحة التي يرفعها الحكم الرابع، وأنت من يمسكها: الشيء الوحيد في كرة القدم الذي وُجد ليُري الملعب كله رقمًا واحدًا في لحظة واحدة.",
     idea: [
       "The card is the board the fourth official raises, held in your own hand: a 16:9 face in a frame, a collar, a long centred paddle and your fist round the grip, with the cuff of a bench jacket leaving the frame at the bottom corner. Painted solid, it reads as a board held up before a single character is read. The board never mirrors.",
       "Every tier uses the same three rows. Row A is identity: the name, the founder's ·26 and the tier at the end. Row B is the 84 with OVR beside it on the same baseline. Row C is all four stats on one fixed line, so a screenshot always carries the whole card. There is no previous-gameweek row: the app has no previous overall yet, so that line appears only once two real values exist.",
@@ -1493,10 +1837,13 @@
     ],
     tiers: {
       HOMA: "A new steel board in black enamel with a visible brush direction, a bare galvanised hem and four rivets. Every figure is hand-painted by a sign-writer in white Changa with a grey drop shade, and the founder year in tungsten paint. A fresh BotolaGO decal sits at the top, and the ID is stamped into the hem. Full outline, 0 ribs.",
-      STADE: "Flip cards. Black number cards hang on rings from a polished rail inside a brushed aluminium frame, each split by its hinge line. The name, the tier, OVR and the four stats are smaller cards. 1 rib.",
+      STADE:
+        "Flip cards. Black number cards hang on rings from a polished rail inside a brushed aluminium frame, each split by its hinge line. The name, the tier, OVR and the four stats are smaller cards. 1 rib.",
       PRO: "Warm-white LEDs behind black acrylic in a brushed aluminium frame on a 3u grid: the name and the 84 sampled from Changa 800 (the 84 on 20 rows), the labels and stats in a 5×7 and a 3×5 board font, one 4% reflection band and the cyan on-strip. 2 ribs.",
-      CHAMPION: "A double-sided full matrix on a 2u pitch with three brightness levels, so the brand face keeps its curves. Its dots are larger, overlap and carry a white core, so it is measurably brighter than PRO. A mirror-polished frame with a bright chamfer, and a 5u visible edge under the board. 3 ribs.",
-      LEGEND: "Frameless dead-front smoked glass, running almost edge to edge inside a 3u polished titanium lip: the only board without a frame. No pixels: the name and the 84 are white-hot light inside a tight warm bloom and a wide one, a pool of light sits on the glass, light spills onto its foot, and the stats line stays. The logo is printed on the glass, as supplied, and the ID is etched into its foot. A telescopic titanium extension makes the handle 30% longer. 4 ribs.",
+      CHAMPION:
+        "A double-sided full matrix on a 2u pitch with three brightness levels, so the brand face keeps its curves. Its dots are larger, overlap and carry a white core, so it is measurably brighter than PRO. A mirror-polished frame with a bright chamfer, and a 5u visible edge under the board. 3 ribs.",
+      LEGEND:
+        "Frameless dead-front smoked glass, running almost edge to edge inside a 3u polished titanium lip: the only board without a frame. No pixels: the name and the 84 are white-hot light inside a tight warm bloom and a wide one, a pool of light sits on the glass, light spills onto its foot, and the stats line stays. The logo is printed on the glass, as supplied, and the ID is etched into its foot. A telescopic titanium extension makes the handle 30% longer. 4 ribs.",
     },
     legend: [
       "On the first open after reaching LEGEND, with motion on, your fist raises the board from below on a 420ms spring with a hand's wobble. The tungsten 26 is already lit. Then one 300ms power-on scan: a bright line runs down the glass while the face, already lit, rises from 60% to full brightness.",
@@ -1527,7 +1874,8 @@
       const ar = MC.isAr(o);
       const u = MC.uid(ID);
       const tier = p.tier;
-      const svg = (cls, inner) => `<svg class="c09-face ${cls}" direction="ltr" viewBox="0 0 320 340" style="aspect-ratio:320/340" aria-hidden="true" focusable="false">${inner}</svg>`;
+      const svg = (cls, inner) =>
+        `<svg class="c09-face ${cls}" direction="ltr" viewBox="0 0 320 340" style="aspect-ratio:320/340" aria-hidden="true" focusable="false">${inner}</svg>`;
       const front = svg("c09-front", board(p, o, u, "front"));
       const back = o.thumb ? "" : svg("c09-back", board(p, o, MC.uid(ID + "k"), "back"));
       const pitch = tier === "CHAMPION" ? "2" : tier === "PRO" ? "3" : "0";
@@ -1598,7 +1946,8 @@
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           replay();
-        } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") el.classList.toggle("is-flipped");
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowRight")
+          el.classList.toggle("is-flipped");
       });
     },
   };

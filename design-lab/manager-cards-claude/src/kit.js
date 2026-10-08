@@ -24,11 +24,57 @@
 
   /* Fictional managers used only to test leaderboards (tier contrast at small sizes). */
   MC.SAMPLES = [
-    { key: "yasmine", name: { lat: "YASMINE", ar: "ياسمين" }, ovr: 92, tier: "LEGEND", founder: 2026, serial: "000317", rank: 1, pts: 1288 },
-    { key: "othmane", name: { lat: "OTHMANE", ar: "عثمان" }, ovr: 88, tier: "CHAMPION", founder: null, serial: "011902", rank: 2, pts: 1241 },
-    { key: "ali", name: { lat: "ALI", ar: "علي" }, ovr: 84, tier: "PRO", founder: 2026, serial: "004821", rank: 3, pts: 1196, me: true },
-    { key: "salma", name: { lat: "SALMA", ar: "سلمى" }, ovr: 77, tier: "STADE", founder: null, serial: "020466", rank: 4, pts: 1150 },
-    { key: "hamza", name: { lat: "HAMZA", ar: "حمزة" }, ovr: 63, tier: "HOMA", founder: null, serial: "031115", rank: 5, pts: 1097 },
+    {
+      key: "yasmine",
+      name: { lat: "YASMINE", ar: "ياسمين" },
+      ovr: 92,
+      tier: "LEGEND",
+      founder: 2026,
+      serial: "000317",
+      rank: 1,
+      pts: 1288,
+    },
+    {
+      key: "othmane",
+      name: { lat: "OTHMANE", ar: "عثمان" },
+      ovr: 88,
+      tier: "CHAMPION",
+      founder: null,
+      serial: "011902",
+      rank: 2,
+      pts: 1241,
+    },
+    {
+      key: "ali",
+      name: { lat: "ALI", ar: "علي" },
+      ovr: 84,
+      tier: "PRO",
+      founder: 2026,
+      serial: "004821",
+      rank: 3,
+      pts: 1196,
+      me: true,
+    },
+    {
+      key: "salma",
+      name: { lat: "SALMA", ar: "سلمى" },
+      ovr: 77,
+      tier: "STADE",
+      founder: null,
+      serial: "020466",
+      rank: 4,
+      pts: 1150,
+    },
+    {
+      key: "hamza",
+      name: { lat: "HAMZA", ar: "حمزة" },
+      ovr: 63,
+      tier: "HOMA",
+      founder: null,
+      serial: "031115",
+      rank: 5,
+      pts: 1097,
+    },
   ];
 
   /** A full profile for a sample row (fills ALI's shared fields). */
@@ -74,7 +120,12 @@
       club: "النادي",
       country: "المغرب",
       stats: { CAP: "القائد", SEL: "التشكيلة", TRF: "الانتقالات", CON: "الثبات" },
-      statsLong: { CAP: "قرارات القائد", SEL: "اختيار التشكيلة", TRF: "قرارات الانتقالات", CON: "الثبات" },
+      statsLong: {
+        CAP: "قرارات القائد",
+        SEL: "اختيار التشكيلة",
+        TRF: "قرارات الانتقالات",
+        CON: "الثبات",
+      },
       tiers: { HOMA: "حومة", STADE: "ملعب", PRO: "محترف", CHAMPION: "بطل", LEGEND: "أسطورة" },
       rank: "الترتيب",
       pts: "نقطة",
@@ -91,7 +142,10 @@
 
   /* ---------- helpers ---------- */
   MC.esc = (s) =>
-    String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    String(s).replace(
+      /[&<>"']/g,
+      (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
   let serial = 0;
   /** Unique id for SVG defs (several copies of one card appear on a page). */
   MC.uid = (prefix = "mc") => `${prefix}-${++serial}`;
@@ -145,9 +199,16 @@
       strokeWidth: 0,
       ...opts,
     };
-    const st = o.stroke !== "none" ? ` stroke="${o.stroke}" stroke-width="${o.strokeWidth}" stroke-linejoin="round"` : "";
-    const part = (d, fill) => (fill === false || (fill === "none" && !st) ? "" : `<path d="${d}" fill="${fill}"${st}/>`);
-    const pos = o.x != null ? ` x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}"` : ` width="100%" height="100%"`;
+    const st =
+      o.stroke !== "none"
+        ? ` stroke="${o.stroke}" stroke-width="${o.strokeWidth}" stroke-linejoin="round"`
+        : "";
+    const part = (d, fill) =>
+      fill === false || (fill === "none" && !st) ? "" : `<path d="${d}" fill="${fill}"${st}/>`;
+    const pos =
+      o.x != null
+        ? ` x="${o.x}" y="${o.y}" width="${o.w}" height="${o.h}"`
+        : ` width="100%" height="100%"`;
     const rim =
       o.rim !== "none"
         ? `<g fill="none" stroke="${o.rim}" stroke-width="3" opacity=".9"><path d="${A.torso}"/>${o.hood ? `<path d="${A.hood}"/>` : `<path d="${A.hair}"/><path d="${A.ears}"/>`}</g>`
@@ -156,11 +217,19 @@
       `<svg${pos} viewBox="${A.viewBox}" preserveAspectRatio="${o.preserve || "xMidYMax meet"}" class="${o.cls || ""}" aria-hidden="true" focusable="false">` +
       rim +
       part(A.torso, o.torso) +
-      (o.seam !== "none" && o.seam !== false ? `<path d="${A.seam}" stroke="${o.seam}" stroke-width="2.5" fill="none"/>` : "") +
+      (o.seam !== "none" && o.seam !== false
+        ? `<path d="${A.seam}" stroke="${o.seam}" stroke-width="2.5" fill="none"/>`
+        : "") +
       (o.hood
         ? part(A.hood, o.hoodFill || o.torso) +
-          (o.seam !== "none" && o.seam !== false ? `<path d="${A.hoodSeam}" stroke="${o.seam}" stroke-width="2.5" fill="none"/><path d="${A.hoodRim}" stroke="${o.seam}" stroke-width="2.5" fill="none"/>` : "")
-        : part(A.neck, o.neck) + part(A.collar, o.collar) + part(A.ears, o.skin) + part(A.head, o.skin) + part(A.hair, o.hair)) +
+          (o.seam !== "none" && o.seam !== false
+            ? `<path d="${A.hoodSeam}" stroke="${o.seam}" stroke-width="2.5" fill="none"/><path d="${A.hoodRim}" stroke="${o.seam}" stroke-width="2.5" fill="none"/>`
+            : "")
+        : part(A.neck, o.neck) +
+          part(A.collar, o.collar) +
+          part(A.ears, o.skin) +
+          part(A.head, o.skin) +
+          part(A.hair, o.hair)) +
       `</svg>`
     );
   };
@@ -179,7 +248,9 @@
     return (
       `<svg viewBox="${MC.CREST.viewBox}" width="${o.w || "100%"}" height="${o.h || "100%"}" aria-hidden="true" focusable="false">` +
       `<path d="${MC.CREST.shield}" fill="${o.mono ? "none" : f}" stroke="${o.mono || o.ring}" stroke-width="${o.mono ? 2.4 : 1.6}"/>` +
-      (o.mono ? `<path d="M9 13L31 37" stroke="${o.mono}" stroke-width="2.4"/>` : `<path d="${MC.CREST.sash}" fill="${sash}"/>`) +
+      (o.mono
+        ? `<path d="M9 13L31 37" stroke="${o.mono}" stroke-width="2.4"/>`
+        : `<path d="${MC.CREST.sash}" fill="${sash}"/>`) +
       `<circle cx="20" cy="22" r="5.2" fill="${o.mono ? "none" : f}" stroke="${o.mono || o.sash}" stroke-width="2"/>` +
       `</svg>`
     );
@@ -199,9 +270,15 @@
     const B = window.MC_BRAND;
     const src = kind === "mark" ? B.mark : B.wordmark;
     const variant = opts.variant || "color";
-    const ink = variant === "light" ? "#ffffff" : variant === "mono" ? opts.color || "currentColor" : "#0151fc";
+    const ink =
+      variant === "light"
+        ? "#ffffff"
+        : variant === "mono"
+          ? opts.color || "currentColor"
+          : "#0151fc";
     const ball = variant === "mono" ? opts.ball || ink : "#000000";
-    const label = opts.label === false ? ' aria-hidden="true"' : ' role="img" aria-label="BotolaGO"';
+    const label =
+      opts.label === false ? ' aria-hidden="true"' : ' role="img" aria-label="BotolaGO"';
     return (
       `<svg viewBox="${src.viewBox}" width="${opts.w || "100%"}"${opts.h ? ` height="${opts.h}"` : ""} style="display:block;overflow:visible"${label} focusable="false" class="${opts.cls || ""}">` +
       src.paths.map((p) => `<path d="${p.d}" fill="${p.part === "ink" ? ink : ball}"/>`).join("") +

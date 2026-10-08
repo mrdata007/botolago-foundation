@@ -31,8 +31,28 @@
   const NOTCH_MINI = { e: 96, d: 56, h: 52 };
   /** The paver: two square lobes, a waist, a trapezoid notch in each long side. */
   function paverPts(bite, notch = NOTCH, ch = CH) {
-    const a = 180 - notch.e / 2, b = 180 - notch.d / 2, c = 180 + notch.d / 2, d = 180 + notch.e / 2;
-    const P = ch ? [[ch, 0], [a, 0], [b, notch.h], [c, notch.h], [d, 0], [360 - ch, 0], [360, ch]] : [[0, 0], [a, 0], [b, notch.h], [c, notch.h], [d, 0], [360, 0]];
+    const a = 180 - notch.e / 2,
+      b = 180 - notch.d / 2,
+      c = 180 + notch.d / 2,
+      d = 180 + notch.e / 2;
+    const P = ch
+      ? [
+          [ch, 0],
+          [a, 0],
+          [b, notch.h],
+          [c, notch.h],
+          [d, 0],
+          [360 - ch, 0],
+          [360, ch],
+        ]
+      : [
+          [0, 0],
+          [a, 0],
+          [b, notch.h],
+          [c, notch.h],
+          [d, 0],
+          [360, 0],
+        ];
     // the first edge chip: a bite out of the bottom end corner (one per season played)
     if (bite) P.push([360, 151], [356.5, 154], [355, 159.5], [350, 163.5], [345, 168]);
     else if (ch) P.push([360, 168 - ch], [360 - ch, 168]);
@@ -48,20 +68,57 @@
      stop a joint short of it on every side, so the sand shows through and the interlock reads in
      silhouette. The outer two step in from the paver's ends. In the share's pavement (down) the
      outer blocks instead run to the ends and grow legs into the next row's top notch. */
-  const CT = 176, CB = 228, JW = 5, STEP = 12;
+  const CT = 176,
+    CB = 228,
+    JW = 5,
+    STEP = 12;
   function coursePts(t = 4, down = false) {
-    const n = NOTCH, a = 180 - n.e / 2, slope = (n.e - n.d) / 2 / n.h;
+    const n = NOTCH,
+      a = 180 - n.e / 2,
+      slope = (n.e - n.d) / 2 / n.h;
     const off = JW * Math.hypot(1, slope); // horizontal width of a JW joint across the slanted side
     const top = 168 - n.h + t + 3.5; // under the notch floor: its side band, then a 3.5u joint
     const xs = (y) => a + off + slope * (168 - y);
-    const b2 = [[91 + CH, CT], [xs(CT), CT], [xs(top), top], [177 - CH, top], [177, top + CH], [177, CB - CH], [177 - CH, CB], [91 + CH, CB], [91, CB - CH], [91, CT + CH]];
+    const b2 = [
+      [91 + CH, CT],
+      [xs(CT), CT],
+      [xs(top), top],
+      [177 - CH, top],
+      [177, top + CH],
+      [177, CB - CH],
+      [177 - CH, CB],
+      [91 + CH, CB],
+      [91, CB - CH],
+      [91, CT + CH],
+    ];
     let b1;
     if (down) {
       // the next row sits half a block along; its top notch is centred on the joint at x = -3
-      const c0 = -3, legB = 236 + n.h - 4 - 3.5;
+      const c0 = -3,
+        legB = 236 + n.h - 4 - 3.5;
       const lx = (y) => c0 + n.e / 2 - off - slope * (y - 236);
-      b1 = [[CH, CT], [85 - CH, CT], [85, CT + CH], [85, CB - CH], [85 - CH, CB], [lx(CB), CB], [lx(legB), legB], [0, legB], [0, CT + CH]];
-    } else b1 = [[STEP + CH, CT], [85 - CH, CT], [85, CT + CH], [85, CB - CH], [85 - CH, CB], [STEP + CH, CB], [STEP, CB - CH], [STEP, CT + CH]];
+      b1 = [
+        [CH, CT],
+        [85 - CH, CT],
+        [85, CT + CH],
+        [85, CB - CH],
+        [85 - CH, CB],
+        [lx(CB), CB],
+        [lx(legB), legB],
+        [0, legB],
+        [0, CT + CH],
+      ];
+    } else
+      b1 = [
+        [STEP + CH, CT],
+        [85 - CH, CT],
+        [85, CT + CH],
+        [85, CB - CH],
+        [85 - CH, CB],
+        [STEP + CH, CB],
+        [STEP, CB - CH],
+        [STEP, CT + CH],
+      ];
     return [b1, b2, mirror(b2), mirror(b1)];
   }
   const COURSE_CX = [(STEP + 85) / 2, 134, 226, 360 - (STEP + 85) / 2];
@@ -72,20 +129,25 @@
     const n = P.length;
     let A = 0;
     for (let i = 0; i < n; i++) {
-      const [x1, y1] = P[i], [x2, y2] = P[(i + 1) % n];
+      const [x1, y1] = P[i],
+        [x2, y2] = P[(i + 1) % n];
       A += x1 * y2 - x2 * y1;
     }
     const s = A > 0 ? 1 : -1;
     const L = P.map((p, i) => {
       const q = P[(i + 1) % n];
-      let dx = q[0] - p[0], dy = q[1] - p[1];
+      let dx = q[0] - p[0],
+        dy = q[1] - p[1];
       const l = Math.hypot(dx, dy) || 1;
-      dx /= l; dy /= l;
-      const nx = -dy * s, ny = dx * s;
+      dx /= l;
+      dy /= l;
+      const nx = -dy * s,
+        ny = dx * s;
       return { px: p[0] + nx * d, py: p[1] + ny * d, dx, dy };
     });
     return P.map((_, i) => {
-      const a = L[(i - 1 + n) % n], b = L[i];
+      const a = L[(i - 1 + n) % n],
+        b = L[i];
       const den = a.dx * b.dy - a.dy * b.dx;
       if (Math.abs(den) < 1e-6) return [b.px, b.py];
       const t = ((b.px - a.px) * b.dy - (b.py - a.py) * b.dx) / den;
@@ -102,10 +164,13 @@
     for (let i = 0; i < n; i++) A += P[i][0] * P[(i + 1) % n][1] - P[(i + 1) % n][0] * P[i][1];
     const sg = A > 0 ? 1 : -1;
     for (let i = 0; i < n; i++) {
-      const p = P[i], q = P[(i + 1) % n];
-      const dx = q[0] - p[0], dy = q[1] - p[1];
+      const p = P[i],
+        q = P[(i + 1) % n];
+      const dx = q[0] - p[0],
+        dy = q[1] - p[1];
       const l = Math.hypot(dx, dy) || 1;
-      const ox = (dy / l) * sg, oy = (-dx / l) * sg; // outward normal
+      const ox = (dy / l) * sg,
+        oy = (-dx / l) * sg; // outward normal
       const b = ox * LIGHT[0] + oy * LIGHT[1];
       const quad = dPoly([p, q, Q[(i + 1) % n], Q[i]]);
       if (b > 0.04) s += `<path d="${quad}" fill="#fff" fill-opacity="${r2(b * hiA)}"/>`;
@@ -116,40 +181,142 @@
 
   /* ---------- materials, one per tier ---------- */
   const PRO_CHIPS = [
-    { c: "#c8c3b6", w: 0.3 }, { c: "#a6a39b", w: 0.15 }, { c: "#6f727a", w: 0.08 }, { c: "#0C3164", w: 0.16 },
-    { c: "#9BDBFD", w: 0.11 }, { c: "#0151FC", w: 0.08 }, { c: "#3b4a5e", w: 0.07 }, { c: "#fffdf7", w: 0.05 },
+    { c: "#c8c3b6", w: 0.3 },
+    { c: "#a6a39b", w: 0.15 },
+    { c: "#6f727a", w: 0.08 },
+    { c: "#0C3164", w: 0.16 },
+    { c: "#9BDBFD", w: 0.11 },
+    { c: "#0151FC", w: 0.08 },
+    { c: "#3b4a5e", w: 0.07 },
+    { c: "#fffdf7", w: 0.05 },
   ];
   // black terrazzo: greys, white marble and lapis — no brass in the aggregate (brass is kept for the strips)
   const LEGEND_CHIPS = [
-    { c: "#363b44", w: 0.3 }, { c: "#545b66", w: 0.2 }, { c: "#868c96", w: 0.13 }, { c: "#d6d9de", w: 0.1 },
-    { c: "#ECE8DF", w: 0.08 }, { c: "#0C3164", w: 0.12 }, { c: "#9BDBFD", w: 0.04 }, { c: "#0151FC", w: 0.03 },
+    { c: "#363b44", w: 0.3 },
+    { c: "#545b66", w: 0.2 },
+    { c: "#868c96", w: 0.13 },
+    { c: "#d6d9de", w: 0.1 },
+    { c: "#ECE8DF", w: 0.08 },
+    { c: "#0C3164", w: 0.12 },
+    { c: "#9BDBFD", w: 0.04 },
+    { c: "#0151FC", w: 0.03 },
   ];
   /* tool = the colour of lettering cut into the stone: ink, plus a lip that catches the light. */
   const TIER = {
     HOMA: {
-      stone: "#8a8f95", band: "#5f646a", bandLo: "#3c4045", t: 4, bev: 3.6, hiA: 0.34, loA: 0.42, edge: "rgba(20,22,26,.5)",
-      rf: "0.045", ss: 2.8, el: 46, gd: 3.2, gl: 2.6, rough: true, pin: 80, marks: true, broom: true,
-      tool: { ink: "#1f2226", lip: "#c9cdd1", lo: 0.6 }, num: "paint", stat: "chalk", fig: "groove", fill: "#F4F2EC",
+      stone: "#8a8f95",
+      band: "#5f646a",
+      bandLo: "#3c4045",
+      t: 4,
+      bev: 3.6,
+      hiA: 0.34,
+      loA: 0.42,
+      edge: "rgba(20,22,26,.5)",
+      rf: "0.045",
+      ss: 2.8,
+      el: 46,
+      gd: 3.2,
+      gl: 2.6,
+      rough: true,
+      pin: 80,
+      marks: true,
+      broom: true,
+      tool: { ink: "#1f2226", lip: "#c9cdd1", lo: 0.6 },
+      num: "paint",
+      stat: "chalk",
+      fig: "groove",
+      fill: "#F4F2EC",
     },
     STADE: {
-      stone: "#565d65", band: "#383d43", bandLo: "#212428", t: 4, bev: 3, hiA: 0.42, loA: 0.5, edge: "#7d848c",
-      rf: "0.07", ss: 1.3, el: 52, gd: 2.6, gl: 2.2, sheen: true, pin: 24, bite: true,
-      tool: { ink: "#E6E9EC", lip: "#1a1d21", lo: 0.6 }, num: "stencil", fig: "stencil", fill: "#F2F4F5",
+      stone: "#565d65",
+      band: "#383d43",
+      bandLo: "#212428",
+      t: 4,
+      bev: 3,
+      hiA: 0.42,
+      loA: 0.5,
+      edge: "#7d848c",
+      rf: "0.07",
+      ss: 1.3,
+      el: 52,
+      gd: 2.6,
+      gl: 2.2,
+      sheen: true,
+      pin: 24,
+      bite: true,
+      tool: { ink: "#E6E9EC", lip: "#1a1d21", lo: 0.6 },
+      num: "stencil",
+      fig: "stencil",
+      fill: "#F2F4F5",
     },
     PRO: {
-      stone: "#E9E6DF", band: "#B9B4A8", bandLo: "#8f8a7f", t: 4, bev: 2.6, hiA: 0.6, loA: 0.24, edge: "#858D99",
-      rf: "0.11", ss: 0.55, el: 60, gd: 2.2, gl: 0, chips: PRO_CHIPS, bite: true,
-      tool: { ink: "#5a564f", lip: "#ffffff", lo: 0.5 }, num: "cement", fig: "marq", fill: "#0C3164",
+      stone: "#E9E6DF",
+      band: "#B9B4A8",
+      bandLo: "#8f8a7f",
+      t: 4,
+      bev: 2.6,
+      hiA: 0.6,
+      loA: 0.24,
+      edge: "#858D99",
+      rf: "0.11",
+      ss: 0.55,
+      el: 60,
+      gd: 2.2,
+      gl: 0,
+      chips: PRO_CHIPS,
+      bite: true,
+      tool: { ink: "#5a564f", lip: "#ffffff", lo: 0.5 },
+      num: "cement",
+      fig: "marq",
+      fill: "#0C3164",
     },
     CHAMPION: {
-      stone: "#EEEBE4", band: "#B9B4A8", bandLo: "#8f8a7f", t: 4, bev: 2.2, hiA: 0.6, loA: 0.26, edge: "#858D99",
-      rf: "0.11", ss: 0.35, el: 64, gd: 2, gl: 0, chips: PRO_CHIPS, bite: true, polish: 1, strips: true,
-      tool: { ink: "#5a564f", lip: "#ffffff", lo: 0.5 }, num: "cementBrass", fig: "marqBrass", scratch: "resin", fill: "#0C3164",
+      stone: "#EEEBE4",
+      band: "#B9B4A8",
+      bandLo: "#8f8a7f",
+      t: 4,
+      bev: 2.2,
+      hiA: 0.6,
+      loA: 0.26,
+      edge: "#858D99",
+      rf: "0.11",
+      ss: 0.35,
+      el: 64,
+      gd: 2,
+      gl: 0,
+      chips: PRO_CHIPS,
+      bite: true,
+      polish: 1,
+      strips: true,
+      tool: { ink: "#5a564f", lip: "#ffffff", lo: 0.5 },
+      num: "cementBrass",
+      fig: "marqBrass",
+      scratch: "resin",
+      fill: "#0C3164",
     },
     LEGEND: {
-      stone: "#1B1F26", band: "#2A2F36", bandLo: "#14171c", t: 6, bev: 1.8, hiA: 0.26, loA: 0.5, edge: "#737B86",
-      rf: "0.11", ss: 0.25, el: 66, gd: 0, gl: 2.4, chips: LEGEND_CHIPS, bite: true, polish: 2, strips: true,
-      tool: { ink: "#b9bec6", lip: null, lo: 0.5 }, num: "marble", fig: "legend", scratch: "brass", fill: "#ECE8DF",
+      stone: "#1B1F26",
+      band: "#2A2F36",
+      bandLo: "#14171c",
+      t: 6,
+      bev: 1.8,
+      hiA: 0.26,
+      loA: 0.5,
+      edge: "#737B86",
+      rf: "0.11",
+      ss: 0.25,
+      el: 66,
+      gd: 0,
+      gl: 2.4,
+      chips: LEGEND_CHIPS,
+      bite: true,
+      polish: 2,
+      strips: true,
+      tool: { ink: "#b9bec6", lip: null, lo: 0.5 },
+      num: "marble",
+      fig: "legend",
+      scratch: "brass",
+      fill: "#ECE8DF",
     },
   };
   const tierOf = (p) => TIER[p.tier] || TIER.PRO;
@@ -160,28 +327,46 @@
     const R = rng(seed);
     const groups = palette.map(() => []);
     for (let i = 0; i < count; i++) {
-      const x = box[0] + R() * box[2], y = box[1] + R() * box[3];
+      const x = box[0] + R() * box[2],
+        y = box[1] + R() * box[3];
       const r = rmin + (rmax - rmin) * Math.pow(R(), 2.3);
-      let u = R(), k = 0;
-      while (k < palette.length - 1 && u > palette[k].w) { u -= palette[k].w; k++; }
-      const nv = 4 + Math.floor(R() * 3), a0 = R() * 6.283;
+      let u = R(),
+        k = 0;
+      while (k < palette.length - 1 && u > palette[k].w) {
+        u -= palette[k].w;
+        k++;
+      }
+      const nv = 4 + Math.floor(R() * 3),
+        a0 = R() * 6.283;
       const jit = [];
       for (let j = 0; j < nv; j++) jit.push([R(), R()]);
-      if (keep && keep.some((b) => x + r > b[0] && x - r < b[2] && y + r > b[1] && y - r < b[3])) continue;
+      if (keep && keep.some((b) => x + r > b[0] && x - r < b[2] && y + r > b[1] && y - r < b[3]))
+        continue;
       let d = "M";
       for (let j = 0; j < nv; j++) {
-        const a = a0 + (j * 6.283) / nv + (jit[j][0] - 0.5) * 0.8, rr = r * (0.55 + jit[j][1] * 0.55);
-        d += `${r1(x + Math.cos(a) * rr)} ${r1(y + Math.sin(a) * rr * 0.85)}` + (j < nv - 1 ? "L" : "");
+        const a = a0 + (j * 6.283) / nv + (jit[j][0] - 0.5) * 0.8,
+          rr = r * (0.55 + jit[j][1] * 0.55);
+        d +=
+          `${r1(x + Math.cos(a) * rr)} ${r1(y + Math.sin(a) * rr * 0.85)}` +
+          (j < nv - 1 ? "L" : "");
       }
       groups[k].push(d + "Z");
     }
-    return palette.map((p, k) => (groups[k].length ? `<path d="${groups[k].join("")}" fill="${p.c}"${opacity ? ` fill-opacity="${opacity}"` : ""}/>` : "")).join("");
+    return palette
+      .map((p, k) =>
+        groups[k].length
+          ? `<path d="${groups[k].join("")}" fill="${p.c}"${opacity ? ` fill-opacity="${opacity}"` : ""}/>`
+          : "",
+      )
+      .join("");
   }
   function dots(seed, count, rmin, rmax, box, fill, op, keep) {
     const R = rng(seed);
     let d = "";
     for (let i = 0; i < count; i++) {
-      const x = r1(box[0] + R() * box[2]), y = r1(box[1] + R() * box[3]), r = r2(rmin + (rmax - rmin) * R());
+      const x = r1(box[0] + R() * box[2]),
+        y = r1(box[1] + R() * box[3]),
+        r = r2(rmin + (rmax - rmin) * R());
       if (keep && keep.some((b) => x > b[0] && x < b[2] && y > b[1] && y < b[3])) continue;
       d += `M${r2(x - r)} ${y}a${r} ${r} 0 1 0 ${r2(2 * r)} 0a${r} ${r} 0 1 0 ${r2(-2 * r)} 0`;
     }
@@ -190,13 +375,17 @@
   /** Broom finish: near-horizontal drag lines left by the broom on fresh concrete. */
   function broom(seed, count, box) {
     const R = rng(seed + 31);
-    let dk = "", lt = "";
+    let dk = "",
+      lt = "";
     for (let i = 0; i < count; i++) {
       const y = box[1] + ((i + R() * 0.8) / count) * box[3];
-      const x0 = box[0] + R() * 60 - 20, x1 = box[0] + box[2] - R() * 60 + 20;
-      const m = (x0 + x1) / 2, dy = (R() - 0.5) * 2.4;
+      const x0 = box[0] + R() * 60 - 20,
+        x1 = box[0] + box[2] - R() * 60 + 20;
+      const m = (x0 + x1) / 2,
+        dy = (R() - 0.5) * 2.4;
       const d = `M${r1(x0)} ${r1(y)}Q${r1(m)} ${r1(y + dy)} ${r1(x1)} ${r1(y + (R() - 0.5) * 1.6)}`;
-      if (i % 2) lt += d; else dk += d;
+      if (i % 2) lt += d;
+      else dk += d;
     }
     return `<path d="${dk}" fill="none" stroke="#000" stroke-opacity=".07" stroke-width=".5"/><path d="${lt}" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width=".5"/>`;
   }
@@ -206,11 +395,52 @@
   const MR = `font-family="Manrope" font-weight="700"`;
   const AX = (w) => `font-family="Alexandria" font-weight="${w}"`;
   // advances per em, measured in Chromium (Big Shoulders Display 800)
-  const BSW = { A: .44, B: .44, C: .45, D: .46, E: .38, F: .38, G: .46, H: .45, I: .22, J: .42, K: .46, L: .37, M: .69, N: .51, O: .46, P: .44, Q: .46, R: .44, S: .44, T: .38, U: .45, V: .46, W: .73, X: .44, Y: .43, Z: .39, " ": .22, "#": .69, "·": .18, 0: .47, 1: .26, 2: .46, 3: .47, 4: .48, 5: .48, 6: .47, 7: .45, 8: .47, 9: .47 };
+  const BSW = {
+    A: 0.44,
+    B: 0.44,
+    C: 0.45,
+    D: 0.46,
+    E: 0.38,
+    F: 0.38,
+    G: 0.46,
+    H: 0.45,
+    I: 0.22,
+    J: 0.42,
+    K: 0.46,
+    L: 0.37,
+    M: 0.69,
+    N: 0.51,
+    O: 0.46,
+    P: 0.44,
+    Q: 0.46,
+    R: 0.44,
+    S: 0.44,
+    T: 0.38,
+    U: 0.45,
+    V: 0.46,
+    W: 0.73,
+    X: 0.44,
+    Y: 0.43,
+    Z: 0.39,
+    " ": 0.22,
+    "#": 0.69,
+    "·": 0.18,
+    0: 0.47,
+    1: 0.26,
+    2: 0.46,
+    3: 0.47,
+    4: 0.48,
+    5: 0.48,
+    6: 0.47,
+    7: 0.45,
+    8: 0.47,
+    9: 0.47,
+  };
   const bsW = (s) => [...String(s)].reduce((a, c) => a + (BSW[c] ?? 0.45), 0);
   // Alexandria 300 (the scratch): ALI 1.53em, ·26 1.42em; Arabic about .59em a letter at 300, .65 at 700
   const AX3L = { A: 0.66, L: 0.55, I: 0.32 };
-  const scratchW = (s, ar) => (ar ? [...String(s)].length * 0.59 : [...String(s)].reduce((a, c) => a + (AX3L[c] ?? 0.64), 0));
+  const scratchW = (s, ar) =>
+    ar ? [...String(s)].length * 0.59 : [...String(s)].reduce((a, c) => a + (AX3L[c] ?? 0.64), 0);
   const arW = (s, w = 700) => [...String(s)].length * (w >= 700 ? 0.65 : 0.5);
 
   /** Lettering cut into the stone: a lip catches the light down-right, the ink sits on top.
@@ -218,7 +448,11 @@
   function tooled(x, y, str, attrs, tool, ar) {
     const off = ar ? 0.25 : tool.lo;
     const lipA = ar ? 0.5 : 0.85;
-    return (tool.lip ? `<text x="${r2(x + off)}" y="${r2(y + off)}" ${attrs} fill="${tool.lip}" fill-opacity="${lipA}">${str}</text>` : "") + `<text x="${r2(x)}" y="${r2(y)}" ${attrs} fill="${tool.ink}">${str}</text>`;
+    return (
+      (tool.lip
+        ? `<text x="${r2(x + off)}" y="${r2(y + off)}" ${attrs} fill="${tool.lip}" fill-opacity="${lipA}">${str}</text>`
+        : "") + `<text x="${r2(x)}" y="${r2(y)}" ${attrs} fill="${tool.ink}">${str}</text>`
+    );
   }
 
   function brassStops(hi) {
@@ -229,11 +463,16 @@
   /** White marble for the LEGEND inlays: #ECE8DF with faint grey veins, seeded per member. */
   function marblePattern(id, seed) {
     const R = rng(seed + 77);
-    let v = "", f = "";
+    let v = "",
+      f = "";
     for (let i = 0; i < 7; i++) {
-      const x0 = -20 + R() * 400, y0 = -10 + R() * 60, x1 = x0 + 60 + R() * 120, y1 = y0 + 150 + R() * 90;
+      const x0 = -20 + R() * 400,
+        y0 = -10 + R() * 60,
+        x1 = x0 + 60 + R() * 120,
+        y1 = y0 + 150 + R() * 90;
       const d = `M${r1(x0)} ${r1(y0)}C${r1(x0 + 40 + R() * 40)} ${r1(y0 + 60)} ${r1(x1 - 60 - R() * 40)} ${r1(y1 - 70)} ${r1(x1)} ${r1(y1)}`;
-      if (i % 3) f += d; else v += d;
+      if (i % 3) f += d;
+      else v += d;
     }
     return `<pattern id="${id}" patternUnits="userSpaceOnUse" width="360" height="236"><rect width="360" height="236" fill="#ECE8DF"/><path d="${v}" fill="none" stroke="#8d939c" stroke-opacity=".42" stroke-width=".9"/><path d="${f}" fill="none" stroke="#a7acb3" stroke-opacity=".32" stroke-width=".5"/></pattern>`;
   }
@@ -268,7 +507,11 @@
     if (T.fig === "groove") {
       // HOMA: a groove cut in raw concrete; the wall nearer the light is in shadow, the far wall lit,
       // and the hair is pressed in as a rough darker patch
-      if (mini) return open + `<g fill="#62676d">${P(A.torso)}${P(A.head)}</g><path d="${A.hair}" fill="#4c5056"/></g>`;
+      if (mini)
+        return (
+          open +
+          `<g fill="#62676d">${P(A.torso)}${P(A.head)}</g><path d="${A.hair}" fill="#4c5056"/></g>`
+        );
       const lines = [A.torso, A.collar, A.hair].map(P).join("") + P(A.seam);
       return (
         `<defs><mask id="${u}-gv" maskUnits="userSpaceOnUse" ${box}><g fill="none" stroke="#fff" stroke-width="${sw(3.2)}" stroke-linejoin="round" stroke-linecap="round">${lines}</g></mask>` +
@@ -284,8 +527,13 @@
     }
     if (T.fig === "stencil") {
       // STADE: two sprayed stencils, sky then navy, bridges left as gaps, one off register by 1u
-      const sky = "#9BDBFD", navy = "#0C3164";
-      if (mini) return open + `<g fill="${sky}">${P(A.torso)}${P(A.neck)}${P(A.head)}</g><path d="${A.hair}" fill="${navy}"/></g>`;
+      const sky = "#9BDBFD",
+        navy = "#0C3164";
+      if (mini)
+        return (
+          open +
+          `<g fill="${sky}">${P(A.torso)}${P(A.neck)}${P(A.head)}</g><path d="${A.hair}" fill="${navy}"/></g>`
+        );
       const skyP = [A.torso, A.neck, A.ears, A.head].map(P).join("");
       const navyP = P(A.hair) + P(A.collar);
       return (
@@ -315,8 +563,28 @@
     const collar = "#0151FC";
     const st = `stroke="${cut}" stroke-width="${cw}" stroke-linejoin="round"`;
     if (mini)
-      return open + `<path d="${A.torso}" fill="${jacket}" ${st}/><path d="${A.head}" fill="${skin}" ${st}/><path d="${A.hair}" fill="${hair}" ${st}/></g>`;
-    const specks = `<g clip-path="url(#${u}-torso)">${chipPaths(seed + 11, legend ? [{ c: "#9BDBFD", w: 0.5 }, { c: "#ffffff", w: 0.22 }, { c: "#4f7fd8", w: 0.28 }] : [{ c: "#9BDBFD", w: 0.45 }, { c: "#ffffff", w: 0.3 }, { c: "#0151FC", w: 0.25 }], legend ? 110 : 70, 0.8, 2.6, [8, 172, 184, 68])}</g>`;
+      return (
+        open +
+        `<path d="${A.torso}" fill="${jacket}" ${st}/><path d="${A.head}" fill="${skin}" ${st}/><path d="${A.hair}" fill="${hair}" ${st}/></g>`
+      );
+    const specks = `<g clip-path="url(#${u}-torso)">${chipPaths(
+      seed + 11,
+      legend
+        ? [
+            { c: "#9BDBFD", w: 0.5 },
+            { c: "#ffffff", w: 0.22 },
+            { c: "#4f7fd8", w: 0.28 },
+          ]
+        : [
+            { c: "#9BDBFD", w: 0.45 },
+            { c: "#ffffff", w: 0.3 },
+            { c: "#0151FC", w: 0.25 },
+          ],
+      legend ? 110 : 70,
+      0.8,
+      2.6,
+      [8, 172, 184, 68],
+    )}</g>`;
     const vein = `<path d="M66 72C88 62 96 82 112 74S130 60 136 66M74 104C90 96 102 112 122 100M84 54C94 66 112 52 120 60" fill="none" stroke="${legend ? "#f4f2ec" : "#e8e6e1"}" stroke-opacity="${legend ? 0.5 : 0.35}" stroke-width="${sw(0.5)}"/>`;
     return (
       `<defs><clipPath id="${u}-torso"><path d="${A.torso}"/></clipPath><clipPath id="${u}-hair"><path d="${A.hair}"/></clipPath></defs>` +
@@ -352,11 +620,13 @@
         return `<text ${a} fill="#ffffff" opacity=".2" filter="url(#${u}-os)">${str}</text><text ${a} fill="${T.fill}" filter="url(#${u}-spray)">${str}</text>`;
       case "cement": // PRO: navy cement inlay, a fine cut line around it
         return `<text ${a} fill="${T.fill}" stroke="#3a3e46" stroke-opacity=".55" stroke-width="${r2(Math.max(0.6, 1.4 * k))}" paint-order="stroke">${str}</text>`;
-      case "cementBrass": { // CHAMPION: navy cement held in a brass strip bent around each glyph
+      case "cementBrass": {
+        // CHAMPION: navy cement held in a brass strip bent around each glyph
         const w = r2(size >= 40 ? 2.8 * k : size >= 20 ? 1.5 : 1);
         return `<text ${a} fill="${T.fill}" stroke="#4a3812" stroke-opacity=".5" stroke-width="${r2(w + (size >= 20 ? 1 : 0.6))}" stroke-linejoin="round" paint-order="stroke">${str}</text><text ${a} fill="${T.fill}" stroke="url(#${u}-brass)" stroke-width="${w}" stroke-linejoin="round" paint-order="stroke">${str}</text>`;
       }
-      default: { // LEGEND: white marble with faint veins, held in brass
+      default: {
+        // LEGEND: white marble with faint veins, held in brass
         const w = r2(size >= 40 ? 2.6 * k : size >= 20 ? 1.4 : 0.9);
         return `<text ${a} fill="#0b0d10" stroke="#0b0d10" stroke-width="${r2(w + (size >= 20 ? 1.2 : 0.7))}" stroke-linejoin="round">${str}</text><text ${a} fill="url(#${u}-marble)" stroke="url(#${u}-brassHi)" stroke-width="${w}" stroke-linejoin="round" paint-order="stroke">${str}</text>`;
       }
@@ -378,11 +648,14 @@
     const runs = (dx, dy, attrs) =>
       `<text x="${r2(x + dx)}" y="${r2(y + dy)}" ${F} text-anchor="start"${ar ? ` direction="rtl"` : ""} textLength="${nW}" lengthAdjust="spacingAndGlyphs" ${attrs}>${esc(nm)}</text>` +
       `<text x="${r2(x2 + dx)}" y="${r2(y + dy)}" ${F} text-anchor="${ar ? "end" : "start"}" direction="ltr" ${attrs}>${tail}</text>`;
-    const groove = (c, a, w) => `fill="${c}" fill-opacity="${a}" stroke="${c}" stroke-opacity="${a}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
+    const groove = (c, a, w) =>
+      `fill="${c}" fill-opacity="${a}" stroke="${c}" stroke-opacity="${a}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
     let cut;
     if (T.scratch === "brass") {
       // LEGEND: the groove is filled with brass, flush with the black stone
-      cut = runs(0, 0, groove("#07080a", 0.9, 2.8)) + `<g class="x05-flow">${runs(0, 0, groove(`url(#${u}-brassHi)`, 1, 1.8))}</g>`;
+      cut =
+        runs(0, 0, groove("#07080a", 0.9, 2.8)) +
+        `<g class="x05-flow">${runs(0, 0, groove(`url(#${u}-brassHi)`, 1, 1.8))}</g>`;
     } else {
       cut =
         runs(0.6, 0.7, groove("#C4C9CE", T.num === "stencil" ? 0.55 : 0.9, 1.4)) + // the lit far wall
@@ -393,7 +666,8 @@
     const w = nW + 1 + tW + 14;
     if (T.scratch === "resin") {
       // CHAMPION: the scratch is sealed under a clear resin oval (a floor someone chose to protect)
-      const cx = ar ? x - w / 2 + 7 : x + w / 2 - 7, cy = y - fs * 0.34;
+      const cx = ar ? x - w / 2 + 7 : x + w / 2 - 7,
+        cy = y - fs * 0.34;
       resin =
         `<g clip-path="url(#${u}-paver)">` +
         `<ellipse cx="${r2(cx)}" cy="${r2(cy + 0.9)}" rx="${r2(w / 2)}" ry="${r2(fs * 0.74)}" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="1.2"/>` +
@@ -402,7 +676,8 @@
         `<path d="M${r2(cx - w * 0.24)} ${r2(cy - fs * 0.5)}Q${r2(cx - w * 0.08)} ${r2(cy - fs * 0.68)} ${r2(cx + w * 0.08)} ${r2(cy - fs * 0.62)}" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width=".9" stroke-linecap="round"/>` +
         `</g>`;
     }
-    const x0 = ar ? x - w + 7 : x - 2, x1 = ar ? x + 2 : x + w - 7;
+    const x0 = ar ? x - w + 7 : x - 2,
+      x1 = ar ? x + 2 : x + w - 7;
     keep.push([x0 - 2, y - fs - 6, x1 + 2, y + (ar ? fs * 0.55 : 4)]);
     const rot = `rotate(${ar ? 4 : -4} ${r2(x)} ${r2(y)})`;
     return `<g transform="${rot}"><g filter="url(#${u}-wob)">${cut}</g>${resin}</g>`;
@@ -426,7 +701,13 @@
     const legend = p.tier === "LEGEND";
     const motion = !!o.motion && legend && !thumb;
     const keep = [];
-    const kb = (x0, y0, x1, y1) => keep.push([Math.min(x0, x1) - 2, Math.min(y0, y1) - 2, Math.max(x0, x1) + 2, Math.max(y0, y1) + 2]);
+    const kb = (x0, y0, x1, y1) =>
+      keep.push([
+        Math.min(x0, x1) - 2,
+        Math.min(y0, y1) - 2,
+        Math.max(x0, x1) + 2,
+        Math.max(y0, y1) + 2,
+      ]);
     const tool = T.tool;
     let gaps = ""; // stencil bridges (STADE)
     const bridges = (cx, y, size, str, anchor) => {
@@ -435,7 +716,8 @@
       let left = anchor === "middle" ? cx - total / 2 : anchor === "end" ? cx - total : cx;
       for (const ch of s) {
         const w = (BSW[ch] ?? 0.45) * size;
-        if (ch !== "1") gaps += `<rect x="${r2(left + w / 2 - size * 0.021)}" y="${r2(y - size * 0.85)}" width="${r2(size * 0.042)}" height="${r2(size * 0.9)}" fill="#000"/>`;
+        if (ch !== "1")
+          gaps += `<rect x="${r2(left + w / 2 - size * 0.021)}" y="${r2(y - size * 0.85)}" width="${r2(size * 0.042)}" height="${r2(size * 0.9)}" fill="#000"/>`;
         left += w;
       }
     };
@@ -449,7 +731,14 @@
     if (p.founder && !thumb) {
       const cap = esc(S.founderLine);
       if (ar) {
-        ink += tooled(X(14), 44, cap, `${AX(600)} font-size="7.4" text-anchor="start" direction="rtl"`, tool, true);
+        ink += tooled(
+          X(14),
+          44,
+          cap,
+          `${AX(600)} font-size="7.4" text-anchor="start" direction="rtl"`,
+          tool,
+          true,
+        );
         kb(X(14), 36, X(14) - arW(S.founderLine, 600) * 7.4, 47);
       } else {
         ink += tooled(X(14), 41, cap, `${MR} font-size="6.4" letter-spacing=".8"`, tool);
@@ -458,16 +747,29 @@
     }
     if (!thumb) {
       // the waist: wordmark, crest, tier, country, season
-      const lw = 44, lh = lw / MC.LOGO_RATIO.wordmark;
-      const logo = (color, extra = "") => `<g transform="translate(${r2(180 - lw / 2)} 46)"${extra}>${MC.logo("wordmark", { variant: "mono", color, label: false, w: lw, h: r2(lh) })}</g>`;
-      if (T.num === "paint" || T.num === "stencil") ink += `<g transform="translate(.5 .5)" opacity=".85">${logo(tool.lip)}</g>` + logo(tool.ink);
+      const lw = 44,
+        lh = lw / MC.LOGO_RATIO.wordmark;
+      const logo = (color, extra = "") =>
+        `<g transform="translate(${r2(180 - lw / 2)} 46)"${extra}>${MC.logo("wordmark", { variant: "mono", color, label: false, w: lw, h: r2(lh) })}</g>`;
+      if (T.num === "paint" || T.num === "stencil")
+        ink +=
+          `<g transform="translate(.5 .5)" opacity=".85">${logo(tool.lip)}</g>` + logo(tool.ink);
       else if (legend) ink += logo("#ECE8DF");
-      else ink += logo("#0151FC", ` stroke="#3a3e46" stroke-opacity=".5" stroke-width="30" paint-order="stroke"`);
+      else
+        ink += logo(
+          "#0151FC",
+          ` stroke="#3a3e46" stroke-opacity=".5" stroke-width="30" paint-order="stroke"`,
+        );
       kb(180 - lw / 2, 46, 180 + lw / 2, 46 + lh);
-      const crest = (opts) => `<g transform="translate(173 59)">${MC.crest({ w: 14, h: 17, ...opts })}</g>`;
-      if (T.num === "paint" || T.num === "stencil") ink += `<g transform="translate(.5 .5)" opacity=".85">${crest({ mono: tool.lip })}</g>` + crest({ mono: tool.ink });
+      const crest = (opts) =>
+        `<g transform="translate(173 59)">${MC.crest({ w: 14, h: 17, ...opts })}</g>`;
+      if (T.num === "paint" || T.num === "stencil")
+        ink +=
+          `<g transform="translate(.5 .5)" opacity=".85">${crest({ mono: tool.lip })}</g>` +
+          crest({ mono: tool.ink });
       else if (legend) ink += crest({ fill: "#2a2f38", sash: "#ECE8DF", ring: "#ECE8DF" });
-      else ink += crest({ fill: "#3b4a5e", sash: "#e9e4d6", ring: T.strips ? "#C29A45" : "#5F6368" });
+      else
+        ink += crest({ fill: "#3b4a5e", sash: "#e9e4d6", ring: T.strips ? "#C29A45" : "#5F6368" });
       kb(173, 59, 187, 76);
       const tw = S.tiers[p.tier];
       if (ar) {
@@ -482,13 +784,32 @@
         kb(180 - Math.min(38, est * fs) / 2, 98 - fs * 0.8, 180 + Math.min(38, est * fs) / 2, 98);
       }
       if (ar) {
-        ink += tooled(180, 111.5, esc(S.country), `${AX(600)} font-size="8.4" text-anchor="middle" direction="rtl"`, tool, true);
+        ink += tooled(
+          180,
+          111.5,
+          esc(S.country),
+          `${AX(600)} font-size="8.4" text-anchor="middle" direction="rtl"`,
+          tool,
+          true,
+        );
         kb(162, 104, 198, 115);
       } else {
-        ink += tooled(180, 110.5, esc(S.country), `${MR} font-size="6.8" letter-spacing=".3" text-anchor="middle"`, tool);
+        ink += tooled(
+          180,
+          110.5,
+          esc(S.country),
+          `${MR} font-size="6.8" letter-spacing=".3" text-anchor="middle"`,
+          tool,
+        );
         kb(160, 105, 200, 111);
       }
-      ink += tooled(180, 122, esc(p.season), `${MR} font-size="7.6" text-anchor="middle" direction="ltr" style="font-variant-numeric:tabular-nums"`, tool);
+      ink += tooled(
+        180,
+        122,
+        esc(p.season),
+        `${MR} font-size="7.6" text-anchor="middle" direction="ltr" style="font-variant-numeric:tabular-nums"`,
+        tool,
+      );
       kb(165, 116, 195, 123);
     }
     // the end lobe: name, the 84, the ID — all inlaid in the tier's material
@@ -501,7 +822,17 @@
         kb(ex - (arW(nm) * fs) / 2, 33 - fs * 0.9, ex + (arW(nm) * fs) / 2, 33 + fs * 0.6);
       } else {
         const fs = Math.min(26, 112 / (bsW(nm) + 0.02 * nm.length));
-        ink += inlay(T, ex, 36, fs, esc(nm), "middle", u, `${BS} letter-spacing="${r2(fs * 0.02)}"`, wordAs(T));
+        ink += inlay(
+          T,
+          ex,
+          36,
+          fs,
+          esc(nm),
+          "middle",
+          u,
+          `${BS} letter-spacing="${r2(fs * 0.02)}"`,
+          wordAs(T),
+        );
         kb(ex - (bsW(nm) * fs) / 2, 36 - fs * 0.8, ex + (bsW(nm) * fs) / 2, 36);
       }
     }
@@ -511,7 +842,13 @@
     kb(ex - 48, ny - 81, ex + 48, ny + 1);
     if (!thumb) {
       const iy = ar ? 155 : 152;
-      ink += tooled(ex, iy, esc(p.id), `${MR} font-size="8" letter-spacing=".5" text-anchor="middle" direction="ltr" style="font-variant-numeric:tabular-nums"`, tool);
+      ink += tooled(
+        ex,
+        iy,
+        esc(p.id),
+        `${MR} font-size="8" letter-spacing=".5" text-anchor="middle" direction="ltr" style="font-variant-numeric:tabular-nums"`,
+        tool,
+      );
       kb(ex - 28, iy - 6.5, ex + 28, iy + 1);
     }
     // the course: one stat per half-block, label cut in, value inlaid
@@ -523,13 +860,27 @@
         const valAs = T.stat || (T.num === "stencil" ? "stencil" : null);
         if (ar) {
           const lfs = Math.max(10, Math.min(10.5, 60 / arW(S.stats[k], 600)));
-          ink += tooled(cx, 194, lab, `${AX(600)} font-size="${r2(lfs)}" text-anchor="middle" direction="rtl"`, tool, true);
-          kb(cx - (arW(S.stats[k], 600) * lfs) / 2, 184, cx + (arW(S.stats[k], 600) * lfs) / 2, 198);
+          ink += tooled(
+            cx,
+            194,
+            lab,
+            `${AX(600)} font-size="${r2(lfs)}" text-anchor="middle" direction="rtl"`,
+            tool,
+            true,
+          );
+          kb(
+            cx - (arW(S.stats[k], 600) * lfs) / 2,
+            184,
+            cx + (arW(S.stats[k], 600) * lfs) / 2,
+            198,
+          );
           ink += inlay(T, cx, 221, 22, v, "middle", u, `${BS} direction="ltr"`, valAs);
           if (T.num === "stencil") bridges(cx, 221, 22, v, "middle");
           kb(cx - 12, 203, cx + 12, 222);
         } else {
-          const lw = bsW(S.stats[k]) * 15 + 0.9 * S.stats[k].length, vw = bsW(v) * 23, gap = 4.5;
+          const lw = bsW(S.stats[k]) * 15 + 0.9 * S.stats[k].length,
+            vw = bsW(v) * 23,
+            gap = 4.5;
           const x0 = X(COURSE_CX[i]) - (lw + gap + vw) / 2;
           ink += tooled(x0, 211, lab, `${BS} font-size="15" letter-spacing=".9"`, tool);
           ink += inlay(T, x0 + lw + gap, 211, 23, v, "start", u, BS, valAs);
@@ -558,11 +909,14 @@
       `<filter id="${u}-paintS" x="-4%" y="-4%" width="108%" height="108%"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="1" seed="${seed + 13}" result="g"/><feDisplacementMap in="SourceGraphic" in2="g" scale=".6" xChannelSelector="R" yChannelSelector="G" result="d"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 12 0 0 0 -2.9" result="gm"/><feComposite in="d" in2="gm" operator="in"/></filter>` +
       `<filter id="${u}-grime" x="-4%" y="-4%" width="108%" height="108%"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="2" seed="${seed + 14}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="1.4" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation=".45"/></filter>` +
       `<filter id="${u}-chalk" x="-4%" y="-10%" width="108%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="1" seed="${seed + 5}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="1.2" xChannelSelector="R" yChannelSelector="G" result="d"/><feColorMatrix in="t" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 -3.2 2.9" result="m"/><feComposite in="d" in2="m" operator="in"/></filter>` +
-      (T.rough ? `<filter id="${u}-rough" x="-2%" y="-3%" width="104%" height="106%"><feTurbulence type="fractalNoise" baseFrequency=".08" numOctaves="2" seed="${seed + 1}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter>` : "") +
+      (T.rough
+        ? `<filter id="${u}-rough" x="-2%" y="-3%" width="104%" height="106%"><feTurbulence type="fractalNoise" baseFrequency=".08" numOctaves="2" seed="${seed + 1}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="2.6" xChannelSelector="R" yChannelSelector="G"/></filter>`
+        : "") +
       `<linearGradient id="${u}-pol" gradientUnits="userSpaceOnUse" x1="${ar ? 250 : 110}" y1="0" x2="${ar ? 190 : 170}" y2="70"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
       `<linearGradient id="${u}-rake" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="360" y2="0"><stop offset=".3" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity="${legend ? 0.05 : 0.1}"/><stop offset=".7" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
       (legend ? marblePattern(`${u}-marble`, seed) : "");
-    if (T.num === "stencil") defs += `<mask id="${u}-bridge" maskUnits="userSpaceOnUse" x="0" y="0" width="360" height="236"><rect width="360" height="236" fill="#fff"/>${gaps}</mask>`;
+    if (T.num === "stencil")
+      defs += `<mask id="${u}-bridge" maskUnits="userSpaceOnUse" x="0" y="0" width="360" height="236"><rect width="360" height="236" fill="#fff"/>${gaps}</mask>`;
 
     /* ---- the block body ---- */
     let body = `<path d="${bandD}" fill="url(#${u}-band)"/>`;
@@ -580,9 +934,19 @@
     }
     if (T.chips) {
       const n = thumb ? 160 : legend ? 620 : 680;
-      surf += chipPaths(seed, T.chips, n, thumb ? 1.6 : 0.8, thumb ? 4 : 3.6, [0, 0, 360, 230], 0, thumb ? null : keep);
+      surf += chipPaths(
+        seed,
+        T.chips,
+        n,
+        thumb ? 1.6 : 0.8,
+        thumb ? 4 : 3.6,
+        [0, 0, 360, 230],
+        0,
+        thumb ? null : keep,
+      );
     }
-    if (T.polish === 1) surf += `<rect x="0" y="0" width="360" height="236" fill="url(#${u}-pol)"/>`;
+    if (T.polish === 1)
+      surf += `<rect x="0" y="0" width="360" height="236" fill="url(#${u}-pol)"/>`;
     if (T.polish === 2) {
       // a mirror finish: one hard-edged reflection band (and its faint echo) that follows the raking light
       const band = ar ? "M110 -10H84L-6 246H20Z" : "M250 -10H276L366 246H340Z";
@@ -596,7 +960,11 @@
     /* brass strips, only as straight dividers: the two waist verticals, and a strip in each course joint */
     let strips = "";
     if (T.strips) {
-      const b = 180 - NOTCH.d / 2, c = 180 + NOTCH.d / 2, top = NOTCH.h, bot = 168 - NOTCH.h, tt = tongueTop(T.t);
+      const b = 180 - NOTCH.d / 2,
+        c = 180 + NOTCH.d / 2,
+        top = NOTCH.h,
+        bot = 168 - NOTCH.h,
+        tt = tongueTop(T.t);
       const d = `M${b} ${top}V${bot}M${c} ${top}V${bot}M${X(88)} ${CT - 1}V${CB}M180 ${tt}V${CB}M${X(272)} ${CT - 1}V${CB}`;
       strips = `<path d="${d}" fill="none" stroke="#2c210c" stroke-opacity=".45" stroke-width="2.6"/><path d="${d}" fill="none" stroke="url(#${u}-brass${legend ? "Hi" : ""})" stroke-width="1.6"/>`;
     }
@@ -626,7 +994,9 @@
         `</g></g>`;
     }
 
-    const rake = thumb ? "" : `<g clip-path="url(#${u}-faces)" class="x05-rake"><rect x="0" y="0" width="360" height="236" fill="url(#${u}-rake)"/></g>`;
+    const rake = thumb
+      ? ""
+      : `<g clip-path="url(#${u}-faces)" class="x05-rake"><rect x="0" y="0" width="360" height="236" fill="url(#${u}-rake)"/></g>`;
     const shadow = thumb ? "" : `<path d="${bandD}" fill="#000" filter="url(#${u}-sh)"/>`;
     const bodyG = T.rough ? `<g filter="url(#${u}-rough)">${body}${arris}</g>` : `${body}${arris}`;
     return (
@@ -641,7 +1011,8 @@
     const ar = MC.isAr(o);
     const size = o.size || 44;
     const mini = !!o.mini || size <= 32;
-    const h = Math.round(size * 0.82), w = h * 2;
+    const h = Math.round(size * 0.82),
+      w = h * 2;
     const u = MC.uid(C + "t");
     const seed = seedOf(p);
     const X = (x) => (ar ? 360 - x : x);
@@ -661,12 +1032,36 @@
     s += `<path d="${dPoly(P.map(([x, y]) => [x, y + t]))}" fill="${T.bandLo}"/>`;
     s += `<path d="${d}" fill="${T.stone}"/>`;
     let surf = "";
-    if (T.chips) surf += chipPaths(seed, T.chips.slice(0, mini ? 6 : 8), mini ? 22 : 64, mini ? 6 : 3.5, mini ? 9 : 8, [0, 0, 360, 168], 0, keep);
-    if (T.pin) surf += dots(seed, mini ? 12 : 34, mini ? 4 : 2.2, mini ? 6 : 3.6, [0, 0, 360, 168], "#26292d", 0.5, keep);
-    if (T.broom && !mini) surf += `<path d="M0 30H360M0 64H360M0 98H360M0 132H360" stroke="#000" stroke-opacity=".06" stroke-width="2"/>`;
-    if (T.sheen) surf += `<path d="M0 0H360V60C240 40 120 90 0 50Z" fill="#fff" fill-opacity=".1"/>`;
-    if (T.polish === 1) surf += `<path d="${ar ? "M250 0H210L80 168H120Z" : "M110 0H150L280 168H240Z"}" fill="#fff" fill-opacity=".16"/>`;
-    if (T.polish === 2) surf += `<path d="${ar ? "M118 -4H82L-20 172H16Z" : "M242 -4H278L380 172H344Z"}" fill="#fff" fill-opacity=".12"/>`;
+    if (T.chips)
+      surf += chipPaths(
+        seed,
+        T.chips.slice(0, mini ? 6 : 8),
+        mini ? 22 : 64,
+        mini ? 6 : 3.5,
+        mini ? 9 : 8,
+        [0, 0, 360, 168],
+        0,
+        keep,
+      );
+    if (T.pin)
+      surf += dots(
+        seed,
+        mini ? 12 : 34,
+        mini ? 4 : 2.2,
+        mini ? 6 : 3.6,
+        [0, 0, 360, 168],
+        "#26292d",
+        0.5,
+        keep,
+      );
+    if (T.broom && !mini)
+      surf += `<path d="M0 30H360M0 64H360M0 98H360M0 132H360" stroke="#000" stroke-opacity=".06" stroke-width="2"/>`;
+    if (T.sheen)
+      surf += `<path d="M0 0H360V60C240 40 120 90 0 50Z" fill="#fff" fill-opacity=".1"/>`;
+    if (T.polish === 1)
+      surf += `<path d="${ar ? "M250 0H210L80 168H120Z" : "M110 0H150L280 168H240Z"}" fill="#fff" fill-opacity=".16"/>`;
+    if (T.polish === 2)
+      surf += `<path d="${ar ? "M118 -4H82L-20 172H16Z" : "M242 -4H278L380 172H344Z"}" fill="#fff" fill-opacity=".12"/>`;
     s += `<g clip-path="url(#${u}-c)">${surf}</g>`;
     s += facets(P, mini ? 11 : 8, T.hiA, T.loA);
     if (T.strips) {
@@ -694,19 +1089,23 @@
     // the number, inlaid in the end lobe
     const a = `x="${r2(ncx)}" y="${r2(by)}" text-anchor="middle" font-size="${fs}" ${BS} direction="ltr"`;
     const num = esc(p.ovr);
-    if (T.num === "paint") s += `<text ${a} fill="none" stroke="#25282c" stroke-opacity=".45" stroke-width="${mini ? 12 : 9}" stroke-linejoin="round">${num}</text><text ${a} fill="${T.fill}">${num}</text>`;
+    if (T.num === "paint")
+      s += `<text ${a} fill="none" stroke="#25282c" stroke-opacity=".45" stroke-width="${mini ? 12 : 9}" stroke-linejoin="round">${num}</text><text ${a} fill="${T.fill}">${num}</text>`;
     else if (T.num === "stencil") {
       s += `<text ${a} fill="${T.fill}">${num}</text>`;
       // the stencil bridges, cut in the stone's colour
       let left = ncx - nw / 2;
       for (const ch of String(p.ovr)) {
         const cw = (BSW[ch] ?? 0.45) * fs;
-        if (ch !== "1") s += `<rect x="${r2(left + cw / 2 - (mini ? 4 : 3))}" y="${r2(by - fs * 0.85)}" width="${mini ? 8 : 6}" height="${r2(fs * 0.9)}" fill="${T.stone}"/>`;
+        if (ch !== "1")
+          s += `<rect x="${r2(left + cw / 2 - (mini ? 4 : 3))}" y="${r2(by - fs * 0.85)}" width="${mini ? 8 : 6}" height="${r2(fs * 0.9)}" fill="${T.stone}"/>`;
         left += cw;
       }
     } else if (T.num === "cement") s += `<text ${a} fill="${T.fill}">${num}</text>`;
-    else if (T.num === "cementBrass") s += `<text ${a} fill="${T.fill}" stroke="url(#${u}-brass)" stroke-width="${mini ? 12 : 9}" stroke-linejoin="round" paint-order="stroke">${num}</text>`;
-    else s += `<text ${a} fill="#ECE8DF" stroke="url(#${u}-brassHi)" stroke-width="${mini ? 11 : 8}" stroke-linejoin="round" paint-order="stroke">${num}</text>`;
+    else if (T.num === "cementBrass")
+      s += `<text ${a} fill="${T.fill}" stroke="url(#${u}-brass)" stroke-width="${mini ? 12 : 9}" stroke-linejoin="round" paint-order="stroke">${num}</text>`;
+    else
+      s += `<text ${a} fill="#ECE8DF" stroke="url(#${u}-brassHi)" stroke-width="${mini ? 11 : 8}" stroke-linejoin="round" paint-order="stroke">${num}</text>`;
     s += `<path d="${d}" fill="none" stroke="${T.edge}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     return `<svg class="x05-tok-svg" viewBox="0 0 360 180" width="${w}" height="${h}" aria-hidden="true" focusable="false" style="overflow:visible">${s}</svg>`;
   }
@@ -714,11 +1113,13 @@
   /* ---------- the share's pavement: the same blocks, laid in stretcher bond ---------- */
   function pavementField(seed, rows, cols) {
     const R = rng(seed + 41);
-    const faces = ["", "", ""], bands = [];
+    const faces = ["", "", ""],
+      bands = [];
     for (let k = rows[0]; k <= rows[1]; k++) {
       const shift = Math.abs(k) % 2 ? 183 : 0;
       for (let j = cols[0]; j <= cols[1]; j++) {
-        const dx = j * 366 + shift, dy = k * 236;
+        const dx = j * 366 + shift,
+          dy = k * 236;
         // clamped just outside the frame; no slanted edge crosses the clamp, so nothing visible bends
         const cl = (x) => Math.max(-45, Math.min(405, x));
         [paverPts(false), ...coursePts(4, true)].forEach((Q) => {
@@ -741,8 +1142,10 @@
   const c = {
     id: "x05",
     cut: true,
-    cutReason: "An identity as 'the floor people walk on' gave a teenager the weakest reason to belong in the pool; 'un pavé' is a riot projectile in French; and at 24px the block read as a bow tie or a dog bone.",
-    cutReasonAr: "أن تكون هويتك «الأرض التي يمشي عليها الناس» أضعف سبب يجعل مراهقًا يريدها؛ وكلمة «pavé» بالفرنسية حجر يُرمى في أعمال الشغب؛ وعند 24 بكسل بدا الحجر كربطة عنق أو عظمة كلب.",
+    cutReason:
+      "An identity as 'the floor people walk on' gave a teenager the weakest reason to belong in the pool; 'un pavé' is a riot projectile in French; and at 24px the block read as a bow tie or a dog bone.",
+    cutReasonAr:
+      "أن تكون هويتك «الأرض التي يمشي عليها الناس» أضعف سبب يجعل مراهقًا يريدها؛ وكلمة «pavé» بالفرنسية حجر يُرمى في أعمال الشغب؛ وعند 24 بكسل بدا الحجر كربطة عنق أو عظمة كلب.",
     n: 5,
     name: "PAVÉ",
     nameAr: "البلاطة",
@@ -779,10 +1182,13 @@
     ],
     tiers: {
       HOMA: "Raw cast concrete, light and matte: a broom finish, pinholes and the ghost rectangles of mould boards, a crude arris that wobbles, the number and name brushed on in worn road paint, the stats in chalk, the figure a groove cut into the concrete with the hair pressed in.",
-      STADE: "Cured and sealed: dark concrete with a wet sheen that catches the light, sharper arrises, the number sprayed through a stencil (bridges and overspray), the figure a two-colour spray stencil in sky and navy, and the first edge chip bitten out of the end corner.",
+      STADE:
+        "Cured and sealed: dark concrete with a wet sheen that catches the light, sharper arrises, the number sprayed through a stencil (bridges and overspray), the figure a two-colour spray stencil in sky and navy, and the first edge chip bitten out of the end corner.",
       PRO: "Ground down to white granito: the aggregate is exposed in navy, sky, logo-blue and club-colour chips. The number, name and stat values become navy cement inlays, the wordmark logo-blue stone, and the figure flush marquetry: navy granite jacket, blue collar, warm stone, black marble hair.",
-      CHAMPION: "Polished terrazzo: a reflection band across the face, brass dividers in the waist and in the course joints, the numerals in navy cement held in a brass strip bent around each glyph (real terrazzo technique), brass cut lines through the figure, and the founder scratch sealed under clear resin.",
-      LEGEND: "Black terrazzo polished to a mirror, with one hard reflection band that follows the light. The 84 and the name are inlaid in white marble with faint grey veins, held in brass; the figure becomes a lapis jacket with veined hair; brass is kept for the dividers, the figure's cut lines and the founder scratch, now filled with metal. The block stands taller (a 6u side) and keeps a lit rim on the dark ground.",
+      CHAMPION:
+        "Polished terrazzo: a reflection band across the face, brass dividers in the waist and in the course joints, the numerals in navy cement held in a brass strip bent around each glyph (real terrazzo technique), brass cut lines through the figure, and the founder scratch sealed under clear resin.",
+      LEGEND:
+        "Black terrazzo polished to a mirror, with one hard reflection band that follows the light. The 84 and the name are inlaid in white marble with faint grey veins, held in brass; the figure becomes a lapis jacket with veined hair; brass is kept for the dividers, the figure's cut lines and the founder scratch, now filled with metal. The block stands taller (a 6u side) and keeps a lit rim on the dark ground.",
     },
     legend: [
       "The grind. A raking floodlight crosses the block, then a grinding head sweeps from the start lobe to the end lobe (900ms): the polished CHAMPION surface goes under a band of grey slurry and comes out as wet, dark black terrazzo, which dries as the head moves on. Brass flows into the founder scratch last. It plays once, never loops, and under reduced motion the finished block simply shows.",
@@ -823,7 +1229,9 @@
       const nm = esc(MC.nameOf(p, o));
       const bond = (o.rank || 0) % 2 ? "a" : "b";
       const yy = String(p.founder || "").slice(-2);
-      const founder = p.founder ? `<span class="x05-row-f" aria-hidden="true"><bdi dir="ltr">${ar ? yy + "·" : "·" + yy}</bdi></span>` : "";
+      const founder = p.founder
+        ? `<span class="x05-row-f" aria-hidden="true"><bdi dir="ltr">${ar ? yy + "·" : "·" + yy}</bdi></span>`
+        : "";
       return (
         `<div class="x05 x05-row${o.me ? " is-me" : ""}" dir="${S.dir}" data-tier="${p.tier}" data-bond="${bond}" role="img" aria-label="${esc((o.rank || "") + ". " + MC.label(p, o) + ", " + (o.pts || "") + " " + S.pts)}">` +
         `<div class="x05-row-slab" style="${slabChips(p)}">` +
@@ -841,7 +1249,8 @@
       const u = MC.uid(C + "s");
       const T = tierOf(p);
       const sc = 320 / 360;
-      const ox = 20, oy = 266;
+      const ox = 20,
+        oy = 266;
       const seed = seedOf(p);
       const X = (x) => (ar ? 360 - x : x);
       const MP = (P) => (ar ? mirror(P) : P);
@@ -850,46 +1259,101 @@
       const tr = `translate(${ox} ${oy}) scale(${r2(sc)})`;
       // ALI's slot: the pavement is cut to the block's exact outline, with a 3u sand joint all round
       const aliBlocks = [MP(paverPts(T.bite)), ...coursePts(T.t).map(MP)];
-      const slot = aliBlocks.map(dPoly).join("") + aliBlocks.map((P) => dPoly(P.map(([x, y]) => [x, y + T.t]))).join("");
+      const slot =
+        aliBlocks.map(dPoly).join("") +
+        aliBlocks.map((P) => dPoly(P.map(([x, y]) => [x, y + T.t]))).join("");
       const sand = "#211f1b";
       const logoW = 108;
-      const logo = MC.logo("wordmark", { variant: "light", label: false, w: logoW, h: r2(logoW / MC.LOGO_RATIO.wordmark) });
+      const logo = MC.logo("wordmark", {
+        variant: "light",
+        label: false,
+        w: logoW,
+        h: r2(logoW / MC.LOGO_RATIO.wordmark),
+      });
       const nm = MC.nameOf(p, o);
       const yy = String(p.founder || "").slice(-2);
       // kerb: two cast stones with a joint, the inscription on the first
-      const kerbY = 516, kerbB = 594;
-      const kA = ar ? [[94, kerbY], [370, kerbY], [370, kerbB], [94, kerbB]] : [[-10, kerbY], [266, kerbY], [266, kerbB], [-10, kerbB]];
-      const kB = ar ? [[-10, kerbY], [90, kerbY], [90, kerbB], [-10, kerbB]] : [[270, kerbY], [370, kerbY], [370, kerbB], [270, kerbB]];
+      const kerbY = 516,
+        kerbB = 594;
+      const kA = ar
+        ? [
+            [94, kerbY],
+            [370, kerbY],
+            [370, kerbB],
+            [94, kerbB],
+          ]
+        : [
+            [-10, kerbY],
+            [266, kerbY],
+            [266, kerbB],
+            [-10, kerbB],
+          ];
+      const kB = ar
+        ? [
+            [-10, kerbY],
+            [90, kerbY],
+            [90, kerbB],
+            [-10, kerbB],
+          ]
+        : [
+            [270, kerbY],
+            [370, kerbY],
+            [370, kerbB],
+            [270, kerbB],
+          ];
       const chamf = (Q) => {
         const [a, b, c2, d] = Q;
-        return [[a[0] + 3, a[1]], [b[0] - 3, b[1]], [b[0], b[1] + 3], [c2[0], c2[1] - 3], [c2[0] - 3, c2[1]], [d[0] + 3, d[1]], [d[0], d[1] - 3], [a[0], a[1] + 3]];
+        return [
+          [a[0] + 3, a[1]],
+          [b[0] - 3, b[1]],
+          [b[0], b[1] + 3],
+          [c2[0], c2[1] - 3],
+          [c2[0] - 3, c2[1]],
+          [d[0] + 3, d[1]],
+          [d[0], d[1] - 3],
+          [a[0], a[1] + 3],
+        ];
       };
       const kerbs = [chamf(kA), chamf(kB)];
       const kerbD = kerbs.map(dPoly).join("");
       const kerbBand = kerbs.map((Q) => dPoly(Q.map(([x, y]) => [x, y + 7]))).join("");
       const KT = { ...TIER.HOMA, stone: "#8a9097", el: 44, rf: "0.05", ss: 1.8 };
       // the scratch on the kerb, three times the size of the card's
-      const sfs = ar ? 38 : 44, sx = X(28), sy = ar ? 553 : 560;
+      const sfs = ar ? 38 : 44,
+        sx = X(28),
+        sy = ar ? 553 : 560;
       const nW = r2(scratchW(nm, ar) * sfs);
       const tail = ar ? `${yy}·` : `·${yy}`;
       const x2 = ar ? sx - nW - 2 : sx + nW + 2;
       const F = `font-family="Alexandria" font-weight="300" font-size="${sfs}"`;
       const runs = (dx, dy, attrs) =>
         `<text x="${r2(sx + dx)}" y="${r2(sy + dy)}" ${F} text-anchor="start"${ar ? ' direction="rtl"' : ""} textLength="${nW}" lengthAdjust="spacingAndGlyphs" ${attrs}>${esc(nm)}</text>` +
-        (p.founder ? `<text x="${r2(x2 + dx)}" y="${r2(sy + dy)}" ${F} text-anchor="${ar ? "end" : "start"}" direction="ltr" ${attrs}>${tail}</text>` : "");
-      const groove = (c, a, w) => `fill="${c}" fill-opacity="${a}" stroke="${c}" stroke-opacity="${a}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
+        (p.founder
+          ? `<text x="${r2(x2 + dx)}" y="${r2(sy + dy)}" ${F} text-anchor="${ar ? "end" : "start"}" direction="ltr" ${attrs}>${tail}</text>`
+          : "");
+      const groove = (c, a, w) =>
+        `fill="${c}" fill-opacity="${a}" stroke="${c}" stroke-opacity="${a}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
       const scr = `<g transform="rotate(${ar ? 3 : -3} ${sx} ${sy})" filter="url(#${u}-wob)">${runs(1.4, 1.6, groove("#C4C9CE", 0.85, 3))}${runs(0, 0, groove("#33373c", 0.82, 4.4))}${runs(-1, -1.1, groove("#000", 0.28, 2))}</g>`;
       // the kerb inscription: ID, tier and season cut on one line, separated by small cut squares
       const iy = 584;
-      const ins = (x, txt, attrs) => `<text x="${r2(x + 0.6)}" y="${iy + 0.6}" ${attrs} fill="#cfd3d7" fill-opacity=".8">${txt}</text><text x="${r2(x)}" y="${iy}" ${attrs} fill="#1f2226">${txt}</text>`;
-      const sq = (x) => `<rect x="${r2(x - 1.8)}" y="${iy - 5.6}" width="3.6" height="3.6" transform="rotate(45 ${r2(x)} ${iy - 3.8})" fill="#1f2226"/>`;
-      const idW = 6.67 * 10.5 + 1.4 * 11, gap = 13;
+      const ins = (x, txt, attrs) =>
+        `<text x="${r2(x + 0.6)}" y="${iy + 0.6}" ${attrs} fill="#cfd3d7" fill-opacity=".8">${txt}</text><text x="${r2(x)}" y="${iy}" ${attrs} fill="#1f2226">${txt}</text>`;
+      const sq = (x) =>
+        `<rect x="${r2(x - 1.8)}" y="${iy - 5.6}" width="3.6" height="3.6" transform="rotate(45 ${r2(x)} ${iy - 3.8})" fill="#1f2226"/>`;
+      const idW = 6.67 * 10.5 + 1.4 * 11,
+        gap = 13;
       const tierTxt = esc(S.tiers[p.tier]);
-      const tierW = ar ? arW(S.tiers[p.tier], 700) * 12 : bsW(S.tiers[p.tier]) * 14 + 1.4 * S.tiers[p.tier].length;
+      const tierW = ar
+        ? arW(S.tiers[p.tier], 700) * 12
+        : bsW(S.tiers[p.tier]) * 14 + 1.4 * S.tiers[p.tier].length;
       let insc = "";
       if (ar) {
         let x = 332;
-        insc += ins(x, esc(p.id), `${MR} font-size="10.5" letter-spacing="1.4" text-anchor="end" direction="ltr"`);
+        insc += ins(
+          x,
+          esc(p.id),
+          `${MR} font-size="10.5" letter-spacing="1.4" text-anchor="end" direction="ltr"`,
+        );
         x -= idW + gap;
         insc += sq(x);
         x -= gap;
@@ -897,7 +1361,11 @@
         x -= tierW + gap;
         insc += sq(x);
         x -= gap;
-        insc += ins(x, esc(p.season), `${MR} font-size="10.5" letter-spacing="1.4" text-anchor="end" direction="ltr"`);
+        insc += ins(
+          x,
+          esc(p.season),
+          `${MR} font-size="10.5" letter-spacing="1.4" text-anchor="end" direction="ltr"`,
+        );
       } else {
         let x = 28;
         insc += ins(x, esc(p.id), `${MR} font-size="10.5" letter-spacing="1.4"`);
@@ -941,7 +1409,11 @@
         `<rect width="360" height="640" fill="url(#${u}-vig)"/>` +
         // ALI's slot, then ALI's block locked into it
         `<path d="${slot}" transform="${tr}" fill="${sand}" stroke="${sand}" stroke-width="6" stroke-linejoin="round"/>` +
-        cardSVG(p, { ...o, motion: false, thumb: false }, `x="${ox}" y="${oy}" width="320" height="${r2(cardH)}"`) +
+        cardSVG(
+          p,
+          { ...o, motion: false, thumb: false },
+          `x="${ox}" y="${oy}" width="320" height="${r2(cardH)}"`,
+        ) +
         // the kerb at the pavement's edge, and the road beyond it
         `<rect y="${kerbY - 8}" width="360" height="${640 - kerbY + 8}" fill="${sand}"/>` +
         `<rect y="${kerbB + 10}" width="360" height="${640 - kerbB - 10}" fill="#0a0d12" filter="url(#${u}-asph)"/>` +
@@ -960,7 +1432,8 @@
     },
 
     mount(el) {
-      if (!el || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+      if (!el || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches))
+        return;
       const move = (e) => {
         const r = el.getBoundingClientRect();
         const x = ((e.clientX - r.left) / r.width) * 2 - 1;

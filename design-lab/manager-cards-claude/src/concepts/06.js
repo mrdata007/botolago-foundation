@@ -16,8 +16,14 @@
     if (document.fonts && document.fonts.load) {
       document.fonts.load('800 100px "Changa"', "ALI ·26 0123456789 BotolaGO");
       document.fonts.load('800 100px "Changa"', "علي ياسمين عثمان سلمى حمزة");
-      document.fonts.load('800 100px "Manrope"', "CAP SEL TRF CON PRO STADE HOMA CHAMPION LEGEND 0123456789 #·/");
-      document.fonts.load('700 100px "Noto Sans Arabic"', "القائد التشكيلة الانتقالات الثبات عضو مؤسس المغرب محترف أسطورة");
+      document.fonts.load(
+        '800 100px "Manrope"',
+        "CAP SEL TRF CON PRO STADE HOMA CHAMPION LEGEND 0123456789 #·/",
+      );
+      document.fonts.load(
+        '700 100px "Noto Sans Arabic"',
+        "القائد التشكيلة الانتقالات الثبات عضو مؤسس المغرب محترف أسطورة",
+      );
     }
   } catch (e) {
     /* measuring falls back to estimates */
@@ -33,13 +39,24 @@
   const wrapPhi = (a) => a - TAU * Math.round(a / TAU);
   const rgb = (h) => {
     h = String(h).replace("#", "");
-    if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+    if (h.length === 3)
+      h = h
+        .split("")
+        .map((c) => c + c)
+        .join("");
     return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
   };
   const mix = (a, b, t) => {
     const A = rgb(a);
     const Bc = rgb(b);
-    return "#" + A.map((v, i) => Math.round(v + (Bc[i] - v) * t).toString(16).padStart(2, "0")).join("");
+    return (
+      "#" +
+      A.map((v, i) =>
+        Math.round(v + (Bc[i] - v) * t)
+          .toString(16)
+          .padStart(2, "0"),
+      ).join("")
+    );
   };
 
   /* Text metrics (canvas) at 100px, cached only once the face is really loaded. */
@@ -53,7 +70,13 @@
       cv = cv || document.createElement("canvas").getContext("2d");
       cv.font = font;
       const m = cv.measureText(txt);
-      r = { w: m.width, a: m.actualBoundingBoxAscent, d: m.actualBoundingBoxDescent, l: m.actualBoundingBoxLeft, r: m.actualBoundingBoxRight };
+      r = {
+        w: m.width,
+        a: m.actualBoundingBoxAscent,
+        d: m.actualBoundingBoxDescent,
+        l: m.actualBoundingBoxLeft,
+        r: m.actualBoundingBoxRight,
+      };
       if (document.fonts && document.fonts.check(font, txt)) mcache.set(key, r);
     } catch (e) {
       const n = [...String(txt)].length;
@@ -65,7 +88,8 @@
   const F_MR = '800 100px "Manrope"';
   const F_AR = '700 100px "Noto Sans Arabic"';
   /** Width in units of a string set at size z (letter-spacing ls added between glyphs). */
-  const wOf = (t, font, z, ls = 0) => (metrics(t, font).w * z) / 100 + ls * Math.max(0, [...String(t)].length - 1);
+  const wOf = (t, font, z, ls = 0) =>
+    (metrics(t, font).w * z) / 100 + ls * Math.max(0, [...String(t)].length - 1);
 
   /* ---------- palette ---------- */
   const K = {
@@ -83,11 +107,61 @@
 
   /* ---------- tiers: material, finish and light, not colour ---------- */
   const TIER = {
-    HOMA: { n: 0, tone: 0.07, weave: "rib", ovr: "print", piping: false, ring: false, reinforce: false, light: 0.55, spec: 0.05 },
-    STADE: { n: 1, tone: 0, weave: "twill", ovr: "woven", piping: false, ring: false, reinforce: false, light: 0.72, spec: 0.09 },
-    PRO: { n: 2, tone: 0, weave: "double", ovr: "satin", piping: false, ring: false, reinforce: false, light: 0.88, spec: 0.15 },
-    CHAMPION: { n: 3, tone: -0.05, weave: "double", ovr: "applique", piping: true, ring: false, reinforce: true, light: 1.02, spec: 0.19 },
-    LEGEND: { n: 4, tone: -0.2, weave: "ottoman", ovr: "silicone", piping: false, ring: true, reinforce: true, light: 1.25, spec: 0.3 },
+    HOMA: {
+      n: 0,
+      tone: 0.07,
+      weave: "rib",
+      ovr: "print",
+      piping: false,
+      ring: false,
+      reinforce: false,
+      light: 0.55,
+      spec: 0.05,
+    },
+    STADE: {
+      n: 1,
+      tone: 0,
+      weave: "twill",
+      ovr: "woven",
+      piping: false,
+      ring: false,
+      reinforce: false,
+      light: 0.72,
+      spec: 0.09,
+    },
+    PRO: {
+      n: 2,
+      tone: 0,
+      weave: "double",
+      ovr: "satin",
+      piping: false,
+      ring: false,
+      reinforce: false,
+      light: 0.88,
+      spec: 0.15,
+    },
+    CHAMPION: {
+      n: 3,
+      tone: -0.05,
+      weave: "double",
+      ovr: "applique",
+      piping: true,
+      ring: false,
+      reinforce: true,
+      light: 1.02,
+      spec: 0.19,
+    },
+    LEGEND: {
+      n: 4,
+      tone: -0.2,
+      weave: "ottoman",
+      ovr: "silicone",
+      piping: false,
+      ring: true,
+      reinforce: true,
+      light: 1.25,
+      spec: 0.3,
+    },
   };
   const tierOf = (p) => TIER[p.tier] || TIER.PRO;
   const stripesOf = (T) => Math.min(3, T.n);
@@ -96,7 +170,12 @@
     sec: (p.club && p.club.secondary) || K.cream,
   });
   /* The body colour in this tier's material: printed elastic is a touch chalkier, the heavy LEGEND weave deeper. */
-  const bodyTone = (club, T) => (T.tone > 0 ? mix(club.body, "#ffffff", T.tone) : T.tone < 0 ? mix(club.body, "#000000", -T.tone) : club.body);
+  const bodyTone = (club, T) =>
+    T.tone > 0
+      ? mix(club.body, "#ffffff", T.tone)
+      : T.tone < 0
+        ? mix(club.body, "#000000", -T.tone)
+        : club.body;
 
   /* ---------- band geometry (viewBox units) ----------
      R/ry: the cylinder and its rim ellipse (ry/R = sin of the view angle, about 27 degrees);
@@ -116,29 +195,111 @@
     return g;
   }
   const B = geo({
-    W: 360, VH: 240, cx: 158, R: 140, ry: 64, ty: 70, H: 90, t: 3.5,
-    bind: 6.5, selv: 5, stripe0: 9.5, stripeP: 4.4, stripeW: 2.2,
-    thC: -10, Z: 70, ovrBase: 82, crestTh: -42, crestY: 60, crestH: 31,
-    tab: { th0: 15, th1: 64, rb: 7, psi: 27, past: 26, dr: 2.5, hT: 0, Ht: 90, lab0: 20, num1: 67,
-      ring: { past: 8, over: 14, stock: 8, depth: 30, fold: 18 } },
+    W: 360,
+    VH: 240,
+    cx: 158,
+    R: 140,
+    ry: 64,
+    ty: 70,
+    H: 90,
+    t: 3.5,
+    bind: 6.5,
+    selv: 5,
+    stripe0: 9.5,
+    stripeP: 4.4,
+    stripeW: 2.2,
+    thC: -10,
+    Z: 70,
+    ovrBase: 82,
+    crestTh: -42,
+    crestY: 60,
+    crestH: 31,
+    tab: {
+      th0: 15,
+      th1: 64,
+      rb: 7,
+      psi: 27,
+      past: 26,
+      dr: 2.5,
+      hT: 0,
+      Ht: 90,
+      lab0: 20,
+      num1: 67,
+      ring: { past: 8, over: 14, stock: 8, depth: 30, fold: 18 },
+    },
   });
   /* The story close-up: the same band, the 84 grown to fill the wall (the name moves to the credit line). */
-  const SB = geo({ ...B, thC: -17, Z: 111, ovrBase: 81.5, crestTh: -66, tab: { ...B.tab, past: 12, ring: { ...B.tab.ring, past: 4 } } });
+  const SB = geo({
+    ...B,
+    thC: -17,
+    Z: 111,
+    ovrBase: 81.5,
+    crestTh: -66,
+    tab: { ...B.tab, past: 12, ring: { ...B.tab.ring, past: 4 } },
+  });
   /* Token (44-80px): 1u = 1px at 44px. The hole is 6.8u tall. */
   const GT = geo({
-    W: 66, WL: 71, VH: 44, cx: 29.4, R: 27.4, ry: 12.5, ty: 13.5, H: 17, t: 1.3,
-    bind: 2, selv: 1.6, stripe0: 3.1, stripeP: 3.1, stripeW: 2,
-    thC: -14, Z: 16.5,
-    tab: { th0: 20, th1: 62, rb: 2, psi: 27, past: 7, dr: 0.6, hT: 0, Ht: 17, ring: { past: 2.5, over: 4, stock: 2.6, depth: 9, fold: 6 } },
+    W: 66,
+    WL: 71,
+    VH: 44,
+    cx: 29.4,
+    R: 27.4,
+    ry: 12.5,
+    ty: 13.5,
+    H: 17,
+    t: 1.3,
+    bind: 2,
+    selv: 1.6,
+    stripe0: 3.1,
+    stripeP: 3.1,
+    stripeW: 2,
+    thC: -14,
+    Z: 16.5,
+    tab: {
+      th0: 20,
+      th1: 62,
+      rb: 2,
+      psi: 27,
+      past: 7,
+      dr: 0.6,
+      hT: 0,
+      Ht: 17,
+      ring: { past: 2.5, over: 4, stock: 2.6, depth: 9, fold: 6 },
+    },
   });
   /* Mini (24-32px): 1u = 1px at 28px. The hole is 4u tall; stripes 1.6u with 1.2u gaps; the strap covers the full wall. */
   const GM = geo({
-    W: 42, WL: 46, VH: 28, cx: 18.1, R: 17.5, ry: 8, ty: 8.6, H: 11.2, t: 0.9,
-    bind: 1.1, selv: 0.9, stripe0: 1.9, stripeP: 2.8, stripeW: 1.6,
-    thC: -14, Z: 11,
-    tab: { th0: 24, th1: 60, rb: 1.4, psi: 27, past: 5, dr: 0.4, hT: 0, Ht: 11.2, runMini: 3.6, ring: { past: 2, over: 2.3, stock: 1.6, depth: 6.6, fold: 4 } },
+    W: 42,
+    WL: 46,
+    VH: 28,
+    cx: 18.1,
+    R: 17.5,
+    ry: 8,
+    ty: 8.6,
+    H: 11.2,
+    t: 0.9,
+    bind: 1.1,
+    selv: 0.9,
+    stripe0: 1.9,
+    stripeP: 2.8,
+    stripeW: 1.6,
+    thC: -14,
+    Z: 11,
+    tab: {
+      th0: 24,
+      th1: 60,
+      rb: 1.4,
+      psi: 27,
+      past: 5,
+      dr: 0.4,
+      hT: 0,
+      Ht: 11.2,
+      runMini: 3.6,
+      ring: { past: 2, over: 2.3, stock: 1.6, depth: 6.6, fold: 4 },
+    },
   });
-  const ovrBaseOf = (g) => (g.ovrBase != null ? g.ovrBase : g.H - g.selv - (g.H - g.selv - g.bind - 0.64 * g.Z) / 2);
+  const ovrBaseOf = (g) =>
+    g.ovrBase != null ? g.ovrBase : g.H - g.selv - (g.H - g.selv - g.bind - 0.64 * g.Z) / 2;
   const ovrTopOf = (g) => ovrBaseOf(g) - 0.64 * g.Z;
 
   /* ---------- paths ---------- */
@@ -148,14 +309,16 @@
   /* Inner face of the back wall: from the far arc of the inner rim to the far arc of the inner bottom edge. */
   const iwPath = (g) =>
     `M${f(g.cx - g.Ri)} ${f(g.ty)}A${f(g.Ri)} ${f(g.ryi)} 0 0 1 ${f(g.cx + g.Ri)} ${f(g.ty)}V${f(g.by)}A${f(g.Ri)} ${f(g.ryi)} 0 0 0 ${f(g.cx - g.Ri)} ${f(g.by)}Z`;
-  const ell = (cx, cy, rx, ry) => `M${f(cx - rx)} ${f(cy)}A${f(rx)} ${f(ry)} 0 1 0 ${f(cx + rx)} ${f(cy)}A${f(rx)} ${f(ry)} 0 1 0 ${f(cx - rx)} ${f(cy)}Z`;
+  const ell = (cx, cy, rx, ry) =>
+    `M${f(cx - rx)} ${f(cy)}A${f(rx)} ${f(ry)} 0 1 0 ${f(cx + rx)} ${f(cy)}A${f(rx)} ${f(ry)} 0 1 0 ${f(cx - rx)} ${f(cy)}Z`;
   /* The top edge seen from above: the ring between the outer and the inner rim. */
   const rimPath = (g) => ell(g.cx, g.ty, g.R, g.ry) + ell(g.cx, g.ty, g.Ri, g.ryi);
   const outlinePath = (g) =>
     `M${f(g.x0)} ${f(g.ty)}A${f(g.R)} ${f(g.ry)} 0 0 1 ${f(g.x1)} ${f(g.ty)}V${f(g.by)}A${f(g.R)} ${f(g.ry)} 0 0 1 ${f(g.x0)} ${f(g.by)}Z`;
   const arcBand = (g, h0, h1) =>
     `M${f(g.x0)} ${f(g.ty + h0)}A${f(g.R)} ${f(g.ry)} 0 0 0 ${f(g.x1)} ${f(g.ty + h0)}L${f(g.x1)} ${f(g.ty + h1)}A${f(g.R)} ${f(g.ry)} 0 0 1 ${f(g.x0)} ${f(g.ty + h1)}Z`;
-  const arcLine = (g, h) => `M${f(g.x0)} ${f(g.ty + h)}A${f(g.R)} ${f(g.ry)} 0 0 0 ${f(g.x1)} ${f(g.ty + h)}`;
+  const arcLine = (g, h) =>
+    `M${f(g.x0)} ${f(g.ty + h)}A${f(g.R)} ${f(g.ry)} 0 0 0 ${f(g.x1)} ${f(g.ty + h)}`;
   const arcLines = (g, step, h0, h1) => {
     let d = "";
     for (let h = h0; h < h1; h += step) d += arcLine(g, h);
@@ -163,7 +326,8 @@
   };
   const backBand = (g, h0, h1) =>
     `M${f(g.cx - g.Ri)} ${f(g.ty + h0)}A${f(g.Ri)} ${f(g.ryi)} 0 0 1 ${f(g.cx + g.Ri)} ${f(g.ty + h0)}L${f(g.cx + g.Ri)} ${f(g.ty + h1)}A${f(g.Ri)} ${f(g.ryi)} 0 0 0 ${f(g.cx - g.Ri)} ${f(g.ty + h1)}Z`;
-  const backLine = (g, h) => `M${f(g.cx - g.Ri)} ${f(g.ty + h)}A${f(g.Ri)} ${f(g.ryi)} 0 0 1 ${f(g.cx + g.Ri)} ${f(g.ty + h)}`;
+  const backLine = (g, h) =>
+    `M${f(g.cx - g.Ri)} ${f(g.ty + h)}A${f(g.Ri)} ${f(g.ryi)} 0 0 1 ${f(g.cx + g.Ri)} ${f(g.ty + h)}`;
   const backLines = (g, step, h0, h1) => {
     let d = "";
     for (let h = h0; h < h1; h += step) d += backLine(g, h);
@@ -173,7 +337,8 @@
   /* ---------- projection ---------- */
   /* A local frame on the surface whose tangent heads at angle p (p = theta on the cylinder):
      verticals stay vertical, horizontals follow the ellipse (skewY), widths shrink by cos p. */
-  const frameT = (g, x, y, p) => `translate(${f(x)} ${f(y)}) skewY(${f(Math.atan(-g.sa * Math.tan(p)) * DEG)}) scale(${f(Math.cos(p))} 1)`;
+  const frameT = (g, x, y, p) =>
+    `translate(${f(x)} ${f(y)}) skewY(${f(Math.atan(-g.sa * Math.tan(p)) * DEG)}) scale(${f(Math.cos(p))} 1)`;
   /* Places content on the outer face at arc position s, wall height h, turned by phi. */
   function place(g, s, h, phi, inner, cut = 0.16) {
     const th = s / g.R + phi;
@@ -273,7 +438,8 @@
     return "M" + P.join("L") + "Z";
   }
   const cutEnd = (sTop, sBot, Ht) => (v) => sTop - ((sTop - sBot) * v) / Ht;
-  const stripPoly = (S, sTop, sBot, Ht, dy = 0) => stripBandPoly(S, 0, Ht, cutEnd(sTop, sBot, Ht), dy);
+  const stripPoly = (S, sTop, sBot, Ht, dy = 0) =>
+    stripBandPoly(S, 0, Ht, cutEnd(sTop, sBot, Ht), dy);
   function stripLine(S, s0, s1, v) {
     const P = [];
     let fr = S.frame(s0);
@@ -371,7 +537,9 @@
       let inner;
       if (T.ovr === "print") {
         // screen print: flat ink, the elastic's ribs show through it
-        inner = `<text ${base} fill="${K.cream}">${ch}</text>` + (thumb ? "" : `<text ${base} fill="url(#${u}-ink)">${ch}</text>`);
+        inner =
+          `<text ${base} fill="${K.cream}">${ch}</text>` +
+          (thumb ? "" : `<text ${base} fill="url(#${u}-ink)">${ch}</text>`);
       } else if (T.ovr === "woven") {
         // woven flat into the band: its pick lines run through the figures
         inner = `<text ${base} fill="url(#${u}-pk)">${ch}</text><text ${base} fill="none" stroke="#0b0f14" stroke-opacity=".28" stroke-width=".6">${ch}</text>`;
@@ -393,7 +561,9 @@
         inner =
           `<text ${base} x=".9" y="1.2" fill="#05080d" opacity=".38"${thumb ? "" : ` filter="url(#${u}-lift)"`}>${ch}</text>` +
           `<text ${base} fill="url(#${u}-app)">${ch}</text>` +
-          (thumb ? "" : `<text ${base} fill="none" stroke="${mix(club.sec, "#000", 0.42)}" stroke-width="1.4" stroke-dasharray=".34 .26">${ch}</text>`);
+          (thumb
+            ? ""
+            : `<text ${base} fill="none" stroke="${mix(club.sec, "#000", 0.42)}" stroke-width="1.4" stroke-dasharray=".34 .26">${ch}</text>`);
       } else {
         // LEGEND: moulded white silicone, flat face, a fine chamfer and a hard raking shadow
         inner =
@@ -414,7 +584,13 @@
     const sc = h / 48;
     const inner =
       `<g transform="translate(${f(-w / 2)} ${f(-h / 2)})">` +
-      MC.crest({ fill: club.sec, sash: mix(club.body, "#ffffff", 0.12), ring: mix(club.sec, "#000", 0.3), w: f(w), h: f(h) }) +
+      MC.crest({
+        fill: club.sec,
+        sash: mix(club.body, "#ffffff", 0.12),
+        ring: mix(club.sec, "#000", 0.3),
+        w: f(w),
+        h: f(h),
+      }) +
       (thumb
         ? ""
         : `<path d="${MC.CREST.shield}" transform="scale(${f(sc)})" fill="none" stroke="${mix(club.sec, "#000", 0.45)}" stroke-width="${f(1 / sc)}" stroke-dasharray="${f(0.32 / sc)} ${f(0.24 / sc)}"/>`) +
@@ -430,14 +606,34 @@
     const s0 = g.R * g.thC * RAD;
     const Q = (Math.PI * g.R) / 2;
     const fill = wovenFill(T, u);
-    const lab = ar ? `font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="10"` : `font-family="Manrope, sans-serif" font-weight="800" font-size="8.5" letter-spacing="1.6"`;
+    const lab = ar
+      ? `font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="10"`
+      : `font-family="Manrope, sans-serif" font-weight="800" font-size="8.5" letter-spacing="1.6"`;
     let out = "";
     const s1 = s0 + sg * Q;
-    out += place(g, s1, 24, phi, `<text text-anchor="middle" ${lab} fill="${K.thread2}">${MC.esc(S.season)}</text>`);
-    out += place(g, s1, 60, phi, `<text text-anchor="middle" font-family="Changa, sans-serif" font-weight="800" font-size="31" fill="${fill}" direction="ltr">${MC.esc(p.season)}</text>`);
+    out += place(
+      g,
+      s1,
+      24,
+      phi,
+      `<text text-anchor="middle" ${lab} fill="${K.thread2}">${MC.esc(S.season)}</text>`,
+    );
+    out += place(
+      g,
+      s1,
+      60,
+      phi,
+      `<text text-anchor="middle" font-family="Changa, sans-serif" font-weight="800" font-size="31" fill="${fill}" direction="ltr">${MC.esc(p.season)}</text>`,
+    );
     // one woven slot per completed season (none yet)
     for (let i = 0; i < 4; i++)
-      out += place(g, s1 - 30 + i * 20, 69, phi, `<rect x="-7" y="0" width="14" height="5" fill="none" stroke="${K.thread2}" stroke-width=".8" stroke-dasharray="1.5 1.2" opacity=".75"/>`);
+      out += place(
+        g,
+        s1 - 30 + i * 20,
+        69,
+        phi,
+        `<rect x="-7" y="0" width="14" height="5" fill="none" stroke="${K.thread2}" stroke-width=".8" stroke-dasharray="1.5 1.2" opacity=".75"/>`,
+      );
     const s2 = s0 + Math.PI * g.R;
     // the figure from behind, woven in two-colour jacquard: hood and one shoulder rising from the bottom edge
     out += place(
@@ -446,14 +642,49 @@
       0,
       phi,
       `<g clip-path="url(#${u}-fig${ar ? "r" : ""})">` +
-        MC.avatar({ x: -52, y: -18.9, w: 104, h: 124.8, torso: `url(#${u}-jq)`, hoodFill: `url(#${u}-jq)`, seam: mix(club.body, "#000", 0.25), stroke: mix(club.body, "#000", 0.25), strokeWidth: 3.2, preserve: "xMidYMid meet" }) +
+        MC.avatar({
+          x: -52,
+          y: -18.9,
+          w: 104,
+          h: 124.8,
+          torso: `url(#${u}-jq)`,
+          hoodFill: `url(#${u}-jq)`,
+          seam: mix(club.body, "#000", 0.25),
+          stroke: mix(club.body, "#000", 0.25),
+          strokeWidth: 3.2,
+          preserve: "xMidYMid meet",
+        }) +
         `</g>`,
     );
-    out += place(g, s2 + sg * 50, 30, phi, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="10.5" fill="${K.cream}" direction="ltr" style="font-variant-numeric:tabular-nums">${MC.esc(p.id)}</text>`);
-    out += place(g, s2 + sg * 50, 55, phi, `<text text-anchor="middle" font-family="Changa, 'Noto Sans Arabic', sans-serif" font-weight="800" font-size="16" fill="${fill}">${MC.esc(S.country)}</text>`);
-    out += place(g, s2 + sg * 50, 73, phi, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="10" fill="${K.thread2}" direction="ltr">${MC.esc(p.season)}</text>`);
+    out += place(
+      g,
+      s2 + sg * 50,
+      30,
+      phi,
+      `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="10.5" fill="${K.cream}" direction="ltr" style="font-variant-numeric:tabular-nums">${MC.esc(p.id)}</text>`,
+    );
+    out += place(
+      g,
+      s2 + sg * 50,
+      55,
+      phi,
+      `<text text-anchor="middle" font-family="Changa, 'Noto Sans Arabic', sans-serif" font-weight="800" font-size="16" fill="${fill}">${MC.esc(S.country)}</text>`,
+    );
+    out += place(
+      g,
+      s2 + sg * 50,
+      73,
+      phi,
+      `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="10" fill="${K.thread2}" direction="ltr">${MC.esc(p.season)}</text>`,
+    );
     const s3 = s0 - sg * Q;
-    out += place(g, s3, 58, phi, `<text text-anchor="middle" font-family="Changa, sans-serif" font-weight="800" font-size="31" fill="${fill}" direction="ltr">BotolaGO</text>`);
+    out += place(
+      g,
+      s3,
+      58,
+      phi,
+      `<text text-anchor="middle" font-family="Changa, sans-serif" font-weight="800" font-size="31" fill="${fill}" direction="ltr">BotolaGO</text>`,
+    );
     return out;
   }
 
@@ -516,9 +747,23 @@
       );
       cx += ww + gap * sc;
     });
-    const big = placeIn(g, 0, h0 + 13.4, phi, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="12" letter-spacing=".3" direction="ltr" fill="${ink}">${MC.esc(p.id)}</text>`);
+    const big = placeIn(
+      g,
+      0,
+      h0 + 13.4,
+      phi,
+      `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="12" letter-spacing=".3" direction="ltr" fill="${ink}">${MC.esc(p.id)}</text>`,
+    );
     const ends = [-W / 2 + 3, W / 2 - 3]
-      .map((s) => placeIn(g, s, h0 + 1.5, phi, `<path d="M0 0V${hh - 3}" stroke="${ink}" stroke-opacity=".55" stroke-width=".7" stroke-dasharray="1.3 .9"/>`))
+      .map((s) =>
+        placeIn(
+          g,
+          s,
+          h0 + 1.5,
+          phi,
+          `<path d="M0 0V${hh - 3}" stroke="${ink}" stroke-opacity=".55" stroke-width=".7" stroke-dasharray="1.3 .9"/>`,
+        ),
+      )
       .join("");
     return (
       `<g class="c06-label"${fade < 1 ? ` opacity="${f(fade)}"` : ""}>` +
@@ -647,13 +892,16 @@
       // LEGEND is lined: silver satin, its sheen in soft vertical bands that follow the curve
       return (
         `<g clip-path="url(#${u}-iw)" pointer-events="none"><rect ${R} fill="url(#${u}-lin)"/>` +
-        (thumb ? "" : `<path d="${backLines(g, 1.1, 0.5, g.H)}" fill="none" stroke="#000" stroke-opacity=".07" stroke-width=".4"/>`) +
+        (thumb
+          ? ""
+          : `<path d="${backLines(g, 1.1, 0.5, g.H)}" fill="none" stroke="#000" stroke-opacity=".07" stroke-width=".4"/>`) +
         `</g>`
       );
     }
     if (thumb) return "";
     let s = `<g clip-path="url(#${u}-iw)" pointer-events="none">`;
-    if (T.weave === "rib") s += `<path d="${backLines(g, 2, 1, g.H)}" fill="none" stroke="#000" stroke-opacity=".18" stroke-width=".8"/>`;
+    if (T.weave === "rib")
+      s += `<path d="${backLines(g, 2, 1, g.H)}" fill="none" stroke="#000" stroke-opacity=".18" stroke-width=".8"/>`;
     else if (T.weave === "ottoman") {
       s += `<path d="${backLines(g, 4, 0.8, g.H)}" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="1"/>`;
       s += `<path d="${backLines(g, 4, 3.3, g.H)}" fill="none" stroke="#000" stroke-opacity=".3" stroke-width="1.3"/>`;
@@ -683,17 +931,33 @@
     const tw = Sx.tiers[p.tier];
     let fine = "";
     let big = "";
-    const num = (v, z) => `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${z}" fill="${K.cream}" direction="ltr" style="font-variant-numeric:tabular-nums">${MC.esc(v)}</text>`;
+    const num = (v, z) =>
+      `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${z}" fill="${K.cream}" direction="ltr" style="font-variant-numeric:tabular-nums">${MC.esc(v)}</text>`;
     if (!ar) {
       const s0 = sp.lab0;
       const s1 = sp.num1;
       const hw = wOf(tw, F_MR, 7.2, 1.3);
-      fine += onStrip(S, s0 + hw / 2, head, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="7.2" letter-spacing="1.3" fill="${K.thread2}">${MC.esc(tw)}</text>`);
-      fine += onStrip(S, s0, head + 3.2, `<path d="M0 0H${f(s1 - s0)}" stroke="${K.thread2}" stroke-opacity=".35" stroke-width=".6"/>`);
+      fine += onStrip(
+        S,
+        s0 + hw / 2,
+        head,
+        `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="7.2" letter-spacing="1.3" fill="${K.thread2}">${MC.esc(tw)}</text>`,
+      );
+      fine += onStrip(
+        S,
+        s0,
+        head + 3.2,
+        `<path d="M0 0H${f(s1 - s0)}" stroke="${K.thread2}" stroke-opacity=".35" stroke-width=".6"/>`,
+      );
       MC.STATS.forEach((k, i) => {
         const lw = wOf(Sx.stats[k], F_MR, labelZ, 0.8);
         const v = String(p.stats[k]);
-        fine += onStrip(S, s0 + lw / 2, rows[i] - 0.4, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${labelZ}" letter-spacing=".8" fill="${K.thread2}">${MC.esc(Sx.stats[k])}</text>`);
+        fine += onStrip(
+          S,
+          s0 + lw / 2,
+          rows[i] - 0.4,
+          `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${labelZ}" letter-spacing=".8" fill="${K.thread2}">${MC.esc(Sx.stats[k])}</text>`,
+        );
         fine += onStrip(S, s1 - wOf(v, F_MR, NZ) / 2, rows[i], num(v, NZ));
         big += onStrip(S, s1 - wOf(v, F_MR, 16) / 2, 24.5 + i * 18.4, num(v, 16));
       });
@@ -704,12 +968,27 @@
       const maxL = Math.max(...MC.STATS.map((k) => wOf(Sx.stats[k], F_AR, labelZ)));
       const sEnd = s0 + nW + 6 + maxL;
       const hw = wOf(tw, F_AR, 9);
-      fine += onStrip(S, sEnd - hw / 2, head - 1.2, `<text text-anchor="middle" font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="9" fill="${K.thread2}">${MC.esc(tw)}</text>`);
-      fine += onStrip(S, s0, head + 2.4, `<path d="M0 0H${f(sEnd - s0)}" stroke="${K.thread2}" stroke-opacity=".35" stroke-width=".6"/>`);
+      fine += onStrip(
+        S,
+        sEnd - hw / 2,
+        head - 1.2,
+        `<text text-anchor="middle" font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="9" fill="${K.thread2}">${MC.esc(tw)}</text>`,
+      );
+      fine += onStrip(
+        S,
+        s0,
+        head + 2.4,
+        `<path d="M0 0H${f(sEnd - s0)}" stroke="${K.thread2}" stroke-opacity=".35" stroke-width=".6"/>`,
+      );
       MC.STATS.forEach((k, i) => {
         const lw = wOf(Sx.stats[k], F_AR, labelZ);
         const v = String(p.stats[k]);
-        fine += onStrip(S, sEnd - lw / 2, rows[i] - 0.4, `<text text-anchor="middle" font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="${labelZ}" fill="${K.thread2}">${MC.esc(Sx.stats[k])}</text>`);
+        fine += onStrip(
+          S,
+          sEnd - lw / 2,
+          rows[i] - 0.4,
+          `<text text-anchor="middle" font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="${labelZ}" fill="${K.thread2}">${MC.esc(Sx.stats[k])}</text>`,
+        );
         fine += onStrip(S, s0 + wOf(v, F_MR, NZ) / 2, rows[i], num(v, NZ));
         big += onStrip(S, s0 + wOf(v, F_MR, 16) / 2, 24.5 + i * 18.4, num(v, 16));
       });
@@ -757,19 +1036,24 @@
       const kk = 0.17;
       const dP = `M0 ${f(v0)}V${f(v1)}C${f(Dd * 0.62)} ${f(v1)} ${f(Dd)} ${f(v1 - (v1 - v0) * kk)} ${f(Dd)} ${f((v0 + v1) / 2)}C${f(Dd)} ${f(v0 + (v1 - v0) * kk)} ${f(Dd * 0.62)} ${f(v0)} 0 ${f(v0)}Z`;
       const vm = (v0 + v1) / 2;
-      const ins = (d) => `translate(${f(Dd / 2)} ${f(vm)}) scale(${f((Dd - 2 * d) / Dd)} ${f((v1 - v0 - 2 * d) / (v1 - v0))}) translate(${f(-Dd / 2)} ${f(-vm)})`;
+      const ins = (d) =>
+        `translate(${f(Dd / 2)} ${f(vm)}) scale(${f((Dd - 2 * d) / Dd)} ${f((v1 - v0 - 2 * d) / (v1 - v0))}) translate(${f(-Dd / 2)} ${f(-vm)})`;
       // a machined steel D: dark outer chamfer, brushed body, bright inner chamfer, the hole left open
       s +=
         `<g transform="${tf}">` +
         `<defs><linearGradient id="${u}-st" gradientUnits="userSpaceOnUse" x1="0" y1="${f(v0)}" x2="${f(Dd)}" y2="${f(v1)}">` +
         `<stop offset="0" stop-color="#6c7581"/><stop offset=".14" stop-color="#e9eef3"/><stop offset=".3" stop-color="#8d97a3"/><stop offset=".5" stop-color="#f7f9fb"/>` +
         `<stop offset=".68" stop-color="#6c7581"/><stop offset=".85" stop-color="#c3cad3"/><stop offset="1" stop-color="#4c535d"/></linearGradient></defs>` +
-        (thumb ? "" : `<path d="${dP}" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="${RG.stock}" transform="translate(3 3.6)" filter="url(#${u}-soft)"/>`) +
+        (thumb
+          ? ""
+          : `<path d="${dP}" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="${RG.stock}" transform="translate(3 3.6)" filter="url(#${u}-soft)"/>`) +
         `<path d="${dP}" fill="none" stroke="#1b2028" stroke-width="${f(RG.stock + 1)}" stroke-linejoin="round"/>` +
         `<path d="${dP}" fill="none" stroke="${K.steelDark}" stroke-width="${RG.stock}" stroke-linejoin="round"/>` +
         `<path d="${dP}" fill="none" stroke="url(#${u}-st)" stroke-width="${f(RG.stock - 2.6)}" stroke-linejoin="round"/>` +
         `<path d="${dP}" transform="${ins(2.5)}" fill="none" stroke="${K.steelLight}" stroke-width="1.1" stroke-linejoin="round"/>` +
-        (thumb ? "" : `<path d="M${f(Dd * 0.16)} ${f(v0 - 0.9)}C${f(Dd * 0.42)} ${f(v0 - 0.9)} ${f(Dd * 0.62)} ${f(v0 + 0.6)} ${f(Dd * 0.74)} ${f(v0 + 4.5)}" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".9"/>`) +
+        (thumb
+          ? ""
+          : `<path d="M${f(Dd * 0.16)} ${f(v0 - 0.9)}C${f(Dd * 0.42)} ${f(v0 - 0.9)} ${f(Dd * 0.62)} ${f(v0 + 0.6)} ${f(Dd * 0.74)} ${f(v0 + 4.5)}" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".9"/>`) +
         `</g>`;
       // the strap's end wrapped round the bar and sewn back on itself
       const fold = RG.fold * pull;
@@ -794,8 +1078,17 @@
         if (fold > RG.fold * 0.7) {
           const a0 = xE(e1) + 2.4;
           const a1 = -3;
-          if (founder) dr += boxX(`${f(a0)} ${f(e0)}`, `${f(a1)} ${f(e0)}`, `${f(a1)} ${f(e1)}`, `${f(a0)} ${f(e1)}`, thumb ? 1.6 : 1.15, thumb ? "" : "2.1 1.3");
-          else dr += `<path d="M${f(-fold / 2)} ${f(e0)}V${f(e1)}" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="2.1 1.3"/>`;
+          if (founder)
+            dr += boxX(
+              `${f(a0)} ${f(e0)}`,
+              `${f(a1)} ${f(e0)}`,
+              `${f(a1)} ${f(e1)}`,
+              `${f(a0)} ${f(e1)}`,
+              thumb ? 1.6 : 1.15,
+              thumb ? "" : "2.1 1.3",
+            );
+          else
+            dr += `<path d="M${f(-fold / 2)} ${f(e0)}V${f(e1)}" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="2.1 1.3"/>`;
         }
         ringFront = `<g transform="${tf}">${dr}</g>`;
       }
@@ -845,8 +1138,17 @@
       s += `<path d="${st}" fill="none" stroke="${K.cream}" stroke-opacity=".4" stroke-width=".6" stroke-dasharray="2 1.6"/>`;
     }
     // where the strap is sewn to the band: a box-X for founders, one line for everyone else
-    if (founder && !legend) s += boxX(ptOn(S, 3, e0), ptOn(S, 15, e0), ptOn(S, 15, e1), ptOn(S, 3, e1), thumb ? 1.6 : 1.15, thumb ? "" : "2.1 1.3");
-    else s += `<path d="M${ptOn(S, 8, e0)}L${ptOn(S, 8, e1)}" fill="none" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="${thumb ? "none" : "2.1 1.3"}"/>`;
+    if (founder && !legend)
+      s += boxX(
+        ptOn(S, 3, e0),
+        ptOn(S, 15, e0),
+        ptOn(S, 15, e1),
+        ptOn(S, 3, e1),
+        thumb ? 1.6 : 1.15,
+        thumb ? "" : "2.1 1.3",
+      );
+    else
+      s += `<path d="M${ptOn(S, 8, e0)}L${ptOn(S, 8, e1)}" fill="none" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="${thumb ? "none" : "2.1 1.3"}"/>`;
     if (!thumb) s += tabStats(p, o, S, g, T);
     s += `</g>`;
     s += ringFront;
@@ -870,15 +1172,19 @@
     const woven = T.ovr !== "print";
     let s = defsFull(u, g, T, thumb, club);
     // floor shadow (seen through the loop too)
-    if (!thumb && !share) s += `<ellipse class="c06-gshadow" cx="${f(g.cx + 7)}" cy="${f(g.by + 3)}" rx="${f(g.R + 6)}" ry="${f(g.ry + 5)}" fill="url(#${u}-gs)"/>`;
+    if (!thumb && !share)
+      s += `<ellipse class="c06-gshadow" cx="${f(g.cx + 7)}" cy="${f(g.by + 3)}" rx="${f(g.R + 6)}" ry="${f(g.ry + 5)}" fill="url(#${u}-gs)"/>`;
     // the inside of the back wall
     s += `<path d="${iwPath(g)}" fill="${inner}"/>`;
     s += weaveInside(u, g, T, thumb);
     if (woven) s += `<path d="${backBand(g, 0, g.bind)}" fill="${K.blueIn}"/>`;
-    for (let i = 0; i < stripesOf(T); i++) s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${lined ? body : thumb ? K.cream : `url(#${u}-pk)`}"/>`;
-    if (woven) s += `<path d="${backBand(g, g.H - g.selv, g.H)}" fill="${mix(club.sec, "#000", 0.3)}"/>`;
+    for (let i = 0; i < stripesOf(T); i++)
+      s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${lined ? body : thumb ? K.cream : `url(#${u}-pk)`}"/>`;
+    if (woven)
+      s += `<path d="${backBand(g, g.H - g.selv, g.H)}" fill="${mix(club.sec, "#000", 0.3)}"/>`;
     if (!thumb) s += `<g class="c06-inl">${careLabel(p, o, u, g, phi, club, lined)}</g>`;
-    s += `<g clip-path="url(#${u}-iw)" pointer-events="none"><rect x="${f(g.cx - g.Ri)}" y="${f(g.ty - g.ryi)}" width="${f(2 * g.Ri)}" height="${f(g.H + 2 * g.ryi)}" fill="url(#${u}-insd)"/>` +
+    s +=
+      `<g clip-path="url(#${u}-iw)" pointer-events="none"><rect x="${f(g.cx - g.Ri)}" y="${f(g.ty - g.ryi)}" width="${f(2 * g.Ri)}" height="${f(g.H + 2 * g.ryi)}" fill="url(#${u}-insd)"/>` +
       `<rect x="${f(g.cx - g.Ri)}" y="${f(g.ty - g.ryi)}" width="${f(2 * g.Ri)}" height="${f(g.H)}" fill="url(#${u}-inao)"/></g>`;
     // the top edge, bound in Logo Blue (printed elastic: a plain cut edge)
     s += `<path d="${rimPath(g)}" fill-rule="evenodd" fill="url(#${u}-rimt)"/>`;
@@ -905,7 +1211,8 @@
     s += `<rect class="c06-spec" ${box} fill="url(#${u}-spec)"/>`;
     s += `</g>`;
     s += `<path d="${arcLine(g, 0.4)}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width=".8"/>`;
-    if (T.ring && !thumb) s += `<g clip-path="url(#${u}-fw)"><path d="${arcLine(g, g.bind * 0.42)}" fill="none" stroke="#bcd0ff" stroke-opacity=".55" stroke-width="1.1"/><rect x="${f(g.x0)}" y="${f(g.ty)}" width="${f(2 * g.R)}" height="${f(g.ry + 8)}" fill="url(#${u}-spec)" opacity=".6"/></g>`;
+    if (T.ring && !thumb)
+      s += `<g clip-path="url(#${u}-fw)"><path d="${arcLine(g, g.bind * 0.42)}" fill="none" stroke="#bcd0ff" stroke-opacity=".55" stroke-width="1.1"/><rect x="${f(g.x0)}" y="${f(g.ty)}" width="${f(2 * g.R)}" height="${f(g.ry + 8)}" fill="url(#${u}-spec)" opacity=".6"/></g>`;
     // CHAMPION: a round cord piping on both edges
     if (T.piping) {
       const cord = (d) =>
@@ -962,12 +1269,15 @@
     // inside of the loop: the tier stripes are woven all the way round, so they show inside
     s += `<path d="${iwPath(g)}" fill="${legend ? "#c3cbd5" : mix(club.body, "#000", 0.42)}"/>`;
     if (woven) s += `<path d="${backBand(g, 0, g.bind)}" fill="${K.blueIn}"/>`;
-    for (let i = 0; i < stripesOf(T); i++) s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${legend ? body : K.cream}"/>`;
+    for (let i = 0; i < stripesOf(T); i++)
+      s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${legend ? body : K.cream}"/>`;
     s += `<path d="${iwPath(g)}" fill="url(#${u}-i)"/>`;
     s += `<path d="${rimPath(g)}" fill-rule="evenodd" fill="${woven ? "#2f6dff" : mix(club.body, "#fff", 0.3)}"/>`;
     // front wall
     s += `<path d="${fwPath(g)}" fill="${body}"/>`;
-    s += woven ? `<path d="${arcBand(g, 0, g.bind)}" fill="${K.blue}"/>` : `<path d="${arcBand(g, g.bind * 0.35, g.bind * 1.1)}" fill="${K.blue}"/>`;
+    s += woven
+      ? `<path d="${arcBand(g, 0, g.bind)}" fill="${K.blue}"/>`
+      : `<path d="${arcBand(g, g.bind * 0.35, g.bind * 1.1)}" fill="${K.blue}"/>`;
     s += `<path d="${arcBand(g, g.H - g.selv, g.H)}" fill="${club.sec}"/>`;
     // the 84, centred between the binding and the bottom selvedge
     const th = g.thC * RAD;
@@ -975,10 +1285,12 @@
     const y = g.ty + g.ry * Math.cos(th) + ovrBaseOf(g);
     const t = `text-anchor="middle" font-family="Changa, sans-serif" font-weight="800" font-size="${g.Z}" direction="ltr"`;
     s += `<g transform="${frameT(g, x, y, th)}">`;
-    if (legend) s += `<text ${t} x="${mini ? 0.7 : 1}" y="${mini ? 0.8 : 1.15}" fill="#05080d" opacity=".55">${MC.esc(p.ovr)}</text>`;
+    if (legend)
+      s += `<text ${t} x="${mini ? 0.7 : 1}" y="${mini ? 0.8 : 1.15}" fill="#05080d" opacity=".55">${MC.esc(p.ovr)}</text>`;
     s += `<text ${t} fill="${legend ? "#ffffff" : T.ovr === "applique" ? club.sec : K.cream}">${MC.esc(p.ovr)}</text></g>`;
     s += `<path d="${fwPath(g)}" fill="url(#${u}-c)"/>`;
-    if (T.piping && !mini) s += `<path d="${ell(g.cx, g.ty, g.R, g.ry)}${arcLine(g, g.H)}" fill="none" stroke="${club.sec}" stroke-width="1.1"/>`;
+    if (T.piping && !mini)
+      s += `<path d="${ell(g.cx, g.ty, g.R, g.ry)}${arcLine(g, g.H)}" fill="none" stroke="${club.sec}" stroke-width="1.1"/>`;
     // dark-ground lit edge
     s += `<path d="${outlinePath(g)}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.6 : 0.8}"/>`;
     // the strap
@@ -1032,7 +1344,14 @@
         const fr = S.frame(S.len);
         const a0 = -RG.fold + run + 1.2;
         s += `<g transform="${frameT(g, fr.x, fr.y, fr.p)}">${boxX(`${f(a0)} ${f(g.bind + 0.9)}`, `-1.2 ${f(g.bind + 0.9)}`, `-1.2 ${f(Ht - g.selv - 0.9)}`, `${f(a0)} ${f(Ht - g.selv - 0.9)}`, 0.6)}</g>`;
-      } else s += boxX(ptOn(S, 1.2, g.bind + 0.9), ptOn(S, 5.4, g.bind + 0.9), ptOn(S, 5.4, Ht - g.selv - 0.9), ptOn(S, 1.2, Ht - g.selv - 0.9), 0.6);
+      } else
+        s += boxX(
+          ptOn(S, 1.2, g.bind + 0.9),
+          ptOn(S, 5.4, g.bind + 0.9),
+          ptOn(S, 5.4, Ht - g.selv - 0.9),
+          ptOn(S, 1.2, Ht - g.selv - 0.9),
+          0.6,
+        );
     }
     const Sx = MC.s(o);
     return (
@@ -1046,7 +1365,9 @@
     const S = MC.s(o);
     const me = !!o.me;
     const nm = MC.nameOf(p, o);
-    const fy = p.founder ? `<span class="c06-r-fy">·${MC.ltr(String(p.founder).slice(-2))}</span>` : "";
+    const fy = p.founder
+      ? `<span class="c06-r-fy">·${MC.ltr(String(p.founder).slice(-2))}</span>`
+      : "";
     return (
       `<div class="c06 c06-row${me ? " is-me" : ""}" dir="${S.dir}" data-tier="${p.tier}">` +
       (me ? `<i class="c06-r-sel" aria-hidden="true"></i>` : "") +
@@ -1069,7 +1390,8 @@
     // the band close-up: its start side bleeds off the frame, the 84 and the whole strap stay in it
     const g = SB;
     const xL = g.x0 - 1;
-    const xR = g.cx + g.R + (T.ring ? g.tab.ring.past + g.tab.ring.depth * 0.9 + 5 : g.tab.past + 3);
+    const xR =
+      g.cx + g.R + (T.ring ? g.tab.ring.past + g.tab.ring.depth * 0.9 + 5 : g.tab.past + 3);
     const sc = Math.min(1.34, (348 + 23) / (xR - xL));
     const bx = -23 - xL * sc;
     const by = 92;
@@ -1106,7 +1428,8 @@
     w += `<rect width="360" height="640" filter="url(#${u}-haze)" opacity=".11"/>`;
     // the pitch under the lights: the touchline and the mowing stripes
     w += `<path d="M0 556H360V640H0Z" fill="#0a1a33" opacity=".85"/>`;
-    for (let i = 0; i < 4; i++) w += `<path d="M0 ${566 + i * 20}H360V${576 + i * 20}H0Z" fill="#12274a" opacity=".55"/>`;
+    for (let i = 0; i < 4; i++)
+      w += `<path d="M0 ${566 + i * 20}H360V${576 + i * 20}H0Z" fill="#12274a" opacity=".55"/>`;
     w += `<path d="M0 556H360" stroke="#dfe8f5" stroke-opacity=".4" stroke-width="1.3"/>`;
     // the manager: jacket, hood seam and yoke seam
     w += `<g transform="${FT}"><path d="${A.torso}" fill="url(#${u}-jk)"/><path d="${A.hood}" fill="url(#${u}-jk)"/>`;
@@ -1251,15 +1574,21 @@
     // the control: four faces, the founder tab, and the LEGEND replay
     const lab = [String(p.ovr), S.season, "BOT #", "BotolaGO"];
     let h = `<div class="c06 c06-ctl" dir="${S.dir}"><div class="c06-seg" role="group" aria-label="${MC.esc(MC.nameOf(p, o))}">`;
-    lab.forEach((t, i) => (h += `<button type="button" data-i="${i}" aria-pressed="${i === 0}">${MC.esc(t)}</button>`));
+    lab.forEach(
+      (t, i) =>
+        (h += `<button type="button" data-i="${i}" aria-pressed="${i === 0}">${MC.esc(t)}</button>`),
+    );
     h += `</div>`;
-    if (p.founder) h += `<button type="button" class="c06-open" aria-pressed="false">${MC.esc(S.founder)}</button>`;
+    if (p.founder)
+      h += `<button type="button" class="c06-open" aria-pressed="false">${MC.esc(S.founder)}</button>`;
     if (T.ring && !reduced)
       h += `<button type="button" class="c06-replay" aria-label="${ar ? "إعادة" : "Replay"}"><svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M15.5 10a5.5 5.5 0 1 1-1.8-4.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M14.8 2.6v4h-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
     h += `</div>`;
     el.insertAdjacentHTML("afterend", h);
     ctl = el.nextElementSibling;
-    ctl.querySelectorAll("button[data-i]").forEach((b) => b.addEventListener("click", () => goFace(+b.dataset.i)));
+    ctl
+      .querySelectorAll("button[data-i]")
+      .forEach((b) => b.addEventListener("click", () => goFace(+b.dataset.i)));
     const openBtn = ctl.querySelector(".c06-open");
     const toggleOpen = () => {
       const on = el.classList.toggle("is-open");
@@ -1275,7 +1604,7 @@
       e.preventDefault();
       const dir = (e.key === "ArrowRight" ? 1 : -1) * (ar ? -1 : 1);
       const cur = targets.findIndex((t) => Math.abs(wrapPhi(phi - t)) < 0.2);
-      goFace((((cur < 0 ? 0 : cur) + dir) % 4 + 4) % 4);
+      goFace(((((cur < 0 ? 0 : cur) + dir) % 4) + 4) % 4);
     });
     if (reduced) return;
     // drag to turn (horizontal; vertical scrolling stays with the page)
@@ -1329,7 +1658,11 @@
           const g = geo({ ...B, ry: Math.max(0.01, B.ry * ease(t / D1)) });
           svg.innerHTML = svgBody(p, o, k, { g, phi: 0, pull: 0 });
         } else if (t < D1 + D2) {
-          svg.innerHTML = svgBody(p, o, k, { g: B, phi: 0, pull: clamp(back((t - D1) / D2), 0, 1.08) });
+          svg.innerHTML = svgBody(p, o, k, {
+            g: B,
+            phi: 0,
+            pull: clamp(back((t - D1) / D2), 0, 1.08),
+          });
         } else if (t < D1 + D2 + D3) {
           if (!snapped) {
             snapped = true;
@@ -1365,7 +1698,8 @@
     category: "bold",
     philosophy:
       "The captain's armband, reissued for managers: a woven loop you can see through, with your 84 where the C would be, your tier woven inside and your founder year cut into the strap.",
-    philosophyAr: "شارة القائد في نسخة للمدربين: حلقة منسوجة يُرى من خلالها، تقييمك في مكان حرف القائد، ومستواك منسوج في داخلها، وسنة التأسيس مقصوصة في طرف الحزام.",
+    philosophyAr:
+      "شارة القائد في نسخة للمدربين: حلقة منسوجة يُرى من خلالها، تقييمك في مكان حرف القائد، ومستواك منسوج في داخلها، وسنة التأسيس مقصوصة في طرف الحزام.",
     idea: [
       "Every football culture agrees on one object that means 'this person leads': the armband. In the derb it is a cheap printed strip and who wears it is argued about loudly; in a stadium it is a woven band handed over with ceremony. BRASSARD keeps the object and changes the letter. There is no C. Where the C would be, the band carries your 84.",
       "The card is not a rectangle. It is a short band seen from about 27 degrees above, the angle of a product shot, so you look into the loop and through it: the opening is a real hole and the ground shows through. That hole, the elliptical rim and the strap leaving the band's end make an outline nothing else in the app has.",
@@ -1395,10 +1729,13 @@
     ],
     tiers: {
       HOMA: "Imprimé: new printed elastic with fine longitudinal ribs, the 84 and name screen-printed flat in cream (the ribs show through the ink), a plain cut edge with a printed blue line, nothing woven inside, a simple velcro strap, soft flat light. Full silhouette: clean and new, never worn.",
-      STADE: "Tissé: a jacquard twill, the Logo Blue binding wrapped over the edge, one woven stripe inside the loop, and an 84 woven flat so its pick lines run through the figures.",
+      STADE:
+        "Tissé: a jacquard twill, the Logo Blue binding wrapped over the edge, one woven stripe inside the loop, and an 84 woven flat so its pick lines run through the figures.",
       PRO: "Double: a denser double weave, two stripes inside, and an 84 in raised satin stitch whose threads run across the strokes, with one soft sheen that sits on the cylinder's highlight and travels when the band turns. The light is stronger.",
-      CHAMPION: "Passepoil: a round cord piping on both edges thickens the outline, three stripes inside, the 84 is an appliqué cut from the club's second fabric with a zigzag satin edge, and the strap is reinforced with a stitched border.",
-      LEGEND: "Ottoman: a heavy horizontal rib in a deeper tone under a raking floodlight, the 84 moulded in white silicone with a fine chamfer and a hard cast shadow, and the strap folded through a machined steel D-ring that stands 14u past it above and below, with a hole you can see through. The strap keeps the founder slant, the box-X and the stats.",
+      CHAMPION:
+        "Passepoil: a round cord piping on both edges thickens the outline, three stripes inside, the 84 is an appliqué cut from the club's second fabric with a zigzag satin edge, and the strap is reinforced with a stitched border.",
+      LEGEND:
+        "Ottoman: a heavy horizontal rib in a deeper tone under a raking floodlight, the 84 moulded in white silicone with a fine chamfer and a hard cast shadow, and the strap folded through a machined steel D-ring that stands 14u past it above and below, with a hole you can see through. The strap keeps the founder slant, the box-X and the stats.",
     },
     legend: [
       "LEGEND is the armband the pros wear: a white silicone 84 moulded into a heavy ottoman rib, lit by a raking floodlight, with the strap folded through a machined steel D-ring. The D standing past the strap above and below, with its own hole, is the one outline change; it reads at 24px.",

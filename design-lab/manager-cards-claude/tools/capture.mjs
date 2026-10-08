@@ -6,7 +6,12 @@
 // the full page (default), the viewport only (--viewport), a preview section, or one element.
 const args = process.argv.slice(2);
 const [url, out, widthArg] = args.filter((a) => !a.startsWith("--"));
-const flag = (name) => args.find((a) => a.startsWith(`--${name}=`))?.split("=").slice(1).join("=");
+const flag = (name) =>
+  args
+    .find((a) => a.startsWith(`--${name}=`))
+    ?.split("=")
+    .slice(1)
+    .join("=");
 const pw = await import(process.env.PW_CORE || "playwright-core");
 const browser = await pw.chromium.launch({ executablePath: process.env.CHROME || undefined });
 const width = Number(widthArg || 1440);
@@ -16,18 +21,31 @@ const page = await browser.newPage({
   reducedMotion: "reduce",
   colorScheme: flag("scheme") || "light",
 });
-const ls = (flag("ls") || "").split(",").filter(Boolean).map((kv) => kv.split(":"));
-if (ls.length) await page.addInitScript((pairs) => { for (const [k, v] of pairs) localStorage.setItem("mc-claude-" + k, v); }, ls);
+const ls = (flag("ls") || "")
+  .split(",")
+  .filter(Boolean)
+  .map((kv) => kv.split(":"));
+if (ls.length)
+  await page.addInitScript((pairs) => {
+    for (const [k, v] of pairs) localStorage.setItem("mc-claude-" + k, v);
+  }, ls);
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 await page.goto(url, { waitUntil: "load" });
-await page.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: 15000 }).catch(() => {});
+await page
+  .waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: 15000 })
+  .catch(() => {});
 await page.evaluate(() => document.fonts.ready);
 await page.waitForTimeout(400); // let entrance animations (the detail dialog) finish before freezing
-await page.addStyleTag({ content: "*,*::before,*::after{animation-play-state:paused!important;transition:none!important}" });
+await page.addStyleTag({
+  content: "*,*::before,*::after{animation-play-state:paused!important;transition:none!important}",
+});
 await page.waitForTimeout(250);
-if (flag("click")) { await page.locator(flag("click")).first().click(); await page.waitForTimeout(400); }
+if (flag("click")) {
+  await page.locator(flag("click")).first().click();
+  await page.waitForTimeout(400);
+}
 const section = flag("section");
 const el = flag("el");
 if (section) await page.locator(`[data-shot="${section}"]`).first().screenshot({ path: out });
@@ -39,7 +57,10 @@ const overflow = await page.evaluate(() => {
   const bad = [];
   for (const n of document.querySelectorAll("body *")) {
     const r = n.getBoundingClientRect();
-    if (r.width && (r.right > w + 1 || r.left < -1)) bad.push(`${n.tagName.toLowerCase()}.${String(n.className?.baseVal ?? n.className).split(" ")[0]} ${Math.round(r.left)}..${Math.round(r.right)}`);
+    if (r.width && (r.right > w + 1 || r.left < -1))
+      bad.push(
+        `${n.tagName.toLowerCase()}.${String(n.className?.baseVal ?? n.className).split(" ")[0]} ${Math.round(r.left)}..${Math.round(r.right)}`,
+      );
     if (bad.length > 12) break;
   }
   return bad;

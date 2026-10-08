@@ -41,7 +41,7 @@ node design-lab/manager-cards-claude/build.mjs
 | `index.html`, `src/gallery.*` | The gallery: collection, detail sheet, leaderboard test, critique, refined top 3, vs Codex, final top 5. |
 | `preview.html` | Every surface of one concept on one page (used to build and check each one). |
 | `src/kit.js` | Fixed data (ALI and the sample managers), strings in Latin and Arabic, the shared avatar, crest, flag and logo helpers. |
-| `src/brand.js` | The BotolaGO logo, generated from `src/assets/brand/` by `tools/gen-brand.mjs`. |
+| `src/brand.js` | The BotolaGO logo, generated from `src/assets/brand/` by `tools/gen-brand.mjs`. Run `npx prettier --write design-lab/manager-cards-claude/src/brand.js` after regenerating it: the repository's lint step checks the lab's scripts against Prettier. |
 | `src/contexts.js`, `src/app-context.css` | The app places a card lives in: the ranking card, a comment line, a head-to-head strip, a size ladder and a silhouette test, in light and dark. |
 | `src/concepts/NN.js`, `NN.css` | One concept each. `NN-v2.*` is a refined version. `x0N-*` are the three directions cut after the critics (shown in the gallery's appendix). `00-contract.*` is a plumbing example, not a design. |
 | `src/content/review.js` | The critique, refinement and comparison content shown in the gallery. |

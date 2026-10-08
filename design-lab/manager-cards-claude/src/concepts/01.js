@@ -14,7 +14,8 @@
   const MC = window.MC;
   const esc = MC.esc;
   const r1 = (n) => Math.round(n * 10) / 10;
-  const reducedMotion = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotion = () =>
+    typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   /* Unicode isolates keep Latin codes and dates left-to-right inside Arabic SVG text. */
   const iso = (s) => "⁦" + esc(s) + "⁩";
 
@@ -29,7 +30,46 @@
     /* measuring falls back to the tables below */
   }
   // Changa 800 advance widths (em), measured in Chromium; the fallback when the face is not ready.
-  const CHANGA_W = { A: 0.64, B: 0.59, C: 0.51, D: 0.65, E: 0.52, F: 0.47, G: 0.57, H: 0.65, I: 0.3, J: 0.39, K: 0.62, L: 0.44, M: 0.81, N: 0.67, O: 0.66, P: 0.59, Q: 0.65, R: 0.62, S: 0.58, T: 0.49, U: 0.63, V: 0.62, W: 0.93, X: 0.63, Y: 0.58, Z: 0.59, " ": 0.2, "-": 0.35, 0: 0.67, 1: 0.53, 2: 0.59, 3: 0.56, 4: 0.63, 5: 0.59, 6: 0.61, 7: 0.5, 8: 0.62, 9: 0.61 };
+  const CHANGA_W = {
+    A: 0.64,
+    B: 0.59,
+    C: 0.51,
+    D: 0.65,
+    E: 0.52,
+    F: 0.47,
+    G: 0.57,
+    H: 0.65,
+    I: 0.3,
+    J: 0.39,
+    K: 0.62,
+    L: 0.44,
+    M: 0.81,
+    N: 0.67,
+    O: 0.66,
+    P: 0.59,
+    Q: 0.65,
+    R: 0.62,
+    S: 0.58,
+    T: 0.49,
+    U: 0.63,
+    V: 0.62,
+    W: 0.93,
+    X: 0.63,
+    Y: 0.58,
+    Z: 0.59,
+    " ": 0.2,
+    "-": 0.35,
+    0: 0.67,
+    1: 0.53,
+    2: 0.59,
+    3: 0.56,
+    4: 0.63,
+    5: 0.59,
+    6: 0.61,
+    7: 0.5,
+    8: 0.62,
+    9: 0.61,
+  };
   let ctx2d = null;
   /** Width of txt in em for a CSS font at 100px ("800 100px Changa"); measured when the face is loaded. */
   function emWidth(txt, font, ar) {
@@ -44,7 +84,10 @@
       /* fall through to the estimate */
     }
     // conservative estimates: Arabic letters about 0.78em (wide finals), Latin from the table
-    return [...txt].reduce((a, ch) => a + (ar ? (ch === " " ? 0.22 : 0.78) : CHANGA_W[ch.toUpperCase()] || 0.66), 0);
+    return [...txt].reduce(
+      (a, ch) => a + (ar ? (ch === " " ? 0.22 : 0.78) : CHANGA_W[ch.toUpperCase()] || 0.66),
+      0,
+    );
   }
   const F_NAME = '800 100px "Changa"';
   const F_TIER = '800 100px "Manrope"';
@@ -86,7 +129,11 @@
     const s = EYE.f / (EYE.f + P[2]);
     return [EYE.x + (P[0] - EYE.x) * s, EYE.y + (P[1] - EYE.y) * s];
   };
-  const lerp3 = (A, B, t) => [A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t];
+  const lerp3 = (A, B, t) => [
+    A[0] + (B[0] - A[0]) * t,
+    A[1] + (B[1] - A[1]) * t,
+    A[2] + (B[2] - A[2]) * t,
+  ];
   const dist3 = (A, B) => Math.hypot(B[0] - A[0], B[1] - A[1], B[2] - A[2]);
   const bil = (q, u, v) => lerp3(lerp3(q[0], q[1], u), lerp3(q[3], q[2], u), v);
 
@@ -94,18 +141,73 @@
   const box = (dt, db) => () => {
     const { x0, x1, y0, y1 } = MO;
     return [
-      [[x0, y0, dt], [x1, y0, dt], [x1, y1, db], [x0, y1, db]],
-      [[x0, y0, 0], [x1, y0, 0], [x1, y0, dt], [x0, y0, dt]],
-      [[x0, y0, 0], [x0, y0, dt], [x0, y1, db], [x0, y1, 0]],
-      [[x1, y0, 0], [x1, y0, dt], [x1, y1, db], [x1, y1, 0]],
+      [
+        [x0, y0, dt],
+        [x1, y0, dt],
+        [x1, y1, db],
+        [x0, y1, db],
+      ],
+      [
+        [x0, y0, 0],
+        [x1, y0, 0],
+        [x1, y0, dt],
+        [x0, y0, dt],
+      ],
+      [
+        [x0, y0, 0],
+        [x0, y0, dt],
+        [x0, y1, db],
+        [x0, y1, 0],
+      ],
+      [
+        [x1, y0, 0],
+        [x1, y0, dt],
+        [x1, y1, db],
+        [x1, y1, 0],
+      ],
     ];
   };
   const boxEdges = (dt, db) => () => {
     const { x0, x1, y0, y1 } = MO;
     return {
-      bars: [[[x0, y0, dt], [x1, y0, dt]], [[x0, y1, db], [x1, y1, db]]],
-      stays: [[[x0, y0, dt], [x0, y1, db]], [[x1, y0, dt], [x1, y1, db]]],
-      sides: [[[x0, y0, 0], [x0, y0, dt]], [[x1, y0, 0], [x1, y0, dt]], [[x0, y1, 0], [x0, y1, db]], [[x1, y1, 0], [x1, y1, db]]],
+      bars: [
+        [
+          [x0, y0, dt],
+          [x1, y0, dt],
+        ],
+        [
+          [x0, y1, db],
+          [x1, y1, db],
+        ],
+      ],
+      stays: [
+        [
+          [x0, y0, dt],
+          [x0, y1, db],
+        ],
+        [
+          [x1, y0, dt],
+          [x1, y1, db],
+        ],
+      ],
+      sides: [
+        [
+          [x0, y0, 0],
+          [x0, y0, dt],
+        ],
+        [
+          [x1, y0, 0],
+          [x1, y0, dt],
+        ],
+        [
+          [x0, y1, 0],
+          [x0, y1, db],
+        ],
+        [
+          [x1, y1, 0],
+          [x1, y1, db],
+        ],
+      ],
     };
   };
   // LEGEND's fold (where the sloped back meets the hanging back) projects to y≈166, below every text element
@@ -114,23 +216,110 @@
     const { x0, x1, y0, y1 } = MO;
     const { ym, dt, dm } = LG;
     return [
-      [[x0, y0, 0], [x1, y0, 0], [x1, y0, dt], [x0, y0, dt]],
-      [[x0, y0, dt], [x1, y0, dt], [x1, ym, dm], [x0, ym, dm]],
-      [[x0, ym, dm], [x1, ym, dm], [x1, y1, dm], [x0, y1, dm]],
-      [[x0, y0, 0], [x0, y0, dt], [x0, ym, dm], [x0, ym, 0]],
-      [[x0, ym, 0], [x0, ym, dm], [x0, y1, dm], [x0, y1, 0]],
-      [[x1, y0, 0], [x1, y0, dt], [x1, ym, dm], [x1, ym, 0]],
-      [[x1, ym, 0], [x1, ym, dm], [x1, y1, dm], [x1, y1, 0]],
-      [[x0, y1, 0], [x1, y1, 0], [x1, y1, dm], [x0, y1, dm]], // the ground sheet: a LEGEND net is closed all round
+      [
+        [x0, y0, 0],
+        [x1, y0, 0],
+        [x1, y0, dt],
+        [x0, y0, dt],
+      ],
+      [
+        [x0, y0, dt],
+        [x1, y0, dt],
+        [x1, ym, dm],
+        [x0, ym, dm],
+      ],
+      [
+        [x0, ym, dm],
+        [x1, ym, dm],
+        [x1, y1, dm],
+        [x0, y1, dm],
+      ],
+      [
+        [x0, y0, 0],
+        [x0, y0, dt],
+        [x0, ym, dm],
+        [x0, ym, 0],
+      ],
+      [
+        [x0, ym, 0],
+        [x0, ym, dm],
+        [x0, y1, dm],
+        [x0, y1, 0],
+      ],
+      [
+        [x1, y0, 0],
+        [x1, y0, dt],
+        [x1, ym, dm],
+        [x1, ym, 0],
+      ],
+      [
+        [x1, ym, 0],
+        [x1, ym, dm],
+        [x1, y1, dm],
+        [x1, y1, 0],
+      ],
+      [
+        [x0, y1, 0],
+        [x1, y1, 0],
+        [x1, y1, dm],
+        [x0, y1, dm],
+      ], // the ground sheet: a LEGEND net is closed all round
     ];
   };
   const legendEdges = () => {
     const { x0, x1, y0, y1 } = MO;
     const { ym, dt, dm } = LG;
     return {
-      bars: [[[x0, y0, dt], [x1, y0, dt]], [[x0, ym, dm], [x1, ym, dm]], [[x0, y1, dm], [x1, y1, dm]]],
-      stays: [[[x0, y0, dt], [x0, ym, dm]], [[x1, y0, dt], [x1, ym, dm]], [[x0, ym, dm], [x0, y1, dm]], [[x1, ym, dm], [x1, y1, dm]]],
-      sides: [[[x0, y0, 0], [x0, y0, dt]], [[x1, y0, 0], [x1, y0, dt]], [[x0, y1, 0], [x0, y1, dm]], [[x1, y1, 0], [x1, y1, dm]]],
+      bars: [
+        [
+          [x0, y0, dt],
+          [x1, y0, dt],
+        ],
+        [
+          [x0, ym, dm],
+          [x1, ym, dm],
+        ],
+        [
+          [x0, y1, dm],
+          [x1, y1, dm],
+        ],
+      ],
+      stays: [
+        [
+          [x0, y0, dt],
+          [x0, ym, dm],
+        ],
+        [
+          [x1, y0, dt],
+          [x1, ym, dm],
+        ],
+        [
+          [x0, ym, dm],
+          [x0, y1, dm],
+        ],
+        [
+          [x1, ym, dm],
+          [x1, y1, dm],
+        ],
+      ],
+      sides: [
+        [
+          [x0, y0, 0],
+          [x0, y0, dt],
+        ],
+        [
+          [x1, y0, 0],
+          [x1, y0, dt],
+        ],
+        [
+          [x0, y1, 0],
+          [x0, y1, dm],
+        ],
+        [
+          [x1, y1, 0],
+          [x1, y1, dm],
+        ],
+      ],
     };
   };
   /** STADE's welded cage: the rear frame plus a mid rail and a diagonal brace in each side. */
@@ -138,9 +327,28 @@
     const { x0, x1, y0, y1 } = MO;
     const E = boxEdges(d, d)();
     const ym = y1 - 40; // the rear rail runs low, under the 84 and clear of every label
-    E.bars.push([[x0, ym, d], [x1, ym, d]]);
-    E.braces = [[[x0, y0, 0], [x0, y1, d]], [[x1, y0, 0], [x1, y1, d]]];
-    E.welds = [[x0, y0, d], [x1, y0, d], [x0, y1, d], [x1, y1, d], [x0, ym, d], [x1, ym, d]];
+    E.bars.push([
+      [x0, ym, d],
+      [x1, ym, d],
+    ]);
+    E.braces = [
+      [
+        [x0, y0, 0],
+        [x0, y1, d],
+      ],
+      [
+        [x1, y0, 0],
+        [x1, y1, d],
+      ],
+    ];
+    E.welds = [
+      [x0, y0, d],
+      [x1, y0, d],
+      [x0, y1, d],
+      [x1, y1, d],
+      [x0, ym, d],
+      [x1, ym, d],
+    ];
     return E;
   };
 
@@ -149,10 +357,59 @@
   // 84 and sags between its ties. LEGEND is the heaviest: a braided net at a fine pitch, closed all round.
   const TIER = {
     HOMA: { k: "homa", cords: 0 },
-    STADE: { k: "stade", cords: 1, net: "diamond", slope: 0.72, pitch: 8, planes: box(70, 70), edges: cageEdges(70), pinch: 0, sigma: 46, cord: 0.7, steel: true },
-    PRO: { k: "pro", cords: 2, net: "diamond", slope: 1, pitch: 12, planes: box(80, 80), edges: boxEdges(80, 80), pinch: 0.26, sigma: 48, cord: 1, knot: 1.9, sag: 9, knotCls: "c01-knot2" },
-    CHAMPION: { k: "champion", cords: 3, net: "square", pitch: 10, planes: box(62, 128), edges: boxEdges(62, 128), pinch: 0.32, sigma: 50, cord: 0.85, knot: 1.9 },
-    LEGEND: { k: "legend", cords: 3, net: "square", pitch: 9.5, planes: legendPlanes, edges: legendEdges, pinch: 0.4, sigma: 56, cord: 1.6, knot: 2.6, braid: true },
+    STADE: {
+      k: "stade",
+      cords: 1,
+      net: "diamond",
+      slope: 0.72,
+      pitch: 8,
+      planes: box(70, 70),
+      edges: cageEdges(70),
+      pinch: 0,
+      sigma: 46,
+      cord: 0.7,
+      steel: true,
+    },
+    PRO: {
+      k: "pro",
+      cords: 2,
+      net: "diamond",
+      slope: 1,
+      pitch: 12,
+      planes: box(80, 80),
+      edges: boxEdges(80, 80),
+      pinch: 0.26,
+      sigma: 48,
+      cord: 1,
+      knot: 1.9,
+      sag: 9,
+      knotCls: "c01-knot2",
+    },
+    CHAMPION: {
+      k: "champion",
+      cords: 3,
+      net: "square",
+      pitch: 10,
+      planes: box(62, 128),
+      edges: boxEdges(62, 128),
+      pinch: 0.32,
+      sigma: 50,
+      cord: 0.85,
+      knot: 1.9,
+    },
+    LEGEND: {
+      k: "legend",
+      cords: 3,
+      net: "square",
+      pitch: 9.5,
+      planes: legendPlanes,
+      edges: legendEdges,
+      pinch: 0.4,
+      sigma: 56,
+      cord: 1.6,
+      knot: 2.6,
+      braid: true,
+    },
   };
   const tierOf = (p) => TIER[p.tier] || TIER.PRO;
 
@@ -161,7 +418,13 @@
     const pitch = spec.pitch * (opt.pitchMul || 1);
     const at = opt.pk || POCKET;
     const pins = [];
-    if (opt.pinch !== false) pins.push({ x: at.x, y: at.y, k: spec.pinch * (opt.pinchMul == null ? 1 : opt.pinchMul), s: spec.sigma });
+    if (opt.pinch !== false)
+      pins.push({
+        x: at.x,
+        y: at.y,
+        k: spec.pinch * (opt.pinchMul == null ? 1 : opt.pinchMul),
+        s: spec.sigma,
+      });
     if (opt.extra) pins.push(opt.extra);
     const pinch = (P) => {
       let Q = P;
@@ -210,7 +473,8 @@
         const nt = Math.max(1, Math.round(Lt / pitch));
         for (let i = 1; i < ns; i++) line(q, i / ns, 0, i / ns, 1, Lt);
         for (let j = 1; j < nt; j++) line(q, 0, j / nt, 1, j / nt, Ls);
-        if (withKnots) for (let i = 1; i < ns; i++) for (let j = 1; j < nt; j++) knot(q, i / ns, j / nt);
+        if (withKnots)
+          for (let i = 1; i < ns; i++) for (let j = 1; j < nt; j++) knot(q, i / ns, j / nt);
       } else {
         // diamonds: two families of slanted cords, s = c + k·t and s = c − k·t (k = 1: square knots turned 45°)
         const k = spec.slope || 1;
@@ -250,8 +514,15 @@
   };
 
   /* ---------- filters and gradients (full card only; tokens, rows and the share are flat) ---------- */
-  const stops = (list) => list.map(([o, c, a]) => `<stop offset="${o}" stop-color="${c}"${a != null ? ` stop-opacity="${a}"` : ""}/>`).join("");
-  const lin = (id, list, x2 = 1, y2 = 0) => `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}">${stops(list)}</linearGradient>`;
+  const stops = (list) =>
+    list
+      .map(
+        ([o, c, a]) =>
+          `<stop offset="${o}" stop-color="${c}"${a != null ? ` stop-opacity="${a}"` : ""}/>`,
+      )
+      .join("");
+  const lin = (id, list, x2 = 1, y2 = 0) =>
+    `<linearGradient id="${id}" x1="0" y1="0" x2="${x2}" y2="${y2}">${stops(list)}</linearGradient>`;
   /** Multiplies a fill by fractal noise: galvanised spangle, powder coat, breeze block. */
   const grain = (id, freq, k1, k2, seed = 3, oct = 2) =>
     `<filter id="${id}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">` +
@@ -281,9 +552,11 @@
     `<feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed="31" result="g"/>` +
     `<feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 16 0 0 0 -4" result="ga"/>` +
     `<feComposite in="SourceGraphic" in2="ga" operator="in"/></filter>`;
-  const blur = (id, sd) => `<filter id="${id}" x="-30%" y="-150%" width="160%" height="400%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${sd}"/></filter>`;
+  const blur = (id, sd) =>
+    `<filter id="${id}" x="-30%" y="-150%" width="160%" height="400%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${sd}"/></filter>`;
   /** Feathers the net's clearance round the name and tier, so it reads as the net thinning out, not a plate. */
-  const feather = (id) => `<filter id="${id}" x="-20%" y="-30%" width="140%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="2"/></filter>`;
+  const feather = (id) =>
+    `<filter id="${id}" x="-20%" y="-30%" width="140%" height="160%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="2"/></filter>`;
 
   /** Hand-drawn line: a polyline with seeded perpendicular wobble. */
   function wobble(x1, y1, x2, y2, rand, amp = 0.5, step = 20) {
@@ -295,13 +568,15 @@
     for (let i = 0; i <= n; i++) {
       const t = i / n;
       const w = i === 0 || i === n ? 0 : (rand() - 0.5) * 2 * amp;
-      d += (i ? "L" : "M") + r1(x1 + (x2 - x1) * t + nx * w) + " " + r1(y1 + (y2 - y1) * t + ny * w);
+      d +=
+        (i ? "L" : "M") + r1(x1 + (x2 - x1) * t + nx * w) + " " + r1(y1 + (y2 - y1) * t + ny * w);
     }
     return d;
   }
 
   /** Arabic text in SVG, anchored at its visual right edge. */
-  const arText = (x, y, cls, txt, extra = "") => `<text x="${x}" y="${y}" class="${cls}" direction="rtl" text-anchor="start"${extra}>${txt}</text>`;
+  const arText = (x, y, cls, txt, extra = "") =>
+    `<text x="${x}" y="${y}" class="${cls}" direction="rtl" text-anchor="start"${extra}>${txt}</text>`;
 
   /** A four-point floodlight glint. */
   const glint = (x, y, s, cls = "c01-glint") =>
@@ -311,7 +586,18 @@
   function figure(box = FIG) {
     const { x, y, w, h } = box;
     const k = w / 100;
-    const rim = MC.avatar({ x: r1(x + 1.3 * k), y: r1(y - 0.9 * k), w, h, torso: "#9bdbfd", collar: "#9bdbfd", neck: "#9bdbfd", skin: "#9bdbfd", hair: "#9bdbfd", seam: false });
+    const rim = MC.avatar({
+      x: r1(x + 1.3 * k),
+      y: r1(y - 0.9 * k),
+      w,
+      h,
+      torso: "#9bdbfd",
+      collar: "#9bdbfd",
+      neck: "#9bdbfd",
+      skin: "#9bdbfd",
+      hair: "#9bdbfd",
+      seam: false,
+    });
     const body = MC.avatar({ x, y, w, h, torso: "#1e2733", seam: "#46546a" });
     return `<g class="c01-fig">${rim}${body}</g>`;
   }
@@ -320,7 +606,10 @@
   function statLine(p, o, cls, y = STAT_Y) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    const items = MC.STATS.map((k) => `<tspan class="c01-sl-l">${esc(S.stats[k])}</tspan> <tspan class="c01-sl-v">${p.stats[k]}</tspan>`);
+    const items = MC.STATS.map(
+      (k) =>
+        `<tspan class="c01-sl-l">${esc(S.stats[k])}</tspan> <tspan class="c01-sl-v">${p.stats[k]}</tspan>`,
+    );
     const sep = `<tspan class="c01-sl-d"> · </tspan>`;
     const full = ar
       ? `<text x="180" y="${y}" class="c01-sl c01-sl-ar ${cls}" text-anchor="middle" direction="rtl">${items.join(sep)}</text>`
@@ -352,7 +641,9 @@
       `<ellipse cx="${cx}" cy="${cy}" rx="${rx + 0.8}" ry="${ry + 0.8}" fill="#f4f1ea"/>` +
       `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${c.primary}"/>` +
       `<g transform="translate(${r1(cx - rx * 0.66)} ${r1(cy - ry * 0.66)})">${MC.crest({ mono: c.secondary, w: r1(rx * 1.32), h: r1(ry * 1.32) })}</g>` +
-      (wrap ? `<ellipse cx="${r1(cx + rx * 0.45)}" cy="${cy}" rx="${r1(rx * 0.55)}" ry="${ry + 0.8}" fill="#000" opacity=".2"/>` : "") +
+      (wrap
+        ? `<ellipse cx="${r1(cx + rx * 0.45)}" cy="${cy}" rx="${r1(rx * 0.55)}" ry="${ry + 0.8}" fill="#000" opacity=".2"/>`
+        : "") +
       `</g>`
     );
   }
@@ -363,8 +654,24 @@
     if (tk === "homa") {
       // the lamp's pool: the wall fades toward its ends and its top, so the chalk Π stays the outline
       d +=
-        `<linearGradient id="${u}-wfh" gradientUnits="userSpaceOnUse" x1="${WALL.x0}" y1="0" x2="${WALL.x1}" y2="0">${stops([[0, "#fff", 0.22], [0.09, "#fff", 0.6], [0.26, "#fff", 1], [0.74, "#fff", 1], [0.91, "#fff", 0.6], [1, "#fff", 0.22]])}</linearGradient>` +
-        `<linearGradient id="${u}-wfv" gradientUnits="userSpaceOnUse" x1="0" y1="${WALL.y0}" x2="0" y2="${WALL.y1}">${stops([[0, "#fff", 0.22], [0.12, "#fff", 0.64], [0.36, "#fff", 1], [1, "#fff", 1]])}</linearGradient>` +
+        `<linearGradient id="${u}-wfh" gradientUnits="userSpaceOnUse" x1="${WALL.x0}" y1="0" x2="${WALL.x1}" y2="0">${stops(
+          [
+            [0, "#fff", 0.22],
+            [0.09, "#fff", 0.6],
+            [0.26, "#fff", 1],
+            [0.74, "#fff", 1],
+            [0.91, "#fff", 0.6],
+            [1, "#fff", 0.22],
+          ],
+        )}</linearGradient>` +
+        `<linearGradient id="${u}-wfv" gradientUnits="userSpaceOnUse" x1="0" y1="${WALL.y0}" x2="0" y2="${WALL.y1}">${stops(
+          [
+            [0, "#fff", 0.22],
+            [0.12, "#fff", 0.64],
+            [0.36, "#fff", 1],
+            [1, "#fff", 1],
+          ],
+        )}</linearGradient>` +
         `<mask id="${u}-wmh" maskUnits="userSpaceOnUse" x="0" y="0" width="${VW}" height="${VH}"><rect x="0" y="0" width="${VW}" height="${VH}" fill="url(#${u}-wfh)"/></mask>` +
         `<mask id="${u}-wmv" maskUnits="userSpaceOnUse" x="0" y="0" width="${VW}" height="${VH}"><rect x="0" y="0" width="${VW}" height="${VH}" fill="url(#${u}-wfv)"/></mask>`;
     }
@@ -376,23 +683,92 @@
         grain(`${u}-block`, 0.8, 0.3, 0.8, 41, 2) +
         chalkLine(`${u}-chalk`) +
         chalkText(`${u}-chalkt`) +
-        `<radialGradient id="${u}-lamp" cx="104" cy="24" r="230" gradientUnits="userSpaceOnUse">${stops([[0, "#ffd58a", 0.13], [0.5, "#ffd58a", 0.05], [1, "#ffd58a", 0]])}</radialGradient>`;
+        `<radialGradient id="${u}-lamp" cx="104" cy="24" r="230" gradientUnits="userSpaceOnUse">${stops(
+          [
+            [0, "#ffd58a", 0.13],
+            [0.5, "#ffd58a", 0.05],
+            [1, "#ffd58a", 0],
+          ],
+        )}</radialGradient>`;
     if (tk === "stade")
       d +=
-        lin(`${u}-tube`, [[0, "#6e7884"], [0.45, "#d5dce3"], [0.7, "#8f9aa5"], [1, "#6e7884"]]) +
-        lin(`${u}-barg`, [[0, "#d5dce3"], [0.3, "#a9b3bd"], [0.72, "#8f9aa5"], [1, "#6e7884"]], 0, 1) +
+        lin(`${u}-tube`, [
+          [0, "#6e7884"],
+          [0.45, "#d5dce3"],
+          [0.7, "#8f9aa5"],
+          [1, "#6e7884"],
+        ]) +
+        lin(
+          `${u}-barg`,
+          [
+            [0, "#d5dce3"],
+            [0.3, "#a9b3bd"],
+            [0.72, "#8f9aa5"],
+            [1, "#6e7884"],
+          ],
+          0,
+          1,
+        ) +
         grain(`${u}-spangle`, 0.42, 0.55, 0.76, 7);
     if (tk === "pro")
       d +=
-        lin(`${u}-tube`, [[0, "#c9d2dc"], [0.3, "#ffffff"], [0.62, "#f2f4f6"], [1, "#b4bec9"]]) +
-        lin(`${u}-barg`, [[0, "#ffffff"], [0.4, "#f4f6f8"], [0.84, "#d5dce3"], [1, "#b4bec9"]], 0, 1) +
-        lin(`${u}-specV`, [[0, "#ffffff", 1], [1, "#ffffff", 0.15]], 0, 1) +
-        lin(`${u}-specH`, [[0, "#ffffff", 0], [1, "#ffffff", 1]]);
+        lin(`${u}-tube`, [
+          [0, "#c9d2dc"],
+          [0.3, "#ffffff"],
+          [0.62, "#f2f4f6"],
+          [1, "#b4bec9"],
+        ]) +
+        lin(
+          `${u}-barg`,
+          [
+            [0, "#ffffff"],
+            [0.4, "#f4f6f8"],
+            [0.84, "#d5dce3"],
+            [1, "#b4bec9"],
+          ],
+          0,
+          1,
+        ) +
+        lin(
+          `${u}-specV`,
+          [
+            [0, "#ffffff", 1],
+            [1, "#ffffff", 0.15],
+          ],
+          0,
+          1,
+        ) +
+        lin(`${u}-specH`, [
+          [0, "#ffffff", 0],
+          [1, "#ffffff", 1],
+        ]);
     if (tk === "champion" || tk === "legend")
       d +=
-        lin(`${u}-tube`, [[0, "#dce3ea"], [0.28, "#ffffff"], [0.6, "#f2f4f6"], [1, "#cdd5de"]]) +
-        lin(`${u}-barg`, [[0, "#ffffff"], [0.5, "#f2f4f6"], [1, "#dce3ea"]], 0, 1) +
-        lin(`${u}-specV`, [[0, "#ffffff", 1], [1, "#ffffff", 0.1]], 0, 1) +
+        lin(`${u}-tube`, [
+          [0, "#dce3ea"],
+          [0.28, "#ffffff"],
+          [0.6, "#f2f4f6"],
+          [1, "#cdd5de"],
+        ]) +
+        lin(
+          `${u}-barg`,
+          [
+            [0, "#ffffff"],
+            [0.5, "#f2f4f6"],
+            [1, "#dce3ea"],
+          ],
+          0,
+          1,
+        ) +
+        lin(
+          `${u}-specV`,
+          [
+            [0, "#ffffff", 1],
+            [1, "#ffffff", 0.1],
+          ],
+          0,
+          1,
+        ) +
         grain(`${u}-powder`, 1.1, 0.14, 0.94, 9, 1);
     return d;
   }
@@ -407,7 +783,10 @@
       const xa = L + PW / 2;
       const xb = R - PW / 2;
       const yb = BAR.y0 + 2.5;
-      const d = wobble(xa, WALL.y1, xa, yb, rand) + wobble(xa, yb, xb, yb, rand) + wobble(xb, yb, xb, WALL.y1, rand);
+      const d =
+        wobble(xa, WALL.y1, xa, yb, rand) +
+        wobble(xa, yb, xb, yb, rand) +
+        wobble(xb, yb, xb, WALL.y1, rand);
       return (
         `<g class="c01-frameg">` +
         `<path d="${d}" class="c01-chalk" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"${flat ? "" : ` filter="url(#${u}-chalk)"`}/>` +
@@ -428,9 +807,14 @@
         `<rect x="${L}" y="${BAR.y0}" width="${PW}" height="${H}" fill="${body}"/><rect x="${R - PW}" y="${BAR.y0}" width="${PW}" height="${H}" fill="${body}"/>` +
         `<rect x="${L + PW * 0.68}" y="${BAR.y1}" width="${PW * 0.32}" height="${H - 24}" fill="${shade}"/><rect x="${R - PW * 0.32}" y="${BAR.y1}" width="${PW * 0.32}" height="${H - 24}" fill="${shade}"/>` +
         `<rect x="${L}" y="${BAR.y0}" width="${R - L}" height="24" fill="${body}"/><rect x="${L}" y="${BAR.y1 - 3}" width="${R - L}" height="3" fill="${shade}"/>`;
-      if (steel) s += `<rect x="${L + 6}" y="${BAR.y0 + 4}" width="${R - L - 12}" height="15" rx="1" fill="#f2f4f6"/>`;
+      if (steel)
+        s += `<rect x="${L + 6}" y="${BAR.y0 + 4}" width="${R - L - 12}" height="15" rx="1" fill="#f2f4f6"/>`;
     } else {
-      const fx = steel ? ` filter="url(#${u}-spangle)"` : tk === "pro" ? "" : ` filter="url(#${u}-powder)"`;
+      const fx = steel
+        ? ` filter="url(#${u}-spangle)"`
+        : tk === "pro"
+          ? ""
+          : ` filter="url(#${u}-powder)"`;
       s +=
         `<g${fx}><rect x="${L}" y="${BAR.y0}" width="${PW}" height="${H}" fill="url(#${u}-tube)"/><rect x="${R - PW}" y="${BAR.y0}" width="${PW}" height="${H}" fill="url(#${u}-tube)"/>` +
         `<rect x="${L}" y="${BAR.y0}" width="${R - L}" height="24" fill="url(#${u}-barg)"/></g>`;
@@ -453,7 +837,8 @@
       }
       if (steel || tk === "pro") {
         let w = "";
-        for (let x = L + 1.2; x < L + PW; x += 2.4) w += `<circle cx="${r1(x)}" cy="${BAR.y1 + 0.6}" r="1"/><circle cx="${r1(x + R - PW - L)}" cy="${BAR.y1 + 0.6}" r="1"/>`;
+        for (let x = L + 1.2; x < L + PW; x += 2.4)
+          w += `<circle cx="${r1(x)}" cy="${BAR.y1 + 0.6}" r="1"/><circle cx="${r1(x + R - PW - L)}" cy="${BAR.y1 + 0.6}" r="1"/>`;
         s += `<g fill="${steel ? "#7e8893" : "#c9d2dc"}">${w}</g>`;
       }
     }
@@ -472,7 +857,8 @@
     if (tk === "stade") {
       // the welded cage behind the chain-link: rear frame, mid rail, side braces, weld beads at the joints
       const br = (E.braces || []).map(([a, b]) => seg2(a, b)).join("");
-      if (thumb) return `<path d="${all + br}" class="c01-rearsteel" stroke-width="3" fill="none"/>`;
+      if (thumb)
+        return `<path d="${all + br}" class="c01-rearsteel" stroke-width="3" fill="none"/>`;
       const welds = (E.welds || []).map((P) => {
         const Q = project(P);
         return `<circle cx="${r1(Q[0])}" cy="${r1(Q[1])}" r="2.1"/>`;
@@ -483,7 +869,8 @@
         `<g class="c01-weld">${welds.join("")}</g>`
       );
     }
-    if (tk === "pro") return `<path d="${all}" class="c01-net" stroke-width="${thumb ? 2.4 : 1.2}" fill="none"/>`;
+    if (tk === "pro")
+      return `<path d="${all}" class="c01-net" stroke-width="${thumb ? 2.4 : 1.2}" fill="none"/>`;
     const stays = E.stays.map(([a, b]) => seg2(a, b)).join("");
     const rest = [...E.bars, ...E.sides].map(([a, b]) => seg2(a, b)).join("");
     return (
@@ -504,29 +891,56 @@
     // the 84 keeps a hard 6u halo in the net
     const t84 = `<text x="${POCKET.x}" y="152" class="c01-84 ${ink}" text-anchor="middle"${fx}>${p.ovr}</text>`;
     draw.push(t84);
-    knock.push(t84.replace(/ filter="[^"]*"/, "").replace("<text ", `<text style="fill:#000;stroke:#000;stroke-width:12;stroke-linejoin:round" `));
+    knock.push(
+      t84
+        .replace(/ filter="[^"]*"/, "")
+        .replace(
+          "<text ",
+          `<text style="fill:#000;stroke:#000;stroke-width:12;stroke-linejoin:round" `,
+        ),
+    );
     if (!thumb) {
       const L = nameLayout(p, o);
       const tierTxt = esc(S.tiers[p.tier]);
-      const tl = (ln) => (ln.tl ? ` textLength="${r1(ln.tl)}" lengthAdjust="spacingAndGlyphs"` : "");
+      const tl = (ln) =>
+        ln.tl ? ` textLength="${r1(ln.tl)}" lengthAdjust="spacingAndGlyphs"` : "";
       if (ar) {
-        const spans = L.lines.map((ln) => `<tspan x="${L.edge}" y="${r1(ln.y)}" style="font-size:${r1(L.fs)}px"${tl(ln)}>${esc(ln.txt)}</tspan>`).join("");
-        draw.push(`<text class="c01-name ${ink}" direction="rtl" text-anchor="start"${fx}>${spans}</text>`);
+        const spans = L.lines
+          .map(
+            (ln) =>
+              `<tspan x="${L.edge}" y="${r1(ln.y)}" style="font-size:${r1(L.fs)}px"${tl(ln)}>${esc(ln.txt)}</tspan>`,
+          )
+          .join("");
+        draw.push(
+          `<text class="c01-name ${ink}" direction="rtl" text-anchor="start"${fx}>${spans}</text>`,
+        );
         draw.push(arText(L.edge, r1(L.tierY), `c01-tier-ar ${ink}`, tierTxt));
       } else {
-        const spans = L.lines.map((ln) => `<tspan x="${L.edge}" y="${r1(ln.y)}" style="font-size:${r1(L.fs)}px"${tl(ln)}>${esc(ln.txt)}</tspan>`).join("");
+        const spans = L.lines
+          .map(
+            (ln) =>
+              `<tspan x="${L.edge}" y="${r1(ln.y)}" style="font-size:${r1(L.fs)}px"${tl(ln)}>${esc(ln.txt)}</tspan>`,
+          )
+          .join("");
         draw.push(`<text class="c01-name ${ink}"${fx}>${spans}</text>`);
-        draw.push(`<text x="${L.edge + 1}" y="${r1(L.tierY)}" class="c01-tier ${ink}">${tierTxt}</text>`);
+        draw.push(
+          `<text x="${L.edge + 1}" y="${r1(L.tierY)}" class="c01-tier ${ink}">${tierTxt}</text>`,
+        );
       }
       // one soft clearance for the name block: the name's box, the tier's box (3u) and the bridge between,
       // feathered; the tier box has a large-size twin for the small card, where the tier label grows
       if (!F.flat && tk !== "homa") {
-        const box = (x0, x1, y0, y1, cls = "") => `<rect${cls ? ` class="${cls}"` : ""} x="${r1(x0)}" y="${r1(y0)}" width="${r1(x1 - x0)}" height="${r1(y1 - y0)}" rx="3"/>`;
-        const span = (w, pad) => (ar ? [L.edge - w - pad, L.edge + pad] : [L.edge - pad, L.edge + w + pad]);
+        const box = (x0, x1, y0, y1, cls = "") =>
+          `<rect${cls ? ` class="${cls}"` : ""} x="${r1(x0)}" y="${r1(y0)}" width="${r1(x1 - x0)}" height="${r1(y1 - y0)}" rx="3"/>`;
+        const span = (w, pad) =>
+          ar ? [L.edge - w - pad, L.edge + pad] : [L.edge - pad, L.edge + w + pad];
         const [nx0, nx1] = span(L.w, 5);
         const nb = L.bottom + 4;
         let k = box(nx0, nx1, L.top - 5, nb);
-        [[L.tierW, L.tierCap, "c01-kt"], [L.tierW * L.tierBig, L.tierCap * L.tierBig, "c01-kt-big"]].forEach(([w, cap, cls]) => {
+        [
+          [L.tierW, L.tierCap, "c01-kt"],
+          [L.tierW * L.tierBig, L.tierCap * L.tierBig, "c01-kt-big"],
+        ].forEach(([w, cap, cls]) => {
           const [tx0, tx1] = span(w, 3);
           k += box(tx0, tx1, L.tierY - cap - 3, L.tierY + L.tierDesc + 3, cls);
           const [bx0, bx1] = span(Math.min(w, L.w), 3);
@@ -587,7 +1001,9 @@
     lines.forEach((ln, i) => (ln.y = top + cap * fs + i * lead * fs));
     const last = lines[lines.length - 1].y;
     const tierSize = ar ? 13 : 12;
-    const tierW = ar ? emWidth(S.tiers[p.tier], F_TIER_AR, true) * tierSize : emWidth(S.tiers[p.tier], F_TIER) * tierSize + 0.1 * tierSize * [...S.tiers[p.tier]].length;
+    const tierW = ar
+      ? emWidth(S.tiers[p.tier], F_TIER_AR, true) * tierSize
+      : emWidth(S.tiers[p.tier], F_TIER) * tierSize + 0.1 * tierSize * [...S.tiers[p.tier]].length;
     const tierY = ar ? last + 0.5 * fs + 17 : last + 20;
     return {
       edge,
@@ -648,7 +1064,8 @@
   function ballBag(u, F) {
     const thumb = !!F.thumb;
     let mesh = "";
-    for (let k = -50; k < 60; k += thumb ? 7 : 5) mesh += `M${290 + k} 8l52 52M${290 + k} 60l52 -52`;
+    for (let k = -50; k < 60; k += thumb ? 7 : 5)
+      mesh += `M${290 + k} 8l52 52M${290 + k} 60l52 -52`;
     return (
       `<g class="c01-bag">` +
       `<path d="${BAG}" class="c01-bagfill"/>` +
@@ -674,7 +1091,8 @@
       const yt = r1(yb - ch);
       if (i) mortar += `M${x0} ${r1(yb)}H${x1}`;
       lite += `M${x0} ${r1(yt + 1)}H${x1}`;
-      for (let x = x0 + (i % 2 ? bl / 2 : bl); x < x1 - 2; x += bl) mortar += `M${r1(x)} ${yt}V${r1(yb)}`;
+      for (let x = x0 + (i % 2 ? bl / 2 : bl); x < x1 - 2; x += bl)
+        mortar += `M${r1(x)} ${yt}V${r1(yb)}`;
     }
     const rect = `x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"`;
     return (
@@ -682,7 +1100,9 @@
       // at thumb size the wall goes thin, so the chalk Π stays the outline (the 1-bit test reads a goal, not a block)
       `<rect ${rect} fill="#72787f"${F.thumb ? ' fill-opacity=".3"' : ""}${flat ? "" : ` filter="url(#${u}-block)"`}/>` +
       (flat ? "" : `<rect ${rect} fill="url(#${u}-lamp)"/>`) +
-      (F.thumb ? "" : `<path d="${lite}" stroke="#8a9097" stroke-width=".8" opacity=".35"/><path d="${mortar}" stroke="#5f656c" stroke-width="1"/>`) +
+      (F.thumb
+        ? ""
+        : `<path d="${lite}" stroke="#8a9097" stroke-width=".8" opacity=".35"/><path d="${mortar}" stroke="#5f656c" stroke-width="1"/>`) +
       `</g></g>`
     );
   }
@@ -697,7 +1117,8 @@
     if (tk === "homa") {
       out += wall(u, F);
       // two fresh ball marks in the lucarne, clear of the 84 (its top sits near y76) and of the chalked stats
-      if (!thumb) out += `<g class="c01-marks"><circle cx="302" cy="64.5" r="7"/><circle cx="279" cy="62.5" r="6.5"/></g>`;
+      if (!thumb)
+        out += `<g class="c01-marks"><circle cx="302" cy="64.5" r="7"/><circle cx="279" cy="62.5" r="6.5"/></g>`;
     }
     if (spec.net) {
       out += `<g mask="url(#${u}-m)">${rear(spec, tk, thumb)}</g>`;
@@ -712,7 +1133,9 @@
             `<g class="c01-net c01-braid" stroke-width="${cw}"><path data-net="1" id="${u}-np" d="${net.d}"/></g>` +
             `<use href="#${u}-np" class="c01-netlite" stroke-width=".6" transform="translate(-.45 -.45)"/>`
           : `<path data-net="1" d="${net.d}" class="${spec.steel ? "c01-steelnet" : "c01-net"}" stroke-width="${cw}"/>`) +
-        (net.knots ? `<path data-knots="1" d="${net.knots}" class="${spec.knotCls || (braid ? "c01-knot c01-bknot" : "c01-knot")}" stroke-width="${spec.knot}" stroke-linecap="round"/>` : "") +
+        (net.knots
+          ? `<path data-knots="1" d="${net.knots}" class="${spec.knotCls || (braid ? "c01-knot c01-bknot" : "c01-knot")}" stroke-width="${spec.knot}" stroke-linecap="round"/>`
+          : "") +
         `</g>`;
     }
     if (tk === "legend" && !thumb) {
@@ -730,7 +1153,8 @@
       out +=
         `<path d="M2.3 ${HOMA_LINE}H357.7" class="c01-key" stroke-width="6.6" stroke-linecap="round" fill="none"/>` +
         `<path d="M2.3 ${HOMA_LINE}H357.7" class="c01-chalk" stroke-width="4.6" stroke-linecap="round" fill="none"${F.flat || thumb ? "" : ` filter="url(#${u}-chalk)"`}/>`;
-    else out += `<rect x="0" y="${LINE.y0}" width="${VW}" height="${LINE.y1 - LINE.y0}" class="c01-linec c01-keyed"/>`;
+    else
+      out += `<rect x="0" y="${LINE.y0}" width="${VW}" height="${LINE.y1 - LINE.y0}" class="c01-linec c01-keyed"/>`;
     out += footing(u, p, F, tk);
     return { svg: out, mask: c.knock };
   }
@@ -750,7 +1174,9 @@
     let s =
       outline +
       `<rect x="${L}" y="${BAR.y0}" width="${R - L}" height="24" fill="${barFill}" class="${homa ? "c01-backframe" : ""}"${homa ? ' stroke-width="1.2"' : ""}/>` +
-      (tk === "stade" ? `<rect x="${L + 6}" y="${BAR.y0 + 4}" width="${R - L - 12}" height="15" rx="1" fill="#f2f4f6"/>` : "") +
+      (tk === "stade"
+        ? `<rect x="${L + 6}" y="${BAR.y0 + 4}" width="${R - L - 12}" height="15" rx="1" fill="#f2f4f6"/>`
+        : "") +
       barText +
       `<rect x="0" y="${LINE.y0}" width="${VW}" height="6" class="c01-backline"/>`;
     if (p.founder) {
@@ -779,7 +1205,9 @@
       const label = ar ? "إعادة الهدف" : "Revoir le but";
       s +=
         `<g class="c01-replay"><rect x="120" y="208" width="120" height="22" rx="11" class="c01-replaybg"/>` +
-        (ar ? arText(214, 223.5, "c01-replayt-ar", label) : `<text x="186" y="223" class="c01-replayt" text-anchor="middle">${label}</text>`) +
+        (ar
+          ? arText(214, 223.5, "c01-replayt-ar", label)
+          : `<text x="186" y="223" class="c01-replayt" text-anchor="middle">${label}</text>`) +
         `<path d="${ar ? "M226 214a5 5 0 1 0 4 2" : "M134 214a5 5 0 1 1 -4 2"}" class="c01-replayi" fill="none" stroke-width="1.6"/></g>`;
     }
     return `<svg class="c01-face c01-back" viewBox="0 0 ${VW} ${VH}" width="100%" aria-hidden="true" focusable="false">${s}</svg>`;
@@ -812,7 +1240,8 @@
     const n = TIER[tier].cords;
     const mid = base - fs * 0.36;
     const cx1 = Math.floor(tx - emWidth(String(p.ovr), F_NAME) * fs - 1); // stop a pixel short of the 84
-    for (let i = 0; i < n; i++) cords += `M${mx0} ${Math.floor(mid + (i - (n - 1) / 2) * 3) + 0.5}H${cx1}`;
+    for (let i = 0; i < n; i++)
+      cords += `M${mx0} ${Math.floor(mid + (i - (n - 1) / 2) * 3) + 0.5}H${cx1}`;
     if (cords) out += `<path d="${cords}" class="c01-mcord" stroke-width="1" fill="none"/>`;
     // the floor: two ground stays from the post feet back to a short rear ground bar. A goal has a floor; a screen does not.
     const fd = Math.max(3, Math.round(3.6 * s));
@@ -822,8 +1251,10 @@
     out += `<path d="M${mx0 + 0.5} ${feet}L${mx0 + ins} ${yb}H${mx1 - ins}L${mx1 - 0.5} ${feet}" stroke="currentColor" stroke-width="1" fill="none" shape-rendering="crispEdges"/>`;
     out += `<path d="M${X0} ${feet}V${Y0}H${X1}V${feet}H${X1 - t}V${my0}H${mx0}V${feet}Z" fill="currentColor"/>`;
     out += `<rect x="0" y="${YL}" width="${W}" height="${lh}" fill="currentColor"/>`;
-    if (p.founder) out += `<rect x="${X1 - t / 2 - 2}" y="${YL + lh}" width="4" height="${fh}" fill="currentColor"/>`;
-    if (tier === "LEGEND") out += `<circle cx="${X1 + 0.5}" cy="${Y0 - 0.5}" r="2" fill="currentColor"/>`;
+    if (p.founder)
+      out += `<rect x="${X1 - t / 2 - 2}" y="${YL + lh}" width="4" height="${fh}" fill="currentColor"/>`;
+    if (tier === "LEGEND")
+      out += `<circle cx="${X1 + 0.5}" cy="${Y0 - 0.5}" r="2" fill="currentColor"/>`;
     out += `<text x="${tx}" y="${base}" class="c01-t84" style="font-size:${fs}px" text-anchor="end" fill="currentColor">${p.ovr}</text>`;
     return (
       `<span class="c01 c01-tok is-mini t-${TIER[tier].k}" dir="ltr" role="img" aria-label="${esc(MC.label(p, o))}" style="width:${W}px;height:${h}px;--c01-club:${p.club.primary}">` +
@@ -866,18 +1297,22 @@
       for (let i = 1; i <= 2; i++) {
         const y = my1 - ch * i;
         mesh += `M${mx0} ${px(y)}H${mx1}`;
-        for (let x = mx0 + (i % 2 ? bl / 2 : bl); x < mx1 - 2; x += bl) mesh += `M${px(x)} ${y}v${ch}`;
+        for (let x = mx0 + (i % 2 ? bl / 2 : bl); x < mx1 - 2; x += bl)
+          mesh += `M${px(x)} ${y}v${ch}`;
       }
       meshCls = "c01-twall";
     } else if (tier === "STADE" || tier === "PRO") {
       const a = tier === "STADE" ? 0.72 : 1;
       const step = Math.round(mw / (tier === "STADE" ? 3.4 : 2.6));
-      for (let c = -a * mh + step / 2; c < mw; c += step) mesh += `M${r1(mx0 + c)} ${my0}l${r1(a * mh)} ${mh}`;
-      for (let c = step / 2; c < mw + a * mh; c += step) mesh += `M${r1(mx0 + c)} ${my0}l${r1(-a * mh)} ${mh}`;
+      for (let c = -a * mh + step / 2; c < mw; c += step)
+        mesh += `M${r1(mx0 + c)} ${my0}l${r1(a * mh)} ${mh}`;
+      for (let c = step / 2; c < mw + a * mh; c += step)
+        mesh += `M${r1(mx0 + c)} ${my0}l${r1(-a * mh)} ${mh}`;
       if (tier === "STADE") meshCls = "c01-tsteel";
     } else {
       const n = tier === "LEGEND" ? 4 : 3;
-      for (let i = 1; i < n; i++) mesh += `M${px(mx0 + (mw * i) / n)} ${my0}V${my1}M${mx0} ${px(my0 + (mh * i) / n)}H${mx1}`;
+      for (let i = 1; i < n; i++)
+        mesh += `M${px(mx0 + (mw * i) / n)} ${my0}V${my1}M${mx0} ${px(my0 + (mh * i) / n)}H${mx1}`;
     }
     const halo = Math.max(2, Math.round(fs * 0.16));
     const defs =
@@ -923,8 +1358,10 @@
     name: "Lucarne",
     nameAr: "الزاوية العليا",
     category: "safe",
-    philosophy: "Your season is the shot and your 84 is where it went in: the top corner of a five-a-side goal that you rebuild, tier by tier, from a chalk goal on a breeze-block wall to the floodlit box net that keeps your ball.",
-    philosophyAr: "موسمك تسديدة، ورقم 84 هو المكان الذي دخلت منه الكرة: الزاوية العليا لمرمى خماسي تعيد بناءه مستوى بعد مستوى، من مرمى مرسوم بالطباشير على جدار من الطوب إلى شباك تحت الأضواء تحتفظ بكرتك.",
+    philosophy:
+      "Your season is the shot and your 84 is where it went in: the top corner of a five-a-side goal that you rebuild, tier by tier, from a chalk goal on a breeze-block wall to the floodlit box net that keeps your ball.",
+    philosophyAr:
+      "موسمك تسديدة، ورقم 84 هو المكان الذي دخلت منه الكرة: الزاوية العليا لمرمى خماسي تعيد بناءه مستوى بعد مستوى، من مرمى مرسوم بالطباشير على جدار من الطوب إلى شباك تحت الأضواء تحتفظ بكرتك.",
     idea: [
       "The card is a five-a-side goal (3 m by 2 m) seen from the penalty spot. The mouth is see-through: the net is drawn as cords over whatever ground the card sits on, so the outline is a Π standing on a goal line that runs the full width of the card, never a filled rectangle. The goal is an object and never mirrors.",
       "The 84 sits where the shot went in, the top corner of the net (la lucarne), in Changa 800, with the cords pulled in around it and a hard 6u clearance round the figures. 'OVR' is not in the artwork; it is in the accessible label. The name (Changa 800) and the tier sit top-start, so the card reads across as 'ALI … 84'; round them the net thins out in one feathered clearing rather than separate plates.",
@@ -957,10 +1394,13 @@
     ],
     tiers: {
       HOMA: "Mur. A goal chalked on a new breeze-block wall laid in running bond, both ends squared with half blocks. One clean 5u chalk line draws the posts and bar down to the wall's foot, and a second chalk line runs the full width of the card on the ground below the wall. The 84 and the name carry an even fine chalk grain that keeps about 98% of the stroke; the tier and the stat line are solid chalk. One street lamp makes a pool of light: the wall fades toward its ends and top (to under 2:1 against the night ground), so the chalk Π stays the outline. Two fresh ball marks sit in the lucarne, clear of the 84, and the club sticker is on the wall. No net.",
-      STADE: "Cage. Galvanised 12u tubes with spangle and welded joints, and rigid flat chain-link in bare wire at a tight 8u pitch: it does not bulge or sag. Behind it the welded rear frame shows, with a low rear rail, a diagonal brace in each side and weld beads at the joints. The stats are on a white enamel band painted along the bar, and the club's colours are taped round the start post.",
+      STADE:
+        "Cage. Galvanised 12u tubes with spangle and welded joints, and rigid flat chain-link in bare wire at a tight 8u pitch: it does not bulge or sag. Behind it the welded rear frame shows, with a low rear rail, a diagonal brace in each side and weld beads at the joints. The stats are on a white enamel band painted along the bar, and the club's colours are taped round the start post.",
       PRO: "Tube. White-painted steel tubes with a specular streak from an end-side floodlight, and soft nylon: a net of square knots turned 45° in the club's colour, with knots in the club's second colour. It bulges round the 84 and sags between its ties, so the roof droops and the cords curve, the opposite of STADE's rigid cage.",
-      CHAMPION: "Box. White powder-coated aluminium and a deeper box net receding in perspective (roof and side panels) on 3u stanchions, with a knotted square net and two floodlight glints.",
-      LEGEND: "Lucarne. The same box goal with the heaviest net of the ladder: a braided cord (1.6u body with a lighter 0.6u strand along it) at a 9.5u pitch with 2.6u knots, in three receding planes plus a ground sheet, so the net is closed all round. Its fold sits low, below every label. The white ball is lodged for good in the top-end corner, and its net bag breaks the Π by 16u: the outline change that shows at 32px. One floodlight off the corner throws three hard-edged steps of light across the net, and the stats are still painted on the bar. No gold, no sparkle.",
+      CHAMPION:
+        "Box. White powder-coated aluminium and a deeper box net receding in perspective (roof and side panels) on 3u stanchions, with a knotted square net and two floodlight glints.",
+      LEGEND:
+        "Lucarne. The same box goal with the heaviest net of the ladder: a braided cord (1.6u body with a lighter 0.6u strand along it) at a 9.5u pitch with 2.6u knots, in three receding planes plus a ground sheet, so the net is closed all round. Its fold sits low, below every label. The white ball is lodged for good in the top-end corner, and its net bag breaks the Π by 16u: the outline change that shows at 32px. One floodlight off the corner throws three hard-edged steps of light across the net, and the stats are still painted on the bar. No gold, no sparkle.",
     },
     legend: [
       "LEGEND is the goal that remembers your goal: the ball never leaves the top corner, and its net bag is the only place the outline breaks.",
@@ -1000,7 +1440,9 @@
       const defs =
         `<defs>${frameDefs(u, tk, F, p)}` +
         `<mask id="${u}-m" maskUnits="userSpaceOnUse" x="0" y="0" width="${VW}" height="${VH}"><rect width="${VW}" height="${VH}" fill="#fff"/>${g.mask}</mask></defs>`;
-      const lift = thumb ? "" : `<rect x="24" y="${LINE.y0 + 2}" width="312" height="7" rx="3.5" class="th-l" fill="#001c49" opacity=".55" filter="url(#${u}-soft)"/>`;
+      const lift = thumb
+        ? ""
+        : `<rect x="24" y="${LINE.y0 + 2}" width="312" height="7" rx="3.5" class="th-l" fill="#001c49" opacity=".55" filter="url(#${u}-soft)"/>`;
       const front =
         `<svg class="c01-face c01-front" viewBox="0 0 ${VW} ${VH}" width="100%" aria-hidden="true" focusable="false">` +
         defs +
@@ -1026,7 +1468,9 @@
       const S = MC.s(o);
       const tk = tierOf(p).k;
       const tok = compactTok(p, o, 44);
-      const founder = p.founder ? `<span class="c01-r26">·${MC.ltr(String(p.founder).slice(-2))}</span>` : "";
+      const founder = p.founder
+        ? `<span class="c01-r26">·${MC.ltr(String(p.founder).slice(-2))}</span>`
+        : "";
       return (
         `<div class="c01 c01-row t-${tk}${o.me ? " is-me" : ""}" dir="${S.dir}" role="img" aria-label="${esc(`${o.rank}. ${MC.label(p, o)}, ${o.pts} ${S.pts}`)}">` +
         `<span class="c01-rk">${MC.ltr(String(o.rank))}</span>` +
@@ -1051,7 +1495,11 @@
       const by = r1(MO.y0 + 9 + fs * 0.7);
       const t84 = `<text x="302" y="${by}" class="c01-84 c01-sh84" text-anchor="end" style="font-size:${fs}px">${p.ovr}</text>`;
       const ko84 = `<text x="302" y="${by}" class="c01-84" text-anchor="end" style="font-size:${fs}px;fill:#000;stroke:#000;stroke-width:12;stroke-linejoin:round">${p.ovr}</text>`;
-      const F = { flat: true, content: { draw: t84, knock: ko84 }, pk: { x: r1(302 - fs * 0.6), y: r1(by - fs * 0.36) } };
+      const F = {
+        flat: true,
+        content: { draw: t84, knock: ko84 },
+        pk: { x: r1(302 - fs * 0.6), y: r1(by - fs * 0.36) },
+      };
       const g = goal(u, p, o, F);
       // turf: horizontal mowing bands, thinner toward the goal line
       let turf = "";
@@ -1068,7 +1516,12 @@
       const GX = 344;
       const GY = 34;
       const light =
-        `<linearGradient id="${u}-haze" gradientUnits="userSpaceOnUse" x1="0" y1="112" x2="0" y2="196">${stops([[0, "#eaf6ff", 0], [1, "#eaf6ff", 1]])}</linearGradient>` +
+        `<linearGradient id="${u}-haze" gradientUnits="userSpaceOnUse" x1="0" y1="112" x2="0" y2="196">${stops(
+          [
+            [0, "#eaf6ff", 0],
+            [1, "#eaf6ff", 1],
+          ],
+        )}</linearGradient>` +
         `<path d="M${GX} ${GY}L36 ${lineY}H236Z" fill="url(#${u}-haze)" opacity=".07"/>` +
         `<path d="M${GX} ${GY}L96 ${lineY}H190Z" fill="url(#${u}-haze)" opacity=".08"/>` +
         `<circle cx="${GX}" cy="${GY}" r="20" fill="#eaf6ff" opacity=".07"/><circle cx="${GX}" cy="${GY}" r="11" fill="#eaf6ff" opacity=".14"/>` +
@@ -1179,7 +1632,10 @@
           const a = 1 - e;
           const x = a * a * P0[0] + 2 * a * e * P1[0] + e * e * P2[0];
           const y = a * a * P0[1] + 2 * a * e * P1[1] + e * e * P2[1];
-          ball.setAttribute("transform", `translate(${r1(x)} ${r1(y)}) scale(${r1((1.15 - 0.15 * e) * 100) / 100})`);
+          ball.setAttribute(
+            "transform",
+            `translate(${r1(x)} ${r1(y)}) scale(${r1((1.15 - 0.15 * e) * 100) / 100})`,
+          );
           shadowEl.setAttribute("cx", r1(x));
           shadowEl.setAttribute("cy", r1(270 - 26 * e));
           shadowEl.setAttribute("rx", r1(11 * (1 - e) + 1));
@@ -1192,7 +1648,12 @@
           // hard cut: the ball is in the corner, the net at full stretch; hold 240ms, one 60ms flash
           g.remove();
           if (still) still.style.opacity = "";
-          const grow = (sc) => bag && bag.setAttribute("transform", `translate(${R} ${BAR.y0}) scale(${sc}) translate(${-R} ${-BAR.y0})`);
+          const grow = (sc) =>
+            bag &&
+            bag.setAttribute(
+              "transform",
+              `translate(${R} ${BAR.y0}) scale(${sc}) translate(${-R} ${-BAR.y0})`,
+            );
           grow(1.22);
           repath({ x: 300, y: 70, k: 0.3, s: 54 }, 1.3);
           const flash = document.createElementNS(NS, "rect");
@@ -1207,7 +1668,15 @@
           setTimeout(() => flash.remove(), 60);
           if (navigator.vibrate) navigator.vibrate(40);
           setTimeout(() => {
-            pinchAnim(300, 70, 54, (t) => 0.3 * (1 - settle(t)), 420, 8, () => repath(null, 1));
+            pinchAnim(
+              300,
+              70,
+              54,
+              (t) => 0.3 * (1 - settle(t)),
+              420,
+              8,
+              () => repath(null, 1),
+            );
             const s0 = performance.now();
             const back = (now) => {
               const t = Math.min(1, (now - s0) / 420);
@@ -1236,7 +1705,8 @@
           return;
         }
         if (pt.x >= MO.x0 && pt.x <= MO.x1 && pt.y >= MO.y0 && pt.y <= MO.y1) {
-          if (anim && nets.length) pinchAnim(pt.x, pt.y, 34, (t) => 0.18 * Math.sin(Math.PI * t), 420, 8);
+          if (anim && nets.length)
+            pinchAnim(pt.x, pt.y, 34, (t) => 0.18 * Math.sin(Math.PI * t), 420, 8);
           else highlight();
         }
       });

@@ -38,16 +38,28 @@
   ];
   const pathOf = (map) => {
     const m = (x, y) => map(x, y).map(r1).join(" ");
-    return "M" + m(START[0], START[1]) + SEGS.map((s) => "C" + m(s[0], s[1]) + " " + m(s[2], s[3]) + " " + m(s[4], s[5])).join("") + "Z";
+    return (
+      "M" +
+      m(START[0], START[1]) +
+      SEGS.map((s) => "C" + m(s[0], s[1]) + " " + m(s[2], s[3]) + " " + m(s[4], s[5])).join("") +
+      "Z"
+    );
   };
   const POLY = (() => {
     const pts = [];
     let p0 = START;
     for (const s of SEGS) {
       for (let i = 1; i <= 24; i++) {
-        const t = i / 24, mt = 1 - t;
-        const a = mt * mt * mt, b = 3 * mt * mt * t, c = 3 * mt * t * t, d = t * t * t;
-        pts.push([a * p0[0] + b * s[0] + c * s[2] + d * s[4], a * p0[1] + b * s[1] + c * s[3] + d * s[5]]);
+        const t = i / 24,
+          mt = 1 - t;
+        const a = mt * mt * mt,
+          b = 3 * mt * mt * t,
+          c = 3 * mt * t * t,
+          d = t * t * t;
+        pts.push([
+          a * p0[0] + b * s[0] + c * s[2] + d * s[4],
+          a * p0[1] + b * s[1] + c * s[3] + d * s[5],
+        ]);
       }
       p0 = [s[4], s[5]];
     }
@@ -57,8 +69,10 @@
   function span(y) {
     const xs = [];
     for (let i = 0; i < POLY.length; i++) {
-      const a = POLY[i], b = POLY[(i + 1) % POLY.length];
-      if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) xs.push(a[0] + ((y - a[1]) * (b[0] - a[0])) / (b[1] - a[1]));
+      const a = POLY[i],
+        b = POLY[(i + 1) % POLY.length];
+      if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y))
+        xs.push(a[0] + ((y - a[1]) * (b[0] - a[0])) / (b[1] - a[1]));
     }
     return xs.length ? [Math.min(...xs), Math.max(...xs)] : null;
   }
@@ -85,8 +99,10 @@
   /** Offset a run outward by off(t) (t 0..1 along the run). */
   const offsetRun = (pts, off, c = [131, 300]) =>
     pts.map((p, k) => {
-      const a = pts[Math.max(0, k - 1)], b = pts[Math.min(pts.length - 1, k + 1)];
-      let nx = b[1] - a[1], ny = -(b[0] - a[0]);
+      const a = pts[Math.max(0, k - 1)],
+        b = pts[Math.min(pts.length - 1, k + 1)];
+      let nx = b[1] - a[1],
+        ny = -(b[0] - a[0]);
       const l = Math.hypot(nx, ny) || 1;
       nx /= l;
       ny /= l;
@@ -111,7 +127,10 @@
   const LIP = (() => {
     const pts = run((p) => p[1] < 30);
     const bump = (t) => Math.sin(Math.PI * t) ** 0.7;
-    return { outer: offsetRun(pts, (t) => 6.1 + 4.8 * bump(t)), inner: offsetRun(pts, (t) => 6.1 - 2.6 * bump(t)) }; // both edges meet at the ends: no seam
+    return {
+      outer: offsetRun(pts, (t) => 6.1 + 4.8 * bump(t)),
+      inner: offsetRun(pts, (t) => 6.1 - 2.6 * bump(t)),
+    }; // both edges meet at the ends: no seam
   })();
   // The mini: the forefoot alone, a toe-cap shield. Its base is cut in a shallow, uneven V
   // (the big-toe joint sits ahead of the little-toe joint) to a point under the 84, where the
@@ -135,9 +154,25 @@
       map,
       D: pathOf(map),
       heel: polyD(HEEL, map),
-      toe: polyD(TOE.outer, map) + "L" + TOE.inner.slice().reverse().map((p) => map(p[0], p[1]).map(r1).join(" ")).join("L") + "Z",
+      toe:
+        polyD(TOE.outer, map) +
+        "L" +
+        TOE.inner
+          .slice()
+          .reverse()
+          .map((p) => map(p[0], p[1]).map(r1).join(" "))
+          .join("L") +
+        "Z",
       toeMid: TOE.outer.map((p, i) => [(p[0] + TOE.inner[i][0]) / 2, (p[1] + TOE.inner[i][1]) / 2]),
-      lip: polyD(LIP.outer, map) + "L" + LIP.inner.slice().reverse().map((p) => map(p[0], p[1]).map(r1).join(" ")).join("L") + "Z",
+      lip:
+        polyD(LIP.outer, map) +
+        "L" +
+        LIP.inner
+          .slice()
+          .reverse()
+          .map((p) => map(p[0], p[1]).map(r1).join(" "))
+          .join("L") +
+        "Z",
       lipEdge: polyD(LIP.outer, map),
     };
     return (GEO[key] = G);
@@ -178,14 +213,19 @@
       idY: 556,
       ctY: 568,
       crest: { x: r1(midX(600)), y: 601, w: 10.5 },
-      season: [[134, 35], [164, 22], [194, 31]],
+      season: [
+        [134, 35],
+        [164, 22],
+        [194, 31],
+      ],
     };
   })();
 
   /* ------------------------------------------------------------------ studs per tier */
   // The tangent of the outline nearest a point, in degrees (blades run along the edge).
   const edgeTangent = (x, y) => {
-    let bi = 0, bd = 1e9;
+    let bi = 0,
+      bd = 1e9;
     POLY.forEach((p, i) => {
       const d = (p[0] - x) ** 2 + (p[1] - y) ** 2;
       if (d < bd) {
@@ -193,7 +233,9 @@
         bi = i;
       }
     });
-    const n = POLY.length, a = POLY[(bi - 3 + n) % n], b = POLY[(bi + 3) % n];
+    const n = POLY.length,
+      a = POLY[(bi - 3 + n) % n],
+      b = POLY[(bi + 3) % n];
     // the tangent that points toward the toe (up): the blade's narrow end leads
     let deg = (Math.atan2(b[1] - a[1], b[0] - a[0]) * 180) / Math.PI;
     if (Math.sin(deg * D2R) > 0) deg -= 180;
@@ -213,11 +255,13 @@
   const STUDS = {
     HOMA: (() => {
       const out = [];
-      const p = 19.5, rr = 6;
+      const p = 19.5,
+        rr = 6;
       for (let row = 0, y = 26; y < 640; row++, y += p * 0.866) {
         for (let x = 18 + (row % 2 ? p / 2 : 0); x < 250; x += p) {
           if (!insideBy(x, y, 13)) continue;
-          if (ZONES.some((z) => x > z[0] - rr && x < z[2] + rr && y > z[1] - rr && y < z[3] + rr)) continue;
+          if (ZONES.some((z) => x > z[0] - rr && x < z[2] + rr && y > z[1] - rr && y < z[3] + rr))
+            continue;
           if (Math.hypot(x - LAY.cir.x, y - LAY.cir.y) < LAY.cir.r + 8) continue;
           if (Math.hypot(x - LAY.wheel.x, y - LAY.wheel.y) < 46) continue;
           if (Math.hypot(x - LAY.crest.x, y - LAY.crest.y) < 13) continue;
@@ -227,20 +271,42 @@
       return out;
     })(),
     STADE: [
-      Lx(50, 20), Rx(42, 24),
-      Lx(62, 21), Lx(112, 16), Lx(162, 15), Lx(214, 16), Rx(68, 21), Rx(118, 16), Rx(168, 15), Rx(220, 16),
-      Lx(244, 15), Rx(250, 15),
-      Lx(530, 22), Rx(530, 22), Lx(604, 22), Rx(604, 22), [LAY.crest.x, 628],
+      Lx(50, 20),
+      Rx(42, 24),
+      Lx(62, 21),
+      Lx(112, 16),
+      Lx(162, 15),
+      Lx(214, 16),
+      Rx(68, 21),
+      Rx(118, 16),
+      Rx(168, 15),
+      Rx(220, 16),
+      Lx(244, 15),
+      Rx(250, 15),
+      Lx(530, 22),
+      Rx(530, 22),
+      Lx(604, 22),
+      Rx(604, 22),
+      [LAY.crest.x, 628],
     ].map(([x, y], i) => ({ t: "cone", x, y, r: i === 16 ? 8 : 9.2 })),
     PRO: [
-      ...[Lx(72, 21), Lx(152, 17), Lx(232, 17), Rx(78, 21), Rx(158, 17), Rx(238, 17)].map((q) => blade(q)),
+      ...[Lx(72, 21), Lx(152, 17), Lx(232, 17), Rx(78, 21), Rx(158, 17), Rx(238, 17)].map((q) =>
+        blade(q),
+      ),
       ...[Lx(528, 24), Rx(528, 24), Lx(604, 24), Rx(604, 24)].map((q) => blade(q, 0)),
     ],
     CHAMPION: [
-      ...[Lx(70, 23), Rx(76, 23), Lx(230, 21), Rx(236, 21), Lx(606, 27), Rx(606, 27)].map(([x, y]) => ({ t: "steel", x, y, r: 11.5 })),
-      ...[Lx(150, 16), Rx(156, 16), Lx(528, 24), Rx(528, 24)].map((q) => ({ ...blade(q), steel: true })),
+      ...[Lx(70, 23), Rx(76, 23), Lx(230, 21), Rx(236, 21), Lx(606, 27), Rx(606, 27)].map(
+        ([x, y]) => ({ t: "steel", x, y, r: 11.5 }),
+      ),
+      ...[Lx(150, 16), Rx(156, 16), Lx(528, 24), Rx(528, 24)].map((q) => ({
+        ...blade(q),
+        steel: true,
+      })),
     ],
-    LEGEND: [Lx(84, -2), Rx(90, -2), Lx(236, -1), Rx(240, -1), Lx(584, 0), Rx(584, 0)].map(([x, y]) => ({ t: "big", x, y, r: 16.5 })),
+    LEGEND: [Lx(84, -2), Rx(90, -2), Lx(236, -1), Rx(240, -1), Lx(584, 0), Rx(584, 0)].map(
+      ([x, y]) => ({ t: "big", x, y, r: 16.5 }),
+    ),
   };
 
   /* ------------------------------------------------------------------ materials */
@@ -253,41 +319,122 @@
   const TIER = {
     HOMA: {
       // new gum rubber: honey, translucent, a crisp moulded edge
-      plate: ["#d99a55", "#b8722f", "#86491a"], ink: "#2c1603", inkTone: "#4f2c0c", recess: "#5a2f08",
-      stud: ["#efbd7a", "#c6843f", "#7c4515"], tip: null, side: "#6a3c10", grain: 0.2, gloss: 0.24, part: 0.34,
-      tag: "#97571f", yr: "#5a2f08", hi: "#ffeccc", tok: "#b8722f", topTok: "#eab774",
+      plate: ["#d99a55", "#b8722f", "#86491a"],
+      ink: "#2c1603",
+      inkTone: "#4f2c0c",
+      recess: "#5a2f08",
+      stud: ["#efbd7a", "#c6843f", "#7c4515"],
+      tip: null,
+      side: "#6a3c10",
+      grain: 0.2,
+      gloss: 0.24,
+      part: 0.34,
+      tag: "#97571f",
+      yr: "#5a2f08",
+      hi: "#ffeccc",
+      tok: "#b8722f",
+      topTok: "#eab774",
     },
     STADE: {
       // matte moulded rubber, round cones
-      plate: ["#303338", "#1f2125", "#131417"], ink: "#ecebe6", inkTone: "#c4c2bc", recess: "#050506",
-      stud: ["#aab0b8", "#555b63", "#15171a"], tip: null, side: "#8a9098", grain: 0.36, gloss: 0.03, part: 0.2,
-      tag: "#2b2e33", yr: RIM, hi: "#ffffff", tok: "#202226", topTok: "#b3b9c1",
+      plate: ["#303338", "#1f2125", "#131417"],
+      ink: "#ecebe6",
+      inkTone: "#c4c2bc",
+      recess: "#050506",
+      stud: ["#aab0b8", "#555b63", "#15171a"],
+      tip: null,
+      side: "#8a9098",
+      grain: 0.36,
+      gloss: 0.03,
+      part: 0.2,
+      tag: "#2b2e33",
+      yr: RIM,
+      hi: "#ffffff",
+      tok: "#202226",
+      topTok: "#b3b9c1",
     },
     PRO: {
       // smoked translucent TPU: Logo Blue pulled 35% toward navy, frosted; Logo Blue only on the blade tips
-      plate: ["#2d5bbd", "#0c3c98", "#061e55"], ink: "#f2f6ff", inkTone: "#c8d7ff", recess: "#020f33",
-      stud: ["#3f66bb", "#0a2e7c", "#03153f"], tip: LOGO, side: "#7d9de6", grain: 0.26, gloss: 0.12, part: 0,
-      tag: "#06276a", yr: RIM, hi: "#ffffff", tok: "#0c3c98", topTok: LOGO,
+      plate: ["#2d5bbd", "#0c3c98", "#061e55"],
+      ink: "#f2f6ff",
+      inkTone: "#c8d7ff",
+      recess: "#020f33",
+      stud: ["#3f66bb", "#0a2e7c", "#03153f"],
+      tip: LOGO,
+      side: "#7d9de6",
+      grain: 0.26,
+      gloss: 0.12,
+      part: 0,
+      tag: "#06276a",
+      yr: RIM,
+      hi: "#ffffff",
+      tok: "#0c3c98",
+      topTok: LOGO,
     },
     CHAMPION: {
       // carbon twill under clear coat, steel-tipped blades and screw-in steel
-      plate: ["#30353d", "#1b1e24", "#0c0e11"], ink: "#f2f4f6", inkTone: "#c3c8ce", recess: "#040506",
-      stud: ["#4a5059", "#22262c", "#07080a"], tip: "steel", side: "#9aa1ab", grain: 0.1, gloss: 0.46, part: 0,
-      tag: "#2b3038", yr: RIM, hi: "#ffffff", tok: "#1b1e24", topTok: "#dfe4e8",
+      plate: ["#30353d", "#1b1e24", "#0c0e11"],
+      ink: "#f2f4f6",
+      inkTone: "#c3c8ce",
+      recess: "#040506",
+      stud: ["#4a5059", "#22262c", "#07080a"],
+      tip: "steel",
+      side: "#9aa1ab",
+      grain: 0.1,
+      gloss: 0.46,
+      part: 0,
+      tag: "#2b3038",
+      yr: RIM,
+      hi: "#ffffff",
+      tok: "#1b1e24",
+      topTok: "#dfe4e8",
     },
     LEGEND: {
       // smoked clear plate over a machined steel pitch
-      plate: ["#7590a0", "#566f7c", "#3e5561"], ink: "#0e1620", inkTone: "#26333f", recess: "#0e1620",
-      stud: ["#ffffff", "#c4cbd3", "#5f6874"], tip: null, side: "#0e1620", grain: 0.08, gloss: 0.42, part: 0,
-      tag: "#0e1620", yr: "#24313d", hi: "#ffffff", tok: "#8ca5b1", topTok: "#ffffff",
+      plate: ["#7590a0", "#566f7c", "#3e5561"],
+      ink: "#0e1620",
+      inkTone: "#26333f",
+      recess: "#0e1620",
+      stud: ["#ffffff", "#c4cbd3", "#5f6874"],
+      tip: null,
+      side: "#0e1620",
+      grain: 0.08,
+      gloss: 0.42,
+      part: 0,
+      tag: "#0e1620",
+      yr: "#24313d",
+      hi: "#ffffff",
+      tok: "#8ca5b1",
+      topTok: "#ffffff",
     },
   };
   const STEEL = [
-    [0, "#fbfcfd"], [0.16, "#c9d0d8"], [0.32, "#7f8a97"], [0.47, "#eef2f6"], [0.6, "#aab3bd"], [0.76, "#59636f"], [0.9, "#cfd6dd"], [1, "#f4f6f8"],
+    [0, "#fbfcfd"],
+    [0.16, "#c9d0d8"],
+    [0.32, "#7f8a97"],
+    [0.47, "#eef2f6"],
+    [0.6, "#aab3bd"],
+    [0.76, "#59636f"],
+    [0.9, "#cfd6dd"],
+    [1, "#f4f6f8"],
   ];
   const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const mix = (a, b, t) => "#" + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, "0")).join("");
-  const stops = (a, op = 1) => a.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"${op < 1 ? ` stop-opacity="${op}"` : ""}/>`).join("");
+  const mix = (a, b, t) =>
+    "#" +
+    hex(a)
+      .map((v, i) =>
+        Math.round(v + (hex(b)[i] - v) * t)
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("");
+  const stops = (a, op = 1) =>
+    a
+      .map(
+        ([o, c]) =>
+          `<stop offset="${o}" stop-color="${c}"${op < 1 ? ` stop-opacity="${op}"` : ""}/>`,
+      )
+      .join("");
 
   // A precomputed fine grain (frost on TPU, tooth on rubber): two seeded dot tiles of
   // different sizes laid over each other so the repeat never lines up. No noise filter.
@@ -295,7 +442,8 @@
     let s = 20261;
     const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
     const tile = (w, n) => {
-      let lt = "", dk = "";
+      let lt = "",
+        dk = "";
       for (let i = 0; i < n; i++) {
         const c = `<circle cx="${r1(rnd() * w)}" cy="${r1(rnd() * w)}" r="${r2(0.14 + rnd() * 0.22)}"/>`;
         if (i % 2) lt += c;
@@ -315,37 +463,66 @@
    * wall from stacked copies, then the lit top face).
    */
   function stud(u, s, P, X, det) {
-    const x = r1(X(s.x)), y = s.y;
+    const x = r1(X(s.x)),
+      y = s.y;
     const ar = X(0) !== 0;
-    const sh = [], body = [];
+    const sh = [],
+      body = [];
     const walls = (n, shape) => {
-      for (let i = n; i >= 1; i--) body.push(shape(r1(0.6 * i), r1(1.0 * i), mix(P.stud[2], "#000000", 0.08 * i)));
+      for (let i = n; i >= 1; i--)
+        body.push(shape(r1(0.6 * i), r1(1.0 * i), mix(P.stud[2], "#000000", 0.08 * i)));
     };
     if (s.t === "nub") {
       sh.push(`<circle cx="${r1(x + 2.4)}" cy="${r1(y + 4)}" r="${s.r}"/>`);
-      if (det) walls(3, (dx, dy, c) => `<circle cx="${r1(x + dx)}" cy="${r1(y + dy)}" r="${s.r}" fill="${c}"/>`);
+      if (det)
+        walls(
+          3,
+          (dx, dy, c) => `<circle cx="${r1(x + dx)}" cy="${r1(y + dy)}" r="${s.r}" fill="${c}"/>`,
+        );
       body.push(`<circle cx="${x}" cy="${y}" r="${s.r}" fill="url(#${u}-nub)"/>`);
-      if (det) body.push(`<circle cx="${r1(x - 0.4)}" cy="${r1(y - 0.6)}" r="${r1(s.r * 0.5)}" fill="${P.stud[0]}" opacity=".8"/><circle cx="${r1(x - s.r * 0.36)}" cy="${r1(y - s.r * 0.4)}" r="${r1(s.r * 0.26)}" fill="#fff8ea" opacity=".75"/>`);
+      if (det)
+        body.push(
+          `<circle cx="${r1(x - 0.4)}" cy="${r1(y - 0.6)}" r="${r1(s.r * 0.5)}" fill="${P.stud[0]}" opacity=".8"/><circle cx="${r1(x - s.r * 0.36)}" cy="${r1(y - s.r * 0.4)}" r="${r1(s.r * 0.26)}" fill="#fff8ea" opacity=".75"/>`,
+        );
       return { sh, body };
     }
     if (s.t === "cone" || s.t === "round") {
       const cone = s.t === "cone";
       const top = s.r * (cone ? 0.5 : 0.78);
       sh.push(`<circle cx="${r1(x + 3)}" cy="${r1(y + 5)}" r="${s.r}"/>`);
-      if (det) walls(4, (dx, dy, c) => `<circle cx="${r1(x + dx)}" cy="${r1(y + dy)}" r="${s.r}" fill="${c}"/>`);
+      if (det)
+        walls(
+          4,
+          (dx, dy, c) => `<circle cx="${r1(x + dx)}" cy="${r1(y + dy)}" r="${s.r}" fill="${c}"/>`,
+        );
       body.push(`<circle cx="${x}" cy="${y}" r="${s.r}" fill="url(#${u}-cone)"/>`);
-      body.push(`<circle cx="${r1(x - 0.5)}" cy="${r1(y - 0.8)}" r="${r1(top)}" fill="${P.tip ? P.tip : `url(#${u}-top)`}"/>`);
-      if (det) body.push(`<path d="M${r1(x - 0.5 - top * 0.8)} ${r1(y - 0.8 - top * 0.1)}A${r1(top * 0.82)} ${r1(top * 0.82)} 0 0 1 ${r1(x - 0.5 + top * 0.1)} ${r1(y - 0.8 - top * 0.8)}" stroke="#fff" stroke-width=".8" fill="none" stroke-linecap="round" opacity="${cone ? 0.45 : 0.7}"/>`);
+      body.push(
+        `<circle cx="${r1(x - 0.5)}" cy="${r1(y - 0.8)}" r="${r1(top)}" fill="${P.tip ? P.tip : `url(#${u}-top)`}"/>`,
+      );
+      if (det)
+        body.push(
+          `<path d="M${r1(x - 0.5 - top * 0.8)} ${r1(y - 0.8 - top * 0.1)}A${r1(top * 0.82)} ${r1(top * 0.82)} 0 0 1 ${r1(x - 0.5 + top * 0.1)} ${r1(y - 0.8 - top * 0.8)}" stroke="#fff" stroke-width=".8" fill="none" stroke-linecap="round" opacity="${cone ? 0.45 : 0.7}"/>`,
+        );
       return { sh, body };
     }
     if (s.t === "blade") {
       const a = ar ? 180 - s.a : s.a; // the left boot mirrors the angle, not the light
-      const g = (d, dx, dy, fill, extra = "") => `<path d="${d}" transform="translate(${r1(x + dx)} ${r1(y + dy)}) rotate(${a})" fill="${fill}"${extra}/>`;
+      const g = (d, dx, dy, fill, extra = "") =>
+        `<path d="${d}" transform="translate(${r1(x + dx)} ${r1(y + dy)}) rotate(${a})" fill="${fill}"${extra}/>`;
       sh.push(g(BLADE, 3, 5, "#000"));
       if (det) walls(4, (dx, dy, c) => g(BLADE, dx, dy, c));
       body.push(g(BLADE, 0, 0, `url(#${u}-cone)`));
       body.push(g(BLADE_TOP, -0.5, -0.8, s.steel ? `url(#${u}-steel)` : P.tip || `url(#${u}-top)`));
-      if (det) body.push(g(BLADE_TOP, -0.9, -1.3, "none", ` stroke="#fff" stroke-width=".7" opacity="${s.steel ? 0.8 : 0.6}"`));
+      if (det)
+        body.push(
+          g(
+            BLADE_TOP,
+            -0.9,
+            -1.3,
+            "none",
+            ` stroke="#fff" stroke-width=".7" opacity="${s.steel ? 0.8 : 0.6}"`,
+          ),
+        );
       return { sh, body };
     }
     // steel: a screw-in stud on a moulded boss
@@ -353,16 +530,34 @@
     const r = s.r;
     const boss = r + (big ? 4 : 3.2);
     sh.push(`<circle cx="${r1(x + 3)}" cy="${r1(y + 5)}" r="${r1(boss)}"/>`);
-    body.push(`<circle cx="${x}" cy="${y}" r="${r1(boss)}" fill="${big ? `url(#${u}-boss)` : P.stud[2]}"/>`);
-    if (det) for (let i = 4; i >= 1; i--) body.push(`<circle cx="${r1(x + 0.6 * i)}" cy="${r1(y + 1.0 * i)}" r="${r}" fill="${mix("#59636f", "#000000", 0.1 * i)}"/>`);
+    body.push(
+      `<circle cx="${x}" cy="${y}" r="${r1(boss)}" fill="${big ? `url(#${u}-boss)` : P.stud[2]}"/>`,
+    );
+    if (det)
+      for (let i = 4; i >= 1; i--)
+        body.push(
+          `<circle cx="${r1(x + 0.6 * i)}" cy="${r1(y + 1.0 * i)}" r="${r}" fill="${mix("#59636f", "#000000", 0.1 * i)}"/>`,
+        );
     body.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="url(#${u}-steel)"/>`);
     body.push(`<circle cx="${x}" cy="${y}" r="${r1(r * 0.64)}" fill="url(#${u}-face)"/>`);
     if (det) {
-      body.push(`<g fill="none" stroke="#fff" stroke-width=".35" opacity=".4">` + [0.2, 0.32, 0.44, 0.56].map((k) => `<circle cx="${x}" cy="${y}" r="${r1(r * k)}"/>`).join("") + `</g>`);
-      body.push(`<path d="M${r1(x - r * 0.78)} ${r1(y - r * 0.3)}A${r1(r * 0.84)} ${r1(r * 0.84)} 0 0 1 ${r1(x + r * 0.2)} ${r1(y - r * 0.82)}" stroke="#fff" stroke-width="${big ? 1.8 : 1.3}" fill="none" stroke-linecap="round" opacity=".95"/>`);
+      body.push(
+        `<g fill="none" stroke="#fff" stroke-width=".35" opacity=".4">` +
+          [0.2, 0.32, 0.44, 0.56]
+            .map((k) => `<circle cx="${x}" cy="${y}" r="${r1(r * k)}"/>`)
+            .join("") +
+          `</g>`,
+      );
+      body.push(
+        `<path d="M${r1(x - r * 0.78)} ${r1(y - r * 0.3)}A${r1(r * 0.84)} ${r1(r * 0.84)} 0 0 1 ${r1(x + r * 0.2)} ${r1(y - r * 0.82)}" stroke="#fff" stroke-width="${big ? 1.8 : 1.3}" fill="none" stroke-linecap="round" opacity=".95"/>`,
+      );
     }
-    body.push(`<circle cx="${x}" cy="${y}" r="${r1(r * 0.64)}" fill="none" stroke="#3d4650" stroke-width=".6" opacity=".7"/>`);
-    body.push(`<circle cx="${r1(x - r * 0.3)}" cy="${r1(y - r * 0.32)}" r="${r1(r * 0.16)}" fill="#fff"/>`);
+    body.push(
+      `<circle cx="${x}" cy="${y}" r="${r1(r * 0.64)}" fill="none" stroke="#3d4650" stroke-width=".6" opacity=".7"/>`,
+    );
+    body.push(
+      `<circle cx="${r1(x - r * 0.3)}" cy="${r1(y - r * 0.32)}" r="${r1(r * 0.16)}" fill="#fff"/>`,
+    );
     return { sh, body };
   }
 
@@ -374,7 +569,14 @@
       `<linearGradient id="${u}-lip" gradientUnits="userSpaceOnUse" x1="0" y1="-6" x2="0" y2="22"><stop offset="0" stop-color="${t === "HOMA" ? "#b88f5a" : "#b3a78d"}"/><stop offset="1" stop-color="#ebe3d1"/></linearGradient>` +
       `<linearGradient id="${u}-pl" x1="0" y1="0" x2="1" y2=".32"><stop offset="0" stop-color="${P.plate[0]}"/><stop offset=".5" stop-color="${P.plate[1]}"/><stop offset="1" stop-color="${P.plate[2]}"/></linearGradient>` +
       (t === "LEGEND"
-        ? `<linearGradient id="${u}-rim" x1="0" y1="0" x2="1" y2=".4">${stops([[0, "#ffffff"], [0.22, "#b7bfc8"], [0.42, "#f1f4f6"], [0.66, "#8b95a0"], [0.85, "#dfe4e8"], [1, "#a7b0ba"]])}</linearGradient>`
+        ? `<linearGradient id="${u}-rim" x1="0" y1="0" x2="1" y2=".4">${stops([
+            [0, "#ffffff"],
+            [0.22, "#b7bfc8"],
+            [0.42, "#f1f4f6"],
+            [0.66, "#8b95a0"],
+            [0.85, "#dfe4e8"],
+            [1, "#a7b0ba"],
+          ])}</linearGradient>`
         : `<linearGradient id="${u}-rim" x1="0" y1="0" x2="1" y2=".5"><stop offset="0" stop-color="#fbf8f1"/><stop offset=".55" stop-color="${RIM}"/><stop offset="1" stop-color="#d8cfbc"/></linearGradient>`) +
       `<radialGradient id="${u}-nub" cx=".36" cy=".32" r=".72"><stop offset="0" stop-color="${P.stud[0]}"/><stop offset=".6" stop-color="${P.stud[1]}"/><stop offset="1" stop-color="${mix(P.stud[1], P.stud[2], 0.5)}"/></radialGradient>` +
       `<linearGradient id="${u}-cone" x1=".1" y1=".05" x2=".85" y2=".95"><stop offset="0" stop-color="${mix(P.stud[0], P.stud[1], 0.35)}"/><stop offset=".55" stop-color="${P.stud[1]}"/><stop offset="1" stop-color="${P.stud[2]}"/></linearGradient>` +
@@ -388,7 +590,10 @@
       `<linearGradient id="${u}-sp" x1="0" y1="0" x2="1" y2=".7"><stop offset="0" stop-color="#fff" stop-opacity="${P.gloss}"/><stop offset=".42" stop-color="#fff" stop-opacity="${r2(P.gloss * 0.3)}"/><stop offset=".62" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
       // toe spring: the toe curls away from the viewer, so it darkens toward the tip
       `<linearGradient id="${u}-ts" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="96"><stop offset="0" stop-color="#000" stop-opacity="${t === "LEGEND" ? 0.18 : 0.3}"/><stop offset=".55" stop-color="#000" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>` +
-      GRAIN.map((g, i) => `<pattern id="${u}-g${i}" width="${g.w}" height="${g.w}" patternUnits="userSpaceOnUse"${i ? ' patternTransform="rotate(31)"' : ""}><g fill="#fff" opacity=".7">${g.lt}</g><g fill="#000" opacity=".8">${g.dk}</g></pattern>`).join("");
+      GRAIN.map(
+        (g, i) =>
+          `<pattern id="${u}-g${i}" width="${g.w}" height="${g.w}" patternUnits="userSpaceOnUse"${i ? ' patternTransform="rotate(31)"' : ""}><g fill="#fff" opacity=".7">${g.lt}</g><g fill="#000" opacity=".8">${g.dk}</g></pattern>`,
+      ).join("");
     if (t === "CHAMPION") {
       // 2/2 twill: each 3-unit cell is a tow running across or along; the step makes the diagonal
       let cells = "";
@@ -406,7 +611,9 @@
       d +=
         `<linearGradient id="${u}-ch" x1="0" y1="0" x2=".55" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset=".42" stop-color="#c9d0d8"/><stop offset=".7" stop-color="#7f8a97"/><stop offset="1" stop-color="#3d4650"/></linearGradient>` +
         `<linearGradient id="${u}-nf" x1="0" y1="0" x2=".18" y2="1"><stop offset="0" stop-color="#f6f8fa"/><stop offset=".4" stop-color="#dde2e7"/><stop offset=".52" stop-color="#a9b3bd"/><stop offset=".6" stop-color="#e9edf1"/><stop offset="1" stop-color="#c2c9d1"/></linearGradient>` +
-        (det ? `<filter id="${u}-ns" x="-15%" y="-15%" width="130%" height="140%"${cis}><feGaussianBlur stdDeviation="1.8"/></filter>` : "") +
+        (det
+          ? `<filter id="${u}-ns" x="-15%" y="-15%" width="130%" height="140%"${cis}><feGaussianBlur stdDeviation="1.8"/></filter>`
+          : "") +
         `<linearGradient id="${u}-wall" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8b949e"/><stop offset=".35" stop-color="#d9dee3"/><stop offset=".6" stop-color="#6f7984"/><stop offset="1" stop-color="#b9c1c9"/></linearGradient>` +
         `<pattern id="${u}-brush" width="40" height="1.3" patternUnits="userSpaceOnUse" patternTransform="rotate(-12)"><rect width="40" height=".45" fill="#fff" opacity=".32"/><rect y=".8" width="40" height=".3" fill="#2a3138" opacity=".18"/></pattern>`;
     }
@@ -484,13 +691,17 @@
     const L = pitchLines(G);
     const b = LAY.box;
     const bx = r1(G.X(G.ar ? b.x + b.w : b.x));
-    const bosses = STUDS.LEGEND.map((st) => `<circle cx="${r1(G.X(st.x))}" cy="${st.y}" r="${st.r + 9}"/>`).join("");
+    const bosses = STUDS.LEGEND.map(
+      (st) => `<circle cx="${r1(G.X(st.x))}" cy="${st.y}" r="${st.r + 9}"/>`,
+    ).join("");
     const wh = `<circle cx="${G.X(LAY.wheel.x)}" cy="${LAY.wheel.y}" r="${LAY.wheel.ro + 9}" fill="none" stroke-width="7"/>`;
     const lines = (stroke, extra = "") =>
       `<g fill="none" stroke="${stroke}" stroke-linecap="round"${extra}>` +
       `<path d="${L.half}" stroke-width="9"/><path d="${L.circle}" stroke-width="7"/>` +
       // the box frame and its D hold the stats; the thumb drops the stats, so it drops the frame too
-      (det ? `<path d="${L.d}" stroke-width="5"/><rect x="${bx}" y="${b.y}" width="${b.w}" height="${b.h}" rx="3" stroke-width="6"/>` : "") +
+      (det
+        ? `<path d="${L.d}" stroke-width="5"/><rect x="${bx}" y="${b.y}" width="${b.w}" height="${b.h}" rx="3" stroke-width="6"/>`
+        : "") +
       wh.replace(' fill="none"', "") +
       `</g>`;
     let s = "";
@@ -520,8 +731,17 @@
       s += `<circle cx="${r1(x + 1)}" cy="${r1(y + 1.6)}" r="${ro}" fill="#000" opacity=".45"/>`;
       s += `<circle cx="${x}" cy="${y}" r="${r2(rm)}" fill="none" stroke="url(#${u}-steel)" stroke-width="${r2(ro - r)}"/>`;
       if (det) {
-        s += `<g fill="none" stroke-width=".3">` + [1.3, 2.5, 3.7, 4.9].map((k, i) => `<circle cx="${x}" cy="${y}" r="${r2(r + k)}" stroke="${i % 2 ? "#2a3138" : "#fff"}" opacity="${i % 2 ? 0.25 : 0.45}"/>`).join("") + `</g>`;
-        const a0 = 200 * D2R, a1 = 258 * D2R;
+        s +=
+          `<g fill="none" stroke-width=".3">` +
+          [1.3, 2.5, 3.7, 4.9]
+            .map(
+              (k, i) =>
+                `<circle cx="${x}" cy="${y}" r="${r2(r + k)}" stroke="${i % 2 ? "#2a3138" : "#fff"}" opacity="${i % 2 ? 0.25 : 0.45}"/>`,
+            )
+            .join("") +
+          `</g>`;
+        const a0 = 200 * D2R,
+          a1 = 258 * D2R;
         s += `<path d="M${r1(x + Math.cos(a0) * rm)} ${r1(y + Math.sin(a0) * rm)}A${r2(rm)} ${r2(rm)} 0 0 1 ${r1(x + Math.cos(a1) * rm)} ${r1(y + Math.sin(a1) * rm)}" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
       }
       s += `<circle cx="${x}" cy="${y}" r="${ro}" fill="none" stroke="#3d4650" stroke-width=".6"/>`;
@@ -532,15 +752,19 @@
     // the dial, raised 1.5: its cast edge, its face, a 1-unit lit rim at the upper-left
     s += `<circle cx="${r1(x + 0.9)}" cy="${r1(y + 1.3)}" r="${r}" fill="${P.recess}" opacity=".85"/>`;
     s += `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#${u}-dial)"/>`;
-    if (t === "CHAMPION") s += `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#${u}-tw)" opacity=".5"/>`;
-    const b0 = 185 * D2R, b1 = 290 * D2R, rh = r - 0.6;
+    if (t === "CHAMPION")
+      s += `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#${u}-tw)" opacity=".5"/>`;
+    const b0 = 185 * D2R,
+      b1 = 290 * D2R,
+      rh = r - 0.6;
     s += `<path d="M${r1(x + Math.cos(b0) * rh)} ${r1(y + Math.sin(b0) * rh)}A${rh} ${rh} 0 0 1 ${r1(x + Math.cos(b1) * rh)} ${r1(y + Math.sin(b1) * rh)}" stroke="${P.hi}" stroke-width=".9" fill="none" stroke-linecap="round" opacity="${t === "HOMA" ? 0.7 : 0.45}"/>`;
     // the mould's years round the dial, 26 at the top (toward the toe), clockwise
     if (det) {
       let yrs = "";
       for (let k = 0; k < 6; k++) {
         const a = (-90 + k * 60) * D2R;
-        const nx = r1(x + Math.cos(a) * r * 0.68), ny = r1(y + Math.sin(a) * r * 0.68 + 1.9);
+        const nx = r1(x + Math.cos(a) * r * 0.68),
+          ny = r1(y + Math.sin(a) * r * 0.68 + 1.9);
         yrs += `<text x="${nx}" y="${ny}" font-size="${k ? 4.9 : 5.6}" text-anchor="middle" direction="ltr" fill="${ink}" opacity="${k ? 0.55 : 1}" class="c05v2-yr">${26 + k}</text>`;
       }
       s += yrs;
@@ -551,13 +775,15 @@
       }
     }
     // the arrow, raised, on 26
-    const tip = y - r * 0.36, tail = y + r * 0.46;
+    const tip = y - r * 0.36,
+      tail = y + r * 0.46;
     const arrow = (dx, dy, col, op) =>
       `<g transform="translate(${dx} ${dy})" opacity="${op}"><path d="M${x} ${r1(tail)}V${r1(tip + 3.4)}" stroke="${col}" stroke-width="2" stroke-linecap="round"/>` +
       `<path d="M${r1(x - 3.4)} ${r1(tip + 4.2)}L${x} ${r1(tip)}L${r1(x + 3.4)} ${r1(tip + 4.2)}Z" fill="${col}"/><circle cx="${x}" cy="${y}" r="2.6" fill="${col}"/></g>`;
     if (det) s += arrow(0.5, 0.8, P.recess, 0.6);
     s += arrow(0, 0, ink, 1);
-    if (det) s += `<circle cx="${r1(x - 0.6)}" cy="${r1(y - 0.7)}" r=".9" fill="${P.hi}" opacity=".7"/>`;
+    if (det)
+      s += `<circle cx="${r1(x - 0.6)}" cy="${r1(y - 0.7)}" r=".9" fill="${P.hi}" opacity=".7"/>`;
     return s;
   }
 
@@ -571,7 +797,8 @@
   const stepCurve = (G) => {
     const { y, mid } = LAY.step;
     const sp = span(y);
-    const l = sp[0] - 4, r = sp[1] + 4;
+    const l = sp[0] - 4,
+      r = sp[1] + 4;
     const X = G.X;
     return {
       y,
@@ -582,7 +809,8 @@
   function hoodRelief(u, P, G, det, t) {
     const h = LAY.hood;
     const k = h.k;
-    const aw = 200 * k, ah = 240 * k;
+    const aw = 200 * k,
+      ah = 240 * k;
     const bx = r1(G.X(h.x) - aw / 2);
     const by = r1(h.top - 58 * k);
     const fill = mix(P.plate[1], "#000000", 0.12);
@@ -614,12 +842,14 @@
     let g = "";
     if (t === "LEGEND") {
       // visible thickness: the side wall of the plate, lit from the top-left
-      for (let k = 9; k >= 1; k--) g += `<path d="${G.D}" fill="url(#${u}-wall)" stroke="url(#${u}-wall)" stroke-width="12" transform="translate(${r1(k * 0.45)} ${r1(k * 1.05)})"/>`;
+      for (let k = 9; k >= 1; k--)
+        g += `<path d="${G.D}" fill="url(#${u}-wall)" stroke="url(#${u}-wall)" stroke-width="12" transform="translate(${r1(k * 0.45)} ${r1(k * 1.05)})"/>`;
       g += `<path d="${G.D}" fill="none" stroke="#3a424b" stroke-width="12.6" transform="translate(4 9.4)"/>`;
     }
     if (t === "PRO" && det) {
       // the TPU plate's own thickness, seen at the lower-right edge
-      for (let k = 4; k >= 1; k--) g += `<path d="${G.D}" fill="${mix("#052a74", "#000000", 0.1 * k)}" transform="translate(${r1(k * 0.3)} ${r1(k * 0.6)})"/>`;
+      for (let k = 4; k >= 1; k--)
+        g += `<path d="${G.D}" fill="${mix("#052a74", "#000000", 0.1 * k)}" transform="translate(${r1(k * 0.3)} ${r1(k * 0.6)})"/>`;
     }
     g += `<path d="${G.D}" fill="url(#${u}-pl)"/>`;
     g += `<g clip-path="url(#${u}-cl)">`;
@@ -636,7 +866,8 @@
     }
     // grain: frost on TPU, tooth on rubber, almost nothing under clear coat
     g += `<rect x="-10" y="-10" width="290" height="670" fill="url(#${u}-g0)" opacity="${P.grain}"/>`;
-    if (det) g += `<rect x="-10" y="-10" width="290" height="670" fill="url(#${u}-g1)" opacity="${r2(P.grain * 0.7)}"/>`;
+    if (det)
+      g += `<rect x="-10" y="-10" width="290" height="670" fill="url(#${u}-g1)" opacity="${r2(P.grain * 0.7)}"/>`;
     if (t === "PRO") g += `<path d="${G.D}" fill="#cfe0ff" opacity=".05"/>`; // the frost on smoked TPU
     if (t === "HOMA") {
       // gum rubber is translucent: it glows where it is thick and darkens at the edge
@@ -645,20 +876,25 @@
     // the hood relief and the shank step are moulded into the plate surface, under the rim
     if (!thumb) g += hoodRelief(u, P, G, det, t);
     if (det) {
-      if (P.part) g += `<rect x="-10" y="-10" width="290" height="670" fill="#fff" opacity="${P.part}" mask="url(#${u}-pm)"/>`;
+      if (P.part)
+        g += `<rect x="-10" y="-10" width="290" height="670" fill="#fff" opacity="${P.part}" mask="url(#${u}-pm)"/>`;
       g += `<path d="${G.D}" fill="none" stroke="#000" stroke-opacity="${t === "LEGEND" ? 0.22 : t === "HOMA" ? 0.3 : 0.38}" stroke-width="30" filter="url(#${u}-bl)"/>`;
-      if (t === "PRO") g += `<rect x="-10" y="-10" width="290" height="670" fill="#6f98f0" opacity=".55" mask="url(#${u}-rf)"/>`;
+      if (t === "PRO")
+        g += `<rect x="-10" y="-10" width="290" height="670" fill="#6f98f0" opacity=".55" mask="url(#${u}-rf)"/>`;
     }
     // toe spring
     g += `<rect x="-10" y="-10" width="290" height="120" fill="url(#${u}-ts)"/>`;
-    if (det) g += `<path d="M${X(34)} 92Q${X(131)} 62 ${X(232)} 86" fill="none" stroke="#fff" stroke-width="5" opacity="${r2(0.05 + P.gloss * 0.12)}" filter="url(#${u}-s1)"/>`;
+    if (det)
+      g += `<path d="M${X(34)} 92Q${X(131)} 62 ${X(232)} 86" fill="none" stroke="#fff" stroke-width="5" opacity="${r2(0.05 + P.gloss * 0.12)}" filter="url(#${u}-s1)"/>`;
     if (t !== "LEGEND") g += grooves(u, P, G, det, t);
     // the plate's curvature catching the light along its upper-left edge
-    if (full) g += `<path d="${G.D}" fill="none" stroke="url(#${u}-sp)" stroke-width="${thumb ? 18 : 16}"${det ? ` filter="url(#${u}-s1)"` : ""}/>`;
+    if (full)
+      g += `<path d="${G.D}" fill="none" stroke="url(#${u}-sp)" stroke-width="${thumb ? 18 : 16}"${det ? ` filter="url(#${u}-s1)"` : ""}/>`;
     if (t === "LEGEND") {
       // thick clear plastic darkens at its edge; a refraction line runs just inside it
       g += `<path d="${G.D}" fill="none" stroke="#5d6f7a" stroke-width="15"/>`;
-      if (det) g += `<rect x="-10" y="-10" width="290" height="670" fill="#effdff" opacity=".75" mask="url(#${u}-rf)"/>`;
+      if (det)
+        g += `<rect x="-10" y="-10" width="290" height="670" fill="#effdff" opacity=".75" mask="url(#${u}-rf)"/>`;
     }
     if (t === "PRO") g += `<path d="${G.D}" fill="none" stroke="${LOGO}" stroke-width="15.4"/>`; // 1-unit Logo Blue edge inside the rim
     g += `</g>`;
@@ -675,7 +911,8 @@
       // keylined on its outer edge only, so it runs out into the rim with no seam at its ends
       g += `<path d="${G.lip}" fill="url(#${u}-lip)"/>`;
       g += `<path d="${G.lipEdge}" fill="none" stroke="${t === "HOMA" ? "#8a5a1e" : "#a39a86"}" stroke-width="1.2" stroke-linecap="round"/>`;
-      if (det) g += `<path d="${G.lipEdge}" fill="none" stroke="#fffaf0" stroke-width=".8" opacity=".75" transform="translate(-.3 .5)"/>`;
+      if (det)
+        g += `<path d="${G.lipEdge}" fill="none" stroke="#fffaf0" stroke-width=".8" opacity=".75" transform="translate(-.3 .5)"/>`;
     }
     // the heel counter in the club's colour, keylined in its second colour
     g += `<path d="${G.heel}" fill="none" stroke="${p.club.secondary}" stroke-width="11" stroke-linecap="butt"/>`;
@@ -713,14 +950,42 @@
   }
 
   /* ------------------------------------------------------------------ text */
-  const CH = { A: 0.64, B: 0.59, C: 0.51, D: 0.65, E: 0.52, F: 0.47, G: 0.57, H: 0.65, I: 0.3, J: 0.39, K: 0.62, L: 0.44, M: 0.81, N: 0.67, O: 0.66, P: 0.59, Q: 0.65, R: 0.62, S: 0.58, T: 0.49, U: 0.63, V: 0.62, W: 0.93, X: 0.63, Y: 0.58, Z: 0.59 };
+  const CH = {
+    A: 0.64,
+    B: 0.59,
+    C: 0.51,
+    D: 0.65,
+    E: 0.52,
+    F: 0.47,
+    G: 0.57,
+    H: 0.65,
+    I: 0.3,
+    J: 0.39,
+    K: 0.62,
+    L: 0.44,
+    M: 0.81,
+    N: 0.67,
+    O: 0.66,
+    P: 0.59,
+    Q: 0.65,
+    R: 0.62,
+    S: 0.58,
+    T: 0.49,
+    U: 0.63,
+    V: 0.62,
+    W: 0.93,
+    X: 0.63,
+    Y: 0.58,
+    Z: 0.59,
+  };
   // advance widths of the stat labels in em, measured in Chromium with the lab's faces
   // (Manrope 600 at 0.06em tracking; Noto Sans Arabic 600)
   const LABEL_EM = {
     lat: { CAP: 2.176, SEL: 1.929, TRF: 1.951, CON: 2.357 },
     ar: { CAP: 2.222, SEL: 3.653, TRF: 4.016, CON: 2.627 },
   };
-  const emName = (s, ar) => (ar ? [...s].length * 0.6 : [...s].reduce((a, ch) => a + (CH[ch.toUpperCase()] || 0.6), 0));
+  const emName = (s, ar) =>
+    ar ? [...s].length * 0.6 : [...s].reduce((a, ch) => a + (CH[ch.toUpperCase()] || 0.6), 0);
 
   /** Raised moulded type: a 1-unit shadow below-right, a lit edge above-left, then the face. */
   const raised = (attrs, body, P, det, k = 1) =>
@@ -742,20 +1007,41 @@
     // 1. the 84, moulded proud at the centre spot, inside the centre circle
     const ovr = String(p.ovr);
     const ofs = ovr.length > 2 ? 66 : LAY.ovr.fs;
-    const ox = r1(X(LAY.cir.x)), oy = r1(LAY.cir.y + ofs * 0.32);
-    const ot = (dx, dy, fill, extra = "") => `<text class="c05v2-ov" x="${r1(ox + dx)}" y="${r1(oy + dy)}" font-size="${ofs}" fill="${fill}" text-anchor="middle" direction="ltr"${extra}>${ovr}</text>`;
+    const ox = r1(X(LAY.cir.x)),
+      oy = r1(LAY.cir.y + ofs * 0.32);
+    const ot = (dx, dy, fill, extra = "") =>
+      `<text class="c05v2-ov" x="${r1(ox + dx)}" y="${r1(oy + dy)}" font-size="${ofs}" fill="${fill}" text-anchor="middle" direction="ltr"${extra}>${ovr}</text>`;
     s += `<g class="c05v2-84">`;
     if (legend) {
       // machined numerals: a soft cast shadow, a short side wall in dark steel, a thin chamfer lit
       // from the top-left, and a polished face. No outline stroke.
       s += ot(1.8, 2.8, "#0e1620", ` opacity=".34"${det ? ` filter="url(#${u}-ns)"` : ""}`);
-      for (let i = thumb ? 2 : 4; i >= 1; i--) s += ot(r1(0.45 * i), r1(0.7 * i), mix("#4b5560", "#0e1620", 0.14 * i));
-      s += ot(0, 0, `url(#${u}-ch)`, ` stroke="url(#${u}-ch)" stroke-width="2.4" stroke-linejoin="round"`);
+      for (let i = thumb ? 2 : 4; i >= 1; i--)
+        s += ot(r1(0.45 * i), r1(0.7 * i), mix("#4b5560", "#0e1620", 0.14 * i));
+      s += ot(
+        0,
+        0,
+        `url(#${u}-ch)`,
+        ` stroke="url(#${u}-ch)" stroke-width="2.4" stroke-linejoin="round"`,
+      );
       s += ot(0, 0, `url(#${u}-nf)`);
-      if (det) s += ot(0, 0, "none", ` stroke="#ffffff" stroke-width=".5" opacity=".55" transform="translate(-.5 -.6)"`);
+      if (det)
+        s += ot(
+          0,
+          0,
+          "none",
+          ` stroke="#ffffff" stroke-width=".5" opacity=".55" transform="translate(-.5 -.6)"`,
+        );
     } else {
-      s += ot(0, 0, P.recess, ` stroke="${P.recess}" stroke-width="3" stroke-linejoin="round" opacity=".85"`);
-      if (!thumb) for (let i = 3; i >= 1; i--) s += ot(r1(0.5 * i), r1(0.8 * i), mix(P.side, "#000000", 0.1 * i));
+      s += ot(
+        0,
+        0,
+        P.recess,
+        ` stroke="${P.recess}" stroke-width="3" stroke-linejoin="round" opacity=".85"`,
+      );
+      if (!thumb)
+        for (let i = 3; i >= 1; i--)
+          s += ot(r1(0.5 * i), r1(0.8 * i), mix(P.side, "#000000", 0.1 * i));
       s += ot(-0.9, -0.9, mix(P.ink, "#ffffff", 0.6));
       s += ot(0, 0, `url(#${u}-ov)`);
     }
@@ -764,7 +1050,8 @@
     // 2. the name across the ball, the founder year after it in the plate's own material (ALI ·26)
     const fy = p.founder ? `·${p.founder % 100}` : "";
     const ax = LAY.ax;
-    const sp = span(LAY.nameY - 22), sp2 = span(LAY.nameY);
+    const sp = span(LAY.nameY - 22),
+      sp2 = span(LAY.nameY);
     const avail = 2 * Math.min(ax - sp[0], sp[1] - ax, ax - sp2[0], sp2[1] - ax) - 2 * RIMIN - 48;
     const em = emName(name, ar) + (fy ? 0.18 + 0.62 * 1.45 : 0);
     // Arabic is capped lower: the two dots under a final ya (علي) hang about 0.35em below the
@@ -772,7 +1059,9 @@
     const fs = r1(Math.min(ar ? 30 : 34, avail / em));
     const ny = LAY.nameY - (ar ? 3 : 0);
     const nx = X(ax); // on the axis of the centre spot
-    const yr = fy ? `<tspan class="c05v2-fy" font-size="${r1(fs * 0.62)}" fill="${P.yr}"${ar ? "" : ' direction="ltr" unicode-bidi="embed"'}>${fy}</tspan>` : "";
+    const yr = fy
+      ? `<tspan class="c05v2-fy" font-size="${r1(fs * 0.62)}" fill="${P.yr}"${ar ? "" : ' direction="ltr" unicode-bidi="embed"'}>${fy}</tspan>`
+      : "";
     const nameBody = `<tspan font-size="${fs}">${esc(name)}</tspan>${yr ? " " + yr : ""}`;
     const nattr = `class="c05v2-nm${ar ? " is-ar" : ""}" x="${r1(nx)}" y="${r1(ny)}" text-anchor="middle"${dirA}`;
     if (det) {
@@ -785,7 +1074,9 @@
     if (!thumb) {
       const tierTxt = S.tiers[p.tier];
       const tfs = ar ? 10.5 : 8.6;
-      const tw = r1((ar ? [...tierTxt].length * 0.6 * tfs : tierTxt.length * (0.7 + 0.14) * tfs) + 14);
+      const tw = r1(
+        (ar ? [...tierTxt].length * 0.6 * tfs : tierTxt.length * (0.7 + 0.14) * tfs) + 14,
+      );
       const th = LAY.tagH + (ar ? 1 : 0);
       const ty = LAY.tagY + (ar ? 10 : 0);
       const tx = X(ax);
@@ -807,8 +1098,10 @@
       const b = LAY.box;
       const bl = ar ? MIRROR - b.x - b.w : b.x; // the box's visual left edge
       const br = bl + b.w;
-      const pad = 9.5, gap = 5;
-      const vfs = 13.5, lfs = ar ? 6.9 : 7.6;
+      const pad = 9.5,
+        gap = 5;
+      const vfs = 13.5,
+        lfs = ar ? 6.9 : 7.6;
       const vw = 1.24 * vfs; // two tabular figures, Manrope 700 (measured)
       const lw = (k) => LABEL_EM[ar ? "ar" : "lat"][k] * lfs;
       const cl = [Math.max(lw("CAP"), lw("TRF")), Math.max(lw("SEL"), lw("CON"))];
@@ -834,7 +1127,9 @@
         const y = base[(i / 2) | 0];
         const lab = `class="c05v2-sl${ar ? " is-ar" : ""}" x="${r1(lx)}" y="${y}" font-size="${lfs}" text-anchor="${la}" direction="ltr"`;
         const val = `class="c05v2-sv" x="${r1(vx)}" y="${y}" font-size="${vfs}" text-anchor="${va}" direction="ltr"`;
-        s += `<g opacity=".7">${raised(lab, esc(S.stats[k]), P, det, 0.8)}</g>` + raised(val, String(p.stats[k]), P, det, 1);
+        s +=
+          `<g opacity=".7">${raised(lab, esc(S.stats[k]), P, det, 0.8)}</g>` +
+          raised(val, String(p.stats[k]), P, det, 1);
       });
     }
 
@@ -851,7 +1146,13 @@
         s += raised(fl, fb, P, det, 0.9);
       }
       // 6. the style code: the BotolaGO ID moulded under the clock, the country under it
-      s += raised(`class="c05v2-id" x="${wx}" y="${LAY.idY}" font-size="7.8" text-anchor="middle" direction="ltr"`, esc(p.id), P, det, 0.8);
+      s += raised(
+        `class="c05v2-id" x="${wx}" y="${LAY.idY}" font-size="7.8" text-anchor="middle" direction="ltr"`,
+        esc(p.id),
+        P,
+        det,
+        0.8,
+      );
       s += `<g opacity=".8">${raised(`class="c05v2-ct${ar ? " is-ar" : ""}" x="${wx}" y="${LAY.ctY}" font-size="${ar ? 8.4 : 6.8}" text-anchor="middle"${dirA}`, esc(S.country), P, det, 0.7)}</g>`;
       // 7. the club crest, stamped inside the heel cup
       const cw2 = LAY.crest.w;
@@ -889,37 +1190,62 @@
   // The whole sole laid horizontal, toe at the inline end, the arch along the bottom. The
   // midfoot is shortened so the token stays about 2.1:1. Card (x, y) -> token (TL - sq(y), x).
   const SQ = { a: 300, b: 470, k: 0.5 };
-  const sq = (y) => (y <= SQ.a ? y : y >= SQ.b ? y - (SQ.b - SQ.a) * (1 - SQ.k) : SQ.a + (y - SQ.a) * SQ.k);
+  const sq = (y) =>
+    y <= SQ.a ? y : y >= SQ.b ? y - (SQ.b - SQ.a) * (1 - SQ.k) : SQ.a + (y - SQ.a) * SQ.k;
   const TL = r1(sq(660));
   const tokP = (x, y) => [TL - sq(y), x];
   const TW = r1(TL + 14);
-  const TY0 = -14, TH = 290;
+  const TY0 = -14,
+    TH = 290;
   let TOKG = null;
   const tokGeo = () =>
     TOKG ||
     (TOKG = {
       D: pathOf(tokP),
       heel: polyD(HEEL, tokP),
-      toe: polyD(TOE.outer, tokP) + "L" + TOE.inner.slice().reverse().map((q) => tokP(q[0], q[1]).map(r1).join(" ")).join("L") + "Z",
+      toe:
+        polyD(TOE.outer, tokP) +
+        "L" +
+        TOE.inner
+          .slice()
+          .reverse()
+          .map((q) => tokP(q[0], q[1]).map(r1).join(" "))
+          .join("L") +
+        "Z",
     });
   // the 84 across the forefoot; studs around it, never under it
   const TOVR = { x: 131, y: 150, fs: 162 };
   const TSTUD = {
-    STADE: [Lx(44, 30), Rx(52, 30), Lx(262, 24), Rx(266, 24), Lx(390, 22), Rx(380, 20), Lx(604, 30), Rx(604, 30)].map(([x, y]) => ({ t: "cone", x, y, r: 20 })),
+    STADE: [
+      Lx(44, 30),
+      Rx(52, 30),
+      Lx(262, 24),
+      Rx(266, 24),
+      Lx(390, 22),
+      Rx(380, 20),
+      Lx(604, 30),
+      Rx(604, 30),
+    ].map(([x, y]) => ({ t: "cone", x, y, r: 20 })),
     PRO: [
       ...[Lx(70, 28), Lx(236, 26), Rx(76, 28), Rx(240, 26)].map((q) => ({ ...blade(q), sc: 1.8 })),
       ...[Lx(600, 34), Rx(600, 34)].map((q) => ({ ...blade(q), sc: 1.8 })),
     ],
-    CHAMPION: [Lx(60, 30), Rx(66, 30), Lx(254, 28), Rx(258, 28), Lx(604, 32), Rx(604, 32)].map(([x, y]) => ({ t: "steel", x, y, r: 20 })),
-    LEGEND: [Lx(84, -2), Rx(90, -2), Lx(236, -1), Rx(240, -1), Lx(584, 0), Rx(584, 0)].map(([x, y]) => ({ t: "big", x, y, r: 25 })),
+    CHAMPION: [Lx(60, 30), Rx(66, 30), Lx(254, 28), Rx(258, 28), Lx(604, 32), Rx(604, 32)].map(
+      ([x, y]) => ({ t: "steel", x, y, r: 20 }),
+    ),
+    LEGEND: [Lx(84, -2), Rx(90, -2), Lx(236, -1), Rx(240, -1), Lx(584, 0), Rx(584, 0)].map(
+      ([x, y]) => ({ t: "big", x, y, r: 25 }),
+    ),
   };
   let TNUBS = null;
   function tokNubs() {
     if (TNUBS) return TNUBS;
     const out = [];
-    const pch = 31, r = 9.5;
+    const pch = 31,
+      r = 9.5;
     const [ocx, ocy] = tokP(TOVR.x, TOVR.y);
-    const hw = TOVR.fs * 0.6 + 8, hh = TOVR.fs * 0.32 + 8;
+    const hw = TOVR.fs * 0.6 + 8,
+      hh = TOVR.fs * 0.32 + 8;
     const [wcx, wcy] = tokP(LAY.wheel.x, LAY.wheel.y);
     for (let row = 0, y = 24; y < 640; row++, y += pch * 0.866) {
       for (let x = 30 + (row % 2 ? pch / 2 : 0); x < 236; x += pch) {
@@ -936,7 +1262,11 @@
   /** Stud emblems in token or mini space (flat, two-tone, lit from the top-left). */
   function emblem(s, cx, cy, P, u, ar, rot, px = 6) {
     const r = s.r;
-    if (s.t === "nub") return { sh: "", st: `<circle cx="${r1(cx + 1.8)}" cy="${r1(cy + 2.8)}" r="${r}" fill="${P.stud[2]}"/><circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r}" fill="${P.topTok}"/>` };
+    if (s.t === "nub")
+      return {
+        sh: "",
+        st: `<circle cx="${r1(cx + 1.8)}" cy="${r1(cy + 2.8)}" r="${r}" fill="${P.stud[2]}"/><circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r}" fill="${P.topTok}"/>`,
+      };
     if (s.t === "cone" || s.t === "round")
       return {
         sh: `<circle cx="${r1(cx + 4)}" cy="${r1(cy + 6)}" r="${r}"/>`,
@@ -945,13 +1275,22 @@
     if (s.t === "blade") {
       const a = ar ? 180 - (s.a + rot) : s.a + rot;
       const sc = s.sc || 2;
-      const c = (d, dx, dy, fill) => `<path d="${d}" transform="translate(${r1(cx + dx)} ${r1(cy + dy)}) rotate(${a}) scale(${sc})" fill="${fill}"/>`;
+      const c = (d, dx, dy, fill) =>
+        `<path d="${d}" transform="translate(${r1(cx + dx)} ${r1(cy + dy)}) rotate(${a}) scale(${sc})" fill="${fill}"/>`;
       // a 1px light specular edge on the upper-left of the tip (px = viewBox units per CSS pixel),
       // so a Logo Blue tip still reads on the smoked navy plate in a 44px row
       const spec = s.steel ? "" : c(BLADE_TOP, r1(-0.8 - px * 0.7), r1(-1.2 - px * 0.9), "#e3ecff");
       return {
         sh: c(BLADE, 4, 6, "#000"),
-        st: c(BLADE, 2.4, 4, P.stud[2]) + c(BLADE, 0, 0, P.stud[1]) + spec + c(BLADE_TOP, -0.8, -1.2, s.steel ? `url(#${u}-s)` : P.topTok) + c(BLADE_TOP, -1.8, -2.4, "none").replace("/>", ' stroke="#fff" stroke-width=".9" opacity=".7"/>'),
+        st:
+          c(BLADE, 2.4, 4, P.stud[2]) +
+          c(BLADE, 0, 0, P.stud[1]) +
+          spec +
+          c(BLADE_TOP, -0.8, -1.2, s.steel ? `url(#${u}-s)` : P.topTok) +
+          c(BLADE_TOP, -1.8, -2.4, "none").replace(
+            "/>",
+            ' stroke="#fff" stroke-width=".9" opacity=".7"/>',
+          ),
       };
     }
     if (s.t === "ring")
@@ -990,20 +1329,24 @@
     const cell = r1((TH / size) * 3); // 3px twill cells at any size
     let shape = "";
     // LEGEND's steel side wall, always toward the lower-right (inside the mirror, x flips)
-    if (t === "LEGEND") shape += `<path d="${TG.D}" fill="#6f7984" stroke="#6f7984" stroke-width="${rimW}" transform="translate(${ar ? -8 : 8} 9)"/>`;
+    if (t === "LEGEND")
+      shape += `<path d="${TG.D}" fill="#6f7984" stroke="#6f7984" stroke-width="${rimW}" transform="translate(${ar ? -8 : 8} 9)"/>`;
     shape += `<path d="${TG.D}" fill="url(#${u}-p)"/>`;
-    if (t === "CHAMPION") shape += `<path d="${TG.D}" fill="url(#${u}-tw)" opacity=".75"/><path d="${TG.D}" fill="#fff" opacity=".08"/>`;
+    if (t === "CHAMPION")
+      shape += `<path d="${TG.D}" fill="url(#${u}-tw)" opacity=".75"/><path d="${TG.D}" fill="#fff" opacity=".08"/>`;
     if (t === "LEGEND") shape += `<path d="${TG.D}" fill="#9fb8c4" fill-opacity=".45"/>`;
     shape += `<path d="${TG.D}" fill="none" stroke="${t === "LEGEND" ? "#3a424b" : t === "HOMA" ? "#8a5a1e" : "#a39a86"}" stroke-width="${rimW + 4}"/>`;
     shape += `<path d="${TG.D}" fill="none" stroke="${t === "LEGEND" ? `url(#${u}-s)` : RIM}" stroke-width="${rimW}"/>`;
     // the heel counter in the club colour (rule 8: visible on the 44px token), keylined
     shape += `<path d="${TG.heel}" fill="none" stroke="${p.club.secondary}" stroke-width="${rimW + 10}" stroke-linecap="round"/>`;
     shape += `<path d="${TG.heel}" fill="none" stroke="${p.club.primary}" stroke-width="${rimW + 2}" stroke-linecap="round"/>`;
-    if (t === "LEGEND") shape += `<path d="${TG.toe}" fill="url(#${u}-s)" stroke="#3d4650" stroke-width="3"/>`;
+    if (t === "LEGEND")
+      shape += `<path d="${TG.toe}" fill="url(#${u}-s)" stroke="#3d4650" stroke-width="3"/>`;
     const g = mir(shape);
     // studs: emblems in token space (the light never rotates)
     const list = t === "HOMA" ? tokNubs() : TSTUD[t];
-    let sh = "", st = "";
+    let sh = "",
+      st = "";
     for (const s of list) {
       const [cx0, cy] = tokP(s.x, s.y);
       const e = emblem(s, X(cx0), cy, P, u, ar, 90, TH / size);
@@ -1012,8 +1355,10 @@
     }
     // the founder sign: the machined steel insert ring and its dial in the heel
     const [wx0, wy] = tokP(LAY.wheel.x, LAY.wheel.y);
-    const fx = r1(X(wx0)), fy = r1(wy);
-    const R = 36, rD = 23;
+    const fx = r1(X(wx0)),
+      fy = r1(wy);
+    const R = 36,
+      rD = 23;
     const ring = p.founder
       ? `<circle cx="${r1(fx + 2)}" cy="${r1(fy + 3)}" r="${R + 3}" fill="#000" opacity=".4"/><circle cx="${fx}" cy="${fy}" r="${r2((R + rD) / 2)}" fill="none" stroke="url(#${u}-s)" stroke-width="${R - rD}"/>` +
         `<circle cx="${fx}" cy="${fy}" r="${rD}" fill="${P.plate[1]}"/><circle cx="${fx}" cy="${fy}" r="${R}" fill="none" stroke="#3d4650" stroke-width="2"/>` +
@@ -1054,9 +1399,18 @@
     return {
       HOMA: [...toe, Lx(130, 8), Rx(126, 8), ...low].map(([x, y]) => ({ t: "nub", x, y, r: 12 })),
       STADE: [...toe, ...low].map(([x, y]) => ({ t: "cone", x, y, r: 16 })),
-      PRO: [{ ...blade(Lx(40, 20)), sc: 2.2 }, { ...blade(Lx(142, 9)), sc: 2.2 }, { ...blade(Rx(142, 9)), sc: 2.2 }],
+      PRO: [
+        { ...blade(Lx(40, 20)), sc: 2.2 },
+        { ...blade(Lx(142, 9)), sc: 2.2 },
+        { ...blade(Rx(142, 9)), sc: 2.2 },
+      ],
       CHAMPION: [...toe, ...low].map(([x, y]) => ({ t: "ring", x, y, r: 16 })),
-      LEGEND: [Lx(52, -3), Rx(52, -3), Lx(204, -3), Rx(188, -3)].map(([x, y]) => ({ t: "big", x, y, r: 19 })),
+      LEGEND: [Lx(52, -3), Rx(52, -3), Lx(204, -3), Rx(188, -3)].map(([x, y]) => ({
+        t: "big",
+        x,
+        y,
+        r: 19,
+      })),
     };
   })();
   const MBOX = { x0: 0, y0: -12, w: 263, h: 274 };
@@ -1064,7 +1418,15 @@
   const miniGeo = () => {
     if (MINIG) return MINIG;
     const D = (map) => "M" + CAPLOOP.map((q) => map(q[0], q[1]).map(r1).join(" ")).join("L") + "Z";
-    const TOEm = polyD(TOE.outer, (x, y) => [x, y]) + "L" + TOE.inner.slice().reverse().map((q) => [q[0], q[1]].map(r1).join(" ")).join("L") + "Z";
+    const TOEm =
+      polyD(TOE.outer, (x, y) => [x, y]) +
+      "L" +
+      TOE.inner
+        .slice()
+        .reverse()
+        .map((q) => [q[0], q[1]].map(r1).join(" "))
+        .join("L") +
+      "Z";
     return (MINIG = { lat: D((x, y) => [x, y]), ar: D((x, y) => [MIRROR - x, y]), toeLat: TOEm });
   };
 
@@ -1079,14 +1441,17 @@
     const rimW = r1((1.6 * MBOX.h) / size); // a 1.6px cream rim at any size
     const cell = r1((MBOX.h / size) * 3);
     let g = "";
-    if (t === "LEGEND") g += `<path d="${D}" fill="#6f7984" stroke="#6f7984" stroke-width="${rimW}" transform="translate(5 7)"/>`;
+    if (t === "LEGEND")
+      g += `<path d="${D}" fill="#6f7984" stroke="#6f7984" stroke-width="${rimW}" transform="translate(5 7)"/>`;
     g += `<path d="${D}" fill="url(#${u}-p)"/>`;
     if (t === "CHAMPION") g += `<path d="${D}" fill="url(#${u}-tw)" opacity=".75"/>`;
     if (t === "LEGEND") g += `<path d="${D}" fill="#9fb8c4" fill-opacity=".45"/>`;
     g += `<path d="${D}" fill="none" stroke="${t === "LEGEND" ? "#3a424b" : t === "HOMA" ? "#8a5a1e" : "#a39a86"}" stroke-width="${r1(rimW + 4)}" stroke-linejoin="round"/>`;
     g += `<path d="${D}" fill="none" stroke="${t === "LEGEND" ? `url(#${u}-s)` : RIM}" stroke-width="${rimW}" stroke-linejoin="round"/>`;
-    if (t === "LEGEND") g += `<g${ar ? ` transform="matrix(-1 0 0 1 ${MIRROR} 0)"` : ""}><path d="${MG.toeLat}" fill="url(#${u}-s)" stroke="#3d4650" stroke-width="4"/></g>`;
-    let sh = "", st = "";
+    if (t === "LEGEND")
+      g += `<g${ar ? ` transform="matrix(-1 0 0 1 ${MIRROR} 0)"` : ""}><path d="${MG.toeLat}" fill="url(#${u}-s)" stroke="#3d4650" stroke-width="4"/></g>`;
+    let sh = "",
+      st = "";
     for (const s of MSTUD[t]) {
       const e = emblem(s, X(s.x), s.y, P, u, ar, 0, MBOX.h / size);
       sh += e.sh;
@@ -1095,7 +1460,8 @@
     // the 84
     const ovr = String(p.ovr);
     const ofs = ovr.length > 2 ? 84 : 109; // 88% of the first pass, so the studs clear the digits
-    const ox = r1(X(132)), oy = r1(129 + ofs * 0.32);
+    const ox = r1(X(132)),
+      oy = r1(129 + ofs * 0.32);
     const legend = t === "LEGEND";
     const ovText =
       `<text class="c05v2-ov" x="${r1(ox + 4)}" y="${r1(oy + 6)}" font-size="${ofs}" text-anchor="middle" fill="${mix(P.side, "#000000", 0.25)}">${ovr}</text>` +
@@ -1103,7 +1469,8 @@
     // founder: a steel dot (at least 3px) sitting on the cut, like the centre spot on the halfway line
     const fr = r1((1.75 * MBOX.h) / size);
     // the bead sits in a dark socket ring, so it holds on LEGEND's light steel as well as on navy
-    const fx = X(CUT.apex[0]), fyy = CUT.apex[1] - 13;
+    const fx = X(CUT.apex[0]),
+      fyy = CUT.apex[1] - 13;
     const sock = r1((0.9 * MBOX.h) / size);
     const fd = p.founder
       ? `<circle cx="${r1(fx + 2)}" cy="${fyy + 3}" r="${r1(fr + sock)}" fill="#000" opacity=".35"/><circle cx="${fx}" cy="${fyy}" r="${r1(fr + sock)}" fill="#0e1620"/><circle cx="${fx}" cy="${fyy}" r="${fr}" fill="url(#${u}-s)"/><circle cx="${r1(fx - fr * 0.3)}" cy="${r1(fyy - fr * 0.32)}" r="${r1(fr * 0.3)}" fill="#fff"/>`
@@ -1124,7 +1491,8 @@
   /* The founder year after the name in HTML (row, share): the year in the name's own ink and
      weight, the dot a steel bead in a dark socket (the clock's insert ring, in miniature). The
      dot stays in the text as "·" for copy and screen readers; the bead draws it. */
-  const founderYear = (p) => (p.founder ? `<i><span class="c05v2-bead">·</span>${MC.ltr(String(p.founder % 100))}</i>` : "");
+  const founderYear = (p) =>
+    p.founder ? `<i><span class="c05v2-bead">·</span>${MC.ltr(String(p.founder % 100))}</i>` : "";
 
   /* ------------------------------------------------------------------ row */
   function row(p, o = {}) {
@@ -1155,22 +1523,31 @@
     // the print a sole leaves is its mirror image: the stud marks of this boot, pressed into the turf
     // the print keeps the story's 24px margin on its outer side
     const sc = 0.56;
-    const ox = ar ? r1(25 - 22 * sc) : r1(335 - 241 * sc), oy = 136;
+    const ox = ar ? r1(25 - 22 * sc) : r1(335 - 241 * sc),
+      oy = 136;
     const prMap = (x, y) => [r1(ox + (ar ? x : MIRROR - x) * sc), r1(oy + y * sc)];
-    const pit = "#010a05", lip = "#9ccfa8";
+    const pit = "#010a05",
+      lip = "#9ccfa8";
     const marks = STUDS[t]
       .map((s) => {
         const [x, y] = prMap(s.x, s.y);
         if (s.t === "blade") {
           const a = ar ? s.a : 180 - s.a;
-          const c = (col, dx, dy, op, k) => `<path d="${BLADE}" transform="translate(${r1(x + dx)} ${r1(y + dy)}) rotate(${a}) scale(${r2(sc * k)})" fill="${col}" opacity="${op}"/>`;
-          return c(lip, -0.6, -0.8, 1, 1.18) + c(pit, 0, 0, 0.9, 1) + `<circle cx="${r1(x + 7)}" cy="${r1(y - 4)}" r=".9" fill="${lip}"/><circle cx="${r1(x - 6)}" cy="${r1(y + 5)}" r=".7" fill="#6fae80"/>`;
+          const c = (col, dx, dy, op, k) =>
+            `<path d="${BLADE}" transform="translate(${r1(x + dx)} ${r1(y + dy)}) rotate(${a}) scale(${r2(sc * k)})" fill="${col}" opacity="${op}"/>`;
+          return (
+            c(lip, -0.6, -0.8, 1, 1.18) +
+            c(pit, 0, 0, 0.9, 1) +
+            `<circle cx="${r1(x + 7)}" cy="${r1(y - 4)}" r=".9" fill="${lip}"/><circle cx="${r1(x - 6)}" cy="${r1(y + 5)}" r=".7" fill="#6fae80"/>`
+          );
         }
         const r = r1((s.r || 7) * sc);
         return (
           `<circle cx="${r1(x - 0.5)}" cy="${r1(y - 0.7)}" r="${r1(r + 1.6)}" fill="${lip}"/>` +
           `<circle cx="${x}" cy="${y}" r="${r}" fill="${pit}" opacity=".9"/>` +
-          (s.t === "nub" ? "" : `<circle cx="${r1(x + r + 1.6)}" cy="${r1(y + 1)}" r=".9" fill="${lip}"/><circle cx="${r1(x - r)}" cy="${r1(y + r + 1.2)}" r=".7" fill="#6fae80"/>`)
+          (s.t === "nub"
+            ? ""
+            : `<circle cx="${r1(x + r + 1.6)}" cy="${r1(y + 1)}" r=".9" fill="${lip}"/><circle cx="${r1(x - r)}" cy="${r1(y + r + 1.2)}" r=".7" fill="#6fae80"/>`)
         );
       })
       .join("");
@@ -1193,7 +1570,9 @@
       `<filter id="${u}-pb" x="-10%" y="-10%" width="120%" height="120%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation=".35"/></filter>` +
       `</defs>` +
       `<rect width="360" height="640" fill="#0a2416"/>` +
-      [0, 1, 2, 3, 4, 5, 6, 7].map((i) => `<rect y="${i * 80}" width="360" height="40" fill="#0d2c1b"/>`).join("") +
+      [0, 1, 2, 3, 4, 5, 6, 7]
+        .map((i) => `<rect y="${i * 80}" width="360" height="40" fill="#0d2c1b"/>`)
+        .join("") +
       `<rect width="360" height="640" filter="url(#${u}-g)" opacity=".38"/>` +
       `<path d="${tl}" stroke="#eef3ea" stroke-width="5.5" opacity=".92" filter="url(#${u}-ch)"/>` +
       `<rect width="360" height="640" filter="url(#${u}-g)" opacity=".2" style="mix-blend-mode:multiply"/>` +
@@ -1235,8 +1614,10 @@
     name: "Semelle",
     nameAr: "النعل",
     category: "bold",
-    philosophy: "Your BotolaGO identity is the soleplate of your boot: the stud pattern is your tier, and BotolaGO's pitch is moulded into it, with the 84 at the centre spot.",
-    philosophyAr: "هويتك في BotolaGO هي نعل حذائك: نمط المسامير يدل على مستواك، وملعب BotolaGO مصبوب فيه، والرقم 84 في نقطة الوسط.",
+    philosophy:
+      "Your BotolaGO identity is the soleplate of your boot: the stud pattern is your tier, and BotolaGO's pitch is moulded into it, with the 84 at the centre spot.",
+    philosophyAr:
+      "هويتك في BotolaGO هي نعل حذائك: نمط المسامير يدل على مستواك، وملعب BotolaGO مصبوب فيه، والرقم 84 في نقطة الوسط.",
     gridWidth: 170,
     detailWidth: 260,
     idea: [
@@ -1269,10 +1650,13 @@
     ],
     tiers: {
       HOMA: "Turf trainer in new gum rubber: honey-brown, translucent where it is thick, with a crisp moulded edge and a parting line, and a field of round turf nubs, each with its own side wall. Full outline, raw but new.",
-      STADE: "Artificial-grass sole in matte moulded rubber: a fine dry tooth, no sheen, and round conical studs with flat grey tops and real height.",
+      STADE:
+        "Artificial-grass sole in matte moulded rubber: a fine dry tooth, no sheen, and round conical studs with flat grey tops and real height.",
       PRO: "Firm-ground smoked TPU: Logo Blue pulled about 35% toward navy and smoked, frosted with a precomputed fine grain, its thickness visible at the edge. Ten tapered blades whose tips are the only full-strength Logo Blue, plus a 1-unit Logo Blue edge inside the rim.",
-      CHAMPION: "Soft-ground hybrid on a visible carbon twill under a gloss clear coat: six screw-in polished steel studs on moulded bosses, and four blades with steel tips.",
-      LEGEND: "A smoked clear plate over a machined steel chassis that is the pitch itself (halfway bar, centre-circle ring, box frame and the clock's ring), with visible thickness and a refraction line. The 84 is machined steel numerals: a polished face, a thin chamfer and a short side wall, with no outline. Six machined studs set into the edge break the outline, and a slim steel toe guard lengthens the toe.",
+      CHAMPION:
+        "Soft-ground hybrid on a visible carbon twill under a gloss clear coat: six screw-in polished steel studs on moulded bosses, and four blades with steel tips.",
+      LEGEND:
+        "A smoked clear plate over a machined steel chassis that is the pitch itself (halfway bar, centre-circle ring, box frame and the clock's ring), with visible thickness and a refraction line. The 84 is machined steel numerals: a polished face, a thin chamfer and a short side wall, with no outline. Six machined studs set into the edge break the outline, and a slim steel toe guard lengthens the toe.",
     },
     legend: [
       "LEGEND is the only tier whose black-and-white outline changes: six steel studs stand proud of both edges and a machined toe guard extends the toe, so it reads as a solid shape at 32px and on the mini.",
