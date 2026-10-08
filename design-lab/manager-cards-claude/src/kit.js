@@ -110,8 +110,8 @@
   // halftone or emboss it; the figure itself is shared by every concept.
   MC.AVATAR = {
     viewBox: "0 0 200 240",
-    torso: "M8 240C10 205 32 187 64 179L84 175H116L136 179C168 187 190 205 192 240Z",
-    seam: "M26 212C66 199 134 199 174 212",
+    torso: "M2 240C4 203 26 182 62 174L84 170H116L138 174C174 182 196 203 198 240Z",
+    seam: "M22 214C64 199 136 199 178 214M66 176C58 196 50 218 46 240M134 176C142 196 150 218 154 240",
     collar: "M68 168C82 161 118 161 132 168L137 190C118 183 82 183 63 190Z",
     neck: "M85 138H115L117 172C106 168 94 168 83 172Z",
     head: "M64 98C64 62 82 46 100 46C118 46 136 62 136 98C136 126 122 146 100 146C78 146 64 126 64 98Z",
@@ -119,9 +119,9 @@
     hair: "M61 100C57 58 79 38 100 38C121 38 143 58 139 100C138 114 134 124 128 131C120 126 110 131 100 138C90 131 80 126 72 131C66 124 62 114 61 100Z",
     // Hood up (the default): covers head, hair and ears; its peak and centre seam make the
     // figure read as a person in a bench jacket, not the generic "no photo" bust.
-    hood: "M44 184C38 150 40 112 52 84C64 58 82 46 100 44C118 46 136 58 148 84C160 112 162 150 156 184C130 174 70 174 44 184Z",
-    hoodSeam: "M100 46C100 92 100 140 100 176",
-    hoodRim: "M50 182C78 172 122 172 150 182",
+    hood: "M52 180C47 150 48 118 58 94C68 72 84 60 100 58C116 60 132 72 142 94C152 118 153 150 148 180C126 171 74 171 52 180Z",
+    hoodSeam: "M100 60C100 100 100 140 100 173",
+    hoodRim: "M56 178C80 170 120 170 144 178",
   };
   /**
    * Draws the shared avatar as an <svg>. Colours are per part. A part set to false is not drawn;

@@ -1,8 +1,9 @@
 /* 04 POCHOIR (bold). The spray stencil that numbers neighbourhood-tournament bibs: hand-cut
    kraft in the derb, then film, oiled manila, etched zinc and, at the top, the brass plate a
-   sign shop keeps for decades. The card is the TOOL, resting on the print it makes: a 2.2:1
-   bib-number plate with a round hang hole, the 84 cut through it, every cut showing the
-   club-coloured print on the sheet beneath. The plate never mirrors. */
+   sign shop keeps for decades. The card is the TOOL: a 2.2:1 bib-number plate with a round hang
+   hole and the 84 cut through it. On the light ground it rests on the club-coloured print it
+   makes; on the dark ground its cuts are open, ringed with the club's overspray. The plate never
+   mirrors. */
 (function () {
   const MC = window.MC;
 
@@ -860,18 +861,18 @@
     nameAr: "الإستنسل",
     category: "bold",
     philosophy:
-      "Your card is the stencil that numbers your bib: the 84 is cut through it, and every cut shows the print it makes in your club's colour.",
+      "Your card is the stencil that numbers your bib: the 84 is cut through it, and the print it makes is in your club's colour.",
     philosophyAr:
-      "بطاقتك هي القالب الذي يُرقَّم به قميصك: الرقم 84 مقصوص فيها، وكل فتحة تُظهر الطبعة بلون ناديك.",
+      "بطاقتك هي القالب الذي يُرقَّم به قميصك: الرقم 84 مقصوص فيها، والطبعة التي يتركها بلون ناديك.",
     idea: [
       "A bib-number stencil plate at 2.2:1 with a round see-through hang hole, 12% of its width, at the top right. The 84 is cut through the plate at 150 units, with stencil bridges only where its counters need them. The name, the avatar ring, the founder's 26 and one line of stats are cut the same way. The plate never mirrors.",
-      "The plate rests on its own print sheet, so every cut shows the sprayed print in the club's colour: the lab's placeholder slate, deepened until it reads 4.5:1 on each plate. Each cut has a wall shadow on its top and start edges and a lit lip on its bottom and end edges, so it reads as a hole over a print. The hang hole and the registration holes stay open to the ground.",
-      "The lettering is a lab cut of 'BotolaGO Pochoir': Changa 800 and 600 outlines shaped with HarfBuzz, with a bridge computed for every enclosed counter in Latin, Arabic and the digits. Only the lab's fixed strings exist: the digits, ALI, علي and the four stat labels in both scripts. Any other name is rubber-stamped in Changa in the same 72-unit box until the face is drawn.",
-      "Ink on the plate is limited to what a workshop would add. The tier and season are written in marker, printed, stamped or engraved depending on the tier. The BotolaGO ID and the country are stamped under the hang hole like a part number. There is no logo on the plate and no header bar.",
+      "On the light ground the plate rests on its own print sheet, so every cut shows the sprayed print in the club's colour (the lab's placeholder slate, deepened only where a plate needs it: 3:1 for the large cuts, 4.5:1 for the stat line). On the dark ground the cuts are open and show the ground, so the 84 is a real hole in the outline, and a thin rim of club-colour overspray around every cut carries the club. Each cut has a wall shadow on its top and start edges and a lit lip on its bottom and end edges. The hang hole and the registration holes are open on both grounds.",
+      "The lettering is a lab cut of 'BotolaGO Pochoir': Changa 800 and 600 outlines shaped with HarfBuzz, with a bridge computed for every enclosed counter in Latin, Arabic and the digits. Only the lab's fixed strings exist: the digits, ALI, علي and the four stat labels in both scripts. Any other name is rubber-stamped in clean Changa 800 ink in the same 68-unit box until the face is drawn: one line down to 15 units, two lines for two words, and a long single word hyphenated between consonants (ABDER-RAHMANE). Arabic words are never broken.",
+      "Ink on the plate is limited to what a workshop would add. The tier and season are written in marker, printed, stamped or engraved depending on the tier. The BotolaGO ID is stamped under the hang hole like a part number, 'BOT' over the number, with the country beneath, 12 units clear of the name. Only the tier word carries the stamp or marker texture; the season, ID and country are clean ink. There is no logo on the plate and no header bar.",
     ],
     belonging: [
-      "Your number is a hole you can see through to your own print. You own the tool that made it, not a certificate someone issued you.",
-      "The plate keeps every completed season as a stepped band of paint on its border, never inside a cut, so an old plate looks veteran without a single badge. ALI has no completed season, so his plates carry none. The LEGEND preview shows the build-up with three example seasons, labelled as an example.",
+      "Your number is a hole you can see through. You own the tool that made your print, not a certificate someone issued you.",
+      "The plate keeps every completed season as a stepped band of paint on its border, never inside a cut, so an old plate looks veteran without a single badge. ALI has no completed season, so his plates carry none, and no preview shows the build-up (the renderer draws it when given a season count).",
       "The ladder reads instantly: cardboard, film, oiled manila, zinc, brass. A teenager wants the brass, and an adult respects the tool.",
       "The share image is the print itself: your 84 and your name sprayed on a training bib, with the plate that made them lying beside it.",
     ],
@@ -881,41 +882,42 @@
       "With motion on, the first cut ('le premier coup de cutter') replays once: a knife line traces the 26, then the piece drops out. The static card always shows the 26 cut.",
     ],
     small: [
-      "44–80px: the same 2.2:1 plate with the 84 knocked out in solid Changa 800 over the club-coloured print, a 1-unit cut wall, the hang hole, the registration holes (the tier count) and the founder notch. It uses flat fills and two masks, with no noise filters, so fifty in a list cost little.",
-      "24–32px: a 32×15 plate (37×17 at 28px) with the 84 at about 9px cap height. The registration holes become 1.5px dots on the start edge: none for HOMA, one for STADE, two for PRO, three for CHAMPION. LEGEND adds its two hinge clamps on the top edge, and founders keep the notch. Kraft, film, manila, zinc and brass also differ in colour.",
+      "44–80px: the same 2.2:1 plate with the 84 cut through it in Changa 800, its stencil bridges kept at 1.25px or more, the hang hole, the registration holes (the tier count, set well clear of the digits) and the founder notch. The 84 shows the club-coloured print on the light ground, and on the dark ground it is a real hole ringed with club-colour overspray, so the 84 survives the solid silhouette there. Flat fills and three masks, no noise filters, so fifty in a list cost little.",
+      "24–32px: a 32×15 plate (37×17 at 28px) with the 84 at about 9px cap height and its bridges at 1px. The registration holes become 1.5px dots on the start edge: none for HOMA, one for STADE, two for PRO, three for CHAMPION. LEGEND drops the bridges and adds its two hinge clamps on the top edge, and founders keep the notch. Light kraft, film, amber manila, zinc and brass also differ in lightness.",
       "The 'My position' card carries the 72px plate, the name in Changa 800 with its ·26, the tier and the points. On your own row, the app's highlight and ring mark where you are.",
     ],
     rtl: [
       "The plate never mirrors: it is a physical tool, so the 84 stays cut on the left and the hang hole stays top right in both languages.",
-      "The right-hand zone is set right to left. علي is cut in the same Changa-derived face at 32 units, right-aligned and set a little higher so its yeh clears the avatar ring. The tier is stamped as محترف and the country as المغرب. The stat line runs right to left (القائد 91 … الثبات 78) with the digits left to right. Arabic has no tracking.",
+      "The right-hand zone is set right to left, ending at x280. علي is cut in the same Changa-derived face at 32 units, right-aligned and set a little higher so its yeh clears the avatar ring; a two-word Arabic name takes two lines at 18 units. The tier is stamped as محترف and the country as المغرب. The stat line runs right to left (القائد 91 … الثبات 78) with the digits left to right. Arabic has no tracking.",
       "Arabic counters get computed bridges just like Latin ones (the loops of ق, ة and لا), and the dots are separate cuts. The share mirrors its layout, with the wordmark top right and the plate on the left, but the plate itself does not mirror.",
     ],
     tiers: {
-      HOMA: "Fresh kraft board, cut clean with a new knife: generous bridges, corrugation showing in the lit wall of every cut, and the tier written in marker. No registration holes. The outline is complete, with nothing torn or taped.",
+      HOMA: "Fresh, light grey kraft board, cut clean with a new knife: generous bridges, corrugation showing in the lit wall of every cut, and the tier written in marker. No registration holes. The outline is complete, with nothing torn or taped.",
       STADE:
-        "Clear acetate laid over the print: the sheet shows through the whole plate as well as through the cuts. The tier and ID are printed, and one diagonal sheen line crosses it. One registration hole.",
-      PRO: "Oiled manila board with slow oil mottling and a faint sheen, crisp cuts, and the tier and ID rubber-stamped in ink. Two registration holes.",
+        "Clear acetate over a paper sheet, so the plate reads as pale film, with one diagonal sheen line. The tier and ID are printed. One registration hole.",
+      PRO: "Oiled manila board, darkened to amber by the oil, so it sits a clear step below HOMA's kraft in lightness: slow mottling, a faint sheen, crisp cuts, and the tier rubber-stamped in ink. Two registration holes.",
       CHAMPION:
         "Etched zinc: a cool satin face with a fine acid grain, a 1.5-unit edge thickness under the plate and inside every cut, and the tier and ID engraved. Three registration holes.",
       LEGEND:
-        "Thick laser-cut brass, the only precious finish in the concept. It is bridgeless: the counters of the digits and the avatar disc float, held by a fine screen mesh seen only inside the cuts. A 3-unit body, and two hinge clamps of the screen-print frame protruding from the top edge (the outline change, visible at 24px). It rests flat with its seasons' paint on the border, shown here with three example seasons.",
+        "Thick laser-cut brass, the only precious finish in the concept. It is bridgeless: the counters of the digits and the avatar disc float, held by a fine screen mesh seen only inside the cuts. A 3-unit body, and two hinge clamps of the screen-print frame protruding from the top edge (the outline change, visible at 24px). It rests flat and clean: no example paint is shown on it.",
     },
     legend: [
-      "The lift, a replay only. The brass plate rises on its hinge clamps (rotateX 0 → 58° and back, 1.5s), shows the print crisp on the sheet beneath, then settles flat. The 84 is readable in every frame, both on the plate and on the print. On the profile the lift follows the pointer. Under reduced motion the plate stays flat.",
-      "Not built yet: the spec's spray halo sweeping the border before the lift, and the haptic.",
+      "The lift, a replay only. The spray goes through the cuts (on the dark ground the print appears in the open holes), the brass plate rises on its hinge clamps (rotateX 0 → 58° and back, 1.5s) and shows the print crisp on the sheet beneath, then settles flat and the holes open again. The 84 is readable in every frame, both on the plate and on the print. On the profile the lift follows the pointer. Under reduced motion the plate stays flat.",
+      "Not built yet: the spec's stepped spray halo sweeping the border, and the haptic.",
     ],
     advantages: [
-      "An ownable outline: a 2.2:1 plate with a 12% hang hole, the tier count punched into its edge and the founder notch. No other card in either exploration has a rating you can see through.",
-      "Works on both grounds by construction: the print ink is deepened to 4.5:1 against each plate's base colour (measured 4.6:1 on the PRO render), and on the light ground the plate gets a 5.2:1 edge.",
+      "An ownable outline: a 2.2:1 plate with a 12% hang hole, the tier count punched into its edge and the founder notch. On the dark ground the 84 is a hole in that outline, so the solid silhouette states the rating at every size from the card down to 28px. No other card in either exploration has a rating you can see through.",
+      "Works on both grounds by construction. On light, the print against the plate measures 3.3:1 (PRO, the lowest) to 7.4:1 on the render, the stat-line ink is set to 4.5:1, and the plate gets a 5.2:1 edge. On dark, the open holes measure 6.9:1 (PRO) to 16.5:1 against the plate.",
       "Progression changes the material and the cut (knife to laser, bridges to bridgeless, cardboard to brass), plus one outline change at LEGEND.",
       "The tool and its print give a natural share format: the print on a bib.",
     ],
     risks: [
-      "In the solid silhouette test the 84 disappears, because the plate rests on its print. What is left is a bar with a hang hole, registration holes and a notch, which at 28–56px can read as a key or luggage tag. The 84 carries recognition only in colour. Leaving the cuts truly see-through on the dark ground would bring the 84 back into the silhouette there.",
-      "The stencil face is a real type-design cost. The lab cut covers fixed strings only: other names are stamped, and very long ones are condensed.",
+      "On the light ground the plate still rests on its print, so the light silhouette is a bar with a hang hole, registration holes and a notch, which at 28–56px can read as a luggage tag; there the 84 carries recognition only in colour. The dark ground shows the 84 as holes.",
+      "The plate looks different on the two grounds: the print fills the cuts on light, the cuts are open on dark. Each is the same object, but a user switching theme sees the change.",
+      "The stencil face is a real type-design cost. The lab cut covers fixed strings only: other names are stamped in ink, long ones break onto two lines, and only a line still too wide at 15 units is condensed.",
       "Stencil and spray can still read as graffiti or crate marking. The guards are the bib, the clean Changa cut and the absence of any wall, drip or tag.",
-      "HOMA kraft and PRO manila are both tan and differ mainly in saturation and registration holes. The avatar figure is small, and reads as a hooded figure only from about 300px wide.",
-      "LEGEND's example paint coats frame the brass. Whether a veteran plate should look painted or clean is a call for the owner.",
+      "The avatar is small: the hooded figure with its shoulders cropped by the ring reads as a person from behind at the full card, but it is a few pixels at 120px and absent from the tokens.",
+      "The season coats are drawn (flat 45% bands, club colour first, a speckled inner edge) but no preview shows them, and on brass they still read as a frame rather than paint. Whether a veteran plate should look painted or clean is a call for the owner.",
     ],
     gridWidth: 320,
     detailWidth: 480,
