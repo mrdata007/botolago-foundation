@@ -1,4 +1,4 @@
-import type { MomentDto, MyCardDto } from "@/backend/manager-card/contracts";
+import type { MyCardDto } from "@/backend/manager-card/contracts";
 import type { HeroSpec, LineSpec } from "../types";
 import { pickHero, stateLines } from "./moments";
 
@@ -190,9 +190,4 @@ export function linesOf(card: MyCardDto | null, momentLines: readonly LineSpec[]
     }
   }
   return LINE_ORDER.flatMap((kind) => byKind.get(kind) ?? []);
-}
-
-/** Moments pending on a card, for a caller that wants them without the picker. */
-export function pendingKeys(card: MyCardDto): string[] {
-  return card.moments.map((moment: MomentDto) => moment.key);
 }
