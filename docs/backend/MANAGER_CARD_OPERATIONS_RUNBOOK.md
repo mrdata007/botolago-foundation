@@ -51,6 +51,34 @@ Each call answers `{"computeEnabled": ..., "readEnabled": ...}`. Switch compute
 on first and let the first evaluation finish and be checked; switch read on only
 after that, so nobody sees an empty card.
 
+## The owner's three scripts, in order
+
+After the card is installed (switched off, no rules row), three scripts in
+`scripts/backend/` take it to launch. You paste each into the Supabase SQL
+Editor; none of them switches anything on. Run them in this order, one at a
+time:
+
+1. **Calibrate:** `manager-card-calibration-dry-run.sql`. It runs the card's
+   real calculation over every finished gameweek, then ends with an error on
+   purpose, so **nothing is saved**. The error text after `calibration result:`
+   is the result: counts and percentiles only, no names, plus a proposed
+   ruleset (`proposedRulesV1`) and a list of warnings (too few gameweeks or
+   teams, no CAP start date yet). Paste that line back; the numbers are
+   reviewed before anything is installed.
+2. **Rules v1:** `apply-manager-card-rules-v1.sql`. A template: the reviewed
+   JSON replaces the marker inside it, and it refuses to run while the marker
+   is there. It is a rehearsal first (`rollback;`); change that line to
+   `commit;` to install version 1. Compute stays off.
+3. **Founder grant:** `manager-card-founder-grant.sql`. Run it on or after
+   1 November 2026, once. It refuses before the 31 October cut-off has passed
+   (end of day, Moroccan time) and refuses if founders already exist. Its
+   rehearsal ends with `founder dry run: N managers would be founders`; the real
+   section is commented out and needs N typed in, so it cannot mark a different
+   number than you saw.
+
+Then switch compute on (see "Production order"). Each script says at the top
+what it does and how to run it.
+
 ## Rules v1
 
 Nothing is calculated until an **active** row exists in
