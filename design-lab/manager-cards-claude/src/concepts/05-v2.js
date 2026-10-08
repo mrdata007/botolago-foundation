@@ -797,7 +797,7 @@
   }
 
   /* LEGEND's chassis: the same pitch, machined in brushed steel, under the smoked clear plate. */
-  function chassis(u, G, det) {
+  function chassis(u, G, det, clock) {
     const L = pitchLines(G);
     const b = LAY.box;
     const bx = r1(G.X(G.ar ? b.x + b.w : b.x));
@@ -812,7 +812,7 @@
       (det
         ? `<path d="${L.d}" stroke-width="5"/><rect x="${bx}" y="${b.y}" width="${b.w}" height="${b.h}" rx="3" stroke-width="6"/>`
         : "") +
-      wh.replace(' fill="none"', "") +
+      (clock ? wh.replace(' fill="none"', "") : "") +
       `</g>`;
     let s = "";
     s += `<g opacity=".5" transform="translate(2 3.5)">${lines("#16202a")}<g fill="#16202a">${bosses}</g></g>`;
@@ -969,7 +969,8 @@
       g += `<path d="M-20 300L290 40L290 110L-20 370Z" fill="#fff" opacity=".07"/><path d="M-20 392L290 132L290 140L-20 400Z" fill="#fff" opacity=".09"/>`;
     }
     if (t === "LEGEND") {
-      g += chassis(u, G, det);
+      // the chassis ring is the founder clock's seat: only a founder's plate (or the gallery's) has it
+      g += chassis(u, G, det, p.founder || !onbMode(p));
       // the smoked "ice" plate over the chassis, with the hard reflections of thick clear plastic
       g += `<path d="${G.D}" fill="#9fb8c4" fill-opacity=".42"/>`;
       g += `<path d="M-20 330L290 110L290 142L-20 362Z" fill="#fff" opacity=".12"/><path d="M-20 374L290 154L290 162L-20 382Z" fill="#fff" opacity=".09"/><path d="M-20 610L290 470L290 482L-20 622Z" fill="#fff" opacity=".07"/>`;
