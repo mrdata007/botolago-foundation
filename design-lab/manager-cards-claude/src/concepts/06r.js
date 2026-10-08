@@ -118,7 +118,7 @@
   const B = geo({
     W: 360, VH: 240, cx: 158, R: 140, ry: 64, ty: 70, H: 90, t: 3.5,
     bind: 6.5, selv: 5, stripe0: 9.5, stripeP: 4.4, stripeW: 2.2,
-    thC: -10, Z: 70, ovrBase: 82, crestTh: -48, crestY: 60, crestH: 31,
+    thC: -10, Z: 70, ovrBase: 82, crestTh: -42, crestY: 60, crestH: 31,
     tab: { th0: 15, th1: 64, rb: 7, psi: 27, past: 26, dr: 2.5, hT: 0, Ht: 90, lab0: 20, num1: 67,
       ring: { past: 8, over: 14, stock: 8, depth: 30, fold: 18 } },
   });
@@ -414,10 +414,10 @@
     const sc = h / 48;
     const inner =
       `<g transform="translate(${f(-w / 2)} ${f(-h / 2)})">` +
-      MC.crest({ fill: mix(club.body, "#ffffff", 0.12), sash: club.sec, ring: K.cream, w: f(w), h: f(h) }) +
+      MC.crest({ fill: club.sec, sash: mix(club.body, "#ffffff", 0.12), ring: mix(club.sec, "#000", 0.3), w: f(w), h: f(h) }) +
       (thumb
         ? ""
-        : `<path d="${MC.CREST.shield}" transform="scale(${f(sc)})" fill="none" stroke="${K.cream}" stroke-width="${f(1 / sc)}" stroke-dasharray="${f(0.32 / sc)} ${f(0.24 / sc)}"/>`) +
+        : `<path d="${MC.CREST.shield}" transform="scale(${f(sc)})" fill="none" stroke="${mix(club.sec, "#000", 0.45)}" stroke-width="${f(1 / sc)}" stroke-dasharray="${f(0.32 / sc)} ${f(0.24 / sc)}"/>`) +
       `</g>`;
     return place(g, g.R * g.crestTh * RAD, g.crestY, phi, inner);
   }
@@ -445,8 +445,8 @@
       s2 - sg * 26,
       0,
       phi,
-      `<g clip-path="url(#${u}-fig)">` +
-        MC.avatar({ x: -80, y: -102.4, w: 160, h: 192, torso: `url(#${u}-jq)`, hoodFill: `url(#${u}-jq)`, seam: mix(club.body, "#000", 0.25), preserve: "xMidYMid meet" }) +
+      `<g clip-path="url(#${u}-fig${ar ? "r" : ""})">` +
+        MC.avatar({ x: -52, y: -18.9, w: 104, h: 124.8, torso: `url(#${u}-jq)`, hoodFill: `url(#${u}-jq)`, seam: mix(club.body, "#000", 0.25), stroke: mix(club.body, "#000", 0.25), strokeWidth: 3.2, preserve: "xMidYMid meet" }) +
         `</g>`,
     );
     out += place(g, s2 + sg * 50, 30, phi, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="10.5" fill="${K.cream}" direction="ltr" style="font-variant-numeric:tabular-nums">${MC.esc(p.id)}</text>`);
@@ -467,14 +467,14 @@
   }
 
   /* ---------- the woven care label inside the back wall (BOT #, season, country) ---------- */
-  function careLabel(p, o, u, g, phi, club) {
+  function careLabel(p, o, u, g, phi, club, lined = false) {
     const ar = MC.isAr(o);
     const S = MC.s(o);
     const W = 166;
     const h0 = 25.5;
     const hh = 18;
     if (Math.cos(phi) < 0.3) return "";
-    const ink = mix(club.body, "#000", 0.38);
+    const ink = lined ? K.cream : mix(club.body, "#000", 0.38);
     const N = 28;
     const top = [];
     const bot = [];
@@ -523,7 +523,7 @@
     return (
       `<g class="c06-label"${fade < 1 ? ` opacity="${f(fade)}"` : ""}>` +
       `<path d="${tape}" transform="translate(.8 1.4)" fill="#000" opacity=".35"/>` +
-      `<path d="${tape}" fill="#cfd6de"/><path d="${tape}" fill="url(#${u}-pkl)"/>` +
+      `<path d="${tape}" fill="${lined ? mix(club.body, "#000", 0.2) : "#cfd6de"}"/><path d="${tape}" fill="url(#${u}-pkl)"/>` +
       ends +
       `<g class="c06-fine">${txt}</g><g class="c06-big">${big}</g>` +
       `</g>`
@@ -537,7 +537,8 @@
     let d = "<defs>";
     d += `<clipPath id="${u}-fw"><path d="${fwPath(g)}"/></clipPath>`;
     d += `<clipPath id="${u}-iw"><path d="${iwPath(g)}"/></clipPath>`;
-    d += `<clipPath id="${u}-fig"><rect x="-80" y="-4" width="104" height="100"/></clipPath>`;
+    d += `<clipPath id="${u}-lens"><path d="${ell(g.cx, g.ty, g.Ri, g.ryi)}"/></clipPath>`;
+    d += `<clipPath id="${u}-fig"><rect x="-70" y="-6" width="101" height="104"/></clipPath><clipPath id="${u}-figr"><rect x="-31" y="-6" width="101" height="104"/></clipPath>`;
     // the cylinder in one floodlight from the top-start: side shading deepens with the tier
     d +=
       `<linearGradient id="${u}-cyl" gradientUnits="userSpaceOnUse" x1="${f(g.x0)}" y1="0" x2="${f(g.x1)}" y2="0">` +
@@ -554,6 +555,9 @@
       `<stop offset=".72" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="${op(0.3 * L)}"/></linearGradient>`;
     if (T.ring)
       d +=
+        `<linearGradient id="${u}-lin" gradientUnits="userSpaceOnUse" x1="${f(g.cx - g.Ri)}" y1="0" x2="${f(g.cx + g.Ri)}" y2="0">` +
+        `<stop offset="0" stop-color="#5f6874"/><stop offset=".22" stop-color="#9aa4b1"/><stop offset=".42" stop-color="#e4e9ef"/>` +
+        `<stop offset=".55" stop-color="#b7c0cb"/><stop offset=".74" stop-color="#eef2f6"/><stop offset=".9" stop-color="#a3adb9"/><stop offset="1" stop-color="#7c8692"/></linearGradient>` +
         `<linearGradient id="${u}-rake" gradientUnits="userSpaceOnUse" x1="${f(g.x0)}" y1="${f(g.ty)}" x2="${f(g.x0 + 60)}" y2="${f(g.by + g.ry)}">` +
         `<stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient>`;
     // the inside: the start side of the loop is in its own shadow, the end side catches the light
@@ -638,8 +642,16 @@
     return s + `</g>`;
   }
   function weaveInside(u, g, T, thumb) {
-    if (thumb) return "";
     const R = `x="${f(g.cx - g.Ri)}" y="${f(g.ty - g.ryi)}" width="${f(2 * g.Ri)}" height="${f(g.H + 2 * g.ryi)}"`;
+    if (T.ring) {
+      // LEGEND is lined: silver satin, its sheen in soft vertical bands that follow the curve
+      return (
+        `<g clip-path="url(#${u}-iw)" pointer-events="none"><rect ${R} fill="url(#${u}-lin)"/>` +
+        (thumb ? "" : `<path d="${backLines(g, 1.1, 0.5, g.H)}" fill="none" stroke="#000" stroke-opacity=".07" stroke-width=".4"/>`) +
+        `</g>`
+      );
+    }
+    if (thumb) return "";
     let s = `<g clip-path="url(#${u}-iw)" pointer-events="none">`;
     if (T.weave === "rib") s += `<path d="${backLines(g, 2, 1, g.H)}" fill="none" stroke="#000" stroke-opacity=".18" stroke-width=".8"/>`;
     else if (T.weave === "ottoman") {
@@ -664,8 +676,8 @@
     const ar = MC.isAr(o);
     const Sx = MC.s(o);
     const sp = g.tab;
-    const rows = [27.5, 43, 58.5, 74];
-    const head = 13;
+    const rows = [32.5, 48, 63.5, 79];
+    const head = 18;
     const NZ = 13.5;
     const labelZ = ar ? 9.5 : 8;
     const tw = Sx.tiers[p.tier];
@@ -683,7 +695,7 @@
         const v = String(p.stats[k]);
         fine += onStrip(S, s0 + lw / 2, rows[i] - 0.4, `<text text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${labelZ}" letter-spacing=".8" fill="${K.thread2}">${MC.esc(Sx.stats[k])}</text>`);
         fine += onStrip(S, s1 - wOf(v, F_MR, NZ) / 2, rows[i], num(v, NZ));
-        big += onStrip(S, s1 - wOf(v, F_MR, 16) / 2, 20 + i * 19, num(v, 16));
+        big += onStrip(S, s1 - wOf(v, F_MR, 16) / 2, 24.5 + i * 18.4, num(v, 16));
       });
     } else {
       // Arabic: the labels are right-aligned at the reading start, the figures to their left
@@ -692,14 +704,14 @@
       const maxL = Math.max(...MC.STATS.map((k) => wOf(Sx.stats[k], F_AR, labelZ)));
       const sEnd = s0 + nW + 6 + maxL;
       const hw = wOf(tw, F_AR, 9);
-      fine += onStrip(S, sEnd - hw / 2, head + 0.6, `<text text-anchor="middle" font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="9" fill="${K.thread2}">${MC.esc(tw)}</text>`);
-      fine += onStrip(S, s0, head + 3.6, `<path d="M0 0H${f(sEnd - s0)}" stroke="${K.thread2}" stroke-opacity=".35" stroke-width=".6"/>`);
+      fine += onStrip(S, sEnd - hw / 2, head - 1.2, `<text text-anchor="middle" font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="9" fill="${K.thread2}">${MC.esc(tw)}</text>`);
+      fine += onStrip(S, s0, head + 2.4, `<path d="M0 0H${f(sEnd - s0)}" stroke="${K.thread2}" stroke-opacity=".35" stroke-width=".6"/>`);
       MC.STATS.forEach((k, i) => {
         const lw = wOf(Sx.stats[k], F_AR, labelZ);
         const v = String(p.stats[k]);
         fine += onStrip(S, sEnd - lw / 2, rows[i] - 0.4, `<text text-anchor="middle" font-family="'Noto Sans Arabic', sans-serif" font-weight="700" font-size="${labelZ}" fill="${K.thread2}">${MC.esc(Sx.stats[k])}</text>`);
         fine += onStrip(S, s0 + wOf(v, F_MR, NZ) / 2, rows[i], num(v, NZ));
-        big += onStrip(S, s0 + wOf(v, F_MR, 16) / 2, 20 + i * 19, num(v, 16));
+        big += onStrip(S, s0 + wOf(v, F_MR, 16) / 2, 24.5 + i * 18.4, num(v, 16));
       });
     }
     return `<g class="c06-fine">${fine}</g><g class="c06-big">${big}</g>`;
@@ -709,22 +721,31 @@
     const sp = g.tab;
     const founder = !!p.founder;
     const legend = T.ring;
+    const woven = T.ovr !== "print";
     const Ht = sp.Ht;
     const run = (Ht / g.ca) * CUT;
     const fade = clamp(1 - Math.abs(wrapPhi(phi)) / 0.55, 0, 1);
     if (fade <= 0) return "";
     const S = stripBuild(g, sp, phi, legend ? sp.ring.past : sp.past);
-    const fill = legend ? mix(bodyTone(club, T), "#000", 0.1) : K.velcro;
-    const edge = mix(fill, "#000", 0.45);
-    const lift = mix(fill, "#ffffff", 0.24);
+    // the strap is cut from the band's own fabric and sewn on: same body, binding and selvedge
+    const fill = mix(bodyTone(club, T), "#ffffff", 0.05);
+    const edge = mix(fill, "#000", 0.5);
+    const lift = mix(fill, "#ffffff", 0.22);
     const RG = sp.ring;
     // LEGEND: the strap end slides through the ring (pull 0..1) and folds back over itself
     const sTop = legend ? S.len + 0.6 + (1 - pull) * RG.fold * 0.9 : S.len;
     const sBot = legend ? sTop : founder ? S.len - run : S.len;
-    const poly = stripPoly(S, 0, sTop, sBot, Ht);
+    const endAt = cutEnd(sTop, sBot, Ht);
+    const poly = stripPoly(S, sTop, sBot, Ht);
+    const band = (v0, v1, dy) => stripBandPoly(S, v0, v1, endAt, dy);
+    const line = (v, a = 0, b = 0) => stripLine(S, a, endAt(v) - b, v);
+    const bindB = woven ? [0, g.bind] : [2, 5.2];
+    const selB = woven ? [Ht - g.selv, Ht] : [Ht - 6.4, Ht - 3.4];
+    const e0 = bindB[1] + 2.4;
+    const e1 = selB[0] - 2.4;
     let s = `<g class="c06-tab"${fade < 1 ? ` opacity="${f(fade)}"` : ""}>`;
     // contact shadow on the band
-    s += `<g clip-path="url(#${u}-fw)"><path d="${poly}" transform="translate(2.4 3.2)" fill="#000" opacity="${thumb ? 0.3 : 0.55}"${thumb ? "" : ` filter="url(#${u}-soft)"`}/></g>`;
+    s += `<g clip-path="url(#${u}-fw)"><path d="${poly}" transform="translate(2.6 3.4)" fill="#000" opacity="${thumb ? 0.32 : 0.6}"${thumb ? "" : ` filter="url(#${u}-soft)"`}/></g>`;
     let ringFront = "";
     if (legend) {
       const fr = S.frame(S.len);
@@ -737,40 +758,44 @@
       const dP = `M0 ${f(v0)}V${f(v1)}C${f(Dd * 0.62)} ${f(v1)} ${f(Dd)} ${f(v1 - (v1 - v0) * kk)} ${f(Dd)} ${f((v0 + v1) / 2)}C${f(Dd)} ${f(v0 + (v1 - v0) * kk)} ${f(Dd * 0.62)} ${f(v0)} 0 ${f(v0)}Z`;
       const vm = (v0 + v1) / 2;
       const ins = (d) => `translate(${f(Dd / 2)} ${f(vm)}) scale(${f((Dd - 2 * d) / Dd)} ${f((v1 - v0 - 2 * d) / (v1 - v0))}) translate(${f(-Dd / 2)} ${f(-vm)})`;
+      // a machined steel D: dark outer chamfer, brushed body, bright inner chamfer, the hole left open
       s +=
         `<g transform="${tf}">` +
         `<defs><linearGradient id="${u}-st" gradientUnits="userSpaceOnUse" x1="0" y1="${f(v0)}" x2="${f(Dd)}" y2="${f(v1)}">` +
         `<stop offset="0" stop-color="#6c7581"/><stop offset=".14" stop-color="#e9eef3"/><stop offset=".3" stop-color="#8d97a3"/><stop offset=".5" stop-color="#f7f9fb"/>` +
         `<stop offset=".68" stop-color="#6c7581"/><stop offset=".85" stop-color="#c3cad3"/><stop offset="1" stop-color="#4c535d"/></linearGradient></defs>` +
-        (thumb ? "" : `<path d="${dP}" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="${RG.stock}" transform="translate(2.8 3.4)" filter="url(#${u}-soft)"/>`) +
+        (thumb ? "" : `<path d="${dP}" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="${RG.stock}" transform="translate(3 3.6)" filter="url(#${u}-soft)"/>`) +
         `<path d="${dP}" fill="none" stroke="#1b2028" stroke-width="${f(RG.stock + 1)}" stroke-linejoin="round"/>` +
         `<path d="${dP}" fill="none" stroke="${K.steelDark}" stroke-width="${RG.stock}" stroke-linejoin="round"/>` +
-        `<path d="${dP}" fill="none" stroke="url(#${u}-st)" stroke-width="${f(RG.stock - 2.4)}" stroke-linejoin="round"/>` +
-        `<path d="${dP}" transform="${ins(2.2)}" fill="none" stroke="${K.steelLight}" stroke-width="1.1" stroke-linejoin="round"/>` +
-        (thumb ? "" : `<path d="M${f(Dd * 0.2)} ${f(v0 - 0.4)}C${f(Dd * 0.5)} ${f(v0 - 0.4)} ${f(Dd * 0.78)} ${f(v0 + 3)} ${f(Dd * 0.92)} ${f(v0 + 9)}" fill="none" stroke="#fff" stroke-width="1.1" stroke-linecap="round" opacity=".85"/>`) +
+        `<path d="${dP}" fill="none" stroke="url(#${u}-st)" stroke-width="${f(RG.stock - 2.6)}" stroke-linejoin="round"/>` +
+        `<path d="${dP}" transform="${ins(2.5)}" fill="none" stroke="${K.steelLight}" stroke-width="1.1" stroke-linejoin="round"/>` +
+        (thumb ? "" : `<path d="M${f(Dd * 0.16)} ${f(v0 - 0.9)}C${f(Dd * 0.42)} ${f(v0 - 0.9)} ${f(Dd * 0.62)} ${f(v0 + 0.6)} ${f(Dd * 0.74)} ${f(v0 + 4.5)}" fill="none" stroke="#fff" stroke-width="1.3" stroke-linecap="round" opacity=".9"/>`) +
         `</g>`;
       // the strap's end wrapped round the bar and sewn back on itself
       const fold = RG.fold * pull;
       if (fold > 0.5) {
         const cutL = founder ? run : 0;
+        const xE = (v) => -fold + (cutL * v) / Ht;
         const dbl = `M${f(-fold)} 0H0.8V${f(Ht)}H${f(-fold + cutL)}Z`;
-        let dr = `<path d="M-2 0H0.8C${f(RG.stock * 0.62)} 0 ${f(RG.stock * 0.62)} ${f(Ht)} 0.8 ${f(Ht)}H-2Z" fill="${mix(fill, "#000", 0.25)}"/>`;
-        dr += `<path d="${dbl}" transform="translate(1.3 1.8)" fill="#000" opacity=".4"/>`;
+        const hb = (a, b) => `M${f(xE(a))} ${f(a)}H0.8V${f(b)}H${f(xE(b))}Z`;
+        let dr = `<path d="M-2 0H0.8C${f(RG.stock * 0.62)} 0 ${f(RG.stock * 0.62)} ${f(Ht)} 0.8 ${f(Ht)}H-2Z" fill="${mix(fill, "#000", 0.3)}"/>`;
+        dr += `<path d="${dbl}" transform="translate(1.3 1.8)" fill="#000" opacity=".42"/>`;
         dr += `<path d="${dbl}" fill="${mix(fill, "#ffffff", 0.06)}"/>`;
+        dr += `<path d="${hb(bindB[0], bindB[1])}" fill="${K.blue}"/><path d="${hb(selB[0], selB[1])}" fill="${club.sec}"/>`;
         if (!thumb) {
           let rib = "";
-          for (let v = 0.8; v < Ht; v += 4) rib += `M${f(-fold + (cutL * v) / Ht)} ${f(v)}H0.8`;
-          dr += `<path d="${rib}" stroke="#fff" stroke-opacity=".14" stroke-width="1"/>`;
+          for (let v = 0.8; v < Ht; v += 4) rib += `M${f(xE(v))} ${f(v)}H0.8`;
+          dr += `<path d="${rib}" stroke="#fff" stroke-opacity=".2" stroke-width="1"/>`;
           rib = "";
-          for (let v = 3.3; v < Ht; v += 4) rib += `M${f(-fold + (cutL * v) / Ht)} ${f(v)}H0.8`;
-          dr += `<path d="${rib}" stroke="#000" stroke-opacity=".32" stroke-width="1.2"/>`;
+          for (let v = 3.3; v < Ht; v += 4) rib += `M${f(xE(v))} ${f(v)}H0.8`;
+          dr += `<path d="${rib}" stroke="#000" stroke-opacity=".34" stroke-width="1.2"/>`;
         }
         dr += `<path d="${dbl}" fill="none" stroke="${edge}" stroke-width="1.2" stroke-linejoin="round"/>`;
         if (fold > RG.fold * 0.7) {
-          const a0 = -fold + cutL + 2.6;
-          const a1 = -2.8;
-          if (founder) dr += boxX(`${f(a0)} 4`, `${f(a1)} 4`, `${f(a1)} ${f(Ht - 4)}`, `${f(a0)} ${f(Ht - 4)}`, thumb ? 1.6 : 1.15, thumb ? "" : "2.1 1.3");
-          else dr += `<path d="M${f(-fold / 2)} 4V${f(Ht - 4)}" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="2.1 1.3"/>`;
+          const a0 = xE(e1) + 2.4;
+          const a1 = -3;
+          if (founder) dr += boxX(`${f(a0)} ${f(e0)}`, `${f(a1)} ${f(e0)}`, `${f(a1)} ${f(e1)}`, `${f(a0)} ${f(e1)}`, thumb ? 1.6 : 1.15, thumb ? "" : "2.1 1.3");
+          else dr += `<path d="M${f(-fold / 2)} ${f(e0)}V${f(e1)}" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="2.1 1.3"/>`;
         }
         ringFront = `<g transform="${tf}">${dr}</g>`;
       }
@@ -779,48 +804,54 @@
     if (founder && !thumb) {
       const Sx = MC.s(o);
       const ar = MC.isAr(o);
-      const sm = 56;
       s +=
         `<g class="c06-tab-in" aria-hidden="true"><path d="${poly}" fill="#252b33"/>` +
         onStrip(
           S,
-          sm,
+          56,
           Ht / 2,
-          `<rect x="-36" y="-17" width="72" height="34" fill="${K.cream}"/>` +
-            `<text y="-2" text-anchor="middle" font-family="${ar ? "'Noto Sans Arabic', Changa" : "Changa"}, sans-serif" font-weight="800" font-size="${ar ? 9 : 10}" fill="${mix(club.body, "#000", 0.35)}">${MC.esc(Sx.founderLine)}</text>` +
-            `<text y="11" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="8" fill="${mix(club.body, "#000", 0.35)}" direction="ltr">${MC.esc(p.id)}</text>`,
+          `<rect x="-38" y="-18" width="76" height="36" fill="${K.cream}"/>` +
+            `<text y="-2" text-anchor="middle" font-family="${ar ? "'Noto Sans Arabic', Changa" : "Changa"}, sans-serif" font-weight="800" font-size="${ar ? 9.5 : 10.5}" fill="${mix(club.body, "#000", 0.35)}">${MC.esc(Sx.founderLine)}</text>` +
+            `<text y="11.5" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="8.5" fill="${mix(club.body, "#000", 0.35)}" direction="ltr">${MC.esc(p.id)}</text>`,
         ) +
         `</g>`;
     }
     s += `<g class="c06-tab-face">`;
     // the strap's thickness, seen on its top edge
-    s += `<path d="${stripPoly(S, 0, sTop, sBot, Ht, -1.5)}" fill="${lift}"/>`;
+    s += `<path d="${stripPoly(S, sTop, sBot, Ht, -1.7)}" fill="${lift}"/>`;
     s += `<path d="${poly}" fill="${fill}"/>`;
     if (!thumb) {
       if (legend) {
         let rib = "";
-        for (let v = 0.8; v < Ht; v += 4) rib += stripLine(S, 0, sTop, v);
-        s += `<path d="${rib}" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="1"/>`;
+        for (let v = 0.8; v < Ht; v += 4) rib += line(v);
+        s += `<path d="${rib}" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.1"/>`;
         rib = "";
-        for (let v = 3.3; v < Ht; v += 4) rib += stripLine(S, 0, sTop, v);
-        s += `<path d="${rib}" fill="none" stroke="#000" stroke-opacity=".32" stroke-width="1.2"/>`;
+        for (let v = 3.3; v < Ht; v += 4) rib += line(v);
+        s += `<path d="${rib}" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="1.3"/>`;
       } else {
-        s += `<path d="${poly}" fill="#000" filter="url(#${u}-vel)" opacity=".4"/>`;
+        let pk = "";
+        for (let v = woven ? 0.8 : 1; v < Ht; v += woven ? 1.6 : 2) pk += line(v);
+        s += `<path d="${pk}" fill="none" stroke="#000" stroke-opacity="${woven ? 0.11 : 0.17}" stroke-width="${woven ? 0.45 : 0.8}"/>`;
       }
+      s += `<path d="${poly}" fill="#000" filter="url(#${u}-gr)" opacity=".26"/>`;
     }
-    s += `<path d="${poly}" fill="url(#${u}-cyl)" opacity=".8"/><path d="${poly}" fill="url(#${u}-flap)"/>`;
-    s += `<path d="${poly}" fill="none" stroke="${edge}" stroke-width="1.3" stroke-linejoin="round"/>`;
-    // reinforced strap: a stitched inset border
-    if (T.reinforce && !thumb) {
-      const e2 = (legend ? sTop : sBot) - 3.5;
-      s += `<path d="${stripLine(S, 2.5, e2, 3)}${stripLine(S, 2.5, e2, Ht - 3)}" fill="none" stroke="${K.cream}" stroke-opacity=".5" stroke-width=".75" stroke-dasharray="1.9 1.3"/>`;
+    s += `<path d="${band(bindB[0], bindB[1])}" fill="${K.blue}"/><path d="${band(selB[0], selB[1])}" fill="${club.sec}"/>`;
+    s += `<path d="${poly}" fill="url(#${u}-cyl)" opacity=".75"/><path d="${poly}" fill="url(#${u}-flap)"/>`;
+    s += `<path d="${poly}" fill="none" stroke="${edge}" stroke-width="1.2" stroke-linejoin="round"/>`;
+    if (!thumb && woven) {
+      // the running stitch that holds the binding continues along the strap (doubled when reinforced)
+      let st = line(bindB[1] + 1.2, 1.5, 1.5) + line(selB[0] - 1.2, 1.5, 1.5);
+      if (T.reinforce) st += line(bindB[1] + 3.2, 1.5, 3) + line(selB[0] - 3.2, 1.5, 3);
+      s += `<path d="${st}" fill="none" stroke="${K.cream}" stroke-opacity=".4" stroke-width=".6" stroke-dasharray="2 1.6"/>`;
     }
     // where the strap is sewn to the band: a box-X for founders, one line for everyone else
-    if (founder && !legend) s += boxX(ptOn(S, 3, 4), ptOn(S, 15, 4), ptOn(S, 15, Ht - 4), ptOn(S, 3, Ht - 4), thumb ? 1.6 : 1.15, thumb ? "" : "2.1 1.3");
-    else s += `<path d="M${ptOn(S, 8, 4)}L${ptOn(S, 8, Ht - 4)}" fill="none" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="${thumb ? "none" : "2.1 1.3"}"/>`;
+    if (founder && !legend) s += boxX(ptOn(S, 3, e0), ptOn(S, 15, e0), ptOn(S, 15, e1), ptOn(S, 3, e1), thumb ? 1.6 : 1.15, thumb ? "" : "2.1 1.3");
+    else s += `<path d="M${ptOn(S, 8, e0)}L${ptOn(S, 8, e1)}" fill="none" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="${thumb ? "none" : "2.1 1.3"}"/>`;
     if (!thumb) s += tabStats(p, o, S, g, T);
     s += `</g>`;
     s += ringFront;
+    // dark-ground lit edge on the strap end that leaves the band
+    s += `<path d="${stripLine(S, S.len * 0.72, sTop, 0)}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width=".8" stroke-opacity=".7"/>`;
     s += `</g>`;
     return s;
   }
@@ -834,7 +865,8 @@
     const share = !!st.share;
     const phi = st.phi || 0;
     const body = bodyTone(club, T);
-    const inner = mix(club.body, "#000", T.n === 4 ? 0.45 : 0.35);
+    const lined = !!T.ring;
+    const inner = lined ? "#aeb7c3" : mix(club.body, "#000", 0.35);
     const woven = T.ovr !== "print";
     let s = defsFull(u, g, T, thumb, club);
     // floor shadow (seen through the loop too)
@@ -843,9 +875,9 @@
     s += `<path d="${iwPath(g)}" fill="${inner}"/>`;
     s += weaveInside(u, g, T, thumb);
     if (woven) s += `<path d="${backBand(g, 0, g.bind)}" fill="${K.blueIn}"/>`;
-    for (let i = 0; i < stripesOf(T); i++) s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${thumb ? K.cream : `url(#${u}-pk)`}"/>`;
+    for (let i = 0; i < stripesOf(T); i++) s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${lined ? body : thumb ? K.cream : `url(#${u}-pk)`}"/>`;
     if (woven) s += `<path d="${backBand(g, g.H - g.selv, g.H)}" fill="${mix(club.sec, "#000", 0.3)}"/>`;
-    if (!thumb) s += `<g class="c06-inl">${careLabel(p, o, u, g, phi, club)}</g>`;
+    if (!thumb) s += `<g class="c06-inl">${careLabel(p, o, u, g, phi, club, lined)}</g>`;
     s += `<g clip-path="url(#${u}-iw)" pointer-events="none"><rect x="${f(g.cx - g.Ri)}" y="${f(g.ty - g.ryi)}" width="${f(2 * g.Ri)}" height="${f(g.H + 2 * g.ryi)}" fill="url(#${u}-insd)"/>` +
       `<rect x="${f(g.cx - g.Ri)}" y="${f(g.ty - g.ryi)}" width="${f(2 * g.Ri)}" height="${f(g.H)}" fill="url(#${u}-inao)"/></g>`;
     // the top edge, bound in Logo Blue (printed elastic: a plain cut edge)
@@ -873,6 +905,7 @@
     s += `<rect class="c06-spec" ${box} fill="url(#${u}-spec)"/>`;
     s += `</g>`;
     s += `<path d="${arcLine(g, 0.4)}" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width=".8"/>`;
+    if (T.ring && !thumb) s += `<g clip-path="url(#${u}-fw)"><path d="${arcLine(g, g.bind * 0.42)}" fill="none" stroke="#bcd0ff" stroke-opacity=".55" stroke-width="1.1"/><rect x="${f(g.x0)}" y="${f(g.ty)}" width="${f(2 * g.R)}" height="${f(g.ry + 8)}" fill="url(#${u}-spec)" opacity=".6"/></g>`;
     // CHAMPION: a round cord piping on both edges
     if (T.piping) {
       const cord = (d) =>
@@ -885,7 +918,7 @@
     s +=
       `<g class="c06-rim" fill="none" stroke="${K.rim}" stroke-linecap="round" pointer-events="none">` +
       `<path d="${outlinePath(g)}" stroke-width="1"/>` +
-      `<g clip-path="url(#${u}-iw)"><path d="${backLine(g, g.H)}" stroke-width=".8" stroke-opacity=".55"/></g>` +
+      `<g clip-path="url(#${u}-lens)"><path d="${backLine(g, g.H)}" stroke-width=".8" stroke-opacity=".55"/></g>` +
       `<path d="${ell(g.cx, g.ty, g.Ri, g.ryi)}" stroke-width=".6" stroke-opacity=".35"/></g>`;
     s += `<g class="c06-tabw">${tabFull(p, o, u, g, T, club, phi, thumb, st.pull == null ? 1 : st.pull)}</g>`;
     return s;
@@ -927,9 +960,9 @@
       `<linearGradient id="${u}-i" gradientUnits="userSpaceOnUse" x1="${f(g.cx - g.Ri)}" y1="0" x2="${f(g.cx + g.Ri)}" y2="0">` +
       `<stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset=".5" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient></defs>`;
     // inside of the loop: the tier stripes are woven all the way round, so they show inside
-    s += `<path d="${iwPath(g)}" fill="${mix(club.body, "#000", 0.42)}"/>`;
+    s += `<path d="${iwPath(g)}" fill="${legend ? "#c3cbd5" : mix(club.body, "#000", 0.42)}"/>`;
     if (woven) s += `<path d="${backBand(g, 0, g.bind)}" fill="${K.blueIn}"/>`;
-    for (let i = 0; i < stripesOf(T); i++) s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${K.cream}"/>`;
+    for (let i = 0; i < stripesOf(T); i++) s += `<path d="${backBand(g, g.stripe0 + i * g.stripeP, g.stripe0 + i * g.stripeP + g.stripeW)}" fill="${legend ? body : K.cream}"/>`;
     s += `<path d="${iwPath(g)}" fill="url(#${u}-i)"/>`;
     s += `<path d="${rimPath(g)}" fill-rule="evenodd" fill="${woven ? "#2f6dff" : mix(club.body, "#fff", 0.3)}"/>`;
     // front wall
@@ -953,10 +986,12 @@
     const Ht = sp.Ht;
     const run = mini ? sp.runMini : (Ht / g.ca) * CUT;
     const S = stripBuild(g, sp, 0, legend ? sp.ring.past : sp.past);
-    const tf = legend ? mix(body, "#000", 0.18) : mini ? "#6b7380" : K.velcro;
+    const tf = mix(body, "#ffffff", 0.07);
     const sTop = legend ? S.len + 0.3 : S.len;
     const sBot = legend ? sTop : founder ? S.len - run : S.len;
-    const poly = stripPoly(S, 0, sTop, sBot, Ht);
+    const poly = stripPoly(S, sTop, sBot, Ht);
+    const endAt = cutEnd(sTop, sBot, Ht);
+    const bindT = woven ? [0, g.bind] : [g.bind * 0.35, g.bind * 1.1];
     s += `<path d="${poly}" transform="translate(${mini ? 0.6 : 0.9} ${mini ? 0.8 : 1.1})" fill="#000" opacity=".35"/>`;
     if (legend) {
       const RG = sp.ring;
@@ -973,7 +1008,11 @@
         `<path d="${dP}" fill="none" stroke="#ffffff" stroke-width="${f(RG.stock * 0.32)}" stroke-linejoin="round" transform="translate(-.3 -.3)" opacity=".8"/>` +
         `</g>`;
     }
-    s += `<path d="${poly}" fill="${tf}" stroke="${mix(tf, "#000", 0.45)}" stroke-width="${mini ? 0.5 : 0.7}" stroke-linejoin="round"/>`;
+    s += `<path d="${poly}" fill="${tf}"/>`;
+    s += `<path d="${stripBandPoly(S, bindT[0], bindT[1], endAt)}" fill="${K.blue}"/><path d="${stripBandPoly(S, Ht - g.selv, Ht, endAt)}" fill="${club.sec}"/>`;
+    s += `<path d="${poly}" fill="url(#${u}-c)" opacity=".7"/>`;
+    s += `<path d="${poly}" fill="none" stroke="${mix(tf, "#000", 0.55)}" stroke-width="${mini ? 0.5 : 0.7}" stroke-linejoin="round"/>`;
+    s += `<path d="${stripLine(S, S.len * 0.6, sTop, 0)}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.5 : 0.7}"/>`;
     if (legend) {
       const RG = sp.ring;
       const fr = S.frame(S.len);
@@ -981,7 +1020,10 @@
       const cutL = founder ? run : 0;
       s +=
         `<g transform="${frameT(g, fr.x, fr.y, fr.p)}">` +
-        `<path d="M${f(-fold)} 0H0.6C${f(RG.stock * 0.6)} 0 ${f(RG.stock * 0.6)} ${f(Ht)} 0.6 ${f(Ht)}H${f(-fold + cutL)}Z" fill="${mix(tf, "#fff", 0.08)}" stroke="${mix(tf, "#000", 0.45)}" stroke-width="${mini ? 0.5 : 0.7}" stroke-linejoin="round"/>` +
+        `<path d="M${f(-fold)} 0H0.6C${f(RG.stock * 0.6)} 0 ${f(RG.stock * 0.6)} ${f(Ht)} 0.6 ${f(Ht)}H${f(-fold + cutL)}Z" fill="${mix(tf, "#fff", 0.08)}"/>` +
+        `<path d="M${f(-fold)} ${f(bindT[0])}H0.6V${f(bindT[1])}H${f(-fold + (cutL * bindT[1]) / Ht)}Z" fill="${K.blue}"/>` +
+        `<path d="M${f(-fold + (cutL * (Ht - g.selv)) / Ht)} ${f(Ht - g.selv)}H0.6V${f(Ht)}H${f(-fold + cutL)}Z" fill="${club.sec}"/>` +
+        `<path d="M${f(-fold)} 0H0.6C${f(RG.stock * 0.6)} 0 ${f(RG.stock * 0.6)} ${f(Ht)} 0.6 ${f(Ht)}H${f(-fold + cutL)}Z" fill="none" stroke="${mix(tf, "#000", 0.55)}" stroke-width="${mini ? 0.5 : 0.7}" stroke-linejoin="round"/>` +
         `</g>`;
     }
     if (founder && size >= 56) {
@@ -989,8 +1031,8 @@
         const RG = sp.ring;
         const fr = S.frame(S.len);
         const a0 = -RG.fold + run + 1.2;
-        s += `<g transform="${frameT(g, fr.x, fr.y, fr.p)}">${boxX(`${f(a0)} 1.8`, `-1.2 1.8`, `-1.2 ${f(Ht - 1.8)}`, `${f(a0)} ${f(Ht - 1.8)}`, 0.6)}</g>`;
-      } else s += boxX(ptOn(S, 1.2, 1.8), ptOn(S, 5.4, 1.8), ptOn(S, 5.4, Ht - 1.8), ptOn(S, 1.2, Ht - 1.8), 0.6);
+        s += `<g transform="${frameT(g, fr.x, fr.y, fr.p)}">${boxX(`${f(a0)} ${f(g.bind + 0.9)}`, `-1.2 ${f(g.bind + 0.9)}`, `-1.2 ${f(Ht - g.selv - 0.9)}`, `${f(a0)} ${f(Ht - g.selv - 0.9)}`, 0.6)}</g>`;
+      } else s += boxX(ptOn(S, 1.2, g.bind + 0.9), ptOn(S, 5.4, g.bind + 0.9), ptOn(S, 5.4, Ht - g.selv - 0.9), ptOn(S, 1.2, Ht - g.selv - 0.9), 0.6);
     }
     const Sx = MC.s(o);
     return (
@@ -1024,65 +1066,66 @@
     const club = clubOf(p);
     const T = tierOf(p);
     const A = MC.AVATAR;
-    // the band close-up: fit the 84's left edge to the tab's end inside the frame, bleeding off the start side
+    // the band close-up: its start side bleeds off the frame, the 84 and the whole strap stay in it
     const g = SB;
-    const all = metrics(String(p.ovr), F_CH);
-    const s0 = g.R * g.thC * RAD;
-    const inkL = s0 - (((all.r - all.l) / 2) * g.Z) / 100 - (all.l * g.Z) / 100;
-    const xL = g.cx + g.R * Math.sin(inkL / g.R);
-    const xR = g.cx + g.R + (T.ring ? g.tab.ring.past + g.tab.ring.depth + 4 : g.tab.past + 2);
-    const sc = Math.min(1.34, (346 - 14) / (xR - xL));
-    const bx = 14 - xL * sc;
-    const by = 92 - 4 * sc;
+    const xL = g.x0 - 1;
+    const xR = g.cx + g.R + (T.ring ? g.tab.ring.past + g.tab.ring.depth * 0.9 + 5 : g.tab.past + 3);
+    const sc = Math.min(1.34, (348 + 23) / (xR - xL));
+    const bx = -23 - xL * sc;
+    const by = 92;
     const bu = MC.uid(ID);
     const band =
       `<svg class="c06-sh-band" x="${f(bx)}" y="${f(by)}" width="${f(g.W * sc)}" height="${f(g.VH * sc)}" viewBox="0 0 ${g.W} ${g.VH}" overflow="visible">` +
       svgBody(p, { ...o, thumb: false }, bu, { g, phi: 0, pull: 1, share: true }) +
       `</svg>`;
-    // the figure from behind, cropped to the hood and one shoulder, the armband on the upper arm
-    const FS = 1.8;
-    const FX = 252 - 100 * FS;
-    const FY = 300 - 44 * FS;
+    // the manager from behind, off-centre on the end side: hood and one shoulder, dark against the lit haze
+    const FS = 1.6;
+    const FX = 292 - 100 * FS;
+    const FY = 354 - 44 * FS;
     const Fx = (ax) => FX + ax * FS;
     const Fy = (ay) => FY + ay * FS;
-    let sc2 = "<defs>";
-    sc2 += `<linearGradient id="${u}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050913"/><stop offset=".55" stop-color="#0a1426"/><stop offset="1" stop-color="#050a14"/></linearGradient>`;
-    sc2 += `<radialGradient id="${u}-src" gradientUnits="userSpaceOnUse" cx="-30" cy="-50" r="430"><stop offset="0" stop-color="#9cb3e6" stop-opacity=".9"/><stop offset=".22" stop-color="#5b72a6" stop-opacity=".62"/><stop offset=".5" stop-color="#22345a" stop-opacity=".35"/><stop offset="1" stop-color="#0a1428" stop-opacity="0"/></radialGradient>`;
-    sc2 += `<linearGradient id="${u}-beam" gradientUnits="userSpaceOnUse" x1="-40" y1="-40" x2="330" y2="600"><stop offset="0" stop-color="#dfe9ff" stop-opacity=".36"/><stop offset=".55" stop-color="#9fb8ef" stop-opacity=".08"/><stop offset="1" stop-color="#9fb8ef" stop-opacity="0"/></linearGradient>`;
-    sc2 += `<filter id="${u}-bl" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>`;
-    sc2 += `<filter id="${u}-haze" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".011 .028" numOctaves="3" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .75  0 0 0 0 .82  0 0 0 0 1  1.1 0 0 0 -.35"/></filter>`;
-    sc2 += `<filter id="${u}-gr" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="9"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.4 0 0 0 -.62"/></filter>`;
-    sc2 += `<linearGradient id="${u}-jk" gradientUnits="userSpaceOnUse" x1="${f(Fx(0))}" y1="0" x2="${f(Fx(200))}" y2="0"><stop offset="0" stop-color="#1c2a44"/><stop offset=".45" stop-color="#121c2e"/><stop offset="1" stop-color="#0a101b"/></linearGradient>`;
-    sc2 += `<clipPath id="${u}-fig"><path transform="translate(${f(FX)} ${f(FY)}) scale(${FS})" d="${A.torso}${A.hood}"/></clipPath>`;
-    sc2 += `<clipPath id="${u}-lit"><rect x="0" y="0" width="${f(Fx(104))}" height="640"/></clipPath>`;
-    sc2 += `<linearGradient id="${u}-scrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03060d" stop-opacity="0"/><stop offset="1" stop-color="#03060d" stop-opacity=".88"/></linearGradient>`;
-    sc2 += "</defs>";
+    const FT = `translate(${f(FX)} ${f(FY)}) scale(${FS})`;
+    let d = "<defs>";
+    d += `<linearGradient id="${u}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050913"/><stop offset=".5" stop-color="#0b162b"/><stop offset="1" stop-color="#060b16"/></linearGradient>`;
+    d += `<radialGradient id="${u}-src" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="420"><stop offset="0" stop-color="#a9bde8" stop-opacity=".95"/><stop offset=".2" stop-color="#5f77ab" stop-opacity=".66"/><stop offset=".48" stop-color="#22355c" stop-opacity=".34"/><stop offset="1" stop-color="#0a1428" stop-opacity="0"/></radialGradient>`;
+    d += `<radialGradient id="${u}-mist" gradientUnits="userSpaceOnUse" cx="250" cy="470" r="230"><stop offset="0" stop-color="#57739f" stop-opacity=".95"/><stop offset=".5" stop-color="#2c4472" stop-opacity=".6"/><stop offset="1" stop-color="#0b162b" stop-opacity="0"/></radialGradient>`;
+    d += `<linearGradient id="${u}-beam" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="320" y2="600"><stop offset="0" stop-color="#e3ecff" stop-opacity=".34"/><stop offset=".6" stop-color="#9fb8ef" stop-opacity=".07"/><stop offset="1" stop-color="#9fb8ef" stop-opacity="0"/></linearGradient>`;
+    d += `<filter id="${u}-bl" x="-5%" y="-5%" width="110%" height="110%"><feGaussianBlur stdDeviation="8"/></filter>`;
+    d += `<filter id="${u}-haze" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".011 .028" numOctaves="3" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .75  0 0 0 0 .82  0 0 0 0 1  1.1 0 0 0 -.35"/></filter>`;
+    d += `<filter id="${u}-gr" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="9"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.4 0 0 0 -.62"/></filter>`;
+    d += `<linearGradient id="${u}-jk" gradientUnits="userSpaceOnUse" x1="${f(Fx(0))}" y1="0" x2="${f(Fx(200))}" y2="0"><stop offset="0" stop-color="#121c30"/><stop offset=".4" stop-color="#0a111e"/><stop offset="1" stop-color="#060a12"/></linearGradient>`;
+    d += `<clipPath id="${u}-fig"><path transform="${FT}" d="${A.torso}"/><path transform="${FT}" d="${A.hood}"/></clipPath>`;
+    d += `<clipPath id="${u}-lit"><rect x="0" y="0" width="${f(Fx(100))}" height="640"/></clipPath>`;
+    d += `<linearGradient id="${u}-scrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03060d" stop-opacity="0"/><stop offset="1" stop-color="#03060d" stop-opacity=".9"/></linearGradient>`;
+    d += "</defs>";
     let w = `<rect width="360" height="640" fill="url(#${u}-sky)"/>`;
-    // the floodlight is out of frame at the top-start: its glow, two beams, the haze they light
+    // the floodlight is out of frame at the top-start: its glow, two beams and the haze they light
     w += `<rect width="360" height="640" fill="url(#${u}-src)"/>`;
-    w += `<g filter="url(#${u}-bl)"><path d="M-60 -40L40 -60L380 470L250 640Z" fill="url(#${u}-beam)"/><path d="M-80 30L-30 -10L170 640L40 640Z" fill="url(#${u}-beam)" opacity=".7"/></g>`;
-    w += `<rect width="360" height="640" filter="url(#${u}-haze)" opacity=".1"/>`;
-    // the pitch behind: the touchline and turf stripes, far below the light
-    w += `<path d="M0 548H360V640H0Z" fill="#081326"/>`;
-    for (let i = 0; i < 4; i++) w += `<path d="M0 ${560 + i * 22}H360V${571 + i * 22}H0Z" fill="#0d1d38" opacity=".7"/>`;
-    w += `<path d="M0 548H360" stroke="#dfe8f5" stroke-opacity=".38" stroke-width="1.3"/>`;
-    // the manager
-    w += `<g transform="translate(${f(FX)} ${f(FY)}) scale(${FS})">`;
-    w += `<path d="${A.torso}" fill="url(#${u}-jk)"/><path d="${A.hood}" fill="url(#${u}-jk)"/>`;
-    w += `<g fill="none" stroke="#2c3d5e" stroke-width="1.3"><path d="${A.seam}"/><path d="${A.hoodSeam}"/><path d="${A.hoodRim}"/></g>`;
-    w += `</g>`;
-    // the armband on the upper arm, catching the light
+    w += `<g filter="url(#${u}-bl)"><path d="M0 0H60L360 430V600L230 640H150Z" fill="url(#${u}-beam)"/><path d="M0 40L22 0L190 640H40L0 470Z" fill="url(#${u}-beam)" opacity=".65"/></g>`;
+    w += `<rect width="360" height="640" fill="url(#${u}-mist)"/>`;
+    w += `<rect width="360" height="640" filter="url(#${u}-haze)" opacity=".11"/>`;
+    // the pitch under the lights: the touchline and the mowing stripes
+    w += `<path d="M0 556H360V640H0Z" fill="#0a1a33" opacity=".85"/>`;
+    for (let i = 0; i < 4; i++) w += `<path d="M0 ${566 + i * 20}H360V${576 + i * 20}H0Z" fill="#12274a" opacity=".55"/>`;
+    w += `<path d="M0 556H360" stroke="#dfe8f5" stroke-opacity=".4" stroke-width="1.3"/>`;
+    // the manager: jacket, hood seam and yoke seam
+    w += `<g transform="${FT}"><path d="${A.torso}" fill="url(#${u}-jk)"/><path d="${A.hood}" fill="url(#${u}-jk)"/>`;
+    w += `<g fill="none" stroke="#25395e" stroke-width="1.2"><path d="${A.seam}"/><path d="${A.hoodSeam}"/><path d="${A.hoodRim}"/></g></g>`;
+    // the armband on the upper arm: club colour, the Logo Blue edge catching the light
     const arm = `M${f(Fx(9))} ${f(Fy(214))}Q${f(Fx(26))} ${f(Fy(203))} ${f(Fx(46))} ${f(Fy(194))}L${f(Fx(53))} ${f(Fy(208))}Q${f(Fx(33))} ${f(Fy(217))} ${f(Fx(14))} ${f(Fy(229))}Z`;
     const armTop = `M${f(Fx(9))} ${f(Fy(214))}Q${f(Fx(26))} ${f(Fy(203))} ${f(Fx(46))} ${f(Fy(194))}L${f(Fx(47.4))} ${f(Fy(196.8))}Q${f(Fx(27.4))} ${f(Fy(205.8))} ${f(Fx(10))} ${f(Fy(217))}Z`;
     w += `<g clip-path="url(#${u}-fig)"><path d="${arm}" fill="${club.body}"/><path d="${armTop}" fill="${K.blue}"/>`;
     w += `<path d="M${f(Fx(12))} ${f(Fy(226.4))}Q${f(Fx(32))} ${f(Fy(214.4))} ${f(Fx(52))} ${f(Fy(205.4))}" stroke="${club.sec}" stroke-width="2.4" fill="none"/>`;
     w += `<path d="M${f(Fx(9))} ${f(Fy(214))}Q${f(Fx(26))} ${f(Fy(203))} ${f(Fx(46))} ${f(Fy(194))}" stroke="#dce8ff" stroke-width="1.5" fill="none"/></g>`;
     // rim light on the side that faces the floodlight
-    w += `<g clip-path="url(#${u}-lit)" fill="none" stroke="#cfe0ff" stroke-width="1.5" opacity=".9"><path transform="translate(${f(FX)} ${f(FY)}) scale(${FS})" vector-effect="non-scaling-stroke" d="${A.hood}"/><path transform="translate(${f(FX)} ${f(FY)}) scale(${FS})" vector-effect="non-scaling-stroke" d="${A.torso}"/></g>`;
-    // grain, then the bottom scrim for the credit line
+    w += `<g clip-path="url(#${u}-lit)" fill="none" stroke="#d6e4ff" stroke-width="1.5" opacity=".95"><path transform="${FT}" vector-effect="non-scaling-stroke" d="${A.hood}"/><path transform="${FT}" vector-effect="non-scaling-stroke" d="${A.torso}"/></g>`;
+    // grain, then the scrim under the credit line
     w += `<rect width="360" height="640" filter="url(#${u}-gr)" opacity=".05"/>`;
-    w += `<rect y="520" width="360" height="120" fill="url(#${u}-scrim)"/>`;
-    const scene = `<svg class="c06-sh-scene" viewBox="0 0 360 640" aria-hidden="true" focusable="false">${sc2}<g${ar ? ' transform="translate(360 0) scale(-1 1)"' : ""}>${w}</g>${band}</svg>`;
+    w += `<rect y="590" width="360" height="50" fill="url(#${u}-scrim)" opacity=".6"/>`;
+    // the floodlight's haze is densest behind the wordmark's ball (the light variant draws the ball black)
+    const ballX = ar ? 360 - 22 - 118 * 0.07 : 22 + 118 * 0.93;
+    const glow = `<radialGradient id="${u}-lg" gradientUnits="userSpaceOnUse" cx="${f(ballX)}" cy="41" r="64"><stop offset="0" stop-color="#7488b2" stop-opacity=".95"/><stop offset=".45" stop-color="#5b6f9a" stop-opacity=".7"/><stop offset="1" stop-color="#3a4a6a" stop-opacity="0"/></radialGradient>`;
+    const scene = `<svg class="c06-sh-scene" viewBox="0 0 360 640" aria-hidden="true" focusable="false">${d}${glow}<g${ar ? ' transform="translate(360 0) scale(-1 1)"' : ""}>${w}</g><circle cx="${f(ballX)}" cy="41" r="64" fill="url(#${u}-lg)"/>${band}</svg>`;
     const yy = p.founder ? String(p.founder).slice(-2) : "";
     const dot = `<i aria-hidden="true">·</i>`;
     const credit =
@@ -1143,7 +1186,7 @@
       const b = q(".c06-inl");
       const c = q(".c06-tabw");
       if (a) a.innerHTML = surfaceItems(p, o, k, B, phi, T, club, false, false);
-      if (b) b.innerHTML = careLabel(p, o, k, B, phi, club);
+      if (b) b.innerHTML = careLabel(p, o, k, B, phi, club, !!T.ring);
       if (c) c.innerHTML = tabFull(p, o, k, B, T, club, phi, false, 1);
       mark();
     };
