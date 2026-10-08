@@ -51,11 +51,15 @@ const el = flag("el");
 if (section) await page.locator(`[data-shot="${section}"]`).first().screenshot({ path: out });
 else if (el) await page.locator(el).first().screenshot({ path: out });
 else await page.screenshot({ path: out, fullPage: !args.includes("--viewport") });
-// Overflow report: elements whose box escapes the page width (measured, not scrollWidth).
+// Overflow report: elements whose box escapes the page width (measured, not scrollWidth); SVG internals
+// clipped by their own SVG are not reported.
 const overflow = await page.evaluate(() => {
   const w = document.documentElement.clientWidth;
   const bad = [];
   for (const n of document.querySelectorAll("body *")) {
+    // the parts of an SVG are clipped by the SVG's own box (unless it sets overflow: visible)
+    const svg = n.ownerSVGElement;
+    if (svg && getComputedStyle(svg).overflow !== "visible") continue;
     const r = n.getBoundingClientRect();
     if (r.width && (r.right > w + 1 || r.left < -1))
       bad.push(
