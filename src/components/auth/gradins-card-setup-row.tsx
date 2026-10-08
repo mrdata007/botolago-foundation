@@ -16,7 +16,8 @@ import { serverResolvesClub } from "./server-resolves-club";
  * Profile setup, steps 1 and 2: the manager card being formed (plan M1c). Rendered only while
  * Gradins is live and the guest came from the Fantasy builder (`isFantasyCreateNext`). The route
  * loads this file with `lazy`, inside its live branch: with the switch off the page neither
- * mounts nor downloads any of it (`scripts/qa/manager-card-off-bundle-gate.ts`).
+ * mounts nor downloads any of it. The file name starts with `gradins-` so its chunk is named like
+ * the section's own, which `scripts/qa/manager-card-off-bundle-gate.ts` lets reach the card code.
  *
  * A slim row, not a card: the 64 px token at the start and the name as it is typed beside it (no
  * eyebrow label over it, and nothing fades or slides: a recolour changes the token in place). It is

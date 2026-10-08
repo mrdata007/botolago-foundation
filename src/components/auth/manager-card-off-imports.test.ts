@@ -38,7 +38,7 @@ describe("the pages WP6 touches keep the section's code out of their own chunks"
   it.each(FILES)("%s imports no card or Gradins module statically", (file) => {
     const imports = staticImports(stripComments(read(file)));
     const strays = imports.filter(({ from }) =>
-      /(^@\/components\/(manager-card|gradins)\b)|(^@\/backend\/manager-card\b)|(^@\/services\/(use-manager-card|manager-card)$)|(CardSetupRow|CardDeletionLine)$/.test(
+      /(^@\/components\/(manager-card|gradins)\b)|(^@\/backend\/manager-card\b)|(^@\/services\/(use-manager-card|manager-card)$)|(gradins-card-setup-row|gradins-card-deletion-line)$/.test(
         from,
       ),
     );
@@ -54,12 +54,12 @@ describe("the pages WP6 touches keep the section's code out of their own chunks"
 
   it("loads the two card components on demand, only from a live branch", () => {
     const setup = stripComments(read("src/routes/auth.profile-setup.tsx"));
-    expect(setup).toContain('import("@/components/auth/CardSetupRow")');
+    expect(setup).toContain('import("@/components/auth/gradins-card-setup-row")');
     expect(setup).toMatch(/cardPath && step <= 2 \? \(\s*[^]*?<Suspense[^]*?<CardSetupSlot/);
     expect(setup.match(/<CardSetupSlot/g)).toHaveLength(1);
 
     const profile = stripComments(read("src/routes/profile.tsx"));
-    expect(profile).toContain('import("@/components/auth/CardDeletionLine")');
+    expect(profile).toContain('import("@/components/auth/gradins-card-deletion-line")');
     const uses = [...profile.matchAll(/<CardDeletionLine/g)];
     expect(uses).toHaveLength(2);
     for (const use of uses) {

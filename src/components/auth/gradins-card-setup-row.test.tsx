@@ -5,7 +5,7 @@ import { FIXTURES } from "@/backend/manager-card/fixtures";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 
-import { CardSetupRow } from "./CardSetupRow";
+import { CardSetupRow } from "./gradins-card-setup-row";
 import { isFantasyCreateNext } from "./fantasy-create-path";
 import { serverResolvesClub } from "./server-resolves-club";
 

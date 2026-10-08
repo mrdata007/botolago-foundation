@@ -6,7 +6,7 @@ import { fill } from "@/components/manager-card/interpolate";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 
-import { CardDeletionNotice } from "./CardDeletionLine";
+import { CardDeletionNotice } from "./gradins-card-deletion-line";
 
 /**
  * The deletion request's line about the card (plan section 4): the card goes with the account, its

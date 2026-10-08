@@ -12,7 +12,9 @@ import { useMyManagerCard } from "@/services/use-manager-card";
  * none yet and the line says only that the card goes. No card, no line.
  *
  * The route loads this file with `lazy`, from its live branch only: with the switch off the
- * profile page neither mounts nor downloads any of it.
+ * profile page neither mounts nor downloads any of it. The file name starts with `gradins-` so its
+ * chunk is named like the section's own, which `scripts/qa/manager-card-off-bundle-gate.ts` lets
+ * reach the card code.
  */
 export function CardDeletionNotice({
   card,

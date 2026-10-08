@@ -57,7 +57,9 @@ const STEPS = 3;
  * import would make every visit to this page download the section's code, switch or no switch.
  */
 const CardSetupSlot = lazy(() =>
-  import("@/components/auth/CardSetupRow").then((module) => ({ default: module.CardSetupSlot })),
+  import("@/components/auth/gradins-card-setup-row").then((module) => ({
+    default: module.CardSetupSlot,
+  })),
 );
 
 function ProfileSetupPage() {
