@@ -1,10 +1,11 @@
 /* 09 PANNEAU — the fourth official's board, held up in your own hand.
    The card is the board: a 16:9 face in a frame, a collar, a long centred paddle and your fist on it.
    Units are viewBox units ("u"): the board is 320u wide, the whole object 320 x 340u.
-   LED text is computed, not textured: every string becomes a grid of cells and each LED is on or off
-   (PRO: a 5x7 and a 3x5 board font at a 3u pitch; CHAMPION: the brand face sampled at a 2u pitch with
-   three brightness levels, so its curves survive). Arabic is set solid in Handjet: the lab's copy of
-   Handjet has no element axes, so a dot mask would merge the dots of ي. */
+   LED text is computed, not textured: every string becomes a grid of cells and each LED is on or off.
+   Names and the 84 are Changa 800 sampled into the grid (Arabic too: its em is sized so the dots of ي
+   stay separate cells); labels use a 5x7 and a 3x5 board font on PRO's 3u pitch, and sampled Changa
+   with three brightness levels on CHAMPION's 2u pitch. Arabic labels are solid Handjet: the lab's copy
+   of Handjet has no element axes, so a dot mask would merge its dots. */
 (function () {
   const MC = window.MC;
   const ID = "c09";
@@ -1461,45 +1462,45 @@
     idea: [
       "The card is the board the fourth official raises, held in your own hand: a 16:9 face in a frame, a collar, a long centred paddle and your fist round the grip, with the cuff of a bench jacket leaving the frame at the bottom corner. Painted solid, it reads as a board held up before a single character is read. The board never mirrors.",
       "Every tier uses the same three rows. Row A is identity: the name, the founder's ·26 and the tier at the end. Row B is the 84 with OVR beside it on the same baseline. Row C is all four stats on one fixed line, so a screenshot always carries the whole card. There is no previous-gameweek row: the app has no previous overall yet, so that line appears only once two real values exist.",
-      "On the LED tiers the light is computed, not textured: every string becomes a grid of cells, and each LED is on or off over a field of unlit LEDs. PRO runs a 5×7 and a 3×5 board font on a 3u grid. That is the founder lamp's own pitch; a 4u grid cannot hold the four-stat line. CHAMPION's full matrix samples Changa at 2u with three brightness levels, so its curves survive. Where a dot would fall under two device pixels, the cells turn solid.",
+      "On the LED tiers the light is computed, not textured: every string becomes a grid of cells, and each LED is on or off over a field of unlit LEDs. The name and the 84 are Changa 800 sampled into the grid, in Latin and in Arabic. PRO sets its labels in a 5×7 and a 3×5 board font on a 3u grid, the founder lamp's own pitch; a 4u grid cannot hold the four-stat line. CHAMPION's full matrix samples everything at 2u with three brightness levels, so its curves survive. Where a dot would fall under two device pixels, the cells turn solid.",
       "Each colour has one meaning. Warm-white LEDs carry identity and figures. Tungsten carries the founder year and nothing else. Cyan appears only as the 2u strip that says the board is on. No amber, no navy, and no glow below LEGEND.",
-      "Swipe and the board turns over. The back carries the four stats as a column, the placeholder club crest, and a thirty-gameweek season record whose first seven marks are the labelled sample (EXEMPLE / مثال).",
+      "Swipe and the board turns over. The back carries the four stats as a column and a thirty-gameweek season record whose first seven marks are the labelled sample (EXEMPLE / مثال). Its end half holds the shared figure, hood up, rim-lit and cut by the bezel, made in the tier's medium: painted on HOMA, printed on STADE's card, drawn in LED cells on PRO and CHAMPION, lit on LEGEND's glass. A small club crest sits beside it.",
     ],
     belonging: [
       "Your number's going up. Every board in the league goes up in the same minute at gameweek close, so a group chat compares one moment.",
-      "A 15-year-old knows this object from every broadcast. The tiers form a technology ladder anyone can read from across a leaderboard: painted steel, flip cards, LED, full matrix, then dead-front glass held highest.",
-      "The fist is yours. You are the one holding it up, and in the share you stand at the touchline, seen from behind, with the board raised.",
+      "A 15-year-old knows this object from every broadcast. The tiers form a technology ladder anyone can read from across a leaderboard: painted steel, flip cards, LED, a brighter full matrix, then frameless lit glass held highest.",
+      "The fist is yours. In the share you stand at the touchline, seen from behind with your hood up, your arm bent up to hold the board beside your head, the four stats running on the stand's ribbon board behind.",
       "The founder lamp is the first light on the board and it never goes out. The year sits after the name, the way supporter groups carry theirs: ALI ·26.",
       "A screenshot always shows the whole card: name, year, tier, 84 and all four stats on the front.",
     ],
     founderMark: [
       "A knurled steel collar where the grip meets the board. It is 40u wide against the 28u grip, so a founder's outline differs from everyone else's. Its polished band carries 26 laser-engraved at 10.5u on the front, with FOUNDER and the BOT number wrapping round the cylinder.",
-      "On the face, ·26 follows the name, readable at arm's length. It is a tungsten lamp on the LED tiers that stays lit while the scan replays. HOMA paints it, STADE prints it on the name card, and LEGEND lights it in the glass.",
+      "On the face, ·26 follows the name, readable at arm's length. It is a tungsten lamp on the LED tiers that the power-on scan never touches. HOMA paints it, STADE prints it on the name card, and LEGEND lights it in the glass.",
       "At 24–32px the collar survives as a 3px steel bulge, wider than the stem, directly under the panel. In rows the name reads ALI ·26.",
       "Later cohorts get a plain rubber collar flush with the grip and no tungsten cell.",
     ],
     small: [
       "56–80px: the board on its club-colour paddle. The 84 is solid Changa 800 in warm white. PRO and CHAMPION add the cyan on-strip and a faint field of unlit LEDs. Founders get the steel collar, and the stem carries one rib per tier step.",
-      "44–52px (row(), the My position card): the same board on a shorter grip. The club colour is the grip itself, and the club's second colour forms its ribs.",
-      "24–32px, inside a ranking row's name cell: a panel 22×12 to 30×16 with a 1px rim, the 84 in solid Changa 800, and a stem at least 75% of the panel height, so it does not read as a monitor. The tier is the rib count on the stem: none for HOMA, one to three for STADE to CHAMPION, four for LEGEND. LEGEND's handle is also 30% longer, so in any column its board stands higher.",
+      "44–52px (row(), the My position card): the same board on a shorter grip. The club colour is the grip itself, and the club's second colour forms its ribs. From 44px up, LEGEND's 84 is white-hot with a warm bloom, the only token that glows.",
+      "24–32px, inside a ranking row's name cell: a panel 22×12 to 30×16 with a 1px rim, the 84 in solid Changa 800, and a stem at least 60% of the panel height, so it does not read as a monitor. The tier is the rib count on the stem: none for HOMA, one to three for STADE to CHAMPION, four for LEGEND. LEGEND also stands on a narrower telescopic segment, so in any column its board sits higher and its stem steps in.",
       "Thumbnails drop engravings, dots and filters and keep the whole outline, hand included.",
     ],
     rtl: [
-      "The object never mirrors: frame, collar, grip and your right hand stay put. The content does: the name and its 26· sit at the right, the tier at the left, the stats read from the right, and the season record fills from the right.",
-      "On the LED tiers, Arabic is set solid in Handjet, thickened by a hairline stroke. The lab's copy of Handjet has no element axes, so a dot mask would merge the dots of ي. HOMA, STADE, LEGEND and every row set علي in Changa 800.",
+      "The object never mirrors: frame, collar, grip and your right hand stay put. The content does: the name and its 26· sit at the right, the tier at the left, the stats read from the right, the season record fills from the right, and the figure on the back moves to the left half.",
+      "On the LED tiers, علي is Changa 800 sampled into the grid like the Latin name, sized so the two dots of ي stay separate cells. The Arabic tier, stat labels and sample label are solid Handjet, thickened by a hairline stroke: the lab's copy of Handjet has no element axes, so in dots they would merge. HOMA, STADE, LEGEND, the share and every row set علي in Changa 800.",
       "The 84 OVR group stays centred and left to right. Digits are Western and run left to right everywhere. No letter-spacing on Arabic.",
-      "The bottom rail reads المغرب · 2026/27 · BOT #004821, with Manrope supplying the digits. The sample record on the back says مثال.",
+      "The bottom rail reads المغرب · 2026/27 · BOT #004821, with Manrope supplying the digits; on LEGEND the same line is etched into the glass. The sample record on the back says مثال.",
     ],
     tiers: {
       HOMA: "A new steel board in black enamel with a visible brush direction, a bare galvanised hem and four rivets. Every figure is hand-painted by a sign-writer in white Changa with a grey drop shade, and the founder year in tungsten paint. A fresh BotolaGO decal sits at the top, and the ID is stamped into the hem. Full outline, 0 ribs.",
       STADE: "Flip cards. Black number cards hang on rings from a polished rail inside a brushed aluminium frame, each split by its hinge line. The name, the tier, OVR and the four stats are smaller cards. 1 rib.",
-      PRO: "Warm-white LEDs behind black acrylic in a brushed aluminium frame: a 5×7 and a 3×5 board font on a 3u grid, the 84 sampled into 20 rows, one 4% reflection band and the cyan on-strip. 2 ribs.",
-      CHAMPION: "A double-sided full matrix: a 2u pitch with three brightness levels, so the brand face keeps its curves. A mirror-polished frame with a bright chamfer, and a 5u visible edge under the board. 3 ribs.",
-      LEGEND: "Dead-front smoked glass in a thin satin-titanium frame with a polished lip. No pixels: the name, the 84 and the stats line are continuous warm light with a 2px bloom and a pool of light on the glass, and the ID is etched into its foot. A telescopic titanium extension makes the handle 30% longer. 4 ribs.",
+      PRO: "Warm-white LEDs behind black acrylic in a brushed aluminium frame on a 3u grid: the name and the 84 sampled from Changa 800 (the 84 on 20 rows), the labels and stats in a 5×7 and a 3×5 board font, one 4% reflection band and the cyan on-strip. 2 ribs.",
+      CHAMPION: "A double-sided full matrix on a 2u pitch with three brightness levels, so the brand face keeps its curves. Its dots are larger, overlap and carry a white core, so it is measurably brighter than PRO. A mirror-polished frame with a bright chamfer, and a 5u visible edge under the board. 3 ribs.",
+      LEGEND: "Frameless dead-front smoked glass, running almost edge to edge inside a 3u polished titanium lip: the only board without a frame. No pixels: the name and the 84 are white-hot light inside a tight warm bloom and a wide one, a pool of light sits on the glass, light spills onto its foot, and the stats line stays. The logo is printed on the glass, as supplied, and the ID is etched into its foot. A telescopic titanium extension makes the handle 30% longer. 4 ribs.",
     },
     legend: [
-      "On the first open after reaching LEGEND, with motion on, your fist raises the board from below on a 420ms spring with a hand's wobble. The tungsten 26 is already lit. Then the face powers on in one 300ms top-to-bottom scan that lands on the final values.",
-      "No gesture is needed to see the number: the scan plays by itself, and a tap only replays it. Under reduced motion the lit board simply shows. There is one scan and no flashing.",
+      "On the first open after reaching LEGEND, with motion on, your fist raises the board from below on a 420ms spring with a hand's wobble. The tungsten 26 is already lit. Then one 300ms power-on scan: a bright line runs down the glass while the face, already lit, rises from 60% to full brightness.",
+      "The 84 is never hidden and no gesture is needed to see it: the scan plays by itself, and a tap only replays it. Under reduced motion the lit board simply shows. There is one scan and no flashing.",
       "In every ranking the LEGEND board stands higher than the rest, because its handle is longer, and the stats line stays on its front.",
     ],
     advantages: [
@@ -1507,12 +1508,12 @@
       "A built-in weekly ritual: the object exists to show one number at one moment.",
       "Every stat is on the front at every tier, so a screenshot is complete.",
       "The tiers are physical technologies (paint, cards, LED, matrix, glass) plus a rib count on the stem, so they read in greyscale and without colour.",
-      "Arabic in a shop-sign face is local, not translated. The colour law (warm figures, tungsten founder, one cyan on-strip) fits the app.",
+      "Arabic in a shop-sign medium is local, not translated. The colour law (warm figures, tungsten founder, one cyan on-strip) fits the app.",
     ],
     risks: [
       "The board belongs to the substitution, so 'remplaçant' teasing is possible. Copy has to frame the IN ('ton numéro entre').",
       "A sign on a stick in a raised hand can read as a placard. The guard is the pitch-level share with the touchline and the dugout, and the share never shows a crowd.",
-      "On the LED tiers, Arabic is solid Handjet because the lab's font has no element axes. Production should vendor the full Handjet and set Arabic in dots.",
+      "On the LED tiers the Arabic labels and stats are solid Handjet, because the lab's font has no element axes. Production should vendor the full Handjet and set them in dots too.",
       "LED text is sampled from fonts at render time and cached per string. Production should ship pre-built cell grids.",
       "Handjet is not a brand face. The card shows the shared figure's hand in one skin tone only: skin-tone and gloved variants are specified but not built.",
       "Several features are specified but not built: a previous-gameweek row and the 'Changement' share, which need a previous overall that does not exist yet; the collar ceremony; and a friend's board raised beside yours.",

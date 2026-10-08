@@ -282,9 +282,10 @@
       } else {
         if (two) {
           const ws = two.map((l) => textW("800 34px Changa", l, est(l)));
-          const fs2 = Math.min(22, (34 * NAME.w) / Math.max(...ws));
+          // Arabic ascenders are taller: two Arabic lines stop at 18u and sit lower
+          const fs2 = Math.min(ar ? 18 : 22, (34 * NAME.w) / Math.max(...ws));
           const fsU = Math.max(15, fs2);
-          const y2 = ar ? 80 : 82;
+          const y2 = ar ? 83 : 82;
           const y1 = r2(y2 - fsU * (ar ? 1.12 : 1.02));
           // only a line still too wide at 15u is condensed to the box
           const fit = (i) => ((ws[i] * fsU) / 34 > NAME.w + 0.5 ? ` textLength="${NAME.w}" lengthAdjust="spacingAndGlyphs"` : "");

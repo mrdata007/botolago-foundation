@@ -288,8 +288,9 @@
   letter-spacing: 0.08em;
   color: var(--ui-on-surface-muted, #4e5661);
 }
+/* Arabic names need the room under the baseline: the dots of ي must never be clipped (علي, not على) */
 .c07-row[dir="rtl"] .c07-row-name b {
-  font: 800 18px/1.3 "Changa", "Noto Sans Arabic", sans-serif;
+  font: 800 18px/1.7 "Changa", "Noto Sans Arabic", sans-serif;
   letter-spacing: 0;
 }
 .c07-row[dir="rtl"] .c07-row-name small,
@@ -320,9 +321,9 @@
 }
 .c07-sh-logo {
   position: absolute;
-  top: 26px;
-  inset-inline-start: 20px;
-  width: 112px;
+  top: 14px;
+  inset-inline-start: 18px;
+  width: 100px;
 }
 .c07-sh-cap {
   position: absolute;
@@ -331,25 +332,25 @@
   margin: 0;
   display: grid;
   justify-items: end;
-  font: 700 15px/1.18 "Changa", sans-serif;
+  font: 700 14px/1.2 "Changa", sans-serif;
+  text-align: end;
   color: rgba(242, 238, 228, 0.88);
 }
 .c07-share[dir="rtl"] .c07-sh-cap {
   font: 700 16px/1.45 "Changa", "Noto Sans Arabic", sans-serif;
 }
-/* identity: in the column beside the scarf, under the rail and clear of a story's side buttons */
+/* identity: at the foot of the story's safe band, beside the scarf's lower end */
 .c07-sh-id {
   position: absolute;
-  top: 112px;
-  inset-inline-end: 18px;
-  width: 96px;
+  bottom: 112px;
+  inset-inline-end: 16px;
   display: grid;
   justify-items: end;
   gap: 5px;
   text-align: end;
 }
 .c07-sh-name {
-  font: 800 30px/1 "Changa", sans-serif;
+  font: 800 34px/1 "Changa", sans-serif;
   color: #fff;
   white-space: nowrap;
 }
@@ -377,11 +378,7 @@
   font-family: "Noto Sans Arabic", "Manrope", sans-serif;
   letter-spacing: 0;
 }
-.c07-share--legend .c07-sh-id {
-  top: auto;
-  bottom: 40px;
-  width: auto;
-}
+
 .c07-sh-scarf {
   position: absolute;
   container-type: inline-size;

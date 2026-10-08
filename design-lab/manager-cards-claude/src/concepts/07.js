@@ -1302,14 +1302,18 @@
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const u = MC.uid(PFX + "s");
-    const railY = 92;
     const card = full(p, { ...o, motion: false, thumb: false, _noRail: true });
     const vb = (card.match(/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/) || [0, VW, 600]).map(Number);
     const legend = p.tier === "LEGEND";
-    // the whole scarf, fringe included, between the rail and the frame's foot
-    const k = legend ? 336 / vb[1] : Math.min(0.98, (634 - railY) / (vb[2] - (RAIL_Y + RAIL_H / 2)));
+    // hanging: the scarf is fitted from the rail to the foot of its cast-on, which meets the frame's
+    // foot; the fringe runs off the frame. The knitted 84 is then about 18% of the frame's height.
+    const railY = 48;
+    const yCast = Number((card.match(/data-cast="([\d.]+)"/) || [0, vb[2] - 44])[1]);
+    const k = legend ? 340 / vb[1] : (640 - railY) / (yCast - (RAIL_Y + RAIL_H / 2));
     const sw = Math.round(vb[1] * k);
-    const top = legend ? 150 : f2(railY - (RAIL_Y + RAIL_H / 2) * k);
+    const top = legend ? 118 : f2(railY - (RAIL_Y + RAIL_H / 2) * k);
+    const side = 6; // the card box's inset from the frame edge (its tail hangs in the overhang)
+    const postX = side + Math.round((X1 + 8) * k); // the barrier upright, just past the scarf's end edge
     const bg =
       `<svg class="c07-sh-bg" viewBox="0 0 360 640" preserveAspectRatio="none" aria-hidden="true">` +
       `<defs>` +
@@ -1327,24 +1331,29 @@
       // the floodlight's glow
       `<rect width="360" height="640" fill="url(#${u}-fl)"/>` +
       `<g filter="url(#${u}-bl)" opacity=".3"><ellipse cx="${ar ? 30 : 330}" cy="-6" rx="70" ry="18" fill="#F4F8FF"/></g>` +
-      // the crowd barrier: top rail, uprights, a lower rail behind the scarf
+      // the crowd barrier: top rail, one upright down to the lower rail, the lower rail behind the scarf
       (legend
         ? ""
-        : `<rect x="${ar ? 360 - 8 - sw - 16 : 8 + sw + 9}" y="${railY}" width="7" height="560" fill="url(#${u}-post)"/>` +
+        : `<rect x="${ar ? 360 - postX - 7 : postX}" y="${railY}" width="7" height="${270 + 4}" fill="url(#${u}-post)"/>` +
           `<rect x="0" y="${railY + 270}" width="360" height="9" rx="4.5" fill="url(#${u}-st)" opacity=".7"/>` +
           `<rect x="0" y="${railY - 6}" width="360" height="12" rx="6" fill="url(#${u}-st)"/>` +
           `<path d="M0 ${railY - 3}H360" stroke="#fff" stroke-opacity=".7" stroke-width="1.2"/>`) +
       `</svg>`;
     const logo = MC.logo("wordmark", { variant: "light", w: "100%" });
     const cap = ar ? ["موسمي", "صفًّا بعد صف"] : ["Ma saison,", "rang par rang"];
-    const yr = p.founder ? `·${String(p.founder).slice(-2)}` : "";
+    // ALI ·26: the founder's year after the name. In Arabic the dot leads the figures inside the
+    // left-to-right run, so it still sits between the name and the year.
+    const yr = p.founder ? (ar ? `${String(p.founder).slice(-2)}·` : `·${String(p.founder).slice(-2)}`) : "";
+    const nmTxt = `${MC.nameOf(p, o)}${yr ? " ·26" : ""}`;
+    const m = ink(nmTxt, '800 {s} "Changa"');
+    const nameFs = Math.round(Math.min(34, (112 / ((m.left + m.right) / 100)) * 0.98));
     return (
       `<div class="c07-share${legend ? " c07-share--legend" : ""}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}">` +
       bg +
       `<div class="c07-sh-logo">${logo}</div>` +
-      `<p class="c07-sh-cap">${cap.map((l) => `<span>${esc(l)}</span>`).join("")}</p>` +
-      `<div class="c07-sh-scarf" style="top:${top}px;${ar ? "right" : "left"}:${legend ? 12 : 8}px;width:${sw}px">${card}</div>` +
-      `<div class="c07-sh-id"><b class="c07-sh-name">${esc(MC.nameOf(p, o))} <span dir="ltr">${esc(yr)}</span></b>` +
+      `<p class="c07-sh-cap"${legend ? "" : ` style="inset-inline-end:16px;top:${railY + 20}px"`}>${cap.map((l) => `<span>${esc(l)}</span>`).join("")}</p>` +
+      `<div class="c07-sh-scarf" style="top:${top}px;${ar ? "right" : "left"}:${legend ? 10 : side}px;width:${sw}px">${card}</div>` +
+      `<div class="c07-sh-id"><b class="c07-sh-name" style="font-size:${nameFs}px">${esc(MC.nameOf(p, o))}${yr ? ` <span dir="ltr">${esc(yr)}</span>` : ""}</b>` +
       `<span class="c07-sh-tier">${esc(S.tiers[p.tier])}</span>` +
       `<span class="c07-sh-sub"><span dir="ltr">@ali</span> · ${ar ? "مثال" : "Exemple"}</span></div>` +
       `</div>`
