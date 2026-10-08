@@ -20,6 +20,7 @@ knitter's easing (26 steps along the fast part of a row, 10 over the last stretc
 | File                                  | What                                                                                                                                    |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `index.ts`                            | `echarpeRenderer`, `ready()`, `mountSway`, `estimateAspect`, `knitName`. Imports `echarpe.css`.                                         |
+| `gradins-renderer.ts`                 | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`gradins-*`).                  |
 | `charts.ts`                           | The hand-cleaned stitch charts, unchanged from the lab (data only; generated from the lab file).                                        |
 | `knit.ts`                             | Pure primitives over bitmaps and stitch grids: `word`, `hjoin`, `grid`, `stamp`, `gridRuns`, `trim`, `vstack`, `castOff`.               |
 | `knit-name.ts`                        | `knitName`: what is knitted from a name (plan 6.4.1). No charts, so the estimate can use it.                                            |
@@ -113,30 +114,38 @@ no-preference)`. Measured in Chromium: `document.getAnimations()` is empty for e
 
 ## The sway
 
-`echarpeRenderer.mount(el)` (also exported as `mountSway`) swings the hanging scarf from the rail
-while a mouse or pen is pressed and dragged: a damped pendulum, at most 1.2 s, nothing under
-reduced motion or while the page is hidden. `CardRenderer` has no slot for it, so a screen reaches it
-through `EcharpeRenderer` (see the report to the orchestrator).
+`echarpeRenderer.mount(el)` (exported as `mountSway` too) is the optional `mount` of `CardRenderer`:
+`ManagerCard` calls it after inserting a full card when the screen asks for `sway` and the reader
+has not asked for less motion. It swings the hanging scarf from the rail while a mouse or pen is
+pressed and dragged (a damped pendulum, at most 1.2 s), does nothing while the page is hidden or on
+a LEGEND card (held, not hung), and returns its cleanup.
 
 ## Fonts
 
 The patch is set in Manrope (French) and Noto Sans Arabic (Arabic); the Arabic names with no chart
 are sampled from Changa 800 on a canvas (`raster.ts`). `ready()` asks the page to load both Changa
-subsets and waits at most 1.5 s; `active-renderer.ts` awaits it before the first card is drawn, and
-a sample is cached only when the font reports ready.
+subsets and waits at most 1.5 s; `active-renderer.ts` awaits it inside `load()` before the first card
+is drawn, and a sample is cached only when the font reports ready.
+
+## Label
+
+`label()` is the app's own `cardLabel` (`../copy.ts`, « Carte de manager, Ali, 84 OVR, PRO, Raja CA,
+BOT #482913 ») on the profile as the object can show it, so what is spoken is what is drawn. The
+root's `aria-label` is that sentence without control and direction characters (the contract's
+`stripControls`), escaped. A token's label is shorter: who, the number, the tier, the founder line.
 
 ## Measured
 
 Recorded on the development machine (Bun and Chromium 141, `scratchpad` harness, not committed):
 
-| What                                             | CPU x1                                  | CPU x4 (throttled) |
-| ------------------------------------------------ | --------------------------------------- | ------------------ |
-| `full()`, charted Latin PRO                      | 0.2 ms                                  | 0.4 ms             |
-| `full()`, founder, long name, LEGEND (worst)     | 0.2 ms                                  | 1.2 ms             |
-| `full()`, Arabic name sampled from Changa, first | 17.9 ms                                 | 72 ms              |
-| `full()`, the same name, cached                  | 0.2 ms                                  | 0.8 ms             |
-| `token()`                                        | under 0.1                               | under 0.1          |
-| markup parsed and laid out (PRO)                 | 3.7 ms                                  | 14.5 ms            |
-| Chunk (JS + CSS), minified                       | 116 kB, 33.5 kB gzip, + 1.1 kB gzip CSS |                    |
+| What                                             | CPU x1                                   | CPU x4 (throttled) |
+| ------------------------------------------------ | ---------------------------------------- | ------------------ |
+| `full()`, charted Latin PRO                      | 0.2 ms                                   | 0.4 ms             |
+| `full()`, founder, long name, LEGEND (worst)     | 0.2 ms                                   | 1.2 ms             |
+| `full()`, Arabic name sampled from Changa, first | 17.9 ms                                  | 72 ms              |
+| `full()`, the same name, cached                  | 0.2 ms                                   | 0.8 ms             |
+| `token()`                                        | under 0.1                                | under 0.1          |
+| markup parsed and laid out (PRO)                 | 3.7 ms                                   | 14.5 ms            |
+| Chunk in the built app (`bun run build`)         | 80.9 kB, 26.8 kB gzip, + 1.1 kB gzip CSS |                    |
 
 Budget (plan 6.6): 25 ms, 60 ms, 3 ms and 60 kB gzip.
