@@ -140,7 +140,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-obj,
   .c09.c09-card.is-replay[data-tier="LEGEND"] .c09-obj {
-    animation: c09-raise 420ms cubic-bezier(0.25, 1.35, 0.45, 1) both;
+    animation: c09-raise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .c09.c09-card[data-motion="1"][data-tier="LEGEND"] .c09-front .c09-lit,
   .c09.c09-card.is-replay .c09-front .c09-lit {

@@ -17,7 +17,7 @@ body { margin: 0; background: #0c1220; color: #e9eef5; font-family: "Manrope", "
 .ctx-ladder-slot { display: grid; place-items: center; }
 .pv-rows { display: grid; gap: 8px; }
 .pv-stack { display: grid; gap: 12px; }
-.pv-share { width: 360px; height: 640px; overflow: hidden; border-radius: 12px; }
+.pv-share { width: 360px; height: 640px; overflow: hidden; border-radius: 14px; }
 
 /* Silhouette test: every pixel of the card or token painted one colour. */
 .ctx-sil { display: flex; align-items: flex-end; gap: 22px; }

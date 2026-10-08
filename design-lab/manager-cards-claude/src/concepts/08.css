@@ -66,14 +66,14 @@
   .c08.c08--motion .c08-slip {
     transform-box: fill-box;
     transform-origin: 50% 50%;
-    animation: c08-collage 120ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+    animation: c08-collage 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   /* LEGEND: the cutter traces one die round the cluster, it lifts and slaps down, one flash frame */
   .c08.c08--motion[data-tier="LEGEND"] .c08-cut { animation: c08-trace 600ms cubic-bezier(0.45, 0, 0.55, 1) both; }
   .c08.c08--motion[data-tier="LEGEND"] .c08-cluster {
     transform-box: fill-box;
     transform-origin: 50% 55%;
-    animation: c08-lift 140ms 600ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+    animation: c08-lift 140ms 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   .c08.c08--motion[data-tier="LEGEND"] .c08-flashf { animation: c08-flashframe 80ms 760ms linear both; }
   .c08.c08--motion[data-tier="LEGEND"] .c08-sheen { animation: c08-blaze 80ms 760ms linear both; }
