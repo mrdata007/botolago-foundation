@@ -1,7 +1,11 @@
 # Manager Card — domain plan (BG-0158)
 
-**Status:** design only. Nothing in this file is built yet. No formula is coded
-until the owner answers the decisions in section 2. Research base: `origin/main`
+**Status:** approved. On 2026-10-08 the owner answered "yes to all decisions"
+(D1–D20 as recommended below, including D12's "ignore CAP weeks before #376",
+D14's open questions settled as: no special-number exclusion, and textures must
+not make numbers look rarer), and said to build from scratch (earlier unpushed
+Codex work is not used; no Codex agent is writing). The build order is in
+`docs/engineering/tasks/BG-0158/IMPLEMENTATION_PLAN.md`. Research base: `origin/main`
 at `3f9c57fc` (merge of #378), re-checked 2026-10-08.
 
 The Manager Card is a user's football identity, built from their Fantasy play:
