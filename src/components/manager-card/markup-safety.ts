@@ -27,6 +27,12 @@ export const ALLOWED_CARD_TAGS = [
   "text",
   "tspan",
   "use",
+  // Inert: the knit grain and the shadows (filters) and the clipped stitches (mask).
+  "filter",
+  "feTurbulence",
+  "feColorMatrix",
+  "feGaussianBlur",
+  "mask",
 ] as const;
 
 const ALLOWED = new Set<string>(ALLOWED_CARD_TAGS);
@@ -43,21 +49,28 @@ export const HOSTILE_NAMES = [
 
 /**
  * Everything wrong with a piece of renderer output, as readable strings; empty means safe.
- * Checks the tag allow-list, event-handler attributes, `javascript:` URLs, and that no attribute
- * value holds a raw double quote or angle bracket.
+ *
+ * Checks the tag allow-list, event-handler attributes (by attribute NAME: a name that is
+ * "<img src=x onerror=alert(1)>" legitimately sits, escaped, inside an `aria-label`), URL
+ * attributes that start with `javascript:`, and that no attribute value holds a raw angle
+ * bracket. An unescaped double quote breaks an attribute open, which shows up as a handler, a new
+ * tag or a bracket in what follows.
  */
 export function findUnsafeMarkup(html: string): string[] {
   const problems: string[] = [];
   for (const match of html.matchAll(/<\/?([A-Za-z][A-Za-z0-9-]*)/g)) {
     if (!ALLOWED.has(match[1]!)) problems.push(`tag <${match[1]}> is not allowed`);
   }
-  // Attributes: name="value" pairs inside tags. A value may not hold an unescaped < or >.
   for (const tag of html.matchAll(/<[A-Za-z][^>]*>/g)) {
     const source = tag[0];
-    if (/\son[a-z]+\s*=/i.test(source)) problems.push(`event handler in ${source.slice(0, 60)}`);
-    if (/javascript:/i.test(source)) problems.push(`javascript: URL in ${source.slice(0, 60)}`);
+    // Attribute values out, names and structure left.
+    const names = source.replace(/="[^"]*"/g, '=""');
+    if (/\son[a-z]+\s*=/i.test(names)) problems.push(`event handler in ${source.slice(0, 60)}`);
+    if (/\s(?:xlink:)?(?:href|src|action|formaction)\s*=\s*"\s*javascript:/i.test(source)) {
+      problems.push(`javascript: URL in ${source.slice(0, 60)}`);
+    }
     for (const attribute of source.matchAll(/\s[A-Za-z:-]+="([^"]*)"/g)) {
-      if (/[<>]/.test(attribute[1]!)) problems.push(`raw angle bracket in an attribute value`);
+      if (/[<>]/.test(attribute[1]!)) problems.push("raw angle bracket in an attribute value");
     }
   }
   if (/<script/i.test(html)) problems.push("a script element");

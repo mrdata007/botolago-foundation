@@ -3,11 +3,7 @@ import { QueryClient } from "@tanstack/react-query";
 
 import type { ManagerCardStatus } from "@/backend/manager-card/contracts";
 import {
-  STATUS_FAILURE_TTL_MS,
   STATUS_OFF,
-  STATUS_TIMEOUT_MS,
-  STATUS_TTL_MS,
-  createStatusReader,
   ensureManagerCardStatus,
   managerCardStatusFrom,
   managerCardStatusKey,
@@ -16,6 +12,12 @@ import {
   readManagerCardStatusOnServer,
   shouldRedirectFromGradins,
 } from "./manager-card-status";
+import {
+  STATUS_FAILURE_TTL_MS,
+  STATUS_TIMEOUT_MS,
+  STATUS_TTL_MS,
+  createStatusReader,
+} from "./manager-card-status-server";
 
 const ON: ManagerCardStatus = { enabled: true, minRated: 3, minConfirmed: 5 };
 
