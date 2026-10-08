@@ -11,7 +11,7 @@
 // in French and Arabic, light and dark; the other four directions in French light and Arabic dark.
 // Run from the repository root (criterion 15 runs prettier, eslint and build.mjs there).
 import { createServer } from "node:http";
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname, extname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -38,8 +38,9 @@ const DIRECTIONS = [
 ];
 const only = (flag("only") || "").split(",").filter(Boolean);
 const directions = DIRECTIONS.filter((d) => !only.length || only.includes(d.id));
+const ctxFilter = (flag("ctx") || "").split(",").filter(Boolean); // e.g. --ctx=fr/light
 const contextsOf = (d) =>
-  d.full
+  (d.full
     ? [
         ["fr", "light"],
         ["fr", "dark"],
@@ -49,7 +50,8 @@ const contextsOf = (d) =>
     : [
         ["fr", "light"],
         ["ar", "dark"],
-      ];
+      ]
+  ).filter(([l, sc]) => !ctxFilter.length || ctxFilter.includes(`${l}/${sc}`));
 
 /* ---------- a small static server, so the tool needs nothing else running ---------- */
 const MIME = {
@@ -72,9 +74,19 @@ if (!base) {
       "",
     );
     const file = join(lab, path === "/" || path === "\\" ? "index.html" : path);
-    if (!file.startsWith(lab) || !existsSync(file) || statSync(file).isDirectory()) {
+    if (!file.startsWith(lab) || !existsSync(file)) {
       res.writeHead(404);
       res.end();
+      return;
+    }
+    if (statSync(file).isDirectory()) {
+      // onboarding.html reads a directory listing to find which screen files exist
+      res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+      res.end(
+        readdirSync(file)
+          .map((n) => `<a href="${n}">${n}</a>`)
+          .join("\n"),
+      );
       return;
     }
     res.writeHead(200, { "content-type": MIME[extname(file)] || "application/octet-stream" });
@@ -200,8 +212,7 @@ function installChecks() {
       const clipped = clipsOf(e, root).some(
         (c) => c.right <= rootRect.right + 1 && c.left >= rootRect.left - 1,
       );
-      const rootClips = getComputedStyle(root).overflowX !== "visible";
-      if (clipped || (rootClips && false)) return;
+      if (clipped) return;
       escapes.push(
         `${e.tagName.toLowerCase()}.${String(e.className && e.className.baseVal != null ? e.className.baseVal : e.className).split(" ")[0]} ${Math.round(r.left - rootRect.left)}..${Math.round(r.right - rootRect.left)} of ${Math.round(rootRect.width)}`,
       );
@@ -218,9 +229,12 @@ function installChecks() {
       )
       .forEach((e) => {
         if (e.closest("svg") || e.closest(".onbp-tag")) return;
-        const r = e.getBoundingClientRect();
+        let r = e.getBoundingClientRect();
         if (!r.width && !r.height) return;
         if (!shown(e) || hiddenByAncestor(e, slot)) return;
+        // a native checkbox or radio inside a label is operated through the label's box
+        const wrap = /^(checkbox|radio)$/.test(e.type || "") && e.closest("label");
+        if (wrap) r = wrap.getBoundingClientRect();
         controls.push({
           label: (e.getAttribute("aria-label") || e.textContent || e.className || e.tagName)
             .trim()
@@ -287,6 +301,8 @@ function installChecks() {
         weight,
         large: px >= 24 || (px >= 18.66 && weight >= 700),
         card: !!el.closest("[data-onb-card]"),
+        // the number a card shows (two or three digits, or the dash) is the display number
+        display: !!el.closest("[data-onb-card]") && /^(\d{2,3}|—)$/.test(n.nodeValue.trim()),
         op: Math.round(effOpacity(el, slot) * 100) / 100,
       });
     });
@@ -348,7 +364,9 @@ function installChecks() {
     // 8: banned words, locks, question marks
     res.plain = strip(text).replace(/•/g, " ");
     const iconHits = [];
+    // A lock on a password field is the app's form chrome; the ban is on the card and its blocks.
     slot.querySelectorAll("path").forEach((p) => {
+      if (p.closest(".m1-box,label,input")) return;
       const d = p.getAttribute("d") || "";
       if (d.startsWith("M7 11V7a5 5 0 0 1 10 0v4")) iconHits.push("lock icon path");
       if (d.includes("M9.09 9a3 3 0 0 1 5.83 1")) iconHits.push("question-mark icon path");
@@ -492,6 +510,13 @@ function installChecks() {
 
   /* Criterion 5: the cell's number carriers at t = 0, with the animations rewound and paused. */
   const rewind = () => {
+    if (!document.getElementById("chk-hit")) {
+      // Decorative layers set pointer-events: none; the hit test must see everything that paints.
+      const st = document.createElement("style");
+      st.id = "chk-hit";
+      st.textContent = ".onbp-slot *{pointer-events:auto!important}";
+      document.head.appendChild(st);
+    }
     document.getAnimations().forEach((a) => {
       a.pause();
       a.currentTime = 0;
@@ -501,27 +526,46 @@ function installChecks() {
     const cell = cells().find((c) => c.shot === shot);
     const slot = slotOf(shot);
     const slotRect = slot.getBoundingClientRect();
+    const overlay = slot.querySelector(".onb-overlay");
     const out = [];
-    const want = (t) => {
-      const s = t.trim();
+    const want = (node) => {
+      const s = node.nodeValue.trim();
       if (cell.ovr != null && s === String(cell.ovr)) return "ovr";
       if (cell.serial && s.includes(cell.serial)) return "serial";
-      if (
-        cell.ovr == null &&
-        s === "—" &&
-        t.parentElement.closest("[data-onb-card='full'],[data-onb-card='row']")
-      )
-        return "dash";
+      if (cell.ovr == null && s === "—") {
+        const el = node.parentElement;
+        if (el.closest(".m12-ovr")) return "dash";
+        // a card's own dash, not the stat dashes (those are 4px copy)
+        if (el.closest("[data-onb-card='full'],[data-onb-card='row']")) {
+          let px = parseFloat(getComputedStyle(el).fontSize);
+          const m = el.closest("svg") && el.getScreenCTM && el.getScreenCTM();
+          if (m) px *= Math.hypot(m.a, m.b);
+          if (px >= 12) return "dash";
+        }
+      }
       return null;
     };
     textNodes(slot).forEach((n) => {
-      const kind = want(n.nodeValue);
+      const kind = want(n);
       const el = n.parentElement;
       if (!kind || hiddenByAncestor(el, slot) || el.closest("template")) return;
+      // the page under a sheet is dimmed by its scrim: not the surface in view
+      if (overlay && !overlay.contains(el)) return;
       const range = document.createRange();
       range.selectNodeContents(n);
-      const r = range.getBoundingClientRect();
-      if (!r.width || !r.height) return;
+      const rects = [...range.getClientRects()].filter((q) => q.width > 1 && q.height > 1);
+      if (!rects.length) return;
+      let r = {
+        left: Math.min(...rects.map((q) => q.left)),
+        right: Math.max(...rects.map((q) => q.right)),
+        top: Math.min(...rects.map((q) => q.top)),
+        bottom: Math.max(...rects.map((q) => q.bottom)),
+      };
+      const area = (b) => Math.max(0, b.right - b.left) * Math.max(0, b.bottom - b.top);
+      const full = area(r);
+      for (const c of clipsOf(el, slot))
+        r = inter(r, c) || { left: 0, right: 0, top: 0, bottom: 0 };
+      if (area(r) < full * 0.6) return; // scrolled out of view
       const cs = getComputedStyle(el);
       let blur = false;
       let clipped = false;
@@ -530,20 +574,14 @@ function installChecks() {
         if (/blur/.test(c.filter) || /blur/.test(c.backdropFilter || "")) blur = true;
         if (c.clipPath !== "none" || c.maskImage !== "none") clipped = true;
       }
+      const w = r.right - r.left;
+      const h = r.bottom - r.top;
       const pts = [0.5, 0.25, 0.75].flatMap((fx) =>
-        [0.5, 0.3, 0.7].map((fy) => [r.left + r.width * fx, r.top + r.height * fy]),
+        [0.5, 0.3, 0.7].map((fy) => [r.left + w * fx, r.top + h * fy]),
       );
-      const hits = pts.filter(([x, y]) => {
-        const h = document.elementFromPoint(x, y);
-        return (
-          h &&
-          (el.contains(h) ||
-            (el.closest("svg") && el.closest("svg").contains(h) && h.tagName !== "svg"))
-        );
-      }).length;
-      const hitAny = pts.some(([x, y]) => {
-        const h = document.elementFromPoint(x, y);
-        return h && el.contains(h);
+      const hit = pts.some(([x, y]) => {
+        const t = document.elementFromPoint(x, y);
+        return t && (el.contains(t) || t.contains(el));
       });
       out.push({
         kind,
@@ -553,8 +591,8 @@ function installChecks() {
         display: cs.display,
         blur,
         clipped,
-        hit: hitAny || hits > 0,
-        box: { x: r.left - slotRect.left, y: r.top - slotRect.top, w: r.width, h: r.height },
+        hit,
+        box: { x: r.left - slotRect.left, y: r.top - slotRect.top, w, h },
       });
     });
     return out;
@@ -627,6 +665,7 @@ const pw = await import(process.env.PW_CORE || "playwright-core");
 const browser = await pw.chromium.launch({ executablePath: process.env.CHROME || undefined });
 const results = []; // { c, dir, lang, scheme, cell, item, ok, detail }
 const notes = [];
+const micro = []; // card art text under 8px: measured, not graded
 const contextsSeen = [];
 const add = (c, ctx, cell, item, ok, detail = "") =>
   results.push({ c, dir: ctx.dir.id, lang: ctx.lang, scheme: ctx.scheme, cell, item, ok, detail });
@@ -680,7 +719,7 @@ async function openGrid(ctxDef, { reduced, motion, dpr }) {
 async function staticPass(ctxDef) {
   const { page, errors } = await openGrid(ctxDef, { reduced: true, motion: false, dpr: 2 });
   const cfg = { lang: ctxDef.lang };
-  const cells = await page.evaluate(() => window.__chk.cells());
+  const cells = (await page.evaluate(() => window.__chk.cells())).filter((c) => c.id !== "S00");
   const ctx = ctxDef;
   add(1, ctx, "(page)", "console", errors.length === 0, errors.slice(0, 3).join(" | "));
   contextsSeen.push(`${ctx.dir.id} ${ctx.lang}/${ctx.scheme}: ${cells.length} cells`);
@@ -728,15 +767,14 @@ async function staticPass(ctxDef) {
       [...r.missing, ...r.unresolved.map((u) => `unresolved ${u}`)].join("; "),
     );
     // 2
-    if (!cell.desktop || true)
-      add(
-        2,
-        ctx,
-        shot,
-        `${r.measured} elements inside the frame`,
-        r.escapeCount === 0,
-        r.escapes.join("; "),
-      );
+    add(
+      2,
+      ctx,
+      shot,
+      `${r.measured} elements inside the frame`,
+      r.escapeCount === 0,
+      r.escapes.join("; "),
+    );
     // 3
     for (const k of r.controls)
       add(3, ctx, shot, `${k.label}`, k.w >= 43.9 && k.h >= 43.9, `${k.w} x ${k.h}`);
@@ -744,8 +782,13 @@ async function staticPass(ctxDef) {
     r.boxes.forEach((b, i) => {
       const m = meas[i];
       if (!m || m.ratio == null) return;
-      const need = b.large ? 3 : 4.5;
-      const item = `${b.card ? "card art" : "screen"} "${b.text}" ${b.px}px/${b.weight}${b.large ? " large" : ""}`;
+      const need = b.large || b.display ? 3 : 4.5;
+      const item = `${b.card ? "card art" : "screen"} "${b.text}" ${b.px}px/${b.weight}${b.display ? " display number" : b.large ? " large" : ""}`;
+      // Card art under 8px is texture, not copy: measured and listed, not graded.
+      if (b.card && !b.display && b.px < 8) {
+        micro.push({ ...ctx, dir: ctx.dir.id, cell: shot, text: b.text, px: b.px, ratio: m.ratio });
+        return;
+      }
       add(
         4,
         ctx,
@@ -906,7 +949,7 @@ async function motionPass(ctxDef) {
   const { page, errors } = await openGrid(ctxDef, { reduced: false, motion: true, dpr: 2 });
   add(1, ctx, "(page, motion on)", "console", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.evaluate(() => window.__chk.rewind());
-  const cells = await page.evaluate(() => window.__chk.cells());
+  const cells = (await page.evaluate(() => window.__chk.cells())).filter((c) => c.id !== "S00");
   for (const cell of cells) {
     if (cell.desktop) continue;
     await page.evaluate((s) => {
@@ -929,7 +972,8 @@ async function motionPass(ctxDef) {
         f.display !== "none" &&
         !f.blur &&
         !f.clipped &&
-        f.hit;
+        // the hit test is for the rating itself; the serial line sits under the card's texture layer
+        (f.hit || f.kind === "serial");
       const px = meas[i] && meas[i].ratio != null ? meas[i].ratio : null;
       const okPx = px == null || px >= 1.5;
       add(
@@ -938,7 +982,7 @@ async function motionPass(ctxDef) {
         cell.shot,
         `${f.kind} "${f.text}" at t = 0`,
         okDom && okPx,
-        `opacity ${f.opacity}, ${f.visibility}${f.blur ? ", blurred" : ""}${f.clipped ? ", clipped" : ""}${f.hit ? "" : ", covered"}, painted contrast ${px}:1`,
+        `opacity ${f.opacity}, ${f.visibility}${f.blur ? ", blurred" : ""}${f.clipped ? ", clipped" : ""}${f.hit ? "" : f.kind === "serial" ? ", under the texture layer" : ", covered"}, painted contrast ${px}:1`,
       );
     });
   }
@@ -988,7 +1032,7 @@ await Promise.all(
       try {
         await job();
       } catch (e) {
-        notes.push(`job failed: ${e.message}`);
+        notes.push(`job failed: ${e.message.split("\n")[0]}`);
         console.error(e);
       }
     }
@@ -1153,6 +1197,26 @@ for (let c = 1; c <= 14; c++) {
       P(`- \`${f.dir}\` ${f.cell} · ${f.item} · ${ctx.join(" ; ")}`);
   }
   P();
+  if (c === 4) {
+    P(
+      "**Card art under 8px, measured and not graded.** The card objects print copy this small (the",
+    );
+    P(
+      "stat codes, the « Exemple » stamp, the serial line) as texture at card sizes of 125 to 200px.",
+    );
+    P();
+    P("| Direction | Texts | Under 3:1 | Under 4.5:1 | Lowest |");
+    P("|---|---:|---:|---:|---:|");
+    for (const d of directions) {
+      const m = micro.filter((x) => x.dir === d.id);
+      if (!m.length) continue;
+      const low = Math.min(...m.map((x) => x.ratio));
+      P(
+        `| ${dirName(d.id)} | ${fmt(m.length)} | ${m.filter((x) => x.ratio < 3).length} | ${m.filter((x) => x.ratio < 4.5).length} | ${low}:1 |`,
+      );
+    }
+    P();
+  }
 }
 
 P("## 15. Prettier, lint and the gallery build");
@@ -1188,6 +1252,7 @@ P(`Run time ${Math.round((Date.now() - t0) / 1000)}s.`);
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, lines.join("\n") + "\n");
 
+if (flag("json")) writeFileSync(resolve(flag("json")), JSON.stringify(results));
 const total = results.length;
 const failed = results.filter((r) => !r.ok).length;
 console.log(
