@@ -13,7 +13,8 @@ import type { CardLang, CardProfile } from "./types";
  * renderer has loaded; after that the box takes the markup's own shape, which changes with the
  * card (the fourth counted journée turns the forming marks into season stripes).
  *
- * Today this is Écharpe v2 (`./echarpe`). `load` waits for the Changa face its Arabic-name sampler
+ * Today this is Écharpe v2 (`./echarpe`, entered through `gradins-renderer.ts`, whose name is the
+ * chunk's). `load` waits for the Changa face its Arabic-name sampler
  * reads (within a second and a half) before it hands the renderer over, so the first card is drawn
  * with the right face. `estimateAspect` is Écharpe's own `estimate.ts`, the one module of the folder
  * that is in the main bundle: it imports only the geometry and the name cleaner, no chart.
@@ -32,7 +33,7 @@ export interface ActiveRenderer {
 export const activeRenderer: ActiveRenderer = {
   id: "echarpe-v2",
   load: async () => {
-    const module = await import("./echarpe");
+    const module = await import("./echarpe/gradins-renderer");
     await module.ready();
     return module.echarpeRenderer;
   },
