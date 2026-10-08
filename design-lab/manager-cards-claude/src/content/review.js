@@ -281,6 +281,7 @@ window.MC.REVIEW = {
 <li>Give every winner's middle tiers an added part, not only a new colour.</li>
 <li>Redraw the 24px tokens of Écharpe and Porte-clés so they read as a scarf and a key tag, not a chip and a capsule.</li>
 <li>Show each winner in two or three real club colourways.</li>
+<li>Embroider the figures on Écharpe's stats patch: its border is now stitched, but the numbers are still a regular typeface, so the patch can read as a printed label.</li>
 <li>Carry the parts the losers donated: Panneau's raise-the-board share, Lsaq's sticker export, Lucarne's top-corner moment, and Quatre Ombres' four-shadow light as a reveal.</li>
 </ul>`,
   refinedIntro: "The critique's top three, refined. Each first pass stays as it was built, beside its refined version, so the change is visible. The refinements followed the judge's brief for each direction (hierarchy, generic details, spacing, typography, iconography, silhouette, avatar, stats, founder mark), then a fresh reviewer compared the two versions and a last round fixed what it found.",

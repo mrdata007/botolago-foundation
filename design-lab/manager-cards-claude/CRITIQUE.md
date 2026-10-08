@@ -247,5 +247,7 @@ as "2b". Both were re-checked in every tier with all five sample names.
 - Redraw the 24px tokens of Écharpe and Porte-clés so they read as a scarf and a key tag.
 - Show each winner in two or three real club colourways (the sample club is a deliberately
   neutral placeholder).
+- Embroider the figures on Écharpe's stats patch. Its border is now stitched, but the numbers
+  are still a regular typeface, so the patch can read as a printed label.
 - Carry the parts the losers donated: Panneau's raise-the-board share, Lsaq's sticker
   export, Lucarne's top-corner moment, and Quatre Ombres' four-shadow light as a reveal.
