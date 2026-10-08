@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
-import { UiSkeleton } from "@/components/ui-kit";
+import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 import { cardLabel, useCardStrings } from "./copy";
 import { cachedRender } from "./render-cache";
+import { newIdScope, scopeSvgIds } from "./scope-ids";
 import { useCardRenderer, useCardTheme } from "./use-card-renderer";
 import type { CardProfile, TokenSize } from "./types";
 
@@ -26,6 +27,7 @@ export function CardToken({
   const strings = useCardStrings();
   const renderer = useCardRenderer();
   const theme = useCardTheme();
+  const [scope] = useState(newIdScope);
 
   const view = useMemo(() => {
     if (!renderer) return null;
@@ -33,10 +35,13 @@ export function CardToken({
       "|",
     );
     return {
-      html: cachedRender(key, () => renderer.token(profile, { strings, theme, size })),
+      html: scopeSvgIds(
+        cachedRender(key, () => renderer.token(profile, { strings, theme, size })),
+        scope,
+      ),
       box: renderer.tokenBox(profile, size),
     };
-  }, [renderer, strings, theme, size, profile]);
+  }, [renderer, strings, theme, size, profile, scope]);
 
   const box = view?.box ?? { width: size, height: size };
   return (
@@ -49,7 +54,12 @@ export function CardToken({
         <span className="block" dangerouslySetInnerHTML={{ __html: view.html }} />
       ) : (
         <>
-          <UiSkeleton className="h-full w-full" />
+          {/* The kit's skeleton is a block element; a token sits in a button or a cell. */}
+          <span
+            aria-hidden
+            className={cn("shimmer block h-full w-full", ui.radius.control)}
+            style={{ backgroundColor: "var(--ui-surface-sunken)" }}
+          />
           <span className="sr-only">{cardLabel(profile, strings)}</span>
         </>
       )}
