@@ -138,14 +138,14 @@ root's `aria-label` is that sentence without control and direction characters (t
 
 Recorded on the development machine (Bun and Chromium 141, `scratchpad` harness, not committed):
 
-| What                                             | CPU x1                                  | CPU x4 (throttled) |
-| ------------------------------------------------ | --------------------------------------- | ------------------ |
-| `full()`, charted Latin PRO                      | 0.2 ms                                  | 0.4 ms             |
-| `full()`, founder, long name, LEGEND (worst)     | 0.2 ms                                  | 1.2 ms             |
-| `full()`, Arabic name sampled from Changa, first | 17.9 ms                                 | 72 ms              |
-| `full()`, the same name, cached                  | 0.2 ms                                  | 0.8 ms             |
-| `token()`                                        | under 0.1                               | under 0.1          |
-| markup parsed and laid out (PRO)                 | 3.7 ms                                  | 14.5 ms            |
-| Chunk (JS + CSS), minified                       | 116 kB, 33.5 kB gzip, + 1.1 kB gzip CSS |                    |
+| What                                             | CPU x1                                   | CPU x4 (throttled) |
+| ------------------------------------------------ | ---------------------------------------- | ------------------ |
+| `full()`, charted Latin PRO                      | 0.2 ms                                   | 0.4 ms             |
+| `full()`, founder, long name, LEGEND (worst)     | 0.2 ms                                   | 1.2 ms             |
+| `full()`, Arabic name sampled from Changa, first | 17.9 ms                                  | 72 ms              |
+| `full()`, the same name, cached                  | 0.2 ms                                   | 0.8 ms             |
+| `token()`                                        | under 0.1                                | under 0.1          |
+| markup parsed and laid out (PRO)                 | 3.7 ms                                   | 14.5 ms            |
+| Chunk in the built app (`bun run build`)         | 80.9 kB, 26.8 kB gzip, + 1.1 kB gzip CSS |                    |
 
 Budget (plan 6.6): 25 ms, 60 ms, 3 ms and 60 kB gzip.
