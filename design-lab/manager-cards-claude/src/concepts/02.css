@@ -1,105 +1,78 @@
 /* 02 TIR — the shot. Every selector is scoped under .c02.
-   Dark app ground is the default; light ground overrides below. */
+   Dark app ground is the default; the light ground overrides below. */
 
 /* ---------- ground tokens ---------- */
 .c02,
 :root .app-light .app-dark .c02 {
   --c02-ball-hi: #eef2f6;
   --c02-ball: #e3e8ee;
-  --c02-ball-lo: #c3ccd6;
+  --c02-ball-lo: #c9d1db;
   --c02-ball-flat: #e3e8ee;
-  --c02-seam: #b4bec9;
-  --c02-seam-hi: #f2f5f8;
-  --c02-ring: rgba(255, 255, 255, 0);
-  --c02-rim: #737b86;
-  --c02-alu-edge: #4f5862;
-  --c02-lift: rgba(0, 0, 0, 0.72);
-  --c02-champ-ring: #c3cad2;
-  --c02-mini-dot: #f4fbff;
-  --c02-air-ink: #c9d3e0;
-  --c02-homa-cres: #c9cfd8;
-  --c02-stade-line: #9bdbfd;
-  --c02-lowcres: #f4fbff;
-  --c02-lring: #f4fbff;
-  --c02-flare: #f4fbff;
-  --c02-tpanel: #b4bec9;
-  --c02-tpanel-pearl: #cbd5e1;
+  --c02-ring: #737b86;
+  --c02-ring-blade: #858d99;
+  --c02-trail-rim: #737b86;
+  --c02-blade-rim: rgba(0, 0, 0, 0);
+  --c02-blade-hi: #ffffff;
+  --c02-blade: #eef1f4;
+  --c02-blade-lo: #dde3ea;
+  --c02-cres-rim: #737b86;
   /* rows */
-  --c02-surface: #121b29;
+  --c02-surface: oklch(0.22 0.03 260);
   --c02-text: #f0f6fc;
   --c02-muted: #a9b2be;
-  --c02-wedge: color-mix(in oklab, #9bdbfd 15%, transparent);
-  --c02-wedge-edge: color-mix(in oklab, #9bdbfd 34%, transparent);
+  --c02-me: color-mix(in oklab, #9bdbfd 14%, oklch(0.22 0.03 260));
   --c02-row-edge: color-mix(in oklab, #f0f6fc 10%, transparent);
-  --c02-row-ball: #e3e8ee;
+  --c02-yr: #6f9bff;
 }
 .app-light .c02,
 :root[data-ground="day"] .c02,
 :root .app-dark .app-light .c02 {
   --c02-ball-hi: #ffffff;
-  --c02-ball: #f8fafc;
-  --c02-ball-lo: #d9e0e8;
+  --c02-ball: #fbfcfd;
+  --c02-ball-lo: #dfe5ec;
   --c02-ball-flat: #ffffff;
-  --c02-seam: #cfd7e0;
-  --c02-seam-hi: #ffffff;
   --c02-ring: #858d99;
-  --c02-rim: rgba(0, 0, 0, 0);
-  --c02-alu-edge: #6e7782;
-  --c02-lift: rgba(0, 28, 73, 0.42);
-  --c02-champ-ring: #6e7782;
-  --c02-mini-dot: #001c49;
-  --c02-air-ink: #0c3164;
-  --c02-homa-cres: #aeb5be;
-  --c02-stade-line: #0c3164;
-  --c02-lowcres: #0c3164;
-  --c02-lring: #001c49;
-  --c02-flare: #0c3164;
-  --c02-tpanel: #d6dde7;
-  --c02-tpanel-pearl: #dce4ee;
+  --c02-ring-blade: #858d99;
+  --c02-trail-rim: rgba(0, 0, 0, 0);
+  --c02-blade-rim: #858d99;
+  --c02-blade-hi: #ffffff;
+  --c02-blade: #f4f6f8;
+  --c02-blade-lo: #e3e8ee;
+  --c02-cres-rim: rgba(0, 0, 0, 0);
   --c02-surface: #ffffff;
   --c02-text: #060d1a;
   --c02-muted: #4e5661;
-  --c02-wedge: color-mix(in oklab, #0c3164 12%, transparent);
-  --c02-wedge-edge: color-mix(in oklab, #0c3164 26%, transparent);
+  --c02-me: color-mix(in oklab, oklch(0.88 0.11 205) 22%, #ffffff);
   --c02-row-edge: color-mix(in oklab, #0c3164 9%, transparent);
-  --c02-row-ball: #ffffff;
+  --c02-yr: #0151fc;
 }
 :root .app-dark .c02 {
   --c02-ball-hi: #eef2f6;
   --c02-ball: #e3e8ee;
-  --c02-ball-lo: #c3ccd6;
+  --c02-ball-lo: #c9d1db;
   --c02-ball-flat: #e3e8ee;
-  --c02-seam: #b4bec9;
-  --c02-seam-hi: #f2f5f8;
-  --c02-ring: rgba(255, 255, 255, 0);
-  --c02-rim: #737b86;
-  --c02-alu-edge: #4f5862;
-  --c02-lift: rgba(0, 0, 0, 0.72);
-  --c02-champ-ring: #c3cad2;
-  --c02-mini-dot: #f4fbff;
-  --c02-air-ink: #c9d3e0;
-  --c02-homa-cres: #c9cfd8;
-  --c02-stade-line: #9bdbfd;
-  --c02-lowcres: #f4fbff;
-  --c02-lring: #f4fbff;
-  --c02-flare: #f4fbff;
-  --c02-tpanel: #b4bec9;
-  --c02-tpanel-pearl: #cbd5e1;
-  --c02-surface: #121b29;
+  --c02-ring: #737b86;
+  --c02-ring-blade: #858d99;
+  --c02-trail-rim: #737b86;
+  --c02-blade-rim: rgba(0, 0, 0, 0);
+  --c02-blade-hi: #ffffff;
+  --c02-blade: #eef1f4;
+  --c02-blade-lo: #dde3ea;
+  --c02-cres-rim: #737b86;
+  --c02-surface: oklch(0.22 0.03 260);
   --c02-text: #f0f6fc;
   --c02-muted: #a9b2be;
-  --c02-wedge: color-mix(in oklab, #9bdbfd 15%, transparent);
-  --c02-wedge-edge: color-mix(in oklab, #9bdbfd 34%, transparent);
+  --c02-me: color-mix(in oklab, #9bdbfd 14%, oklch(0.22 0.03 260));
   --c02-row-edge: color-mix(in oklab, #f0f6fc 10%, transparent);
-  --c02-row-ball: #e3e8ee;
+  --c02-yr: #6f9bff;
 }
 
-/* ---------- the card object ---------- */
+/* ---------- the card object: no frame, a 300×420 footprint ---------- */
 .c02.c02-card {
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 400 / 190;
+  aspect-ratio: 300 / 420;
   -webkit-tap-highlight-color: transparent;
 }
 .c02 .c02-svg {
@@ -118,7 +91,7 @@
 .c02 .c02-t-name {
   font-family: "Changa", sans-serif;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 .c02 .c02-t-arname {
   font-family: "Changa", "Noto Sans Arabic", sans-serif;
@@ -130,11 +103,11 @@
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
-.c02 .c02-t-meta {
+.c02 .c02-t-print {
   font-family: "Manrope", sans-serif;
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 .c02 .c02-t-ar {
   font-family: "Noto Sans Arabic", "Changa", sans-serif;
@@ -142,7 +115,10 @@
   letter-spacing: 0;
 }
 .c02 .c02-track {
-  letter-spacing: 0.09em;
+  letter-spacing: 0.08em;
+}
+.c02 .c02-track-s {
+  letter-spacing: 0.06em;
 }
 
 /* gradient stops driven by the ground */
@@ -155,65 +131,45 @@
 .c02 .c02-s-balllo {
   stop-color: var(--c02-ball-lo);
 }
-.c02 .c02-s-flare {
-  stop-color: var(--c02-flare);
-  stop-opacity: 0.95;
+.c02 .c02-s-blade-hi {
+  stop-color: var(--c02-blade-hi);
 }
-.c02 .c02-s-flare0 {
-  stop-color: var(--c02-flare);
-  stop-opacity: 0;
+.c02 .c02-s-blade {
+  stop-color: var(--c02-blade);
+}
+.c02 .c02-s-blade-lo {
+  stop-color: var(--c02-blade-lo);
 }
 
-/* ball */
-.c02 .c02-lift {
-  fill: var(--c02-lift);
+/* ---------- ball ---------- */
+.c02 .c02-ball-flat {
+  fill: var(--c02-ball-flat);
+}
+.c02 .c02-panel {
+  fill: #001c49;
 }
 .c02 .c02-ring {
   stroke: var(--c02-ring);
 }
-.c02 .c02-lring {
-  stroke: var(--c02-lring);
+.c02 .c02-ring.is-blade {
+  stroke: var(--c02-ring-blade);
 }
 .c02 .c02-seam {
-  stroke: var(--c02-seam);
-}
-.c02 .c02-seam-hi {
-  stroke: var(--c02-seam-hi);
-}
-.c02 .c02-seam-print {
   fill: none;
-  stroke: #c3ccd7;
-  stroke-width: 1.1;
-  stroke-linejoin: round;
+  stroke: #c9d2dc;
+  stroke-width: 0.7;
 }
-.c02 .c02-ball-flat {
-  fill: var(--c02-ball-flat);
-}
-.c02 .c02-ball-homa {
-  fill: #e9ecef;
-}
-.c02 .c02-ball-dirt {
-  fill: #9aa2ac;
-  opacity: 0.18;
-}
-.c02 .c02-ovr {
+.c02 .c02-print1 {
   fill: #001c49;
 }
-.c02 .c02-ovr-inv {
-  fill: #f4fbff;
-}
-.c02 .c02-unit {
+.c02 .c02-print2 {
   fill: #4e5661;
-  letter-spacing: 0.12em;
+}
+.c02 .c02-print2.c02-t-print {
+  font-weight: 700;
 }
 .c02 .c02-founder-26 {
   fill: #ffffff;
-}
-.c02 .c02-tpanel {
-  fill: var(--c02-tpanel);
-}
-.c02 .c02-tpanel.is-pearl {
-  fill: var(--c02-tpanel-pearl);
 }
 .c02 .c02-ball-back {
   opacity: 0;
@@ -226,203 +182,191 @@
   fill: #9bdbfd;
 }
 
-/* trail materials */
-.c02 .c02-rim {
-  stroke: var(--c02-rim);
+/* ---------- trail materials ---------- */
+.c02 .c02-trail-rim {
+  stroke: var(--c02-trail-rim);
+  stroke-width: 1;
 }
-.c02 .c02-rim-share {
-  stroke: #737b86;
+.c02 .c02-trail-rim.is-blade {
+  stroke: var(--c02-blade-rim);
 }
-.c02 .c02-alu-edge {
-  stroke: var(--c02-alu-edge);
+.c02 .c02-paint {
+  fill: #0c3164;
 }
 .c02 .c02-concrete {
   fill: #4a515b;
 }
-.c02 .c02-chalkline {
-  stroke: #d5dae0;
+.c02 .c02-rubber {
+  fill: #2b2f35;
 }
-.c02 .c02-blade-pro {
-  fill: #b6c1d1;
+.c02 .c02-blade {
+  fill: var(--c02-blade);
 }
-.c02 .c02-blade-pro.is-best,
-.c02 .c02-blade-stade.is-best {
-  fill: #ffffff;
+.c02 .c02-blade-edge {
+  stroke: #ffffff;
+  stroke-width: 1.6;
+  stroke-linecap: round;
 }
-.c02 .c02-blade-stade {
-  fill: #c8d1dd;
+.c02 .c02-blade-bevel {
+  stroke: #c9d2dc;
+  stroke-width: 0.5;
+  opacity: 0.8;
 }
-.c02 .c02-blade-chalk {
-  fill: #c9cfd8;
+.c02 .c02-chalk-line {
+  fill: none;
+  stroke: #eef0ea;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
-.c02 .c02-blade-chalk.is-best {
-  fill: #eef1f4;
+
+/* swooshes: Logo Blue, ink, and the club colour (CHAMPION) */
+.c02 .c02-cres {
+  stroke: var(--c02-cres-rim);
+  stroke-width: 0;
 }
-.c02 .c02-beam {
-  fill: #dbe7f3;
-}
-.c02 .c02-beam.is-best {
-  fill: #ffffff;
-}
-.c02 .c02-crescent {
+.c02 .c02-cres-blue {
   fill: #0151fc;
 }
-.c02 .c02-cres-chalk {
-  fill: var(--c02-homa-cres);
-}
-.c02 .c02-cres-line {
-  stroke: var(--c02-stade-line);
-}
-.c02 .c02-lowcres {
-  fill: var(--c02-lowcres);
-}
-.c02 .c02-stencil {
-  fill: #dfe6ee;
-  opacity: 0.3;
-}
-
-/* stat labels inside the roots */
-.c02 .c02-slab text {
+.c02 .c02-cres-ink {
   fill: #001c49;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
 }
-.c02 .c02-slab-champion text {
-  fill: #f4f6f8;
-}
-.c02 .c02-slab-champion.is-best text {
-  fill: #ffffff;
-}
-.c02 .c02-slab-champion .c02-engrave-hi text {
-  fill: #2f3740;
-  opacity: 0.6;
-}
-.c02 .c02-slab-legend text {
-  fill: #f4fbff;
-}
-.c02 .c02-slab-t {
-  opacity: 0.92;
+.c02 .c02-cres-club {
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
 }
 
-/* words on the swoosh */
-.c02 .c02-arc-t {
-  fill: #ffffff;
+/* lanes: equal, faint, running on to the tip */
+.c02 .c02-lane {
+  stroke: #2a4a7e;
+  stroke-width: 0.5;
+  fill: none;
 }
-.c02 .c02-arc-homa {
-  fill: #2b3038;
+.c02 .c02-lane-homa {
+  stroke: #eef0ea;
+  stroke-width: 0.9;
+  opacity: 0.85;
 }
-.c02 .c02-arc-stade {
-  fill: var(--c02-air-ink);
+.c02 .c02-lane-champion {
+  stroke: #535a64;
+  stroke-width: 0.6;
+}
+.c02 .c02-lane-legend {
+  stroke: #c9d2dc;
+  stroke-width: 0.6;
 }
 
-/* name zone, per material */
-.c02 .c02-name {
+/* LEGEND dimples: debossed, one per gameweek */
+.c02 .c02-dimple-pit {
+  fill: #d6dde5;
+}
+.c02 .c02-dimple-sh {
+  fill: none;
+  stroke: #8f9aa7;
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+.c02 .c02-dimple-hi {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+.c02 .c02-example {
+  fill: #6b7480;
+}
+
+/* ---------- words on the trail ---------- */
+.c02 .c02-name,
+.c02 .c02-ovr,
+.c02 .c02-sval {
   fill: #ffffff;
 }
 .c02 .c02-tier {
   fill: #9bdbfd;
 }
-.c02 .c02-meta {
-  fill: #a9b2be;
+.c02 .c02-slab {
+  fill: #b6c1d1;
 }
-.c02 .c02-nz-homa .c02-name {
-  fill: #eef1f4;
+/* HOMA: chalk on concrete */
+.c02.c02--homa .c02-name,
+.c02.c02--homa .c02-ovr,
+.c02.c02--homa .c02-sval,
+.c02 .c02-ovr.is-chalk {
+  fill: #eef0ea;
 }
-.c02 .c02-nz-homa .c02-tier {
-  fill: #f2f4f6;
+.c02.c02--homa .c02-tier {
+  fill: #eef0ea;
 }
-.c02 .c02-nz-homa .c02-meta {
-  fill: #e1e5ea;
+.c02.c02--homa .c02-slab {
+  fill: #c9ced6;
 }
-.c02 .c02-nz-homa text {
-  paint-order: stroke;
-  stroke: #353b44;
-  stroke-width: 1.4px;
-  stroke-linejoin: round;
-}
-.c02 .c02-nz-stade .c02-meta {
-  fill: #b9c4d2;
-}
-.c02 .c02-nz-champion .c02-name {
+/* LEGEND: ink on the white blade */
+.c02.c02--legend .c02-name,
+.c02.c02--legend .c02-ovr,
+.c02.c02--legend .c02-sval,
+.c02 .c02-ovr.is-ink {
   fill: #001c49;
 }
-.c02 .c02-nz-champion .c02-name-hi {
-  fill: #ffffff;
-  opacity: 0.85;
+.c02.c02--legend .c02-tier {
+  fill: #0151fc;
 }
-.c02 .c02-nz-champion .c02-tier {
-  fill: #0c3164;
-}
-.c02 .c02-nz-champion .c02-meta {
-  fill: #3a434d;
-}
-.c02 .c02-nz-legend .c02-tier {
-  fill: #f4fbff;
-}
-.c02 .c02-nz-legend .c02-meta {
-  fill: #b5cde6;
-}
-
-/* thumb: keep the silhouette and the 84 */
-.c02.c02--thumb .c02-lift {
-  opacity: 0.6;
+.c02.c02--legend .c02-slab {
+  fill: #4e5661;
 }
 
 /* ---------- size-aware text (the slot is an inline-size container) ---------- */
-@container (max-width: 279.98px) {
-  .c02 .c02-slab-t,
-  .c02 .c02-season,
-  .c02 .c02-arc-words {
+@container (max-width: 259.98px) {
+  .c02 .c02-print2,
+  .c02 .c02-example {
     display: none;
   }
-  .c02 .c02-sval {
-    font-size: 13.5px;
-  }
-  .c02 .c02-nz .c02-tier {
-    font-size: 12px;
-    letter-spacing: 0.05em;
-  }
-  .c02 .c02-nz .c02-bot {
-    font-size: 10.5px;
+}
+@container (max-width: 219.98px) {
+  .c02 .c02-print1,
+  .c02 .c02-seam {
+    display: none;
   }
 }
-@container (max-width: 199.98px) {
-  .c02 .c02-slab,
-  .c02 .c02-bot {
+@container (max-width: 169.98px) {
+  .c02 .c02-stats,
+  .c02 .c02-fig {
     display: none;
   }
 }
 
-/* ---------- motion (only when o.motion; never under reduced motion) ---------- */
+/* ---------- motion (only when asked; never under reduced motion) ---------- */
 .c02 .c02-ballg,
 .c02 .c02-ball-front,
-.c02 .c02-ball-back {
+.c02 .c02-ball-back,
+.c02 .c02-founder,
+.c02 .c02-dimple {
   transform-box: fill-box;
   transform-origin: center;
 }
-.c02.c02--motion .c02-blades path {
-  transform-box: fill-box;
-  transform-origin: right center;
-  animation: c02-draw 520ms cubic-bezier(0.2, 0.7, 0.2, 1) 120ms both;
+/* the founder strike: a die-press frame, once */
+.c02.c02--motion.is-founder .c02-founder {
+  animation: c02-press 120ms cubic-bezier(0.2, 0.7, 0.2, 1) 300ms both;
 }
-.c02.c02--motion .c02-ballg {
-  animation: c02-contact 420ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+/* LEGEND: contact, flight to rest while the blade draws in, then the dimples press in */
+.c02.c02--motion.c02--legend .c02-ballg {
+  animation: c02-contact 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
-.c02.c02--motion.c02--legend .c02-dot {
-  animation: c02-dot 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
-  animation-delay: calc(420ms + var(--i) * 20ms);
+.c02.c02--motion.c02--legend .c02-dimple {
+  animation: c02-dimple 160ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(500ms + var(--i) * 20ms);
 }
-.c02.c02--motion.c02--legend .c02-flood {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: c02-breathe 1400ms ease-in-out 760ms 1 both;
-}
+/* tap: the ball pulls back and springs forward while the lanes redraw */
 .c02.is-strike .c02-ballg {
-  animation: c02-strike 320ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+  animation: c02-strike 320ms cubic-bezier(0.34, 1.4, 0.64, 1) both;
 }
-.c02.is-strike .c02-blades path {
-  transform-box: fill-box;
-  transform-origin: right center;
-  animation: c02-draw 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+.c02.is-strike .c02-lane {
+  stroke-dasharray: 1;
+  animation: c02-lane 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
+/* long-press: the ball turns over to its provenance */
 .c02.is-flipped .c02-ball-front {
   opacity: 0;
 }
@@ -432,57 +376,55 @@
 .c02.is-flipped .c02-ballg {
   animation: c02-flip 650ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.c02.c02--champion .c02-sweep {
+/* CHAMPION: a sheen on the ball follows the tilt */
+.c02.c02--champion .c02-sheen {
   transform: translateX(calc(var(--c02-tilt, 0) * 46px));
   transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-@keyframes c02-draw {
+@keyframes c02-press {
   from {
-    transform: scaleX(0.04);
+    transform: scale(0.94);
   }
   to {
-    transform: scaleX(1);
+    transform: scale(1);
   }
 }
 @keyframes c02-contact {
   0% {
-    transform: scale(0.92, 1.06);
+    transform: translate(-14px, 22px) scale(0.92, 1.06);
   }
-  18% {
-    transform: scale(0.92, 1.06);
+  14% {
+    transform: translate(-14px, 22px) scale(0.92, 1.06);
   }
   100% {
-    transform: scale(1, 1);
+    transform: translate(0, 0) scale(1, 1);
+  }
+}
+@keyframes c02-dimple {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
   }
 }
 @keyframes c02-strike {
   0% {
-    transform: translateX(0);
+    transform: translate(0, 0);
   }
   35% {
-    transform: translateX(-2.2%);
+    transform: translate(3.3px, -5px);
   }
   100% {
-    transform: translateX(0);
+    transform: translate(0, 0);
   }
 }
-@keyframes c02-dot {
+@keyframes c02-lane {
   from {
-    opacity: 0;
+    stroke-dashoffset: 1;
   }
   to {
-    opacity: 1;
-  }
-}
-@keyframes c02-breathe {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.06);
-    opacity: 0.8;
+    stroke-dashoffset: 0;
   }
 }
 @keyframes c02-flip {
@@ -512,27 +454,18 @@
 }
 .c02.c02-token svg {
   display: block;
-  overflow: visible;
-}
-.c02.c02-token .c02-champ-ring {
-  stroke: var(--c02-champ-ring);
-}
-.c02.c02-token .c02-mini-dot {
-  fill: var(--c02-mini-dot);
 }
 
-/* ---------- row: the leaderboard line that flies ---------- */
+/* ---------- row: the "My position" compact card ---------- */
 .c02.c02-row {
-  position: relative;
-  isolation: isolate;
   display: grid;
-  grid-template-columns: 26px auto minmax(0, 1fr) auto;
+  grid-template-columns: 24px auto minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 10px;
   width: 100%;
   max-width: 358px;
-  min-height: 64px;
-  padding-block: 6px;
+  min-height: 60px;
+  padding-block: 8px;
   padding-inline: 8px 14px;
   box-sizing: border-box;
   border-radius: 14px;
@@ -540,21 +473,9 @@
   box-shadow: 0 0 0 1px var(--c02-row-edge);
   color: var(--c02-text);
   font-family: "Manrope", "Noto Sans Arabic", sans-serif;
-  overflow: hidden;
-}
-.c02.c02-row .c02-row-wedge {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(90deg, transparent 0%, var(--c02-wedge) 34%, var(--c02-wedge) 100%);
-  clip-path: polygon(0 47%, 100% 0, 100% 100%, 0 53%);
-}
-.c02.c02-row[dir="rtl"] .c02-row-wedge {
-  background: linear-gradient(270deg, transparent 0%, var(--c02-wedge) 34%, var(--c02-wedge) 100%);
-  clip-path: polygon(100% 47%, 0 0, 0 100%, 100% 53%);
 }
 .c02.c02-row.is-me {
-  box-shadow: 0 0 0 1.5px var(--c02-wedge-edge);
+  background: var(--c02-me);
 }
 .c02 .c02-row-rank {
   font: 800 15px/1 "Manrope", sans-serif;
@@ -568,7 +489,6 @@
 .c02 .c02-row-token {
   display: grid;
   place-items: center;
-  height: 44px;
 }
 .c02 .c02-row-who {
   display: grid;
@@ -577,31 +497,22 @@
 }
 .c02 .c02-row-who b {
   font: 800 17px/1.15 "Changa", sans-serif;
-  letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.c02 .c02-row-yr {
+  font: 800 13px/1 "Changa", sans-serif;
+  font-style: normal;
+  color: var(--c02-yr);
+}
 .c02 .c02-row-who small {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   font: 800 10.5px/1.3 "Manrope", sans-serif;
   letter-spacing: 0.08em;
   color: var(--c02-muted);
 }
-/* founder: a tiny ball with the blue notch in its rim, as on the token */
-.c02 .c02-row-f {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 92% 88%, #0151fc 0 36%, transparent 37%), var(--c02-row-ball);
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c02-muted) 70%, transparent);
-}
 .c02.c02-row[dir="rtl"] .c02-row-who b {
   font: 800 17px/1.5 "Changa", "Noto Sans Arabic", sans-serif;
-  letter-spacing: 0;
 }
 .c02.c02-row[dir="rtl"] .c02-row-who small {
   font: 700 11.5px/1.6 "Noto Sans Arabic", sans-serif;
@@ -643,68 +554,36 @@
   height: 100%;
   direction: ltr;
 }
+.c02.c02-share .c02-trail-rim {
+  stroke: #737b86;
+}
+.c02.c02-share .c02-trail-rim.is-blade {
+  stroke: rgba(0, 0, 0, 0);
+}
+.c02.c02-share .c02-cres {
+  stroke: #737b86;
+}
+.c02.c02-share .c02-ring {
+  stroke: #737b86;
+}
 .c02 .c02-sh-logo {
   position: absolute;
   top: 28px;
   left: 22px;
-  width: 132px;
-}
-.c02.c02-share[dir="rtl"] .c02-sh-logo {
-  left: auto;
-  right: 22px;
-  top: 30px;
-}
-.c02 .c02-sh-who {
-  position: absolute;
-  right: 22px;
-  top: 392px;
-  display: grid;
-  justify-items: right;
-  text-align: right;
-}
-.c02 .c02-sh-name {
-  display: block;
-  font: 800 92px/0.9 "Changa", sans-serif;
-  letter-spacing: -0.015em;
-  transform: skewX(-11.3deg);
-  transform-origin: 0 100%;
-  text-shadow: 0 10px 30px rgba(0, 8, 28, 0.6);
-}
-.c02 .c02-sh-name-ar {
-  font: 800 76px/1.5 "Changa", "Noto Sans Arabic", sans-serif;
-  letter-spacing: 0;
-  transform: none;
-}
-.c02 .c02-sh-tier {
-  margin-top: 6px;
-  font: 800 17px/1 "Manrope", sans-serif;
-  letter-spacing: 0.22em;
-  margin-inline-end: -0.22em;
-  color: #9bdbfd;
-}
-.c02.c02-share[dir="rtl"] .c02-sh-tier {
-  margin-top: 0;
-  margin-inline-end: 0;
-  font: 700 19px/1.6 "Noto Sans Arabic", sans-serif;
-  letter-spacing: 0;
+  width: 128px;
 }
 .c02 .c02-sh-foot {
   position: absolute;
   inset-inline: 22px;
-  bottom: 30px;
+  bottom: 34px;
   display: flex;
   align-items: baseline;
-  justify-content: flex-end;
   gap: 12px;
   font-variant-numeric: tabular-nums;
 }
 .c02 .c02-sh-foot b {
-  font: 800 15px/1 "Manrope", sans-serif;
-  margin-right: auto;
-}
-.c02.c02-share[dir="rtl"] .c02-sh-foot b {
-  margin-right: 0;
-  margin-left: auto;
+  font: 800 16px/1 "Manrope", sans-serif;
+  margin-inline-end: auto;
 }
 .c02 .c02-sh-foot span {
   font: 600 12px/1 "Manrope", sans-serif;
@@ -713,8 +592,7 @@
 .c02 .c02-sh-foot em {
   font: 700 10px/1 "Manrope", sans-serif;
   font-style: normal;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
   color: #001c49;
   background: #9bdbfd;
   padding: 4px 7px;

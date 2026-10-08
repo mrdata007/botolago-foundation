@@ -1,0 +1,333 @@
+/* 05 SEMELLE: the outsole, studs up. Everything is scoped under .c05. */
+
+/* ---------- full card ---------- */
+.c05.c05-full {
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  --c05-rx: 0deg;
+  --c05-ry: 0deg;
+  transform: perspective(1100px) rotateX(var(--c05-rx)) rotateY(var(--c05-ry));
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.c05 .c05-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  /* the lift on the page: a soft offset drop, deeper on the dark ground */
+  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28)) drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
+}
+.app-dark .c05 .c05-svg,
+:root[data-ground="night"] .c05 .c05-svg {
+  filter: drop-shadow(0 1.8cqi 3cqi rgba(0, 0, 0, 0.6));
+}
+.app-light .c05 .c05-svg,
+:root[data-ground="day"] .c05 .c05-svg {
+  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28)) drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
+}
+.app-dark .c05 .c05-svg {
+  filter: drop-shadow(0 1.8cqi 3cqi rgba(0, 0, 0, 0.6));
+}
+.c05.is-thumb .c05-svg {
+  filter: none;
+}
+
+/* moulded type */
+.c05 text {
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c05 .c05-ov {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+}
+.c05 .c05-nm,
+.c05 .c05-fn,
+.c05 .c05-yr {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+}
+.c05 .c05-nm tspan.c05-tr {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.c05 .c05-nm tspan.c05-tr.is-ar {
+  font-family: "Changa", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c05 .c05-fy {
+  font-weight: 700;
+}
+.c05 .c05-fl {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+.c05 .c05-fl.is-ar {
+  font-family: "Changa", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c05 .c05-id {
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+}
+.c05 .c05-ct {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+}
+.c05 .c05-ct.is-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c05 .c05-sl {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.c05 .c05-sl.is-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c05 .c05-sv {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.c05 .c05-se {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+/* signature interaction (detail view, set up by mount) */
+.c05.is-live {
+  cursor: grab;
+}
+@media (prefers-reduced-motion: reduce) {
+  .c05.c05-full {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---------- token ---------- */
+.c05.c05-tok {
+  display: inline-block;
+  line-height: 0;
+  flex: none;
+  vertical-align: middle;
+}
+.c05.c05-tok svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- row: the "My position" compact card ---------- */
+.c05.c05-row {
+  --c05-row-bg: #121b29;
+  --c05-row-fg: #f0f6fc;
+  --c05-row-mute: #a9b2be;
+  --c05-row-edge: rgba(240, 246, 252, 0.1);
+  display: grid;
+  grid-template-columns: 26px auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  max-width: 358px;
+  height: 64px;
+  padding-inline: 10px 14px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--c05-row-bg);
+  color: var(--c05-row-fg);
+  box-shadow: 0 0 0 1px var(--c05-row-edge);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.app-light .c05.c05-row,
+:root[data-ground="day"] .c05.c05-row {
+  --c05-row-bg: #ffffff;
+  --c05-row-fg: #060d1a;
+  --c05-row-mute: #4e5661;
+  --c05-row-edge: rgba(12, 49, 100, 0.08);
+  box-shadow: 0 1px 2px rgba(12, 49, 100, 0.1), 0 4px 14px -8px rgba(12, 49, 100, 0.14), 0 0 0 1px var(--c05-row-edge);
+}
+.app-dark .c05.c05-row {
+  --c05-row-bg: #121b29;
+  --c05-row-fg: #f0f6fc;
+  --c05-row-mute: #a9b2be;
+  --c05-row-edge: rgba(240, 246, 252, 0.1);
+  box-shadow: 0 0 0 1px var(--c05-row-edge);
+}
+/* "you are here": the app's earned spring-to-sky edge, as a full 1.5px ring */
+.c05.c05-row.is-me {
+  background:
+    linear-gradient(var(--c05-row-bg), var(--c05-row-bg)) padding-box,
+    linear-gradient(100deg, #53e488, #5ed9e6) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: none;
+}
+.app-light .c05.c05-row.is-me,
+:root[data-ground="day"] .c05.c05-row.is-me {
+  background:
+    linear-gradient(color-mix(in oklab, #73edfa 12%, #fff), color-mix(in oklab, #73edfa 12%, #fff)) padding-box,
+    linear-gradient(100deg, #2fc66a, #22b5c9) border-box;
+}
+.c05 .c05-rk {
+  font: 800 15px/1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--c05-row-mute);
+}
+.c05.is-me .c05-rk {
+  color: var(--c05-row-fg);
+}
+.c05 .c05-rt {
+  display: grid;
+  place-items: center;
+}
+.c05 .c05-rw {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.c05 .c05-rw b {
+  font: 800 17px/1.15 "Changa", sans-serif;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c05 .c05-rw b.is-ar {
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+.c05 .c05-rw b i {
+  font-style: normal;
+  font-weight: 700;
+  margin-inline-start: 0.28em;
+  color: #b8963f;
+}
+.app-dark .c05 .c05-rw b i,
+:root[data-ground="night"] .c05 .c05-rw b i {
+  color: #e6cf8b;
+}
+.app-light .c05 .c05-rw b i,
+:root[data-ground="day"] .c05 .c05-rw b i {
+  color: #8a6a1c;
+}
+.app-dark .c05 .c05-rw b i {
+  color: #e6cf8b;
+}
+.c05 .c05-rw small {
+  font: 600 12px/1.35 "Manrope", "Noto Sans Arabic", sans-serif;
+  color: var(--c05-row-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c05 .c05-rw small em {
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--c05-row-fg);
+}
+.c05[dir="rtl"] .c05-rw small em {
+  letter-spacing: 0;
+}
+.c05 .c05-rp {
+  display: grid;
+  justify-items: end;
+  font: 800 18px/1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c05 .c05-rp small {
+  font: 700 10px/1.4 "Manrope", "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--c05-row-mute);
+}
+.c05[dir="rtl"] .c05-rp small {
+  letter-spacing: 0;
+}
+
+/* ---------- share: the sole on a night pitch, beside its own print ---------- */
+.c05.c05-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #0a2416;
+  color: #f4f1e9;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c05 .c05-sh-bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.c05 .c05-sh-logo {
+  position: absolute;
+  top: 26px;
+  inset-inline-start: 22px;
+  width: 132px;
+}
+.c05 .c05-sh-card {
+  position: absolute;
+  top: 104px;
+  inset-inline-start: 18px;
+  width: 210px;
+  container-type: inline-size;
+  transform: rotate(-7deg);
+  transform-origin: 50% 50%;
+}
+.c05[dir="rtl"] .c05-sh-card {
+  transform: rotate(7deg);
+}
+.c05 .c05-sh-card .c05-svg {
+  filter: drop-shadow(0.9cqi 3cqi 3.4cqi rgba(0, 0, 0, 0.72)) drop-shadow(0 0.6cqi 0.6cqi rgba(0, 0, 0, 0.5));
+}
+.c05 .c05-sh-cap {
+  position: absolute;
+  inset-inline-end: 22px;
+  bottom: 30px;
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: end;
+}
+.c05 .c05-sh-cap b {
+  font: 800 44px/1 "Changa", sans-serif;
+  letter-spacing: 0.01em;
+}
+.c05 .c05-sh-cap b.is-ar {
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+.c05 .c05-sh-cap b i {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 0.62em;
+  margin-inline-start: 0.2em;
+  color: #e6cf8b;
+}
+.c05 .c05-sh-cap span {
+  font: 700 12px/1.4 "Manrope", "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0.16em;
+  color: #cfe2d4;
+}
+.c05[dir="rtl"] .c05-sh-cap span {
+  letter-spacing: 0;
+}
+.c05 .c05-sh-cap span em {
+  font-style: normal;
+  font-weight: 800;
+  color: #fff;
+  margin-inline-end: 0.5em;
+}

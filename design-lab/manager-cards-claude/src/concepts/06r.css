@@ -1,0 +1,360 @@
+/* 06 BRASSARD. Dark ground is the default; the light ground drops the lit rim and
+   deepens the floor shadow. Every selector is scoped under .c06. */
+.c06 {
+  --c06-rim: 1;
+  --c06-gs: 0.5;
+}
+.app-light .c06,
+:root[data-ground="day"] .c06 {
+  --c06-rim: 0;
+  --c06-gs: 0.42;
+}
+:root .app-dark .c06 {
+  --c06-rim: 1;
+  --c06-gs: 0.5;
+}
+:root .c06.c06-share .c06 {
+  --c06-rim: 1;
+  --c06-gs: 0.7;
+}
+
+.c06 .c06-rim {
+  opacity: var(--c06-rim);
+}
+.c06 .c06-gshadow {
+  opacity: var(--c06-gs);
+}
+
+/* ---------- full card ---------- */
+.c06.c06-full {
+  display: block;
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.c06.c06-full > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.c06.c06-full:focus-visible {
+  outline: 2px solid #9bdbfd;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+@container (max-width: 250px) {
+  .c06 .c06-fine {
+    display: none;
+  }
+}
+
+/* the founder tab folds open on its sewn edge (live card only) */
+.c06 .c06-tab-face {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.c06 .c06-tab-in {
+  opacity: 0;
+  transition: opacity 0.18s linear;
+}
+.c06.is-open .c06-tab-face {
+  transform: scaleX(0.06);
+}
+.c06.is-open .c06-tab-in {
+  opacity: 1;
+}
+
+/* signature motion: the satin highlight drifts as if the band breathes on the arm */
+.c06.is-motion .c06-spec {
+  animation: c06-sheen 7s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes c06-sheen {
+  from {
+    transform: translateX(-34px);
+  }
+  to {
+    transform: translateX(72px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c06.is-motion .c06-spec {
+    animation: none;
+  }
+  .c06 .c06-tab-face,
+  .c06 .c06-tab-in {
+    transition: none;
+  }
+}
+
+/* ---------- token ---------- */
+.c06.c06-tok {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+  flex: none;
+}
+.c06.c06-tok > svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- row: the "My position" compact card ---------- */
+.c06.c06-row {
+  --r-bg: #121b29;
+  --r-fg: #f0f6fc;
+  --r-mu: #a9b2be;
+  --r-edge: rgba(240, 246, 252, 0.09);
+  position: relative;
+  display: grid;
+  grid-template-columns: 26px auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 64px;
+  padding: 0 14px 0 8px;
+  border-radius: 10px;
+  background: var(--r-bg);
+  box-shadow: inset 0 0 0 1px var(--r-edge);
+  color: var(--r-fg);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+  overflow: hidden;
+}
+.app-light .c06.c06-row,
+:root[data-ground="day"] .c06.c06-row {
+  --r-bg: #ffffff;
+  --r-fg: #060d1a;
+  --r-mu: #4e5661;
+  --r-edge: #e5e8ec;
+}
+:root .app-dark .c06.c06-row {
+  --r-bg: #121b29;
+  --r-fg: #f0f6fc;
+  --r-mu: #a9b2be;
+  --r-edge: rgba(240, 246, 252, 0.09);
+}
+.c06.c06-row[dir="rtl"] {
+  padding: 0 8px 0 14px;
+}
+.c06 .c06-r-rank {
+  font: 800 19px/1 "Changa", sans-serif;
+  text-align: center;
+  color: var(--r-mu);
+}
+.c06 .c06-r-tok {
+  display: grid;
+  place-items: center;
+}
+.c06 .c06-r-id {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.c06 .c06-r-name {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  font: 800 17px/1.25 "Changa", sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c06 .c06-r-name bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c06 .c06-r-fy {
+  flex: none;
+  font: 700 12px/1 "Manrope", sans-serif;
+  color: var(--r-mu);
+}
+.c06 .c06-r-tier {
+  font: 800 10.5px/1.3 "Manrope", sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--r-mu);
+}
+.c06 .c06-r-pts {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.c06 .c06-r-pts b {
+  font: 800 18px/1 "Manrope", sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c06 .c06-r-pts small {
+  font: 700 10px/1 "Manrope", sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--r-mu);
+}
+.c06.c06-row[dir="rtl"] .c06-r-name {
+  font-size: 17px;
+  line-height: 1.6;
+}
+.c06.c06-row[dir="rtl"] .c06-r-tier,
+.c06.c06-row[dir="rtl"] .c06-r-pts small {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+.c06.c06-row[dir="rtl"] .c06-r-tier {
+  font-size: 11.5px;
+}
+
+/* your row is a woven label sewn into the table */
+.c06.c06-row.is-me {
+  --r-fg: #1d2735;
+  --r-mu: #4c5767;
+  background:
+    repeating-linear-gradient(-58deg, rgba(255, 255, 255, 0.5) 0 1px, transparent 1px 3.2px),
+    repeating-linear-gradient(0deg, rgba(29, 39, 53, 0.06) 0 0.6px, transparent 0.6px 1.6px),
+    #e9edf2;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.12),
+    0 6px 14px -10px rgba(0, 0, 0, 0.6);
+}
+:root .app-dark .c06.c06-row.is-me,
+.c06.c06-row.is-me {
+  --r-fg: #1d2735;
+  --r-mu: #4c5767;
+}
+:root .app-dark .c06.c06-row.is-me {
+  background:
+    repeating-linear-gradient(-58deg, rgba(255, 255, 255, 0.45) 0 1px, transparent 1px 3.2px),
+    repeating-linear-gradient(0deg, rgba(29, 39, 53, 0.06) 0 0.6px, transparent 0.6px 1.6px),
+    #dfe5ec;
+}
+.c06.c06-row.is-me::after {
+  content: "";
+  position: absolute;
+  inset: 7px 5px 4px;
+  border: 1px dashed rgba(29, 39, 53, 0.42);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.c06 .c06-r-sel {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: #0151fc;
+}
+.c06.c06-row.is-me .c06-r-rank {
+  color: #1d2735;
+}
+
+/* ---------- share (360x640) ---------- */
+.c06.c06-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #050a14;
+  color: #eef2f7;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c06 .c06-sh-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.c06 .c06-sh-top {
+  position: absolute;
+  inset-inline: 22px;
+  top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.c06 .c06-sh-logo {
+  display: block;
+  width: 116px;
+}
+.c06 .c06-sh-ex {
+  font: 700 10px/1 "Manrope", sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(238, 242, 247, 0.32);
+  color: rgba(238, 242, 247, 0.82);
+  background: rgba(5, 10, 20, 0.35);
+}
+.c06.c06-share[dir="rtl"] .c06-sh-ex {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-size: 11px;
+  letter-spacing: 0;
+  line-height: 1.4;
+  padding: 2px 10px;
+}
+.c06 .c06-sh-band {
+  position: absolute;
+  left: 4px;
+  right: 8px;
+  top: 76px;
+  container-type: inline-size;
+}
+.c06 .c06-sh-id {
+  position: absolute;
+  inset-inline-start: 22px;
+  top: 356px;
+  width: 150px;
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+}
+.c06 .c06-sh-name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font: 800 48px/1 "Changa", sans-serif;
+  color: #ffffff;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.6);
+}
+.c06 .c06-sh-fy {
+  font: 700 22px/1 "Changa", sans-serif;
+  color: #9bdbfd;
+}
+.c06 .c06-sh-tier {
+  margin-top: 6px;
+  font: 800 12px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 5px 9px 4px;
+  border-top: 3px solid #0151fc;
+  background: #eef2f7;
+  color: #1d2735;
+}
+.c06 .c06-sh-handle {
+  font: 700 14px/1.3 "Manrope", sans-serif;
+  color: #eef2f7;
+}
+.c06 .c06-sh-meta {
+  font: 700 10.5px/1.55 "Manrope", sans-serif;
+  letter-spacing: 0.04em;
+  color: #a9b2be;
+  font-variant-numeric: tabular-nums;
+}
+.c06.c06-share[dir="rtl"] .c06-sh-name {
+  line-height: 1.5;
+  font-size: 46px;
+}
+.c06.c06-share[dir="rtl"] .c06-sh-tier {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0;
+  line-height: 1.5;
+  padding: 3px 10px 2px;
+}
+.c06.c06-share[dir="rtl"] .c06-sh-meta {
+  letter-spacing: 0;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}

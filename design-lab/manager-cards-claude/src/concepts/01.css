@@ -1,297 +1,211 @@
-/* 01 LUCARNE. Every selector is scoped under .c01. The card is see-through, so its ink
-   follows the ground it sits on: night (default) and day tokens below. The share image
-   is always night. The STADE wall, the stats band and the founder footing are material,
-   so they look the same on both grounds. */
+/* 01 LUCARNE. Every selector is scoped under .c01. The mouth is see-through, so the ink
+   follows the ground the goal stands on: night (default) and day tokens below. The goal's
+   own materials (paint, galvanised steel, chalk on breeze block, concrete, cast iron) look
+   the same on both grounds. The net is drawn in the club's colour (--c01-club, set per
+   render), lifted toward white on the night ground so the cords still read. The share
+   image is always night. */
 
 /* ---------- night ground (default) ---------- */
 .c01 {
   --c01-ink: #f2f4f6;
-  --c01-muted: #a9b2be;
-  --c01-tier: #9bdbfd;
   --c01-key: transparent;
   --c01-line: #e3e8ee;
-  --c01-chalk: #eef0ea;
-  --c01-gap: #050b18;
-  --c01-pocket: rgba(0, 0, 0, 0.55);
-  --c01-net: rgba(198, 208, 219, 0.36);
-  --c01-cnet: rgba(236, 241, 246, 0.4);
-  --c01-knot: rgba(240, 244, 248, 0.78);
-  --c01-lnet: rgba(242, 244, 246, 0.55);
-  --c01-lknot: rgba(242, 244, 246, 0.9);
-  --c01-rear: #e9eef3;
-  --c01-bagfill: rgba(5, 11, 24, 0.55);
-  --c01-housing: #1d2a3c;
-  --c01-beam: 234, 246, 255;
-  --c01-beam-a: 0.04;
-  --c01-beam-b: 0.08;
-  --c01-beam-c: 0.12;
-  --c01-dim: #001c49;
-  --c01-lamp: #ffd58a;
-  --c01-castc: #000000;
-  --c01-castop: 0.6;
-  --c01-prints: #2a2f36;
-  --c01-show-d: inline;
+  --c01-net: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 55%, transparent);
+  --c01-knot: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 45%, #ffffff) 85%, transparent);
+  --c01-steelnet: rgba(198, 208, 219, 0.42);
+  --c01-rearsteel: #8f9aa5;
+  --c01-rearw: #e9eef3;
+  --c01-bagfill: rgba(5, 11, 24, 0.5);
+  --c01-beam-a: 0.09;
+  --c01-beam-b: 0.065;
+  --c01-beam-c: 0.04;
   --c01-show-l: none;
-  /* token */
-  --c01-tink: #f2f4f6;
-  --c01-tf-stade: #eceff0;
-  --c01-tf-pro: #b4bdc7;
-  --c01-tf-champion: #ffffff;
-  --c01-tf-legend: #ffffff;
-  --c01-tline: #e3e8ee;
-  --c01-tchalk: #eef0ea;
-  --c01-tbag: #3d78b3;
-  --c01-tfoot: #a9b3bd;
-  --c01-tdepth: #c9d2dc;
-  /* row */
-  --c01-rtext: #f0f6fc;
-  --c01-rline: rgba(227, 232, 238, 0.2);
-  --c01-rme: rgba(155, 219, 253, 0.12);
-  --c01-steelc: #c9d2dc;
+  --c01-backframe: rgba(242, 244, 246, 0.4);
+  /* small marks */
+  --c01-tnet: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 80%, transparent);
+  --c01-tsteel: rgba(198, 208, 219, 0.6);
+  --c01-tgalv: #a3adb8;
+  --c01-tconc: #a9adb2;
+  --c01-twall: rgba(169, 173, 178, 0.55);
+  --c01-mcord: color-mix(in oklab, var(--c01-club, currentColor) 50%, #ffffff);
 }
 
 /* ---------- day ground ---------- */
 .app-light .c01:not(.c01-share),
 :root[data-ground="day"] .c01:not(.c01-share) {
   --c01-ink: #001c49;
-  --c01-muted: #4e5661;
-  --c01-tier: #0151fc;
-  --c01-key: #858d99;
+  --c01-key: #6e7884;
   --c01-line: #f4f6f8;
-  --c01-chalk: #2a2f36;
-  --c01-gap: #f5f7f9;
-  --c01-pocket: rgba(0, 28, 73, 0.08);
-  --c01-net: rgba(110, 120, 132, 0.5);
-  --c01-cnet: rgba(133, 141, 153, 0.6);
-  --c01-knot: rgba(78, 86, 97, 0.82);
-  --c01-lnet: rgba(29, 59, 102, 0.55);
-  --c01-lknot: rgba(29, 59, 102, 0.85);
-  --c01-rear: #c9d2dc;
-  --c01-bagfill: rgba(0, 28, 73, 0.06);
-  --c01-housing: #0c3164;
-  --c01-beam: 1, 81, 252;
-  --c01-beam-a: 0.025;
-  --c01-beam-b: 0.045;
-  --c01-beam-c: 0.07;
-  --c01-dim: #001c49;
-  --c01-lamp: #ffc861;
-  --c01-castc: #001c49;
-  --c01-castop: 0.16;
-  --c01-prints: #2a2f36;
-  --c01-show-d: none;
+  --c01-net: color-mix(in srgb, var(--c01-club, #8f9aa5) 60%, transparent);
+  --c01-knot: color-mix(in srgb, var(--c01-club, #8f9aa5) 90%, transparent);
+  --c01-steelnet: rgba(110, 120, 132, 0.55);
+  --c01-rearsteel: #8f9aa5;
+  --c01-rearw: #f2f4f6;
+  --c01-bagfill: rgba(0, 28, 73, 0.05);
+  --c01-beam-a: 0;
+  --c01-beam-b: 0;
+  --c01-beam-c: 0;
   --c01-show-l: inline;
-  --c01-tink: #001c49;
-  --c01-tf-stade: #0c3164;
-  --c01-tf-pro: #6e7884;
-  --c01-tf-champion: #0c3164;
-  --c01-tf-legend: #001c49;
-  --c01-tline: #0c3164;
-  --c01-tchalk: #2a2f36;
-  --c01-tbag: #2f5d8a;
-  --c01-tfoot: #5f6873;
-  --c01-tdepth: #4e5661;
-  --c01-rtext: #060d1a;
-  --c01-rline: rgba(12, 49, 100, 0.16);
-  --c01-rme: rgba(12, 49, 100, 0.07);
-  --c01-steelc: #5f6873;
+  --c01-backframe: rgba(0, 28, 73, 0.35);
+  --c01-tnet: color-mix(in srgb, var(--c01-club, #6e7884) 75%, transparent);
+  --c01-tsteel: rgba(110, 120, 132, 0.7);
+  --c01-tgalv: #6e7884;
+  --c01-tconc: #8a9097;
+  --c01-twall: rgba(95, 101, 108, 0.5);
+  --c01-mcord: var(--c01-club, currentColor);
 }
 
 /* ---------- a night context inside a day page wins back ---------- */
 .app-dark .c01:not(.c01-share),
 :root[data-ground] .app-dark .c01:not(.c01-share) {
   --c01-ink: #f2f4f6;
-  --c01-muted: #a9b2be;
-  --c01-tier: #9bdbfd;
   --c01-key: transparent;
   --c01-line: #e3e8ee;
-  --c01-chalk: #eef0ea;
-  --c01-gap: #050b18;
-  --c01-pocket: rgba(0, 0, 0, 0.55);
-  --c01-net: rgba(198, 208, 219, 0.36);
-  --c01-cnet: rgba(236, 241, 246, 0.4);
-  --c01-knot: rgba(240, 244, 248, 0.78);
-  --c01-lnet: rgba(242, 244, 246, 0.55);
-  --c01-lknot: rgba(242, 244, 246, 0.9);
-  --c01-rear: #e9eef3;
-  --c01-bagfill: rgba(5, 11, 24, 0.55);
-  --c01-housing: #1d2a3c;
-  --c01-beam: 234, 246, 255;
-  --c01-beam-a: 0.04;
-  --c01-beam-b: 0.08;
-  --c01-beam-c: 0.12;
-  --c01-dim: #001c49;
-  --c01-lamp: #ffd58a;
-  --c01-castc: #000000;
-  --c01-castop: 0.6;
-  --c01-show-d: inline;
+  --c01-net: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 55%, transparent);
+  --c01-knot: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 45%, #ffffff) 85%, transparent);
+  --c01-steelnet: rgba(198, 208, 219, 0.42);
+  --c01-rearsteel: #8f9aa5;
+  --c01-rearw: #e9eef3;
+  --c01-bagfill: rgba(5, 11, 24, 0.5);
+  --c01-beam-a: 0.09;
+  --c01-beam-b: 0.065;
+  --c01-beam-c: 0.04;
   --c01-show-l: none;
-  --c01-tink: #f2f4f6;
-  --c01-tf-stade: #eceff0;
-  --c01-tf-pro: #b4bdc7;
-  --c01-tf-champion: #ffffff;
-  --c01-tf-legend: #ffffff;
-  --c01-tline: #e3e8ee;
-  --c01-tchalk: #eef0ea;
-  --c01-tbag: #3d78b3;
-  --c01-tfoot: #a9b3bd;
-  --c01-tdepth: #c9d2dc;
-  --c01-rtext: #f0f6fc;
-  --c01-rline: rgba(227, 232, 238, 0.2);
-  --c01-rme: rgba(155, 219, 253, 0.12);
-  --c01-steelc: #c9d2dc;
+  --c01-backframe: rgba(242, 244, 246, 0.4);
+  --c01-tnet: color-mix(in srgb, color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 80%, transparent);
+  --c01-tsteel: rgba(198, 208, 219, 0.6);
+  --c01-tgalv: #a3adb8;
+  --c01-tconc: #a9adb2;
+  --c01-twall: rgba(169, 173, 178, 0.55);
+  --c01-mcord: color-mix(in oklab, var(--c01-club, currentColor) 50%, #ffffff);
 }
 
-/* "your net is lit" in your own leaderboard row */
-.c01.c01-row.is-me { --c01-me-mesh: #73edfa; --c01-rline: rgba(115, 237, 250, 0.75); }
-.app-light .c01.c01-row.is-me,
-:root[data-ground="day"] .c01.c01-row.is-me { --c01-me-mesh: #0151fc; --c01-rline: rgba(1, 81, 252, 0.6); }
-.app-dark .c01.c01-row.is-me,
-:root[data-ground] .app-dark .c01.c01-row.is-me { --c01-me-mesh: #73edfa; --c01-rline: rgba(115, 237, 250, 0.75); }
-
-.c01 .th-d { display: var(--c01-show-d); }
 .c01 .th-l { display: var(--c01-show-l); }
 
 /* ---------- full card ---------- */
-.c01.c01-card { position: relative; width: 100%; aspect-ratio: 360 / 260; }
-.c01.c01-card > svg,
-.c01.c01-share > svg { display: block; width: 100%; height: 100%; direction: ltr; overflow: hidden; }
+.c01.c01-card { position: relative; width: 100%; aspect-ratio: 360 / 280; }
+.c01.c01-card > svg { display: block; width: 100%; height: 100%; direction: ltr; overflow: hidden; }
+.c01.c01-card > .c01-back { position: absolute; inset: 0; visibility: hidden; }
+
+/* the turn, only once mount() has made the card live */
+.c01.c01-card.is-live { perspective: 1100px; cursor: pointer; }
+.c01.c01-card.is-live > .c01-face { backface-visibility: hidden; transition: transform 650ms cubic-bezier(0.3, 0.7, 0.2, 1); }
+.c01.c01-card.is-live > .c01-back { visibility: visible; transform: rotateY(180deg); }
+.c01.c01-card.is-live.is-flipped > .c01-front { transform: rotateY(-180deg); }
+.c01.c01-card.is-live.is-flipped > .c01-back { transform: rotateY(0deg); }
+.c01.c01-card.no-anim > .c01-face { transition: none; }
+.c01.c01-card.is-hl .c01-frameg { opacity: 0.72; }
 
 .c01 .c01-84 { font-family: "Changa", sans-serif; font-weight: 800; font-size: 104px; }
-.c01 .c01-ovr { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 10px; letter-spacing: 0.12em; }
-.c01 .c01-name { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; font-size: 34px; letter-spacing: 0.02em; }
-.c01 .c01-name-ar { font-family: "Changa", "Noto Sans Arabic", sans-serif; font-weight: 800; font-size: 30px; }
+.c01 .c01-name { font-family: "Changa", "Noto Sans Arabic", sans-serif; font-weight: 800; font-size: 34px; }
 .c01 .c01-tier { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.1em; }
 .c01 .c01-tier-ar { font-family: "Noto Sans Arabic", sans-serif; font-weight: 700; font-size: 13px; }
-.c01 .c01-meta { font-family: "Manrope", sans-serif; font-weight: 700; font-size: 9.5px; letter-spacing: 0.03em; font-variant-numeric: tabular-nums; }
-.c01 .c01-meta-ar { font-family: "Noto Sans Arabic", "Manrope", sans-serif; font-weight: 700; font-size: 9.5px; }
 
-/* the stats band on the crossbar: small labels, large tabular values */
-.c01 .c01-bt { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 9px; }
-.c01 .c01-bt .c01-bl { font-size: 8px; letter-spacing: 0.08em; }
-.c01 .c01-bt .c01-bv { font-size: 14px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
-.c01 .c01-bt-ar .c01-bl { font-family: "Noto Sans Arabic", sans-serif; font-weight: 700; font-size: 9.5px; letter-spacing: 0; }
-.c01 .c01-bt-homa .c01-bl,
-.c01 .c01-bt-homa .c01-bv { font-size: 12px; }
-.c01 .c01-bt-homa.c01-bt-ar .c01-bl { font-size: 12px; }
-.c01 .c01-btv { display: none; font-family: "Manrope", sans-serif; font-weight: 800; font-size: 20px; font-variant-numeric: tabular-nums; }
-.c01 .c01-btv-homa { font-size: 18px; }
+/* the stat line painted on the crossbar */
+.c01 .c01-sl { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 12px; font-variant-numeric: tabular-nums; }
+.c01 .c01-sl .c01-sl-l { font-size: 10.5px; letter-spacing: 0.06em; }
+.c01 .c01-sl .c01-sl-v { font-size: 13px; }
+.c01 .c01-sl-ar { font-family: "Noto Sans Arabic", sans-serif; font-weight: 700; font-size: 12px; }
+.c01 .c01-sl-ar .c01-sl-l { font-size: 12px; letter-spacing: 0; }
+.c01 .c01-sl-ar .c01-sl-v { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 12.5px; }
+.c01 .c01-slv { display: none; font-family: "Manrope", sans-serif; font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
 
-/* the founder footing */
-.c01 .c01-fword { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 7px; letter-spacing: 0.1em; }
-.c01 .c01-fword-ar { font-family: "Noto Sans Arabic", sans-serif; font-weight: 800; font-size: 8px; letter-spacing: 0; }
+/* the founder plate and the back face */
 .c01 .c01-fyear { font-family: "Changa", sans-serif; font-weight: 800; font-size: 14px; }
+.c01 .c01-bk { font-family: "Manrope", "Noto Sans Arabic", sans-serif; font-weight: 800; font-size: 12px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.c01 .c01-bk[direction="rtl"] { font-family: "Noto Sans Arabic", "Manrope", sans-serif; font-weight: 700; letter-spacing: 0; }
+.c01 .c01-pl { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 10px; letter-spacing: 0.12em; }
+.c01 .c01-pl-ar { font-family: "Noto Sans Arabic", sans-serif; font-weight: 700; font-size: 11px; }
+.c01 .c01-pl26 { font-family: "Changa", sans-serif; font-weight: 800; font-size: 56px; }
+.c01 .c01-backframe { stroke: var(--c01-backframe); }
+.c01 .c01-backline { fill: var(--c01-backframe); }
+.c01 .c01-backslab { stroke: #6e7884; stroke-width: 1px; }
+.c01 .c01-replaybg { fill: none; stroke: var(--c01-ink); stroke-width: 1.2px; }
+.c01 .c01-replayt { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 10.5px; letter-spacing: 0.04em; fill: var(--c01-ink); }
+.c01 .c01-replayt-ar { font-family: "Noto Sans Arabic", sans-serif; font-weight: 700; font-size: 11px; fill: var(--c01-ink); }
+.c01 .c01-replayi { stroke: var(--c01-ink); }
 
 .c01 .c01-ink { fill: var(--c01-ink); }
-.c01 .c01-muted { fill: var(--c01-muted); }
-.c01 .c01-tierc { fill: var(--c01-tier); }
-.c01 .c01-chalkfill { fill: var(--c01-chalk); }
-.c01 .c01-chalk { stroke: var(--c01-chalk); }
-.c01 .c01-hatch { stroke: var(--c01-gap); opacity: 0.42; }
+.c01 .c01-paint { fill: #001c49; }
+.c01 .c01-chalkf { fill: #f4f6f8; }
+.c01 .c01-chalk { stroke: #f4f6f8; }
+.c01 .c01-marks circle { fill: #5f656c; fill-opacity: 0.55; stroke: #8a9097; stroke-width: 0.8px; stroke-dasharray: 2 1.6; }
 .c01 .c01-key { stroke: var(--c01-key); }
-.c01 .c01-keyed { stroke: var(--c01-key); stroke-width: 2.2px; paint-order: stroke; }
-.c01 .c01-wallpaint { fill: #f7f7f2; }
-.c01 .c01-wpaint { fill: #f7f7f2; }
-.c01 .c01-wink { fill: #070d1a; }
+.c01 .c01-keyed { stroke: var(--c01-key); stroke-width: 2px; paint-order: stroke; }
 .c01 .c01-linec { fill: var(--c01-line); }
-.c01 .c01-prints { stroke: var(--c01-prints); opacity: 0.18; }
-.c01 .c01-cast { opacity: var(--c01-castop); }
-.c01 .c01-cast path { fill: var(--c01-castc); }
-.c01 .c01-rearl { stroke: var(--c01-rear); }
-
 .c01 .c01-net { stroke: var(--c01-net); }
-.c01.t-champion .c01-net { stroke: var(--c01-cnet); }
-.c01.t-legend .c01-net { stroke: var(--c01-lnet); }
 .c01 .c01-knot { stroke: var(--c01-knot); }
-.c01.t-legend .c01-knot { stroke: var(--c01-lknot); }
+.c01 .c01-steelnet { stroke: var(--c01-steelnet); }
+.c01 .c01-rearsteel { stroke: var(--c01-rearsteel); }
+.c01 .c01-rearw { stroke: var(--c01-rearw); }
 .c01 .c01-bagfill { fill: var(--c01-bagfill); }
-.c01 .c01-bagnet,
-.c01 .c01-bagcord { stroke: var(--c01-lnet); }
-.c01 .c01-bagcord { stroke: var(--c01-lknot); }
-.c01 .c01-housing { fill: var(--c01-housing); stroke: #8f9aa5; stroke-width: 0.6px; }
-.c01 .c01-beam1 { fill: rgba(var(--c01-beam), var(--c01-beam-a)); }
-.c01 .c01-beam2 { fill: rgba(var(--c01-beam), var(--c01-beam-b)); }
-.c01 .c01-beam3 { fill: rgba(var(--c01-beam), var(--c01-beam-c)); }
-.c01 .c01-dim { fill: var(--c01-dim); }
-.c01 .c01-flash { fill: #ffffff; }
+.c01 .c01-bagnet { stroke: var(--c01-net); }
+.c01 .c01-bagcord { stroke: var(--c01-knot); }
+.c01 .c01-glint { fill: #ffffff; }
+.c01 .c01-beam1 { fill: rgba(234, 246, 255, var(--c01-beam-a)); }
+.c01 .c01-beam2 { fill: rgba(234, 246, 255, var(--c01-beam-b)); }
+.c01 .c01-beam3 { fill: rgba(234, 246, 255, var(--c01-beam-c)); }
 
-/* small card: labels go, values grow; meta, sticker and the footing's word drop out */
+/* small card (the 200px tier strip): the stat labels go and the values grow; fine marks drop */
 @container (max-width: 260px) {
-  .c01 .c01-bt { display: none; }
-  .c01 .c01-btv { display: inline; }
+  .c01 .c01-sl { display: none; }
+  .c01 .c01-slv { display: inline; }
+  .c01 .c01-tier { font-size: 15px; }
+  .c01 .c01-tier-ar { font-size: 16px; }
 }
 @container (max-width: 250px) {
   .c01 .c01-fine { display: none; }
 }
-.c01.c01-card[dir="rtl"] text { letter-spacing: 0; }
+.c01[dir="rtl"] text[direction="rtl"] { letter-spacing: 0; }
 
-/* ---------- token ---------- */
+/* ---------- tokens ---------- */
 .c01.c01-tok { display: inline-block; vertical-align: middle; line-height: 0; flex: none; }
 .c01.c01-tok > svg { display: block; overflow: visible; direction: ltr; }
 .c01 .c01-t84 { font-family: "Changa", sans-serif; font-weight: 800; }
-.c01 .c01-t84i { fill: var(--c01-tink); }
-.c01 .c01-t84c { fill: var(--c01-tchalk); }
-.c01.c01-tok .c01-tframe { fill: var(--c01-tink); }
-.c01.c01-tok.t-stade .c01-tframe { fill: var(--c01-tf-stade); }
-.c01.c01-tok.t-pro .c01-tframe { fill: var(--c01-tf-pro); }
-.c01.c01-tok.t-champion .c01-tframe { fill: var(--c01-tf-champion); }
-.c01.c01-tok.t-legend .c01-tframe { fill: var(--c01-tf-legend); }
-.c01.c01-tok.is-mini .c01-tframe { fill: var(--c01-tink); }
-.c01 .c01-tline { fill: var(--c01-tline); }
-.c01.c01-tok.is-mini .c01-tline { fill: var(--c01-tink); }
-.c01 .c01-tmesh { stroke: var(--c01-tink); stroke-opacity: 0.4; }
-.c01.c01-row.is-me .c01-tmesh { stroke: var(--c01-me-mesh); stroke-opacity: 0.75; }
-.c01 .c01-tchalk { stroke: var(--c01-tchalk); }
-.c01 .c01-tchalkf { fill: var(--c01-tchalk); }
-.c01 .c01-tbag { fill: var(--c01-tbag); }
-.c01.c01-tok.is-mini .c01-tbag { fill: var(--c01-tchalk); }
-.c01 .c01-tfoot { fill: var(--c01-tfoot); }
-.c01.c01-tok.is-mini .c01-tfoot { fill: var(--c01-tink); }
-.c01 .c01-tball { fill: var(--c01-tink); }
-.c01 .c01-tbagnet { stroke: var(--c01-tink); stroke-opacity: 0.55; }
-.c01 .c01-tdepth { stroke: var(--c01-tdepth); }
-.c01.c01-tok.is-mini .c01-tdepth { stroke: var(--c01-tink); }
+.c01 .c01-tframe { fill: currentColor; }
+.c01 .c01-tgalv { fill: var(--c01-tgalv); }
+.c01 .c01-tnet { stroke: var(--c01-tnet); }
+.c01 .c01-tsteel { stroke: var(--c01-tsteel); }
+.c01 .c01-twall { stroke: var(--c01-twall); }
+.c01 .c01-tconc { fill: var(--c01-tconc); }
+.c01 .c01-mcord { stroke: var(--c01-mcord); }
 
-/* ---------- leaderboard row: every row stands on its own goal line ---------- */
+/* ---------- My position compact card ---------- */
 .c01.c01-row {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   max-width: 358px;
   height: 64px;
-  padding-inline: 6px 12px;
+  padding-inline: 8px 14px;
   border-radius: 12px;
-  color: var(--c01-rtext);
-  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
   box-sizing: border-box;
+  color: var(--ui-on-surface, #f0f6fc);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
 }
 .c01.c01-row[dir="rtl"] { font-family: "Noto Sans Arabic", "Manrope", sans-serif; }
-.c01.c01-row.is-me { background: var(--c01-rme); }
-.c01 .c01-rk { flex: none; width: 24px; text-align: center; font: 800 17px/1 "Changa", sans-serif; color: var(--c01-muted); }
-.c01.c01-row.is-me .c01-rk { color: var(--c01-ink); }
-.c01 .c01-rt { flex: none; display: block; align-self: flex-end; margin-block-end: 6px; height: 46px; position: relative; z-index: 1; }
-.c01 .c01-rn { flex: 1; min-width: 0; display: grid; gap: 3px; }
-.c01 .c01-rn b { font: 800 15px/1.2 "Manrope", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: 0.01em; }
-.c01.c01-row[dir="rtl"] .c01-rn b { font: 700 16px/1.5 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
-.c01 .c01-rn small { display: flex; align-items: center; gap: 8px; font: 800 10.5px/1.3 "Manrope", sans-serif; letter-spacing: 0.1em; color: var(--c01-tier); }
-.c01.c01-row[dir="rtl"] .c01-rn small { font: 700 12px/1.6 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
-.c01 .c01-rf { display: inline-flex; align-items: center; gap: 4px; color: var(--c01-steelc); font: 800 10.5px/1 "Manrope", sans-serif; letter-spacing: 0.06em; }
-.c01 .c01-rf svg { fill: currentColor; }
-.c01 .c01-rp { flex: none; display: grid; justify-items: end; gap: 2px; }
+.c01.c01-row.is-me { background: var(--ui-me, rgba(155, 219, 253, 0.12)); }
+.c01 .c01-rk { flex: none; width: 22px; text-align: center; font: 800 16px/1 "Manrope", sans-serif; font-variant-numeric: tabular-nums; color: var(--ui-on-surface-muted, #a9b2be); }
+.c01.c01-row.is-me .c01-rk { color: inherit; }
+.c01 .c01-rt { flex: none; display: block; height: 44px; }
+.c01 .c01-rn { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.c01 .c01-rn b { display: flex; align-items: baseline; min-width: 0; font: 800 15px/1.25 "Changa", "Noto Sans Arabic", sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.c01 .c01-r26 { margin-inline-start: 4px; font: 800 13px/1 "Changa", sans-serif; color: var(--ui-on-surface-muted, #a9b2be); }
+.c01 .c01-rn small { font: 700 11px/1.3 "Manrope", sans-serif; letter-spacing: 0.08em; color: var(--ui-on-surface-muted, #a9b2be); }
+.c01.c01-row[dir="rtl"] .c01-rn small { font: 700 12px/1.5 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
+.c01 .c01-rp { flex: none; display: grid; justify-items: end; gap: 3px; }
 .c01 .c01-rp b { font: 800 17px/1 "Manrope", sans-serif; font-variant-numeric: tabular-nums; }
-.c01 .c01-rp small { font: 600 11px/1.2 "Manrope", "Noto Sans Arabic", sans-serif; color: var(--c01-muted); }
-.c01.c01-row[dir="rtl"] .c01-rp small { font-family: "Noto Sans Arabic", sans-serif; }
-.c01 .c01-rl { position: absolute; inset-inline: 0; bottom: 6px; height: 2px; background: var(--c01-rline); border-radius: 1px; }
+.c01 .c01-rp small { font: 700 10px/1.2 "Manrope", sans-serif; letter-spacing: 0.08em; color: var(--ui-on-surface-muted, #a9b2be); }
+.c01.c01-row[dir="rtl"] .c01-rp small { font: 700 11px/1.3 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
 
 /* ---------- share (always night) ---------- */
 .c01.c01-share { width: 100%; height: 100%; background: #001c49; }
-.c01 .c01-sh-name { font-family: "Changa", sans-serif; font-weight: 800; font-size: 44px; fill: #ffffff; }
-.c01 .c01-sh-name-ar { font-family: "Changa", "Noto Sans Arabic", sans-serif; font-weight: 800; font-size: 40px; fill: #ffffff; }
-.c01 .c01-sh-tier { font-family: "Manrope", sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 0.12em; fill: #9bdbfd; }
-.c01 .c01-sh-tier-ar { font-family: "Noto Sans Arabic", "Manrope", sans-serif; font-weight: 700; font-size: 15px; fill: #9bdbfd; }
-.c01 .c01-sh-meta { font-family: "Manrope", sans-serif; font-weight: 600; font-size: 12px; fill: #a9b2be; font-variant-numeric: tabular-nums; }
-.c01 .c01-sh-meta-ar { font-family: "Noto Sans Arabic", "Manrope", sans-serif; font-weight: 600; font-size: 12px; fill: #a9b2be; }
+.c01.c01-share > svg { display: block; width: 100%; height: 100%; direction: ltr; overflow: hidden; }
+.c01.c01-share .c01-sh84 { fill: #f2f4f6; }
+.c01.c01-share .c01-sh-name { font-family: "Changa", "Noto Sans Arabic", sans-serif; font-weight: 800; font-size: 30px; fill: #ffffff; }
+.c01.c01-share .c01-sh-meta { font-family: "Manrope", sans-serif; font-weight: 600; font-size: 12px; fill: #a9b2be; font-variant-numeric: tabular-nums; }
+.c01.c01-share .c01-sh-meta-ar { font-family: "Noto Sans Arabic", "Manrope", sans-serif; }
 
 @media (prefers-reduced-motion: reduce) {
   .c01 * { transition: none !important; animation: none !important; }

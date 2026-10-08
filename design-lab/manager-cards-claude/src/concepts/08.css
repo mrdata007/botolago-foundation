@@ -1,38 +1,26 @@
-/* 08 LSAQ: die-cut vinyl stickers. Dark app ground is the default; light overrides below. */
+/* 08 LSAQ: die-cut stickers. Dark app ground is the default; light overrides below.
+   On the mist ground every sticker carries a 1px #858D99 hairline and a 0 1.5px 2px shadow;
+   on the dark ground the white keyline is the edge and the hairline becomes a dark separator. */
 .c08 {
-  --c08-white: #edf1f5;
-  --c08-paper: #ebe7db;
-  --c08-bleach: #c3ccd7;
-  --c08-hair: #59657a;
-  --c08-shadow: rgba(0, 0, 0, 0.55);
-  --c08-navy: #001c49;
+  --c08-white: #ffffff;
+  --c08-paper: #f8f7f2;
+  --c08-hair: #0a0f18;
+  --c08-shadow: rgba(0, 0, 0, 0.5);
 }
 .app-light .c08,
 :root[data-ground="day"] .c08 {
-  --c08-white: #ffffff;
-  --c08-paper: #f4f1e8;
-  --c08-bleach: #e3e9ef;
-  --c08-hair: #9aa3b0;
+  --c08-hair: #858d99;
   --c08-shadow: rgba(0, 28, 73, 0.28);
 }
 .app-dark .c08,
 :root[data-ground="day"] .app-dark .c08 {
-  --c08-white: #edf1f5;
-  --c08-paper: #ebe7db;
-  --c08-bleach: #c3ccd7;
-  --c08-hair: #59657a;
-  --c08-shadow: rgba(0, 0, 0, 0.55);
+  --c08-hair: #0a0f18;
+  --c08-shadow: rgba(0, 0, 0, 0.5);
 }
 
 /* paint hooks used inside the SVG */
-.c08 .k-w { fill: var(--c08-white); }
-.c08 .k-ws { stroke: var(--c08-white); }
-.c08 .c08-bl { fill: var(--c08-bleach); stroke: var(--c08-bleach); }
-.c08 .c08-papf { fill: var(--c08-paper); stroke: var(--c08-paper); }
-.c08 .c08-pap { fill: var(--c08-paper); }
-.c08 .c08-ko { color: var(--c08-white); }
-.c08 .c08-kop { color: var(--c08-paper); }
-.c08 .c08-hl { stroke: var(--c08-hair); }
+.c08 .c08-white { fill: var(--c08-white); }
+.c08 .c08-paper { fill: var(--c08-paper); }
 .c08 .c08-fh { flood-color: var(--c08-hair); }
 .c08 .c08-fs { flood-color: var(--c08-shadow); }
 
@@ -40,7 +28,7 @@
 .c08.c08-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 300 / 390;
+  aspect-ratio: 300 / 360;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -51,38 +39,62 @@
   overflow: visible;
   direction: ltr;
 }
-.c08 .c08-go { touch-action: none; }
-.c08 .c08-swell { transform: scale(1.06); }
-.c08 .c08-lammove { transform: translate(calc(var(--c08-tx, 0) * 70px), calc(var(--c08-ty, 0) * 50px)); transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1); }
-.c08 .c08-beadmove { transform: translate(calc(var(--c08-tx, 0) * 10px), calc(var(--c08-ty, 0) * 7px)); transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.c08 .c08-tab { touch-action: none; }
+.c08 .c08-under { visibility: hidden; }
+.c08.c08-peeling .c08-under { visibility: visible; }
+.c08 .c08-ex1 { display: none; }
+.c08.c08-ex .c08-ex1 { display: inline; }
+.c08.c08-ex .c08-ex0 { display: none; }
+.c08 .c08-lammove {
+  transform: translate(calc(var(--c08-tx, 0) * 70px), calc(var(--c08-ty, 0) * 50px));
+  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+/* LEGEND: the reflective sheen answers the light; the flash blazes it */
+.c08 .c08-sheen {
+  opacity: calc(0.3 + var(--c08-lit, 0) * 0.6);
+  transition: opacity 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.c08.c08-flash .c08-sheen { opacity: 1; transition-duration: 40ms; }
+.c08 .c08-cut { stroke-dasharray: 1; stroke-dashoffset: 0; opacity: 0; }
+.c08 .c08-flashf { opacity: 0; pointer-events: none; }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* the slap: the number lands at 115% and settles in 140ms */
-  .c08.c08--motion .c08-slapin { animation: c08-slap 140ms cubic-bezier(0.22, 1.1, 0.36, 1) both; }
-  /* LEGEND, the pour: resin floods, the digits swell, the bead lands, the stack presses once */
-  .c08.c08--motion[data-tier="LEGEND"] .c08-dome { animation: c08-pour 360ms 140ms cubic-bezier(0.22, 1.1, 0.36, 1) both; }
-  .c08.c08--motion[data-tier="LEGEND"] .c08-swell { animation: c08-swell 360ms 160ms cubic-bezier(0.22, 1.1, 0.36, 1) both; }
-  .c08.c08--motion[data-tier="LEGEND"] .c08-cluster { transform-box: fill-box; transform-origin: 50% 60%; animation: c08-press 220ms 520ms ease-out both; }
+  /* le premier collage: the founder slip slaps down, 120ms, 2deg overshoot */
+  .c08.c08--motion .c08-slip {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: c08-collage 120ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  }
+  /* LEGEND: the cutter traces one die round the cluster, it lifts and slaps down, one flash frame */
+  .c08.c08--motion[data-tier="LEGEND"] .c08-cut { animation: c08-trace 600ms cubic-bezier(0.45, 0, 0.55, 1) both; }
+  .c08.c08--motion[data-tier="LEGEND"] .c08-cluster {
+    transform-box: fill-box;
+    transform-origin: 50% 55%;
+    animation: c08-lift 140ms 600ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+  .c08.c08--motion[data-tier="LEGEND"] .c08-flashf { animation: c08-flashframe 80ms 760ms linear both; }
 }
-@keyframes c08-slap {
-  from { transform: scale(1.15); }
-  to { transform: scale(1); }
+@keyframes c08-collage {
+  0% { transform: scale(1.14) rotate(-2deg); }
+  70% { transform: scale(0.99) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
 }
-@keyframes c08-pour {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@keyframes c08-trace {
+  0% { stroke-dashoffset: 1; opacity: 1; }
+  92% { stroke-dashoffset: 0; opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
 }
-@keyframes c08-swell {
-  from { transform: scale(1); }
-  to { transform: scale(1.06); }
+@keyframes c08-lift {
+  0% { transform: translateY(-1.5%) scale(1.02) rotate(0deg); }
+  60% { transform: translateY(0) scale(0.995) rotate(2deg); }
+  100% { transform: none; }
 }
-@keyframes c08-press {
-  0% { transform: scale(1); }
-  40% { transform: scale(0.98); }
-  100% { transform: scale(1); }
+@keyframes c08-flashframe {
+  0%, 100% { opacity: 0; }
+  20%, 80% { opacity: 0.3; }
 }
 
-/* ---------- token ---------- */
+/* ---------- token and mini ---------- */
 .c08.c08-tk {
   display: inline-block;
   line-height: 0;
@@ -90,21 +102,25 @@
   vertical-align: middle;
 }
 .c08.c08-tk svg { display: block; overflow: visible; direction: ltr; }
+.app-light .c08.c08-tk:not(.c08-tk--mini) svg,
+:root[data-ground="day"] .c08.c08-tk:not(.c08-tk--mini) svg { filter: drop-shadow(0 1px 1px rgba(0, 28, 73, 0.22)); }
+.app-dark .c08.c08-tk svg,
+:root[data-ground="day"] .app-dark .c08.c08-tk svg { filter: none; }
 
-/* ---------- row: a sheet of kiss-cut strips; your own strip is peeled and slapped on top ---------- */
+/* ---------- row: the "My position" compact card; your own row is a white vinyl strip ---------- */
 .c08.c08-row {
   --c08-row-ink: oklch(0.97 0.01 250);
   --c08-row-muted: oklch(0.76 0.02 258);
-  --c08-row-cut: color-mix(in oklab, oklch(0.97 0.01 250) 16%, transparent);
+  --c08-row-cut: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent);
   display: grid;
-  grid-template-columns: 24px 56px minmax(0, 1fr) auto 58px;
+  grid-template-columns: 26px 64px minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 10px;
   width: 100%;
   max-width: 358px;
   height: 64px;
-  padding-inline: 10px 12px;
-  border-radius: 7px;
+  padding-inline: 10px 14px;
+  border-radius: 6px;
   box-shadow: inset 0 0 0 1px var(--c08-row-cut);
   color: var(--c08-row-ink);
   font-family: "Manrope", "Noto Sans Arabic", sans-serif;
@@ -112,70 +128,43 @@
 }
 .app-light .c08.c08-row,
 :root[data-ground="day"] .c08.c08-row {
-  --c08-row-ink: oklch(0.16 0.03 260);
-  --c08-row-muted: oklch(0.45 0.02 258);
-  --c08-row-cut: color-mix(in oklab, oklch(0.32 0.1 258) 16%, transparent);
+  --c08-row-ink: #14161a;
+  --c08-row-muted: #5a606a;
+  --c08-row-cut: color-mix(in oklab, #858d99 45%, transparent);
 }
 .app-dark .c08.c08-row,
 :root[data-ground="day"] .app-dark .c08.c08-row {
   --c08-row-ink: oklch(0.97 0.01 250);
   --c08-row-muted: oklch(0.76 0.02 258);
-  --c08-row-cut: color-mix(in oklab, oklch(0.97 0.01 250) 16%, transparent);
+  --c08-row-cut: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent);
 }
 .c08.c08-row.is-me {
-  --c08-row-ink: #001c49;
-  --c08-row-muted: #3d4a63;
-  background: var(--c08-white);
-  box-shadow: 0 0 0 1px var(--c08-hair), 0 3px 7px -2px var(--c08-shadow);
+  --c08-row-ink: #14161a;
+  --c08-row-muted: #4d535c;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px #858d99, 0 1.5px 2px var(--c08-shadow);
   transform: rotate(-0.8deg);
   position: relative;
   z-index: 1;
 }
+.app-dark .c08.c08-row.is-me { box-shadow: 0 1.5px 2px var(--c08-shadow); }
 .c08.c08-row.is-me[dir="rtl"] { transform: rotate(0.8deg); }
 .c08 .c08-rk {
   font: 800 17px/1 "Changa", sans-serif;
   text-align: center;
   color: var(--c08-row-muted);
+  font-variant-numeric: tabular-nums;
 }
 .c08.c08-row.is-me .c08-rk { color: var(--c08-row-ink); }
-.c08 .c08-rtk { display: grid; place-items: center; height: 44px; }
+.c08 .c08-rtk { display: grid; place-items: center; height: 48px; }
 .c08 .c08-rn {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font: 900 21px/1.1 "Big Shoulders Display", sans-serif;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  font: 800 20px/1.2 "Changa", sans-serif;
 }
-.c08.c08-row[dir="rtl"] .c08-rn {
-  font: 400 19px/1.9 "Lalezar", "Noto Sans Arabic", sans-serif;
-  letter-spacing: 0;
-}
-/* the tier, as a small kiss-cut tag in that tier's material */
-.c08 .c08-rt {
-  justify-self: end;
-  padding: 3px 7px 2px;
-  border-radius: 3px;
-  font: 800 10px/1.3 "Manrope", sans-serif;
-  letter-spacing: 0.06em;
-  color: #001c49;
-  background: #ffffff;
-  box-shadow: 0 0 0 1px #9aa3b0, 0 1px 2px rgba(0, 28, 73, 0.22);
-  transform: rotate(6deg);
-  white-space: nowrap;
-}
-.c08.c08-row[dir="rtl"] .c08-rt {
-  font: 700 11px/1.6 "Changa", "Noto Sans Arabic", sans-serif;
-  letter-spacing: 0;
-  padding: 1px 8px 2px;
-  transform: rotate(-6deg);
-}
-.c08.c08-row[data-tier="HOMA"] .c08-rt { background: #f4f1e8; color: #1a1a1a; box-shadow: 0 0 0 1px transparent; outline: 1px dashed #59657a; outline-offset: 1px; }
-.c08.c08-row[data-tier="STADE"] .c08-rt { background: #ffffff; }
-.c08.c08-row[data-tier="PRO"] .c08-rt { background: linear-gradient(145deg, #ffffff 0 38%, #e8eefb 46%, #ffffff 56%); }
-.c08.c08-row[data-tier="CHAMPION"] .c08-rt { background: linear-gradient(180deg, #f6f8fa 0%, #c9d0d9 40%, #6f7a89 50%, #b4bcc7 64%, #e6eaef 100%); box-shadow: 0 0 0 1.5px #ffffff, 0 0 0 2.5px #9aa3b0, 0 1px 2px rgba(0, 28, 73, 0.22); }
-.c08.c08-row[data-tier="LEGEND"] .c08-rt { background: radial-gradient(circle at 5px 4px, rgba(255, 255, 255, 0.85) 0 1.2px, transparent 2px), linear-gradient(180deg, rgba(255, 255, 255, 0.16) 0 40%, transparent 41%), #001c49; color: #ffffff; box-shadow: 0 0 0 1.5px #ffffff, 0 0 0 2.5px #9aa3b0, 0 2px 4px rgba(0, 28, 73, 0.35); }
+.c08.c08-row[dir="rtl"] .c08-rn { font: 800 19px/1.95 "Changa", "Noto Sans Arabic", sans-serif; }
 .c08 .c08-rp {
   display: grid;
   justify-items: end;
@@ -188,54 +177,52 @@
 
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    .c08.c08-row.is-me .c08-rtk { animation: c08-rowslap linear both; animation-timeline: view(); animation-range: entry 0% entry 80%; }
+    .c08.c08-row.is-me .c08-rtk { animation: c08-rowslap linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
   }
 }
 @keyframes c08-rowslap {
-  0%, 60% { transform: scale(1.15); }
+  0%, 70% { transform: scale(1.15); }
   100% { transform: scale(1); }
 }
 
-/* ---------- share: the stack slapped on a concrete lamppost by the cage ---------- */
+/* ---------- share: 'Le classeur', the cluster slapped across a school binder's cover ---------- */
 .c08.c08-share,
 :root[data-ground="day"] .c08.c08-share,
-.app-dark .c08.c08-share {
+.app-dark .c08.c08-share,
+.app-light .c08.c08-share {
   --c08-white: #ffffff;
-  --c08-paper: #f4f1e8;
-  --c08-bleach: #e3e9ef;
-  --c08-hair: #8a93a1;
-  --c08-shadow: rgba(2, 8, 20, 0.42);
+  --c08-paper: #f8f7f2;
+  --c08-hair: #8a7a52;
+  --c08-shadow: rgba(70, 50, 0, 0.32);
   position: relative;
   width: 360px;
   height: 640px;
   overflow: hidden;
-  background: #020814;
+  background: #e9b41e;
 }
 .c08 .c08-sh-art { position: absolute; inset: 0; display: block; direction: ltr; }
 .c08 .c08-sh-logo {
   position: absolute;
-  top: 46px;
-  inset-inline-start: 24px;
-  width: 128px;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  top: 42px;
+  inset-inline-start: 58px;
+  width: 132px;
 }
 .c08 .c08-sh-strip {
   position: absolute;
-  top: 524px;
-  inset-inline-start: 50px;
+  bottom: 44px;
+  inset-inline-start: 58px;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 7px 12px 6px;
   border-radius: 3px;
   background: #ffffff;
-  color: #001c49;
+  color: #14161a;
   font: 800 11.5px/1.3 "Manrope", "Noto Sans Arabic", sans-serif;
-  letter-spacing: 0.02em;
   white-space: nowrap;
-  box-shadow: 0 0 0 1px #8a93a1, 0 2px 4px rgba(2, 8, 20, 0.45);
+  box-shadow: 0 0 0 1px #8a7a52, 0 1.5px 2px rgba(70, 50, 0, 0.32);
   transform: rotate(-2deg);
 }
-.c08.c08-share[dir="rtl"] .c08-sh-strip { transform: rotate(2deg); letter-spacing: 0; font-size: 12px; line-height: 1.6; padding-block: 4px 3px; }
+.c08.c08-share[dir="rtl"] .c08-sh-strip { transform: rotate(2deg); font-size: 12px; line-height: 1.6; padding-block: 4px 3px; }
 .c08 .c08-sh-strip i { font-style: normal; opacity: 0.45; }
-.c08 .c08-sh-strip em { font-style: normal; font-weight: 700; color: #4a5872; }
+.c08 .c08-sh-strip em { font-style: normal; font-weight: 700; color: #4d535c; }
