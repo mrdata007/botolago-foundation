@@ -535,6 +535,19 @@
   color: var(--ui-ink-fg);
   font-size: 13px;
 }
+/* One disabled state for every button, the app's own idiom for a control that is not armed: it lies
+   flat (no lift, no gradient), in muted text on the sunken fill, never a faded copy of the enabled
+   one (opacity would drop the label under 3:1 against its own fill). Text buttons stay transparent. */
+.onb .onb-btn:disabled {
+  background: var(--ui-surface-sunken);
+  background-image: none;
+  color: var(--ui-on-surface-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.onb .onb-btn--text:disabled {
+  background: transparent;
+}
 .onb .onb-chip {
   display: inline-flex;
   align-items: center;
@@ -738,9 +751,14 @@
   display: block;
   container-type: inline-size;
 }
+/* A token is as wide as its art (a goal is wider than it is tall, a sole twice that). The inline
+   min-width is only a floor, which switches off a flex item's automatic minimum, so it must never
+   shrink either: flex: none, and no max-width. Layouts that hold one size their column to auto. */
 .onb .onb-card--token {
   display: inline-grid;
+  flex: none;
   place-items: center;
+  max-width: none;
   container-type: normal;
 }
 .onb .onb-card--share {

@@ -134,7 +134,6 @@
 .onb .m12-hist__first { font-weight: 800; }
 .onb .m12-replay-row .onb-disc { color: var(--ui-ink-fg); }
 .onb .m12-bleed { margin: -14px -16px 14px; }
-.onb .m12-tok { display: inline-flex; flex: none; align-items: center; justify-content: flex-start; }
 
 /* The replay sheet: the stored values stamped with their round, the current number in the first line. */
 .onb .m12-rp { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-block: 2px 8px; text-align: center; }
@@ -157,7 +156,6 @@
 .onb .m12-learn { margin-block-start: -6px; display: inline-flex; align-items: center; align-self: flex-start; min-height: 44px; color: var(--ui-ink-fg); font: 800 13px/var(--ui-leading-copy) var(--onb-body); text-decoration: underline; text-underline-offset: 2px; }
 .onb .m12-check { display: flex; align-items: flex-start; gap: 12px; width: 100%; min-height: 56px; padding: 12px; border-radius: var(--ui-radius-card); border: 1px solid color-mix(in oklab, var(--ui-negative) 30%, transparent); background: color-mix(in oklab, var(--ui-negative) 7%, transparent); font: 600 13px/var(--ui-leading-copy) var(--onb-body); text-align: start; }
 .onb .m12-check__box { flex: none; width: 18px; height: 18px; margin-block-start: 3px; border: 2px solid var(--ui-on-surface-muted); border-radius: 4px; background: var(--ui-surface); }
-.onb .onb-btn.m12-destructive:disabled { opacity: 1; box-shadow: none; background: var(--ui-surface-sunken); color: var(--ui-on-surface-muted); cursor: not-allowed; }
 .onb .m12-ghost { background: transparent; color: var(--ui-ink-fg); }
 /* The profile page behind it (the part the deletion row sits in). */
 .onb .m12-group + .m12-group { margin-block-start: 24px; }
@@ -249,22 +247,8 @@
   const tierWord = (env, tier, cls = "") =>
     `<span class="m12-tier${cls ? " " + cls : ""}">${esc(env.tier(tier))}</span>`;
 
-  /** A token in a slot that grows to the token's own width (a goal or a sole is wider than it is tall). */
-  const tok = (env, size, opts) =>
-    `<span class="m12-tok" data-m12-tok>${env.card("token", { size, ...opts })}</span>`;
-  const fitTokens = () =>
-    document.querySelectorAll("[data-m12-tok]:not([data-m12-fit])").forEach((el) => {
-      const wrap = el.firstElementChild;
-      const art = wrap && wrap.firstElementChild;
-      const w = art ? art.getBoundingClientRect().width : 0;
-      if (!w) return;
-      el.dataset.m12Fit = "1";
-      if (w > wrap.getBoundingClientRect().width + 1) el.style.minWidth = Math.ceil(w) + "px";
-    });
-  new MutationObserver(fitTokens).observe(document.documentElement, {
-    childList: true,
-    subtree: true,
-  });
+  /** The card's token. Its slot (.onb-card--token) is as wide as the art and never shrinks, so a goal or a sole sits beside text without overlapping it. */
+  const tok = (env, size, opts) => env.card("token", { size, ...opts });
 
   /** The hub: the app's own blocks, the card block set right under Valeur / Banque / Rang. */
   const hubScreen = (env, block, extra = {}) => {

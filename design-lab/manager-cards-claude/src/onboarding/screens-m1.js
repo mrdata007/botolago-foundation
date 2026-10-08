@@ -183,7 +183,6 @@
   ONB.style(
     "m1",
     `
-    .onb .onb-btn:disabled { opacity: 0.45; box-shadow: none; cursor: not-allowed; }
     .onb .m1-caps { text-transform: uppercase; }
     .onb[dir="ltr"] .m1-caps { letter-spacing: 0.025em; }
     .onb .m1-balance { text-wrap: balance; }
