@@ -504,7 +504,9 @@
     const name = MC.nameOf(p, o);
     const yr = p.founder ? String(p.founder).slice(2) : "";
     const yy = yr ? (ar ? yr + "·" : "·" + yr) : "";
-    const NW = 150;
+    const ny = 302;
+    // fit to the bulb's real width at the name's cap height, inside the tier's border
+    const NW = Math.min(150, 2 * (halfW(ny - 19) - F.inset) - 6);
     const nW = (fs) => wAt(F_CH, name, fs, ar ? 0.55 : 0.62);
     const sW = (fs) => (yy ? wAt(F_CH6, yy, fs * 0.62, 0.48) + fs * 0.14 : 0);
     let nfs = 30;
@@ -514,7 +516,6 @@
     const squeeze = nwRaw + sw > NW + 1;
     const nw = squeeze ? NW - sw : nwRaw;
     const x0 = 130 - (nw + sw) / 2;
-    const ny = 302;
     const nameX = ar ? x0 + sw : x0;
     const sufX = ar ? x0 : x0 + nw + nfs * 0.14;
     bulb +=
@@ -522,9 +523,9 @@
       (yy ? `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" ${paint(ink)} fill-opacity=".78">${esc(yy)}</text>` : "");
 
     // the 84: engraved at the centre of the bulb like a room number, ink-centred in a fixed slot
-    const fs = p.ovr >= 100 ? 82 : 100;
+    const fs = p.ovr >= 100 ? 70 : 100;
     const x84 = inkX(p.ovr, fs, 130);
-    bulb += `<text x="${x84 != null ? x84 : 130}" y="404" ${x84 != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" ${paint(ink)}>${esc(p.ovr)}</text>`;
+    bulb += `<text x="${x84 != null ? x84 : 130}" y="${p.ovr >= 100 ? 396 : 404}" ${x84 != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" ${paint(ink)}>${esc(p.ovr)}</text>`;
 
     // the BotolaGO ID, season and country, engraved round the bottom like a hotel fob's return line
     if (!thumb) {
