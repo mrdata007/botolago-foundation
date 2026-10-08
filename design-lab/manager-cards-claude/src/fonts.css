@@ -1,18 +1,112 @@
 /* Lab-local faces. Product faces are copies of public/fonts (Fontsource, OFL).
    Extra display faces are OFL, vendored from Google Fonts for this lab only. */
-@font-face { font-family: "Changa"; font-weight: 200 800; font-display: block; src: url(../fonts/changa-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: "Changa"; font-weight: 200 800; font-display: block; src: url(../fonts/changa-arabic-wght-normal.woff2) format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: "Manrope"; font-weight: 200 800; font-display: block; src: url(../fonts/manrope-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
-@font-face { font-family: "Noto Sans Arabic"; font-weight: 100 900; font-display: block; src: url(../fonts/noto-sans-arabic-arabic-wght-normal.woff2) format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC; }
+@font-face {
+  font-family: "Changa";
+  font-weight: 200 800;
+  font-display: block;
+  src: url(../fonts/changa-latin-wght-normal.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Changa";
+  font-weight: 200 800;
+  font-display: block;
+  src: url(../fonts/changa-arabic-wght-normal.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+  font-family: "Manrope";
+  font-weight: 200 800;
+  font-display: block;
+  src: url(../fonts/manrope-latin-wght-normal.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Noto Sans Arabic";
+  font-weight: 100 900;
+  font-display: block;
+  src: url(../fonts/noto-sans-arabic-arabic-wght-normal.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
 /* Latin subset of the same face, so Western digits and Latin codes inside Arabic text never fall back to a serif. */
-@font-face { font-family: "Noto Sans Arabic"; font-weight: 100 900; font-display: block; src: url(../fonts/noto-sans-arabic-latin-wght-normal.woff2) format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD; }
-@font-face { font-family: "Handjet"; font-weight: 200 900; font-display: block; src: url(../fonts/handjet-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: "Handjet"; font-weight: 200 900; font-display: block; src: url(../fonts/handjet-arabic.woff2) format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: "Big Shoulders Display"; font-weight: 500 900; font-display: block; src: url(../fonts/big-shoulders-display-latin.woff2) format("woff2"); }
-@font-face { font-family: "Reem Kufi"; font-weight: 400 700; font-display: block; src: url(../fonts/reem-kufi-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: "Reem Kufi"; font-weight: 400 700; font-display: block; src: url(../fonts/reem-kufi-arabic.woff2) format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: "Lalezar"; font-weight: 400; font-display: block; src: url(../fonts/lalezar-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: "Lalezar"; font-weight: 400; font-display: block; src: url(../fonts/lalezar-arabic.woff2) format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC; }
-@font-face { font-family: "Saira Stencil One"; font-weight: 400; font-display: block; src: url(../fonts/saira-stencil-one-latin.woff2) format("woff2"); }
-@font-face { font-family: "Alexandria"; font-weight: 300 900; font-display: block; src: url(../fonts/alexandria-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F; }
-@font-face { font-family: "Alexandria"; font-weight: 300 900; font-display: block; src: url(../fonts/alexandria-arabic.woff2) format("woff2"); unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC; }
+@font-face {
+  font-family: "Noto Sans Arabic";
+  font-weight: 100 900;
+  font-display: block;
+  src: url(../fonts/noto-sans-arabic-latin-wght-normal.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC,
+    U+2122, U+2212, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Handjet";
+  font-weight: 200 900;
+  font-display: block;
+  src: url(../fonts/handjet-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+2000-206F;
+}
+@font-face {
+  font-family: "Handjet";
+  font-weight: 200 900;
+  font-display: block;
+  src: url(../fonts/handjet-arabic.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+  font-family: "Big Shoulders Display";
+  font-weight: 500 900;
+  font-display: block;
+  src: url(../fonts/big-shoulders-display-latin.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Reem Kufi";
+  font-weight: 400 700;
+  font-display: block;
+  src: url(../fonts/reem-kufi-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+2000-206F;
+}
+@font-face {
+  font-family: "Reem Kufi";
+  font-weight: 400 700;
+  font-display: block;
+  src: url(../fonts/reem-kufi-arabic.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+  font-family: "Lalezar";
+  font-weight: 400;
+  font-display: block;
+  src: url(../fonts/lalezar-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+2000-206F;
+}
+@font-face {
+  font-family: "Lalezar";
+  font-weight: 400;
+  font-display: block;
+  src: url(../fonts/lalezar-arabic.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}
+@font-face {
+  font-family: "Saira Stencil One";
+  font-weight: 400;
+  font-display: block;
+  src: url(../fonts/saira-stencil-one-latin.woff2) format("woff2");
+}
+@font-face {
+  font-family: "Alexandria";
+  font-weight: 300 900;
+  font-display: block;
+  src: url(../fonts/alexandria-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+2000-206F;
+}
+@font-face {
+  font-family: "Alexandria";
+  font-weight: 300 900;
+  font-display: block;
+  src: url(../fonts/alexandria-arabic.woff2) format("woff2");
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FEFC;
+}

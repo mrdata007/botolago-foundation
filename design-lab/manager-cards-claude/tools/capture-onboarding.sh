@@ -7,7 +7,7 @@
 #   bash design-lab/manager-cards-claude/tools/capture-onboarding.sh [only]
 #
 # only: all (default) | lead | others | desktop | motion | 2x   (which set to take; the index is
-# always rewritten from the files on disk). Environment: PORT (4350), JOBS (4), OUT.
+# always rewritten from the files on disk). Environment: PORT (4350), JOBS (4), ONB_OUT (the folder).
 #
 # The matrix (ONBOARDING_PLAN.md section 7, "Captures"), phone 390 x 844:
 #   Écharpe 07-v2     every screen and variant, fr and ar, light and dark, dpr 1
@@ -24,7 +24,7 @@ LAB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$LAB"
 PORT="${PORT:-4350}"
 JOBS="${JOBS:-4}"
-OUT="${OUT:-$LAB/review/onboarding}"
+OUT="${ONB_OUT:-$LAB/review/onboarding}"
 BASE="http://127.0.0.1:$PORT"
 export PW_CORE="${PW_CORE:-playwright-core}" CHROME="${CHROME:-}"
 

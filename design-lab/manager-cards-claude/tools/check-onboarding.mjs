@@ -1144,6 +1144,7 @@ const run = (cmd, argv) => {
   const r = spawnSync(cmd, argv, { cwd: repo, encoding: "utf8", shell: false });
   return {
     ok: r.status === 0,
+    full: `${r.stdout || ""}${r.stderr || ""}`.trim(),
     out: `${r.stdout || ""}${r.stderr || ""}`.trim().split("\n").slice(-6).join("\n"),
   };
 };
@@ -1152,6 +1153,10 @@ if (!args.includes("--skip-lint")) {
   lint.push([
     "npx prettier --check design-lab/manager-cards-claude",
     run("npx", ["prettier", "--check", "design-lab/manager-cards-claude"]),
+  ]);
+  lint.push([
+    'npx prettier --check "design-lab/manager-cards-claude/**/*.{js,mjs}" (the scripts, as the repository lint checks them)',
+    run("npx", ["prettier", "--check", "design-lab/manager-cards-claude/**/*.{js,mjs}"]),
   ]);
   lint.push([
     "npx eslint design-lab/manager-cards-claude",
@@ -1164,6 +1169,14 @@ if (!args.includes("--skip-lint")) {
 }
 
 /* ---------- CHECKS.md ---------- */
+// Who can fix a failure: the lab (this tool's owner), a direction module (src/concepts is final:
+// reported, not edited), or the app's own token that the lab mirrors on purpose.
+const ownerOf = (f) =>
+  /^placeholder /.test(f.item)
+    ? "app"
+    : /card art/.test(f.item) || /عضو مؤسس/.test(f.detail)
+      ? "direction"
+      : "lab";
 const CRITERIA = {
   1: [
     "No console error, no placeholder box, no unresolved {placeholder}",
@@ -1234,7 +1247,7 @@ P(
 );
 P();
 P(
-  "Method: every screen and variant of `onboarding.html` for each direction, measured in a real Chromium (390px phone frames, desktop D1 at 1440): Écharpe v2 in French and Arabic, light and dark; Porte-clés v2, Lucarne, Semelle v2 and Touchline in French light and Arabic dark. Element rectangles, computed styles, text scans, `getAnimations()` and pixel contrast from the screenshots. Nothing here is asserted from tokens or hex values.",
+  "Method: every screen and variant of `onboarding.html` for each direction, measured in a real Chromium (390px phone frames, desktop D1 at 1440): Écharpe v2 in French and Arabic, light and dark; Porte-clés v2, Lucarne, Semelle v2 and Touchline in French light and Arabic dark. Element rectangles, computed styles, text scans, `getAnimations()` and pixel contrast from the screenshots. Nothing here is asserted from tokens or hex values. S00 (the foundation's kit demo, not one of the plan's screens) is left out: 54 phone variants (S01 to S18) and the 2 desktop D1 variants, 56 in all.",
 );
 P();
 P(`Contexts measured: ${contextsSeen.length} (${contextsSeen.sort().join("; ")}).`);
@@ -1245,21 +1258,25 @@ if (notes.length) {
 P();
 P("## Summary");
 P();
-P("| # | Criterion | Checked | Pass | Fail |");
-P("|---|---|---:|---:|---:|");
+P("| # | Criterion | Checked | Pass | Fail | of which lab / direction / app |");
+P("|---|---|---:|---:|---:|---|");
 const byC = (c) => results.filter((r) => r.c === c);
 for (let c = 1; c <= 14; c++) {
   const rs = byC(c);
   const fail = rs.filter((r) => !r.ok).length;
   P(
-    `| ${c} | ${CRITERIA[c][0]} | ${fmt(rs.length)} | ${fmt(rs.length - fail)} | ${fail ? `**${fmt(fail)}**` : "0"} |`,
+    `| ${c} | ${CRITERIA[c][0]} | ${fmt(rs.length)} | ${fmt(rs.length - fail)} | ${fail ? `**${fmt(fail)}**` : "0"} | ${["lab", "direction", "app"].map((o) => rs.filter((r) => !r.ok && ownerOf(r) === o).length).join(" / ")} |`,
   );
 }
 const lintOk = lint.length ? lint.every(([, r]) => r.ok) : null;
 P(
-  `| 15 | Prettier, lint and the gallery build | ${lint.length} | ${lint.filter(([, r]) => r.ok).length} | ${lint.filter(([, r]) => !r.ok).length} |`,
+  `| 15 | Prettier, lint and the gallery build | ${lint.length} | ${lint.filter(([, r]) => r.ok).length} | ${lint.filter(([, r]) => !r.ok).length} | see section 15 |`,
 );
-P("| 16 | The judges' fixes hold (Appendix A) | reviewer | - | - |");
+P("| 16 | The judges' fixes hold (Appendix A) | reviewer | - | - | - |");
+P();
+P(
+  "Failures are tagged **[lab]** (this tool's owner fixes them), **[direction]** (the card objects in `src/concepts/` are final: reported here, not edited) or **[app]** (the app's own token, mirrored on purpose and listed for the owner).",
+);
 P();
 
 const dirName = (id) => (DIRECTIONS.find((d) => d.id === id) || { name: id }).name;
@@ -1292,7 +1309,7 @@ for (let c = 1; c <= 14; c++) {
       groups.get(key).ctx.push(`${f.lang}/${f.scheme}${f.detail ? ` ${f.detail}` : ""}`);
     }
     for (const { f, ctx } of groups.values())
-      P(`- \`${f.dir}\` ${f.cell} · ${f.item} · ${ctx.join(" ; ")}`);
+      P(`- **[${ownerOf(f)}]** \`${f.dir}\` ${f.cell} · ${f.item} · ${ctx.join(" ; ")}`);
   }
   P();
   if (c === 4) {
@@ -1325,7 +1342,28 @@ else {
   P("| Command | Result |");
   P("|---|---|");
   for (const [cmd, r] of lint) P(`| \`${cmd}\` | ${r.ok ? "pass" : "**fail**"} |`);
-  for (const [cmd, r] of lint) if (!r.ok) P(`\n\`${cmd}\` output:\n\n\`\`\`\n${r.out}\n\`\`\``);
+  for (const [cmd, r] of lint) {
+    if (r.ok) continue;
+    if (/^npx prettier --check design-lab/.test(cmd)) {
+      const files = (r.full.match(/^\[warn\] (\S+)$/gm) || []).map((l) => l.slice(7));
+      const final = (f) =>
+        /\/src\/concepts\//.test(f) ||
+        /\/(BACKEND_HANDOFF|CONTRACT|CRITIQUE|DIRECTIONS|ONBOARDING_PLAN|ONBOARDING|BRIEF)\.md$/.test(
+          f,
+        );
+      P(
+        `\nThe whole-folder check lists ${files.length} files. ${files.filter(final).length} are card directions (\`src/concepts/*\`) and plan documents that this pass may not edit; they were not Prettier-formatted before it either (the repository's lint, \`eslint .\`, only reads the scripts). Lab-owned and still unformatted: ${
+          files
+            .filter((f) => !final(f))
+            .map((f) => `\`${f.replace(/^design-lab\/manager-cards-claude\//, "")}\``)
+            .join(", ") || "none"
+        }.`,
+      );
+      P(
+        `\n<details><summary>Not formatted (${files.length})</summary>\n\n${files.map((f) => `- ${f}`).join("\n")}\n\n</details>`,
+      );
+    } else P(`\n\`${cmd}\` output:\n\n\`\`\`\n${r.out}\n\`\`\``);
+  }
 }
 P();
 P("## 16. The judges' fixes hold (ONBOARDING_PLAN.md Appendix A)");

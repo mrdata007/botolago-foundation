@@ -13,7 +13,9 @@
     <script src="src/contexts.js"></script>
   </head>
   <body>
-    <main id="out"><p>Loading. Open with <code>?c=01-slug</code>.</p></main>
+    <main id="out">
+      <p>Loading. Open with <code>?c=01-slug</code>.</p>
+    </main>
     <script>
       (function () {
         const q = new URLSearchParams(location.search);
@@ -26,8 +28,10 @@
         document.head.appendChild(css);
         const js = document.createElement("script");
         js.src = `src/concepts/${slug}${v}.js`;
-        js.onload = () => document.fonts.ready.then(() => render(MC.concepts[MC.concepts.length - 1]));
-        js.onerror = () => (document.getElementById("out").textContent = "Concept file not found: " + js.src);
+        js.onload = () =>
+          document.fonts.ready.then(() => render(MC.concepts[MC.concepts.length - 1]));
+        js.onerror = () =>
+          (document.getElementById("out").textContent = "Concept file not found: " + js.src);
         document.head.appendChild(js);
 
         function section(title, body, cls = "") {
@@ -48,13 +52,19 @@
           h += section(
             "Tier evolution",
             `<div class="app-dark pv-ground pv-tiers">` +
-              MC.TIERS.map((t) => `<figure><div class="pv-full" style="width:200px">${c.full(MC.withTier(t), lat)}</div><figcaption>${t}</figcaption></figure>`).join("") +
+              MC.TIERS.map(
+                (t) =>
+                  `<figure><div class="pv-full" style="width:200px">${c.full(MC.withTier(t), lat)}</div><figcaption>${t}</figcaption></figure>`,
+              ).join("") +
               `</div>`,
           );
           h += section(
             "Arabic samples",
             `<div class="app-dark pv-ground pv-tiers" dir="rtl" lang="ar">` +
-              MC.SAMPLES.map((s) => `<figure><div class="pv-full" style="width:200px">${c.full(MC.sample(s), ar)}</div><figcaption>${MC.esc(s.name.ar)} · ${s.tier}</figcaption></figure>`).join("") +
+              MC.SAMPLES.map(
+                (s) =>
+                  `<figure><div class="pv-full" style="width:200px">${c.full(MC.sample(s), ar)}</div><figcaption>${MC.esc(s.name.ar)} · ${s.tier}</figcaption></figure>`,
+              ).join("") +
               `</div>`,
           );
           h += section(
