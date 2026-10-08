@@ -24,8 +24,16 @@ const STATE =
   process.env.STATE ??
   "/tmp/claude-0/-home-user-botolago-foundation/09f7cd8f-a9f8-5b6b-ae49-c115e311665e/scratchpad/wp4/state.json";
 const args = process.argv.slice(2);
-const flag = (n, d) => args.find((a) => a.startsWith(`--${n}=`))?.split("=").slice(1).join("=") ?? d;
-const fixtures = flag("fixtures", "born0Serial,rated,launchArrival,returning,tierUp,legend,founder,seasonClosed").split(",");
+const flag = (n, d) =>
+  args
+    .find((a) => a.startsWith(`--${n}=`))
+    ?.split("=")
+    .slice(1)
+    .join("=") ?? d;
+const fixtures = flag(
+  "fixtures",
+  "born0Serial,rated,launchArrival,returning,tierUp,legend,founder,seasonClosed",
+).split(",");
 const langs = flag("langs", "fr,ar").split(",");
 const themes = flag("themes", "light,dark").split(",");
 const w = Number(flag("w", 390));
@@ -61,14 +69,25 @@ for (const fixture of fixtures) {
       );
       const problems = [];
       page.on("pageerror", (e) => problems.push(`pageerror ${String(e).slice(0, 160)}`));
-      page.on("console", (m) => m.type() === "error" && problems.push(`console ${m.text().slice(0, 160)}`));
-      await page.goto(`${BASE}/gradins?mc=${fixture}${host ? `&host=${host}` : ""}`, { waitUntil: "networkidle" });
-      await page.waitForSelector('[data-testid="moment-hero"], [data-testid="card-born-panel"]', { timeout: 8000 }).catch(() => {});
+      page.on(
+        "console",
+        (m) => m.type() === "error" && problems.push(`console ${m.text().slice(0, 160)}`),
+      );
+      await page.goto(`${BASE}/gradins?mc=${fixture}${host ? `&host=${host}` : ""}`, {
+        waitUntil: "networkidle",
+      });
+      await page
+        .waitForSelector('[data-testid="moment-hero"], [data-testid="card-born-panel"]', {
+          timeout: 8000,
+        })
+        .catch(() => {});
       await page.waitForTimeout(900);
-      const shot = (await page.screenshot()).toString("base64");
+      const shot = (await page.screenshot({ fullPage: true })).toString("base64");
       const measured = await page.evaluate(
         async ({ shot, vw }) => {
-          const block = document.querySelector('[data-testid="moment-hero"], [data-testid="card-born-panel"]');
+          const block = document.querySelector(
+            '[data-testid="moment-hero"], [data-testid="card-born-panel"]',
+          );
           if (!block) return { block: false };
           const img = new Image();
           await new Promise((res) => {
@@ -81,7 +100,9 @@ for (const fixture of fixtures) {
           const ctx = canvas.getContext("2d", { willReadFrequently: true });
           ctx.drawImage(img, 0, 0);
           const paint = (css) => {
-            const c = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+            const c = document
+              .createElement("canvas")
+              .getContext("2d", { willReadFrequently: true });
             c.canvas.width = c.canvas.height = 1;
             c.fillStyle = "#000";
             c.fillRect(0, 0, 1, 1);
@@ -109,7 +130,8 @@ for (const fixture of fixtures) {
                 [Math.round(rect.left) + inset, midY - 8],
                 [Math.round(rect.right) - inset, midY + 8],
               ].map(([x, y]) => [...ctx.getImageData(x, y, 1, 1).data]);
-              const med = (i) => ends.map((p) => p[i]).sort((a, b) => a - b)[Math.floor(ends.length / 2)];
+              const med = (i) =>
+                ends.map((p) => p[i]).sort((a, b) => a - b)[Math.floor(ends.length / 2)];
               return [med(0), med(1), med(2)];
             }
             // The box's border pixels, one pixel outside the text's own ink where it can be had.
@@ -131,14 +153,19 @@ for (const fixture of fixtures) {
           const texts = [];
           for (const el of block.querySelectorAll("h2, p, button, a")) {
             if (el.closest("[inert]")) continue;
-            const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) || el.matches("button, a");
+            const own =
+              [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) ||
+              el.matches("button, a");
             const label = (el.textContent ?? "").trim();
             if (!own && !label) continue;
             const r = el.getBoundingClientRect();
             if (r.width === 0 || r.height === 0) continue;
             const cs = getComputedStyle(el);
             const fg = paint(cs.color).slice(0, 3);
-            const bg = behind(r, el.matches("button, a") && getComputedStyle(el).borderRadius !== "0px");
+            const bg = behind(
+              r,
+              el.matches("button, a") && getComputedStyle(el).borderRadius !== "0px",
+            );
             const px = parseFloat(cs.fontSize);
             texts.push({
               text: label.slice(0, 40),
@@ -153,7 +180,11 @@ for (const fixture of fixtures) {
             .filter((el) => !el.closest("[inert]"))
             .map((el) => {
               const r = el.getBoundingClientRect();
-              return { name: el.getAttribute("aria-label") ?? el.textContent.trim().slice(0, 24), w: Math.round(r.width), h: Math.round(r.height) };
+              return {
+                name: el.getAttribute("aria-label") ?? el.textContent.trim().slice(0, 24),
+                w: Math.round(r.width),
+                h: Math.round(r.height),
+              };
             });
           const outside = [...block.querySelectorAll("*")]
             .filter((el) => {
@@ -161,7 +192,9 @@ for (const fixture of fixtures) {
               return r.width > 0 && (r.right > vw + 0.5 || r.left < -0.5);
             })
             .slice(0, 6)
-            .map((el) => `${el.tagName}.${String(el.className.baseVal ?? el.className).slice(0, 30)}`);
+            .map(
+              (el) => `${el.tagName}.${String(el.className.baseVal ?? el.className).slice(0, 30)}`,
+            );
           const heading = block.querySelector("h2");
           const ovr = document.querySelector('[data-mc="ovr"]');
           let number = null;
@@ -169,8 +202,13 @@ for (const fixture of fixtures) {
             const r = ovr.getBoundingClientRect();
             const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
             let opacity = 1;
-            for (let n = ovr; n && n.nodeType === 1; n = n.parentElement) opacity *= Number(getComputedStyle(n).opacity);
-            number = { opacity, onTop: !!top && (top === ovr || ovr.contains(top)), visibility: getComputedStyle(ovr).visibility };
+            for (let n = ovr; n && n.nodeType === 1; n = n.parentElement)
+              opacity *= Number(getComputedStyle(n).opacity);
+            number = {
+              opacity,
+              onTop: !!top && (top === ovr || ovr.contains(top)),
+              visibility: getComputedStyle(ovr).visibility,
+            };
           }
           return {
             block: true,
@@ -201,7 +239,12 @@ for (const r of report) {
   }
   const lowText = r.texts.filter((t) => t.ratio < t.floor);
   const smallTaps = r.taps.filter((t) => t.w < 44 || t.h < 44);
-  const bad = lowText.length + smallTaps.length + r.outside.length + r.problems.length + (r.number && (r.number.opacity !== 1 || !r.number.onTop) ? 1 : 0);
+  const bad =
+    lowText.length +
+    smallTaps.length +
+    r.outside.length +
+    r.problems.length +
+    (r.number && (r.number.opacity !== 1 || !r.number.onTop) ? 1 : 0);
   failures += bad ? 1 : 0;
   const worst = r.texts.length ? Math.min(...r.texts.map((t) => t.ratio)) : null;
   console.log(

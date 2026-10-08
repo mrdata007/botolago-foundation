@@ -60,3 +60,21 @@ born0Serial ar light: texts=7 worst=6.92 taps=44x44,358x48 outside=0 anim=0 numb
 founder fr light: texts=6 worst=10.42 taps=44x44,175x48,175x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
 founder ar light: texts=6 worst=10.42 taps=44x44,175x48,175x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
 PROBE OK
+# probe: 320 x 640 (full-page screenshot; a button under the fixed bottom bar reads against the bar: see INDEX, one known artifact)
+returning fr light: texts=4 worst=10.42 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+returning fr dark: texts=4 worst=1.01 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2  <-- {"lowText":[{"text":"Voir le détail","tag":"button","size":15,"ratio":1.01,"floor":4.5,"onGradient":true}],"smallTaps":[],"outside":[],"problems":[]}
+returning ar light: texts=4 worst=10.42 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+returning ar dark: texts=4 worst=10.22 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+born0Serial fr light: texts=7 worst=6.92 taps=44x44,288x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+born0Serial fr dark: texts=7 worst=8.07 taps=44x44,288x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+born0Serial ar light: texts=7 worst=6.92 taps=44x44,288x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+born0Serial ar dark: texts=7 worst=8.07 taps=44x44,288x48 outside=0 anim=1 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+founder fr light: texts=6 worst=10.42 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+founder fr dark: texts=6 worst=10.35 taps=44x44,140x48,140x48 outside=0 anim=1 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+founder ar light: texts=6 worst=10.42 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+founder ar dark: texts=6 worst=10.35 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+tierUp fr light: texts=5 worst=10.42 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+tierUp fr dark: texts=5 worst=10.35 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+tierUp ar light: texts=5 worst=10.42 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+tierUp ar dark: texts=5 worst=10.35 taps=44x44,140x48,140x48 outside=0 anim=0 number={"opacity":1,"onTop":true,"visibility":"visible"} heading=H2
+PROBE FINDINGS: 1

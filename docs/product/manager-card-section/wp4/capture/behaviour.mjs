@@ -39,33 +39,35 @@ async function open(fixture, { splash = true, lang = "fr", reduced = false, host
     },
     [lang, splash],
   );
+  // The URL the app fetched the service with (it carries a `?t=` after a hot update): the wrapper
+  // must sit on that module instance, not on a fresh copy.
+  page.on("request", (r) => {
+    if (/\/src\/services\/manager-card\.ts(\?|$)/.test(r.url())) page.mcUrl = r.url();
+  });
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e).slice(0, 160)));
   page.on("console", (m) => m.type() === "error" && errors.push(m.text().slice(0, 160)));
-  await page.goto(`${BASE}/gradins?mc=${fixture}${host ? `&host=${host}` : ""}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/gradins?mc=${fixture}${host ? `&host=${host}` : ""}`, {
+    waitUntil: "domcontentloaded",
+  });
   return { context, page, errors };
 }
 
 const spyAck = (page) =>
-  page.evaluate(async () => {
-    // The module instance the app itself loaded: the URL it was fetched with (it carries a `?t=`
-    // after a hot update), not a fresh one, or the wrapper would sit on another copy.
-    const url = performance
-      .getEntriesByType("resource")
-      .map((entry) => entry.name)
-      .filter((name) => /\/src\/services\/manager-card\.ts(\?|$)/.test(name))
-      .at(-1);
-    const { managerCardService } = await import(url ?? "/src/services/manager-card.ts");
+  page.evaluate(async (url) => {
+    const { managerCardService } = await import(url);
     window.__acks = [];
     const original = managerCardService.ackMoments.bind(managerCardService);
     managerCardService.ackMoments = (keys, ...rest) => {
       window.__acks.push([...keys]);
       return original(keys, ...rest);
     };
-  });
+  }, page.mcUrl ?? "/src/services/manager-card.ts");
 const acks = (page) => page.evaluate(() => window.__acks);
-const cache = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("botolago.card.moments.v1") ?? "[]"));
-const session = (page) => page.evaluate(() => sessionStorage.getItem("botolago.card.hero_session.v1"));
+const cache = (page) =>
+  page.evaluate(() => JSON.parse(localStorage.getItem("botolago.card.moments.v1") ?? "[]"));
+const session = (page) =>
+  page.evaluate(() => sessionStorage.getItem("botolago.card.hero_session.v1"));
 const hero = (page) => page.locator('[data-testid="moment-hero"]');
 
 // 1. The × acknowledges every folded key in one call, writes the device cache first, and collapses.
@@ -73,18 +75,34 @@ for (const fixture of ["returning", "launchArrival"]) {
   const { context, page, errors } = await open(fixture);
   await hero(page).waitFor({ timeout: 10000 });
   await spyAck(page);
-  const keysShown = await page.evaluate(() => document.querySelector('[data-testid="moment-hero"]')?.getAttribute("data-hero-kind"));
+  const keysShown = await page.evaluate(() =>
+    document.querySelector('[data-testid="moment-hero"]')?.getAttribute("data-hero-kind"),
+  );
   await page.locator('[data-testid="moment-hero-close"]').click();
   await page.waitForTimeout(500);
   const calls = await acks(page);
-  check(`${fixture}: × acknowledges in ONE call`, calls.length === 1, `${keysShown}: ${JSON.stringify(calls)}`);
+  check(
+    `${fixture}: × acknowledges in ONE call`,
+    calls.length === 1,
+    `${keysShown}: ${JSON.stringify(calls)}`,
+  );
   check(`${fixture}: that call holds both keys`, calls[0]?.length === 2);
   const stored = await cache(page);
-  check(`${fixture}: the device cache holds them`, calls[0]?.every((key) => stored.some((entry) => entry.endsWith(`|${key}`))));
-  check(`${fixture}: the hero's label, lines and buttons are inert; the card stays`, await page.evaluate(() => {
-    const section = document.querySelector('[data-testid="moment-hero"]');
-    return section?.dataset.collapsed === "1" && !!section.querySelector('[data-testid="hero-card"] .mc-echarpe') && [...section.querySelectorAll("[inert]")].length === 2;
-  }));
+  check(
+    `${fixture}: the device cache holds them`,
+    calls[0]?.every((key) => stored.some((entry) => entry.endsWith(`|${key}`))),
+  );
+  check(
+    `${fixture}: the hero's label, lines and buttons are inert; the card stays`,
+    await page.evaluate(() => {
+      const section = document.querySelector('[data-testid="moment-hero"]');
+      return (
+        section?.dataset.collapsed === "1" &&
+        !!section.querySelector('[data-testid="hero-card"] .mc-echarpe') &&
+        [...section.querySelectorAll("[inert]")].length === 2
+      );
+    }),
+  );
   check(`${fixture}: the session flag is set`, (await session(page)) === "1");
   check(`${fixture}: no console error`, errors.length === 0, errors.join(" | "));
   await context.close();
@@ -97,7 +115,11 @@ for (const fixture of ["returning", "launchArrival"]) {
   await spyAck(page);
   await page.locator('[data-testid="hero-share"]').click();
   await page.waitForTimeout(300);
-  check("rated: « Partager » acknowledges (one call) and opens the share sheet", (await acks(page)).length === 1 && (await page.locator('[data-testid="card-share-sheet"]').count()) === 1);
+  check(
+    "rated: « Partager » acknowledges (one call) and opens the share sheet",
+    (await acks(page)).length === 1 &&
+      (await page.locator('[data-testid="card-share-sheet"]').count()) === 1,
+  );
   await context.close();
 }
 
@@ -110,7 +132,10 @@ for (const fixture of ["returning", "launchArrival"]) {
   check("rated: nothing is acknowledged before two seconds", (await acks(page)).length === 0);
   await page.waitForTimeout(1600);
   check("rated: two seconds in view acknowledges", (await acks(page)).length === 1);
-  check("rated: and the hero stays open", (await hero(page).getAttribute("data-collapsed")) === null);
+  check(
+    "rated: and the hero stays open",
+    (await hero(page).getAttribute("data-collapsed")) === null,
+  );
   await context.close();
 }
 
@@ -120,7 +145,10 @@ for (const fixture of ["returning", "launchArrival"]) {
   await spyAck(page);
   await page.waitForTimeout(700);
   check("splash up: no hero yet", (await hero(page).count()) === 0);
-  check("splash up: nothing acknowledged, no session flag", (await acks(page)).length === 0 && (await session(page)) === null);
+  check(
+    "splash up: nothing acknowledged, no session flag",
+    (await acks(page)).length === 0 && (await session(page)) === null,
+  );
   await context.close();
 }
 
@@ -145,14 +173,22 @@ for (const fixture of ["returning", "launchArrival"]) {
   await page.locator('[data-testid="card-born-panel-close"]').click();
   await page.waitForTimeout(500);
   const calls = await acks(page);
-  check("team page: × acknowledges card_created in one call", calls.length === 1 && calls[0][0] === "card_created", JSON.stringify(calls));
+  check(
+    "team page: × acknowledges card_created in one call",
+    calls.length === 1 && calls[0][0] === "card_created",
+    JSON.stringify(calls),
+  );
   await context.close();
 }
 {
   const { context, page } = await open("rated", { host: "team" });
   await page.waitForSelector('[data-mc-ready="1"], [data-testid="host-owner"]', { timeout: 10000 });
   await page.waitForTimeout(1500);
-  check("team page: a first rating is not a team-page moment", (await page.locator('[data-testid="moment-hero"], [data-testid="card-born-panel"]').count()) === 0);
+  check(
+    "team page: a first rating is not a team-page moment",
+    (await page.locator('[data-testid="moment-hero"], [data-testid="card-born-panel"]').count()) ===
+      0,
+  );
   await context.close();
 }
 
@@ -172,8 +208,14 @@ for (const fixture of ["returning", "launchArrival"]) {
   await hero(page).waitFor({ timeout: 10000 });
   await page.waitForTimeout(500);
   check("reduced motion: the hero shows", (await hero(page).count()) === 1);
-  check("reduced motion: no animation is running", (await page.evaluate(() => document.getAnimations().length)) === 0);
-  check("reduced motion: no beat class on the card", (await page.locator('[data-testid="hero-card"] .mc-echarpe[class*="--beat-"]').count()) === 0);
+  check(
+    "reduced motion: no animation is running",
+    (await page.evaluate(() => document.getAnimations().length)) === 0,
+  );
+  check(
+    "reduced motion: no beat class on the card",
+    (await page.locator('[data-testid="hero-card"] .mc-echarpe[class*="--beat-"]').count()) === 0,
+  );
   await spyAck(page);
   await page.locator('[data-testid="hero-detail"]').click();
   await page.waitForTimeout(300);
@@ -183,4 +225,8 @@ for (const fixture of ["returning", "launchArrival"]) {
 
 await browser.close();
 const failed = results.filter((r) => !r.ok);
-console.log(failed.length === 0 ? `BEHAVIOUR OK (${results.length} checks)` : `BEHAVIOUR FAILED: ${failed.map((r) => r.name).join("; ")}`);
+console.log(
+  failed.length === 0
+    ? `BEHAVIOUR OK (${results.length} checks)`
+    : `BEHAVIOUR FAILED: ${failed.map((r) => r.name).join("; ")}`,
+);
