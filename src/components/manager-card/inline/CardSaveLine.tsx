@@ -1,15 +1,17 @@
 import { CheckCircle2 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
+import { findClub } from "@/components/fpl/club-lookup";
 import { ui } from "@/components/ui-kit";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { useManagerCardStatus } from "@/services/manager-card-status";
+import type { Club } from "@/types/domain";
 
 import { CardToken } from "../CardToken";
 import { useCardCopy, useMomentCopy } from "../copy";
 import { fill } from "../interpolate";
-import { guestProfile, localProfile } from "../to-profile";
+import { cardClubFromClub, guestProfile, localProfile } from "../to-profile";
 import type { CardClub, CardProfile } from "../types";
 
 /**
@@ -44,10 +46,33 @@ export function saveLineProfile(input: {
  * never a fixed width, with the text taking what is left. `card_save_line_view` is the
  * conversion guardrail (once, when the line first shows).
  */
-export function CardSaveLine({ profile }: { profile: CardProfile }) {
+export function CardSaveLine({
+  signedIn,
+  displayName,
+  teamName,
+  clubs,
+  favoriteClubId,
+}: {
+  signedIn: boolean;
+  /** The account's display name; null for a visitor. */
+  displayName: string | null | undefined;
+  /** The name typed in the builder: the card's name only while the display name is blank. */
+  teamName: string;
+  clubs: readonly Club[];
+  /** The club the profile names (`user.favoriteClubId`); null for a visitor. */
+  favoriteClubId: string | null | undefined;
+}) {
   const { minRated } = useManagerCardStatus();
   const moment = useMomentCopy();
   const card = useCardCopy();
+  const club = useMemo(
+    () => (signedIn && favoriteClubId ? cardClubFromClub(findClub(clubs, favoriteClubId)) : null),
+    [signedIn, favoriteClubId, clubs],
+  );
+  const profile = useMemo(
+    () => saveLineProfile({ signedIn, displayName, teamName, club }),
+    [signedIn, displayName, teamName, club],
+  );
   useEffect(() => {
     if (minRated !== null) track("card_save_line_view");
   }, [minRated]);

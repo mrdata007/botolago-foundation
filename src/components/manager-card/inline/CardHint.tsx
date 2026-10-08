@@ -54,14 +54,19 @@ export function CardHint({ kind, className }: { kind: CardHintKind; className?: 
   }, [eligible, kind, shown]);
 
   if (!shown || closed || !eligible) return null;
-  const text = kind === "cap" ? moment.m3.hintCap : kind === "sel" ? moment.m3.hintSel : moment.m3.hintTrf;
+  const text =
+    kind === "cap" ? moment.m3.hintCap : kind === "sel" ? moment.m3.hintSel : moment.m3.hintTrf;
   return (
     <UiAlert
       tone="info"
       className={className}
       testId={`card-hint-${kind}`}
       action={
-        <UiIconButton variant="ghost" aria-label={t("common.close")} onClick={() => setClosed(true)}>
+        <UiIconButton
+          variant="ghost"
+          aria-label={t("common.close")}
+          onClick={() => setClosed(true)}
+        >
           <X aria-hidden />
         </UiIconButton>
       }

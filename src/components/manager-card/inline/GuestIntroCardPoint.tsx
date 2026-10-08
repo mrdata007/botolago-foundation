@@ -2,6 +2,7 @@ import { useMemo } from "react";
 
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
+import { useManagerCardStatus } from "@/services/manager-card-status";
 
 import { CardToken } from "../CardToken";
 import { useCardCopy, useMomentCopy } from "../copy";
@@ -19,13 +20,16 @@ import { guestProfile } from "../to-profile";
  * sunken fill and a hairline, not the gradient the four steps carry) so the object's material
  * reads. The text names the rounds the status sent (`minRated`), never a constant.
  *
- * The caller shows it only while the section is live, the intro is the open one (a team can
- * still be created) and the status carries `minRated`.
+ * The caller shows it only while the section is live and the intro is the open one (a team can
+ * still be created); it renders nothing when the status carries no `minRated`, because the number
+ * of rounds is the server's and never a constant here.
  */
-export function GuestIntroCardPoint({ minRated }: { minRated: number }) {
+export function GuestIntroCardPoint() {
+  const { minRated } = useManagerCardStatus();
   const moment = useMomentCopy();
   const card = useCardCopy();
   const profile = useMemo(() => guestProfile(), []);
+  if (minRated === null) return null;
   return (
     <li className="flex items-start gap-3" data-testid="fantasy-intro-card-point">
       <span

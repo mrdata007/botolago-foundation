@@ -4,13 +4,14 @@ import { useEffect, type ReactNode } from "react";
 import { ui, UiLinkButton } from "@/components/ui-kit";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { useManagerCards, useMyManagerCard } from "@/services/use-manager-card";
 
 import { CardToken } from "../CardToken";
 import { useCardStrings, useGradinsCopy, useMomentCopy } from "../copy";
 import { fill } from "../interpolate";
 import { fromMember } from "../to-profile";
 import { newlyRated } from "./inline-model";
-import { useLeagueCards } from "./LeagueRowMini";
+import { useLeagueTeamIds } from "./LeagueRowMini";
 
 /** At most three minis and three names: a band is a glance, never a list. */
 const MAX_SHOWN = 3;
@@ -23,23 +24,32 @@ const MAX_SHOWN = 3;
  * members were first rated in. The reader is never named, and members are listed in the league's
  * own order.
  *
- * Nothing renders when the section is not live, the cards did not load, or nobody is new.
+ * Nothing renders when the cards did not load, the reader's own card is not known, or nobody is
+ * new.
  */
-export function LeagueCardBand({ order }: { order: readonly string[] }) {
-  const cards = useLeagueCards();
-  if (!cards || cards.latestEvaluatedGameweek === null) return null;
-  const ordered = order.flatMap((teamId) => {
-    const card = cards.byTeam.get(teamId);
+export function LeagueCardBand({
+  order,
+  ownTeamId,
+}: {
+  /** The standings' team ids, in the league's own order. */
+  order: readonly string[];
+  ownTeamId: string | null;
+}) {
+  const ids = useLeagueTeamIds(order);
+  const cards = useManagerCards(ids);
+  const mine = useMyManagerCard();
+  const latest = mine.data?.throughGameweekSeq ?? null;
+  if (latest === null || !cards.data) return null;
+  const byTeam = new Map(cards.data.map((card) => [card.teamId, card]));
+  const ordered = ids.flatMap((teamId) => {
+    const card = byTeam.get(teamId);
     return card ? [card] : [];
   });
-  const fresh = newlyRated(ordered, cards.latestEvaluatedGameweek, cards.ownTeamId).slice(
-    0,
-    MAX_SHOWN,
-  );
+  const fresh = newlyRated(ordered, latest, ownTeamId).slice(0, MAX_SHOWN);
   if (fresh.length === 0) return null;
   return (
     <BandView
-      gameweek={cards.latestEvaluatedGameweek}
+      gameweek={latest}
       members={fresh.map((card) => ({ id: card.teamId, name: card.name, card }))}
     />
   );

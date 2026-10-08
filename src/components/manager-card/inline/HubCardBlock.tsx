@@ -76,7 +76,9 @@ export function HubCardBlockView({
   const profile = useMemo(() => fromMyCard(card), [card]);
   const model = hubCardModel(
     card,
-    gameweek ? { number: gameweek.number, deadline: gameweek.deadline, status: gameweek.status } : null,
+    gameweek
+      ? { number: gameweek.number, deadline: gameweek.deadline, status: gameweek.status }
+      : null,
   );
   const line = renderLine(model.line, {
     lang,
