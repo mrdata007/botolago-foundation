@@ -1077,7 +1077,7 @@
       MC.STATS.forEach((k, i) => {
         const x = ar ? sx0 + (3 - i) * (sw + sg) : sx0 + i * (sw + sg);
         const lab = S.stats[k];
-        const lsz = ar ? (textW(lab, 11, 700, "Changa") > 38 ? 9.5 : 11) : 10.5;
+        const lsz = ar ? f(Math.min(11, (11 * (sw - 16 - textW(String(p.stats[k]), 14, 800, "Changa") - 4)) / textW(lab, 11, 700, "Changa"))) : 10.5;
         lit += card(x, 137, sw, 21, false);
         lit += ar
           ? `<text x="${x + sw - 6}" y="152" font-family="Changa" font-weight="700" font-size="${lsz}" text-anchor="end" fill="${K.paintW}" fill-opacity=".62">${esc(lab)}</text><text x="${x + 6}" y="152.6" font-family="Changa" font-weight="800" font-size="14" fill="${K.paintW}">${p.stats[k]}</text>`
