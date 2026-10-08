@@ -39,7 +39,7 @@ export function LeagueRowMini({ teamId, teamIds }: { teamId: string; teamIds: re
   if (cards.isLoading) return <MiniSlot />;
   if (!profile) return null;
   return (
-    <span aria-hidden className="me-2 flex shrink-0 items-center" data-testid="league-row-mini">
+    <span aria-hidden className="me-1 flex shrink-0 items-center" data-testid="league-row-mini">
       <CardToken profile={profile} size={28} />
     </span>
   );
@@ -48,7 +48,7 @@ export function LeagueRowMini({ teamId, teamIds }: { teamId: string; teamIds: re
 /** The place of a mini while the cards (or the chunk) are on their way. */
 export function MiniSlot({ className }: { className?: string }) {
   return (
-    <span aria-hidden className={cn("me-2 flex h-7 w-7 shrink-0", className)}>
+    <span aria-hidden className={cn("me-1 flex h-7 w-7 shrink-0", className)}>
       <UiSkeleton className="h-full w-full rounded-full" />
     </span>
   );

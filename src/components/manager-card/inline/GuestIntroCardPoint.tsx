@@ -16,9 +16,9 @@ import { guestProfile } from "../to-profile";
  *
  * The disc holds the object's own mini in its base material with a dash in the number carrier
  * (a drawn card, not an icon, and in particular not an ID-card glyph). No name, no club, no
- * serial, no number, and no request: the guest has nothing to be read. The disc is quiet (a
- * sunken fill and a hairline, not the gradient the four steps carry) so the object's material
- * reads. The text names the rounds the status sent (`minRated`), never a constant.
+ * serial, no number, and no request: the guest has nothing to be read. The disc is the same
+ * gradient disc as the four steps' (it is a point of the same list), the mini where their icon is.
+ * The text names the rounds the status sent (`minRated`), never a constant.
  *
  * The caller shows it only while the section is live and the intro is the open one (a team can
  * still be created); it renders nothing when the status carries no `minRated`, because the number
@@ -32,14 +32,16 @@ export function GuestIntroCardPoint() {
   if (minRated === null) return null;
   return (
     <li className="flex items-start gap-3" data-testid="fantasy-intro-card-point">
+      {/* The same gradient disc as the four steps above it, with the object's mini where their
+          icon is. */}
       <span
         aria-hidden
         className={cn(
           "grid h-9 w-9 shrink-0 place-items-center",
           ui.radius.full,
-          ui.surface.sunken,
-          "shadow-[inset_0_0_0_1px_var(--ui-rule)]",
+          "text-[color:var(--ui-ink-deep)]",
         )}
+        style={{ backgroundImage: "var(--ui-grad-action)" }}
       >
         <CardToken profile={profile} size={24} />
       </span>

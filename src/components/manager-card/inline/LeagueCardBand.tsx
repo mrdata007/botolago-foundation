@@ -1,7 +1,7 @@
-import { ChevronRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
-import { ui, UiLinkButton } from "@/components/ui-kit";
+import { ui } from "@/components/ui-kit";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import { useManagerCards, useMyManagerCard } from "@/services/use-manager-card";
@@ -18,7 +18,8 @@ const MAX_SHOWN = 3;
 
 /**
  * The line above a private league's table when members' first numbers have just landed (plan
- * M5a): up to three 24 px minis and « Nouvelles notes après la J4 : Karim, Salma ». Names only,
+ * M5a): up to three 24 px minis hung on a rail, as the stands hold the scarves, and « Nouvelles
+ * notes après la J4 : Karim, Salma ». Names only,
  * never the numbers, so no low number becomes a headline. It is a weekly state, not a moment: it
  * is not acknowledged, and it is there while the latest evaluated journée is the one those
  * members were first rated in. The reader is never named, and members are listed in the league's
@@ -74,43 +75,49 @@ function BandView({
     </bdi>,
   ]);
   return (
-    <div
-      className={cn(
-        "mt-3 flex min-h-12 items-center gap-2.5 px-3 py-2",
-        ui.radius.card,
-        ui.surface.sunken,
-      )}
-      data-testid="league-card-band"
-    >
-      <span aria-hidden className="flex shrink-0 items-center gap-1">
-        {members.map((member) => (
-          <CardToken key={member.id} profile={fromMember(member.card)} size={24} />
-        ))}
-      </span>
-      <p className={cn("min-w-0 text-pretty", ui.text.secondary, ui.tone.default)}>
-        {fill(moment.m5.band, { gw: gameweek, names: <>{names}</> })}
-      </p>
+    <div className="mt-3" data-testid="league-card-band">
+      {/* The stands: a rail across the column, and the new cards hung from it. */}
+      <span
+        aria-hidden
+        className="block h-1.5 rounded-full bg-[color:var(--ui-rule-strong)]"
+        data-testid="league-card-band-rail"
+      />
+      <div className="-mt-0.5 flex items-start gap-3 ps-3">
+        <span aria-hidden className="flex shrink-0 items-start gap-1.5">
+          {members.map((member) => (
+            <CardToken key={member.id} profile={fromMember(member.card)} size={24} />
+          ))}
+        </span>
+        <p className={cn("min-w-0 text-pretty pt-2", ui.text.secondary, ui.tone.default)}>
+          {fill(moment.m5.band, { gw: gameweek, names: <>{names}</> })}
+        </p>
+      </div>
     </div>
   );
 }
 
 /**
  * « Comparer les cartes de la ligue » (plan M5): the way from a league's table to « Les vôtres »,
- * where the cards sit beside each other and the face-à-face opens. The Fantasy league page keeps
- * its rows and report menus as they are; the comparison has its own page.
+ * where the cards sit beside each other and the face-à-face opens. A plain muted line after the
+ * band, not a box: the table is what this page is for, and its rows and report menus are as they
+ * were. The comparison has its own page.
  */
 export function LeagueCompareLink({ leagueId }: { leagueId: string }) {
   const copy = useGradinsCopy();
   return (
-    <UiLinkButton
+    <Link
       to="/gradins/les-votres"
       search={{ ligue: leagueId }}
-      variant="soft"
-      className="mt-3"
       data-testid="league-compare-link"
+      className={cn(
+        "mt-1 flex min-h-11 items-center self-start",
+        ui.text.meta,
+        ui.tone.muted,
+        "underline underline-offset-4",
+        ui.focus,
+      )}
     >
       {copy.peopleCompare}
-      <ChevronRight className="h-4 w-4" aria-hidden />
-    </UiLinkButton>
+    </Link>
   );
 }

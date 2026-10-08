@@ -4,7 +4,7 @@ import { useMemo, type ReactNode } from "react";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { formatDeadline } from "@/components/fpl/deadline";
-import { ui, UiBadge, UiSkeleton } from "@/components/ui-kit";
+import { ui, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -81,15 +81,14 @@ export function HubCardBlockView({
       : null,
   );
   const line = renderLine(model.line, {
-    lang,
     moment,
     gradins,
     cardCopy,
     minRated: card.minRated,
     rated: model.head.kind === "number",
-    tier: card.tier,
     deadline: (iso) => <bdi>{formatDeadline(iso, lang, { weekday: "short" })}</bdi>,
   });
+  const fresh = model.fresh ? <Pill tone="new">{gradins.badgeNew}</Pill> : null;
   return (
     <Link
       to="/gradins"
@@ -107,13 +106,31 @@ export function HubCardBlockView({
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="sr-only">{gradins.hubCardView}. </span>
-        <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-          <Head head={model.head} cardCopy={cardCopy} formingLabel={moment.m3.label} />
-          {model.fresh ? <UiBadge tone="action">{gradins.badgeNew}</UiBadge> : null}
-        </span>
-        {line ? (
-          <span className={cn("text-pretty", ui.text.meta, ui.tone.muted)}>{line}</span>
-        ) : null}
+        {model.line.kind === "late" ? (
+          // The season ended before a first number: the sentence that says so leads, the count
+          // and the season it is for follow in a quieter line. No title, no big counter.
+          <>
+            <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <span className={cn("text-pretty", ui.text.bodyStrong, ui.tone.default)}>{line}</span>
+              {fresh}
+            </span>
+            {model.head.kind === "counter" ? (
+              <bdi dir="ltr" className={cn(ui.text.meta, ui.tone.muted)}>
+                {model.head.k}/{model.head.n} · {card.season.label}
+              </bdi>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              <Head head={model.head} cardCopy={cardCopy} formingLabel={moment.m3.label} />
+              {fresh}
+            </span>
+            {line ? (
+              <span className={cn("text-pretty", ui.text.meta, ui.tone.muted)}>{line}</span>
+            ) : null}
+          </>
+        )}
       </span>
       <ChevronRight className={cn("h-5 w-5 shrink-0", ui.tone.muted)} aria-hidden />
     </Link>
@@ -150,21 +167,43 @@ function Head({
       {head.tier ? (
         <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{cardCopy.tier[head.tier]}</span>
       ) : null}
-      {head.provisional ? <UiBadge tone="outline">{cardCopy.provisional}</UiBadge> : null}
+      {head.provisional ? <Pill tone="quiet">{cardCopy.provisional}</Pill> : null}
     </>
+  );
+}
+
+/**
+ * A small pill in the sentence's own case (the kit's badge is the uppercase, letter-spaced label
+ * step, which this block does not want): « Nouveau » on the action gradient, « Provisoire » as a
+ * hairline outline. Both are words, never a colour alone.
+ */
+function Pill({ tone, children }: { tone: "new" | "quiet"; children: ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5",
+        ui.radius.full,
+        ui.text.meta,
+        "[font-weight:var(--ui-weight-strong)]",
+        tone === "new"
+          ? "text-[color:var(--ui-ink-deep)]"
+          : cn("bg-[color:var(--ui-surface)]", ui.rule.all, ui.tone.default),
+      )}
+      style={tone === "new" ? { backgroundImage: "var(--ui-grad-action)" } : undefined}
+    >
+      {children}
+    </span>
   );
 }
 
 function renderLine(
   line: HubCardLine,
   ctx: {
-    lang: string;
     moment: MomentCopy;
     gradins: GradinsCopy;
     cardCopy: CardCopy;
     minRated: number;
     rated: boolean;
-    tier: MyCardDto["tier"];
     deadline: (iso: string) => ReactNode;
   },
 ): ReactNode {
