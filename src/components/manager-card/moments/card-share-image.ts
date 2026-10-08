@@ -41,11 +41,11 @@ export const CARD_IMAGE_LAYOUT = {
   pill: { height: 64, top: 90, padding: 28, size: 30 },
   caption: { baseline: 292, size: 66, min: 44 },
   card: { top: 352, bottom: 1496 },
-  name: { baseline: 1622, size: 80, min: 44 },
-  rating: { baseline: 1706, number: 74, unit: 36, tier: 46 },
-  meta: { baseline: 1772, size: 34 },
-  footer: { baseline: 1846, size: 30 },
-  disc: { diameter: 124, centreY: 1640, ring: 5 },
+  name: { baseline: 1620, size: 76, min: 44 },
+  rating: { baseline: 1714, number: 88, unit: 36, tier: 48 },
+  meta: { baseline: 1780, size: 34 },
+  footer: { baseline: 1850, size: 30 },
+  disc: { diameter: 124, centreY: 1652, ring: 5 },
 } as const;
 
 const WORDMARK_RATIO = 1614.8063 / 288.1029;
