@@ -8,6 +8,8 @@
 #
 # only: all (default) | lead | others | desktop | motion | 2x   (which set to take; the index is
 # always rewritten from the files on disk). Environment: PORT (4350), JOBS (4), ONB_OUT (the folder).
+# "all" also deletes every WebP in the folder that this run did not make (a renamed or dropped
+# variant), so the folder is exactly the matrix below.
 #
 # The matrix (ONBOARDING_PLAN.md section 7, "Captures"), phone 390 x 844:
 #   Écharpe 07-v2     every screen and variant, fr and ar, light and dark, dpr 1
@@ -16,8 +18,9 @@
 #   03-v2, 01, 05-v2, t1-touchline   S05, S06, S08, S09, S10, S14 (every variant) in fr light,
 #                     ar light and ar dark, dpr 1
 #   Desktop D1        Écharpe, fr and ar light, 1440 wide, dpr 1
-#   motion/           S05 new-serial and S08 fresh at t = 0 with the beat on, and under reduced
-#                     motion (every direction in fr light, Écharpe also in ar dark)
+#   motion/           S05 new-serial, S08 fresh and S14 founder at t = 0 with the beat on (S14 plays
+#                     Écharpe's own founder beat), and under reduced motion (every direction in
+#                     fr light, Écharpe also in ar dark)
 set -euo pipefail
 
 LAB="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -34,6 +37,7 @@ one() {
   IFS=$'\t' read -r url out w h dpr scheme mode <<<"$1"
   mkdir -p "$(dirname "$out")"
   local tmp json
+  rm -f "$out" # a capture that fails must not leave an older one behind
   tmp="$(mktemp --suffix=.png)"
   case "$mode" in
     phone) json="$(node tools/capture.mjs "$url" "$tmp" "$w" --height="$h" --viewport --dpr="$dpr" --scheme="$scheme")" ;;
@@ -128,7 +132,7 @@ if [ "$ONLY" = all ] || [ "$ONLY" = motion ]; then
     [ "$dir" = "$LEAD_ID" ] && sets+=("ar:dark")
     for ls in "${sets[@]}"; do
       lang="${ls%%:*}"; scheme="${ls##*:}"
-      for sv in S05:new-serial S08:fresh; do
+      for sv in S05:new-serial S08:fresh S14:founder; do
         id="${sv%%:*}"; variant="${sv##*:}"
         for mode in motion reduced; do
           job "$(q "$dq" "$id" "$variant" "$lang" "$scheme")" "$OUT/motion/$dir/$id-$variant-$lang-$scheme-$([ "$mode" = motion ] && echo t0-motion || echo reduced).webp" 390 844 1 "$scheme" "$mode"
@@ -148,6 +152,18 @@ if [ -s "$JOBFILE" ]; then
   # each job prints one JSON line (console errors, elements outside the frame): keep them for review
   xargs -d '\n' -P "$JOBS" -I{} bash "${BASH_SOURCE[0]}" --one {} <"$JOBFILE" | tee -a "$LOG" |
     awk '/"errors":\[[^]]/ || /"overflow":\[[^]]/ {print "NOTE " $0}' >&2 || true
+fi
+
+# A full run owns the folder: a WebP it did not make belongs to a screen or variant that no longer
+# exists (renamed, merged or dropped), so it goes. The partial sets (lead, others, ...) leave the rest alone.
+if [ "$ONLY" = all ] && [ -s "$JOBFILE" ]; then
+  KEEP="$(cut -f2 "$JOBFILE" | sort)"
+  PRUNED=0
+  while IFS= read -r f; do
+    grep -qxF -- "$f" <<<"$KEEP" || { rm -f "$f"; PRUNED=$((PRUNED + 1)); }
+  done < <(find "$OUT" -name '*.webp' | sort)
+  echo "pruned $PRUNED captures of screens and variants that no longer exist" >&2
+  find "$OUT" -mindepth 1 -type d -empty -delete
 fi
 rm -f "$JOBFILE"
 
@@ -176,7 +192,7 @@ L.push("## How they were made", "", "```sh", "cd design-lab/manager-cards-claude
 L.push("Each file is one `tools/capture.mjs` call, `onboarding.html?<direction>&screen=<id>&variant=<key>&lang=<fr|ar>&scheme=<light|dark>`, converted with `ffmpeg -c:v libwebp -quality 80`. Phone screens are the 390 x 844 viewport at device pixel ratio 1 (2 in `2x/`), reduced motion on, animations frozen. The t = 0 motion proofs come from `tools/capture-motion.mjs`. The per-capture console errors and elements outside the frame are in `capture.log` (one JSON line each, named by the WebP it made).", "");
 L.push("## Files", "");
 L.push("| Folder | Direction | What |", "|---|---|---|");
-const dirs = [["07-v2", "Écharpe v2 (the lead)", "every screen and variant, fr and ar, light and dark, 390 x 844 at 1x; `2x/` has the eight key moments at 2x; `D1-*` are the desktop screens at 1440"], ["03-v2", "Porte-clés v2", "S05, S06, S08, S09, S10, S14: fr light, ar light, ar dark"], ["01", "Lucarne", "the same six screens"], ["05-v2", "Semelle v2", "the same six screens, with the cultural-test label"], ["t1-touchline", "Touchline (reworked)", "the same six screens"], ["motion", "all five", "S05 new-serial and S08 fresh at t = 0 with motion on, and under reduced motion"]];
+const dirs = [["07-v2", "Écharpe v2 (the lead)", "every screen and variant, fr and ar, light and dark, 390 x 844 at 1x; `2x/` has the eight key moments at 2x; `D1-*` are the desktop screens at 1440"], ["03-v2", "Porte-clés v2", "S05, S06, S08, S09, S10, S14: fr light, ar light, ar dark"], ["01", "Lucarne", "the same six screens"], ["05-v2", "Semelle v2", "the same six screens, with the cultural-test label"], ["t1-touchline", "Touchline (reworked)", "the same six screens"], ["motion", "all five", "S05 new-serial, S08 fresh and S14 founder at t = 0 with motion on, and under reduced motion"]];
 for (const [d, n, w] of dirs) {
   const fs = files.filter((f) => rel(f).startsWith(d + "/"));
   L.push(`| \`${d}/\` | ${n} | ${fs.length} files (${kb(fs.reduce((s, f) => s + statSync(f).size, 0))}): ${w} |`);

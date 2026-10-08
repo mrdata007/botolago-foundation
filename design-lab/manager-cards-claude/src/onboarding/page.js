@@ -141,9 +141,6 @@
           if (small && extra > 2) small.insertAdjacentText("beforeend", ` · scrolls (+${extra}px)`);
         }
         if (c && c.mount) {
-          // A card that turns (Lucarne) would transition its back face in from 0 to 180 degrees
-          // when it goes live, drawing it over the front for the first 300ms: mount at rest.
-          fr.slot.classList.add("onbp-mounting");
           fr.slot.querySelectorAll('[data-onb-card="full"]').forEach((el) => {
             try {
               if (el.firstElementChild) c.mount(el.firstElementChild, fr.env ? fr.env.o : {});
@@ -156,10 +153,6 @@
           const room = document.documentElement.clientWidth - 48;
           if (room < 1440) fr.slot.style.zoom = String(room / 1440);
         }
-      }
-      if (frames.some((fr) => fr.slot.classList.contains("onbp-mounting"))) {
-        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-        frames.forEach((fr) => fr.slot.classList.remove("onbp-mounting"));
       }
       return frames;
     },
