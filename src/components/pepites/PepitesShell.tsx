@@ -143,19 +143,24 @@ const TITLE_FILLS_AND_WRAPS =
  *   themselves carry data ("Classement final 2025/2026"), not the name.
  * - `backTo` puts the back pill on its own row above that, inside the same
  *   white band (the ranking and the method page are one level down from
- *   `/pepites`). `backTestId` names it for the tests.
+ *   `/pepites`). `backTestId` names it for the tests, `backLabel` replaces
+ *   its "Retour" (the home, while Gradins is live and Pépites sits inside
+ *   Fantasy, goes back to « Fantasy »).
  * - `desktop` lines the band up with a `width="desktop"` page.
  * - the heading fills the title row and wraps (see above).
  */
 export function PepitesPageTitle({
   desktop = false,
   backTo,
+  backLabel,
   backTestId = "pepites-back",
   className,
   ...title
 }: Omit<ComponentProps<typeof UiPageTitle>, "width"> & {
   desktop?: boolean;
   backTo?: string;
+  /** Names the back pill (the home's « Fantasy » while Pépites lives in Fantasy); "Retour" without it. */
+  backLabel?: string;
   backTestId?: string;
 }) {
   const { t } = useI18n();
@@ -163,7 +168,7 @@ export function PepitesPageTitle({
     <>
       <div className={cn(ui.surface.bar, "pt-2", desktop && DESKTOP_TITLE_COLUMN)}>
         <div className={cn(BAR_ROW, "flex flex-col items-start gap-2")}>
-          {backTo ? <PepitesBack to={backTo} testId={backTestId} /> : null}
+          {backTo ? <PepitesBack to={backTo} testId={backTestId} label={backLabel} /> : null}
           <p className={cn(ui.text.label, ui.tone.muted)} data-testid="pepites-section-label">
             {t("pepites.brand")}
           </p>
