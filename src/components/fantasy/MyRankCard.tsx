@@ -1,5 +1,5 @@
 import { Hourglass, Search, Target, UserPlus } from "lucide-react";
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 
 import { AnimatedNumber, FlashOnChange } from "@/components/common/AnimatedNumber";
 import { RankOrdinal } from "@/components/fantasy-lists/RankOrdinal";
@@ -11,7 +11,16 @@ import type { LeagueStanding } from "@/types/fantasy";
 import { selectMyRankState, type TeamPresence } from "./my-rank-state";
 import { pointsUnit } from "@/lib/points-unit";
 import { fantasyNextAction } from "@/services/fantasy-next-action";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
+
+// The card's token is its own chunk, requested only while the section is live: with the switch
+// off this line imports nothing of the Manager Card.
+const RankCardToken = lazy(() =>
+  import("@/components/manager-card/inline/RankCardToken").then((module) => ({
+    default: module.RankCardToken,
+  })),
+);
 
 /**
  * "Your position" — the line above the rankings table (A-Rankings).
@@ -38,8 +47,15 @@ export function MyRankCard({
   onJump?: () => void;
 }) {
   const { t, lang } = useI18n();
+  const cardLive = useManagerCardLive();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const state = selectMyRankState({ standing, presence });
+  // The card's token, at the end of the line, while live (plan M3c). Display only.
+  const cardToken = cardLive ? (
+    <Suspense fallback={null}>
+      <RankCardToken />
+    </Suspense>
+  ) : null;
 
   const kicker = (
     <p className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.rankings.my_rank")}</p>
@@ -82,7 +98,7 @@ export function MyRankCard({
   if (state.kind === "unranked") {
     return (
       <div data-testid="my-rank-card-unranked">
-        <PositionLine>
+        <PositionLine trailing={cardToken}>
           {kicker}
           {state.teamName ? (
             <p dir="auto" className={cn("mt-1.5 truncate", ui.text.bodyStrong, ui.tone.default)}>
@@ -106,7 +122,16 @@ export function MyRankCard({
     <div data-testid="my-rank-card">
       <PositionLine
         trailing={
-          onJump ? (
+          cardToken ? (
+            <div className="flex items-center gap-1">
+              {cardToken}
+              {onJump ? (
+                <UiIconButton aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
+                  <Target aria-hidden />
+                </UiIconButton>
+              ) : null}
+            </div>
+          ) : onJump ? (
             <UiIconButton aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
               <Target aria-hidden />
             </UiIconButton>
