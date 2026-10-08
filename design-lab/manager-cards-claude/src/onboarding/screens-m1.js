@@ -190,6 +190,8 @@
     .onb .m1-focus { box-shadow: 0 0 0 2px var(--ui-page), 0 0 0 4px var(--ui-ink-fg), var(--ui-shadow-lifted); }
 
     /* S01 · FantasyGuestIntro, open state */
+    .onb.onb-m1-hub .onb-body { padding-block-start: 0; }
+    .onb .m1-pagetitle { margin-inline: -16px; margin-block-end: 14px; }
     .onb .m1-intro { padding: 16px; }
     .onb .m1-intro__head { display: flex; align-items: flex-start; gap: 12px; }
     .onb .m1-art { flex: none; display: grid; place-items: center; width: 88px; height: 64px; border-radius: var(--ui-radius-control); background: var(--ui-surface-sunken); color: var(--ui-on-surface-muted); }
@@ -277,7 +279,7 @@
     .onb .m1-setupcard { display: flex; align-items: center; gap: 12px; min-height: 80px; margin-block-start: 20px; padding: 8px 12px; padding-inline-start: 8px; border-radius: var(--ui-radius-card); background: var(--ui-surface-sunken); }
     .onb .m1-setupcard > .onb-card { flex: none; }
     .onb .m1-setupcard__text { min-width: 0; display: flex; flex-direction: column; }
-    .onb .m1-echo { color: var(--ui-on-surface); }
+    .onb .m1-echo { color: var(--ui-on-surface); overflow-wrap: anywhere; }
     .onb .m1-avatar { display: grid; place-items: center; flex: none; width: 80px; height: 80px; border-radius: 999px; background: var(--ui-surface-sunken); box-shadow: inset 0 0 0 1px var(--ui-rule); color: var(--ui-on-surface-muted); }
     .onb .m1-setup { display: grid; gap: 16px; margin-block-start: 20px; }
     .onb .m1-setup--club { gap: 12px; }
@@ -326,7 +328,6 @@
       reserve = false,
       page = false,
       type = "text",
-      ltr = false,
     },
   ) => {
     const uid = MC.uid("m1-f");
@@ -338,7 +339,7 @@
       `<div class="m1-field">` +
       `<label class="onb-t-meta m1-field__label" for="${uid}">${label}</label>` +
       `<span class="m1-box">${lead ? `<span class="m1-box__lead">${lead}</span>` : ""}` +
-      `<input id="${uid}" class="m1-input${page ? " m1-input--page" : ""}${lead ? " m1-input--lead" : ""}${trail ? " m1-input--trail" : ""}" type="${type}" value="${esc(value)}" placeholder="${esc(placeholder)}"${ltr ? ' dir="ltr"' : ""}${hint ? ` aria-describedby="${uid}-hint"` : ""} autocomplete="off" />` +
+      `<input id="${uid}" class="m1-input${page ? " m1-input--page" : ""}${lead ? " m1-input--lead" : ""}${trail ? " m1-input--trail" : ""}" type="${type}" value="${esc(value)}" placeholder="${esc(placeholder)}"${hint ? ` aria-describedby="${uid}-hint"` : ""} autocomplete="off" />` +
       `${trail ? `<span class="m1-box__trail">${trail}</span>` : ""}</span>` +
       (hintFirst ? hintHtml + err : err + hintHtml) +
       `</div>`
@@ -382,7 +383,6 @@
         kind: "primary",
         full: true,
         icon: "plus",
-        cls: "m1-cta",
         attrs: 'style="margin-block-start:16px"',
       }) +
       `<p class="onb-t-meta onb-muted m1-balance" style="margin-block-start:8px;text-align:center">${env.t("app.intro.sign_in_note")}</p>` +
@@ -416,17 +416,18 @@
     render(env) {
       const sk = ONB.skeleton;
       const fold = env.v.key === "fold";
+      // The page title is the first thing in the page, so it scrolls away with it (UiPageTitle).
       const content =
+        `<div class="onb-titleband m1-pagetitle"><h1 class="onb-t-title">${env.t("app.fantasy.title")}</h1></div>` +
         `<div class="onb-flow" style="--gap:10px">${sk.deadlineCard(env, { gw: env.ctx.firstGw })}` +
         `<div style="margin-block-start:14px">${introCard(env)}</div></div>` +
         `<div style="margin-block-start:16px">${sk.shortcuts(env)}</div>`;
       return ONB.phone(content, env, {
         tab: "fantasy",
         signedIn: false,
-        title: fold ? env.t("app.fantasy.title") : "",
         scrollTo: fold ? undefined : ".m1-prizes",
         scrollTop: fold ? 0 : undefined,
-      });
+      }).replace('class="onb onb-phone ', 'class="onb onb-phone onb-m1-hub ');
     },
   });
 
@@ -437,7 +438,7 @@
 
   const nameStep = (env, { teamName, signedIn, created }) => {
     const id = MC.uid("m1-save");
-    const created_ = created
+    const createdLine = created
       ? `<p class="m1-created onb-t-secondary" id="${id}-note" role="status" style="margin-block-start:12px">${ico("checkc", 18)}<span>${env.t(K + "m1.builder.line")}</span></p>`
       : "";
     const guestNote = signedIn
@@ -461,7 +462,7 @@
       `<div style="margin-block-start:16px">${kv(env.t("app.captain"))}${kv(env.t("app.vice_captain"))}</div>` +
       saveRow(env) +
       guestNote +
-      created_ +
+      createdLine +
       save +
       `</section></div>`
     );

@@ -200,8 +200,8 @@
 .onb .m23-pos { display: flex; gap: 12px; }
 .onb .m23-pos__edge { flex: none; width: 4px; align-self: stretch; border-radius: 999px; background-image: var(--ui-grad-action); }
 .onb .m23-pos__main { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding-block: 4px; }
-.onb .m23-pos__sec { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font: 600 14px/var(--ui-leading-copy) var(--onb-body); }
-.onb .m23-inl { display: inline-flex; align-items: center; gap: 4px; }
+.onb .m23-pos__sec { display: flex; align-items: center; gap: 6px; font: 600 14px/var(--ui-leading-copy) var(--onb-body); }
+.onb .m23-inl { display: inline-flex; align-items: center; gap: 4px; line-height: 1; }
 .onb .m23-pos__trail { flex: none; display: flex; align-items: center; gap: 4px; align-self: center; }
 .onb .m23-pos__card { display: flex; align-items: center; gap: 6px; min-height: 48px; padding-inline: 4px 8px; border-radius: 999px; }
 .onb .m23-pos__k { font: 800 15px/var(--ui-leading-flat) var(--onb-body); }
@@ -262,7 +262,7 @@
 }
 @keyframes m23-rise { from { transform: translateY(8px); } to { transform: none; } }
 @keyframes m23-step { from { transform: translateX(calc(var(--m23-dir, 1) * -8px)); } to { transform: none; } }
-@keyframes m23-settle { from { transform: scale(1.14); } to { transform: none; } }
+@keyframes m23-settle { from { transform: scale(1.08); } to { transform: none; } }
 .onb[dir="rtl"] { --m23-dir: -1; }
 `,
   );
@@ -443,7 +443,8 @@
       case "late":
         return env.t(K + "m3.late", { season: env.ctx.nextSeason });
       default:
-        return env.t(K + "m3.line", { gw });
+        // The dot and the colon bind to the word before them, so a line never starts with one.
+        return env.t(K + "m3.line", { gw }).replace(/ ([·:]) /g, "\u00a0$1 ");
     }
   };
 
@@ -516,7 +517,7 @@
       `<div class="m23-pos"><span class="m23-pos__edge" aria-hidden="true"></span>` +
       `<div class="m23-pos__main"><p class="onb-t-label onb-muted">${env.t("app.my_rank")}</p>` +
       `<p>${bar(112, 34)}</p>` +
-      `<p class="m23-pos__sec"><span class="m23-inl">${bar(84, 13)}</span><span class="onb-muted" aria-hidden="true">·</span><span class="m23-inl">${bar(34, 13)}<span class="onb-muted">${env.t("app.points.unit")}</span></span><span class="onb-muted" aria-hidden="true">·</span><span class="m23-inl">${bar(30, 13)}</span></p></div>` +
+      `<p class="m23-pos__sec"><span class="m23-inl">${bar(58, 13)}</span><span class="onb-muted" aria-hidden="true">·</span><span class="m23-inl">${bar(28, 13)}<span class="onb-muted">${env.t("app.points.unit")}</span></span><span class="onb-muted" aria-hidden="true">·</span><span class="m23-inl">${bar(24, 13)}</span></p></div>` +
       `<div class="m23-pos__trail"><button type="button" class="m23-pos__card">${env.card("token", { size: 44 })}<span class="m23-pos__k">${env.t(K + "m3.counter")}</span></button>` +
       ibtn("target", env.text("app.rankings.jump")) +
       `</div></div>`;
@@ -529,7 +530,7 @@
           `<th scope="col"${i > 1 ? ' class="m23-n"' : ""}>${c.startsWith("app.") ? env.t(c) : c}</th>`,
       )
       .join("");
-    const rows = [1, 2, 3, 4, 5, 6]
+    const rows = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
       .map(
         (n) =>
           `<tr><td><span class="m23-rankno">${env.num(n)}</span></td><td>${bar(n % 2 ? 118 : 96, 13)}${bar(70, 11)}</td>` +
