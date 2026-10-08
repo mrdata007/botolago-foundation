@@ -38,6 +38,8 @@ node design-lab/manager-cards-claude/build.mjs
 | `DIRECTIONS.md` | The ten directions as decided, the direction roll, and why each exists. |
 | `CRITIQUE.md` | Scores, superlatives, the refined top three and the comparison with Codex. |
 | `CONTRACT.md` | The module contract every concept follows. |
+| `ONBOARDING_PLAN.md` | Plan for how a manager first meets the card (« Le premier 84 »): moments, states, copy, open decisions. Plan only, no screens built yet. |
+| `BACKEND_HANDOFF.md` | Prompt for a new session to build the card's backend (data, rating maths, API, switch, job), including the onboarding's "seen" records (section 6a). |
 | `index.html`, `src/gallery.*` | The gallery: collection, detail sheet, leaderboard test, critique, refined top 3, vs Codex, final top 5. |
 | `preview.html` | Every surface of one concept on one page (used to build and check each one). |
 | `src/kit.js` | Fixed data (ALI and the sample managers), strings in Latin and Arabic, the shared avatar, crest, flag and logo helpers. |
