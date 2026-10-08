@@ -6,13 +6,41 @@
    then six machined studs that break the outline. Founders carry an injection-moulding year
    clock set in a machined-steel insert ring, its arrow on 26. No gold anywhere.
    Latin cards are a RIGHT boot, Arabic cards the LEFT boot. Light always comes from the
-   top-left: the left boot uses mirrored coordinates, never a mirroring transform. */
+   top-left: the left boot uses mirrored coordinates, never a mirroring transform.
+
+   Onboarding states (CONTRACT.md). A card with no number is the finished plate with its
+   number field blank: a moulded dash at the centre spot, and the rounds counted so far as
+   tally slots hanging from the halfway groove, raised when counted and engraved empty when
+   not (never studs: the studs are the tier). With no tier the plate is the BASE material, a
+   raw slate nylon sample plate, with its ten stud mounts bare. The first rating seats the
+   tier's studs onto them. The founder clock exists only for a founder. A profile that has
+   none of the onboarding fields takes the same path as before, byte for byte. */
 (function () {
   const MC = window.MC;
   const esc = (s) => MC.esc(s);
   const r1 = (n) => Math.round(n * 10) / 10;
   const r2 = (n) => Math.round(n * 100) / 100;
   const D2R = Math.PI / 180;
+  // the material key: no tier is the base plate, an unknown tier keeps its old fallback (PRO)
+  const tierKey = (p) => (p.tier === null ? "BASE" : TIER[p.tier] ? p.tier : "PRO");
+  // true for a profile that carries any onboarding field or state; the gallery's never does
+  const onbMode = (p) =>
+    p.counted != null ||
+    p.minRated != null ||
+    p.provisional != null ||
+    p.statReason != null ||
+    p.ovr == null ||
+    p.tier === null ||
+    p.name == null ||
+    p.club == null ||
+    p.serial == null ||
+    p.id == null;
+  // the tally: how many rounds are drawn and how many of them are counted (only while forming)
+  const tallyOf = (p) => {
+    const n = p.ovr == null ? Math.min(9, Math.max(0, p.minRated | 0)) : 0;
+    return { n, k: Math.min(n, Math.max(0, p.counted | 0)) };
+  };
+  const PROV = { lat: "Provisoire", ar: "مبدئي" };
 
   /* ------------------------------------------------------------------ geometry */
   // A right soleplate seen from below, toe up. The toe is a boot's toe, not a foot's: a
@@ -199,6 +227,10 @@
       ax,
       cir: { x: ax, y: cy, r: 70 },
       ovr: { fs: 92 },
+      // no number yet: the dash sits above the groove when the tally hangs under it (up), else on
+      // the centre spot; the tally hangs from the halfway groove: y below it, then slot and pitch
+      dash: { w: 66, h: 14, r: 3.5, up: -20 },
+      tally: { y: 6, h: 24, w: 9.5, pitch: 21 },
       nameY: 242,
       tagY: 246,
       tagH: 13,
@@ -307,6 +339,19 @@
     LEGEND: [Lx(84, -2), Rx(90, -2), Lx(236, -1), Rx(240, -1), Lx(584, 0), Rx(584, 0)].map(
       ([x, y]) => ({ t: "big", x, y, r: 16.5 }),
     ),
+    // no tier yet: the plate's ten stud mounts, bare. Six in the forefoot, four in the heel.
+    BASE: [
+      Lx(72, 21),
+      Lx(152, 17),
+      Lx(232, 17),
+      Rx(78, 21),
+      Rx(158, 17),
+      Rx(238, 17),
+      Lx(528, 24),
+      Rx(528, 24),
+      Lx(604, 24),
+      Rx(604, 24),
+    ].map(([x, y]) => ({ t: "socket", x, y, r: 10.5 })),
   };
 
   /* ------------------------------------------------------------------ materials */
@@ -407,6 +452,26 @@
       tok: "#8ca5b1",
       topTok: "#ffffff",
     },
+    BASE: {
+      // the raw sample plate before any rating: unpainted slate nylon, matte, a fine tooth. It
+      // is no tier's material (the ladder runs honey, black, blue, carbon, ice), and it carries
+      // no tier word. Its stud mounts are bare bosses in the plate's own tone.
+      plate: ["#738395", "#505f70", "#36424f"],
+      ink: "#f5f8fb",
+      inkTone: "#d6dee7",
+      recess: "#141d28",
+      stud: ["#8a9aab", "#62738a", "#2b3541"],
+      tip: null,
+      side: "#9fb0c2",
+      grain: 0.3,
+      gloss: 0.08,
+      part: 0,
+      tag: "#3a4755",
+      yr: "#f5f8fb",
+      hi: "#ffffff",
+      tok: "#505f70",
+      topTok: "#8798a9",
+    },
   };
   const STEEL = [
     [0, "#fbfcfd"],
@@ -453,6 +518,17 @@
     };
     return [tile(13, 64), tile(9.1, 30)];
   })();
+
+  /** Delays (ms) that seat a list of studs one by one from the toe to the heel (by height on the
+      plate), spread over `spread` ms in all. */
+  const seatDelays = (list, spread = 380) => {
+    const d = [];
+    list
+      .map((q, i) => [q.y, q.x, i])
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+      .forEach((q, k) => (d[q[2]] = Math.round((k * spread) / Math.max(1, list.length - 1))));
+    return d;
+  };
 
   /* ------------------------------------------------------------------ stud drawing */
   // A firm-ground blade: a tapered bar, 25 long, 8.4 wide at the heel end, 5.2 at the toe end.
@@ -523,6 +599,26 @@
             ` stroke="#fff" stroke-width=".7" opacity="${s.steel ? 0.8 : 0.6}"`,
           ),
         );
+      return { sh, body };
+    }
+    if (s.t === "socket") {
+      // a bare mount: a low boss in the plate's own tone with its bore open and nothing fitted
+      const r = s.r;
+      const ring = (a0, a1, k) =>
+        `M${r1(x + Math.cos(a0 * D2R) * r * k)} ${r1(y + Math.sin(a0 * D2R) * r * k)}A${r1(r * k)} ${r1(r * k)} 0 0 1 ${r1(x + Math.cos(a1 * D2R) * r * k)} ${r1(y + Math.sin(a1 * D2R) * r * k)}`;
+      sh.push(`<circle cx="${r1(x + 2.2)}" cy="${r1(y + 3.4)}" r="${r}"/>`);
+      if (det)
+        walls(
+          2,
+          (dx, dy, c) => `<circle cx="${r1(x + dx)}" cy="${r1(y + dy)}" r="${r}" fill="${c}"/>`,
+        );
+      body.push(`<circle cx="${x}" cy="${y}" r="${r}" fill="url(#${u}-nub)"/>`);
+      body.push(
+        `<path d="${ring(190, 280, 0.82)}" stroke="#fff" stroke-width="1" fill="none" stroke-linecap="round" opacity=".5"/>`,
+      );
+      body.push(
+        `<circle cx="${x}" cy="${y}" r="${r1(r * 0.5)}" fill="${P.recess}"/><path d="${ring(20, 100, 0.5)}" stroke="#fff" stroke-width=".9" fill="none" stroke-linecap="round" opacity=".35"/>`,
+      );
       return { sh, body };
     }
     // steel: a screw-in stud on a moulded boss
@@ -649,6 +745,20 @@
       d: `M${r1(bx - half)} ${b.y}A${dr} ${dr} 0 0 1 ${r1(bx + half)} ${b.y}`,
       box: `M${r1(X(b.x))} ${b.y}H${r1(X(b.x + b.w))}V${b.y + b.h}H${r1(X(b.x))}Z`,
     };
+  }
+
+  /** The blank number field: until a rating exists the centre circle is a shallow dish, its
+      upper-left wall in shadow and its lower-right wall lit, waiting for the figure. */
+  function numberField(u, P, G, det, t) {
+    const { x, y, r } = LAY.cir;
+    const cx = G.X(x);
+    const rr = r - 5;
+    const arc = (a0, a1) =>
+      `M${r1(cx + Math.cos(a0 * D2R) * rr)} ${r1(y + Math.sin(a0 * D2R) * rr)}A${rr} ${rr} 0 0 1 ${r1(cx + Math.cos(a1 * D2R) * rr)} ${r1(y + Math.sin(a1 * D2R) * rr)}`;
+    let s = `<circle cx="${cx}" cy="${y}" r="${rr}" fill="${P.recess}" opacity="${det ? 0.22 : 0.18}"/>`;
+    s += `<path d="${arc(196, 286)}" fill="none" stroke="#000" stroke-width="2.2" stroke-linecap="round" opacity=".3"/>`;
+    s += `<path d="${arc(16, 106)}" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity="${t === "HOMA" ? 0.5 : 0.24}"/>`;
+    return s;
   }
 
   function grooves(u, P, G, det, t) {
@@ -836,7 +946,7 @@
   }
 
   /* ------------------------------------------------------------------ the sole */
-  function solid(u, t, P, p, G, full, thumb) {
+  function solid(u, t, P, p, G, full, thumb, beat) {
     const X = G.X;
     const det = full && !thumb;
     let g = "";
@@ -886,6 +996,7 @@
     g += `<rect x="-10" y="-10" width="290" height="120" fill="url(#${u}-ts)"/>`;
     if (det)
       g += `<path d="M${X(34)} 92Q${X(131)} 62 ${X(232)} 86" fill="none" stroke="#fff" stroke-width="5" opacity="${r2(0.05 + P.gloss * 0.12)}" filter="url(#${u}-s1)"/>`;
+    if (p.ovr == null && t !== "LEGEND") g += numberField(u, P, G, det, t);
     if (t !== "LEGEND") g += grooves(u, P, G, det, t);
     // the plate's curvature catching the light along its upper-left edge
     if (full)
@@ -914,9 +1025,11 @@
       if (det)
         g += `<path d="${G.lipEdge}" fill="none" stroke="#fffaf0" stroke-width=".8" opacity=".75" transform="translate(-.3 .5)"/>`;
     }
-    // the heel counter in the club's colour, keylined in its second colour
-    g += `<path d="${G.heel}" fill="none" stroke="${p.club.secondary}" stroke-width="11" stroke-linecap="butt"/>`;
-    g += `<path d="${G.heel}" fill="none" stroke="${p.club.primary}" stroke-width="9.4" stroke-linecap="butt"/>`;
+    // the heel counter in the club's colour, keylined in its second colour; with no club it is
+    // the plate's own material, keylined in the rim's tone, and carries no disc
+    const hc = p.club || { primary: mix(P.plate[1], "#000000", 0.3), secondary: "#cfc6b2" };
+    g += `<path d="${G.heel}" fill="none" stroke="${hc.secondary}" stroke-width="11" stroke-linecap="butt"/>`;
+    g += `<path d="${G.heel}" fill="none" stroke="${hc.primary}" stroke-width="9.4" stroke-linecap="butt"/>`;
     if (det) {
       // within-tier wear indicator: four notches moulded into the lateral rim (empty: no progress data in the sample)
       let w = "";
@@ -939,13 +1052,28 @@
       }
     }
     if (!thumb) g += boxPlate(u, P, G, det, t);
-    g += yearClock(u, P, G, !!p.founder, det, t);
-    // studs: every cast shadow in one blurred layer, then the bodies
+    if (p.founder || !onbMode(p)) g += yearClock(u, P, G, !!p.founder, det, t);
+    // studs: every cast shadow in one blurred layer, then the bodies. On the first-rating beat
+    // each stud is wrapped so it can seat itself (the wrappers draw nothing).
     const parts = STUDS[t].map((s) => stud(u, s, P, X, det));
+    // one by one, toe to heel: each stud's delay spreads the whole run over 380ms
+    const dly = beat === "first" ? seatDelays(STUDS[t]) : [];
+    const seat = (q, i, cls) =>
+      beat === "first" ? `<g class="c05v2-seat ${cls}" style="--d:${dly[i]}ms">${q}</g>` : q;
+    // the press leaves a ring in the plate round each seat (a few studs only; invisible at rest)
+    const rings = beat === "first" && parts.length <= 12;
+    const shadows = parts.map((q, i) => seat(q.sh.join(""), i, "is-sh")).join("");
     g += det
-      ? `<g filter="url(#${u}-sb)" opacity=".38">${parts.map((q) => q.sh.join("")).join("")}</g>`
-      : `<g opacity=".3">${parts.map((q) => q.sh.join("")).join("")}</g>`;
-    g += parts.map((q) => q.body.join("")).join("");
+      ? `<g filter="url(#${u}-sb)" opacity=".38">${shadows}</g>`
+      : `<g opacity=".3">${shadows}</g>`;
+    if (rings)
+      g += STUDS[t]
+        .map(
+          (s, i) =>
+            `<g class="c05v2-seat-ring" style="--d:${dly[i]}ms"><circle cx="${r1(X(s.x))}" cy="${s.y}" r="${s.t === "blade" ? 9 : s.r}" fill="none" stroke="${P.recess}" stroke-width="1.6"/></g>`,
+        )
+        .join("");
+    g += parts.map((q, i) => seat(q.body.join(""), i, "is-body")).join("");
     return g;
   }
 
@@ -994,7 +1122,78 @@
         `<text ${attrs} fill="${P.hi}" opacity="${P.ink === "#2c1603" ? 0.55 : 0.32}" transform="translate(${r2(-0.35 * k)} ${r2(-0.5 * k)})">${body}</text>`
       : "") + `<text ${attrs} fill="${P.ink}">${body}</text>`;
 
-  function words(u, p, o, P, G, full, thumb) {
+  /** A small moulded dash, a figure with no value yet: shadow below-right, lit edge above-left, face. */
+  const moulded = (cx, cy, w, h, P, det, k = 1) => {
+    const rect = (dx, dy, fill, op) =>
+      `<rect x="${r1(cx - w / 2 + dx)}" y="${r1(cy - h / 2 + dy)}" width="${w}" height="${h}" rx="${r1(h / 2)}" fill="${fill}"${op ? ` opacity="${op}"` : ""}/>`;
+    return (
+      (det
+        ? rect(0.5 * k, 0.75 * k, P.recess, 0.7) +
+          rect(-0.35 * k, -0.5 * k, P.hi, P.ink === "#2c1603" ? 0.55 : 0.32)
+        : "") + rect(0, 0, P.ink)
+    );
+  };
+
+  /** The name carrier with no name: a blank engraving field where the name will be moulded. */
+  function nameField(P, nx, ny, det) {
+    const w = 120,
+      h = 25;
+    const x = r1(nx - w / 2),
+      y = r1(ny - h + 3);
+    const rr = `x="${x}" y="${y}" width="${w}" height="${h}" rx="5"`;
+    return (
+      `<g class="c05v2-name-void">` +
+      `<rect ${rr} fill="#fff" opacity=".2" transform="translate(.6 .9)"/>` +
+      `<rect ${rr} fill="${P.recess}" opacity=".5"/>` +
+      (det
+        ? `<path d="M${x + 0.6} ${y + h - 4}V${y + 5}Q${x + 0.6} ${y + 0.6} ${x + 5} ${y + 0.6}H${r1(x + w - 5)}" fill="none" stroke="#000" stroke-width="1.2" opacity=".4"/>`
+        : "") +
+      `</g>`
+    );
+  }
+
+  /** The rounds counted so far, as slots hanging from the halfway groove under the dash: a raised
+      bar in the number's own ink where a round is counted, an engraved empty slot where not. They
+      fill from the inline start (the left on the French boot, the right on the mirrored Arabic
+      one). Slots, never studs: the studs are the tier. */
+  function tally(u, p, P, G, tl, det, legend, thumb, tick) {
+    const T = LAY.tally;
+    const pitch = Math.min(T.pitch, 100 / tl.n);
+    const w = r1(Math.min(T.w, pitch * 0.46));
+    const y = r1(LAY.cir.y + T.y);
+    const face = legend ? `url(#${u}-nf)` : `url(#${u}-ov)`;
+    let out = `<g class="c05v2-tally">`;
+    for (let i = 0; i < tl.n; i++) {
+      const x = r1(G.X(LAY.cir.x + (i - (tl.n - 1) / 2) * pitch) - w / 2);
+      const bar = (dx, dy, fill, extra = "") =>
+        `<rect${dx || dy ? "" : ` class="c05v2-mark ${i < tl.k ? "is-on" : "is-off"}"`} x="${r1(x + dx)}" y="${r1(y + dy)}" width="${w}" height="${T.h}" rx="2.2" fill="${fill}"${extra}/>`;
+      if (i < tl.k) {
+        // the newest counted round, on the tick beat: its mark presses into the groove
+        const press = tick && i === tl.k - 1;
+        const mx = r1(x + w / 2);
+        if (press)
+          out += `<path class="c05v2-glint" d="M${r1(mx - 15)} ${LAY.cir.y}H${r1(mx + 15)}" stroke="${P.hi}" stroke-width="2.4" stroke-linecap="round" fill="none"/>`;
+        out += press
+          ? `<g class="c05v2-press is-sh">${bar(1, 1.5, P.recess, ' opacity=".7"')}</g><g class="c05v2-press is-body">`
+          : bar(1, 1.5, P.recess, ' opacity=".7"');
+        if (!thumb) out += bar(-0.4, -0.55, P.hi, ' opacity=".4"');
+        out += bar(0, 0, face);
+        if (press) out += `</g>`;
+      } else {
+        out += bar(0.6, 0.9, "#fff", ` opacity="${p.tier === "HOMA" ? 0.5 : 0.3}"`);
+        // an engraved empty slot with a lit rim, so it reads as hollow against the plate
+        out += bar(
+          0,
+          0,
+          P.recess,
+          ` opacity=".92" stroke="${legend ? "#ffffff" : P.ink}" stroke-width="1.3" stroke-opacity=".85"`,
+        );
+      }
+    }
+    return out + `</g>`;
+  }
+
+  function words(u, p, o, P, G, full, thumb, beat) {
     const ar = MC.isAr(o);
     const S = MC.s(o);
     const X = G.X;
@@ -1004,13 +1203,21 @@
     const legend = p.tier === "LEGEND";
     let s = "";
 
-    // 1. the 84, moulded proud at the centre spot, inside the centre circle
+    // 1. the 84, moulded proud at the centre spot, inside the centre circle. With no number yet
+    //    the same moulding, in the same layers and ink, is a dash (the tally hangs under it).
+    const nullNum = p.ovr == null;
+    const tl = tallyOf(p);
     const ovr = String(p.ovr);
     const ofs = ovr.length > 2 ? 66 : LAY.ovr.fs;
     const ox = r1(X(LAY.cir.x)),
       oy = r1(LAY.cir.y + ofs * 0.32);
-    const ot = (dx, dy, fill, extra = "") =>
-      `<text class="c05v2-ov" x="${r1(ox + dx)}" y="${r1(oy + dy)}" font-size="${ofs}" fill="${fill}" text-anchor="middle" direction="ltr"${extra}>${ovr}</text>`;
+    const dsh = LAY.dash;
+    const dy0 = r1(LAY.cir.y + (tl.n ? dsh.up : 0) - dsh.h / 2);
+    const ot = nullNum
+      ? (dx, dy, fill, extra = "") =>
+          `<rect class="c05v2-dash" x="${r1(ox - dsh.w / 2 + dx)}" y="${r1(dy0 + dy)}" width="${dsh.w}" height="${dsh.h}" rx="${dsh.r}" fill="${fill}"${extra}/>`
+      : (dx, dy, fill, extra = "") =>
+          `<text class="c05v2-ov" x="${r1(ox + dx)}" y="${r1(oy + dy)}" font-size="${ofs}" fill="${fill}" text-anchor="middle" direction="ltr"${extra}>${ovr}</text>`;
     s += `<g class="c05v2-84">`;
     if (legend) {
       // machined numerals: a soft cast shadow, a short side wall in dark steel, a thin chamfer lit
@@ -1046,9 +1253,10 @@
       s += ot(0, 0, `url(#${u}-ov)`);
     }
     s += `</g>`;
+    if (tl.n) s += tally(u, p, P, G, tl, det, legend, thumb, beat === "tick");
 
     // 2. the name across the ball, the founder year after it in the plate's own material (ALI ·26)
-    const fy = p.founder ? `·${p.founder % 100}` : "";
+    const fy = p.founder && name ? `·${p.founder % 100}` : "";
     const ax = LAY.ax;
     const sp = span(LAY.nameY - 22),
       sp2 = span(LAY.nameY);
@@ -1064,14 +1272,19 @@
       : "";
     const nameBody = `<tspan font-size="${fs}">${esc(name)}</tspan>${yr ? " " + yr : ""}`;
     const nattr = `class="c05v2-nm${ar ? " is-ar" : ""}" x="${r1(nx)}" y="${r1(ny)}" text-anchor="middle"${dirA}`;
-    if (det) {
-      s += `<text ${nattr} fill="${P.recess}" opacity=".75" transform="translate(.8 1.2)">${nameBody.replace(/ fill="[^"]*"/, "")}</text>`;
-      s += `<text ${nattr} fill="${P.hi}" opacity="${t0(P)}" transform="translate(-.5 -.6)">${nameBody.replace(/ fill="[^"]*"/, "")}</text>`;
+    if (!name) {
+      // a guest before naming: the name carrier, drawn empty (a blank engraving field, no text)
+      s += nameField(P, nx, ny, det);
+    } else {
+      if (det) {
+        s += `<text ${nattr} fill="${P.recess}" opacity=".75" transform="translate(.8 1.2)">${nameBody.replace(/ fill="[^"]*"/, "")}</text>`;
+        s += `<text ${nattr} fill="${P.hi}" opacity="${t0(P)}" transform="translate(-.5 -.6)">${nameBody.replace(/ fill="[^"]*"/, "")}</text>`;
+      }
+      s += `<text ${nattr} fill="${legend ? P.ink : P.ink}">${nameBody}</text>`;
     }
-    s += `<text ${nattr} fill="${legend ? P.ink : P.ink}">${nameBody}</text>`;
 
-    // 3. the tier, a moulded tag of its own under the name
-    if (!thumb) {
+    // 3. the tier, a moulded tag of its own under the name (none before a rating: no tier word)
+    if (!thumb && p.tier !== null) {
       const tierTxt = S.tiers[p.tier];
       const tfs = ar ? 10.5 : 8.6;
       const tw = r1(
@@ -1127,9 +1340,20 @@
         const y = base[(i / 2) | 0];
         const lab = `class="c05v2-sl${ar ? " is-ar" : ""}" x="${r1(lx)}" y="${y}" font-size="${lfs}" text-anchor="${la}" direction="ltr"`;
         const val = `class="c05v2-sv" x="${r1(vx)}" y="${y}" font-size="${vfs}" text-anchor="${va}" direction="ltr"`;
-        s +=
-          `<g opacity=".7">${raised(lab, esc(S.stats[k]), P, det, 0.8)}</g>` +
-          raised(val, String(p.stats[k]), P, det, 1);
+        const sv = p.stats ? p.stats[k] : undefined;
+        // a stat with no value yet is a dash in its figure's place, centred in the figure's slot
+        const figure =
+          sv == null
+            ? moulded(
+                r1(va === "start" ? vx + vw / 2 : vx - vw / 2),
+                r1(y - vfs * 0.36),
+                9,
+                2.4,
+                P,
+                det,
+              )
+            : raised(val, String(sv), P, det, 1);
+        s += `<g opacity=".7">${raised(lab, esc(S.stats[k]), P, det, 0.8)}</g>` + figure;
       });
     }
 
@@ -1145,18 +1369,23 @@
         const fb = `<textPath href="#${u}-fa" startOffset="50%" text-anchor="middle">${esc(S.founderLine)}</textPath>`;
         s += raised(fl, fb, P, det, 0.9);
       }
-      // 6. the style code: the BotolaGO ID moulded under the clock, the country under it
-      s += raised(
-        `class="c05v2-id" x="${wx}" y="${LAY.idY}" font-size="7.8" text-anchor="middle" direction="ltr"`,
-        esc(p.id),
-        P,
-        det,
-        0.8,
-      );
+      // 6. the style code: the BotolaGO ID moulded under the clock, the country under it. With no
+      //    ID yet the carrier holds a dash (no sentence, no placeholder text).
+      s +=
+        p.id == null
+          ? moulded(wx, LAY.idY - 2.9, 16, 2.6, P, det, 0.8)
+          : raised(
+              `class="c05v2-id" x="${wx}" y="${LAY.idY}" font-size="7.8" text-anchor="middle" direction="ltr"`,
+              esc(p.id),
+              P,
+              det,
+              0.8,
+            );
       s += `<g opacity=".8">${raised(`class="c05v2-ct${ar ? " is-ar" : ""}" x="${wx}" y="${LAY.ctY}" font-size="${ar ? 8.4 : 6.8}" text-anchor="middle"${dirA}`, esc(S.country), P, det, 0.7)}</g>`;
-      // 7. the club crest, stamped inside the heel cup
+      // 7. the club crest, stamped inside the heel cup (no club, no crest)
       const cw2 = LAY.crest.w;
-      s += `<svg x="${r1(X(LAY.crest.x) - cw2 / 2)}" y="${r1(LAY.crest.y - cw2 * 0.6)}" width="${cw2}" height="${r1(cw2 * 1.2)}" viewBox="0 0 40 48" aria-hidden="true" opacity=".85">${MC.crest({ mono: P.ink }).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
+      if (p.club !== null)
+        s += `<svg x="${r1(X(LAY.crest.x) - cw2 / 2)}" y="${r1(LAY.crest.y - cw2 * 0.6)}" width="${cw2}" height="${r1(cw2 * 1.2)}" viewBox="0 0 40 48" aria-hidden="true" opacity=".85">${MC.crest({ mono: P.ink }).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</svg>`;
       // 8. the season, a second production mark following the toe (re-drawn left to right in Arabic)
       const q = LAY.season.map(([a, b2]) => [r1(X(a)), b2]);
       if (ar) q.reverse();
@@ -1171,17 +1400,20 @@
   function full(p, o = {}) {
     const ar = MC.isAr(o);
     const S = MC.s(o);
-    const t = TIER[p.tier] ? p.tier : "PRO";
+    const t = tierKey(p);
     const P = TIER[t];
     const u = MC.uid("c05v2");
     const thumb = !!o.thumb;
     const G = geo(ar);
+    // one optional beat (CSS only, off under reduced motion): "make" hangs the plate, "first"
+    // seats the tier's studs, "tick" presses the newest counted round into the groove
+    const beat = ["make", "first", "tick"].includes(o.beat) && !thumb ? o.beat : "";
     return (
-      `<div class="c05v2 c05v2-full t-${t.toLowerCase()}${thumb ? " is-thumb" : ""}${o.motion ? " is-motion" : ""}" dir="${S.dir}" lang="${ar ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${t}">` +
+      `<div class="c05v2 c05v2-full t-${t.toLowerCase()}${thumb ? " is-thumb" : ""}${o.motion ? " is-motion" : ""}${beat ? " is-beat-" + beat : ""}" dir="${S.dir}" lang="${ar ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${t}">` +
       `<svg class="c05v2-svg" viewBox="0 -8 263 666" aria-hidden="true" focusable="false">` +
       defs(u, t, P, G, !thumb) +
-      solid(u, t, P, p, G, true, thumb) +
-      `<g class="c05v2-words">${words(u, p, o, P, G, true, thumb)}</g>` +
+      solid(u, t, P, p, G, true, thumb, beat) +
+      `<g class="c05v2-words">${words(u, p, o, P, G, true, thumb, beat)}</g>` +
       `</svg></div>`
     );
   }
@@ -1236,6 +1468,17 @@
     LEGEND: [Lx(84, -2), Rx(90, -2), Lx(236, -1), Rx(240, -1), Lx(584, 0), Rx(584, 0)].map(
       ([x, y]) => ({ t: "big", x, y, r: 25 }),
     ),
+    // the base plate's bare mounts: the forefoot six at token scale and the heel pair
+    BASE: [
+      Lx(70, 28),
+      Lx(236, 26),
+      Rx(76, 28),
+      Rx(240, 26),
+      Lx(150, 22),
+      Rx(156, 22),
+      Lx(600, 34),
+      Rx(600, 34),
+    ].map(([x, y]) => ({ t: "socket", x, y, r: 19 })),
   };
   let TNUBS = null;
   function tokNubs() {
@@ -1293,6 +1536,11 @@
           ),
       };
     }
+    if (s.t === "socket")
+      return {
+        sh: `<circle cx="${r1(cx + 3)}" cy="${r1(cy + 5)}" r="${r}"/>`,
+        st: `<circle cx="${r1(cx + 1.8)}" cy="${r1(cy + 2.8)}" r="${r}" fill="${P.stud[2]}"/><circle cx="${r1(cx)}" cy="${r1(cy)}" r="${r}" fill="${P.topTok}"/><circle cx="${r1(cx + 0.8)}" cy="${r1(cy + 1.2)}" r="${r1(r * 0.48)}" fill="${P.recess}"/>`,
+      };
     if (s.t === "ring")
       return {
         sh: `<circle cx="${r1(cx + 3)}" cy="${r1(cy + 4)}" r="${r}"/>`,
@@ -1313,14 +1561,78 @@
       ? `<pattern id="${u}-tw" width="${cell * 2}" height="${cell * 2}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="${cell * 2}" height="${cell * 2}" fill="#16191e"/><rect width="${cell}" height="${cell}" fill="#3a4049"/><rect x="${cell}" y="${cell}" width="${cell}" height="${cell}" fill="#3a4049"/></pattern>`
       : "");
 
+  /** The token's number carrier with no number: the moulded dash, and the tally of counted rounds
+      hanging under it (same marks as the card, fatter for 44-80px). Token space, upright. */
+  function tokenBlank(p, P, t, cx, cy, ar, tl, tick) {
+    const legend = t === "LEGEND";
+    const ink = legend ? "#ffffff" : P.ink;
+    const D = { w: 100, h: 26, r: 6 };
+    const dcy = cy + (tl.n ? -33 : 0);
+    const rect = (x, y, w, h, r, fill, extra = "", cls = "") =>
+      `<rect${cls ? ` class="${cls}"` : ""} x="${r1(x)}" y="${r1(y)}" width="${w}" height="${h}" rx="${r}" fill="${fill}"${extra}/>`;
+    let out =
+      rect(cx - D.w / 2 + 3, dcy - D.h / 2 + 5, D.w, D.h, D.r, mix(P.side, "#000000", 0.25)) +
+      rect(
+        cx - D.w / 2,
+        dcy - D.h / 2,
+        D.w,
+        D.h,
+        D.r,
+        ink,
+        ` stroke="${P.recess}" stroke-width="12" paint-order="stroke" stroke-linejoin="round"`,
+        "c05v2-dash",
+      );
+    if (tl.n) {
+      const pitch = Math.min(36, 190 / tl.n);
+      const w = r1(Math.min(24, pitch * 0.62)),
+        h = 46,
+        y = cy + 4;
+      for (let i = 0; i < tl.n; i++) {
+        const x = cx + (ar ? -1 : 1) * (i - (tl.n - 1) / 2) * pitch - w / 2;
+        if (i < tl.k) {
+          const press = tick && i === tl.k - 1;
+          const sh = rect(x + 2.4, y + 4, w, h, 4, P.recess, ' opacity=".7"');
+          const face = rect(
+            x,
+            y,
+            w,
+            h,
+            4,
+            ink,
+            ` stroke="${P.recess}" stroke-width="6" paint-order="stroke" stroke-linejoin="round"`,
+            "c05v2-mark is-on",
+          );
+          out += press
+            ? `<g class="c05v2-press is-sh">${sh}</g><g class="c05v2-press is-body">${face}</g>`
+            : sh + face;
+        } else {
+          out +=
+            rect(x + 2, y + 3, w, h, 4, "#ffffff", ' opacity=".3"') +
+            rect(
+              x,
+              y,
+              w,
+              h,
+              4,
+              P.recess,
+              ` opacity=".92" stroke="${ink}" stroke-width="4.5" stroke-opacity=".75"`,
+              "c05v2-mark is-off",
+            );
+        }
+      }
+    }
+    return out;
+  }
+
   function token(p, o = {}) {
     const size = o.size || 44;
     const mini = !!o.mini || size <= 32;
     if (mini) return miniToken(p, o, size);
     const ar = MC.isAr(o);
-    const t = TIER[p.tier] ? p.tier : "PRO";
+    const t = tierKey(p);
     const P = TIER[t];
     const u = MC.uid("c05v2t");
+    const beat = ["first", "tick"].includes(o.beat) ? o.beat : "";
     const w = TW;
     const X = (x) => (ar ? w - x : x);
     const TG = tokGeo();
@@ -1337,9 +1649,11 @@
     if (t === "LEGEND") shape += `<path d="${TG.D}" fill="#9fb8c4" fill-opacity=".45"/>`;
     shape += `<path d="${TG.D}" fill="none" stroke="${t === "LEGEND" ? "#3a424b" : t === "HOMA" ? "#8a5a1e" : "#a39a86"}" stroke-width="${rimW + 4}"/>`;
     shape += `<path d="${TG.D}" fill="none" stroke="${t === "LEGEND" ? `url(#${u}-s)` : RIM}" stroke-width="${rimW}"/>`;
-    // the heel counter in the club colour (rule 8: visible on the 44px token), keylined
-    shape += `<path d="${TG.heel}" fill="none" stroke="${p.club.secondary}" stroke-width="${rimW + 10}" stroke-linecap="round"/>`;
-    shape += `<path d="${TG.heel}" fill="none" stroke="${p.club.primary}" stroke-width="${rimW + 2}" stroke-linecap="round"/>`;
+    // the heel counter in the club colour (rule 8: visible on the 44px token), keylined; with no
+    // club it is the plate's own material and carries no disc
+    const hc = p.club || { primary: mix(P.plate[1], "#000000", 0.3), secondary: "#cfc6b2" };
+    shape += `<path d="${TG.heel}" fill="none" stroke="${hc.secondary}" stroke-width="${rimW + 10}" stroke-linecap="round"/>`;
+    shape += `<path d="${TG.heel}" fill="none" stroke="${hc.primary}" stroke-width="${rimW + 2}" stroke-linecap="round"/>`;
     if (t === "LEGEND")
       shape += `<path d="${TG.toe}" fill="url(#${u}-s)" stroke="#3d4650" stroke-width="3"/>`;
     const g = mir(shape);
@@ -1347,12 +1661,17 @@
     const list = t === "HOMA" ? tokNubs() : TSTUD[t];
     let sh = "",
       st = "";
-    for (const s of list) {
+    const dly = beat === "first" ? seatDelays(list) : [];
+    list.forEach((s, i) => {
       const [cx0, cy] = tokP(s.x, s.y);
       const e = emblem(s, X(cx0), cy, P, u, ar, 90, TH / size);
       sh += e.sh;
-      st += e.st;
-    }
+      // the first-rating beat seats the studs one by one, toe to heel (a few emblems only)
+      st +=
+        beat === "first" && list.length <= 12
+          ? `<g class="c05v2-seat is-body" style="--d:${dly[i]}ms">${e.st}</g>`
+          : e.st;
+    });
     // the founder sign: the machined steel insert ring and its dial in the heel
     const [wx0, wy] = tokP(LAY.wheel.x, LAY.wheel.y);
     const fx = r1(X(wx0)),
@@ -1364,7 +1683,9 @@
         `<circle cx="${fx}" cy="${fy}" r="${rD}" fill="${P.plate[1]}"/><circle cx="${fx}" cy="${fy}" r="${R}" fill="none" stroke="#3d4650" stroke-width="2"/>` +
         // the dial's arrow points at the toe, where 26 sits
         `<path d="M${r1(fx - (ar ? -1 : 1) * 11)} ${fy}H${r1(fx + (ar ? -1 : 1) * 6)}" stroke="${P.ink}" stroke-width="6" stroke-linecap="round"/><path d="M${r1(fx + (ar ? -1 : 1) * 3)} ${r1(fy - 9)}L${r1(fx + (ar ? -1 : 1) * 15)} ${fy}L${r1(fx + (ar ? -1 : 1) * 3)} ${r1(fy + 9)}Z" fill="${P.ink}"/>`
-      : `<circle cx="${fx}" cy="${fy}" r="${rD + 3}" fill="none" stroke="${P.recess}" stroke-width="5" opacity=".5"/>`;
+      : onbMode(p)
+        ? ""
+        : `<circle cx="${fx}" cy="${fy}" r="${rD + 3}" fill="none" stroke="${P.recess}" stroke-width="5" opacity=".5"/>`;
     // the 84 across the forefoot
     const ovr = String(p.ovr);
     const ofs = ovr.length > 2 ? TOVR.fs * 0.78 : TOVR.fs;
@@ -1375,14 +1696,17 @@
       `<text class="c05v2-ov" x="${r1(ocx + 3)}" y="${r1(ocy + ofs * 0.32 + 5)}" font-size="${ofs}" text-anchor="middle" fill="${mix(P.side, "#000000", 0.25)}">${ovr}</text>` +
       `<text class="c05v2-ov" x="${r1(ocx)}" y="${r1(ocy + ofs * 0.32)}" font-size="${ofs}" text-anchor="middle" fill="${legend ? "#ffffff" : P.ink}" stroke="${t === "HOMA" ? "#f7deb2" : P.recess}" stroke-width="12" paint-order="stroke" stroke-linejoin="round">${ovr}</text>`;
     const wpx = r1((w / TH) * size);
+    // no number yet: a dash across the forefoot with the rounds counted hanging under it
+    const num =
+      p.ovr == null ? tokenBlank(p, P, t, X(ocx0), ocy, ar, tallyOf(p), beat === "tick") : ovText;
     return (
-      `<span class="c05v2 c05v2-tok t-${t.toLowerCase()}" style="width:${wpx}px;height:${size}px" role="img" aria-label="${esc(MC.label(p, o))}">` +
+      `<span class="c05v2 c05v2-tok t-${t.toLowerCase()}${beat ? " is-beat-" + beat : ""}" style="width:${wpx}px;height:${size}px${beat ? `;--c05v2-k:${r1((TH / size) * 0.76)}` : ""}" role="img" aria-label="${esc(MC.label(p, o))}">` +
       `<svg viewBox="0 ${TY0} ${w} ${TH}" width="${wpx}" height="${size}" aria-hidden="true" focusable="false"><defs>${tokDefs(u, t, P, cell)}</defs>` +
       g +
       `<g fill="#000" opacity=".3">${sh}</g>` +
       st +
       ring +
-      ovText +
+      num +
       `</svg></span>`
     );
   }
@@ -1411,6 +1735,8 @@
         y,
         r: 19,
       })),
+      // no tier: four bare mounts, the toe pair and the cut pair
+      BASE: [...toe, ...low].map(([x, y]) => ({ t: "socket", x, y, r: 15 })),
     };
   })();
   const MBOX = { x0: 0, y0: -12, w: 263, h: 274 };
@@ -1432,7 +1758,7 @@
 
   function miniToken(p, o, size) {
     const ar = MC.isAr(o);
-    const t = TIER[p.tier] ? p.tier : "PRO";
+    const t = tierKey(p);
     const P = TIER[t];
     const u = MC.uid("c05v2m");
     const X = (x) => (ar ? MIRROR - x : x);
@@ -1463,9 +1789,17 @@
     const ox = r1(X(132)),
       oy = r1(129 + ofs * 0.32);
     const legend = t === "LEGEND";
+    // no number yet: the dash stays (the tally drops out at this size)
+    const dw = 84,
+      dh = 28,
+      dx = r1(ox - dw / 2),
+      dyy = r1(129 - dh / 2);
     const ovText =
-      `<text class="c05v2-ov" x="${r1(ox + 4)}" y="${r1(oy + 6)}" font-size="${ofs}" text-anchor="middle" fill="${mix(P.side, "#000000", 0.25)}">${ovr}</text>` +
-      `<text class="c05v2-ov" x="${ox}" y="${oy}" font-size="${ofs}" text-anchor="middle" fill="${legend ? "#ffffff" : P.ink}" stroke="${t === "HOMA" ? "#f7deb2" : P.recess}" stroke-width="16" paint-order="stroke" stroke-linejoin="round">${ovr}</text>`;
+      p.ovr == null
+        ? `<rect x="${r1(dx + 4)}" y="${r1(dyy + 6)}" width="${dw}" height="${dh}" rx="7" fill="${mix(P.side, "#000000", 0.25)}"/>` +
+          `<rect class="c05v2-dash" x="${dx}" y="${dyy}" width="${dw}" height="${dh}" rx="7" fill="${legend ? "#ffffff" : P.ink}" stroke="${P.recess}" stroke-width="16" paint-order="stroke" stroke-linejoin="round"/>`
+        : `<text class="c05v2-ov" x="${r1(ox + 4)}" y="${r1(oy + 6)}" font-size="${ofs}" text-anchor="middle" fill="${mix(P.side, "#000000", 0.25)}">${ovr}</text>` +
+          `<text class="c05v2-ov" x="${ox}" y="${oy}" font-size="${ofs}" text-anchor="middle" fill="${legend ? "#ffffff" : P.ink}" stroke="${t === "HOMA" ? "#f7deb2" : P.recess}" stroke-width="16" paint-order="stroke" stroke-linejoin="round">${ovr}</text>`;
     // founder: a steel dot (at least 3px) sitting on the cut, like the centre spot on the halfway line
     const fr = r1((1.75 * MBOX.h) / size);
     // the bead sits in a dark socket ring, so it holds on LEGEND's light steel as well as on navy
@@ -1498,14 +1832,20 @@
   function row(p, o = {}) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    const t = TIER[p.tier] ? p.tier : "PRO";
+    const t = tierKey(p);
     const yr = founderYear(p);
+    const name = MC.nameOf(p, o);
+    // under the name: tier and number, or, while forming, « en formation k/N » in the number's place
+    const sub =
+      p.ovr == null
+        ? `${esc(MC.onbStr(o).forming)}${p.minRated ? ` <em>${MC.ltr((p.counted | 0) + "/" + p.minRated)}</em>` : ""}`
+        : `${p.tier === null ? "" : `<em>${esc(S.tiers[t])}</em> `}${MC.ltr(p.ovr + " " + S.ovr)}`;
     return (
       `<div class="c05v2 c05v2-row t-${t.toLowerCase()}${o.me ? " is-me" : ""}" dir="${S.dir}" lang="${ar ? "ar" : "en"}">` +
       `<span class="c05v2-rk">${MC.ltr(o.rank != null ? o.rank : "")}</span>` +
       `<span class="c05v2-rt">${token(p, { ...o, size: 44, mini: false })}</span>` +
-      `<span class="c05v2-rw"><b class="${ar ? "is-ar" : ""}">${esc(MC.nameOf(p, o))}${yr}</b>` +
-      `<small><em>${esc(S.tiers[t])}</em> ${MC.ltr(p.ovr + " " + S.ovr)}</small></span>` +
+      `<span class="c05v2-rw">${name ? `<b class="${ar ? "is-ar" : ""}">${esc(name)}${yr}</b>` : `<b class="is-void" aria-hidden="true"></b>`}` +
+      `<small>${sub}</small></span>` +
       `<span class="c05v2-rp">${MC.ltr(o.pts != null ? o.pts : "")}<small>${esc(S.pts)}</small></span>` +
       `</div>`
     );
@@ -1518,7 +1858,7 @@
   function share(p, o = {}) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    const t = TIER[p.tier] ? p.tier : "PRO";
+    const t = tierKey(p);
     const u = MC.uid("c05v2s");
     // the print a sole leaves is its mirror image: the stud marks of this boot, pressed into the turf
     // the print keeps the story's 24px margin on its outer side
@@ -1581,9 +1921,12 @@
       `<rect width="360" height="640" fill="url(#${u}-vg)"/>` +
       `</svg>` +
       `<div class="c05v2-sh-logo">${MC.logo("wordmark", { variant: "light" })}</div>` +
-      `<div class="c05v2-sh-card">${full(p, { ...o, motion: false })}</div>` +
-      `<div class="c05v2-sh-cap"><b class="${ar ? "is-ar" : ""}">${esc(name)}${founderYear(p)}</b>` +
-      `<span><em>${esc(S.tiers[t])}</em> ${MC.ltr(p.season)}</span></div>` +
+      `<div class="c05v2-sh-card">${full(p, { ...o, motion: false, beat: undefined })}</div>` +
+      `<div class="c05v2-sh-cap">${name ? `<b class="${ar ? "is-ar" : ""}">${esc(name)}${founderYear(p)}</b>` : `<b class="is-void" aria-hidden="true"></b>`}` +
+      `<span>${p.tier === null ? "" : `<em>${esc(S.tiers[t])}</em> `}${MC.ltr(p.season)}</span>` +
+      // a provisional number says so on the image itself, in text
+      (p.provisional ? `<span class="c05v2-sh-prov">${PROV[ar ? "ar" : "lat"]}</span>` : "") +
+      `</div>` +
       `</div>`
     );
   }

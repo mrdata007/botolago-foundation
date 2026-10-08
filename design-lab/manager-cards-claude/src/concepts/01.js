@@ -9,7 +9,14 @@
    a neighbourhood pitch (STADE), white steel tubes with a knotted net in club colour (PRO),
    a powder-coated box goal (CHAMPION), and the same box goal with the ball lodged for good
    in the top corner, its net bag breaking the outline (LEGEND).
-   The goal is an object, so it never mirrors in Arabic; the 84 stays top-right. */
+   The goal is an object, so it never mirrors in Arabic; the 84 stays top-right.
+   Onboarding states (CONTRACT.md): a card with no number yet is the same goal in its base
+   material (plain tubes, a plain net, no tier word, no club colour in the cords), with a dash where
+   the 84 will go in the top corner, k of N chalk tallies on the start post and the ID's dash on the
+   back of the bar. Three optional beats, only when o.beat is set and never under reduced motion:
+   "make" chalks the goal on the wall (posts, bar, net lines, chalk dust), "first" sends the ball
+   into the top corner where the 84 already sits (net bulge, one-beat freeze), "tick" chalks one
+   more tally on the post. */
 (function () {
   const MC = window.MC;
   const esc = MC.esc;
@@ -18,6 +25,14 @@
     typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   /* Unicode isolates keep Latin codes and dates left-to-right inside Arabic SVG text. */
   const iso = (s) => "⁦" + esc(s) + "⁩";
+  const DASH = "\u2014";
+  /* The chalk hand is seeded from the serial; with no serial yet it is this fixed seed, never random. */
+  const SEED_FALLBACK = 7;
+  const seedOf = (p) => parseInt(p.serial, 10) || SEED_FALLBACK;
+  /* The club's colours as CSS variables; a card with no club keeps the object's own material. */
+  const clubVars = (p, both) =>
+    p.club ? `--c01-club:${p.club.primary}${both ? `;--c01-club2:${p.club.secondary}` : ""}` : "";
+  const val = (x) => (x == null ? DASH : x);
 
   /* ---------- text measure (names are fitted, never left to run under the 84) ---------- */
   // Ask for the Arabic faces now, so the page's fonts.ready waits for them and the first render measures real glyphs.
@@ -59,6 +74,7 @@
     Z: 0.59,
     " ": 0.2,
     "-": 0.35,
+    "\u2014": 0.8,
     0: 0.67,
     1: 0.53,
     2: 0.59,
@@ -356,6 +372,20 @@
   // STADE hangs nothing: rigid flat chain-link (no bulge), tight pitch. PRO is soft nylon: it bulges round the
   // 84 and sags between its ties. LEGEND is the heaviest: a braided net at a fine pitch, closed all round.
   const TIER = {
+    // No rating yet: the goal as put up, before the ladder. Plain tubes, a plain square mesh in the
+    // net's own neutral, no knots, no sag, no pull toward a pocket nothing has gone into.
+    BASE: {
+      k: "base",
+      cords: 0,
+      net: "square",
+      pitch: 13,
+      planes: box(48, 48),
+      pinch: 0,
+      sigma: 40,
+      cord: 0.8,
+      steel: true,
+      plain: true,
+    },
     HOMA: { k: "homa", cords: 0 },
     STADE: {
       k: "stade",
@@ -411,7 +441,7 @@
       braid: true,
     },
   };
-  const tierOf = (p) => TIER[p.tier] || TIER.PRO;
+  const tierOf = (p) => (p.tier == null ? TIER.BASE : TIER[p.tier] || TIER.PRO);
 
   /** The net as projected polylines, pulled toward the pocket (and, while tapped, toward the tap). */
   function buildNet(spec, opt = {}) {
@@ -461,7 +491,7 @@
         dev = Math.max(dev, Math.abs(Q[0] - P[0]) + Math.abs(Q[1] - P[1]));
         pts.push(Q);
       }
-      const use = dev < 0.25 ? [pts[0], pts[pts.length - 1]] : pts;
+      const use = dev < 0.25 && !opt.full ? [pts[0], pts[pts.length - 1]] : pts;
       d += "M" + use.map((P) => r1(P[0]) + " " + r1(P[1])).join("L");
     };
     const withKnots = spec.knot && !opt.noKnots;
@@ -552,6 +582,14 @@
     `<feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="1" seed="31" result="g"/>` +
     `<feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 16 0 0 0 -4" result="ga"/>` +
     `<feComposite in="SourceGraphic" in2="ga" operator="in"/></filter>`;
+  /** Chalk dust for the onboarding beats: a hair of edge wobble and a speckled grain, over the whole card. */
+  const chalkDust = (id) =>
+    `<filter id="${id}" filterUnits="userSpaceOnUse" x="-4" y="-4" width="${VW + 8}" height="${VH + 8}" color-interpolation-filters="sRGB">` +
+    `<feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="9" result="n"/>` +
+    `<feDisplacementMap in="SourceGraphic" in2="n" scale="1.2" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
+    `<feTurbulence type="fractalNoise" baseFrequency="1.25" numOctaves="1" seed="23" result="g"/>` +
+    `<feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 5 -1.1" result="ga"/>` +
+    `<feComposite in="d" in2="ga" operator="in"/></filter>`;
   const blur = (id, sd) =>
     `<filter id="${id}" x="-30%" y="-150%" width="160%" height="400%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="${sd}"/></filter>`;
   /** Feathers the net's clearance round the name and tier, so it reads as the net thinning out, not a plate. */
@@ -608,14 +646,14 @@
     const ar = MC.isAr(o);
     const items = MC.STATS.map(
       (k) =>
-        `<tspan class="c01-sl-l">${esc(S.stats[k])}</tspan> <tspan class="c01-sl-v">${p.stats[k]}</tspan>`,
+        `<tspan class="c01-sl-l">${esc(S.stats[k])}</tspan> <tspan class="c01-sl-v">${val(p.stats[k])}</tspan>`,
     );
     const sep = `<tspan class="c01-sl-d"> · </tspan>`;
     const full = ar
       ? `<text x="180" y="${y}" class="c01-sl c01-sl-ar ${cls}" text-anchor="middle" direction="rtl">${items.join(sep)}</text>`
       : `<text x="180" y="${y}" class="c01-sl ${cls}" text-anchor="middle">${items.join(sep)}</text>`;
     // small cards: the four values alone, larger, in the same reading order
-    const vals = (ar ? [...MC.STATS].reverse() : MC.STATS).map((k) => p.stats[k]).join(" · ");
+    const vals = (ar ? [...MC.STATS].reverse() : MC.STATS).map((k) => val(p.stats[k])).join(" · ");
     const short = `<text x="180" y="${r1(y + 2)}" class="c01-slv ${cls}" text-anchor="middle" direction="ltr">${vals}</text>`;
     return full + short;
   }
@@ -770,6 +808,27 @@
           1,
         ) +
         grain(`${u}-powder`, 1.1, 0.14, 0.94, 9, 1);
+    if (tk === "base")
+      d +=
+        lin(`${u}-tube`, [
+          [0, "#d3dae2"],
+          [0.32, "#ffffff"],
+          [0.66, "#f0f3f5"],
+          [1, "#c3ccd6"],
+        ]) +
+        lin(
+          `${u}-barg`,
+          [
+            [0, "#ffffff"],
+            [0.5, "#f4f6f8"],
+            [1, "#d5dce3"],
+          ],
+          0,
+          1,
+        );
+    // chalk for the tallies (HOMA already has it), and the dustier chalk of the "make" beat
+    if (F.chalk && tk !== "homa") d += chalkLine(`${u}-chalk`);
+    if (F.dust) d += chalkDust(`${u}-dust`);
     return d;
   }
 
@@ -779,7 +838,7 @@
     const flat = !!(F.flat || F.thumb);
     if (tk === "homa") {
       // a goal chalked on the wall: one clean 5u line, fresh, never smudged
-      const rand = rng(parseInt(p.serial, 10) || 7);
+      const rand = rng(seedOf(p));
       const xa = L + PW / 2;
       const xb = R - PW / 2;
       const yb = BAR.y0 + 2.5;
@@ -791,7 +850,7 @@
         `<g class="c01-frameg">` +
         `<path d="${d}" class="c01-chalk" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"${flat ? "" : ` filter="url(#${u}-chalk)"`}/>` +
         (thumb ? "" : statLine(p, o, "c01-chalkf", 52)) +
-        (thumb ? "" : sticker(p, 334, 190, false)) +
+        (thumb || !p.club ? "" : sticker(p, 334, 190, false)) +
         `</g>`
       );
     }
@@ -812,12 +871,14 @@
     } else {
       const fx = steel
         ? ` filter="url(#${u}-spangle)"`
-        : tk === "pro"
+        : tk === "pro" || tk === "base"
           ? ""
           : ` filter="url(#${u}-powder)"`;
+      // "make": each tube is revealed behind the chalk stroke that draws it (see the beat in 01.css)
+      const pc = (c) => (F.beat === "make" ? ` class="${c}"` : "");
       s +=
-        `<g${fx}><rect x="${L}" y="${BAR.y0}" width="${PW}" height="${H}" fill="url(#${u}-tube)"/><rect x="${R - PW}" y="${BAR.y0}" width="${PW}" height="${H}" fill="url(#${u}-tube)"/>` +
-        `<rect x="${L}" y="${BAR.y0}" width="${R - L}" height="24" fill="url(#${u}-barg)"/></g>`;
+        `<g${fx}><rect${pc("c01-pl1")} x="${L}" y="${BAR.y0}" width="${PW}" height="${H}" fill="url(#${u}-tube)"/><rect${pc("c01-pl2")} x="${R - PW}" y="${BAR.y0}" width="${PW}" height="${H}" fill="url(#${u}-tube)"/>` +
+        `<rect${pc("c01-bar1")} x="${L}" y="${BAR.y0}" width="${R - L}" height="24" fill="url(#${u}-barg)"/></g>`;
       if (steel) {
         // white enamel painted along the galvanised bar, welds at the joints
         s += `<rect x="${L + 6}" y="${BAR.y0 + 4}" width="${R - L - 12}" height="15" rx="1" fill="#f2f4f6"/><rect x="${L + 6}" y="${BAR.y0 + 18.2}" width="${R - L - 12}" height=".8" fill="#c9d2dc"/>`;
@@ -844,8 +905,8 @@
     }
     if (!thumb) s += statLine(p, o, "c01-paint");
     if (tk === "champion" && !thumb) s += glint(R - 4, 72, 6) + glint(R - 26, BAR.y0 + 3, 5);
-    if (!thumb && steel) s += tape(p);
-    if (!thumb) s += sticker(p, POST_END, 179, true);
+    if (!thumb && steel && p.club) s += tape(p);
+    if (!thumb && p.club) s += sticker(p, POST_END, 179, true);
     return `<g class="c01-frameg">${s}</g>`;
   }
 
@@ -888,8 +949,12 @@
     const ink = tk === "homa" ? "c01-chalkf" : "c01-ink";
     const draw = [];
     const knock = [];
-    // the 84 keeps a hard 6u halo in the net
-    const t84 = `<text x="${POCKET.x}" y="152" class="c01-84 ${ink}" text-anchor="middle"${fx}>${p.ovr}</text>`;
+    // the 84 keeps a hard 6u halo in the net; with no number yet the same Changa dash takes its place,
+    // right-aligned to where the 84 ends, in the top corner, lifted to the figures' mid-height
+    const t84 =
+      p.ovr == null
+        ? `<text x="${r1(POCKET.x + (emWidth("84", F_NAME) * 104) / 2)}" y="145" class="c01-84 c01-dash ${ink}" text-anchor="end"${fx}>${DASH}</text>`
+        : `<text x="${POCKET.x}" y="152" class="c01-84 ${ink}" text-anchor="middle"${fx}>${p.ovr}</text>`;
     draw.push(t84);
     knock.push(
       t84
@@ -901,32 +966,34 @@
     );
     if (!thumb) {
       const L = nameLayout(p, o);
-      const tierTxt = esc(S.tiers[p.tier]);
+      const tierTxt = L.hasTier ? esc(S.tiers[p.tier]) : "";
       const tl = (ln) =>
         ln.tl ? ` textLength="${r1(ln.tl)}" lengthAdjust="spacingAndGlyphs"` : "";
-      if (ar) {
-        const spans = L.lines
-          .map(
-            (ln) =>
-              `<tspan x="${L.edge}" y="${r1(ln.y)}" style="font-size:${r1(L.fs)}px"${tl(ln)}>${esc(ln.txt)}</tspan>`,
-          )
-          .join("");
+      const spans = L.lines
+        .map(
+          (ln) =>
+            `<tspan x="${L.edge}" y="${r1(ln.y)}" style="font-size:${r1(L.fs)}px"${tl(ln)}>${esc(ln.txt)}</tspan>`,
+        )
+        .join("");
+      if (L.empty) {
+        // no name yet: the carrier is drawn empty, a painted rule on the line the name will sit on
+        const rx = ar ? L.edge - L.w : L.edge;
+        draw.push(
+          `<rect class="c01-nrule ${ink}" x="${r1(rx)}" y="${r1(L.lines[0].y - 3.4)}" width="${r1(L.w)}" height="3.4" rx="1.7"${fx}/>`,
+        );
+      } else if (ar) {
         draw.push(
           `<text class="c01-name ${ink}" direction="rtl" text-anchor="start"${fx}>${spans}</text>`,
         );
-        draw.push(arText(L.edge, r1(L.tierY), `c01-tier-ar ${ink}`, tierTxt));
       } else {
-        const spans = L.lines
-          .map(
-            (ln) =>
-              `<tspan x="${L.edge}" y="${r1(ln.y)}" style="font-size:${r1(L.fs)}px"${tl(ln)}>${esc(ln.txt)}</tspan>`,
-          )
-          .join("");
         draw.push(`<text class="c01-name ${ink}"${fx}>${spans}</text>`);
-        draw.push(
-          `<text x="${L.edge + 1}" y="${r1(L.tierY)}" class="c01-tier ${ink}">${tierTxt}</text>`,
-        );
       }
+      if (L.hasTier)
+        draw.push(
+          ar
+            ? arText(L.edge, r1(L.tierY), `c01-tier-ar ${ink}`, tierTxt)
+            : `<text x="${L.edge + 1}" y="${r1(L.tierY)}" class="c01-tier ${ink}">${tierTxt}</text>`,
+        );
       // one soft clearance for the name block: the name's box, the tier's box (3u) and the bridge between,
       // feathered; the tier box has a large-size twin for the small card, where the tier label grows
       if (!F.flat && tk !== "homa") {
@@ -937,10 +1004,13 @@
         const [nx0, nx1] = span(L.w, 5);
         const nb = L.bottom + 4;
         let k = box(nx0, nx1, L.top - 5, nb);
-        [
-          [L.tierW, L.tierCap, "c01-kt"],
-          [L.tierW * L.tierBig, L.tierCap * L.tierBig, "c01-kt-big"],
-        ].forEach(([w, cap, cls]) => {
+        (L.hasTier
+          ? [
+              [L.tierW, L.tierCap, "c01-kt"],
+              [L.tierW * L.tierBig, L.tierCap * L.tierBig, "c01-kt-big"],
+            ]
+          : []
+        ).forEach(([w, cap, cls]) => {
           const [tx0, tx1] = span(w, 3);
           k += box(tx0, tx1, L.tierY - cap - 3, L.tierY + L.tierDesc + 3, cls);
           const [bx0, bx1] = span(Math.min(w, L.w), 3);
@@ -958,7 +1028,9 @@
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const name = MC.nameOf(p, o);
-    const left84 = POCKET.x - (emWidth(String(p.ovr), F_NAME) * 104) / 2;
+    const hasTier = p.tier != null;
+    // the layout is the same with a dash as with a number, so the name does not move when the 84 arrives
+    const left84 = POCKET.x - (emWidth(p.ovr == null ? "84" : String(p.ovr), F_NAME) * 104) / 2;
     const edge = ar ? Math.min(176, Math.floor(left84 - 12)) : 64; // Latin starts at x64; Arabic ends just short of the 84
     const maxW = ar ? edge - 58 : Math.min(176, left84 - 12) - edge;
     const em = (t) => emWidth(t, F_NAME, ar);
@@ -972,7 +1044,11 @@
     let fs;
     const one = fit(em(name), 34);
     const words = name.trim().split(/\s+/);
-    if (one.fs >= 22 && !one.tl) {
+    const empty = !name.trim();
+    if (empty) {
+      fs = 34;
+      lines = [{ txt: "", w: Math.min(84, maxW) }];
+    } else if (one.fs >= 22 && !one.tl) {
       fs = one.fs;
       lines = [{ txt: name, w: em(name) * fs }];
     } else if (words.length > 1) {
@@ -1001,12 +1077,17 @@
     lines.forEach((ln, i) => (ln.y = top + cap * fs + i * lead * fs));
     const last = lines[lines.length - 1].y;
     const tierSize = ar ? 13 : 12;
-    const tierW = ar
-      ? emWidth(S.tiers[p.tier], F_TIER_AR, true) * tierSize
-      : emWidth(S.tiers[p.tier], F_TIER) * tierSize + 0.1 * tierSize * [...S.tiers[p.tier]].length;
+    const tierName = hasTier ? S.tiers[p.tier] : "";
+    const tierW = !hasTier
+      ? 0
+      : ar
+        ? emWidth(tierName, F_TIER_AR, true) * tierSize
+        : emWidth(tierName, F_TIER) * tierSize + 0.1 * tierSize * [...tierName].length;
     const tierY = ar ? last + 0.5 * fs + 17 : last + 20;
     return {
       edge,
+      empty,
+      hasTier,
       fs,
       lines,
       w: Math.max(...lines.map((l) => l.w)),
@@ -1107,6 +1188,111 @@
     );
   }
 
+  /* ---------- onboarding: tallies and the three beats (full card) ---------- */
+  const TAL = { x0: 43, x1: 80, y0: 176, pitch: 13 }; // chalk rungs on the start post, first at the bottom
+  const BEAT = { x: 298, y: 67, r: 9 }; // where the ball ends: tucked into the top-end corner, behind the 84
+  const POSTS = { a: L + PW / 2, b: R - PW / 2, bar: BAR.y0 + 12 }; // tube centre lines the chalk follows
+  // delays (ms) of the "make" beat, in drawing order: ground line, left post, bar, right post, net lines
+  const MAKE = { line: 0, post1: 90, bar: 220, post2: 340, net: 400 };
+
+  /** A few specks of chalk dust that fall from a point and fade (only inside a beat). */
+  function specks(x, y, delay, seed, n = 3) {
+    const rand = rng(seed);
+    let out = "";
+    for (let i = 0; i < n; i++)
+      out += `<circle class="c01-speck" cx="${r1(x + (rand() - 0.5) * 7)}" cy="${r1(y + rand() * 2)}" r="${r1(0.9 + rand() * 0.9)}" style="--dx:${r1((rand() - 0.5) * 5)}px;--dy:${r1(8 + rand() * 9)}px;animation-delay:${delay + i * 18}ms"/>`;
+    return out;
+  }
+
+  /** k of N chalk tallies on the start post (while the number is null): one rung per counted round,
+      the empty ones faint. beat "tick" draws only the newest rung, stroke by stroke, with a little dust. */
+  function tallies(u, p, F) {
+    const t = tallyOf(p);
+    if (!t || F.thumb) return { svg: "", knock: "" };
+    const rand = rng(seedOf(p) + 11);
+    const fresh = F.beat === "tick" && t.k ? t.k - 1 : -1;
+    let rungs = "";
+    let dust = "";
+    for (let i = 0; i < t.n; i++) {
+      const y = TAL.y0 - i * TAL.pitch;
+      const ya = r1(y + (rand() - 0.5) * 1.6);
+      const yb = r1(y + (rand() - 0.5) * 1.6);
+      const d = wobble(TAL.x0, ya, r1(TAL.x1 + (rand() - 0.5) * 3), yb, rand, 0.35, 8);
+      // the rung being drawn sits on its own faint ghost, so the slot is there before the chalk is
+      if (i === fresh)
+        rungs += `<path d="${d}" class="c01-tally is-off" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+      rungs += `<path d="${d}" class="c01-tally ${i < t.k ? "is-on" : "is-off"}${i === fresh ? " is-new" : ""}" pathLength="1" stroke-width="5" stroke-linecap="round" fill="none"/>`;
+      if (i === fresh) dust = specks(TAL.x1 - 6, y + 2, 230, seedOf(p) + 5);
+    }
+    const top = TAL.y0 - (t.n - 1) * TAL.pitch - 7;
+    const box = `<rect x="${TAL.x0 - 2}" y="${top}" width="${TAL.x1 - TAL.x0 + 8}" height="${TAL.y0 + 7 - top}" rx="3"/>`;
+    return {
+      svg: `<g class="c01-tallies"${F.flat ? "" : ` filter="url(#${u}-chalk)"`}>${rungs}</g>${dust}`,
+      knock: F.flat ? "" : `<g filter="url(#${u}-fe)" fill="#000">${box}</g>`,
+    };
+  }
+
+  /** The net's cords grouped by where they start, left to right, so the "make" beat can sweep across. */
+  function bundles(d, n = 8) {
+    const subs = d.match(/M[^M]+/g) || [];
+    const out = Array.from({ length: n }, () => "");
+    subs.forEach((sub) => {
+      const xs = [...sub.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((m) => +m[1]);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+      const i = Math.max(0, Math.min(n - 1, Math.floor(((cx - MO.x0) / (MO.x1 - MO.x0)) * n)));
+      out[i] += sub;
+    });
+    return out;
+  }
+
+  /** "make": the goal chalked on the wall, stroke by stroke: ground line, left post up, bar across,
+      right post down (hand-drawn, with dust), then the net's cords. The tubes are revealed behind the chalk
+      (clip-path in 01.css) and the chalk fades out, leaving the finished goal. */
+  function makeChalk(u, p, F) {
+    const rand = rng(seedOf(p));
+    const { a, b, bar } = POSTS;
+    const stroke = (d, delay, cls = "") =>
+      `<path d="${d}" class="c01-bc ${cls}" pathLength="1" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" fill="none" style="animation-delay:${delay}ms"/>`;
+    return (
+      `<g class="c01-chalkfx"${F.flat ? "" : ` filter="url(#${u}-dust)"`}>` +
+      stroke(wobble(2, LINE.y0 + 3, VW - 2, LINE.y0 + 3, rand, 0.5, 24), MAKE.line, "c01-bc-line") +
+      stroke(wobble(a, LINE.y0, a, bar, rand), MAKE.post1) +
+      stroke(wobble(a, bar, b, bar, rand), MAKE.bar) +
+      stroke(wobble(b, bar, b, LINE.y0, rand), MAKE.post2) +
+      `</g>` +
+      specks(2, LINE.y0 + 3, MAKE.line + 10, 3) +
+      specks(a, bar, MAKE.bar - 10, 4) +
+      specks(b, bar, MAKE.post2 - 10, 5) +
+      specks(b, LINE.y0, MAKE.post2 + 150, 6)
+    );
+  }
+
+  /** "first": the ball arcs up the end-post side into the top corner where the 84 already sits (behind it),
+      the net's cords pull in round it, one-beat freeze, then everything settles. Returns the ball layer and
+      the keyframes that re-path the net (a hard cut at impact, held, eased back). */
+  function firstBeat(u, spec, opt) {
+    const rest = buildNet(spec, { ...opt, full: true });
+    const bulge = buildNet(spec, {
+      ...opt,
+      full: true,
+      extra: { x: BEAT.x, y: BEAT.y, k: 0.4, s: 46 },
+    });
+    const kf = (name, A, B) =>
+      `@keyframes ${name}{49.9%{d:path("${A}");animation-timing-function:linear}50%{d:path("${B}");animation-timing-function:linear}77%{d:path("${B}");animation-timing-function:cubic-bezier(.2,.7,.2,1)}}`;
+    const style =
+      `<style>@media (prefers-reduced-motion: no-preference){` +
+      `.${u}-nb{animation:${u}-nb 600ms linear both}` +
+      kf(`${u}-nb`, rest.d, bulge.d) +
+      (rest.knots
+        ? `.${u}-kb{animation:${u}-kb 600ms linear both}${kf(`${u}-kb`, rest.knots, bulge.knots)}`
+        : "") +
+      `}</style>`;
+    const ball =
+      `<g class="c01-bball"><circle class="c01-bring" cx="${BEAT.x}" cy="${BEAT.y}" r="${BEAT.r}"/>` +
+      `<g class="c01-ball1">${ballArt(BEAT.r)}</g></g>`;
+    return { style, ball, rest };
+  }
+
   /** The goal itself (everything but the foreground figure), in card coordinates. */
   function goal(u, p, o, F) {
     const spec = tierOf(p);
@@ -1120,23 +1306,64 @@
       if (!thumb)
         out += `<g class="c01-marks"><circle cx="302" cy="64.5" r="7"/><circle cx="279" cy="62.5" r="6.5"/></g>`;
     }
+    const beat = F.beat || "";
+    let ball = "";
     if (spec.net) {
       out += `<g mask="url(#${u}-m)">${rear(spec, tk, thumb)}</g>`;
-      const net = buildNet(spec, { pitchMul: thumb ? 2 : 1, noKnots: thumb, pk: F.pk });
+      // no number yet: the corner is empty, so the cords hang straight (nothing pulls them toward the pocket)
+      const nopt = {
+        pitchMul: thumb ? 2 : 1,
+        noKnots: thumb,
+        pk: F.pk,
+        pinch: p.ovr == null ? false : undefined,
+      };
       const cw = thumb ? spec.cord * 2.2 : spec.cord;
       // LEGEND's cord is braided: the body, then a 0.6u lighter strand laid along its upper edge (the same path, reused)
       const braid = spec.braid && !thumb;
+      const first = beat === "first" && !braid && !thumb;
+      const fb = first ? firstBeat(u, spec, nopt) : null;
+      const net = fb ? fb.rest : buildNet(spec, nopt);
+      if (fb) {
+        out += fb.style;
+        ball = fb.ball;
+      }
+      const netCls = spec.steel ? "c01-steelnet" : "c01-net";
+      const make = beat === "make" && !braid;
+      // "make": the cords start at one end and are drawn across, left to right (not editable by mount())
+      const body = make
+        ? bundles(net.d)
+            .map((b, i) =>
+              b
+                ? `<path d="${b}" class="${netCls} c01-nb" pathLength="1" stroke-width="${cw}" style="animation-delay:${MAKE.net + i * 24}ms"/>`
+                : "",
+            )
+            .join("")
+        : "";
+      const twin = make
+        ? `<g class="c01-chalkfx c01-twin"${F.flat ? "" : ` filter="url(#${u}-dust)"`}>${bundles(
+            net.d,
+          )
+            .map((b, i) =>
+              b
+                ? `<path d="${b}" class="c01-bc c01-bcn" pathLength="1" stroke-width="${r1(cw + 0.9)}" style="animation-delay:${MAKE.net + i * 24}ms"/>`
+                : "",
+            )
+            .join("")}</g>`
+        : "";
       out +=
         `<g mask="url(#${u}-m)" fill="none" class="c01-netg">` +
         (braid
           ? // the path carries no paint of its own, so the reused copy takes the lighter strand's paint
             `<g class="c01-net c01-braid" stroke-width="${cw}"><path data-net="1" id="${u}-np" d="${net.d}"/></g>` +
             `<use href="#${u}-np" class="c01-netlite" stroke-width=".6" transform="translate(-.45 -.45)"/>`
-          : `<path data-net="1" d="${net.d}" class="${spec.steel ? "c01-steelnet" : "c01-net"}" stroke-width="${cw}"/>`) +
+          : make
+            ? body
+            : `<path data-net="1" d="${net.d}" class="${netCls}${first ? ` ${u}-nb` : ""}" stroke-width="${cw}"/>`) +
         (net.knots
-          ? `<path data-knots="1" d="${net.knots}" class="${spec.knotCls || (braid ? "c01-knot c01-bknot" : "c01-knot")}" stroke-width="${spec.knot}" stroke-linecap="round"/>`
+          ? `<path data-knots="1" d="${net.knots}" class="${spec.knotCls || (braid ? "c01-knot c01-bknot" : "c01-knot")}${first ? ` ${u}-kb` : ""}${make ? " c01-knots" : ""}" stroke-width="${spec.knot}" stroke-linecap="round"/>`
           : "") +
-        `</g>`;
+        `</g>` +
+        twin;
     }
     if (tk === "legend" && !thumb) {
       // one floodlight, off the top-end corner: three hard-edged steps of light across the net
@@ -1145,6 +1372,7 @@
         `<path d="M350 4L30 240H250Z" class="c01-beam1"/><path d="M350 4L84 240H200Z" class="c01-beam2"/><path d="M350 4L120 240H166Z" class="c01-beam3"/></g>`;
     }
     if (tk === "legend") out += ballBag(u, F);
+    out += ball; // under the content: the ball is never in front of the 84
     out += `<g class="c01-content">${c.draw}</g>`;
     out += frame(u, p, o, tk, F);
     // goal line, the full width of the card
@@ -1156,7 +1384,10 @@
     else
       out += `<rect x="0" y="${LINE.y0}" width="${VW}" height="${LINE.y1 - LINE.y0}" class="c01-linec c01-keyed"/>`;
     out += footing(u, p, F, tk);
-    return { svg: out, mask: c.knock };
+    const tal = tallies(u, p, F);
+    out += tal.svg;
+    if (beat === "make" && !thumb) out += makeChalk(u, p, F);
+    return { svg: out, mask: c.knock + tal.knock };
   }
 
   /* ---------- the back of the card: the crossbar's back face and the plate in close-up ---------- */
@@ -1167,7 +1398,9 @@
     const homa = tk === "homa";
     const outline = `<path d="M${L} ${LINE.y0}V${BAR.y0}H${R}V${LINE.y0}H${R - PW}V${BAR.y1}H${L + PW}V${LINE.y0}Z" class="c01-backframe" stroke-width="1.2" fill="none"/>`;
     const barFill = homa ? "none" : tk === "stade" ? "#8f9aa5" : "#e9edf1";
-    const where = p.founder ? "" : ` · ${p.id}`;
+    // the ID's carrier is the bar's back face (and the plate's edge): with no serial yet it carries a dash
+    const idTxt = p.id == null ? DASH : p.id;
+    const where = p.founder ? "" : ` · ${idTxt}`;
     const barText = ar
       ? `<text x="180" y="${STAT_Y}" class="c01-bk ${homa ? "c01-ink" : "c01-paint"}" text-anchor="middle" direction="rtl">${esc(S.country)} · ${iso(p.season + where)}</text>`
       : `<text x="180" y="${STAT_Y}" class="c01-bk ${homa ? "c01-ink" : "c01-paint"}" text-anchor="middle">${esc(p.season)} · ${esc(S.country)}${esc(where)}</text>`;
@@ -1194,11 +1427,11 @@
         `<rect x="${x0 + 5}" y="${y0 + 22}" width="${x1 - x0 - 10}" height="${y1 - y0 - 44}" rx="1" fill="none" stroke="#55595f" stroke-width="1"/>` +
         `<g fill="#55595f"><circle cx="${x0 + 8}" cy="${y0 + 8}" r="2.4"/><circle cx="${x1 - 8}" cy="${y0 + 8}" r="2.4"/><circle cx="${x0 + 8}" cy="${y1 - 8}" r="2.4"/><circle cx="${x1 - 8}" cy="${y1 - 8}" r="2.4"/></g>` +
         edgeTop +
-        `<text x="180" y="${y1 - 8}" class="c01-pl" text-anchor="middle" fill="#8a8f96">${esc(p.id)}</text>` +
+        `<text x="180" y="${y1 - 8}" class="c01-pl" text-anchor="middle" fill="#8a8f96">${esc(idTxt)}</text>` +
         `<text x="178.6" y="${y1 - 31.6}" class="c01-pl26" text-anchor="middle" fill="#c3c8ce">${String(p.founder).slice(-2)}</text>` +
         `<text x="181.6" y="${y1 - 28.6}" class="c01-pl26" text-anchor="middle" fill="#0e0f11">${String(p.founder).slice(-2)}</text>` +
         `<text x="180" y="${y1 - 30}" class="c01-pl26" text-anchor="middle" fill="#8a8f96">${String(p.founder).slice(-2)}</text>`;
-    } else {
+    } else if (p.club) {
       s += `<g transform="translate(160 110)">${MC.crest({ fill: p.club.primary, sash: p.club.secondary, ring: p.club.secondary, w: 40, h: 48 })}</g>`;
     }
     if (legend) {
@@ -1213,10 +1446,25 @@
     return `<svg class="c01-face c01-back" viewBox="0 0 ${VW} ${VH}" width="100%" aria-hidden="true" focusable="false">${s}</svg>`;
   }
 
+  /* ---------- onboarding helpers ---------- */
+  /** The beat this render plays: "make", "first" or "tick", and never under reduced motion. */
+  const beatOf = (o) =>
+    (o.beat === "make" || o.beat === "first" || o.beat === "tick") && !reducedMotion()
+      ? o.beat
+      : "";
+  /** The tier key a token draws: BASE before a rating, PRO for a tier the lab does not know. */
+  const tierKey = (p) => (p.tier == null ? "BASE" : TIER[p.tier] ? p.tier : "PRO");
+  /** k of N counted rounds while the number is null: { n, k }, or null when no tallies are drawn. */
+  const tallyOf = (p) => {
+    const n = Math.min(6, Math.max(0, Math.floor(p.minRated) || 0));
+    if (p.ovr != null || !n) return null;
+    return { n, k: Math.min(n, Math.max(0, Math.floor(p.counted) || 0)) };
+  };
+
   /* ---------- small marks ---------- */
   /** 24–32px, inside the ranking row's name cell: Π in the text colour; tier = count of net cords. */
   function miniTok(p, o, h) {
-    const tier = TIER[p.tier] ? p.tier : "PRO";
+    const tier = tierKey(p);
     const s = h / 24;
     const W = Math.round(30 * s);
     const t = 2;
@@ -1239,7 +1487,7 @@
     // the tier is the number of net cords, in the free zone left of the 84 (at its height, clear of the line)
     const n = TIER[tier].cords;
     const mid = base - fs * 0.36;
-    const cx1 = Math.floor(tx - emWidth(String(p.ovr), F_NAME) * fs - 1); // stop a pixel short of the 84
+    const cx1 = Math.floor(tx - emWidth(p.ovr == null ? DASH : String(p.ovr), F_NAME) * fs - 1); // stop a pixel short of the 84
     for (let i = 0; i < n; i++)
       cords += `M${mx0} ${Math.floor(mid + (i - (n - 1) / 2) * 3) + 0.5}H${cx1}`;
     if (cords) out += `<path d="${cords}" class="c01-mcord" stroke-width="1" fill="none"/>`;
@@ -1255,16 +1503,20 @@
       out += `<rect x="${X1 - t / 2 - 2}" y="${YL + lh}" width="4" height="${fh}" fill="currentColor"/>`;
     if (tier === "LEGEND")
       out += `<circle cx="${X1 + 0.5}" cy="${Y0 - 0.5}" r="2" fill="currentColor"/>`;
-    out += `<text x="${tx}" y="${base}" class="c01-t84" style="font-size:${fs}px" text-anchor="end" fill="currentColor">${p.ovr}</text>`;
+    // no number yet: the same Changa dash, a hair above its natural height so it sits at the figures' mid-height
+    out +=
+      p.ovr == null
+        ? `<text x="${tx}" y="${r1(base - fs * 0.07)}" class="c01-t84 c01-tdash" style="font-size:${fs}px" text-anchor="end" fill="currentColor">${DASH}</text>`
+        : `<text x="${tx}" y="${base}" class="c01-t84" style="font-size:${fs}px" text-anchor="end" fill="currentColor">${p.ovr}</text>`;
     return (
-      `<span class="c01 c01-tok is-mini t-${TIER[tier].k}" dir="ltr" role="img" aria-label="${esc(MC.label(p, o))}" style="width:${W}px;height:${h}px;--c01-club:${p.club.primary}">` +
+      `<span class="c01 c01-tok is-mini t-${TIER[tier].k}" dir="ltr" role="img" aria-label="${esc(MC.label(p, o))}" style="width:${W}px;height:${h}px${p.club ? `;${clubVars(p)}` : ""}">` +
       `<svg viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" aria-hidden="true" focusable="false">${out}</svg></span>`
     );
   }
 
   /** 44–80px (My position card, hub team card, head-to-head): the goal with its net, club and footing. */
   function compactTok(p, o, h) {
-    const tier = TIER[p.tier] ? p.tier : "PRO";
+    const tier = tierKey(p);
     const tk = TIER[tier].k;
     const u = MC.uid("c01t");
     const W = Math.round(h * 1.29);
@@ -1309,15 +1561,33 @@
       for (let c = step / 2; c < mw + a * mh; c += step)
         mesh += `M${r1(mx0 + c)} ${my0}l${r1(-a * mh)} ${mh}`;
       if (tier === "STADE") meshCls = "c01-tsteel";
+    } else if (tier === "BASE") {
+      // the goal as put up: a plain square mesh in the net's neutral, not the club's colour
+      for (let i = 1; i < 3; i++)
+        mesh += `M${px(mx0 + (mw * i) / 3)} ${my0}V${my1}M${mx0} ${px(my0 + (mh * i) / 3)}H${mx1}`;
+      meshCls = "c01-tsteel";
     } else {
       const n = tier === "LEGEND" ? 4 : 3;
       for (let i = 1; i < n; i++)
         mesh += `M${px(mx0 + (mw * i) / n)} ${my0}V${my1}M${mx0} ${px(my0 + (mh * i) / n)}H${mx1}`;
     }
     const halo = Math.max(2, Math.round(fs * 0.16));
+    // no number yet: the Changa dash, a hair above its natural height (the mid-height of the figures)
+    const none = p.ovr == null;
+    const ny = none ? r1(base - fs * 0.07) : base;
+    const numTxt = none ? DASH : p.ovr;
+    // k of N chalk tallies on the start post, reaching into the mouth (a number drops them)
+    const tal = tallyOf(p);
+    const th = h >= 60 ? 3 : 2;
+    const tlen = h >= 60 ? 10 : 8;
+    const tTop = (i) => my1 - 4 - (i + 1) * th - i * 2;
+    const tBeat = beatOf(o) === "tick" && tal && tal.k ? tal.k - 1 : -1;
+    const tallyKnock = tal
+      ? `<rect x="${mx0 - 1}" y="${tTop(tal.n - 1) - 1}" width="${tlen + 2}" height="${tTop(0) + th - tTop(tal.n - 1) + 2}" fill="#000"/>`
+      : "";
     const defs =
       `<clipPath id="${u}-mo"><rect x="${mx0}" y="${my0}" width="${mw}" height="${mh}"/></clipPath>` +
-      `<mask id="${u}-k" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${h}"><rect width="${W}" height="${h}" fill="#fff"/><text x="${tx}" y="${base}" class="c01-t84" style="font-size:${fs}px;fill:#000;stroke:#000;stroke-width:${halo}px;stroke-linejoin:round" text-anchor="end">${p.ovr}</text></mask>`;
+      `<mask id="${u}-k" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${h}"><rect width="${W}" height="${h}" fill="#fff"/><text x="${tx}" y="${ny}" class="c01-t84" style="font-size:${fs}px;fill:#000;stroke:#000;stroke-width:${halo}px;stroke-linejoin:round" text-anchor="end">${numTxt}</text>${tallyKnock}</mask>`;
     let s = `<g clip-path="url(#${u}-mo)"><path d="${mesh}" class="${meshCls}" stroke-width="1" fill="none" mask="url(#${u}-k)"/></g>`;
     if (tier === "CHAMPION" || tier === "LEGEND") {
       const dd = Math.round(h * 0.12);
@@ -1329,7 +1599,8 @@
     s += `<rect x="0" y="${YL}" width="${W}" height="${lh}" fill="currentColor"/>`;
     // the club, as a crest sticker on the end post
     const cr = h >= 60 ? 3 : 2.5;
-    s += `<circle cx="${X1 - t / 2}" cy="${Math.round(my0 + mh * 0.62)}" r="${cr}" fill="${p.club.primary}" stroke="${p.club.secondary}" stroke-width="1"/>`;
+    if (p.club)
+      s += `<circle cx="${X1 - t / 2}" cy="${Math.round(my0 + mh * 0.62)}" r="${cr}" fill="${p.club.primary}" stroke="${p.club.secondary}" stroke-width="1"/>`;
     if (p.founder) {
       const fw = Math.max(5, Math.round(W * 0.08));
       s += `<rect x="${r1(X1 - t / 2 - fw / 2)}" y="${YL - 1}" width="${fw}" height="${h - YL + 1}" class="c01-tconc"/>`;
@@ -1342,9 +1613,15 @@
         `<path d="M${X1 - br * 2.4} ${Y0}Q${r1(X1 + br * 1.9)} ${r1(Y0 - br * 2.6)} ${X1} ${r1(Y0 + br * 2.4)}" stroke="currentColor" stroke-opacity=".75" stroke-width="1" fill="none"/>` +
         `<circle cx="${bx}" cy="${by}" r="${br}" fill="#ffffff" stroke="currentColor" stroke-width="1"/>`;
     }
-    s += `<text x="${tx}" y="${base}" class="c01-t84" style="font-size:${fs}px" text-anchor="end" fill="currentColor">${p.ovr}</text>`;
+    if (tal) {
+      for (let i = 0; i < tal.n; i++) {
+        const on = i < tal.k;
+        s += `<path d="M${mx0 - 1} ${tTop(i) + th / 2}h${tlen + 1}" class="c01-ttal${on ? "" : " is-off"}${i === tBeat ? " is-new" : ""}" stroke-width="${th}" fill="none"${i === tBeat ? ' pathLength="1"' : ""}/>`;
+      }
+    }
+    s += `<text x="${tx}" y="${ny}" class="c01-t84${none ? " c01-tdash" : ""}" style="font-size:${fs}px" text-anchor="end" fill="currentColor">${numTxt}</text>`;
     return (
-      `<span class="c01 c01-tok t-${tk}" dir="ltr" role="img" aria-label="${esc(MC.label(p, o))}" style="width:${W}px;height:${h}px;--c01-club:${p.club.primary}">` +
+      `<span class="c01 c01-tok t-${tk}${tBeat >= 0 ? " is-beat-tick" : ""}" dir="ltr" role="img" aria-label="${esc(MC.label(p, o))}" style="width:${W}px;height:${h}px${p.club ? `;${clubVars(p)}` : ""}">` +
       `<svg viewBox="0 0 ${W} ${h}" width="${W}" height="${h}" aria-hidden="true" focusable="false"><defs>${defs}</defs>${s}</svg></span>`
     );
   }
@@ -1435,7 +1712,14 @@
       const u = MC.uid("c01");
       const tk = tierOf(p).k;
       const thumb = !!o.thumb;
-      const F = { thumb, flat: false };
+      const beat = thumb ? "" : beatOf(o);
+      const F = {
+        thumb,
+        flat: false,
+        beat,
+        chalk: !thumb && !!tallyOf(p),
+        dust: beat === "make",
+      };
       const g = goal(u, p, o, F);
       const defs =
         `<defs>${frameDefs(u, tk, F, p)}` +
@@ -1451,7 +1735,7 @@
         (thumb ? "" : figure()) +
         `</svg>`;
       return (
-        `<div class="c01 c01-card t-${tk}${thumb ? " is-thumb" : ""}" dir="${S.dir}" lang="${MC.isAr(o) ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${p.tier}" style="--c01-club:${p.club.primary};--c01-club2:${p.club.secondary}">` +
+        `<div class="c01 c01-card t-${tk}${thumb ? " is-thumb" : ""}${beat ? ` is-beat-${beat}` : ""}" dir="${S.dir}" lang="${MC.isAr(o) ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${p.tier == null ? "" : p.tier}" style="${clubVars(p, true)}">` +
         front +
         (thumb ? "" : backFace(u, p, o, tk)) +
         `</div>`
@@ -1471,11 +1755,19 @@
       const founder = p.founder
         ? `<span class="c01-r26">·${MC.ltr(String(p.founder).slice(-2))}</span>`
         : "";
+      // while forming, « en formation k/N » takes the tier's place under the name
+      const forming = p.ovr == null ? MC.onbStr(o).forming : "";
+      const sub =
+        p.ovr == null
+          ? `${esc(forming)}${p.minRated ? ` ${MC.ltr(`${Math.min(p.minRated, Math.max(0, p.counted || 0))}/${p.minRated}`)}` : ""}`
+          : p.tier == null
+            ? ""
+            : esc(S.tiers[p.tier]);
       return (
         `<div class="c01 c01-row t-${tk}${o.me ? " is-me" : ""}" dir="${S.dir}" role="img" aria-label="${esc(`${o.rank}. ${MC.label(p, o)}, ${o.pts} ${S.pts}`)}">` +
         `<span class="c01-rk">${MC.ltr(String(o.rank))}</span>` +
         `<span class="c01-rt">${tok}</span>` +
-        `<span class="c01-rn"><b><bdi>${esc(MC.nameOf(p, o))}</bdi>${founder}</b><small>${esc(S.tiers[p.tier])}</small></span>` +
+        `<span class="c01-rn"><b><bdi>${esc(MC.nameOf(p, o))}</bdi>${founder}</b><small>${sub}</small></span>` +
         `<span class="c01-rp"><b>${MC.ltr(String(o.pts))}</b><small>${esc(S.pts)}</small></span>` +
         `</div>`
       );
@@ -1493,12 +1785,17 @@
       const ty = 103.6;
       const fs = r1(150 / k); // the 84 at 150px
       const by = r1(MO.y0 + 9 + fs * 0.7);
-      const t84 = `<text x="302" y="${by}" class="c01-84 c01-sh84" text-anchor="end" style="font-size:${fs}px">${p.ovr}</text>`;
-      const ko84 = `<text x="302" y="${by}" class="c01-84" text-anchor="end" style="font-size:${fs}px;fill:#000;stroke:#000;stroke-width:12;stroke-linejoin:round">${p.ovr}</text>`;
+      // no number yet: the dash, a hair above its natural height (the figures' mid-height)
+      const none = p.ovr == null;
+      const ny = none ? r1(by - fs * 0.07) : by;
+      const numTxt = none ? DASH : p.ovr;
+      const t84 = `<text x="302" y="${ny}" class="c01-84 c01-sh84" text-anchor="end" style="font-size:${fs}px">${numTxt}</text>`;
+      const ko84 = `<text x="302" y="${ny}" class="c01-84" text-anchor="end" style="font-size:${fs}px;fill:#000;stroke:#000;stroke-width:12;stroke-linejoin:round">${numTxt}</text>`;
       const F = {
         flat: true,
         content: { draw: t84, knock: ko84 },
         pk: { x: r1(302 - fs * 0.6), y: r1(by - fs * 0.36) },
+        beat: "",
       };
       const g = goal(u, p, o, F);
       // turf: horizontal mowing bands, thinner toward the goal line
@@ -1532,17 +1829,35 @@
       const name = MC.nameOf(p, o);
       const founder = p.founder ? ` ·${String(p.founder).slice(-2)}` : "";
       const sample = ar ? "مثال" : "Exemple";
-      const handle = "@" + p.name.lat.toLowerCase();
+      const handle = p.name ? "@" + p.name.lat.toLowerCase() : "";
+      // name, founder year and tier on one line; with no tier yet (or no name) the line is shorter
+      const headLine = [`${name}${founder}`.trim(), p.tier == null ? "" : S.tiers[p.tier]]
+        .filter(Boolean)
+        .map(esc)
+        .join(" · ");
+      const idLine = esc([handle, p.id == null ? DASH : p.id].filter(Boolean).join(" · "));
+      // « Provisoire » / «مبدئي» is on the image itself, as text, whenever the number is provisional
+      const prov = p.provisional ? (ar ? "مبدئي" : "Provisoire") : "";
+      const chipW = ar ? 52 : 82;
+      const chip = prov
+        ? `<g class="c01-sh-chip"><rect x="${336 - chipW}" y="542" width="${chipW}" height="22" rx="11"/>` +
+          (ar
+            ? `<text x="${336 - chipW / 2}" y="557.5" class="c01-sh-chipt c01-sh-chipt-ar" direction="rtl" text-anchor="middle">${prov}</text>`
+            : `<text x="${336 - chipW / 2}" y="557" class="c01-sh-chipt" text-anchor="middle">${prov}</text>`) +
+          `</g>`
+        : "";
       const text = ar
         ? // Arabic descenders (the dots of ي) reach about 16u below the baseline, so the meta lines sit lower
-          arText(336, 484, "c01-sh-name", `${esc(name)}${founder} · ${esc(S.tiers[p.tier])}`) +
-          `<text x="336" y="514" class="c01-sh-meta" text-anchor="end">${esc(handle)} · ${esc(p.id)}</text>` +
-          arText(336, 530, "c01-sh-meta c01-sh-meta-ar", `${iso(p.season)} · ${sample}`)
-        : `<text x="336" y="490" class="c01-sh-name" text-anchor="end">${esc(name)}${founder} · ${esc(S.tiers[p.tier])}</text>` +
-          `<text x="336" y="510" class="c01-sh-meta" text-anchor="end">${esc(handle)} · ${esc(p.id)}</text>` +
-          `<text x="336" y="525" class="c01-sh-meta" text-anchor="end">${esc(p.season)} · ${sample}</text>`;
+          arText(336, 484, "c01-sh-name", headLine) +
+          `<text x="336" y="514" class="c01-sh-meta" text-anchor="end">${idLine}</text>` +
+          arText(336, 530, "c01-sh-meta c01-sh-meta-ar", `${iso(p.season)} · ${sample}`) +
+          chip
+        : `<text x="336" y="490" class="c01-sh-name" text-anchor="end">${headLine}</text>` +
+          `<text x="336" y="510" class="c01-sh-meta" text-anchor="end">${idLine}</text>` +
+          `<text x="336" y="525" class="c01-sh-meta" text-anchor="end">${esc(p.season)} · ${sample}</text>` +
+          chip;
       return (
-        `<div class="c01 c01-share t-${tk}" dir="${S.dir}" lang="${ar ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}" style="--c01-club:${p.club.primary};--c01-club2:${p.club.secondary}">` +
+        `<div class="c01 c01-share t-${tk}" dir="${S.dir}" lang="${ar ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}" style="${clubVars(p, true)}">` +
         `<svg viewBox="0 0 360 640" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">` +
         `<defs>${frameDefs(u, tk, F, p)}<mask id="${u}-m" maskUnits="userSpaceOnUse" x="0" y="0" width="${VW}" height="${VH}"><rect width="${VW}" height="${VH}" fill="#fff"/>${g.mask}</mask></defs>` +
         `<rect width="360" height="640" fill="#001c49"/>` +
@@ -1570,7 +1885,7 @@
       const anim = o.motion !== false && !reducedMotion();
       if (!anim) el.classList.add("no-anim");
       const tier = el.dataset.tier;
-      const spec = TIER[tier] || TIER.PRO;
+      const spec = TIER[tier] || (el.classList.contains("t-base") ? TIER.BASE : TIER.PRO);
       const legend = tier === "LEGEND";
       const NS = "http://www.w3.org/2000/svg";
       const netg = svg.querySelector(".c01-netg");

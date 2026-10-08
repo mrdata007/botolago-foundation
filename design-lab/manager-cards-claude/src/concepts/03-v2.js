@@ -97,7 +97,14 @@
     const m = meas(font, String(text));
     return m ? r2(cx - (((m.r - m.l) / 2) * fs) / 100) : null;
   }
-  const tierOf = (p) => (MC.TIERS.includes(p.tier) ? p.tier : "PRO");
+  // No tier yet (onboarding): the base tag, which is HOMA's aluminium with no tier word on it
+  // and none of the hardware a tier adds. Any other unknown tier keeps falling back to PRO.
+  const tierOf = (p) => (MC.TIERS.includes(p.tier) ? p.tier : p.tier === null ? "HOMA" : "PRO");
+  // No club yet: the object's own material. Colour-bearing parts fall back to this slate and
+  // cream; the club disc is simply not drawn.
+  const NOCLUB = { lat: "", ar: "", initials: "", primary: "#3b4a5e", secondary: "#e9e4d6" };
+  const clubOf = (p) => p.club || NOCLUB;
+  const DASH = "—";
 
   /* ------------------------------------------------------------ the tag outline */
   // viewBox 0 2 272 484. The tag is a 156 x 359 capsule (1:2.3): a semicircular top, straight
@@ -169,6 +176,20 @@
     return g.hw - g.rb + Math.sqrt(Math.max(0, g.rb * g.rb - (y - (bot - g.rb)) ** 2));
   }
   const NT = notchOf(G);
+  // the length of the tag's outline, in viewBox units (measured once; the beat's cutter needs it)
+  let perim = 0;
+  function perimeter() {
+    if (!perim) {
+      try {
+        const el = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        el.setAttribute("d", tagD(0));
+        perim = el.getTotalLength();
+      } catch (e) {
+        perim = 1060;
+      }
+    }
+    return perim;
+  }
   const EY = { x: G.cx, y: G.top + 27, r: 11 };
   const holeD = (r = EY.r, oy = 0, c = EY) =>
     `M${r2(c.x + r)} ${r2(c.y + oy)}A${r} ${r} 0 1 0 ${r2(c.x - r)} ${r2(c.y + oy)}A${r} ${r} 0 1 0 ${r2(c.x + r)} ${r2(c.y + oy)}Z`;
@@ -673,10 +694,75 @@
   };
 
   /* ------------------------------------------------------------ the engraving */
-  function engraving(p, o, id, F, thumb) {
+  // The onboarding parts of the engraving, each drawn in this object's own grammar:
+  //  - the number carrier with no number is a blank engraving field (a machined flat, a recess
+  //    with a lit lip) holding one engraved, paint-filled dash;
+  //  - counted rounds are notches engraved along the start rim: paint-filled when counted,
+  //    outlined and empty when not;
+  //  - an empty name or ID carrier is an engraved rule, or a dash on the D.
+  const isDark = (F) => lum(F.ink) > 0.3;
+  const dashBar = (cxp, cyp, w, h, fill) =>
+    `<rect class="c03v2-dash" x="${r2(cxp - w / 2)}" y="${r2(cyp - h / 2)}" width="${w}" height="${h}" rx="${r2(h * 0.24)}" fill="${fill}"/>`;
+  // The blank field is a polished flat on the bead-blasted face, the place the engraver will cut
+  // the number: a slightly brighter plane with a shadowed top-start wall and a lit bottom-end lip.
+  function fieldPocket(F) {
+    const dk = isDark(F);
+    const x = 46;
+    const y = 358;
+    const w = 116;
+    const h = 80;
+    const r = 10;
+    const rr = `M${x + r} ${y}H${x + w - r}A${r} ${r} 0 0 1 ${x + w} ${y + r}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}Z`;
+    return (
+      `<g class="c03v2-fld"><path d="${rr}" fill="#fff" fill-opacity="${dk ? 0.06 : 0.17}"/>` +
+      `<path d="M${x} ${y + h - r}V${y + r}A${r} ${r} 0 0 1 ${x + r} ${y}H${x + w - r}" fill="none" stroke="#000" stroke-opacity="${dk ? 0.5 : 0.28}" stroke-width="1.2"/>` +
+      `<path d="M${x + w} ${y + h * 0.35}V${y + h - r}A${r} ${r} 0 0 1 ${x + w - r} ${y + h}H${x + r}A${r} ${r} 0 0 1 ${x} ${y + h - r}" fill="none" stroke="#fff" stroke-opacity="${dk ? 0.26 : 0.75}" stroke-width="1.2"/></g>`
+    );
+  }
+  // the tool's light: white on a dark ink, a cool blue on a pale one, so it shows on every face
+  const laser = (F) => (isDark(F) ? "#5eb0ff" : "#ffffff");
+  // A liquid front: one wavelength is 40u, so sliding a layer by 40u loops it. Used for the enamel
+  // that flows into the engraved 84.
+  const waveD = (y0, amp, close) => {
+    let d = `M-40 ${y0}Q-30 ${r2(y0 - amp)} -20 ${y0}`;
+    for (let x = 0; x < 300; x += 20) d += `T${x} ${y0}`;
+    return d + (close ? `V460H-40Z` : "");
+  };
+  const markN = (p) => Math.max(1, Math.min(5, Math.round(p.minRated)));
+  const markK = (p, N) => Math.max(0, Math.min(N, Math.round(p.counted || 0)));
+  // Counted rounds are tally cuts filed into the start rim, level with the stat table: a painted cut
+  // when counted, only its engraved outline when not (the same two states the 84 passes through).
+  function notches(p, F, beat) {
+    const N = markN(p);
+    const k = markK(p, N);
+    const ink = F.ink;
+    const w = 18;
+    const h = 8.5;
+    const x = G.cx - G.hw + (F.lay ? 12 : 1.6);
+    const pitch = N > 3 ? 14 : 20;
+    let s = "";
+    for (let i = 0; i < N; i++) {
+      const y = r2(264 + (i - (N - 1) / 2) * pitch - h / 2);
+      const hollow = `<rect class="c03v2-mk" x="${x + 0.5}" y="${y + 0.5}" width="${w - 1}" height="${h - 1}" rx="1.5" fill="none" stroke="${ink}" stroke-opacity=".85" stroke-width="1"/>`;
+      const paint = `<rect class="c03v2-mk is-on" x="${x}" y="${y}" width="${w}" height="${h}" rx="1.8" fill="${ink}"/>`;
+      if (i < k - 1 || (i === k - 1 && beat !== "tick")) s += paint;
+      else if (i === k - 1) {
+        // the "tick" beat: this notch is the one being engraved now. Its outline is already cut;
+        // a tool traces it, then the paint runs in from the rim.
+        s +=
+          hollow +
+          `<rect class="c03v2-mkfill" x="${x}" y="${y}" width="${w}" height="${h}" rx="1.8" fill="${ink}"/>` +
+          `<rect class="c03v2-mktrace" x="${x - 0.6}" y="${y - 0.6}" width="${w + 1.2}" height="${h + 1.2}" rx="2.2" pathLength="1" fill="none" stroke="${laser(F)}" stroke-width="1.6"/>`;
+      } else s += hollow;
+    }
+    return `<g>${s}</g>`;
+  }
+
+  function engraving(p, o, id, F, thumb, beat, meta = {}) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const ink = F.ink;
+    const forming = p.ovr == null;
     let big = "";
     let small = "";
 
@@ -695,7 +781,7 @@
     };
     const tier = S.tiers[p.tier];
     const bc = lay.bandY + lay.bandH / 2;
-    if (!thumb) {
+    if (!thumb && p.tier) {
       if (ar) {
         const fs = lay.tierAr || 12;
         const m = meas(F_AR, tier);
@@ -715,38 +801,46 @@
     const name = MC.nameOf(p, o);
     const yr = p.founder ? String(p.founder).slice(2) : "";
     const yy = yr ? (ar ? yr + "·" : "·" + yr) : "";
-    let ny = L.nameY;
-    const NW = 116;
-    const nW = (fs) => wAt(F_CH, name, fs, ar ? 0.55 : 0.62);
-    const sW = (fs) => (yy ? wAt(F_CH6, yy, fs * 0.62, 0.48) + fs * 0.14 : 0);
-    let nfs = 30;
-    if (nW(30) + sW(30) > NW) nfs = Math.max(17, (30 * NW) / (nW(30) + sW(30)));
-    // Arabic letters climb above and drop below the Latin caps: fit the ink between the table
-    // (or LEGEND's hexagon seam) and the 84 with 8u clear of each, moving the baseline first and
-    // the size only if it must
-    if (ar) {
-      const m = meas(F_CH, name);
-      if (m) {
-        const top = lay.nameTop || lay.st0 + 3 * lay.stP + 3 + 12;
-        const bot = L.b84 - 0.64 * L.f84 - 8;
-        const asc = m.a / 100;
-        const dsc = m.d / 100;
-        if ((asc + dsc) * nfs > bot - top) nfs = Math.max(17, (bot - top) / (asc + dsc));
-        ny = Math.min(Math.max(ny, top + asc * nfs), bot - dsc * nfs);
+    let lineW = 78;
+    if (!name) {
+      // no name yet: the carrier is an empty engraved rule on the line the name will sit on
+      big += `<rect class="c03v2-blank" x="${G.cx - 42}" y="${L.nameY - 3}" width="84" height="2.6" rx="1.3" fill="${ink}" fill-opacity=".62"/>`;
+    } else {
+      let ny = L.nameY;
+      const NW = 116;
+      const nW = (fs) => wAt(F_CH, name, fs, ar ? 0.55 : 0.62);
+      const sW = (fs) => (yy ? wAt(F_CH6, yy, fs * 0.62, 0.48) + fs * 0.14 : 0);
+      let nfs = 30;
+      if (nW(30) + sW(30) > NW) nfs = Math.max(17, (30 * NW) / (nW(30) + sW(30)));
+      // Arabic letters climb above and drop below the Latin caps: fit the ink between the table
+      // (or LEGEND's hexagon seam) and the 84 with 8u clear of each, moving the baseline first and
+      // the size only if it must
+      if (ar) {
+        const m = meas(F_CH, name);
+        if (m) {
+          const top = lay.nameTop || lay.st0 + 3 * lay.stP + 3 + 12;
+          const bot = L.b84 - 0.64 * L.f84 - 8;
+          const asc = m.a / 100;
+          const dsc = m.d / 100;
+          if ((asc + dsc) * nfs > bot - top) nfs = Math.max(17, (bot - top) / (asc + dsc));
+          ny = Math.min(Math.max(ny, top + asc * nfs), bot - dsc * nfs);
+        }
       }
+      ny = r2(ny);
+      const sw = sW(nfs);
+      const nwRaw = nW(nfs);
+      const squeeze = nwRaw + sw > NW + 1;
+      const nw = squeeze ? NW - sw : nwRaw;
+      lineW = nw + sw;
+      const x0 = G.cx - lineW / 2;
+      const nameX = ar ? x0 + sw : x0;
+      const sufX = ar ? x0 : x0 + nw + nfs * 0.14;
+      const nameAt = `x="${r2(nameX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="800" font-size="${r2(nfs)}"${squeeze ? ` textLength="${r2(nw)}" lengthAdjust="spacingAndGlyphs"` : ""}`;
+      big += `<text ${nameAt} fill="${ink}">${esc(name)}</text>`;
+      if (yy)
+        small += `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" fill="${ink}" fill-opacity=".86">${esc(yy)}</text>`;
+      meta.name = { x0: r2(x0), w: r2(lineW), y: ny, fs: nfs, at: nameAt, text: name };
     }
-    ny = r2(ny);
-    const sw = sW(nfs);
-    const nwRaw = nW(nfs);
-    const squeeze = nwRaw + sw > NW + 1;
-    const nw = squeeze ? NW - sw : nwRaw;
-    const lineW = nw + sw;
-    const x0 = G.cx - lineW / 2;
-    const nameX = ar ? x0 + sw : x0;
-    const sufX = ar ? x0 : x0 + nw + nfs * 0.14;
-    big += `<text x="${r2(nameX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="800" font-size="${r2(nfs)}" fill="${ink}"${squeeze ? ` textLength="${r2(nw)}" lengthAdjust="spacingAndGlyphs"` : ""}>${esc(name)}</text>`;
-    if (yy)
-      small += `<text x="${r2(sufX)}" y="${ny}" font-family="Changa, sans-serif" font-weight="600" font-size="${r2(nfs * 0.62)}" direction="ltr" fill="${ink}" fill-opacity=".86">${esc(yy)}</text>`;
 
     // the stat table: four aligned rows, as wide as the name line so they read as one column
     // (LEGEND caps it at the width its hexagon panel can frame). Values in Manrope 700 with
@@ -759,9 +853,13 @@
       MC.STATS.forEach((k, i) => {
         const y = r2(lay.st0 + i * lay.stP);
         const lab = esc(S.stats[k]);
+        const none = p.stats[k] == null;
         const val = esc(p.stats[k]);
+        // a missing figure is a short engraved dash, flush to the same edge its figure would be
         const vT = (x, end) =>
-          `<text x="${x}" y="${y}"${end ? ' text-anchor="end"' : ""} font-family="Manrope, sans-serif" font-weight="700" font-size="${vf}" style="font-variant-numeric:tabular-nums" fill="${ink}">${val}</text>`;
+          none
+            ? `<rect class="c03v2-dash" x="${end ? x - 8 : x}" y="${r2(y - 5.2)}" width="8" height="1.9" rx=".5" fill="${ink}" fill-opacity=".86"/>`
+            : `<text x="${x}" y="${y}"${end ? ' text-anchor="end"' : ""} font-family="Manrope, sans-serif" font-weight="700" font-size="${vf}" style="font-variant-numeric:tabular-nums" fill="${ink}">${val}</text>`;
         if (ar) {
           // RTL: the Arabic label at the right edge, its figure at the left edge, figures aligned
           small +=
@@ -775,24 +873,47 @@
       });
     }
 
-    // the 84, low in the tag, ink-centred in a fixed slot above the D
-    const fs = p.ovr >= 100 ? 74 : L.f84;
-    const x84 = inkX(p.ovr, fs, G.cx);
-    big += `<text x="${x84 != null ? x84 : G.cx}" y="${L.b84}" ${x84 != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" fill="${ink}">${esc(p.ovr)}</text>`;
+    // the 84, low in the tag, ink-centred in a fixed slot above the D. With no number yet the
+    // carrier is a blank engraving field and an engraved dash, never 0 and never empty.
+    if (forming) {
+      meta.pocket = fieldPocket(F);
+      // the engraved dash, its lower lip catching the light
+      big += `<g opacity=".5" transform="translate(.4 1)">${dashBar(G.cx, 396, 48, 11.5, isDark(F) ? "#000" : "#fff")}</g>${dashBar(G.cx, 396, 48, 11.5, ink)}`;
+    } else {
+      const fs = p.ovr >= 100 ? 74 : L.f84;
+      const x84 = inkX(p.ovr, fs, G.cx);
+      const at = `x="${x84 != null ? x84 : G.cx}" y="${L.b84}" ${x84 != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}"`;
+      if (beat === "first") {
+        // The first rating. The 84 is already engraved and fully legible as an outline (the
+        // channel); the enamel then flows into it: two liquid layers rise through the digits,
+        // lapping, each with a lit meniscus, and the outline gives way once they have covered it.
+        big +=
+          `<clipPath id="${id}-n84"><text ${at}>${esc(p.ovr)}</text></clipPath>` +
+          `<text class="c03v2-nline" ${at} fill="${ink}" fill-opacity=".16" stroke="${ink}" stroke-width="4.6" stroke-linejoin="round" clip-path="url(#${id}-n84)">${esc(p.ovr)}</text>` +
+          `<g clip-path="url(#${id}-n84)"><g class="c03v2-flow">` +
+          `<g class="c03v2-lap1"><path d="${waveD(338, 4.5, true)}" fill="${ink}" fill-opacity=".7"/></g>` +
+          `<g class="c03v2-lap2"><path d="${waveD(344, 3.5, true)}" fill="${ink}"/><path d="${waveD(344, 3.5, false)}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/></g>` +
+          `</g></g>`;
+      } else big += `<text ${at} fill="${ink}">${esc(p.ovr)}</text>`;
+    }
 
-    // the return line rides the penalty-area D: BotolaGO ID and country
+    // the return line rides the penalty-area D: BotolaGO ID and country. With no serial the ID
+    // carrier is a dash (no text, no sentence).
     if (!thumb) {
       const sp = ` font-family="Manrope, sans-serif" font-weight="700" font-size="6.8" fill="${ink}" fill-opacity=".82"`;
+      const idS = p.id ? esc(p.id) : `<tspan font-size="11" font-weight="800">${DASH}</tspan>`;
       small += ar
-        ? `<text${sp} direction="rtl"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle"><tspan font-family="Noto Sans Arabic, sans-serif" font-weight="700" font-size="7.4">${esc(S.country)}</tspan> · <tspan letter-spacing=".25">${esc(p.id)}</tspan></textPath></text>`
-        : `<text${sp} letter-spacing=".25"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle">${esc(`${p.id} · ${S.country}`)}</textPath></text>`;
+        ? `<text${sp} direction="rtl"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle"><tspan font-family="Noto Sans Arabic, sans-serif" font-weight="700" font-size="7.4">${esc(S.country)}</tspan> · <tspan letter-spacing=".25">${idS}</tspan></textPath></text>`
+        : `<text${sp} letter-spacing=".25"><textPath href="#${id}-rp" startOffset="50%" text-anchor="middle">${p.id ? esc(`${p.id} · ${S.country}`) : `${idS} · ${esc(S.country)}`}</textPath></text>`;
     }
     const key =
       F.keyline && !thumb
         ? `<path d="${tagD(F.keyInset || L.key)}" fill="none" stroke="${ink}" stroke-opacity="${F.keyline}" stroke-width=".8"/>`
         : "";
     const fl = (k) => (F.filter && !thumb ? ` filter="url(#${id}-${k})"` : "");
-    return `<g${fl("ink2")}>${key}${small}</g><g${fl("ink")}>${big}</g>`;
+    // counted rounds, only while the number is still to come: the finished tag carries its 84
+    const tally = forming && p.minRated ? notches(p, F, beat) : "";
+    return `${meta.pocket || ""}<g${fl("ink2")}>${key}${small}${tally}</g><g${fl("ink")}>${big}</g>`;
   }
 
   /* ------------------------------------------------------------ the ring */
@@ -1061,7 +1182,7 @@
   }
 
   function charms(p, o, id, J, thumb) {
-    const c = p.club;
+    const c = clubOf(p);
     const av = CH.av;
     const cl = CH.cl;
     const ba = CH.ba;
@@ -1076,8 +1197,11 @@
       `<g transform="translate(${av.x} ${av.y})">${avatarPin(id + "p", c, thumb, av.r, uA, id)}</g>` +
       beadChain([ba.x, ba.y - ba.r - 9], thumb) +
       `<g transform="translate(${ba.x} ${ba.y})">${seasonBall(id + "b", season, thumb, ba.r, id)}</g>` +
-      link(bC) +
-      `<g transform="translate(${cl.x} ${cl.y})">${clubDisc(id, c, thumb, cl.r, uC)}</g>` +
+      // no club yet: no disc, the pin and the season ball hang on the ring as they are
+      (p.club
+        ? link(bC) +
+          `<g transform="translate(${cl.x} ${cl.y})">${clubDisc(id, c, thumb, cl.r, uC)}</g>`
+        : "") +
       // the jump rings, bunched on the split ring
       `<circle r="4.4" fill="none" stroke="#2f363e" stroke-width="3"/><circle r="4.4" fill="none" stroke="url(#${id}-st)" stroke-width="2"/>` +
       `</g></g>`
@@ -1115,10 +1239,10 @@
   function art(p, o, id, opts = {}) {
     const thumb = !!o.thumb;
     const tk = tierOf(p);
-    const c = p.club;
+    const c = clubOf(p);
     const founder = !!p.founder;
     const F = FACE[tk](id, c, thumb);
-    const defs =
+    let defs =
       defsCommon(id, founder) +
       F.defs +
       `<path id="${id}-rp" d="${idArc((F.lay && F.lay.idR) || L.idR)}"/>`;
@@ -1138,14 +1262,60 @@
       F.seeThrough && !thumb
         ? `<g clip-path="url(#${id}-fc)" opacity=".2">${reId(ringS, 3)}</g>`
         : "";
+    const meta = {};
+    const eng = engraving(p, o, id, F, thumb, opts.beat, meta);
+    // "make" beat (the card is born). The name is engraved: a tool traces each letter's outline in
+    // turn (a dashed stroke drawn along the glyph, letter by letter, or word by word in Arabic),
+    // over a name that is already fully there. Then the tag is cut: a lit cutter runs once round
+    // the outline, drawing the cut edge behind it, and cools. All of it is extra parts laid over
+    // the finished tag; the tag, the name and the serial are drawn in the first frame.
+    let make = "";
+    if (opts.beat === "make") {
+      const lz = laser(F);
+      const nm = meta.name;
+      if (nm) {
+        const parts = MC.isAr(o) ? nm.text.split(/\s+/) : [...nm.text].filter((ch) => ch.trim());
+        const step = Math.min(48, 230 / parts.length);
+        const spans = parts
+          .map(
+            (t, i) =>
+              `<tspan style="animation-delay:${Math.round(i * step)}ms">${esc(t)}${MC.isAr(o) && i < parts.length - 1 ? " " : ""}</tspan>`,
+          )
+          .join("");
+        make += `<text class="c03v2-nz" ${nm.at} fill="none" stroke="${lz}" stroke-width="1" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true">${spans}</text>`;
+      }
+      // the cutter: a bright head with a comet's tail of short segments, each a little fainter,
+      // running once round the outline. The dash period is longer than the path, so a segment
+      // never wraps; each one waits at the start by its own offset and runs the same loop.
+      const P = perimeter();
+      const seg = (cls, len, k, extra) => {
+        const o = r2(k * P);
+        return `<path class="${cls}" d="${tagD(0)}" fill="none" stroke-linecap="round" style="--o:${o};--e:${r2(o - 1.22 * P)};stroke-dasharray:${r2(len * P)} ${r2(2 * P)}" ${extra}/>`;
+      };
+      let tail = "";
+      for (let j = 0; j < 7; j++)
+        tail += seg(
+          `c03v2-cut1${j < 3 ? " is-b" : ""}`,
+          0.03,
+          (j + 1) * 0.03,
+          `stroke-opacity="${r2(0.95 - j * 0.11, 2)}" stroke-width="${r2(4.6 - j * 0.36, 2)}"`,
+        );
+      make +=
+        `<g class="c03v2-cut" aria-hidden="true">` +
+        tail +
+        seg("c03v2-cut2", 0.006, 0.002, `stroke-opacity=".5" stroke-width="12"`) +
+        seg("c03v2-cut3", 0.002, 0.001, `stroke="#fff" stroke-width="5"`) +
+        `</g>`;
+    }
     const fob =
       `<g class="c03v2-fob">` +
       F.under +
       F.body +
       see +
       F.band +
-      engraving(p, o, id, F, thumb) +
+      eng +
       `<path class="c03v2-rim" d="${tagD(0)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
+      make +
       `</g>`;
     // the band runs over the tag's top and dives through the eyelet
     const front = `<g clip-path="url(#${id}-fr)">${reId(ringS, 2)}</g>`;
@@ -1160,9 +1330,12 @@
   function full(p, o = {}) {
     const S = MC.s(o);
     const id = MC.uid("c03v2");
-    const A = art(p, o, id);
+    // one optional beat, from the onboarding screens: the CSS runs it only with motion allowed
+    const beat = ["make", "first", "tick"].includes(o.beat) ? o.beat : null;
+    const A = art(p, o, id, { beat });
+    const tk = p.tier ? String(p.tier) : "BASE";
     return (
-      `<div class="c03v2 c03v2-full c03v2--${String(p.tier).toLowerCase()}${o.thumb ? " is-thumb" : ""}" dir="${S.dir}"${MC.isAr(o) ? ' lang="ar"' : ""} role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${p.tier}"${o.motion ? ' data-motion="1"' : ""}>` +
+      `<div class="c03v2 c03v2-full c03v2--${tk.toLowerCase()}${o.thumb ? " is-thumb" : ""}" dir="${S.dir}"${MC.isAr(o) ? ' lang="ar"' : ""} role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tk}"${o.motion ? ' data-motion="1"' : ""}${beat ? ` data-beat="${beat}"` : ""}>` +
       `<svg class="c03v2-art" viewBox="${VB}" direction="ltr" aria-hidden="true" focusable="false"><defs>${A.defs}</defs>${A.body}</svg>` +
       `</div>`
     );
@@ -1207,7 +1380,9 @@
   function bigToken(p, o, size) {
     const id = MC.uid("c03v2t");
     const tk = tierOf(p);
-    const c = p.club;
+    const c = clubOf(p);
+    const hasClub = !!p.club;
+    const forming = p.ovr == null;
     const T = TOK[tk](c);
     const founder = !!p.founder;
     const HR = 15;
@@ -1251,19 +1426,45 @@
     const nfs = p.ovr >= 100 ? (T.stitch ? 70 : 78) : T.stitch ? 97 : 110;
     const nx = inkX(n, nfs, G.cx);
     const ny = T.stitch ? 431 : 440;
+    // no number yet: the blank engraving field (from 56px) and its dash, at the digits' height
+    const dk = lum(T.num) > 0.3;
+    const numEl = forming
+      ? (size >= 56
+          ? `<rect x="44" y="${ny - 76}" width="120" height="80" rx="11" fill="#fff" fill-opacity="${dk ? 0.08 : 0.2}"/>`
+          : "") + dashBar(G.cx, r2(ny - 0.32 * nfs), 58, 16, T.num)
+      : `<text x="${nx != null ? nx : G.cx}" y="${ny}" ${nx != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${nfs}" fill="${T.num}">${esc(n)}</text>`;
+    // counted rounds: tally cuts along the start rim, painted when counted (until the number comes)
+    const tally =
+      forming && p.minRated
+        ? (() => {
+            const N = markN(p);
+            const k = markK(p, N);
+            let m = "";
+            for (let i = 0; i < N; i++) {
+              const y = r2(292 + (i - (N - 1) / 2) * 24 - 7);
+              m +=
+                i < k
+                  ? `<rect x="28" y="${y}" width="36" height="14" rx="3" fill="${T.num}"/>`
+                  : `<rect x="29.5" y="${y + 1.5}" width="33" height="11" rx="2" fill="none" stroke="${T.num}" stroke-opacity=".9" stroke-width="3"/>`;
+            }
+            return m;
+          })()
+        : "";
     const defs =
       (founder
         ? `<linearGradient id="${id}-rg" gradientUnits="userSpaceOnUse" x1="-44" y1="-44" x2="44" y2="44"><stop offset="0" stop-color="#9db0ca"/><stop offset=".45" stop-color="#3a4e6b"/><stop offset=".7" stop-color="#7a92b4"/><stop offset="1" stop-color="#2c3d55"/></linearGradient>`
         : `<linearGradient id="${id}-rg" gradientUnits="userSpaceOnUse" x1="-44" y1="-44" x2="44" y2="44"><stop offset="0" stop-color="#eef1f4"/><stop offset=".45" stop-color="#8d97a3"/><stop offset=".7" stop-color="#d5dbe1"/><stop offset="1" stop-color="#7b8592"/></linearGradient>`) +
       bandClip;
     return (
-      `<svg viewBox="${TVB.x} ${TVB.y} ${TVB.w} ${TVB.h}" width="${r2((size * TVB.w) / TVB.h)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false"><defs>${defs}</defs>` +
+      // no club, no disc: the same box, with the tag and its ring centred in it
+      `<svg viewBox="${hasClub ? TVB.x : -14} ${TVB.y} ${TVB.w} ${TVB.h}" width="${r2((size * TVB.w) / TVB.h)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false"><defs>${defs}</defs>` +
       carab +
       ringS +
-      (size >= 44 ? disc : "") +
+      (size >= 44 && hasClub ? disc : "") +
       face +
       `<path class="c03v2-rim" d="${tagD(0)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
-      `<text x="${nx != null ? nx : G.cx}" y="${ny}" ${nx != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${nfs}" fill="${T.num}">${esc(n)}</text>` +
+      tally +
+      numEl +
       `</svg>`
     );
   }
@@ -1277,7 +1478,7 @@
   const MV = { x: -0.7, y: -0.9, w: 22, h: 25.8 };
   function miniToken(p, o, size) {
     const tk = tierOf(p);
-    const c = p.club;
+    const c = clubOf(p);
     const T = TOK[tk](c);
     const founder = !!p.founder;
     const MP = (d = 0, oy = 0) => tagG(GMI, d, oy);
@@ -1308,11 +1509,16 @@
     const fs = p.ovr >= 100 ? 7.2 : T.stitch ? 8.2 : 9.4;
     const nx = inkX(n, fs, GMI.cx);
     const ny = T.stitch ? 20.6 : 21.2;
+    // no number yet: the engraved dash at the digits' height (the counted notches drop at this size)
+    const numEl =
+      p.ovr == null
+        ? dashBar(GMI.cx, r2(ny - 0.32 * fs), 6.4, 2, T.num)
+        : `<text x="${nx != null ? nx : GMI.cx}" y="${ny}" ${nx != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" fill="${T.num}">${esc(n)}</text>`;
     return (
       `<svg viewBox="${MV.x} ${MV.y} ${MV.w} ${MV.h}" width="${r2((size * MV.w) / MV.h)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false">` +
       face +
       `<path class="c03v2-rim" d="${MP()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
-      `<text x="${nx != null ? nx : GMI.cx}" y="${ny}" ${nx != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" fill="${T.num}">${esc(n)}</text>` +
+      numEl +
       carab +
       ringS +
       `</svg>`
@@ -1323,8 +1529,13 @@
     const size = o.size || 44;
     const mini = o.mini || size <= 32;
     const S = MC.s(o);
+    // a finished card keeps its short label; the onboarding states speak through the kit's label
+    const label =
+      p.ovr != null && p.tier && p.name
+        ? `${MC.nameOf(p, o)}, ${p.ovr} ${S.ovr}, ${S.tiers[p.tier]}${p.founder ? ", " + S.founderLine : ""}`
+        : MC.label(p, o);
     return (
-      `<span class="c03v2 c03v2-tok${mini ? " is-mini" : ""}" role="img" aria-label="${esc(`${MC.nameOf(p, o)}, ${p.ovr} ${S.ovr}, ${S.tiers[p.tier]}${p.founder ? ", " + S.founderLine : ""}`)}" data-tier="${p.tier}">` +
+      `<span class="c03v2 c03v2-tok${mini ? " is-mini" : ""}" role="img" aria-label="${esc(label)}" data-tier="${p.tier || "BASE"}">` +
       (mini ? miniToken(p, o, size) : bigToken(p, o, size)) +
       `</span>`
     );
@@ -1333,7 +1544,7 @@
   /* ------------------------------------------------------------ row: the "My position" compact card */
   // the tier cue beside the tier word: a small tag in the tier's material, with its D
   function tierSwatch(p) {
-    const T = TOK[tierOf(p)](p.club);
+    const T = TOK[tierOf(p)](clubOf(p));
     const g = { cx: 5, top: 0.5, hw: 4.5, H: 14, rb: 2.2, c: 2.2, dep: 1.3 };
     return (
       `<svg class="c03v2-pg" viewBox="0 0 10 16" width="8.75" height="14" aria-hidden="true">` +
@@ -1353,12 +1564,21 @@
     const ar = MC.isAr(o);
     const yr = p.founder ? String(p.founder).slice(2) : "";
     const yy = yr ? (ar ? yr + "·" : "·" + yr) : "";
+    // while forming, « en formation 1/3 » stands where the tier word would, and no tier swatch
+    const t = MC.onbStr(o);
+    const sub =
+      p.ovr == null && p.minRated
+        ? `<span>${esc(t.forming)} ${MC.ltr(`${markK(p, markN(p))}/${markN(p)}`)}</span>`
+        : p.tier
+          ? `${tierSwatch(p)}<span>${esc(S.tiers[p.tier])}</span>`
+          : "";
+    const nm = MC.nameOf(p, o);
     return (
-      `<div class="c03v2 c03v2-row${o.me ? " is-me" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} data-tier="${p.tier}">` +
+      `<div class="c03v2 c03v2-row${o.me ? " is-me" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} data-tier="${p.tier || "BASE"}">` +
       `<span class="c03v2-rk">${MC.ltr(o.rank != null ? o.rank : "")}</span>` +
       `<span class="c03v2-rt">${token(p, { ...o, size: 56, mini: false })}</span>` +
-      `<span class="c03v2-rn"><b><span class="c03v2-rnm">${esc(MC.nameOf(p, o))}</span>${yy ? `<i>${MC.ltr(yy)}</i>` : ""}</b>` +
-      `<small>${tierSwatch(p)}<span>${esc(S.tiers[p.tier])}</span></small></span>` +
+      `<span class="c03v2-rn"><b>${nm ? `<span class="c03v2-rnm">${esc(nm)}</span>` : `<span class="c03v2-rnm c03v2-blank" aria-hidden="true"></span>`}${yy ? `<i>${MC.ltr(yy)}</i>` : ""}</b>` +
+      `<small>${sub}</small></span>` +
       `<span class="c03v2-rp"><b>${MC.ltr(o.pts != null ? o.pts : "")}</b><small>${esc(S.pts)}</small></span>` +
       `</div>`
     );
@@ -1399,7 +1619,9 @@
     const fobT = `${ringT} rotate(${swing} ${EY.x} ${EY.y})`;
     const obj = (X, pre) =>
       `<g transform="${pre}${ringT}">${X.back}</g><g transform="${pre}${fobT}">${X.fob}</g><g transform="${pre}${ringT}">${X.front}</g>`;
-    const handle = "@" + String(p.key || p.name.lat).toLowerCase();
+    // an unnamed card has no handle; a club-less one sews its webbing in the object's own slate
+    const club = clubOf(p);
+    const handle = p.name ? "@" + String(p.key || p.name.lat).toLowerCase() : "";
     const yr = p.founder ? String(p.founder).slice(2) : "";
     const yy = yr ? (ar ? yr + "·" : "·" + yr) : "";
     // the strap crosses the top-end corner; the wordmark sits in the top-start corner
@@ -1411,7 +1633,7 @@
       A2.defs +
       `<pattern id="${id}-wv" width="3.2" height="3.2" patternUnits="userSpaceOnUse"><rect width="3.2" height="3.2" fill="#383c43"/><rect width="3.2" height="1.3" fill="#42464e"/><rect y="1.6" width="1.3" height="1.6" fill="#3e424a"/></pattern>` +
       `<pattern id="${id}-wu" width="3.6" height="3.6" patternUnits="userSpaceOnUse"><rect width="3.6" height="3.6" fill="#26292e"/><rect width="1.5" height="3.6" fill="#2e3137"/><rect y="1.8" width="3.6" height="1" fill="#2a2d32"/></pattern>` +
-      `<pattern id="${id}-wb" width="4" height="3" patternUnits="userSpaceOnUse"><rect width="4" height="3" fill="${p.club.primary}"/><rect width="4" height="1.2" fill="${mix(p.club.primary, "#ffffff", 0.12)}"/></pattern>` +
+      `<pattern id="${id}-wb" width="4" height="3" patternUnits="userSpaceOnUse"><rect width="4" height="3" fill="${club.primary}"/><rect width="4" height="1.2" fill="${mix(club.primary, "#ffffff", 0.12)}"/></pattern>` +
       `<filter id="${id}-gr" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 -.18"/></filter>` +
       `<radialGradient id="${id}-lt" gradientUnits="userSpaceOnUse" cx="${ar ? 300 : 60}" cy="90" r="430"><stop offset="0" stop-color="#fff" stop-opacity=".14"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></radialGradient>` +
       `<linearGradient id="${id}-gu" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>` +
@@ -1432,7 +1654,7 @@
       `<rect width="20" height="640" fill="url(#${id}-gu)"/><path d="M20 0V640" stroke="#7d8189" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>` +
       `<rect x="340" width="20" height="640" fill="url(#${id}-gv)"/><path d="M340 0V640" stroke="#7d8189" stroke-width="1" stroke-dasharray="4 3" opacity=".7"/>` +
       // a webbing strap in the club colours across the top-end corner
-      `<g transform="${strap}"><rect x="-40" y="-17" width="260" height="34" fill="url(#${id}-wb)"/><rect x="-40" y="-17" width="260" height="4" fill="${p.club.secondary}"/><rect x="-40" y="13" width="260" height="4" fill="${p.club.secondary}"/><rect x="-40" y="-17" width="260" height="34" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1"/><path d="M-40 -10H220M-40 10H220" stroke="#000" stroke-opacity=".25" stroke-width="1" stroke-dasharray="3 2.4"/></g>` +
+      `<g transform="${strap}"><rect x="-40" y="-17" width="260" height="34" fill="url(#${id}-wb)"/><rect x="-40" y="-17" width="260" height="4" fill="${club.secondary}"/><rect x="-40" y="13" width="260" height="4" fill="${club.secondary}"/><rect x="-40" y="-17" width="260" height="34" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="1"/><path d="M-40 -10H220M-40 10H220" stroke="#000" stroke-opacity=".25" stroke-width="1" stroke-dasharray="3 2.4"/></g>` +
       `<rect width="360" height="640" fill="url(#${id}-lt)"/>` +
       // the keyring, its cast shadow thrown down-end by the top-start light
       `<g filter="url(#${id}-cs)">${obj(A2, "translate(12 16) ")}</g>` +
@@ -1445,16 +1667,22 @@
       `<path d="M-5.6 4V25" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>` +
       `</g>` +
       `</svg>`;
+    const nm = MC.nameOf(p, o);
     const label =
       `<div class="c03v2-sh-tag">` +
-      `<div class="c03v2-sh-name"><b>${esc(MC.nameOf(p, o))}</b>${yy ? `<i>${MC.ltr(yy)}</i>` : ""}</div>` +
-      `<div class="c03v2-sh-meta"><span class="c03v2-sh-h">${MC.ltr(handle)}</span><em>${ar ? "مثال" : "Exemple"}</em></div>` +
+      `<div class="c03v2-sh-name">${nm ? `<b>${esc(nm)}</b>` : `<b class="c03v2-blank" aria-hidden="true"></b>`}${yy ? `<i>${MC.ltr(yy)}</i>` : ""}</div>` +
+      `<div class="c03v2-sh-meta">${handle ? `<span class="c03v2-sh-h">${MC.ltr(handle)}</span>` : ""}<em>${ar ? "مثال" : "Exemple"}</em></div>` +
       `</div>`;
+    // a provisional number says so on the image itself: a second woven label, bottom-end corner
+    const prov = p.provisional
+      ? `<div class="c03v2-sh-prov"><b>${ar ? "مبدئي" : "Provisoire"}</b></div>`
+      : "";
     return (
       `<div class="c03v2 c03v2-share" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${esc(MC.label(p, o))}">` +
       bg +
       `<div class="c03v2-sh-logo">${MC.logo("wordmark", { variant: "light" })}</div>` +
       label +
+      prov +
       `</div>`
     );
   }

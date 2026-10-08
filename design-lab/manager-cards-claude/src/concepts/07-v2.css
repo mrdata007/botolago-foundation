@@ -43,6 +43,10 @@
   font-family: "Manrope", sans-serif;
   fill: #23252a;
 }
+/* a rating that does not exist yet: a dash in the figure's place */
+.c07v2 .c07v2-pt-nil {
+  fill-opacity: 0.8;
+}
 .c07v2 .c07v2-pt-k {
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -149,6 +153,53 @@
   }
 }
 
+/* ---------- beats: the scarf knits itself (o.beat "make" | "first" | "tick") ----------
+   Self-contained: this block and the BEATS section of 07-v2.js are everything a port needs.
+   The JS wraps a row (a cast-on row, a tacking line, a stripe row, a row of the name band) in
+   <g class="c07v2-kr"> with --c07v2-d (delay) and --c07v2-t (duration). Each row is revealed one
+   stitch at a time from the inline start: a clip-path inset stepped in whole stitches (26 along the
+   fast part of the row, 10 over its last stretch, so the knitter slows as the row is pulled tight).
+   Rows are staggered, bottom to top, the way a piece grows from its cast-on. Never an opacity fade,
+   a slide or a scale of the card; the number, the name's stitches, the serial and the patch carry no
+   animation. Hidden until their turn, so the first painted frame is the scarf with those rows still
+   to knit. Nothing at all under reduced motion (the rows are then drawn finished, as always). */
+@media (prefers-reduced-motion: no-preference) {
+  .c07v2 .c07v2-kr,
+  .c07v2-tk .c07v2-kr {
+    animation: c07v2-stitch var(--c07v2-t, 190ms) both;
+    animation-delay: var(--c07v2-d, 0ms);
+  }
+  .c07v2[dir="rtl"] .c07v2-kr {
+    animation-name: c07v2-stitch-rtl;
+  }
+}
+@keyframes c07v2-stitch {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    animation-timing-function: steps(26, end);
+  }
+  62% {
+    clip-path: inset(0 28% 0 0);
+    animation-timing-function: steps(10, end);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes c07v2-stitch-rtl {
+  0% {
+    clip-path: inset(0 0 0 100%);
+    animation-timing-function: steps(26, end);
+  }
+  62% {
+    clip-path: inset(0 0 0 28%);
+    animation-timing-function: steps(10, end);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
 /* ---------- token and mini ---------- */
 .c07v2-tk {
   display: inline-block;
@@ -187,6 +238,14 @@
 .app-dark .c07v2-tk .c07v2-tk-av path:not([fill="none"]),
 :root[data-ground] .app-dark .c07v2-tk .c07v2-tk-av path:not([fill="none"]) {
   fill: #6b7482;
+}
+/* an undyed-wool token (no club chosen) keeps a thin edge on the light ground too */
+.app-light .c07v2-tk--wool .c07v2-tk-sw,
+.app-light .c07v2-tk--wool .c07v2-tk-tassel,
+:root[data-ground="day"] .c07v2-tk--wool .c07v2-tk-sw,
+:root[data-ground="day"] .c07v2-tk--wool .c07v2-tk-tassel {
+  stroke: #8a8170;
+  stroke-width: 0.5px;
 }
 /* the cream cast-on keeps an edge on the light ground, so it reads as knit, not as a gap */
 .app-light .c07v2-tk .c07v2-tk-cast,
@@ -229,7 +288,9 @@
 }
 .c07v2-row .c07v2-row-rank {
   position: relative;
-  font: 800 15px/1 "Manrope", sans-serif;
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
   text-align: center;
   color: var(--ui-on-surface-muted, #4e5661);
@@ -253,7 +314,10 @@
   padding-top: 8px;
 }
 .c07v2-row .c07v2-row-name b {
-  font: 800 18px/1.1 "Changa", "Noto Sans Arabic", sans-serif;
+  font:
+    800 18px/1.1 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -281,7 +345,10 @@
   margin-inline: 0.14em 0;
 }
 .c07v2-row .c07v2-row-name small {
-  font: 700 11px/1.2 "Manrope", "Noto Sans Arabic", sans-serif;
+  font:
+    700 11px/1.2 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0.06em;
   color: var(--ui-on-surface-muted, #4e5661);
   white-space: nowrap;
@@ -293,7 +360,9 @@
   justify-items: end;
   gap: 3px;
   padding-top: 8px;
-  font: 800 18px/1 "Manrope", sans-serif;
+  font:
+    800 18px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .c07v2-row .c07v2-row-pts small {
@@ -302,9 +371,25 @@
   letter-spacing: 0.08em;
   color: var(--ui-on-surface-muted, #4e5661);
 }
+/* a guest before naming: the name carrier is a short empty band of plain rib, never a word */
+.c07v2-row .c07v2-row-nm0 {
+  display: block;
+  width: 78px;
+  height: 16px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--ui-on-surface-muted, #4e5661) 0 2px,
+    transparent 2px 4px
+  );
+  opacity: 0.4;
+}
 /* Arabic names need the room under the baseline: the dots of ي are never clipped (علي, not على) */
 .c07v2-row[dir="rtl"] .c07v2-row-name b {
-  font: 800 18px/1.7 "Changa", "Noto Sans Arabic", sans-serif;
+  font:
+    800 18px/1.7 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0;
 }
 .c07v2-row[dir="rtl"] .c07v2-row-yr {
@@ -349,11 +434,16 @@
   inset-inline-start: 24px;
   margin: 0;
   display: grid;
-  font: 700 19px/1.12 "Changa", sans-serif;
+  font:
+    700 19px/1.12 "Changa",
+    sans-serif;
   color: #f2eee4;
 }
 .c07v2-share[dir="rtl"] .c07v2-sh-cap {
-  font: 700 19px/1.4 "Changa", "Noto Sans Arabic", sans-serif;
+  font:
+    700 19px/1.4 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
   top: 44px;
 }
 .c07v2-share .c07v2-sh-sub {
@@ -361,7 +451,9 @@
   top: 30px;
   inset-inline-end: 24px;
   margin: 0;
-  font: 700 11px/1.3 "Manrope", sans-serif;
+  font:
+    700 11px/1.3 "Manrope",
+    sans-serif;
   letter-spacing: 0.03em;
   color: rgba(242, 238, 228, 0.78);
 }
@@ -376,4 +468,30 @@
 .c07v2-share .c07v2-sh-scarf .c07v2 {
   --c07v2-rim: rgba(214, 222, 234, 0.3);
   --c07v2-drop: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.7));
+}
+
+/* a provisional rating says so on the image: a small sewn-on label under the sample note */
+.c07v2-share .c07v2-sh-prov {
+  position: absolute;
+  top: 54px;
+  inset-inline-end: 24px;
+  margin: 0;
+  line-height: 1;
+}
+.c07v2-share .c07v2-sh-prov span {
+  display: block;
+  padding: 5px 9px;
+  background: #f2eee4;
+  color: #23252a;
+  font:
+    700 11px/1.2 "Manrope",
+    sans-serif;
+  letter-spacing: 0.03em;
+  border-radius: 2px;
+  outline: 1px dashed rgba(35, 37, 42, 0.55);
+  outline-offset: -3px;
+}
+.c07v2-share[dir="rtl"] .c07v2-sh-prov span {
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+  letter-spacing: 0;
 }

@@ -9,7 +9,14 @@
    not fit steps down a ladder (8 rows → 7 → 6 condensed, the year stacked above the name's end,
    then two lines); it is never cut to an initial. The share image hangs both halves of the
    scarf over the rail: the front with the 84, the name, the tier and the patch; the back with
-   the season, the 2026 cast-on and the fringe. LEGEND lifts the scarf overhead. */
+   the season, the 2026 cast-on and the fringe. LEGEND lifts the scarf overhead.
+
+   Onboarding states (CONTRACT.md): a card with no rating yet is the finished scarf with an empty
+   carrier, like a new one with no rows. The number band is plain rib with a knitted dash; with no
+   tier it is the base scarf (a tone-on-tone name band, a plain fringe of loose strands, no tier
+   strip, no panel, no binding); k of N is one stripe per counted gameweek, a solid two-row stripe
+   when knitted and a one-row tacking line while it waits. A profile without the new fields
+   renders exactly as before. */
 (function () {
   const MC = window.MC;
   const PFX = "c07v2";
@@ -68,6 +75,8 @@
     STADE: { cols: 33, gap: 0.3, leg: 0.2 },
     PRO: { cols: 37, gap: 0.4, leg: 0.27 },
     CHAMPION: { cols: 42, gap: 0.5, leg: 0.36 },
+    // the base scarf (no tier yet): between STADE and PRO, so no tier's gauge is claimed
+    BASE: { cols: 36, gap: 0.34, leg: 0.24 },
   };
 
   /* ---------- hand-cleaned knit charts ('#' = stitch) ---------- */
@@ -940,6 +949,41 @@
     return res;
   }
 
+  /* ---------- beats: the scarf knits itself (o.beat) ----------
+     Three optional beats, each a few rows of the scarf knitting in. They are all done with CSS only
+     (07-v2.css, "beats"), so this section and that one are all a port needs.
+
+       "make"  on birth, 700ms at most: the cast-on rows knit in from the foot, the three tacking
+               lines of the counted-gameweek slots run in, and the base scarf's tone-on-tone name
+               band knits in row by row, bottom to top, the way a piece grows from its cast-on.
+       "first" the first rating, 600ms at most, over an already visible number: the last counted
+               gameweek's stripe (two rows, lower row first) knits in over its tacking line.
+       "tick"  one more counted gameweek, 500ms at most: the new stripe knits in, as in "first".
+
+     How a row knits: knit() wraps the row's SVG in <g class="c07v2-kr"> with two custom properties,
+     --c07v2-d (delay) and --c07v2-t (duration). CSS reveals the row stitch by stitch, from the
+     inline start (right to left in Arabic): a clip-path inset stepped one stitch at a time, fast
+     along the row and slower over the last stitches, the way a knitter pulls the row tight.
+     Rows are staggered by their index in knitting order (0 = first knitted).
+
+     What never moves: the number (and its dash), the name's stitches, the serial and the patch.
+     Only parts that are not those animate, so all of them are legible in the first painted frame.
+     Nothing runs under prefers-reduced-motion, or without o.beat. */
+  const BEATS = {
+    // part: [start ms, gap between rows ms, row duration ms]
+    make: { cast: [0, 36, 170], tack: [110, 45, 190], band: [200, 26, 190] },
+    first: { stripe: [80, 110, 300] },
+    tick: { stripe: [30, 90, 240] },
+  };
+  /** Wraps one row's SVG so it knits in at its turn; returns it unchanged when `beat` has no such
+      part. `i` is the row's index in knitting order, `gap` overrides the stagger between rows. */
+  function knit(beat, part, i, inner, gap) {
+    const t = BEATS[beat] && BEATS[beat][part];
+    if (!t) return inner;
+    const d = Math.round(t[0] + i * (gap != null ? gap : t[1]));
+    return `<g class="c07v2-kr" style="--c07v2-d:${d}ms;--c07v2-t:${t[2]}ms">${inner}</g>`;
+  }
+
   /* ---------- colours from the profile ---------- */
   /** The lightest (or darkest) tint of `g` that reaches `target` contrast, from `t0` up to 0.9. */
   function reach(g, target, t0, toward) {
@@ -979,6 +1023,11 @@
     const F = contrast(CREAM, G) >= 2.6 ? CREAM : contrast(L, G) >= 2.6 ? L : CHAR;
     // the word on the tier strip (the strip is the stripe yarn)
     const T = contrast(G, S) >= 2.6 ? G : CHAR;
+    // the base scarf (no tier yet): the dash in whichever of cream and charcoal stands out more from
+    // the ground (always at least 4.5:1 before the knit's shadows), and a tone-on-tone name band,
+    // a darker lot of the ground yarn, which keeps the name's own colour legible on it
+    const dash = contrast(CREAM, G) >= contrast(CHAR, G) ? CREAM : CHAR;
+    const Q = lightG ? mix(G, "#000000", 0.14) : mix(G, "#000000", 0.4);
     return {
       G,
       L,
@@ -993,6 +1042,8 @@
       K,
       F,
       T,
+      dash,
+      Q,
       cast,
       castInk,
       patch,
@@ -1136,6 +1187,27 @@
     return s;
   }
 
+  /** The base scarf's fringe: no tassels (their count is the tier), only a close row of loose
+      strands, each a short ply of the ground yarn, hanging straight from the knitted end. */
+  function looseFringe(x0, x1, y, len, P, rnd) {
+    const n = Math.max(8, Math.round((x1 - x0) / 7));
+    const step = (x1 - x0) / n;
+    const w = f2(step * 0.52);
+    let s = "";
+    for (let i = 0; i < n; i++) {
+      const x = x0 + step * (i + 0.5);
+      const l = len - rnd() * 7;
+      const sw = (rnd() * 2 - 1) * 1.8;
+      const d = `M${f2(x)} ${f2(y + 1)}C${f2(x + sw * 0.25)} ${f2(y + l * 0.4)} ${f2(x + sw * 0.8)} ${f2(y + l * 0.72)} ${f2(x + sw)} ${f2(y + l)}`;
+      s += `<path d="${d}" stroke="${P.Gdk}" stroke-width="${f2(+w + 0.7)}" fill="none" stroke-linecap="round" opacity=".32"/>`;
+      s += `<path d="${d}" stroke="${P.G}" stroke-width="${w}" fill="none" stroke-linecap="round"/>`;
+      if (i % 2)
+        s += `<path d="${d}" stroke="${P.Gdk}" stroke-width="${w}" fill="none" stroke-linecap="round" opacity=".22"/>`;
+      s += `<path d="${d}" stroke="${P.Gdk}" stroke-width="${f2(w * 0.4)}" stroke-dasharray="1.2 1.6" fill="none" opacity=".45"/>`;
+    }
+    return s;
+  }
+
   /* ---------- the woven jacquard patch ---------- */
   /** A woven patch sewn on the knit: club-secondary ground, a satin-stitch border, a 1u thickness
       shadow, the unmodified colour logo at the top, the ratings in Manrope 700 (tabular) under
@@ -1240,12 +1312,14 @@
           "rtl",
         );
       else s += tx(cx, top + labFs * 0.9, S.stats[key], "middle", "c07v2-pt-k", labFs);
+      // a rating that does not exist yet is a dash, never 0
+      const nil = p.stats[key] == null;
       s += tx(
         cx,
         top + labFs * 1.25 + figFs * 0.86,
-        String(p.stats[key]),
+        nil ? MC.onbStr(o).dash : String(p.stats[key]),
         "middle",
-        "c07v2-pt-v",
+        "c07v2-pt-v" + (nil ? " c07v2-pt-nil" : ""),
         figFs,
       );
     });
@@ -1263,11 +1337,17 @@
   /** The ID's carrier line, woven along the patch's foot (spans so the ID stays left-to-right). */
   function footLine(p, o) {
     const S = MC.s(o);
+    const id = idText(p, o);
     if (MC.isAr(o))
-      return `<tspan direction="ltr" unicode-bidi="embed">${esc(p.id)}</tspan> · <tspan direction="ltr" unicode-bidi="embed">${esc(p.season)}</tspan> · ${esc(S.country)}`;
-    return `${esc(p.id)} · ${esc(p.season)} · ${esc(S.country)}`;
+      return `<tspan direction="ltr" unicode-bidi="embed">${id}</tspan> · <tspan direction="ltr" unicode-bidi="embed">${esc(p.season)}</tspan> · ${esc(S.country)}`;
+    return `${id} · ${esc(p.season)} · ${esc(S.country)}`;
   }
+  /** The ID carrier's text: the serial, or (not assigned yet) the carrier with a dash, no sentence. */
+  const idText = (p, o) => (p.id ? esc(p.id) : "BOT " + MC.onbStr(o).dash);
   const NOTE = (o) => (MC.isAr(o) ? "J.01–J.07 · مثال" : "J.01–J.07 · Exemple");
+  /** The patch's sample note. An onboarding profile does not know which gameweeks the sample
+      season holds, so it carries only the label. */
+  const noteOf = (p, o) => (p.minRated != null ? (MC.isAr(o) ? "مثال" : "Exemple") : NOTE(o));
 
   /* ---------- the knitted motifs ---------- */
   /** Drops blank rows and columns round a bitmap; returns the rows and how many were cut at the top. */
@@ -1297,8 +1377,18 @@
     while (b >= t && !/[^.]/.test(bmp[b])) b--;
     return bmp.slice(t, b + 1);
   };
-  /** The 84: two 9×13 figures, two stitches apart. */
-  const digitsArt = (ovr) => word(String(ovr), D913, 2);
+  /** The knitted dash of a card with no rating yet: 14 stitches by 3 rows (the stem weight of the
+      84's figures) at mid-height of the 13-row band, in the 84's own yarn. Never 0, never blank. */
+  const DASH13 = Array.from({ length: 13 }, (_, r) => (r >= 5 && r <= 7 ? "#" : ".").repeat(14));
+  /** The 84: two 9×13 figures, two stitches apart; or, with no rating yet, the dash. */
+  const digitsArt = (ovr) => (ovr == null ? DASH13 : word(String(ovr), D913, 2));
+  /** Which counted gameweeks are drawn on the object: n slots (the minimum) with k knitted. Only
+      while the number is null or just reached (counted ≤ n); later the season's stripes carry it. */
+  function marksOf(p) {
+    if (!(p.minRated > 0) || p.counted == null) return null;
+    if (p.ovr != null && p.counted > p.minRated) return null;
+    return { n: p.minRated, k: Math.max(0, Math.min(p.counted, p.minRated)) };
+  }
 
   /* ---------- the name and its supporter year: a fit ladder, never an initial ---------- */
   /** The year as a bitmap marked '*': '·26' (Latin), '26·' (Arabic, in visual order). The dot is
@@ -1489,16 +1579,59 @@
         if (fits(k)) return { ...k, rows: nb.bmp.length };
       }
     }
+    // a long name of several words (عبد الله يوسف): two lines, then three, broken at the spaces, each
+    // line sampled from Changa 800 like the one-line fallback; the year ends the last line, or has a
+    // line of its own at the inline end
+    const words = name.split(/\s+/).filter(Boolean);
+    for (let n = 2; n <= Math.min(3, words.length); n++)
+      for (const rows of [9, 8, 7, 6]) {
+        const cands = [];
+        for (const parts of splits(words.join(" "), n)) {
+          const lines = parts.map((t) => {
+            const raw = rasterText(t, rows);
+            const tr = trim(raw.bmp);
+            return { bmp: tr.bmp, base: Math.max(0, raw.base - tr.top) };
+          });
+          let tail = lines[n - 1];
+          let own = null;
+          if (yr) {
+            const yb = ybs[0];
+            const j = [2, 1].map((g) => yearInline(tail, yb, g, true)).find(fits);
+            if (j) tail = j;
+            else own = yb.bmp;
+          }
+          const stack = [...lines.slice(0, -1).map((l) => l.bmp), tail.bmp, ...(own ? [own] : [])];
+          const w = Math.max(...stack.map(bw));
+          // lines are centred; the year's own line sits at the inline end (the left, in Arabic)
+          const b = vstack(
+            stack.map((rowsOf, i) =>
+              own && i === stack.length - 1
+                ? rowsOf.map((r) => r + ".".repeat(w - bw(rowsOf)))
+                : rowsOf,
+            ),
+            2,
+          );
+          if (bw(b) <= inner) cands.push({ b, w: bw(b) });
+        }
+        if (cands.length) {
+          cands.sort((x, y) => x.w - y.w);
+          return { bmp: cands[0].b, base: cands[0].b.length - 1, rows: rows };
+        }
+      }
     const k = yr ? yearTuck(last, ybs[ybs.length - 1], true) : last;
     return { ...k, rows: last.bmp.length };
   }
   /** The name with the supporter year (ALI ·26): name stitches '#', year stitches '*'. In Arabic the
       year comes first on the page (26· علي), the dot between the year and the name. */
   function nameArt(p, o, inner) {
+    const name = MC.nameOf(p, o).trim();
+    // a guest before naming: the name carrier is drawn empty, at the height a name would take
+    if (!name) {
+      const rows = MC.isAr(o) ? 12 : 8;
+      return { bmp: Array(rows).fill(""), base: rows - 1, rows };
+    }
     const yr = p.founder ? String(p.founder).slice(-2) : "";
-    return MC.isAr(o)
-      ? arabicName(MC.nameOf(p, o), yr, inner)
-      : latinName(MC.nameOf(p, o), yr, inner);
+    return MC.isAr(o) ? arabicName(name, yr, inner) : latinName(name, yr, inner);
   }
   /** The tier word: Latin on 4 rows; Arabic hand-charted. */
   function tierArt(tier, o) {
@@ -1524,14 +1657,21 @@
       and longer, carries the season's stripes, the founder's cast-on and the fringe. */
   function fullHanging(p, o) {
     const ar = MC.isAr(o);
-    const tier = p.tier;
-    const Gg = GAUGE[tier];
+    const tier = p.tier || null; // null: the base scarf, before any rating
+    const T = tier || "BASE";
+    const bare = !tier;
+    const Gg = GAUGE[T];
     const cols = Gg.cols;
     const c = FW / cols;
     const P = palette(p);
     const thumb = !!o.thumb;
     const share = !!o._share;
     const homa = tier === "HOMA";
+    const nil = p.ovr == null; // the number carrier is plain rib with a dash
+    const marks = share ? null : marksOf(p);
+    const beat = BEATS[o.beat] ? o.beat : "";
+    const newMark = !!marks && marks.k > 0 && (beat === "first" || beat === "tick"); // the stripe that knits in
+    const SK = p.serial || "0"; // seeds for the grain and the fringe
     const u = MC.uid(PFX);
     const id = (k) => `${u}-${k}`;
     const ids = {
@@ -1560,7 +1700,7 @@
     // motifs
     const dg = digitsArt(p.ovr);
     const nm = nameArt(p, o, inner);
-    const tw = tierArt(tier, o);
+    const tw = tier ? tierArt(tier, o) : [];
 
     // rows, from the rail down; a ground-colour override per row ('' = the ground)
     const keys = [];
@@ -1574,10 +1714,12 @@
     // the 84 (PRO: on a cream panel; STADE: its one jacquard band under it; CHAMPION: a stripe pair)
     if (tier === "PRO") {
       L.digits = r + 1;
+      L.carrier = [r, 15];
       push(15, "C");
       push(1);
     } else {
       L.digits = r;
+      L.carrier = [r, binding ? 14 : 13];
       push(binding ? 14 : 13);
       push(1);
       if (tier === "STADE" || binding) {
@@ -1585,21 +1727,36 @@
         push(1);
       }
     }
-    // the name band
+    // the name band (the base scarf's is a tone-on-tone band, drawn under the grid so the name stays on top)
+    L.nameBand = r;
     L.name = r + 1;
     push(nm.bmp.length + 2);
-    // the tier strip: a narrow band of the stripe yarn (HOMA: a garter ridge band in the one yarn)
+    // the tier strip: a narrow band of the stripe yarn (HOMA: a garter ridge band in the one yarn).
+    // The base scarf has none.
     L.strip = r;
     L.tier = r + 1;
-    push(tw.length + 2, homa ? "" : "S");
+    if (tier) push(tw.length + 2, homa ? "" : "S");
     L.stripEnd = r;
     // the season and the patch
     const pw = FW - 4 * c;
     const px = X0 + 2 * c;
     const foot = [footLine(p, o)];
-    const dry = patch(p, o, 0, 0, pw, ids, P, { head: "logo", foot, note: NOTE(o), thumb });
+    const note = noteOf(p, o);
+    const dry = patch(p, o, 0, 0, pw, ids, P, { head: "logo", foot, note, thumb });
     const pRows = Math.ceil((dry.h + 2) / c);
     if (share) {
+      push(1);
+      L.patch = r;
+      push(pRows + 1);
+    } else if (marks) {
+      // the counted gameweeks, one stripe each: knitted (two rows of the stripe yarn) or still to
+      // come (a one-row tacking line); the patch sits under them, so every stripe shows
+      L.slots = [];
+      for (let i = 0; i < marks.n; i++) {
+        push(i ? 1 : 2);
+        L.slots.push(r);
+        push(2, i < marks.k - (newMark ? 1 : 0) ? "W" : "");
+      }
       push(1);
       L.patch = r;
       push(pRows + 1);
@@ -1607,7 +1764,8 @@
       // one stripe per gameweek played (a row of the stripe yarn, a row of ground); the patch is sewn
       // over the season after its first two stripes, so the rest run out from under its edges
       L.season = r;
-      for (let gw = 1; gw <= PLAYED; gw++) {
+      const played = p.counted != null ? Math.max(0, Math.min(p.counted, PLAYED)) : PLAYED;
+      for (let gw = 1; gw <= played; gw++) {
         push(1);
         push(1, "W");
       }
@@ -1629,7 +1787,7 @@
     const lo = ar ? resEnd : resStart;
     const hi = cols - (ar ? resStart : resEnd);
     const centre = (bmp) => lo + Math.round((hi - lo - bw(bmp)) / 2);
-    const dKey = { HOMA: "R", STADE: "L", PRO: "K", CHAMPION: "F" }[tier];
+    const dKey = { HOMA: "R", STADE: "L", PRO: "K", CHAMPION: "F", BASE: "Z" }[T];
     const dc = centre(dg);
     if (binding) stamp(g, dg, dc + (ar ? -1 : 1), L.digits + 1, { "#": "D" }); // a one-stitch knitted drop shadow
     stamp(g, dg, dc, L.digits, { "#": dKey });
@@ -1643,10 +1801,13 @@
     );
     stamp(g, tw, centre(tw), L.tier, { "#": homa ? "R" : "T" });
     // selvedges: cream at the inline start, Logo Blue at the inline end (HOMA: blue only)
-    for (let i = 0; i < L.rows; i++) {
-      g[i][at(cols - 1)] = "B";
-      if (selv) g[i][at(0)] = "C";
-    }
+    const selvedge = (rows) => {
+      for (const row of rows) {
+        row[at(cols - 1)] = "B";
+        if (selv) row[at(0)] = "C";
+      }
+    };
+    selvedge(g);
     const PK = {
       G: P.G,
       L: P.L,
@@ -1660,6 +1821,7 @@
       K: P.K,
       F: P.F,
       T: P.T,
+      Z: P.dash,
       W: homa ? P.R : P.S,
     };
 
@@ -1681,7 +1843,7 @@
     if (binding)
       defs += `<pattern id="${ids.tape}" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.2" height="2.2" fill="${P.L}"/><rect width="1" height="2.2" fill="#000" opacity=".12"/></pattern>`;
     if (!thumb)
-      defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
+      defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(SK) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
 
     // the front drop's outline: the fold over the tube, straight edges, the cast-on (or cast-off) edge
     const yCast = share ? yFab : yFab + CAST.rows * CAST.c;
@@ -1690,6 +1852,25 @@
 
     // fabric
     let fab = `<rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yFab - FT + 0.6)}" fill="${P.G}"/>`;
+    // the base scarf's name band: a darker lot of the ground yarn under the name (and, with no name
+    // yet, an empty band of plain rib)
+    if (bare) {
+      const nr = nm.bmp.length + 2;
+      let band = "";
+      if (beat === "make")
+        // row by row, bottom to top; the name's stitches are in the grid above it, never animated
+        for (let rr = 0; rr < nr; rr++)
+          band += knit(
+            beat,
+            "band",
+            nr - 1 - rr,
+            `<rect x="${X0}" y="${f2(yOf(L.nameBand + rr))}" width="${FW}" height="${f2(c + 0.04)}" fill="${P.Q}"/>`,
+            Math.min(26, 260 / (nr - 1)),
+          );
+      else
+        band = `<rect x="${X0}" y="${f2(yOf(L.nameBand))}" width="${FW}" height="${f2(nr * c)}" fill="${P.Q}"/>`;
+      fab += `<g class="c07v2-nameband">${band}</g>`;
+    }
     const sR = L.strip;
     const eR = L.stripEnd;
     if (homa) {
@@ -1702,6 +1883,51 @@
       fab += `<g transform="translate(${f2(-sx * 0.7)} ${f2(-c * 0.16)})" fill="#fff" opacity=".3">${keyRects(g, "R", X0, FT, c, c)}</g>`;
     }
     fab += gridRuns(g, PK, X0, FT, c, c, "G");
+    // counted gameweeks still to come: a tacking line (three stitches in the stripe yarn, two left)
+    if (marks)
+      for (let i = marks.k - (newMark ? 1 : 0); i < marks.n; i++) {
+        const gt = grid(cols, 1, "G");
+        for (let cc = 0; cc < cols; cc++) if (cc % 5 < 3) gt[0][cc] = "W";
+        selvedge(gt);
+        fab += knit(
+          beat,
+          "tack",
+          marks.n - 1 - i,
+          `<g class="c07v2-tack">${gridRuns(gt, PK, X0, yOf(L.slots[i]), c, c, "G")}</g>`,
+        );
+      }
+    // the stripe that has just been counted (beats "first" and "tick"): two rows, lower first, over
+    // its tacking line. The number, the name and the serial are all there in the first frame.
+    if (newMark) {
+      const row0 = L.slots[marks.k - 1];
+      for (let q = 0; q < 2; q++) {
+        const gb = grid(cols, 1, "W");
+        selvedge(gb);
+        fab += knit(
+          beat,
+          "stripe",
+          q,
+          `<g class="c07v2-bt-stripe">${gridRuns(gb, PK, X0, yOf(row0 + 1 - q), c, c, "G")}</g>`,
+        );
+      }
+    }
+    // plain rib: every second stitch column a purl ridge. The number carrier with no rating yet, and
+    // an unnamed guest's name band, are rib; the dash is knitted over it in its own yarn.
+    const ribBand = (r0, n) => {
+      let rb = "";
+      for (let cc = lo; cc < hi; cc++)
+        rb +=
+          cc % 2 === 1
+            ? `<rect x="${f2(X0 + cc * c)}" y="${f2(yOf(r0))}" width="${f2(c)}" height="${f2(n * c)}" fill="#000" opacity=".26"/>`
+            : `<rect x="${f2(X0 + cc * c)}" y="${f2(yOf(r0))}" width="${f2(c)}" height="${f2(n * c)}" fill="#fff" opacity=".11"/>`;
+      return rb;
+    };
+    if (nil)
+      fab +=
+        `<g class="c07v2-rib">${ribBand(L.carrier[0], L.carrier[1])}</g>` +
+        `<g fill="${PK[dKey]}" class="c07v2-dash">${keyRectsIn(g, dKey, X0, FT, c, c, L.digits, L.digits + 14)}</g>`;
+    if (!MC.nameOf(p, o).trim())
+      fab += `<g class="c07v2-rib">${ribBand(L.nameBand, nm.bmp.length + 2)}</g>`;
     if (homa) {
       // V stitches everywhere except the garter band, where only the raised word takes them
       fab += `<rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yOf(sR) - FT)}" fill="url(#${ids.base})"/>`;
@@ -1711,7 +1937,7 @@
       fab += `<rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yFab - FT)}" fill="url(#${ids.base})"/>`;
     // the end: the founder's cast-on (card), or a cast-off edge (share: the cast-on is on the back half)
     if (share) fab += castOff(X0, X1, yFab, c, P.Gxd);
-    else fab += castOn(p, P, ids, yFab, ar, thumb, 0);
+    else fab += castOn(p, P, ids, yFab, ar, thumb, 0, beat);
     // shading: edge curl, the fold over the tube, fibre grain
     fab +=
       `<g pointer-events="none"><rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yCast - FT)}" fill="url(#${ids.curl})"/>` +
@@ -1776,13 +2002,15 @@
     back += `<path d="${bOut}" fill="none" stroke="#000" stroke-opacity=".4" stroke-width=".8"/><path d="${bOut}" fill="none" class="c07v2-rim" stroke-width=".8"/>`;
 
     // the fringe: the tassel count is the tier
-    const n = TASSELS[tier];
-    const rnd = seeded(hashStr(p.serial + "fringe" + tier));
-    const tsw = { HOMA: 22, STADE: 17, PRO: 15, CHAMPION: 13 }[tier];
-    const fringeLen = { HOMA: 34, STADE: 37, PRO: 39, CHAMPION: 43 }[tier];
+    const n = bare ? 0 : TASSELS[tier];
+    const rnd = seeded(hashStr(SK + "fringe" + T));
+    const tsw = { HOMA: 22, STADE: 17, PRO: 15, CHAMPION: 13 }[T];
+    const fringeLen = { HOMA: 34, STADE: 37, PRO: 39, CHAMPION: 43, BASE: 30 }[T];
     const fx0 = share ? Math.min(bx0, bx1) : X0;
     const fy = share ? yBackEnd : yCast;
     let fringe = "";
+    // the tassel count is the tier; the base scarf has loose strands instead, so it counts nothing
+    if (bare) fringe = looseFringe(fx0, fx0 + FW, fy - 3, fringeLen, P, rnd);
     for (let i = 0; i < n; i++)
       fringe += tassel(fx0 + (FW * (i + 0.5)) / n, fy - 3, fringeLen + (rnd() * 6 - 3), tsw, P, {
         rnd,
@@ -1801,7 +2029,7 @@
     const pt = patch(p, o, px, yOf(L.patch) + 1, pw, ids, P, {
       head: "logo",
       foot,
-      note: NOTE(o),
+      note,
       thumb,
     });
 
@@ -1819,32 +2047,27 @@
       pt.svg +
       `</g>` +
       `</svg>`;
-    const cls = `c07v2 c07v2--${tier.toLowerCase()}${thumb ? " c07v2--thumb" : ""}${o.motion ? " c07v2--motion" : ""}${P.wool ? " c07v2--wool" : ""}${share ? " c07v2--share" : ""}`;
-    return `<div class="${cls}" dir="${MC.s(o).dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tier}" data-art="${f2(Math.min(X0, bx0))} ${f2(Math.max(X1, bx1))}">${svg}</div>`;
+    const cls = `c07v2 c07v2--${T.toLowerCase()}${thumb ? " c07v2--thumb" : ""}${o.motion ? " c07v2--motion" : ""}${beat ? " c07v2--beat-" + beat : ""}${P.wool ? " c07v2--wool" : ""}${share ? " c07v2--share" : ""}`;
+    return `<div class="${cls}" dir="${MC.s(o).dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tier || "none"}" data-art="${f2(Math.min(X0, bx0))} ${f2(Math.max(X1, bx1))}">${svg}</div>`;
   }
 
   /** The founder's cast-on: five cream rows with 2026 knitted between two cable twists.
       Non-founders cast on plain, in the ground yarn. Digits are never mirrored. `dx` shifts it. */
-  function castOn(p, P, ids, y, ar, thumb, dx) {
+  function castOn(p, P, ids, y, ar, thumb, dx, beat) {
     const cc = CAST.c;
     const cols = Math.round(FW / cc);
     const h = CAST.rows * cc;
     const founder = !!p.founder;
+    const mk = beat === "make"; // the rows knit in one at a time: each carries its own texture
     const base = founder ? P.cast : P.G;
     const x0 = X0 + dx;
     const x1 = X1 + dx;
-    let s = "";
     const yr = founder ? word(String(p.founder), F35, 1) : null;
     const c0 = yr ? Math.round((cols - bw(yr)) / 2) : 0;
-    for (let r = 0; r < CAST.rows; r++) {
-      let row = `<rect x="${f2(x0)}" y="${f2(y + r * cc)}" width="${FW}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${base}"/>`;
-      if (yr)
-        row += `<g fill="${P.castInk}">${bmpRects([yr[r]], x0 + c0 * cc, y + r * cc, cc, cc)}</g>`;
-      row += `<rect x="${f2(ar ? x0 : x1 - cc)}" y="${f2(y + r * cc)}" width="${cc}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${BLUE}"/>`;
-      s += `<g class="c07v2-co-row" style="--c07v2-i:${r}">${row}</g>`;
-    }
-    s += `<g class="c07v2-co-after">`;
-    s += `<rect x="${f2(x0)}" y="${y}" width="${FW}" height="${h}" fill="url(#${ids.cast})"/>`;
+    // the stitch texture over the five rows, the cable twists, and the bind-off loops along the edge
+    const pat = (y0, hh) =>
+      `<rect x="${f2(x0)}" y="${y0}" width="${FW}" height="${hh}" fill="url(#${ids.cast})"/>`;
+    let cables = "";
     if (founder && !thumb) {
       const ink = mix(P.cast, "#000000", 0.32);
       const cx = [(x0 + cc + x0 + c0 * cc) / 2, (x0 + (c0 + bw(yr)) * cc + x1 - cc) / 2].map(
@@ -1853,19 +2076,40 @@
       for (const x of cx) {
         const a = `M${x - 4} ${y}C${x - 4} ${y + 7} ${x + 4} ${y + 10} ${x + 4} ${y + 17.5}C${x + 4} ${y + 25} ${x - 4} ${y + 28} ${x - 4} ${y + 35}`;
         const b = `M${x + 4} ${y}C${x + 4} ${y + 7} ${x - 4} ${y + 10} ${x - 4} ${y + 17.5}C${x - 4} ${y + 25} ${x + 4} ${y + 28} ${x + 4} ${y + 35}`;
-        s += `<rect x="${x - 10}" y="${y}" width="20" height="${h}" fill="${ink}" opacity=".2"/>`;
-        s += `<path d="${b}" stroke="${ink}" stroke-width="7.4" fill="none"/><path d="${b}" stroke="${P.cast}" stroke-width="5.2" fill="none"/>`;
-        s += `<path d="${a}" stroke="${ink}" stroke-width="7.4" fill="none"/><path d="${a}" stroke="${P.cast}" stroke-width="5.2" fill="none"/>`;
-        s += `<path d="${a}" stroke="#fff" stroke-width="1.2" fill="none" opacity=".7" transform="translate(-1 -.6)"/>`;
+        cables += `<rect x="${x - 10}" y="${y}" width="20" height="${h}" fill="${ink}" opacity=".2"/>`;
+        cables += `<path d="${b}" stroke="${ink}" stroke-width="7.4" fill="none"/><path d="${b}" stroke="${P.cast}" stroke-width="5.2" fill="none"/>`;
+        cables += `<path d="${a}" stroke="${ink}" stroke-width="7.4" fill="none"/><path d="${a}" stroke="${P.cast}" stroke-width="5.2" fill="none"/>`;
+        cables += `<path d="${a}" stroke="#fff" stroke-width="1.2" fill="none" opacity=".7" transform="translate(-1 -.6)"/>`;
       }
     }
+    let loops = "";
     if (!thumb) {
       let d = "";
       for (let x = x0 + 3.5; x < x1; x += cc)
         d += `M${f2(x - 2.4)} ${f2(y + h - 0.6)}a2.4 1.9 0 0 0 4.8 0`;
-      s += `<path d="${d}" stroke="${founder ? mix(P.cast, "#000000", 0.32) : P.Gdk}" stroke-width="1" fill="none"/>`;
+      loops = `<path d="${d}" stroke="${founder ? mix(P.cast, "#000000", 0.32) : P.Gdk}" stroke-width="1" fill="none"/>`;
     }
-    s += `</g>`;
+    let s = "";
+    for (let r = 0; r < CAST.rows; r++) {
+      let row = `<rect x="${f2(x0)}" y="${f2(y + r * cc)}" width="${FW}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${base}"/>`;
+      if (yr)
+        row += `<g fill="${P.castInk}">${bmpRects([yr[r]], x0 + c0 * cc, y + r * cc, cc, cc)}</g>`;
+      row += `<rect x="${f2(ar ? x0 : x1 - cc)}" y="${f2(y + r * cc)}" width="${cc}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${BLUE}"/>`;
+      if (mk) {
+        // the foot is knitted first; its row carries the bind-off loops
+        row += pat(y + r * cc, cc) + (r === CAST.rows - 1 ? loops : "");
+        s += knit(
+          beat,
+          "cast",
+          CAST.rows - 1 - r,
+          `<g class="c07v2-co-row" style="--c07v2-i:${r}">${row}</g>`,
+        );
+      } else s += `<g class="c07v2-co-row" style="--c07v2-i:${r}">${row}</g>`;
+    }
+    // the cable twists come in once the five rows are knitted
+    s += mk
+      ? knit(beat, "cast", CAST.rows, `<g class="c07v2-co-after">${cables}</g>`)
+      : `<g class="c07v2-co-after">${pat(y, h)}${cables}${loops}</g>`;
     return `<g class="c07v2-cast${founder ? " c07v2-cast--founder" : ""}">${s}</g>`;
   }
 
@@ -1978,7 +2222,7 @@
       head: "logo",
       keys: ["CAP", "SEL"],
       cols: 1,
-      foot: [NOTE(o)],
+      foot: [noteOf(p, o)],
       thumb,
       footFs: 4.4,
     };
@@ -1987,7 +2231,7 @@
       head: "season",
       keys: ["TRF", "CON"],
       cols: 1,
-      foot: [esc(p.id), esc(S.country)],
+      foot: [idText(p, o), esc(S.country)],
       thumb,
       footFs: 4.4,
     };
@@ -2015,7 +2259,7 @@
       hatch(ids.satin, P.Gdk, mix(P.Gdk, "#000000", 0.35), 0.55, 0.3, 58) +
       `<clipPath id="${ids.arms}"><rect width="${W}" height="${H}"/></clipPath>`;
     if (!thumb)
-      defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
+      defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial || "0") % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
 
     // the band, taut between the fists and gathered into each of them
     const gat = 24;
@@ -2102,7 +2346,7 @@
     };
 
     // the ends hang outside the fists, in front of the arms, down to the card's foot
-    const rnd = seeded(hashStr(p.serial + "fringe-legend"));
+    const rnd = seeded(hashStr((p.serial || "0") + "fringe-legend"));
     const startSide = ar ? 1 : -1;
     const drape = (side, kind, clipId) => {
       const f = side < 0 ? fa : fb;
@@ -2244,32 +2488,83 @@
     [28, F69, 1, 1],
     [0, F57, 1, 1],
   ];
-  /** The 84 for a token at size s, on whole pixels; steps down while `ok(F)` fails. */
+  /** The dash for a token's number carrier: as tall as the 84 would be there, the dash itself two
+      stitches thick (three at 13 rows, the 84's stem weight) and about 60% of the 84's width. */
+  function dashFor(ref) {
+    const h = ref.length;
+    const w = bw(ref);
+    const t = h >= 13 ? 3 : 2;
+    const dw = Math.max(5, Math.round(w * 0.6));
+    const left = Math.floor((w - dw) / 2);
+    const top = Math.floor((h - t) / 2);
+    return Array.from(
+      { length: h },
+      (_, r) =>
+        ".".repeat(left) +
+        (r >= top && r < top + t ? "#" : ".").repeat(dw) +
+        ".".repeat(w - left - dw),
+    );
+  }
+  /** The 84 for a token at size s, on whole pixels; steps down while `ok(F)` fails. With no rating
+      yet the figure is the dash, in the 84's box. */
   function tokenFigures(p, s, ok) {
     let i = TOK.findIndex(([min]) => s >= min);
     let F = null;
     for (; i < TOK.length; i++) {
       const [, chart, k, gap] = TOK[i];
-      const bmp = word(String(p.ovr), chart, gap);
-      F = { bmp, k, w: bw(bmp) * k, h: bmp.length * k };
+      const nil = p.ovr == null;
+      const bmp = nil ? dashFor(word("84", chart, gap)) : word(String(p.ovr), chart, gap);
+      F = { bmp, k, w: bw(bmp) * k, h: bmp.length * k, nil };
       if (!ok || ok(F)) break;
     }
     return F;
   }
+  /** The base scarf's fringe on a token: no tassels (their count is the tier), a close comb of loose
+      strands along the foot of the drop, whole pixels. */
+  function tokFringe(x0, x1, y, len, P, mini) {
+    const w = mini ? 1 : x1 - x0 >= 40 ? 2 : 1;
+    const step = w + 1;
+    let s = "";
+    for (let x = x0, i = 0; x + w <= x1; x += step, i++) {
+      const l = len - (i % 3 === 1 ? Math.max(1, Math.round(len * 0.14)) : i % 3 === 2 ? 1 : 0);
+      s += `<rect x="${x}" y="${y}" width="${w}" height="${l}" fill="${P.G}" class="c07v2-tk-tassel"/>`;
+    }
+    return s;
+  }
+  /** Plain rib on a token, in whole pixels: every second column of `cell` px a darker ridge. */
+  function tokRib(x, y, w, h, cell) {
+    let s = "";
+    for (let i = 1; x + i * cell < x + w; i += 2) {
+      const cw = Math.min(cell, w - i * cell);
+      s += `<rect x="${x + i * cell}" y="${y}" width="${cw}" height="${h}" fill="#000" opacity=".26"/>`;
+    }
+    return s;
+  }
   function token(p, o = {}) {
     const s = Math.max(20, Math.round(o.size || 44));
     const mini = !!o.mini || s <= 32;
-    const tier = p.tier;
+    const tier = p.tier || null; // null: the base scarf, before any rating
     const ar = MC.isAr(o);
     const S = MC.s(o);
+    const T = MC.onbStr(o);
     const P = palette(p);
+    const beat = BEATS[o.beat] ? o.beat : "";
     const yr = p.founder ? ` ·${String(p.founder).slice(-2)}` : "";
-    const label = `${MC.nameOf(p, o)}${yr}, ${p.ovr} ${S.ovr}, ${S.tiers[tier]}${p.founder ? ", " + S.founderLine : ""}`;
+    // what a screen reader hears: the name (or the unnamed card), the rating (or none yet, and how
+    // many gameweeks are counted), the tier when there is one, the founder year when there is one
+    const label = [
+      `${p.name ? MC.nameOf(p, o) : T.cardOf}${yr}`,
+      p.ovr == null
+        ? T.noRating + (p.minRated ? ", " + T.counted(p.counted || 0, p.minRated) : "")
+        : `${p.ovr} ${S.ovr}`,
+      ...(tier ? [S.tiers[tier]] : []),
+      ...(p.founder ? [S.founderLine] : []),
+    ].join(", ");
     const u = MC.uid(PFX + "t");
     const b =
       tier === "LEGEND"
         ? tokenLegend(p, P, s, mini, u, ar)
-        : tokenHanging(p, P, tier, s, mini, u, ar);
+        : tokenHanging(p, P, tier, s, mini, u, ar, beat);
     // the art is drawn left to right and mirrored for Arabic; figures are placed on top, never mirrored
     const mx = (x, w) => (ar ? b.w - x - w : x);
     let figs = `<g transform="translate(${mx(b.dx, b.dw)} ${b.dy})">${b.figs}</g>`;
@@ -2278,11 +2573,12 @@
     const art = ar ? `<g transform="matrix(-1 0 0 1 ${b.w} 0)">${b.art}</g>` : b.art;
     const clip = `<clipPath id="${u}-cl"><rect width="${b.w}" height="${s}"/></clipPath>`;
     return (
-      `<span class="c07v2-tk c07v2-tk--${tier.toLowerCase()}${mini ? " c07v2-tk--mini" : ""}" role="img" aria-label="${esc(label)}" style="width:${b.w}px;height:${s}px">` +
+      `<span class="c07v2-tk c07v2-tk--${(tier || "base").toLowerCase()}${mini ? " c07v2-tk--mini" : ""}${P.wool ? " c07v2-tk--wool" : ""}" role="img" aria-label="${esc(label)}" style="width:${b.w}px;height:${s}px">` +
       `<svg width="${b.w}" height="${s}" viewBox="0 0 ${b.w} ${s}" aria-hidden="true" focusable="false"><defs>${b.defs}${clip}</defs><g clip-path="url(#${u}-cl)">${art}${figs}</g></svg></span>`
     );
   }
-  function tokenHanging(p, P, tier, s, mini, u, ar) {
+  function tokenHanging(p, P, tier, s, mini, u, ar, beat = "") {
+    const bare = !tier; // the base scarf: no panel, no binding, no tier tassels
     const ry = mini ? 1 : Math.max(2, Math.round(s * 0.05));
     const t = mini ? 2 : Math.max(3, Math.round(s * 0.07));
     const railB = ry + t;
@@ -2290,14 +2586,31 @@
     const fb = p.founder ? Math.max(3, Math.round(s * 0.08)) : 0; // the founder's cast-on stripe
     const pro = tier === "PRO"; // PRO's cream panel, at every size (one polarity)
     const champ = tier === "CHAMPION";
-    let tl = mini ? (s >= 32 ? 9 : s >= 28 ? 8 : 7) : Math.round(s * 0.26);
+    const tl0 = mini ? (s >= 32 ? 9 : s >= 28 ? 8 : 7) : Math.round(s * 0.26);
+    let tl = tl0;
     const tlMin = mini ? 5 : Math.round(s * 0.2);
     // the room the figures need: the chart, a stitch of shadow room, the panel's margin
     const need = (F) => F.h + (mini ? 0 : F.k) + 2 * (mini ? 1 : F.k);
+    // the counted gameweeks, one stripe each under the number carrier while there is no rating:
+    // a one-pixel gap and a stripe of two pixels (one on a mini). They drop if they do not fit.
+    const marks = p.ovr == null ? marksOf(p) : null;
+    const ts = mini ? 1 : 2;
+    const mh = marks ? marks.n * (ts + 1) : 0;
     let F = tokenFigures(p, s, null);
-    while (s - tl - fb - 1 - top < need(F) && tl > tlMin) tl--;
-    if (s - tl - fb - 1 - top < need(F))
-      F = tokenFigures(p, s, (G) => s - tl - fb - 1 - top >= need(G));
+    const place = (withMarks) => {
+      const extra = withMarks ? mh : 0;
+      while (s - tl - fb - 1 - top < need(F) + extra && tl > tlMin) tl--;
+      if (s - tl - fb - 1 - top < need(F) + extra)
+        F = tokenFigures(p, s, (G) => s - tl - fb - 1 - top >= need(G) + extra);
+      return s - tl - fb - 1 - top >= need(F) + extra;
+    };
+    let marksOn = !!marks;
+    if (marksOn && !place(true)) {
+      marksOn = false;
+      tl = tl0;
+      F = tokenFigures(p, s, null);
+    }
+    if (!marksOn) place(false);
     const k = F.k;
     const sb = s - tl; // the drop's foot
     const bottom = sb - fb - 1;
@@ -2310,12 +2623,21 @@
     const oh = mini ? 3 : Math.max(4, Math.round(s * 0.1));
     const sx = oh;
     const W = sx + sw + oh;
-    const n = TASSELS[tier];
-    const pc = { HOMA: mini ? 2 : s >= 64 ? 4 : 3, STADE: mini ? 2 : 3, PRO: 2, CHAMPION: 2 }[tier];
+    const n = bare ? 0 : TASSELS[tier];
+    const pc = {
+      HOMA: mini ? 2 : s >= 64 ? 4 : 3,
+      STADE: mini ? 2 : 3,
+      PRO: 2,
+      CHAMPION: 2,
+      BASE: 2,
+    }[tier || "BASE"];
     const defs = chevron(u + "-cv", pc);
     const tw = mini ? 2 : Math.max(3, Math.round(s * 0.085));
     const splay = mini ? 0.45 : s * 0.014;
-    const fy = top + Math.round((bottom - top - F.h - sh) / 2);
+    const pm = mini ? 1 : k; // the carrier's margin round the figure
+    const fy = marksOn
+      ? top + Math.round((bottom - top - need(F) - mh) / 2) + pm
+      : top + Math.round((bottom - top - F.h - sh) / 2);
     let a = "";
     // the rail, rounded at both ends
     a += `<rect x="0" y="${ry}" width="${W}" height="${t}" rx="${f2(t / 2)}" fill="#A9B2BE"/><rect x="${f2(t / 3)}" y="${ry}" width="${f2(W - (2 * t) / 3)}" height="${f2(t * 0.4)}" rx="${f2(t * 0.2)}" fill="#E6EBF0"/><rect x="${f2(t / 2)}" y="${f2(ry + t - 1)}" width="${f2(W - t)}" height="1" fill="#4E5661"/>`;
@@ -2323,7 +2645,6 @@
     const y0 = Math.max(0, ry - (mini ? 1 : 2));
     a += `<rect x="${sx}" y="${y0}" width="${sw}" height="${sb - y0}" fill="${P.G}" class="c07v2-tk-sw"/>`;
     if (pro) {
-      const pm = mini ? 1 : k;
       a += `<rect x="${sx + bind}" y="${fy - pm}" width="${sw - blue - 2 * bind}" height="${F.h + sh + 2 * pm}" fill="${P.C}"/>`;
     }
     a += `<rect x="${sx}" y="${y0}" width="${sw}" height="${sb - y0}" fill="url(#${u}-cv)"/>`;
@@ -2332,6 +2653,36 @@
     a += `<rect x="${sx + sw - blue - bind}" y="${y0}" width="${blue}" height="${sb - y0}" fill="${BLUE}"/>`;
     if (champ)
       a += `<rect x="${sx}" y="${y0}" width="${bind}" height="${sb - y0}" fill="${P.S}"/><rect x="${sx + sw - bind}" y="${y0}" width="${bind}" height="${sb - y0}" fill="${P.S}"/>`;
+    // no rating yet: the number carrier is plain rib (the dash is placed over it, below)
+    const inX = sx + bind; // the knitted width between the selvedge and the bound edge
+    const inW = sw - blue - 2 * bind;
+    if (F.nil)
+      a += `<g class="c07v2-tk-rib">${tokRib(inX, fy - pm, inW, F.h + sh + 2 * pm, k)}</g>`;
+    // the counted gameweeks: a knitted stripe in the stripe yarn, or a tacking line (dashes, one pixel
+    // high on a token under 64px) for a gameweek still to come
+    if (marksOn) {
+      const my = fy + F.h + sh + pm;
+      const dash = s >= 64 ? 3 : mini ? 1 : 2; // a tacking dash and the gap after it, in pixels
+      const newMark = marks.k > 0 && (beat === "tick" || beat === "first");
+      for (let i = 0; i < marks.n; i++) {
+        const yy = my + i * (ts + 1) + 1;
+        if (i < marks.k - (newMark ? 1 : 0)) {
+          a += `<rect x="${inX}" y="${yy}" width="${inW}" height="${ts}" fill="${P.S}" class="c07v2-tk-stripe"/>`;
+          continue;
+        }
+        let d = "";
+        for (let x = inX; x < inX + inW; x += 2 * dash)
+          d += `<rect x="${x}" y="${yy}" width="${Math.min(dash, inX + inW - x)}" height="${s >= 64 ? ts : 1}" fill="${P.S}"/>`;
+        a += knit(beat, "tack", marks.n - 1 - i, `<g class="c07v2-tk-tack">${d}</g>`);
+        if (newMark && i === marks.k - 1)
+          a += knit(
+            beat,
+            "stripe",
+            0,
+            `<rect x="${inX}" y="${yy}" width="${inW}" height="${ts}" fill="${P.S}" class="c07v2-tk-stripe"/>`,
+          );
+      }
+    }
     // the founder's cast-on: a cream band at the foot (2026 knitted into it at 80px)
     let year = null;
     if (fb) {
@@ -2347,12 +2698,16 @@
         };
       }
     }
-    // the fringe: the tassel count is the tier
+    // the fringe: the tassel count is the tier; the base scarf has a comb of loose strands instead
     const tm = Math.max(tw, Math.round(sw * 0.16));
-    a += tokTassels(n, sx + tm, sx + sw - tm, sb, tl, tw, P, splay, mini);
+    a = bare
+      ? a + tokFringe(sx + bind, sx + sw - bind, sb, tl, P, mini)
+      : a + tokTassels(n, sx + tm, sx + sw - tm, sb, tl, tw, P, splay, mini);
     // the figures (placed by the caller, never mirrored); CHAMPION's carry a knitted drop shadow
     const fx = sx + bind + m + (sh && ar ? k : 0) + (pro || champ ? 0 : 0);
-    const key = { HOMA: mini ? P.R2 : P.R2, STADE: P.L, PRO: P.K, CHAMPION: P.F }[tier];
+    const key = { HOMA: mini ? P.R2 : P.R2, STADE: P.L, PRO: P.K, CHAMPION: P.F, BASE: P.dash }[
+      tier || "BASE"
+    ];
     let figs = "";
     if (champ && sh)
       figs += `<g fill="${P.D}" transform="translate(${ar ? -k : k} ${k})">${bmpRects(F.bmp, 0, 0, k, k)}</g>`;
@@ -2451,8 +2806,9 @@
   /* ---------- row: the "My position" card, your scarf on a stretch of barrier ---------- */
   function row(p, o = {}) {
     const S = MC.s(o);
+    const T = MC.onbStr(o);
     const ar = MC.isAr(o);
-    const tier = p.tier;
+    const tier = p.tier || null;
     const tk = token(p, { ...o, size: 56, mini: false });
     const yr = p.founder ? String(p.founder).slice(-2) : "";
     // the supporter year: a thin space, a heavy centred dot, the year at 75%
@@ -2461,12 +2817,23 @@
         ? `<bdi dir="ltr" class="c07v2-row-yr">${yr}<i class="c07v2-row-dot" aria-hidden="true"></i></bdi>`
         : `<span class="c07v2-row-yr"><i class="c07v2-row-dot" aria-hidden="true"></i>${yr}</span>`
       : "";
+    // a guest before naming: the name carrier is a short empty band of plain rib, never a word
+    const name = p.name
+      ? `${esc(MC.nameOf(p, o))}${year}`
+      : `<i class="c07v2-row-nm0" aria-hidden="true"></i>`;
+    // no rating yet: « en formation k/N » stands where the tier and the number would be (the dash is
+    // in the token's number carrier)
+    const line =
+      p.ovr == null
+        ? (tier ? `${esc(S.tiers[tier])} · ` : "") +
+          (p.minRated ? `${esc(T.forming)} ${MC.ltr((p.counted || 0) + "/" + p.minRated)}` : T.dash)
+        : `${esc(S.tiers[tier])} · ${MC.ltr(p.ovr + " " + S.ovr)}`;
     return (
-      `<div class="c07v2-row c07v2-row--${tier.toLowerCase()}${o.me ? " is-me" : ""}" dir="${S.dir}">` +
+      `<div class="c07v2-row c07v2-row--${(tier || "base").toLowerCase()}${o.me ? " is-me" : ""}" dir="${S.dir}">` +
       `<span class="c07v2-row-rail" aria-hidden="true"></span>` +
       `<span class="c07v2-row-rank">${MC.ltr(o.rank)}</span>` +
       `<span class="c07v2-row-token">${tk}</span>` +
-      `<span class="c07v2-row-name"><b>${esc(MC.nameOf(p, o))}${year}</b><small>${esc(S.tiers[tier])} · ${MC.ltr(p.ovr + " " + S.ovr)}</small></span>` +
+      `<span class="c07v2-row-name"><b>${name}</b><small>${line}</small></span>` +
       `<span class="c07v2-row-pts">${MC.ltr(o.pts)}<small>${esc(S.pts)}</small></span>` +
       `</div>`
     );
@@ -2478,7 +2845,7 @@
     const ar = MC.isAr(o);
     const u = MC.uid(PFX + "s");
     const legend = p.tier === "LEGEND";
-    const card = full(p, { ...o, motion: false, thumb: false, _share: true });
+    const card = full(p, { ...o, motion: false, beat: "", thumb: false, _share: true });
     const vb = (card.match(/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/) || [0, VW, 600]).map(
       Number,
     );
@@ -2510,6 +2877,7 @@
       : full(p, {
           ...o,
           motion: false,
+          beat: "",
           thumb: false,
           _share: true,
           _rail: [f2(-left / k), f2((360 - left) / k)],
@@ -2538,12 +2906,16 @@
       `</svg>`;
     const logo = MC.logo("wordmark", { variant: "light", w: "100%" });
     const cap = ar ? ["موسمي،", "صفًّا بعد صف"] : ["Ma saison,", "rang par rang"];
+    // a provisional rating says so on the image itself: a small sewn-on label, text, never colour alone
+    const provWord = ar ? "مبدئي" : "Provisoire";
+    const prov = p.provisional ? `<p class="c07v2-sh-prov"><span>${esc(provWord)}</span></p>` : "";
     return (
-      `<div class="c07v2-share${legend ? " c07v2-share--legend" : ""}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}">` +
+      `<div class="c07v2-share${legend ? " c07v2-share--legend" : ""}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o) + (p.provisional ? ", " + provWord : ""))}">` +
       bg +
       `<div class="c07v2-sh-logo">${logo}</div>` +
       `<p class="c07v2-sh-cap">${cap.map((l) => `<span>${esc(l)}</span>`).join("")}</p>` +
       `<p class="c07v2-sh-sub"><span dir="ltr">@ali</span> · ${ar ? "مثال" : "Exemple"}</p>` +
+      prov +
       `<div class="c07v2-sh-scarf" style="top:${f2(top)}px;left:${f2(left)}px;width:${f2(sw)}px">${cardHTML}</div>` +
       `</div>`
     );
@@ -2697,6 +3069,13 @@
           "Share: both halves hang over the rail inside the 24px margin, the front with the 84, ALI ·26, the tier and the patch, the back with the season's stripes, the 2026 cast-on and the fringe; the 84 is about 1.5× its first-pass v2 size.",
         ],
       },
+    ],
+    onboarding: [
+      "No rating yet: the finished scarf with an empty carrier, like a new one with no rows. The number band keeps its 13 rows, now plain rib (every second stitch a purl ridge) with a knitted dash, 14 stitches by 3 rows, in the 84's own yarn (cream or charcoal on the base scarf, whichever stands out from the ground: at least 4.5:1 measured from pixels on the card, 5:1 on tokens). Never 0, never blank.",
+      "No tier: the base scarf. Its own gauge (36 stitches), a tone-on-tone name band (a darker lot of the ground yarn, which carries the name and, with no name yet, stays an empty band of plain rib), no tier strip, no panel, no binding, and a close fringe of loose strands instead of tassels (the tassel count is the tier). No club: undyed wool. No founder: no cast-on mark and no year, as for any non-founder.",
+      "k of N: one stripe per counted gameweek under the name, N slots. A knitted stripe is two rows of the stripe yarn; one still to come is a one-row tacking line (three stitches knitted, two left). Tokens carry the same marks from 44px, one pixel on a mini, and drop them at 24px if they do not fit. With a rating they stay (complete) until the counted gameweeks pass the minimum, then the season's stripes under the patch carry on.",
+      "Empty fields: stats are a dash on the patch, the ID carrier reads BOT then a dash, a guest's name carrier is the empty band, the row says « en formation k/N » in place of the number and shows an empty band of rib for the name. share() prints « Provisoire » on a small sewn-on label when the rating is provisional.",
+      "Beats (o.beat, CSS only, off under reduced motion): make (birth, 650ms at most) knits the cast-on rows from the foot, runs in the tacking lines and knits the name band row by row; first (first rating, 490ms) knits the last counted stripe in over its tacking line; tick (one more gameweek, 360ms on the card, 270ms on a token) does the same. Rows are revealed stitch by stitch from the inline start, slowing at the end of the row; the number, the name's stitches, the serial and the patch never animate.",
     ],
     colourways: [
       { label: "Exemple", labelAr: "مثال", primary: "#0f6b67", secondary: "#efe6cf" },
