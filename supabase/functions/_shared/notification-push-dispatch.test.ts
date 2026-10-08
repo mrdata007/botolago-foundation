@@ -17,6 +17,7 @@ import {
 } from "./notification-push-types.ts";
 
 const TOKEN = "a".repeat(64);
+const SCHEDULER = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN };
 const NOW = Date.UTC(2026, 9, 5, 18, 0, 0);
 
 const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
@@ -46,7 +47,7 @@ interface Call {
 }
 
 /** A database that hands out `batches` in turn, then nothing. */
-function fakeClient(batches: unknown[], options: { tokenValid?: boolean; failOn?: string } = {}) {
+function fakeClient(batches: unknown[], options: { failOn?: string } = {}) {
   const calls: Call[] = [];
   const queue = [...batches];
   const client: PushRpcClient = {
@@ -56,9 +57,6 @@ function fakeClient(batches: unknown[], options: { tokenValid?: boolean; failOn?
           calls.push({ name, args });
           if (options.failOn === name) {
             return Promise.resolve({ data: null, error: { message: "boom" } });
-          }
-          if (name === "service_verify_scheduler_token") {
-            return Promise.resolve({ data: options.tokenValid ?? true, error: null });
           }
           if (name === "service_claim_push_deliveries") {
             return Promise.resolve({ data: queue.shift() ?? [], error: null });
@@ -115,7 +113,7 @@ function dependencies(
   client: PushRpcClient,
   providers: Partial<Record<PushProviderKey, PushProvider>>,
 ) {
-  return { environment: {}, client, providers, now: () => NOW };
+  return { environment: SCHEDULER, client, providers, now: () => NOW };
 }
 
 describe("push dispatch configuration", () => {
@@ -391,7 +389,7 @@ describe("a dispatch pass", () => {
     await runPushDispatch(
       { ...config, budgetMs: 1_000 },
       {
-        environment: {},
+        environment: SCHEDULER,
         client,
         providers: { fcm: fcm.instance },
         now: () => {
@@ -432,23 +430,24 @@ describe("the request", () => {
   });
 
   it("refuses a missing, malformed or wrong scheduler token before touching a delivery", async () => {
-    for (const token of ["", "short", "G".repeat(64)]) {
+    // Well formed but wrong included: no call reaches the database at all.
+    for (const token of ["", "short", "G".repeat(64), "9".repeat(64)]) {
       const { client, calls } = fakeClient([]);
       const response = await handlePushDispatchRequest(request(token), dependencies(client, {}));
       expect(response.status).toBe(401);
       expect(calls).toHaveLength(0);
     }
-    const { client, calls } = fakeClient([], { tokenValid: false });
-    const response = await handlePushDispatchRequest(request(), dependencies(client, {}));
-    expect(response.status).toBe(401);
-    expect(named(calls, "service_claim_push_deliveries")).toHaveLength(0);
   });
 
-  it("answers 503 when it cannot check the token, and 502 when a pass fails", async () => {
-    const down = fakeClient([], { failOn: "service_verify_scheduler_token" });
-    expect((await handlePushDispatchRequest(request(), dependencies(down.client, {}))).status).toBe(
-      503,
-    );
+  it("answers 503 when no scheduler token is configured, and 502 when a pass fails", async () => {
+    const unconfigured = fakeClient([[delivery(1)]]);
+    const refused = await handlePushDispatchRequest(request(), {
+      ...dependencies(unconfigured.client, {}),
+      environment: {},
+    });
+    expect(refused.status).toBe(503);
+    expect(await refused.json()).toEqual({ error: "scheduler_token_not_configured" });
+    expect(unconfigured.calls).toHaveLength(0);
     const broken = fakeClient([[delivery(1)]], { failOn: "service_claim_push_deliveries" });
     const response = await handlePushDispatchRequest(
       request(),
@@ -461,7 +460,7 @@ describe("the request", () => {
   it("answers 503 for a bad configuration, with nothing claimed", async () => {
     const { client, calls } = fakeClient([[delivery(1)]]);
     const response = await handlePushDispatchRequest(request(), {
-      environment: { PUSH_BATCH_SIZE: "0" },
+      environment: { ...SCHEDULER, PUSH_BATCH_SIZE: "0" },
       client,
       providers: {},
     });

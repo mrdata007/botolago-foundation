@@ -115,7 +115,8 @@ pg_cron  notification-email-tick   every 5 min ─┐
            3. wake    → pg_net POST …/functions/v1/notification-email-dispatch
                         header x-botolago-scheduler-token
 Edge Function notification-email-dispatch
-           verify token → api.service_verify_scheduler_token
+           verify token → in-process, against the secret BOTOLAGO_SCHEDULER_TOKEN
+                          (no database call before it is accepted)
            claim        → api.service_claim_email_deliveries  (re-checks eligibility,
                           cancels stale mail, adds an unsubscribe token)
            render       → supabase/functions/_shared/notification-email-render.ts
@@ -222,6 +223,9 @@ and `AGENTS.md` (nothing else writing at the same time).
    authenticates with the scheduler token the migration generated inside
    Vault, and mail providers call the unsubscribe endpoint with nothing but
    the email's own token.
+   The scheduled functions check that token against their own secret
+   `BOTOLAGO_SCHEDULER_TOKEN` (see **Scheduler token** below), so set that
+   secret before deploying them.
 5. **Test mode** with the owner's own account:
    ```sql
    select app_private.notification_email_configure(
@@ -241,6 +245,41 @@ a Resend API key, sender `noreply@botolago.com`. This ends the built-in
 sender's few-emails-an-hour limit on sign-ups and password resets (BG-0108).
 Then update the "Supabase Auth" row of the privacy policy (see
 `src/content/legal/legal-content.test.ts`, item 8).
+
+## Scheduler token
+
+pg_cron wakes six Edge Functions — `notification-email-dispatch`,
+`notification-push-dispatch`, `football-live-refresh`, `ops-alert-email`,
+`ai-content-generate` and `account-deletion-worker` — with the Vault secret
+`botolago_scheduler_token` in the `x-botolago-scheduler-token` header. They are
+deployed with `verify_jwt = false`, so anyone can reach them, and each one
+compares the header with its own Edge Function secret
+`BOTOLAGO_SCHEDULER_TOKEN` in constant time
+(`supabase/functions/_shared/scheduler-token.ts`) before it touches the
+database. A caller without the token never reaches a service-role call; a
+function with no valid secret refuses everything with
+`503 scheduler_token_not_configured`.
+
+**Rollout order (once, when this check first ships).** Setting the secret is
+harmless to the functions already deployed, so it goes first:
+
+1. Read the Vault value in the SQL editor (it is a secret: copy it straight
+   into the next step, never into a chat, a file or a commit):
+   `select decrypted_secret from vault.decrypted_secrets where name = 'botolago_scheduler_token';`
+2. Supabase → Edge Functions → Secrets → add `BOTOLAGO_SCHEDULER_TOKEN` with
+   that value (or `supabase secrets set BOTOLAGO_SCHEDULER_TOKEN=… --project-ref tkewgajrljbwgwedqsxn`).
+3. Deploy the six functions above.
+4. Check each wakes cleanly: `select app_private.ops_alert_test();` sends the
+   owner a test alert, and `net._http_response` shows `200`s (not `401`/`503`)
+   for the next ticks of the other jobs.
+
+Deploying a function before step 2 makes its job answer `503` until the secret
+is set: nothing is sent or erased, and nothing is lost, because each job only
+claims work after the token is accepted.
+
+**Rotation.** Change both together: update the Vault secret
+(`vault.update_secret`), then `BOTOLAGO_SCHEDULER_TOKEN` to the same value.
+Between the two, wake-ups answer `401` and retry on their next tick.
 
 ## Watching it
 

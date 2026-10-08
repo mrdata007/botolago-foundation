@@ -30,6 +30,7 @@
 
 import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
+import { schedulerTokenRefusal } from "./scheduler-token.ts";
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -119,16 +120,9 @@ export async function handleFootballLiveRefreshRequest(
   if (Number.isFinite(declared) && declared > MAX_REQUEST_BYTES) {
     return json(413, { error: "request_too_large" });
   }
-  const token = request.headers.get("x-botolago-scheduler-token") ?? "";
-  if (!/^[0-9a-f]{64}$/.test(token)) return json(401, { error: "unauthorized" });
-  try {
-    const verified = await dependencies.client
-      .schema("api")
-      .rpc("service_verify_scheduler_token", { p_token: token });
-    if (verified.error || verified.data !== true) return json(401, { error: "unauthorized" });
-  } catch {
-    return json(503, { error: "database_unavailable" });
-  }
+  // Checked in-process, before any database call (scheduler-token.ts).
+  const refusal = schedulerTokenRefusal(request, dependencies.environment);
+  if (refusal) return refusal;
 
   const job = await requestedJob(request);
   if (job === null) return json(400, { error: "invalid_request" });

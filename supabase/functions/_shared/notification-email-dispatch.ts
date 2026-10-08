@@ -3,7 +3,8 @@
 // Woken every few minutes by pg_cron (app_private.notification_email_tick)
 // through pg_net, with the scheduler token in `x-botolago-scheduler-token`.
 // Each pass:
-//   1. checks that token with api.service_verify_scheduler_token;
+//   1. checks that token in-process against BOTOLAGO_SCHEDULER_TOKEN, before
+//      any database call (scheduler-token.ts);
 //   2. claims a small batch with api.service_claim_email_deliveries — the
 //      database has already decided who gets what, in which language, how
 //      much of the plan's daily and monthly quota is left, and has dropped
@@ -35,6 +36,7 @@ import type {
   RenderedEmail,
 } from "./notification-email-types.ts";
 import { EMAIL_NOTIFICATION_TYPES } from "./notification-email-types.ts";
+import { schedulerTokenRefusal } from "./scheduler-token.ts";
 
 export interface EmailRpcResult {
   readonly data: unknown;
@@ -676,16 +678,9 @@ export async function handleEmailDispatchRequest(
   if (Number.isFinite(declared) && declared > MAX_REQUEST_BYTES) {
     return json(413, { error: "request_too_large" });
   }
-  const token = request.headers.get("x-botolago-scheduler-token") ?? "";
-  if (!/^[0-9a-f]{64}$/.test(token)) return json(401, { error: "unauthorized" });
-  try {
-    const verified = await rpc(dependencies.client, "service_verify_scheduler_token", {
-      p_token: token,
-    });
-    if (verified !== true) return json(401, { error: "unauthorized" });
-  } catch {
-    return json(503, { error: "database_unavailable" });
-  }
+  // Checked in-process, before any database call (scheduler-token.ts).
+  const refusal = schedulerTokenRefusal(request, dependencies.environment);
+  if (refusal) return refusal;
 
   let config: EmailDispatchConfiguration;
   try {

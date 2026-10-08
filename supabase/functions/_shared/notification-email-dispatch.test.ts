@@ -14,6 +14,9 @@ import {
 import type { ClaimedEmailDelivery } from "./notification-email-types.ts";
 
 const TOKEN = "a".repeat(64);
+const SCHEDULER = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN };
+// Well formed, but not the configured token.
+const WRONG_TOKEN = "9".repeat(64);
 const API_KEY = "re_test_0123456789abcdef";
 
 function delivery(id: string, email = "fan@example.test"): ClaimedEmailDelivery {
@@ -43,7 +46,7 @@ interface Call {
   readonly args: Record<string, unknown> | undefined;
 }
 
-function fakeClient(batches: unknown[][], options: { tokenValid?: boolean } = {}) {
+function fakeClient(batches: unknown[][]) {
   const calls: Call[] = [];
   const queue = [...batches];
   const client: EmailRpcClient = {
@@ -51,9 +54,6 @@ function fakeClient(batches: unknown[][], options: { tokenValid?: boolean } = {}
       return {
         rpc(name: string, args?: Record<string, unknown>) {
           calls.push({ name, args });
-          if (name === "service_verify_scheduler_token") {
-            return Promise.resolve({ data: options.tokenValid ?? true, error: null });
-          }
           if (name === "service_claim_email_deliveries") {
             return Promise.resolve({ data: queue.shift() ?? [], error: null });
           }
@@ -94,7 +94,7 @@ function dependencies(
   environment: Record<string, string> = { RESEND_API_KEY: API_KEY },
 ) {
   return {
-    environment,
+    environment: { ...SCHEDULER, ...environment },
     client,
     render,
     unsubscribeUrl,
@@ -172,11 +172,17 @@ describe("email dispatch request", () => {
     expect(
       (await handleEmailDispatchRequest(request("nope"), dependencies(client, fetchNever))).status,
     ).toBe(401);
-    const rejected = fakeClient([], { tokenValid: false });
+    const rejected = fakeClient([]);
     expect(
-      (await handleEmailDispatchRequest(request(), dependencies(rejected.client, fetchNever)))
-        .status,
+      (
+        await handleEmailDispatchRequest(
+          request(WRONG_TOKEN),
+          dependencies(rejected.client, fetchNever),
+        )
+      ).status,
     ).toBe(401);
+    // Refused in-process: not even the token is checked through the database.
+    expect(rejected.calls).toEqual([]);
   });
 
   it("claims nothing when the provider is not configured", async () => {
@@ -518,7 +524,11 @@ describe("pepites_weekly through the dispatcher", () => {
     client: EmailRpcClient,
     fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response>,
   ) => ({
-    environment: { RESEND_API_KEY: API_KEY, SUPABASE_URL: "https://project.supabase.co" },
+    environment: {
+      ...SCHEDULER,
+      RESEND_API_KEY: API_KEY,
+      SUPABASE_URL: "https://project.supabase.co",
+    },
     client,
     render: renderNotificationEmail,
     unsubscribeUrl: renderUnsubscribeUrl,
