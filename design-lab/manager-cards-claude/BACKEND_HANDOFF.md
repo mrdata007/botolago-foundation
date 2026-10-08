@@ -32,6 +32,7 @@ You are taking over the backend of the **BotolaGO Manager Card** in
 CLAUDE.md and AGENTS.md load automatically. These are the parts that apply here.
 
 **One writer per database** (AGENTS.md "One writer at a time, per database")
+
 - Before any write, follow its "Before writing" checklist.
 - Read the scheduled jobs from `cron.job`. Main schedules 18; the AGENTS.md list omits five
   (`ops-alert-tick`, `notification-push-tick`, `ai-content-generate`,
@@ -53,6 +54,7 @@ remote project; Lovable MCP `send_message`, `deploy_project`, `query_database`; 
 
 **No Docker.** Cloud containers usually have none (`docker ps` fails), and
 `backend:db:reset`, `db:test`, `db:lint`, `types:generate` and `types:check` need it. Then:
+
 1. Open the draft PR as soon as the first schema commit is pushed. `backend-quality` runs
    only on pull requests, and its `database-quality` job is the only place pgTAP runs.
 2. Types: if "Verify generated database types" fails, CI uploads
@@ -63,6 +65,7 @@ remote project; Lovable MCP `send_message`, `deploy_project`, `query_database`; 
    linked in your report.
 
 **Migrations** (CLAUDE.md "Migrations", `docs/backend/MIGRATIONS.md`)
+
 - Forward-only, unique timestamps (`bun run backend:migrations:check`). One slot per file,
   from the current UTC time (`supabase migration new`), later than main's latest
   (`20261006143700` at research time) and any newer open-PR version. Re-check against main
@@ -89,7 +92,7 @@ too" (name, cadence, what it writes, switch, exact pause and restore SQL), shape
 stale entries.
 
 **Business rules** stay as they are (AGENTS.md "Screen work" rule 6; PRODUCT.md "Game logic
-runs on the server"). The card only *reads* Fantasy data and writes no Fantasy table. OVR,
+runs on the server"). The card only _reads_ Fantasy data and writes no Fantasy table. OVR,
 tier, founder and serial are display-only: no prize, ranking, league or Fantasy rule may
 read them.
 
@@ -131,6 +134,7 @@ everything.
 **RPC shape.** Templates with the step-up: `20261005130000_fantasy_public_recaps.sql`,
 `20261006143700_account_deletion_automatic.sql` (`20260925090200_predictions_api.sql` shows
 grants and errors only; its step-up came in `20260926003100`).
+
 - `security definer`, `set search_path = ''`, caller from `(select auth.uid())`; errors
   `PT400/401/403/404/409` with snake_case messages.
 - `revoke all … from public`, then `grant execute` to `authenticated, service_role`, plus
@@ -145,17 +149,19 @@ from `src/integrations/supabase/v2-client.ts`.
 ### 3.3 Data the card reads
 
 **Identity**
+
 - `app.profiles` (`20260720075453_identity_domain.sql`): `id` → `auth.users` on delete
   cascade; `username` **nullable**, else `^[a-z0-9][a-z0-9_-]{2,19}$`; `display_name`
   default `''`; `avatar_path` (private bucket); `preferred_language`; `created_at`;
   `deleted_at`. No country, sequence or public number; every key is a uuid.
 - `20260720095330_football_catalog.sql`: `app.teams` (`short_name`, `code`,
   `crest_asset_id`, nullable `primary_color`/`secondary_color`), `app.countries(iso_alpha2,
-  iso_alpha3, flag_emoji)`, `app.country_translations`, and `user_preferences.favorite_team_id`
+iso_alpha3, flag_emoji)`, `app.country_translations`, and `user_preferences.favorite_team_id`
   → `app.teams` on delete set null. `app.team_translations(team_id, language, name,
-  short_name)`: `20260921190000_team_translations.sql`.
+short_name)`: `20260921190000_team_translations.sql`.
 
 **Visibility in force**
+
 - `display_name` is not public to anonymous readers (`20260921180000_fantasy_overall_standings.sql:51-72`;
   `src/backend/fantasy/contracts.ts:201`). Signed-in readers get the display name when
   non-blank, else the team name; anonymous readers get the team name (elsewhere a masked
@@ -172,22 +178,23 @@ existing users, and production holds E2E accounts (`e2e.fantasy.recovery@botolag
 
 **Fantasy** (`20260720141826`, `…141847`, `…141850`, `20260927140000`; RLS forced, no browser
 grants)
+
 - **Gameweeks.** `fantasy_gameweeks`: `sequence_number`, `status`, `points_state`,
   `scoring_input_version`, `finalized_at`. Status enum: `scheduled, open, locked, live,
-  provisional, finalizing, finalized, corrected, cancelled`; the table check makes
+provisional, finalizing, finalized, corrected, cancelled`; the table check makes
   `finalized` and `corrected` the final pair. **Stable** = `status in
-  ('finalized','corrected') and points_state = 'final'`, the `fantasy_prizes` predicate
+('finalized','corrected') and points_state = 'final'`, the `fantasy_prizes` predicate
   (`20260924120000:530, 651, 796`), also used by public recaps. `cancelled` never counts.
 - **Version.** A gameweek's current calculation version is its `scoring_input_version`
   (rescoring bumps it). `app_private.fantasy_gameweek_postwork` is keyed `(gameweek_id,
-  calculation_version)`, so a gameweek can have several rows. Opening the next gameweek
+calculation_version)`, so a gameweek can have several rows. Opening the next gameweek
   requires the row for the current version to have `completed_at` set
   (`20260914200740:137-139`); use the same test.
 - **Rules.** Legal XI 1 GK, 3–5 DEF, 2–5 MID, 1–3 FWD (`fantasy_position_rules`); captain ×2,
   Triple Captain ×3; the vice is promoted only when the captain records zero total official
   minutes (`FANTASY_RULES_V1.md:56-57`).
 - **Teams** `unique (user_id, fantasy_season_id)`, `user_id` **RESTRICT** to profiles.
-  `fantasy_lineup_players` holds `captain`, `vice_captain` and the *chosen* `multiplier`.
+  `fantasy_lineup_players` holds `captain`, `vice_captain` and the _chosen_ `multiplier`.
   `fantasy_transfer_batches` (`gameweek_id` = the open gameweek, `point_hit` per batch,
   `chip_type`) and `fantasy_transfers` (`player_out_id`, `player_in_id`). Chips: Wildcard
   1/2, Free Hit (squad restored), Bench Boost, Triple Captain.
@@ -268,8 +275,8 @@ performance → performance makes the card better" (owner). It shows a name, an 
 TRF transfers, CON consistency), a season, a permanent ID (`BOT #004821`), an optional
 FOUNDER 2026 mark, a country, a club and an avatar. The aim is status and comparison ("I'm
 86 OVR, you're only 78") for young Moroccan fans, without pay-to-win. Sample ALI: 84, PRO,
-CAP 91, SEL 82, TRF 86, CON 78 (the stats' mean rounds to 84). *Front-end context, build
-nothing for it:* full card, 44–80px token, 24–32px mini, 1080×1920 share story.
+CAP 91, SEL 82, TRF 86, CON 78 (the stats' mean rounds to 84). _Front-end context, build
+nothing for it:_ full card, 44–80px token, 24–32px mini, 1080×1920 share story.
 
 The owner's original lifecycle, word for word: "Fantasy performance → Manager XP → card
 progression → better OVR → better visual tier → badges / achievements → social status →
@@ -284,25 +291,26 @@ secondary}`. `CONTRACT.md` is the concept modules' render contract, not a data A
 **Data contract (proposal).** The backend returns codes, numbers and stored names (club
 translations, display name); the client holds every UI label and maps the codes.
 
-| Field | Shape | Source today | Status |
-|---|---|---|---|
-| Name | string | `display_name` if non-blank, else team name (the signed-in board rule) | exists (D17) |
-| Handle | `username` or null (client shows a dash) | `profiles.username` | exists |
-| OVR | integer | none | new (D1, D6) |
-| Tier | `homa\|stade\|pro\|champion\|legend` | none | new (D9) |
-| Stats | `cap, sel, trf, con`, nullable integers | none | new (D2–D5) |
-| Provisional, gameweeks counted, rules version | bool, int, text | none | new (D8) |
-| Season | label (`2026/27`) | `fantasy_seasons` → `app.seasons.label` | exists |
-| ID | 6-digit serial string; client adds `BOT #` | none | new, **immutable**, seeds textures (D14) |
-| Founder | cohort year or null | none | new (D13) |
-| Join year | year | `profiles.created_at` (unreliable) | decide |
-| Club | team id, code, fr/ar short name, nullable colours | preferences → `app.teams`, `team_translations` | exists |
-| Country | ISO code | none | D16 |
-| Avatar | shared drawn figure, or photo | owner-only `avatar_path` | D17 |
-| Row context | rank, points | `fantasy_rankings` | exists |
-| History | OVR per gameweek, seasons, tier changes | none | new (D18) |
+| Field                                         | Shape                                             | Source today                                                           | Status                                   |
+| --------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------- |
+| Name                                          | string                                            | `display_name` if non-blank, else team name (the signed-in board rule) | exists (D17)                             |
+| Handle                                        | `username` or null (client shows a dash)          | `profiles.username`                                                    | exists                                   |
+| OVR                                           | integer                                           | none                                                                   | new (D1, D6)                             |
+| Tier                                          | `homa\|stade\|pro\|champion\|legend`              | none                                                                   | new (D9)                                 |
+| Stats                                         | `cap, sel, trf, con`, nullable integers           | none                                                                   | new (D2–D5)                              |
+| Provisional, gameweeks counted, rules version | bool, int, text                                   | none                                                                   | new (D8)                                 |
+| Season                                        | label (`2026/27`)                                 | `fantasy_seasons` → `app.seasons.label`                                | exists                                   |
+| ID                                            | 6-digit serial string; client adds `BOT #`        | none                                                                   | new, **immutable**, seeds textures (D14) |
+| Founder                                       | cohort year or null                               | none                                                                   | new (D13)                                |
+| Join year                                     | year                                              | `profiles.created_at` (unreliable)                                     | decide                                   |
+| Club                                          | team id, code, fr/ar short name, nullable colours | preferences → `app.teams`, `team_translations`                         | exists                                   |
+| Country                                       | ISO code                                          | none                                                                   | D16                                      |
+| Avatar                                        | shared drawn figure, or photo                     | owner-only `avatar_path`                                               | D17                                      |
+| Row context                                   | rank, points                                      | `fantasy_rankings`                                                     | exists                                   |
+| History                                       | OVR per gameweek, seasons, tier changes           | none                                                                   | new (D18)                                |
 
 **Binding rules, with sources**
+
 - **Free to play** (PRODUCT.md ~245, owner brief): no purchase, no stake, nothing that looks
   like betting or pay-to-win. Updates are deterministic.
 - **Independent** (PRODUCT.md ~246): nothing implies affiliation with the FRMF, the LNFP or a
@@ -427,6 +435,7 @@ shown sole is an insult); achievements (none in v1); section 4's "to confirm" li
 ## 6. Implementation plan
 
 **Conventions**
+
 - **Task number.** The ledger is unordered (its tail is BG-0054). Highest on main:
   `grep -o 'BG-0[0-9]\{3\}' docs/engineering/LAUNCH_LEDGER.yaml | sort -u | tail -1`; on each
   open PR branch:
@@ -437,6 +446,7 @@ shown sole is an insult); achievements (none in v1); section 4's "to confirm" li
   `BG-0158: <summary>`. **Object names are proposals.**
 
 **Phase 0: read and confirm**
+
 - Read section 7; `git fetch --unshallow` if shallow; list open PRs and their migrations.
 - Confirm from the repository: no script writes `rank`/`overall_rank`; version and postwork
   semantics; lock keys; step-up counts.
@@ -451,6 +461,7 @@ shown sole is an insult); achievements (none in v1); section 4's "to confirm" li
 - **Accept:** a short note of what you confirmed and where facts differ from this prompt.
 
 **Phase 1: design doc and decisions**
+
 - `docs/backend/MANAGER_CARD_DOMAIN_PLAN.md` (model `PREDICTIONS_DOMAIN_PLAN.md`): sources per
   stat, every D2–D5 edge case, schema, computation, API, visibility, deletion, switch, job,
   risks. Add `docs/engineering/tasks/BG-0158/engineering-brief.yaml` (template
@@ -465,6 +476,7 @@ Every table: RLS forced, `revoke all`, every foreign-key column indexed. Rows ke
 season or gameweek reference it on delete cascade or carry no foreign key; check against
 `api.service_rollback_fantasy_catalog` (`20260918170000`) and
 `scripts/backend/fantasy-catalog-restage-maintenance.sql`.
+
 - `app.manager_cards`: `user_id` PK → `app.profiles(id)` on delete cascade; `serial`
   nullable, unique, never updated (check per D14); founder cohort and granted-at.
 - `app.manager_card_seasons`: user, season, `fantasy_team_id` (on delete cascade); `ovr`,
@@ -487,6 +499,7 @@ skipped by the tick; with the switches off, nothing writes.
 **Phase 3: computation** (after the D1–D12 answers)
 
 An `app_private` function evaluates one gameweek under one rules version:
+
 - **Evaluable:** stable, with the postwork row for its current `scoring_input_version`
   completed. Walk the season in sequence order, skipping `cancelled`.
 - **Corrections:** when a gameweek's version differs from its ledger row, re-evaluate it and
@@ -514,6 +527,7 @@ nothing; null, provisional, Bench Boost, Free Hit, corrected, cancelled and `no_
 hold; no Fantasy table is written; the prune spares card history.
 
 **Phase 4: read API** (`security definer`, `search_path ''`, `pg_catalog` arguments)
+
 - `api.get_my_manager_card()`; `api.manager_card_status()` and `api.ack_manager_card_moments(text[])` (see section 6a); one card by Fantasy team id; a batch of up to 100 team ids for
   ranking rows (fields a proposal, settled in the design doc once a direction is picked); the
   caller's history, keyset-paged.
@@ -528,6 +542,7 @@ hold; no Fantasy table is written; the prune spares card history.
 **Accept:** cross-user and anonymous denial, refusal while off, deleted profiles hidden.
 
 **Phase 5: tests, types, docs, apply script**
+
 - **pgTAP** `supabase/tests/database/manager_card.test.sql`:
   `begin; select extensions.plan(N); … select * from extensions.finish(); rollback;`,
   assertions as `extensions.is`/`extensions.ok`, helpers `pg_temp.id`/`pg_temp.act`. Cover
@@ -566,6 +581,7 @@ The server derives every moment from rows it already writes and records which on
 manager has seen. Routes, components and copy stay out of scope (section 1).
 
 **Rules for this part** (in addition to sections 2 and 4)
+
 - **Display-only.** No prize, ranking, league, Fantasy rule or job reads a moment or an
   acknowledgement. Acknowledging writes nothing but the acknowledgement.
 - **Signed-in only for anything personal** (D19). The one anonymous read returns the switch and
@@ -588,11 +604,11 @@ manager has seen. Routes, components and copy stay out of scope (section 1).
 
 **`app.manager_card_moment_acks`** (name a proposal)
 
-| Column | Type | Rule |
-|---|---|---|
-| `user_id` | `uuid not null` | → `app.profiles(id)` **on delete cascade** |
-| `moment_key` | `text not null` | check on the allowed shapes (below) |
-| `acknowledged_at` | `timestamptz not null default now()` | |
+| Column            | Type                                 | Rule                                       |
+| ----------------- | ------------------------------------ | ------------------------------------------ |
+| `user_id`         | `uuid not null`                      | → `app.profiles(id)` **on delete cascade** |
+| `moment_key`      | `text not null`                      | check on the allowed shapes (below)        |
+| `acknowledged_at` | `timestamptz not null default now()` |                                            |
 
 - Primary key `(user_id, moment_key)`. Its leading column indexes the foreign key.
 - Key check:
@@ -634,15 +650,15 @@ manager has seen. Routes, components and copy stay out of scope (section 1).
 Each moment is returned by `api.get_my_manager_card()` only while it is **pending** (derivable,
 not acknowledged, and inside its window). `occurred_at` is the source row's time.
 
-| Kind | Key | Exists when | Values returned | Returned while |
-|---|---|---|---|---|
-| `card_created` | `card_created` | The caller has a card row, or the forming answer applies | `season_label`, `created_at` (null for the forming answer) | not acknowledged |
-| `first_rating` | `first_rating:<fs>` | The season's lowest-sequence history row with OVR not null | `gameweek_seq`, `ovr`, `tier`, `provisional`, `gameweeks_counted` on that row, `calculated_at`, `first_ever` (no earlier season has a non-null OVR) | not acknowledged, and `<fs>` is the current fantasy season |
-| `provisional_cleared` | `provisional_cleared:<fs>` | The season's lowest-sequence history row with OVR not null and `provisional = false` | `gameweek_seq`, `ovr`, `gameweeks_counted` | not acknowledged, current season |
-| `tier_changed` | `tier_changed:<tier>` | The account's earliest history row (any season) at that tier, tier ≠ `homa` | `tier`, `previous_tier` (the row before), `ovr`, `gameweek_seq`, `season_label` | not acknowledged, and the current tier ranks at or above it |
-| `founder_granted` | `founder_granted` | Founder cohort not null | `cohort`, `founder_granted_at`, `founder_cutoff_date` (nullable) | not acknowledged |
-| `season_closed` | `season_closed:<fs>` | The caller's season row for `<fs>` has `closed_at` | `season_label`, `ovr`, `tier` | not acknowledged, and `<fs>` is the caller's most recently closed season |
-| `season_started` | `season_started:<fs>` | The caller has a team in `<fs>` and a closed season row for an earlier season | `season_label`, `previous {label, ovr, tier}` | not acknowledged, `<fs>` current, and that season's OVR still null |
+| Kind                  | Key                        | Exists when                                                                          | Values returned                                                                                                                                     | Returned while                                                           |
+| --------------------- | -------------------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `card_created`        | `card_created`             | The caller has a card row, or the forming answer applies                             | `season_label`, `created_at` (null for the forming answer)                                                                                          | not acknowledged                                                         |
+| `first_rating`        | `first_rating:<fs>`        | The season's lowest-sequence history row with OVR not null                           | `gameweek_seq`, `ovr`, `tier`, `provisional`, `gameweeks_counted` on that row, `calculated_at`, `first_ever` (no earlier season has a non-null OVR) | not acknowledged, and `<fs>` is the current fantasy season               |
+| `provisional_cleared` | `provisional_cleared:<fs>` | The season's lowest-sequence history row with OVR not null and `provisional = false` | `gameweek_seq`, `ovr`, `gameweeks_counted`                                                                                                          | not acknowledged, current season                                         |
+| `tier_changed`        | `tier_changed:<tier>`      | The account's earliest history row (any season) at that tier, tier ≠ `homa`          | `tier`, `previous_tier` (the row before), `ovr`, `gameweek_seq`, `season_label`                                                                     | not acknowledged, and the current tier ranks at or above it              |
+| `founder_granted`     | `founder_granted`          | Founder cohort not null                                                              | `cohort`, `founder_granted_at`, `founder_cutoff_date` (nullable)                                                                                    | not acknowledged                                                         |
+| `season_closed`       | `season_closed:<fs>`       | The caller's season row for `<fs>` has `closed_at`                                   | `season_label`, `ovr`, `tier`                                                                                                                       | not acknowledged, and `<fs>` is the caller's most recently closed season |
+| `season_started`      | `season_started:<fs>`      | The caller has a team in `<fs>` and a closed season row for an earlier season        | `season_label`, `previous {label, ovr, tier}`                                                                                                       | not acknowledged, `<fs>` current, and that season's OVR still null       |
 
 - A jump from HOMA straight to PRO yields `tier_changed:pro` only. A fall is never a moment.
 - A correction that re-evaluates gameweeks recomputes the same keys; it never creates a second
@@ -656,7 +672,7 @@ All `security definer`, `set search_path = ''`, `pg_catalog` argument types only
 `PT400/401/403/404/409` with snake_case messages (section 3.2).
 
 1. **`api.manager_card_status()` → `jsonb`** `{enabled boolean, min_rated integer|null,
-   min_confirmed integer|null}`.
+min_confirmed integer|null}`.
    - `enabled` = `read_enabled` and an active rules row. Minimums from that row; null when not
      enabled.
    - Grants: `anon, authenticated, service_role`. Reads no caller (no `auth.uid()`), so **no
@@ -735,6 +751,7 @@ All `security definer`, `set search_path = ''`, `pg_catalog` argument types only
 
 pgTAP in `supabase/tests/database/manager_card.test.sql` or a sibling
 `manager_card_moments.test.sql`, with placeholder rules inside each test's rolled-back transaction.
+
 - **Table:** RLS enabled and forced; no grants to `anon` or `authenticated`; the key check rejects
   `first_rating:not-a-uuid`, `tier_changed:homa`, `founder_granted:x`.
 - **Status:** callable by `anon`; `enabled` false with the switch off, false with the switch on and
@@ -849,6 +866,7 @@ The owner prefers short, plain answers without jargon.
 recommendation; "Which do you change?"; the design doc link. Then stop and wait.
 
 **Final report**
+
 - One paragraph on what the card can now do; what is off and how to turn it on.
 - What you tested and where (local, CI), and what did not run; any database you wrote to.
 - The owner's remaining actions, in order:

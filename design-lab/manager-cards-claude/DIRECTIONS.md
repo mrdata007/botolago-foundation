@@ -6,18 +6,18 @@ call. Every direction follows `CONTRACT.md` and the binding rules at the end of 
 
 ## The ten
 
-| # | Direction | Category | The object | Where the 84 lives | Founder 2026 (as built) |
-|---|---|---|---|---|---|
-| 01 | **Lucarne** | safe | The five-a-side goal, from a goal chalked on a wall to the floodlit box net of the neighbourhood pitch | In the top corner of the net, where the shot went in | A concrete footing under the end post, with 26 cast in an iron plate; the outline turns asymmetric |
-| 02 | **Tir** | safe | BotolaGO's own ball in flight, with the stats as the lanes of its trail | Riding the trail behind the ball | One panel of the ball struck in blue enamel, with 26 knocked out in white |
-| 03 | **Porte-clés** | safe | The fob on your keyring, hanging from a split ring and collecting charms over the seasons | Engraved and paint-filled in the fob | Only 2026 founders have a squared split ring |
-| 04 | **Pochoir** | bold | The spray stencil used to number neighbourhood-tournament bibs | Cut through the plate, so the outline itself shows the 84 | 26 cut through the plate, plus a cutter's notch in the bottom edge that changes the outline |
-| 05 | **Semelle** | bold | The underside of your boot, studs up; the stud pattern is the tier | Moulded in the forefoot | The injection-moulding date wheel, in brass |
-| 06 | **Brassard** | bold | The captain's armband, reissued for managers: a band you spin to read | Woven into the band | ALI ·26 woven after the name; the strap end cut on the logo's slant and sewn with a box-X |
-| 07 | **Écharpe** | youth | Your supporter's scarf, one band per gameweek | Knitted at the top | The cast-on: the first five rows, in cream, with 2026 knitted between two cable twists |
-| 08 | **Lsaq** | youth | A stack of die-cut stickers slapped over last week's | On the big sticker | The first sticker at the bottom of the stack: ALI ·26 |
-| 09 | **Panneau** | youth | The board the fourth official raises: one number for the whole stadium | On the LED face | A knurled steel collar on the grip with 26 engraved; ·26 after the name on the face |
-| 10 | **Quatre Ombres** | wildcard | Under four floodlights a player casts four shadows: the X is the mark, and the stats are its four arms | In the lit gap under the figure | A fifth lamp tab with 2026 stamped in it, and a short fifth shadow |
+| #   | Direction         | Category | The object                                                                                             | Where the 84 lives                                        | Founder 2026 (as built)                                                                            |
+| --- | ----------------- | -------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 01  | **Lucarne**       | safe     | The five-a-side goal, from a goal chalked on a wall to the floodlit box net of the neighbourhood pitch | In the top corner of the net, where the shot went in      | A concrete footing under the end post, with 26 cast in an iron plate; the outline turns asymmetric |
+| 02  | **Tir**           | safe     | BotolaGO's own ball in flight, with the stats as the lanes of its trail                                | Riding the trail behind the ball                          | One panel of the ball struck in blue enamel, with 26 knocked out in white                          |
+| 03  | **Porte-clés**    | safe     | The fob on your keyring, hanging from a split ring and collecting charms over the seasons              | Engraved and paint-filled in the fob                      | Only 2026 founders have a squared split ring                                                       |
+| 04  | **Pochoir**       | bold     | The spray stencil used to number neighbourhood-tournament bibs                                         | Cut through the plate, so the outline itself shows the 84 | 26 cut through the plate, plus a cutter's notch in the bottom edge that changes the outline        |
+| 05  | **Semelle**       | bold     | The underside of your boot, studs up; the stud pattern is the tier                                     | Moulded in the forefoot                                   | The injection-moulding date wheel, in brass                                                        |
+| 06  | **Brassard**      | bold     | The captain's armband, reissued for managers: a band you spin to read                                  | Woven into the band                                       | ALI ·26 woven after the name; the strap end cut on the logo's slant and sewn with a box-X          |
+| 07  | **Écharpe**       | youth    | Your supporter's scarf, one band per gameweek                                                          | Knitted at the top                                        | The cast-on: the first five rows, in cream, with 2026 knitted between two cable twists             |
+| 08  | **Lsaq**          | youth    | A stack of die-cut stickers slapped over last week's                                                   | On the big sticker                                        | The first sticker at the bottom of the stack: ALI ·26                                              |
+| 09  | **Panneau**       | youth    | The board the fourth official raises: one number for the whole stadium                                 | On the LED face                                           | A knurled steel collar on the grip with 26 engraved; ·26 after the name on the face                |
+| 10  | **Quatre Ombres** | wildcard | Under four floodlights a player casts four shadows: the X is the mark, and the stats are its four arms | In the lit gap under the figure                           | A fifth lamp tab with 2026 stamped in it, and a short fifth shadow                                 |
 
 Category mix: 3 safe, 3 bold, 3 youth/status, 1 wildcard. Eight of the ten are outside the
 territory the Codex exploration claimed. Écharpe sits near Codex's Terrace and Panneau near
@@ -38,14 +38,14 @@ paddle board).
    built as direction 01. The six catalog challengers were fused and weighed on audience
    identification and product clarity:
 
-   | Challenger | Verdict | What it donated |
-   |---|---|---|
-   | Bebop title card | declined | Freeze on impact (Lucarne): a hard cut and a one-beat freeze when the ball hits the corner |
-   | Punk paste-up | declined | Generations (Pochoir): each season adds a coat of overspray around the cuts |
-   | Akari light | declined | Light is the state (Quatre Ombres): the tier is the quality of the light, never a colour |
-   | Łowicz papercut | competitive | Layer per tier, depth by overlap only |
-   | CRT arcade | declined | Integer mesh (Lucarne, Écharpe): the net and the stitch grid snap to whole pixels at small sizes |
-   | Teletext | declined | Hold, not rotate: the board pins the stat being read |
+   | Challenger       | Verdict     | What it donated                                                                                  |
+   | ---------------- | ----------- | ------------------------------------------------------------------------------------------------ |
+   | Bebop title card | declined    | Freeze on impact (Lucarne): a hard cut and a one-beat freeze when the ball hits the corner       |
+   | Punk paste-up    | declined    | Generations (Pochoir): each season adds a coat of overspray around the cuts                      |
+   | Akari light      | declined    | Light is the state (Quatre Ombres): the tier is the quality of the light, never a colour         |
+   | Łowicz papercut  | competitive | Layer per tier, depth by overlap only                                                            |
+   | CRT arcade       | declined    | Integer mesh (Lucarne, Écharpe): the net and the stitch grid snap to whole pixels at small sizes |
+   | Teletext         | declined    | Hold, not rotate: the board pins the stat being read                                             |
 
 4. **Curation and stress test.** A creative-director agent curated a slate of ten. Three
    adversarial critics attacked it: clone and resemblance, small size / right-to-left /

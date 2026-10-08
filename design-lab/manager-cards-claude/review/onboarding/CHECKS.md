@@ -282,16 +282,15 @@ No failures.
 | `npx eslint design-lab/manager-cards-claude`                                                                             | pass     |
 | `node design-lab/manager-cards-claude/build.mjs`                                                                         | pass     |
 
-The whole-folder check lists 18 files. 17 are card directions (`src/concepts/*`) and plan documents that this pass may not edit; they were not Prettier-formatted before it either (the repository's lint, `eslint .`, only reads the scripts). Lab-owned and still unformatted: `review/onboarding/INDEX.md`.
+The whole-folder check lists 17 files. 17 are card directions (`src/concepts/*`) and plan documents that this pass may not edit; they were not Prettier-formatted before it either (the repository's lint, `eslint .`, only reads the scripts). Lab-owned and still unformatted: none.
 
-<details><summary>Not formatted (18)</summary>
+<details><summary>Not formatted (17)</summary>
 
 - design-lab/manager-cards-claude/BACKEND_HANDOFF.md
 - design-lab/manager-cards-claude/CONTRACT.md
 - design-lab/manager-cards-claude/CRITIQUE.md
 - design-lab/manager-cards-claude/DIRECTIONS.md
 - design-lab/manager-cards-claude/ONBOARDING_PLAN.md
-- design-lab/manager-cards-claude/review/onboarding/INDEX.md
 - design-lab/manager-cards-claude/src/concepts/00-contract.css
 - design-lab/manager-cards-claude/src/concepts/02.css
 - design-lab/manager-cards-claude/src/concepts/03.css
@@ -340,4 +339,4 @@ For the reviewer: tick each row against the captures in `review/onboarding/` (se
 - [ ] **Checklist close to TP-25** (Build, judge 1) → Cut
 - [ ] **« N° bientôt attribué » promises a timescale** (Build, judge 2) → No placeholder sentence; a dash on the carrier
 
-Run time 375s.
+Run time 438s.

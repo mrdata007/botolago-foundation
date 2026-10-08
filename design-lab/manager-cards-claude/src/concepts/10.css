@@ -113,28 +113,67 @@
 .c10.c10-relight .c10-first.c10-k5 {
   transform-origin: 210px 121px;
 }
-.c10.c10-relight .c10-k1 { animation-delay: 0.6s; }
-.c10.c10-relight .c10-k2 { animation-delay: 1s; }
-.c10.c10-relight .c10-k3 { animation-delay: 1.4s; }
-.c10.c10-relight .c10-k4 { animation-delay: 1.8s; }
-.c10.c10-relight .c10-k5 { animation-delay: 2.4s; animation-duration: 0.12s; }
-.c10.c10-relight .c10-cast.c10-k1 { animation-delay: 0.78s; }
-.c10.c10-relight .c10-cast.c10-k2 { animation-delay: 1.18s; }
-.c10.c10-relight .c10-cast.c10-k3 { animation-delay: 1.58s; }
-.c10.c10-relight .c10-cast.c10-k4 { animation-delay: 1.98s; }
-.c10.c10-relight .c10-cast.c10-k5 { animation-delay: 2.52s; animation-duration: 0.14s; }
+.c10.c10-relight .c10-k1 {
+  animation-delay: 0.6s;
+}
+.c10.c10-relight .c10-k2 {
+  animation-delay: 1s;
+}
+.c10.c10-relight .c10-k3 {
+  animation-delay: 1.4s;
+}
+.c10.c10-relight .c10-k4 {
+  animation-delay: 1.8s;
+}
+.c10.c10-relight .c10-k5 {
+  animation-delay: 2.4s;
+  animation-duration: 0.12s;
+}
+.c10.c10-relight .c10-cast.c10-k1 {
+  animation-delay: 0.78s;
+}
+.c10.c10-relight .c10-cast.c10-k2 {
+  animation-delay: 1.18s;
+}
+.c10.c10-relight .c10-cast.c10-k3 {
+  animation-delay: 1.58s;
+}
+.c10.c10-relight .c10-cast.c10-k4 {
+  animation-delay: 1.98s;
+}
+.c10.c10-relight .c10-cast.c10-k5 {
+  animation-delay: 2.52s;
+  animation-duration: 0.14s;
+}
 @keyframes c10-dim {
-  0%, 70% { opacity: 1; }
-  100% { opacity: 0; }
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 @keyframes c10-catch {
-  0% { opacity: 0.08; }
-  33.3% { opacity: 1; }
-  66.6% { opacity: 0.14; }
+  0% {
+    opacity: 0.08;
+  }
+  33.3% {
+    opacity: 1;
+  }
+  66.6% {
+    opacity: 0.14;
+  }
 }
 @keyframes c10-snap {
-  0% { opacity: 0; transform: scale(0.2); }
-  100% { opacity: 1; transform: scale(1); }
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .c10.c10-relight::before {
@@ -192,18 +231,31 @@
   --pool: radial-gradient(120px 64px at var(--tx) 50%, rgba(255, 162, 58, 0.2), transparent 72%);
 }
 .c10.c10--row.t-STADE {
-  --pool: radial-gradient(84px 58px at calc(var(--tx) - 20px) 50%, rgba(255, 162, 58, 0.14), transparent 72%),
-    radial-gradient(84px 58px at calc(var(--tx) + 20px) 50%, rgba(207, 221, 230, 0.14), transparent 72%);
+  --pool:
+    radial-gradient(
+      84px 58px at calc(var(--tx) - 20px) 50%,
+      rgba(255, 162, 58, 0.14),
+      transparent 72%
+    ),
+    radial-gradient(
+      84px 58px at calc(var(--tx) + 20px) 50%,
+      rgba(207, 221, 230, 0.14),
+      transparent 72%
+    );
 }
 .c10.c10--row.t-CHAMPION {
   --pool: radial-gradient(124px 66px at var(--tx) 50%, rgba(207, 221, 230, 0.2), transparent 70%);
 }
 .c10.c10--row.t-LEGEND {
   --pool: radial-gradient(130px 70px at var(--tx) 50%, rgba(255, 255, 255, 0.24), transparent 70%);
-  box-shadow: inset 0 0 0 1px var(--c10-row-rim), inset 0 1px 0 rgba(244, 251, 255, 0.55);
+  box-shadow:
+    inset 0 0 0 1px var(--c10-row-rim),
+    inset 0 1px 0 rgba(244, 251, 255, 0.55);
 }
 .c10.c10--row .c10r-rank {
-  font: 800 15px/1 "Manrope", sans-serif;
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
   text-align: center;
   color: var(--c10r-muted);
@@ -219,22 +271,31 @@
   gap: 2px;
 }
 .c10.c10--row .c10r-id b {
-  font: 800 19px/1.15 "Changa", sans-serif;
+  font:
+    800 19px/1.15 "Changa",
+    sans-serif;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .c10.c10--row .c10r-id b i {
   margin-inline-start: 4px;
-  font: 700 15px/1 "Changa", sans-serif;
+  font:
+    700 15px/1 "Changa",
+    sans-serif;
   font-style: normal;
   color: #fff1d2;
 }
 .c10.c10--row[dir="rtl"] .c10r-id b {
-  font: 800 19px/1.5 "Changa", "Noto Sans Arabic", sans-serif;
+  font:
+    800 19px/1.5 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
 }
 .c10.c10--row .c10r-id small {
-  font: 800 10.5px/1.2 "Manrope", sans-serif;
+  font:
+    800 10.5px/1.2 "Manrope",
+    sans-serif;
   letter-spacing: 0.09em;
   color: var(--c10r-muted);
   white-space: nowrap;
@@ -242,7 +303,9 @@
   text-overflow: ellipsis;
 }
 .c10.c10--row[dir="rtl"] .c10r-id small {
-  font: 700 11.5px/1.5 "Noto Sans Arabic", sans-serif;
+  font:
+    700 11.5px/1.5 "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0;
 }
 .c10.c10--row .c10r-pts {
@@ -250,25 +313,35 @@
   justify-items: end;
   gap: 3px;
   min-width: 44px;
-  font: 800 16px/1 "Manrope", sans-serif;
+  font:
+    800 16px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .c10.c10--row .c10r-pts small {
-  font: 700 9.5px/1 "Manrope", sans-serif;
+  font:
+    700 9.5px/1 "Manrope",
+    sans-serif;
   letter-spacing: 0.1em;
   color: var(--c10r-muted);
 }
 .c10.c10--row[dir="rtl"] .c10r-pts small {
-  font: 700 10.5px/1.4 "Noto Sans Arabic", sans-serif;
+  font:
+    700 10.5px/1.4 "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0;
 }
 /* your own card: the lights are on (lit turf, Logo Blue name) */
 .c10.c10--row.is-me {
   --c10r-ink: #001c49;
   --c10r-muted: #3f4955;
-  background: radial-gradient(160px 90px at var(--tx) 50%, rgba(255, 255, 255, 0.55), transparent 72%),
+  background:
+    radial-gradient(160px 90px at var(--tx) 50%, rgba(255, 255, 255, 0.55), transparent 72%),
     repeating-linear-gradient(90deg, #cfdde6 0 24px, #c2d3de 24px 48px);
-  box-shadow: inset 0 0 0 1px #0b1a33, inset 0 0 0 4px rgba(11, 26, 51, 0.82), inset 0 0 14px 4px rgba(11, 26, 51, 0.4);
+  box-shadow:
+    inset 0 0 0 1px #0b1a33,
+    inset 0 0 0 4px rgba(11, 26, 51, 0.82),
+    inset 0 0 14px 4px rgba(11, 26, 51, 0.4);
 }
 .c10.c10--row.is-me .c10r-id b {
   color: #0151fc;
@@ -320,16 +393,22 @@
   height: 38px;
 }
 .c10.c10--share .c10s-who b {
-  font: 800 32px/38px "Changa", sans-serif;
+  font:
+    800 32px/38px "Changa",
+    sans-serif;
 }
 .c10.c10--share .c10s-yr {
-  font: 700 22px/38px "Changa", sans-serif;
+  font:
+    700 22px/38px "Changa",
+    sans-serif;
   color: #fff1d2;
 }
 .c10.c10--share .c10s-meta {
   display: flex;
   gap: 14px;
-  font: 700 11px/1.3 "Manrope", sans-serif;
+  font:
+    700 11px/1.3 "Manrope",
+    sans-serif;
   letter-spacing: 0.08em;
   color: #c4ccd6;
 }
@@ -337,7 +416,10 @@
   align-items: center;
 }
 .c10.c10--share[dir="rtl"] .c10s-who b {
-  font: 800 30px/38px "Changa", "Noto Sans Arabic", sans-serif;
+  font:
+    800 30px/38px "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
 }
 .c10.c10--share[dir="rtl"] .c10s-meta {
   letter-spacing: 0;

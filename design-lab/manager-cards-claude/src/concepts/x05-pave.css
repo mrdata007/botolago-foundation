@@ -78,27 +78,51 @@
   animation: x05-flow 320ms ease-out 1180ms both;
 }
 @keyframes x05-grind {
-  from { transform: translateX(0); }
-  to { transform: translateX(calc(var(--x05-dir, 1) * 392px)); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(var(--x05-dir, 1) * 392px));
+  }
 }
 @keyframes x05-grind-head {
-  0% { transform: translateX(0); opacity: 0; }
-  6% { opacity: 1; }
-  94% { opacity: 1; }
-  100% { transform: translateX(calc(var(--x05-dir, 1) * 392px)); opacity: 0; }
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  94% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(calc(var(--x05-dir, 1) * 392px));
+    opacity: 0;
+  }
 }
 @keyframes x05-flow {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .x05 .x05-cover,
-  .x05 .x05-head { display: none; }
+  .x05 .x05-head {
+    display: none;
+  }
   .x05 .x05-grind,
   .x05 .x05-flow,
-  .x05 svg:has(.x05-cover) .x05-flow { animation: none; }
+  .x05 svg:has(.x05-cover) .x05-flow {
+    animation: none;
+  }
   .x05 .x05-rake rect,
-  .x05 .x05-mirror { transition: none; }
+  .x05 .x05-mirror {
+    transition: none;
+  }
 }
 
 /* ---------- token ---------- */
@@ -133,7 +157,9 @@
   margin-block: -2px;
   box-sizing: border-box;
   background: var(--x05-grain), var(--x05-sand);
-  box-shadow: 0 -2px 0 var(--x05-sand), 0 2px 0 var(--x05-sand);
+  box-shadow:
+    0 -2px 0 var(--x05-sand),
+    0 2px 0 var(--x05-sand);
   font-family: "Manrope", sans-serif;
   color: var(--x05-ink);
 }
@@ -175,10 +201,16 @@
   inset-block: 0;
   width: 8px;
   background: var(--x05-mottle), var(--x05-nb);
-  box-shadow: inset 0 -4px 0 var(--x05-nb-band), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  box-shadow:
+    inset 0 -4px 0 var(--x05-nb-band),
+    inset 0 1px 0 rgb(255 255 255 / 0.12);
 }
-.x05.x05-row[data-bond="a"]::before { inset-inline-end: 0; }
-.x05.x05-row[data-bond="b"]::before { inset-inline-start: 0; }
+.x05.x05-row[data-bond="a"]::before {
+  inset-inline-end: 0;
+}
+.x05.x05-row[data-bond="b"]::before {
+  inset-inline-start: 0;
+}
 .x05 .x05-row-slab {
   position: absolute;
   inset-block: 0;
@@ -196,12 +228,23 @@
     inset 0 -4px 0 var(--x05-band),
     inset 0 1px 0 var(--x05-lit),
     inset 0 0 0 1px var(--x05-rim);
-  clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 3px, 100% calc(100% - 3px), calc(100% - 3px) 100%, 3px 100%, 0 calc(100% - 3px), 0 3px);
+  clip-path: polygon(
+    3px 0,
+    calc(100% - 3px) 0,
+    100% 3px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    3px 100%,
+    0 calc(100% - 3px),
+    0 3px
+  );
 }
 .x05.x05-row[dir="rtl"] .x05-row-slab {
   padding: 0 10px 4px 14px;
 }
-.x05.x05-row[data-bond="b"] .x05-row-slab { inset-inline: 12px 0; }
+.x05.x05-row[data-bond="b"] .x05-row-slab {
+  inset-inline: 12px 0;
+}
 /* CHAMPION: a brass line runs along the top of the side band; LEGEND: brass on black */
 .x05.x05-row[data-tier="CHAMPION"] .x05-row-slab,
 .x05.x05-row[data-tier="LEGEND"] .x05-row-slab {
@@ -220,17 +263,23 @@
 }
 /* your own row: the slab sits in the floodlight */
 .x05.x05-row.is-me .x05-row-slab {
-  background-image: radial-gradient(84px 46px at 68px 46%, var(--x05-me), transparent 72%), var(--x05-chips, none), var(--x05-grain), var(--x05-mottle);
+  background-image:
+    radial-gradient(84px 46px at 68px 46%, var(--x05-me), transparent 72%), var(--x05-chips, none),
+    var(--x05-grain), var(--x05-mottle);
   box-shadow:
     inset 0 -4px 0 var(--x05-band),
     inset 0 1px 0 var(--x05-lit),
     inset 0 0 0 1px var(--x05-me-edge);
 }
 .x05.x05-row.is-me[dir="rtl"] .x05-row-slab {
-  background-image: radial-gradient(84px 46px at calc(100% - 68px) 46%, var(--x05-me), transparent 72%), var(--x05-chips, none), var(--x05-grain), var(--x05-mottle);
+  background-image:
+    radial-gradient(84px 46px at calc(100% - 68px) 46%, var(--x05-me), transparent 72%),
+    var(--x05-chips, none), var(--x05-grain), var(--x05-mottle);
 }
 .x05 .x05-row-rank {
-  font: 800 22px/1 "Big Shoulders Display", sans-serif;
+  font:
+    800 22px/1 "Big Shoulders Display",
+    sans-serif;
   color: var(--x05-ink);
   text-align: center;
 }
@@ -246,14 +295,19 @@
   min-width: 0;
 }
 .x05 .x05-row-id b {
-  font: 800 21px/1.05 "Big Shoulders Display", sans-serif;
+  font:
+    800 21px/1.05 "Big Shoulders Display",
+    sans-serif;
   letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .x05 .x05-row-id b.ar {
-  font: 700 16px/1.7 "Alexandria", "Noto Sans Arabic", sans-serif;
+  font:
+    700 16px/1.7 "Alexandria",
+    "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0;
   margin-block: -6px -5px;
 }
@@ -261,12 +315,17 @@
   display: flex;
   align-items: baseline;
   gap: 7px;
-  font: 800 11px/1.2 "Big Shoulders Display", sans-serif;
+  font:
+    800 11px/1.2 "Big Shoulders Display",
+    sans-serif;
   letter-spacing: 0.1em;
   color: var(--x05-ink-2);
 }
 .x05.x05-row[dir="rtl"] .x05-row-id small {
-  font: 600 11px/1.5 "Alexandria", "Noto Sans Arabic", sans-serif;
+  font:
+    600 11px/1.5 "Alexandria",
+    "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0;
 }
 .x05 .x05-row-id small i {
@@ -274,7 +333,9 @@
   color: var(--x05-accent);
 }
 .x05 .x05-row-f {
-  font: 300 12px/1 "Alexandria", sans-serif;
+  font:
+    300 12px/1 "Alexandria",
+    sans-serif;
   letter-spacing: 0;
   color: var(--x05-ink-2);
   -webkit-text-stroke: 0.4px currentColor;
@@ -288,16 +349,22 @@
   gap: 2px;
 }
 .x05 .x05-row-pts b {
-  font: 800 17px/1 "Manrope", sans-serif;
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .x05 .x05-row-pts small {
-  font: 700 9.5px/1.2 "Manrope", sans-serif;
+  font:
+    700 9.5px/1.2 "Manrope",
+    sans-serif;
   letter-spacing: 0.14em;
   color: var(--x05-ink-2);
 }
 .x05.x05-row[dir="rtl"] .x05-row-pts small {
-  font: 600 10.5px/1.4 "Noto Sans Arabic", sans-serif;
+  font:
+    600 10.5px/1.4 "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0;
 }
 

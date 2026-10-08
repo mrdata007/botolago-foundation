@@ -72,14 +72,14 @@ takeover.
 
 **Who arrives, in what state**
 
-| # | Who | Where from | State of mind | What they need from the card |
-|---|---|---|---|---|
-| A | **Guest** (no account) | `/jouer` or the landing page, a friend's WhatsApp league link, a shared recap | Curious and committed to little. They know FPL or EA FC Ultimate Team ratings. They are building a squad stored on the phone. | One honest line: a card exists, it starts when the squad is saved, and its number is earned. No sample number. |
-| B | **Signed in, no team this season** (Pronostics player, last season's manager) | Hub, `intro = 'no_team'` | Already trusts the app | The same line; the call to action stays "Créer mon équipe". |
-| C | **New manager, just saved** | The save (`/fantasy/create`) or an import | Peak satisfaction about the squad. The card has no number yet. | Proof the card exists and is theirs, exactly when the number will come, and one social action that is true. |
-| D | **Manager in the wait** (weeks 1–3) | Returns on journée days. Push and email are off in production, so nothing calls them back [code: `PRODUCT.md:197–207`]. | Mild interest, competing with the real game | A visible count of finished journées, the next deadline, and one sentence when a decision they make feeds a stat. |
-| E | **Existing 2026/27 manager at launch** | Hub, on the day the feature is switched on | Already played several rounds | Their card in its current state, number included if they have one, shown once, without a walkthrough. |
-| F | **Returning or lapsed manager** | Hub, after weeks away | Has missed several moments | One coalesced hero on the current card. Nothing stale is presented as news. |
+| #   | Who                                                                           | Where from                                                                                                              | State of mind                                                                                                                 | What they need from the card                                                                                      |
+| --- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| A   | **Guest** (no account)                                                        | `/jouer` or the landing page, a friend's WhatsApp league link, a shared recap                                           | Curious and committed to little. They know FPL or EA FC Ultimate Team ratings. They are building a squad stored on the phone. | One honest line: a card exists, it starts when the squad is saved, and its number is earned. No sample number.    |
+| B   | **Signed in, no team this season** (Pronostics player, last season's manager) | Hub, `intro = 'no_team'`                                                                                                | Already trusts the app                                                                                                        | The same line; the call to action stays "Créer mon équipe".                                                       |
+| C   | **New manager, just saved**                                                   | The save (`/fantasy/create`) or an import                                                                               | Peak satisfaction about the squad. The card has no number yet.                                                                | Proof the card exists and is theirs, exactly when the number will come, and one social action that is true.       |
+| D   | **Manager in the wait** (weeks 1–3)                                           | Returns on journée days. Push and email are off in production, so nothing calls them back [code: `PRODUCT.md:197–207`]. | Mild interest, competing with the real game                                                                                   | A visible count of finished journées, the next deadline, and one sentence when a decision they make feeds a stat. |
+| E   | **Existing 2026/27 manager at launch**                                        | Hub, on the day the feature is switched on                                                                              | Already played several rounds                                                                                                 | Their card in its current state, number included if they have one, shown once, without a walkthrough.             |
+| F   | **Returning or lapsed manager**                                               | Hub, after weeks away                                                                                                   | Has missed several moments                                                                                                    | One coalesced hero on the current card. Nothing stale is presented as news.                                       |
 
 **Experience levels.** Mixed. FPL veterans understand captain, starting XI and transfers;
 EA FC players understand OVR and tiers. The card joins the two: an OVR made of four FPL
@@ -129,15 +129,15 @@ so cohort measures come from **aggregate-only server reads the owner grants** (p
 reads need his leave, hand-off §2). The acknowledgement table (D21) is what makes the key
 measures possible without per-person analytics.
 
-| What | How | Why |
-|---|---|---|
-| **Aha reach** (primary) | For each gameweek: managers whose first rating landed there (history rows), and how many of them acknowledged `first_rating` within 7 days of its `calculated_at` (acks). Aggregate only. | Did people come back and see their number, with no push or email? |
-| **Return to the number** | Of teams created before a given deadline, the share with any card acknowledgement after their first rating. Compared with cohorts from before launch on visits only, read as directional (the calendar confounds it). | Did the wait lose them? If drop-off is high, the remedy is the rules row's minimum, not a fake number. |
-| **First value** | `card_born_view` per `fantasy_team_created`, per week. Expect close to 100%. The gap is read failures and refused step-ups. | The panel reaches new managers in the same session. |
-| **Social loop** (owner's goal) | `card_share_*` per first rating (Seline count ÷ server count of first ratings that week); `card_born_invite`; league joins from invite links before the next deadline (existing league data, aggregate). | "I'm 86, you're 78." |
-| **Comparison coverage** | Rated managers whose league has at least one other rated member (aggregate); `card_h2h_open`. | Is there anyone to compare with? |
-| **Guardrails** | (1) Save-step conversion: `signup_submitted` and `fantasy_team_created` per `card_save_line_view`, against the same weeks before launch; if it drops, the save-step line goes. (2) The builder funnel (new names below) does not move. (3) `card_share_preview_homa` share of previews against the server's tier distribution: a low HOMA rate signals shame. (4) Hero closes without the detail. (5) French against Arabic, from an aggregate join of acks on `profiles.preferred_language`. | Do no harm to the squad funnel; watch for shame. |
-| **Correctness** | A moment cannot be acknowledged twice (primary key). Any `*_view` count above the number of moments pending that week means repeats, which is a bug. Zero card moments while the feature is off. | "Never twice" is measured, not assumed. |
+| What                           | How                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Why                                                                                                    |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **Aha reach** (primary)        | For each gameweek: managers whose first rating landed there (history rows), and how many of them acknowledged `first_rating` within 7 days of its `calculated_at` (acks). Aggregate only.                                                                                                                                                                                                                                                                                                     | Did people come back and see their number, with no push or email?                                      |
+| **Return to the number**       | Of teams created before a given deadline, the share with any card acknowledgement after their first rating. Compared with cohorts from before launch on visits only, read as directional (the calendar confounds it).                                                                                                                                                                                                                                                                         | Did the wait lose them? If drop-off is high, the remedy is the rules row's minimum, not a fake number. |
+| **First value**                | `card_born_view` per `fantasy_team_created`, per week. Expect close to 100%. The gap is read failures and refused step-ups.                                                                                                                                                                                                                                                                                                                                                                   | The panel reaches new managers in the same session.                                                    |
+| **Social loop** (owner's goal) | `card_share_*` per first rating (Seline count ÷ server count of first ratings that week); `card_born_invite`; league joins from invite links before the next deadline (existing league data, aggregate).                                                                                                                                                                                                                                                                                      | "I'm 86, you're 78."                                                                                   |
+| **Comparison coverage**        | Rated managers whose league has at least one other rated member (aggregate); `card_h2h_open`.                                                                                                                                                                                                                                                                                                                                                                                                 | Is there anyone to compare with?                                                                       |
+| **Guardrails**                 | (1) Save-step conversion: `signup_submitted` and `fantasy_team_created` per `card_save_line_view`, against the same weeks before launch; if it drops, the save-step line goes. (2) The builder funnel (new names below) does not move. (3) `card_share_preview_homa` share of previews against the server's tier distribution: a low HOMA rate signals shame. (4) Hero closes without the detail. (5) French against Arabic, from an aggregate join of acks on `profiles.preferred_language`. | Do no harm to the squad funnel; watch for shame.                                                       |
+| **Correctness**                | A moment cannot be acknowledged twice (primary key). Any `*_view` count above the number of moments pending that week means repeats, which is a bug. Zero card moments while the feature is off.                                                                                                                                                                                                                                                                                              | "Never twice" is measured, not assumed.                                                                |
 
 **New event names** (each a distinct name, because `track()` takes no properties) [ours]:
 `card_save_line_view`, `card_born_view`, `card_born_invite`, `card_born_close`,
@@ -182,20 +182,20 @@ also return a card. With the feature off, every screen is exactly as it is today
 
 **Journey at a glance**
 
-| # | Moment | Trigger in plain words | Surface | Opens by itself? |
-|---|---|---|---|---|
-| M1 | `first_contact` | Guest, or signed in without a team, while registration is open | One point in the guest intro; one line on the save step; hints in register and profile setup | No |
-| M2 | `card_created` | The first card read after a first team exists, until acknowledged | A panel at the top of `/fantasy/team` (or the hub) | No: it sits on the page the save already opens |
-| M3 | formation (state) | Card exists, number still null | Hub block, rankings token, recap line; three one-time hints | No |
-| M4 | `first_rating` | The season's first non-null OVR | Hub hero, then a detail sheet; v2 story | No |
-| M5 | league | League members rated | League band, rows, head-to-head | No |
-| M6 | share | A tap on Partager | Share sheet and image | No |
-| M7 | `provisional_cleared` | First evaluated gameweek with provisional false | One line | No |
-| M8 | `tier_changed` | First time ever at a higher tier; or a fall | Hub hero, or a line on the card page | No |
-| M9 | `founder_granted` | The owner's grant set the cohort | Hub hero | No |
-| M10 | `season_closed`, `season_started` | Season frozen; new season's team saved | Hub hero; formation block | No |
-| M11 | returning and launch | Several moments pending | One coalesced hero | No |
-| M12 | replay | A tap on Revoir | Card page | No |
+| #   | Moment                            | Trigger in plain words                                            | Surface                                                                                      | Opens by itself?                               |
+| --- | --------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| M1  | `first_contact`                   | Guest, or signed in without a team, while registration is open    | One point in the guest intro; one line on the save step; hints in register and profile setup | No                                             |
+| M2  | `card_created`                    | The first card read after a first team exists, until acknowledged | A panel at the top of `/fantasy/team` (or the hub)                                           | No: it sits on the page the save already opens |
+| M3  | formation (state)                 | Card exists, number still null                                    | Hub block, rankings token, recap line; three one-time hints                                  | No                                             |
+| M4  | `first_rating`                    | The season's first non-null OVR                                   | Hub hero, then a detail sheet; v2 story                                                      | No                                             |
+| M5  | league                            | League members rated                                              | League band, rows, head-to-head                                                              | No                                             |
+| M6  | share                             | A tap on Partager                                                 | Share sheet and image                                                                        | No                                             |
+| M7  | `provisional_cleared`             | First evaluated gameweek with provisional false                   | One line                                                                                     | No                                             |
+| M8  | `tier_changed`                    | First time ever at a higher tier; or a fall                       | Hub hero, or a line on the card page                                                         | No                                             |
+| M9  | `founder_granted`                 | The owner's grant set the cohort                                  | Hub hero                                                                                     | No                                             |
+| M10 | `season_closed`, `season_started` | Season frozen; new season's team saved                            | Hub hero; formation block                                                                    | No                                             |
+| M11 | returning and launch              | Several moments pending                                           | One coalesced hero                                                                           | No                                             |
+| M12 | replay                            | A tap on Revoir                                                   | Card page                                                                                    | No                                             |
 
 ---
 
@@ -208,16 +208,17 @@ and `api.manager_card_status()` returns `enabled = true` (proposal, section 6a o
 Registration closed, or the flag off: nothing is said about the card.
 
 **M1a · Guest intro: a fifth "how it works" point**
-- *Purpose:* first contact. Promise the card as the result of playing, without adding a step or
+
+- _Purpose:_ first contact. Promise the card as the result of playing, without adding a step or
   competing with "Créer mon équipe".
-- *Layout (390px):* inside the existing "Comment jouer" list [code: `FantasyGuestIntro.tsx:192–215`,
+- _Layout (390px):_ inside the existing "Comment jouer" list [code: `FantasyGuestIntro.tsx:192–215`,
   four points: squad, budget, captain, deadline], after the deadline point, because it is a
   result, not a step. Same row anatomy as the other four. The 36px disc holds the object's
   24–28px mini in its own base material with a dash in the number carrier. It is not a lucide
   icon, and in particular not an ID-card icon (Fan ID risk). Title in body-strong, body in
   secondary. Nothing above the fold moves. The one call to action stays "Créer mon équipe".
-- *Actions:* none of its own. *Next:* unchanged, `/fantasy/create`.
-- *Copy:*
+- _Actions:_ none of its own. _Next:_ unchanged, `/fantasy/create`.
+- _Copy:_
   - FR: title « Votre carte de manager » · body « Elle démarre avec votre équipe. Sa note
     arrive après 3 journées terminées. »
   - AR: title «بطاقتك كمدرّب» · body «تبدأ مع فريقك، ويأتي تقييمها بعد 3 جولات منتهية.»
@@ -225,11 +226,12 @@ Registration closed, or the flag off: nothing is said about the card.
     stage: any of them may be null.)
 
 **M1b · The save step: one line and an empty token above the button**
-- *Trigger:* `step === 'name'` on `/fantasy/create` [code: `src/routes/fantasy.create.tsx:180, 376`]
+
+- _Trigger:_ `step === 'name'` on `/fantasy/create` [code: `src/routes/fantasy.create.tsx:180, 376`]
   and the status flag on.
-- *Purpose:* raise the value of saving at the exact moment an account is asked for (Sorare
+- _Purpose:_ raise the value of saving at the exact moment an account is asked for (Sorare
   pattern 9).
-- *Layout (390px):* inside the existing name card, between the captain and vice-captain rows
+- _Layout (390px):_ inside the existing name card, between the captain and vice-captain rows
   and the guest note: one 64px row, a 48px token at start and two short lines at end. The
   "Entrer l'effectif" button [code: `fpl.enter_squad`, `fantasy.create.tsx:470`] stays last and
   full width.
@@ -238,31 +240,32 @@ Registration closed, or the flag off: nothing is said about the card.
     will carry is chosen at sign-up, so showing the team name here would be wrong after saving.
   - Signed in without a team: the token shows the card name (display name if not blank, else
     team name: D17, the board rule) and the club colour if one resolves (see M1c), with a dash.
-- *Fix that ships with it:* remove `autoFocus` from the team-name input
+- _Fix that ships with it:_ remove `autoFocus` from the team-name input
   [code: `fantasy.create.tsx:420`], so the line and the button are seen before the keyboard
   opens. Measure at 390 × 844 in French and Arabic. (Build's graft. Signing's preview would
   have sat under that keyboard.)
-- *Actions:* none added. *Next:* unchanged. A guest gets the existing account prompt
+- _Actions:_ none added. _Next:_ unchanged. A guest gets the existing account prompt
   [code: `fantasy.create.tsx:303`, `fantasy.create.sign_in_reason`]; a signed-in manager saves.
-- *Copy:*
+- _Copy:_
   - FR: « À l'enregistrement, votre carte de manager démarre avec votre équipe. Sa note arrive
     après 3 journées terminées. »
   - AR: «عند حفظ فريقك تبدأ بطاقتك كمدرّب، ويأتي تقييمها بعد 3 جولات منتهية.»
-- *Event:* `card_save_line_view` (the conversion guardrail).
+- _Event:_ `card_save_line_view` (the conversion guardrail).
 
 **M1c · The account path (guest only): name and club said back, then one tap left**
-- *Trigger:* the guest pressed "Entrer l'effectif". `AuthPromptDialog` passes
+
+- _Trigger:_ the guest pressed "Entrer l'effectif". `AuthPromptDialog` passes
   `next = pathname` [code: `src/components/auth/AuthPromptDialog.tsx:33`], and register, verify and
   profile setup carry `next` through [code: `auth.register.tsx:140`, `auth.verify.tsx:63`,
   `auth.profile-setup.tsx:57`].
-- *Register (`/auth/register`):* one hint under "Nom complet" [code: `auth.register.full_name`].
+- _Register (`/auth/register`):_ one hint under "Nom complet" [code: `auth.register.full_name`].
   - FR: « Sert de nom affiché sur votre carte et dans les classements. Modifiable à l'étape
     suivante. »
   - AR: «يُستخدم اسمًا معروضًا على بطاقتك وفي الترتيب، ويمكن تغييره في الخطوة التالية.»
   - [verify] that registration writes the full name into `display_name`. Profile setup reads
     `user.displayName` back into its field [code: `auth.profile-setup.tsx:89`], which suggests
     it does.
-- *Profile setup, steps 1 and 2 (`/auth/profile-setup`, when `next` is `/fantasy/create`):*
+- _Profile setup, steps 1 and 2 (`/auth/profile-setup`, when `next` is `/fantasy/create`):_
   under the existing "Étape n sur 3" bar, a 64px token at start labelled « Votre carte » /
   «بطاقتك».
   - Step 1: the name on the token follows the "Nom affiché" field as it is typed (Changa 800,
@@ -281,7 +284,7 @@ Registration closed, or the flag off: nothing is said about the card.
     is not shown and the token keeps its own material. No copy anywhere promises a club colour
     before that works.
   - Skipping the club leaves the object in its own material (lab rule 15). Step 3 is unchanged.
-- *Back in the builder:* when the restored draft is complete and valid, `/fantasy/create` opens
+- _Back in the builder:_ when the restored draft is complete and valid, `/fantasy/create` opens
   on the name step (today it opens on the pitch: `useState<"squad" | "name">("squad")`
   [code: `fantasy.create.tsx:180`]) with focus on the save button and one line above it.
   - FR: « Compte créé. Il reste à enregistrer votre équipe. »
@@ -311,6 +314,7 @@ setup, and reopening on the name step.
 ### M2 · `card_created` — the first squad saved: the card is born, with no rating yet
 
 **Trigger (exact, data-driven).**
+
 1. The status flag is on.
 2. `api.get_my_manager_card()` returns a card for the current fantasy season. It answers in the
    `forming` state for any manager with a current-season team even before the card tick has
@@ -331,17 +335,18 @@ from an invite, the panel waits for the first visit to the team page or the hub.
 
 **Variants, chosen by data**
 
-| Data | Wording | Who |
-|---|---|---|
-| `gameweeks_counted = 0`, `ovr` null | "New" | C: just saved |
-| `gameweeks_counted ≥ 1`, `ovr` null | "Arrival, forming" | E: existing manager at launch, below the minimum |
-| `ovr` not null | Not M2. M4's arrival wording, which acknowledges `card_created` and `first_rating` together | E: existing manager, already rated |
+| Data                                | Wording                                                                                     | Who                                              |
+| ----------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `gameweeks_counted = 0`, `ovr` null | "New"                                                                                       | C: just saved                                    |
+| `gameweeks_counted ≥ 1`, `ovr` null | "Arrival, forming"                                                                          | E: existing manager at launch, below the minimum |
+| `ovr` not null                      | Not M2. M4's arrival wording, which acknowledges `card_created` and `first_rating` together | E: existing manager, already rated               |
 
 **Screen M2 · Panel at the top of the team page**
-- *Purpose:* end the first squad on something finished and owned: the saved squad below, the
+
+- _Purpose:_ end the first squad on something finished and owned: the saved squad below, the
   card in its starting state above, exactly when the number arrives, and one social action that
   is true.
-- *Layout (390px), about 300px tall, an inline card above the saved pitch (never a dialog):*
+- _Layout (390px), about 300px tall, an inline card above the saved pitch (never a dialog):_
   - Top row, 44px: the heading « Votre carte de manager » (body-strong, 17px) at start; a
     labelled × (44px target) at end.
   - Body, two columns. At start, the full card at 128px wide (height from the object's own
@@ -350,16 +355,16 @@ from an invite, the panel waits for the first visit to the team page or the hub.
   - Bottom: the invite line, then one full-width 48px **soft** button « Inviter des amis »
     (soft, not gradient, so it does not compete with the team page's own primary action).
   - The pitch starts right under the panel, so its top row stays visible at 844px.
-- *The object:* name in Changa 800 (lab rule 11) once the account has one; club colour if
+- _The object:_ name in Changa 800 (lab rule 11) once the account has one; club colour if
   resolved (lab rule 8), else its own material (rule 15); season carrier 2026/27; ID carrier
   with a dash while the serial is null (data honesty: a dash, no sentence, no moment when it
   arrives); number carrier with a dash. Tier null means base material and no tier word
   (section 9, decision 4).
-- *Motion:* the app's existing enter-rise, 300ms or less. The object may "make" its belonging
+- _Motion:_ the app's existing enter-rise, 300ms or less. The object may "make" its belonging
   parts within 700ms (Écharpe knits its cast-on, Porte-clés engraves the name, Lucarne chalks the
   goal, Touchline fills its person leaf). No flip, no confetti, no sound. Static under reduced
   motion. Nothing animates the dash or the serial.
-- *Copy, "new":*
+- _Copy, "new":_
   - Heading: FR « Votre carte de manager » · AR «بطاقتك كمدرّب» (never the name in a heading)
   - Line 1: FR « Sa note arrive après 3 journées terminées : J5, J6, J7. » · AR «يأتي تقييمها
     بعد 3 جولات منتهية: الجولات 5 و6 و7.» When the server cannot list all three (rounds not yet
@@ -375,14 +380,14 @@ from an invite, the panel waits for the first visit to the team page or the hub.
     (Hedged on purpose. It promises counting, which is always true for teams enrolled before the
     same deadline. It does not promise a number, which may stay null for a friend.)
   - Button: FR « Inviter des amis » · AR «دعوة الأصدقاء». Close: « Fermer » · «إغلاق».
-- *Copy, "arrival, forming":* FR « Nouveau : votre carte est calculée à partir de votre équipe.
+- _Copy, "arrival, forming":_ FR « Nouveau : votre carte est calculée à partir de votre équipe.
   Sa note arrive après 3 journées terminées (2/3). » · AR «جديد: تُحسب بطاقتك انطلاقًا من
   فريقك. يأتي تقييمها بعد 3 جولات منتهية (2/3).»
-- *Actions:* « Inviter des amis » opens the existing league create-and-invite flow
+- _Actions:_ « Inviter des amis » opens the existing league create-and-invite flow
   [code: `fantasy.hub.create_invite`, `fantasy.hub.invite_message`], WhatsApp first. The ×, the
   button, or two seconds with the panel at least half on screen acknowledge `card_created`.
-- *Next:* the team page as today. The hub block shows M3.
-- *Events:* `card_born_view`, `card_born_invite`, `card_born_close`, `card_arrival_view`.
+- _Next:_ the team page as today. The hub block shows M3.
+- _Events:_ `card_born_view`, `card_born_invite`, `card_born_close`, `card_arrival_view`.
 
 **Borrowed.** An explicit finish line with the invite at peak satisfaction: TP-33 [SECONDARY,
 historical 2021]. The first squad as the activation milestone: C01 [VERIFIED], C02 [VERIFIED;
@@ -408,7 +413,8 @@ round (stable means `status in ('finalized','corrected')` and `points_state = 'f
 §3.3). Lineups copy forward, so a passive team is counted too (D12).
 
 **M3a · Hub card block**
-- *Layout (390px):* in the owner's hub area (`FantasyHubPersonal`, directly under the team
+
+- _Layout (390px):_ in the owner's hub area (`FantasyHubPersonal`, directly under the team
   summary Valeur · Banque · Rang) [code: `src/components/fantasy/FantasyHubPersonal.tsx:61`], a
   card-width block of about 120px. At start, the 64px token (lab rule 7: the 44–80px token
   belongs in the manager's own block) with a dash in the number carrier and the round marks
@@ -416,23 +422,23 @@ round (stable means `status in ('finalized','corrected')` and `points_state = 'f
   in the block), the label, then one line with the next round and its deadline (from the hub's
   existing deadline data). The whole block taps through to the card page. It has no button,
   because the useful action is playing the round.
-- *Copy:*
+- _Copy:_
   - Label: FR « Carte en formation » · AR «البطاقة قيد التكوين»
   - Line: FR « Note après 3 journées terminées · prochaine : J6 · date limite sam. 16:30 » ·
     AR «التقييم بعد 3 جولات منتهية · التالية: الجولة 6 · الموعد النهائي السبت 16:30»
   - Before the first counted round is final: FR « Première journée comptée : J5. » · AR «أول
     جولة محتسبة: الجولة 5.»
-- *Accessible name of the token:* « Carte de manager, pas encore de note, 1 journée comptée sur
+- _Accessible name of the token:_ « Carte de manager, pas encore de note, 1 journée comptée sur
   3 » · «بطاقة المدرّب، لا تقييم بعد، جولة واحدة محتسبة من 3». Never "0".
 
 **M3b · Sub-states of the same block**
 
-| Sub-state | Trigger | FR | AR |
-|---|---|---|---|
-| Eve | `gameweeks_counted = min_rated − 1` and the next counted round is locked or live (existing gameweek status) | « Dernière journée avant votre note : J7. » | «آخر جولة قبل تقييمك: الجولة 7.» |
-| Over, not final | That round's matches are done but it is `provisional`, `finalizing`, or postwork for its current version is not complete | « J7 terminée, pas encore définitive. La note arrive dès qu'elle l'est. » | «انتهت الجولة 7 ولم تُعتمد نهائيًا بعد. يظهر التقييم فور اعتمادها.» |
-| Minimum reached, OVR still null | `gameweeks_counted ≥ min_rated`, `ovr_null_reason = too_few_stats` (fewer than three stats, D1) | « 3 journées comptées. La note attend encore une statistique. » | «احتُسبت 3 جولات. ينتظر التقييم إحصاءً آخر.» |
-| Late signer | The season is closed with `gameweeks_counted < min_rated` | « Saison terminée avant votre première note : elle viendra en 2027/28. » | «انتهى الموسم قبل تقييمك الأول: يأتي في موسم 2027/28.» |
+| Sub-state                       | Trigger                                                                                                                  | FR                                                                        | AR                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Eve                             | `gameweeks_counted = min_rated − 1` and the next counted round is locked or live (existing gameweek status)              | « Dernière journée avant votre note : J7. »                               | «آخر جولة قبل تقييمك: الجولة 7.»                                    |
+| Over, not final                 | That round's matches are done but it is `provisional`, `finalizing`, or postwork for its current version is not complete | « J7 terminée, pas encore définitive. La note arrive dès qu'elle l'est. » | «انتهت الجولة 7 ولم تُعتمد نهائيًا بعد. يظهر التقييم فور اعتمادها.» |
+| Minimum reached, OVR still null | `gameweeks_counted ≥ min_rated`, `ovr_null_reason = too_few_stats` (fewer than three stats, D1)                          | « 3 journées comptées. La note attend encore une statistique. »           | «احتُسبت 3 جولات. ينتظر التقييم إحصاءً آخر.»                        |
+| Late signer                     | The season is closed with `gameweeks_counted < min_rated`                                                                | « Saison terminée avant votre première note : elle viendra en 2027/28. »  | «انتهى الموسم قبل تقييمك الأول: يأتي في موسم 2027/28.»              |
 
 No time is ever promised: finalisation time varies and corrections run for 72 hours
 (FANTASY_RULES_V1.md, via Reveal).
@@ -445,14 +451,15 @@ the 44px token with a dash and « 1/3 » in its secondary line. Tap: the card pa
 2/3 » · AR «جولة محتسبة لبطاقتك: 2/3».
 
 **M3e · Three one-line stat hints, at the decision itself** (Signing's graft)
-- *Trigger:* the card exists and `ovr` is null; each hint once, on the first matching action
+
+- _Trigger:_ the card exists and `ovr` is null; each hint once, on the first matching action
   after the card exists. Hints are stored per device (`botolago.card.hint.cap.v1`, `.sel.v1`,
   `.trf.v1`; blocked storage counts as seen, the PrizeWelcome rule). They are low-stakes
   teaching lines, not moments, so they do not use server acknowledgements; a hint may show once
   more on a second phone.
-- *Layout:* an inline info alert (`UiAlert tone="info"`), dismissible, directly above the control
+- _Layout:_ an inline info alert (`UiAlert tone="info"`), dismissible, directly above the control
   being used. It never covers a control and never blocks the deadline flow.
-- *Where and copy:*
+- _Where and copy:_
   - Captain action in `PlayerActionSheet` [code: `src/components/fpl/PlayerActionSheet.tsx:144`,
     `fpl.make_captain`]: FR « Votre capitaine compte pour CAP sur votre carte. » · AR «اختيار
     القائد يُحتسب في خانة «القائد» على بطاقتك.»
@@ -461,7 +468,7 @@ the 44px token with a dash and « 1/3 » in its secondary line. Tap: the card pa
   - First visit to `/fantasy/transfers`, above the list header: FR « Vos transferts comptent pour
     TRF. Sans transfert, TRF reste vide (—). » · AR «الانتقالات تُحتسب في خانة «الانتقالات». من
     دون انتقالات تبقى فارغة (—).»
-- *Events:* `card_hint_cap_view`, `card_hint_sel_view`, `card_hint_trf_view`.
+- _Events:_ `card_hint_cap_view`, `card_hint_sel_view`, `card_hint_trf_view`.
 
 **M3f · First transfer line** (Build's graft). On the existing transfer confirmation, while
 TRF's null reason is `no_transfers`: FR « TRF mesurera ce transfert après 3 journées
@@ -471,6 +478,7 @@ TRF window from the rules row, D4, not `min_rated`.)
 **M3g · Later, after PR #376 merges** (Build's graft, single lines only). PR #376 (explicit
 captain step, bench strip) is open and not mergeable as of 2026-10-08 (`mergeable_state:
 dirty`) [code: GitHub API]. Once it merges and the card is on:
+
 - At 15/15 in the builder: FR « SEL mesurera le choix de vos titulaires. » · AR «ستقيس خانة
   «التشكيلة» اختيار الأساسيين.»
 - At #376's captain choice: FR « CAP mesurera vos choix de capitaine, journée après journée. » ·
@@ -513,11 +521,11 @@ returns it, whether or not the hero is ever seen.**
 
 **Wording, chosen by data** [ours]
 
-| Data | Hero label (FR · AR) | Line (FR · AR) |
-|---|---|---|
-| Fresh: `first_rated_gameweek_seq = through_gameweek_seq` and `card_created` acknowledged | « Première note · J7 » · «أول تقييم · الجولة 7» | « Provisoire jusqu'à 5 journées terminées. » · «يبقى مبدئيًا حتى 5 جولات منتهية.» |
-| Arrival (launch): `card_created` also pending | « Votre carte de manager est là » · «بطاقتك كمدرّب هنا» | « Calculée sur 7 journées terminées de votre saison. » · «حُسبت من 7 جولات منتهية هذا الموسم.» |
-| Coalesced (returning): first rating older than the latest evaluated gameweek | « Première note : 84 (J3). Aujourd'hui : 81, STADE. » · «أول تقييم: 84 (الجولة 3). اليوم: 81، ملعب.» | as fresh, if still provisional |
+| Data                                                                                     | Hero label (FR · AR)                                                                                 | Line (FR · AR)                                                                                 |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Fresh: `first_rated_gameweek_seq = through_gameweek_seq` and `card_created` acknowledged | « Première note · J7 » · «أول تقييم · الجولة 7»                                                      | « Provisoire jusqu'à 5 journées terminées. » · «يبقى مبدئيًا حتى 5 جولات منتهية.»              |
+| Arrival (launch): `card_created` also pending                                            | « Votre carte de manager est là » · «بطاقتك كمدرّب هنا»                                              | « Calculée sur 7 journées terminées de votre saison. » · «حُسبت من 7 جولات منتهية هذا الموسم.» |
+| Coalesced (returning): first rating older than the latest evaluated gameweek             | « Première note : 84 (J3). Aujourd'hui : 81, STADE. » · «أول تقييم: 84 (الجولة 3). اليوم: 81، ملعب.» | as fresh, if still provisional                                                                 |
 
 The arrival and coalesced forms acknowledge every key they fold in (`card_created`,
 `first_rating`, `provisional_cleared` if pending). If `provisional` is already false, the chip
@@ -525,30 +533,32 @@ and the line are absent and M7 never fires. A season-scoped moment from an earli
 never returned by the server, so a stale first rating is never news.
 
 **M4a · Hub hero (the M3 block, expanded once)**
-- *Purpose:* show the number. Everything else is optional.
-- *Layout (390px), about 280px:*
+
+- _Purpose:_ show the number. Everything else is optional.
+- _Layout (390px), about 280px:_
   - Top row: the label at start, a 44px × at end.
   - Middle: the card at 132px wide at start. At end: **84 OVR** at display size (Changa 800,
     OVR inline as a unit, lab rule 6), the tier word under it, and the « Provisoire » chip
     (text, never colour alone).
   - One line.
   - Bottom: two 48px buttons, « Voir le détail » (primary, start) and « Partager » (end).
-- *Motion:* the 84 is legible in the first painted frame. The object may play one beat of
+- _Motion:_ the 84 is legible in the first painted frame. The object may play one beat of
   600ms or less over the visible number (section 7, per direction). No count-up from 0, no
   flip, cover, blur, scratch or tap-to-reveal. Nothing under reduced motion.
-- *Actions:* « Voir le détail » opens M4b; « Partager » opens M6; ×, either button, or two
+- _Actions:_ « Voir le détail » opens M4b; « Partager » opens M6; ×, either button, or two
   seconds at least half on screen acknowledge.
-- *Copy, buttons:* FR « Voir le détail » · « Partager » · AR «عرض التفاصيل» · «مشاركة»
-- *Events:* `card_first_rating_view`, `card_first_rating_detail`, `card_first_rating_close`.
+- _Copy, buttons:_ FR « Voir le détail » · « Partager » · AR «عرض التفاصيل» · «مشاركة»
+- _Events:_ `card_first_rating_view`, `card_first_rating_detail`, `card_first_rating_close`.
 
 **M4b · Detail sheet: where 84 comes from** (Signing's tiles)
-- *Layout:* a bottom sheet at about 85% height, with a drag handle and a 44px close. The card at
+
+- _Layout:_ a bottom sheet at about 85% height, with a drag handle and a 44px close. The card at
   200px wide, centred, with the number visible. Heading, one line, then a 2 × 2 grid of stat
   tiles (the app's `UiStatBlock`, 64px rows): long label and value, or a dash with its reason.
   A footer line. Sticky buttons in the thumb zone. A small « Revoir » text button by the card
   replays the object's beat, number visible throughout; hidden under reduced motion. It fits
   844px without scrolling; shorter phones scroll the tiles under the sticky buttons.
-- *Copy:*
+- _Copy:_
   - Heading: FR « Votre première note : 84 OVR » · AR «تقييمك الأول: 84»
   - Line: FR « Provisoire jusqu'à 5 journées terminées. Elle vient de vos décisions : » · AR
     «مبدئي حتى 5 جولات منتهية، وهو نابع من قراراتك:»
@@ -599,25 +609,27 @@ returns members' cards. The band shows when at least one member's `first_rated_g
 equals the latest evaluated gameweek. It is a weekly state, not acknowledged.
 
 **M5a · Band and rows**
-- *Layout:* one line above the table, with up to three minis of newly rated members. Table rows
+
+- _Layout:_ one line above the table, with up to three minis of newly rated members. Table rows
   in the **league's own points order** (never re-sorted by OVR: OVR is display-only and no
   ranking may read it). Each row has the 24–28px mini inside the name cell (lab rule 7) and, in
   its secondary line, the OVR with « Provisoire », or « en formation 2/3 ». The manager's own row
   is highlighted and scrolled into view.
-- *Copy:* band, names only so that no low number becomes a headline (judge 2's fix): FR
+- _Copy:_ band, names only so that no low number becomes a headline (judge 2's fix): FR
   « Nouvelles notes après la J4 : Karim, Salma » · AR «تقييمات جديدة بعد الجولة 4: كريم، سلمى».
   Row secondary: FR « en formation 2/3 » · AR «قيد التكوين 2/3».
-- *Compare hint, once per device:* FR « Touchez un manager pour comparer vos cartes. » · AR
+- _Compare hint, once per device:_ FR « Touchez un manager pour comparer vos cartes. » · AR
   «للمقارنة بين البطاقتين، يكفي لمس اسم مدرّب.»
 
 **M5b · Head-to-head sheet** (from any row)
-- *Layout:* a bottom sheet. Two cards side by side at about 160px each (the manager's own at
+
+- _Layout:_ a bottom sheet. Two cards side by side at about 160px each (the manager's own at
   start), names under them. Four rows « CAP 91 · 85 »: the higher value in heavier weight with a
   small bar, never colour alone. « Provisoire » under either card when it applies. A dash for any
   null value, never 0. A close button at the bottom. **No share button:** a friend's rating is for
   signed-in readers only (D19) and does not leave the app in an image.
-- *Copy:* FR « Vous 84 · Karim 78 » · « Fermer » · AR «أنت 84 · كريم 78» · «إغلاق»
-- *Event:* `card_league_band_view`, `card_h2h_open`.
+- _Copy:_ FR « Vous 84 · Karim 78 » · « Fermer » · AR «أنت 84 · كريم 78» · «إغلاق»
+- _Event:_ `card_league_band_view`, `card_h2h_open`.
 
 **Borrowed.** Rows grouped with the distance to the next group: GP-US-04 [VERIFIED]. Invite
 always within reach: G02 [VERIFIED]. An invite that names the inviter: TP-03 [SECONDARY,
@@ -635,17 +647,17 @@ leaderboard, no ranking by OVR. No reward per invite (C01, C02, A06).
 
 **Trigger.** A tap on « Partager » (M4, M8, M9, M10, the card page). Never automatic.
 
-- *Layout:* the existing `ShareImageSheet` [code: `src/components/common/ShareImageSheet.tsx`],
+- _Layout:_ the existing `ShareImageSheet` [code: `src/components/common/ShareImageSheet.tsx`],
   story aspect: preview at about 60% width, WhatsApp first and full width, then « Partager
   l'image » and « Copier le lien », and a download when the phone cannot share a file.
-- *Image (1080 × 1920), drawn on the phone like the recap image* [code:
+- _Image (1080 × 1920), drawn on the phone like the recap image_ [code:
   `src/components/fantasy/recap-image.ts`]: the card large, the name, the number with its tier,
   `BOT #482913` (only when not null), the season, « Note provisoire · J7 » / «تقييم مبدئي ·
   الجولة 7» when provisional (small, present), the club as a colour disc with initials (crests in
   share images are undecided), the unmodified wordmark (lab rule 9), botolago.com. Only the
   sharer's own card. Drawn in the interface language; Arabic fully right-to-left. No
   « officiel », no league logo, no serial denominator.
-- *Message* (« tu » is allowed in a message the manager sends [code: `PRODUCT.md:318`]; numbers isolated
+- _Message_ (« tu » is allowed in a message the manager sends [code: `PRODUCT.md:318`]; numbers isolated
   with U+2068…U+2069, as `ShareImageSheet` already requires):
   - With a league: FR « Ma carte BotolaGO : 84 (provisoire). Et toi ? Rejoins ma ligue
     « {ligue} » : {lien} » · AR «بطاقتي في BotolaGO: ‏84 (مبدئي). وأنت؟ انضمّ إلى دوريي
@@ -653,9 +665,9 @@ leaderboard, no ranking by OVR. No reward per invite (C01, C02, A06).
   - Without: FR « Ma carte BotolaGO : 84. Et toi ? {lien} » · AR «بطاقتي في BotolaGO: ‏84.
     وأنت؟ {link}» (link: `/jouer` with a campaign tag). The word « provisoire » / «مبدئي» is added
     whenever it applies.
-- *Buttons:* FR « WhatsApp » · « Partager l'image » · « Copier le lien » · AR «واتساب» · «مشاركة
+- _Buttons:_ FR « WhatsApp » · « Partager l'image » · « Copier le lien » · AR «واتساب» · «مشاركة
   الصورة» · «نسخ الرابط»
-- *Events:* `card_share_preview_<tier>`, `card_share_whatsapp`, `card_share_native`,
+- _Events:_ `card_share_preview_<tier>`, `card_share_whatsapp`, `card_share_native`,
   `card_share_copy`, `card_share_download`.
 
 **Borrowed.** Copy and Share on the completion screen: TP-33 [SECONDARY]. One true big number:
@@ -671,10 +683,11 @@ advert.
 
 **Trigger.** The pending moment `provisional_cleared:<fantasy_season_id>`: the first evaluated
 gameweek of the season with `provisional = false` (after `min_confirmed` final results).
-- *Surface:* one line in the hub block, once. The chip leaves every surface.
-- *Copy:* FR « Votre note n'est plus provisoire : 85 après 5 journées. » · AR «لم يعد تقييمك
+
+- _Surface:_ one line in the hub block, once. The chip leaves every surface.
+- _Copy:_ FR « Votre note n'est plus provisoire : 85 après 5 journées. » · AR «لم يعد تقييمك
   مبدئيًا: 85 بعد 5 جولات.» Never « confirmée » / «مؤكَّد»: the number still moves every journée.
-- *Ack:* on display. *Event:* `card_provisional_cleared_view`.
+- _Ack:_ on display. _Event:_ `card_provisional_cleared_view`.
 - **Borrowed:** labelled certainty, P02 [VERIFIED]. **Departs:** no reward for passing a
   threshold (G01, C01).
 
@@ -683,15 +696,16 @@ gameweek of the season with `provisional = false` (after `min_confirmed` final r
 **Trigger.** Up to a tier above HOMA that this account has never held: the pending moment
 `tier_changed:<tier>`, returned only while the manager still holds that tier or higher. Any other
 change (a fall, if D9 allows it, or a return to a tier held before) is not a moment.
-- *M8a, up, hub hero (as M4a):* the card in its new tier at start; at end the tier word at
+
+- _M8a, up, hub hero (as M4a):_ the card in its new tier at start; at end the tier word at
   display size with the OVR beside it. FR « Votre carte passe PRO. » · « 84 OVR après la J12. Le
   palier suit votre note, journée après journée. » · AR «بطاقتك الآن في فئة محترف.» · «84 بعد
   الجولة 12. تتبع الفئة تقييمك جولةً بعد جولة.» Buttons « Voir ma carte » · « Partager » · «عرض
   بطاقتي» · «مشاركة». Never « monter de niveau » or « level up ».
-- *M8b, down or return:* one line on the card page only, no hero, no motion: FR « Palier actuel :
+- _M8b, down or return:_ one line on the card page only, no hero, no motion: FR « Palier actuel :
   STADE. Meilleur cette saison : PRO. » · AR «الفئة الحالية: ملعب. الأفضل هذا الموسم: محترف.» If
   the owner chooses a season-best tier (D9 alternative), only the OVR line changes.
-- *Event:* `card_tier_up_view`.
+- _Event:_ `card_tier_up_view`.
 - **Borrowed:** a level earned by play, G04 [VERIFIED, historical 2023]; tiers grouped with the
   distance shown, GP-US-04. **Departs:** Sorare's ladders pay out and reset (G01, F01) and its
   tabs follow scarcity (G04). Here nothing is won, a tier can fall honestly, and the words say so.
@@ -701,14 +715,15 @@ change (a fall, if D9 allows it, or a return to a tier held before) is not a mom
 **Trigger.** The card's founder cohort is set (the owner's one-time guarded grant, D13) and
 `founder_granted` is pending. Before the grant: nothing, no teaser, no "eligible". A manager never
 granted sees nothing, ever, and no "missed it" line.
-- *Hub hero (as M4a):* the card showing **ALI ·26** with the direction's founder part. In Arabic
+
+- _Hub hero (as M4a):_ the card showing **ALI ·26** with the direction's founder part. In Arabic
   the year follows the name in reading order, isolated left-to-right: علي <bdi dir="ltr">·26</bdi>.
-- *Copy:* FR « Fondateur 2026 » · « Votre année s'inscrit après votre nom : ALI ·26. Cette marque
+- _Copy:_ FR « Fondateur 2026 » · « Votre année s'inscrit après votre nom : ALI ·26. Cette marque
   a été accordée une seule fois et ne le sera plus. » · with a stored cut-off, add « Accordée aux
   équipes 2026/27 créées avant le {date}. » · AR «عضو مؤسس 2026» · «تُكتب سنتك بعد اسمك: علي ·26.
   مُنحت هذه العلامة مرة واحدة ولن تُمنح مجددًا.» · «مُنحت لفرق موسم 2026/27 المُنشأة قبل {date}.»
   The name sits in the body line, never in the heading.
-- *Buttons:* « Voir ma carte » · « Partager » · «عرض بطاقتي» · «مشاركة». *Event:*
+- _Buttons:_ « Voir ma carte » · « Partager » · «عرض بطاقتي» · «مشاركة». _Event:_
   `card_founder_view`.
 - **Borrowed:** a non-material mark for taking part (TP-25's lesson, [SECONDARY, historical]); keep
   visible recognition of the past (REV-GP-FR-SET [SECONDARY]). **Departs:** Sorare's prestige is
@@ -718,16 +733,16 @@ granted sees nothing, ever, and no "missed it" line.
 
 ### M10 · `season_closed` and `season_started` — new season
 
-- *`season_closed:<fantasy_season_id>`:* the season row is frozen (D7). Hub hero, once: FR
+- _`season_closed:<fantasy_season_id>`:_ the season row is frozen (D7). Hub hero, once: FR
   « Saison 2026/27 terminée : 86, CHAMPION. Elle reste sur votre carte. » · AR «انتهى موسم
   2026/27: 86، بطل. يبقى على بطاقتك.» The direction's season carrier gains the season (a scarf, a
-  season ball charm). *Event:* `card_season_closed_view`.
-- *`season_started:<fantasy_season_id>`:* the manager has a team in a new season and a frozen
+  season ball charm). _Event:_ `card_season_closed_view`.
+- _`season_started:<fantasy_season_id>`:_ the manager has a team in a new season and a frozen
   earlier season; returned only while the new season's OVR is null. The M3 block shows last
   season's number labelled "2026/27" (never a dash, D7) and the new counter beside it: FR « Saison
   2027/28 : votre carte garde sa note 2026/27 jusqu'à votre première note de la saison, après 3
   journées terminées. » · AR «موسم 2027/28: تحتفظ بطاقتك بتقييم 2026/27 حتى أول تقييم لك هذا
-  الموسم، بعد 3 جولات منتهية.» *Event:* `card_season_started_view`. The new season's first rating
+  الموسم، بعد 3 جولات منتهية.» _Event:_ `card_season_started_view`. The new season's first rating
   is M4 again (hero and sheet).
 - **Borrowed:** the season start as a named re-entry moment, AS-EVENT [VERIFIED]. **Departs:**
   Sorare restarts managers each set and users ask where their cards went (REV-GP-FR-SET
@@ -751,18 +766,18 @@ granted sees nothing, ever, and no "missed it" line.
 
 ### M12 · Card page and replay
 
-- *Where:* the card page, route proposal `/fantasy/carte`, reached from the hub block, the
+- _Where:_ the card page, route proposal `/fantasy/carte`, reached from the hub block, the
   rankings token and the profile. Full card (biggest element), the four stats with long labels,
   values or dashes with reasons, the counter or the rating line with the next deadline, the
   history (OVR per evaluated gameweek, newest first), « Partager », and a « Revoir » / «إعادة
   العرض» list that holds only moments that happened: « La première note · J3 », « Fondateur
   2026 », « Première fois PRO · J12 », « Saison 2026/27 ».
-- *Replay:* replays the moment's hero with **that gameweek's stored values**, stamped with its
+- _Replay:_ replays the moment's hero with **that gameweek's stored values**, stamped with its
   round, and a first line with the current number: FR « À la J3 : 84. Aujourd'hui : 87. » · AR
   «في الجولة 3: 84. اليوم: 87.» It plays only the object's own beat (Lucarne's ball meeting the top
   corner, Écharpe's stripe knitting in), never automatically, with the number visible from the
   first frame. Static under reduced motion.
-- *Event:* `card_replay_open`.
+- _Event:_ `card_replay_open`.
 - **Borrowed:** "Play again" at the end of a demo, LIVE-S13 [VERIFIED]. **Departs:** Sorare's demo
   replays with no exit and no completion; this replay ends on the current card and is never the
   only way to see the number.
@@ -771,39 +786,39 @@ granted sees nothing, ever, and no "missed it" line.
 
 ## 4. States and edges
 
-| State | What the person sees |
-|---|---|
-| **Feature off** (status `enabled = false`: read switch off, or no active rules row) | Nothing about the card anywhere. No "coming soon". Every screen as today. |
-| **Guest** | M1a and M1b only: one intro point, one save-step line with an unnamed, locally drawn token. No card, no serial, no counter, no sample number, no server read beyond the anonymous status. The draft stays on the phone as today. |
-| **Signed in without a squad** | M1a (no-team audience) and M1b with the real card name and, once resolution works, the club colour. No card row: cards are for managers only (D14). |
-| **Registration closed** (no enrolment gameweek) | No card mention at all, as `FantasyGuestIntro`'s closed state today. |
-| **Null OVR** (below the minimum) | A dash in the number carrier, read aloud as « pas encore de note » / «لا تقييم بعد». Never 0. Counter k/3 and the next round. Never a padlock, blur, frost, question mark or sealed object (each reads as a loot box or scratch card): the finished object with an empty carrier, like a new scarf with no rows yet. |
-| **Minimum reached, OVR still null** (fewer than three stats, D1) | « 3 journées comptées. La note attend encore une statistique. » with the server's reason code. The first-rating trigger is a non-null OVR, not the count. |
-| **Provisional** | « Provisoire » / «مبدئي» on every surface that shows the number: hub, rankings token, league rows, head-to-head, card page, share image and message. |
-| **TRF null** | A dash with its reason: « pas encore de transfert » / «لا انتقالات بعد» when no batch exists (`no_transfers`); « calculé 3 journées après le transfert » / «يُحسب بعد 3 جولات من الانتقال» when a batch's window is not final (`window_open`). OVR comes from the other three (D1). The copy never implies a manager must transfer. |
-| **Other null stats** | A dash and the server's reason code (`pending_minimum`, `excluded_weeks_only`, `board_not_final`). |
-| **Founder pending** (before the owner's grant) | Nothing. No ghost mark, no "bientôt fondateur". |
-| **Not a founder** | Nothing, ever. |
-| **Serial null** (D14/D15 unanswered, or the tick has not run) | The ID carrier with a dash; no serial sentence anywhere; no moment when it arrives. |
-| **Club null** (skipped, or not resolvable) | The object in its own material, no disc (lab rule 15). |
-| **Name** | Display name if not blank, else team name (D17). Headings never carry the name, so long names and Arabic gender never break a heading. The card fits long names with each direction's own fit ladder, never cut to an initial. |
-| **Deadline passed during the build** | The existing enrolment logic moves the squad to the next journée and shows its notice [code: `fantasy.create.tsx:222`, `fantasy.create.enrolment_next`]. M2 names the server's `rating_gameweeks` from that journée. If the server refuses the save because the deadline passed between build and save, the existing error shows and nothing card-related appears. |
-| **Late signer / season ends below the minimum** | M3b's late-signer line. Next season shows last season's value with its label if there is one (D7), else a dash. |
-| **Round over, not final** | M3b, no promised time. |
-| **Correction after the first rating** (72-hour window) | The current number everywhere. The replay shows the stored value for that round with its version. The hero is not shown again. |
-| **Cancelled gameweek** | Not counted; the counter does not move; "prochaine" names the next real round. |
-| **Double gameweek** | Counted once, as the backend defines (D2). |
-| **CAP weeks before PR #376** | If D12 excludes them, the CAP reason code says so: « J1 non comptée : capitaine attribué par défaut. » / «لا تُحتسب الجولة 1: عُيّن القائد تلقائيًا.» |
-| **Deleted account / deletion pending** | The card read returns nothing (D19: no card for a deleted-pending profile), so every block and moment disappears; acknowledgements and the card go with the account; the serial is retired (D15). The deletion request in `src/routes/profile.tsx` [code] gains one line when a card exists: FR « Votre carte de manager et son numéro BOT #482913 seront supprimés. Ce numéro ne sera jamais réattribué. » · AR «ستُحذف بطاقتك كمدرّب ورقمها BOT #482913، ولن يُعاد إسناد هذا الرقم أبدًا.» (serial part only when not null). A new account gets a new number; founder is not restored. [verify] what a cancelled deletion restores (ACCOUNT_DELETION_RUNBOOK.md). |
-| **A friend deleted** | Gone from league rows and the head-to-head (the batch read omits deleted-pending profiles). Images already sent cannot be recalled (risk). |
-| **MFA step-up refused** on the card read or the acknowledgement | No moment, nothing blocks the flow (`showStepUpNotice` behaves as today) [code: `src/auth/step-up-notice.ts`]. |
-| **Offline, or the read fails** | Hub: nothing new and no card block (never a stale number presented as new). Card page: FR « Impossible de charger votre carte. » · « Réessayer » · AR «تعذّر تحميل البطاقة.» · «إعادة المحاولة». A failed acknowledgement is retried on the next visit; the moment may show once more (acceptable; logged as a repeat). |
-| **Storage blocked / private window** | No effect on moments (server acks). Hints count as seen (the PrizeWelcome rule: never nag). |
-| **Reduced motion** | No enter-rise, no make beat, no number beat, no slide between story frames; « Revoir » beat buttons hidden. Content, order and number identical. |
-| **Arabic (RTL)** | Full mirror: the token at inline start is on the right, sheets and grids mirror, the v2 story's progress fills from the right, lucide arrows mirrored. Western digits (`Intl.NumberFormat` with `-u-nu-latn`). `BOT #482913`, `84 OVR`, `2026/27`, `1/3`, `·26` and gameweek numbers isolated left-to-right (`<bdi>` in the UI, U+2068…U+2069 in messages). Names in Changa 800 in both scripts (lab rule 11), no letter-spacing on Arabic. Modern Standard Arabic written as Arabic, not translated. Plurals through `Intl.PluralRules('ar')` and the app's one/two/few/other keys: 1 «جولة واحدة», 2 «جولتان», 3–10 «جولات», 11+ «جولة». Labels from the kit: «القائد، التشكيلة، الانتقالات، الثبات»; tiers «حومة، ملعب، محترف، بطل، أسطورة» (pending the owner's choice to translate them); «عضو مؤسس». Rules in section 5, "Copy discipline". |
-| **Dark mode** | Tokens only; each direction's material sets its colour (lab rule 15); no black with brass (lab rule 3); a rim on the token over dark grounds. Contrast read from rasterised pixels. |
-| **Low-end Android** | Compact surfaces draw the token only; the full card is drawn only in the M2 panel, M4b, the head-to-head and the card page (Build's performance graft). |
-| **Semelle** | No onboarding moment ships on Semelle until the sole and sacred-name test passes (CRITIQUE.md): M2 puts the user's own name on a sole at the moment of belonging. |
+| State                                                                               | What the person sees                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Feature off** (status `enabled = false`: read switch off, or no active rules row) | Nothing about the card anywhere. No "coming soon". Every screen as today.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Guest**                                                                           | M1a and M1b only: one intro point, one save-step line with an unnamed, locally drawn token. No card, no serial, no counter, no sample number, no server read beyond the anonymous status. The draft stays on the phone as today.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Signed in without a squad**                                                       | M1a (no-team audience) and M1b with the real card name and, once resolution works, the club colour. No card row: cards are for managers only (D14).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Registration closed** (no enrolment gameweek)                                     | No card mention at all, as `FantasyGuestIntro`'s closed state today.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Null OVR** (below the minimum)                                                    | A dash in the number carrier, read aloud as « pas encore de note » / «لا تقييم بعد». Never 0. Counter k/3 and the next round. Never a padlock, blur, frost, question mark or sealed object (each reads as a loot box or scratch card): the finished object with an empty carrier, like a new scarf with no rows yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **Minimum reached, OVR still null** (fewer than three stats, D1)                    | « 3 journées comptées. La note attend encore une statistique. » with the server's reason code. The first-rating trigger is a non-null OVR, not the count.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| **Provisional**                                                                     | « Provisoire » / «مبدئي» on every surface that shows the number: hub, rankings token, league rows, head-to-head, card page, share image and message.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **TRF null**                                                                        | A dash with its reason: « pas encore de transfert » / «لا انتقالات بعد» when no batch exists (`no_transfers`); « calculé 3 journées après le transfert » / «يُحسب بعد 3 جولات من الانتقال» when a batch's window is not final (`window_open`). OVR comes from the other three (D1). The copy never implies a manager must transfer.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Other null stats**                                                                | A dash and the server's reason code (`pending_minimum`, `excluded_weeks_only`, `board_not_final`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Founder pending** (before the owner's grant)                                      | Nothing. No ghost mark, no "bientôt fondateur".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Not a founder**                                                                   | Nothing, ever.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Serial null** (D14/D15 unanswered, or the tick has not run)                       | The ID carrier with a dash; no serial sentence anywhere; no moment when it arrives.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Club null** (skipped, or not resolvable)                                          | The object in its own material, no disc (lab rule 15).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Name**                                                                            | Display name if not blank, else team name (D17). Headings never carry the name, so long names and Arabic gender never break a heading. The card fits long names with each direction's own fit ladder, never cut to an initial.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Deadline passed during the build**                                                | The existing enrolment logic moves the squad to the next journée and shows its notice [code: `fantasy.create.tsx:222`, `fantasy.create.enrolment_next`]. M2 names the server's `rating_gameweeks` from that journée. If the server refuses the save because the deadline passed between build and save, the existing error shows and nothing card-related appears.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **Late signer / season ends below the minimum**                                     | M3b's late-signer line. Next season shows last season's value with its label if there is one (D7), else a dash.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| **Round over, not final**                                                           | M3b, no promised time.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **Correction after the first rating** (72-hour window)                              | The current number everywhere. The replay shows the stored value for that round with its version. The hero is not shown again.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Cancelled gameweek**                                                              | Not counted; the counter does not move; "prochaine" names the next real round.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Double gameweek**                                                                 | Counted once, as the backend defines (D2).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **CAP weeks before PR #376**                                                        | If D12 excludes them, the CAP reason code says so: « J1 non comptée : capitaine attribué par défaut. » / «لا تُحتسب الجولة 1: عُيّن القائد تلقائيًا.»                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| **Deleted account / deletion pending**                                              | The card read returns nothing (D19: no card for a deleted-pending profile), so every block and moment disappears; acknowledgements and the card go with the account; the serial is retired (D15). The deletion request in `src/routes/profile.tsx` [code] gains one line when a card exists: FR « Votre carte de manager et son numéro BOT #482913 seront supprimés. Ce numéro ne sera jamais réattribué. » · AR «ستُحذف بطاقتك كمدرّب ورقمها BOT #482913، ولن يُعاد إسناد هذا الرقم أبدًا.» (serial part only when not null). A new account gets a new number; founder is not restored. [verify] what a cancelled deletion restores (ACCOUNT_DELETION_RUNBOOK.md).                                                                                                                                                                               |
+| **A friend deleted**                                                                | Gone from league rows and the head-to-head (the batch read omits deleted-pending profiles). Images already sent cannot be recalled (risk).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| **MFA step-up refused** on the card read or the acknowledgement                     | No moment, nothing blocks the flow (`showStepUpNotice` behaves as today) [code: `src/auth/step-up-notice.ts`].                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **Offline, or the read fails**                                                      | Hub: nothing new and no card block (never a stale number presented as new). Card page: FR « Impossible de charger votre carte. » · « Réessayer » · AR «تعذّر تحميل البطاقة.» · «إعادة المحاولة». A failed acknowledgement is retried on the next visit; the moment may show once more (acceptable; logged as a repeat).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Storage blocked / private window**                                                | No effect on moments (server acks). Hints count as seen (the PrizeWelcome rule: never nag).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **Reduced motion**                                                                  | No enter-rise, no make beat, no number beat, no slide between story frames; « Revoir » beat buttons hidden. Content, order and number identical.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| **Arabic (RTL)**                                                                    | Full mirror: the token at inline start is on the right, sheets and grids mirror, the v2 story's progress fills from the right, lucide arrows mirrored. Western digits (`Intl.NumberFormat` with `-u-nu-latn`). `BOT #482913`, `84 OVR`, `2026/27`, `1/3`, `·26` and gameweek numbers isolated left-to-right (`<bdi>` in the UI, U+2068…U+2069 in messages). Names in Changa 800 in both scripts (lab rule 11), no letter-spacing on Arabic. Modern Standard Arabic written as Arabic, not translated. Plurals through `Intl.PluralRules('ar')` and the app's one/two/few/other keys: 1 «جولة واحدة», 2 «جولتان», 3–10 «جولات», 11+ «جولة». Labels from the kit: «القائد، التشكيلة، الانتقالات، الثبات»; tiers «حومة، ملعب، محترف، بطل، أسطورة» (pending the owner's choice to translate them); «عضو مؤسس». Rules in section 5, "Copy discipline". |
+| **Dark mode**                                                                       | Tokens only; each direction's material sets its colour (lab rule 15); no black with brass (lab rule 3); a rim on the token over dark grounds. Contrast read from rasterised pixels.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **Low-end Android**                                                                 | Compact surfaces draw the token only; the full card is drawn only in the M2 panel, M4b, the head-to-head and the card page (Build's performance graft).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| **Semelle**                                                                         | No onboarding moment ships on Semelle until the sole and sacred-name test passes (CRITIQUE.md): M2 puts the user's own name on a sole at the moment of belonging.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ---
 
@@ -820,15 +835,15 @@ loses nothing, because the number is already on every surface.
 **Never shown twice.** Each moment has a key, acknowledged on the server per account (D21,
 section 6a of `BACKEND_HANDOFF.md`):
 
-| Key | Scope |
-|---|---|
-| `card_created` | account |
-| `first_rating:<fantasy_season_id>` | season |
-| `provisional_cleared:<fantasy_season_id>` | season |
+| Key                                                  | Scope             |
+| ---------------------------------------------------- | ----------------- |
+| `card_created`                                       | account           |
+| `first_rating:<fantasy_season_id>`                   | season            |
+| `provisional_cleared:<fantasy_season_id>`            | season            |
 | `tier_changed:<tier>` (stade, pro, champion, legend) | account, per tier |
-| `founder_granted` | account |
-| `season_closed:<fantasy_season_id>` | season |
-| `season_started:<fantasy_season_id>` | season |
+| `founder_granted`                                    | account           |
+| `season_closed:<fantasy_season_id>`                  | season            |
+| `season_started:<fantasy_season_id>`                 | season            |
 
 A moment is acknowledged by its ×, by either of its buttons, or after two seconds at least half
 on screen (one full view). A coalesced hero acknowledges every key it folds in, in one call. The
@@ -841,6 +856,7 @@ style) so nothing flashes back while the call is in flight.
 a second phone, and the aha-reach measure is lost.
 
 **First-look rules** (Signing's graft, adapted to inline heroes) [ours]
+
 1. At most one expanded hero or M2 panel per app session (session-scoped flag). Priority:
    `card_created` panel > `first_rating` (including arrival and coalesced) > `founder_granted` >
    `tier_changed` > `season_closed` > `season_started` > `provisional_cleared` (a line). Lower
@@ -861,6 +877,7 @@ screen, plays only the object's own beat, is never automatic, and is static unde
 The number is never held back by any ceremony (lab rule 5).
 
 **Copy discipline (acceptance criteria for every string)** [Signing's graft, extended]
+
 - ·26 appears only when founder is granted.
 - « n'est plus provisoire » / «لم يعد مبدئيًا», never « confirmée » / «مؤكَّد».
 - « terminées » / «منتهية», never « jouées »: only final results count.
@@ -888,23 +905,23 @@ The number is never held back by any ceremony (lab rule 5).
 From the report's "Patterns to AVOID for BotolaGO" (Part B), plus the parts of our own concepts
 the judges cut.
 
-| Sorare pattern | Evidence | Why not here | What we do instead |
-|---|---|---|---|
-| Purchase-linked welcome offers and credit widgets | LIVE-S01, LIVE-S06, LIVE-S20, C06 [VERIFIED], TP-34 [SECONDARY] | Free to play; money in the first steps reads as pay-to-win | M2 lands on the saved squad and the card, with nothing to claim |
-| Cash headlines and payout imagery | LIVE-S02, W04, AS-US-04, G01, GP-US-04 [VERIFIED], TP-08 [SECONDARY] | Real prizes exist but must not be led with as cash, a ladder or a stake | The number and its reasons are the only result; no prize copy in any card moment |
-| Packs and random reveals, even free ones | LIVE-S02, W03, T01, P03 [VERIFIED], TP-27, TP-29, TP-30 [SECONDARY] | Players are bought by budget; nothing may be random or look like a loot box | The card is born empty where data is empty; the number is legible in the first frame; no flip, cover, scratch, count-up |
-| Wheels and spins | W04 [VERIFIED], TP-29 [SECONDARY] | Gambling vocabulary | None |
-| Auctions, markets, trading | AS-US-05 + GP-US-05 [VERIFIED], TP-31 [SECONDARY] | No market in BotolaGO | Transfers stay a Fantasy decision, taught by one hint |
-| Crypto and NFT language | AS-US-04, LIVE-S15, I01 [VERIFIED] | Irrelevant and alienating | None |
-| Rarity tiers and "5/1000" serials | AS-US-02, AS-US-03, AS-US-05, I03 [VERIFIED] | Signals that money buys status | Tiers earned by play only; the serial is an ID with no denominator, never animated, never "lucky" |
-| Lives, streak-to-cash ladders, reset to level 1 | LIVE-S11, F01, G01, G02 [VERIFIED] | No lives or ladder in BotolaGO's rules; reads as gambling | Marks are never lost; passive weeks count; a falling tier is a quiet line |
-| Daily missions and claims | G03 [VERIFIED], TP-29 [SECONDARY] | Nags; BotolaGO's rhythm is the journée | One counter that moves only with final journées |
-| Referral rewards per milestone | C01, C02, A06 [VERIFIED] | Pay-to-recruit | Invites carry only a true statement (same rounds counted) |
-| Per-set restarts to "Free" | REV-GP-FR-SET [SECONDARY] | Feels like losing everything | Every season stays on the card; last season shows until the new number exists |
-| Name asked before anything; name availability check | LIVE-S01, LIVE-S06 [VERIFIED] | Identity before value; BotolaGO is squad-first | The name is asked at the account step, after the squad |
-| Untranslated UI inside localised art; no Arabic | AS-FR-SET, AS-INFO, A02 [VERIFIED] | French and Arabic are equal | Both languages written natively, Arabic fully mirrored |
-| Unexplained vanity counters | LIVE-S02 [VERIFIED] | Never invent counts | No founder count, no "x managers rated" |
-| Quality failures (wrong error copy, raw markdown, a demo with no exit, app-to-browser verification) | LIVE-S04, LIVE-S03, LIVE-S13, LIVE-S14 [VERIFIED], REV-AS-AUTH [SECONDARY], A01 [VERIFIED] | Erodes trust | Acceptance criteria in section 7; replay always ends on the current card |
+| Sorare pattern                                                                                      | Evidence                                                                                   | Why not here                                                                | What we do instead                                                                                                      |
+| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Purchase-linked welcome offers and credit widgets                                                   | LIVE-S01, LIVE-S06, LIVE-S20, C06 [VERIFIED], TP-34 [SECONDARY]                            | Free to play; money in the first steps reads as pay-to-win                  | M2 lands on the saved squad and the card, with nothing to claim                                                         |
+| Cash headlines and payout imagery                                                                   | LIVE-S02, W04, AS-US-04, G01, GP-US-04 [VERIFIED], TP-08 [SECONDARY]                       | Real prizes exist but must not be led with as cash, a ladder or a stake     | The number and its reasons are the only result; no prize copy in any card moment                                        |
+| Packs and random reveals, even free ones                                                            | LIVE-S02, W03, T01, P03 [VERIFIED], TP-27, TP-29, TP-30 [SECONDARY]                        | Players are bought by budget; nothing may be random or look like a loot box | The card is born empty where data is empty; the number is legible in the first frame; no flip, cover, scratch, count-up |
+| Wheels and spins                                                                                    | W04 [VERIFIED], TP-29 [SECONDARY]                                                          | Gambling vocabulary                                                         | None                                                                                                                    |
+| Auctions, markets, trading                                                                          | AS-US-05 + GP-US-05 [VERIFIED], TP-31 [SECONDARY]                                          | No market in BotolaGO                                                       | Transfers stay a Fantasy decision, taught by one hint                                                                   |
+| Crypto and NFT language                                                                             | AS-US-04, LIVE-S15, I01 [VERIFIED]                                                         | Irrelevant and alienating                                                   | None                                                                                                                    |
+| Rarity tiers and "5/1000" serials                                                                   | AS-US-02, AS-US-03, AS-US-05, I03 [VERIFIED]                                               | Signals that money buys status                                              | Tiers earned by play only; the serial is an ID with no denominator, never animated, never "lucky"                       |
+| Lives, streak-to-cash ladders, reset to level 1                                                     | LIVE-S11, F01, G01, G02 [VERIFIED]                                                         | No lives or ladder in BotolaGO's rules; reads as gambling                   | Marks are never lost; passive weeks count; a falling tier is a quiet line                                               |
+| Daily missions and claims                                                                           | G03 [VERIFIED], TP-29 [SECONDARY]                                                          | Nags; BotolaGO's rhythm is the journée                                      | One counter that moves only with final journées                                                                         |
+| Referral rewards per milestone                                                                      | C01, C02, A06 [VERIFIED]                                                                   | Pay-to-recruit                                                              | Invites carry only a true statement (same rounds counted)                                                               |
+| Per-set restarts to "Free"                                                                          | REV-GP-FR-SET [SECONDARY]                                                                  | Feels like losing everything                                                | Every season stays on the card; last season shows until the new number exists                                           |
+| Name asked before anything; name availability check                                                 | LIVE-S01, LIVE-S06 [VERIFIED]                                                              | Identity before value; BotolaGO is squad-first                              | The name is asked at the account step, after the squad                                                                  |
+| Untranslated UI inside localised art; no Arabic                                                     | AS-FR-SET, AS-INFO, A02 [VERIFIED]                                                         | French and Arabic are equal                                                 | Both languages written natively, Arabic fully mirrored                                                                  |
+| Unexplained vanity counters                                                                         | LIVE-S02 [VERIFIED]                                                                        | Never invent counts                                                         | No founder count, no "x managers rated"                                                                                 |
+| Quality failures (wrong error copy, raw markdown, a demo with no exit, app-to-browser verification) | LIVE-S04, LIVE-S03, LIVE-S13, LIVE-S14 [VERIFIED], REV-AS-AUTH [SECONDARY], A01 [VERIFIED] | Erodes trust                                                                | Acceptance criteria in section 7; replay always ends on the current card                                                |
 
 **Also cut from our own concepts.** Signing's full-screen `/fantasy/signature` interstitial (an
 extra tap and up to 1.5s on the activation path) and its share of an unrated card. Reveal's 88%
@@ -930,18 +947,19 @@ did with `BRIEF.md`.
 
 **New files**
 
-| Path | What |
-|---|---|
-| `onboarding.html` | A new page beside `index.html` and `preview.html`. Loads `src/fonts.css`, `src/app-context.css`, `src/brand.js`, `src/kit.js`, `src/contexts.js`, the five direction modules and `src/onboarding/*`. Query: `?c=07&v=v2&lang=ar&scheme=dark&screen=S08` renders one phone screen; without `screen` it lays out every screen for one direction in a grid of 390px phone frames. Sets `<html data-ready="1">` when fonts are ready, like the gallery. |
-| `src/onboarding/states.js` | Fixture profiles, each labelled "sample": `guest`, `signedNoTeam`, `born0` (counted 0, serial null), `born0Serial` (serial `482913`), `forming1`, `eve2`, `notFinal2`, `insufficient3`, `rated` (84 PRO provisional), `ratedTrfNull`, `cleared` (85 not provisional), `tierUp`, `tierDown`, `founder`, `seasonClosed`, `seasonStarted`, `launchArrival`, `returning`, `clubNull`, `offline`, `featureOff`. All serials match `^[1-9][0-9]{5}$`. |
-| `src/onboarding/strings.js` | Every FR and AR string in section 3, with proposed dictionary keys (`card.onboarding.*`) so the product build can lift them. Plural helper on `Intl.PluralRules('ar')`. |
-| `src/onboarding/screens.js`, `onboarding.css` | Phone-frame renderers. App chrome is mocked in the lab's own `app-context.css` style (light and dark), never imported from the app. Selectors scoped under `.onb`. |
-| `src/concepts/t1-touchline.js`, `.css` | **Touchline (reworked)**, drawn fresh under `CONTRACT.md`, using the Codex render in `review/codex/` as reference only, with CRITIQUE.md's rework: no FUT spine stack, the exact logo blue `#0151FC`, the 84 and tier in its badge, long names, an Arabic face, the founder year after the name. Touchline is the fifth of the final top five and is not in this lab today. |
-| `tools/capture-onboarding.sh` | The capture matrix below, calling `tools/capture.mjs`. |
-| `review/onboarding/` | Captures and an `INDEX.md` listing them. |
+| Path                                          | What                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `onboarding.html`                             | A new page beside `index.html` and `preview.html`. Loads `src/fonts.css`, `src/app-context.css`, `src/brand.js`, `src/kit.js`, `src/contexts.js`, the five direction modules and `src/onboarding/*`. Query: `?c=07&v=v2&lang=ar&scheme=dark&screen=S08` renders one phone screen; without `screen` it lays out every screen for one direction in a grid of 390px phone frames. Sets `<html data-ready="1">` when fonts are ready, like the gallery. |
+| `src/onboarding/states.js`                    | Fixture profiles, each labelled "sample": `guest`, `signedNoTeam`, `born0` (counted 0, serial null), `born0Serial` (serial `482913`), `forming1`, `eve2`, `notFinal2`, `insufficient3`, `rated` (84 PRO provisional), `ratedTrfNull`, `cleared` (85 not provisional), `tierUp`, `tierDown`, `founder`, `seasonClosed`, `seasonStarted`, `launchArrival`, `returning`, `clubNull`, `offline`, `featureOff`. All serials match `^[1-9][0-9]{5}$`.     |
+| `src/onboarding/strings.js`                   | Every FR and AR string in section 3, with proposed dictionary keys (`card.onboarding.*`) so the product build can lift them. Plural helper on `Intl.PluralRules('ar')`.                                                                                                                                                                                                                                                                             |
+| `src/onboarding/screens.js`, `onboarding.css` | Phone-frame renderers. App chrome is mocked in the lab's own `app-context.css` style (light and dark), never imported from the app. Selectors scoped under `.onb`.                                                                                                                                                                                                                                                                                  |
+| `src/concepts/t1-touchline.js`, `.css`        | **Touchline (reworked)**, drawn fresh under `CONTRACT.md`, using the Codex render in `review/codex/` as reference only, with CRITIQUE.md's rework: no FUT spine stack, the exact logo blue `#0151FC`, the 84 and tier in its badge, long names, an Arabic face, the founder year after the name. Touchline is the fifth of the final top five and is not in this lab today.                                                                         |
+| `tools/capture-onboarding.sh`                 | The capture matrix below, calling `tools/capture.mjs`.                                                                                                                                                                                                                                                                                                                                                                                              |
+| `review/onboarding/`                          | Captures and an `INDEX.md` listing them.                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 **Contract extension (add to `CONTRACT.md`: "Onboarding states").** Today a profile always has a
 number. Each of the five modules must accept:
+
 - `p.ovr = null` and `p.tier = null`: the number carrier shows a dash; the base material with no
   tier word (section 9, decision 4).
 - `p.counted` and `p.minRated`: k of N marks drawn natively on the object.
@@ -957,40 +975,41 @@ number. Each of the five modules must accept:
 **Each direction plugged in** (merged from Reveal §4 and Signing §6; each is the direction
 designer's call)
 
-| Part | 07 Écharpe (v2) | 03 Porte-clés (v2) | 01 Lucarne | 05 Semelle (v2), provisional | Touchline (reworked) |
-|---|---|---|---|---|---|
-| Number carrier with a dash | Top band in plain rib, a knitted dash | Blank engraving field, an engraved dash | Empty top corner of the net, a dash | Blank forefoot field, a moulded dash | The badge's numeral slot, a dash |
-| k of N marks | One stripe per counted gameweek (its v2 grammar) | Notches engraved round the rim | Chalk tallies on the post | Marks along the flex groove, never studs (studs are the tier) | Ticks along the touchline |
-| Born "make" beat (M2) | Cast-on and name band knit | Name engraved, tag cut | Goal chalked on a wall (its HOMA origin) | Soleplate hung toe-up | Person leaf fills |
-| First-rating beat over a visible 84 | The third stripe knits in below the 84 | Paint-fill runs into the engraved 84 | Ball hits the corner where 84 already sits, one-beat freeze | Studs seat into the plate | Badge settles on the line |
-| Founder ·26 and season carrier | ALI ·26 in the name band, cream cast-on with 2026; one scarf per season | Squared split ring; one season ball charm per season | Footing with 26 in the iron plate | Moulded year clock | ·26 after the name |
+| Part                                | 07 Écharpe (v2)                                                         | 03 Porte-clés (v2)                                   | 01 Lucarne                                                  | 05 Semelle (v2), provisional                                  | Touchline (reworked)             |
+| ----------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------- |
+| Number carrier with a dash          | Top band in plain rib, a knitted dash                                   | Blank engraving field, an engraved dash              | Empty top corner of the net, a dash                         | Blank forefoot field, a moulded dash                          | The badge's numeral slot, a dash |
+| k of N marks                        | One stripe per counted gameweek (its v2 grammar)                        | Notches engraved round the rim                       | Chalk tallies on the post                                   | Marks along the flex groove, never studs (studs are the tier) | Ticks along the touchline        |
+| Born "make" beat (M2)               | Cast-on and name band knit                                              | Name engraved, tag cut                               | Goal chalked on a wall (its HOMA origin)                    | Soleplate hung toe-up                                         | Person leaf fills                |
+| First-rating beat over a visible 84 | The third stripe knits in below the 84                                  | Paint-fill runs into the engraved 84                 | Ball hits the corner where 84 already sits, one-beat freeze | Studs seat into the plate                                     | Badge settles on the line        |
+| Founder ·26 and season carrier      | ALI ·26 in the name band, cream cast-on with 2026; one scarf per season | Squared split ring; one season ball charm per season | Footing with 26 in the iron plate                           | Moulded year clock                                            | ·26 after the name               |
 
 **Screens to build** (phone 390 × 844 unless noted)
 
-| # | Screen | Fixture | Moment |
-|---|---|---|---|
-| S01 | Hub guest intro with the fifth point | `guest` | M1a |
-| S02 | Name step: line and unnamed token, keyboard closed (no autofocus) | `guest`, `signedNoTeam` | M1b |
-| S03 | Register hint; profile setup steps 1–2 with the live token (name typed, club tapped, club skipped) | `guest`, `clubNull` | M1c |
-| S04 | Back in the builder on the name step, focus on save | `guest` | M1c |
-| S05 | Team page with the M2 panel: new (serial null), new (serial set), arrival-forming | `born0`, `born0Serial`, `forming1` | M2 |
-| S06 | Hub block: forming 1/3, eve, not final, insufficient, late signer | `forming1`, `eve2`, `notFinal2`, `insufficient3` | M3a, M3b |
-| S07 | Rankings token, recap line, the three hints, the first-transfer line | `forming1` | M3c–M3f |
-| S08 | Hub hero: fresh, arrival, coalesced | `rated`, `launchArrival`, `returning` | M4a, M11 |
-| S09 | Detail sheet: all stats; TRF null | `rated`, `ratedTrfNull` | M4b |
-| S10 | League page band and rows; head-to-head sheet | `rated` plus league samples | M5 |
-| S11 | Share sheet and the 1080 × 1920 image (FR and AR) | `rated` | M6 |
-| S12 | Provisional cleared line | `cleared` | M7 |
-| S13 | Tier up hero; tier down line on the card page | `tierUp`, `tierDown` | M8 |
-| S14 | Founder hero | `founder` | M9 |
-| S15 | Season closed hero; new season block with last season's number | `seasonClosed`, `seasonStarted` | M10 |
-| S16 | Card page with history and the Revoir list; replay frame 1 | `rated` | M12 |
-| S17 | Deletion request line; offline card page; feature off (hub as today) | `rated`, `offline`, `featureOff` | edges |
-| S18 | v2 only: the three-frame story | `rated` | M4c |
-| D1 | Desktop 1440: hub with the hero; card page | `rated` | M4a, M12 |
+| #   | Screen                                                                                             | Fixture                                          | Moment   |
+| --- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------ | -------- |
+| S01 | Hub guest intro with the fifth point                                                               | `guest`                                          | M1a      |
+| S02 | Name step: line and unnamed token, keyboard closed (no autofocus)                                  | `guest`, `signedNoTeam`                          | M1b      |
+| S03 | Register hint; profile setup steps 1–2 with the live token (name typed, club tapped, club skipped) | `guest`, `clubNull`                              | M1c      |
+| S04 | Back in the builder on the name step, focus on save                                                | `guest`                                          | M1c      |
+| S05 | Team page with the M2 panel: new (serial null), new (serial set), arrival-forming                  | `born0`, `born0Serial`, `forming1`               | M2       |
+| S06 | Hub block: forming 1/3, eve, not final, insufficient, late signer                                  | `forming1`, `eve2`, `notFinal2`, `insufficient3` | M3a, M3b |
+| S07 | Rankings token, recap line, the three hints, the first-transfer line                               | `forming1`                                       | M3c–M3f  |
+| S08 | Hub hero: fresh, arrival, coalesced                                                                | `rated`, `launchArrival`, `returning`            | M4a, M11 |
+| S09 | Detail sheet: all stats; TRF null                                                                  | `rated`, `ratedTrfNull`                          | M4b      |
+| S10 | League page band and rows; head-to-head sheet                                                      | `rated` plus league samples                      | M5       |
+| S11 | Share sheet and the 1080 × 1920 image (FR and AR)                                                  | `rated`                                          | M6       |
+| S12 | Provisional cleared line                                                                           | `cleared`                                        | M7       |
+| S13 | Tier up hero; tier down line on the card page                                                      | `tierUp`, `tierDown`                             | M8       |
+| S14 | Founder hero                                                                                       | `founder`                                        | M9       |
+| S15 | Season closed hero; new season block with last season's number                                     | `seasonClosed`, `seasonStarted`                  | M10      |
+| S16 | Card page with history and the Revoir list; replay frame 1                                         | `rated`                                          | M12      |
+| S17 | Deletion request line; offline card page; feature off (hub as today)                               | `rated`, `offline`, `featureOff`                 | edges    |
+| S18 | v2 only: the three-frame story                                                                     | `rated`                                          | M4c      |
+| D1  | Desktop 1440: hub with the hero; card page                                                         | `rated`                                          | M4a, M12 |
 
 **Captures** (`tools/capture.mjs` already supports width, height, viewport, colour scheme, a
 language setting, and reports elements escaping the page width by their rectangles)
+
 - **Lead direction, Écharpe:** every screen, French and Arabic, light and dark, at 390 × 844 and
   2x.
 - **The other four:** the object-critical screens S05, S06, S08, S09, S10, S14 in French and
@@ -1003,6 +1022,7 @@ language setting, and reports elements escaping the page width by their rectangl
   attente ».
 
 **Acceptance criteria** (each measured, never asserted; CLAUDE.md "Evidence")
+
 1. Every screen renders for every direction and fixture with no console error (capture.mjs
    collects them).
 2. No element escapes the 390px width, measured by element rectangles, not `scrollWidth`.
@@ -1119,36 +1139,36 @@ card, Arabic tier names, the Arabic SEL label).
 
 ## Appendix A. The judges' findings and where they are handled
 
-| Finding | Concept | Judge | Handled in |
-|---|---|---|---|
-| Asks the most of the backend (ingredients, reason codes, next counted gameweek, moments, history, first-rated in batch) | Reveal | 1, 2 | Section 8: no `next_counted_gameweek` (client uses the hub's deadline data), one `rating_gameweeks` array, ingredients deferred to after D2/D3/D5, moments derived in the existing read, history read already planned |
-| If CON cannot be computed and no transfers, OVR stays null at 3/3 | Reveal | 1 | M3b "insufficient" state with a reason; D5's "verify first" on final boards flagged in the addendum |
-| Day 0 thin; guest club colour does not exist | Reveal | 1, 2 | M1b guest token with no club; club only via profile setup and only once resolution works (M1c, decision 5) |
-| M2 is an 88% sheet that opens without a tap | Reveal | 1 | M2 is an inline panel on the team page; nothing opens by itself |
-| Four-frame story invites ceremony creep | Reveal | 1, 2 | v1 hero and detail sheet; story cut to three frames, v2, measured; criterion 5 |
-| League shame (a 52 HOMA among friends) | Reveal | 1, 2 | Names-only band, rows in points order, no share on head-to-head, HOMA share guardrail |
-| Misses the import first-save path | Reveal, Build | 1 | M2's data-driven trigger, invalidation in the import branch, decision 6 |
-| Gendered Arabic imperatives; «أنشئ فريقي»; «ج3» in body copy | Reveal | 1, 2 | Section 5 copy discipline; verbal-noun buttons; «الجولة n» |
-| Name in M2's heading | Reveal | 2 | No name in any heading (criterion 10) |
-| "Weekly event" true only for one cohort | Reveal | 1 | The copy never says "weekly event"; launch handled as arrival |
-| The invite promise fails if a friend's OVR stays null | Reveal | 2 | Hedged: « leurs journées compteront en même temps que les vôtres » |
-| Payoff weeks away with push and email off | Reveal | 2 | M2 panel, M3 counter, hints, recap line, invite; aha-reach measure; the rules-row lever |
-| Guest gating needs an anonymous status read | Reveal | 2 | `api.manager_card_status()` |
-| Reverses D18; sample `BOT #004821` breaks D14 | all | 1 | D21; `BOT #482913` everywhere; lab migration as decision 9 |
-| Ceremony at the least valuable moment; extra tap and latency; unrated share | Signing | 1, 2 | Interstitial cut; no wait on any call at save; unrated share cut |
-| Launch double-counted (arrival then first rating) | Signing | 1 | Arrival hero acknowledges both keys |
-| « votre club » and « votre numéro » promised too early | Signing | 1, 2 | M1 copy promises neither |
-| مؤقت against the app's مبدئية; Latin "Fantasy" in Arabic | Signing, Build | 1 | Copy discipline: the app's root, agreeing with its noun. Signing's kicker is cut; where Fantasy must be named in Arabic it is «فانتازي», as the app writes it [code: `home.deadline_strip`]; only the brand BotolaGO stays Latin |
-| «تمّ التوقيع» reads as a contract; parents | Signing | 1, 2 | The word is not used; parents' sessions first |
-| Save preview under an autofocused keyboard | Signing | 1 | `autoFocus` removed; measured at 390 × 844 |
-| Builder hint row and crest strip push the pitch down | Build | 1, 2 | Cut |
-| Arbitrary line-to-part metaphor; SVG cost on every pick | Build | 1, 2 | Cut; token only in compact surfaces |
-| Built on unmerged PR #376 | Build | 1 | Builder lines only after #376 merges (M3g) |
-| False claim that the club uses `favorite_team_id` | Build | 1 | Corrected in M1c and the addendum |
-| Events with properties | Build | 1 | Distinct names only |
-| « Note confirmée » | Build | 1, 2 | Banned |
-| Checklist close to TP-25 | Build | 1 | Cut |
-| « N° bientôt attribué » promises a timescale | Build | 2 | No placeholder sentence; a dash on the carrier |
+| Finding                                                                                                                 | Concept        | Judge | Handled in                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------------------------------- | -------------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Asks the most of the backend (ingredients, reason codes, next counted gameweek, moments, history, first-rated in batch) | Reveal         | 1, 2  | Section 8: no `next_counted_gameweek` (client uses the hub's deadline data), one `rating_gameweeks` array, ingredients deferred to after D2/D3/D5, moments derived in the existing read, history read already planned            |
+| If CON cannot be computed and no transfers, OVR stays null at 3/3                                                       | Reveal         | 1     | M3b "insufficient" state with a reason; D5's "verify first" on final boards flagged in the addendum                                                                                                                              |
+| Day 0 thin; guest club colour does not exist                                                                            | Reveal         | 1, 2  | M1b guest token with no club; club only via profile setup and only once resolution works (M1c, decision 5)                                                                                                                       |
+| M2 is an 88% sheet that opens without a tap                                                                             | Reveal         | 1     | M2 is an inline panel on the team page; nothing opens by itself                                                                                                                                                                  |
+| Four-frame story invites ceremony creep                                                                                 | Reveal         | 1, 2  | v1 hero and detail sheet; story cut to three frames, v2, measured; criterion 5                                                                                                                                                   |
+| League shame (a 52 HOMA among friends)                                                                                  | Reveal         | 1, 2  | Names-only band, rows in points order, no share on head-to-head, HOMA share guardrail                                                                                                                                            |
+| Misses the import first-save path                                                                                       | Reveal, Build  | 1     | M2's data-driven trigger, invalidation in the import branch, decision 6                                                                                                                                                          |
+| Gendered Arabic imperatives; «أنشئ فريقي»; «ج3» in body copy                                                            | Reveal         | 1, 2  | Section 5 copy discipline; verbal-noun buttons; «الجولة n»                                                                                                                                                                       |
+| Name in M2's heading                                                                                                    | Reveal         | 2     | No name in any heading (criterion 10)                                                                                                                                                                                            |
+| "Weekly event" true only for one cohort                                                                                 | Reveal         | 1     | The copy never says "weekly event"; launch handled as arrival                                                                                                                                                                    |
+| The invite promise fails if a friend's OVR stays null                                                                   | Reveal         | 2     | Hedged: « leurs journées compteront en même temps que les vôtres »                                                                                                                                                               |
+| Payoff weeks away with push and email off                                                                               | Reveal         | 2     | M2 panel, M3 counter, hints, recap line, invite; aha-reach measure; the rules-row lever                                                                                                                                          |
+| Guest gating needs an anonymous status read                                                                             | Reveal         | 2     | `api.manager_card_status()`                                                                                                                                                                                                      |
+| Reverses D18; sample `BOT #004821` breaks D14                                                                           | all            | 1     | D21; `BOT #482913` everywhere; lab migration as decision 9                                                                                                                                                                       |
+| Ceremony at the least valuable moment; extra tap and latency; unrated share                                             | Signing        | 1, 2  | Interstitial cut; no wait on any call at save; unrated share cut                                                                                                                                                                 |
+| Launch double-counted (arrival then first rating)                                                                       | Signing        | 1     | Arrival hero acknowledges both keys                                                                                                                                                                                              |
+| « votre club » and « votre numéro » promised too early                                                                  | Signing        | 1, 2  | M1 copy promises neither                                                                                                                                                                                                         |
+| مؤقت against the app's مبدئية; Latin "Fantasy" in Arabic                                                                | Signing, Build | 1     | Copy discipline: the app's root, agreeing with its noun. Signing's kicker is cut; where Fantasy must be named in Arabic it is «فانتازي», as the app writes it [code: `home.deadline_strip`]; only the brand BotolaGO stays Latin |
+| «تمّ التوقيع» reads as a contract; parents                                                                              | Signing        | 1, 2  | The word is not used; parents' sessions first                                                                                                                                                                                    |
+| Save preview under an autofocused keyboard                                                                              | Signing        | 1     | `autoFocus` removed; measured at 390 × 844                                                                                                                                                                                       |
+| Builder hint row and crest strip push the pitch down                                                                    | Build          | 1, 2  | Cut                                                                                                                                                                                                                              |
+| Arbitrary line-to-part metaphor; SVG cost on every pick                                                                 | Build          | 1, 2  | Cut; token only in compact surfaces                                                                                                                                                                                              |
+| Built on unmerged PR #376                                                                                               | Build          | 1     | Builder lines only after #376 merges (M3g)                                                                                                                                                                                       |
+| False claim that the club uses `favorite_team_id`                                                                       | Build          | 1     | Corrected in M1c and the addendum                                                                                                                                                                                                |
+| Events with properties                                                                                                  | Build          | 1     | Distinct names only                                                                                                                                                                                                              |
+| « Note confirmée »                                                                                                      | Build          | 1, 2  | Banned                                                                                                                                                                                                                           |
+| Checklist close to TP-25                                                                                                | Build          | 1     | Cut                                                                                                                                                                                                                              |
+| « N° bientôt attribué » promises a timescale                                                                            | Build          | 2     | No placeholder sentence; a dash on the carrier                                                                                                                                                                                   |
 
 ## Appendix B. Sources read
 

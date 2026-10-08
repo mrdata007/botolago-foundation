@@ -18,7 +18,7 @@
 }
 .app-light .c03,
 :root[data-ground="day"] .c03 {
-  --c03-rim: rgb(18 16 14 / 0.0);
+  --c03-rim: rgb(18 16 14 / 0);
   --c03-clear: #7f93a8;
   --c03-ring: #3a4e6b;
   --c03-rimr: rgb(30 36 44 / 0.35);
@@ -48,12 +48,24 @@
 }
 
 /* ---------- edges that depend on the ground ---------- */
-.c03 .c03-rim { stroke: var(--c03-rim); }
-.c03 .c03-clear { stroke: var(--c03-clear); }
-.c03 .c03-rimr { stroke: var(--c03-rimr); }
-.c03 .c03-mr { stroke: var(--c03-ring); }
-.c03 .c03-mc { stroke: var(--c03-ring); }
-.c03 .c03-cap { fill: var(--c03-cap); }
+.c03 .c03-rim {
+  stroke: var(--c03-rim);
+}
+.c03 .c03-clear {
+  stroke: var(--c03-clear);
+}
+.c03 .c03-rimr {
+  stroke: var(--c03-rimr);
+}
+.c03 .c03-mr {
+  stroke: var(--c03-ring);
+}
+.c03 .c03-mc {
+  stroke: var(--c03-ring);
+}
+.c03 .c03-cap {
+  fill: var(--c03-cap);
+}
 
 /* ---------- full card ---------- */
 .c03-full {
@@ -69,7 +81,9 @@
   filter: var(--c03-drop);
   touch-action: pan-y;
 }
-.c03-full.is-thumb .c03-art { filter: none; }
+.c03-full.is-thumb .c03-art {
+  filter: none;
+}
 
 /* the fob swings on the eyelet; each charm on its own jump ring */
 .c03 .c03-fob {
@@ -80,27 +94,56 @@
   transform-box: view-box;
   transform-origin: 0 0;
 }
-.c03[data-motion] .c03-fob { animation: c03-settle 900ms cubic-bezier(0.22, 1.1, 0.36, 1) both; }
-.c03[data-motion] .c03-sw { animation: c03-charm 900ms cubic-bezier(0.22, 1.1, 0.36, 1) both; }
+.c03[data-motion] .c03-fob {
+  animation: c03-settle 900ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+}
+.c03[data-motion] .c03-sw {
+  animation: c03-charm 900ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+}
 .c03[data-motion][data-tier="LEGEND"] .c03-fob,
-.c03[data-motion][data-tier="LEGEND"] .c03-sw { animation-duration: 1300ms; }
+.c03[data-motion][data-tier="LEGEND"] .c03-sw {
+  animation-duration: 1300ms;
+}
 @keyframes c03-settle {
-  0% { transform: rotate(8deg); }
-  24% { transform: rotate(-5deg); }
-  48% { transform: rotate(2.6deg); }
-  72% { transform: rotate(-1deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(8deg);
+  }
+  24% {
+    transform: rotate(-5deg);
+  }
+  48% {
+    transform: rotate(2.6deg);
+  }
+  72% {
+    transform: rotate(-1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 @keyframes c03-charm {
-  0% { transform: rotate(-10deg); }
-  28% { transform: rotate(7deg); }
-  54% { transform: rotate(-3deg); }
-  78% { transform: rotate(1deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(-10deg);
+  }
+  28% {
+    transform: rotate(7deg);
+  }
+  54% {
+    transform: rotate(-3deg);
+  }
+  78% {
+    transform: rotate(1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .c03 .c03-fob,
-  .c03 .c03-sw { animation: none !important; transform: none !important; }
+  .c03 .c03-sw {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* ---------- token ---------- */
@@ -109,7 +152,10 @@
   place-items: center;
   line-height: 0;
 }
-.c03-tok svg { display: block; overflow: visible; }
+.c03-tok svg {
+  display: block;
+  overflow: visible;
+}
 
 /* ---------- row: the "My position" compact card ---------- */
 .c03-row {
@@ -130,10 +176,14 @@
 }
 .c03-row.is-me {
   background: var(--c03-me-bg);
-  box-shadow: inset 0 0 0 1.5px var(--c03-me-ring), var(--c03-row-sh);
+  box-shadow:
+    inset 0 0 0 1.5px var(--c03-me-ring),
+    var(--c03-row-sh);
 }
 .c03-rk {
-  font: 800 15px/1 "Manrope", sans-serif;
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
   text-align: center;
   color: var(--c03-row-mute);
@@ -153,7 +203,9 @@
   align-items: baseline;
   gap: 4px;
   min-width: 0;
-  font: 800 19px/1.2 "Changa", sans-serif;
+  font:
+    800 19px/1.2 "Changa",
+    sans-serif;
 }
 .c03-rnm {
   min-width: 0;
@@ -163,7 +215,9 @@
 }
 .c03-rn i {
   flex: none;
-  font: 600 13px/1 "Changa", sans-serif;
+  font:
+    600 13px/1 "Changa",
+    sans-serif;
   font-style: normal;
   color: var(--c03-row-mute);
 }
@@ -171,29 +225,53 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font: 800 11px/1.3 "Manrope", sans-serif;
+  font:
+    800 11px/1.3 "Manrope",
+    sans-serif;
   letter-spacing: 0.1em;
   color: var(--c03-row-mute);
 }
-.c03-pg { flex: none; display: block; }
+.c03-pg {
+  flex: none;
+  display: block;
+}
 .c03-rp {
   display: grid;
   justify-items: end;
   gap: 3px;
 }
 .c03-rp b {
-  font: 800 17px/1 "Manrope", sans-serif;
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .c03-rp small {
-  font: 700 10px/1 "Manrope", sans-serif;
+  font:
+    700 10px/1 "Manrope",
+    sans-serif;
   letter-spacing: 0.08em;
   color: var(--c03-row-mute);
 }
-.c03-row[dir="rtl"] .c03-rn b { font-family: "Changa", "Noto Sans Arabic", sans-serif; line-height: 1.5; }
-.c03-row[dir="rtl"] .c03-rn small { font: 700 12px/1.6 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
-.c03-row[dir="rtl"] .c03-rp small { font: 700 11px/1.5 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
-.c03-row[dir="rtl"] .c03-rn { gap: 0; }
+.c03-row[dir="rtl"] .c03-rn b {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  line-height: 1.5;
+}
+.c03-row[dir="rtl"] .c03-rn small {
+  font:
+    700 12px/1.6 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c03-row[dir="rtl"] .c03-rp small {
+  font:
+    700 11px/1.5 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c03-row[dir="rtl"] .c03-rn {
+  gap: 0;
+}
 
 /* ---------- share: "Sur mon sac" ---------- */
 .c03-share {
@@ -205,8 +283,12 @@
   color: #f0f2f5;
   font-family: "Manrope", "Noto Sans Arabic", sans-serif;
 }
-.c03-share .c03-rim { stroke: #9ba3ae; }
-.c03-share .c03-clear { stroke: #e4eef7; }
+.c03-share .c03-rim {
+  stroke: #9ba3ae;
+}
+.c03-share .c03-clear {
+  stroke: #e4eef7;
+}
 .c03-sh-bg {
   position: absolute;
   inset: 0;
@@ -247,7 +329,9 @@
   background: linear-gradient(90deg, #cfc6ae, #ddd4bd);
   border-right: 1px dashed rgb(70 60 40 / 0.55);
 }
-.c03-sh-tag::before { left: 0; }
+.c03-sh-tag::before {
+  left: 0;
+}
 .c03-sh-tag::after {
   right: 0;
   border-right: 0;
@@ -258,10 +342,14 @@
   display: flex;
   align-items: baseline;
   gap: 5px;
-  font: 800 25px/1.1 "Changa", sans-serif;
+  font:
+    800 25px/1.1 "Changa",
+    sans-serif;
 }
 .c03-sh-name i {
-  font: 600 15px/1 "Changa", sans-serif;
+  font:
+    600 15px/1 "Changa",
+    sans-serif;
   font-style: normal;
   color: #5b5d63;
 }
@@ -270,16 +358,32 @@
   align-items: baseline;
   gap: 7px;
   margin-top: 0;
-  font: 800 11.5px/1.4 "Manrope", sans-serif;
+  font:
+    800 11.5px/1.4 "Manrope",
+    sans-serif;
   letter-spacing: 0.02em;
 }
 .c03-sh-meta em {
-  font: 600 8.5px/1 "Manrope", sans-serif;
+  font:
+    600 8.5px/1 "Manrope",
+    sans-serif;
   font-style: normal;
   letter-spacing: 0.04em;
   color: #6b6658;
 }
-.c03-share[dir="rtl"] .c03-sh-name { font-family: "Changa", "Noto Sans Arabic", sans-serif; line-height: 1.3; }
-.c03-share[dir="rtl"] .c03-sh-name b { font-size: 22px; }
-.c03-share[dir="rtl"] .c03-sh-name i { font-size: 14px; }
-.c03-share[dir="rtl"] .c03-sh-meta em { font: 600 9.5px/1.4 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
+.c03-share[dir="rtl"] .c03-sh-name {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  line-height: 1.3;
+}
+.c03-share[dir="rtl"] .c03-sh-name b {
+  font-size: 22px;
+}
+.c03-share[dir="rtl"] .c03-sh-name i {
+  font-size: 14px;
+}
+.c03-share[dir="rtl"] .c03-sh-meta em {
+  font:
+    600 9.5px/1.4 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}

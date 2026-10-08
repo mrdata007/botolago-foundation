@@ -10,12 +10,14 @@ version is `NN-v2.js` / `NN-v2.css` and registers with `refinedFrom`.
 (function () {
   const MC = window.MC;
   const c = {
-    id: "c03",               // "cNN", refined: "cNN-v2"
-    n: 3,                    // concept number
-    refinedFrom: undefined,  // "c03" on a refined version
-    name: "…", nameAr: "…",  // concept name (English) and Arabic
+    id: "c03", // "cNN", refined: "cNN-v2"
+    n: 3, // concept number
+    refinedFrom: undefined, // "c03" on a refined version
+    name: "…",
+    nameAr: "…", // concept name (English) and Arabic
     category: "safe" | "bold" | "youth" | "wildcard",
-    philosophy: "one sentence", philosophyAr: "…",
+    philosophy: "one sentence",
+    philosophyAr: "…",
     idea: ["design explanation paragraphs"],
     belonging: ["why people would care, compare, screenshot"],
     founderMark: ["how FOUNDER 2026 is made precious"],
@@ -23,14 +25,15 @@ version is `NN-v2.js` / `NN-v2.css` and registers with `refinedFrom`.
     rtl: ["how Arabic / right-to-left is handled"],
     tiers: { HOMA: "…", STADE: "…", PRO: "…", CHAMPION: "…", LEGEND: "…" },
     legend: ["the LEGEND moment"],
-    advantages: ["…"], risks: ["…"],
-    gridWidth: 236,          // optional: card width in the collection grid
-    detailWidth: 380,        // optional: card width in the detail sheet
-    full(p, o) {},           // → HTML string
-    token(p, o) {},          // → HTML string
-    row(p, o) {},            // → HTML string
-    share(p, o) {},          // → HTML string
-    mount(el, o) {},         // optional: attach pointer interaction to a rendered full card
+    advantages: ["…"],
+    risks: ["…"],
+    gridWidth: 236, // optional: card width in the collection grid
+    detailWidth: 380, // optional: card width in the detail sheet
+    full(p, o) {}, // → HTML string
+    token(p, o) {}, // → HTML string
+    row(p, o) {}, // → HTML string
+    share(p, o) {}, // → HTML string
+    mount(el, o) {}, // optional: attach pointer interaction to a rendered full card
   };
   MC.register(c);
 })();
@@ -80,18 +83,18 @@ fixtures live in `src/onboarding/states.js` (`MC.ONB.FIX`); `states.html?c=07&v=
 fixture for one direction. **A profile without these fields (every gallery profile) must render
 exactly as before**: each field below is optional, and its absence means "as today".
 
-| Field | Values | What the object does |
-|---|---|---|
-| `p.ovr` | number or `null` | `null`: the number carrier shows a dash "—", never 0, never blank. |
-| `p.tier` | tier or `null` | `null`: the base material with no tier word (decision 4). Never HOMA printed before a rating. |
-| `p.counted`, `p.minRated` | integers, e.g. 1 and 3 | While `ovr` is null, draw `counted` of `minRated` marks natively on the object (filled and empty). With a number, marks are optional (a direction may keep them complete or drop them). Absent: no marks. |
-| `p.provisional` | boolean | No change to the art. The « Provisoire » chip is app-level, beside the object. |
-| `p.serial`, `p.id` | `"482913"`, `"BOT #482913"`, or both `null` | `null`: the ID carrier shows a dash. No sentence, no placeholder. |
-| `p.founder` | 2026 or `null` | `null`: no founder part at all, no ghost. |
-| `p.club` | club object or `null` | `null`: the object's own material, no disc (lab rule 15). |
-| `p.name` | `{lat, ar}` or `null` | `null` (a guest before naming): the name carrier is drawn empty, never "?" or "Nom". |
-| `p.stats.X` | number or `null` | `null`: a dash in that stat's place. `p.statReason.X` (optional) holds the server reason code. |
-| `o.beat` | `"make"`, `"first"` or absent | One optional motion of 600ms or less ("make": the object makes its belonging parts on birth, ≤700ms; "first": the beat over a visible first number). The number and serial are fully visible in the first painted frame and never animate. Off under `prefers-reduced-motion`. No flip, count-up, cover, blur or confetti. |
+| Field                     | Values                                      | What the object does                                                                                                                                                                                                                                                                                                       |
+| ------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `p.ovr`                   | number or `null`                            | `null`: the number carrier shows a dash "—", never 0, never blank.                                                                                                                                                                                                                                                         |
+| `p.tier`                  | tier or `null`                              | `null`: the base material with no tier word (decision 4). Never HOMA printed before a rating.                                                                                                                                                                                                                              |
+| `p.counted`, `p.minRated` | integers, e.g. 1 and 3                      | While `ovr` is null, draw `counted` of `minRated` marks natively on the object (filled and empty). With a number, marks are optional (a direction may keep them complete or drop them). Absent: no marks.                                                                                                                  |
+| `p.provisional`           | boolean                                     | No change to the art. The « Provisoire » chip is app-level, beside the object.                                                                                                                                                                                                                                             |
+| `p.serial`, `p.id`        | `"482913"`, `"BOT #482913"`, or both `null` | `null`: the ID carrier shows a dash. No sentence, no placeholder.                                                                                                                                                                                                                                                          |
+| `p.founder`               | 2026 or `null`                              | `null`: no founder part at all, no ghost.                                                                                                                                                                                                                                                                                  |
+| `p.club`                  | club object or `null`                       | `null`: the object's own material, no disc (lab rule 15).                                                                                                                                                                                                                                                                  |
+| `p.name`                  | `{lat, ar}` or `null`                       | `null` (a guest before naming): the name carrier is drawn empty, never "?" or "Nom".                                                                                                                                                                                                                                       |
+| `p.stats.X`               | number or `null`                            | `null`: a dash in that stat's place. `p.statReason.X` (optional) holds the server reason code.                                                                                                                                                                                                                             |
+| `o.beat`                  | `"make"`, `"first"` or absent               | One optional motion of 600ms or less ("make": the object makes its belonging parts on birth, ≤700ms; "first": the beat over a visible first number). The number and serial are fully visible in the first painted frame and never animate. Off under `prefers-reduced-motion`. No flip, count-up, cover, blur or confetti. |
 
 `MC.label(p, o)` already speaks these states (« pas encore de note » / «لا تقييم بعد», « 1
 journée comptée sur 3 »), so the root keeps `aria-label="${MC.label(p, o)}"`.

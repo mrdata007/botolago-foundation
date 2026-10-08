@@ -27,18 +27,18 @@ teenagers. The tests with Moroccan users that would settle them are listed at th
 
 ## Scores
 
-| Rank | Concept | Orig. | Own. | Football | Morocco | Youth | Adult | Flex | Collect. | Read. | Mobile | Social | Tiers | Brand | **Total /130** |
-|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 1 | 07 Écharpe | 6.5 | 7.3 | 8.8 | 8.0 | 8.0 | 7.5 | 7.5 | 8.3 | 7.0 | 7.3 | 8.0 | 7.0 | 8.0 | **99** |
-| 2 | 05 Semelle | 8.3 | 7.3 | 8.8 | 4.5 | 8.3 | 5.0 | 7.8 | 7.3 | 7.0 | 6.0 | 7.5 | 8.8 | 6.5 | **92.8** |
-| 3 | 09 Panneau | 6.0 | 6.0 | 8.5 | 3.3 | 7.0 | 6.8 | 6.3 | 4.3 | 6.3 | 8.3 | 7.8 | 6.3 | 6.3 | **82.8** |
-| 4 | 03 Porte-clés | 7.0 | 6.5 | 3.0 | 4.3 | 6.3 | 7.3 | 6.0 | 7.5 | 7.5 | 5.0 | 6.5 | 6.3 | 6.5 | **79.5** |
-| 5 | 01 Lucarne | 5.0 | 4.5 | 8.3 | 4.8 | 5.0 | 6.8 | 4.5 | 4.0 | 8.0 | 7.5 | 5.3 | 5.3 | 5.3 | **74** |
-| 6 | 08 Lsaq | 5.3 | 4.3 | 3.3 | 5.0 | 8.3 | 3.8 | 5.0 | 7.0 | 8.0 | 7.0 | 6.8 | 4.5 | 5.0 | **73** |
-| 7 | 04 Pochoir | 6.3 | 4.8 | 5.3 | 6.0 | 6.5 | 5.5 | 4.8 | 4.8 | 6.8 | 7.0 | 6.3 | 3.5 | 5.0 | **72.3** |
-| 8 | 10 Quatre Ombres | 8.8 | 5.5 | 6.5 | 3.0 | 4.3 | 7.0 | 4.5 | 3.8 | 5.5 | 5.0 | 6.8 | 4.3 | 6.3 | **71** |
-| 9 | 06 Brassard | 6.0 | 4.5 | 7.3 | 3.0 | 5.0 | 5.5 | 5.5 | 3.8 | 4.3 | 5.0 | 4.0 | 2.8 | 4.3 | **60.8** |
-| 10 | 02 Tir | 3.8 | 3.3 | 7.0 | 2.0 | 5.5 | 4.3 | 4.0 | 3.3 | 6.5 | 5.3 | 6.0 | 3.3 | 3.5 | **57.5** |
+| Rank | Concept          | Orig. | Own. | Football | Morocco | Youth | Adult | Flex | Collect. | Read. | Mobile | Social | Tiers | Brand | **Total /130** |
+| ---- | ---------------- | ----: | ---: | -------: | ------: | ----: | ----: | ---: | -------: | ----: | -----: | -----: | ----: | ----: | -------------: |
+| 1    | 07 Écharpe       |   6.5 |  7.3 |      8.8 |     8.0 |   8.0 |   7.5 |  7.5 |      8.3 |   7.0 |    7.3 |    8.0 |   7.0 |   8.0 |         **99** |
+| 2    | 05 Semelle       |   8.3 |  7.3 |      8.8 |     4.5 |   8.3 |   5.0 |  7.8 |      7.3 |   7.0 |    6.0 |    7.5 |   8.8 |   6.5 |       **92.8** |
+| 3    | 09 Panneau       |   6.0 |  6.0 |      8.5 |     3.3 |   7.0 |   6.8 |  6.3 |      4.3 |   6.3 |    8.3 |    7.8 |   6.3 |   6.3 |       **82.8** |
+| 4    | 03 Porte-clés    |   7.0 |  6.5 |      3.0 |     4.3 |   6.3 |   7.3 |  6.0 |      7.5 |   7.5 |    5.0 |    6.5 |   6.3 |   6.5 |       **79.5** |
+| 5    | 01 Lucarne       |   5.0 |  4.5 |      8.3 |     4.8 |   5.0 |   6.8 |  4.5 |      4.0 |   8.0 |    7.5 |    5.3 |   5.3 |   5.3 |         **74** |
+| 6    | 08 Lsaq          |   5.3 |  4.3 |      3.3 |     5.0 |   8.3 |   3.8 |  5.0 |      7.0 |   8.0 |    7.0 |    6.8 |   4.5 |   5.0 |         **73** |
+| 7    | 04 Pochoir       |   6.3 |  4.8 |      5.3 |     6.0 |   6.5 |   5.5 |  4.8 |      4.8 |   6.8 |    7.0 |    6.3 |   3.5 |   5.0 |       **72.3** |
+| 8    | 10 Quatre Ombres |   8.8 |  5.5 |      6.5 |     3.0 |   4.3 |   7.0 |  4.5 |      3.8 |   5.5 |    5.0 |    6.8 |   4.3 |   6.3 |         **71** |
+| 9    | 06 Brassard      |   6.0 |  4.5 |      7.3 |     3.0 |   5.0 |   5.5 |  5.5 |      3.8 |   4.3 |    5.0 |    4.0 |   2.8 |   4.3 |       **60.8** |
+| 10   | 02 Tir           |   3.8 |  3.3 |      7.0 |     2.0 |   5.5 |   4.3 |  4.0 |      3.3 |   6.5 |    5.3 |    6.0 |   3.3 |   3.5 |       **57.5** |
 
 Columns, in the brief's order: Originality, BotolaGO ownership, Football connection,
 Moroccan relevance, Youth appeal, Adult appeal, Status/flex, Collectibility, Readability,
@@ -48,16 +48,16 @@ of its rounded cells by a few tenths.
 
 ## Superlatives
 
-| Award | Winner | Why |
-|---|---|---|
-| Most beautiful | **03 Porte-clés** | One material, one paint-filled ink, a calm column of crest, tier, stats, name and 84, and real craft in the squared ring and engraved rim. |
-| Most ownable | **07 Écharpe** | A scarf over a barrier rail, with a knitted number, overlaps no other product category, and it can carry BotolaGO onto merch and into stadiums. |
-| Teenagers | **05 Semelle** | Boot culture is a status economy Moroccan teenagers already live in; going from turf nubs to steel screw-ins is an upgrade every kid wants. |
-| Serious Fantasy players | **03 Porte-clés** | The most grown-up object: an aligned stat table, honest numbers, no gimmick, and seasonal charms that keep a history. |
-| Most scalable | **09 Panneau** | A black board with a crisp 84 survives from 80px down to 24px in both themes and both scripts. |
-| Best social-media card | **09 Panneau** | Raising the board so the whole stadium sees your 84 is "I'm 84, you're 78" in one gesture. |
-| Most original | **10 Quatre Ombres** | Four floodlights cast four shadows, so the mark is made of light. All four critics scored its originality 8 or 9. |
-| Best overall | **07 Écharpe** | Top total, first or second for every critic, and the only concept that builds Moroccan supporter culture into the object without a tourist cliché. |
+| Award                   | Winner               | Why                                                                                                                                                |
+| ----------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Most beautiful          | **03 Porte-clés**    | One material, one paint-filled ink, a calm column of crest, tier, stats, name and 84, and real craft in the squared ring and engraved rim.         |
+| Most ownable            | **07 Écharpe**       | A scarf over a barrier rail, with a knitted number, overlaps no other product category, and it can carry BotolaGO onto merch and into stadiums.    |
+| Teenagers               | **05 Semelle**       | Boot culture is a status economy Moroccan teenagers already live in; going from turf nubs to steel screw-ins is an upgrade every kid wants.        |
+| Serious Fantasy players | **03 Porte-clés**    | The most grown-up object: an aligned stat table, honest numbers, no gimmick, and seasonal charms that keep a history.                              |
+| Most scalable           | **09 Panneau**       | A black board with a crisp 84 survives from 80px down to 24px in both themes and both scripts.                                                     |
+| Best social-media card  | **09 Panneau**       | Raising the board so the whole stadium sees your 84 is "I'm 84, you're 78" in one gesture.                                                         |
+| Most original           | **10 Quatre Ombres** | Four floodlights cast four shadows, so the mark is made of light. All four critics scored its originality 8 or 9.                                  |
+| Best overall            | **07 Écharpe**       | Top total, first or second for every critic, and the only concept that builds Moroccan supporter culture into the object without a tourist cliché. |
 
 ## One-line verdicts
 
@@ -155,11 +155,11 @@ their verdicts. **Caution:** the judges are Claude agents judging Claude's work 
 another tool's, so this is an argued opinion, not a neutral panel. Testing with Moroccan
 users is what settles it.
 
-| Codex pick | Claude rival | Verdict | Vote |
-|---|---|---|---|
-| #1 Stadium Architecture | 07 Écharpe (refined) | **Replace** | 3 of 3 |
-| #2 Touchline | 05 Semelle (refined) | **Replace, only after a cultural test** | 2 of 3 |
-| #3 Stadium Pass | 03 Porte-clés (refined) | **Replace** | 3 of 3 |
+| Codex pick              | Claude rival            | Verdict                                 | Vote   |
+| ----------------------- | ----------------------- | --------------------------------------- | ------ |
+| #1 Stadium Architecture | 07 Écharpe (refined)    | **Replace**                             | 3 of 3 |
+| #2 Touchline            | 05 Semelle (refined)    | **Replace, only after a cultural test** | 2 of 3 |
+| #3 Stadium Pass         | 03 Porte-clés (refined) | **Replace**                             | 3 of 3 |
 
 - **Stadium Architecture → Écharpe.** Codex's best-finished card, but its one idea is the
   arch the brief lists as a cliché (a headstone at 28px), and it makes a state stadium the
@@ -209,16 +209,16 @@ critique table (which scored the ten first passes). Points were 5 for a first pl
 1 for a fifth. As with the critique, the judges are Claude agents, and four of the five
 places went to Claude's own concepts.
 
-| Concept | Source | Brand | Youth | Product | Points |
-|---|---|---:|---:|---:|---:|
-| 07 Écharpe (refined) | Claude | 1 | 1 | 1 | 15 |
-| 03 Porte-clés (refined) | Claude | 2 | 3 | 2 | 11 |
-| 05 Semelle (refined) | Claude | 3 | 2 | — | 7 |
-| 01 Lucarne | Claude | 5 | — | 3 | 4 |
-| Touchline | Codex | — | 5 | 4 | 3 |
-| 10 Quatre Ombres | Claude | 4 | — | — | 2 |
-| 04 Pochoir | Claude | — | 4 | — | 2 |
-| 09 Panneau | Claude | — | — | 5 | 1 |
+| Concept                 | Source | Brand | Youth | Product | Points |
+| ----------------------- | ------ | ----: | ----: | ------: | -----: |
+| 07 Écharpe (refined)    | Claude |     1 |     1 |       1 |     15 |
+| 03 Porte-clés (refined) | Claude |     2 |     3 |       2 |     11 |
+| 05 Semelle (refined)    | Claude |     3 |     2 |       — |      7 |
+| 01 Lucarne              | Claude |     5 |     — |       3 |      4 |
+| Touchline               | Codex  |     — |     5 |       4 |      3 |
+| 10 Quatre Ombres        | Claude |     4 |     — |       — |      2 |
+| 04 Pochoir              | Claude |     — |     4 |       — |      2 |
+| 09 Panneau              | Claude |     — |     — |       5 |      1 |
 
 1. **07 Écharpe (Claude, refined).** First for all three judges. The only concept in either
    set that builds Moroccan supporter culture into the object without a cliché.

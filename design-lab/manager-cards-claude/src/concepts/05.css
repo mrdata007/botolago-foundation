@@ -16,7 +16,8 @@
   height: auto;
   overflow: visible;
   /* the lift on the page: a soft offset drop, deeper on the dark ground */
-  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28)) drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
+  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28))
+    drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
 }
 .app-dark .c05 .c05-svg,
 :root[data-ground="night"] .c05 .c05-svg {
@@ -24,7 +25,8 @@
 }
 .app-light .c05 .c05-svg,
 :root[data-ground="day"] .c05 .c05-svg {
-  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28)) drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
+  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28))
+    drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
 }
 .app-dark .c05 .c05-svg {
   filter: drop-shadow(0 1.8cqi 3cqi rgba(0, 0, 0, 0.6));
@@ -163,7 +165,10 @@
   --c05-row-fg: #060d1a;
   --c05-row-mute: #4e5661;
   --c05-row-edge: rgba(12, 49, 100, 0.08);
-  box-shadow: 0 1px 2px rgba(12, 49, 100, 0.1), 0 4px 14px -8px rgba(12, 49, 100, 0.14), 0 0 0 1px var(--c05-row-edge);
+  box-shadow:
+    0 1px 2px rgba(12, 49, 100, 0.1),
+    0 4px 14px -8px rgba(12, 49, 100, 0.14),
+    0 0 0 1px var(--c05-row-edge);
 }
 .app-dark .c05.c05-row {
   --c05-row-bg: #121b29;
@@ -183,11 +188,14 @@
 .app-light .c05.c05-row.is-me,
 :root[data-ground="day"] .c05.c05-row.is-me {
   background:
-    linear-gradient(color-mix(in oklab, #73edfa 12%, #fff), color-mix(in oklab, #73edfa 12%, #fff)) padding-box,
+    linear-gradient(color-mix(in oklab, #73edfa 12%, #fff), color-mix(in oklab, #73edfa 12%, #fff))
+      padding-box,
     linear-gradient(100deg, #2fc66a, #22b5c9) border-box;
 }
 .c05 .c05-rk {
-  font: 800 15px/1 "Manrope", sans-serif;
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
   text-align: center;
   color: var(--c05-row-mute);
@@ -205,7 +213,9 @@
   gap: 2px;
 }
 .c05 .c05-rw b {
-  font: 800 17px/1.15 "Changa", sans-serif;
+  font:
+    800 17px/1.15 "Changa",
+    sans-serif;
   letter-spacing: 0.02em;
   white-space: nowrap;
   overflow: hidden;
@@ -233,7 +243,10 @@
   color: #e6cf8b;
 }
 .c05 .c05-rw small {
-  font: 600 12px/1.35 "Manrope", "Noto Sans Arabic", sans-serif;
+  font:
+    600 12px/1.35 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
   color: var(--c05-row-mute);
   white-space: nowrap;
   overflow: hidden;
@@ -251,11 +264,16 @@
 .c05 .c05-rp {
   display: grid;
   justify-items: end;
-  font: 800 18px/1 "Manrope", sans-serif;
+  font:
+    800 18px/1 "Manrope",
+    sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .c05 .c05-rp small {
-  font: 700 10px/1.4 "Manrope", "Noto Sans Arabic", sans-serif;
+  font:
+    700 10px/1.4 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0.08em;
   color: var(--c05-row-mute);
 }
@@ -297,7 +315,8 @@
   transform: rotate(7deg);
 }
 .c05 .c05-sh-card .c05-svg {
-  filter: drop-shadow(0.9cqi 3cqi 3.4cqi rgba(0, 0, 0, 0.72)) drop-shadow(0 0.6cqi 0.6cqi rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0.9cqi 3cqi 3.4cqi rgba(0, 0, 0, 0.72))
+    drop-shadow(0 0.6cqi 0.6cqi rgba(0, 0, 0, 0.5));
 }
 .c05 .c05-sh-cap {
   position: absolute;
@@ -309,7 +328,9 @@
   text-align: end;
 }
 .c05 .c05-sh-cap b {
-  font: 800 44px/1 "Changa", sans-serif;
+  font:
+    800 44px/1 "Changa",
+    sans-serif;
   letter-spacing: 0.01em;
 }
 .c05 .c05-sh-cap b.is-ar {
@@ -324,7 +345,10 @@
   color: #e6cf8b;
 }
 .c05 .c05-sh-cap span {
-  font: 700 12px/1.4 "Manrope", "Noto Sans Arabic", sans-serif;
+  font:
+    700 12px/1.4 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
   letter-spacing: 0.16em;
   color: #cfe2d4;
 }
