@@ -1,22 +1,22 @@
-/* 06 ARDOISE — the café's pavement A-board. Everything scoped under .c06. */
+/* 06 ARDOISE — the café's pavement A-board. Everything scoped under .x06. */
 
 /* ---------- full card ---------- */
-.c06 {
+.x06 {
   position: relative;
   display: block;
   width: 100%;
   perspective: 1400px;
   -webkit-tap-highlight-color: transparent;
 }
-.c06 .c06-turn {
+.x06 .x06-turn {
   position: relative;
   transform-style: preserve-3d;
   transition: transform 650ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
-.c06.is-turned .c06-turn {
+.x06.is-turned .x06-turn {
   transform: rotateY(180deg);
 }
-.c06 .c06-face {
+.x06 .x06-face {
   display: block;
   width: 100%;
   height: auto;
@@ -26,84 +26,84 @@
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
-.c06 .c06-face-back {
+.x06 .x06-face-back {
   position: absolute;
   inset: 0;
   transform: rotateY(180deg);
 }
-.c06.is-live {
+.x06.is-live {
   cursor: pointer;
 }
-.c06.is-live:focus-visible {
+.x06.is-live:focus-visible {
   outline: 2px solid #9fe3ef;
   outline-offset: 6px;
   border-radius: 4px;
 }
 
 /* faces */
-.c06 .c06-lz,
-.c06-row .c06-lz,
-.c06-tok .c06-lz {
+.x06 .x06-lz,
+.x06-row .x06-lz,
+.x06-tok .x06-lz {
   font-family: "Lalezar", "Changa", sans-serif;
   font-weight: 400;
 }
-.c06 .c06-ch,
-.c06-row .c06-ch {
+.x06 .x06-ch,
+.x06-row .x06-ch {
   font-family: "Changa", "Noto Sans Arabic", sans-serif;
 }
-.c06 .c06-mr,
-.c06-row .c06-mr {
+.x06 .x06-mr,
+.x06-row .x06-mr {
   font-family: "Manrope", sans-serif;
 }
-.c06 .c06-bs {
+.x06 .x06-bs {
   font-family: "Big Shoulders Display", "Changa", sans-serif;
 }
-.c06-row .c06-tab {
+.x06-row .x06-tab {
   font-variant-numeric: tabular-nums;
 }
 
 /* dark ground (default): the frame's top lip catches the light */
-.c06 .c06-rim,
-.c06-tok .c06-rim,
-.c06-row .c06-rim {
+.x06 .x06-rim,
+.x06-tok .x06-rim,
+.x06-row .x06-rim {
   opacity: 0.55;
 }
-.c06 .c06-contact {
+.x06 .x06-contact {
   opacity: 0.55;
 }
 /* light ground: no rim, a firmer contact shadow */
-.app-light .c06 .c06-rim,
-:root[data-ground="day"] .c06 .c06-rim,
-.app-light .c06-tok .c06-rim,
-:root[data-ground="day"] .c06-tok .c06-rim,
-.app-light .c06-row .c06-rim,
-:root[data-ground="day"] .c06-row .c06-rim {
+.app-light .x06 .x06-rim,
+:root[data-ground="day"] .x06 .x06-rim,
+.app-light .x06-tok .x06-rim,
+:root[data-ground="day"] .x06-tok .x06-rim,
+.app-light .x06-row .x06-rim,
+:root[data-ground="day"] .x06-row .x06-rim {
   opacity: 0;
 }
-.app-light .c06 .c06-contact,
-:root[data-ground="day"] .c06 .c06-contact {
+.app-light .x06 .x06-contact,
+:root[data-ground="day"] .x06 .x06-contact {
   opacity: 0.32;
 }
-.app-dark .c06 .c06-rim,
-.app-dark .c06-tok .c06-rim,
-.app-dark .c06-row .c06-rim {
+.app-dark .x06 .x06-rim,
+.app-dark .x06-tok .x06-rim,
+.app-dark .x06-row .x06-rim {
   opacity: 0.55;
 }
-.app-dark .c06 .c06-contact {
+.app-dark .x06 .x06-contact {
   opacity: 0.55;
 }
 
 /* LEGEND: one specular sweep across the gilding (never loops) */
-.c06 .c06-sweep-bar {
+.x06 .x06-sweep-bar {
   opacity: 0;
 }
-.c06.is-motion .c06-sweep-bar {
-  animation: c06-sweep 1800ms cubic-bezier(0.45, 0.05, 0.35, 1) 400ms 1 both;
+.x06.is-motion .x06-sweep-bar {
+  animation: x06-sweep 1800ms cubic-bezier(0.45, 0.05, 0.35, 1) 400ms 1 both;
 }
-.c06[dir="rtl"].is-motion .c06-sweep-bar {
-  animation-name: c06-sweep-rtl;
+.x06[dir="rtl"].is-motion .x06-sweep-bar {
+  animation-name: x06-sweep-rtl;
 }
-@keyframes c06-sweep {
+@keyframes x06-sweep {
   0% {
     opacity: 1;
     transform: translateX(0);
@@ -113,7 +113,7 @@
     transform: translateX(420px);
   }
 }
-@keyframes c06-sweep-rtl {
+@keyframes x06-sweep-rtl {
   0% {
     opacity: 1;
     transform: translateX(0);
@@ -124,37 +124,37 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .c06 .c06-turn {
+  .x06 .x06-turn {
     transition: none;
   }
-  .c06 .c06-sweep {
+  .x06 .x06-sweep {
     display: none;
   }
-  .c06.is-motion .c06-sweep-bar {
+  .x06.is-motion .x06-sweep-bar {
     animation: none;
   }
 }
 
 /* ---------- token ---------- */
-.c06-tok {
+.x06-tok {
   display: inline-grid;
   place-items: center;
   flex: none;
   line-height: 0;
   vertical-align: middle;
 }
-.c06-tok svg {
+.x06-tok svg {
   display: block;
   overflow: visible;
 }
 
 /* ---------- row ---------- */
-.c06-row {
+.x06-row {
   width: 100%;
   max-width: 358px;
   line-height: 0;
 }
-.c06-row svg {
+.x06-row svg {
   display: block;
   width: 100%;
   height: auto;
@@ -164,7 +164,7 @@
 }
 
 /* ---------- share (360×640) ---------- */
-.c06-share {
+.x06-share {
   position: relative;
   width: 360px;
   height: 640px;
@@ -173,29 +173,29 @@
   color: #f4efe4;
   font-family: "Manrope", sans-serif;
 }
-.c06-share[dir="rtl"] {
+.x06-share[dir="rtl"] {
   font-family: "Noto Sans Arabic", "Changa", sans-serif;
 }
-.c06-share .c06-sh-bg {
+.x06-share .x06-sh-bg {
   position: absolute;
   inset: 0;
   display: block;
 }
-.c06-share .c06-sh-logo {
+.x06-share .x06-sh-logo {
   position: absolute;
   top: 30px;
   inset-inline-start: 26px;
   width: 116px;
 }
-.c06-share .c06-sh-head {
+.x06-share .x06-sh-head {
   position: absolute;
   top: 62px;
   inset-inline: 26px;
 }
-.c06-share .c06-sh-head p {
+.x06-share .x06-sh-head p {
   margin: 0;
 }
-.c06-share .c06-sh-big {
+.x06-share .x06-sh-big {
   display: flex;
   align-items: baseline;
   gap: 10px;
@@ -203,15 +203,15 @@
   color: #f8f4ea;
   letter-spacing: 0.01em;
 }
-.c06-share[dir="rtl"] .c06-sh-big {
+.x06-share[dir="rtl"] .x06-sh-big {
   letter-spacing: 0;
   line-height: 1.3;
 }
-.c06-share .c06-sh-big bdi {
+.x06-share .x06-sh-big bdi {
   font-variant-numeric: tabular-nums;
   color: #9fe3ef;
 }
-.c06-share .c06-sh-dot {
+.x06-share .x06-sh-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -219,21 +219,21 @@
   align-self: center;
   flex: none;
 }
-.c06-share .c06-sh-ovr {
+.x06-share .x06-sh-ovr {
   font: 800 15px/1 "Changa", sans-serif;
   letter-spacing: 0.1em;
   color: rgb(248 244 234 / 0.72);
   margin-inline-start: -4px;
 }
-.c06-share .c06-sh-line {
+.x06-share .x06-sh-line {
   margin-top: 2px !important;
   font: 600 18px/1.3 "Changa", "Noto Sans Arabic", sans-serif;
   color: #ffd9a0;
 }
-.c06-share[dir="rtl"] .c06-sh-line {
+.x06-share[dir="rtl"] .x06-sh-line {
   line-height: 1.6;
 }
-.c06-share .c06-sh-id {
+.x06-share .x06-sh-id {
   display: flex;
   gap: 12px;
   margin-top: 4px !important;
@@ -241,7 +241,7 @@
   letter-spacing: 0.08em;
   color: rgb(244 239 228 / 0.7);
 }
-.c06-share .c06-sh-board {
+.x06-share .x06-sh-board {
   position: absolute;
   top: 166px;
   inset-inline-end: 10px;

@@ -4,7 +4,7 @@
    the paver (y0–168) and the next course of four half-blocks (y176–228) that lock into it. */
 (function () {
   const MC = window.MC;
-  const C = "c05";
+  const C = "x05";
 
   /* ---------- small helpers ---------- */
   const r1 = (n) => Math.round(n * 10) / 10;
@@ -382,7 +382,7 @@
     let cut;
     if (T.scratch === "brass") {
       // LEGEND: the groove is filled with brass, flush with the black stone
-      cut = runs(0, 0, groove("#07080a", 0.9, 2.8)) + `<g class="c05-flow">${runs(0, 0, groove(`url(#${u}-brassHi)`, 1, 1.8))}</g>`;
+      cut = runs(0, 0, groove("#07080a", 0.9, 2.8)) + `<g class="x05-flow">${runs(0, 0, groove(`url(#${u}-brassHi)`, 1, 1.8))}</g>`;
     } else {
       cut =
         runs(0.6, 0.7, groove("#C4C9CE", T.num === "stencil" ? 0.55 : 0.9, 1.4)) + // the lit far wall
@@ -543,7 +543,7 @@
     let defs =
       `<clipPath id="${u}-faces"><path d="${union}"/></clipPath>` +
       `<clipPath id="${u}-paver"><path d="${dPoly(paver)}"/></clipPath>` +
-      `<filter id="${u}-sh" x="-8%" y="-8%" width="116%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6" result="b"/><feFlood style="flood-color:var(--c05-shadow,#000);flood-opacity:var(--c05-shadow-a,.7)"/><feComposite in2="b" operator="in"/></filter>` +
+      `<filter id="${u}-sh" x="-8%" y="-8%" width="116%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6" result="b"/><feFlood style="flood-color:var(--x05-shadow,#000);flood-opacity:var(--x05-shadow-a,.7)"/><feComposite in2="b" operator="in"/></filter>` +
       stoneFilter(`${u}-stone`, T, seed) +
       `<linearGradient id="${u}-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${T.band}"/><stop offset="1" stop-color="${T.bandLo}"/></linearGradient>` +
       `<linearGradient id="${u}-brass" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="360" y2="236">${brassStops(false)}</linearGradient>` +
@@ -587,7 +587,7 @@
       // a mirror finish: one hard-edged reflection band (and its faint echo) that follows the raking light
       const band = ar ? "M110 -10H84L-6 246H20Z" : "M250 -10H276L366 246H340Z";
       const echo = ar ? "M66 -10H58L-32 246H-24Z" : "M294 -10H302L392 246H384Z";
-      surf += `<g class="c05-mirror"><path d="${band}" fill="#fff" fill-opacity=".14"/><path d="${echo}" fill="#fff" fill-opacity=".03"/></g>`;
+      surf += `<g class="x05-mirror"><path d="${band}" fill="#fff" fill-opacity=".14"/><path d="${echo}" fill="#fff" fill-opacity=".03"/></g>`;
     }
     body += `<g clip-path="url(#${u}-faces)">${surf}</g>`;
     const arris = blocks.map((P) => facets(P, T.bev, T.hiA, T.loA)).join("");
@@ -609,28 +609,28 @@
       const e0 = ar ? 370 : -10; // the grinding edge's start
       defs +=
         stoneFilter(`${u}-stoneC`, C2, seed) +
-        `<mask id="${u}-gm" maskUnits="userSpaceOnUse" x="-420" y="-20" width="1200" height="280"><rect class="c05-grind" x="-10" y="-20" width="380" height="280" fill="#fff"/></mask>` +
+        `<mask id="${u}-gm" maskUnits="userSpaceOnUse" x="-420" y="-20" width="1200" height="280"><rect class="x05-grind" x="-10" y="-20" width="380" height="280" fill="#fff"/></mask>` +
         `<linearGradient id="${u}-wet" x1="${ar ? 0 : 1}" y1="0" x2="${ar ? 1 : 0}" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".62"/><stop offset=".7" stop-color="#000" stop-opacity=".3"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>` +
         `<filter id="${u}-slurry" x="-80%" y="-4%" width="260%" height="108%"><feTurbulence type="fractalNoise" baseFrequency=".07 .12" numOctaves="3" seed="${seed + 21}" result="t"/><feDisplacementMap in="SourceGraphic" in2="t" scale="12" xChannelSelector="R" yChannelSelector="G" result="d"/><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="${seed + 22}" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 .6 .42 0 0 0 .6 .42 0 0 0 .6 .44 0 0 0 0 1" result="gg"/><feBlend in="d" in2="gg" mode="multiply" result="b"/><feComposite in="b" in2="d" operator="in"/></filter>` +
         `<clipPath id="${u}-fb"><path d="${union}${bandD}"/></clipPath>`;
       grind =
-        `<g class="c05-cover" mask="url(#${u}-gm)">` +
+        `<g class="x05-cover" mask="url(#${u}-gm)">` +
         `<path d="${bandC}" fill="#a39e92"/>` +
         `<path d="${union}" fill="${C2.stone}" filter="url(#${u}-stoneC)"/>` +
         `<g clip-path="url(#${u}-faces)">${chipPaths(seed, PRO_CHIPS, 420, 0.8, 3.6, [0, 0, 360, 230])}</g>` +
         blocks.map((P) => facets(P, C2.bev, C2.hiA, C2.loA)).join("") +
         `<path d="${union}" fill="none" stroke="${C2.edge}" stroke-width="1" vector-effect="non-scaling-stroke"/></g>` +
-        `<g clip-path="url(#${u}-fb)"><g class="c05-grind c05-head">` +
+        `<g clip-path="url(#${u}-fb)"><g class="x05-grind x05-head">` +
         `<rect x="${ar ? e0 + 7 : e0 - 27}" y="-6" width="20" height="250" fill="url(#${u}-wet)"/>` +
         `<rect x="${e0 - 7}" y="-6" width="14" height="250" fill="#d4d6d8" filter="url(#${u}-slurry)"/>` +
         `</g></g>`;
     }
 
-    const rake = thumb ? "" : `<g clip-path="url(#${u}-faces)" class="c05-rake"><rect x="0" y="0" width="360" height="236" fill="url(#${u}-rake)"/></g>`;
+    const rake = thumb ? "" : `<g clip-path="url(#${u}-faces)" class="x05-rake"><rect x="0" y="0" width="360" height="236" fill="url(#${u}-rake)"/></g>`;
     const shadow = thumb ? "" : `<path d="${bandD}" fill="#000" filter="url(#${u}-sh)"/>`;
     const bodyG = T.rough ? `<g filter="url(#${u}-rough)">${body}${arris}</g>` : `${body}${arris}`;
     return (
-      `<svg class="c05-svg" ${place} viewBox="0 0 360 236" aria-hidden="true" focusable="false" style="--c05-dir:${ar ? -1 : 1};overflow:visible">` +
+      `<svg class="x05-svg" ${place} viewBox="0 0 360 236" aria-hidden="true" focusable="false" style="--x05-dir:${ar ? -1 : 1};overflow:visible">` +
       `<defs>${defs}</defs>${shadow}${bodyG}${strips}${ink}${outline}${grind}${rake}</svg>`
     );
   }
@@ -708,7 +708,7 @@
     else if (T.num === "cementBrass") s += `<text ${a} fill="${T.fill}" stroke="url(#${u}-brass)" stroke-width="${mini ? 12 : 9}" stroke-linejoin="round" paint-order="stroke">${num}</text>`;
     else s += `<text ${a} fill="#ECE8DF" stroke="url(#${u}-brassHi)" stroke-width="${mini ? 11 : 8}" stroke-linejoin="round" paint-order="stroke">${num}</text>`;
     s += `<path d="${d}" fill="none" stroke="${T.edge}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
-    return `<svg class="c05-tok-svg" viewBox="0 0 360 180" width="${w}" height="${h}" aria-hidden="true" focusable="false" style="overflow:visible">${s}</svg>`;
+    return `<svg class="x05-tok-svg" viewBox="0 0 360 180" width="${w}" height="${h}" aria-hidden="true" focusable="false" style="overflow:visible">${s}</svg>`;
   }
 
   /* ---------- the share's pavement: the same blocks, laid in stretcher bond ---------- */
@@ -735,11 +735,13 @@
     const T = tierOf(p);
     if (!T.chips) return "";
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="346" height="64" viewBox="0 0 346 64">${chipPaths(seedOf(p) + 5, T.chips, 120, 0.5, 1.7, [0, 0, 346, 64], 0.85)}</svg>`;
-    return `--c05-chips:url(&quot;data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, "%27")}&quot;)`;
+    return `--x05-chips:url(&quot;data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g, "%27")}&quot;)`;
   }
 
   const c = {
-    id: "c05",
+    id: "x05",
+    cut: true,
+    cutReason: "An identity as 'the floor people walk on' gave a teenager the weakest reason to belong in the pool; 'un pavé' is a riot projectile in French; and at 24px the block read as a bow tie or a dog bone.",
     n: 5,
     name: "PAVÉ",
     nameAr: "البلاطة",
@@ -806,12 +808,12 @@
 
     full(p, o = {}) {
       const S = MC.s(o);
-      return `<div class="c05 c05-card${o.thumb ? " is-thumb" : ""}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${p.tier}">${cardSVG(p, o)}</div>`;
+      return `<div class="x05 x05-card${o.thumb ? " is-thumb" : ""}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${p.tier}">${cardSVG(p, o)}</div>`;
     },
 
     token(p, o = {}) {
       const S = MC.s(o);
-      return `<span class="c05 c05-tok" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${p.tier}">${tokenSVG(p, o)}</span>`;
+      return `<span class="x05 x05-tok" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${p.tier}">${tokenSVG(p, o)}</span>`;
     },
 
     row(p, o = {}) {
@@ -820,14 +822,14 @@
       const nm = esc(MC.nameOf(p, o));
       const bond = (o.rank || 0) % 2 ? "a" : "b";
       const yy = String(p.founder || "").slice(-2);
-      const founder = p.founder ? `<span class="c05-row-f" aria-hidden="true"><bdi dir="ltr">${ar ? yy + "·" : "·" + yy}</bdi></span>` : "";
+      const founder = p.founder ? `<span class="x05-row-f" aria-hidden="true"><bdi dir="ltr">${ar ? yy + "·" : "·" + yy}</bdi></span>` : "";
       return (
-        `<div class="c05 c05-row${o.me ? " is-me" : ""}" dir="${S.dir}" data-tier="${p.tier}" data-bond="${bond}" role="img" aria-label="${esc((o.rank || "") + ". " + MC.label(p, o) + ", " + (o.pts || "") + " " + S.pts)}">` +
-        `<div class="c05-row-slab" style="${slabChips(p)}">` +
-        `<span class="c05-row-rank">${MC.ltr(o.rank ?? "")}</span>` +
-        `<span class="c05-row-tok">${tokenSVG(p, { ...o, size: 44, mini: false })}</span>` +
-        `<span class="c05-row-id"><b${ar ? ' class="ar"' : ""}>${nm}</b><small><i>${esc(S.tiers[p.tier])}</i>${founder}</small></span>` +
-        `<span class="c05-row-pts"><b>${MC.ltr(o.pts ?? "")}</b><small>${esc(S.pts)}</small></span>` +
+        `<div class="x05 x05-row${o.me ? " is-me" : ""}" dir="${S.dir}" data-tier="${p.tier}" data-bond="${bond}" role="img" aria-label="${esc((o.rank || "") + ". " + MC.label(p, o) + ", " + (o.pts || "") + " " + S.pts)}">` +
+        `<div class="x05-row-slab" style="${slabChips(p)}">` +
+        `<span class="x05-row-rank">${MC.ltr(o.rank ?? "")}</span>` +
+        `<span class="x05-row-tok">${tokenSVG(p, { ...o, size: 44, mini: false })}</span>` +
+        `<span class="x05-row-id"><b${ar ? ' class="ar"' : ""}>${nm}</b><small><i>${esc(S.tiers[p.tier])}</i>${founder}</small></span>` +
+        `<span class="x05-row-pts"><b>${MC.ltr(o.pts ?? "")}</b><small>${esc(S.pts)}</small></span>` +
         `</div></div>`
       );
     },
@@ -908,7 +910,7 @@
         insc += ins(x, esc(p.season), `${MR} font-size="10.5" letter-spacing="1.4"`);
       }
       return (
-        `<div class="c05 c05-share" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}">` +
+        `<div class="x05 x05-share" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}">` +
         `<svg viewBox="0 0 360 640" width="360" height="640" aria-hidden="true" focusable="false">` +
         `<defs>` +
         `<filter id="${u}-field" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="4" seed="${seed}" result="n"/><feDiffuseLighting in="n" surfaceScale="1.7" diffuseConstant="1" lighting-color="#fff" result="l"><feDistantLight azimuth="270" elevation="30"/></feDiffuseLighting><feComposite in="l" in2="SourceGraphic" operator="arithmetic" k1="1.75" result="lit"/><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="1" seed="${seed + 3}" result="g"/><feColorMatrix in="g" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.8 0 0 0 -1.7" result="gd"/><feMerge result="m"><feMergeNode in="lit"/><feMergeNode in="gd"/></feMerge><feComposite in="m" in2="SourceAlpha" operator="in"/></filter>` +
@@ -961,10 +963,10 @@
       const move = (e) => {
         const r = el.getBoundingClientRect();
         const x = ((e.clientX - r.left) / r.width) * 2 - 1;
-        el.style.setProperty("--c05-lx", Math.max(-1, Math.min(1, x)).toFixed(3));
+        el.style.setProperty("--x05-lx", Math.max(-1, Math.min(1, x)).toFixed(3));
       };
       el.addEventListener("pointermove", move);
-      el.addEventListener("pointerleave", () => el.style.setProperty("--c05-lx", "0"));
+      el.addEventListener("pointerleave", () => el.style.setProperty("--x05-lx", "0"));
     },
   };
   MC.register(c);

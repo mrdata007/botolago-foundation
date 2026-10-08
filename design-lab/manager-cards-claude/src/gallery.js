@@ -66,9 +66,19 @@
       } catch {}
     },
   };
+  // The ground follows the viewer's theme (data-theme on the root, else the OS setting)
+  // until the viewer picks Night or Day here.
+  const sysGround = () => {
+    const t = document.documentElement.getAttribute("data-theme");
+    if (t === "light") return "day";
+    if (t === "dark") return "night";
+    return matchMedia("(prefers-color-scheme: light)").matches ? "day" : "night";
+  };
+  const storedGround = store.get("ground", null);
   const state = {
     lang: store.get("lang", "en"),
-    ground: store.get("ground", "night"),
+    ground: storedGround || sysGround(),
+    groundManual: !!storedGround,
     filter: "all",
     detail: null, // concept id
     tier: "PRO",
@@ -124,7 +134,7 @@
     document.querySelectorAll("[data-i18n]").forEach((el) => (el.textContent = T()[el.dataset.i18n]));
     const view = currentView();
     $("#tabs").innerHTML = VIEWS.map(
-      (v) => `<a class="tab" href="#/${v}"${v === view ? ' aria-current="page"' : ""} style="display:inline-flex;align-items:center;text-decoration:none">${esc(T().tabs[v])}</a>`,
+      (v) => `<a class="tab" href="#${v}"${v === view ? ' aria-current="page"' : ""} style="display:inline-flex;align-items:center;text-decoration:none">${esc(T().tabs[v])}</a>`,
     ).join("");
     const seg = (items, cur, key) =>
       items.map((it) => `<button type="button" role="radio" aria-checked="${it.v === cur}" data-${key}="${it.v}">${esc(it.label)}</button>`).join("");
@@ -150,9 +160,9 @@
 
   /* ---------- views ---------- */
   function currentView() {
-    const h = location.hash.replace(/^#\//, "");
+    const h = location.hash.replace(/^#\/?/, "");
     const v = h.split("/")[0];
-    return VIEWS.includes(v) ? v : v === "c" ? "collection" : "collection";
+    return VIEWS.includes(v) ? v : "collection";
   }
 
   function viewCollection() {
@@ -168,7 +178,7 @@
         .map((c) => {
           const v2 = refinedOf(c.id);
           return (
-            `<a class="tile" href="#/c/${c.id}" aria-label="${esc(num(c) + " " + nameOf(c))}">` +
+            `<a class="tile" href="#${c.id}" aria-label="${esc(num(c) + " " + nameOf(c))}">` +
             `<div class="tile-head"><span class="tile-n">${num(c)}</span><span class="tile-name">${esc(nameOf(c))}</span>${catChip(c.category)}</div>` +
             `<div class="stage" style="--card-w:${c.gridWidth || 236}px">${cardHTML(c)}</div>` +
             `<p class="tile-phil">${esc(philOf(c))}</p>` +
@@ -251,7 +261,7 @@
     return (
       `<div class="sec"><h2>${state.lang === "ar" ? "التقييم العدائي" : "Adversarial critique"}</h2><p>${esc(rv.method || "")}</p></div>` +
       `<div class="score-wrap"><table class="scores"><caption class="note" style="caption-side:bottom;padding:10px">${esc(rv.scaleNote || "")}</caption><thead><tr><th scope="col" style="text-align:start">Concept</th>${CRITERIA.map((k) => `<th scope="col">${esc(k)}</th>`).join("")}<th scope="col">Total /130</th></tr></thead><tbody>${rows
-        .map((r) => `<tr><th scope="row"><a href="#/c/${r.c.id}" style="color:inherit">${num(r.c)} ${esc(nameOf(r.c))}</a></th>${r.s.map(cell).join("")}<td class="total">${total(r.s)}</td></tr>`)
+        .map((r) => `<tr><th scope="row"><a href="#${r.c.id}" style="color:inherit">${num(r.c)} ${esc(nameOf(r.c))}</a></th>${r.s.map(cell).join("")}<td class="total">${total(r.s)}</td></tr>`)
         .join("")}</tbody></table></div>` +
       (rv.superlatives
         ? `<div class="sec"><h2>${state.lang === "ar" ? "الأفضل في كل فئة" : "Superlatives"}</h2></div><div class="supers">${rv.superlatives
@@ -374,8 +384,8 @@
     const para = (t) => (Array.isArray(t) ? t : [t]).filter(Boolean).map((x) => `<p>${esc(x)}</p>`).join("");
     d.innerHTML =
       `<div class="d-bar"><span class="crumb">${num(base)} / ${String(list.length).padStart(2, "0")} · ${esc(nameOf(base))}</span>` +
-      `<a class="icon-btn dir" href="#/c/${prev.id}" aria-label="${esc(T().prev)}">${arrow("prev")}</a>` +
-      `<a class="icon-btn dir" href="#/c/${next.id}" aria-label="${esc(T().next)}">${arrow("next")}</a>` +
+      `<a class="icon-btn dir" href="#${prev.id}" aria-label="${esc(T().prev)}">${arrow("prev")}</a>` +
+      `<a class="icon-btn dir" href="#${next.id}" aria-label="${esc(T().next)}">${arrow("next")}</a>` +
       `<button type="button" class="icon-btn" data-close aria-label="${esc(T().close)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>` +
       `<div class="d-scroll"><div class="d-body">` +
       `<div class="d-left">` +
@@ -430,7 +440,7 @@
     const views = { collection: viewCollection, leaderboard: viewLeaderboard, critique: viewCritique, refined: viewRefined, codex: viewCodex, top5: viewTop5, about: viewAbout };
     main.innerHTML = views[v]();
     mountAll(main);
-    const m = location.hash.match(/^#\/c\/([a-z0-9-]+)/);
+    const m = location.hash.match(/^#\/?(?:c\/)?(c\d\d)$/);
     const d = $("#detail");
     if (m) openDetail(m[1]);
     else if (d.open) d.close();
@@ -442,6 +452,7 @@
     if (!t) return;
     if (t.dataset.ground) {
       state.ground = t.dataset.ground;
+      state.groundManual = true;
       store.set("ground", state.ground);
       render();
     } else if (t.dataset.lang) {
@@ -464,14 +475,14 @@
   $("#detail").addEventListener("close", () => {
     state.detail = null;
     state.tier = "PRO";
-    if (location.hash.startsWith("#/c/")) history.replaceState(null, "", "#/collection");
+    if (/^#\/?(?:c\/)?c\d\d$/.test(location.hash)) history.replaceState(null, "", "#collection");
     renderChrome();
-    const tile = document.querySelector(`.tile[href="#/c/${lastOpened}"]`);
+    const tile = document.querySelector(`.tile[href="#${lastOpened}"]`);
     if (tile) tile.focus();
   });
   let lastOpened = null;
   window.addEventListener("hashchange", () => {
-    const m = location.hash.match(/^#\/c\/([a-z0-9-]+)/);
+    const m = location.hash.match(/^#\/?(?:c\/)?(c\d\d)$/);
     if (m) {
       lastOpened = m[1];
       state.tier = "PRO";
@@ -492,9 +503,23 @@
       const i = list.findIndex((x) => x.id === state.detail);
       const forward = (e.key === "ArrowRight") !== (state.lang === "ar");
       const n = list[(i + (forward ? 1 : -1) + list.length) % list.length];
-      location.hash = `#/c/${n.id}`;
+      location.hash = `#${n.id}`;
     }
   });
 
+  const followSystem = () => {
+    if (state.groundManual) return;
+    const g = sysGround();
+    if (g !== state.ground) {
+      state.ground = g;
+      render();
+    }
+  };
+  try {
+    matchMedia("(prefers-color-scheme: light)").addEventListener("change", followSystem);
+  } catch {}
+  new MutationObserver(followSystem).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  document.documentElement.dataset.ground = state.ground;
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(render);
 })();

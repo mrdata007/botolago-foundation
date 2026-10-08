@@ -434,7 +434,7 @@
       const hw2 = tw(p.season, 800, sfs0, "Changa", ls);
       const hEnd = hx2 + dir * hw2;
       const hy = enamel ? 74 : 70;
-      const ha = (x, w, fs, extra = "") => `x="${r2(x)}" y="${hy}" text-anchor="${AS}" class="c06-ch" font-weight="${w}" font-size="${fs}" letter-spacing="${ls}"${extra}`;
+      const ha = (x, w, fs, extra = "") => `x="${r2(x)}" y="${hy}" text-anchor="${AS}" class="x06-ch" font-weight="${w}" font-size="${fs}" letter-spacing="${ls}"${extra}`;
       if (enamel) {
         /* CHAMPION: a painted Logo-Blue band, lettered in white enamel */
         const band = raggedPoly(
@@ -458,7 +458,7 @@
         const pw = tw(tierWord, 800, tfs, "Changa", tls2) + 12;
         const px = ar ? X(251) : X(251) - pw;
         s += `<rect x="${r2(px)}" y="60" width="${r2(pw)}" height="19" rx="3" fill="${C.enamel}"/>`;
-        s += `<text x="${r2(px + pw / 2 + (ar ? 0 : tls2 / 2))}" y="${ar ? 74.2 : 73.4}" text-anchor="middle" class="c06-ch" font-weight="800" font-size="${tfs}" letter-spacing="${tls2}" fill="${C.blue}">${esc(tierWord)}</text>`;
+        s += `<text x="${r2(px + pw / 2 + (ar ? 0 : tls2 / 2))}" y="${ar ? 74.2 : 73.4}" text-anchor="middle" class="x06-ch" font-weight="800" font-size="${tfs}" letter-spacing="${tls2}" fill="${C.blue}">${esc(tierWord)}</text>`;
       } else if (gold) {
         /* LEGEND: the tier rides on the topper; the glass carries a gilded line */
         s += gilt(ha(hx1, hwt, hfs), esc(head), false);
@@ -479,7 +479,7 @@
         const tW = tw(tierWord, 800, tfs, "Changa", tls);
         const rx = tW / 2 + 11;
         const tcx = X(252) - dir * rx;
-        s += `<text x="${r2(tcx + (ar ? 0 : tls / 2))}" y="70.5" text-anchor="middle" class="c06-ch" font-weight="800" font-size="${tfs}" letter-spacing="${tls}" fill="${white}" ${F}>${esc(tierWord)}</text>`;
+        s += `<text x="${r2(tcx + (ar ? 0 : tls / 2))}" y="70.5" text-anchor="middle" class="x06-ch" font-weight="800" font-size="${tfs}" letter-spacing="${tls}" fill="${white}" ${F}>${esc(tierWord)}</text>`;
         s +=
           `<path d="M${r2(tcx - rx + 4)} 58.5 C${r2(tcx - rx - 8)} 63 ${r2(tcx - rx)} 77.5 ${r2(tcx)} 77.2 S${r2(tcx + rx + 4)} 70 ${r2(tcx + rx)} 62.5 S${r2(tcx - rx * 0.4)} 52 ${r2(tcx - rx - 3)} 62" ` +
           `fill="none" stroke="${accent}" stroke-width="1.5" stroke-linecap="round" ${F}/>`;
@@ -490,7 +490,7 @@
     const nx = X(46);
     const nw = tw(name, 400, nfs, "Lalezar");
     const nameEnd = nx + dir * nw;
-    const nameAttr = `x="${r2(nx)}" y="${nBase}" text-anchor="${AS}" class="c06-lz" font-size="${r2(nfs)}"`;
+    const nameAttr = `x="${r2(nx)}" y="${nBase}" text-anchor="${AS}" class="x06-lz" font-size="${r2(nfs)}"`;
     if (gold) {
       s += gilt(nameAttr, esc(name), true);
       sweep.push(nameAttr, esc(name));
@@ -529,8 +529,8 @@
     }
     /* score box, the 84, and its label */
     const ovr = String(p.ovr);
-    const oAttr = `x="${r2(bcx)}" y="${oBase}" text-anchor="middle" class="c06-lz" font-size="${ofs}" direction="ltr"`;
-    const lAttr = `x="${r2(bcx + 0.75)}" y="${lBase}" text-anchor="middle" class="c06-ch" font-weight="800" font-size="${lfs}" letter-spacing="1.5" direction="ltr"`;
+    const oAttr = `x="${r2(bcx)}" y="${oBase}" text-anchor="middle" class="x06-lz" font-size="${ofs}" direction="ltr"`;
+    const lAttr = `x="${r2(bcx + 0.75)}" y="${lBase}" text-anchor="middle" class="x06-ch" font-weight="800" font-size="${lfs}" letter-spacing="1.5" direction="ltr"`;
     if (gold) {
       s += `<rect x="${bx1}" y="${by1}" width="${bx2 - bx1}" height="${r2(by2 - by1)}" rx="10" fill="none" stroke="#07080A" stroke-width="4.4"/>`;
       s += `<rect x="${bx1}" y="${by1}" width="${bx2 - bx1}" height="${r2(by2 - by1)}" rx="10" fill="none" stroke="url(#${u}-gg)" stroke-width="2.4"/>`;
@@ -572,8 +572,8 @@
     let bars = "";
     MC.STATS.forEach((k, i) => {
       const y = SY[i];
-      const la = `x="${r2(lx)}" y="${y}" text-anchor="${AS}" class="c06-ch" font-weight="600" font-size="${sfs}" letter-spacing="${lsS}"`;
-      const va = `x="${r2(vEdge)}" y="${y}" text-anchor="end" class="c06-ch" font-weight="700" font-size="${sfs}" direction="ltr"`;
+      const la = `x="${r2(lx)}" y="${y}" text-anchor="${AS}" class="x06-ch" font-weight="600" font-size="${sfs}" letter-spacing="${lsS}"`;
+      const va = `x="${r2(vEdge)}" y="${y}" text-anchor="end" class="x06-ch" font-weight="700" font-size="${sfs}" direction="ltr"`;
       if (gold) {
         txt += gilt(la, esc(labs[i]), false) + gilt(va, String(p.stats[k]), false);
       } else {
@@ -607,9 +607,9 @@
     const mx = X(68);
     s += `<g opacity="${gold ? 0.92 : 0.88}" ${F}>`;
     s += `<g transform="translate(${r2(ar ? X(46) - 15 : X(46))} 318)">${MC.crest({ w: 15, h: 18, mono: mInk })}</g>`;
-    s += `<text x="${r2(mx)}" y="328" text-anchor="${AS}" class="c06-mr" font-weight="700" font-size="10" letter-spacing=".6" fill="${mInk}" direction="ltr">${esc(p.id)}</text>`;
+    s += `<text x="${r2(mx)}" y="328" text-anchor="${AS}" class="x06-mr" font-weight="700" font-size="10" letter-spacing=".6" fill="${mInk}" direction="ltr">${esc(p.id)}</text>`;
     const ctry = ar ? p.country.ar : p.country.lat;
-    s += `<text x="${r2(mx)}" y="${ar ? 343 : 342}" text-anchor="${AS}" class="${ar ? "c06-ch" : "c06-mr"}" font-weight="700" font-size="${ar ? 11 : 10}" letter-spacing="${ar ? 0 : 0.6}" fill="${mInk}">${esc(ctry)}</text>`;
+    s += `<text x="${r2(mx)}" y="${ar ? 343 : 342}" text-anchor="${AS}" class="${ar ? "x06-ch" : "x06-mr"}" font-weight="700" font-size="${ar ? 11 : 10}" letter-spacing="${ar ? 0 : 0.6}" fill="${mInk}">${esc(ctry)}</text>`;
     s += `</g>`;
     return { s, sweep };
   }
@@ -631,9 +631,9 @@
     const chip = (x, y, a) => `<path d="M${r2(x)} ${r2(y)} l${r2(2.4 * a)} -0.9 l${r2(-1 * a)} 2 z" fill="${C.lip}" opacity=".9"/><path d="M${r2(x)} ${r2(y)} l${r2(2.4 * a)} -0.9" stroke="${C.groove}" stroke-width=".5"/>`;
     const wEnd = wx + dir * ww;
     return (
-      `<g class="c06-carve" transform="rotate(${-1 * dir} ${x0} ${by})">` +
-      cut(x0, by, `text-anchor="${AS}" class="c06-bs" font-weight="800" font-size="16" letter-spacing=".4" direction="ltr"`, "26") +
-      cut(wx, ar ? by - 1.6 : by, `text-anchor="${AS}" class="${ar ? "c06-ch" : "c06-bs"}" font-weight="${ar ? 700 : 800}" font-size="${ar ? 12 : 11}" letter-spacing="${ar ? 0 : 1.2}"`, word) +
+      `<g class="x06-carve" transform="rotate(${-1 * dir} ${x0} ${by})">` +
+      cut(x0, by, `text-anchor="${AS}" class="x06-bs" font-weight="800" font-size="16" letter-spacing=".4" direction="ltr"`, "26") +
+      cut(wx, ar ? by - 1.6 : by, `text-anchor="${AS}" class="${ar ? "x06-ch" : "x06-bs"}" font-weight="${ar ? 700 : 800}" font-size="${ar ? 12 : 11}" letter-spacing="${ar ? 0 : 1.2}"`, word) +
       chip(x0 - dir * 1.8, 364.2, dir) +
       chip(x0 + dir * (w26 + 0.6), 377.6, -dir) +
       chip(wEnd + dir * 1.4, 367.4, -dir) +
@@ -751,8 +751,8 @@
       `<path d="M86.4 10.1 H213.6" stroke="#5a3f0c" stroke-width=".8" opacity=".6"/>`;
     if (!thumb) {
       const a = ar
-        ? `x="150" y="3.8" text-anchor="middle" class="c06-ch" font-weight="800" font-size="13"`
-        : `x="151.5" y="4.3" text-anchor="middle" class="c06-ch" font-weight="800" font-size="12.5" letter-spacing="3"`;
+        ? `x="150" y="3.8" text-anchor="middle" class="x06-ch" font-weight="800" font-size="13"`
+        : `x="151.5" y="4.3" text-anchor="middle" class="x06-ch" font-weight="800" font-size="12.5" letter-spacing="3"`;
       const w = ar ? "أسطورة" : "LEGEND";
       s += `<text ${a} fill="#FFF3C4" opacity=".8" transform="translate(0 .8)">${w}</text><text ${a} fill="#33220A">${w}</text>`;
     }
@@ -801,7 +801,7 @@
     if (!thumb) {
       const bx = ar ? 5 : 295;
       s +=
-        `<g class="c06-contact" filter="url(#${u}-bs)" fill="#000">` +
+        `<g class="x06-contact" filter="url(#${u}-bs)" fill="#000">` +
         `<ellipse cx="16" cy="436.5" rx="11" ry="2.4"/><ellipse cx="284" cy="436.5" rx="11" ry="2.4"/><ellipse cx="${bx}" cy="434" rx="6" ry="2"/></g>`;
     }
     /* the back face: the depth of the A */
@@ -880,7 +880,7 @@
         .map(([x, y]) => `<circle cx="${r2(x)}" cy="${y}" r="1.1"/>`)
         .join("")}</g>`;
     }
-    s += `<g class="c06-slotedge" fill="none"><rect x="119.4" y="27.9" width="61.2" height="13.2" rx="6.6" stroke="${pine ? C.pineEdge : "#2f1b0b"}" stroke-width="1.6"/><path d="M125 41.6 H175" stroke="${C.lip}" stroke-width=".8" opacity=".8"/></g>`;
+    s += `<g class="x06-slotedge" fill="none"><rect x="119.4" y="27.9" width="61.2" height="13.2" rx="6.6" stroke="${pine ? C.pineEdge : "#2f1b0b"}" stroke-width="1.6"/><path d="M125 41.6 H175" stroke="${C.lip}" stroke-width=".8" opacity=".8"/></g>`;
     if (founder) {
       /* the notch's two cut faces: one in shadow, one catching the light */
       const [a, apex, b] = NOTCH;
@@ -953,7 +953,7 @@
     s += `</g>`;
     /* the outer edge: a lit lip on dark grounds, a darker edge for the pale pine */
     if (pine) s += `<polygon points="${pts(OUT)}" fill="none" stroke="${C.pineEdge}" stroke-width="1.2" stroke-linejoin="round"/>`;
-    else s += `<polygon class="c06-rim" points="${pts(OUT)}" fill="none" stroke="#D9AA78" stroke-width="1.1" stroke-linejoin="round"/>`;
+    else s += `<polygon class="x06-rim" points="${pts(OUT)}" fill="none" stroke="#D9AA78" stroke-width="1.1" stroke-linejoin="round"/>`;
     /* hardware, by tier */
     let over = "";
     if (tier === "PRO") over += hinge(u, ar, "st") + markerClip(ar).replace(/__U__/g, u);
@@ -981,7 +981,9 @@
 
   /* ---------- registration ---------- */
   const c = {
-    id: "c06",
+    id: "x06",
+    cut: true,
+    cutReason: "All three critics rejected it: it reads as a café menu or price board ('Plat du jour : ALI 84'); 'ardoise' is a child's school slate and, in 'avoir une ardoise', a debt; and it repeats the app's own 'standings soon' easel.",
     n: 6,
     slug: "06-ardoise",
     name: "Ardoise",
@@ -1051,7 +1053,7 @@
       const ar = MC.isAr(o);
       const S = MC.s(o);
       const tier = p.tier;
-      const u = MC.uid("c06");
+      const u = MC.uid("x06");
       const founder = !!p.founder;
       const thumb = !!o.thumb;
       const med = MEDIUM[tier];
@@ -1067,18 +1069,18 @@
         for (let i = 0; i < f.sweep.length; i += 2) mask += `<text ${f.sweep[i]} fill="#fff">${f.sweep[i + 1]}</text>`;
         content +=
           `<mask id="${u}-gm" maskUnits="userSpaceOnUse" x="0" y="-12" width="300" height="452"><rect x="0" y="-12" width="300" height="452" fill="#000"/>${mask}</mask>` +
-          `<g class="c06-sweep" mask="url(#${u}-gm)"><rect class="c06-sweep-bar" x="${ar ? 320 : -90}" y="40" width="70" height="330" fill="url(#${u}-sw)" transform="skewX(-14)"/></g>`;
+          `<g class="x06-sweep" mask="url(#${u}-gm)"><rect class="x06-sweep-bar" x="${ar ? 320 : -90}" y="40" width="70" height="330" fill="url(#${u}-sw)" transform="skewX(-14)"/></g>`;
       }
       if (o.lit) content += doorLight(u, ar);
       const svg =
-        `<svg class="c06-face" viewBox="${VB}" aria-hidden="true" focusable="false">` +
+        `<svg class="x06-face" viewBox="${VB}" aria-hidden="true" focusable="false">` +
         `<defs>${defs(u, tier)}<clipPath id="${u}-sl"><polygon points="${pts(IN)}"/></clipPath></defs>` +
         frame.body +
         content +
         `</svg>`;
       return (
-        `<div class="c06 c06-${tier.toLowerCase()}${o.motion ? " is-motion" : ""}${thumb ? " is-thumb" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(MC.label(p, o))}" data-tier="${tier}" data-lang="${ar ? "ar" : "lat"}">` +
-        `<div class="c06-turn">${svg}</div></div>`
+        `<div class="x06 x06-${tier.toLowerCase()}${o.motion ? " is-motion" : ""}${thumb ? " is-thumb" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(MC.label(p, o))}" data-tier="${tier}" data-lang="${ar ? "ar" : "lat"}">` +
+        `<div class="x06-turn">${svg}</div></div>`
       );
     },
 
@@ -1087,7 +1089,7 @@
       const mini = !!o.mini || size <= 32;
       const tier = p.tier;
       const ar = MC.isAr(o);
-      const u = MC.uid("c06k");
+      const u = MC.uid("x06k");
       const founder = !!p.founder;
       const W = 62;
       const H = 82;
@@ -1100,7 +1102,7 @@
       const P = (a, attrs) => `<polygon points="${pts(a)}" ${attrs}/>`;
       const label = `role="img" aria-label="${MC.esc(MC.label(p, o))}"`;
       const wrap = (defsS, g) =>
-        `<span class="c06-tok c06-tok-${tier.toLowerCase()}" style="width:${w}px;height:${size}px" ${label}>` +
+        `<span class="x06-tok x06-tok-${tier.toLowerCase()}" style="width:${w}px;height:${size}px" ${label}>` +
         `<svg viewBox="0 0 ${W} ${H}" width="${w}" height="${size}" aria-hidden="true" focusable="false"><defs>${defsS}</defs>${g}</svg></span>`;
       const frameCol = homa ? C.pine : C.wood;
       const faceCol = homa ? C.paint : legend ? C.glass : C.slate;
@@ -1172,10 +1174,10 @@
           cy = (top + fr + 10 + bot - fr) / 2;
         }
         g += `</g>`;
-        if (!homa && !legend) g += `<path class="c06-rim" d="M${r2(lx(top) + 0.6)} ${top + 0.7} H26.4 M35.6 ${top + 0.7} H${r2(rx(top) - 0.6)}" stroke="#D9AA78" stroke-width="1.4"/>`;
+        if (!homa && !legend) g += `<path class="x06-rim" d="M${r2(lx(top) + 0.6)} ${top + 0.7} H26.4 M35.6 ${top + 0.7} H${r2(rx(top) - 0.6)}" stroke="#D9AA78" stroke-width="1.4"/>`;
         const fs = legend ? 31 : 34;
         const col = homa || tier === "STADE" ? C.chalk : tier === "PRO" ? C.sky : champ ? C.enamel : "#EBCB60";
-        g += `<text x="${W / 2}" y="${r2(cy + fs * 0.32)}" text-anchor="middle" class="c06-ch" font-weight="800" font-size="${fs}" fill="${col}" direction="ltr">${ovr}</text>`;
+        g += `<text x="${W / 2}" y="${r2(cy + fs * 0.32)}" text-anchor="middle" class="x06-ch" font-weight="800" font-size="${fs}" fill="${col}" direction="ltr">${ovr}</text>`;
         return wrap(d, g);
       }
 
@@ -1268,31 +1270,31 @@
       g += P(inn, `fill="${faceCol}"`);
       g += P(inn, `fill="none" stroke="#000" stroke-opacity=".35" stroke-width="1.2"`);
       g += `</g>`;
-      if (!homa) g += `<path class="c06-rim" d="M${r2(lx(top))} ${top + 0.4} H${r2(rx(top))}" stroke="#D9AA78" stroke-width="1"/>`;
+      if (!homa) g += `<path class="x06-rim" d="M${r2(lx(top))} ${top + 0.4} H${r2(rx(top))}" stroke="#D9AA78" stroke-width="1"/>`;
       const capsT = `<g fill="#C79C42"><rect x="${r2(lx(top) - 1.4)}" y="${top - 1.4}" width="7" height="4.4"/><rect x="${r2(rx(top) - 5.6)}" y="${top - 1.4}" width="7" height="4.4"/><rect x="${r2(55 - 5.6)}" y="${bot - 4.4}" width="7" height="5.6"/></g>`;
       /* tier by medium */
       const tx = ar ? W - cx : cx;
       let t = "";
       if (homa || tier === "STADE") {
-        t = `<text x="${tx}" y="${base}" text-anchor="middle" class="c06-lz" font-size="${ofs}" fill="${C.chalk}" direction="ltr">${ovr}</text>`;
+        t = `<text x="${tx}" y="${base}" text-anchor="middle" class="x06-lz" font-size="${ofs}" fill="${C.chalk}" direction="ltr">${ovr}</text>`;
         if (tier === "STADE") t += `<path d="M${tx - 10} ${base + 3.6} H${tx + 10}" stroke="${C.chalk}" stroke-width="1.3" stroke-linecap="round" opacity=".85"/>`;
       } else if (tier === "PRO") {
         const bw = 31;
         const bh = 26;
         t = `<rect x="${tx - bw / 2}" y="${r2(cy - bh / 2)}" width="${bw}" height="${bh}" rx="4" fill="none" stroke="${C.sky}" stroke-width="1.7"/>`;
         t += `<rect x="${tx - bw / 2 + 3}" y="${r2(cy - bh / 2 + 3)}" width="${bw - 6}" height="${bh - 6}" rx="2.2" fill="none" stroke="${C.chalk}" stroke-width=".8"/>`;
-        t += `<text x="${tx}" y="${r2(cy + 20 * 0.29)}" text-anchor="middle" class="c06-lz" font-size="20" fill="${C.sky}" direction="ltr">${ovr}</text>`;
+        t += `<text x="${tx}" y="${r2(cy + 20 * 0.29)}" text-anchor="middle" class="x06-lz" font-size="20" fill="${C.sky}" direction="ltr">${ovr}</text>`;
       } else if (champ) {
         const bandH = 6.6;
         t = `<rect x="${r2(inn[0][0])}" y="${yi1}" width="${r2(inn[1][0] - inn[0][0])}" height="${bandH}" fill="${C.blue}"/>`;
         const b = r2(cy + bandH / 2 + (ofs - 3) * 0.29);
-        t += `<text x="${tx + (ar ? -1.5 : 1.5)}" y="${b + 1.5}" text-anchor="middle" class="c06-lz" font-size="${ofs - 3}" fill="${C.blue}" direction="ltr">${ovr}</text>`;
-        t += `<text x="${tx}" y="${b}" text-anchor="middle" class="c06-lz" font-size="${ofs - 3}" fill="${C.enamel}" direction="ltr">${ovr}</text>`;
+        t += `<text x="${tx + (ar ? -1.5 : 1.5)}" y="${b + 1.5}" text-anchor="middle" class="x06-lz" font-size="${ofs - 3}" fill="${C.blue}" direction="ltr">${ovr}</text>`;
+        t += `<text x="${tx}" y="${b}" text-anchor="middle" class="x06-lz" font-size="${ofs - 3}" fill="${C.enamel}" direction="ltr">${ovr}</text>`;
         t += capsT;
       } else if (legend) {
         const fi = inn.map(([x, y], i) => [x + (i === 0 || i === 3 ? 2.2 : -2.2), y + (i < 2 ? 2.2 : -2.2)]);
         t = `<polygon points="${pts(fi)}" fill="none" stroke="url(#${u}-g)" stroke-width="1.1"/>`;
-        t += `<text x="${tx}" y="${base}" text-anchor="middle" class="c06-lz" font-size="${ofs}" fill="url(#${u}-g)" stroke="#07080A" stroke-width=".7" paint-order="stroke" direction="ltr">${ovr}</text>`;
+        t += `<text x="${tx}" y="${base}" text-anchor="middle" class="x06-lz" font-size="${ofs}" fill="url(#${u}-g)" stroke="#07080A" stroke-width=".7" paint-order="stroke" direction="ltr">${ovr}</text>`;
         t += capsT;
         /* the topper on its posts */
         t += `<g fill="#B8913A"><rect x="20.5" y="7.6" width="3" height="4"/><rect x="38.5" y="7.6" width="3" height="4"/></g>`;
@@ -1305,7 +1307,7 @@
       const ar = MC.isAr(o);
       const S = MC.s(o);
       const tier = p.tier;
-      const u = MC.uid("c06r");
+      const u = MC.uid("x06r");
       const med = MEDIUM[tier];
       const W = 358;
       const X = (x) => (ar ? W - x : x);
@@ -1341,24 +1343,24 @@
           `<g stroke="${C.gold}" stroke-opacity=".7" stroke-width=".8"><path d="M6 11.6H352M6 48.4H352"/></g>`;
       g += `<rect x="2" y="4" width="354" height="4.4" fill="${rail}"${homa ? ` stroke="${C.pineEdge}" stroke-width=".7"` : ""}/>`;
       g += `<rect x="2" y="51.6" width="354" height="4.4" fill="${rail}"${homa ? ` stroke="${C.pineEdge}" stroke-width=".7"` : ""}/>`;
-      if (!homa) g += `<path d="M2 4.4H356" stroke="#D9AA78" stroke-width=".9" class="c06-rim"/>`;
+      if (!homa) g += `<path d="M2 4.4H356" stroke="#D9AA78" stroke-width=".9" class="x06-rim"/>`;
       if (champ || glass) g += `<g fill="#C79C42"><rect x="0.6" y="3.2" width="8" height="6"/><rect x="349.4" y="3.2" width="8" height="6"/><rect x="0.6" y="50.8" width="8" height="6"/><rect x="349.4" y="50.8" width="8" height="6"/></g>`;
       if (founder) d += `<mask id="${u}-m" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="64"><rect width="${W}" height="64" fill="#fff"/><polygon points="9,57 13.4,50.6 17.8,57" fill="#000"/></mask>`;
       /* rank */
       const rk = String(o.rank != null ? o.rank : "");
-      t += `<text x="${X(26)}" y="36" text-anchor="middle" class="c06-mr" font-weight="800" font-size="17" fill="${ink}" direction="ltr" ${F}>${rk}</text>`;
+      t += `<text x="${X(26)}" y="36" text-anchor="middle" class="x06-mr" font-weight="800" font-size="17" fill="${ink}" direction="ltr" ${F}>${rk}</text>`;
       if (o.me) t += `<path d="M${X(26) - 12} 22.6 C${X(26) - 17} 32.6 ${X(26) - 6} 42.6 ${X(26) + 3} 41.6 S${X(26) + 16} 30.6 ${X(26) + 10} 22.6 S${X(26) - 6} 16.6 ${X(26) - 13} 25.6" fill="none" stroke="${C.sky}" stroke-width="1.6" stroke-linecap="round" ${F}/>`;
       /* the 84 in its box */
       const b1 = X(ar ? 94 : 44);
       const bw = 50;
       if (med === "enamel") {
         t += `<rect x="${b1}" y="13" width="${bw}" height="34" rx="3" fill="${C.blue}"/>`;
-        t += `<text x="${b1 + bw / 2 + 1.4}" y="${39.6 + 1.4}" text-anchor="middle" class="c06-lz" font-size="27" fill="#002a8f" direction="ltr">${p.ovr}</text>`;
-        t += `<text x="${b1 + bw / 2}" y="39.6" text-anchor="middle" class="c06-lz" font-size="27" fill="${C.enamel}" direction="ltr">${p.ovr}</text>`;
+        t += `<text x="${b1 + bw / 2 + 1.4}" y="${39.6 + 1.4}" text-anchor="middle" class="x06-lz" font-size="27" fill="#002a8f" direction="ltr">${p.ovr}</text>`;
+        t += `<text x="${b1 + bw / 2}" y="39.6" text-anchor="middle" class="x06-lz" font-size="27" fill="${C.enamel}" direction="ltr">${p.ovr}</text>`;
       } else {
         t += `<path d="${hbox(b1, 13, b1 + bw, 47, 5, homa ? 1 : 0.5)}" fill="none" stroke="${accent}" stroke-width="${glass ? 1.3 : 1.5}" ${F}/>`;
         if (med === "marker") t += `<rect x="${b1 + 3}" y="16" width="${bw - 6}" height="28" rx="2.5" fill="none" stroke="${C.chalk}" stroke-width=".8"/>`;
-        t += `<text x="${b1 + bw / 2}" y="39.6" text-anchor="middle" class="c06-lz" font-size="27" fill="${med === "marker" ? C.sky : ink}"${glass ? ' stroke="#07080A" stroke-width=".8" paint-order="stroke"' : ""} direction="ltr" ${F}>${p.ovr}</text>`;
+        t += `<text x="${b1 + bw / 2}" y="39.6" text-anchor="middle" class="x06-lz" font-size="27" fill="${med === "marker" ? C.sky : ink}"${glass ? ' stroke="#07080A" stroke-width=".8" paint-order="stroke"' : ""} direction="ltr" ${F}>${p.ovr}</text>`;
       }
       /* name + tier */
       const pts0 = String(o.pts != null ? o.pts : "");
@@ -1368,15 +1370,15 @@
       const name = MC.nameOf(p, o);
       const n0 = ar ? 21 : 23;
       const nfs = r2(Math.max(14, Math.min(n0, (n0 * avail) / tw(name, 400, n0, "Lalezar"))));
-      t += `<text x="${nx}" y="${ar ? 27.6 : 31}" text-anchor="${AS}" class="c06-lz" font-size="${nfs}" fill="${ink}" ${F}>${MC.esc(name)}</text>`;
+      t += `<text x="${nx}" y="${ar ? 27.6 : 31}" text-anchor="${AS}" class="x06-lz" font-size="${nfs}" fill="${ink}" ${F}>${MC.esc(name)}</text>`;
       const tierWord = S.tiers[tier];
-      t += `<text x="${nx}" y="${ar ? 47.2 : 45.6}" text-anchor="${AS}" class="c06-ch" font-weight="700" font-size="10.5" letter-spacing="${ar ? 0 : 0.5}" fill="${accent}" opacity="${glass ? 1 : 0.86}">${MC.esc(tierWord)}</text>`;
+      t += `<text x="${nx}" y="${ar ? 47.2 : 45.6}" text-anchor="${AS}" class="x06-ch" font-weight="700" font-size="10.5" letter-spacing="${ar ? 0 : 0.5}" fill="${accent}" opacity="${glass ? 1 : 0.86}">${MC.esc(tierWord)}</text>`;
       /* points */
-      t += `<text x="${X(338)}" y="36.2" text-anchor="${AE}" class="c06-mr c06-tab" font-weight="800" font-size="17" fill="${ink}" direction="ltr" ${F}>${pts0}</text>`;
+      t += `<text x="${X(338)}" y="36.2" text-anchor="${AE}" class="x06-mr x06-tab" font-weight="800" font-size="17" fill="${ink}" direction="ltr" ${F}>${pts0}</text>`;
       if (founder) g = `<g mask="url(#${u}-m)">${g}</g>`;
       const geo = ar ? `<g transform="translate(${W} 0) scale(-1 1)">${g}</g>` : g;
       return (
-        `<div class="c06-row${o.me ? " is-me" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(`${rk}. ${name}, ${p.ovr} OVR, ${tierWord}, ${pts0} ${S.pts}`)}">` +
+        `<div class="x06-row${o.me ? " is-me" : ""}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(`${rk}. ${name}, ${p.ovr} OVR, ${tierWord}, ${pts0} ${S.pts}`)}">` +
         `<svg viewBox="0 0 ${W} 64" aria-hidden="true" focusable="false"><defs>${d}</defs>${geo}${t}</svg></div>`
       );
     },
@@ -1384,7 +1386,7 @@
     share(p, o = {}) {
       const ar = MC.isAr(o);
       const S = MC.s(o);
-      const u = MC.uid("c06s");
+      const u = MC.uid("x06s");
       const M = ar ? `transform="translate(360 0) scale(-1 1)"` : "";
       const floor = 500;
       /* pavement: rows of cement pavers, staggered, converging on a vanishing point behind the board */
@@ -1406,7 +1408,7 @@
         y = y2;
       }
       const scene =
-        `<svg class="c06-sh-bg" viewBox="0 0 360 640" width="360" height="640" aria-hidden="true" focusable="false"><defs>` +
+        `<svg class="x06-sh-bg" viewBox="0 0 360 640" width="360" height="640" aria-hidden="true" focusable="false"><defs>` +
         `<linearGradient id="${u}-wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050f24"/><stop offset="1" stop-color="#0c2146"/></linearGradient>` +
         `<linearGradient id="${u}-pave" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#11284d"/><stop offset="1" stop-color="#06122a"/></linearGradient>` +
         `<linearGradient id="${u}-in" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9A65A"/><stop offset=".45" stop-color="#FFD9A0"/><stop offset="1" stop-color="#FFE9C6"/></linearGradient>` +
@@ -1446,21 +1448,21 @@
         `</g></svg>`;
       const name = MC.nameOf(p, o);
       return (
-        `<div class="c06-share" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(MC.label(p, o))}">` +
+        `<div class="x06-share" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(MC.label(p, o))}">` +
         scene +
-        `<div class="c06-sh-logo">${MC.logo("wordmark", { variant: "light", label: false })}</div>` +
-        `<div class="c06-sh-head"><p class="c06-sh-big"><span class="c06-sh-name">${MC.esc(name)}</span><span class="c06-sh-dot" aria-hidden="true"></span>${MC.ltr(String(p.ovr))}<span class="c06-sh-ovr">OVR</span></p>` +
-        `<p class="c06-sh-line">${MC.esc(ar ? CAPTION.ar : CAPTION.lat)}</p>` +
-        `<p class="c06-sh-id"><span>${MC.ltr(p.id)}</span><span>${MC.ltr(p.season)}</span></p></div>` +
-        `<div class="c06-sh-board">${c.full(p, { ...o, thumb: false, lit: true })}</div>` +
+        `<div class="x06-sh-logo">${MC.logo("wordmark", { variant: "light", label: false })}</div>` +
+        `<div class="x06-sh-head"><p class="x06-sh-big"><span class="x06-sh-name">${MC.esc(name)}</span><span class="x06-sh-dot" aria-hidden="true"></span>${MC.ltr(String(p.ovr))}<span class="x06-sh-ovr">OVR</span></p>` +
+        `<p class="x06-sh-line">${MC.esc(ar ? CAPTION.ar : CAPTION.lat)}</p>` +
+        `<p class="x06-sh-id"><span>${MC.ltr(p.id)}</span><span>${MC.ltr(p.season)}</span></p></div>` +
+        `<div class="x06-sh-board">${c.full(p, { ...o, thumb: false, lit: true })}</div>` +
         `</div>`
       );
     },
 
     /* Walk around it: a tap turns the board on its legs to the other language's face. */
     mount(el) {
-      if (!el || !el.classList.contains("c06")) return;
-      const turn = el.querySelector(".c06-turn");
+      if (!el || !el.classList.contains("x06")) return;
+      const turn = el.querySelector(".x06-turn");
       if (!turn) return;
       const tier = el.dataset.tier;
       const other = el.dataset.lang === "ar" ? "lat" : "ar";
@@ -1471,9 +1473,9 @@
         if (!back) {
           const tmp = document.createElement("div");
           tmp.innerHTML = c.full(MC.withTier(tier), { lang: other });
-          back = tmp.querySelector(".c06-face");
+          back = tmp.querySelector(".x06-face");
           if (!back) return;
-          back.classList.add("c06-face-back");
+          back.classList.add("x06-face-back");
           turn.appendChild(back);
         }
         el.classList.toggle("is-turned");

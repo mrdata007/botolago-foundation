@@ -35,6 +35,39 @@
   --g-floor: radial-gradient(60% 40% at 50% 100%, color-mix(in oklab, oklch(0.32 0.1 258) 7%, transparent), transparent 70%);
   color-scheme: light;
 }
+/* Before the script picks a ground, follow the viewer's theme. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-ground]):not([data-theme="dark"]) {
+  --g-bg: oklch(0.975 0.004 250);
+  --g-bg-2: oklch(0.955 0.006 250);
+  --g-surface: oklch(1 0 0);
+  --g-sunken: oklch(0.93 0.006 250);
+  --g-line: oklch(0.91 0.006 250);
+  --g-line-strong: oklch(0.64 0.02 258);
+  --g-text: oklch(0.16 0.03 260);
+  --g-muted: oklch(0.45 0.02 258);
+  --g-faint: oklch(0.555 0.02 258);
+  --g-accent: oklch(0.32 0.1 258);
+  --g-on-accent: oklch(1 0 0);
+  --g-floor: radial-gradient(60% 40% at 50% 100%, color-mix(in oklab, oklch(0.32 0.1 258) 7%, transparent), transparent 70%);
+  color-scheme: light;
+}
+}
+:root[data-theme="light"]:not([data-ground]) {
+  --g-bg: oklch(0.975 0.004 250);
+  --g-bg-2: oklch(0.955 0.006 250);
+  --g-surface: oklch(1 0 0);
+  --g-sunken: oklch(0.93 0.006 250);
+  --g-line: oklch(0.91 0.006 250);
+  --g-line-strong: oklch(0.64 0.02 258);
+  --g-text: oklch(0.16 0.03 260);
+  --g-muted: oklch(0.45 0.02 258);
+  --g-faint: oklch(0.555 0.02 258);
+  --g-accent: oklch(0.32 0.1 258);
+  --g-on-accent: oklch(1 0 0);
+  --g-floor: radial-gradient(60% 40% at 50% 100%, color-mix(in oklab, oklch(0.32 0.1 258) 7%, transparent), transparent 70%);
+  color-scheme: light;
+}
 :root[dir="rtl"] {
   --g-body: "Noto Sans Arabic", "Manrope", sans-serif;
 }
@@ -56,7 +89,7 @@ button, input { font: inherit; color: inherit; }
 .skip:focus { top: 12px; }
 
 /* ---------- top bar ---------- */
-.top { position: sticky; top: 0; z-index: 20; background: color-mix(in oklab, var(--g-bg) 92%, transparent); backdrop-filter: blur(10px); border-block-end: 1px solid var(--g-line); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in oklab, var(--g-bg) 92%, transparent); backdrop-filter: blur(10px); border-block-end: 1px solid var(--g-line); }
 .top-in { max-width: 1440px; margin: 0 auto; padding: 10px 24px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .brand-logo { width: 116px; flex: none; }

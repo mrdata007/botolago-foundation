@@ -340,7 +340,7 @@
     const tw = ar ? 60.6 : 57.3;
     const x = 62, y = 369, h = 23, w = f(31 + tw + 6);
     let s =
-      `<g class="c03-tag">` +
+      `<g class="x03-tag">` +
       `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.4" fill="url(#${u}-dam)"/>` +
       `<rect x="${x + 1.1}" y="${y + 1.1}" width="${f(w - 2.2)}" height="${h - 2.2}" rx="1" fill="none" stroke="${C.thread}" stroke-width=".8" stroke-dasharray="1.3 .8"/>` +
       `<path d="M${x} ${y + h - 0.6}H${f(x + w)}" stroke="#000" stroke-opacity=".14" stroke-width="1.2"/>`;
@@ -359,8 +359,8 @@
   /* ---------- rail, hook, loop ---------- */
   function rail(T, u) {
     return (
-      `<g class="c03-rail">` +
-      `<rect class="c03-rim" x="90" y="2" width="120" height="10" rx="2.5"/>` +
+      `<g class="x03-rail">` +
+      `<rect class="x03-rim" x="90" y="2" width="120" height="10" rx="2.5"/>` +
       `<rect x="90" y="2" width="120" height="10" rx="2.5" fill="url(#${u}-rail)"/>` +
       (T.rail === "oak" || T.rail === "walnut" ? `<rect x="90" y="2" width="120" height="10" rx="2.5" filter="url(#${u}-wood)" opacity=".55"/>` : "") +
       `<path d="M92.5 2.9H207.5" stroke="${RAIL[T.rail].hi}" stroke-opacity=".75" stroke-width=".9" stroke-linecap="round"/>` +
@@ -373,9 +373,9 @@
     const H = HOOK[T.hook];
     if (T.hook === "peg")
       return (
-        `<g class="c03-hook">` +
+        `<g class="x03-hook">` +
         `<rect x="145" y="11" width="10" height="5" rx="1" fill="url(#${u}-hookL)"/>` +
-        `<circle class="c03-rim" cx="150" cy="22" r="10"/>` +
+        `<circle class="x03-rim" cx="150" cy="22" r="10"/>` +
         `<circle cx="150" cy="22" r="10" fill="url(#${u}-peg)"/>` +
         `<circle cx="150" cy="22" r="7" fill="none" stroke="#1E140C" stroke-width=".7" stroke-opacity=".55"/>` +
         `<circle cx="150" cy="22" r="3.8" fill="none" stroke="#1E140C" stroke-width=".6" stroke-opacity=".5"/>` +
@@ -387,7 +387,7 @@
         ? "M161 6.5C161 -.5 155 -.5 155 5V30C155 42.5 140 44.5 138 34"
         : "M157 8V30C157 42.5 141 45 138.5 33.5";
     return (
-      `<g class="c03-hook">` +
+      `<g class="x03-hook">` +
       (T.hook === "wire" ? "" : `<rect x="151" y="3.6" width="12" height="6.8" rx="2" fill="url(#${u}-hookL)"/><circle cx="157" cy="7" r="1.1" fill="#000" fill-opacity=".4"/>`) +
       `<path d="${d}" fill="none" stroke="url(#${u}-hookL)" stroke-width="${T.hook === "wire" ? 4.4 : 6}" stroke-linecap="round" stroke-linejoin="round"/>` +
       (T.hook === "wire" ? "" : `<circle cx="138.6" cy="32.6" r="3.7" fill="url(#${u}-hookL)"/>`) +
@@ -475,13 +475,13 @@
   function full(p, o = {}) {
     const S = MC.s(o);
     const T = TIER[p.tier] || TIER.PRO;
-    const u = MC.uid("c03");
+    const u = MC.uid("x03");
     const thumb = !!o.thumb;
     const out = outline(T);
     const tp = COLLAR[T.collar];
-    const tierCls = `c03--${p.tier.toLowerCase()}`;
+    const tierCls = `x03--${p.tier.toLowerCase()}`;
     let g = "";
-    g += `<path class="c03-rim" d="${out}"/>`;
+    g += `<path class="x03-rim" d="${out}"/>`;
     g += `<path d="${out}" fill="url(#${u}-body)"/>`;
     g += `<g clip-path="url(#${u}-clip)">`;
     if (!thumb) {
@@ -534,15 +534,15 @@
       g += `<path d="${band}" fill="${T.collar === "tall" ? T.rib : T.body[0]}"/><path d="${band}" fill="url(#${u}-rib)"/>`;
     }
     // lit top edge from the overhead tube light (shoulders)
-    g += `<path class="c03-lit" d="M20 91.4L114 68M186 68L280 91.4" clip-path="url(#${u}-clip)"/>`;
+    g += `<path class="x03-lit" d="M20 91.4L114 68M186 68L280 91.4" clip-path="url(#${u}-clip)"/>`;
     if (T.piping) g += `<path d="M21.6 92.8L114.4 69.8M185.6 69.8L278.4 92.8" stroke="${T.light ? C.tunnel : C.slate}" stroke-width="2.2" stroke-linecap="round"/>`;
     // back-neck label and the stats line
     if (!thumb) g += neckLabel(o, T, u) + statsLine(p, o, T);
     // name and number
     g += nameMark(p, o, T, u, thumb);
-    g += `<g class="c03-num">${number(p, T, u, thumb)}</g>`;
-    if (T.num === "twill4") g += `<g clip-path="url(#${u}-clip)"><rect class="c03-sweep" x="30" y="202" width="80" height="112" fill="url(#${u}-sweep)"/></g>`;
-    if (!thumb) g += `<g clip-path="url(#${u}-clip)"><rect class="c03-sheen" x="12" y="0" width="276" height="420" fill="url(#${u}-sheen)"/></g>`;
+    g += `<g class="x03-num">${number(p, T, u, thumb)}</g>`;
+    if (T.num === "twill4") g += `<g clip-path="url(#${u}-clip)"><rect class="x03-sweep" x="30" y="202" width="80" height="112" fill="url(#${u}-sweep)"/></g>`;
+    if (!thumb) g += `<g clip-path="url(#${u}-clip)"><rect class="x03-sheen" x="12" y="0" width="276" height="420" fill="url(#${u}-sheen)"/></g>`;
     // hem meta: country code, serial, season
     if (!thumb)
       g +=
@@ -551,15 +551,15 @@
     g += sleeves(p, o, T, u, thumb);
     g += founderTag(p, o, u, thumb);
 
-    const cls = `c03 c03-card ${tierCls}${thumb ? " c03--thumb" : ""}${o.motion ? " c03--motion" : ""}`;
+    const cls = `x03 x03-card ${tierCls}${thumb ? " x03--thumb" : ""}${o.motion ? " x03--motion" : ""}`;
     const peg = T.hook === "peg";
     return (
       `<div class="${cls}" dir="${S.dir}" role="img" aria-label="${E(MC.label(p, o))}" data-tier="${p.tier}">` +
-      `<svg class="c03-svg" viewBox="0 0 300 420" style="direction:ltr" aria-hidden="true" focusable="false">` +
+      `<svg class="x03-svg" viewBox="0 0 300 420" style="direction:ltr" aria-hidden="true" focusable="false">` +
       defs(u, T) +
       (o.rail === false ? "" : rail(T, u)) +
-      (peg ? `<g class="c03-swing">${loop(T)}</g>${hook(T, u)}` : hook(T, u)) +
-      `<g class="c03-swing">${peg ? "" : loop(T)}<g class="c03-jacket">${g}</g><g class="c03-press" aria-hidden="true"></g></g>` +
+      (peg ? `<g class="x03-swing">${loop(T)}</g>${hook(T, u)}` : hook(T, u)) +
+      `<g class="x03-swing">${peg ? "" : loop(T)}<g class="x03-jacket">${g}</g><g class="x03-press" aria-hidden="true"></g></g>` +
       `</svg></div>`
     );
   }
@@ -617,18 +617,18 @@
     const railC = RAIL[T.rail].tok;
     const hookC = HOOK[T.hook].tok;
     const body = legend ? C.ecru : T.body[1];
-    const tierCls = `c03--${p.tier.toLowerCase()}`;
+    const tierCls = `x03--${p.tier.toLowerCase()}`;
     if (o.mini || size <= 32) {
       // mini: a 2px rail, the wide shoulder wedge, the 84 under the collar; hook only at 32px
       const w = (size * 36) / 32;
       const rh = f((2 * 32) / size);
       const F = 13.6;
       return (
-        `<span class="c03 c03-tok c03-mini ${tierCls}" style="--h:${size}px">` +
+        `<span class="x03 x03-tok x03-mini ${tierCls}" style="--h:${size}px">` +
         `<svg viewBox="0 0 36 32" width="${f(w)}" height="${size}" style="direction:ltr;overflow:visible" aria-hidden="true" focusable="false">` +
         `<rect x="3" y="0" width="30" height="${rh}" rx="${f(rh / 2)}" fill="${railC}"/>` +
         (size >= 30 ? `<path d="M19.8 ${rh}V3.4C19.8 5.6 16.9 6.1 16.4 4.1" fill="none" stroke="${hookC}" stroke-width="1.5" stroke-linecap="round"/>` : "") +
-        `<path class="c03-rim" d="${MINI}"/>` +
+        `<path class="x03-rim" d="${MINI}"/>` +
         `<path d="${MINI}" fill="${body}"/>` +
         `<path d="M13.4 6.6L13.8 4.8Q18 3.4 22.2 4.8L22.6 6.6Q18 5.4 13.4 6.6Z" fill="${legend ? T.rib : T.body[0]}"/>` +
         `<path d="M6.8 12.4V24.4M29.2 12.4V24.4" stroke="${legend ? "#A99E83" : T.crease}" stroke-width=".9"/>` +
@@ -642,13 +642,13 @@
     const out = tokOutline(T.collar);
     const showRail = o.rail !== false;
     let s = "";
-    if (showRail) s += `<rect class="c03-rim" x="6" y="0" width="48" height="4" rx="1"/><rect x="6" y="0" width="48" height="4" rx="1" fill="${railC}"/><path d="M7 .7H53" stroke="${RAIL[T.rail].hi}" stroke-opacity=".7" stroke-width=".6"/>`;
-    if (T.hook === "peg") s += `<rect x="28.4" y="3" width="3.2" height="2.4" fill="${hookC}"/><circle class="c03-rim" cx="30" cy="8" r="4.2"/><circle cx="30" cy="8" r="4.2" fill="${hookC}"/><circle cx="28.8" cy="6.8" r="1.3" fill="#A07E5E"/>`;
+    if (showRail) s += `<rect class="x03-rim" x="6" y="0" width="48" height="4" rx="1"/><rect x="6" y="0" width="48" height="4" rx="1" fill="${railC}"/><path d="M7 .7H53" stroke="${RAIL[T.rail].hi}" stroke-opacity=".7" stroke-width=".6"/>`;
+    if (T.hook === "peg") s += `<rect x="28.4" y="3" width="3.2" height="2.4" fill="${hookC}"/><circle class="x03-rim" cx="30" cy="8" r="4.2"/><circle cx="30" cy="8" r="4.2" fill="${hookC}"/><circle cx="28.8" cy="6.8" r="1.3" fill="#A07E5E"/>`;
     else
       s +=
         (T.hook === "wire" ? `<path d="M36.6 3.4C36.6 .6 33.5 .6 33.5 2.6V7.6C33.5 12.6 27.6 13.6 26.3 9.4" fill="none" stroke="${hookC}" stroke-width="3" stroke-linecap="round"/>` : `<rect x="31.2" y=".6" width="4.6" height="3" rx="1" fill="${hookC}"/><path d="M33.5 1.8V7.6C33.5 12.6 27.6 13.6 26.3 9.4" fill="none" stroke="${hookC}" stroke-width="3" stroke-linecap="round"/><circle cx="26.4" cy="9.2" r="1.7" fill="${hookC}"/>`) +
         `<path d="M29 17L29 11.2Q30.4 9.4 31.8 11.2L31.8 17Z" fill="${legend ? T.rib : T.body[0]}"/>`;
-    s += `<path class="c03-rim" d="${out}"/>`;
+    s += `<path class="x03-rim" d="${out}"/>`;
     s += `<path d="${out}" fill="${body}"/>`;
     s += `<path d="M3.2 22.4L10.5 23V62H3.2ZM56.8 22.4L49.5 23V62H56.8Z" fill="#000" fill-opacity="${legend ? 0.08 : 0.14}"/>`;
     if (T.fabric === "quilt") s += `<path d="M3.6 37H56.4M3.6 49H56.4M12.5 67H47.5" stroke="#0A1A36" stroke-width="${thin ? 1 : 0.8}"/><path d="M3.6 37.9H56.4M3.6 49.9H56.4M12.5 67.9H47.5" stroke="#fff" stroke-opacity=".22" stroke-width=".5"/>`;
@@ -658,7 +658,7 @@
     s += tokenNum(n, T, 23.5, 30, 56.5, thin);
     if (p.founder) s += `<rect x="14" y="72.6" width="11" height="6.8" rx=".8" fill="${C.damask}"/>${thin ? "" : `<rect x="14.6" y="73.2" width="9.8" height="5.6" rx=".5" fill="none" stroke="${C.thread}" stroke-width=".5" stroke-dasharray=".9 .5"/>`}`;
     return (
-      `<span class="c03 c03-tok ${tierCls}" style="--h:${size}px">` +
+      `<span class="x03 x03-tok ${tierCls}" style="--h:${size}px">` +
       `<svg viewBox="0 0 60 80" width="${f(w)}" height="${size}" style="direction:ltr" aria-hidden="true" focusable="false">${s}</svg></span>`
     );
   }
@@ -666,16 +666,16 @@
   /* ---------- compact card: one peg on the dressing-room rail ---------- */
   function row(p, o = {}) {
     const S = MC.s(o);
-    const tierCls = `c03-chip--${p.tier.toLowerCase()}`;
+    const tierCls = `x03-chip--${p.tier.toLowerCase()}`;
     return (
-      `<div class="c03 c03-row${o.me ? " is-me" : ""}${o.me && o.motion ? " c03--motion" : ""}" dir="${S.dir}">` +
-      `<span class="c03-row-rank" aria-label="${E(S.rank)} ${o.rank}">${MC.ltr(o.rank)}</span>` +
-      `<span class="c03-row-tok">${token(p, { ...o, size: 54, mini: false, rail: false })}</span>` +
-      `<span class="c03-row-id"><b class="c03-row-name">${E(MC.nameOf(p, o))}</b>` +
-      `<span class="c03-row-sub"><i class="c03-chip ${tierCls}">${E(S.tiers[p.tier])}</i><bdi dir="ltr" class="c03-row-ovr">${p.ovr} <small>${S.ovr}</small></bdi>` +
-      (p.founder ? `<span class="c03-chip c03-chip--founder" title="${E(S.founderLine)}" aria-label="${E(S.founderLine)}">${MC.ltr(p.founder)}</span>` : "") +
+      `<div class="x03 x03-row${o.me ? " is-me" : ""}${o.me && o.motion ? " x03--motion" : ""}" dir="${S.dir}">` +
+      `<span class="x03-row-rank" aria-label="${E(S.rank)} ${o.rank}">${MC.ltr(o.rank)}</span>` +
+      `<span class="x03-row-tok">${token(p, { ...o, size: 54, mini: false, rail: false })}</span>` +
+      `<span class="x03-row-id"><b class="x03-row-name">${E(MC.nameOf(p, o))}</b>` +
+      `<span class="x03-row-sub"><i class="x03-chip ${tierCls}">${E(S.tiers[p.tier])}</i><bdi dir="ltr" class="x03-row-ovr">${p.ovr} <small>${S.ovr}</small></bdi>` +
+      (p.founder ? `<span class="x03-chip x03-chip--founder" title="${E(S.founderLine)}" aria-label="${E(S.founderLine)}">${MC.ltr(p.founder)}</span>` : "") +
       `</span></span>` +
-      `<span class="c03-row-pts"><b>${MC.ltr(o.pts)}</b><small>${E(S.pts)}</small></span>` +
+      `<span class="x03-row-pts"><b>${MC.ltr(o.pts)}</b><small>${E(S.pts)}</small></span>` +
       `</div>`
     );
   }
@@ -714,12 +714,12 @@
   function share(p, o = {}) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
-    const u = MC.uid("c03s");
+    const u = MC.uid("x03s");
     const T = TIER[p.tier] || TIER.PRO;
     const jx = ar ? 164 : 196; // the jacket's hook, toward the end side
     const hooks = [jx - 132, jx, jx + 132];
     const bg =
-      `<svg class="c03-share-bg" viewBox="0 0 360 640" width="360" height="640" aria-hidden="true" focusable="false">` +
+      `<svg class="x03-share-bg" viewBox="0 0 360 640" width="360" height="640" aria-hidden="true" focusable="false">` +
       `<defs>` +
       `<filter id="${u}-plaster" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012 .02" numOctaves="4" seed="17"/><feColorMatrix values="0 0 0 0 .42  0 0 0 0 .38  0 0 0 0 .3  0 0 0 1.3 -.55"/></filter>` +
       `<filter id="${u}-lime" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 .3  0 0 0 0 .27  0 0 0 0 .2  0 0 0 .9 -.38"/></filter>` +
@@ -758,18 +758,18 @@
         .join("") +
       `</svg>`;
     const cap =
-      `<div class="c03-share-cap">` +
-      `<span class="c03-share-handle">${MC.ltr("@ali")}</span>` +
-      `<b class="c03-share-name">${E(MC.nameOf(p, o))}</b>` +
-      `<span class="c03-share-line"><i class="c03-chip c03-chip--${p.tier.toLowerCase()}">${E(S.tiers[p.tier])}</i><bdi dir="ltr" class="c03-share-ovr">${p.ovr} <small>${S.ovr}</small></bdi></span>` +
-      `<span class="c03-share-meta">${MC.ltr(p.id)}<span aria-hidden="true">·</span>${MC.ltr(p.season)}<span aria-hidden="true">·</span>${ar ? "مثال" : "Sample"}</span>` +
+      `<div class="x03-share-cap">` +
+      `<span class="x03-share-handle">${MC.ltr("@ali")}</span>` +
+      `<b class="x03-share-name">${E(MC.nameOf(p, o))}</b>` +
+      `<span class="x03-share-line"><i class="x03-chip x03-chip--${p.tier.toLowerCase()}">${E(S.tiers[p.tier])}</i><bdi dir="ltr" class="x03-share-ovr">${p.ovr} <small>${S.ovr}</small></bdi></span>` +
+      `<span class="x03-share-meta">${MC.ltr(p.id)}<span aria-hidden="true">·</span>${MC.ltr(p.season)}<span aria-hidden="true">·</span>${ar ? "مثال" : "Sample"}</span>` +
       `</div>`;
     return (
-      `<div class="c03 c03-share" dir="${S.dir}" role="img" aria-label="${E(MC.label(p, o))}">` +
+      `<div class="x03 x03-share" dir="${S.dir}" role="img" aria-label="${E(MC.label(p, o))}">` +
       bg +
-      `<div class="c03-share-logo">${MC.logo("wordmark", { variant: "color", label: false })}</div>` +
-      `<div class="c03-share-jacket" style="left:${f(jx - 157 * (248 / 300))}px">${full(p, { ...o, thumb: false, motion: false, rail: false })}</div>` +
-      `<div class="c03-share-fig" aria-hidden="true" style="background-image:${halftoneFigure(ar ? -3 : 3).replace(/"/g, "&quot;")}"></div>` +
+      `<div class="x03-share-logo">${MC.logo("wordmark", { variant: "color", label: false })}</div>` +
+      `<div class="x03-share-jacket" style="left:${f(jx - 157 * (248 / 300))}px">${full(p, { ...o, thumb: false, motion: false, rail: false })}</div>` +
+      `<div class="x03-share-fig" aria-hidden="true" style="background-image:${halftoneFigure(ar ? -3 : 3).replace(/"/g, "&quot;")}"></div>` +
       cap +
       `</div>`
     );
@@ -777,13 +777,13 @@
 
   /* ---------- interaction: tap to swing, pointer for sheen, long-press to press and peel ---------- */
   function mount(el, o = {}) {
-    if (!el || !el.classList || !el.classList.contains("c03-card")) return;
+    if (!el || !el.classList || !el.classList.contains("x03-card")) return;
     if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const svg = el.querySelector("svg");
-    const swings = el.querySelectorAll(".c03-swing");
-    const sheen = el.querySelector(".c03-sheen");
-    const press = el.querySelector(".c03-press");
-    const numG = el.querySelector(".c03-num");
+    const swings = el.querySelectorAll(".x03-swing");
+    const sheen = el.querySelector(".x03-sheen");
+    const press = el.querySelector(".x03-press");
+    const numG = el.querySelector(".x03-num");
     if (!svg || !swings.length) return;
     const buzz = (pat) => {
       try {
@@ -791,9 +791,9 @@
       } catch (e) {}
     };
     const doSwing = () => {
-      swings.forEach((s) => s.classList.remove("c03-swinging"));
+      swings.forEach((s) => s.classList.remove("x03-swinging"));
       void el.getBoundingClientRect();
-      swings.forEach((s) => s.classList.add("c03-swinging"));
+      swings.forEach((s) => s.classList.add("x03-swinging"));
     };
     el.addEventListener("pointermove", (e) => {
       if (!sheen) return;
@@ -806,20 +806,20 @@
     let timer = null, startX = 0, startY = 0, moved = false, pressing = false, film = null;
     const NS = "http://www.w3.org/2000/svg";
     const x0 = 46, y0 = 202, x1 = 254, y1 = 310;
-    const fid = MC.uid("c03f");
+    const fid = MC.uid("x03f");
     function showFilm() {
       if (!press) return;
       press.innerHTML = "";
       film = document.createElementNS(NS, "g");
-      film.setAttribute("class", "c03-film");
+      film.setAttribute("class", "x03-film");
       film.innerHTML =
-        `<clipPath id="${fid}"><polygon class="c03-film-cut" points="${x0},${y0} ${x1},${y0} ${x1},${y1} ${x0},${y1}"/></clipPath>` +
+        `<clipPath id="${fid}"><polygon class="x03-film-cut" points="${x0},${y0} ${x1},${y0} ${x1},${y1} ${x0},${y1}"/></clipPath>` +
         `<g clip-path="url(#${fid})"><rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="3" fill="#E9F1FF" fill-opacity=".3"/>` +
-        `<g class="c03-film-mirror" transform="translate(300 0) scale(-1 1)" opacity=".45"></g>` +
+        `<g class="x03-film-mirror" transform="translate(300 0) scale(-1 1)" opacity=".45"></g>` +
         `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" rx="3" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"/></g>` +
-        `<path class="c03-film-flap" d="" fill="#F4F8FF" fill-opacity=".8"/>` +
-        `<circle class="c03-film-grip" cx="${x0 + 6}" cy="${y1 - 6}" r="5" fill="#fff" fill-opacity=".55"/>`;
-      const mirror = film.querySelector(".c03-film-mirror");
+        `<path class="x03-film-flap" d="" fill="#F4F8FF" fill-opacity=".8"/>` +
+        `<circle class="x03-film-grip" cx="${x0 + 6}" cy="${y1 - 6}" r="5" fill="#fff" fill-opacity=".55"/>`;
+      const mirror = film.querySelector(".x03-film-mirror");
       if (numG && mirror) {
         numG.querySelectorAll("text").forEach((t) => {
           const c = t.cloneNode(true);
@@ -833,21 +833,21 @@
     }
     function peel(d) {
       if (!film) return;
-      const cut = film.querySelector(".c03-film-cut");
-      const flap = film.querySelector(".c03-film-flap");
-      const grip = film.querySelector(".c03-film-grip");
+      const cut = film.querySelector(".x03-film-cut");
+      const flap = film.querySelector(".x03-film-flap");
+      const grip = film.querySelector(".x03-film-grip");
       if (cut) cut.setAttribute("points", `${x0},${y0} ${x1},${y0} ${x1},${y1} ${x0 + d},${y1} ${x0},${y1 - d}`);
       if (flap) flap.setAttribute("d", `M${x0} ${y1 - d}L${x0 + d} ${y1}L${x0 + d} ${y1 - d}Z`);
       if (grip) grip.setAttribute("opacity", "0");
       if (d > 0.6 * (x1 - x0)) {
         buzz(18);
-        film.classList.add("c03-film-gone");
+        film.classList.add("x03-film-gone");
         const fl = film;
         film = null;
         setTimeout(() => fl.remove(), 260);
-        el.classList.remove("c03--revealed");
+        el.classList.remove("x03--revealed");
         void el.getBoundingClientRect();
-        el.classList.add("c03--revealed");
+        el.classList.add("x03--revealed");
       }
     }
     el.addEventListener("pointerdown", (e) => {
@@ -863,13 +863,13 @@
       }
       timer = setTimeout(() => {
         timer = null;
-        el.classList.add("c03--pressing");
+        el.classList.add("x03--pressing");
         buzz([20, 60, 20, 60, 20, 60, 30]);
         setTimeout(() => {
-          el.classList.remove("c03--pressing");
-          el.classList.add("c03--lifted");
+          el.classList.remove("x03--pressing");
+          el.classList.add("x03--lifted");
           buzz(25);
-          setTimeout(() => el.classList.remove("c03--lifted"), 400);
+          setTimeout(() => el.classList.remove("x03--lifted"), 400);
           showFilm();
         }, 1200);
       }, 1200);
@@ -899,7 +899,9 @@
   }
 
   MC.register({
-    id: "c03",
+    id: "x03",
+    cut: true,
+    cutReason: "At 24px the jacket reads as the shirt the Fantasy squad already uses for players, and Pépites already puts a rank number on a shirt back. Its press-and-peel ritual also held the number back behind a gesture, which reads as a scratch card.",
     n: 3,
     slug: "03",
     name: "Flocage",

@@ -47,3 +47,14 @@ mkdirSync(outDir, { recursive: true });
 const out = join(outDir, "manager-cards-claude.html");
 writeFileSync(out, html);
 console.log(`wrote ${out} (${(Buffer.byteLength(html) / 1024 / 1024).toFixed(2)} MB)`);
+
+// Artifact page: the host wraps the page in its own doctype/html/head/body, so the
+// fragment keeps the title, description, styles, body content and scripts only.
+const title = html.match(/<title>[\s\S]*?<\/title>/)[0];
+const desc = (html.match(/<meta name="description"[^>]*>/) || [""])[0];
+const styles = [...html.matchAll(/<style>[\s\S]*?<\/style>/g)].map((m) => m[0]).join("\n");
+const body = html.match(/<body>([\s\S]*)<\/body>/)[1];
+const fragment = `${title}\n${desc}\n${styles}\n${body}`;
+const outArtifact = join(outDir, "manager-card-exploration-b.html");
+writeFileSync(outArtifact, fragment);
+console.log(`wrote ${outArtifact} (${(Buffer.byteLength(fragment) / 1024 / 1024).toFixed(2)} MB)`);
