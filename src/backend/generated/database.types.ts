@@ -1167,6 +1167,11 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      get_manager_card: { Args: { p_fantasy_team_id: string }; Returns: Json }
+      get_manager_cards: {
+        Args: { p_fantasy_team_ids: string[] }
+        Returns: Json
+      }
       get_my_account_standing: { Args: never; Returns: Json }
       get_my_fantasy_history: {
         Args: {
@@ -1189,6 +1194,11 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
+      get_my_manager_card: { Args: never; Returns: Json }
+      get_my_manager_card_history: {
+        Args: { p_after_gameweek_sequence?: number; p_limit?: number }
+        Returns: Json
+      }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
