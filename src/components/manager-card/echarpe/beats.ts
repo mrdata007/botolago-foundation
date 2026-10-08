@@ -45,7 +45,7 @@ export const BEAT_MS: Readonly<Record<BeatName, number>> = {
 export const BEAT_CAP_MS = 700;
 
 type KnitBeat = keyof typeof BEATS;
-const isKnitBeat = (beat: string): beat is KnitBeat => beat in BEATS;
+const isKnitBeat = (beat: string): beat is KnitBeat => Object.hasOwn(BEATS, beat);
 
 /** The timing of a part of a beat, or undefined when the beat has no such part. */
 export function timingOf(beat: string, part: string): KnitTiming | undefined {

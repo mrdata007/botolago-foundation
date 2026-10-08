@@ -45,7 +45,7 @@ export const echarpeRenderer: EcharpeRenderer = {
   detail: (profile, part, options) => (part === "founder" ? founderDetail(profile, options) : null),
   image: (profile, strings) => cardImage(profile, strings, rasterText),
   label: (profile, strings) => cardLabel(profile, strings),
-  beatMs: (beat) => BEAT_MS[beat] ?? 0,
+  beatMs: (beat) => (Object.hasOwn(BEAT_MS, beat) ? BEAT_MS[beat] : 0),
   mount: mountSway,
 };
 

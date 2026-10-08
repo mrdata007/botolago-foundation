@@ -590,3 +590,17 @@ describe("the label", () => {
     );
   });
 });
+
+describe("the boundary", () => {
+  it("reads a beat that is not one of the seven as no beat, whatever it inherits", () => {
+    for (const beat of ["constructor", "toString", "__proto__", "hasOwnProperty"] as const) {
+      const html = full(PROFILES.rated, FR, "light", beat as BeatName);
+      expect(html).not.toContain("mc-echarpe--beat-");
+      expect(R.beatMs(beat as BeatName)).toBe(0);
+    }
+  });
+  it("reads a club colour that is not a string as no club", () => {
+    const p = { ...PROFILES.rated, club: { ...CLUBS.raja, primary: 12 as never } } as CardProfile;
+    expect(full(p)).toContain("mc-echarpe--wool");
+  });
+});

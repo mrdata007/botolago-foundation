@@ -20,7 +20,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 /** The beats a drawing can show, and the cases each one has something to knit in. */
 export function appliedBeat(v: View, beat: BeatName | undefined): BeatName | "" {
-  if (!beat || !(beat in BEAT_MS)) return "";
+  if (!beat || !Object.hasOwn(BEAT_MS, beat)) return "";
   const { p } = v;
   if (p.tier === "legend") return beat === "legend" ? "legend" : "";
   switch (beat) {

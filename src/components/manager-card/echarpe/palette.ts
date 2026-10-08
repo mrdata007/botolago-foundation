@@ -110,9 +110,9 @@ export interface Palette {
 const cache = new Map<string, Palette>();
 
 export function palette(p: Pick<CardProfile, "club">): Palette {
-  const primary = p.club && parseHex(p.club.primary) ? p.club.primary : null;
-  const secondary =
-    primary && p.club?.secondary && parseHex(p.club.secondary) ? p.club.secondary : null;
+  const hex = (v: unknown): string | null => (typeof v === "string" && parseHex(v) ? v : null);
+  const primary = hex(p.club?.primary);
+  const secondary = primary ? hex(p.club?.secondary) : null;
   const key = `${primary ?? ""}|${secondary ?? ""}`;
   const hit = cache.get(key);
   if (hit) return hit;
