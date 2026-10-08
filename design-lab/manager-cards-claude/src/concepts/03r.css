@@ -1,6 +1,7 @@
 /* 03 PORTE-CLÉS. The object's material lives in the SVG; this sheet carries the ground-dependent
    edges (a lit rim on the dark ground, none on the light one), the row and the share layout.
-   Dark ground is the default; the light ground overrides it. */
+   Dark ground is the default; the light ground overrides it. The viewBox (0 -14 260 474) keeps
+   headroom above the ring on every tier for LEGEND's carabiner. */
 .c03 {
   --c03-rim: #9ba3ae;
   --c03-clear: #e4eef7;
@@ -58,7 +59,7 @@
 .c03-full {
   position: relative;
   width: 100%;
-  aspect-ratio: 260 / 420;
+  aspect-ratio: 260 / 474;
 }
 .c03-full .c03-art {
   display: block;
@@ -73,7 +74,7 @@
 /* the fob swings on the eyelet; each charm on its own jump ring */
 .c03 .c03-fob {
   transform-box: view-box;
-  transform-origin: 130px 112px;
+  transform-origin: 130px 115px;
 }
 .c03 .c03-sw {
   transform-box: view-box;
@@ -217,14 +218,14 @@
   inset-inline-start: 24px;
   width: 124px;
 }
-/* a woven label sewn onto the bag: the handle and the ID get a physical carrier */
+/* a woven label sewn onto the bag in the corner the swing leaves free (bottom-left in both
+   languages: the object never mirrors, so neither does the free corner) */
 .c03-sh-tag {
   position: absolute;
-  inset-inline-start: 24px;
-  bottom: 46px;
+  left: 18px;
+  bottom: 30px;
   box-sizing: border-box;
-  min-width: 212px;
-  padding: 9px 26px 10px;
+  padding: 8px 22px 9px;
   border-radius: 2px;
   color: #22252b;
   background:
@@ -242,15 +243,15 @@
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 11px;
+  width: 9px;
   background: linear-gradient(90deg, #cfc6ae, #ddd4bd);
-  border-inline-end: 1px dashed rgb(70 60 40 / 0.55);
+  border-right: 1px dashed rgb(70 60 40 / 0.55);
 }
-.c03-sh-tag::before { inset-inline-start: 0; }
+.c03-sh-tag::before { left: 0; }
 .c03-sh-tag::after {
-  inset-inline-end: 0;
-  border-inline-end: 0;
-  border-inline-start: 1px dashed rgb(70 60 40 / 0.55);
+  right: 0;
+  border-right: 0;
+  border-left: 1px dashed rgb(70 60 40 / 0.55);
   background: linear-gradient(270deg, #cfc6ae, #ddd4bd);
 }
 .c03-sh-name {
@@ -266,23 +267,17 @@
 }
 .c03-sh-meta {
   display: flex;
-  gap: 12px;
-  margin-top: 2px;
-  font: 800 11px/1.4 "Manrope", sans-serif;
-  letter-spacing: 0.08em;
-  font-variant-numeric: tabular-nums;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 1px;
+  font: 800 13px/1.4 "Manrope", sans-serif;
+  letter-spacing: 0.02em;
 }
-.c03-sh-h { letter-spacing: 0.02em; }
-.c03-sh-tag em {
-  position: absolute;
-  top: 8px;
-  inset-inline-end: 18px;
+.c03-sh-meta em {
   font: 600 9px/1 "Manrope", sans-serif;
   font-style: normal;
   letter-spacing: 0.06em;
   color: #6b6658;
 }
 .c03-share[dir="rtl"] .c03-sh-name { font-family: "Changa", "Noto Sans Arabic", sans-serif; line-height: 1.5; }
-.c03-share[dir="rtl"] .c03-sh-meta { letter-spacing: 0; font-family: "Noto Sans Arabic", "Manrope", sans-serif; font-weight: 700; line-height: 1.7; }
-.c03-share[dir="rtl"] .c03-sh-meta bdi { font-family: "Manrope", sans-serif; font-weight: 800; letter-spacing: 0.06em; }
-.c03-share[dir="rtl"] .c03-sh-tag em { font: 600 10px/1.4 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }
+.c03-share[dir="rtl"] .c03-sh-meta em { font: 600 10px/1.4 "Noto Sans Arabic", sans-serif; letter-spacing: 0; }

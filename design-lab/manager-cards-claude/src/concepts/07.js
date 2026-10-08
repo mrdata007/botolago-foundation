@@ -1,10 +1,11 @@
-/* 07 ÉCHARPE — the card is your supporter's scarf, knotted over the steel crowd-barrier rail.
+/* 07 ÉCHARPE — the card is your supporter's scarf, knotted over the steel crowd-barrier rail
+   (its own tail wrapped once round the tube on the start side and hanging down the overhang).
    Read from the rail down: the 84 knitted in your club's colours; the tier word; the season,
    one band per gameweek actually played (one yarn, told apart by stitch texture, so the
    scarf grows longer as the season goes on); a woven label sewn on the front with the four
    ratings and the ID; the knitted name; the founder's cream cable cast-on with 2026; the
    fringe, whose tassel count is the tier. LEGEND lifts the scarf off the rail: held taut
-   overhead between two fists, the card turns landscape.
+   overhead between two fists, arms rising from below, the card turns landscape (about 1.6:1).
    Motifs are rasterised once onto stitch grids (Changa 800 for every knitted glyph) and drawn
    as merged colour runs under one stitch-texture pattern per gauge. */
 (function () {
@@ -361,6 +362,15 @@
       rows--;
       bmp = trim(rasterText(text, CHANGA, rows, G.cw, G.ch, 0.46, opt));
     }
+    // still too wide for this gauge (eight letters on HOMA's 24 stitches): knit the initial only,
+    // at full height, and weave the whole name into the label
+    if (bw(bmp) > cols - 4 && !onLabel) {
+      text = [...text][0];
+      dots = false;
+      onLabel = true;
+      rows = Math.round(hU / G.ch);
+      bmp = trim(rasterText(text, CHANGA, rows, G.cw, G.ch, 0.46, opt));
+    }
     if (dots) {
       // the bowl of the final yā is the lowest ink at the left; the dots sit one row under it
       const w = bw(bmp);
@@ -479,7 +489,7 @@
     }
     return s;
   }
-  /** Same, with rows and columns swapped (LEGEND: the grid is drawn along the length). */
+  /** Brushed steel for the barrier rail (a tube lit from above). */
   function steelGrad(id, vertical = true) {
     return (
       `<linearGradient id="${id}" x1="0" y1="0" x2="${vertical ? 0 : 1}" y2="${vertical ? 1 : 0}">` +
@@ -542,7 +552,7 @@
 
   /** The woven label sewn on the front: the brand header, the four ratings in a column, and the
       ID's carrier (ID, country, season) woven into its foot. */
-  function wovenLabel(p, o, x, y, w, k, thumb, ids, nameOnLabel, stack) {
+  function wovenLabel(p, o, x, y, w, k, thumb, ids, nameOnLabel, stack, vf = 1) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const Lt = labelLayout(w, k, stack, nameOnLabel);
@@ -573,7 +583,7 @@
     // the four ratings (the Arabic names shrink until each line fits beside its figure)
     let akfs = 11.5 * k;
     if (ar) {
-      const vw = ((ink("88", '800 {s} "Manrope"').right + ink("88", '800 {s} "Manrope"').left) * 13 * k) / 100;
+      const vw = ((ink("88", '800 {s} "Manrope"').right + ink("88", '800 {s} "Manrope"').left) * 13 * k * vf) / 100;
       const kw = Math.max(...MC.STATS.map((key) => { const m = ink(S.stats[key], '700 {s} "Noto Sans Arabic"'); return m.left + m.right; }));
       akfs = Math.min(akfs, ((R - L - vw - 6 * k) / kw) * 100);
     }
@@ -581,10 +591,10 @@
       const yy = y + Lt.stats[i];
       if (ar) {
         s += tx(R, yy, S.stats[key], "start", "c07-lb-k c07-lb-ar", akfs, "rtl");
-        s += tx(L, yy, String(p.stats[key]), "start", "c07-lb-v", 13 * k);
+        s += tx(L, yy, String(p.stats[key]), "start", "c07-lb-v", 13 * k * vf);
       } else {
         s += tx(L, yy, S.stats[key], "start", "c07-lb-k", 10.5 * k);
-        s += tx(R, yy, String(p.stats[key]), "end", "c07-lb-v", 13 * k);
+        s += tx(R, yy, String(p.stats[key]), "end", "c07-lb-v", 13 * k * vf);
       }
     });
     s += rule(y + Lt.rule2);
@@ -1058,7 +1068,7 @@
         const k = 1.28;
         const lh = labelLayout(lw, k, true, nm.onLabel).h;
         const lx = xL + (dw - lw) / 2 + o2 * 2;
-        s2 += wovenLabel(p, o, f2(lx), f2(DB - 8 - lh), lw, k, thumb, ids, nm.onLabel, true);
+        s2 += wovenLabel(p, o, f2(lx), f2(DB - 8 - lh), lw, k, thumb, ids, nm.onLabel, true, 1.22);
       }
       let fr = "";
       for (let i = 0; i < TASSELS.LEGEND; i++) {
@@ -1401,8 +1411,8 @@
     philosophy: "Your card is your supporter's scarf, knotted over the barrier rail: the 84 at the top in your club's colours, and below it only the gameweeks you have actually played, so the scarf grows with your season.",
     philosophyAr: "بطاقتك وشاحُ المشجّع معقودًا على حاجز المدرّج: الرقم 84 في أعلاه بألوان ناديك، وتحته الجولات التي لعبتها فعلًا فقط، فيطول الوشاح مع موسمك.",
     idea: [
-      "The card is a knitted supporter scarf knotted over a steel crowd-barrier rail. The silhouette is the rail overhanging both sides, the knot on the inline-start side (a bundle tied with a strip of the same knit, its two cream selvedges showing), the strip, and the fringe at the foot. A cream selvedge runs down the start edge and a Logo Blue one down the end edge: that blue column is the one fixed brand place. The ground is the user's club primary and the letters its secondary; the lab's placeholder club gives a slate ground (#3b4a5e) with cream letters (#e9e4d6). With no club chosen, the scarf is undyed wool (#E8E1D0) with charcoal letters.",
-      "It reads from the rail down. The 84 is knitted big at the top, the part that hangs in front of you, sampled from Changa 800 at the tier's own gauge and condensed until it sits inside the selvedges. There is no OVR in the artwork; the accessible label carries '84 OVR'. The tier word is knitted under it.",
+      "The card is a knitted supporter scarf knotted over a steel crowd-barrier rail. The silhouette is the rail overhanging both sides, the knot, the strip, and the fringe at the foot. The knot is the scarf's own tail: a strip of the same knit wrapped once round the tube on the inline-start side and hanging about 70u down the overhang, its cream and Logo Blue selvedges showing, with two small tassels at its end. A cream selvedge runs down the start edge of the scarf and a Logo Blue one down the end edge: that blue column is the one fixed brand place. The ground is the user's club primary and the letters its secondary; the lab's placeholder club gives a slate ground (#3b4a5e) with cream letters (#e9e4d6). With no club chosen, the scarf is undyed wool (#E8E1D0) with charcoal letters.",
+      "It reads from the rail down. The 84 is knitted big at the top, the part that hangs in front of you, sampled from Changa 800 at the tier's own gauge and condensed until it sits inside the selvedges (HOMA's is a bold hand chart). There is no OVR in the artwork; the accessible label carries '84 OVR'. The tier word is knitted under it.",
       "Then the season: one band of two rows per gameweek actually played, all in the ground yarn, told apart by stitch alone: garter ridges, then 1×1 rib, alternating, with a raised purl ridge closing every band, the rib bands pulling the edges in slightly, and a cream notch on the start selvedge every fifth gameweek. Unplayed gameweeks are not knitted and there is never an empty row, so the scarf is as long as the season so far. The sample has seven bands, labelled 'J.01–J.07 · Exemple' on the label.",
       "Below the season, the name is knitted in Changa 800, letter-spaced so the letters never fuse. Under it is the woven label sewn on the front: the BotolaGO wordmark (colour version, unmodified), the four ratings in a column (Manrope 800, tabular), and BOT #004821, MOROCCO and 2026/27 woven into its foot. Last come the founder's cream cable cast-on with 2026, and the fringe.",
       "Every motif is rasterised once by canvas onto a stitch grid and drawn as merged colour runs, under one stitch-texture pattern per gauge. The fold over the tube, the edge curl and the fibre grain appear at full size only. Tokens and rows use flat yarn fields and solid figures, with no filters.",
@@ -1415,31 +1425,31 @@
     ],
     founderMark: [
       "The cast-on: the first five rows ever knitted, just above the fringe, are cream, with two cable twists flanking 2026 knitted in the darker club yarn. They keep the same gauge at every tier and form the bright band at the scarf's foot, readable at arm's length.",
-      "The year is never knitted next to the name. The woven label always sits between the knitted name and the cast-on, so the scarf never shows the supporter-group 'name + year' lockup. Written forms elsewhere use 'ALI ·26' (the share image) or 'FOUNDER 2026' (the row).",
+      "The year is never knitted next to the name. On the hanging scarf the woven label always sits between the knitted name and the cast-on; at LEGEND the name is in the raised band and the cast-on hangs at the far end, below the other fist. So the scarf never shows the supporter-group 'name + year' lockup. Written forms elsewhere use 'ALI ·26' (the share image) or 'FOUNDER 2026' (the row).",
       "Non-founders cast on plain, in the ground yarn, with no year.",
-      "At 24px the founder mark is a 3px cream band above the tassels, edged on the light ground so it reads as knit and not as a gap. At LEGEND it becomes a vertical cream band near the end of the raised scarf.",
+      "At 24px the founder mark is a 3px cream band above the tassels, edged on the light ground so it reads as knit and not as a gap. On the LEGEND card the cast-on is at the foot of the end that hangs from the second fist, 2026 upright across it; in the LEGEND token and mini it is a vertical cream band near the end of the raised swatch.",
       "Ceremony 'la première maille' (motion on, replayable): the five cast-on rows knit across in turn, 120ms each, and the cables then appear. The 84 stays visible throughout; reduced motion shows the finished state.",
     ],
     small: [
-      "44–80px token: a hanging segment. It has a steel rail with an overhang, the knot bump on the start side, and a club-colour swatch carrying the 84 in solid Changa 800. The swatch has a cream start selvedge and a Logo Blue end selvedge, the cream cast-on band for founders, and the tassels: two, three or four, five knotted at CHAMPION. PRO keeps its dog-eared corner. Flat fields only, with no textures or filters.",
-      "24–32px mini, as it leads the name cell of the ranking card: an integer 22×24 grid scaled whole. It has a 2px rail, the knot bump, a 14px club-colour swatch with the 84 in Changa 800, a 3px cream founder band and 1px tassels counting the tier. LEGEND turns horizontal (24×11), held by two fists with arms below: the outline change.",
+      "44–80px token: a hanging segment. It has a steel rail with a longer overhang on the start side, where the scarf's tail is wrapped round the rail and hangs (about 0.12 of the token's height wide, to 45% of the swatch's height), and a club-colour swatch carrying the 84 in solid Changa 800. The swatch has a cream start selvedge and a Logo Blue end selvedge, the cream cast-on band for founders, and the tassels: two, three or four, five knotted at CHAMPION. PRO keeps its dog-eared corner. Flat fields only, with no textures or filters.",
+      "24–32px mini, as it leads the name cell of the ranking card: an integer 22×24 grid scaled whole. It has a 2px rail, the tail as a 2×6-cell column on the start side, a 14-cell club-colour swatch with its Logo Blue end selvedge and the 84 in Changa 800 centred on it at 9 cells high, a 3-cell cream founder band, and 1-cell tassels snapped to whole cells, counting the tier (2, 3, 4, 5). LEGEND turns horizontal (24×11), held by two fists with arms below: the outline change.",
       "Row (the 'My position' card): the steel rail runs along the top of the card and the 56px token hangs from it. Beside it are the name in Changa 800, the tier with FOUNDER 2026, and the points. Five rows read as stretches of barrier, each with its scarf.",
     ],
     rtl: [
-      "The scarf is a textile with no logo rule, so the layout mirrors. The knot moves to the right; the Logo Blue selvedge goes to the left edge; the cream selvedge and the fifth-gameweek notches go to the right; PRO's dog-ear moves to the bottom left. At LEGEND the reading order reverses, with the name at the right. The BotolaGO wordmark stays Latin and unmirrored.",
+      "The scarf is a textile with no logo rule, so the layout mirrors. The knot (the tail) moves to the right; the Logo Blue selvedge goes to the left edge; the cream selvedge and the fifth-gameweek notches go to the right; PRO's dog-ear moves to the bottom left. At LEGEND the reading order reverses: the name is at the right of the band and the 84 at the left, the label end hangs from the right fist and the cast-on end from the left. The BotolaGO wordmark stays Latin and unmirrored.",
       "علي is sampled from Changa 800 at 9 stitch rows. Its final yā is knitted without dots and the two dots are hand-placed as single stitch cells, so it never reads as على.",
-      "The Arabic tier word is satin-stitch embroidery over the knit (a thread hatch with a split-stitch outline), because Arabic does not hold at 7 stitch rows.",
-      "The label is set in Noto Sans Arabic 700, right-aligned, with المغرب in its foot. Knitted figures and every number stay left-to-right, and there is no letter-spacing on Arabic.",
+      "The Arabic tier word is satin-stitch embroidery over the knit (a thread hatch with a split-stitch outline), because Arabic does not hold at 7 stitch rows. At LEGEND أسطورة is embroidered under the knitted name.",
+      "The label is set in Noto Sans Arabic 700, right-aligned, with المغرب in its foot; on LEGEND's narrower label the Arabic rating names shrink until each fits beside its figure. Knitted figures and every number stay left-to-right, and there is no letter-spacing on Arabic. The share sets the founder's year as علي 26· with the dot inside the left-to-right run, so it sits between the name and the year.",
     ],
     tiers: {
-      HOMA: "Hand-knitted chunky garter (8u stitches, 24 across) in continuous horizontal ridges: new yarn, even tension, a clean outline. The 84 is a hand-charted 5×7 bitmap (each pixel two stitches by two rows) and the word HOMA is hand-charted too. The season alternates stockinette and rib. Full silhouette, 2 tassels.",
-      STADE: "Machine jacquard at 32 stitches with flat, shallow stitches. The 84 is sampled from Changa 800 at 18 rows and the word STADE at 7. 3 tassels.",
-      PRO: "Double-face jacquard with plump stitches and the 84 at 18 rows. The bottom inline-end corner is dog-eared, showing the reverse face with its colours swapped, which changes the outline. 4 tassels.",
+      HOMA: "Hand-knitted chunky garter (8u stitches, 24 across) in continuous horizontal ridges: new yarn, even tension, a clean outline. The 84 is a bold hand chart with two-pixel stems (columns 1-2-2-2-1 stitches wide, rows doubled), so its stems are three stitches, the ink weight of STADE's figures. The word HOMA is hand-charted too. Its gaps are rounded down, so it is never taller than STADE. The season alternates stockinette and rib. Full silhouette, 2 tassels.",
+      STADE: "Machine jacquard at 32 stitches with flat, shallow stitches. The 84 is sampled from Changa 800 at 18 rows, framed by a two-row stripe of the club's secondary above and below; the word STADE is sampled at 7 rows. 3 tassels.",
+      PRO: "Double-face jacquard with plump stitches. The 84 panel is knitted reversed: secondary ground, primary figures, the colours the dog-eared bottom inline-end corner promises, which also changes the outline. The word PRO is hand-charted on a bold 7-row chart, so the R never reads as an A. 4 tassels.",
       CHAMPION: "The finest gauge (4×5u, 48 stitches across): the 84 is sampled at 22 rows and gains its curves, and CHAMPION is hand-charted on 10 rows. 5 knotted tassels.",
-      LEGEND: "'Écharpe levée': lifted off the rail and held taut overhead between two fists in bench-jacket cuffs, so the card turns landscape. Heaviest gauge (9u stitches). It reads along the length: the name, the 84, the season as vertical bands, then the label (ratings 2×2, the tier word woven beside the brand). The cast-on is turned with the scarf, so 2026 reads upward. The ends drape down beside the wrists with the longest hand-knotted fringe. No gold, satin or lurex.",
+      LEGEND: "'Écharpe levée': lifted off the rail and held taut overhead between two fists, the forearms in graphite bench-jacket sleeves rising from the bottom edge, so the card turns landscape (about 1.6:1 for a short name). The band, at the heaviest gauge (9u stitches, 17 across), runs across the top third: the name with LEGEND knitted under it, a two-stitch cream bar between ground stitches, and the 84 at 13 rows, 1.6 times the name's height. Each end drapes down from its fist: the start end carries seven thin ridges for the season and the woven label (ratings in a column); the other end carries the cast-on with 2026 upright. Both end in the longest hand-knotted fringe. No gold, satin or lurex.",
     },
     legend: [
-      "The outline changes from hanging (rail, strip, fringe) to raised (a band held by two fists, arms from below). It is visible at 24px, where the mini turns into a horizontal swatch with two fists.",
+      "The outline changes from hanging (rail, strip, fringe) to raised (a band held by two fists, the forearms rising from below, the two ends draping beside them). It is visible at 24px, where the mini turns into a horizontal swatch with two fists.",
       "The moment (motion on, replayable, the 84 visible throughout): the fists come up from below, the scarf lifts and settles taut in 420ms, and the fringe swings once. Reduced motion shows the raised final state.",
       "Its richness comes from the object's own physics: the heaviest gauge, the ridged gameweek bands, the long knotted fringe and the gesture itself. There is no precious metal anywhere.",
     ],
@@ -1452,12 +1462,12 @@
     ],
     risks: [
       "It sits close to ultras culture: no slogans or group-like names ever, the year is never knitted beside the name, and free-text names would need moderation.",
-      "The card's height changes through the season: about 1:2.5 at J.07 (1:2.7 for HOMA's chunky gauge) and about 1:3.7 by J.30. The landscape LEGEND is about 3.8:1, so in a fixed-width slot it is small: at 360px wide it is about 94px tall, and its label figures are 7–8px.",
-      "Knitted type limits names. Nine letters or more knit only the initial, with the full name on the label. Arabic names other than علي are sampled the same way but were not hand-checked.",
-      "At 24px it is a pixel badge. The knot reads as a knot only from about 44px; below that it is a bump.",
+      "The card's height changes through the season: about 1:2.6 at J.07 (HOMA included) and about 1:3.7 by J.30 (1:4.1 for HOMA's chunky gauge). The landscape LEGEND is about 1.6:1 for ALI (about 122px tall at 200px wide), 1.4:1 for علي, and up to about 1.85:1 for a seven-letter name; its label hangs on one end, so at 360px wide its rating figures are about 9px.",
+      "Knitted type limits names. Nine letters or more (or a name too wide for HOMA's 24 stitches, such as MOHAMMED) knit only the initial, with the full name woven into the label. Arabic names other than علي are sampled the same way but were not hand-checked.",
+      "At 24px it is a pixel badge; the tail there is a 2×6-cell tab beside the rail.",
       "The placeholder club colour is a slate close to navy. Real club colours will change the whole look, and they need contrast rules (and red with green only when the club's own data says so).",
       "Scarves overlap the empty-leagues and season-prize art, which needs the owner's sign-off. The fists use the shared avatar's single skin tone.",
-      "Not built yet: the league share 'Le mur des écharpes', the band that knits on at gameweek close, long-press on the label, and the multi-segment sway (the drag sway is a single pendulum from the rail). The share's knitted 84 is about 15% of the frame height, short of the 18% target.",
+      "Not built yet: the league share 'Le mur des écharpes', the band that knits on at gameweek close, long-press on the label, and the multi-segment sway (the drag sway is a single pendulum from the rail). The share fits the scarf from the rail to its cast-on (the knitted 84 is about 18% of the frame's height), so the fringe runs off the frame's foot.",
       "The Arabic strings (embroidered tier words, مثال, the caption) need MSA review.",
     ],
     gridWidth: 150,
