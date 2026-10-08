@@ -181,7 +181,12 @@
 }
 .app-dark .c07v2-tk .c07v2-tk-arm,
 :root[data-ground] .app-dark .c07v2-tk .c07v2-tk-arm {
-  fill: #5d6570;
+  fill: #6b7482;
+}
+/* LEGEND's supporter (the shared avatar): lifted a step on the dark ground so the hood reads */
+.app-dark .c07v2-tk .c07v2-tk-av path:not([fill="none"]),
+:root[data-ground] .app-dark .c07v2-tk .c07v2-tk-av path:not([fill="none"]) {
+  fill: #6b7482;
 }
 /* the cream cast-on keeps an edge on the light ground, so it reads as knit, not as a gap */
 .app-light .c07v2-tk .c07v2-tk-cast,
@@ -194,7 +199,7 @@
 .c07v2-row {
   position: relative;
   display: grid;
-  grid-template-columns: 22px auto minmax(0, 1fr) auto;
+  grid-template-columns: 22px 64px minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 10px;
   width: 100%;
@@ -233,10 +238,12 @@
 .c07v2-row.is-me .c07v2-row-rank {
   color: var(--ui-on-surface, #0d1626);
 }
+/* a fixed slot, the token centred in it, so every name starts at the same x */
 .c07v2-row .c07v2-row-token {
   position: relative;
   display: block;
   align-self: start;
+  justify-self: center;
   margin-top: 0;
 }
 .c07v2-row .c07v2-row-name {
@@ -252,12 +259,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* the supporter year after the name: about 60% of its size, the muted ink */
+/* the supporter year after the name: a thin space, a heavy dot centred on the figures, the year
+   at 75% in the muted ink (never a hairline that reads as a minus sign next to the points) */
 .c07v2-row .c07v2-row-yr {
-  font-size: 0.68em;
+  font-size: 0.75em;
   font-weight: 800;
   color: var(--ui-on-surface-muted, #4e5661);
   letter-spacing: 0.02em;
+  margin-inline-start: 0.2em;
+}
+.c07v2-row .c07v2-row-dot {
+  display: inline-block;
+  width: 0.26em;
+  height: 0.26em;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 0.24em;
+  margin-inline-end: 0.14em;
+}
+.c07v2-row[dir="rtl"] .c07v2-row-dot {
+  margin-inline: 0.14em 0;
 }
 .c07v2-row .c07v2-row-name small {
   font: 700 11px/1.2 "Manrope", "Noto Sans Arabic", sans-serif;
@@ -318,13 +339,13 @@
 }
 .c07v2-share .c07v2-sh-logo {
   position: absolute;
-  top: 26px;
+  top: 24px;
   inset-inline-start: 24px;
   width: 96px;
 }
 .c07v2-share .c07v2-sh-cap {
   position: absolute;
-  top: 54px;
+  top: 50px;
   inset-inline-start: 24px;
   margin: 0;
   display: grid;
@@ -333,7 +354,7 @@
 }
 .c07v2-share[dir="rtl"] .c07v2-sh-cap {
   font: 700 19px/1.4 "Changa", "Noto Sans Arabic", sans-serif;
-  top: 50px;
+  top: 44px;
 }
 .c07v2-share .c07v2-sh-sub {
   position: absolute;

@@ -1,14 +1,15 @@
 /* 07 ÉCHARPE v2 — the supporter's scarf, refined.
-   Default state (grids, detail, tier strip): the scarf draped over the steel crowd-barrier rail,
-   its front drop showing a face of about 1:1.6 and the rest hanging behind it (the back drop
-   shows as an offset edge and a second fringe). Read from the rail down, each element on its own
-   colour band: the 84 (100%), ALI ·26 (62%), a narrow tier band set in the stripes (38%), the
-   woven jacquard patch with the ratings, the founder's cream cast-on with 2026, the fringe.
-   Every knitted glyph comes from a hand-cleaned chart on an integer stitch grid (no live
-   rasterising): digits 9 stitches by 13 rows, Latin capitals on 8 rows, tier words on 5 rows,
-   علي and the five Arabic tier words hand-charted with connected joins.
-   The full-length scarf (o.long) carries the season, one stripe per gameweek played; the share
-   image uses it. LEGEND lifts the scarf off the rail and holds it overhead. */
+   Default state (grids, detail, tier strip): the scarf folded over the steel crowd-barrier rail.
+   The front drop shows a face of about 1:1.5; the rest of the scarf hangs behind it, parallel,
+   in shadow, and shows as a darker strip along the inline-start edge with a fold lip over the
+   rail and a straight cast-off edge. Read from the rail down, each element on its own band:
+   the 84 (13 rows), ALI ·26 (8 rows), a narrow tier strip (a 4-row word), then the season's
+   gameweek stripes with the woven patch sewn over them, the founder's cream cast-on, the fringe.
+   Every knitted glyph comes from a hand-cleaned chart on an integer stitch grid. A name that does
+   not fit steps down a ladder (8 rows → 7 → 6 condensed, the year stacked above the name's end,
+   then two lines); it is never cut to an initial. The share image hangs both halves of the
+   scarf over the rail: the front with the 84, the name, the tier and the patch; the back with
+   the season, the 2026 cast-on and the fringe. LEGEND lifts the scarf overhead. */
 (function () {
   const MC = window.MC;
   const PFX = "c07v2";
@@ -31,7 +32,7 @@
   const PATCH_FALLBACK = "#ECE6D8"; // the patch ground when the club's second colour is dark
   const INK = "#23252A";
   const INK_SOFT = "#4F4A42";
-  const SLEEVE = "#2f343c"; // bench-jacket sleeve (graphite)
+  const SLEEVE = "#2f343c"; // bench-jacket graphite (LEGEND's figure and sleeves)
   const SLEEVE_LT = "#4f5763";
   const PLAYED = 7; // sample season: J.01–J.07, labelled Exemple
 
@@ -39,20 +40,23 @@
   const VW = 264;
   const X0 = 26;
   const X1 = 250;
-  const FW = X1 - X0; // 224: 28 stitches at HOMA, 32 at STADE, 35 at PRO, 40 at CHAMPION
+  const FW = X1 - X0; // 224
   const RAIL_Y = 8;
   const RAIL_H = 14;
   const FT = 2; // the fabric's top, turned over the tube
   const CAST = { c: 7, rows: 5 }; // the founder's cast-on keeps one gauge at every tier
-  const BACK = { dx: 12 }; // the back drop: offset to the inline start, shorter than the front
+  const BACK_DX = 10; // the back drop shows this far beyond the front's inline-start edge
+  const SHARE_DX = 16; // in the share, the back half shows a wider strip
   const TASSELS = { HOMA: 2, STADE: 3, PRO: 4, CHAMPION: 5, LEGEND: 3 };
+  const LEGEND_INNER = 36; // stitches the raised band gives the name
 
-  /* gauge: HOMA chunky acrylic → STADE machine jacquard → PRO fine (0.8× HOMA) → CHAMPION double-knit */
+  /* gauge: stitches across the 224u face. HOMA chunky acrylic → STADE machine jacquard → PRO fine
+     (0.81× HOMA's stitch) → CHAMPION double-knit */
   const GAUGE = {
-    HOMA: { c: 8, gap: 0.5, leg: 0.34, ridge: true },
-    STADE: { c: 7, gap: 0.3, leg: 0.2 },
-    PRO: { c: 6.4, gap: 0.4, leg: 0.27 },
-    CHAMPION: { c: 5.6, gap: 0.5, leg: 0.36, plump: true },
+    HOMA: { cols: 30, gap: 0.42, leg: 0.34 },
+    STADE: { cols: 33, gap: 0.3, leg: 0.2 },
+    PRO: { cols: 37, gap: 0.4, leg: 0.27 },
+    CHAMPION: { cols: 42, gap: 0.5, leg: 0.36 },
   };
 
   /* ---------- hand-cleaned knit charts ('#' = stitch) ---------- */
@@ -102,49 +106,88 @@
     "-": ["....", "....", "....", "####", "####", "....", "....", "...."],
     " ": ["..", "..", "..", "..", "..", "..", "..", ".."],
   };
-  // Tier words (and long names), 5 rows, one-stitch strokes.
-  const T5 = {
-    A: [".##.", "#..#", "####", "#..#", "#..#"],
-    B: ["###.", "#..#", "###.", "#..#", "###."],
-    C: [".###", "#...", "#...", "#...", ".###"],
-    D: ["###.", "#..#", "#..#", "#..#", "###."],
-    E: ["###", "#..", "##.", "#..", "###"],
-    F: ["###", "#..", "##.", "#..", "#.."],
-    G: [".###", "#...", "#.##", "#..#", ".###"],
-    H: ["#..#", "#..#", "####", "#..#", "#..#"],
-    I: ["#", "#", "#", "#", "#"],
-    J: ["..#", "..#", "..#", "#.#", ".#."],
-    K: ["#..#", "#.#.", "##..", "#.#.", "#..#"],
-    L: ["#..", "#..", "#..", "#..", "###"],
-    M: ["#...#", "##.##", "#.#.#", "#...#", "#...#"],
-    N: ["#..#", "##.#", "#.##", "#..#", "#..#"],
-    O: [".##.", "#..#", "#..#", "#..#", ".##."],
-    P: ["###.", "#..#", "###.", "#...", "#..."],
-    Q: [".##.", "#..#", "#..#", "#.##", ".###"],
-    R: ["###.", "#..#", "###.", "#.#.", "#..#"],
-    S: [".###", "#...", ".##.", "...#", "###."],
-    T: ["###", ".#.", ".#.", ".#.", ".#."],
-    U: ["#..#", "#..#", "#..#", "#..#", ".##."],
-    V: ["#...#", "#...#", ".#.#.", ".#.#.", "..#.."],
-    W: ["#...#", "#...#", "#.#.#", "##.##", "#...#"],
-    X: ["#..#", "#..#", ".##.", "#..#", "#..#"],
-    Y: ["#.#", "#.#", ".#.", ".#.", ".#."],
-    Z: ["####", "..#.", ".#..", "#...", "####"],
-    "-": ["...", "...", "###", "...", "..."],
-    " ": [".", ".", ".", ".", "."],
+  // Condensed capitals, 7 rows: still two-stitch stems, one-row bars, mostly five stitches wide.
+  const N7 = {
+    A: [".###.", "##.##", "##.##", "#####", "##.##", "##.##", "##.##"],
+    B: ["####.", "##.##", "##.##", "####.", "##.##", "##.##", "####."],
+    C: [".####", "##...", "##...", "##...", "##...", "##...", ".####"],
+    D: ["####.", "##.##", "##.##", "##.##", "##.##", "##.##", "####."],
+    E: ["####", "##..", "##..", "###.", "##..", "##..", "####"],
+    F: ["####", "##..", "##..", "###.", "##..", "##..", "##.."],
+    G: [".####", "##...", "##...", "##.##", "##.##", "##.##", ".####"],
+    H: ["##.##", "##.##", "##.##", "#####", "##.##", "##.##", "##.##"],
+    I: ["##", "##", "##", "##", "##", "##", "##"],
+    J: ["...##", "...##", "...##", "...##", "...##", "##.##", ".###."],
+    K: ["##.##", "##.##", "####.", "###..", "####.", "##.##", "##.##"],
+    L: ["##..", "##..", "##..", "##..", "##..", "##..", "####"],
+    M: ["##...##", "###.###", "#######", "##.#.##", "##...##", "##...##", "##...##"],
+    N: ["##..##", "###.##", "######", "##.###", "##..##", "##..##", "##..##"],
+    O: [".###.", "##.##", "##.##", "##.##", "##.##", "##.##", ".###."],
+    P: ["####.", "##.##", "##.##", "####.", "##...", "##...", "##..."],
+    Q: [".###.", "##.##", "##.##", "##.##", "##.##", "##.#.", ".##.#"],
+    R: ["####.", "##.##", "##.##", "####.", "##.##", "##.##", "##.##"],
+    S: [".####", "##...", "##...", ".###.", "...##", "...##", "####."],
+    T: ["######", "..##..", "..##..", "..##..", "..##..", "..##..", "..##.."],
+    U: ["##.##", "##.##", "##.##", "##.##", "##.##", "##.##", ".###."],
+    V: ["##.##", "##.##", "##.##", "##.##", "##.##", ".###.", "..#.."],
+    W: ["##...##", "##...##", "##.#.##", "##.#.##", "#######", "###.###", "##...##"],
+    X: ["##.##", "##.##", ".###.", "..#..", ".###.", "##.##", "##.##"],
+    Y: ["##..##", "##..##", "##..##", ".####.", "..##..", "..##..", "..##.."],
+    Z: ["#####", "...##", "...##", "..##.", ".##..", "##...", "#####"],
+    "-": ["...", "...", "...", "###", "...", "...", "..."],
+    " ": ["..", "..", "..", "..", "..", "..", ".."],
   };
-  // Condensed 3-wide variants, used when a tier word would not sit inside the bound edges.
-  const T5C = {
-    A: [".#.", "#.#", "###", "#.#", "#.#"],
-    C: [".##", "#..", "#..", "#..", ".##"],
-    H: ["#.#", "#.#", "###", "#.#", "#.#"],
-    O: [".#.", "#.#", "#.#", "#.#", ".#."],
-    P: ["##.", "#.#", "##.", "#..", "#.."],
-    D: ["##.", "#.#", "#.#", "#.#", "##."],
-    G: [".##", "#..", "#.#", "#.#", ".##"],
-    N: ["#..#", "##.#", "#.##", "#..#", "#..#"],
+  // Condensed capitals, 6 rows: two-stitch stems, one-row bars, four stitches where the letter allows.
+  const N6 = {
+    A: [".###.", "##.##", "#####", "##.##", "##.##", "##.##"],
+    B: ["####.", "##.##", "####.", "##.##", "##.##", "####."],
+    C: [".###", "##..", "##..", "##..", "##..", ".###"],
+    D: ["####.", "##.##", "##.##", "##.##", "##.##", "####."],
+    E: ["####", "##..", "###.", "##..", "##..", "####"],
+    F: ["####", "##..", "###.", "##..", "##..", "##.."],
+    G: [".####", "##...", "##.##", "##.##", "##.##", ".####"],
+    H: ["##.##", "##.##", "#####", "##.##", "##.##", "##.##"],
+    I: ["##", "##", "##", "##", "##", "##"],
+    J: ["...##", "...##", "...##", "...##", "##.##", ".###."],
+    K: ["##.##", "##.##", "####.", "####.", "##.##", "##.##"],
+    L: ["##..", "##..", "##..", "##..", "##..", "####"],
+    M: ["##...##", "###.###", "##.#.##", "##...##", "##...##", "##...##"],
+    N: ["##..##", "###.##", "##.###", "##..##", "##..##", "##..##"],
+    O: [".###.", "##.##", "##.##", "##.##", "##.##", ".###."],
+    P: ["####.", "##.##", "##.##", "####.", "##...", "##..."],
+    Q: [".###.", "##.##", "##.##", "##.##", "##.#.", ".##.#"],
+    R: ["####.", "##.##", "##.##", "####.", "##.##", "##.##"],
+    S: [".###", "##..", ".##.", "..##", "..##", "###."],
+    T: ["####", ".##.", ".##.", ".##.", ".##.", ".##."],
+    U: ["##.##", "##.##", "##.##", "##.##", "##.##", ".###."],
+    V: ["##.##", "##.##", "##.##", "##.##", ".###.", "..#.."],
+    W: ["##...##", "##...##", "##.#.##", "#######", "###.###", "##...##"],
+    X: ["##.##", "##.##", ".###.", ".###.", "##.##", "##.##"],
+    Y: ["##..##", "##..##", ".####.", "..##..", "..##..", "..##.."],
+    Z: ["####", "..##", "..##", ".##.", "##..", "####"],
+    "-": ["...", "...", "###", "...", "...", "..."],
+    " ": ["..", "..", "..", "..", "..", ".."],
   };
-  // Small figures, 3×5: the year after the name (·26) and the cast-on's 2026.
+  // Tier words, 4 rows, one-stitch strokes: a step below the name in size and weight.
+  const T4 = {
+    A: [".#.", "#.#", "###", "#.#"],
+    C: ["###", "#..", "#..", "###"],
+    D: ["##.", "#.#", "#.#", "##."],
+    E: ["###", "##.", "#..", "###"],
+    G: ["###", "#..", "#.#", "###"],
+    H: ["#.#", "###", "#.#", "#.#"],
+    I: ["#", "#", "#", "#"],
+    L: ["#..", "#..", "#..", "###"],
+    M: ["#...#", "##.##", "#.#.#", "#...#"],
+    N: ["#..#", "##.#", "#.##", "#..#"],
+    O: ["###", "#.#", "#.#", "###"],
+    P: ["###", "#.#", "###", "#.."],
+    R: ["###", "#.#", "##.", "#.#"],
+    S: [".###", "##..", "..##", "###."],
+    T: ["###", ".#.", ".#.", ".#."],
+    " ": [".", ".", ".", "."],
+  };
+  // Small figures, 3×5: the year after an 8-row name (·26) and the cast-on's 2026.
   const F35 = {
     0: ["###", "#.#", "#.#", "#.#", "###"],
     1: [".#.", "##.", ".#.", ".#.", "###"],
@@ -157,7 +200,45 @@
     8: ["###", "#.#", "###", "#.#", "###"],
     9: ["###", "#.#", "###", "..#", "###"],
   };
-  // Token figures, 5×7 with two-stitch stems (24–28px minis, HOMA's chunky token).
+  // Smaller figures, 3×4: the year after a 7- or 6-row name, and after Arabic names.
+  const F34 = {
+    0: ["###", "#.#", "#.#", "###"],
+    1: ["##.", ".#.", ".#.", "###"],
+    2: ["##.", "..#", ".#.", "###"],
+    3: ["###", ".##", "..#", "###"],
+    4: ["#.#", "#.#", "###", "..#"],
+    5: ["###", "##.", "..#", "##."],
+    6: ["#..", "###", "#.#", "###"],
+    7: ["###", "..#", ".#.", ".#."],
+    8: ["###", "#.#", "###", "###"],
+    9: ["###", "#.#", "###", "..#"],
+  };
+  // Token figures: optical sizes on whole pixels, so the 84 steps down evenly from 80px to 24px
+  // (D913×2 26px · F710×2 20px · F69×2 18px · D913 13px · F710 10px · F69 9px · F57 7px).
+  const F710 = {
+    0: [".#####.", "#######", "##...##", "##...##", "##...##", "##...##", "##...##", "##...##", "#######", ".#####."],
+    1: [".####..", "#####..", "...##..", "...##..", "...##..", "...##..", "...##..", "...##..", "#######", "#######"],
+    2: [".#####.", "#######", "##...##", ".....##", "....###", "..####.", ".###...", "###....", "#######", "#######"],
+    3: [".#####.", "#######", "##...##", ".....##", "..#####", "..#####", ".....##", "##...##", "#######", ".#####."],
+    4: ["##..##.", "##..##.", "##..##.", "##..##.", "##..##.", "#######", "#######", "....##.", "....##.", "....##."],
+    5: ["#######", "#######", "##.....", "######.", "#######", ".....##", ".....##", "##...##", "#######", ".#####."],
+    6: [".######", "#######", "##.....", "######.", "#######", "##...##", "##...##", "##...##", "#######", ".#####."],
+    7: ["#######", "#######", ".....##", "....###", "...###.", "...##..", "..###..", "..##...", "..##...", "..##..."],
+    8: [".#####.", "#######", "##...##", "##...##", ".#####.", ".#####.", "##...##", "##...##", "#######", ".#####."],
+    9: [".#####.", "#######", "##...##", "##...##", "##...##", "#######", ".######", ".....##", "#######", "######."],
+  };
+  const F69 = {
+    0: [".####.", "######", "##..##", "##..##", "##..##", "##..##", "##..##", "######", ".####."],
+    1: [".###..", "####..", "..##..", "..##..", "..##..", "..##..", "..##..", "######", "######"],
+    2: [".####.", "######", "##..##", "....##", "...###", ".####.", "###...", "######", "######"],
+    3: [".####.", "######", "....##", "..####", "..####", "....##", "##..##", "######", ".####."],
+    4: ["##.##.", "##.##.", "##.##.", "##.##.", "######", "######", "...##.", "...##.", "...##."],
+    5: ["######", "######", "##....", "#####.", "######", "....##", "##..##", "######", ".####."],
+    6: [".#####", "######", "##....", "#####.", "######", "##..##", "##..##", "######", ".####."],
+    7: ["######", "######", "....##", "...###", "..###.", "..##..", ".###..", ".##...", ".##..."],
+    8: [".####.", "######", "##..##", "##..##", ".####.", "##..##", "##..##", "######", ".####."],
+    9: [".####.", "######", "##..##", "##..##", "######", ".#####", "....##", "######", "#####."],
+  };
   const F57 = {
     0: [".###.", "##.##", "##.##", "##.##", "##.##", "##.##", ".###."],
     1: ["..##.", ".###.", "..##.", "..##.", "..##.", "..##.", ".####"],
@@ -170,12 +251,12 @@
     8: [".###.", "##.##", "##.##", ".###.", "##.##", "##.##", ".###."],
     9: [".###.", "##.##", "##.##", ".####", "...##", "...##", ".###."],
   };
-  // Arabic, hand-charted from Changa's geometric Arabic and joined on the baseline. Charts are
-  // in visual order (left to right on the page), so they are never mirrored.
-  // علي: 17 × 12, two-stitch strokes like the Latin names; baseline rows 5–6; the yā's two dots
-  // are 2×2 blocks one row under its bowl.
+  // Arabic, hand-charted from Changa's geometric Arabic and joined on the baseline. Charts are in
+  // visual order (left to right on the page), so they are never mirrored. 'base' is the last row
+  // of the two-row baseline. The bold charts have two-stitch strokes like the Latin capitals, the
+  // condensed ones (name~) one-stitch uprights on the same two-row baseline. Dots are 2×2 blocks.
   const AR_NAME = {
-    علي: [
+    علي: { base: 6, bmp: [
       "........##.......",
       "........##.......",
       "........##..#####",
@@ -188,10 +269,120 @@
       ".................",
       ".##.##...........",
       ".##.##...........",
-    ],
+    ] },
+    "علي~": { base: 6, bmp: [
+      "......#.....",
+      "......#.....",
+      "......#.####",
+      "......#.#...",
+      "#.....#.#...",
+      "#..#########",
+      "#..#########",
+      "####........",
+      "####........",
+      "............",
+      "##.##.......",
+      "##.##.......",
+    ] },
+    سلمى: { base: 6, bmp: [
+      "...............##.........",
+      "...............##.........",
+      "...............##.........",
+      "........######.##.##.##.##",
+      "##......##..##.##.##.##.##",
+      "##..######################",
+      "##..######################",
+      "#######...................",
+      "#######...................",
+    ] },
+    "سلمى~": { base: 6, bmp: [
+      "..........#......",
+      "..........#......",
+      "..........#......",
+      ".....####.#.#.#.#",
+      "#....#..#.#.#.#.#",
+      "#..##############",
+      "#..##############",
+      "####.............",
+      "####.............",
+    ] },
+    ياسمين: { base: 6, bmp: [
+      "..##........................##....",
+      "..##........................##....",
+      "............................##....",
+      "##......##..######.##.##.##.##.##.",
+      "##......##..##..##.##.##.##.##.##.",
+      "##..#######################.#####.",
+      "##..#######################.#####.",
+      "######............................",
+      "######.##.##.................##.##",
+      ".......##.##.................##.##",
+    ] },
+    "ياسمين~": { base: 6, bmp: [
+      ".##................#....",
+      ".##................#....",
+      "...................#....",
+      "#.....#.####.#.#.#.#.#..",
+      "#.....#.#..#.#.#.#.#.#..",
+      "#..###############.###..",
+      "#..###############.###..",
+      "####....................",
+      "####.##.##.........##.##",
+      ".....##.##.........##.##",
+    ] },
+    عثمان: { base: 9, bmp: [
+      "...................##.........",
+      "...................##.........",
+      "..............................",
+      "..##....##.......##..##.......",
+      "..##....##.......##..##.......",
+      "........##...............#####",
+      "##..##..##.######..##...##....",
+      "##..##..##.##..##..##...##....",
+      "##..##..######################",
+      "##..##..######################",
+      "######........................",
+      "######........................",
+    ] },
+    "عثمان~": { base: 9, bmp: [
+      "............##.......",
+      "............##.......",
+      ".....................",
+      ".##..#.....##.##.....",
+      ".##..#.....##.##.....",
+      ".....#...........####",
+      "#..#.#.####..#...#...",
+      "#..#.#.#..#..#...#...",
+      "#..#.################",
+      "#..#.################",
+      "####.................",
+      "####.................",
+    ] },
+    حمزة: { base: 6, bmp: [
+      "##.##....##..............",
+      "##.##....##..............",
+      "...................######",
+      ".####....##.######.######",
+      "##..##...##.##..##.....##",
+      "##..##...################",
+      ".####....################",
+      ".........##..............",
+      "........##...............",
+      ".......##................",
+    ] },
+    "حمزة~": { base: 6, bmp: [
+      "##.##..##.........",
+      "##.##..##.........",
+      "..............####",
+      ".##....#.####....#",
+      "#..#...#.#..#....#",
+      "#..#...###########",
+      ".##....###########",
+      ".......#..........",
+      "......#...........",
+      ".....#............",
+    ] },
   };
-  const AR_NAME_BASE = { علي: 6 }; // the baseline's last row (figures sit on it)
-  // Tier words, 8 rows, one-stitch strokes, baseline row 5.
   const AR_TIER = {
     HOMA: ["...............", "#.#............", "............###", "###.###..###..#", "#.#.#.#..#.#..#", "#######..######", "..........#....", ".........#....."],
     STADE: ["............#....", "............#....", "........###.#....", "#.....#.#.#.#.###", "#.....#.#.#.#.#.#", "#################", ".................", "...#............."],
@@ -344,9 +535,10 @@
     return s;
   }
 
-  /* ---------- fallback: a name with no chart (other Arabic names) sampled from Changa 800 ---------- */
+  /* ---------- fallback: an Arabic name with no chart, sampled from Changa 800 ---------- */
   const RCACHE = new Map();
-  function rasterText(text, rows, thr = 0.5) {
+  /** Samples `text` at `rows` stitches tall. Returns { bmp, base } (base = the baseline's last row). */
+  function rasterText(text, rows, thr = 0.45) {
     const spec = '800 100px "Changa"';
     const key = `${text}|${rows}|${thr}`;
     if (RCACHE.has(key)) return RCACHE.get(key);
@@ -376,17 +568,28 @@
       }
       out.push(line);
     }
+    const res = { bmp: out, base: Math.max(0, Math.min(rows - 1, Math.round((asc / hh) * rows) - 1)) };
     let ok = true;
     try {
       ok = !document.fonts || document.fonts.check(spec, text);
     } catch (e) {
       ok = true;
     }
-    if (ok) RCACHE.set(key, out);
-    return out;
+    if (ok) RCACHE.set(key, res);
+    return res;
   }
 
   /* ---------- colours from the profile ---------- */
+  /** The lightest (or darkest) tint of `g` that reaches `target` contrast, from `t0` up to 0.9. */
+  function reach(g, target, t0, toward) {
+    let t = t0;
+    let c = mix(g, toward, t);
+    while (contrast(c, g) < target && t < 0.9) {
+      t += 0.04;
+      c = mix(g, toward, t);
+    }
+    return c;
+  }
   function palette(p) {
     const club = p.club && p.club.primary;
     const G = club ? p.club.primary : WOOL;
@@ -399,11 +602,12 @@
     const cast = lum(L) > 0.55 ? L : CREAM;
     const castInk = [G, L, CHAR].find((c) => contrast(c, cast) >= 3.2) || CHAR;
     const patch = lum(L) > 0.55 ? L : PATCH_FALLBACK;
-    // HOMA's single-colour relief: a lit tint, or a shade on a light ground (whichever reads)
-    const tintC = mix(G, "#ffffff", 0.42);
-    const shadeC = mix(G, "#000000", 0.42);
-    const R = contrast(tintC, G) >= contrast(shadeC, G) ? tintC : shadeC;
-    const R2 = R === tintC ? mix(G, "#ffffff", 0.62) : mix(G, "#000000", 0.62); // the relief at 24–32px
+    // HOMA's single-colour relief: the raised stitches catch the light (or, on a pale ground, the
+    // shade). Pushed until the figures clear 6:1 before the stitch texture, so they stay above 3:1
+    // on the card once the knit's shadows are on them, and above 4.5:1 on tokens.
+    const toward = lightG ? "#000000" : "#ffffff";
+    const R = reach(G, 6.2, 0.55, toward);
+    const R2 = reach(G, 5.0, 0.5, toward);
     // the stripe yarn: the second colour, or cream when the second colour is too close to the ground
     const S = contrast(L, G) >= 1.8 ? L : CREAM;
     // the knitted drop shadow behind CHAMPION's and LEGEND's figures: a third, near-black yarn
@@ -412,7 +616,9 @@
     const K = contrast(G, CREAM) >= 2.6 ? G : contrast(L, CREAM) >= 2.6 ? L : CHAR;
     // CHAMPION's and LEGEND's cream figures, or the second yarn on a pale ground
     const F = contrast(CREAM, G) >= 2.6 ? CREAM : contrast(L, G) >= 2.6 ? L : CHAR;
-    return { G, L, C: CREAM, B: BLUE, N, Y, R, R2, S, D, K, F, cast, castInk, patch, wool: !club, Gdk: mix(G, "#000000", 0.3), Gxd: mix(G, "#000000", 0.5), Glt: mix(G, "#ffffff", 0.18) };
+    // the word on the tier strip (the strip is the stripe yarn)
+    const T = contrast(G, S) >= 2.6 ? G : CHAR;
+    return { G, L, C: CREAM, B: BLUE, N, Y, R, R2, S, D, K, F, T, cast, castInk, patch, wool: !club, Gdk: mix(G, "#000000", 0.3), Gxd: mix(G, "#000000", 0.5), Glt: mix(G, "#ffffff", 0.18) };
   }
 
   /* ---------- textures ---------- */
@@ -525,6 +731,7 @@
     return s;
   }
 
+
   /* ---------- the woven jacquard patch ---------- */
   /** A woven patch sewn on the knit: club-secondary ground, a satin-stitch border, a 1u thickness
       shadow, the unmodified colour logo at the top, the ratings in Manrope 700 (tabular) under
@@ -543,18 +750,18 @@
     const L = x + bdr + pad;
     const R = x + w - bdr - pad;
     const iw = R - L;
-    const lw = Math.min(iw * (ncol > 1 ? 0.32 : 0.78), 58 * k);
+    const lw = Math.min(iw * (ncol > 1 ? 0.3 : 0.8), 52 * k);
     const lh = lw / MC.LOGO_RATIO.wordmark;
     const headY = y + bdr + pad * 0.85;
     const headH = opts.head === "logo" ? lh : 7 * k;
     const figFs = (ncol > 1 ? 14.5 : 15) * k * (opts.figScale || 1);
     const labFs = ar ? 8.4 * k : 7.6 * k;
     const cellH = labFs * 1.25 + figFs * 1.02;
-    const stat0 = headY + headH + 6 * k;
+    const stat0 = headY + headH + 4.5 * k;
     const footFs = (opts.footFs || 5.6) * k;
     const footLines = opts.foot || [];
-    const ruleY = stat0 + nrow * cellH + (nrow - 1) * 4 * k + 5 * k;
-    const footY0 = ruleY + footFs * 1.45;
+    const ruleY = stat0 + nrow * cellH + (nrow - 1) * 4 * k + 3.5 * k;
+    const footY0 = ruleY + footFs * 1.4;
     const h = Math.ceil((footLines.length ? footY0 + (footLines.length - 1) * footFs * 1.4 + footFs * 0.55 : ruleY) + pad * 0.7 + bdr - y);
     const thumb = !!opts.thumb;
     let s = "";
@@ -621,13 +828,14 @@
   const NOTE = (o) => (MC.isAr(o) ? "J.01–J.07 · مثال" : "J.01–J.07 · Exemple");
 
   /* ---------- the knitted motifs ---------- */
+  /** Drops blank rows and columns round a bitmap; returns the rows and how many were cut at the top. */
   function trim(bmp) {
     let t = 0;
     let b = bmp.length - 1;
     while (t <= b && bmp[t].indexOf("#") < 0) t++;
     while (b >= t && bmp[b].indexOf("#") < 0) b--;
     const rows = bmp.slice(t, b + 1);
-    if (!rows.length) return bmp;
+    if (!rows.length) return { bmp, top: 0 };
     let l = Infinity;
     let r = -1;
     for (const row of rows) {
@@ -637,69 +845,242 @@
         r = Math.max(r, row.lastIndexOf("#"));
       }
     }
-    return rows.map((row) => row.slice(l, r + 1));
+    return { bmp: rows.map((row) => row.slice(l, r + 1)), top: t };
   }
+  /** Drops blank rows only (keeps the chart's width). */
+  const trimRows = (bmp) => {
+    let t = 0;
+    let b = bmp.length - 1;
+    while (t <= b && !/[^.]/.test(bmp[t])) t++;
+    while (b >= t && !/[^.]/.test(bmp[b])) b--;
+    return bmp.slice(t, b + 1);
+  };
   /** The 84: two 9×13 figures, two stitches apart. */
   const digitsArt = (ovr) => word(String(ovr), D913, 2);
-  /** The name with the supporter year after it (ALI ·26): name marks '#', year marks '*'.
-      Latin names use the 8-row capitals; when they do not fit, the 5-row ones; then the initial
-      (the whole name is then woven into the patch). The year is 5 rows (about 60% of the name),
-      sitting on the name's baseline. Arabic reads right to left, so on the page the year comes
-      first: 26· علي, the dot between the year and the name. */
-  function nameArt(p, o, inner) {
-    const ar = MC.isAr(o);
-    const name = MC.nameOf(p, o);
-    const yr = p.founder ? String(p.founder).slice(-2) : "";
-    const dot = { bmp: [".", ".", "*", ".", "."] };
-    const yrDigits = yr ? { bmp: tint(word(yr, F35, 1), "*") } : null;
-    const attempts = [];
-    if (ar) {
-      if (AR_NAME[name]) attempts.push({ bmp: AR_NAME[name], base: AR_NAME_BASE[name] });
-      else {
-        const b = trim(rasterText(name, 9));
-        attempts.push({ bmp: b, base: b.length - 1 });
+
+  /* ---------- the name and its supporter year: a fit ladder, never an initial ---------- */
+  /** The year as a bitmap marked '*': '·26' (Latin), '26·' (Arabic, in visual order). The dot is
+      one stitch at mid-height of the figures. */
+  function yearArt(yr, fig, ar) {
+    const h = fig[0].length;
+    const dot = { bmp: Array.from({ length: h }, (_, i) => (i === Math.floor(h / 2) ? "*" : ".")) };
+    const digits = { bmp: tint(word(yr, fig, 1), "*") };
+    return hjoin(ar ? [digits, dot] : [dot, digits], [1]);
+  }
+  /** The year on the name's baseline, after the name (before it on the page in Arabic). */
+  function yearInline(name, yb, g, ar) {
+    return ar ? hjoin([yb, name], [g]) : hjoin([name, yb], [g]);
+  }
+  /** The year above the end of the name (right in Latin, left in Arabic), as low as it can sit with
+      one clear stitch round every stitch of the name. */
+  function yearTuck(name, yb, ar) {
+    const nb = name.bmp;
+    const nh = nb.length;
+    const nw = bw(nb);
+    const yw = bw(yb.bmp);
+    const yh = yb.bmp.length;
+    const W = Math.max(nw, yw);
+    const nx = ar ? 0 : W - nw;
+    const yx = ar ? 0 : W - yw;
+    const hit = (top) => {
+      for (let r = 0; r < yh; r++)
+        for (let c = 0; c < yw; c++) {
+          if (yb.bmp[r][c] === ".") continue;
+          for (let dr = -1; dr <= 1; dr++)
+            for (let dc = -1; dc <= 1; dc++) {
+              const gr = top + r + dr;
+              const gc = yx + c + dc - nx;
+              if (gr >= 0 && gr < nh && gc >= 0 && gc < nw && nb[gr][gc] !== ".") return true;
+            }
+        }
+      return false;
+    };
+    const base = name.base != null ? name.base : nh - 1;
+    let top = base - yh + 1;
+    while (top > -yh - 1 && hit(top)) top--;
+    const off = Math.max(0, -top);
+    const H = Math.max(nh + off, top + off + yh);
+    const rows = Array.from({ length: H }, () => new Array(W).fill("."));
+    const paint = (bmp, x, y) => bmp.forEach((row, r) => [...row].forEach((ch, c) => ch !== "." && (rows[y + r][x + c] = ch)));
+    paint(nb, nx, off);
+    paint(yb.bmp, yx, top + off);
+    return { bmp: rows.map((r) => r.join("")), base: base + off };
+  }
+  /** Lines stacked and centred, one blank row apart. */
+  function vstack(parts, gap = 1) {
+    const W = Math.max(...parts.map(bw));
+    const rows = [];
+    parts.forEach((b, i) => {
+      if (i) for (let g = 0; g < gap; g++) rows.push(".".repeat(W));
+      const l = Math.floor((W - bw(b)) / 2);
+      b.forEach((row) => rows.push(".".repeat(l) + row + ".".repeat(W - l - row.length)));
+    });
+    return rows;
+  }
+  /** Every way to cut a name into n lines: at spaces when it has several words, else between letters
+      (at least two letters a line). */
+  function splits(name, n) {
+    const words = name.split(/\s+/).filter(Boolean);
+    const units = words.length >= n ? words : [...name.replace(/\s+/g, "")];
+    const joiner = words.length >= n ? " " : "";
+    const min = words.length >= n ? 1 : 2;
+    const out = [];
+    const rec = (start, left, acc) => {
+      if (left === 1) {
+        if (units.length - start >= min) out.push([...acc, units.slice(start).join(joiner)]);
+        return;
       }
-    } else {
-      const up = name.toUpperCase();
-      attempts.push({ bmp: word(up, N8, 1), base: 7 });
-      attempts.push({ bmp: word(up, T5, 1), base: 4 });
-    }
-    for (const a of attempts) {
+      for (let e = start + min; e <= units.length - min * (left - 1); e++) rec(e, left - 1, [...acc, units.slice(start, e).join(joiner)]);
+    };
+    rec(0, n, []);
+    return out;
+  }
+  const LATIN = [
+    { f: N8, y: F35 },
+    { f: N7, y: F34 },
+    { f: N6, y: F34 },
+  ];
+  function latinName(name, yr, inner) {
+    const up = name.toUpperCase();
+    const fits = (b) => bw(b.bmp) <= inner;
+    // 1. one line, the year on the baseline after it (8 rows, then 7, then 6)
+    for (const F of LATIN) {
+      const nb = { bmp: word(up, F.f, 1), base: F.f.A.length - 1 };
       if (!yr) {
-        if (bw(a.bmp) <= inner) return { bmp: a.bmp, base: a.base, onPatch: false };
+        if (fits(nb)) return { ...nb, rows: F.f.A.length };
+        continue;
+      }
+      const yb = yearArt(yr, F.y, false);
+      for (const g of [2, 1]) {
+        const j = yearInline(nb, yb, g, false);
+        if (fits(j)) return { ...j, rows: F.f.A.length };
+      }
+    }
+    // 2. one line, the year stacked above its end
+    if (yr)
+      for (const F of LATIN) {
+        const nb = { bmp: word(up, F.f, 1), base: F.f.A.length - 1 };
+        const j = yearTuck(nb, yearArt(yr, F.y, false), false);
+        if (fits(j)) return { ...j, rows: F.f.A.length };
+      }
+    // 3. two lines, then three. A break between two consonants (YAS|MINE, OTH|MANE, SAL|MA) reads as
+    // a syllable; any other break is a last resort. The year goes after the last line, else on a
+    // line of its own.
+    const V = /[AEIOUY]/;
+    const cost = (parts) => parts.slice(1).reduce((t, part, i) => {
+      const prev = parts[i];
+      const a = prev[prev.length - 1];
+      const b = part[0];
+      if (a === " " || b === " " || /\s/.test(up)) return t;
+      return t + (!V.test(a) && !V.test(b) ? 0 : !V.test(b) ? 1 : 3);
+    }, 0);
+    for (const n of [2, 3, 4]) {
+      const cands = [];
+      for (const F of LATIN.slice(1))
+        for (const parts of splits(up, n)) {
+          const lines = parts.map((t) => word(t, F.f, 1));
+          const rows = F.f.A.length;
+          if (!yr) {
+            const b = vstack(lines);
+            if (bw(b) <= inner) cands.push({ b, rank: cost(parts) * 10, rows });
+            continue;
+          }
+          const yb = yearArt(yr, F.y, false);
+          let placed = null;
+          for (const g of [2, 1]) {
+            const b = vstack([...lines.slice(0, -1), yearInline({ bmp: lines[n - 1] }, yb, g, false).bmp]);
+            if (bw(b) <= inner) {
+              placed = b;
+              break;
+            }
+          }
+          if (placed) cands.push({ b: placed, rank: cost(parts) * 10, rows });
+          else {
+            // the year on a line of its own, set at the end of the name (right-aligned)
+            const wmax = Math.max(...lines.map(bw));
+            const yl = yb.bmp.map((r) => ".".repeat(Math.max(0, wmax - bw(yb.bmp))) + r);
+            const b = vstack([...lines, yl]);
+            if (bw(b) <= inner) cands.push({ b, rank: cost(parts) * 10 + 5, rows });
+          }
+        }
+      if (cands.length) {
+        // the best break first, then the larger capitals, then the narrower block
+        cands.sort((x, y) => x.rank - y.rank || y.rows - x.rows || bw(x.b) - bw(y.b));
+        const best = cands[0];
+        return { bmp: best.b, base: best.b.length - 1, rows: best.rows };
+      }
+    }
+    // the narrowest: one letter a line would still be a name, never a single initial
+    const b = vstack([...up.replace(/\s+/g, "")].map((ch) => word(ch, N6, 1)));
+    return { bmp: b, base: b.length - 1, rows: 6 };
+  }
+  function arabicName(name, yr, inner) {
+    const fits = (b) => bw(b.bmp) <= inner;
+    const yb = yr ? yearArt(yr, F34, true) : null;
+    const tries = [];
+    if (AR_NAME[name]) tries.push(() => AR_NAME[name]);
+    if (AR_NAME[name + "~"]) tries.push(() => AR_NAME[name + "~"]);
+    for (const rows of [12, 11, 10, 9, 8, 7, 6]) tries.push(() => rasterText(name, rows));
+    let last = null;
+    for (const t of tries) {
+      const raw = t();
+      const tr = trim(raw.bmp);
+      const nb = { bmp: tr.bmp, base: Math.max(0, raw.base - tr.top) };
+      last = nb;
+      if (!yb) {
+        if (fits(nb)) return { ...nb, rows: nb.bmp.length };
         continue;
       }
       for (const g of [2, 1]) {
-        const j = ar ? hjoin([yrDigits, dot, a], [1, g]) : hjoin([a, dot, yrDigits], [g, 1]);
-        if (bw(j.bmp) <= inner) return { bmp: j.bmp, base: j.base, onPatch: false };
+        const j = yearInline(nb, yb, g, true);
+        if (fits(j)) return { ...j, rows: nb.bmp.length };
       }
+      const k = yearTuck(nb, yb, true);
+      if (fits(k)) return { ...k, rows: nb.bmp.length };
     }
-    // the initial only; the whole name is woven into the patch
-    const ini = ar ? trim(rasterText([...name][0], 9)) : N8[name[0].toUpperCase()] || N8.A;
-    const a = { bmp: ini, base: ar ? ini.length - 1 : 7 };
-    const j = yr ? (ar ? hjoin([yrDigits, dot, a], [1, 2]) : hjoin([a, dot, yrDigits], [2, 1])) : a;
-    return { bmp: j.bmp, base: j.base, onPatch: true };
+    const k = yb ? yearTuck(last, yb, true) : last;
+    return { ...k, rows: last.bmp.length };
   }
-  /** The tier word: Latin on 5 rows; Arabic hand-charted on 8. */
-  function tierArt(tier, o, inner = 99) {
-    if (MC.isAr(o)) return AR_TIER[tier];
-    const w = word(MC.STR.lat.tiers[tier], T5, 1);
-    return bw(w) <= inner ? w : word(MC.STR.lat.tiers[tier], { ...T5, ...T5C }, 1);
+  /** The name with the supporter year (ALI ·26): name stitches '#', year stitches '*'. In Arabic the
+      year comes first on the page (26· علي), the dot between the year and the name. */
+  function nameArt(p, o, inner) {
+    const yr = p.founder ? String(p.founder).slice(-2) : "";
+    return MC.isAr(o) ? arabicName(MC.nameOf(p, o), yr, inner) : latinName(MC.nameOf(p, o), yr, inner);
+  }
+  /** The tier word: Latin on 4 rows; Arabic hand-charted. */
+  function tierArt(tier, o) {
+    if (MC.isAr(o)) return trimRows(AR_TIER[tier]);
+    return word(MC.STR.lat.tiers[tier], T4, 1);
   }
 
-  /* ---------- full card: the scarf over the rail (HOMA → CHAMPION) ---------- */
+  /** Rects for the cells holding key `k` in rows [r0, r1). */
+  function keyRectsIn(g, k, x0, y0, cw, ch, r0, r1) {
+    return keyRects(g.slice(r0, r1), k, x0, y0 + r0 * ch, cw, ch);
+  }
+  /** A straight cast-off edge: the bind-off loops along a knitted end. */
+  function castOff(xa, xb, y, step, ink) {
+    let d = "";
+    for (let x = xa + step / 2; x < xb - 1; x += step) d += `M${f2(x - step * 0.36)} ${f2(y - 0.4)}a${f2(step * 0.36)} ${f2(step * 0.28)} 0 0 0 ${f2(step * 0.72)} 0`;
+    return `<path d="${d}" stroke="${ink}" stroke-width="1" fill="none"/>`;
+  }
+
+  /* ---------- full card: the scarf folded over the rail (HOMA → CHAMPION) ---------- */
+  /** o._share: the share's composition, both halves over the rail. The front keeps the 84, the name,
+      the tier and the patch and ends in a cast-off edge; the back half, offset to the inline start
+      and longer, carries the season's stripes, the founder's cast-on and the fringe. */
   function fullHanging(p, o) {
     const ar = MC.isAr(o);
     const tier = p.tier;
     const Gg = GAUGE[tier];
-    const c = Gg.c;
+    const cols = Gg.cols;
+    const c = FW / cols;
     const P = palette(p);
     const thumb = !!o.thumb;
-    const long = !!o.long;
+    const share = !!o._share;
+    const homa = tier === "HOMA";
     const u = MC.uid(PFX);
     const id = (k) => `${u}-${k}`;
-    const ids = { base: id("pb"), garter: id("pg"), cast: id("pc"), clip: id("cl"), bclip: id("bc"), curl: id("cu"), fold: id("fo"), grain: id("gr"), soft: id("sf"), weave: id("wv"), weft: id("wf"), satin: id("st"), rail: id("rl"), tape: id("tp"), back: id("bk") };
-    const cols = Math.round(FW / c);
+    const ids = { base: id("pb"), garter: id("pg"), cast: id("pc"), clip: id("cl"), bclip: id("bc"), curl: id("cu"), fold: id("fo"), grain: id("gr"), soft: id("sf"), weave: id("wv"), weft: id("wf"), satin: id("st"), rail: id("rl"), tape: id("tp"), shade: id("sh") };
     const at = (lc) => (ar ? cols - 1 - lc : lc); // logical column (from the inline start) → grid column
     const binding = tier === "CHAMPION";
     const selv = tier === "STADE" || tier === "PRO";
@@ -709,75 +1090,63 @@
     // motifs
     const dg = digitsArt(p.ovr);
     const nm = nameArt(p, o, inner);
-    const tw = tierArt(tier, o, inner);
-    const twRows = tw.length;
+    const tw = tierArt(tier, o);
 
-    // rows, from the rail down
-    const L = {};
-    const keys = []; // a ground-colour override per row ('' = the ground)
-    let r = Math.ceil((RAIL_Y + RAIL_H + 3 - FT) / c);
+    // rows, from the rail down; a ground-colour override per row ('' = the ground)
+    const keys = [];
+    let r = 0;
     const push = (n, k = "") => {
       for (let i = 0; i < n; i++) keys.push(k);
       r += n;
     };
-    for (let i = 0; i < r; i++) keys.push("");
-    // the 84
+    push(Math.ceil((RAIL_Y + RAIL_H + 3 - FT) / c));
+    const L = {};
+    // the 84 (PRO: on a cream panel; STADE: its one jacquard band under it; CHAMPION: a stripe pair)
     if (tier === "PRO") {
       L.digits = r + 1;
-      push(15, "C"); // PRO: a cream panel behind the 84
+      push(15, "C");
+      push(1);
     } else {
       L.digits = r;
-      push(tier === "CHAMPION" ? 14 : 13);
+      push(binding ? 14 : 13);
       push(1);
+      if (tier === "STADE" || binding) {
+        push(2, "S");
+        push(1);
+      }
     }
-    // between the 84 and the name: STADE one stripe, CHAMPION a stripe trio
-    if (tier === "STADE") {
-      push(2, "S");
-      push(1);
-    } else if (tier === "CHAMPION") {
-      push(2, "S");
-      push(1);
-    } else if (tier === "PRO") push(1);
     // the name band
     L.name = r + 1;
     push(nm.bmp.length + 2);
-    // the tier band, set in the stripes
-    const strip = { HOMA: "", STADE: "S", PRO: "", CHAMPION: "" }[tier];
-    // STADE has one band (the stripe under its 84; its tier strip is that band's yarn); PRO and
-    // CHAMPION frame the tier strip with a stripe on each side
-    const stripes = { HOMA: [], STADE: [""], PRO: ["S", ""], CHAMPION: ["S", ""] }[tier];
-    const st = stripes;
-    for (const k of st) push(1, k);
-    L.band = [r, r + twRows + 2];
+    // the tier strip: a narrow band of the stripe yarn (HOMA: a garter ridge band in the one yarn)
+    L.strip = r;
     L.tier = r + 1;
-    push(twRows + 2, strip);
-    for (const k of st.slice().reverse()) push(1, k);
-    // the season (full length only): one stripe per gameweek played, every fifth in cream
-    if (long) {
-      push(2);
-      L.season = r;
-      // every fifth gameweek is a double stripe, so the tally can be counted by fives
-      for (let gw = 1; gw <= PLAYED; gw++) {
-        push(gw % 5 === 0 ? 2 : 1, "S");
-        push(3);
-      }
-    }
-    // the patch, sewn on with a stitch of ground around it
+    push(tw.length + 2, homa ? "" : "S");
+    L.stripEnd = r;
+    // the season and the patch
     const pw = FW - 4 * c;
     const px = X0 + 2 * c;
-    // a name too long to knit is woven in full along the patch's foot
-    const foot = nm.onPatch ? [esc(MC.nameOf(p, o)), footLine(p, o)] : [footLine(p, o)];
+    const foot = [footLine(p, o)];
     const dry = patch(p, o, 0, 0, pw, ids, P, { head: "logo", foot, note: NOTE(o), thumb });
-    push(1);
-    L.patch = r;
-    push(Math.ceil((dry.h + 2) / c));
-    push(1);
+    const pRows = Math.ceil((dry.h + 2) / c);
+    if (share) {
+      push(1);
+      L.patch = r;
+      push(pRows + 1);
+    } else {
+      // one stripe per gameweek played (a row of the stripe yarn, a row of ground); the patch is sewn
+      // over the season after its first two stripes, so the rest run out from under its edges
+      L.season = r;
+      for (let gw = 1; gw <= PLAYED; gw++) {
+        push(1);
+        push(1, "W");
+      }
+      L.patch = L.season + 4;
+      while (r < L.patch + pRows + 1) push(1);
+    }
     L.rows = r;
     const yOf = (row) => FT + row * c;
     const yFab = yOf(L.rows);
-    const yCast = yFab + CAST.rows * CAST.c;
-    const fringeLen = { HOMA: 34, STADE: 37, PRO: 39, CHAMPION: 43 }[tier];
-    const H = Math.ceil(yCast + fringeLen + 8);
 
     // the stitch grid
     const g = grid(cols, L.rows, "G");
@@ -790,22 +1159,19 @@
     const lo = ar ? resEnd : resStart;
     const hi = cols - (ar ? resStart : resEnd);
     const centre = (bmp) => lo + Math.round((hi - lo - bw(bmp)) / 2);
-    // the 84
     const dKey = { HOMA: "R", STADE: "L", PRO: "K", CHAMPION: "F" }[tier];
     const dc = centre(dg);
-    if (tier === "CHAMPION") stamp(g, dg, dc + (ar ? -1 : 1), L.digits + 1, { "#": "D" }); // a one-stitch knitted drop shadow
+    if (binding) stamp(g, dg, dc + (ar ? -1 : 1), L.digits + 1, { "#": "D" }); // a one-stitch knitted drop shadow
     stamp(g, dg, dc, L.digits, { "#": dKey });
-    // the name and its year
-    stamp(g, nm.bmp, centre(nm.bmp), L.name, tier === "HOMA" ? { "#": "R", "*": "Y" } : { "#": "N", "*": "Y" });
-    // the tier word
-    const tKey = { HOMA: "R", STADE: "G", PRO: "S", CHAMPION: "F" }[tier];
-    stamp(g, tw, centre(tw), L.tier, { "#": tKey });
+    // HOMA knits the name and its year in the same relief, so the year never outranks the name
+    stamp(g, nm.bmp, centre(nm.bmp), L.name, homa ? { "#": "R", "*": "R" } : { "#": "N", "*": "Y" });
+    stamp(g, tw, centre(tw), L.tier, { "#": homa ? "R" : "T" });
     // selvedges: cream at the inline start, Logo Blue at the inline end (HOMA: blue only)
     for (let i = 0; i < L.rows; i++) {
       g[i][at(cols - 1)] = "B";
       if (selv) g[i][at(0)] = "C";
     }
-    const PK = { G: P.G, L: P.L, C: P.C, B: P.B, N: P.N, Y: P.Y, R: P.R, S: P.S, D: P.D, K: P.K, F: P.F };
+    const PK = { G: P.G, L: P.L, C: P.C, B: P.B, N: P.N, Y: P.Y, R: P.R, S: P.S, D: P.D, K: P.K, F: P.F, T: P.T, W: homa ? P.R : P.S };
 
     // defs
     let defs =
@@ -817,6 +1183,7 @@
       `<stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset=".8" stop-color="#000" stop-opacity="0"/><stop offset=".94" stop-color="#000" stop-opacity=".06"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>` +
       `<linearGradient id="${ids.fold}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".24"/><stop offset=".25" stop-color="#fff" stop-opacity=".08"/>` +
       `<stop offset=".55" stop-color="#000" stop-opacity=".26"/><stop offset=".78" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>` +
+      `<linearGradient id="${ids.shade}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".1"/><stop offset=".12" stop-color="#000" stop-opacity=".34"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>` +
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="125%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.3"/></filter>` +
       `<pattern id="${ids.weave}" width="1.4" height="1.4" patternUnits="userSpaceOnUse"><rect width="1.4" height=".6" fill="#000" opacity=".05"/><rect x=".7" y=".7" width=".7" height=".7" fill="#fff" opacity=".08"/></pattern>` +
       `<pattern id="${ids.weft}" width="3" height="1.1" patternUnits="userSpaceOnUse"><rect width="3" height=".35" fill="${P.patch}" opacity=".32"/></pattern>` +
@@ -826,30 +1193,39 @@
     if (!thumb)
       defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
 
-    // the front drop's outline: the fold over the tube, straight edges, the cast-on edge
-    const outline = `M${X0} ${FT + 7}Q${X0} ${FT} ${X0 + 7} ${FT}H${X1 - 7}Q${X1} ${FT} ${X1} ${FT + 7}V${yCast}H${X0}Z`;
+    // the front drop's outline: the fold over the tube, straight edges, the cast-on (or cast-off) edge
+    const yCast = share ? yFab : yFab + CAST.rows * CAST.c;
+    const outline = `M${X0} ${FT + 7}Q${X0} ${FT} ${X0 + 7} ${FT}H${X1 - 7}Q${X1} ${FT} ${X1} ${FT + 7}V${f2(yCast)}H${X0}Z`;
     defs += `<clipPath id="${ids.clip}"><path d="${outline}"/></clipPath>`;
 
     // fabric
     let fab = `<rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yFab - FT + 0.6)}" fill="${P.G}"/>`;
-    if (tier === "HOMA") fab += `<g transform="translate(${f2(c * 0.2)} ${f2(c * 0.3)})" fill="#020a1c" opacity=".38">${keyRects(g, "R", X0, FT, c, c)}</g>`;
-    fab += gridRuns(g, PK, X0, FT, c, c, "G");
-    fab += `<rect x="${X0}" y="${FT}" width="${FW}" height="${yFab - FT}" fill="url(#${ids.base})"/>`;
-    if (tier === "HOMA") {
-      // single-colour acrylic: the motifs are knitted in relief (purl ridges), the tier band is a garter strip
-      const gx = ar ? X0 + c : X0;
-      const gh = f2((L.band[1] - L.band[0]) * c);
-      fab += `<rect x="${gx}" y="${f2(yOf(L.band[0]))}" width="${FW - c}" height="${gh}" fill="${P.G}"/><rect x="${gx}" y="${f2(yOf(L.band[0]))}" width="${FW - c}" height="${gh}" fill="url(#${ids.garter})"/>`;
-      fab += `<g fill="${P.R}">${keyRects(g, "R", X0, FT, c, c)}</g><g fill="url(#${ids.garter})">${keyRects(g, "R", X0, FT, c, c)}</g>`;
-      fab += `<g fill="${P.Y}">${keyRects(g, "Y", X0, FT, c, c)}</g><g fill="url(#${ids.base})">${keyRects(g, "Y", X0, FT, c, c)}</g>`;
+    const sR = L.strip;
+    const eR = L.stripEnd;
+    if (homa) {
+      // the tier strip: a garter-ridge band in the one yarn
+      fab += `<rect x="${X0}" y="${f2(yOf(sR))}" width="${FW}" height="${f2((eR - sR) * c)}" fill="url(#${ids.garter})"/>`;
+      // single-colour relief: each raised stitch casts a shadow down and to the inline end and
+      // catches a light edge up and to the start
+      const sx = f2(c * (ar ? -0.2 : 0.2));
+      fab += `<g transform="translate(${sx} ${f2(c * 0.26)})" fill="#020a1c" opacity=".55">${keyRects(g, "R", X0, FT, c, c)}</g>`;
+      fab += `<g transform="translate(${f2(-sx * 0.7)} ${f2(-c * 0.16)})" fill="#fff" opacity=".3">${keyRects(g, "R", X0, FT, c, c)}</g>`;
     }
-    // the cast-on (founders: cream with 2026 and two cables; otherwise plain, in the ground)
-    fab += castOn(p, P, ids, yFab, ar, thumb);
+    fab += gridRuns(g, PK, X0, FT, c, c, "G");
+    if (homa) {
+      // V stitches everywhere except the garter band, where only the raised word takes them
+      fab += `<rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yOf(sR) - FT)}" fill="url(#${ids.base})"/>`;
+      fab += `<rect x="${X0}" y="${f2(yOf(eR))}" width="${FW}" height="${f2(yFab - yOf(eR))}" fill="url(#${ids.base})"/>`;
+      fab += `<g fill="url(#${ids.base})">${keyRectsIn(g, "R", X0, FT, c, c, sR, eR)}</g>`;
+    } else fab += `<rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yFab - FT)}" fill="url(#${ids.base})"/>`;
+    // the end: the founder's cast-on (card), or a cast-off edge (share: the cast-on is on the back half)
+    if (share) fab += castOff(X0, X1, yFab, c, P.Gxd);
+    else fab += castOn(p, P, ids, yFab, ar, thumb, 0);
     // shading: edge curl, the fold over the tube, fibre grain
     fab +=
-      `<g pointer-events="none"><rect x="${X0}" y="${FT}" width="${FW}" height="${yCast - FT}" fill="url(#${ids.curl})"/>` +
+      `<g pointer-events="none"><rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yCast - FT)}" fill="url(#${ids.curl})"/>` +
       `<rect x="${X0}" y="${FT}" width="${FW}" height="36" fill="url(#${ids.fold})"/>` +
-      (thumb ? "" : `<rect x="${X0}" y="${FT}" width="${FW}" height="${yCast - FT}" filter="url(#${ids.grain})" opacity=".5"/>`) +
+      (thumb ? "" : `<rect x="${X0}" y="${FT}" width="${FW}" height="${f2(yCast - FT)}" filter="url(#${ids.grain})" opacity=".5"/>`) +
       `</g>`;
 
     // CHAMPION: a woven tape bound over both long edges, a Logo Blue thread down the end-side tape
@@ -868,82 +1244,104 @@
       }
     }
 
-    // the back drop: the rest of the scarf hangs behind the rail, swung a little toward the inline
-    // start, so it shows as a wedge of knit beside the front drop; it ends above the cast-on, so its
-    // fringe never adds to the tassel count
-    let back = "";
-    if (!long) {
-      const sg = ar ? 1 : -1; // toward the inline start
-      const yb = yOf(L.patch) + c * 3;
-      const edgeTop = ar ? X1 + 1 : X0 - 1;
-      const edgeBot = edgeTop + sg * 15;
-      const inner = ar ? X1 - 30 : X0 + 30;
-      const bOutline = `M${f2(edgeTop)} ${FT + 10}L${f2(edgeBot)} ${f2(yb - 10)}Q${f2(edgeBot + 0.5 * sg)} ${f2(yb + 2)} ${f2(edgeBot - sg * 12)} ${f2(yb + 1)}L${f2(inner)} ${f2(yb - 4)}V${FT + 10}Z`;
-      back += `<clipPath id="${ids.bclip}"><path d="${bOutline}"/></clipPath>`;
-      const bx = Math.min(edgeBot, inner) - 2;
-      const bwid = Math.abs(inner - edgeBot) + 4;
-      back += `<g clip-path="url(#${ids.bclip})"><rect x="${f2(bx)}" y="${FT}" width="${f2(bwid)}" height="${yb - FT + 4}" fill="${P.Gdk}"/>`;
-      back += `<rect x="${f2(bx)}" y="${FT}" width="${f2(bwid)}" height="${yb - FT + 4}" fill="url(#${ids.base})"/>`;
-      for (const yy of [yb - 5 * c, yb - 3 * c]) back += `<rect x="${f2(bx)}" y="${f2(yy)}" width="${f2(bwid)}" height="${f2(c)}" fill="${mix(P.S, "#000000", 0.42)}"/>`;
-      back += `<rect x="${f2(bx)}" y="${FT}" width="${f2(bwid)}" height="${yb - FT + 4}" fill="#000" opacity=".2"/></g>`;
-      back += `<path d="${bOutline}" fill="none" stroke="#000" stroke-opacity=".35" stroke-width=".8"/><path d="${bOutline}" fill="none" class="c07v2-rim" stroke-width=".8"/>`;
+    // the back drop: the other half of the scarf, behind the rail, parallel to the front and in its
+    // shadow. It shows beyond the front's inline-start edge, turns over the rail in a fold lip, and
+    // ends in a straight cast-off edge (card: above the front's cast-on, so its fringe never adds to
+    // the tassel count; share: below the front, carrying the season, the cast-on and the fringe).
+    const sg = ar ? 1 : -1; // toward the inline start
+    const dx = share ? SHARE_DX : BACK_DX;
+    const bx0 = X0 + sg * dx;
+    const bx1 = X1 + sg * dx;
+    const outerX = ar ? bx1 : bx0;
+    const innerX = ar ? X1 : X0; // where the front starts covering it
+    const yBackFab = share ? yFab + 3 * c : yFab - 2 * c;
+    const yBackEnd = share ? yBackFab + CAST.rows * CAST.c : yBackFab;
+    const bOut = ar
+      ? `M${f2(bx0)} ${FT}H${f2(bx1 - 7)}Q${f2(bx1)} ${FT} ${f2(bx1)} ${FT + 7}V${f2(yBackEnd)}H${f2(bx0)}Z`
+      : `M${f2(bx1)} ${FT}H${f2(bx0 + 7)}Q${f2(bx0)} ${FT} ${f2(bx0)} ${FT + 7}V${f2(yBackEnd)}H${f2(bx1)}Z`;
+    let back = `<clipPath id="${ids.bclip}"><path d="${bOut}"/></clipPath><g clip-path="url(#${ids.bclip})">`;
+    back += `<rect x="${f2(Math.min(bx0, bx1))}" y="${FT}" width="${FW}" height="${f2(yBackEnd - FT)}" fill="${share ? P.G : P.Gdk}"/>`;
+    if (share) {
+      // the season on the back half: one two-row stripe per gameweek played, ending above the cast-on
+      for (let gw = 0; gw < PLAYED; gw++) {
+        const yy = yBackFab - c - (PLAYED - gw) * 4 * c;
+        back += `<rect x="${f2(Math.min(bx0, bx1))}" y="${f2(yy)}" width="${FW}" height="${f2(2 * c)}" fill="${homa ? P.R : P.S}"/>`;
+      }
+      back += `<rect x="${f2(ar ? bx0 : bx1 - c)}" y="${FT}" width="${f2(c)}" height="${f2(yBackFab - FT)}" fill="${BLUE}"/>`;
     }
+    if (!thumb) back += `<rect x="${f2(Math.min(bx0, bx1))}" y="${FT}" width="${FW}" height="${f2(yBackFab - FT)}" fill="url(#${ids.base})"/>`;
+    if (share) back += castOn(p, P, ids, yBackFab, ar, thumb, sg * dx);
+    // in shadow under the rail and the front
+    back += `<rect x="${f2(Math.min(bx0, bx1))}" y="${FT}" width="${FW}" height="${f2(yBackEnd - FT)}" fill="url(#${ids.shade})" opacity="${share ? 0.45 : 1}"/>`;
+    back += `</g>`;
+    // the fold lip: the back's top edge turning over the tube, catching the light
+    back += `<path d="M${f2(outerX)} ${FT + 9}Q${f2(outerX)} ${FT} ${f2(outerX - sg * 8)} ${FT}H${f2(innerX)}" fill="none" stroke="${P.Glt}" stroke-opacity=".75" stroke-width="1.6" stroke-linecap="round"/>`;
+    if (!share && !thumb) back += castOff(Math.min(outerX, innerX), Math.max(outerX, innerX), yBackEnd, c, P.Gxd);
+    back += `<path d="${bOut}" fill="none" stroke="#000" stroke-opacity=".4" stroke-width=".8"/><path d="${bOut}" fill="none" class="c07v2-rim" stroke-width=".8"/>`;
 
     // the fringe: the tassel count is the tier
     const n = TASSELS[tier];
     const rnd = seeded(hashStr(p.serial + "fringe" + tier));
     const tsw = { HOMA: 22, STADE: 17, PRO: 15, CHAMPION: 13 }[tier];
+    const fringeLen = { HOMA: 34, STADE: 37, PRO: 39, CHAMPION: 43 }[tier];
+    const fx0 = share ? Math.min(bx0, bx1) : X0;
+    const fy = share ? yBackEnd : yCast;
     let fringe = "";
-    const tx = (i) => X0 + (FW * (i + 0.5)) / n;
-    for (let i = 0; i < n; i++) fringe += tassel(tx(i), yCast - 3, fringeLen + (rnd() * 6 - 3), tsw, P, { rnd, twisted: binding });
+    for (let i = 0; i < n; i++) fringe += tassel(fx0 + (FW * (i + 0.5)) / n, fy - 3, fringeLen + (rnd() * 6 - 3), tsw, P, { rnd, twisted: binding });
+    const H = Math.ceil(fy + fringeLen + 8);
 
-    // the rail
+    // the rail (the share draws it wider, between the two halves, so it crosses the whole frame)
+    const rx0 = share && o._rail ? o._rail[0] : 1;
+    const rw = share && o._rail ? o._rail[1] - o._rail[0] : VW - 2;
     const rail =
-      `<rect x="1" y="${RAIL_Y}" width="${VW - 2}" height="${RAIL_H}" rx="${RAIL_H / 2}" fill="url(#${ids.rail})"/>` +
-      `<rect x="1.5" y="${RAIL_Y + 0.5}" width="${VW - 3}" height="${RAIL_H - 1}" rx="${RAIL_H / 2 - 0.5}" fill="none" stroke="#4E5661" stroke-width="1"/>` +
-      `<path d="M8 ${RAIL_Y + 3.4}H${VW - 8}" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-linecap="round"/>`;
+      `<rect x="${rx0}" y="${RAIL_Y}" width="${rw}" height="${RAIL_H}" rx="${RAIL_H / 2}" fill="url(#${ids.rail})"/>` +
+      `<rect x="${rx0 + 0.5}" y="${RAIL_Y + 0.5}" width="${rw - 1}" height="${RAIL_H - 1}" rx="${RAIL_H / 2 - 0.5}" fill="none" stroke="#4E5661" stroke-width="1"/>` +
+      `<path d="M${rx0 + 7} ${RAIL_Y + 3.4}H${rx0 + rw - 7}" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-linecap="round"/>`;
     const rim = `<path class="c07v2-rim" d="${outline}" fill="none" stroke-width="1"/>`;
     const pt = patch(p, o, px, yOf(L.patch) + 1, pw, ids, P, { head: "logo", foot, note: NOTE(o), thumb });
 
     const svg =
       `<svg class="c07v2-svg" viewBox="0 0 ${VW} ${H}" aria-hidden="true" focusable="false" style="direction:ltr">` +
       `<defs>${defs}</defs>` +
+      (share ? `<g class="c07v2-fringe">${fringe}</g>` : "") +
       `<g class="c07v2-back">${back}</g>` +
-      (o._noRail ? "" : rail) +
+      rail +
       `<g class="c07v2-sway">` +
-      `<g class="c07v2-fringe">${fringe}</g>` +
+      (share ? "" : `<g class="c07v2-fringe">${fringe}</g>`) +
       `<g class="c07v2-fabric" clip-path="url(#${ids.clip})">${fab}</g>` +
       bind +
       rim +
       pt.svg +
       `</g>` +
       `</svg>`;
-    const cls = `c07v2 c07v2--${tier.toLowerCase()}${thumb ? " c07v2--thumb" : ""}${o.motion ? " c07v2--motion" : ""}${P.wool ? " c07v2--wool" : ""}${long ? " c07v2--long" : ""}`;
-    return `<div class="${cls}" dir="${MC.s(o).dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tier}" data-cast="${f2(yCast)}">${svg}</div>`;
+    const cls = `c07v2 c07v2--${tier.toLowerCase()}${thumb ? " c07v2--thumb" : ""}${o.motion ? " c07v2--motion" : ""}${P.wool ? " c07v2--wool" : ""}${share ? " c07v2--share" : ""}`;
+    return `<div class="${cls}" dir="${MC.s(o).dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="${tier}" data-art="${f2(Math.min(X0, bx0))} ${f2(Math.max(X1, bx1))}">${svg}</div>`;
   }
 
   /** The founder's cast-on: five cream rows with 2026 knitted between two cable twists.
-      Non-founders cast on plain, in the ground yarn. Digits are never mirrored. */
-  function castOn(p, P, ids, y, ar, thumb) {
+      Non-founders cast on plain, in the ground yarn. Digits are never mirrored. `dx` shifts it. */
+  function castOn(p, P, ids, y, ar, thumb, dx) {
     const cc = CAST.c;
     const cols = Math.round(FW / cc);
     const h = CAST.rows * cc;
     const founder = !!p.founder;
     const base = founder ? P.cast : P.G;
+    const x0 = X0 + dx;
+    const x1 = X1 + dx;
     let s = "";
     const yr = founder ? word(String(p.founder), F35, 1) : null;
     const c0 = yr ? Math.round((cols - bw(yr)) / 2) : 0;
     for (let r = 0; r < CAST.rows; r++) {
-      let row = `<rect x="${X0}" y="${f2(y + r * cc)}" width="${FW}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${base}"/>`;
-      if (yr) row += `<g fill="${P.castInk}">${bmpRects([yr[r]], X0 + c0 * cc, y + r * cc, cc, cc)}</g>`;
-      row += `<rect x="${ar ? X0 : X1 - cc}" y="${f2(y + r * cc)}" width="${cc}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${BLUE}"/>`;
+      let row = `<rect x="${f2(x0)}" y="${f2(y + r * cc)}" width="${FW}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${base}"/>`;
+      if (yr) row += `<g fill="${P.castInk}">${bmpRects([yr[r]], x0 + c0 * cc, y + r * cc, cc, cc)}</g>`;
+      row += `<rect x="${f2(ar ? x0 : x1 - cc)}" y="${f2(y + r * cc)}" width="${cc}" height="${cc + (r < CAST.rows - 1 ? 0.6 : 0)}" fill="${BLUE}"/>`;
       s += `<g class="c07v2-co-row" style="--c07v2-i:${r}">${row}</g>`;
     }
     s += `<g class="c07v2-co-after">`;
-    s += `<rect x="${X0}" y="${y}" width="${FW}" height="${h}" fill="url(#${ids.cast})"/>`;
+    s += `<rect x="${f2(x0)}" y="${y}" width="${FW}" height="${h}" fill="url(#${ids.cast})"/>`;
     if (founder && !thumb) {
       const ink = mix(P.cast, "#000000", 0.32);
-      const cx = [(X0 + cc + X0 + c0 * cc) / 2, (X0 + (c0 + bw(yr)) * cc + X1 - cc) / 2].map(Math.round);
+      const cx = [(x0 + cc + x0 + c0 * cc) / 2, (x0 + (c0 + bw(yr)) * cc + x1 - cc) / 2].map(Math.round);
       for (const x of cx) {
         const a = `M${x - 4} ${y}C${x - 4} ${y + 7} ${x + 4} ${y + 10} ${x + 4} ${y + 17.5}C${x + 4} ${y + 25} ${x - 4} ${y + 28} ${x - 4} ${y + 35}`;
         const b = `M${x + 4} ${y}C${x + 4} ${y + 7} ${x - 4} ${y + 10} ${x - 4} ${y + 17.5}C${x - 4} ${y + 25} ${x + 4} ${y + 28} ${x + 4} ${y + 35}`;
@@ -955,7 +1353,7 @@
     }
     if (!thumb) {
       let d = "";
-      for (let x = X0 + 3.5; x < X1; x += cc) d += `M${x - 2.4} ${y + h - 0.6}a2.4 1.9 0 0 0 4.8 0`;
+      for (let x = x0 + 3.5; x < x1; x += cc) d += `M${f2(x - 2.4)} ${f2(y + h - 0.6)}a2.4 1.9 0 0 0 4.8 0`;
       s += `<path d="${d}" stroke="${founder ? mix(P.cast, "#000000", 0.32) : P.Gdk}" stroke-width="1" fill="none"/>`;
     }
     s += `</g>`;
@@ -963,13 +1361,15 @@
   }
 
   /* ---------- full card: LEGEND, the scarf raised overhead ---------- */
-  /** 'Écharpe levée': lifted off the rail and held taut overhead, its ends wound round two fists,
-      the forearms in bench-jacket sleeves with club-colour ribbed cuffs rising from the bottom
-      edge. The raised span carries the same three bands as the hanging scarf, at the same
-      legibility: the 84 (13 rows), ALI ·26, and the LEGEND strip. The two ends hang in front of
-      the forearms with woven patches: CAP and SEL on the reading-start end (with the logo),
-      TRF and CON on the other, above the founder's cast-on. Drawn in LTR units; Arabic mirrors
-      the structure, never the knitted words. */
+  /** 'Écharpe levée': lifted off the rail and held taut overhead by the supporter, seen from behind
+      (the shared avatar, hood up, cropped at the card's foot, its hood seam showing). The arms rise
+      in bench-jacket sleeves to two fists wound in the scarf, knuckles showing through the knit (no
+      skin tone). The raised span carries the same bands as the hanging scarf: the 84 (13 rows, a
+      knitted drop shadow), ALI ·26, and the LEGEND strip. The two ends hang long, outside the fists,
+      down to the card's foot: CAP and SEL with the logo on the reading-start end, TRF and CON with
+      the ID on the other, then the season's stripes, a cream cast-on (2026) and cast-off, the
+      knotted fringe. Portrait, about 1:1.45, the same height budget as the hanging tiers. Drawn in
+      LTR units; Arabic mirrors the structure, never the knitted words. */
   const LGC = 8;
   function fullLegend(p, o) {
     const ar = MC.isAr(o);
@@ -977,12 +1377,12 @@
     const thumb = !!o.thumb;
     const u = MC.uid(PFX);
     const id = (k) => `${u}-${k}`;
-    const ids = { base: id("pb"), flap: id("pf"), cast: id("pc"), clip: id("cl"), curl: id("cu"), soft: id("sf"), weave: id("wv"), weft: id("wf"), satin: id("st"), grain: id("gr"), sleeve: id("sl"), rib: id("rb"), dA: id("da"), dB: id("db"), arms: id("ar") };
+    const ids = { base: id("pb"), flap: id("pf"), cast: id("pc"), clip: id("cl"), curl: id("cu"), soft: id("sf"), weave: id("wv"), weft: id("wf"), satin: id("st"), grain: id("gr"), sleeve: id("sl"), dA: id("da"), dB: id("db"), arms: id("ar"), knit: id("kn"), fade: id("fd"), mask: id("mk"), rail: id("rl") };
     const c = LGC;
     const dg = digitsArt(p.ovr);
-    const nm = nameArt(p, o, 34);
+    const nm = nameArt(p, o, LEGEND_INNER);
     const tw = tierArt("LEGEND", o);
-    const content = Math.max(bw(dg), bw(nm.bmp), bw(tw));
+    const content = Math.max(bw(dg) + 1, bw(nm.bmp), bw(tw));
     // the band's rows (across the scarf): cream selvedge, the 84, the name, the tier strip, Logo Blue selvedge
     const keys = [];
     const R = {};
@@ -1002,12 +1402,12 @@
     push(1, "B");
     const nRows = keys.length;
     const BH = nRows * c;
-    const BY = 16;
+    const BY = 14;
     const mid = BY + BH / 2;
     const top = BY;
     const bot = BY + BH;
     const gather = 18;
-    const endW = 80;
+    const endW = 90;
     const pad = 6;
     const fa = pad + endW + 4;
     const xs = fa + gather;
@@ -1015,6 +1415,18 @@
     const xe = xs + bandCols * c;
     const fb = xe + gather;
     const W = fb + 4 + endW + pad;
+    // the supporter, from behind: the shared avatar, hood up, the hood about half the span between
+    // the fists. The arms are raised straight, about 2.4 hood-heights long, in a V to the fists; the
+    // figure stands behind the crowd barrier and fades out under its shoulders (it is cropped there).
+    const avS = ((fb - fa) * 0.5) / 96;
+    const armLen = 2.4 * 115 * avS;
+    const shDx = fa - (W / 2 - 64 * avS);
+    const shY = mid + Math.sqrt(Math.max(0, armLen * armLen - shDx * shDx));
+    const avY = shY - 184 * avS;
+    const avX = W / 2 - 100 * avS;
+    const railY = shY + 44 * avS;
+    // portrait, about 1:1.45 (taller when a two-line name deepens the band)
+    const H = Math.max(Math.round(W * 1.45), Math.round(railY + 72));
     // the grid runs from fist to fist; the words sit on the full-width part
     const cols = Math.round((fb - fa) / c);
     const g = grid(cols, nRows, "G");
@@ -1026,27 +1438,27 @@
     stamp(g, dg, place(dg) + (ar ? -1 : 1), R.digits + 1, { "#": "D" }); // the knitted drop shadow, as at CHAMPION
     stamp(g, dg, place(dg), R.digits, { "#": "F" });
     stamp(g, nm.bmp, place(nm.bmp), R.name, { "#": "N", "*": "Y" });
-    stamp(g, tw, place(tw), R.strip + 1, { "#": "G" });
-    const PK = { G: P.G, L: P.L, C: P.C, B: P.B, N: P.N, Y: P.Y, S: P.S, D: P.D, F: P.F };
+    stamp(g, tw, place(tw), R.strip + 1, { "#": "T" });
+    const PK = { G: P.G, L: P.L, C: P.C, B: P.B, N: P.N, Y: P.Y, S: P.S, D: P.D, F: P.F, T: P.T };
 
-    // the ends: patches, the founder's cast-on, the fringe
-    const pk = 1.08;
-    const pw = endW - 14;
+    // the ends: patches, the season, the cream cast-on and cast-off, the fringe
+    const pk = 1.3;
+    const pw = endW - 12;
     const S = MC.s(o);
-    const optA = { k: pk, head: "logo", keys: ["CAP", "SEL"], cols: 1, foot: nm.onPatch ? [esc(MC.nameOf(p, o)), NOTE(o)] : [NOTE(o)], thumb, footFs: 4.8 };
-    const optB = { k: pk, head: "season", keys: ["TRF", "CON"], cols: 1, foot: [esc(p.id), esc(S.country)], thumb, footFs: 4.8 };
+    const optA = { k: pk, head: "logo", keys: ["CAP", "SEL"], cols: 1, foot: [NOTE(o)], thumb, footFs: 4.4 };
+    const optB = { k: pk, head: "season", keys: ["TRF", "CON"], cols: 1, foot: [esc(p.id), esc(S.country)], thumb, footFs: 4.4 };
     const ph = Math.max(patch(p, o, 0, 0, pw, ids, P, optA).h, patch(p, o, 0, 0, pw, ids, P, optB).h);
     const endTop = mid + 20;
-    const patchY = mid + 44;
+    const patchY = mid + 46;
     const LCAST = { c: 5, rows: 5 };
-    const castTop = patchY + ph + 10;
-    const yEnd = castTop + LCAST.rows * LCAST.c;
     const fringeLen = 54;
-    const H = Math.ceil(yEnd + fringeLen + 10);
+    const yEnd = H - fringeLen - 4;
+    const castTop = yEnd - LCAST.rows * LCAST.c;
 
     let defs =
       stitchPattern(ids.base, c, { gap: 0.48, leg: 0.34, transform: "rotate(-90)" }) +
       stitchPattern(ids.flap, c, { gap: 0.46, leg: 0.32 }) +
+      stitchPattern(ids.knit, 6, { gap: 0.4, leg: 0.3 }) +
       stitchPattern(ids.cast, LCAST.c, { gap: 0.18, leg: 0.3, gapC: "#5A4E36" }) +
       `<linearGradient id="${ids.curl}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset=".08" stop-color="#000" stop-opacity="0"/><stop offset=".88" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>` +
       `<linearGradient id="${ids.sleeve}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${mix(SLEEVE, "#000000", 0.35)}"/><stop offset=".45" stop-color="${SLEEVE_LT}"/><stop offset="1" stop-color="${mix(SLEEVE, "#000000", 0.45)}"/></linearGradient>` +
@@ -1081,7 +1493,51 @@
         folds += `<path d="M${f2(f + dir * 6)} ${f2(y1)}C${f2(f + dir * 14)} ${f2(y1)} ${f2(f + dir * 18)} ${f2(y2)} ${f2(f + dir * (gather + 14))} ${f2(y2)}" stroke="#000" stroke-opacity=".28" stroke-width="1.6" fill="none"/>`;
       }
 
-    // the ends hang outside the fists, in front of the forearms
+    // the figure (geometry above)
+    const A = MC.AVATAR;
+    const figure =
+      MC.avatar({ x: f2(avX), y: f2(avY), w: f2(200 * avS), h: f2(240 * avS), hood: true, torso: SLEEVE, seam: "#7d8796", cls: "c07v2-av" }) +
+      `<svg x="${f2(avX)}" y="${f2(avY)}" width="${f2(200 * avS)}" height="${f2(240 * avS)}" viewBox="${A.viewBox}" aria-hidden="true"><g fill="none" class="c07v2-rim" stroke-width="${f2(1.4 / avS)}"><path d="${A.hood}"/></g></svg>`;
+    defs +=
+      `<linearGradient id="${ids.fade}" gradientUnits="userSpaceOnUse" x1="0" y1="${f2(shY + 14 * avS)}" x2="0" y2="${f2(railY + 4)}"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>` +
+      `<mask id="${ids.mask}" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="url(#${ids.fade})"/></mask>` +
+      steelGrad(ids.rail);
+    // the crowd barrier the scarf came off: a top rail at chest height, a lower rail, a few uprights
+    const barrier = (() => {
+      let b = "";
+      const yl = H - 34;
+      const inner0 = pad + endW;
+      const inner1 = W - pad - endW;
+      for (let i = 0; i < 4; i++) {
+        const x = inner0 + ((inner1 - inner0) * (i + 0.5)) / 4;
+        b += `<rect x="${f2(x - 3)}" y="${f2(railY)}" width="6" height="${f2(yl - railY)}" fill="#3a424d"/><rect x="${f2(x - 3)}" y="${f2(railY)}" width="1.6" height="${f2(yl - railY)}" fill="#fff" opacity=".12"/>`;
+      }
+      b += `<rect x="0" y="${f2(yl)}" width="${W}" height="9" rx="4.5" fill="url(#${ids.rail})" opacity=".85"/>`;
+      b += `<rect x="0" y="${f2(railY - 7)}" width="${W}" height="14" rx="7" fill="url(#${ids.rail})"/><rect x=".5" y="${f2(railY - 6.5)}" width="${W - 1}" height="13" rx="6.5" fill="none" stroke="#4E5661"/>`;
+      b += `<path d="M7 ${f2(railY - 3.6)}H${W - 7}" stroke="#fff" stroke-opacity=".7" stroke-width="1.2" stroke-linecap="round"/>`;
+      return b;
+    })();
+    // the arms: bench-jacket sleeves from the shoulders up to the fists
+    const shoulder = (side) => ({ x: W / 2 + side * 64 * avS, y: shY });
+    const arm = (fx, side) => {
+      const sh = shoulder(side);
+      const rw = 22 * avS; // half-width at the shoulder
+      const fw = 19; // half-width at the wrist
+      const d = `M${f2(sh.x - rw)} ${f2(sh.y)}L${f2(fx - fw)} ${f2(mid + 10)}L${f2(fx + fw)} ${f2(mid + 10)}L${f2(sh.x + rw)} ${f2(sh.y)}Z`;
+      let a = `<path d="${d}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})" transform="translate(2 3)"/>`;
+      a += `<path d="${d}" fill="url(#${ids.sleeve})"/>`;
+      a += `<path d="M${f2(sh.x + side * rw * 0.4)} ${f2(sh.y)}L${f2(fx + side * fw * 0.4)} ${f2(mid + 14)}" stroke="${mix(SLEEVE, "#000000", 0.4)}" stroke-width="1.6"/>`;
+      a += `<path d="M${f2(sh.x - side * rw * 0.5)} ${f2(sh.y)}L${f2(fx - side * fw * 0.5)} ${f2(mid + 14)}" stroke="#fff" stroke-opacity=".1" stroke-width="2"/>`;
+      // a ribbed cuff in the club colour at the wrist
+      a += `<path d="M${f2(fx - fw)} ${f2(mid + 22)}L${f2(fx + fw)} ${f2(mid + 22)}L${f2(fx + fw - 0.6)} ${f2(mid + 34)}L${f2(fx - fw + 0.6)} ${f2(mid + 34)}Z" fill="${P.G}"/>`;
+      let rib = "";
+      for (let x = fx - fw + 2.5; x < fx + fw - 1; x += 3.2) rib += `M${f2(x)} ${f2(mid + 23)}V${f2(mid + 33)}`;
+      a += `<path d="${rib}" stroke="#000" stroke-opacity=".28" stroke-width="1"/>`;
+      a += `<path d="${d}" fill="none" class="c07v2-rim" stroke-width="1.2"/>`;
+      return a;
+    };
+
+    // the ends hang outside the fists, in front of the arms, down to the card's foot
     const rnd = seeded(hashStr(p.serial + "fringe-legend"));
     const startSide = ar ? 1 : -1;
     const drape = (side, kind, clipId) => {
@@ -1092,6 +1548,10 @@
       let s = `<clipPath id="${clipId}"><path d="${d}"/></clipPath>`;
       s += `<path d="${d}" fill="#020a1c" opacity=".4" filter="url(#${ids.soft})" transform="translate(${2 * side} 3)"/>`;
       s += `<g clip-path="url(#${clipId})"><rect x="${f2(xL - 12)}" y="${endTop}" width="${endW + 24}" height="${yEnd - endTop}" fill="${P.G}"/>`;
+      // the season down each end: seven stripes between the patch and the cast-on
+      const sTop = patchY + ph + 12;
+      const pitch = Math.min(12, (castTop - 10 - sTop) / PLAYED);
+      if (pitch >= 6) for (let i = 0; i < PLAYED; i++) s += `<rect x="${f2(xL - 12)}" y="${f2(sTop + i * pitch)}" width="${endW + 24}" height="${f2(pitch / 2)}" fill="${P.S}"/>`;
       if (!thumb) s += `<rect x="${f2(xL - 12)}" y="${endTop}" width="${endW + 24}" height="${yEnd - endTop}" fill="url(#${ids.flap})"/>`;
       // the selvedges run down the long edges: cream on the outer edge, Logo Blue on the inner
       const outerX = side < 0 ? xL - 4 : xL + endW - c;
@@ -1100,63 +1560,53 @@
       s += `<rect x="${f2(innerX)}" y="${endTop}" width="${c + 4}" height="${yEnd - endTop}" fill="${BLUE}"/>`;
       // two stripes under the fist
       for (const yy of [endTop + 10, endTop + 20]) s += `<rect x="${f2(xL - 12)}" y="${yy}" width="${endW + 24}" height="${c - 3}" fill="${P.S}"/>`;
-      if (kind === "cast") {
-        const founder = !!p.founder;
-        s += `<rect x="${f2(xL - 4)}" y="${castTop}" width="${endW + 8}" height="${LCAST.rows * LCAST.c}" fill="${founder ? P.cast : P.G}"/>`;
-        if (founder) {
-          const yr = word(String(p.founder), F35, 1);
-          const yx = xL + Math.round((endW - bw(yr) * LCAST.c) / 2);
-          s += `<g fill="${P.castInk}">${bmpRects(yr, yx, castTop, LCAST.c, LCAST.c)}</g>`;
-        }
-        if (!thumb) s += `<rect x="${f2(xL - 4)}" y="${castTop}" width="${endW + 8}" height="${LCAST.rows * LCAST.c}" fill="url(#${ids.cast})"/>`;
-      } else for (const yy of [castTop + 4, castTop + 14]) s += `<rect x="${f2(xL - 4)}" y="${yy}" width="${endW + 8}" height="${c - 3}" fill="${P.S}"/>`;
+      // a cream end on both: the founder's cast-on with 2026, and the cast-off on the other end
+      const founder = !!p.founder;
+      s += `<rect x="${f2(xL - 4)}" y="${castTop}" width="${endW + 8}" height="${LCAST.rows * LCAST.c}" fill="${founder ? P.cast : P.G}"/>`;
+      if (founder && kind === "cast") {
+        const yr = word(String(p.founder), F35, 1);
+        const yx = xL + Math.round((endW - bw(yr) * LCAST.c) / 2);
+        s += `<g fill="${P.castInk}">${bmpRects(yr, yx, castTop, LCAST.c, LCAST.c)}</g>`;
+      }
+      if (!thumb) s += `<rect x="${f2(xL - 4)}" y="${castTop}" width="${endW + 8}" height="${LCAST.rows * LCAST.c}" fill="url(#${ids.cast})"/>`;
       s += `<rect x="${f2(xL - 12)}" y="${endTop}" width="${endW + 24}" height="${yEnd - endTop}" fill="url(#${ids.curl})" opacity=".5"/></g>`;
       s += `<path d="${d}" fill="none" stroke="${P.Gdk}" stroke-width="1"/><path d="${d}" fill="none" class="c07v2-rim" stroke-width="1"/>`;
       s += patch(p, o, xL + (endW - pw) / 2, patchY, pw, ids, P, kind === "cast" ? optB : optA).svg;
       let fr = "";
       for (let i = 0; i < TASSELS.LEGEND; i++) {
         const x = xL + (endW * (i + 0.5)) / TASSELS.LEGEND;
-        fr += tassel(x, yEnd - 3, fringeLen + rnd() * 8, 17, P, { rnd, knotted: true, hang: side * 2.5 });
+        fr += tassel(x, yEnd - 3, fringeLen - 4 - rnd() * 6, 17, P, { rnd, knotted: true, hang: side * 2.5 });
       }
       return `<g class="c07v2-fringe">${fr}</g><g class="c07v2-end">${s}</g>`;
     };
-    // the forearms, in bench-jacket sleeves, rising from the bottom edge to the fists behind the band
-    const forearm = (cx, side) => {
-      const lean = -side * 46;
-      const t = mid;
-      const d = `M${f2(cx - 22)} ${t}L${f2(cx + 22)} ${t}L${f2(cx + lean + 32)} ${H + 2}L${f2(cx + lean - 32)} ${H + 2}Z`;
-      let a = `<path d="${d}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})" transform="translate(2 3)"/>`;
-      a += `<path d="${d}" fill="url(#${ids.sleeve})"/>`;
-      a += `<path d="M${f2(cx + side * 6)} ${t + 60}L${f2(cx + lean + side * 12)} ${H + 2}" stroke="${mix(SLEEVE, "#000000", 0.4)}" stroke-width="1.6"/>`;
-      a += `<path d="M${f2(cx - side * 14)} ${t + 40}L${f2(cx + lean - side * 22)} ${H + 2}" stroke="#fff" stroke-opacity=".1" stroke-width="2"/>`;
-      a += `<path d="${d}" fill="none" class="c07v2-rim" stroke-width="1.2"/>`;
-      return a;
-    };
-    // the fists: the scarf's end wound round each hand, so no hand and no skin tone shows
+    // the fists: the scarf's end wound round each hand, the knuckles a ridge through the knit
     const fist = (cx, dir) => {
-      const fw = 50;
+      const fw = 52;
       const fh = 60;
       const x = cx - fw / 2;
       const y = mid - fh / 2 - 2;
-      let s = `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(${dir * 2} 3)"><rect x="${x}" y="${y}" width="${fw}" height="${fh}" rx="18" fill="#020a1c"/></g>`;
-      s += `<rect x="${x}" y="${y}" width="${fw}" height="${fh}" rx="18" fill="${P.G}"/>`;
-      if (!thumb) s += `<rect x="${x}" y="${y}" width="${fw}" height="${fh}" rx="18" fill="url(#${ids.flap})"/>`;
+      const kn = [0, 1, 2, 3].map((i) => x + 9 + i * 11.3);
+      const shape = `M${x} ${y + 16}` + kn.map((kx) => `Q${f2(kx)} ${f2(y - 3)} ${f2(kx + 5.6)} ${f2(y + 4)}`).join("") + `Q${x + fw} ${y + 4} ${x + fw} ${y + 18}V${y + fh - 16}Q${x + fw} ${y + fh} ${x + fw - 16} ${y + fh}H${x + 16}Q${x} ${y + fh} ${x} ${y + fh - 16}Z`;
+      let s = `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(${dir * 2} 3)"><path d="${shape}" fill="#020a1c"/></g>`;
+      s += `<path d="${shape}" fill="${P.G}"/>`;
+      if (!thumb) s += `<path d="${shape}" fill="url(#${ids.flap})"/>`;
+      // the knuckles catch the light
+      s += kn.map((kx) => `<path d="M${f2(kx - 2.5)} ${f2(y + 5)}Q${f2(kx + 2)} ${f2(y - 0.5)} ${f2(kx + 6)} ${f2(y + 4)}" stroke="#fff" stroke-opacity=".32" stroke-width="1.6" fill="none" stroke-linecap="round"/>`).join("");
       // three turns of the scarf, each edged by a selvedge
-      [y + 15, y + 30, y + 45].forEach((yy, i) => {
+      [y + 22, y + 35, y + 48].forEach((yy, i) => {
         const sl = dir * (i - 1) * 2.5;
         s += `<path d="M${x} ${f2(yy + sl)}Q${cx} ${f2(yy - 6)} ${x + fw} ${f2(yy - sl)}" stroke="#000" stroke-opacity=".4" stroke-width="2.2" fill="none"/>`;
         s += `<path d="M${x + 1} ${f2(yy + sl + 2.6)}Q${cx} ${f2(yy - 3.2)} ${x + fw - 1} ${f2(yy - sl + 2.6)}" stroke="${i === 1 ? BLUE : P.C}" stroke-width="2.4" fill="none"/>`;
       });
-      s += `<rect x="${x}" y="${y}" width="${fw}" height="${fh}" rx="18" fill="none" stroke="${P.Gxd}" stroke-width="1.2"/>`;
-      s += `<rect x="${x}" y="${y}" width="${fw}" height="${fh}" rx="18" fill="none" class="c07v2-rim" stroke-width="1"/>`;
-      s += `<path d="M${x + 10} ${y + 5}Q${cx} ${y - 1} ${x + fw - 10} ${y + 5}" stroke="#fff" stroke-opacity=".28" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+      s += `<path d="${shape}" fill="none" stroke="${P.Gxd}" stroke-width="1.2"/>`;
+      s += `<path d="${shape}" fill="none" class="c07v2-rim" stroke-width="1"/>`;
       return `<g class="c07v2-fist">${s}</g>`;
     };
     const rim = `<path class="c07v2-rim" d="${outline}" fill="none" stroke-width="1.2"/>`;
     const svg =
       `<svg class="c07v2-svg" viewBox="0 0 ${W} ${H}" aria-hidden="true" focusable="false" style="direction:ltr">` +
       `<defs>${defs}</defs>` +
-      `<g clip-path="url(#${ids.arms})"><g class="c07v2-arms">${forearm(fa, -1)}${forearm(fb, 1)}</g></g>` +
+      `<g clip-path="url(#${ids.arms})"><g class="c07v2-arms" mask="url(#${ids.mask})">${arm(fa, -1)}${arm(fb, 1)}${figure}</g>${barrier}</g>` +
       `<g class="c07v2-raise">` +
       `<g class="c07v2-fabric" clip-path="url(#${ids.clip})">${fab}${folds}</g>` +
       rim +
@@ -1164,7 +1614,7 @@
       `<g class="c07v2-arms">${drape(startSide, "label", ids.dA)}${drape(-startSide, "cast", ids.dB)}${fist(fa, -1)}${fist(fb, 1)}</g>` +
       `</svg>`;
     const cls = `c07v2 c07v2--legend${thumb ? " c07v2--thumb" : ""}${o.motion ? " c07v2--motion" : ""}${P.wool ? " c07v2--wool" : ""}`;
-    return `<div class="${cls}" dir="${MC.s(o).dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="LEGEND">${svg}</div>`;
+    return `<div class="${cls}" dir="${MC.s(o).dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="LEGEND" data-art="0 ${W}">${svg}</div>`;
   }
 
   function full(p, o = {}) {
@@ -1177,21 +1627,53 @@
     const h = Math.max(2, Math.round(pc * 0.9));
     return `<pattern id="${id}" width="${pc}" height="${h}" patternUnits="userSpaceOnUse"><path d="M0 ${f2(h * 0.12)}L${f2(pc / 2)} ${f2(h * 0.78)}L${pc} ${f2(h * 0.12)}" stroke="#000" stroke-opacity=".26" stroke-width="${f2(Math.max(0.5, pc * 0.26))}" fill="none"/><path d="M0 ${f2(h * 0.55)}L${f2(pc / 2)} ${f2(h * 1.2)}" stroke="#fff" stroke-opacity=".1" stroke-width="${f2(Math.max(0.4, pc * 0.18))}" fill="none"/></pattern>`;
   }
-  /** Tassels for tokens: a wrapped head, a bundle that swells a little, then tapers to a soft
-      point; n of them hang from y, splaying slightly outward. Whole-pixel tops. */
-  function points(n, x0, x1, y, len, w, fill, cls, splay, wrap) {
+  /** Tassels for tokens: a short neck where the strands are gathered, a wrap of the second yarn round
+      the head, then two (minis) or three strands hanging and fanning a little to uneven tips. n of
+      them hang from y. Whole-pixel tops, plain paths, no filters. */
+  function tokTassels(n, x0, x1, y, len, w, P, splay, mini) {
     let s = "";
+    const k = mini ? 2 : 3;
     for (let i = 0; i < n; i++) {
       const x = Math.round(n === 1 ? (x0 + x1) / 2 : x0 + ((x1 - x0) * i) / (n - 1));
       const sp = (i - (n - 1) / 2) * splay;
-      const hw = w / 2;
-      const bulge = Math.max(hw, hw * 1.18);
-      const tip = Math.max(0.45, w * 0.12);
-      const ym = y + len * 0.42;
-      s += `<path d="M${f2(x - hw * 0.8)} ${y}H${f2(x + hw * 0.8)}L${f2(x + bulge + sp * 0.4)} ${f2(ym)}L${f2(x + tip + sp)} ${f2(y + len)}H${f2(x - tip + sp)}L${f2(x - bulge + sp * 0.4)} ${f2(ym)}Z" fill="${fill}" class="${cls}"/>`;
-      if (wrap && w >= 4) s += `<rect x="${f2(x - hw * 0.85)}" y="${f2(y + Math.max(1, len * 0.1))}" width="${f2(w * 0.85)}" height="${f2(Math.max(1, len * 0.08))}" fill="${wrap}"/>`;
+      const neck = Math.max(1, Math.round(len * 0.16));
+      const wrap = Math.max(1, Math.round(len * 0.14));
+      const ys = y + neck + wrap; // where the strands fall from
+      s += `<rect x="${f2(x - w * 0.35)}" y="${y}" width="${f2(w * 0.7)}" height="${neck + 0.5}" fill="${P.G}" class="c07v2-tk-tassel"/>`;
+      const sw = Math.max(0.75, (w * 0.95) / k);
+      for (let j = 0; j < k; j++) {
+        const t = k === 1 ? 0 : (j / (k - 1)) * 2 - 1; // -1 … 1
+        const xb = x + t * (w / 2 - sw / 2);
+        const xt = x + sp + t * (w / 2 + w * 0.12);
+        const yt = y + len - (j % 2 ? 0 : Math.max(1, Math.round(len * 0.1)));
+        s += `<path d="M${f2(xb - sw / 2)} ${ys - 0.5}H${f2(xb + sw / 2)}L${f2(xt + sw * 0.35)} ${f2(yt)}H${f2(xt - sw * 0.35)}Z" fill="${P.G}" class="c07v2-tk-tassel"/>`;
+      }
+      // the wrap round the head, in the second yarn
+      s += `<rect x="${f2(x - w * 0.5)}" y="${y + neck}" width="${f2(w)}" height="${wrap}" rx="${f2(Math.min(wrap, w) * 0.3)}" fill="${P.S}" class="c07v2-tk-wrap"/>`;
     }
     return s;
+  }
+  // the 84 at each token size: [from size, chart, cell px, gap stitches]
+  const TOK = [
+    [80, D913, 2, 2],
+    [64, F710, 2, 1],
+    [56, F69, 2, 1],
+    [44, D913, 1, 2],
+    [32, F710, 1, 1],
+    [28, F69, 1, 1],
+    [0, F57, 1, 1],
+  ];
+  /** The 84 for a token at size s, on whole pixels; steps down while `ok(F)` fails. */
+  function tokenFigures(p, s, ok) {
+    let i = TOK.findIndex(([min]) => s >= min);
+    let F = null;
+    for (; i < TOK.length; i++) {
+      const [, chart, k, gap] = TOK[i];
+      const bmp = word(String(p.ovr), chart, gap);
+      F = { bmp, k, w: bw(bmp) * k, h: bmp.length * k };
+      if (!ok || ok(F)) break;
+    }
+    return F;
   }
   function token(p, o = {}) {
     const s = Math.max(20, Math.round(o.size || 44));
@@ -1209,47 +1691,37 @@
     let figs = `<g transform="translate(${mx(b.dx, b.dw)} ${b.dy})">${b.figs}</g>`;
     if (b.year) figs += `<g fill="${b.year.fill}" transform="translate(${mx(b.year.x, b.year.w)} ${b.year.y})" shape-rendering="crispEdges">${bmpRects(b.year.bmp, 0, 0, 1, 1)}</g>`;
     const art = ar ? `<g transform="matrix(-1 0 0 1 ${b.w} 0)">${b.art}</g>` : b.art;
+    const clip = `<clipPath id="${u}-cl"><rect width="${b.w}" height="${s}"/></clipPath>`;
     return (
       `<span class="c07v2-tk c07v2-tk--${tier.toLowerCase()}${mini ? " c07v2-tk--mini" : ""}" role="img" aria-label="${esc(label)}" style="width:${b.w}px;height:${s}px">` +
-      `<svg width="${b.w}" height="${s}" viewBox="0 0 ${b.w} ${s}" aria-hidden="true" focusable="false"><defs>${b.defs}</defs>${art}${figs}</svg></span>`
+      `<svg width="${b.w}" height="${s}" viewBox="0 0 ${b.w} ${s}" aria-hidden="true" focusable="false"><defs>${b.defs}${clip}</defs><g clip-path="url(#${u}-cl)">${art}${figs}</g></svg></span>`
     );
   }
-  /** The 84 for a token, on whole pixels: the 9×13 chart where it fits, else the bold 5×7.
-      HOMA keeps the coarse 5×7 at a larger cell, so its gauge reads even at 80px. */
-  function tokenFigures(p, tier, avail, mini, s) {
-    let chart = F57;
-    let k = 1;
-    if (tier === "HOMA") k = mini ? 1 : Math.max(1, Math.min(3, Math.floor(avail / 8)));
-    else {
-      const k13 = Math.floor(avail / 13);
-      if (k13 >= 1 && (!mini || s >= 32)) {
-        chart = D913;
-        k = Math.min(k13, mini ? 1 : 2);
-      }
-    }
-    const bmp = word(String(p.ovr), chart, chart === D913 ? 2 : 1);
-    return { bmp, k, w: bw(bmp) * k, h: bmp.length * k };
-  }
   function tokenHanging(p, P, tier, s, mini, u, ar) {
-    const ry = mini ? 2 : Math.max(2, Math.round(s * 0.06));
-    const t = mini ? 2 : Math.max(3, Math.round(s * 0.075));
+    const ry = mini ? 1 : Math.max(2, Math.round(s * 0.05));
+    const t = mini ? 2 : Math.max(3, Math.round(s * 0.07));
     const railB = ry + t;
-    const tl = mini ? (s >= 32 ? 9 : s >= 28 ? 8 : 7) : Math.round(s * 0.26);
-    const sb = s - tl; // the swatch's foot
-    const fb = p.founder ? (mini ? 3 : Math.max(3, Math.round(s * 0.08))) : 0;
-    const pro = tier === "PRO" && !mini; // PRO's cream panel from 44px
-    const champ = tier === "CHAMPION";
-    const shadow = champ && !mini;
     const top = railB + 1;
-    const bottom = sb - fb - 1;
-    const F = tokenFigures(p, tier, bottom - top - (shadow ? 1 : 0) - (pro ? 2 : 0), mini, s);
+    const fb = p.founder ? Math.max(3, Math.round(s * 0.08)) : 0; // the founder's cast-on stripe
+    const pro = tier === "PRO"; // PRO's cream panel, at every size (one polarity)
+    const champ = tier === "CHAMPION";
+    let tl = mini ? (s >= 32 ? 9 : s >= 28 ? 8 : 7) : Math.round(s * 0.26);
+    const tlMin = mini ? 5 : Math.round(s * 0.2);
+    // the room the figures need: the chart, a stitch of shadow room, the panel's margin
+    const need = (F) => F.h + (mini ? 0 : F.k) + 2 * (mini ? 1 : F.k);
+    let F = tokenFigures(p, s, null);
+    while (s - tl - fb - 1 - top < need(F) && tl > tlMin) tl--;
+    if (s - tl - fb - 1 - top < need(F)) F = tokenFigures(p, s, (G) => s - tl - fb - 1 - top >= need(G));
     const k = F.k;
+    const sb = s - tl; // the drop's foot
+    const bottom = sb - fb - 1;
+    // one width per size, whatever the tier: the figures, their margin, the selvedge, the bound edges
     const blue = mini ? 1 : Math.max(1, Math.round(s * 0.03));
-    const bind = champ ? (mini ? 1 : Math.max(1, Math.round(s * 0.035))) : 0;
-    const pin = pro ? Math.max(1, Math.round(s * 0.035)) : 0; // the club colour framing PRO's panel
-    const m = mini ? 1 : pin + k + 1;
-    const sw = F.w + 2 * m + blue + 2 * bind + (shadow ? k : 0);
-    const oh = mini ? 3 : Math.max(4, Math.round(s * 0.11));
+    const bind = mini ? 1 : Math.max(1, Math.round(s * 0.035));
+    const m = mini ? 1 : k + 1;
+    const sh = mini ? 0 : k;
+    const sw = F.w + 2 * m + blue + 2 * bind + sh;
+    const oh = mini ? 3 : Math.max(4, Math.round(s * 0.1));
     const sx = oh;
     const W = sx + sw + oh;
     const n = TASSELS[tier];
@@ -1257,7 +1729,7 @@
     const defs = chevron(u + "-cv", pc);
     const tw = mini ? 2 : Math.max(3, Math.round(s * 0.085));
     const splay = mini ? 0.45 : s * 0.014;
-    const fy = top + Math.round((bottom - top - F.h - (shadow ? k : 0)) / 2);
+    const fy = top + Math.round((bottom - top - F.h - sh) / 2);
     let a = "";
     // the rail, rounded at both ends
     a += `<rect x="0" y="${ry}" width="${W}" height="${t}" rx="${f2(t / 2)}" fill="#A9B2BE"/><rect x="${f2(t / 3)}" y="${ry}" width="${f2(W - (2 * t) / 3)}" height="${f2(t * 0.4)}" rx="${f2(t * 0.2)}" fill="#E6EBF0"/><rect x="${f2(t / 2)}" y="${f2(ry + t - 1)}" width="${f2(W - t)}" height="1" fill="#4E5661"/>`;
@@ -1265,81 +1737,100 @@
     const y0 = Math.max(0, ry - (mini ? 1 : 2));
     a += `<rect x="${sx}" y="${y0}" width="${sw}" height="${sb - y0}" fill="${P.G}" class="c07v2-tk-sw"/>`;
     if (pro) {
-      const py0 = Math.max(railB + 1, fy - k);
-      a += `<rect x="${sx + pin}" y="${py0}" width="${sw - blue - 2 * pin}" height="${Math.min(bottom, fy + F.h + k) - py0}" fill="${P.C}"/>`;
+      const pm = mini ? 1 : k;
+      a += `<rect x="${sx + bind}" y="${fy - pm}" width="${sw - blue - 2 * bind}" height="${F.h + sh + 2 * pm}" fill="${P.C}"/>`;
     }
     a += `<rect x="${sx}" y="${y0}" width="${sw}" height="${sb - y0}" fill="url(#${u}-cv)"/>`;
     a += `<rect x="${sx}" y="${y0}" width="${sw}" height="${Math.max(1, ry + Math.round(t / 2) - y0)}" fill="#fff" opacity=".16"/><rect x="${sx}" y="${railB}" width="${sw}" height="${mini ? 1 : Math.max(1, Math.round(t * 0.45))}" fill="#000" opacity=".24"/>`;
-    // the Logo Blue selvedge at the end, CHAMPION's bound edges in the second yarn
+    // the Logo Blue selvedge at the end; CHAMPION's bound edges in the second yarn
     a += `<rect x="${sx + sw - blue - bind}" y="${y0}" width="${blue}" height="${sb - y0}" fill="${BLUE}"/>`;
-    if (bind) a += `<rect x="${sx}" y="${y0}" width="${bind}" height="${sb - y0}" fill="${P.S}"/><rect x="${sx + sw - bind}" y="${y0}" width="${bind}" height="${sb - y0}" fill="${P.S}"/>`;
-    // the founder's cast-on: a cream band at the foot (with 2026 knitted in it from 64px)
+    if (champ) a += `<rect x="${sx}" y="${y0}" width="${bind}" height="${sb - y0}" fill="${P.S}"/><rect x="${sx + sw - bind}" y="${y0}" width="${bind}" height="${sb - y0}" fill="${P.S}"/>`;
+    // the founder's cast-on: a cream band at the foot (2026 knitted into it at 80px)
     let year = null;
     if (fb) {
       a += `<rect x="${sx}" y="${sb - fb}" width="${sw}" height="${fb}" fill="${P.cast}" class="c07v2-tk-cast"/>`;
-      if (fb >= 5) {
+      if (s >= 80 && fb >= 5) {
         const yb = word(String(p.founder), F35, 1);
         year = { bmp: yb, w: bw(yb), x: sx + Math.round((sw - bw(yb)) / 2), y: sb - fb + Math.floor((fb - 5) / 2), fill: P.castInk };
       }
     }
-    // the fringe: tapered tassels, the count is the tier
+    // the fringe: the tassel count is the tier
     const tm = Math.max(tw, Math.round(sw * 0.16));
-    a += points(n, sx + tm, sx + sw - tm, sb, tl, tw, P.G, "c07v2-tk-tassel", splay, P.Gxd);
+    a += tokTassels(n, sx + tm, sx + sw - tm, sb, tl, tw, P, splay, mini);
     // the figures (placed by the caller, never mirrored); CHAMPION's carry a knitted drop shadow
-    const fx = sx + bind + m + (shadow && ar ? k : 0);
-    const key = { HOMA: mini ? P.R2 : P.R, STADE: P.L, PRO: mini ? P.L : P.K, CHAMPION: P.F }[tier];
+    const fx = sx + bind + m + (sh && ar ? k : 0) + (pro || champ ? 0 : 0);
+    const key = { HOMA: mini ? P.R2 : P.R2, STADE: P.L, PRO: P.K, CHAMPION: P.F }[tier];
     let figs = "";
-    if (shadow) figs += `<g fill="${P.D}" transform="translate(${ar ? -k : k} ${k})">${bmpRects(F.bmp, 0, 0, k, k)}</g>`;
+    if (champ && sh) figs += `<g fill="${P.D}" transform="translate(${ar ? -k : k} ${k})">${bmpRects(F.bmp, 0, 0, k, k)}</g>`;
     figs += `<g fill="${key}">${bmpRects(F.bmp, 0, 0, k, k)}</g>`;
     return { w: W, h: s, art: a, defs, figs: `<g shape-rendering="crispEdges">${figs}</g>`, dx: fx, dy: fy, dw: F.w, year };
   }
+  /** LEGEND: the band held overhead by the supporter. The shared avatar's hooded head sits between
+      the forearms under the band (cropped at the shoulders), the fists carry a knuckle bump, and
+      each end hangs outside its fist with a cream cast-on (≥3px) and a tassel. */
   function tokenLegend(p, P, s, mini, u, ar) {
-    // raised: the band held overhead, its ends wound round two fists; the forearms rise from the
-    // bottom edge and meet like a V; each end hangs outside its fist and ends in a tassel
-    const F = tokenFigures(p, "LEGEND", mini ? 9 : s >= 72 ? 26 : 13, mini, s);
+    const F = tokenFigures(p, s, (G) => G.h <= (mini ? 9 : Math.round(s * 0.36)));
     const k = F.k;
     const sel = mini ? 1 : Math.max(1, Math.round(s * 0.03));
     const m = mini ? 1 : k + 1;
-    const bh = F.h + 2 * m + 2 * sel + (mini ? 0 : k);
-    const by = mini ? 2 : Math.max(2, Math.round(s * 0.05));
-    const fw = mini ? 4 : Math.max(5, Math.round(s * 0.12));
-    const fh = Math.round(bh * 0.72);
-    const ew = mini ? 2 : Math.max(3, Math.round(s * 0.075));
-    const bwid = F.w + 2 * (m + 1) + (mini ? 0 : k);
-    const x0 = ew + 1 + Math.round(fw / 2);
-    const W = x0 + bwid + Math.round(fw / 2) + ew + 1;
+    const sh = mini ? 0 : k;
+    const bh = F.h + 2 * m + 2 * sel + sh;
+    const by = mini ? 1 : Math.max(2, Math.round(s * 0.04));
+    const bwid = F.w + 2 * (m + 1) + sh;
+    const fw = mini ? 4 : Math.max(6, Math.round(s * 0.12));
+    const fh = Math.round(bh * 0.8);
+    const ew = mini ? 3 : Math.max(4, Math.round(s * 0.08));
+    const x0 = Math.ceil(fw / 2) + ew;
+    const W = 2 * x0 + bwid;
     const fy = by + Math.round((bh - fh) / 2);
-    const tl = mini ? 5 : Math.round(s * 0.2);
+    const tl = mini ? 5 : Math.round(s * 0.18);
     const defs = chevron(u + "-cv", 2);
     let a = "";
-    // the forearms: from each fist down and inward, meeting the bottom edge like a V
+    // the supporter: the shared avatar, hood up, its head between the forearms, cropped at the shoulders
+    const avS = (bwid * 0.4) / 96;
+    const hoodTop = by + bh + (mini ? 1 : 2);
+    const avY = hoodTop - 58 * avS;
+    const avX = W / 2 - 100 * avS;
+    const shY = Math.min(s + 1, avY + 186 * avS);
+    // the forearms: from each fist down to the shoulders
     const aw = mini ? 3 : Math.max(4, Math.round(s * 0.1));
     for (const [cx, dir] of [
       [x0, -1],
       [x0 + bwid, 1],
     ]) {
-      const lean = -dir * Math.round(bwid * 0.3);
-      a += `<path d="M${cx - aw / 2} ${fy + fh - 1}H${cx + aw / 2}L${f2(cx + aw * 0.42 + lean)} ${s}H${f2(cx - aw * 0.42 + lean)}Z" fill="${SLEEVE}" class="c07v2-tk-arm"/>`;
-      // the end hanging outside the fist, with its tassel
-      const ex = dir < 0 ? cx - fw / 2 - ew + 1 : cx + fw / 2 - 1;
-      const eh = Math.round(s - tl - fy - 1);
-      a += `<rect x="${ex}" y="${fy + 1}" width="${ew}" height="${eh}" fill="${P.G}" class="c07v2-tk-sw"/>`;
-      const cb = mini ? 2 : Math.max(2, Math.round(s * 0.06));
-      if (p.founder && dir > 0) a += `<rect x="${ex}" y="${fy + 1 + eh - cb}" width="${ew}" height="${cb}" fill="${P.cast}" class="c07v2-tk-cast"/>`;
-      a += points(1, ex + ew / 2, ex + ew / 2, fy + 1 + eh, tl, Math.max(2, ew), P.G, "c07v2-tk-tassel", 0);
+      const shx = W / 2 + dir * 62 * avS;
+      a += `<path d="M${f2(cx - aw / 2)} ${fy + fh - 1}H${f2(cx + aw / 2)}L${f2(shx + aw * 0.75)} ${f2(shY)}H${f2(shx - aw * 0.75)}Z" fill="${SLEEVE_LT}" class="c07v2-tk-arm"/>`;
+    }
+    a += MC.avatar({ x: f2(avX), y: f2(avY), w: f2(200 * avS), h: f2(240 * avS), hood: true, torso: SLEEVE_LT, seam: "#8a94a3", cls: "c07v2-tk-av" });
+    // the ends hanging outside the fists, each with a cream cast-on and a tassel
+    for (const [cx, dir] of [
+      [x0, -1],
+      [x0 + bwid, 1],
+    ]) {
+      const ex = dir < 0 ? cx - Math.ceil(fw / 2) - ew + 1 : cx + Math.ceil(fw / 2) - 1;
+      const eTop = fy + 1;
+      const eh = s - tl - eTop;
+      a += `<rect x="${ex}" y="${eTop}" width="${ew}" height="${eh}" fill="${P.G}" class="c07v2-tk-sw"/>`;
+      const cb = Math.max(3, Math.round(s * 0.08));
+      a += `<rect x="${ex}" y="${eTop + eh - cb}" width="${ew}" height="${cb}" fill="${p.founder ? P.cast : P.G}" class="${p.founder ? "c07v2-tk-cast" : ""}"/>`;
+      a += tokTassels(1, ex + ew / 2, ex + ew / 2, eTop + eh, tl, Math.max(2, ew - 1), P, 0, mini);
     }
     // the raised band
     a += `<rect x="${x0}" y="${by}" width="${bwid}" height="${bh}" fill="${P.G}" class="c07v2-tk-sw"/>`;
     a += `<rect x="${x0}" y="${by}" width="${bwid}" height="${bh}" fill="url(#${u}-cv)"/>`;
     a += `<rect x="${x0}" y="${by}" width="${bwid}" height="${sel}" fill="${P.C}"/><rect x="${x0}" y="${by + bh - sel}" width="${bwid}" height="${sel}" fill="${BLUE}"/>`;
-    // the fists: rounded bundles of the scarf
+    // the fists: rounded bundles of the scarf with a ridge of knuckles on top (no cream dash)
     for (const cx of [x0, x0 + bwid]) {
-      a += `<rect x="${cx - fw / 2}" y="${fy}" width="${fw}" height="${fh}" rx="${f2(fw * 0.42)}" fill="${P.G}" stroke="${P.Gxd}" stroke-width="${mini ? 0.6 : 1}" class="c07v2-tk-fist"/>`;
-      if (!mini) a += `<path d="M${cx - fw / 2 + 1} ${fy + Math.round(fh * 0.5)}H${cx + fw / 2 - 1}" stroke="${P.C}" stroke-width="${Math.max(1, Math.round(s * 0.02))}"/>`;
+      const fx = cx - fw / 2;
+      const nk = mini ? 1 : 3;
+      const kr = Math.max(0.8, fw / (2 * nk) );
+      let top = `M${f2(fx)} ${f2(fy + kr + 1)}`;
+      for (let i = 0; i < nk; i++) top += `A${f2(kr)} ${f2(kr)} 0 0 1 ${f2(fx + (fw * (i + 1)) / nk)} ${f2(fy + kr + 1)}`;
+      a += `<path d="${top}V${fy + fh - 2}Q${f2(fx + fw)} ${fy + fh} ${f2(fx + fw - 2)} ${fy + fh}H${f2(fx + 2)}Q${f2(fx)} ${fy + fh} ${f2(fx)} ${fy + fh - 2}Z" fill="${P.G}" stroke="${P.Gxd}" stroke-width="${mini ? 0.6 : 1}" class="c07v2-tk-fist"/>`;
     }
     const dy = by + sel + m;
-    const dx = x0 + Math.round((bwid - F.w - (mini ? 0 : k)) / 2) + (ar && !mini ? k : 0);
-    const figs = `<g shape-rendering="crispEdges">${mini ? "" : `<g fill="${P.D}" transform="translate(${ar ? -k : k} ${k})">${bmpRects(F.bmp, 0, 0, k, k)}</g>`}<g fill="${P.F}">${bmpRects(F.bmp, 0, 0, k, k)}</g></g>`;
+    const dx = x0 + Math.round((bwid - F.w - sh) / 2) + (ar && sh ? k : 0);
+    const figs = `<g shape-rendering="crispEdges">${sh ? `<g fill="${P.D}" transform="translate(${ar ? -k : k} ${k})">${bmpRects(F.bmp, 0, 0, k, k)}</g>` : ""}<g fill="${P.F}">${bmpRects(F.bmp, 0, 0, k, k)}</g></g>`;
     return { w: W, h: s, art: a, defs, figs, dx, dy, dw: F.w };
   }
 
@@ -1350,7 +1841,8 @@
     const tier = p.tier;
     const tk = token(p, { ...o, size: 56, mini: false });
     const yr = p.founder ? String(p.founder).slice(-2) : "";
-    const year = yr ? (ar ? ` <bdi dir="ltr" class="c07v2-row-yr">${yr}·</bdi>` : ` <span class="c07v2-row-yr">·${yr}</span>`) : "";
+    // the supporter year: a thin space, a heavy centred dot, the year at 75%
+    const year = yr ? (ar ? `<bdi dir="ltr" class="c07v2-row-yr">${yr}<i class="c07v2-row-dot" aria-hidden="true"></i></bdi>` : `<span class="c07v2-row-yr"><i class="c07v2-row-dot" aria-hidden="true"></i>${yr}</span>`) : "";
     return (
       `<div class="c07v2-row c07v2-row--${tier.toLowerCase()}${o.me ? " is-me" : ""}" dir="${S.dir}">` +
       `<span class="c07v2-row-rail" aria-hidden="true"></span>` +
@@ -1362,30 +1854,36 @@
     );
   }
 
-  /* ---------- share: "Sur la barrière", the whole scarf on the barrier at night ---------- */
+  /* ---------- share: "Sur la barrière", both halves of the scarf over the rail at night ---------- */
   function share(p, o = {}) {
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const u = MC.uid(PFX + "s");
     const legend = p.tier === "LEGEND";
-    const card = full(p, { ...o, motion: false, thumb: false, long: true, _noRail: true });
+    const card = full(p, { ...o, motion: false, thumb: false, _share: true });
     const vb = (card.match(/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/) || [0, VW, 600]).map(Number);
+    const art = ((card.match(/data-art="([^"]+)"/) || [0, `0 ${vb[1]}`])[1] || "").split(" ").map(Number);
     const M = 24; // the safe margin round the whole scarf
-    const railY = 112;
+    const railY = 115;
     let k;
     let left;
     let top;
     if (legend) {
-      k = Math.min((360 - 2 * M) / vb[1], (640 - railY - M) / vb[2]);
+      const avail = 640 - M - (railY - 6);
+      k = Math.min((360 - 2 * M) / vb[1], avail / vb[2]);
       left = (360 - vb[1] * k) / 2;
-      top = railY;
+      top = railY - 6;
     } else {
-      // from the rail to the fringe's tips, inside the margin
-      k = (640 - M - railY) / (vb[2] - (RAIL_Y + RAIL_H / 2));
-      left = (360 - FW * k) / 2 - X0 * k;
-      top = railY - (RAIL_Y + RAIL_H / 2) * k;
+      // both halves inside the margin, from the rail to the fringe's tips
+      const railC = RAIL_Y + RAIL_H / 2;
+      const artW = art[1] - art[0];
+      k = Math.min((360 - 2 * M) / artW, (640 - M - railY) / (vb[2] - railC));
+      left = (360 - artW * k) / 2 - art[0] * k;
+      top = railY - railC * k;
     }
     const sw = vb[1] * k;
+    // the top rail crosses the whole frame, drawn between the two halves
+    const cardHTML = legend ? card : full(p, { ...o, motion: false, thumb: false, _share: true, _rail: [f2(-left / k), f2((360 - left) / k)] });
     const postX = ar ? M + 6 : 360 - M - 14;
     const bg =
       `<svg class="c07v2-sh-bg" viewBox="0 0 360 640" preserveAspectRatio="none" aria-hidden="true">` +
@@ -1402,13 +1900,10 @@
       `<g filter="url(#${u}-bl)" opacity=".9"><rect x="-20" y="330" width="400" height="330" fill="url(#${u}-pitch)"/>` +
       `<path d="M-20 400H380M-20 480H380M-20 566H380" stroke="#2C6239" stroke-width="24" opacity=".45"/><path d="M-20 350H380" stroke="#DDE8DF" stroke-width="3" opacity=".5"/></g>` +
       `<rect width="360" height="640" fill="url(#${u}-fl)"/>` +
-      // the crowd barrier: top rail, an upright on the far side, a lower rail behind the scarf
+      // the crowd barrier: an upright and a lower rail behind the scarf (the top rail is drawn with the scarf)
       (legend
-        ? ""
-        : `<rect x="${postX}" y="${railY}" width="8" height="${300}" fill="url(#${u}-post)"/>` +
-          `<rect x="0" y="${railY + 296}" width="360" height="9" rx="4.5" fill="url(#${u}-st)" opacity=".7"/>` +
-          `<rect x="-8" y="${railY - 7}" width="376" height="14" rx="7" fill="url(#${u}-st)"/>` +
-          `<path d="M0 ${railY - 3.6}H360" stroke="#fff" stroke-opacity=".7" stroke-width="1.2"/>`) +
+        ? `<rect x="-8" y="${railY + 360}" width="376" height="10" rx="5" fill="url(#${u}-st)" opacity=".55"/>`
+        : `<rect x="${postX}" y="${railY}" width="8" height="${300}" fill="url(#${u}-post)"/>` + `<rect x="0" y="${railY + 296}" width="360" height="9" rx="4.5" fill="url(#${u}-st)" opacity=".7"/>`) +
       `</svg>`;
     const logo = MC.logo("wordmark", { variant: "light", w: "100%" });
     const cap = ar ? ["موسمي،", "صفًّا بعد صف"] : ["Ma saison,", "rang par rang"];
@@ -1418,7 +1913,7 @@
       `<div class="c07v2-sh-logo">${logo}</div>` +
       `<p class="c07v2-sh-cap">${cap.map((l) => `<span>${esc(l)}</span>`).join("")}</p>` +
       `<p class="c07v2-sh-sub"><span dir="ltr">@ali</span> · ${ar ? "مثال" : "Exemple"}</p>` +
-      `<div class="c07v2-sh-scarf" style="top:${f2(top)}px;left:${f2(left)}px;width:${f2(sw)}px">${card}</div>` +
+      `<div class="c07v2-sh-scarf" style="top:${f2(top)}px;left:${f2(left)}px;width:${f2(sw)}px">${cardHTML}</div>` +
       `</div>`
     );
   }
@@ -1459,110 +1954,110 @@
     name: "Écharpe",
     nameAr: "الوشاح",
     category: "youth",
-    philosophy: "Your card is your supporter's scarf, draped over the barrier rail in your club's colours: the 84 knitted big, then ALI ·26, then the tier, each on its own band, so the eye steps down the scarf the way it reads a terrace.",
-    philosophyAr: "بطاقتك وشاحُ المشجّع مُلقًى على حاجز المدرّج بألوان ناديك: الرقم 84 محبوكًا كبيرًا، ثم «علي 26·»، ثم الرتبة، كلٌّ على شريطه، فتنزل العين على الوشاح كما تقرأ المدرّج.",
+    philosophy: "Your card is your supporter's scarf, folded over the barrier rail in your club's colours: the 84 knitted big, then ALI ·26, then a narrow tier strip over the season's stripes, so the eye steps down the scarf the way it reads a terrace.",
+    philosophyAr: "بطاقتك وشاحُ المشجّع مطويًّا على حاجز المدرّج بألوان ناديك: الرقم 84 محبوكًا كبيرًا، ثم «علي 26·»، ثم شريط الرتبة فوق خطوط الموسم، فتنزل العين على الوشاح كما تقرأ المدرّج.",
     idea: [
-      "The card is a knitted supporter scarf draped over a steel crowd-barrier rail. By default (grids, the detail sheet, the tier strip) it is folded: the front drop shows a face of about 1:1.6 (1:1.6 to 1:1.7 for the whole card with its fringe in Latin, 1:1.8 to 1:1.9 in Arabic, whose name and tier word need more rows), and the rest of the scarf hangs behind the rail. That back drop shows as a wedge of knit swung toward the inline start, ending above the cast-on so its fringe never adds to the tassel count. The silhouette is the rail overhanging both sides, the drape, and the fringe.",
-      "It reads from the rail down, each element on its own colour band: the 84 (13 rows, 100%), then ALI ·26 (8 rows, about 62% of the 84), then a narrow tier strip set in the stripes (5 rows, about 38%), then the woven patch, then the founder's cast-on and the fringe. Weight steps down with size: the figures have three-stitch stems, the name two, the tier word one.",
-      "Every knitted glyph comes from a hand-cleaned chart on an integer stitch grid, drawn from Changa 800 and cleaned stitch by stitch, with nothing rasterised live: figures 9 stitches by 13 rows with open three-stitch counters, Latin capitals on 8 rows with two-stitch stems, tier words on 5 rows, and علي and the five Arabic tier words hand-charted with joins on the baseline. The 8 has two clean counters, and no glyph carries a stray stitch.",
-      "The stats sit on a woven jacquard patch sewn on two stitches in from the scarf's edges. The patch has a club-secondary ground (#e9e4d6 for the placeholder club), a 2u satin-stitch border in the club's dark yarn and a 1u thickness edge. The unmodified colour BotolaGO wordmark sits at the top, with the sample note 'J.01–J.07 · Exemple' opposite. The four ratings run in a row: Manrope 700 tabular figures under 600 caps labels at 70% ink. BOT #004821 · 2026/27 · MOROCCO is woven along the bottom edge, and a weft texture lies over everything woven.",
-      "The ground is the user's club primary and the second yarn its secondary; the placeholder club gives slate (#3b4a5e) and cream (#e9e4d6). A Logo Blue selvedge runs down the inline-end edge at every tier, as the one fixed brand thread. The module computes contrast for any pair of club colours (relief tint or shade, cast-on colour, patch ground, stripe yarn). Two unbranded proof colourways, teal and cream and orange and black, are exposed as `colourways` and labelled Exemple.",
-      "The full-length scarf (o.long) is kept for the share image. It adds the season under the tier strip: one stripe per gameweek played, with every fifth a double stripe, so the scarf grows with the season.",
+      "The card is a knitted supporter scarf folded over a steel crowd-barrier rail. By default (grids, the detail sheet, the tier strip) the front drop shows a face of about 1:1.5 (PRO, Latin), and the other half of the scarf hangs behind the rail, parallel and in shadow. It shows as a darker strip along the inline-start edge, turns over the rail in a lit fold lip, and ends in a straight cast-off edge above the front's cast-on, so its fringe never adds to the tassel count. The silhouette is the rail overhanging both sides, two layers of drape, and the fringe.",
+      "It reads from the rail down, each element on its own band: the 84 (13 rows), then ALI ·26 (8 rows, about 62% of the 84), then a narrow tier strip (a 4-row word, about 31%; the strip is about 40% of the 84's band), then the season, one stripe per gameweek played, with the woven patch sewn over it after the second stripe so the rest run out from under its edges, then the founder's cast-on and the fringe. Weight steps down with size: the figures have three-stitch stems, the name two, the tier word one.",
+      "Every knitted glyph comes from a hand-cleaned chart on an integer stitch grid, drawn from Changa 800: figures 9 stitches by 13 rows with open three-stitch counters, Latin capitals on 8 rows with condensed 7- and 6-row sets (still two-stitch stems), tier words on 4 rows, and the Arabic names علي, ياسمين, عثمان, سلمى and حمزة hand-charted in a bold and a condensed weight, joined on a two-row baseline with 2×2 dots, plus the five Arabic tier words.",
+      "A name never collapses to an initial. It steps down a fit ladder: 8 rows with ·26 on its baseline, then 7, then 6, then the same with ·26 stacked above the name's end, then two lines broken at a syllable where one exists (the year after the second line, or on a line of its own set at the name's end). Arabic goes bold, bold with the year tucked above the name's end, condensed, then a Changa 800 sample at falling row counts. The tier word stays a step below the name at every rung.",
+      "The stats sit on a woven jacquard patch sewn on two stitches in from the scarf's edges: club-secondary ground (#e9e4d6 for the placeholder club), a 2u satin-stitch border in the club's dark yarn, a 1u thickness edge, the unmodified colour BotolaGO wordmark at the top with the sample note 'J.01–J.07 · Exemple' opposite, the four ratings in a row (Manrope 700 tabular figures under 600 caps labels at 70% ink), and BOT #004821 · 2026/27 · MOROCCO woven along the bottom edge.",
+      "The ground is the user's club primary and the second yarn its secondary; the placeholder club gives slate (#3b4a5e) and cream (#e9e4d6). A Logo Blue selvedge runs down the inline-end edge at every tier, as the one fixed brand thread. The module computes contrast for any pair of club colours (relief tint or shade, cast-on colour, patch ground, stripe yarn, tier-word yarn). Two unbranded proof colourways, teal and cream and orange and black, are exposed as `colourways` and labelled Exemple.",
     ],
     belonging: [
       "It is the object the Moroccan terrace already lives by: a scarf in your club's colours, knitted with your number, your name and your founding year, hung on the barrier.",
-      "Status lives in the knit itself and in the fringe. A chunky single-colour HOMA scarf becomes STADE's two-colour jacquard, PRO's fine gauge with a cream panel, and CHAMPION's double-knit with bound edges and twisted cords. At LEGEND you lift it off the rail and hold it up. Friends compare tassels at a glance: two, three, four, five.",
+      "Status lives in the knit itself and in the fringe. A chunky single-colour HOMA scarf in raised relief becomes STADE's two-colour jacquard, PRO's fine gauge with a cream panel, and CHAMPION's double-knit with bound edges and twisted cords. At LEGEND you lift it off the rail and hold it up. Friends compare tassels at a glance: two, three, four, five.",
       "ALI ·26 is the supporter-group form of a founding year, so a founder's scarf says 'I was here from the start' the way a curva's banner does.",
-      "It is screenshot-worthy as an object, not a number badge. The share image hangs the whole scarf on a barrier at night under 'Ma saison, rang par rang'.",
+      "The season is knitted in: one stripe per gameweek, running out from under the patch. The share image hangs both halves of the scarf on a barrier at night under 'Ma saison, rang par rang'.",
     ],
     founderMark: [
-      "Written into the name band: ALI ·26, with the year knitted in the club's second colour at 5 rows, about 60% of the name's 8 rows, on the name's baseline. In Arabic it reads 26· علي, the dot between the year and the name. On HOMA's single-colour scarf, the ·26 is the one place duplicate-stitched in the second colour.",
+      "Written into the name band: ALI ·26, the year knitted at about 60% of the name's height (5 rows beside 8; 4 rows beside a 7- or 6-row or Arabic name) on the name's baseline, in the club's second colour. On HOMA's single-colour scarf the year is knitted in the same relief as the name, so it never outranks it. In Arabic it reads 26· علي, the dot between the year and the name.",
       "The craft mark: the first five rows ever knitted, just above the fringe, are a cream cable cast-on with 2026 knitted between two cable twists. They keep one gauge at every tier and read at arm's length. Non-founders cast on plain, in the ground yarn.",
-      "At 24px the founder mark is a 3px cast-on stripe at the foot of the mini, in the club's second colour when it is light (cream for the placeholder), edged on the light ground. From 64px, 2026 is knitted into that stripe on whole pixels. The row writes ALI ·26 and never 'FOUNDER 2026'.",
+      "On tokens and minis the founder mark is a cream cast-on stripe at the foot, at least 3px tall at 24px (both ends of the raised LEGEND scarf carry one). 2026 is knitted into it only at 80px. The row writes ALI ·26 and never 'FOUNDER 2026'.",
       "Ceremony 'la première maille' (motion on, replayable): the five cast-on rows knit across in turn, then the cables appear. The 84 stays visible throughout; reduced motion shows the finished state.",
     ],
     small: [
-      "44–80px token: a hanging segment. It has a steel rail with rounded end caps overhanging both sides, and the club-primary drop turned over the tube, filled with a precomputed chevron knit pattern (an SVG pattern, no filters) whose stitch size is the gauge: 4px at HOMA from 64px, 3px at STADE, 2px at PRO and CHAMPION. The 84 is on whole pixels: the 9×13 chart at 2px from 56px and at 1px at 44px; HOMA keeps a bold 5×7 at 2–3px cells, so its coarse gauge reads at 80px. It also has the Logo Blue selvedge, the founder's cast-on stripe, and tapered tassels, about 30% longer than v1's, with a wrapped head. PRO keeps its cream panel framed in the club colour; CHAMPION keeps its bound edges and the knitted shadow.",
-      "24–32px mini, inside the ranking row's name cell: the same object on a 1px grid. A 2px rail with rounded caps, the club-primary drop, the 84 at 1px (the 9×13 chart at 32px, a bold 5×7 at 24–28px), the 3px cast-on stripe for founders, and tapered points counting the tier (2, 3, 4, 5). LEGEND changes the outline: a raised band held by two fists on a V of forearms.",
-      "Row (the 'My position' card): the barrier rail runs along the top of the card and the 56px token hangs from it. Beside it are ALI ·26 in Changa 800 (the year at 68% in the muted ink), then the tier with '84 OVR', then the points.",
+      "44–80px token: a hanging segment with a steel rail (rounded end caps) overhanging both sides and the club-primary drop turned over the tube, filled with a precomputed chevron knit pattern (an SVG pattern, no filters) whose stitch size is the gauge (4px at HOMA from 64px, 3px at STADE, 2px at PRO and CHAMPION). The token is one width per size at every tier. The 84 steps down evenly on whole pixels, through optical sizes of the knit chart: 26px at 80, 20 at 64, 18 at 56, 13 at 44, 10 at 32, 9 at 28, 7 at 24.",
+      "One polarity at every size: PRO is always slate figures on its cream panel, STADE and CHAMPION cream on the club colour, HOMA a light relief on the one yarn (about 6:1 on tokens). Tassels have a wrapped head in the second yarn and split into two or three strands at the tip, drawn as plain paths.",
+      "24–32px mini, inside the ranking row's name cell: the same object on a 1px grid. The tassel count carries the tier (2, 3, 4, 5), and the founder's 3px cast-on stripe sits at the foot. LEGEND changes the outline: a raised band held by two fists with a knuckle bump, the forearms meeting the shared avatar's hooded head between them, the ends hanging outside with a cream cast-on each.",
+      "Row (the 'My position' card): the barrier rail runs along the top of the card and the 56px token hangs from it in a fixed 64px slot, so every name starts at the same x. Beside it are ALI ·26 in Changa 800 (a heavy centred dot after a thin space, the year at 75%), then the tier with '84 OVR', then the points.",
     ],
     rtl: [
-      "The scarf is a textile with no logo rule, so its structure mirrors: the Logo Blue selvedge goes to the left edge, the back drop swings to the right, and the patch's ratings run right to left from CAP. The knitted words are charted in visual order and never mirrored, and the BotolaGO wordmark stays Latin.",
-      "علي is hand-charted on 17 stitches by 12 rows, with two-stitch strokes like the Latin capitals. The ain opens to the left of a short stem, the lam rises from the baseline, and the yā's bowl hangs below it with its two dots as 2×2 blocks one row under the bowl. حومة, ملعب, محترف, بطل and أسطورة are hand-charted on 8 rows with one-stitch strokes, joined on the baseline. Other Arabic names fall back to Changa 800 sampled at 9 rows, and those have not been hand-checked.",
+      "The scarf is a textile with no logo rule, so its structure mirrors: the Logo Blue selvedge goes to the left edge, the back drop to the right, and the patch's ratings run right to left from CAP. The knitted words are charted in visual order and never mirrored, and the BotolaGO wordmark stays Latin.",
+      "The five sample Arabic names are hand-charted in two weights, bold (two-stitch strokes, about 12 rows with the descenders) and condensed (one-stitch uprights on the same two-row baseline), with joins on the baseline and 2×2 dots: the ain opens on a short stem, lam and alif rise from the baseline, sin has three teeth, tha its three dots, and the final yā and nun hang their bowls below it. Other Arabic names fall back to Changa 800 sampled at 12 rows and down; those have not been hand-checked. The five Arabic tier words are hand-charted on 7–8 rows with one-stitch strokes.",
       "The patch sets Arabic in Noto Sans Arabic 600 with no letter-spacing. Figures, BOT #004821 and 2026/27 stay left to right. In the row the year is a left-to-right run (26·) after علي, so the dot sits between them; the name cell keeps line-height 1.7 so the yā's dots are never clipped.",
     ],
     tiers: {
-      HOMA: "Chunky single-colour acrylic: 8u stitches, 28 across. The 84, the name and the tier word are knitted in relief, in raised purl ridges with a lit tint and a cast shadow, on the one yarn. The tier strip is a garter band, and ·26 is duplicate-stitched in the second colour. The full outline is kept, with the Logo Blue selvedge and 2 tassels.",
-      STADE: "Two-colour jacquard at 7u (32 across): the 84 in the second colour on the ground, then one two-row stripe, the name band, and the tier word on a strip of the second yarn. 3 tassels.",
-      PRO: "A finer gauge, 6.4u (0.8× HOMA, 35 across). The 84 is knitted in the ground colour on a cream panel, and the tier word in the second colour between two stripes. 4 tassels.",
-      CHAMPION: "Double-knit at 5.6u (40 across), with plumper stitches. The cream 84 carries a knitted one-stitch drop shadow in a third, near-black yarn. A woven tape in the club's second colour binds both long edges, with a Logo Blue thread down the end-side tape. 5 two-ply twisted cords end in brushed tips.",
-      LEGEND: "'Écharpe levée': lifted off the rail and held overhead, its ends wound round two fists in the scarf itself (no hand and no skin tone shows), with the forearms in graphite bench-jacket sleeves rising from the bottom edge. The raised span carries the same three bands at the same chart sizes: the 84 with its drop shadow, ALI ·26, and the LEGEND strip. The two ends hang outside the fists with woven patches: CAP and SEL with the logo on the reading-start end, and TRF and CON with the ID and country on the other, above the founder's cast-on. About 1.13:1 (456×404u).",
+      HOMA: "Chunky single-colour acrylic: 30 stitches across, the coarsest gauge. The 84, the name, its year and the tier word are knitted in raised relief on the one yarn: V stitches in a light tint, each with a cast shadow and a lit edge: about 4:1 against the ground on the card and about 6:1 on tokens, measured from rasterised pixels. The tier strip is a garter-ridge band, the season stripes are raised ridges. The full outline is kept, with the Logo Blue selvedge and 2 tassels.",
+      STADE: "Two-colour jacquard, 33 across: the 84 in the second colour on the ground, then its one jacquard band (a two-row stripe), the name band, the tier word on a strip of the second yarn, the season's stripes. 3 tassels.",
+      PRO: "A finer gauge, 37 across (0.81× HOMA's stitch). The 84 is knitted in the ground colour on a cream panel, the tier word in the ground on a strip of the second yarn. 4 tassels.",
+      CHAMPION: "Double-knit, 42 across, with plumper stitches. The cream 84 carries a knitted one-stitch drop shadow in a third, near-black yarn. A woven tape in the club's second colour binds both long edges, with a Logo Blue thread down the end-side tape. 5 two-ply twisted cords end in brushed tips.",
+      LEGEND: "'Écharpe levée': lifted off the rail and held overhead by the supporter, the shared avatar seen from behind, hood up, cropped at the card's foot with its hood seam showing. The arms rise in graphite bench-jacket sleeves with club-colour cuffs to two fists wound in the scarf, the knuckles a ridge through the knit (no skin tone). The raised span carries the same bands at the same chart sizes: the 84 with its drop shadow, ALI ·26, and the LEGEND strip. The two ends hang long outside the fists: CAP and SEL with the logo on the reading-start end, TRF and CON with the ID and country on the other, the season's stripes, a cream cast-on (2026) and a cream cast-off, and knotted fringes. Portrait, about 1:1.45.",
     },
     legend: [
-      "The outline changes from hanging (rail, drape, fringe) to raised (a wide band held by two fists on a V of forearms, with the ends hanging beside them). It is visible at 24px.",
-      "The stats stay on the front, on the two hanging ends. The 84 is knitted from the same 13-row chart as every other tier and spans about 35% of the card's width (48% on the hanging card).",
-      "Its richness comes from the object's physics and the gesture: the drop-shadowed 84, the long hand-knotted fringe, and the scarf wound round the fists. There is no precious metal anywhere.",
-      "The moment (motion on, replayable, the 84 visible throughout): the forearms come up, the band lifts and settles taut, and the fringe swings once. Reduced motion shows the raised final state.",
+      "The outline changes from hanging (rail, drape, fringe) to raised: a wide band over a hooded head, held by two fists on a V of forearms, the ends hanging beside them. It is visible at 24px, where the figure reads as arms raised round a head.",
+      "The stats stay on the front, on the two hanging ends, at 1.3× the hanging card's patch. The 84 is knitted from the same 13-row chart as every other tier.",
+      "Its richness comes from the object's physics and the gesture: the drop-shadowed 84, the long hand-knotted fringe, the scarf wound round the fists, and the supporter under it. There is no precious metal anywhere.",
+      "The moment (motion on, replayable, the 84 visible throughout): the arms come up, the band lifts and settles taut, and the fringe swings once. Reduced motion shows the raised final state.",
     ],
     advantages: [
       "It is the supporter's own object, in your club's colours, and reads as neither FUT, Sorare, an NFT nor a bank card.",
       "The tier ladder is physical: gauge, colour count, panel, binding, cord and finally the gesture. The tassel count makes it readable down to 24px on both grounds.",
-      "The type is clean: hand-cleaned stitch charts for figures, Latin capitals, tier words and the Arabic, with three sizes and three stroke weights making a clear hierarchy.",
+      "The type is clean and robust: hand-cleaned stitch charts for figures, three Latin sizes and the Arabic in two weights, a fit ladder that never cuts a name to its initial, and three sizes and stroke weights keeping the hierarchy.",
       "The ratings are always on the front, on a patch that reads as textile, and the ID has a physical carrier woven into the patch's edge.",
-      "The folded state brings the grid aspect to about 1:1.6 to 1:1.7, while the full-length scarf stays available for the share.",
+      "The folded state brings the grid aspect to about 1:1.5 for PRO in Latin, while the share shows the whole scarf.",
     ],
     risks: [
       "It sits near ultras culture and near Codex's Terrace theme. ALI ·26 is the supporter-group form by design, so free-text names need moderation, and the share keeps stands and steps out of the background.",
-      "LEGEND is roughly square (about 1.13:1), so in a fixed-width slot it is shorter than the hanging tiers. Its 84 is about 73% of PRO's width in the same slot.",
-      "Arabic cards are taller (about 1:1.8 to 1:1.9), because the hand-charted علي needs 12 rows and the Arabic tier words 8. Only علي and the five tier words are hand-charted; other Arabic names use a sampled fallback.",
-      "Latin names longer than the 8-row capitals allow drop to the 5-row capitals, and then to the initial with the full name woven into the patch's foot.",
+      "Card height varies with the gauge and the name: PRO is about 1:1.53 and CHAMPION 1:1.48, HOMA's coarse stitch makes it taller (about 1:1.7), Arabic adds rows for descenders and the tier word (about 1:1.6 to 1:2.0), and a long name on a narrow scarf goes to two lines (up to about 1:2.0 at HOMA).",
+      "Splitting a single-word name over two lines (YAS / MINE ·26) is legible but not how a person writes their name; it happens only where the scarf has too few stitches for the condensed 7- and 6-row capitals, and the break prefers a syllable (between two consonants).",
+      "In the share, the 84 is about 16% of the frame height in Latin (14% in Arabic, whose name and tier word add rows): the two halves and the whole length inside a 24px margin cap it below the 18% target at PRO's 37-stitch gauge.",
       "The placeholder club colour is a slate close to navy, so the sample still reads cool. The module's contrast logic has been rendered for the two proof colourways, not for real club palettes, and red with green should appear only when a club's own data says so.",
       "Not built: the band that knits on at gameweek close, a league 'mur des écharpes' share, long-press on the patch, and the multi-segment sway (the drag sway is a single pendulum from the rail).",
-      "The Arabic strings (the caption, مثال and the charted tier words) need review by a native MSA reader.",
+      "The Arabic charts (the five names in two weights, the five tier words), the caption and مثال need review by a native MSA reader. Other Arabic names use a sampled fallback that has not been hand-checked.",
     ],
     refinementNotes: [
       {
         title: "Knit typography",
         items: [
-          "Replaced every live-rasterised glyph with hand-cleaned stitch charts drawn from Changa 800: figures 9×13 with three-stitch stems and open counters (the '+' in the 8, the blob and the A's star artefacts are gone), Latin capitals on 8 rows, and tier words on 5 rows.",
-          "Hand-charted علي with joins on the baseline and the yā's dots as 2×2 blocks one row under the bowl. Knitted all five Arabic tier words (v1 embroidered them).",
-          "Token and mini figures snap to whole pixels: the same 9×13 chart at 1–2px, with a bold 5×7 at 24–28px.",
+          "Every glyph comes from a hand-cleaned stitch chart drawn from Changa 800: figures 9×13 with three-stitch stems and open counters (no '+' in the 8, no blob, no star artefacts in A), Latin capitals on 8 rows with condensed 7- and 6-row sets, tier words on 4 rows.",
+          "A fit ladder replaces the fall-back to an initial: 8 → 7 → 6 rows with ·26 on the baseline, then ·26 stacked above the name's end, then two lines. Every sample name now knits in full at every tier in both scripts.",
+          "Hand-charted the five sample Arabic names (علي, ياسمين, عثمان, سلمى, حمزة) in a bold and a condensed weight, joined on a two-row baseline with 2×2 dots; the five Arabic tier words are knitted.",
         ],
       },
       {
-        title: "Hierarchy",
+        title: "Hierarchy and the season",
         items: [
-          "Sizes now step down: 84 (13 rows), ALI ·26 (8 rows, about 62%), tier strip (5 rows, about 38%), then the patch. Stroke weight steps down with them (three, two and one stitches).",
-          "Each element has its own colour band (PRO: cream panel, ground name band, framed tier strip), so the eye steps down the scarf.",
+          "Sizes step down: 84 (13 rows), ALI ·26 (8 rows), the tier word (4 rows) on a narrow strip about 40% of the 84's band. Stroke weight steps down with them (three, two and one stitches), and the tier word stays a step below the name at every rung of the ladder.",
+          "The season is back on the folded face: one stripe per gameweek played (J.01–J.07, Exemple), the woven patch sewn over it after the second stripe so the rest run out from under its edges.",
         ],
       },
       {
         title: "Founder mark",
         items: [
-          "ALI ·26 is knitted into the name band, with ·26 in the club's second colour at about 60% of the name height. The cream cable cast-on with 2026 stays as the craft mark.",
-          "The row and the 44px token no longer write 'PRO FOUNDER 2026'. The row shows ALI ·26, and the token and mini carry a cast-on stripe at least 3px tall at 24px (with 2026 knitted in from 64px).",
+          "ALI ·26 is knitted into the name band at about 60% of the name height; on HOMA the year is in the same relief as the name, so it never outranks it. The cream cable cast-on with 2026 stays as the craft mark.",
+          "Tokens and minis carry a cast-on stripe at least 3px tall at 24px (on both ends at LEGEND), with 2026 knitted in only at 80px. The row shows ALI ·26 with a heavy centred dot, never 'FOUNDER 2026'.",
         ],
       },
       {
         title: "Stats patch",
         items: [
-          "The white UI-like label is now a woven jacquard patch: club-secondary ground, a 2u satin-stitch border, a 1u thickness edge, two stitches in from the scarf's edges, and a weft texture over the text.",
-          "The unmodified colour logo is at the top, the ratings in a row (Manrope 700 tabular, 600 caps labels at 70% ink), and BOT #004821 · 2026/27 · MOROCCO woven along the bottom edge. 'J.01–J.07 · Exemple' stays labelled.",
+          "A woven jacquard patch: club-secondary ground, a 2u satin-stitch border, a 1u thickness edge, two stitches in from the scarf's edges, and a weft texture over the text. The unmodified colour logo at the top, the ratings in a row, BOT #004821 · 2026/27 · MOROCCO woven along the bottom edge, 'J.01–J.07 · Exemple' labelled.",
         ],
       },
       {
         title: "Tier physics and LEGEND",
         items: [
-          "HOMA: single-colour chunky relief. STADE: two-colour jacquard with one band. PRO: 0.8× gauge and a cream panel. CHAMPION: double-knit, a woven binding tape and twisted cords. The change in gauge shows in the token's chevrons at 80px.",
-          "LEGEND is recomposed at full legibility. The raised span carries the 84, ALI ·26 and the LEGEND strip from the same charts; CAP and SEL hang on one end and TRF and CON on the other; the fists are wound in the scarf, so no skin tone shows.",
+          "HOMA: single-colour chunky relief, now with V stitches, a cast shadow and a lit edge on every raised stitch (measured about 4:1 on the card, up from 2.3:1, and about 6:1 on tokens). STADE: two-colour jacquard with one band. PRO: 0.81× gauge and a cream panel. CHAMPION: double-knit, woven binding tape and twisted cords.",
+          "LEGEND is portrait (about 1:1.45, the hanging tiers' height budget): the shared avatar from behind, hood up, arms raised to fists with knuckles under the knit, the ends hanging long with patches at 1.3×, the season's stripes and cream ends. At 24–28px the figure reads as arms raised round a head.",
         ],
       },
       {
-        title: "Silhouette and small sizes",
+        title: "Silhouette, small sizes and share",
         items: [
-          "The new default is a folded state over the rail, about 1:1.6 to 1:1.7 in Latin against v1's 1:2.7, with the back drop shown as a swung wedge. The full-length scarf is kept for the share.",
-          "Token and mini: a chevron knit fill in club primary (an SVG pattern, no filters), tapered tassels with a wrapped head, about 30% longer, and a rail with rounded end caps. The tier cue is tassel count, and the raised V at LEGEND.",
-          "Share: the whole scarf sits inside a 24px safe margin (fringe and cast-on no longer cropped), centred on the barrier, with no stands in the background.",
+          "The back drop is now the other half of the scarf: opaque, darker, parallel to the front, with a lit fold lip over the rail and a straight cast-off edge.",
+          "Tokens: one width per size at every tier, one polarity (PRO always slate on cream), an 84 that steps down evenly (26/20/18/13/10/9/7px), 2026 only at 80px, and tassels with a wrapped head in the second yarn and a two- or three-strand split. Rows put every token in a fixed 64px slot and set ·26 with a heavy centred dot.",
+          "Share: both halves hang over the rail inside the 24px margin, the front with the 84, ALI ·26, the tier and the patch, the back with the season's stripes, the 2026 cast-on and the fringe; the 84 is about 1.5× its first-pass v2 size.",
         ],
       },
     ],
