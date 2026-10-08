@@ -35,20 +35,20 @@ is "Atlas XI"; the mock league `lg1` has `m1`, `m2`, `me`, `m4`, `m5`.
 Fantasy gains the onboarding moments the owner approved (plan 5.1), all inline, none opening by
 itself, all gated on the section being live:
 
-| Moment | Surface | Change while live |
-| ------ | ------- | ----------------- |
-| M1a | `FantasyGuestIntro` (open state only) | A fifth « Comment jouer » point: the guest mini in its 36 px disc, `m1.intro.*`, after the deadline point. Not shown without `minRated` from the status. |
-| M1b | `/fantasy/create`, name step | A 64 px row (token + `m1.save.line`) between the captain rows and the guest note; `autoFocus` off the team name; `card_save_line_view`. |
-| M1c (back) | `/fantasy/create` | A restored draft that the new account adopted from the visitor opens on the name step with `m1.builder.line`, focus on the save button. |
-| M2 | `/fantasy/team` | `CardBornPanel surface="team"` (WP4) above the controls; the SEL hint. |
-| M3a, M3b | hub, `FantasyHubTeamArea` | `HubCardBlock` after « Composer l'équipe » (64 px token, counter or number, next round, « Nouveau »), taps to `/gradins`. |
-| M3c | `MyRankCard` | 44 px token and `k/n` or `84 OVR` at the end of « Mon classement », taps to `/gradins`. |
-| M3d | `GameweekRecapCard` | `m3.recap` under the total while the card forms and that round counted. |
-| M3e | `PlayerActionSheet`, `/fantasy/team`, `/fantasy/transfers` | `CardHint` (`UiAlert tone="info"`, dismissible), once each per device, only for a manager whose card has no number yet. |
-| M3f | transfer confirmation | `FirstTransferLine` while TRF's reason is `no_transfers`. |
-| M5 | `/fantasy/leagues/$leagueId` (private) | `LeagueCardBand`, 28 px minis before the team name, the `gradins.people.compare` link to G3. |
-| 3.4 | hub, `fantasy.index.tsx` | `PepitesHubTile` under the four shortcuts; PrizeWelcome waits when a hero was already shown this session. |
-| Decision 6 | `FantasyImportPrompt` | `track("fantasy_team_created")` on the import's success path, **in its own commit**, not gated (analytics only); and the card read is invalidated after an import, gated. |
+| Moment     | Surface                                                    | Change while live                                                                                                                                                         |
+| ---------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| M1a        | `FantasyGuestIntro` (open state only)                      | A fifth « Comment jouer » point: the guest mini in its 36 px disc, `m1.intro.*`, after the deadline point. Not shown without `minRated` from the status.                  |
+| M1b        | `/fantasy/create`, name step                               | A 64 px row (token + `m1.save.line`) between the captain rows and the guest note; `autoFocus` off the team name; `card_save_line_view`.                                   |
+| M1c (back) | `/fantasy/create`                                          | A restored draft that the new account adopted from the visitor opens on the name step with `m1.builder.line`, focus on the save button.                                   |
+| M2         | `/fantasy/team`                                            | `CardBornPanel surface="team"` (WP4) above the controls; the SEL hint.                                                                                                    |
+| M3a, M3b   | hub, `FantasyHubTeamArea`                                  | `HubCardBlock` after « Composer l'équipe » (64 px token, counter or number, next round, « Nouveau »), taps to `/gradins`.                                                 |
+| M3c        | `MyRankCard`                                               | 44 px token and `k/n` or `84 OVR` at the end of « Mon classement », taps to `/gradins`.                                                                                   |
+| M3d        | `GameweekRecapCard`                                        | `m3.recap` under the total while the card forms and that round counted.                                                                                                   |
+| M3e        | `PlayerActionSheet`, `/fantasy/team`, `/fantasy/transfers` | `CardHint` (`UiAlert tone="info"`, dismissible), once each per device, only for a manager whose card has no number yet.                                                   |
+| M3f        | transfer confirmation                                      | `FirstTransferLine` while TRF's reason is `no_transfers`.                                                                                                                 |
+| M5         | `/fantasy/leagues/$leagueId` (private)                     | `LeagueCardBand`, 28 px minis before the team name, the `gradins.people.compare` link to G3.                                                                              |
+| 3.4        | hub, `fantasy.index.tsx`                                   | `PepitesHubTile` under the four shortcuts; PrizeWelcome waits when a hero was already shown this session.                                                                 |
+| Decision 6 | `FantasyImportPrompt`                                      | `track("fantasy_team_created")` on the import's success path, **in its own commit**, not gated (analytics only); and the card read is invalidated after an import, gated. |
 
 The lab's open points, solved in the real components rather than carried over:
 

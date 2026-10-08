@@ -7,7 +7,8 @@ import { track, type AnalyticsEvent } from "@/lib/analytics";
 import { useMyManagerCard } from "@/services/use-manager-card";
 
 import { useMomentCopy } from "../copy";
-import { DEVICE_KEYS, hasSeen, markSeen, type DeviceKey } from "../storage";
+import { DEVICE_KEYS, type DeviceKey } from "../storage";
+import { claimHint } from "./hint-once";
 import { hintEligible } from "./inline-model";
 
 export type CardHintKind = "cap" | "sel" | "trf";
@@ -47,8 +48,7 @@ export function CardHint({ kind, className }: { kind: CardHintKind; className?: 
 
   useEffect(() => {
     if (!eligible || shown) return;
-    if (hasSeen(DEVICE_KEY[kind])) return;
-    markSeen(DEVICE_KEY[kind]);
+    if (!claimHint(DEVICE_KEY[kind])) return;
     track(EVENT[kind]);
     setShown(true);
   }, [eligible, kind, shown]);
@@ -62,11 +62,7 @@ export function CardHint({ kind, className }: { kind: CardHintKind; className?: 
       className={className}
       testId={`card-hint-${kind}`}
       action={
-        <UiIconButton
-          variant="ghost"
-          aria-label={t("fpl.close")}
-          onClick={() => setClosed(true)}
-        >
+        <UiIconButton variant="ghost" aria-label={t("fpl.close")} onClick={() => setClosed(true)}>
           <X aria-hidden />
         </UiIconButton>
       }

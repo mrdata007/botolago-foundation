@@ -86,7 +86,10 @@ export function HubCardBlockView({
     cardCopy,
     minRated: card.minRated,
     rated: model.head.kind === "number",
-    deadline: (iso) => <bdi>{formatDeadline(iso, lang, { weekday: "short" })}</bdi>,
+    // One piece: a date never breaks between its day and its month.
+    deadline: (iso) => (
+      <bdi className="whitespace-nowrap">{formatDeadline(iso, lang, { weekday: "short" })}</bdi>
+    ),
   });
   const fresh = model.fresh ? <Pill tone="new">{gradins.badgeNew}</Pill> : null;
   return (

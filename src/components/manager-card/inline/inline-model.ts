@@ -64,7 +64,8 @@ export function nextSeasonLabel(label: string): string | null {
   if (!match) return null;
   const start = Number(match[1]);
   const end = Number(match[2]);
-  if ((start + 1) % 100 !== (end + 1) % 100) return null;
+  // A season label is its start year and the next year's last two digits: « 2026/27 ».
+  if (end !== (start + 1) % 100) return null;
   return `${start + 1}/${String((end + 1) % 100).padStart(2, "0")}`;
 }
 
