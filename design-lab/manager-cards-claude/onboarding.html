@@ -8,106 +8,14 @@
     <link rel="stylesheet" href="src/fonts.css" />
     <link rel="stylesheet" href="src/app-context.css" />
     <link rel="stylesheet" href="src/onboarding/onboarding.css" />
+    <link rel="stylesheet" href="src/onboarding/page.css" />
     <script src="src/brand.js"></script>
     <script src="src/kit.js"></script>
     <script src="src/contexts.js"></script>
     <script src="src/onboarding/states.js"></script>
     <script src="src/onboarding/strings.js"></script>
     <script src="src/onboarding/frame.js"></script>
-    <style>
-      html,
-      body {
-        margin: 0;
-      }
-      body {
-        font:
-          13px/1.4 "Manrope",
-          sans-serif;
-      }
-      body.app-light {
-        background: #e6e9ef;
-      }
-      body.app-dark {
-        background: #05080f;
-      }
-      .onbp-head {
-        padding: 16px 24px 0;
-        direction: ltr;
-      }
-      .onbp-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, 390px);
-        justify-content: center;
-        align-items: start;
-        gap: 28px 24px;
-        padding: 20px 24px 40px;
-      }
-      .onbp-cell {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        min-width: 0;
-      }
-      .onbp-cell--wide {
-        grid-column: 1 / -1;
-        align-items: center;
-      }
-      .onbp-label {
-        min-height: 56px;
-        max-width: 390px;
-        direction: ltr;
-        font-size: 12px;
-        line-height: 1.4;
-      }
-      .onbp-cell--wide .onbp-label {
-        max-width: none;
-        width: 100%;
-      }
-      .onbp-label b {
-        font-weight: 800;
-      }
-      .onbp-label small {
-        display: block;
-        opacity: 0.72;
-        font-size: 11px;
-      }
-      .onbp-slot {
-        position: relative;
-      }
-      .onbp-grid .onbp-slot .onb-phone {
-        border-radius: 28px;
-        box-shadow:
-          0 0 0 1px rgba(20, 30, 60, 0.18),
-          0 14px 32px -14px rgba(20, 30, 60, 0.4);
-      }
-      .onbp-tag {
-        display: inline-block;
-        padding: 2px 8px;
-        border: 1px solid currentColor;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 800;
-        line-height: 1.4;
-        background: #fff3c4;
-        color: #4a3700;
-      }
-      /* Single screen: the tag rides the status bar, between the clock and the battery. */
-      .onbp-single .onbp-tag {
-        position: absolute;
-        z-index: 20;
-        top: 3px;
-        left: 50%;
-        transform: translateX(-50%);
-        padding: 0 8px;
-        font-size: 10px;
-        white-space: nowrap;
-        pointer-events: none;
-      }
-      .onbp-note {
-        padding: 24px;
-        direction: ltr;
-      }
-    </style>
+    <script src="src/onboarding/page.js"></script>
   </head>
   <body>
     <main id="out"><p class="onbp-note">Loading the onboarding screens…</p></main>
@@ -115,22 +23,13 @@
       /* The onboarding screens for one card direction. Query: c, v (the direction, as preview.html),
          lang=fr|ar, scheme=light|dark, screen=S05 (one screen, page width = frame width),
          variant=<key>, motion=1 (allow the card beats). Without screen: every registered screen
-         and variant in 390px phone frames, labelled above. */
+         and variant in 390px phone frames, labelled above. The rendering is MC.ONB.page.render
+         (src/onboarding/page.js); dist/onboarding.html has the same page with a toolbar. */
       (async function () {
         const q = new URLSearchParams(location.search);
         const slug = q.get("c") || "";
         const vq = q.get("v") ? "-" + q.get("v") : "";
-        const lang = q.get("lang") === "ar" ? "ar" : "fr";
-        const scheme = q.get("scheme") === "dark" ? "dark" : "light";
-        const only = q.get("screen");
-        const onlyVariant = q.get("variant");
-        const motion = q.get("motion") === "1";
-        document.body.className = "app-" + scheme;
-        document.documentElement.style.colorScheme = scheme;
-        document.documentElement.lang = lang;
-        const out = document.getElementById("out");
         const MC = window.MC;
-        const ONB = MC.ONB;
 
         /* Screen files: in this order, each optional. A directory listing tells which exist, so a
            missing file costs no network error; without a listing every file is tried. */
@@ -177,133 +76,16 @@
           await load(`src/concepts/${slug}${vq}.js`);
           c = MC.concepts.find((x) => !before.includes(x));
         }
-        const semelle = (c && c.n === 5) || /^05(?!\d)/.test(slug);
 
-        const esc = MC.esc;
-        const frames = [];
-        const failed = (def, variant, e, wide) =>
-          `<div class="onb ${wide ? "onb-desktop" : "onb-phone"} app-${scheme}" dir="${lang === "ar" ? "rtl" : "ltr"}" lang="${lang}"><div class="onb-missing" style="margin:16px;padding:16px;min-height:80px">screen ${esc(def.id)} / ${esc(variant.key)} failed: ${esc(e.message)}</div></div>`;
-        function build(def, variant) {
-          let env;
-          let html;
-          try {
-            env = ONB.makeEnv(def, variant, { c, lang, scheme, motion });
-            html = def.render(env);
-          } catch (e) {
-            console.warn(`[onboarding] ${def.id}/${variant.key}: ${e.message}`);
-            html = failed(def, variant, e, def.desktop);
-          }
-          const slot = document.createElement("div");
-          slot.className = "onbp-slot";
-          slot.innerHTML = html;
-          let root = slot.firstElementChild;
-          if (!root || !root.classList.contains("onb")) {
-            const wrap = document.createElement("div");
-            wrap.className = "onb app-" + scheme;
-            while (slot.firstChild) wrap.appendChild(slot.firstChild);
-            slot.appendChild(wrap);
-            root = wrap;
-          }
-          root.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
-          root.setAttribute("lang", lang);
-          if (semelle) {
-            const tag = document.createElement("span");
-            tag.className = "onbp-tag";
-            tag.textContent = "Test culturel en attente";
-            slot.dataset.semelle = "1";
-            slot.prepend(tag);
-          }
-          frames.push({ def, variant, slot, root, env });
-          return slot;
-        }
-
-        const registry = ONB.SCREENS;
-        let toShow;
-        if (only) {
-          const def = ONB.get(only);
-          if (!def) {
-            out.innerHTML = `<p class="onbp-note">No screen “${esc(only)}”. Registered: ${registry.map((s) => esc(s.id)).join(", ") || "none"}.</p>`;
-            document.documentElement.dataset.ready = "1";
-            return;
-          }
-          const variant =
-            def.variants.find((v) => v.key === onlyVariant) ||
-            (onlyVariant ? null : def.variants[0]);
-          if (!variant) {
-            out.innerHTML = `<p class="onbp-note">No variant “${esc(onlyVariant)}” on ${esc(def.id)}. Variants: ${def.variants.map((v) => esc(v.key)).join(", ")}.</p>`;
-            document.documentElement.dataset.ready = "1";
-            return;
-          }
-          toShow = [[def, variant]];
-          out.className = "onbp-single";
-          out.innerHTML = "";
-          out.appendChild(build(def, variant));
-        } else {
-          toShow = registry.flatMap((def) => def.variants.map((v) => [def, v]));
-          const head = document.createElement("header");
-          head.className = "onbp-head";
-          head.innerHTML =
-            `<b>${esc(c ? c.name : slug || "no direction")}</b> · onboarding screens · ${lang} · ${scheme}` +
-            ` · ${registry.length} screens, ${toShow.length} variants` +
-            (semelle ? ` · <span class="onbp-tag">Test culturel en attente</span>` : "");
-          const grid = document.createElement("div");
-          grid.className = "onbp-grid";
-          for (const [def, variant] of toShow) {
-            const cell = document.createElement("section");
-            cell.className = "onbp-cell" + (def.desktop ? " onbp-cell--wide" : "");
-            cell.dataset.shot = `${def.id}-${variant.key}`;
-            const label = document.createElement("div");
-            label.className = "onbp-label";
-            label.innerHTML =
-              `<b>${esc(def.id)}</b> · ${esc(variant.key)} · ${esc(def.title)}` +
-              `<small>${esc(def.moment || "")} · fixture ${esc(variant.fixture)} (sample)${variant.label ? " · " + esc(variant.label) : ""}</small>`;
-            cell.appendChild(label);
-            cell.appendChild(build(def, variant));
-            grid.appendChild(cell);
-          }
-          out.innerHTML = "";
-          if (!toShow.length) out.innerHTML = `<p class="onbp-note">No screen registered yet.</p>`;
-          out.appendChild(head);
-          out.appendChild(grid);
-        }
-
-        /* After the fonts are in: scroll positions, mounts, overflow notes, the desktop fit. */
-        await document.fonts.ready;
-        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-        for (const fr of frames) {
-          const scroller = fr.root.querySelector(".onb-scroll");
-          if (scroller) {
-            const to = scroller.dataset.scrollTo;
-            const top = scroller.dataset.scrollTop;
-            if (to) {
-              const target = scroller.querySelector(to);
-              if (target)
-                scroller.scrollTop =
-                  target.getBoundingClientRect().top -
-                  scroller.getBoundingClientRect().top +
-                  scroller.scrollTop -
-                  8;
-            } else if (top != null) scroller.scrollTop = Number(top);
-            const extra = scroller.scrollHeight - scroller.clientHeight;
-            fr.root.dataset.scrolls = extra > 2 ? String(extra) : "0";
-            const small = fr.slot.parentElement?.querySelector(".onbp-label small");
-            if (small && extra > 2)
-              small.insertAdjacentText("beforeend", ` · scrolls (+${extra}px)`);
-          }
-          if (c && c.mount) {
-            fr.slot.querySelectorAll('[data-onb-card="full"]').forEach((el) => {
-              try {
-                if (el.firstElementChild) c.mount(el.firstElementChild, fr.env ? fr.env.o : {});
-              } catch (e) {
-                console.warn("[onboarding] mount: " + e.message);
-              }
-            });
-          }
-          if (!only && fr.def.desktop) {
-            const room = document.documentElement.clientWidth - 48;
-            if (room < 1440) fr.slot.style.zoom = String(room / 1440);
-          }
-        }
+        await MC.ONB.page.render(document.getElementById("out"), {
+          c,
+          slug,
+          lang: q.get("lang"),
+          scheme: q.get("scheme"),
+          motion: q.get("motion") === "1",
+          screen: q.get("screen") || "",
+          variant: q.get("variant") || "",
+        });
         document.documentElement.dataset.ready = "1";
       })();
     </script>

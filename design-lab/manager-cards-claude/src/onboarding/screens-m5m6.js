@@ -337,7 +337,7 @@
   const rowHTML = (env, m) => {
     const name = nameOf(env, m.p);
     const move = m.move
-      ? `<span class="m56-move ${m.move > 0 ? "is-up" : "is-down"}">${tri(m.move > 0)}<span aria-hidden="true">${ONB.num(Math.abs(m.move), env)}</span><span class="m56-sr">${env.text(m.move > 0 ? "app.rank.up" : "app.rank.down")} ${Math.abs(m.move)}</span></span>`
+      ? `<span class="m56-move ${m.move > 0 ? "is-up" : "is-down"}">${tri(m.move > 0)}<span aria-hidden="true">${ONB.num(Math.abs(m.move), env)}</span><span class="m56-sr">${env.text(m.move > 0 ? "app.rank.up" : "app.rank.down")} ${ONB.num(Math.abs(m.move), env)}</span></span>`
       : `<span class="m56-move"><span aria-hidden="true">=</span><span class="m56-sr">${env.t("app.rank.same")}</span></span>`;
     const ident = `${miniOf(env, m.p)}<span class="m56-name" dir="auto">${esc(name)}</span>`;
     return (
@@ -384,7 +384,7 @@
         )
         .join("")}</div>` +
       `<section class="m56-panel" role="tabpanel">` +
-      `<p class="m56-updated onb-t-meta onb-muted">${env.t("app.league.updated")} : <strong><bdi>${esc(env.pick(UPDATED))}</bdi></strong></p>` +
+      `<p class="m56-updated onb-t-meta onb-muted">${env.t("app.league.updated")} : <strong><bdi>${ONB.iso(env.pick(UPDATED), env)}</bdi></strong></p>` +
       bandHTML(env, league) +
       ONB.alert(env.t(K + "m5.hint.compare"), env, { tone: "info", dismiss: true }) +
       tableHTML(env, league) +
@@ -445,7 +445,7 @@
         `<span class="m56-bar m56-bar--${side}${rank(side)}" aria-hidden="true">${v == null ? "" : `<i style="--v:${v};--i:${i}"></i>`}</span>`;
       return (
         `<li>${val(x, "me")}${bar(x, "me")}<span class="m56-code">${esc(env.stat(k).code)}</span>${bar(y, "them")}${val(y, "them")}` +
-        `<span class="m56-sr">${esc(env.stat(k).code)} : ${x == null ? ONB.dash : x}, ${y == null ? ONB.dash : y}</span></li>`
+        `<span class="m56-sr">${esc(env.stat(k).code)} : ${ONB.num(x, env)}, ${ONB.num(y, env)}</span></li>`
       );
     }).join("")}</ul>`;
 

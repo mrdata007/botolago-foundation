@@ -15,7 +15,6 @@
   const ONB = MC.ONB;
   if (!ONB || !ONB.screen) return;
   const K = "card.onboarding.";
-  const esc = MC.esc;
   const bar = ONB.skeleton.bar;
 
   /* The app's own words that the shared kit does not carry yet, copied from
@@ -307,7 +306,7 @@
       )
       .join("")}</div>${foot ? `<div class="m23-strip__foot">${foot}</div>` : ""}</div>`;
 
-  const deadlineText = (env) => `<bdi>${esc(env.pick(env.ctx.deadline) || "")}</bdi>`;
+  const deadlineText = (env) => `<bdi>${ONB.iso(env.pick(env.ctx.deadline) || "", env)}</bdi>`;
   /** "Journée 6 · Date limite : sam. 16:30" (French sets a space before a colon). */
   const deadlineLine = (env, gw) =>
     `${env.t("app.gameweek")} ${env.num(gw)} · ${env.t("app.deadline")}${env.ar ? ":" : " :"} <strong>${deadlineText(env)}</strong>`;

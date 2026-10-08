@@ -90,7 +90,8 @@
      (shortcuts and "Mes ligues": add it so the content always scrolls far enough), pitch(env, { h }).
    Neutral bars stand in for numbers; labels are the app's real ones.
 
-   DIGITS  MC.ONB.num(n, env) -> <bdi dir="ltr">n</bdi> ("—" when null); MC.ONB.gw(n, env) -> J5 /
+   DIGITS  MC.ONB.iso(text, env) -> escaped text with each run of digits isolated in Arabic;
+     MC.ONB.num(n, env) -> <bdi dir="ltr">n</bdi> ("—" when null); MC.ONB.gw(n, env) -> J5 /
      الجولة 5; MC.ONB.rounds(n, env) -> "3 journées" / "3 جولات" (Arabic plural: 1 جولة واحدة, 2
      جولتان, 3-10 جولات, 11+ جولة); gwList(arr, env); the *Text twins take (value, lang) and return plain text. */
 (function () {
@@ -118,6 +119,9 @@
     return `${arr.length === 2 ? "الجولتين" : "الجولات"} ${arr.join(" و")}`;
   };
   ONB.gwList = (arr, env) => esc(ONB.gwListText(arr, langOf(env)));
+  /** Escaped text; in Arabic every run of Western digits (12, 09:10, 2026) is isolated left to right. */
+  ONB.iso = (text, env) =>
+    env && env.ar ? esc(text).replace(/\d+(?:[:/.,]\d+)*/g, '<bdi dir="ltr">$&</bdi>') : esc(text);
   ONB.roundsText = (n, lang) =>
     lang === "ar"
       ? MC.arPlural(n, {
@@ -498,7 +502,7 @@
     return (
       `<section class="onb-feature" aria-label="${env.text("app.gameweek")} ${esc(g)}">` +
       `<p style="display:flex;flex-wrap:wrap;align-items:baseline;gap:0 8px"><span class="onb-t-title" style="text-transform:uppercase">${env.t("app.gameweek")} ${ONB.num(g, env)}</span><span class="onb-t-label" style="opacity:.8">· ${env.t("app.deadline")}</span></p>` +
-      `<p class="onb-t-secondary" style="font-weight:800;margin-block-start:2px"><bdi>${esc(d)}</bdi></p>` +
+      `<p class="onb-t-secondary" style="font-weight:800;margin-block-start:2px"><bdi>${ONB.iso(d, env)}</bdi></p>` +
       `<div class="onb-grid2" style="grid-template-columns:repeat(3,1fr);margin-block-start:12px">${tile("app.hours")}${tile("app.minutes")}${tile("app.seconds")}</div>` +
       `</section>`
     );

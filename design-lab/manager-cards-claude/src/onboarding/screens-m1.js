@@ -385,7 +385,7 @@
         attrs: 'style="margin-block-start:16px"',
       }) +
       `<p class="onb-t-meta onb-muted m1-balance" style="margin-block-start:8px;text-align:center">${env.t("app.intro.sign_in_note")}</p>` +
-      `<p class="onb-t-secondary onb-muted" style="margin-block-start:12px">${env.t("app.intro.join_by", { n: env.ctx.firstGw })} <span class="m1-when">${ico("timer", 16)}<bdi>${esc(env.pick(env.ctx.deadline))}</bdi></span></p>` +
+      `<p class="onb-t-secondary onb-muted" style="margin-block-start:12px">${env.t("app.intro.join_by", { n: env.ctx.firstGw })} <span class="m1-when">${ico("timer", 16)}<bdi>${ONB.iso(env.pick(env.ctx.deadline), env)}</bdi></span></p>` +
       `<p class="onb-t-meta m1-prizes" style="margin-block-start:12px">${ico("trophy", 16)}${env.t("app.intro.prizes")}</p>` +
       `<h3 id="${howId}" class="onb-t-label onb-muted m1-caps m1-how" style="margin-block-start:20px">${env.t("app.intro.how_title")}</h3>` +
       `<ul class="m1-points" aria-labelledby="${howId}" style="margin-block-start:8px">${four.map(([i, t, b]) => point(disc(i), t, b)).join("")}${fifth}</ul>` +

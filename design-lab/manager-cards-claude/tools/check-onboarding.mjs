@@ -100,7 +100,7 @@ if (!base) {
 function installChecks() {
   const MC = window.MC;
   const ONB = MC.ONB;
-  const SKIP = "script,style,template,noscript,title,desc";
+  const SKIP = "script,style,template,noscript,title,desc,defs,mask,clipPath,pattern,symbol,marker";
   const arRe = /[؀-ۿ]/;
 
   const effOpacity = (el, stop) => {
@@ -141,6 +141,7 @@ function installChecks() {
       if (!n.nodeValue.trim()) continue;
       const p = n.parentElement;
       if (!p || p.closest(SKIP)) continue;
+      // SVG masks and defs are not painted where they sit; punctuation alone is not copy to grade
       out.push(n);
     }
     return out;
@@ -155,6 +156,24 @@ function installChecks() {
     });
     root.querySelectorAll("title,desc").forEach((e) => parts.push(e.textContent));
     return parts.join(" • ");
+  };
+  // A card that can turn (Lucarne) keeps its back face in the page with backface-visibility hidden:
+  // what is on a face turned away is not on screen, and it must not block a hit test either.
+  const markBack = (slot) => {
+    if (!document.getElementById("chk-back")) {
+      const st = document.createElement("style");
+      st.id = "chk-back";
+      st.textContent =
+        ".onbp-slot [data-chk-back],.onbp-slot [data-chk-back] *{pointer-events:none!important}";
+      document.head.appendChild(st);
+    }
+    slot.querySelectorAll("*").forEach((e) => {
+      if (e.hasAttribute("data-chk-back")) return;
+      const cs = getComputedStyle(e);
+      if (cs.backfaceVisibility !== "hidden") return;
+      const m = /^matrix3d\((.+)\)$/.exec(cs.transform);
+      if (m && Number(m[1].split(",")[10]) < 0) e.setAttribute("data-chk-back", "");
+    });
   };
   const slotOf = (shot) => document.querySelector(`.onbp-cell[data-shot="${shot}"] .onbp-slot`);
 
@@ -192,6 +211,7 @@ function installChecks() {
     const rootRect = root.getBoundingClientRect();
     const ar = cfg.lang === "ar";
     const res = { cell, shot };
+    markBack(slot);
     const text = allText(slot);
     res.text = text;
 
@@ -252,6 +272,8 @@ function installChecks() {
     textNodes(slot).forEach((n) => {
       const el = n.parentElement;
       if (el.closest(".onbp-tag") || !shown(el) || hiddenByAncestor(el, slot)) return;
+      if (el.closest("[data-chk-back]")) return;
+      if (!/[\p{L}\p{N}\u2014]/u.test(n.nodeValue)) return;
       const range = document.createRange();
       range.selectNodeContents(n);
       const rects = [...range.getClientRects()].filter((r) => r.width > 2 && r.height > 2);
@@ -302,10 +324,42 @@ function installChecks() {
         large: px >= 24 || (px >= 18.66 && weight >= 700),
         card: !!el.closest("[data-onb-card]"),
         // the number a card shows (two or three digits, or the dash) is the display number
-        display: !!el.closest("[data-onb-card]") && /^(\d{2,3}|—)$/.test(n.nodeValue.trim()),
+        display:
+          !!el.closest("[data-onb-card]") && px >= 8 && /^(\d{2,3}|—)$/.test(n.nodeValue.trim()),
         op: Math.round(effOpacity(el, slot) * 100) / 100,
       });
     });
+    // text fields: the value, or the placeholder, is not a text node, so it is read from its box
+    slot
+      .querySelectorAll("input:not([type=checkbox]):not([type=radio]):not([type=hidden])")
+      .forEach((inp) => {
+        if (!shown(inp) || hiddenByAncestor(inp, slot)) return;
+        const txt = (inp.value || inp.getAttribute("placeholder") || "").trim();
+        if (!txt) return;
+        const cs = getComputedStyle(inp);
+        const r = inp.getBoundingClientRect();
+        const side = (n) => parseFloat(cs[`padding${n}`]) + parseFloat(cs[`border${n}Width`]);
+        const c2d = document.createElement("canvas").getContext("2d");
+        c2d.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const fs = parseFloat(cs.fontSize);
+        const w = Math.min(c2d.measureText(txt).width, r.width - side("Left") - side("Right"));
+        const rtl = cs.direction === "rtl";
+        const x = rtl ? r.right - side("Right") - w : r.left + side("Left");
+        boxes.push({
+          x: x - slotRect.left,
+          y: r.top + r.height / 2 - fs * 0.6 - slotRect.top,
+          w,
+          h: fs * 1.2,
+          text: txt.slice(0, 36),
+          px: fs,
+          weight: Number(cs.fontWeight) || 400,
+          large: false,
+          card: false,
+          display: false,
+          op: 1,
+          field: inp.value ? "field value" : "placeholder",
+        });
+      });
     res.boxes = boxes;
 
     // 6: a null number is a dash, never a 0, and is spoken as « pas encore de note »
@@ -522,10 +576,20 @@ function installChecks() {
       a.currentTime = 0;
     });
   };
+  // Run every animation to its end state (infinite ones are left alone).
+  const settle = () =>
+    document.getAnimations().forEach((a) => {
+      try {
+        a.finish();
+      } catch {
+        /* infinite */
+      }
+    });
   const carriers = (shot) => {
     const cell = cells().find((c) => c.shot === shot);
     const slot = slotOf(shot);
     const slotRect = slot.getBoundingClientRect();
+    markBack(slot);
     const overlay = slot.querySelector(".onb-overlay");
     const out = [];
     const want = (node) => {
@@ -548,7 +612,7 @@ function installChecks() {
     textNodes(slot).forEach((n) => {
       const kind = want(n);
       const el = n.parentElement;
-      if (!kind || hiddenByAncestor(el, slot) || el.closest("template")) return;
+      if (!kind || hiddenByAncestor(el, slot) || el.closest("template,[data-chk-back]")) return;
       // the page under a sheet is dimmed by its scrim: not the surface in view
       if (overlay && !overlay.contains(el)) return;
       const range = document.createRange();
@@ -579,9 +643,14 @@ function installChecks() {
       const pts = [0.5, 0.25, 0.75].flatMap((fx) =>
         [0.5, 0.3, 0.7].map((fy) => [r.left + w * fx, r.top + h * fy]),
       );
+      const same = (t) =>
+        t.tagName === el.tagName &&
+        t.closest("svg") === el.closest("svg") &&
+        t.textContent.trim() === n.nodeValue.trim();
       const hit = pts.some(([x, y]) => {
         const t = document.elementFromPoint(x, y);
-        return t && (el.contains(t) || t.contains(el));
+        // the numeral may be drawn as stacked layers (fill, outline): another layer of it is not a cover
+        return t && (el.contains(t) || t.contains(el) || same(t));
       });
       out.push({
         kind,
@@ -657,7 +726,7 @@ function installChecks() {
   // the plural helper for 1, 2, 3, 5 and 11
   const plurals = () => [1, 2, 3, 5, 11].map((n) => ONB.roundsText(n, "ar"));
 
-  window.__chk = { cells, collect, motionState, rewind, carriers, analyze, plurals };
+  window.__chk = { cells, collect, motionState, rewind, settle, carriers, analyze, plurals };
 }
 
 /* ---------- running the measurements ---------- */
@@ -667,8 +736,10 @@ const results = []; // { c, dir, lang, scheme, cell, item, ok, detail }
 const notes = [];
 const micro = []; // card art text under 8px: measured, not graded
 const contextsSeen = [];
+// Each job collects into its own sink, committed only when the job completes (a job that times
+// out is run again from the start, so a retry never double-counts).
 const add = (c, ctx, cell, item, ok, detail = "") =>
-  results.push({ c, dir: ctx.dir.id, lang: ctx.lang, scheme: ctx.scheme, cell, item, ok, detail });
+  ctx.sink.push({ c, dir: ctx.dir.id, lang: ctx.lang, scheme: ctx.scheme, cell, item, ok, detail });
 
 const BANNED = [
   ["pull", /(?<![\p{L}])pull(?![\p{L}])/iu],
@@ -722,7 +793,7 @@ async function staticPass(ctxDef) {
   const cells = (await page.evaluate(() => window.__chk.cells())).filter((c) => c.id !== "S00");
   const ctx = ctxDef;
   add(1, ctx, "(page)", "console", errors.length === 0, errors.slice(0, 3).join(" | "));
-  contextsSeen.push(`${ctx.dir.id} ${ctx.lang}/${ctx.scheme}: ${cells.length} cells`);
+  ctx.seen.push(`${ctx.dir.id} ${ctx.lang}/${ctx.scheme}: ${cells.length} cells`);
   const ms = await page.evaluate(() => window.__chk.motionState());
   add(
     12,
@@ -783,10 +854,18 @@ async function staticPass(ctxDef) {
       const m = meas[i];
       if (!m || m.ratio == null) return;
       const need = b.large || b.display ? 3 : 4.5;
-      const item = `${b.card ? "card art" : "screen"} "${b.text}" ${b.px}px/${b.weight}${b.display ? " display number" : b.large ? " large" : ""}`;
+      const item = `${b.field ? b.field : b.card ? "card art" : "screen"} "${b.text}" ${b.px}px/${b.weight}${b.display ? " display number" : b.large ? " large" : ""}`;
       // Card art under 8px is texture, not copy: measured and listed, not graded.
       if (b.card && !b.display && b.px < 8) {
-        micro.push({ ...ctx, dir: ctx.dir.id, cell: shot, text: b.text, px: b.px, ratio: m.ratio });
+        ctx.msink.push({
+          lang: ctx.lang,
+          scheme: ctx.scheme,
+          dir: ctx.dir.id,
+          cell: shot,
+          text: b.text,
+          px: b.px,
+          ratio: m.ratio,
+        });
         return;
       }
       add(
@@ -965,9 +1044,18 @@ async function motionPass(ctxDef) {
       ([b, boxes]) => window.__chk.analyze(b, boxes, window.devicePixelRatio),
       [png.toString("base64"), found.map((f) => ({ ...f.box }))],
     );
+    // the same carriers once every animation has run to its end: an opacity that is the same at
+    // both ends is the material's own (a moulded numeral), not a number held back
+    await page.evaluate(() => window.__chk.settle());
+    const final = await page.evaluate((s) => window.__chk.carriers(s), cell.shot);
+    // a number may be drawn as stacked layers (fill, outline) or as two faces of the object at
+    // the same place: it is held back only if no layer of it is shown
+    const groups = new Map();
     found.forEach((f, i) => {
+      const end = final.length === found.length ? final[i] : null;
+      const staticOpacity = f.opacity < 0.99 && end && f.opacity >= end.opacity - 0.01;
       const okDom =
-        f.opacity >= 0.99 &&
+        (f.opacity >= 0.99 || staticOpacity) &&
         f.visibility === "visible" &&
         f.display !== "none" &&
         !f.blur &&
@@ -975,16 +1063,21 @@ async function motionPass(ctxDef) {
         // the hit test is for the rating itself; the serial line sits under the card's texture layer
         (f.hit || f.kind === "serial");
       const px = meas[i] && meas[i].ratio != null ? meas[i].ratio : null;
-      const okPx = px == null || px >= 1.5;
-      add(
-        5,
-        ctx,
-        cell.shot,
-        `${f.kind} "${f.text}" at t = 0`,
-        okDom && okPx,
-        `opacity ${f.opacity}, ${f.visibility}${f.blur ? ", blurred" : ""}${f.clipped ? ", clipped" : ""}${f.hit ? "" : f.kind === "serial" ? ", under the texture layer" : ", covered"}, painted contrast ${px}:1`,
+      const ok = okDom && (px == null || px >= 1.5);
+      const detail = `opacity ${f.opacity}${staticOpacity ? " (the material's own, same at the end)" : ""}, ${f.visibility}${f.blur ? ", blurred" : ""}${f.clipped ? ", clipped" : ""}${f.hit ? "" : f.kind === "serial" ? ", under the texture layer" : ", covered"}, painted contrast ${px}:1`;
+      const near = [...groups.values()].find(
+        (g) =>
+          g.kind === f.kind &&
+          g.text === f.text &&
+          Math.abs(g.x - f.box.x) < 4 &&
+          Math.abs(g.y - f.box.y) < 4,
       );
+      if (!near)
+        groups.set(groups.size, { kind: f.kind, text: f.text, ok, detail, x: f.box.x, y: f.box.y });
+      else if (ok && !near.ok) Object.assign(near, { ok, detail });
     });
+    for (const g of groups.values())
+      add(5, ctx, cell.shot, `${g.kind} "${g.text}" at t = 0`, g.ok, g.detail);
   }
   await page.close();
 }
@@ -1016,25 +1109,30 @@ async function reducedMotionPass(ctxDef) {
 const queue = [];
 for (const d of directions)
   for (const [lang, scheme] of contextsOf(d)) {
-    const c = { dir: d, lang, scheme };
-    queue.push(
-      () => staticPass(c),
-      () => motionPass(c),
-      () => reducedMotionPass(c),
-    );
+    for (const pass of [staticPass, motionPass, reducedMotionPass])
+      queue.push(async () => {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          const ctx = { dir: d, lang, scheme, sink: [], msink: [], seen: [] };
+          try {
+            await pass(ctx);
+            results.push(...ctx.sink);
+            micro.push(...ctx.msink);
+            contextsSeen.push(...ctx.seen);
+            return;
+          } catch (e) {
+            notes.push(
+              `${pass.name} ${d.id} ${lang}/${scheme} attempt ${attempt}: ${e.message.split("\n")[0]}`,
+            );
+          }
+        }
+      });
   }
 let nextJob = 0;
 const t0 = Date.now();
 await Promise.all(
   Array.from({ length: jobs }, async () => {
     while (nextJob < queue.length) {
-      const job = queue[nextJob++];
-      try {
-        await job();
-      } catch (e) {
-        notes.push(`job failed: ${e.message.split("\n")[0]}`);
-        console.error(e);
-      }
+      await queue[nextJob++]();
     }
   }),
 );
