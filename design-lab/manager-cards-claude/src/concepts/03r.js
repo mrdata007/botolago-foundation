@@ -524,18 +524,18 @@
       (thumb || opts.noCaption
         ? ""
         : `<text class="c03-cap" x="${r2(at.ball[0] + 34)}" y="${r2(at.ball[1] + 28)}" font-family="${MC.isAr(o) ? "Noto Sans Arabic, sans-serif" : "Manrope, sans-serif"}" font-weight="600" font-size="7" ${MC.isAr(o) ? 'direction="rtl" text-anchor="end"' : ""}>${MC.isAr(o) ? "مثال" : "Exemple"}</text>`);
-    const swing = opts.swing ? ` transform="rotate(${opts.swing} ${EY.x} ${EY.y})"` : "";
     const body =
-      (tk === "LEGEND" ? carabiner(id, at.carab) : "") +
       ring(p, o, id, thumb, "back") +
-      `<g class="c03-fob"${swing}>` +
+      (opts.swing ? `<g transform="rotate(${opts.swing} ${EY.x} ${EY.y})">` : "") +
+      `<g class="c03-fob">` +
       plies(tk, c, thumb) +
       F.body +
       `<path class="c03-rim" d="${pearD(0)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` +
       engraving(p, o, id, ink, thumb) +
       `</g>` +
+      (opts.swing ? `</g>` : "") +
       ring(p, o, id, thumb, "front") +
-      (tk === "LEGEND" ? `<g clip-path="url(#${id}-fr)">${carabiner(id, at.carab)}</g>` : "") +
+      (tk === "LEGEND" ? carabiner(id, at.carab) : "") +
       `<g class="c03-charms">${charms}</g>`;
     void S;
     return { defs, body };
@@ -626,6 +626,7 @@
     const y = (v) => r2(v + oy);
     return `M10 ${y(4.2)}A3 3 0 0 1 13 ${y(7.2)}L13 ${y(8)}C13 ${y(10.2)} 18 ${y(10.8)} 18 ${y(13.6)}A8 5 0 0 1 2 ${y(13.6)}C2 ${y(10.8)} 7 ${y(10.2)} 7 ${y(8)}L7 ${y(7.2)}A3 3 0 0 1 10 ${y(4.2)}Z`;
   };
+  const MHOLE = (oy = 0) => `M11 ${r2(6.7 + oy)}A1 1 0 1 0 9 ${r2(6.7 + oy)}A1 1 0 1 0 11 ${r2(6.7 + oy)}Z`;
   function miniToken(p, o, size) {
     const tk = MC.TIERS.includes(p.tier) ? p.tier : "PRO";
     const c = p.club;
@@ -635,14 +636,15 @@
     const step = 1.15;
     let ply = "";
     for (let k = list.length; k >= 1; k--) {
-      ply += `<path d="${MPEAR(step * k)}" fill="${list[k - 1]}" stroke="#000" stroke-opacity=".3" stroke-width=".25"/>`;
+      ply += `<path d="${MPEAR(step * k)}${MHOLE(step * k)}" fill-rule="evenodd" fill="${list[k - 1]}" stroke="#000" stroke-opacity=".3" stroke-width=".25"/>`;
       if (k === list.length) ply += `<path class="c03-rim" d="${MPEAR(step * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     }
-    const hole = `<circle cx="10" cy="6.6" r="1" class="c03-hole"/>`;
+    const hole = "";
+    const FP = MPEAR() + MHOLE();
     let face;
-    if (T.clear) face = `<path d="${MPEAR()}" fill="${T.body}"/><path class="c03-clear" d="${MPEAR()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
-    else if (T.nickel) face = `<path d="${MPEAR()}" fill="${T.body}"/><path d="${MPEAR()}" fill="none" stroke="#c9d0d8" stroke-width="1.1"/>`;
-    else face = `<path d="${MPEAR()}" fill="${T.body}"/>` + (T.stitch ? `<path d="${MPEAR()}" fill="none" stroke="#7d5a3a" stroke-width=".7"/>` : "");
+    if (T.clear) face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/><path class="c03-clear" d="${MPEAR()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    else if (T.nickel) face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/><path d="${MPEAR()}" fill="none" stroke="#c9d0d8" stroke-width="1.1"/>`;
+    else face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` + (T.stitch ? `<path d="${MPEAR()}" fill="none" stroke="#7d5a3a" stroke-width=".7"/>` : "");
     const ringS = founder
       ? `<g transform="translate(14.9 4.3) rotate(${TILT})"><path class="c03-mr" d="${rrect(3, 1)}" fill="none" stroke-width="1.35"/></g>`
       : `<circle class="c03-mr" cx="14.9" cy="4.5" r="3.1" fill="none" stroke-width="1.3"/>`;
@@ -708,9 +710,9 @@
     const ar = MC.isAr(o);
     const id = MC.uid("c03s");
     const A = art(p, { ...o, thumb: false }, id + "a", { swing: -7, noCaption: true });
-    const sc = 1.08;
+    const sc = 1;
     const tx = 180 - 130 * sc;
-    const slot = { x: r2(tx + 158.6 * sc), y: 150 };
+    const slot = { x: r2(tx + 158.6 * sc), y: 146 };
     const ty = r2(slot.y - 49.8 * sc);
     const handle = "@" + String(p.key || p.name.lat).toLowerCase();
     const yy = p.founder ? "·" + String(p.founder).slice(2) : "";
@@ -739,11 +741,10 @@
       `<use href="#${id}-obj" transform="translate(${r2(tx + 9)} ${r2(ty + 12)}) scale(${sc})" filter="url(#${id}-cs)"/>` +
       `<use href="#${id}-obj" transform="translate(${r2(tx)} ${ty}) scale(${sc})"/>` +
       // the slider and its pull tab, with the ring through the tab's slot
-      `<g transform="translate(${zx} 119)">` +
+      `<g transform="translate(${zx} ${slot.y - 30})">` +
       `<rect x="-15" y="-11" width="30" height="20" rx="5" fill="url(#${id}-zp)" stroke="#16181b" stroke-width="1"/>` +
       `<path d="M-13 -9H13" stroke="#fff" stroke-opacity=".35" stroke-width="1"/>` +
-      `<path d="M-8 2H8V36A6 6 0 0 1 2 42H-2A6 6 0 0 1 -8 36Z" fill="url(#${id}-zp)" stroke="#16181b" stroke-width="1"/>` +
-      `<rect x="-4" y="25" width="8" height="12" rx="3" fill="#121316"/>` +
+      `<path d="M-8 2H8V36A6 6 0 0 1 2 42H-2A6 6 0 0 1 -8 36ZM-4 25V34A3 3 0 0 0 -1 37H1A3 3 0 0 0 4 34V25A3 3 0 0 0 1 22H-1A3 3 0 0 0 -4 25Z" fill-rule="evenodd" fill="url(#${id}-zp)" stroke="#16181b" stroke-width="1"/>` +
       `<path d="M-6.5 4V34" stroke="#fff" stroke-opacity=".3" stroke-width="1"/>` +
       `</g>` +
       `<ellipse cx="${r2(tx + 118 * sc)}" cy="${r2(ty + 46 * sc)}" rx="7" ry="1.6" fill="#fff" opacity=".55" transform="rotate(${-72} ${r2(tx + 118 * sc)} ${r2(ty + 46 * sc)})"/>` +

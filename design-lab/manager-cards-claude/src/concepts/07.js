@@ -858,25 +858,26 @@
     const P = palette(p);
     const thumb = !!o.thumb;
     const u = MC.uid(PFX);
-    const ids = { base: u + "-pb", rib: u + "-pr", cast: u + "-pc", clip: u + "-cl", curl: u + "-cu", soft: u + "-sf", weave: u + "-wv", grain: u + "-gr", cuff: u + "-cf", sleeve: u + "-sl", fist: u + "-fi" };
-    const C = LG.cw; // cell along the length
-    const BH = 14 * C; // band height: 14 stitches across (selvedges included)
-    const BY = 30;
-    const rowsN = 14;
+    const ids = { base: u + "-pb", rib: u + "-pr", ridge: u + "-rg", cast: u + "-pc", flap: u + "-pf", clip: u + "-cl", curl: u + "-cu", soft: u + "-sf", weave: u + "-wv", grain: u + "-gr", cuff: u + "-cf", sleeve: u + "-sl", fist: u + "-fi" };
+    const C = LG.cw; // the heaviest gauge: 9u stitches
+    const rowsN = 14; // stitches across the band, selvedges included
+    const BH = rowsN * C; // 126
+    const BY = 34;
+    const H = 262;
+    const mid = BY + BH / 2;
     // knitted motifs, set along the length (the way a terrace scarf carries its words)
-    const dg = trim(rasterText(String(p.ovr), CHANGA, 10, C, C, 0.46));
-    const nm = nameArt(p, o, { cw: C, ch: C }, 20, 54);
-    // sections along the length, in cells (Latin order: name, 84, season, label, cast-on)
+    const dg = trim(rasterText(String(p.ovr), CHANGA, 10, C, C, 0.46, { ls: "0.02em" }));
+    const nm = nameArt(p, o, { cw: C, ch: C }, 24, 72);
     const seasonW = PLAYED * 14;
-    const castW = CAST.rows * CAST.ch; // 35: the cast-on keeps its gauge, so its rows run across the band
-    const fistZone = 80;
-    const fr = 34; // fringe reach beyond the ends
+    const castW = CAST.rows * CAST.ch; // 35: the cast-on keeps its gauge, its rows now run across the band
+    const fistZone = 66;
+    const margin = 78; // room for the ends draping down beside the wrists
     const parts = [
       { k: "endA", w: fistZone },
       { k: "name", w: bw(nm.bmp) * C },
-      { k: "gap", w: 22 },
+      { k: "gap", w: 24 },
       { k: "digits", w: bw(dg) * C },
-      { k: "gap", w: 22 },
+      { k: "gap", w: 24 },
       { k: "season", w: seasonW },
       { k: "gap", w: 16 },
       { k: "label", w: 170 },
@@ -884,21 +885,18 @@
       { k: "cast", w: castW },
       { k: "endB", w: fistZone },
     ];
-    const len = parts.reduce((a, b) => a + b.w, 0);
-    const xs = fr;
-    const W = Math.ceil(len + 2 * fr);
-    const H = 250;
+    const len = parts.reduce((acc, pt) => acc + pt.w, 0);
+    const W = Math.ceil(len + 2 * margin);
+    const xa = margin;
+    const xb = margin + len;
     // positions (mirrored in Arabic: the reading starts at the right)
-    let acc = xs;
+    let acc = xa;
     const pos = {};
     for (const pt of parts) {
-      const x = ar ? W - acc - pt.w : acc;
-      if (pt.k !== "gap") pos[pt.k] = { x, w: pt.w };
+      if (pt.k !== "gap") pos[pt.k] = { x: ar ? W - acc - pt.w : acc, w: pt.w };
       acc += pt.w;
     }
-    const xa = xs;
-    const xb = xs + len;
-    // the grid covers the whole band; cell columns along x
+    // the grid: columns along the length
     const cols = Math.ceil(len / C);
     const g = grid(cols, rowsN, "G");
     for (let c = 0; c < cols; c++) {
@@ -912,56 +910,49 @@
     let defs =
       stitchPattern(ids.base, LG, { transform: "rotate(-90)" }) +
       stitchPattern(ids.rib, { ...LG, kind: "r" }, { transform: "rotate(-90)" }) +
+      stitchPattern(ids.flap, LG) +
       stitchPattern(ids.cast, { cw: CAST.cw, ch: CAST.ch, kind: "v", gap: 0.18, leg: 0.3 }, { gapC: "#5A4E36", transform: "rotate(-90)" }) +
+      `<pattern id="${ids.ridge}" width="4" height="${C}" patternUnits="userSpaceOnUse" y="${BY}"><rect x="2.6" width="1.4" height="${C}" fill="#000" opacity=".34"/><ellipse cx="1.7" cy="${C / 2}" rx="1.5" ry="${f2(C * 0.47)}" fill="#fff" opacity=".2"/></pattern>` +
       `<linearGradient id="${ids.curl}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".26"/><stop offset=".08" stop-color="#000" stop-opacity="0"/><stop offset=".86" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>` +
-      `<linearGradient id="${ids.sleeve}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${mix(SLEEVE, "#000", 0.35)}"/><stop offset=".45" stop-color="${SLEEVE_LT}"/><stop offset="1" stop-color="${mix(SLEEVE, "#000", 0.45)}"/></linearGradient>` +
+      `<linearGradient id="${ids.sleeve}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${mix(SLEEVE, "#000000", 0.35)}"/><stop offset=".45" stop-color="${SLEEVE_LT}"/><stop offset="1" stop-color="${mix(SLEEVE, "#000000", 0.45)}"/></linearGradient>` +
       `<linearGradient id="${ids.fist}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${SKIN_LT}"/><stop offset=".55" stop-color="${SKIN}"/><stop offset="1" stop-color="${SKIN_DK}"/></linearGradient>` +
-      `<pattern id="${ids.cuff}" width="3" height="10" patternUnits="userSpaceOnUse"><rect width="3" height="10" fill="${SLEEVE_LT}"/><rect width="1.3" height="10" fill="${mix(SLEEVE, "#000", 0.25)}"/></pattern>` +
+      `<pattern id="${ids.cuff}" width="3" height="10" patternUnits="userSpaceOnUse"><rect width="3" height="10" fill="${SLEEVE_LT}"/><rect width="1.3" height="10" fill="${mix(SLEEVE, "#000000", 0.25)}"/></pattern>` +
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.6"/></filter>` +
       `<pattern id="${ids.weave}" width="1.6" height="1.6" patternUnits="userSpaceOnUse"><rect width="1.6" height=".7" fill="#000" opacity=".04"/></pattern>`;
     if (!thumb)
       defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
 
-    // outline: taut along the length, gathered into each fist
-    const fa = ar ? xb - 30 : xa + 30; // fist centres
-    const fb = ar ? xa + 30 : xb - 30;
-    const fl = Math.min(fa, fb);
-    const fr2 = Math.max(fa, fb);
+    // the band, taut between the fists and gathered into each of them
+    const fa = xa + 20; // fist centres
+    const fb = xb - 20;
+    const gat = 25;
     const top = BY;
     const bot = BY + BH;
-    const gat = 26; // half-height where the fist gathers it
-    const mid = BY + BH / 2;
     const outline =
-      `M${xa} ${mid - 40}` +
-      `C${xa + 8} ${mid - 46} ${fl - 18} ${mid - gat} ${fl} ${mid - gat}` +
-      `C${fl + 18} ${mid - gat} ${fl + 26} ${top} ${fl + 44} ${top}` +
-      `H${fr2 - 44}C${fr2 - 26} ${top} ${fr2 - 18} ${mid - gat} ${fr2} ${mid - gat}` +
-      `C${fr2 + 18} ${mid - gat} ${xb - 8} ${mid - 46} ${xb} ${mid - 40}` +
-      `V${mid + 40}C${xb - 8} ${mid + 46} ${fr2 + 18} ${mid + gat} ${fr2} ${mid + gat}` +
-      `C${fr2 - 18} ${mid + gat} ${fr2 - 26} ${bot} ${fr2 - 44} ${bot}` +
-      `H${fl + 44}C${fl + 26} ${bot} ${fl + 18} ${mid + gat} ${fl} ${mid + gat}` +
-      `C${fl - 18} ${mid + gat} ${xa + 8} ${mid + 46} ${xa} ${mid + 40}Z`;
+      `M${fa} ${mid - gat}C${fa + 20} ${mid - gat} ${fa + 26} ${top} ${fa + 48} ${top}` +
+      `H${fb - 48}C${fb - 26} ${top} ${fb - 20} ${mid - gat} ${fb} ${mid - gat}` +
+      `V${mid + gat}C${fb - 20} ${mid + gat} ${fb - 26} ${bot} ${fb - 48} ${bot}` +
+      `H${fa + 48}C${fa + 26} ${bot} ${fa + 20} ${mid + gat} ${fa} ${mid + gat}Z`;
     defs += `<clipPath id="${ids.clip}"><path d="${outline}"/></clipPath>`;
 
-    // fabric: ground, runs (the grid is drawn with x along columns)
-    let fab = `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="${P.G}"/>`;
-    // the grid's columns run along x: draw its runs row by row
-    fab += gridRuns(g, P, xa, BY, C, C, "G");
-    // season bands: one per gameweek played, alternating stockinette and rib, a notch every fifth
+    let fab = `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="${P.G}"/>` + gridRuns(g, P, xa, BY, C, C, "G");
+    fab += `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="url(#${ids.base})"/>`;
+    // the season: one band per gameweek played (J.01 nearest the name), alternating stockinette
+    // and rib, a purl ridge between them, a cream notch on the top selvedge every fifth
     const bands = [];
     for (let k = 0; k < PLAYED; k++) {
       const gw = k + 1;
-      const x = ar ? pos.season.x + pos.season.w - (k + 1) * 14 : pos.season.x + k * 14;
-      bands.push({ gw, x, rib: gw % 2 === 0 });
+      bands.push({ gw, x: ar ? pos.season.x + pos.season.w - (k + 1) * 14 : pos.season.x + k * 14, rib: gw % 2 === 0 });
     }
-    // texture: base everywhere, rib over the even bands
-    fab += `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="url(#${ids.base})"/>`;
     for (const b of bands) {
-      if (b.rib) fab += `<rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="${P.G}"/><rect x="${b.x}" y="${BY}" width="14" height="${C}" fill="${CREAM}"/><rect x="${b.x}" y="${BY + BH - C}" width="14" height="${C}" fill="${BLUE}"/><rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="url(#${ids.rib})"/>`;
-      fab += `<path d="M${b.x} ${BY}V${BY + BH}" stroke="#000" stroke-opacity=".16" stroke-width=".8"/>`;
-      if (b.gw % 5 === 0) fab += `<rect x="${b.x}" y="${BY + C}" width="14" height="${C}" fill="${CREAM}"/>`;
+      if (b.rib)
+        fab +=
+          `<rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="${P.G}"/><rect x="${b.x}" y="${BY}" width="14" height="${C}" fill="${CREAM}"/>` +
+          `<rect x="${b.x}" y="${BY + BH - C}" width="14" height="${C}" fill="${BLUE}"/><rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="url(#${ids.rib})"/>`;
+      if (b.gw % 5 === 0) fab += `<rect x="${b.x}" y="${BY + C}" width="14" height="${C}" fill="${CREAM}"/><rect x="${b.x}" y="${BY + C}" width="14" height="${C}" fill="url(#${ids.base})"/>`;
     }
-    // the cast-on, turned with the scarf: its rows run across the band, 2026 reads upward
+    for (const x of bands.map((b) => b.x).concat([ar ? pos.season.x : pos.season.x + pos.season.w])) fab += `<rect x="${f2(x - 2)}" y="${BY}" width="4" height="${BH}" fill="url(#${ids.ridge})"/>`;
+    // the cast-on, turned with the scarf: its rows run across the band and 2026 reads upward
     {
       const cx = pos.cast.x;
       const founder = !!p.founder;
@@ -969,9 +960,8 @@
       fab += `<rect x="${cx}" y="${BY + BH - C}" width="${castW}" height="${C}" fill="${BLUE}"/>`;
       if (founder) {
         const yr = word(String(p.founder), F35, 1); // 5 rows × 15 stitches
-        const yw = bw(yr) * CAST.cw; // 90 along the band's height
+        const yw = bw(yr) * CAST.cw;
         const y0 = BY + (BH - yw) / 2;
-        // rotate the bitmap: rows become columns, reading bottom to top
         let rs = "";
         for (let r = 0; r < 5; r++)
           for (let c = 0; c < yr[r].length; c++) if (yr[r][c] === "#") rs += `<rect x="${f2(cx + r * CAST.ch)}" y="${f2(y0 + yw - (c + 1) * CAST.cw)}" width="${CAST.ch + 0.04}" height="${CAST.cw + 0.04}"/>`;
@@ -983,50 +973,54 @@
       `<g pointer-events="none"><rect x="${xa}" y="${BY}" width="${len}" height="${BH}" fill="url(#${ids.curl})"/>` +
       (thumb ? "" : `<rect x="${xa}" y="${BY}" width="${len}" height="${BH}" filter="url(#${ids.grain})" opacity=".5"/>`) +
       `</g>`;
-    // gathered folds into each fist
+    // gathered folds running into each fist
     let folds = "";
-    for (const f of [fa, fb]) {
-      const dir = f === fl ? 1 : -1;
-      for (const dy of [-22, -10, 2, 14]) folds += `<path d="M${f2(f + dir * 4)} ${f2(mid + dy * 0.5)}C${f2(f + dir * 18)} ${f2(mid + dy * 0.9)} ${f2(f + dir * 30)} ${f2(mid + dy * 1.9)} ${f2(f + dir * 46)} ${f2(mid + dy * 2.6)}" stroke="#000" stroke-opacity=".28" stroke-width="1.4" fill="none"/>`;
-    }
-
-    // the long hand-knotted fringe hangs from both ends
-    const rnd = seeded(hashStr(p.serial + "fringe-legend"));
-    let fringe = "";
-    for (const [x, dir] of [
-      [xa, -1],
-      [xb, 1],
+    for (const [f, dir] of [
+      [fa, 1],
+      [fb, -1],
     ])
-      for (let i = 0; i < TASSELS.LEGEND; i++) {
-        const ty = mid - 28 + i * 26;
-        fringe += tassel(x + dir * 4, ty, 62 + rnd() * 8, 11, P, { rnd, knotted: true, hang: dir * 14 });
-      }
+      for (const dy of [-20, -8, 4, 16]) folds += `<path d="M${f2(f + dir * 6)} ${f2(mid + dy * 0.6)}C${f2(f + dir * 20)} ${f2(mid + dy * 0.9)} ${f2(f + dir * 32)} ${f2(mid + dy * 2)} ${f2(f + dir * 50)} ${f2(mid + dy * 2.8)}" stroke="#000" stroke-opacity=".3" stroke-width="1.4" fill="none"/>`;
 
+    // the ends drape down beside the wrists, each with the long hand-knotted fringe
+    const rnd = seeded(hashStr(p.serial + "fringe-legend"));
+    const flap = (f, dir) => {
+      const d = `M${f} ${mid - 16}C${f + dir * 22} ${mid - 14} ${f + dir * 44} ${mid + 18} ${f + dir * 60} ${mid + 80}L${f + dir * 20} ${mid + 88}C${f + dir * 16} ${mid + 50} ${f + dir * 6} ${mid + 24} ${f - dir * 4} ${mid + 14}Z`;
+      let s2 = `<path d="${d}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})" transform="translate(2 3)"/>`;
+      s2 += `<path d="${d}" fill="${P.G}"/>` + (thumb ? "" : `<path d="${d}" fill="url(#${ids.flap})"/>`);
+      s2 += `<path d="M${f + dir * 16} ${mid - 12}C${f + dir * 34} ${mid + 6} ${f + dir * 48} ${mid + 36} ${f + dir * 57} ${mid + 79}" stroke="${CREAM}" stroke-width="4" fill="none"/>`;
+      s2 += `<path d="M${f + dir * 2} ${mid + 18}C${f + dir * 10} ${mid + 34} ${f + dir * 16} ${mid + 60} ${f + dir * 20} ${mid + 86}" stroke="${BLUE}" stroke-width="3.6" fill="none"/>`;
+      s2 += `<path d="${d}" fill="none" stroke="${P.Gdk}" stroke-width=".9"/>`;
+      let fr = "";
+      for (let i = 0; i < TASSELS.LEGEND; i++) {
+        const t = (i + 0.5) / TASSELS.LEGEND;
+        const x = f + dir * (22 + 36 * t);
+        const y = mid + 87 - 7 * t;
+        fr += tassel(x, y - 2, 52 + rnd() * 8, 13, P, { rnd, knotted: true, hang: dir * 3 });
+      }
+      return `<g class="c07-end">${fr}${s2}</g>`;
+    };
     // two fists in bench-jacket cuffs, arms raised from below: four fingers side by side round
-    // the gathered scarf, the thumb closing over them from the inner side
+    // the gathered scarf, the thumb folded across them
     const fist = (cx, dir) => {
-      const tilt = dir * 6;
-      const top = mid - 30;
-      const sleeveD = `M${cx - 20} ${mid + 24}L${cx + 20} ${mid + 24}L${cx + 29 + dir * 18} ${H + 4}L${cx - 29 + dir * 18} ${H + 4}Z`;
+      const sleeveD = `M${cx - 18} ${mid + 26}L${cx + 18} ${mid + 26}L${cx + 27 + dir * 16} ${H + 4}L${cx - 27 + dir * 16} ${H + 4}Z`;
       let g2 = `<path d="${sleeveD}" fill="#020a1c" opacity=".35" filter="url(#${ids.soft})" transform="translate(2 3)"/>`;
       g2 += `<path d="${sleeveD}" fill="url(#${ids.sleeve})"/>`;
-      g2 += `<path d="M${cx + dir * 6} ${mid + 40}L${cx + dir * 14} ${H + 4}" stroke="${mix(SLEEVE, "#000", 0.35)}" stroke-width="1.4"/>`;
-      // the back of the hand and the wrist
-      g2 += `<path d="M${cx - 19} ${mid - 6}H${cx + 19}V${mid + 14}C${cx + 19} ${mid + 22} ${cx + 12} ${mid + 26} ${cx} ${mid + 26}C${cx - 12} ${mid + 26} ${cx - 19} ${mid + 22} ${cx - 19} ${mid + 14}Z" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
-      // the cuff: a ribbed knit band
-      g2 += `<rect x="${cx - 21}" y="${mid + 20}" width="42" height="15" rx="4" fill="url(#${ids.cuff})" stroke="${mix(SLEEVE, "#000", 0.4)}" stroke-width="1"/>`;
-      // fingers, curled over the front of the scarf
+      g2 += `<path d="M${cx + dir * 4} ${mid + 44}L${cx + dir * 12} ${H + 4}" stroke="${mix(SLEEVE, "#000000", 0.35)}" stroke-width="1.4"/>`;
+      g2 += `<rect x="${cx - 14}" y="${mid + 10}" width="28" height="16" fill="${SKIN_DK}"/>`;
+      g2 += `<rect x="${cx - 20}" y="${mid + 20}" width="40" height="14" rx="4" fill="url(#${ids.cuff})" stroke="${mix(SLEEVE, "#000000", 0.4)}" stroke-width="1"/>`;
+      g2 += `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(1.5 2.5)"><rect x="${cx - 18}" y="${mid - 22}" width="36" height="38" rx="9" fill="#020a1c"/></g>`;
+      g2 += `<rect x="${cx - 18}" y="${mid - 14}" width="36" height="30" rx="9" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
       for (let i = 0; i < 4; i++) {
-        const fx = cx - 19 + i * 9.6;
-        const fh = 30 - Math.abs(i - 1.5) * 2.4;
-        g2 += `<rect x="${f2(fx)}" y="${f2(top + (30 - fh) * 0.5)}" width="9.4" height="${f2(fh)}" rx="4.6" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
-        g2 += `<path d="M${f2(fx + 2.6)} ${f2(top + (30 - fh) * 0.5 + 5)}V${f2(top + (30 - fh) * 0.5 + fh * 0.55)}" stroke="${SKIN_LT}" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>`;
-        g2 += `<path d="M${f2(fx + 1.6)} ${f2(top + fh * 0.62)}H${f2(fx + 7.8)}" stroke="${SKIN_DK}" stroke-width=".8" opacity=".7"/>`;
+        const fx = cx - 18 + i * 9;
+        const ft = mid - 22 - (i === 1 || i === 2 ? 1.5 : 0);
+        g2 += `<rect x="${f2(fx)}" y="${f2(ft)}" width="9" height="${f2(mid + 4 - ft)}" rx="4.5" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
+        g2 += `<path d="M${f2(fx + 1.8)} ${f2(mid - 8)}Q${f2(fx + 4.5)} ${f2(mid - 6.6)} ${f2(fx + 7.2)} ${f2(mid - 8)}" stroke="${SKIN_DK}" stroke-width=".8" fill="none" opacity=".8"/>`;
+        g2 += `<path d="M${f2(fx + 3)} ${f2(ft + 4)}V${f2(ft + 9)}" stroke="#fff" stroke-opacity=".35" stroke-width="1.4" stroke-linecap="round"/>`;
       }
-      // the thumb, from the inner side across the lower knuckles
-      const ix = cx - dir * 19;
-      g2 += `<path d="M${ix} ${mid + 12}C${ix - dir * 4} ${mid + 2} ${ix - dir * 2} ${mid - 6} ${ix + dir * 6} ${mid - 6}C${ix + dir * 16} ${mid - 6} ${ix + dir * 24} ${mid - 3} ${ix + dir * 26} ${mid + 1}C${ix + dir * 27} ${mid + 5} ${ix + dir * 20} ${mid + 7} ${ix + dir * 12} ${mid + 6}C${ix + dir * 8} ${mid + 6} ${ix + dir * 6} ${mid + 10} ${ix + dir * 4} ${mid + 14}Z" fill="${SKIN}" stroke="${SKIN_DK}" stroke-width="1"/>`;
-      return `<g class="c07-fist" transform="rotate(${tilt} ${cx} ${mid})">${g2}</g>`;
+      // the thumb, folded across the lower joints from the inner side
+      const ix = cx - dir * 18;
+      g2 += `<path d="M${ix} ${mid + 14}C${ix - dir * 3} ${mid + 6} ${ix + dir * 2} ${mid - 1} ${ix + dir * 10} ${mid - 1}H${ix + dir * 22}C${ix + dir * 27} ${mid - 1} ${ix + dir * 27} ${mid + 7} ${ix + dir * 22} ${mid + 7}H${ix + dir * 12}C${ix + dir * 8} ${mid + 7} ${ix + dir * 6} ${mid + 11} ${ix + dir * 5} ${mid + 15}Z" fill="${SKIN}" stroke="${SKIN_DK}" stroke-width="1"/>`;
+      return `<g class="c07-fist" transform="rotate(${dir * 5} ${cx} ${mid})">${g2}</g>`;
     };
     const label = wovenLabel(p, o, pos.label.x, BY + 6, pos.label.w, BH - 12, "wide", thumb, ids, nm.onLabel);
     const rim = `<path class="c07-rim" d="${outline}" fill="none" stroke-width="1.2"/>`;
@@ -1034,12 +1028,12 @@
       `<svg class="c07-svg" viewBox="0 0 ${W} ${H}" aria-hidden="true" focusable="false" style="direction:ltr">` +
       `<defs>${defs}</defs>` +
       `<g class="c07-raise">` +
-      `<g class="c07-fringe">${fringe}</g>` +
       `<g class="c07-fabric" clip-path="url(#${ids.clip})">${fab}${folds}</g>` +
       rim +
       label +
       `</g>` +
-      `<g class="c07-fists">${fist(fa, ar ? 1 : -1)}${fist(fb, ar ? -1 : 1)}</g>` +
+      `<g class="c07-fringe">${flap(fa, -1)}${flap(fb, 1)}</g>` +
+      `<g class="c07-fists">${fist(fa, -1)}${fist(fb, 1)}</g>` +
       `</svg>`;
     const cls = `c07 c07--legend${thumb ? " c07--thumb" : ""}${o.motion ? " c07--motion" : ""}`;
     return `<div class="${cls}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}" data-tier="LEGEND">${svg}</div>`;
@@ -1106,13 +1100,7 @@
     a += `<rect x="${sx}" y="${st}" width="${sw}" height="${f2(t * 0.6)}" fill="#fff" opacity=".14"/><rect x="${sx}" y="${f2(ry + t)}" width="${sw}" height="${Math.max(1, Math.round(t * 0.5))}" fill="#000" opacity=".22"/>`;
     // selvedges: cream at the start, Logo Blue at the end
     a += `<rect x="${sx}" y="${st}" width="${edge}" height="${sb - st}" fill="${CREAM}"/><rect x="${sx + sw - edge}" y="${st}" width="${edge}" height="${sb - st - ear}" fill="${BLUE}"/>`;
-    // the label's edge, sewn under the figures (from 56px)
-    const digitsBottom = sb - fb - (s >= 56 ? Math.round(s * 0.1) : Math.round(s * 0.05));
-    if (s >= 56) {
-      const lw = Math.round(sw * 0.5);
-      const lh2 = Math.max(3, Math.round(s * 0.055));
-      a += `<rect x="${f2(sx + (sw - lw) / 2)}" y="${sb - fb - lh2 - Math.round(s * 0.03)}" width="${lw}" height="${lh2}" fill="${SATIN}"/><rect x="${f2(sx + (sw - lw) / 2 + 2)}" y="${sb - fb - lh2 - Math.round(s * 0.03) + 1}" width="${Math.round(lw * 0.45)}" height="1" fill="${BLUE}"/>`;
-    }
+    const digitsBottom = sb - fb - Math.max(2, Math.round(s * 0.05));
     // founder: the cream cast-on band
     if (fb) a += `<rect x="${sx}" y="${sb - fb}" width="${sw - (ear ? ear * (fb / ear) : 0)}" height="${fb}" fill="${CREAM}" class="c07-tk-cast"/>`;
     if (ear) {
@@ -1120,8 +1108,11 @@
       a += `<path d="M${ex} ${sb}L${sx + sw} ${sb - ear}L${ex} ${sb - ear}Z" fill="${P.L}"/><path d="M${ex} ${sb}L${sx + sw} ${sb - ear}" stroke="#020a1c" stroke-opacity=".4" stroke-width=".8"/>`;
     }
     // knot: the bump on the start side, over the rail
-    const kr = Math.max(3, Math.round(s * 0.11));
-    a += `<ellipse cx="${f2(sx + kr * 0.15)}" cy="${f2(ry + t * 0.7)}" rx="${kr}" ry="${f2(kr * 0.9)}" fill="${P.G}" stroke="${P.Gdk}" stroke-width=".8"/><path d="M${f2(sx - kr * 0.75)} ${f2(ry + t * 0.7 + kr * 0.3)}Q${f2(sx - kr * 0.2)} ${f2(ry + t * 0.7 + kr * 0.95)} ${f2(sx + kr * 0.6)} ${f2(ry + t * 0.7 + kr * 0.7)}" stroke="${CREAM}" stroke-width="${f2(Math.max(1, kr * 0.28))}" fill="none"/>`;
+    const kr = Math.max(3, Math.round(s * 0.13));
+    const ky = ry + t * 0.8;
+    a += `<ellipse cx="${f2(sx - kr * 0.05)}" cy="${f2(ky + kr * 0.85)}" rx="${f2(kr * 0.5)}" ry="${f2(kr * 0.62)}" fill="${P.G}" stroke="${P.Gdk}" stroke-width=".8"/>`;
+    a += `<ellipse cx="${f2(sx + kr * 0.2)}" cy="${f2(ky)}" rx="${kr}" ry="${f2(kr * 0.8)}" transform="rotate(-16 ${f2(sx + kr * 0.2)} ${f2(ky)})" fill="${P.G}" stroke="${P.Gdk}" stroke-width=".8"/>`;
+    a += `<path d="M${f2(sx - kr * 0.85)} ${f2(ky - kr * 0.5)}Q${f2(sx)} ${f2(ky - kr * 0.3)} ${f2(sx + kr * 1.05)} ${f2(ky + kr * 0.45)}" stroke="${CREAM}" stroke-width="${f2(Math.max(1, kr * 0.22))}" fill="none"/>`;
     // tassels: the count is the tier
     const n = TASSELS[tier];
     const tw = Math.max(2, Math.round(s * 0.05));
@@ -1223,48 +1214,51 @@
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const u = MC.uid(PFX + "s");
-    const railY = 128;
-    const scale = 0.98;
-    const sw = Math.round(VW * scale);
-    const sx = ar ? 360 - 20 - sw : 20;
-    const scarfTop = f2(railY - (RAIL_Y + RAIL_H / 2) * scale);
+    const railY = 92;
+    const card = full(p, { ...o, motion: false, thumb: false, _noRail: true });
+    const vb = (card.match(/viewBox="0 0 (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)"/) || [0, VW, 600]).map(Number);
+    const legend = p.tier === "LEGEND";
+    // the whole scarf, fringe included, between the rail and the frame's foot
+    const k = legend ? 336 / vb[1] : Math.min(0.98, (634 - railY) / (vb[2] - (RAIL_Y + RAIL_H / 2)));
+    const sw = Math.round(vb[1] * k);
+    const top = legend ? 150 : f2(railY - (RAIL_Y + RAIL_H / 2) * k);
     const bg =
       `<svg class="c07-sh-bg" viewBox="0 0 360 640" preserveAspectRatio="none" aria-hidden="true">` +
       `<defs>` +
       `<linearGradient id="${u}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05080F"/><stop offset=".4" stop-color="#0A1220"/><stop offset="1" stop-color="#04070D"/></linearGradient>` +
-      `<radialGradient id="${u}-fl" cx="${ar ? 0.12 : 0.88}" cy=".02" r=".7"><stop offset="0" stop-color="#EAF2FF" stop-opacity=".5"/><stop offset=".18" stop-color="#9DB8E6" stop-opacity=".18"/><stop offset=".6" stop-color="#2A3F66" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>` +
+      `<radialGradient id="${u}-fl" cx="${ar ? 0.12 : 0.88}" cy=".02" r=".75"><stop offset="0" stop-color="#EAF2FF" stop-opacity=".46"/><stop offset=".2" stop-color="#9DB8E6" stop-opacity=".16"/><stop offset=".6" stop-color="#2A3F66" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>` +
       `<linearGradient id="${u}-pitch" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E2416" stop-opacity="0"/><stop offset=".25" stop-color="#173A22"/><stop offset=".7" stop-color="#1F4A2B"/><stop offset="1" stop-color="#0B1A10"/></linearGradient>` +
       `<filter id="${u}-bl" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="9"/></filter>` +
       steelGrad(u + "-st") +
       `<linearGradient id="${u}-post" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#4E5661"/><stop offset=".4" stop-color="#C6CDD6"/><stop offset="1" stop-color="#5E6876"/></linearGradient>` +
       `</defs>` +
       `<rect width="360" height="640" fill="url(#${u}-sky)"/>` +
-      // the pitch beyond, out of focus: mown bands, a touchline
-      `<g filter="url(#${u}-bl)" opacity=".9"><rect x="-20" y="300" width="400" height="240" fill="url(#${u}-pitch)"/>` +
-      `<path d="M-20 360H380M-20 430H380M-20 505H380" stroke="#2C6239" stroke-width="22" opacity=".45"/><path d="M-20 318H380" stroke="#DDE8DF" stroke-width="3" opacity=".5"/></g>` +
-      // floodlight glow and the far stand's lights
+      // the pitch beyond, out of focus: mown bands and a touchline
+      `<g filter="url(#${u}-bl)" opacity=".9"><rect x="-20" y="290" width="400" height="260" fill="url(#${u}-pitch)"/>` +
+      `<path d="M-20 352H380M-20 424H380M-20 500H380" stroke="#2C6239" stroke-width="22" opacity=".45"/><path d="M-20 308H380" stroke="#DDE8DF" stroke-width="3" opacity=".5"/></g>` +
+      // the floodlight's glow
       `<rect width="360" height="640" fill="url(#${u}-fl)"/>` +
-      `<g filter="url(#${u}-bl)" opacity=".55"><ellipse cx="${ar ? 40 : 320}" cy="22" rx="46" ry="16" fill="#F4F8FF"/></g>` +
+      `<g filter="url(#${u}-bl)" opacity=".55"><ellipse cx="${ar ? 40 : 320}" cy="18" rx="46" ry="15" fill="#F4F8FF"/></g>` +
       // the crowd barrier: top rail, uprights, a lower rail behind the scarf
-      `<rect x="${ar ? 334 : 20}" y="${railY}" width="7" height="520" fill="url(#${u}-post)"/>` +
-      `<rect x="${ar ? 20 : 334}" y="${railY}" width="7" height="520" fill="url(#${u}-post)" opacity=".85"/>` +
-      `<rect x="0" y="${railY + 250}" width="360" height="9" rx="4.5" fill="url(#${u}-st)" opacity=".75"/>` +
-      `<rect x="0" y="${railY - 7}" width="360" height="14" rx="7" fill="url(#${u}-st)"/>` +
-      `<path d="M0 ${railY - 3.5}H360" stroke="#fff" stroke-opacity=".7" stroke-width="1.4"/>` +
+      (legend
+        ? ""
+        : `<rect x="${ar ? 20 : 333}" y="${railY}" width="7" height="560" fill="url(#${u}-post)"/>` +
+          `<rect x="0" y="${railY + 270}" width="360" height="9" rx="4.5" fill="url(#${u}-st)" opacity=".7"/>` +
+          `<rect x="0" y="${railY - 6}" width="360" height="12" rx="6" fill="url(#${u}-st)"/>` +
+          `<path d="M0 ${railY - 3}H360" stroke="#fff" stroke-opacity=".7" stroke-width="1.2"/>`) +
       `</svg>`;
     const logo = MC.logo("wordmark", { variant: "light", w: "100%" });
-    const cap = ar ? "موسمي صفًّا بعد صف" : "Ma saison, rang par rang";
-    const yr = p.founder ? ` ·${String(p.founder).slice(-2)}` : "";
+    const cap = ar ? ["موسمي", "صفًّا بعد صف"] : ["Ma saison,", "rang par rang"];
+    const yr = p.founder ? `·${String(p.founder).slice(-2)}` : "";
     return (
-      `<div class="c07-share" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}">` +
+      `<div class="c07-share${legend ? " c07-share--legend" : ""}" dir="${S.dir}" role="img" aria-label="${esc(MC.label(p, o))}">` +
       bg +
-      `<div class="c07-sh-head">` +
       `<div class="c07-sh-logo">${logo}</div>` +
-      `<p class="c07-sh-cap">${esc(cap)}</p>` +
-      `</div>` +
-      `<div class="c07-sh-id"><b class="c07-sh-name">${esc(MC.nameOf(p, o))}<span dir="ltr">${esc(yr)}</span></b>` +
-      `<span class="c07-sh-sub">${esc(S.tiers[p.tier])} · <span dir="ltr">@ali</span> · ${ar ? "مثال" : "Exemple"}</span></div>` +
-      `<div class="c07-sh-scarf" style="top:${scarfTop}px;left:${sx}px;width:${sw}px">${full(p, { ...o, motion: false, thumb: false, _noRail: true })}</div>` +
+      `<p class="c07-sh-cap">${cap.map((l) => `<span>${esc(l)}</span>`).join("")}</p>` +
+      `<div class="c07-sh-scarf" style="top:${top}px;${ar ? "right" : "left"}:${legend ? 12 : 8}px;width:${sw}px">${card}</div>` +
+      `<div class="c07-sh-id"><b class="c07-sh-name">${esc(MC.nameOf(p, o))} <span dir="ltr">${esc(yr)}</span></b>` +
+      `<span class="c07-sh-tier">${esc(S.tiers[p.tier])}</span>` +
+      `<span class="c07-sh-sub"><span dir="ltr">@ali</span> · ${ar ? "مثال" : "Exemple"}</span></div>` +
       `</div>`
     );
   }

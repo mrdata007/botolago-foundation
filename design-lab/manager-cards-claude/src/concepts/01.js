@@ -132,7 +132,7 @@
       knots += `M${r1(Q[0])} ${r1(Q[1])}h0`;
     };
     const line = (q, u0, v0, u1, v1, len) => {
-      const n = Math.max(1, Math.ceil(len / 5));
+      const n = Math.max(1, Math.ceil(len / 9)); // a point every 9u is enough for the bulge's curvature
       const pts = [];
       let dev = 0;
       for (let i = 0; i <= n; i++) {
@@ -758,15 +758,65 @@
     category: "safe",
     philosophy: "Your season is the shot and your 84 is where it went in: the top corner of a five-a-side goal that you rebuild, tier by tier, from a chalk goal on a breeze-block wall to the floodlit box net that keeps your ball.",
     philosophyAr: "موسمك تسديدة، ورقم 84 هو المكان الذي دخلت منه الكرة: الزاوية العليا لمرمى خماسي تعيد بناءه مستوى بعد مستوى، من مرمى مرسوم بالطباشير على جدار من الطوب إلى شباك تحت الأضواء تحتفظ بكرتك.",
-    idea: [],
-    belonging: [],
-    founderMark: [],
-    small: [],
-    rtl: [],
-    tiers: {},
-    legend: [],
-    advantages: [],
-    risks: [],
+    idea: [
+      "The card is a five-a-side goal (3 m by 2 m) seen from the penalty spot. The mouth is see-through: the net is drawn as cords over whatever ground the card sits on, so the outline is a Π standing on a goal line that runs the full width of the card, never a filled rectangle. The goal is an object and never mirrors.",
+      "The 84 sits where the shot went in, the top corner of the net (la lucarne), in Changa 800, with the cords pulled in around it and cleared 6u from every text element. 'OVR' is not in the artwork; it is in the accessible label. The name (Changa 800) and the tier sit top-start, so the card reads across as 'ALI … 84'.",
+      "The four stats are one painted line along the crossbar's front face, CAP 91 · SEL 82 · TRF 86 · CON 78 in navy, at every tier including LEGEND. Below 260px the labels drop and the four values grow.",
+      "The manager is the shared hooded figure seen from behind, standing outside the start post and cropped by the left and bottom edges: the back of the hood with its seam, one shoulder, and a rim of light from the goal end. It is dropped at thumbnail size. The spec's hand-on-hip elbow is not drawn, because the shared figure has no arms.",
+      "From PRO up the net is in the club's colour (here the lab's placeholder slate), lifted toward white on the night ground so the cords still read. The club's crest is a sticker wrapped round the end post at every tier.",
+    ],
+    belonging: [
+      "Everyone's first goal was chalked on a wall, so HOMA is drawn fresh: a clean chalk goal on a new breeze-block wall, never a broken one. The ladder is a story the audience has lived: the wall, the galvanised cage of the terrain de proximité, white tubes with a real net, a box goal, and the box goal that kept your ball.",
+      "A 15-year-old wants the box net, because everyone knows the sound of a ball hitting a real net. LEGEND is the only goal that keeps the shape of your shot: the ball stays in the corner and its net bag breaks the outline, which still shows at 24px.",
+      "Comparing is already in the vocabulary: 'yours is still chalk', 'mine has a net'. From PRO up your club's colour is the net itself, and its sticker is on the post at every tier.",
+      "Founders' goals stand in concrete poured in 2026, and the My position card and the share write it the way supporter groups write a founding year: ALI ·26.",
+    ],
+    founderMark: [
+      "A founder's end post stands in a concrete footing, 44u wide, that sticks out 20u below the goal line, so the outline itself is asymmetric under the end post. Set into the concrete is a cast-iron plate with 26 cast in relief (a lit edge, a shadow and an iron face). Later cohorts' posts stand straight on the line.",
+      "It never changes with tier: at HOMA the same footing sits at the foot of the chalked post, against the wall.",
+      "Tap the crossbar and the card turns over. The back shows the plate in close-up with its edge lettering, FOUNDER 2026 and BOT #004821; the plate is the ID's physical carrier.",
+      "Small, it is a block under the end post that breaks the line: 4×3px at 24px, 5–8px wide at 44–80px. The issue ceremony (the plate pressed into wet concrete) is specified but not built in the lab.",
+    ],
+    small: [
+      "44–80px (My position card, hub team card, head-to-head): the Π in the text colour (galvanised grey at STADE) stands a pixel above a painted line that runs past both posts. Only two or three cords run each way, so the mouth stays open. The 84 is in Changa 800 at 0.4 of the height in the top-end corner, with the cords cleared around it. The club's sticker is a dot on the end post, and the founder block sits under it. The net carries the tier: two breeze-block courses at HOMA, sparse chain-link at STADE, a diamond net in club colour at PRO, a square net with depth stays at CHAMPION, and a finer net with the ball bag breaking the top-end corner at LEGEND.",
+      "24–32px (inside the ranking row's name cell): a 30×24 Π drawn in the text colour, with a 1px gap above a 2px line. One side-net stay runs back from the start corner so it reads as a goal with depth rather than a screen. The 84 is in Changa 800 at 10px, top-end. The tier is the number of horizontal cords in club colour: HOMA 0, STADE 1, PRO 2, CHAMPION 3, and LEGEND 3 plus a 4px ball breaking the top-end corner. Founders have a 4×3px block under the end post. At 24px the third cord passes behind the 84 and only shows to its left.",
+      "In the 1-bit test the full card reads as a Π, a line and a footing with net hatch. The HOMA thumbnail thins its wall so the chalk Π stays the outline.",
+    ],
+    rtl: [
+      "The goal never mirrors: the 84 stays top-right, which is where Arabic reading starts. The name علي sits top-left in Changa 800 at 34u, right-aligned to x150 so it clears the 84. Its tier (محترف, from the app's strings) sits under it in Noto Sans Arabic 700 at 13u, on a baseline at y130 below the name's descender.",
+      "The crossbar line reads right to left in Noto Sans Arabic 700: القائد 91 · التشكيلة 82 · الانتقالات 86 · الثبات 78, about 246u on a 268u bar. Figures stay Western and left-to-right, and no Arabic run has letter-spacing.",
+      "Tokens never mirror either. In the My position card and the share, the founder year follows the name in reading order (علي ·26). The back of the bar reads المغرب · 2026/27, and the plate's edge reads عضو مؤسس 2026.",
+    ],
+    tiers: {
+      HOMA: "Mur. A goal chalked on a new breeze-block wall: one clean 5u chalk line for the posts and bar, and the stats, name and 84 chalked with a fine grain that keeps about 90% of the stroke. Two fresh ball marks sit near the lucarne, one warm street lamp lights the wall, and the club sticker is stuck on the wall. No net. The wall's toothed ends are the street edge; the chalk Π is complete.",
+      STADE: "Cage. Galvanised 12u tubes with spangle and welded joints, and a chain-link diamond net in bare wire with the cage's rear frame. The stats are on a white enamel band painted along the bar, and the club's colours are taped round the start post.",
+      PRO: "Tube. White-painted steel tubes with a specular streak from an end-side floodlight, and a knotted net of square knots turned 45°, in the club's colour, hung in a shallow box.",
+      CHAMPION: "Box. White powder-coated aluminium and a deeper box net receding in perspective (roof and side panels) on 3u stanchions, with a knotted square net and two floodlight glints.",
+      LEGEND: "Lucarne. The same box goal with a heavier braided net in three receding planes. The white ball is lodged for good in the top-end corner, and its net bag breaks the Π by 16u: the outline change that shows at 32px. One floodlight off the corner throws three hard-edged steps of light across the net, and the stats are still painted on the bar. No gold.",
+    },
+    legend: [
+      "LEGEND is the goal that remembers your goal: the ball never leaves the top corner, and its net bag is the only place the outline breaks.",
+      "The moment plays once, on the first open after the tier-up, and can be replayed from the back of the card ('Revoir le but · إعادة الهدف'). The 84 and the ball's net bag are on the card from the first frame. A ball leaves the ground in front of the manager and curves into the top corner over 520ms, accelerating. Impact is a hard cut: the bag at full stretch, a 240ms hold, one 60ms white flash clipped to the mouth, and one haptic. Then the bag and the net settle over 420ms into their permanent shape. Reduced motion shows only the final frame.",
+      "Tap the net and it gives round your finger: the cords re-path and the edges stay tied to the posts. Tap the crossbar to turn the card over.",
+    ],
+    advantages: [
+      "Anyone who has played reads it at a glance: a goal with a number in the top corner needs no caption.",
+      "Progression is lived, not a colour change: each tier rebuilds the object in a new material, and every step is a real neighbourhood goal.",
+      "The see-through Π holds both grounds: white and galvanised frames on night, and a 1px keyline with one lift shadow on day.",
+      "Founders show in the outline itself (the footing under the end post) at every size down to 24px.",
+      "There is no FUT skeleton: no portrait slot, no rating column, no stat tiles and no flag.",
+      "The small marks stay goals: the open mouth, the gap above the line and the cord count survive at 24px in 1-bit.",
+    ],
+    risks: [
+      "To non-football eyes the Π can read as pi, a torii gate or a table. At 24–28px the line and the side-net stay carry the 'goal' reading, and the mini can still read as a screen on a stand.",
+      "A goal suggests goals scored, so the card can read as a striker's rating rather than a manager's.",
+      "The ink follows the theme (a navy 84 on day, white on night), so light and dark screenshots differ. The share is always night.",
+      "The net shows the placeholder club's slate here. A real club colour (red, green, yellow) changes the whole card, which is the point, but each club needs a contrast check on both grounds.",
+      "The manager is a cropped hood and one shoulder. Without the spec's hand-on-hip elbow (the shared figure has no arms) it reads as 'someone watching' rather than a pose.",
+      "'Lucarne' as current Moroccan usage is unverified, HOMA is Darija, and 'Revoir le but' is a proposal: all need the owner's sign-off.",
+      "The net is generated geometry: 33–54 KB of markup per full card (PRO, with knots, is the heaviest). That is fine for one profile card but heavy for a grid of full cards. Tokens and rows are flat, filter-free and about 1–2 KB.",
+      "The head-to-head share (a top-down pitch with both goals) is specified but not built, because the lab contract has one share renderer.",
+    ],
     gridWidth: 300,
     detailWidth: 460,
 

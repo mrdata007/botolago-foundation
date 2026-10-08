@@ -69,7 +69,7 @@
   }
   const circle = (cx, cy, r) => `M${r2(cx - r)} ${cy}a${r} ${r} 0 1 0 ${r2(2 * r)} 0a${r} ${r} 0 1 0 ${r2(-2 * r)} 0Z`;
   // the see-through holes (no print behind them): the hang hole and the registration holes
-  const throughD = (t) => circle(HANG.cx, HANG.cy, HANG.r) + regYs(t.n).map((y) => circle(10, y, 3)).join("");
+  const throughD = (t) => circle(HANG.cx, HANG.cy, HANG.r) + regYs(t.n).map((y) => circle(10, y, 3.6)).join("");
 
   /* ------------------------------------------------------------ type */
   function glyphRun(keys, w, gap = 0) {
@@ -127,6 +127,7 @@
     const ar = MC.isAr(o);
     const t = TIER[tk];
     let paths = "";
+    let small = ""; // the stat line: thin walls, so small lettering keeps its strokes
     let br = [];
     let brExtra = ""; // bridges drawn in another coordinate space (the avatar seams)
     let stamped = ""; // a name the lab face cannot cut is rubber-stamped instead
@@ -142,9 +143,12 @@
     const name = MC.nameOf(p, o);
     const run = glyphRun([name], "w800");
     if (run) {
-      const w = ((run.x1 - run.x0) * 34) / UPM;
-      const fs = w > 76 ? Math.max(20, (34 * 76) / w) : 34;
-      const nm = place(run, ar ? 290 : 212, 76, fs, ar ? "end" : "start");
+      // Arabic sits a little higher and smaller, so a descending yeh clears the avatar ring
+      const fs0 = ar ? 32 : 34;
+      const box = ar ? 72 : 76;
+      const w = ((run.x1 - run.x0) * fs0) / UPM;
+      const fs = w > box ? Math.max(20, (fs0 * box) / w) : fs0;
+      const nm = place(run, ar ? 286 : 212, ar ? 70 : 76, fs, ar ? "end" : "start");
       paths += nm.paths;
       br = br.concat(nm.br.map((b) => [...b, bridgeW(fs, t)]));
     } else {
@@ -159,17 +163,17 @@
     const RC = { cx: 232, cy: 108 };
     paths += `<path fill-rule="evenodd" d="${circle(RC.cx, RC.cy, 20)}M${RC.cx - 16.6} ${RC.cy}a16.6 16.6 0 1 1 33.2 0a16.6 16.6 0 1 1 -33.2 0Z"/>`;
     const A = MC.AVATAR;
-    const fsA = 0.19;
-    const ftx = RC.cx - 4 - 100 * fsA;
-    const fty = RC.cy - 12.4 - 44 * fsA;
+    const fsA = 0.152;
+    const ftx = RC.cx - 3.2 - 100 * fsA;
+    const fty = RC.cy - 12.2 - 44 * fsA;
     const figT = `translate(${r2(ftx)} ${r2(fty)}) scale(${fsA})`;
     paths += `<g clip-path="url(#${o._u("fc")})"><path transform="${figT}" d="${A.torso}"/><path transform="${figT}" d="${A.hood || A.head}"/></g>`;
     const bwS = t.bf ? Math.max(1.3, bridgeW(34, t)) : 0.9; // LEGEND: the seams float, held by the mesh
     if (t.bf) {
       br.push([RC.cx - 21, RC.cy, RC.cx - 15.8, RC.cy, bwS], [RC.cx + 15.8, RC.cy, RC.cx + 21, RC.cy, bwS]);
     }
-    if (A.hood) brExtra += `<path fill="none" transform="${figT}" stroke-width="${r2(bwS / fsA)}" d="${A.hoodSeam}"/><path fill="none" transform="${figT}" stroke-width="${r2(bwS / fsA)}" d="${A.hoodRim}"/>`;
-    brExtra += `<path fill="none" transform="${figT}" stroke-width="${r2(bwS / fsA)}" d="${A.seam}"/>`;
+    // the hood's rim stays as a bridge: hood and shoulders read as a person seen from behind
+    brExtra += `<path fill="none" transform="${figT}" stroke-width="${r2(bwS / fsA)}" d="${A.hood ? A.hoodRim : "M68 168C82 161 118 161 132 168"}"/>`;
     const clip = `<clipPath id="${o._u("fc")}"><circle cx="${RC.cx}" cy="${RC.cy}" r="14.2"/></clipPath>`;
 
     // founder: '26' cut at 30u under the hang hole
@@ -198,13 +202,13 @@
         if (ar) {
           const l = place(g.lab, x, 150, fs, "end");
           const m = place(g.num, x - g.wl - 3.6, 150, fs, "end");
-          paths += l.paths + m.paths;
+          small += l.paths + m.paths;
           br = br.concat([...l.br, ...m.br].map((b) => [...b, bridgeW(fs, t)]));
           x -= g.w + gap;
         } else {
           const l = place(g.lab, x, 150, fs);
           const m = place(g.num, x + g.wl + 3.6, 150, fs);
-          paths += l.paths + m.paths;
+          small += l.paths + m.paths;
           br = br.concat([...l.br, ...m.br].map((b) => [...b, bridgeW(fs, t)]));
           x += g.w + gap;
         }
@@ -212,7 +216,7 @@
     }
 
     const brs = (t.bf ? br.map((b) => lines([b], b[4])).join("") : "") + brExtra;
-    return { paths, brs, clip, stamped };
+    return { paths, small, brs, clip, stamped };
   }
 
   /* ------------------------------------------------------------ full card */
@@ -240,13 +244,16 @@
     const seasons = o.seasons != null ? o.seasons : exampleCoats ? 3 : 0;
 
     /* ---- the cut set and its masks (defined once, in the print layer) ---- */
-    let defs = C.clip + `<g id="${u("cuts")}">${C.paths}</g><g id="${u("brs")}">${C.brs}</g>`;
+    let defs = C.clip + `<g id="${u("cuts")}"><g id="${u("big")}">${C.paths}</g><g id="${u("small")}">${C.small}</g></g><g id="${u("brs")}">${C.brs}</g>`;
     const H = (fill, stroke) => `<use href="#${u("cuts")}" fill="${fill}"/><use href="#${u("brs")}" stroke="${stroke}"/>`;
     defs += `<mask id="${u("H")}" ${MBOX}>${H("#fff", "#000")}</mask>`;
     defs += `<mask id="${u("M")}" ${MBOX}><path d="${PLATE}" fill="#fff"/><path d="${THR}" fill="#000"/>${H("#000", "#fff")}</mask>`;
     defs += `<mask id="${u("TH")}" ${MBOX}><path d="${PLATE}" fill="#fff"/><path d="${THR}" fill="#000"/></mask>`;
-    const shifted = (d) => `<g mask="${url("H")}">${R("#fff")}<g transform="translate(${d} ${d})">${H("#000", "#fff")}</g></g>`;
-    defs += `<mask id="${u("WM")}" ${MBOX}>${shifted(t.wall)}</mask><mask id="${u("LM")}" ${MBOX}>${shifted(-t.lip)}</mask>`;
+    const shifted = (d, ds) =>
+      `<g mask="${url("H")}">${R("#fff")}` +
+      `<g transform="translate(${d} ${d})"><use href="#${u("big")}" fill="#000"/><use href="#${u("brs")}" stroke="#fff"/></g>` +
+      `<g transform="translate(${ds} ${ds})"><use href="#${u("small")}" fill="#000"/><use href="#${u("brs")}" stroke="#fff"/></g></g>`;
+    defs += `<mask id="${u("WM")}" ${MBOX}>${shifted(t.wall, r2(Math.min(0.6, t.wall * 0.4)))}</mask><mask id="${u("LM")}" ${MBOX}>${shifted(-t.lip, -0.45)}</mask>`;
 
     /* ---- the print beneath: paper, and the cut shapes sprayed in the club's ink ---- */
     let shadow = "";
@@ -267,10 +274,10 @@
     if (tk === "HOMA") {
       // fresh kraft board: directional fibres, nothing worn
       if (tex)
-        pdefs += `<filter id="${u("fib")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".85 .035" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .27  0 0 0 0 .19  0 0 0 0 .09  0 0 0 2.4 -1"/></filter>` +
-          `<filter id="${u("fibL")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".7 .03" numOctaves="2" seed="17"/><feColorMatrix values="0 0 0 0 .93  0 0 0 0 .86  0 0 0 0 .72  0 0 0 2.4 -1.05"/></filter>`;
+        pdefs += `<filter id="${u("fib")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".035 .75" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .27  0 0 0 0 .19  0 0 0 0 .09  0 0 0 2.4 -1"/></filter>` +
+          `<filter id="${u("fibL")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".03 .6" numOctaves="2" seed="17"/><feColorMatrix values="0 0 0 0 .93  0 0 0 0 .86  0 0 0 0 .72  0 0 0 2.4 -1.05"/></filter>`;
       pdefs += `<pattern id="${u("FLUTE")}" width="2.2" height="10" patternUnits="userSpaceOnUse"><rect width="2.2" height="10" fill="#d8c29c"/><rect width=".9" height="10" fill="#8a6f49"/></pattern>`;
-      face = R(t.plate) + (tex ? R("#000", ` filter="${url("fib")}" opacity=".16"`) + R("#000", ` filter="${url("fibL")}" opacity=".14"`) : "");
+      face = R(t.plate) + (tex ? R("#000", ` filter="${url("fib")}" opacity=".1"`) + R("#000", ` filter="${url("fibL")}" opacity=".1"`) : "");
     } else if (tk === "STADE") {
       // clear acetate over the paper: the print shows through the film as well as the cuts
       face = R(t.plate, ` opacity="${t.film}"`) + `<path d="M228 -6L176 166" stroke="#fff" stroke-width="5" opacity=".22"/><path d="M236 -6L184 166" stroke="#fff" stroke-width="1.2" opacity=".55"/>`;
@@ -280,12 +287,12 @@
         pdefs += `<filter id="${u("oil")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".013" numOctaves="3" seed="3"/><feColorMatrix values="0 0 0 0 .36  0 0 0 0 .2  0 0 0 0 .04  0 0 0 1.7 -.66"/></filter>` +
           `<filter id="${u("grain")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="1" seed="8"/><feColorMatrix values="0 0 0 0 .4  0 0 0 0 .26  0 0 0 0 .08  0 0 0 2.2 -1.3"/></filter>`;
       pdefs += `<linearGradient id="${u("sheen")}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff2cc" stop-opacity=".22"/><stop offset=".5" stop-color="#fff2cc" stop-opacity="0"/><stop offset="1" stop-color="#3a2000" stop-opacity=".14"/></linearGradient>`;
-      face = R(t.plate) + (tex ? R("#000", ` filter="${url("oil")}" opacity=".55"`) + R("#000", ` filter="${url("grain")}" opacity=".5"`) : "") + R(url("sheen"));
+      face = R(t.plate) + (tex ? R("#000", ` filter="${url("oil")}" opacity=".3"`) + R("#000", ` filter="${url("grain")}" opacity=".22"`) : "") + R(url("sheen"));
     } else if (tk === "CHAMPION") {
       // etched zinc: a cool satin face with a fine acid grain
       pdefs += `<linearGradient id="${u("zn")}" x1="0" y1="0" x2=".35" y2="1"><stop offset="0" stop-color="#c3cad2"/><stop offset=".55" stop-color="#a7afb8"/><stop offset="1" stop-color="#959ea8"/></linearGradient>`;
       if (tex) pdefs += `<filter id="${u("etch")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="1" seed="21"/><feColorMatrix values="0 0 0 0 .2  0 0 0 0 .23  0 0 0 0 .27  0 0 0 2.6 -1.45"/></filter>`;
-      face = R(url("zn")) + (tex ? R("#000", ` filter="${url("etch")}" opacity=".7"`) : "");
+      face = R(url("zn")) + (tex ? R("#000", ` filter="${url("etch")}" opacity=".32"`) : "");
     } else {
       // polished brass, laser-cut: a warm face and two clean reflections
       pdefs += `<linearGradient id="${u("br")}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3c27a"/><stop offset=".55" stop-color="#d1aa55"/><stop offset="1" stop-color="#c49a45"/></linearGradient>`;
@@ -296,11 +303,9 @@
     let coats = "";
     if (seasons > 0) {
       const cc = [p.club && p.club.primary ? p.club.primary : NAVY, NAVY, "#1f1d1a"];
-      if (tex) pdefs += `<filter id="${u("spk")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency="1.4" numOctaves="1" seed="9" result="n"/><feColorMatrix in="n" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -3 2.1" result="a"/><feComposite in="SourceGraphic" in2="a" operator="in"/></filter>`;
       const outer = `M${PR} 0H${PW - PR}A${PR} ${PR} 0 0 1 ${PW} ${PR}V${PH - PR}A${PR} ${PR} 0 0 1 ${PW - PR} ${PH}H${PR}A${PR} ${PR} 0 0 1 0 ${PH - PR}V${PR}A${PR} ${PR} 0 0 1 ${PR} 0Z`;
       for (let i = Math.min(seasons, 6) - 1; i >= 0; i--)
-        coats += `<path d="${outer}" fill="none" stroke="${cc[i % 3]}" stroke-width="${12 * (i + 1)}" opacity=".45"/>`;
-      coats = `<g${tex ? ` filter="${url("spk")}"` : ""}>${coats}</g>`;
+        coats += `<path d="${outer}" fill="none" stroke="${cc[i % 3]}" stroke-width="${8 * (i + 1)}" opacity=".3"/>`;
     }
 
     // lettering on the plate: tier and season, the ID and the country, each in the tier's craft
@@ -344,14 +349,14 @@
       R(t.wallC, ` mask="${url("WM")}" opacity="${t.wallO}"`) +
       R(t.lipC === "FLUTE" ? url("FLUTE") : t.lipC, ` mask="${url("LM")}" opacity="${t.lipC === "FLUTE" ? 0.95 : 0.85}"`);
     // the through-holes: a clean punched rim
-    pdefs += `<linearGradient id="${u("rim")}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".6"/></linearGradient>`;
-    const rims = [`<circle cx="${HANG.cx}" cy="${HANG.cy}" r="${HANG.r - 0.7}"/>`, ...regYs(t.n).map((y) => `<circle cx="10" cy="${y}" r="2.5"/>`)].join("");
-    const rimG = `<g fill="none" stroke="${url("rim")}" stroke-width="1.4">${rims}</g>`;
+    pdefs += `<linearGradient id="${u("rim")}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".6"/><stop offset=".45" stop-color="#000" stop-opacity="0"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".75"/></linearGradient>`;
+    const rims = [`<circle cx="${HANG.cx}" cy="${HANG.cy}" r="${HANG.r - 0.9}"/>`, ...regYs(t.n).map((y) => `<circle cx="10" cy="${y}" r="2.7"/>`)].join("");
+    const rimG = `<g fill="none" stroke="${url("rim")}" stroke-width="1.8">${rims}</g>`;
     // LEGEND: bridgeless, the counters float on the frame's fine screen mesh, seen only in the cuts
     let mesh = "";
     if (legend && !thumb) {
-      pdefs += `<pattern id="${u("mesh")}" width="1.8" height="1.8" patternUnits="userSpaceOnUse" patternTransform="rotate(22)"><rect width=".34" height="1.8" fill="#f6e7b8"/><rect width="1.8" height=".34" fill="#f6e7b8"/></pattern>`;
-      mesh = R(url("mesh"), ` mask="${url("H")}" opacity=".55"`);
+      pdefs += `<pattern id="${u("mesh")}" width="1.8" height="1.8" patternUnits="userSpaceOnUse" patternTransform="rotate(22)"><rect width=".26" height="1.8" fill="#fbefc6"/><rect width="1.8" height=".26" fill="#fbefc6"/></pattern>`;
+      mesh = R(url("mesh"), ` mask="${url("H")}" opacity=".32"`);
     }
     const edge = `<path d="${PLATE}" fill="none" class="c04-edge" stroke="${t.edge}" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="${THR}" fill="none" class="c04-edge" stroke="${t.edge}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
 
@@ -370,12 +375,12 @@
     let frame = "";
     if (t.clamps) {
       const clamp = (x) =>
-        `<g transform="translate(${x} 0)"><rect x="0" y="-9" width="30" height="15" rx="2" fill="url(#${u("st")})" stroke="#3d454f" stroke-width=".8"/>` +
-        `<rect x="2" y="-7.6" width="26" height="2.2" rx="1.1" fill="#eef2f6" opacity=".7"/><circle cx="15" cy="0" r="3.1" fill="#6f7882" stroke="#2f363e" stroke-width=".7"/><path d="M13 0H17M15 -2V2" stroke="#e6ebf0" stroke-width=".7"/></g>`;
+        `<g transform="translate(${x} 0)"><rect x="0" y="-12" width="36" height="19" rx="2.4" fill="url(#${u("st")})" stroke="#3d454f" stroke-width=".8"/>` +
+        `<rect x="2.4" y="-10.3" width="31.2" height="2.4" rx="1.2" fill="#f4f7fa" opacity=".75"/><circle cx="18" cy="-.5" r="3.6" fill="#6f7882" stroke="#2f363e" stroke-width=".7"/><path d="M15.6 -.5H20.4M18 -2.9V1.9" stroke="#e6ebf0" stroke-width=".8"/></g>`;
       frame =
         `<svg class="c04-svg c04-frame" viewBox="0 0 ${PW} ${PH}" aria-hidden="true" focusable="false"><defs><linearGradient id="${u("st")}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d5dbe1"/><stop offset=".5" stop-color="#9aa3ad"/><stop offset="1" stop-color="#6f7882"/></linearGradient></defs>` +
-        clamp(46) +
-        clamp(156) +
+        clamp(44) +
+        clamp(152) +
         `</svg>`;
     }
 
@@ -501,8 +506,9 @@
     const fabric = p.club && p.club.secondary ? p.club.secondary : "#e9e4d6";
     const ink = contrast(club, fabric) >= 3 ? club : NAVY;
     // the bib, 300 × 360, drawn flat: shoulder straps, a round neck, armholes, a straight hem
-    const bib = "M78 0H112C118 26 132 40 150 40S182 26 188 0H222L226 34C230 66 252 92 292 100L300 104V352Q300 360 292 360H8Q0 360 0 352V104L8 100C48 92 70 66 74 34Z";
-    const binding = "M78 0C84 30 112 52 150 52S216 30 222 0M74 34C70 66 48 92 8 100M226 34C230 66 252 92 292 100";
+    // the bib, 296 × 358, drawn flat: broad shoulder straps, a scoop neck, shallow armholes
+    const bib = "M66 0H116C120 34 132 56 150 56S180 34 184 0H234C238 40 254 64 286 72L294 76V350Q294 358 286 358H14Q6 358 6 350V76L14 72C46 64 62 40 66 0Z";
+    const binding = "M116 0C120 34 132 56 150 56S180 34 184 0M66 0C62 40 46 64 14 72M234 0C238 40 254 64 286 72";
     // the sprayed print (the plate's own cut shapes, so the bridge gaps print too)
     const name = MC.nameOf(p, o);
     const nr = glyphRun([name], "w800");
@@ -532,11 +538,11 @@
       `<path d="${bib}" fill="${fabric}"/>` +
       `<g clip-path="url(#${u("bc")})"><rect x="-10" y="-10" width="320" height="380" fill="url(#${u("knit")})" opacity=".55"/>` +
       // two stepped halos of overspray, flat, then the crisp print
-      `<g fill="${ink}"><use href="#${u("pr")}" filter="url(#${u("h2")})" opacity=".08"/><use href="#${u("pr")}" filter="url(#${u("h1")})" opacity=".12"/></g>` +
+      `<g fill="${ink}"><use href="#${u("pr")}" filter="url(#${u("h2")})" opacity=".1"/><use href="#${u("pr")}" filter="url(#${u("h1")})" opacity=".16"/></g>` +
       `<rect x="-10" y="-10" width="320" height="380" fill="${ink}" mask="url(#${u("pm")})"/></g>` +
       `<path d="${binding}" fill="none" stroke="${shade}" stroke-width="7" opacity=".55"/>` +
       `<path d="${binding}" fill="none" stroke="${mix(fabric, "#000000", 0.35)}" stroke-width=".9" stroke-dasharray="3 2.4" transform="translate(0 2)"/>` +
-      `<path d="M0 346H300" stroke="${mix(fabric, "#000000", 0.35)}" stroke-width=".9" stroke-dasharray="3 2.4"/>` +
+      `<path d="M6 345H294" stroke="${mix(fabric, "#000000", 0.35)}" stroke-width=".9" stroke-dasharray="3 2.4"/>` +
       `</g>` +
       `</svg>`;
     const logo = MC.logo("wordmark", { variant: "light", w: 118, label: false });
@@ -548,7 +554,8 @@
       `<div class="c04-sh-logo">${logo}</div>` +
       `<div class="c04-sh-plate">${card}</div>` +
       `<div class="c04-sh-meta"><b${ar ? ' class="ar"' : ""}>${esc(name)}${yr ? ` <span>${MC.ltr("·" + yr)}</span>` : ""}</b>` +
-      `<span class="c04-sh-line"><span>${esc(S.tiers[tk])}</span><span>${MC.ltr(p.id)}</span><span>${ar ? "مثال" : "Exemple"}</span></span></div>` +
+      `<span class="c04-sh-tier">${esc(S.tiers[tk])}</span>` +
+      `<span class="c04-sh-line"><span>${MC.ltr(p.id)}</span><span>${ar ? "مثال" : "Exemple"}</span></span></div>` +
       `</div>`
     );
   }

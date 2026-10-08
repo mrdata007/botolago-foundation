@@ -277,16 +277,16 @@
     const C = clubOf(p);
     const ground = home ? PAPER : tier === "CHAMPION" ? deepen(C.c, 0.15) : C.c;
     const hi = home ? PAPER : C.on;
-    const s = (0.44 * R) / 52;
-    const hx = cx - sg * 0.26 * R;
-    const top = cy - 0.74 * R;
+    const s = (0.6 * R) / 52; // close crop: the hood's crown runs off the top, the shoulders off the bottom
+    const hx = cx - sg * 0.2 * R;
+    const top = cy - 1.06 * R;
     const pos = { x: r1(hx - 100 * s), y: r1(top - 44 * s), w: r1(200 * s), h: r1(240 * s) };
     const fig = (q) => MC.avatar({ ...pos, rim: "none", ...q });
     const box = `x="${r1(cx - R)}" y="${r1(cy - R)}" width="${2 * R}" height="${2 * R}"`;
     let defs = `<clipPath id="${u}-cd"><circle cx="${cx}" cy="${cy}" r="${R}"/></clipPath>`;
     let face = `<rect ${box} fill="${ground}"/>`;
     if (thumb) {
-      face += fig({ torso: INK, seam: ground, rim: hi });
+      face += fig({ torso: mix(INK, hi, 0.4), hoodFill: INK, seam: ground, rim: hi });
     } else {
       const P = SCREEN[tier];
       const lit = sg > 0 ? { x1: 20, y1: 40, x2: 175, y2: 236 } : { x1: 180, y1: 40, x2: 25, y2: 236 };
@@ -297,7 +297,9 @@
         `<linearGradient id="${u}-tone" gradientUnits="userSpaceOnUse" x1="${lit.x1}" y1="${lit.y1}" x2="${lit.x2}" y2="${lit.y2}"><stop offset="0" stop-color="#fff"/><stop offset=".22" stop-color="#9a9a9a"/><stop offset=".46" stop-color="#2e2e2e"/><stop offset=".6" stop-color="#000"/></linearGradient>` +
         `<radialGradient id="${u}-pool" gradientUnits="userSpaceOnUse" cx="${r1(cx - sg * 0.75 * R)}" cy="${r1(cy - 0.85 * R)}" r="${r1(1.25 * R)}"><stop offset="0" stop-color="#9a9a9a"/><stop offset=".5" stop-color="#3a3a3a"/><stop offset="1" stop-color="#000"/></radialGradient>` +
         `<mask id="${u}-mpool" maskUnits="userSpaceOnUse" ${box}><circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#${u}-pool)"/></mask>` +
-        `<mask id="${u}-mfig" maskUnits="userSpaceOnUse" ${box}>${fig({ torso: `url(#${u}-tone)`, seam: false })}</mask>` +
+        // the jacket gets its own screen (lighter at the shoulders, solid where the country is printed), so it reads apart from the hood
+        `<linearGradient id="${u}-tt" gradientUnits="userSpaceOnUse" x1="${sg > 0 ? 40 : 160}" y1="176" x2="${sg > 0 ? 120 : 80}" y2="236"><stop offset="0" stop-color="#d8d8d8"/><stop offset=".45" stop-color="#7a7a7a"/><stop offset=".8" stop-color="#151515"/><stop offset="1" stop-color="#000"/></linearGradient>` +
+        `<mask id="${u}-mfig" maskUnits="userSpaceOnUse" ${box}>${fig({ torso: `url(#${u}-tt)`, hoodFill: `url(#${u}-tone)`, seam: false })}</mask>` +
         edgeLight(`${u}-rl`, sg * 1.7, 1.7, hi);
       face += `<g filter="url(#${u}-thr)"><rect ${box} fill="url(#${u}-ht)" mask="url(#${u}-mpool)"/></g>`;
       face += fig({ torso: INK, seam: false });
@@ -564,7 +566,7 @@
     const k = 1 / s; // die units per px
     const halfW = 101 * s + kp + hp;
     const halfH = 80 * s + kp + hp;
-    const slipPx = mini ? (h <= 24 ? 4.6 : 5.4) : 34 * s + 1.2;
+    const slipPx = mini ? (h <= 24 ? 5.4 : 6) : 34 * s + 1.2;
     const dd = 0.35 * h; // disc diameter at 64-80px
     let W;
     let cx;
@@ -621,15 +623,21 @@
     let discSvg = "";
     if (disc) {
       const R = disc.R;
-      const sA = (0.44 * R) / 52;
-      const hx = disc.x - (rtl ? -1 : 1) * 0.26 * R;
-      const top = disc.y - 0.74 * R;
+      const sA = (0.6 * R) / 52;
+      const hx = disc.x - (rtl ? -1 : 1) * 0.2 * R;
+      const top = disc.y - 1.06 * R;
       defs += `<clipPath id="${u}-cd"><circle cx="${r2(disc.x)}" cy="${r2(disc.y)}" r="${r2(R)}"/></clipPath>`;
       discSvg +=
         `<circle cx="${r2(disc.x)}" cy="${r2(disc.y)}" r="${r2(R + 0.75 * kp + hp)}" ${fillV("var(--c08-hair)")}/>` +
         `<circle cx="${r2(disc.x)}" cy="${r2(disc.y)}" r="${r2(R + 0.75 * kp)}" ${fillV(stockVar)}/>` +
         `<g clip-path="url(#${u}-cd)"><rect x="${r2(disc.x - R)}" y="${r2(disc.y - R)}" width="${r2(2 * R)}" height="${r2(2 * R)}" fill="${home ? PAPER : C.c}"/>` +
-        MC.avatar({ x: r2(hx - 100 * sA), y: r2(top - 44 * sA), w: r2(200 * sA), h: r2(240 * sA), torso: INK, seam: home ? PAPER : C.c, stroke: home ? INK : C.on, strokeWidth: r2(1.1 / sA) }) +
+        (() => {
+          // flat at this size: a cream rim light on the upper-start edge (the figure offset over itself), hood in ink, jacket a shade lighter
+          const at = (dx, dy, q) => MC.avatar({ x: r2(hx - 100 * sA + dx), y: r2(top - 44 * sA + dy), w: r2(200 * sA), h: r2(240 * sA), seam: false, ...q });
+          const lit = home ? INK : C.on;
+          const off = rtl ? -0.9 : 0.9;
+          return at(0, 0, { torso: lit, hoodFill: lit }) + at(off, 0.9, { torso: mix(INK, home ? "#9a9a9a" : C.on, 0.4), hoodFill: home ? "#3a3a3a" : INK });
+        })() +
         `</g>`;
     }
     for (let i = n; i >= 1; i--) svg += layer(i * ep);
@@ -771,24 +779,30 @@
         `<svg class="c08-sh-art" viewBox="0 0 360 640" width="360" height="640" aria-hidden="true" focusable="false"><defs>${defs}` +
         `<filter id="${u}-peb" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">` +
         `<feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="3" result="n"/>` +
-        `<feDiffuseLighting in="n" surfaceScale="1.3" lighting-color="#ffffff" result="l"><feDistantLight azimuth="${ar ? 315 : 225}" elevation="60"/></feDiffuseLighting>` +
-        `<feComposite in="SourceGraphic" in2="l" operator="arithmetic" k1="1.12" k2="0" k3="0" k4="0"/></filter>` +
+        `<feDiffuseLighting in="n" surfaceScale=".75" lighting-color="#ffffff" result="l"><feDistantLight azimuth="${ar ? 315 : 225}" elevation="60"/></feDiffuseLighting>` +
+        `<feComposite in="SourceGraphic" in2="l" operator="arithmetic" k1="1.08" k2="0" k3="0" k4="0"/></filter>` +
+        `<clipPath id="${u}-cov"><path d="${ar ? "M360 0V640H28Q14 640 14 626V14Q14 0 28 0Z" : "M0 0H332Q346 0 346 14V626Q346 640 332 640H0Z"}"/></clipPath>` +
         `<filter id="${u}-fstk" x="-15%" y="-15%" width="130%" height="135%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceAlpha" stdDeviation=".8" result="b"/><feOffset in="b" dy=".8" result="o"/><feFlood flood-color="#5a4300" flood-opacity=".22"/><feComposite in2="o" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` +
         `<linearGradient id="${u}-lit" x1="${ar ? 1 : 0}" y1="0" x2="${ar ? 0 : 1}" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#3a2a00" stop-opacity=".22"/></linearGradient>` +
         `<linearGradient id="${u}-spine" x1="${ar ? 1 : 0}" y1="0" x2="${ar ? 0 : 1}" y2="0"><stop offset="0" stop-color="#3a2a00" stop-opacity=".28"/><stop offset="1" stop-color="#3a2a00" stop-opacity="0"/></linearGradient>` +
         `</defs>` +
-        // the cover: yellow polypropylene, pebbled, hinged at the start edge
-        `<rect width="360" height="640" fill="#E9B41E" filter="url(#${u}-peb)"/>` +
+        // the desk, then the cover: yellow polypropylene, pebbled, hinged at the start edge, its end edge rounded
+        `<rect width="360" height="640" fill="#2A2E35"/>` +
+        `<rect x="${ar ? 12 : 0}" y="3" width="348" height="640" rx="14" fill="#000" fill-opacity=".35"/>` +
+        `<g clip-path="url(#${u}-cov)"><rect width="360" height="640" fill="#E9B41E" filter="url(#${u}-peb)"/>` +
         `<rect x="${ar ? 324 : 0}" width="36" height="640" fill="url(#${u}-spine)"/>` +
         `<rect x="${L(34) - (ar ? 1.4 : 0)}" width="1.4" height="640" fill="#5a4300" fill-opacity=".35"/><rect x="${L(35.6) - (ar ? 1 : 0)}" width="1" height="640" fill="#fff" fill-opacity=".35"/>` +
         `<rect x="${L(42) - (ar ? 1.4 : 0)}" width="1.4" height="640" fill="#5a4300" fill-opacity=".3"/><rect x="${L(43.6) - (ar ? 1 : 0)}" width="1" height="640" fill="#fff" fill-opacity=".3"/>` +
         `<rect width="360" height="640" fill="url(#${u}-lit)"/>` +
+        // the spine's label pocket: a blank card under clear plastic
+        `<g transform="translate(${L(17)} 330)"><rect x="-11" y="-92" width="22" height="184" rx="3" fill="#F7F4EA"/><rect x="-11" y="-92" width="22" height="184" rx="3" fill="none" stroke="#5a4300" stroke-opacity=".3"/><rect x="${ar ? 2 : -9}" y="-88" width="7" height="176" rx="2" fill="#fff" fill-opacity=".45"/></g>` +
         // a few blank, sun-faded stickers from before
         faded(300, 92, 12, `<circle r="30" fill="#F3F0E6"/><circle r="25" fill="FILL"/>`, "#CFE2E2") +
-        faded(332, 300, -9, `<rect x="-26" y="-36" width="52" height="72" rx="6" fill="#F3F0E6"/><rect x="-21" y="-31" width="42" height="62" rx="3" fill="FILL"/>`, "#EBD9D5") +
+        faded(314, 300, -9, `<rect x="-26" y="-36" width="52" height="72" rx="6" fill="#F3F0E6"/><rect x="-21" y="-31" width="42" height="62" rx="3" fill="FILL"/>`, "#EBD9D5") +
         faded(54, 548, -14, `<rect x="-40" y="-24" width="80" height="48" rx="24" fill="#F3F0E6"/><rect x="-35" y="-19" width="70" height="38" rx="19" fill="FILL"/>`, "#DCD9EA") +
         faded(300, 596, 7, `<circle r="22" fill="#F3F0E6"/><circle r="18" fill="FILL"/>`, "#F1E7C8") +
         // your fresh cluster, slapped across it
+        `</g>` +
         `<g transform="translate(${tx} ${ty}) scale(${r2(sc * 1000) / 1000})">${body}</g>` +
         `</svg>`;
       const ex = ar ? "مثال" : "Exemple";

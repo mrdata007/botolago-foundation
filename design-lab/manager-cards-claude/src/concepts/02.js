@@ -71,10 +71,38 @@
   const VB = { w: 300, h: 420 };
   const C = { x: 224, y: 94, r: 70 };
   const AL = Math.hypot(0.547, 0.837);
-  const AX = [-0.547 / AL, 0.837 / AL]; // from the ball toward the tip (bottom-start)
-  const NM = [AX[1], -AX[0]]; // across the trail, toward its lower-end edge
-  const at = (s, off = 0) => [C.x + AX[0] * s + NM[0] * off, C.y + AX[1] * s + NM[1] * off];
+  const AX = [-0.547 / AL, 0.837 / AL]; // the chord, from the ball toward the tip (bottom-start), 56.8°
+  const NM = [AX[1], -AX[0]]; // across the chord, toward the trail's lower-end edge
   const AX_DEG = (Math.atan2(AX[1], AX[0]) * 180) / Math.PI;
+  /* The axis is the shot's arc: the same chord, bowed 13u toward the upper-start side, so the ball
+     arrives flatter than it left (48° at the ball, 66° at the tip). */
+  const S_BASE = 365;
+  const SAG = 13;
+  const T_BASE = [C.x + AX[0] * S_BASE, C.y + AX[1] * S_BASE];
+  const QC = [(C.x + T_BASE[0]) / 2 - NM[0] * 2 * SAG, (C.y + T_BASE[1]) / 2 - NM[1] * 2 * SAG];
+  const unit = (v) => {
+    const m = Math.hypot(v[0], v[1]) || 1;
+    return [v[0] / m, v[1] / m];
+  };
+  const D0 = unit([QC[0] - C.x, QC[1] - C.y]);
+  const D1 = unit([T_BASE[0] - QC[0], T_BASE[1] - QC[1]]);
+  function axis(s) {
+    if (s <= 0) return { p: [C.x + D0[0] * s, C.y + D0[1] * s], d: D0 };
+    if (s >= S_BASE) return { p: [T_BASE[0] + D1[0] * (s - S_BASE), T_BASE[1] + D1[1] * (s - S_BASE)], d: D1 };
+    const t = s / S_BASE;
+    const u = 1 - t;
+    const p = [u * u * C.x + 2 * u * t * QC[0] + t * t * T_BASE[0], u * u * C.y + 2 * u * t * QC[1] + t * t * T_BASE[1]];
+    const d = unit([2 * u * (QC[0] - C.x) + 2 * t * (T_BASE[0] - QC[0]), 2 * u * (QC[1] - C.y) + 2 * t * (T_BASE[1] - QC[1])]);
+    return { p, d };
+  }
+  const at = (s, off = 0) => {
+    const a = axis(s);
+    return [a.p[0] + a.d[1] * off, a.p[1] - a.d[0] * off];
+  };
+  const angAt = (s) => {
+    const d = axis(s).d;
+    return (Math.atan2(d[1], d[0]) * 180) / Math.PI;
+  };
   /** Trail geometry: w(s) = 128 − 124·(s−36)/L, s measured from the ball centre. LEGEND is 30% longer. */
   const GEO = (legend) => {
     const L = 329 * (legend ? 1.3 : 1);
@@ -84,11 +112,29 @@
   };
   const G_BASE = GEO(false);
   const G_LEG = GEO(true);
-  /** x of the trail's upper-start / lower-end edge at height y. */
+  /** The trail's two edges as polylines (sampled once per geometry). */
+  const EDGES = new Map();
+  function edges(g) {
+    if (!EDGES.has(g)) {
+      const U = [];
+      const Lo = [];
+      for (let s = 0; s <= g.sTip + 0.01; s += 2.5) {
+        U.push(at(s, -g.w(s) / 2));
+        Lo.push(at(s, g.w(s) / 2));
+      }
+      EDGES.set(g, { U, L: Lo });
+    }
+    return EDGES.get(g);
+  }
+  /** x of the trail's upper-start (side −1) or lower-end (side +1) edge at height y. */
   function edgeX(g, y, side) {
-    const k = side < 0 ? -1 : 1;
-    const s = (y - C.y - (k * NM[1] * g.a0) / 2) / (AX[1] + (k * NM[1] * g.a1) / 2);
-    return C.x + AX[0] * s + (k * NM[0] * g.w(s)) / 2;
+    const pts = side < 0 ? edges(g).U : edges(g).L;
+    for (let i = 1; i < pts.length; i++) {
+      const a = pts[i - 1];
+      const b = pts[i];
+      if ((a[1] - y) * (b[1] - y) <= 0 && a[1] !== b[1]) return a[0] + ((y - a[1]) / (b[1] - a[1])) * (b[0] - a[0]);
+    }
+    return side < 0 ? pts[pts.length - 1][0] : pts[0][0];
   }
   /** Horizontal room for a text box (top yT, bottom yB) inside the trail, clear of the ball. */
   function room(g, yT, yB, pad = 4, ballGap = 4) {
@@ -99,17 +145,27 @@
     if (Math.abs(dy) < rr) R = Math.min(R, C.x - Math.sqrt(rr * rr - dy * dy));
     return { L, R, w: R - L, c: (L + R) / 2 };
   }
+  const TRAILS = new Map();
   function trailPath(g) {
+    if (TRAILS.has(g)) return TRAILS.get(g);
     const s0 = 2;
-    const u0 = at(s0, -g.w(s0) / 2);
-    const l0 = at(s0, g.w(s0) / 2);
-    const u1 = at(g.sTip, -g.w(g.sTip) / 2);
-    const l1 = at(g.sTip, g.w(g.sTip) / 2);
+    const N = 48;
+    const U = [];
+    const Lo = [];
+    for (let i = 0; i <= N; i++) {
+      const s = s0 + ((g.sTip - s0) * i) / N;
+      U.push(at(s, -g.w(s) / 2));
+      Lo.push(at(s, g.w(s) / 2));
+    }
     const tip = at(g.sTip + 2.6, 0);
-    const front = at(-g.w(s0) / 2, 0);
-    const R0 = r2(Math.hypot(u0[0] - C.x, u0[1] - C.y));
+    const R0 = r2(Math.hypot(U[0][0] - C.x, U[0][1] - C.y));
+    const front = at(-R0, 0);
     // the root closes round the front of the ball (hidden under it), so the trail's edges stay tangent
-    return `M${P(u0)}L${P(u1)}Q${P(tip)} ${P(l1)}L${P(l0)}A${R0} ${R0} 0 0 0 ${P(front)}A${R0} ${R0} 0 0 0 ${P(u0)}Z`;
+    const d =
+      "M" + U.map(P).join("L") + `Q${P(tip)} ${P(Lo[N])}L` + Lo.slice(0, N).reverse().map(P).join("L") +
+      `A${R0} ${R0} 0 0 0 ${P(front)}A${R0} ${R0} 0 0 0 ${P(U[0])}Z`;
+    TRAILS.set(g, d);
+    return d;
   }
   /** A swoosh outside the trail's upper-start edge: inner edge parallel to it at `gap`, up to `T` thick. */
   function crescentPath(g, s0, s1, gap, T, bow = 0, n = 40) {
@@ -127,9 +183,9 @@
   }
   // the logo's grammar: Logo-Blue swoosh, the ink swoosh outside it, and (CHAMPION) a club-colour third
   const CRES = [
-    { s0: 40, s1: 200, gap: 10, T: 12, bow: 0, cls: "c02-cres-blue" },
-    { s0: 24, s1: 150, gap: 27, T: 8, bow: 1.5, cls: "c02-cres-ink" },
-    { s0: 18, s1: 108, gap: 40, T: 6, bow: 2, cls: "c02-cres-club" },
+    { s0: 34, s1: 212, gap: 10, T: 12, bow: 0, cls: "c02-cres-blue" },
+    { s0: 20, s1: 152, gap: 27, T: 8, bow: 1.5, cls: "c02-cres-ink" },
+    { s0: 12, s1: 108, gap: 40, T: 6, bow: 2, cls: "c02-cres-club" },
   ];
   const CRES_COUNT = { HOMA: 0, STADE: 1, PRO: 2, CHAMPION: 3, LEGEND: 2 };
   const BAND = [52, 62];
@@ -159,7 +215,7 @@
       `<stop offset="0" class="c02-s-ballhi"/><stop offset="0.55" class="c02-s-ball"/><stop offset="1" class="c02-s-balllo"/></radialGradient>`;
     // seam arcs that carry the ball's printed code and season
     d += `<path id="${id}-seam1" d="M186 104Q224 116 262 104" fill="none"/>`;
-    d += `<path id="${id}-seam2" d="M196 119Q222 127 246 120" fill="none"/>`;
+    d += `<path id="${id}-seam2" d="M180 118Q222 131 262 117" fill="none"/>`;
     // struck enamel: blurred alpha lit from the top-start, added back over the fill
     d +=
       `<filter id="${id}-strike" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">` +
@@ -241,9 +297,12 @@
       const sEnd = Math.min(g.sTip - 6, legend ? 392 : 1e9);
       const lanes = legend ? [-1, 1] : [-1, 0, 1];
       lanes.forEach((k) => {
-        const a = at(LANE_S0, (k * g.w(LANE_S0)) / 4);
-        const b = at(sEnd, (k * g.w(sEnd)) / 4);
-        out += `<path d="M${P(a)}L${P(b)}" class="c02-lane c02-lane-${tier.toLowerCase()}" pathLength="1"${tier === "HOMA" ? ` filter="url(#${id}-chalk)"` : ""}/>`;
+        const pts = [];
+        for (let i = 0; i <= 12; i++) {
+          const s = LANE_S0 + ((sEnd - LANE_S0) * i) / 12;
+          pts.push(at(s, (k * g.w(s)) / 4));
+        }
+        out += `<path d="M${pts.map(P).join("L")}" class="c02-lane c02-lane-${tier.toLowerCase()}" pathLength="1"${tier === "HOMA" ? ` filter="url(#${id}-chalk)"` : ""}/>`;
       });
     }
     // material details
@@ -252,14 +311,14 @@
       const s0 = 30;
       const sT = g.sTip - 3;
       const e = (s, k) => at(s, k * (g.w(s) / 2 - 2.6));
-      out += `<path d="M${P(e(s0, -1))}L${P(e(sT, -1))}L${P(at(g.sTip - 1, 0))}L${P(e(sT, 1))}L${P(e(s0, 1))}" class="c02-chalk-line" filter="url(#${id}-chalk)"/>`;
+      const side = (k) => Array.from({ length: 21 }, (_, i) => e(s0 + ((sT - s0) * i) / 20, k));
+      out += `<path d="M${side(-1).map(P).join("L")}L${P(at(g.sTip - 1, 0))}L${side(1).reverse().map(P).join("L")}" class="c02-chalk-line" filter="url(#${id}-chalk)"/>`;
     }
     if (legend) {
       // one polished leading edge, a soft fall-off on the other
-      const u0 = at(4, -g.w(4) / 2 + 1.1);
-      const u1 = at(g.sTip, -g.w(g.sTip) / 2 + 1.1);
-      out += `<path d="M${P(u0)}L${P(u1)}" class="c02-blade-edge"/>`;
-      out += `<path d="M${P(at(4, -g.w(4) / 2 + 3))}L${P(at(g.sTip, -g.w(g.sTip) / 2 + 3))}" class="c02-blade-bevel"/>`;
+      const line = (o) => "M" + Array.from({ length: 25 }, (_, i) => at(4 + ((g.sTip - 4) * i) / 24, -g.w(4 + ((g.sTip - 4) * i) / 24) / 2 + o)).map(P).join("L");
+      out += `<path d="${line(1.1)}" class="c02-blade-edge" fill="none"/>`;
+      out += `<path d="${line(3.2)}" class="c02-blade-bevel" fill="none"/>`;
     }
     out += `<path d="${path}" class="c02-trail-rim${legend ? " is-blade" : ""}" fill="none" vector-effect="non-scaling-stroke"/>`;
     out += `</g>`;
@@ -284,7 +343,7 @@
     }
     // the sample's count is not real data: say so on the object
     const t = at(278 + n * 10 + 8, 0);
-    g += `<text x="${r2(t[0])}" y="${r2(t[1])}" font-size="${ar ? 7 : 6}" text-anchor="middle" dominant-baseline="central" transform="rotate(${r2(AX_DEG - 180)} ${r2(t[0])} ${r2(t[1])})" class="${ar ? "c02-t-ar" : "c02-t-lab c02-track"} c02-example">${ar ? "مثال" : "EXEMPLE"}</text>`;
+    g += `<text x="${r2(t[0])}" y="${r2(t[1])}" font-size="${ar ? 7 : 6}" text-anchor="middle" dominant-baseline="central" transform="rotate(${r2(angAt(278 + n * 10 + 8) - 180)} ${r2(t[0])} ${r2(t[1])})" class="${ar ? "c02-t-ar" : "c02-t-lab c02-track"} c02-example">${ar ? "مثال" : "EXEMPLE"}</text>`;
     return g + `</g>`;
   }
 
@@ -345,45 +404,42 @@
     const k = opts.k || FIG_K;
     const o = opts.o || FIG_O;
     const box = opts.box || FIG;
-    const target = opts.target || [C.x, C.y];
     const fill = opts.fill || "#0C1F3D";
     const seam = opts.seam || "#1E3A66";
     const rim = opts.rim || "#9BDBFD";
-    // the raised arm, in the avatar's own units: shoulder → hand, aimed at the ball
-    const S0 = [164, 200];
-    const sc = [o[0] + S0[0] * k, o[1] + S0[1] * k];
-    let dx = target[0] - sc[0];
-    let dy = target[1] - sc[1];
-    const m = Math.hypot(dx, dy);
-    dx /= m;
-    dy /= m;
+    // the raised right arm, in the avatar's own units: from the shoulder, along the shot's chord
+    const dir = opts.dir || [-AX[0], -AX[1]];
+    const dx = dir[0];
+    const dy = dir[1];
     const px = -dy;
     const py = dx;
-    const L = 128;
+    const S0 = [160, 196];
+    const L = 112;
     const H = [S0[0] + dx * L, S0[1] + dy * L];
-    const arm =
-      `M${P([S0[0] - px * 22 - dx * 14, S0[1] - py * 22 - dy * 14])}` +
-      `L${P([H[0] - px * 11, H[1] - py * 11])}` +
-      `L${P([H[0] + px * 11, H[1] + py * 11])}` +
-      `L${P([S0[0] + px * 20 - dx * 22, S0[1] + py * 20 - dy * 22])}Z`;
-    const fist = `M${P([H[0] - px * 12 + dx * 2, H[1] - py * 12 + dy * 2])}a13 13 0 1 0 ${r2(px * 24)} ${r2(py * 24)}a13 13 0 1 0 ${r2(-px * 24)} ${r2(-py * 24)}Z`;
-    const finger = [
-      [H[0] + dx * 10 - px * 4, H[1] + dy * 10 - py * 4],
-      [H[0] + dx * 34 - px * 4, H[1] + dy * 34 - py * 4],
-    ];
-    const armG = (f, st = "") =>
-      `<g transform="translate(${r2(o[0])} ${r2(o[1])}) scale(${r2(k)})"${st}>` +
-      `<path d="${arm}" fill="${f}"/><path d="${fist}" fill="${f}"/>` +
-      `<path d="M${P(finger[0])}L${P(finger[1])}" stroke="${f}" stroke-width="9" stroke-linecap="round"/></g>`;
+    // sleeve: wide at the shoulder (tucked into the torso), narrowing to the cuff
+    const sleeve = poly([
+      [S0[0] - px * 30 - dx * 18, S0[1] - py * 30 - dy * 18],
+      [H[0] - px * 14, H[1] - py * 14],
+      [H[0] + px * 14, H[1] + py * 14],
+      [S0[0] + px * 26 - dx * 30, S0[1] + py * 26 - dy * 30],
+    ]);
+    const fc = [H[0] + dx * 12, H[1] + dy * 12];
+    const fist = `M${P([fc[0] - 15, fc[1]])}a15 15 0 1 0 30 0a15 15 0 1 0 -30 0Z`;
+    const f0 = [fc[0] + dx * 8 - px * 6, fc[1] + dy * 8 - py * 6];
+    const f1 = [fc[0] + dx * 36 - px * 6, fc[1] + dy * 36 - py * 6];
+    const cuff = `M${P([H[0] - px * 14, H[1] - py * 14])}L${P([H[0] + px * 14, H[1] + py * 14])}`;
     const sw = r2(2 / k);
-    // rim light: the whole figure stroked in sky, then the figure on top
+    const T = `translate(${r2(o[0])} ${r2(o[1])}) scale(${r2(k)})`;
+    // rim light: the whole figure stroked in sky behind, then the figure on top
     const rimG =
       MC.avatar({ x: r2(box.x), y: r2(box.y), w: r2(box.w), h: r2(box.h), torso: rim, seam: false, stroke: rim, strokeWidth: sw }) +
-      `<g transform="translate(${r2(o[0])} ${r2(o[1])}) scale(${r2(k)})" stroke="${rim}" stroke-width="${sw}" stroke-linejoin="round">` +
-      `<path d="${arm}" fill="${rim}"/><path d="${fist}" fill="${rim}"/>` +
-      `<path d="M${P(finger[0])}L${P(finger[1])}" stroke-width="${r2(9 + 2 * sw)}" stroke-linecap="round"/></g>`;
+      `<g transform="${T}" fill="${rim}" stroke="${rim}" stroke-width="${sw}" stroke-linejoin="round">` +
+      `<path d="${sleeve}"/><path d="${fist}"/><path d="M${P(f0)}L${P(f1)}" stroke-width="${r2(11 + 2 * sw)}" stroke-linecap="round"/></g>`;
     const body = MC.avatar({ x: r2(box.x), y: r2(box.y), w: r2(box.w), h: r2(box.h), torso: fill, seam });
-    return `<g class="c02-fig"${opts.clip ? ` clip-path="url(#${opts.clip})"` : ""}>${rimG}${armG(fill)}${body}</g>`;
+    const armG =
+      `<g transform="${T}"><path d="${sleeve}" fill="${fill}"/><path d="${cuff}" stroke="${seam}" stroke-width="5" transform="translate(${r2(-dx * 8)} ${r2(-dy * 8)})"/>` +
+      `<path d="${fist}" fill="${fill}"/><path d="M${P(f0)}L${P(f1)}" stroke="${fill}" stroke-width="11" stroke-linecap="round"/></g>`;
+    return `<g class="c02-fig"${opts.clip ? ` clip-path="url(#${opts.clip})"` : ""}>${rimG}${body}${armG}</g>`;
   }
 
   /* ---------- the words on the trail ---------- */
@@ -539,7 +595,7 @@
      Compact (44–80px): nominal 80 → 80×35, units are half-pixels (viewBox height 70).
      Mini (24–32px): the spec's 32×18 sits at the 28px slot, units are quarter-pixels (height 72). */
   const TK = { H: 70, ball: { x: 125, y: 35, r: 34 }, head: 32, ua: -118, uc: [50, 3], tip: [2, 55], tipW: 3, lc: [52, 70], la: 112, num: [62, 50], fs: 36 };
-  const MN = { H: 72, ball: { x: 92, y: 36, r: 28 }, head: 36, ua: -100, uc: [24, 4], tip: [1, 54], tipW: 4, lc: [30, 73], la: 100, num: [41, 52], fs: 42 };
+  const MN = { H: 76, ball: { x: 101, y: 48, r: 26 }, head: 25, ua: -128, uc: [34, 25], tip: [1, 61], tipW: 4, lc: [40, 77], la: 112, num: [49, 56.5], fs: 40 };
   const qpt = (a, c, b, t) => {
     const u = 1 - t;
     return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]];
@@ -577,6 +633,14 @@
     const A = [];
     const B = [];
     const { a, c, b } = f.upper;
+    // start where the whole swoosh stays inside the token's box
+    for (let i = 0; i < 40; i++) {
+      const p = qpt(a, c, b, t0);
+      const d = qdr(a, c, b, t0);
+      const mm = Math.hypot(d[0], d[1]) || 1;
+      if (p[1] + (d[0] / mm) * (gap + T) >= 0.6) break;
+      t0 += 0.01;
+    }
     for (let i = 0; i <= n; i++) {
       const tt = i / n;
       const t = t0 + (t1 - t0) * tt;
@@ -647,14 +711,14 @@
     const n = CRES_COUNT[tier];
     const spec = mini
       ? [
-          { t0: 0.16, t1: 0.86, gap: 4.5, T: 6.5 },
-          { t0: 0.1, t1: 0.66, gap: 14, T: 5.5 },
-          { t0: 0.06, t1: 0.46, gap: 22.5, T: 4.6 },
+          { t0: 0.04, t1: 0.88, gap: 4, T: 6.4 },
+          { t0: 0.04, t1: 0.72, gap: 14, T: 5.4 },
+          { t0: 0.04, t1: 0.58, gap: 23, T: 4.6 },
         ]
       : [
-          { t0: 0.12, t1: 0.86, gap: 3.6, T: 5.6 },
-          { t0: 0.08, t1: 0.66, gap: 11.4, T: 4.4 },
-          { t0: 0.05, t1: 0.46, gap: 18.2, T: 3.6 },
+          { t0: 0.06, t1: 0.86, gap: 3.6, T: 5.6 },
+          { t0: 0.06, t1: 0.7, gap: 11.6, T: 4.6 },
+          { t0: 0.06, t1: 0.56, gap: 18.8, T: 3.8 },
         ];
     const cls = ["c02-cres-blue", "c02-cres-ink", "c02-cres-club"];
     for (let i = n - 1; i >= 0; i--) {
@@ -674,7 +738,7 @@
     g += numText(p.ovr, f.b.x - (T.ball.x - T.num[0]), T.num[1], fs, legend ? "c02-ovr is-ink" : tier === "HOMA" ? "c02-ovr is-chalk" : "c02-ovr");
     g += tokenBall(id, p, tier, f.b, mini);
     // nominal size → px: compact 80 → 80×35; mini 28 → 32×18
-    const pxPerU = mini ? size / 28 / 4 : size / 80 / 2;
+    const pxPerU = mini ? size / 28 / 4 : size / 80 / 2; // mini 28 → 32×19, compact 80 → 80×35
     const w = r2(f.W * pxPerU);
     const h = r2(T.H * pxPerU);
     return (
@@ -706,44 +770,47 @@
     const id = MC.uid(PFX);
     const tier = p.tier;
     const g = tier === "LEGEND" ? G_LEG : G_BASE;
-    // the card's comet, scaled so the ball is about 150px across, placed to rise across the frame
-    const k = 1.1;
-    const B = [262, 172];
-    const tr = `translate(${B[0]} ${B[1]}) scale(${k}) translate(${-C.x} ${-C.y})`;
-    const toShare = (q) => [B[0] + (q[0] - C.x) * k, B[1] + (q[1] - C.y) * k];
-    const HZ = 470;
+    // the card itself, scaled 1.2 and set into the frame: its bottom edge becomes the touchline
+    const k = 1.2;
+    const OX = -2;
+    const OY = 40;
+    const TOUCH = OY + VB.h * k;
+    const HZ = 446;
     let stripes = "";
-    for (let i = -8; i <= 8; i++) {
+    for (let i = -9; i <= 9; i++) {
       if (i % 2 === 0) continue;
-      const x0 = 180 + i * 30;
-      const x1 = x0 + 30;
-      const top = (x) => 180 + (x - 180) * 0.34;
-      const bot = (x) => 180 + (x - 180) * 1.5;
+      const x0 = 180 + i * 28;
+      const x1 = x0 + 28;
+      const top = (x) => 180 + (x - 180) * 0.36;
+      const bot = (x) => 180 + (x - 180) * 1.7;
       stripes += `<path d="M${r2(top(x0))} ${HZ}L${r2(top(x1))} ${HZ}L${r2(bot(x1))} 640L${r2(bot(x0))} 640Z"/>`;
     }
     const extra =
       `<clipPath id="${id}-ctrail"><path d="${trailPath(g)}"/></clipPath>` +
-      `<linearGradient id="${id}-gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#062550"/><stop offset="0.6" stop-color="#001C49"/><stop offset="1" stop-color="#00102B"/></linearGradient>`;
+      `<linearGradient id="${id}-gsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#05224D"/><stop offset="0.65" stop-color="#001C49"/><stop offset="1" stop-color="#001634"/></linearGradient>`;
     let svg = defs(id, tier, extra);
     svg += `<rect width="360" height="640" fill="url(#${id}-gsky)"/>`;
-    // two flat floodlight halos at the top: discs, no glow
+    // two floodlights: lamp banks with flat halos, no glow
     [
-      [300, 58, 1],
-      [196, 34, 0.8],
+      [186, 30, 0.85],
+      [318, 22, 1],
     ].forEach(([x, y, s]) => {
-      svg += `<circle cx="${x}" cy="${y}" r="${r2(54 * s)}" fill="#9BDBFD" fill-opacity="0.06"/><circle cx="${x}" cy="${y}" r="${r2(30 * s)}" fill="#9BDBFD" fill-opacity="0.08"/><circle cx="${x}" cy="${y}" r="${r2(9 * s)}" fill="#EAF6FF" fill-opacity="0.9"/>`;
+      svg += `<circle cx="${x}" cy="${y}" r="${r2(58 * s)}" fill="#9BDBFD" fill-opacity="0.05"/><circle cx="${x}" cy="${y}" r="${r2(34 * s)}" fill="#9BDBFD" fill-opacity="0.07"/>`;
+      const w = 30 * s;
+      const h = 14 * s;
+      svg += `<rect x="${r2(x - w / 2)}" y="${r2(y - h / 2)}" width="${r2(w)}" height="${r2(h)}" rx="${r2(2.5 * s)}" fill="#0C3164"/>`;
+      for (let i = 0; i < 4; i++)
+        for (let j = 0; j < 2; j++) svg += `<circle cx="${r2(x - w / 2 + (w / 4) * (i + 0.5))}" cy="${r2(y - h / 2 + (h / 2) * (j + 0.5))}" r="${r2(2.4 * s)}" fill="#EAF6FF"/>`;
     });
-    // the perspective pitch
+    // the perspective pitch, then the touchline he stands at
     svg += `<rect x="0" y="${HZ}" width="360" height="${640 - HZ}" fill="#001634"/>`;
     svg += `<g fill="hsl(214 90% 55% / .13)">${stripes}</g>`;
-    svg += `<path d="M0 ${HZ}H360" stroke="#9BDBFD" stroke-opacity="0.3" stroke-width="1"/>`;
-    // the touchline, where he stands
-    svg += `<path d="M0 556L360 548" stroke="#EAF6FF" stroke-opacity="0.5" stroke-width="2"/>`;
-    // the striker, small and solid at the bottom-start, pointing at the ball
-    const fb = { x: 74, y: 452, w: 78, h: 93.6 };
-    const fk = Math.min(fb.w / 200, fb.h / 240);
-    svg += figureLayer(id, { box: fb, k: fk, o: [fb.x + (fb.w - 200 * fk) / 2, fb.y + (fb.h - 240 * fk)], target: B, fill: "#000A1E", seam: "#0C3164", rim: "#9BDBFD" });
-    svg += `<g transform="${tr}">${comet(id, p, o, tier, { share: true })}</g>`;
+    svg += `<path d="M0 ${HZ}H360" stroke="#9BDBFD" stroke-opacity="0.28" stroke-width="1"/>`;
+    svg += `<path d="M0 ${r2(TOUCH)}H360" stroke="#EAF6FF" stroke-opacity="0.55" stroke-width="2"/>`;
+    svg += `<g transform="translate(${OX} ${OY}) scale(${k})">`;
+    svg += figureLayer(id, { clip: `${id}-cfig`, fill: "#000A1E", seam: "#0C3164" });
+    svg += comet(id, p, o, tier, { share: true });
+    svg += `</g>`;
     const yr = p.founder ? ` ·${String(p.founder).slice(-2)}` : "";
     return (
       `<div class="c02 c02-share c02--${tier.toLowerCase()}" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${esc(MC.label(p, o))}">` +

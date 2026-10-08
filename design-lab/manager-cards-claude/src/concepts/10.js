@@ -117,15 +117,6 @@
       `<feMerge><feMergeNode in="dk"/><feMergeNode in="lt"/></feMerge></filter>`
     );
   }
-  function bladePattern(id, k, shift) {
-    const dark = "M1 6.6l.5-3M4.3 6.9l-.3-3.3M7 6.3l.6-2.8M2.4 3.2l-.4-2.6M8.2 2.9l.3-2.4M5.6 2.4l-.5-2.2";
-    const lite = "M1.9 6.2l.4-2.4M6 6.5l.2-2.2M3.6 2.6l.3-2.2M.4 2.4l.2-1.8";
-    return (
-      `<pattern id="${id}" patternUnits="userSpaceOnUse" x="${shift}" y="${f(shift * 0.6)}" width="${f(9 * k)}" height="${f(7 * k)}">` +
-      `<g transform="scale(${k})" stroke-linecap="round" fill="none"><path d="${dark}" stroke="#0A1C33" stroke-width=".6"/><path d="${lite}" stroke="#FFFFFF" stroke-width=".5"/></g></pattern>`
-    );
-  }
-
   /* ================= full card ================= */
   const VB = [420, 240];
   const PANEL = { x: 30, y: 30, w: 360, h: 180 };
@@ -256,37 +247,25 @@
   }
 
   /**
-   * The figure, built from the shared avatar.
-   * "high": the card's high rear camera. Hood, shoulders, folded-arm elbows at the widest point,
-   *   then the body tapers to the feet at `at`, so the figure flows into its own shadows.
-   * "rear": the share's low camera behind. The rear view as drawn, its hem fading into the turf.
+   * The figure: the shared rear view, dressed in the club's bench jacket (the club colour,
+   * its light trim on the hood seams), rim-lit by the lamps on its upper edges. It stands on
+   * the feet point `at`, and its hem fades into the shadows it casts.
    */
-  function figure(u, at, w, h, rimW, mode = "high") {
+  function figure(u, at, w, h, rimW, club) {
     const [cx, fy] = at;
-    const solid = { torso: C.figure, seam: C.seam, collar: C.figure, neck: C.figure, skin: C.figure, hair: C.figure };
-    const rimAv = (box) => MC.avatar({ ...box, torso: "#FFFFFF", seam: false, stroke: "#FFFFFF", strokeWidth: f((rimW * 2 * 200) / w) });
-    let s = "", shape = "";
-    if (mode === "high") {
-      // foreshortened: shoulders 4u above the feet, elbows level with them, feet 12u below
-      const box = { x: cx - w / 2, y: fy - 4 - 0.73 * h, w, h, preserve: "none" };
-      const ey = fy, ex = w * 0.4, er = w * 0.14;
-      const body = `<path d="M${f(cx - w * 0.36)} ${f(fy - 4)}L${f(cx + w * 0.36)} ${f(fy - 4)}L${f(cx + w * 0.1)} ${f(fy + 12)}L${f(cx - w * 0.1)} ${f(fy + 12)}Z"/>`;
-      const elbows = `<ellipse cx="${f(cx - ex)}" cy="${f(ey)}" rx="${f(er * 1.15)}" ry="${f(er)}"/><ellipse cx="${f(cx + ex)}" cy="${f(ey)}" rx="${f(er * 1.15)}" ry="${f(er)}"/>`;
-      // everything below the elbows tapers into the feet
-      s += `<clipPath id="${u}-fc"><path d="M${f(cx - w)} ${f(box.y - 4)}H${f(cx + w)}V${f(ey + er * 0.3)}L${f(cx + w * 0.1)} ${f(fy + 12)}H${f(cx - w * 0.1)}L${f(cx - w)} ${f(ey + er * 0.3)}Z"/></clipPath>`;
-      s += `<g clip-path="url(#${u}-fc)">`;
-      // the rim lights the top edges only: below the elbows the figure runs into its shadows
-      s += `<clipPath id="${u}-rc"><rect x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(ey - er * 0.15 - box.y + 4)}"/></clipPath>`;
-      s += `<g opacity=".78" clip-path="url(#${u}-rc)"><g fill="#FFFFFF" stroke="#FFFFFF" stroke-width="${f(rimW * 2)}" stroke-linejoin="round">${elbows}${body}</g>${rimAv(box)}</g>`;
-      s += `<g fill="${C.figure}">${body}${elbows}</g>`;
-      s += MC.avatar({ ...box, ...solid });
-      return s + `</g>`;
-    }
+    const jacket = (club && club.primary) || C.figure;
+    const trim = (club && club.secondary) || C.seam;
     const box = { x: cx - w / 2, y: fy + h * 0.12 - h, w, h, preserve: "none" };
-    s += `<linearGradient id="${u}-hemg" gradientUnits="userSpaceOnUse" x1="0" y1="${f(box.y)}" x2="0" y2="${f(box.y + h)}"><stop offset=".8" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+    let s = `<linearGradient id="${u}-hemg" gradientUnits="userSpaceOnUse" x1="0" y1="${f(box.y)}" x2="0" y2="${f(box.y + h)}"><stop offset=".88" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
     s += `<mask id="${u}-hem" maskUnits="userSpaceOnUse" x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(h + 8)}"><rect x="${f(cx - w)}" y="${f(box.y - 4)}" width="${f(w * 2)}" height="${f(h + 8)}" fill="url(#${u}-hemg)"/></mask>`;
-    s += `<g mask="url(#${u}-hem)"><g opacity=".85">${rimAv(box)}</g>${MC.avatar({ ...box, ...solid })}</g>`;
-    return s + shape;
+    s += `<g mask="url(#${u}-hem)">`;
+    s += `<g opacity=".85">${MC.avatar({ ...box, torso: "#FFFFFF", seam: false, stroke: "#FFFFFF", strokeWidth: f((rimW * 2 * 200) / w) })}</g>`;
+    s += MC.avatar({ ...box, torso: jacket, seam: trim, collar: jacket });
+    // a little night in the jacket toward the hem, so it settles into the shadows
+    s += `<rect x="${f(box.x)}" y="${f(box.y + h * 0.7)}" width="${f(w)}" height="${f(h * 0.3)}" fill="url(#${u}-hemd)"/>`;
+    s += `</g>`;
+    s += `<linearGradient id="${u}-hemd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.night}" stop-opacity="0"/><stop offset="1" stop-color="${C.night}" stop-opacity=".55"/></linearGradient>`;
+    return s;
   }
 
   function full(p, o = {}) {
@@ -302,7 +281,7 @@
 
     let defs = gr.d + pools.d;
     defs += `<clipPath id="${u}-clip"><rect x="30" y="30" width="360" height="180" rx="2"/></clipPath>`;
-    defs += `<filter id="${u}-soft" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3"/></filter>`;
+    defs += `<filter id="${u}-soft" color-interpolation-filters="sRGB" x="-10%" y="-10%" width="120%" height="120%"><feGaussianBlur stdDeviation="3"/></filter>`;
     defs += `<mask id="${u}-lit" maskUnits="userSpaceOnUse" x="20" y="20" width="380" height="200"><rect x="40" y="41" width="340" height="158" rx="6" fill="#fff" filter="url(#${u}-soft)"/></mask>`;
     defs += `<radialGradient id="${u}-vig" gradientUnits="userSpaceOnUse" cx="${F[0]}" cy="${F[1]}" r="215"><stop offset=".42" stop-color="${C.night}" stop-opacity="0"/><stop offset="1" stop-color="${C.night}" stop-opacity="${T.vig}"/></radialGradient>`;
     defs += `<linearGradient id="${u}-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>`;
@@ -311,8 +290,8 @@
     defs += `<radialGradient id="${u}-bloomL"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".7"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient>`;
     defs += `<radialGradient id="${u}-bloomS"><stop offset="0" stop-color="${C.sodium}" stop-opacity=".55"/><stop offset="1" stop-color="${C.sodium}" stop-opacity="0"/></radialGradient>`;
     defs += `<radialGradient id="${u}-bloomF"><stop offset="0" stop-color="${C.first}" stop-opacity=".8"/><stop offset="1" stop-color="${C.first}" stop-opacity="0"/></radialGradient>`;
-    defs += `<filter id="${u}-pen" filterUnits="userSpaceOnUse" x="40" y="20" width="340" height="200"><feGaussianBlur stdDeviation="${SOFT.blur}"/></filter>`;
-    defs += `<filter id="${u}-contact" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="2.4"/></filter>`;
+    defs += `<filter id="${u}-pen" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" x="40" y="20" width="340" height="200"><feGaussianBlur stdDeviation="${SOFT.blur}"/></filter>`;
+    defs += `<filter id="${u}-contact" color-interpolation-filters="sRGB" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="2.4"/></filter>`;
     if (!thumb) defs += `<filter id="${u}-paint" x="-4%" y="-20%" width="108%" height="140%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.3 0.55" numOctaves="2" seed="11" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale=".55" xChannelSelector="R" yChannelSelector="G"/></filter>`;
 
     // the four shadows: shadow toward corner c is cast by the lamp opposite it
@@ -335,7 +314,7 @@
     // founder: a fifth, short, razor-sharp shadow straight up, cast by the fifth lamp
     let fifthSh = "";
     if (p.founder) {
-      const d = thumb ? closedPath(wedgeLoop(50, 7, 3)) : personPath(50, 0.66);
+      const d = thumb ? closedPath(wedgeLoop(52, 7, 3)) : personPath(52, 0.68);
       fifthSh = `<g class="c10-cast c10-first c10-k5"><path d="${d}" fill-rule="evenodd" fill="${T.crisp.fill}" opacity="${Math.max(0.84, T.crisp.op)}" transform="translate(${F[0]} ${F[1]}) rotate(-90)"/></g>`;
     }
 
@@ -389,7 +368,7 @@
       `<g class="c10-turf" mask="url(#${u}-lit)">${gr.g}${pools.g}<rect x="30" y="30" width="360" height="180" fill="url(#${u}-vig)"/><g class="c10-paint">${paint}</g></g>` +
       `<g class="c10-shadows" style="mix-blend-mode:multiply">${sh}${fifthSh}</g>` +
       `<ellipse cx="${F[0]}" cy="${F[1] + 2}" rx="24" ry="8" fill="#06142B" opacity=".5" filter="url(#${u}-contact)"/>` +
-      figure(u, F, 42, 36, 0.85, "high") +
+      figure(u, F, 44, 53, 0.85, p.club) +
       `<g style="mix-blend-mode:screen">${blooms}</g>` +
       lettering +
       `</g>` +
@@ -564,8 +543,8 @@
     d += `<radialGradient id="${u}-vig" gradientUnits="userSpaceOnUse" cx="180" cy="360" r="330"><stop offset=".38" stop-color="${C.night}" stop-opacity="0"/><stop offset=".86" stop-color="${C.night}" stop-opacity="${f(T.vig + 0.25)}"/><stop offset="1" stop-color="${C.night}" stop-opacity=".95"/></radialGradient>`;
     d += `<linearGradient id="${u}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.deep}"/><stop offset=".75" stop-color="${C.night}"/><stop offset="1" stop-color="#16294A"/></linearGradient>`;
     d += `<linearGradient id="${u}-near" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.night}" stop-opacity="0"/><stop offset="1" stop-color="${C.night}" stop-opacity=".85"/></linearGradient>`;
-    d += `<filter id="${u}-pen" filterUnits="userSpaceOnUse" x="0" y="150" width="360" height="400"><feGaussianBlur stdDeviation="${SOFT.blur * 1.2}"/></filter>`;
-    d += `<filter id="${u}-contact" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>`;
+    d += `<filter id="${u}-pen" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" x="0" y="150" width="360" height="400"><feGaussianBlur stdDeviation="${SOFT.blur * 1.2}"/></filter>`;
+    d += `<filter id="${u}-contact" color-interpolation-filters="sRGB" x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>`;
     d += `<linearGradient id="${u}-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>`;
     d += `<linearGradient id="${u}-steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3BCC5"/><stop offset=".5" stop-color="${C.steel}"/><stop offset="1" stop-color="#7A848E"/></linearGradient>`;
     d += `<radialGradient id="${u}-lamp" cx=".5" cy=".45" r=".65"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".6" stop-color="${C.lens}"/><stop offset="1" stop-color="#B9CCDA"/></radialGradient>`;
@@ -626,7 +605,7 @@
       ovr +
       `<g style="mix-blend-mode:multiply">${sh}</g>` +
       `<ellipse cx="${Fs[0]}" cy="${Fs[1] + 2}" rx="40" ry="9" fill="#06142B" opacity=".5" filter="url(#${u}-contact)"/>` +
-      figure(u, Fs, 92, 110, 1.6, "rear") +
+      figure(u, Fs, 92, 110, 1.6, p.club) +
       towers +
       `<g style="mix-blend-mode:screen">${blooms}</g>` +
       `<rect x="0" y="${f(nearY)}" width="360" height="${f(640 - nearY)}" fill="${C.night}"/>` +
@@ -649,14 +628,13 @@
   }
 
   /* ================= interaction ================= */
-  // Drag swings the four lights up to 10 degrees: the four shadows pivot around the feet, the
+  // Drag swings the four lights up to 8 degrees: the four shadows pivot around the feet, the
   // founder's shadow alone stays put. Tap a lamp plate to light it and read what its stat means.
   function mount(el, o = {}) {
     if (!el || !el.classList || !el.classList.contains("c10--card") || el.dataset.c10Mounted) return;
     el.dataset.c10Mounted = "1";
     const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
     const S = MC.s(o);
-    const ar = MC.isAr(o);
     const swings = el.querySelectorAll(".c10-swing");
     const slides = el.querySelectorAll(".c10-slide");
     let target = 0, cur = 0, raf = 0, startX = null, base = 0, moved = false;
@@ -667,7 +645,7 @@
       raf = Math.abs(target - cur) > 0.02 ? requestAnimationFrame(apply) : 0;
     };
     const go = (deg) => {
-      target = Math.max(-10, Math.min(10, deg));
+      target = Math.max(-8, Math.min(8, deg));
       if (!raf) raf = requestAnimationFrame(apply);
     };
     if (!reduce) {
@@ -680,7 +658,7 @@
         if (startX == null) return;
         const dx = e.clientX - startX;
         if (Math.abs(dx) > 4) moved = true;
-        go(base + (dx / el.getBoundingClientRect().width) * 40 * (ar ? 1 : 1));
+        go(base + (dx / el.getBoundingClientRect().width) * 32);
       });
       const end = () => {
         startX = null;

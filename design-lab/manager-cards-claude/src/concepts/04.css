@@ -214,24 +214,26 @@
   inset-inline-start: 24px;
   width: 118px;
 }
+/* the plate that made the print, lying beside the bib under one hard light */
 .c04-share .c04-sh-plate {
   position: absolute;
-  top: 404px;
-  inset-inline-end: 14px;
-  width: 214px;
+  top: 438px;
+  inset-inline-end: -8px;
+  width: 204px;
   container-type: inline-size;
-  transform: rotate(-7deg);
+  transform: rotate(-8deg);
   filter: drop-shadow(5px 9px 2px rgba(0, 0, 0, 0.5));
 }
 .c04-share[dir="rtl"] .c04-sh-plate {
-  transform: rotate(7deg);
+  transform: rotate(8deg);
+  filter: drop-shadow(-5px 9px 2px rgba(0, 0, 0, 0.5));
 }
 .c04-share .c04-sh-meta {
   position: absolute;
   bottom: 116px;
   inset-inline-start: 24px;
   display: grid;
-  gap: 6px;
+  gap: 4px;
   justify-items: start;
 }
 .c04-share .c04-sh-meta b {
@@ -243,6 +245,15 @@
 .c04-share .c04-sh-meta b span {
   font-weight: 700;
   color: #c9d4e6;
+}
+.c04-share .c04-sh-tier {
+  margin-top: 2px;
+  font: 800 11px/1.2 "Manrope", sans-serif;
+  letter-spacing: 0.12em;
+}
+.c04-share[dir="rtl"] .c04-sh-tier {
+  font: 700 12.5px/1.4 "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0;
 }
 .c04-share .c04-sh-line {
   display: flex;

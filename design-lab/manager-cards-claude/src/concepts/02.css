@@ -575,7 +575,7 @@
 .c02 .c02-sh-foot {
   position: absolute;
   inset-inline: 22px;
-  bottom: 34px;
+  bottom: 60px;
   display: flex;
   align-items: baseline;
   gap: 12px;
