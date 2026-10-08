@@ -108,7 +108,7 @@ The controller measures rather than assumes:
 - project identity, ownership, region, and `ACTIVE_HEALTHY`;
 - latest completed daily backup;
 - WAL-G enabled;
-- PITR as `ENABLED` or `DISABLED_ACCEPTED`;
+- PITR `ENABLED` (an explicit `true` from the Management API);
 - zero Edge Functions and zero cron jobs;
 - football and news ingestion run state;
 - notification fan-out and schedule state;
@@ -122,8 +122,19 @@ The controller measures rather than assumes:
 - 112/112 canonical tables with RLS enabled and forced.
 
 An unavailable WAL-G, worker, schedule, bootstrap-audit, conflict, or manifest
-source is `UNVERIFIED` and blocks mutation. PITR may remain disabled when the
-daily backup and WAL-G checks pass; the report labels that state honestly.
+source is `UNVERIFIED` and blocks mutation. So does point-in-time recovery that
+is disabled (`PITR_DISABLED`) or not reported as an explicit `true`
+(`PITR_STATE_UNVERIFIED`).
+
+Until 2026-10-08 this gate accepted disabled PITR as `DISABLED_ACCEPTED`. That
+contradicted the recovery gate in
+[PRODUCTION_V2_ADMIN_ACTIVATION_RUNBOOK.md](../backend/PRODUCTION_V2_ADMIN_ACTIVATION_RUNBOOK.md)
+("PITR state is unknown … stop. Do not promote migrations"), and the
+production-readiness audit (P1-03) required disabled or unverifiable PITR to
+fail. The migration promoter
+(`scripts/backend/phase7e-production-migration-promoter.py`) and the read-only
+preflight workflow (`phase7e-production-admin-preflight.yml`) apply the same
+rule.
 
 ## Approved smoke identities
 
