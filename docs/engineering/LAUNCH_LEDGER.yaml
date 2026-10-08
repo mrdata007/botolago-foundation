@@ -4885,12 +4885,17 @@ tasks:
     area: fantasy
     severity: P2
     owner: Chief
-    state: BLOCKED # design sent to the owner 2026-10-08; waiting on decisions D1-D20 and the Codex/production questions
+    state: RUNNING # built (PR #381, draft, CI green); installed on production 2026-10-08 switched off; waiting on calibration and rules v1
     depends_on: []
     plan: docs/backend/MANAGER_CARD_DOMAIN_PLAN.md
     brief: docs/engineering/tasks/BG-0158/engineering-brief.yaml
     evidence:
-      - "design only: repository facts checked against origin/main 3f9c57fc on 2026-10-08; no staging or production read"
+      - "design: repository facts checked against origin/main 3f9c57fc on 2026-10-08; owner answered yes to D1-D20 the same day"
+      - "five migrations 20261008123000-123400, built by Sonnet lanes and reviewed; CI backend-quality green on 10b3bd7 (run 37782701338): full pgTAP suite incl. manager_card.test.sql (149 checks), db lint, generated types"
+      - "calculation matches an independent Python reference row for row; a second run changes nothing; ~5.5 s per evaluation at 4,003 teams / gameweek 4 locally"
+      - "production 2026-10-08: owner ran apply-20261008123000-manager-card.sql in the SQL Editor; rehearsal passed, commit applied, Fantasy tick paused and restored; ships off with no rules (docs/production/APPLIED_2026_10_08_MANAGER_CARD.md); session read-back pending (connector signed out)"
     remaining:
-      - "owner: answer D1-D20 in the plan's section 2"
-      - "owner: is there unpushed Codex work on the card; are 20261005130000 and 20261006143700 on production"
+      - "session: read-only check of production once the Supabase connector is reconnected"
+      - "owner: aggregate-only production read for calibration, then rules v1 by reviewed script"
+      - "owner: founder cut-off and grant; switches on once the card screens exist"
+      - "owner: review and merge PR #381"
