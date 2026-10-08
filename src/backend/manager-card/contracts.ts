@@ -90,7 +90,9 @@ export const momentSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("tier_changed"),
-    key: z.string().startsWith("tier_changed:"),
+    // `startsWith("tier_changed:")`, narrowed to the four tiers a card can rise to: HOMA is where a
+    // card starts, so it is never a change (the backend's moment_key check says the same).
+    key: z.string().regex(/^tier_changed:(stade|pro|champion|legend)$/),
     occurredAt: iso,
     tier,
     previousTier: tier.nullable(),

@@ -281,9 +281,17 @@ export const MANAGER_CARD_ENABLED: boolean = false;
  * Development preview of Gradins: `VITE_MANAGER_CARD_PREVIEW=1` on a development
  * server only. `import.meta.env.DEV` is replaced by `false` in a production
  * build, so this is `false` there and every branch it guards is removed.
+ *
+ * The `typeof` guard is for code that imports this module outside Vite: the
+ * Playwright runner (Node) loads it from `tests/e2e/pronostics.e2e.ts`, where
+ * `import.meta.env` is undefined and reading `.DEV` would throw. In a build Vite
+ * replaces `import.meta.env` with an object, so the guard folds to `true` and
+ * the whole expression to `false`.
  */
 export const MANAGER_CARD_PREVIEW: boolean =
-  import.meta.env.DEV === true && import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1";
+  typeof import.meta.env !== "undefined" &&
+  import.meta.env.DEV === true &&
+  import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1";
 
 /** The build lets Gradins exist; the database status decides whether it shows. */
 export const MANAGER_CARD_BUILD: boolean = MANAGER_CARD_ENABLED || MANAGER_CARD_PREVIEW;

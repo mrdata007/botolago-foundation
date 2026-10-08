@@ -21,7 +21,7 @@ export function GradinsHome(): JSX.Element {
     <FantasyFrame bottomNav topBar="always">
       <UiPageTitle title={copy.nav} />
       <div className="flex justify-center px-4 py-6">
-        <ManagerCard profile={profile} width={240} testId="gradins-stage" />
+        <ManagerCard profile={profile} width={240} testId="gradins-stage" sway />
       </div>
     </FantasyFrame>
   );
