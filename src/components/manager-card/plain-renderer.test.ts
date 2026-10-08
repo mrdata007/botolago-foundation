@@ -3,8 +3,8 @@ import { describe, expect, it } from "bun:test";
 import { FIXTURES } from "@/backend/manager-card/fixtures";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 
-import { activeRenderer } from "./active-renderer";
 import { cardStrings, type Translate } from "./copy";
+import { activeRenderer } from "./active-renderer";
 import { ALLOWED_CARD_TAGS, findUnsafeMarkup } from "./markup-safety";
 import { esc, plainRenderer } from "./plain-renderer";
 import { fromMember, fromMyCard } from "./to-profile";
