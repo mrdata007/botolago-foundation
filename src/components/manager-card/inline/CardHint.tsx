@@ -64,7 +64,7 @@ export function CardHint({ kind, className }: { kind: CardHintKind; className?: 
       action={
         <UiIconButton
           variant="ghost"
-          aria-label={t("common.close")}
+          aria-label={t("fpl.close")}
           onClick={() => setClosed(true)}
         >
           <X aria-hidden />
