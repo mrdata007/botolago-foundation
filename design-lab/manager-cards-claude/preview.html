@@ -52,6 +52,12 @@
               `</div>`,
           );
           h += section(
+            "Arabic samples",
+            `<div class="app-dark pv-ground pv-tiers" dir="rtl" lang="ar">` +
+              MC.SAMPLES.map((s) => `<figure><div class="pv-full" style="width:200px">${c.full(MC.sample(s), ar)}</div><figcaption>${MC.esc(s.name.ar)} · ${s.tier}</figcaption></figure>`).join("") +
+              `</div>`,
+          );
+          h += section(
             "Token ladder",
             `<div class="app-light pv-ground">${MC.ctxLadder(c, lat)}</div><div class="app-dark pv-ground">${MC.ctxLadder(c, lat)}</div>`,
           );

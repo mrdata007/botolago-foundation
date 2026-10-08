@@ -767,7 +767,9 @@
     const sp = span(LAY.nameY - 22), sp2 = span(LAY.nameY);
     const avail = 2 * Math.min(ax - sp[0], sp[1] - ax, ax - sp2[0], sp2[1] - ax) - 2 * RIMIN - 48;
     const em = emName(name, ar) + (fy ? 0.18 + 0.62 * 1.45 : 0);
-    const fs = r1(Math.min(34, avail / em));
+    // Arabic is capped lower: the two dots under a final ya (علي) hang about 0.35em below the
+    // baseline and must clear the tier tag
+    const fs = r1(Math.min(ar ? 30 : 34, avail / em));
     const ny = LAY.nameY - (ar ? 3 : 0);
     const nx = X(ax); // on the axis of the centre spot
     const yr = fy ? `<tspan class="c05v2-fy" font-size="${r1(fs * 0.62)}" fill="${P.yr}"${ar ? "" : ' direction="ltr" unicode-bidi="embed"'}>${fy}</tspan>` : "";
@@ -784,8 +786,8 @@
       const tierTxt = S.tiers[p.tier];
       const tfs = ar ? 10.5 : 8.6;
       const tw = r1((ar ? [...tierTxt].length * 0.6 * tfs : tierTxt.length * (0.7 + 0.14) * tfs) + 14);
-      const th = LAY.tagH + (ar ? 3 : 0);
-      const ty = LAY.tagY + (ar ? 3 : 0);
+      const th = LAY.tagH + (ar ? 1 : 0);
+      const ty = LAY.tagY + (ar ? 10 : 0);
       const tx = X(ax);
       s += `<g class="c05v2-tag">`;
       s += `<rect x="${r1(tx - tw / 2 + 0.7)}" y="${r1(ty + 1.1)}" width="${tw}" height="${th}" rx="3" fill="#000" opacity=".35"/>`;

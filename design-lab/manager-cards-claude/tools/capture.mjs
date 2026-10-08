@@ -1,6 +1,7 @@
 // Screenshot helper for the lab. Needs playwright-core and a Chromium.
 //   PW_CORE=/path/to/node_modules/playwright-core/index.mjs CHROME=/path/to/chrome \
 //   node tools/capture.mjs <url> <out.png> [width=1440] [--section=<data-shot>] [--el=<css selector>] [--dpr=2] [--height=900] [--viewport]
+//   [--scheme=light|dark] [--ls=lang:ar,ground:day]  (gallery settings, stored as mc-claude-<key>) [--click=<css selector>]
 // Waits for <html data-ready="1">, settles fonts, disables animation, then captures
 // the full page (default), the viewport only (--viewport), a preview section, or one element.
 const args = process.argv.slice(2);
@@ -13,15 +14,20 @@ const page = await browser.newPage({
   viewport: { width, height: Number(flag("height") || 900) },
   deviceScaleFactor: Number(flag("dpr") || 2),
   reducedMotion: "reduce",
+  colorScheme: flag("scheme") || "light",
 });
+const ls = (flag("ls") || "").split(",").filter(Boolean).map((kv) => kv.split(":"));
+if (ls.length) await page.addInitScript((pairs) => { for (const [k, v] of pairs) localStorage.setItem("mc-claude-" + k, v); }, ls);
 const errors = [];
 page.on("pageerror", (e) => errors.push(String(e)));
 page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 await page.goto(url, { waitUntil: "load" });
 await page.waitForFunction(() => document.documentElement.dataset.ready === "1", null, { timeout: 15000 }).catch(() => {});
 await page.evaluate(() => document.fonts.ready);
+await page.waitForTimeout(400); // let entrance animations (the detail dialog) finish before freezing
 await page.addStyleTag({ content: "*,*::before,*::after{animation-play-state:paused!important;transition:none!important}" });
 await page.waitForTimeout(250);
+if (flag("click")) { await page.locator(flag("click")).first().click(); await page.waitForTimeout(400); }
 const section = flag("section");
 const el = flag("el");
 if (section) await page.locator(`[data-shot="${section}"]`).first().screenshot({ path: out });

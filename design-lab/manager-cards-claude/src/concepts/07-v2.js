@@ -937,7 +937,7 @@
   }
   const LATIN = [
     { f: N8, y: F35 },
-    { f: N7, y: F34 },
+    { f: N7, y: F35 },
     { f: N6, y: F34 },
   ];
   function latinName(name, yr, inner) {
@@ -1016,7 +1016,8 @@
   }
   function arabicName(name, yr, inner) {
     const fits = (b) => bw(b.bmp) <= inner;
-    const yb = yr ? yearArt(yr, F34, true) : null;
+    // the year in 5-row figures, as in Latin; the 4-row set (whose 6 reads as a b) only as a last resort
+    const ybs = yr ? [yearArt(yr, F35, true), yearArt(yr, F34, true)] : [null];
     const tries = [];
     if (AR_NAME[name]) tries.push(() => AR_NAME[name]);
     if (AR_NAME[name + "~"]) tries.push(() => AR_NAME[name + "~"]);
@@ -1027,18 +1028,20 @@
       const tr = trim(raw.bmp);
       const nb = { bmp: tr.bmp, base: Math.max(0, raw.base - tr.top) };
       last = nb;
-      if (!yb) {
+      if (!yr) {
         if (fits(nb)) return { ...nb, rows: nb.bmp.length };
         continue;
       }
-      for (const g of [2, 1]) {
-        const j = yearInline(nb, yb, g, true);
-        if (fits(j)) return { ...j, rows: nb.bmp.length };
+      for (const yb of ybs) {
+        for (const g of [2, 1]) {
+          const j = yearInline(nb, yb, g, true);
+          if (fits(j)) return { ...j, rows: nb.bmp.length };
+        }
+        const k = yearTuck(nb, yb, true);
+        if (fits(k)) return { ...k, rows: nb.bmp.length };
       }
-      const k = yearTuck(nb, yb, true);
-      if (fits(k)) return { ...k, rows: nb.bmp.length };
     }
-    const k = yb ? yearTuck(last, yb, true) : last;
+    const k = yr ? yearTuck(last, ybs[ybs.length - 1], true) : last;
     return { ...k, rows: last.bmp.length };
   }
   /** The name with the supporter year (ALI ·26): name stitches '#', year stitches '*'. In Arabic the
