@@ -39,13 +39,13 @@ build on.
 
 ## 3. The five P1 findings
 
-| Finding                         | Baseline (Phase 3) | Evidence on `main` today                                                                                                                                                                                                                                  | Status after this branch               | Next action                                                         |
-| ------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------- |
-| P1-01 Scheduler authentication  | open               | **Confirmed.** 6 public (`verify_jwt = false`) functions call the service-role RPC `api.service_verify_scheduler_token` (SECURITY DEFINER, reads Vault, plain `=` compare) for any well-formed token, before refusing it. 2 tests asserted that call.     | **Fixed on branch**, not in production | Owner sets `BOTOLAGO_SCHEDULER_TOKEN`, then deploys the 6 functions |
-| P1-02 Staff authorization order | open               | **Confirmed** in 2 functions. `news-editorial-write` parses and sanitizes the JSON and reads the service-role HMAC secret before any role check. `player-photo-upload` buffers ~30 MB of multipart first. `news-media-upload` was already correct.        | **Fixed on branch**, not in production | Deploy the 2 functions after review                                 |
-| P1-03 PITR preflight            | open               | **Confirmed** in 3 places. The promoter records `bool(pitr_enabled)` and promotes, 7F labels it `DISABLED_ACCEPTED`, and the 7E-A workflow prints PASS unconditionally. Ledger: a production promotion passed with `pitrEnabled false` (run 35375519576). | **Fixed on branch**                    | Owner enables PITR, or migration promotion stays blocked            |
-| P1-04 RPO ≤ 5 min               | UNVERIFIED         | No PITR enabled (last evidence 2026-09-18), no restore rehearsal anywhere in the repo                                                                                                                                                                     | **UNVERIFIED**                         | Section 10                                                          |
-| P1-05 RTO ≤ 1 h                 | UNVERIFIED         | No restore has ever been timed                                                                                                                                                                                                                            | **UNVERIFIED**                         | Section 10                                                          |
+| Finding                         | Baseline (Phase 3) | Evidence on `main` today                                                                                                                                                                                                                                  | Status after this branch               | Next action                                                              |
+| ------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------ |
+| P1-01 Scheduler authentication  | open               | **Confirmed.** 6 public (`verify_jwt = false`) functions call the service-role RPC `api.service_verify_scheduler_token` (SECURITY DEFINER, reads Vault, plain `=` compare) for any well-formed token, before refusing it. 2 tests asserted that call.     | **Fixed on branch**, not in production | Owner sets `BOTOLAGO_SCHEDULER_TOKEN`, then deploys the 6 functions      |
+| P1-02 Staff authorization order | open               | **Confirmed** in 2 functions. `news-editorial-write` parses and sanitizes the JSON and reads the service-role HMAC secret before any role check. `player-photo-upload` buffers ~30 MB of multipart first. `news-media-upload` was already correct.        | **Fixed on branch**, not in production | Deploy the 2 functions after review                                      |
+| P1-03 PITR preflight            | open               | **Confirmed** in 3 places. The promoter records `bool(pitr_enabled)` and promotes, 7F labels it `DISABLED_ACCEPTED`, and the 7E-A workflow prints PASS unconditionally. Ledger: a production promotion passed with `pitrEnabled false` (run 35375519576). | **Fixed on branch**                    | Owner enables PITR, or the promoter and preflight workflows stay refused |
+| P1-04 RPO ≤ 5 min               | UNVERIFIED         | No PITR enabled (last evidence 2026-09-18), no restore rehearsal anywhere in the repo                                                                                                                                                                     | **UNVERIFIED**                         | Section 10                                                               |
+| P1-05 RTO ≤ 1 h                 | UNVERIFIED         | No restore has ever been timed                                                                                                                                                                                                                            | **UNVERIFIED**                         | Section 10                                                               |
 
 No P1 was added or downgraded.
 
@@ -83,11 +83,16 @@ achievements, any route, any API contract, any migration.
    after the token is accepted. Steps are in
    `docs/backend/EMAIL_NOTIFICATIONS.md` → "Scheduler token". When rotating,
    change both copies together.
-2. **Migration promotion is blocked until PITR is on.** Once merged, the
-   promoter refuses every batch while production reports PITR off. That is
-   the invariant asked for, and it costs money (PITR is a paid Supabase
-   add-on). If the owner decides otherwise, that is a policy reversal to make
-   explicitly, not a guard to loosen.
+2. **The promoter and preflight workflows refuse to run until PITR is on.**
+   Once merged, the 7E-B promoter, the 7F gate and the 7E-A preflight refuse
+   while production reports PITR off. That is the invariant asked for, and it
+   costs money (PITR is a paid Supabase add-on, and production's Micro compute
+   must first go to Small). If the owner decides otherwise, that is a policy
+   reversal to make explicitly, not a guard to loosen.
+   _Corrected 2026-10-08 (`release-preparation.md` §7):_ the guarded SQL-editor
+   scripts used for migrations since late September are **not** blocked, and
+   they have no automatic PITR check either. That gap is recorded in the
+   release runbook.
 
 ## 6. Tests added
 
@@ -265,7 +270,7 @@ scenario against staging behind the same one-writer guard.
 2. **Capacity UNVERIFIED** at 500 concurrent users.
 3. **Branch fixes are not in production.** P1-01 and P1-02 need review,
    merge and Edge Function deploys (P1-01 after the secret is set).
-4. PITR off **blocks migration promotion** once this branch merges (by design).
+4. With PITR off, the promoter and preflight workflows refuse once this branch merges (by design). The SQL-editor migration path has no automatic PITR check (release runbook § "Residual gap").
 
 ## 13. Exact next actions
 
@@ -292,3 +297,15 @@ scenario against staging behind the same one-writer guard.
 the branch, but not deployed. Recovery (RPO/RTO) and capacity remain
 UNVERIFIED, and PITR is off. That is not enough evidence for SHIP, and
 nothing found justifies BLOCK.
+
+## Release preparation (2026-10-08)
+
+Deployment dependencies, the Vercel finding, PITR activation, the restore
+rehearsal, capacity costs, the release runbook and the owner actions in
+dependency order are in [release-preparation.md](release-preparation.md).
+New production facts (read-only):
+
+- production compute is **Micro**, not Large;
+- all 12 Edge Functions are deployed;
+- `ai-content-generate` has no production cron job;
+- the Vault scheduler token exists.
