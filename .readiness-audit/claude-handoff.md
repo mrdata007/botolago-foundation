@@ -114,23 +114,30 @@ runs them (logs kept in the session scratchpad). Python ran under 3.13 with
 CI's pinned requirements (CI uses 3.12). The browser suites used this
 sandbox's Chromium build 1194; CI installs 1228.
 
-| Suite                                        | Phase 3                           | `main` today (measured here) | This branch                               | Result         |
-| -------------------------------------------- | --------------------------------- | ---------------------------- | ----------------------------------------- | -------------- |
-| Config integrity, migrations, secrets checks | —                                 | —                            | pass                                      | PASS           |
-| `bun install --frozen-lockfile`              | —                                 | —                            | pass (Bun 1.3.14)                         | PASS           |
-| TypeScript typecheck                         | PASS                              | —                            | pass                                      | PASS           |
-| Bun tests                                    | 5,993 pass, 17 skip               | 6,183 pass, 17 skip, 0 fail  | **6,241 pass, 17 skip, 0 fail** (+58 new) | PASS           |
-| Backend tests (`src/backend`)                | 997 pass                          | 997 pass                     | 997 pass, 0 fail                          | PASS           |
-| Python operations tests                      | 222 pass                          | —                            | **225 pass** (+3 new)                     | PASS           |
-| Application lint                             | 0 errors, 31 warnings             | 0 errors, 31 warnings        | 0 errors, 31 warnings                     | PASS           |
-| CI lint (`bun run lint`)                     | 2,168 errors (local working copy) | 0 errors                     | 0 errors; see section 8                   | PASS           |
-| Production build                             | PASS, warnings                    | —                            | pass                                      | PASS           |
-| Time-zone parity                             | —                                 | —                            | pass                                      | PASS           |
-| Browser checks (dev server)                  | 105 pass, 1 skip                  | BROWSER_MAIN                 | BROWSER_BRANCH                            | BROWSER_RESULT |
-| Pépites browser                              | 26 pass                           | —                            | PEPITES_BRANCH                            | PEPITES_RESULT |
-| Built-bundle smoke                           | 3 pass                            | —                            | SMOKE_BRANCH                              | SMOKE_RESULT   |
-| Database / pgTAP                             | UNVERIFIED                        | PASS in CI (section 9)       | not runnable here; PR CI                  | PASS (`main`)  |
-| 500 concurrent users                         | UNVERIFIED                        | —                            | not run                                   | UNVERIFIED     |
+| Suite                                        | Phase 3                           | `main` today (measured here)                                       | This branch                                                                        | Result                                          |
+| -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Config integrity, migrations, secrets checks | —                                 | —                                                                  | pass                                                                               | PASS                                            |
+| `bun install --frozen-lockfile`              | —                                 | —                                                                  | pass (Bun 1.3.14)                                                                  | PASS                                            |
+| TypeScript typecheck                         | PASS                              | —                                                                  | pass                                                                               | PASS                                            |
+| Bun tests                                    | 5,993 pass, 17 skip               | 6,183 pass, 17 skip, 0 fail                                        | **6,241 pass, 17 skip, 0 fail** (+58 new)                                          | PASS                                            |
+| Backend tests (`src/backend`)                | 997 pass                          | 997 pass                                                           | 997 pass, 0 fail                                                                   | PASS                                            |
+| Python operations tests                      | 222 pass                          | —                                                                  | **225 pass** (+3 new)                                                              | PASS                                            |
+| Application lint                             | 0 errors, 31 warnings             | 0 errors, 31 warnings                                              | 0 errors, 31 warnings                                                              | PASS                                            |
+| CI lint (`bun run lint`)                     | 2,168 errors (local working copy) | 0 errors                                                           | 0 errors; see section 8                                                            | PASS                                            |
+| Production build                             | PASS, warnings                    | —                                                                  | pass                                                                               | PASS                                            |
+| Time-zone parity                             | —                                 | —                                                                  | pass                                                                               | PASS                                            |
+| Browser checks (dev server)                  | 105 pass, 1 skip                  | dark-mode `/` first-paint test: fails 2 of 3 alone in this sandbox | 104 pass, 1 fail, 1 skip; the 1 fail is the same dark-mode test, also 2 of 3 alone | UNVERIFIED here (matches `main`); PR CI decides |
+| Pépites browser                              | 26 pass                           | —                                                                  | 26 pass                                                                            | PASS                                            |
+| Built-bundle smoke                           | 3 pass                            | —                                                                  | 3 pass                                                                             | PASS                                            |
+| Database / pgTAP                             | UNVERIFIED                        | PASS in CI (section 9)                                             | not runnable here; PR CI                                                           | PASS (`main`)                                   |
+| 500 concurrent users                         | UNVERIFIED                        | —                                                                  | not run                                                                            | UNVERIFIED                                      |
+
+The one browser failure, `dark-mode-flag.e2e.ts` "/ is dark from the first
+paint, with no hydration error", fails the same way on unchanged `main` in
+this sandbox: run alone with `--repeat-each=3`, it fails 2 of 3 on both. CI
+passed it on `main`'s tree (run 37596944962), and #378 notes it times out on a
+cold local compile. This branch changes no page code. It is not counted as a
+pass: the draft PR's CI run is the authority.
 
 The skips are tests that need an external database or service and skip
 themselves when it is absent (they are not counted as passes). One of them,
