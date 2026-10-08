@@ -159,6 +159,17 @@ export async function rootBeforeLoad({
   await ensureManagerCardStatus(context.queryClient, location.searchStr ?? "");
 }
 
+/**
+ * Whether `/gradins` and everything under it sends the visitor to Fantasy: the build switch is
+ * off, or the status the server read says off, missing or failed. Two layers, both must say yes.
+ */
+export function shouldRedirectFromGradins(
+  queryClient: QueryClient,
+  build: boolean = MANAGER_CARD_BUILD,
+): boolean {
+  return !build || !managerCardStatusFrom(queryClient).enabled;
+}
+
 /** Synchronous read for route guards: what the cache holds, else STATUS_OFF. */
 export function managerCardStatusFrom(queryClient: QueryClient): ManagerCardStatus {
   const cached = queryClient.getQueryData<ManagerCardStatus>(managerCardStatusKey);
