@@ -217,7 +217,7 @@
       `<div class="lb-matrix">${originals()
         .map((c) => {
           const cc = refinedOf(c.id) || c;
-          return `<div class="lb-line"><h3>${num(c)} ${esc(nameOf(c))}<small>${esc(catLabel(c.category))}${cc !== c ? (ar ? " · محسّنة" : " · refined") : ""}</small></h3><div style="display:grid;gap:14px">${MC.ctxLadder(cc, o)}<div class="${state.ground === "day" ? "app-light" : "app-dark"}" style="background:none">${MC.ctxSilhouette(cc, o)}</div></div><div>${cc.row(MC.ALI, { ...o, rank: 3, pts: 1196, me: true })}</div></div>`;
+          return `<div class="lb-line"><h3>${num(c)} ${esc(nameOf(c))}<small>${esc(catLabel(c.category))}${cc !== c ? (ar ? " · محسّنة" : " · refined") : ""}</small></h3><div style="display:grid;gap:14px">${MC.ctxLadder(cc, o)}<div class="${state.ground === "day" ? "app-light" : "app-dark"}" style="background:none">${MC.ctxSilhouette(cc, o)}</div></div><div class="${state.ground === "day" ? "app-light" : "app-dark"}" style="background:none">${cc.row(MC.ALI, { ...o, rank: 3, pts: 1196, me: true })}</div></div>`;
         })
         .join("")}</div>` +
       `<div class="sec"><h2>${ar ? "داخل التطبيق" : "Inside the app"}</h2><p>${
@@ -248,7 +248,7 @@
     "Tier progression",
     "Long-term brand",
   ];
-  const total = (arr) => arr.reduce((a, b) => a + b, 0);
+  const total = (arr) => Math.round(arr.reduce((a, b) => a + b, 0) * 10) / 10;
 
   function viewCritique() {
     const rv = R();
@@ -270,6 +270,9 @@
               return `<div class="super"><div style="display:grid;place-items:center;height:64px">${c ? c.token(MC.ALI, { lang: cardLang(), size: 56 }) : ""}</div><div><b>${esc(s.label)}</b><strong>${c ? num(c) + " " + esc(nameOf(c)) : esc(s.id)}</strong><p>${esc(s.why)}</p></div></div>`;
             })
             .join("")}</div>`
+        : "") +
+      (rv.top3Reasoning
+        ? `<div class="sec"><h2>${state.lang === "ar" ? "اختيار أفضل ثلاثة" : "Choosing the top three"}</h2></div><div class="prose" lang="en" dir="ltr"><p>${esc(rv.top3Reasoning)}</p></div>`
         : "") +
       (rv.critiqueNotes ? `<div class="sec"><h2>${state.lang === "ar" ? "ما وجده التقييم" : "What the critique found"}</h2></div><div class="prose" lang="en" dir="ltr">${rv.critiqueNotes}</div>` : "")
     );
