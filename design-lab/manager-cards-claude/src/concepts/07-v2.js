@@ -950,7 +950,7 @@
   }
 
   /* ---------- beats: the scarf knits itself (o.beat) ----------
-     Three optional beats, each a few rows of the scarf knitting in. They are all done with CSS only
+     Four optional beats, each a few rows of the scarf knitting in. They are all done with CSS only
      (07-v2.css, "beats"), so this section and that one are all a port needs.
 
        "make"  on birth, 700ms at most: the cast-on rows knit in from the foot, the three tacking
@@ -959,6 +959,9 @@
        "first" the first rating, 600ms at most, over an already visible number: the last counted
                gameweek's stripe (two rows, lower row first) knits in over its tacking line.
        "tick"  one more counted gameweek, 500ms at most: the new stripe knits in, as in "first".
+       "founder" the founder grant, 520ms: the cream cast-on at the foot knits in from its first row,
+               2026 stitched into those rows, then the two cable twists come in. Only the cast-on
+               moves; the 84, ALI ·26 and the patch (BOT #, season) are drawn from the first frame.
 
      How a row knits: knit() wraps the row's SVG in <g class="c07v2-kr"> with two custom properties,
      --c07v2-d (delay) and --c07v2-t (duration). CSS reveals the row stitch by stitch, from the
@@ -974,6 +977,8 @@
     make: { cast: [0, 36, 170], tack: [110, 45, 190], band: [200, 26, 190] },
     first: { stripe: [80, 110, 300] },
     tick: { stripe: [30, 90, 240] },
+    // the founder's own: the cream cast-on knits in from the foot, 2026 with it, then the cables
+    founder: { cast: [0, 64, 190] },
   };
   /** Wraps one row's SVG so it knits in at its turn; returns it unchanged when `beat` has no such
       part. `i` is the row's index in knitting order, `gap` overrides the stagger between rows. */
@@ -2058,7 +2063,7 @@
     const cols = Math.round(FW / cc);
     const h = CAST.rows * cc;
     const founder = !!p.founder;
-    const mk = beat === "make"; // the rows knit in one at a time: each carries its own texture
+    const mk = beat === "make" || beat === "founder"; // the rows knit in one at a time: each carries its own texture
     const base = founder ? P.cast : P.G;
     const x0 = X0 + dx;
     const x1 = X1 + dx;
@@ -3075,7 +3080,7 @@
       "No tier: the base scarf. Its own gauge (36 stitches), a tone-on-tone name band (a darker lot of the ground yarn, which carries the name and, with no name yet, stays an empty band of plain rib), no tier strip, no panel, no binding, and a close fringe of loose strands instead of tassels (the tassel count is the tier). No club: undyed wool. No founder: no cast-on mark and no year, as for any non-founder.",
       "k of N: one stripe per counted gameweek under the name, N slots. A knitted stripe is two rows of the stripe yarn; one still to come is a one-row tacking line (three stitches knitted, two left). Tokens carry the same marks from 44px, one pixel on a mini, and drop them at 24px if they do not fit. With a rating they stay (complete) until the counted gameweeks pass the minimum, then the season's stripes under the patch carry on.",
       "Empty fields: stats are a dash on the patch, the ID carrier reads BOT then a dash, a guest's name carrier is the empty band, the row says « en formation k/N » in place of the number and shows an empty band of rib for the name. share() prints « Provisoire » on a small sewn-on label when the rating is provisional.",
-      "Beats (o.beat, CSS only, off under reduced motion): make (birth, 650ms at most) knits the cast-on rows from the foot, runs in the tacking lines and knits the name band row by row; first (first rating, 490ms) knits the last counted stripe in over its tacking line; tick (one more gameweek, 360ms on the card, 270ms on a token) does the same. Rows are revealed stitch by stitch from the inline start, slowing at the end of the row; the number, the name's stitches, the serial and the patch never animate.",
+      "Beats (o.beat, CSS only, off under reduced motion): make (birth, 650ms at most) knits the cast-on rows from the foot, runs in the tacking lines and knits the name band row by row; first (first rating, 490ms) knits the last counted stripe in over its tacking line; tick (one more gameweek, 360ms on the card, 270ms on a token) does the same; founder (the grant, 520ms) knits the founder's cream cast-on in from its foot row, 2026 with it, then the cable twists. Rows are revealed stitch by stitch from the inline start, slowing at the end of the row; the number, the name's stitches, the serial and the patch never animate.",
     ],
     colourways: [
       { label: "Exemple", labelAr: "مثال", primary: "#0f6b67", secondary: "#efe6cf" },
@@ -3088,6 +3093,8 @@
     row,
     share,
     mount,
+    // the o.beat values this direction plays (a screen asks before it passes "founder")
+    beats: ["make", "first", "tick", "founder"],
   };
   MC.register(c);
 })();
