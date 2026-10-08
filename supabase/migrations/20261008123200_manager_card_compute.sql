@@ -212,6 +212,22 @@ begin
       null;
     end;
   end loop;
+  return current_serial;
+end;
+$$;
+
+-- Drops the calculation's temporary tables. Dynamic because they exist only at
+-- run time (the static checks cannot see them).
+create function app_private.manager_card_drop_temp()
+returns void
+language plpgsql
+volatile
+set search_path = ''
+as $$
+begin
+  execute 'drop table if exists pg_temp.mc_gws, pg_temp.mc_all, pg_temp.mc_teams, pg_temp.mc_res, pg_temp.mc_pts, '
+    'pg_temp.mc_lp, pg_temp.mc_cap, pg_temp.mc_form, pg_temp.mc_lpos, pg_temp.mc_best, pg_temp.mc_sel, '
+    'pg_temp.mc_con, pg_temp.mc_trf, pg_temp.mc_fig';
 end;
 $$;
 
@@ -243,7 +259,7 @@ declare
   mismatch_count integer;
   season_changed integer;
   history_changed integer;
-  new_card record;
+  new_user uuid;
 begin
   if p_gameweek_id is null or p_rules_version is null then
     raise exception using errcode = 'PT400', message = 'validation_failed';
@@ -294,70 +310,105 @@ begin
   fingerprint_before := app_private.manager_card_season_fingerprint(season.id);
 
   -- Evaluable gameweeks of the season up to and including this one.
+  execute pg_catalog.concat($q$
   create temp table mc_gws on commit drop as
   select g.id as gameweek_id, g.sequence_number as seq, g.deadline_at
   from app.fantasy_gameweeks g
-  where g.fantasy_season_id = season.id
-    and g.sequence_number <= gw.sequence_number
+  where g.fantasy_season_id = $1
+    and g.sequence_number <= $3
     and g.status in ('finalized', 'corrected') and g.points_state = 'final'
     and exists (
       select 1 from app_private.fantasy_gameweek_postwork work
       where work.gameweek_id = g.id and work.calculation_version = g.scoring_input_version
         and work.completed_at is not null
-    );
-  create unique index mc_gws_idx on pg_temp.mc_gws (gameweek_id);
+    )
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create unique index mc_gws_idx on pg_temp.mc_gws (gameweek_id)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- Every non-cancelled gameweek of the season (the TRF windows walk these).
+  execute pg_catalog.concat($q$
   create temp table mc_all on commit drop as
   select g.id as gameweek_id, g.sequence_number as seq
   from app.fantasy_gameweeks g
-  where g.fantasy_season_id = season.id and g.status <> 'cancelled';
-  create unique index mc_all_idx on pg_temp.mc_all (seq);
-  select max(seq) into last_seq from pg_temp.mc_all;
+  where g.fantasy_season_id = $1 and g.status <> 'cancelled'
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create unique index mc_all_idx on pg_temp.mc_all (seq)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  select max(seq)  from pg_temp.mc_all
+  $q$, '') into last_seq using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- The managers rated by this run: active teams with a final result in this
   -- gameweek whose profile is not marked for deletion.
+  execute pg_catalog.concat($q$
   create temp table mc_teams on commit drop as
   select t.id as team_id, t.user_id
   from app.fantasy_teams t
   join app.profiles p on p.id = t.user_id and p.deleted_at is null
   join app.fantasy_team_gameweek_results r
-    on r.fantasy_team_id = t.id and r.gameweek_id = gw.id and r.state = 'final'
-  where t.fantasy_season_id = season.id and t.status = 'active';
-  create unique index mc_teams_idx on pg_temp.mc_teams (team_id);
+    on r.fantasy_team_id = t.id and r.gameweek_id = $2 and r.state = 'final'
+  where t.fantasy_season_id = $1 and t.status = 'active'
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create unique index mc_teams_idx on pg_temp.mc_teams (team_id)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- Their final results in every evaluable gameweek so far.
+  execute pg_catalog.concat($q$
   create temp table mc_res on commit drop as
   select r.fantasy_team_id as team_id, r.gameweek_id, g.seq, g.deadline_at, r.final_score,
     r.starting_points, r.chip_type, r.scoring_details, l.id as lineup_id
   from pg_temp.mc_teams t
   join app.fantasy_team_gameweek_results r on r.fantasy_team_id = t.team_id and r.state = 'final'
   join pg_temp.mc_gws g on g.gameweek_id = r.gameweek_id
-  left join app.fantasy_lineups l on l.fantasy_team_id = t.team_id and l.gameweek_id = r.gameweek_id;
-  create unique index mc_res_idx on pg_temp.mc_res (team_id, gameweek_id);
-  create index mc_res_lineup_idx on pg_temp.mc_res (lineup_id);
+  left join app.fantasy_lineups l on l.fantasy_team_id = t.team_id and l.gameweek_id = r.gameweek_id
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create unique index mc_res_idx on pg_temp.mc_res (team_id, gameweek_id)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create index mc_res_lineup_idx on pg_temp.mc_res (lineup_id)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- Every player's points in those gameweeks (owned or not).
+  execute pg_catalog.concat($q$
   create temp table mc_pts on commit drop as
   select p.fantasy_player_id, p.gameweek_id, coalesce(p.final_points, 0) as pts, p.minutes_played as mins
   from app.fantasy_player_gameweek_points p
-  join pg_temp.mc_gws g on g.gameweek_id = p.gameweek_id;
-  create unique index mc_pts_idx on pg_temp.mc_pts (fantasy_player_id, gameweek_id);
+  join pg_temp.mc_gws g on g.gameweek_id = p.gameweek_id
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create unique index mc_pts_idx on pg_temp.mc_pts (fantasy_player_id, gameweek_id)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- The locked lineups of those results, with each player's week.
+  execute pg_catalog.concat($q$
   create temp table mc_lp on commit drop as
   select r.team_id, r.gameweek_id, r.lineup_id, lp.fantasy_player_id, lp.slot, lp.captain, lp.vice_captain,
     fp.position_id, coalesce(pp.pts, 0) as pts, coalesce(pp.mins, 0) as mins
   from pg_temp.mc_res r
   join app.fantasy_lineup_players lp on lp.lineup_id = r.lineup_id
   join app.fantasy_players fp on fp.id = lp.fantasy_player_id
-  left join pg_temp.mc_pts pp on pp.fantasy_player_id = lp.fantasy_player_id and pp.gameweek_id = r.gameweek_id;
-  create index mc_lp_idx on pg_temp.mc_lp (lineup_id);
-  analyze pg_temp.mc_res;
-  analyze pg_temp.mc_pts;
-  analyze pg_temp.mc_lp;
+  left join pg_temp.mc_pts pp on pp.fantasy_player_id = lp.fantasy_player_id and pp.gameweek_id = r.gameweek_id
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create index mc_lp_idx on pg_temp.mc_lp (lineup_id)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_res
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_pts
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_lp
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- CAP: one ratio per team-week, null when the week is skipped.
+  execute pg_catalog.concat($q$
   create temp table mc_cap on commit drop as
   with per_lineup as (
     select lp.lineup_id,
@@ -381,29 +432,33 @@ begin
     from per_lineup pl
   )
   select r.team_id, r.gameweek_id,
-    (cap_ignore is not null and r.deadline_at < cap_ignore) as ignored,
+    ($5 is not null and r.deadline_at < $5) as ignored,
     (e.eff_id is not null
       and r.scoring_details is not null and r.scoring_details ? 'effectiveCaptainId'
       and (r.scoring_details ->> 'effectiveCaptainId') is distinct from e.eff_id::text) as mismatch,
     case
-      when cap_ignore is not null and r.deadline_at < cap_ignore then null
+      when $5 is not null and r.deadline_at < $5 then null
       when e.eff_id is null or e.best is null or e.best <= 0 then null
       when r.scoring_details is not null and r.scoring_details ? 'effectiveCaptainId'
         and (r.scoring_details ->> 'effectiveCaptainId') is distinct from e.eff_id::text then null
       else greatest(0, e.eff_pts::numeric / e.best)
     end as ratio
   from pg_temp.mc_res r
-  left join effective e on e.lineup_id = r.lineup_id;
-  select count(*) into mismatch_count from pg_temp.mc_cap where mismatch and not ignored;
+  left join effective e on e.lineup_id = r.lineup_id
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  select count(*)  from pg_temp.mc_cap where mismatch and not ignored
+  $q$, '') into mismatch_count using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- SEL: the legal formations from the season's ruleset, then the best eleven
   -- the lineup's fifteen could have produced.
+  execute pg_catalog.concat($q$
   create temp table mc_form on commit drop as
   with recursive pr as (
     select rule.position_id, rule.starting_minimum as mn, rule.starting_maximum as mx,
       row_number() over (order by rule.position_id) as rn
     from app.fantasy_position_rules rule
-    where rule.ruleset_id = season.ruleset_id
+    where rule.ruleset_id = $4
   ), xis as (
     select distinct s.n from (
       select lineup_id, count(*)::integer as n from pg_temp.mc_lp where slot = 'starter' group by lineup_id
@@ -421,8 +476,10 @@ begin
     where f.rn = (select max(rn) from pr) and f.total = f.xi
   )
   select forms.fid, forms.xi, pr.position_id, forms.ns[pr.rn] as n
-  from forms cross join pr;
+  from forms cross join pr
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
+  execute pg_catalog.concat($q$
   create temp table mc_lpos on commit drop as
   select ranked.lineup_id, ranked.position_id, ranked.k,
     sum(ranked.pts) over (
@@ -434,10 +491,16 @@ begin
         partition by lp.lineup_id, lp.position_id order by lp.pts desc, lp.fantasy_player_id
       ) as k
     from pg_temp.mc_lp lp
-  ) ranked;
-  create index mc_lpos_idx on pg_temp.mc_lpos (lineup_id, position_id, k);
-  analyze pg_temp.mc_lpos;
+  ) ranked
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  create index mc_lpos_idx on pg_temp.mc_lpos (lineup_id, position_id, k)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_lpos
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
+  execute pg_catalog.concat($q$
   create temp table mc_best on commit drop as
   select scored.lineup_id, max(scored.total) as best
   from (
@@ -453,16 +516,20 @@ begin
     group by l.lineup_id, f.fid
   ) scored
   where scored.ok
-  group by scored.lineup_id;
+  group by scored.lineup_id
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
+  execute pg_catalog.concat($q$
   create temp table mc_sel on commit drop as
   select r.team_id, r.gameweek_id,
     least(1, greatest(0, r.starting_points::numeric / b.best)) as ratio
   from pg_temp.mc_res r
   join pg_temp.mc_best b on b.lineup_id = r.lineup_id
-  where r.chip_type is distinct from 'bench_boost' and b.best > 0;
+  where r.chip_type is distinct from 'bench_boost' and b.best > 0
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- CON: rank every active team's final result of each evaluable gameweek.
+  execute pg_catalog.concat($q$
   create temp table mc_con on commit drop as
   select ranked.team_id, ranked.gameweek_id, (ranked.above * 2 < ranked.n) as top_half
   from (
@@ -471,13 +538,15 @@ begin
       count(*) over (partition by r.gameweek_id) as n
     from app.fantasy_team_gameweek_results r
     join app.fantasy_teams t
-      on t.id = r.fantasy_team_id and t.fantasy_season_id = season.id and t.status = 'active'
+      on t.id = r.fantasy_team_id and t.fantasy_season_id = $1 and t.status = 'active'
     join pg_temp.mc_gws g on g.gameweek_id = r.gameweek_id
     where r.state = 'final'
   ) ranked
-  where ranked.team_id in (select team_id from pg_temp.mc_teams);
+  where ranked.team_id in (select team_id from pg_temp.mc_teams)
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- TRF: confirmed, non-Free-Hit batches whose window is evaluable.
+  execute pg_catalog.concat($q$
   create temp table mc_trf on commit drop as
   with batches as (
     select b.id as batch_id, b.fantasy_team_id as team_id, b.point_hit, b.transfers_count,
@@ -492,14 +561,14 @@ begin
     from batches bt
     join pg_temp.mc_all a on a.seq >= bt.b_seq
   ), win_w as (
-    select * from win where rn <= trf_window
+    select * from win where rn <= $6
   ), ready as (
     select ww.batch_id
     from win_w ww
     left join pg_temp.mc_gws g on g.gameweek_id = ww.gameweek_id
     group by ww.batch_id
     having bool_and(g.gameweek_id is not null)
-      or exists (select 1 from pg_temp.mc_gws lg where lg.seq = last_seq)
+      or exists (select 1 from pg_temp.mc_gws lg where lg.seq = $7)
   ), used as (
     select ww.batch_id, ww.gameweek_id
     from win_w ww
@@ -515,15 +584,27 @@ begin
   left join used u on u.batch_id = bt.batch_id
   left join pg_temp.mc_pts p
     on p.gameweek_id = u.gameweek_id and p.fantasy_player_id in (tr.player_in_id, tr.player_out_id)
-  group by bt.team_id, tr.id, bt.point_hit, bt.transfers_count;
+  group by bt.team_id, tr.id, bt.point_hit, bt.transfers_count
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
-  analyze pg_temp.mc_teams;
-  analyze pg_temp.mc_cap;
-  analyze pg_temp.mc_sel;
-  analyze pg_temp.mc_con;
-  analyze pg_temp.mc_trf;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_teams
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_cap
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_sel
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_con
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  analyze pg_temp.mc_trf
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- The figures.
+  execute pg_catalog.concat($q$
   create temp table mc_fig on commit drop as
   with counted as (
     select team_id, count(*)::integer as counted from pg_temp.mc_res group by team_id
@@ -546,17 +627,17 @@ begin
     left join con_avg on con_avg.team_id = t.team_id
   ), gated as (
     select raw.team_id, raw.user_id, raw.counted,
-      case when raw.counted >= min_weeks then raw.cap_raw end as cap_raw,
-      case when raw.counted >= min_weeks then raw.sel_raw end as sel_raw,
-      case when raw.counted >= min_weeks then raw.trf_raw end as trf_raw,
-      case when raw.counted >= min_weeks then raw.con_raw end as con_raw
+      case when raw.counted >= $8 then raw.cap_raw end as cap_raw,
+      case when raw.counted >= $8 then raw.sel_raw end as sel_raw,
+      case when raw.counted >= $8 then raw.trf_raw end as trf_raw,
+      case when raw.counted >= $8 then raw.con_raw end as con_raw
     from raw
   ), scaled as (
     select g.*,
-      app_private.manager_card_scale(g.cap_raw, scales -> 'cap') as cap,
-      app_private.manager_card_scale(g.sel_raw, scales -> 'sel') as sel,
-      app_private.manager_card_scale(g.trf_raw, scales -> 'trf') as trf,
-      app_private.manager_card_scale(g.con_raw, scales -> 'con') as con
+      app_private.manager_card_scale(g.cap_raw, $10 -> 'cap') as cap,
+      app_private.manager_card_scale(g.sel_raw, $10 -> 'sel') as sel,
+      app_private.manager_card_scale(g.trf_raw, $10 -> 'trf') as trf,
+      app_private.manager_card_scale(g.con_raw, $10 -> 'con') as con
     from gated g
   ), rated as (
     select s.*,
@@ -570,40 +651,43 @@ begin
   )
   select r.team_id, r.user_id, r.counted, r.cap_raw, r.sel_raw, r.trf_raw, r.con_raw,
     r.cap, r.sel, r.trf, r.con, r.ovr,
-    app_private.manager_card_tier(r.ovr, tiers) as tier,
-    (r.counted < provisional_below) as provisional
-  from rated r;
-  select count(*) into team_count from pg_temp.mc_fig;
+    app_private.manager_card_tier(r.ovr, $11) as tier,
+    (r.counted < $9) as provisional
+  from rated r
+  $q$, '') using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
+  execute pg_catalog.concat($q$
+  select count(*)  from pg_temp.mc_fig
+  $q$, '') into team_count using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- The scoring may have moved while this ran: write nothing.
   fingerprint_after := app_private.manager_card_season_fingerprint(season.id);
   if fingerprint_after is distinct from fingerprint_before then
-    drop table if exists pg_temp.mc_gws, pg_temp.mc_all, pg_temp.mc_teams, pg_temp.mc_res, pg_temp.mc_pts,
-      pg_temp.mc_lp, pg_temp.mc_cap, pg_temp.mc_form, pg_temp.mc_lpos, pg_temp.mc_best, pg_temp.mc_sel,
-      pg_temp.mc_con, pg_temp.mc_trf, pg_temp.mc_fig;
+    perform app_private.manager_card_drop_temp();
     return jsonb_build_object('outcome', 'version_changed', 'gameweekId', gw.id);
   end if;
-
   -- Writes: the card, its number, the history row, the season row, the ledger.
+  execute pg_catalog.concat($q$
   insert into app.manager_cards (user_id)
   select f.user_id from pg_temp.mc_fig f
-  on conflict (user_id) do nothing;
-  for new_card in
-    select card.user_id
-    from app.manager_cards card
-    where card.serial is null and card.user_id in (select user_id from pg_temp.mc_fig)
-    order by card.user_id
+  on conflict (user_id) do nothing
+  $q$, '');
+
+  for new_user in execute pg_catalog.concat(
+    'select card.user_id from app.manager_cards card
+     where card.serial is null and card.user_id in (select user_id from pg_temp.mc_fig)
+     order by card.user_id', '')
   loop
-    perform app_private.manager_card_assign_serial(new_card.user_id);
+    perform app_private.manager_card_assign_serial(new_user);
   end loop;
 
+  execute pg_catalog.concat($q$
   with written as (
     insert into app.manager_card_gameweeks as h (
       user_id, fantasy_season_id, gameweek_id, ovr, tier, cap, sel, trf, con,
       cap_raw, sel_raw, trf_raw, con_raw, gameweeks_counted, provisional, rules_version
     )
-    select f.user_id, season.id, gw.id, f.ovr, f.tier, f.cap, f.sel, f.trf, f.con,
-      f.cap_raw, f.sel_raw, f.trf_raw, f.con_raw, f.counted, f.provisional, p_rules_version
+    select f.user_id, $1, $2, f.ovr, f.tier, f.cap, f.sel, f.trf, f.con,
+      f.cap_raw, f.sel_raw, f.trf_raw, f.con_raw, f.counted, f.provisional, $12
     from pg_temp.mc_fig f
     on conflict (user_id, gameweek_id) do update set
       fantasy_season_id = excluded.fantasy_season_id, ovr = excluded.ovr, tier = excluded.tier,
@@ -620,15 +704,17 @@ begin
         excluded.gameweeks_counted, excluded.provisional, excluded.rules_version)
     returning 1
   )
-  select count(*)::integer into history_changed from written;
+  select count(*)::integer from written
+  $q$, '') into history_changed using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
+  execute pg_catalog.concat($q$
   with written as (
     insert into app.manager_card_seasons as s (
       user_id, fantasy_season_id, fantasy_team_id, ovr, tier, cap, sel, trf, con,
       cap_raw, sel_raw, trf_raw, con_raw, gameweeks_counted, provisional, rules_version, through_gameweek_id
     )
-    select f.user_id, season.id, f.team_id, f.ovr, f.tier, f.cap, f.sel, f.trf, f.con,
-      f.cap_raw, f.sel_raw, f.trf_raw, f.con_raw, f.counted, f.provisional, p_rules_version, gw.id
+    select f.user_id, $1, f.team_id, f.ovr, f.tier, f.cap, f.sel, f.trf, f.con,
+      f.cap_raw, f.sel_raw, f.trf_raw, f.con_raw, f.counted, f.provisional, $12, $2
     from pg_temp.mc_fig f
     on conflict (user_id, fantasy_season_id) do update set
       fantasy_team_id = excluded.fantasy_team_id, ovr = excluded.ovr, tier = excluded.tier,
@@ -640,7 +726,7 @@ begin
     -- An older gameweek never pulls the season row back: during a correction
     -- the row keeps its figures until the re-evaluation reaches the latest week.
     where (select through.sequence_number from app.fantasy_gameweeks through
-           where through.id = s.through_gameweek_id) <= gw.sequence_number
+           where through.id = s.through_gameweek_id) <= $3
       and (s.fantasy_team_id, s.ovr, s.tier, s.cap, s.sel, s.trf, s.con, s.cap_raw, s.sel_raw, s.trf_raw,
         s.con_raw, s.gameweeks_counted, s.provisional, s.rules_version, s.through_gameweek_id)
       is distinct from
@@ -649,7 +735,8 @@ begin
         excluded.gameweeks_counted, excluded.provisional, excluded.rules_version, excluded.through_gameweek_id)
     returning 1
   )
-  select count(*)::integer into season_changed from written;
+  select count(*)::integer  from written
+  $q$, '') into season_changed using season.id, gw.id, gw.sequence_number, season.ruleset_id, cap_ignore, trf_window, last_seq, min_weeks, provisional_below, scales, tiers, p_rules_version;
 
   -- The ledger keeps the version that was read at the start, and when (the
   -- real clock, so gameweeks evaluated in one tick are ordered): a gameweek
@@ -663,9 +750,8 @@ begin
     evaluated_at = excluded.evaluated_at,
     cards_written = excluded.cards_written;
 
-  drop table if exists pg_temp.mc_gws, pg_temp.mc_all, pg_temp.mc_teams, pg_temp.mc_res, pg_temp.mc_pts,
-    pg_temp.mc_lp, pg_temp.mc_cap, pg_temp.mc_form, pg_temp.mc_lpos, pg_temp.mc_best, pg_temp.mc_sel,
-    pg_temp.mc_con, pg_temp.mc_trf, pg_temp.mc_fig;
+  perform app_private.manager_card_drop_temp();
+
   return jsonb_build_object(
     'outcome', 'evaluated',
     'gameweekId', gw.id,
@@ -695,7 +781,7 @@ declare
   batch_size integer;
   stale record;
   outcome jsonb;
-  blocked uuid[] := '{}';
+  blocked uuid[] := array[]::uuid[];
   gameweeks integer := 0;
   teams integer := 0;
   cards integer := 0;
@@ -886,6 +972,7 @@ revoke all on function
   app_private.manager_card_scale(numeric, jsonb),
   app_private.manager_card_tier(integer, jsonb),
   app_private.manager_card_season_fingerprint(uuid),
+  app_private.manager_card_drop_temp(),
   app_private.manager_card_assign_serial(uuid),
   app_private.manager_card_evaluate_gameweek(uuid, integer),
   app_private.manager_card_tick(),
@@ -896,6 +983,7 @@ grant execute on function
   app_private.manager_card_scale(numeric, jsonb),
   app_private.manager_card_tier(integer, jsonb),
   app_private.manager_card_season_fingerprint(uuid),
+  app_private.manager_card_drop_temp(),
   app_private.manager_card_assign_serial(uuid),
   app_private.manager_card_evaluate_gameweek(uuid, integer),
   app_private.manager_card_tick(),
