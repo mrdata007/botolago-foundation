@@ -425,7 +425,10 @@ export const BASELINES: Baselines = {
   // this pass. On top of BG-0152's 253: 253 + 7 - 8 = 252 (measured). W4 is
   // unchanged: the navs' dynamic `t(item.labelKey)` calls were already counted
   // out with BG-0145.
-  W3: 252,
+  // Gradins (2026-10-08): the moment hero's close button reads `common.close`,
+  // which had no call site, so W3 falls 252 -> 251 (measured). Every new
+  // Gradins key is read through the literal accessors in copy.ts.
+  W3: 251,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
