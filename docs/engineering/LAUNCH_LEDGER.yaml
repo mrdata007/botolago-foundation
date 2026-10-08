@@ -4896,6 +4896,7 @@ tasks:
       - "production 2026-10-08: owner ran apply-20261008123000-manager-card.sql in the SQL Editor; rehearsal passed, commit applied, Fantasy tick paused and restored; ships off with no rules (docs/production/APPLIED_2026_10_08_MANAGER_CARD.md); session read-back pending (connector signed out)"
     remaining:
       - "session: read-only check of production once the Supabase connector is reconnected"
-      - "owner: aggregate-only production read for calibration, then rules v1 by reviewed script"
-      - "owner: founder cut-off and grant; switches on once the card screens exist"
+      - "owner: recalibrate after at least 5 finished gameweeks (2026-10-08 dry run: 2 gameweeks, 7 teams, nothing installable), then rules v1 by scripts/backend/apply-manager-card-rules-v1.sql"
+      - "owner: founder grant on or after 2026-11-01 (cut-off 31 October end of day, Moroccan time) by scripts/backend/manager-card-founder-grant.sql"
+      - "owner: switches on once the card screens exist (onboarding planned in another session)"
       - "owner: review and merge PR #381"

@@ -70,3 +70,19 @@ do when the connection is back:
    (`docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md`).
 3. **Founder.** Set the founder cut-off and run the grant once.
 4. **Switch on.** Turn compute on, then reads, once the screens exist.
+
+## Calibration dry run (2026-10-08, owner)
+
+The owner ran `scripts/backend/manager-card-calibration-dry-run.sql` in the
+SQL Editor of Production V2. It ended in its deliberate error, which carries
+the result, and the owner checked afterwards that nothing was saved: no rules,
+no cards and no evaluation rows, with both switches still off.
+
+- 2 finished gameweeks.
+- 7 teams evaluated: 6 counted two weeks, 1 counted one.
+- 0 teams at the three-week minimum.
+- 0 captain mismatches.
+
+The proposed scales and tiers stayed placeholders, and the script said not to
+install them. Decision: no rules v1 yet. Recalibrate after at least five
+finished gameweeks. No founder grant was run; it runs on or after 1 November 2026.
