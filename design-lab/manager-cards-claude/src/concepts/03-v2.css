@@ -429,7 +429,9 @@
 }
 .c03v2 .c03v2-sh-prov b {
   display: block;
-  font: 800 13px/1.3 "Manrope", sans-serif;
+  font:
+    800 13px/1.3 "Manrope",
+    sans-serif;
   letter-spacing: 0.04em;
 }
 .c03v2.c03v2-share[dir="rtl"] .c03v2-sh-prov b {
@@ -448,6 +450,10 @@
 .c03v2 .c03v2-mktrace,
 .c03v2 .c03v2-nline {
   opacity: 0;
+}
+/* the enamel is drawn only while the beat runs: the finished number is the 84 beneath it */
+.c03v2 .c03v2-flow {
+  visibility: hidden;
 }
 .c03v2 .c03v2-mkfill {
   transform-box: fill-box;
@@ -472,11 +478,14 @@
   }
 
   /* first (about 560ms): the 84 is an engraved outline, then enamel flows into it */
+  .c03v2[data-beat="first"] .c03v2-n84 {
+    animation: c03v2-ntint 560ms both;
+  }
   .c03v2[data-beat="first"] .c03v2-nline {
     animation: c03v2-oline 560ms linear both;
   }
   .c03v2[data-beat="first"] .c03v2-flow {
-    animation: c03v2-rise 520ms cubic-bezier(0.42, 0.12, 0.4, 1) 40ms backwards;
+    animation: c03v2-rise 520ms cubic-bezier(0.4, 0.05, 0.35, 1) 40ms backwards;
   }
   .c03v2[data-beat="first"] .c03v2-lap1 {
     animation: c03v2-lapa 520ms linear 40ms backwards;
@@ -536,6 +545,17 @@
     opacity: 0;
   }
 }
+@keyframes c03v2-ntint {
+  from {
+    fill-opacity: 0.16;
+  }
+  74% {
+    fill-opacity: 0.16;
+  }
+  to {
+    fill-opacity: 1;
+  }
+}
 @keyframes c03v2-oline {
   from {
     opacity: 1;
@@ -550,9 +570,11 @@
 @keyframes c03v2-rise {
   from {
     transform: translateY(104px);
+    visibility: visible;
   }
   to {
     transform: translateY(0);
+    visibility: visible;
   }
 }
 @keyframes c03v2-lapa {
@@ -591,4 +613,9 @@
   to {
     transform: scaleX(1);
   }
+}
+
+/* « en formation 1/3 » in the row: a sentence, not a tier word, so no capital-style spacing */
+.c03v2 .c03v2-rn small .c03v2-fm {
+  letter-spacing: 0.02em;
 }

@@ -1222,7 +1222,7 @@
       if (i === fresh)
         rungs += `<path d="${d}" class="c01-tally is-off" stroke-width="5" stroke-linecap="round" fill="none"/>`;
       rungs += `<path d="${d}" class="c01-tally ${i < t.k ? "is-on" : "is-off"}${i === fresh ? " is-new" : ""}" pathLength="1" stroke-width="5" stroke-linecap="round" fill="none"/>`;
-      if (i === fresh) dust = specks(TAL.x1 - 6, y + 2, 230, seedOf(p) + 5);
+      if (i === fresh) dust = specks(TAL.x1 - 6, y + 2, 190, seedOf(p) + 5);
     }
     const top = TAL.y0 - (t.n - 1) * TAL.pitch - 7;
     const box = `<rect x="${TAL.x0 - 2}" y="${top}" width="${TAL.x1 - TAL.x0 + 8}" height="${TAL.y0 + 7 - top}" rx="3"/>`;
@@ -1263,7 +1263,7 @@
       specks(2, LINE.y0 + 3, MAKE.line + 10, 3) +
       specks(a, bar, MAKE.bar - 10, 4) +
       specks(b, bar, MAKE.post2 - 10, 5) +
-      specks(b, LINE.y0, MAKE.post2 + 150, 6)
+      specks(b, LINE.y0, MAKE.post2 + 100, 6)
     );
   }
 
@@ -1339,8 +1339,9 @@
             )
             .join("")
         : "";
+      // the chalk twin of the cords keeps the same clearance round the number and the name as the cords do
       const twin = make
-        ? `<g class="c01-chalkfx c01-twin"${F.flat ? "" : ` filter="url(#${u}-dust)"`}>${bundles(
+        ? `<g mask="url(#${u}-m)"><g class="c01-chalkfx c01-twin"${F.flat ? "" : ` filter="url(#${u}-dust)"`}>${bundles(
             net.d,
           )
             .map((b, i) =>
@@ -1348,7 +1349,7 @@
                 ? `<path d="${b}" class="c01-bc c01-bcn" pathLength="1" stroke-width="${r1(cw + 0.9)}" style="animation-delay:${MAKE.net + i * 24}ms"/>`
                 : "",
             )
-            .join("")}</g>`
+            .join("")}</g></g>`
         : "";
       out +=
         `<g mask="url(#${u}-m)" fill="none" class="c01-netg">` +

@@ -619,13 +619,13 @@
   stroke: var(--c01-ink);
 }
 .c01 .c01-tally.is-off {
-  opacity: 0.26;
+  opacity: 0.5;
 }
 .c01 .c01-ttal {
   stroke: currentColor;
 }
 .c01 .c01-ttal.is-off {
-  opacity: 0.3;
+  opacity: 0.5;
 }
 
 /* « Provisoire » / «مبدئي» on the share image */
@@ -678,7 +678,7 @@
     animation: c01-draw 300ms cubic-bezier(0.3, 0.7, 0.2, 1) 60ms both;
   }
   .c01 .c01-speck {
-    animation: c01-speck 380ms ease-out forwards;
+    animation: c01-speck 220ms ease-out forwards;
   }
 
   /* make: the goal chalked on the wall, stroke by stroke. The chalk leads, the tube is revealed behind it */
@@ -703,6 +703,7 @@
     stroke-dashoffset: 1;
     animation: c01-draw 120ms cubic-bezier(0.4, 0.1, 0.3, 1) forwards;
   }
+  .c01.is-beat-make .th-l,
   .c01.is-beat-make .c01-linec {
     animation: c01-wipe-x 150ms linear 30ms both;
   }

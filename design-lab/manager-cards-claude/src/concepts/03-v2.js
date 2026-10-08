@@ -1,4 +1,5 @@
-/* 03 PORTE-CLÉS, second pass (v2, refined from c03).
+/* 03 PORTE-CLÉS, second pass (v2, refined from c03). Onboarding states and beats: see the
+   "onboarding" notes at the foot of this file.
    Your BotolaGO identity is the tag on your keyring: a dressing-room locker key tag, an
    elongated 1:2.3 capsule whose bottom edge is cut with the penalty-area "D". The squared
    split ring that only 2026 founders get stays the founder sign. The ring's charms are your
@@ -884,12 +885,15 @@
       const x84 = inkX(p.ovr, fs, G.cx);
       const at = `x="${x84 != null ? x84 : G.cx}" y="${L.b84}" ${x84 != null ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}"`;
       if (beat === "first") {
-        // The first rating. The 84 is already engraved and fully legible as an outline (the
-        // channel); the enamel then flows into it: two liquid layers rise through the digits,
-        // lapping, each with a lit meniscus, and the outline gives way once they have covered it.
+        // The first rating. The number is the engraved 84 itself, always there at full opacity:
+        // at the start its channel is cut and only tinted (its paint is a pale primer) with an
+        // inner outline, so it reads at once; then the enamel flows into it, two liquid layers
+        // rising through the digits, lapping, each with a lit meniscus. With motion off the
+        // number is simply painted, exactly as in every other card.
         big +=
+          `<text class="c03v2-n84" ${at} fill="${ink}">${esc(p.ovr)}</text>` +
           `<clipPath id="${id}-n84"><text ${at}>${esc(p.ovr)}</text></clipPath>` +
-          `<text class="c03v2-nline" ${at} fill="${ink}" fill-opacity=".16" stroke="${ink}" stroke-width="4.6" stroke-linejoin="round" clip-path="url(#${id}-n84)">${esc(p.ovr)}</text>` +
+          `<text class="c03v2-nline" ${at} fill="none" stroke="${ink}" stroke-width="4.6" stroke-linejoin="round" clip-path="url(#${id}-n84)">${esc(p.ovr)}</text>` +
           `<g clip-path="url(#${id}-n84)"><g class="c03v2-flow">` +
           `<g class="c03v2-lap1"><path d="${waveD(338, 4.5, true)}" fill="${ink}" fill-opacity=".7"/></g>` +
           `<g class="c03v2-lap2"><path d="${waveD(344, 3.5, true)}" fill="${ink}"/><path d="${waveD(344, 3.5, false)}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2"/></g>` +
@@ -1568,7 +1572,7 @@
     const t = MC.onbStr(o);
     const sub =
       p.ovr == null && p.minRated
-        ? `<span>${esc(t.forming)} ${MC.ltr(`${markK(p, markN(p))}/${markN(p)}`)}</span>`
+        ? `<span class="c03v2-fm">${esc(t.forming)} ${MC.ltr(`${markK(p, markN(p))}/${markN(p)}`)}</span>`
         : p.tier
           ? `${tierSwatch(p)}<span>${esc(S.tiers[p.tier])}</span>`
           : "";
@@ -1876,6 +1880,14 @@
           "Motion: the settle no longer holds the tag after it ends, so drag-to-swing works with motion on, a touch during the settle takes over at once, and dragging no longer selects the card's text.",
         ],
       },
+    ],
+    // Onboarding states (CONTRACT.md "Onboarding states"), for the reviewer reading the code.
+    onboarding: [
+      "No number yet: the number carrier is a blank engraving field, a polished flat on the face, holding one engraved, paint-filled dash. Never 0, never empty.",
+      "No tier yet: the base tag, HOMA's aluminium, with its band left blank and none of the hardware a tier adds. No tier word.",
+      "Counted rounds: tally cuts filed into the start rim beside the stat table, painted when counted and only outlined when not (the two states the 84 passes through). They drop once the number exists, and at 24-32px; the dash stays.",
+      "Empty carriers: an engraved rule where the name goes, a dash on the D where the BOT ID goes, a short dash for a missing stat. No club: no disc on the ring and the object's own slate. No founder: the ordinary round ring.",
+      "Beats, only when o.beat is set and motion is allowed: make (680ms) traces the name letter by letter then runs a cutter once round the outline; first (560ms) flows enamel into the engraved 84; tick (430ms) engraves the notch just counted. Each is extra parts laid over a finished card: the number, name and serial are drawn in the first frame.",
     ],
     gridWidth: 220,
     detailWidth: 360,
