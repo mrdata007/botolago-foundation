@@ -33,7 +33,7 @@ import { useClubBlock } from "./use-club-block";
 import { useGradinsPeople } from "./use-gradins-people";
 import { useGradinsScreen } from "./use-gradins-screen";
 import { useViewEvent } from "./use-view-event";
-import { QuietHeading } from "./figures";
+import { QuietHeading, STICKY_COLUMN_CLASS } from "./figures";
 
 /**
  * G1, the section home `/gradins` (plan section 4.1): who I am in the stands. The card hangs on
@@ -86,9 +86,7 @@ export function GradinsHomeView({
 }): JSX.Element {
   const copy = useGradinsCopy();
   return (
-    // `stickyBottomBar` clips the column's corners with `overflow: clip`, which keeps the card's
-    // column sticky from 768px: `overflow: hidden` would make the column a scroll box.
-    <FantasyFrame bottomNav topBar="always" stickyBottomBar>
+    <FantasyFrame bottomNav topBar="always" className={STICKY_COLUMN_CLASS}>
       <UiPageTitle title={copy.nav} />
       {state.kind === "loading" ? <GradinsLoading /> : null}
       {state.kind === "error" ? <GradinsError retry={retry} /> : null}

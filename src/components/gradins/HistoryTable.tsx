@@ -42,7 +42,8 @@ export function HistoryTable({
             className={cn("h-[var(--ui-row-min)]", index === rows.length - 1 && "border-b-0")}
           >
             <UiTD className={cn("ps-4", STANDINGS_FIGURE_CELL, ui.tone.muted)}>
-              {`${t("fantasy.leagues.gw")}${row.gameweekSeq}`}
+              {t("fantasy.leagues.gw")}
+              <Figure>{row.gameweekSeq}</Figure>
             </UiTD>
             <UiTD numeric strong className={cn(STANDINGS_FIGURE_CELL, ui.stat.md, ui.tone.default)}>
               {row.ovr === null ? (

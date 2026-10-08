@@ -9,6 +9,14 @@ import { cn } from "@/lib/utils";
  * the « Provisoire » pill, and the dash that stands for a number the server has not given.
  */
 
+/**
+ * The Fantasy frame's column, clipped with `overflow: clip` from 768px so the card's column can
+ * stick: the frame's default `overflow: hidden` would make the column the scroll box of a sticky
+ * child, and it never scrolls. `flow-root` keeps the block formatting context `hidden` gave.
+ * Passed as the frame's `className`, so the section leaves the shell's frame as it is.
+ */
+export const STICKY_COLUMN_CLASS = "md:flow-root md:overflow-clip";
+
 /** Western digits, isolated: `<bdi dir="ltr">`, so a neighbouring word cannot reorder them. */
 export function Figure({ children }: { children: ReactNode }) {
   return <bdi dir="ltr">{children}</bdi>;

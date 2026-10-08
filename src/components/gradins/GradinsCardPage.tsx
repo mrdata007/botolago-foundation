@@ -6,7 +6,7 @@ import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { useCardCopy, useGradinsCopy, useMomentCopy } from "@/components/manager-card/copy";
-import { fill, fillText } from "@/components/manager-card/interpolate";
+import { fill, fillText, ltr } from "@/components/manager-card/interpolate";
 import { ReplaySheet } from "@/components/manager-card/moments/ReplaySheet";
 import { ShareCardSheet } from "@/components/manager-card/moments/ShareCardSheet";
 import { FORMULA_KEYS } from "@/components/manager-card/copy";
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 
 import { CardStage, RatingLine } from "./CardStage";
 import { FounderBlock } from "./FounderBlock";
+import { STICKY_COLUMN_CLASS } from "./figures";
 import { cardView } from "./gradins-state";
 import { RevoirList } from "./RevoirList";
 import { GradinsError, GradinsLoading, GradinsUnavailable } from "./StateBlocks";
@@ -45,7 +46,7 @@ export function GradinsCardPage(): JSX.Element {
     if (away) void navigate({ to: "/gradins", replace: true });
   }, [away, navigate]);
   return (
-    <FantasyFrame bottomNav stickyBottomBar>
+    <FantasyFrame bottomNav className={STICKY_COLUMN_CLASS}>
       <UiHeader kicker={copy.nav} title={copy.cardTitle} backTo="/gradins" />
       {state.kind === "loading" || away ? <GradinsLoading /> : null}
       {state.kind === "error" ? <GradinsError retry={g.retry} /> : null}
@@ -163,7 +164,9 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
             className={cn("text-pretty px-1", ui.text.secondary, ui.tone.muted)}
             data-testid="gradins-serial"
           >
-            {fill(copy.cardSerial, { serial: fillText(cardCopy.serial, { serial: card.serial }) })}
+            {fill(copy.cardSerial, {
+              serial: ltr(fillText(cardCopy.serial, { serial: card.serial })),
+            })}
           </p>
         ) : null}
 
