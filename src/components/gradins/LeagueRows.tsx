@@ -11,7 +11,7 @@ import { ui, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
-import { DASH, PersonName, ProvisionalBadge } from "./figures";
+import { DASH, Figure, PersonName, ProvisionalBadge } from "./figures";
 import { cardLine, rowReportTargets, type PeopleRow } from "./people";
 
 /**
@@ -186,7 +186,15 @@ function CardLineText({ row, youLabel }: { row: PeopleRow; youLabel: ReactNode }
           {line.provisional ? <ProvisionalBadge className="px-2 py-0.5" /> : null}
         </>
       ) : line.kind === "forming" ? (
-        <span>{fill(moments.m5.rowForming, { k: line.counted, n: line.min })}</span>
+        <span>
+          {fill(moments.m5.rowForming.replace("{k}/{n}", "{kn}"), {
+            kn: (
+              <Figure>
+                {line.counted}/{line.min}
+              </Figure>
+            ),
+          })}
+        </span>
       ) : (
         <span>
           <span aria-hidden>{DASH}</span>

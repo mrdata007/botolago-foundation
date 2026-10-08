@@ -245,7 +245,8 @@ describe("G1 for a manager", () => {
     const line = html.match(/data-testid="gradins-rating-line"[\s\S]*?<\/p>/)![0];
     expect(text(line)).toContain("86");
     expect(text(line)).toContain("2026/27");
-    expect(text(html)).toContain("garde sa note 2026/27");
+    // The sentence about last season's note is WP4's `MomentLines`, drawn once its gate is open.
+    expect(text(html)).toContain("Carte en formation");
   });
 
   it("drops the forming display of a season that is over, keeping « 1/3 · 2026/27 » as a line", async () => {

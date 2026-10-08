@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
@@ -65,9 +67,19 @@ describe("« Votre palier »", () => {
     expect(text(html)).toContain(fr["gradins.card.tier_none"]);
   });
 
-  it("states a fall plainly, with the best tier of the season, and promises nothing", async () => {
-    const html = await render(<TierLadder card={card("tierDown")} />);
-    expect(text(html)).toContain("Palier actuel : STADE. Meilleur cette saison : PRO.");
+  it("leaves the sentence about a fall to WP4's state line, and never writes it twice", async () => {
+    const c = card("tierDown");
+    const bare = await render(<TierLadder card={c} />);
+    expect(text(bare)).not.toContain("Meilleur cette saison");
+    expect(text(bare)).not.toContain(fr["gradins.card.tier_best"]);
+    const slot = await render(
+      <TierLadder card={c} fallLine={<p data-testid="fall">Palier actuel : STADE.</p>} />,
+    );
+    expect(text(slot)).toContain("Palier actuel : STADE.");
+    // The same card in the page: the real line is WP4's and shows once its gate is open.
+    expect(readFileSync(join(import.meta.dir, "GradinsCardPage.tsx"), "utf8")).toContain(
+      "kinds={TIER_DOWN}",
+    );
   });
 });
 

@@ -103,11 +103,9 @@ function roundText(
         title: gradins.roundTitle,
         counter: { counted: block.counted, min: block.min },
         label: moments.m3.label,
-        line: fill(moments.m10.started, {
-          season: block.season,
-          prev: block.previous,
-          final: card.finalRounds(block.min),
-        }),
+        // The sentence about last season's note is WP4's persistent state line (`MomentLines`,
+        // under this block): this block states the counter, the page does not word it twice.
+        line: null,
         secondary: null,
         compose: true,
       };
@@ -121,7 +119,9 @@ function roundText(
           line: formingText(block.line, block.min, lang, moments, card),
           secondary: (
             <>
-              <Figure>{block.counted}</Figure>/<Figure>{block.min}</Figure>
+              <Figure>
+                {block.counted}/{block.min}
+              </Figure>
               <span aria-hidden> · </span>
               <Figure>{block.season}</Figure>
             </>
@@ -187,7 +187,9 @@ export function ThisRoundBlock({
               )}
             >
               <span aria-hidden>
-                <Figure>{text.counter.counted}</Figure>/<Figure>{text.counter.min}</Figure>
+                <Figure>
+                  {text.counter.counted}/{text.counter.min}
+                </Figure>
               </span>
               <span className="sr-only">
                 {card.countedA11y(text.counter.counted, text.counter.min)}

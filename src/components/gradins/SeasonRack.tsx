@@ -54,7 +54,9 @@ export function SeasonRack({
               </>
             ) : (
               <>
-                <Figure>{season.gameweeksCounted}</Figure>/<Figure>{card.minRated}</Figure>
+                <Figure>
+                  {season.gameweeksCounted}/{card.minRated}
+                </Figure>
               </>
             );
           const body = (

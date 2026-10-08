@@ -50,6 +50,12 @@ describe("the Gradins screens' imports", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("never word the two state lines WP4 owns: the new-season sentence and the fall below the best tier", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(/m10\.started|moments\.m8\.downLine/);
+    }
+  });
+
   it("do not import the fixtures or the mock repository", () => {
     for (const { name, text } of sources) {
       expect(code(text), name).not.toMatch(/manager-card\/(fixtures|mock-repository)/);

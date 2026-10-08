@@ -7,11 +7,12 @@ import { SectionHeader } from "@/components/common/SectionHeader";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { useCardCopy, useGradinsCopy, useMomentCopy } from "@/components/manager-card/copy";
 import { fill, fillText, ltr } from "@/components/manager-card/interpolate";
+import { MomentLines } from "@/components/manager-card/moments/MomentLines";
 import { ReplaySheet } from "@/components/manager-card/moments/ReplaySheet";
 import { ShareCardSheet } from "@/components/manager-card/moments/ShareCardSheet";
 import { FORMULA_KEYS } from "@/components/manager-card/copy";
 import { fromMyCard } from "@/components/manager-card/to-profile";
-import { STAT_CODES, type ReplayItem } from "@/components/manager-card/types";
+import { STAT_CODES, type LineSpec, type ReplayItem } from "@/components/manager-card/types";
 import { ui, UiButton, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,9 @@ export function GradinsCardPage(): JSX.Element {
     </FantasyFrame>
   );
 }
+
+/** The one line of state the card page asks WP4 for. */
+const TIER_DOWN: readonly LineSpec["kind"][] = ["tier_down"];
 
 function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
   const copy = useGradinsCopy();
@@ -155,7 +159,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         <section data-testid="gradins-tier" aria-label={copy.cardTier}>
           <SectionHeader title={copy.cardTier} />
           <UiCard padding="sm">
-            <TierLadder card={card} />
+            <TierLadder card={card} fallLine={<MomentLines card={card} kinds={TIER_DOWN} />} />
           </UiCard>
         </section>
 

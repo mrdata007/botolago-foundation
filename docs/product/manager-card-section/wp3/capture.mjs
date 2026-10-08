@@ -60,7 +60,7 @@ for (const lang of LANGS) {
         const page = await context.newPage();
         const logs = logCollector(page);
         await patchMock(page, state.patch);
-        await open(page, state.path, lang);
+        await open(page, state.path, lang, { settle: 3500 });
         if (state.open === "h2h") {
           await page.locator('[data-testid="gradins-people-open"]').first().click();
           await page.waitForTimeout(1500);

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { CardToken } from "@/components/manager-card/CardToken";
 import { useCardCopy, useGradinsCopy, useMomentCopy } from "@/components/manager-card/copy";
@@ -22,7 +24,14 @@ import { cardView, tierFell } from "./gradins-state";
  *     held and the best (plan 4.2);
  *   - not rated yet: « Le palier arrive avec votre première note. » and no token is marked.
  */
-export function TierLadder({ card }: { card: MyCardDto }) {
+export function TierLadder({
+  card,
+  fallLine = null,
+}: {
+  card: MyCardDto;
+  /** What states a fall below the season's best tier: WP4's `MomentLines` for `tier_down`. */
+  fallLine?: ReactNode;
+}) {
   const gradins = useGradinsCopy();
   const copy = useCardCopy();
   const moments = useMomentCopy();
@@ -77,13 +86,9 @@ export function TierLadder({ card }: { card: MyCardDto }) {
           <p>{gradins.cardTierNone}</p>
         ) : (
           <>
-            {tierFell(card) && card.tier && card.bestTier ? (
-              <p className={cn(ui.tone.default, "[font-weight:var(--ui-weight-strong)]")}>
-                {fill(moments.m8.downLine, {
-                  tier: copy.tier[card.tier],
-                  best: copy.tier[card.bestTier],
-                })}
-              </p>
+            {tierFell(card) ? (
+              // « Palier actuel : STADE. Meilleur cette saison : PRO. » is WP4's state line.
+              fallLine
             ) : best ? (
               <p>
                 {gradins.cardTierBest}

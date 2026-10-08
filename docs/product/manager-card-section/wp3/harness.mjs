@@ -98,7 +98,22 @@ const MOCK_PATCHES = {
 
 export async function patchMock(page, kind) {
   await page.unroute("**/src/mocks/fantasy-data.ts*").catch(() => {});
+  await page.unroute("**/src/backend/manager-card/fixtures.ts*").catch(() => {});
   if (!kind) return;
+  if (kind === "arrival") {
+    // The arrival-forming panel needs `card_created` pending on a card with one counted journée,
+    // which no shipped fixture has: the served fixtures module is rewritten in flight (the file in
+    // the repository is untouched).
+    await page.route("**/src/backend/manager-card/fixtures.ts*", async (route) => {
+      const response = await route.fetch();
+      const body = (await response.text()).replace(
+        /("Forming, 1 of 3",\s*card\(\{)/,
+        "$1 moments: [cardCreated()],",
+      );
+      await route.fulfill({ response, body });
+    });
+    return;
+  }
   await page.route("**/src/mocks/fantasy-data.ts*", async (route) => {
     const response = await route.fetch();
     const body = await response.text();

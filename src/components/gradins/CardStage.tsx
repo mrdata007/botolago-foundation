@@ -117,7 +117,9 @@ export function RatingLine({
         </span>
         <span className={cn(ui.score.md, ui.tone.default)}>
           <span aria-hidden>
-            <Figure>{counted}</Figure>/<Figure>{min}</Figure>
+            <Figure>
+              {counted}/{min}
+            </Figure>
           </span>
           <span className="sr-only">{copy.countedA11y(counted, min)}</span>
         </span>
