@@ -4,6 +4,7 @@ import { renderToString } from "react-dom/server";
 import { FIXTURES } from "@/backend/manager-card/fixtures";
 import { I18nProvider } from "@/i18n/provider";
 
+import { activeRenderer } from "./active-renderer";
 import { CardToken } from "./CardToken";
 import { ManagerCard } from "./ManagerCard";
 import { clearRenderCache, cachedRender, renderCacheSize, widthBucket } from "./render-cache";
@@ -20,7 +21,7 @@ describe("ManagerCard on the server", () => {
     expect(html).toContain("mc-card");
     expect(html).toContain('data-testid="stage"');
     expect(html).toContain("width:240px");
-    expect(html).toContain("aspect-ratio:1 / 1.5");
+    expect(html).toContain(`aspect-ratio:1 / ${activeRenderer.estimateAspect(profile, "fr")}`);
     expect(html).toContain("Carte de manager, Ali, 84 OVR, PRO, Raja CA, BOT #482913");
     expect(html).toContain("sr-only");
     expect(html).not.toContain("<svg");
