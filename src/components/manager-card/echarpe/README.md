@@ -20,6 +20,7 @@ knitter's easing (26 steps along the fast part of a row, 10 over the last stretc
 | File                                  | What                                                                                                                                    |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `index.ts`                            | `echarpeRenderer`, `ready()`, `mountSway`, `estimateAspect`, `knitName`. Imports `echarpe.css`.                                         |
+| `gradins-renderer.ts`                 | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`gradins-*`).                  |
 | `charts.ts`                           | The hand-cleaned stitch charts, unchanged from the lab (data only; generated from the lab file).                                        |
 | `knit.ts`                             | Pure primitives over bitmaps and stitch grids: `word`, `hjoin`, `grid`, `stamp`, `gridRuns`, `trim`, `vstack`, `castOff`.               |
 | `knit-name.ts`                        | `knitName`: what is knitted from a name (plan 6.4.1). No charts, so the estimate can use it.                                            |
