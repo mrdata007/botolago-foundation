@@ -45,7 +45,8 @@
      Wraps the direction's output in a container-type: inline-size slot, passes {...env.o, ...opts}
      and catches exceptions (a dashed « direction not ready: <error> » box and a console.warn).
      opts: width (px or css; full default 200, row 358, share 360), size (token height, default 44;
-     mini is set for size <= 32), beat ("make" | "first": passed only when the page has motion=1),
+     mini is set for size <= 32), beat ("make" | "first" | "tick" | "founder": passed only when the
+     page has motion=1, and the only motion the card plays: o.motion is always false here),
      rank, pts, me (rows), p (another profile), cls. The full card fills its width.
      MC.ONB.dash = "—"  (a missing number is always this, never 0).
 
@@ -270,6 +271,10 @@
     const p = pOver || env.p;
     const o = { ...env.o, ...rest };
     if (!env.o.motion) delete o.beat;
+    // The page's motion switch only lets a beat play. The direction's own gallery motion (the
+    // fringe swing, the founder cast-on, a ceremony) never runs here: on a card the beat is the
+    // one motion, and a card with no beat stands still.
+    o.motion = false;
     const c = env.c;
     const extra = cls ? " " + cls : "";
     const W = width == null ? (kind === "row" ? 358 : kind === "share" ? 360 : 200) : width;

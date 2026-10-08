@@ -201,8 +201,6 @@
     .onb .m1-points { display: grid; gap: 12px; }
     .onb .m1-points > li { display: flex; align-items: flex-start; gap: 12px; }
     .onb .m1-points__text { display: flex; flex-direction: column; min-width: 0; }
-    /* The fifth point is a result, not a step: its disc is quiet so the object's own material reads. */
-    .onb .m1-disc--card { background: var(--ui-surface-sunken); box-shadow: inset 0 0 0 1px var(--ui-rule); }
 
     /* S02, S04 · the builder's name step */
     .onb.onb-m1-flat .onb-body { padding-block: 0 24px; }
@@ -369,7 +367,8 @@
       `<li>${lead}<span class="m1-points__text"><span class="onb-t-strong">${title}</span><span class="onb-t-secondary onb-muted">${body}</span></span></li>`;
     const fifth = point(
       // The object's mini in its own base material, with a dash in the number carrier: not an icon.
-      `<span class="onb-disc m1-disc--card" aria-hidden="true">${tok(env, 24)}</span>`,
+      // It sits in the same gradient disc as the four points above it, so it reads as one more step.
+      `<span class="onb-disc onb-disc--grad" aria-hidden="true">${tok(env, 24)}</span>`,
       env.t(K + "m1.intro.title"),
       env.t(K + "m1.intro.body"),
     );
@@ -629,7 +628,7 @@
 
   /** The card, said back: the live token at 64px with the plan's label and, when it holds, its hint. */
   const setupCard = (env, hintKey) =>
-    `<div class="m1-setupcard">${tok(env, 64)}<div class="m1-setupcard__text"><span class="onb-t-label onb-muted m1-caps">${env.t(K + "m1.setup.card_label")}</span>` +
+    `<div class="m1-setupcard">${tok(env, 64)}<div class="m1-setupcard__text">` +
     // The direction's token carries the name in its accessible name only (nothing is drawn at 64px),
     // so the name said back is set beside it, in Changa 800, as the card will print it.
     `<span class="onb-t-header m1-echo" aria-hidden="true">${esc(MC.nameOf(env.p, env.o))}</span>` +

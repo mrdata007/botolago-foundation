@@ -34,7 +34,6 @@
       "À l'enregistrement, votre carte de manager démarre avec votre équipe. Sa note arrive après {n} journées terminées.",
     [P + "m1.register.hint"]:
       "Sert de nom affiché sur votre carte et dans les classements. Modifiable à l'étape suivante.",
-    [P + "m1.setup.card_label"]: "Votre carte",
     [P + "m1.setup.name_hint"]:
       "Ce nom figure sur votre carte et dans les classements. Un prénom ou un surnom suffit.",
     [P + "m1.setup.club_hint"]:
@@ -284,7 +283,6 @@
     [P + "m1.save.line"]: "عند حفظ فريقك تبدأ بطاقتك كمدرّب، ويأتي تقييمها بعد {n} جولات منتهية.",
     [P + "m1.register.hint"]:
       "يُستخدم اسمًا معروضًا على بطاقتك وفي الترتيب، ويمكن تغييره في الخطوة التالية.",
-    [P + "m1.setup.card_label"]: "بطاقتك",
     [P + "m1.setup.name_hint"]: "يظهر هذا الاسم على بطاقتك وفي الترتيب. يكفي اسم أول أو لقب.",
     [P + "m1.setup.club_hint"]: "يمنح ناديك لونه لبطاقتك، ويمكن تغييره من ملفك الشخصي.",
     [P + "m1.builder.line"]: "تمّ إنشاء حسابك. بقي حفظ فريقك.",
