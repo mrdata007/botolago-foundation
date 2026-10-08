@@ -12,7 +12,7 @@ import { cardAspect, cardImage, founderDetail, fullCard } from "./full";
 import { rasterText, ready } from "./raster";
 import { mountSway } from "./sway";
 import { tokenLabel, tokenMarkup, tokenWidth } from "./token";
-import { cardLabel, makeView } from "./view";
+import { label, makeView } from "./view";
 import type { CardRenderer } from "../renderer";
 import type { BeatName } from "../types";
 
@@ -26,13 +26,7 @@ const BEATS: readonly BeatName[] = [
   "castoff",
 ];
 
-/** The renderer, and the one thing the interface has no slot for yet: the drag-to-sway. */
-export interface EcharpeRenderer extends CardRenderer {
-  /** Attaches the sway to a mounted full card; returns the cleanup. */
-  mount(el: HTMLElement | null): () => void;
-}
-
-export const echarpeRenderer: EcharpeRenderer = {
+export const echarpeRenderer: CardRenderer = {
   id: "echarpe-v2",
   beats: BEATS,
   full: (profile, options) => fullCard(profile, options, rasterText),
@@ -44,7 +38,7 @@ export const echarpeRenderer: EcharpeRenderer = {
   tokenBox: (profile, size) => ({ width: tokenWidth(profile, size), height: size }),
   detail: (profile, part, options) => (part === "founder" ? founderDetail(profile, options) : null),
   image: (profile, strings) => cardImage(profile, strings, rasterText),
-  label: (profile, strings) => cardLabel(profile, strings),
+  label,
   beatMs: (beat) => (Object.hasOwn(BEAT_MS, beat) ? BEAT_MS[beat] : 0),
   mount: mountSway,
 };

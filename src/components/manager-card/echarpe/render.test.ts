@@ -6,7 +6,9 @@ import { echarpeRenderer as R } from "./index";
 import { AR, CLUBS, FR, HOSTILE_NAMES, LANGS, PROFILES, type ProfileName } from "./test-data";
 import { groupsByClass, knitIntervals, peakOverlap, tokenise, viewBox } from "./test-markup";
 import { TASSELS } from "./geometry";
+import { cardLabel } from "../copy";
 import { esc } from "./knit";
+import { stripControls } from "./view";
 
 const THEMES = ["light", "dark"] as const;
 const SIZES: TokenSize[] = [24, 28, 32, 44, 56, 64, 80];
@@ -329,7 +331,7 @@ describe("hostile names cannot become markup", () => {
         expect(rest).not.toContain(hostile);
         // and in the label it is escaped
         const label = /aria-label="([^"]*)"/.exec(html)?.[1] ?? "";
-        expect(label).toBe(esc(R.label(p, s)));
+        expect(label).toBe(esc(stripControls(R.label(p, s))));
       });
   it("hostile club colours and fields read as the empty part", () => {
     const p = {
@@ -563,31 +565,44 @@ describe("the wordmark on the patch", () => {
   });
 });
 
-describe("the label", () => {
-  it("is one sentence: who, the number, the tier, the season, the serial, the ratings", () => {
+describe("the label (the app's own sentence, copy.ts)", () => {
+  it("is one sentence: the card, who, the number, the tier, the club, the serial", () => {
     expect(R.label(PROFILES.rated, FR)).toBe(
-      "KARIM, 84 OVR, PRO, 2026/27, BOT #482913, Exemple, CAP 91, SEL 82, TRF 86, CON 78",
+      "Carte de manager, KARIM, 84 OVR, PRO, Raja Casablanca, BOT #482913, Exemple",
     );
     expect(R.label(PROFILES.rated, AR)).toBe(
-      "KARIM، 84 OVR، محترف، 2026/27، BOT #482913، مثال، القائد 91، التشكيلة 82، الانتقالات 86، الثبات 78",
+      "بطاقة المدرّب، KARIM، 84 OVR، محترف، الرجاء، BOT #482913، مثال",
     );
     expect(R.label(PROFILES.born0, FR)).toBe(
-      "KARIM, pas encore de note, aucune journée comptée sur 3, 2026/27, Exemple",
+      "Carte de manager, KARIM, pas encore de note, aucune journée comptée sur 3, Raja Casablanca, Exemple",
     );
+    expect(R.label(PROFILES.founder, FR)).toContain("Fondateur 2026");
   });
-  it("the root carries it, and a token carries its own", () => {
+  it("is copy.ts's cardLabel word for word, for every profile in both languages", () => {
+    for (const name of NAMES)
+      for (const s of LANGS) {
+        const p = PROFILES[name] as CardProfile;
+        expect(R.label(p, s)).toBe(cardLabel(p, s));
+      }
+  });
+  it("speaks what is drawn: a number out of range is no number", () => {
+    const bad = { ...PROFILES.rated, ovr: 9000, tier: "nope" as never } as CardProfile;
+    expect(R.label(bad, FR)).toContain("pas encore de note");
+    expect(R.label(bad, FR)).not.toContain("9000");
+  });
+  it("the root carries it, without control or direction characters; a token carries its own", () => {
     for (const s of LANGS) {
       const html = full(PROFILES.rated, s);
       expect(html).toContain(`aria-label="${R.label(PROFILES.rated, s)}"`);
     }
+    const html = full({ ...PROFILES.rated, name: "\u202ealice\u0007" }, FR);
+    expect(html).toContain('aria-label="Carte de manager, alice, 84 OVR');
     expect(R.token(PROFILES.rated, { strings: FR, theme: "light", size: 44 })).toContain(
       'aria-label="KARIM, 84 OVR, PRO"',
     );
   });
-  it("never speaks control or direction characters", () => {
-    expect(R.label({ ...PROFILES.rated, name: "‮alice\u0007" }, FR).startsWith("alice, 84")).toBe(
-      true,
-    );
+  it("a name is no more than 80 characters of it", () => {
+    expect(R.label({ ...PROFILES.rated, name: "x".repeat(5000) }, FR).length).toBeLessThan(200);
   });
 });
 

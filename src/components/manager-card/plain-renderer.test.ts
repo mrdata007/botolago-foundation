@@ -49,12 +49,12 @@ describe("the plain renderer", () => {
     ).toContain(">78</text>");
   });
 
-  it("reserves the shape the active renderer estimates", () => {
-    expect(activeRenderer.estimateAspect(rated)).toBe(plainRenderer.aspect(rated, STRINGS.fr));
-  });
-
-  it("loads through the active renderer's own import", async () => {
-    expect(await activeRenderer.load()).toBe(plainRenderer);
+  it("is not the active renderer any more: Écharpe is, and its estimate is close to its own aspect", async () => {
+    const active = await activeRenderer.load();
+    expect(active).not.toBe(plainRenderer);
+    expect(active.id).toBe(activeRenderer.id);
+    const real = active.aspect(rated, STRINGS.fr);
+    expect(Math.abs(activeRenderer.estimateAspect(rated, "fr") - real) / real).toBeLessThan(0.03);
   });
 });
 
