@@ -12,7 +12,7 @@
 // Failure modes (mapping/network/RLS/conflict/validation/gameweek_unresolved)
 // keep local state intact and never mark the UID.
 
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { ui, UiButton } from "@/components/ui-kit";
@@ -34,6 +34,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { track } from "@/lib/analytics";
+
+// Live: while this prompt is on screen the card's heroes and born panel stay shut. A chunk of its
+// own, requested only while the section is live.
+const MomentBlock = lazy(() =>
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+    default: module.MomentBlock,
+  })),
+);
 
 type Phase = "idle" | "saving" | "success" | "error";
 
@@ -188,6 +196,11 @@ export function FantasyImportPrompt() {
       dir={dir}
       className={cn("mx-3 my-3 p-4", ui.surface.card)}
     >
+      {cardLive ? (
+        <Suspense fallback={null}>
+          <MomentBlock />
+        </Suspense>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {/* `ui.tone.ink` (`--ui-ink-fg`) is the theme-correct brand

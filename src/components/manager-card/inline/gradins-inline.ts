@@ -16,6 +16,7 @@ export { GuestIntroCardPoint } from "./GuestIntroCardPoint";
 export { HubCardBlock } from "./HubCardBlock";
 export { LeagueCardBand, LeagueCompareLink } from "./LeagueCardBand";
 export { LeagueRowMini } from "./LeagueRowMini";
+export { MomentBlock } from "./MomentBlock";
 export { PepitesHubTile } from "./PepitesHubTile";
 export { RankCardToken } from "./RankCardToken";
 export { RecapCardLine } from "./RecapCardLine";
