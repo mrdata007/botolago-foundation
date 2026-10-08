@@ -47,7 +47,7 @@ export function GradinsCardPage(): JSX.Element {
   }, [away, navigate]);
   return (
     <FantasyFrame bottomNav className={STICKY_COLUMN_CLASS}>
-      <UiHeader kicker={copy.nav} title={copy.cardTitle} backTo="/gradins" />
+      <UiHeader title={copy.cardTitle} backTo="/gradins" />
       {state.kind === "loading" || away ? <GradinsLoading /> : null}
       {state.kind === "error" ? <GradinsError retry={g.retry} /> : null}
       {state.kind === "unavailable" ? <GradinsUnavailable /> : null}

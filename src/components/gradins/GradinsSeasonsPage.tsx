@@ -44,7 +44,7 @@ export function GradinsSeasonsPage(): JSX.Element {
   }, [away, navigate]);
   return (
     <FantasyFrame bottomNav>
-      <UiHeader title={copy.seasonsTitle} kicker={copy.nav} backTo="/gradins" />
+      <UiHeader title={copy.seasonsTitle} backTo="/gradins" />
       {state.kind === "loading" || away ? <GradinsLoading /> : null}
       {state.kind === "error" ? <GradinsError retry={g.retry} /> : null}
       {state.kind === "unavailable" ? <GradinsUnavailable /> : null}

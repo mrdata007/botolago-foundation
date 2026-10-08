@@ -14,6 +14,7 @@ import { HEIGHT, sparklinePoints } from "./sparkline-math";
  * What it says honestly:
  *   - a journée with no note (the card was still forming) is a gap, never a zero;
  *   - a provisional note is a hollow point, the confirmed ones are the line itself;
+ *   - fewer than two notes draw nothing (the sentence and the table already say it);
  *   - the latest note is a filled point with a 2px ring of the surface, so it stays a dot where
  *     it meets the line.
  * The scale runs between the season's lowest and highest note with a little room, because a
@@ -36,6 +37,8 @@ export function Sparkline({ rows }: { rows: readonly HistoryRowDto[] }) {
   }, []);
 
   const { segments, points } = sparklinePoints(rows, width, lang === "ar");
+  // One note is a point, not a line: the sentence above and the table say it, an empty frame does not.
+  if (points.length < 2) return <div ref={box} className="w-full" aria-hidden />;
   return (
     <div ref={box} className="w-full" data-testid="gradins-sparkline" aria-hidden>
       <svg

@@ -17,6 +17,7 @@ import { fromMyCard } from "@/components/manager-card/to-profile";
 import { FounderBlock } from "./FounderBlock";
 import { deriveReplayItems } from "./replay-items";
 import { RevoirList } from "./RevoirList";
+import { Sparkline } from "./Sparkline";
 import { StatTiles } from "./StatTiles";
 import { TierLadder } from "./TierLadder";
 
@@ -119,5 +120,20 @@ describe("the founder block", () => {
     const c = card("rated");
     const html = await render(<FounderBlock card={c} profile={fromMyCard(c)} />);
     expect(html).toBe("");
+  });
+});
+
+describe("the season's line", () => {
+  it("draws a line from two notes and nothing from one", async () => {
+    const rows = FIXTURES.rated.history;
+    expect(rows.filter((row) => row.ovr !== null).length).toBeGreaterThan(0);
+    const one = await render(
+      <Sparkline rows={rows.filter((row) => row.ovr !== null).slice(0, 1)} />,
+    );
+    expect(one).not.toContain("<svg");
+    const many = FIXTURES.seasonClosed.history;
+    expect(many.filter((row) => row.ovr !== null).length).toBeGreaterThan(1);
+    const two = await render(<Sparkline rows={many} />);
+    expect(two).toContain("<svg");
   });
 });

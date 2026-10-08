@@ -40,7 +40,9 @@ export function LeagueBand({ rows, gameweek }: { rows: readonly PeopleRow[]; gam
             names: shown.map((row, index) => (
               <span key={row.standing.managerId}>
                 {index > 0 ? card.a11y.separator : ""}
-                <PersonName>{row.name}</PersonName>
+                <span className="[font-weight:var(--ui-weight-heavy)]">
+                  <PersonName>{row.name}</PersonName>
+                </span>
               </span>
             )),
           })}

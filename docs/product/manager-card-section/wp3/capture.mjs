@@ -6,11 +6,11 @@
  *     VITE_AUTH_MODE=mock VITE_FANTASY_DATA_MODE=mock VITE_FOOTBALL_DATA_MODE=mock \
  *     VITE_PEPITES_DATA_MODE=mock bun run dev -- --host 127.0.0.1 --port 4183 --strictPort
  *   node docs/product/manager-card-section/wp3/capture.mjs [--only g1,g2] [--langs fr,ar]
- *        [--themes light,dark] [--widths 390,1440] [--full] [--out <dir>]
+ *        [--themes light,dark] [--widths 390,1440] [--full] [--scale 2|1] [--out <dir>]
  *
  * Files are `<screen>-<fixture>-<lang>-<theme>-<width>.png`, the first screenful as the reader sees
  * it (the bottom bar is the bar of the screen). `--full` also writes `…-full.png`: the whole page
- * at 390, French and Arabic, light only. Prints one line per picture with any console error, failed
+ * at 390 (a viewport as tall as the page), French and Arabic, light only. Prints one line per picture with any console error, failed
  * request or HTTP 4xx the page produced (there should be none).
  */
 import { mkdirSync } from "node:fs";
@@ -33,7 +33,10 @@ const THEMES = (flag("themes", "light,dark") ?? "").split(",");
 const WIDTHS = (flag("widths", "390,1440") ?? "").split(",").map(Number);
 const FULL = args.includes("--full");
 
-const SIZE = { 390: { height: 844, scale: 2 }, 1440: { height: 900, scale: 1 } };
+// `--scale 1` writes the pictures at their CSS size (the committed set); the default is a
+// two-pixel-per-pixel phone, which is what a review of details uses.
+const PHONE_SCALE = Number(flag("scale", "2"));
+const SIZE = { 390: { height: 844, scale: PHONE_SCALE }, 1440: { height: 900, scale: 1 } };
 
 mkdirSync(OUT, { recursive: true });
 const browser = await launch();
@@ -65,7 +68,12 @@ for (const lang of LANGS) {
         const base = `${state.id}-${lang}-${theme}-${width}`;
         await page.screenshot({ path: join(OUT, `${base}.png`) });
         if (FULL && width === 390 && theme === "light" && !state.open) {
-          await page.screenshot({ path: join(OUT, `${base}-full.png`), fullPage: true });
+          // The viewport grows to the page, so the fixed bottom bar sits at the foot of the
+          // picture instead of floating in the middle of a stitched full-page capture.
+          const total = await page.evaluate(() => document.documentElement.scrollHeight);
+          await page.setViewportSize({ width, height: total });
+          await page.waitForTimeout(600);
+          await page.screenshot({ path: join(OUT, `${base}-full.png`) });
         }
         pictures += 1;
         if (logs.length) problems += 1;

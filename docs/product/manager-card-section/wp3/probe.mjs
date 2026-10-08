@@ -4,8 +4,9 @@
  *   taps      every link, button and field visible on the screen is at least 44 × 44, measured on its
  *             rectangle (an element whose `::after` stretches over a row is measured on its own box);
  *   rows      every table row and list row is at least 48 px tall;
- *   rtl       Arabic: <html dir="rtl">, no letter-spacing on any text, a Western digit that sits among
- *             Arabic letters is isolated (a bdi, or dir="ltr"), names in Changa at 800;
+ *   rtl       Arabic: <html dir="rtl">, no letter-spacing on any text, a Western digit next to a Latin
+ *             letter is isolated (a bdi, dir="ltr" or U+2066 to U+2069), the back pill at the right and
+ *             the own-row bar on the right edge of its row; names in rows and the band weigh 800;
  *   motion    with motion reduced: `document.getAnimations()` is empty and no « Revoir » beat button
  *             is drawn; with motion allowed, the number is on top at every frame of a beat (opacity 1,
  *             and `elementFromPoint` at its centre is the number or part of it);
@@ -54,7 +55,7 @@ const NAMES = /\bAli\b|Rachid|KARIM|SALMA|YASMINE|OTHMANE|HAMZA|علي/;
 
 /** Runs in the page. */
 function measure({ lang }) {
-  const out = { taps: [], rows: [], rtl: [], words: [], tabs: 0 };
+  const out = { taps: [], rows: [], rtl: [], names: [], words: [], tabs: 0 };
   const visible = (el) => {
     const r = el.getBoundingClientRect();
     if (r.width < 2 || r.height < 2) return false;
@@ -96,8 +97,33 @@ function measure({ lang }) {
     if (h < 47.5) out.rows.push(`${describe(row)} ${h.toFixed(1)}`);
   }
 
+  // A manager's name in a table row or the band is heavy (800), in either language.
+  for (const name of root.querySelectorAll(
+    "tbody bdi[dir=auto], [data-testid=gradins-band] bdi[dir=auto]",
+  )) {
+    if (!visible(name)) continue;
+    const weight = Number(getComputedStyle(name.parentElement).fontWeight);
+    if (weight < 800) out.names.push(`${describe(name)} is weight ${weight}`);
+  }
+
   if (lang === "ar") {
     if (document.documentElement.dir !== "rtl") out.rtl.push("html dir is not rtl");
+    // The mirror: the back pill at the right, the own-row bar on the right edge of its row.
+    const vw = document.documentElement.clientWidth;
+    const back = [...root.querySelectorAll("a, button")].find(
+      (el) => /^(Retour|رجوع)$/.test(el.textContent.trim()) && visible(el),
+    );
+    if (back) {
+      const b = back.getBoundingClientRect();
+      if ((b.left + b.right) / 2 < vw / 2) out.rtl.push("mirror: the back pill is on the left");
+    }
+    for (const bar of root.querySelectorAll("[data-own-bar]")) {
+      const row = bar.closest("tr");
+      if (!row || !visible(bar)) continue;
+      const gap = row.getBoundingClientRect().right - bar.getBoundingClientRect().right;
+      if (Math.abs(gap) > 2)
+        out.rtl.push(`mirror: the own-row bar is ${gap.toFixed(1)}px off the right edge`);
+    }
     for (const el of root.querySelectorAll("*")) {
       if (el.closest("svg")) continue;
       const own = [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim());
@@ -115,8 +141,18 @@ function measure({ lang }) {
       if (!el || el.closest("svg, bdi, [dir=ltr], .sr-only") || !visible(el)) continue;
       // A run inside U+2066 to U+2069 is isolated already (the copy accessors write plurals so).
       const bare = t.replace(/[\u2066-\u2068][^\u2069]*\u2069/g, "");
-      if (digit.test(bare) && arabic.test(bare))
-        out.rtl.push(`digits among Arabic, not isolated: "${t.trim().slice(0, 50)}"`);
+      if (!digit.test(bare) || !arabic.test(bare)) continue;
+      // Between Arabic letters, Western digits already read in order (the bidi algorithm gives them
+      // the direction of the letters around them). They are reordered next to a Latin letter
+      // (« OVR », « BOT »), through spaces and punctuation: that is what must be isolated.
+      for (const run of bare.matchAll(/\d+/g)) {
+        const before = bare.slice(0, run.index).match(/(\p{L})[^\p{L}]*$/u)?.[1] ?? "";
+        const after = bare.slice(run.index + run[0].length).match(/^[^\p{L}]*(\p{L})/u)?.[1] ?? "";
+        if (/\p{Script=Latin}/u.test(before) || /\p{Script=Latin}/u.test(after)) {
+          out.rtl.push(`digits next to a Latin letter, not isolated: "${t.trim().slice(0, 50)}"`);
+          break;
+        }
+      }
     }
   }
 
@@ -199,6 +235,7 @@ for (const lang of LANGS) {
           m.taps.forEach((x) => found.push(`tap < 44: ${x}`));
           m.rows.forEach((x) => found.push(`row < 48: ${x}`));
           m.rtl.forEach((x) => found.push(`rtl: ${x}`));
+          m.names.forEach((x) => found.push(`name weight: ${x}`));
           m.headings
             .filter((h) => NAMES.test(h))
             .forEach((h) => found.push(`heading carries a name: ${h}`));
@@ -214,8 +251,6 @@ for (const lang of LANGS) {
             found.push(
               `the number was not on top during a beat: ${beats.bad.slice(0, 3).join("; ")}`,
             );
-          if (beats.seen.length)
-            label + ` (beats seen: ${beats.seen.join(",")}, ${beats.frames} frames)`;
           if (beats.seen.length)
             console.log(
               `  ${label}: beats ${beats.seen.join(",")} over ${beats.frames} frames, number on top throughout`,

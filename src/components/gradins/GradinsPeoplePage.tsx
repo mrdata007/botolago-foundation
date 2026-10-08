@@ -49,7 +49,7 @@ export function GradinsPeoplePage(): JSX.Element {
   }, [away, navigate]);
   return (
     <FantasyFrame bottomNav>
-      <UiHeader kicker={copy.nav} title={copy.peopleTitle} backTo="/gradins" />
+      <UiHeader title={copy.peopleTitle} backTo="/gradins" />
       {state.kind === "loading" || away ? <GradinsLoading /> : null}
       {state.kind === "error" ? <GradinsError retry={g.retry} /> : null}
       {state.kind === "unavailable" ? <GradinsUnavailable /> : null}
@@ -115,6 +115,7 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
   // The table waits for the cards too, so the band and the minis arrive with the rows, not after.
   const loading = people.leaguesPending || people.standingsPending || people.cardsPending;
   const alone = rows.length > 0 && rows.every((row) => row.own);
+  const canInvite = league !== null && (league.role === "owner" || league.role === "creator");
   const clubName = card.club ? card.club.shortName[lang] || card.club.shortName.fr : "";
 
   return (
@@ -166,10 +167,19 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
               <UiSkeleton className="h-16" />
             </div>
           ) : alone ? (
-            <UiCard padding="lg">
+            <UiCard padding="lg" className="flex flex-col items-center gap-4">
               <p className={cn("text-pretty text-center", ui.text.body, ui.tone.default)}>
                 {fill(copy.peopleAlone, { league: <PersonName>{league.name}</PersonName> })}
               </p>
+              {canInvite ? (
+                <UiLinkButton
+                  to="/fantasy/leagues/$leagueId"
+                  params={{ leagueId: league.id }}
+                  variant="soft"
+                >
+                  {t("fantasy.leagues.invite_friends")}
+                </UiLinkButton>
+              ) : null}
             </UiCard>
           ) : (
             <UiCard padding="none" className="overflow-hidden">
@@ -224,7 +234,7 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
             </p>
           ) : null}
 
-          {league && (league.role === "owner" || league.role === "creator") ? (
+          {!alone && canInvite && league ? (
             <UiLinkButton
               to="/fantasy/leagues/$leagueId"
               params={{ leagueId: league.id }}
