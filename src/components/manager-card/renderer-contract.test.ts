@@ -169,7 +169,12 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
       expect(art.svg).not.toContain("<tspan");
       expect(art.width).toBeGreaterThan(0);
       expect(art.height).toBeGreaterThan(art.width);
-      expect(art.texts.some((run) => run.text === "84")).toBe(true);
+      // The card's own text is a run: the patch's ratings (91 on this fixture) and its serial. A
+      // direction that knits the number (Écharpe) has no run for it; one that prints it (the plain
+      // renderer) has.
+      const spoken = art.texts.map((run) => run.text);
+      expect(spoken.some((text) => text === "84" || text === "91")).toBe(true);
+      expect(spoken).toContain("BOT #482913");
       for (const run of art.texts) {
         expect(run.size).toBeGreaterThan(0);
         expect(["start", "middle", "end"]).toContain(run.anchor);
