@@ -900,7 +900,7 @@
     const A = art(p, { ...o, thumb: false }, id + "a");
     const A2 = art(p, { ...o, thumb: true }, id + "b");
     const sc = 1.42;
-    const H = { x: 160, y: 84 };
+    const H = { x: 158, y: 84 };
     const ringT = `translate(${H.x} ${H.y}) scale(${sc}) rotate(${whole}) translate(${r2(-hook[0])} ${r2(-hook[1])})`;
     const fobT = `${ringT} rotate(${swing} ${EY.x} ${EY.y})`;
     const obj = (X, pre) => `<g transform="${pre}${ringT}">${X.back}</g><g transform="${pre}${fobT}">${X.fob}</g><g transform="${pre}${ringT}">${X.front}</g>`;
