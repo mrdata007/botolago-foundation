@@ -113,17 +113,25 @@ no-preference)`. Measured in Chromium: `document.getAnimations()` is empty for e
 
 ## The sway
 
-`echarpeRenderer.mount(el)` (also exported as `mountSway`) swings the hanging scarf from the rail
-while a mouse or pen is pressed and dragged: a damped pendulum, at most 1.2 s, nothing under
-reduced motion or while the page is hidden. `CardRenderer` has no slot for it, so a screen reaches it
-through `EcharpeRenderer` (see the report to the orchestrator).
+`echarpeRenderer.mount(el)` (exported as `mountSway` too) is the optional `mount` of `CardRenderer`:
+`ManagerCard` calls it after inserting a full card when the screen asks for `sway` and the reader
+has not asked for less motion. It swings the hanging scarf from the rail while a mouse or pen is
+pressed and dragged (a damped pendulum, at most 1.2 s), does nothing while the page is hidden or on
+a LEGEND card (held, not hung), and returns its cleanup.
 
 ## Fonts
 
 The patch is set in Manrope (French) and Noto Sans Arabic (Arabic); the Arabic names with no chart
 are sampled from Changa 800 on a canvas (`raster.ts`). `ready()` asks the page to load both Changa
-subsets and waits at most 1.5 s; `active-renderer.ts` awaits it before the first card is drawn, and
-a sample is cached only when the font reports ready.
+subsets and waits at most 1.5 s; `active-renderer.ts` awaits it inside `load()` before the first card
+is drawn, and a sample is cached only when the font reports ready.
+
+## Label
+
+`label()` is the app's own `cardLabel` (`../copy.ts`, « Carte de manager, Ali, 84 OVR, PRO, Raja CA,
+BOT #482913 ») on the profile as the object can show it, so what is spoken is what is drawn. The
+root's `aria-label` is that sentence without control and direction characters (the contract's
+`stripControls`), escaped. A token's label is shorter: who, the number, the tier, the founder line.
 
 ## Measured
 
