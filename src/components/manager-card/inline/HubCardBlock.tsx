@@ -127,10 +127,14 @@ export function HubCardBlockView({
           <>
             <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <Head head={model.head} cardCopy={cardCopy} formingLabel={moment.m3.label} />
-              {fresh}
             </span>
-            {line ? (
-              <span className={cn("text-pretty", ui.text.meta, ui.tone.muted)}>{line}</span>
+            {line || fresh ? (
+              // « Nouveau » starts the line, so the busiest state (a provisional number with a
+              // moment waiting) is three rows and not four.
+              <span className={cn("text-pretty", ui.text.meta, ui.tone.muted)}>
+                {fresh ? <span className="me-2 inline-flex align-middle">{fresh}</span> : null}
+                {line}
+              </span>
             ) : null}
           </>
         )}
