@@ -5,7 +5,7 @@
  *
  *   BASE=http://127.0.0.1:4183 node docs/product/manager-card-section/wp3/sticky.mjs
  *
- * Exits 1 when the stage moves with the page, or leaves the viewport.
+ * Exits 1 when, scrolled to the foot, the column is not at its sticky offset inside the window.
  */
 import { launch, newContext, open } from "./harness.mjs";
 
@@ -38,6 +38,7 @@ for (const [lang, path] of [
         pageHeight: Math.round(document.documentElement.scrollHeight),
         viewport: innerHeight,
         scrollY: Math.round(scrollY),
+        stickyTop: column ? parseFloat(getComputedStyle(column).top) : null,
       };
     });
   const before = await measure();
@@ -47,10 +48,15 @@ for (const [lang, path] of [
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   await page.waitForTimeout(400);
   const after = await measure();
+  // Scrolled to the foot of the page the column rests at its sticky offset, inside the window, and
+  // it never moved down on the way (a hero above it may keep it lower at the start).
   const scrolled = during.scrollY > 100;
-  const stuck = during.top !== null && during.top >= 0 && during.bottom <= during.viewport + 1;
-  const stuckEnd = after.top !== null && after.top >= 0;
-  const ok = scrolled && stuck && stuckEnd;
+  const rests =
+    after.top !== null &&
+    Math.abs(after.top - after.stickyTop) <= 1 &&
+    after.bottom <= after.viewport + 1;
+  const neverDown = during.top <= before.top && after.top <= during.top;
+  const ok = scrolled && rests && neverDown;
   if (!ok) failed += 1;
   console.log(
     `${lang} ${path}: top ${before.top} -> ${during.top} -> ${after.top} (scrolled ${during.scrollY}, page ${before.pageHeight}px): ${ok ? "ok" : "FAIL"}`,

@@ -48,6 +48,7 @@ for (const lang of LANGS) {
     for (const width of WIDTHS) {
       for (const state of STATES) {
         if (ONLY.length && !ONLY.some((prefix) => state.id.startsWith(prefix))) continue;
+        if (state.widths && !state.widths.includes(width)) continue;
         const context = await newContext(browser, {
           lang,
           theme,
@@ -67,7 +68,7 @@ for (const lang of LANGS) {
         }
         const base = `${state.id}-${lang}-${theme}-${width}`;
         await page.screenshot({ path: join(OUT, `${base}.png`) });
-        if (FULL && width === 390 && theme === "light" && !state.open) {
+        if (FULL && width === 390 && theme === "light" && !state.open && !state.widths) {
           // The viewport grows to the page, so the fixed bottom bar sits at the foot of the
           // picture instead of floating in the middle of a stitched full-page capture.
           const total = await page.evaluate(() => document.documentElement.scrollHeight);

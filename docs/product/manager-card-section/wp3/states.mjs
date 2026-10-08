@@ -1,6 +1,7 @@
 /**
  * Every Gradins screen and state of WP3, shared by `capture.mjs` and `probe.mjs`. `visitor`,
- * `noTeam`, `patch` and `open` set up what a fixture cannot (see `harness.mjs`).
+ * `noTeam`, `patch` and `open` set up what a fixture cannot (see `harness.mjs`); `widths` limits a
+ * state to the widths it is shown at (the hero states are phone pictures).
  */
 export const STATES = [
   { id: "g1-guest", path: "/gradins", visitor: true },
@@ -12,13 +13,13 @@ export const STATES = [
   { id: "g1-seasonStarted", path: "/gradins?mc=seasonStarted" },
   { id: "g1-offline", path: "/gradins?mc=offline" },
   // The heroes WP4 draws in the hero slot above the stage (plan 5.3), on this page.
-  { id: "g1-born0", path: "/gradins?mc=born0" },
-  { id: "g1-born0Serial", path: "/gradins?mc=born0Serial" },
-  { id: "g1-forming1Arrival", path: "/gradins?mc=forming1", patch: "arrival" },
-  { id: "g1-launchArrival", path: "/gradins?mc=launchArrival" },
-  { id: "g1-returning", path: "/gradins?mc=returning" },
-  { id: "g1-tierUp", path: "/gradins?mc=tierUp" },
-  { id: "g1-legend", path: "/gradins?mc=legend" },
+  { id: "g1-born0", path: "/gradins?mc=born0", widths: [390] },
+  { id: "g1-born0Serial", path: "/gradins?mc=born0Serial", widths: [390] },
+  { id: "g1-forming1Arrival", path: "/gradins?mc=forming1", patch: "arrival", widths: [390] },
+  { id: "g1-launchArrival", path: "/gradins?mc=launchArrival", widths: [390] },
+  { id: "g1-returning", path: "/gradins?mc=returning", widths: [390] },
+  { id: "g1-tierUp", path: "/gradins?mc=tierUp", widths: [390] },
+  { id: "g1-legend", path: "/gradins?mc=legend", widths: [390] },
   { id: "g2-rated", path: "/gradins/carte?mc=rated" },
   { id: "g2-ratedTrfNull", path: "/gradins/carte?mc=ratedTrfNull" },
   { id: "g2-insufficient3", path: "/gradins/carte?mc=insufficient3" },

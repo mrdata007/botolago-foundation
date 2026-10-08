@@ -213,6 +213,7 @@ for (const lang of LANGS) {
   for (const width of WIDTHS) {
     for (const state of STATES) {
       if (ONLY.length && !ONLY.some((p) => state.id.startsWith(p))) continue;
+      if (state.widths && !state.widths.includes(width)) continue;
       for (const reduced of [false, true]) {
         const context = await newContext(browser, {
           lang,
