@@ -754,7 +754,7 @@
     const keys = opts.keys || MC.STATS;
     const ncol = opts.cols || keys.length;
     const nrow = Math.ceil(keys.length / ncol);
-    const bdr = 2 * k; // satin border
+    const bdr = 2.6 * k; // satin border
     const pad = 5.6 * k;
     const L = x + bdr + pad;
     const R = x + w - bdr - pad;
@@ -782,7 +782,6 @@
       s += `<rect x="${f2(x)}" y="${f2(y)}" width="${f2(w)}" height="${h}" fill="url(#${ids.weave})"/>`;
       // the satin-stitch border (a merrowed edge): threads over the edge, in the club's dark yarn
       s += `<path d="M${f2(x)} ${f2(y)}h${f2(w)}v${h}h${f2(-w)}Z M${f2(x + bdr)} ${f2(y + bdr)}v${f2(h - 2 * bdr)}h${f2(w - 2 * bdr)}v${f2(-(h - 2 * bdr))}Z" fill="url(#${ids.satin})" fill-rule="evenodd"/>`;
-      s += `<rect x="${f2(x + bdr + 0.25)}" y="${f2(y + bdr + 0.25)}" width="${f2(w - 2 * bdr - 0.5)}" height="${f2(h - 2 * bdr - 0.5)}" fill="none" stroke="#000" stroke-opacity=".18" stroke-width=".5"/>`;
     } else s += `<path d="M${f2(x)} ${f2(y)}h${f2(w)}v${h}h${f2(-w)}Z M${f2(x + bdr)} ${f2(y + bdr)}v${f2(h - 2 * bdr)}h${f2(w - 2 * bdr)}v${f2(-(h - 2 * bdr))}Z" fill="${P.Gdk}" fill-rule="evenodd"/>`;
     const tx = (xx, yy, str, anchor, cls, fs, dir = "ltr", extra = "") =>
       `<text x="${f2(xx)}" y="${f2(yy)}" text-anchor="${anchor}" direction="${dir}" font-size="${f2(fs)}" class="c07v2-pt ${cls}"${extra}>${esc(str)}</text>`;
@@ -812,14 +811,10 @@
       if (ar) s += tx(cx, top + labFs * 0.95, S.stats[key], "middle", "c07v2-pt-k c07v2-pt-ar", labFs, "rtl");
       else s += tx(cx, top + labFs * 0.9, S.stats[key], "middle", "c07v2-pt-k", labFs);
       s += tx(cx, top + labFs * 1.25 + figFs * 0.86, String(p.stats[key]), "middle", "c07v2-pt-v", figFs);
-      if (ncol > 1 && col > 0) {
-        const sx = L + (iw / ncol) * vis + (ar ? iw / ncol : 0);
-        s += `<path d="M${f2(sx)} ${f2(top + 1.5 * k)}V${f2(top + cellH - 1 * k)}" stroke="${mix(P.patch, "#000000", 0.2)}" stroke-width="${f2(0.6 * k)}"/>`;
-      }
     });
     // the woven bottom edge: a rule, then the ID's physical carrier
     if (footLines.length) {
-      s += `<path d="M${f2(L)} ${f2(ruleY)}H${f2(R)}" stroke="${mix(P.patch, "#000000", 0.22)}" stroke-width="${f2(0.7 * k)}"/>`;
+      s += `<path d="M${f2(L)} ${f2(ruleY)}H${f2(R)}" stroke="${P.Gdk}" stroke-width="${f2(0.8 * k)}" stroke-dasharray="${f2(2.2 * k)} ${f2(1.4 * k)}" stroke-linecap="round" opacity=".7"/>`;
       footLines.forEach((ln, i) => {
         s += `<text x="${f2((L + R) / 2)}" y="${f2(footY0 + i * footFs * 1.4)}" text-anchor="middle" direction="${ar ? "rtl" : "ltr"}" font-size="${f2(footFs)}" class="c07v2-pt c07v2-pt-foot${ar ? " c07v2-pt-ar" : ""}">${ln}</text>`;
       });
@@ -1199,7 +1194,7 @@
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="125%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.3"/></filter>` +
       `<pattern id="${ids.weave}" width="2" height="2" patternUnits="userSpaceOnUse"><path d="M0 .5H1M1 1.5H2" stroke="#000" stroke-opacity=".13" stroke-width=".6"/><path d="M1.5 0V1M.5 1V2" stroke="#fff" stroke-opacity=".2" stroke-width=".6"/></pattern>` +
       `<pattern id="${ids.weft}" width="3" height="1.1" patternUnits="userSpaceOnUse"><rect width="3" height=".42" fill="${P.patch}" opacity=".46"/></pattern>` +
-      hatch(ids.satin, P.Glt, P.Gxd);
+      hatch(ids.satin, P.Gdk, mix(P.Gdk, "#000000", 0.35), 0.55, 0.3, 58);
     if (binding)
       defs += `<pattern id="${ids.tape}" width="2.2" height="2.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.2" height="2.2" fill="${P.L}"/><rect width="1" height="2.2" fill="#000" opacity=".12"/></pattern>`;
     if (!thumb)
@@ -1477,7 +1472,7 @@
       `<filter id="${ids.soft}" x="-10%" y="-10%" width="120%" height="130%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.5"/></filter>` +
       `<pattern id="${ids.weave}" width="2" height="2" patternUnits="userSpaceOnUse"><path d="M0 .5H1M1 1.5H2" stroke="#000" stroke-opacity=".13" stroke-width=".6"/><path d="M1.5 0V1M.5 1V2" stroke="#fff" stroke-opacity=".2" stroke-width=".6"/></pattern>` +
       `<pattern id="${ids.weft}" width="3" height="1.1" patternUnits="userSpaceOnUse"><rect width="3" height=".42" fill="${P.patch}" opacity=".46"/></pattern>` +
-      hatch(ids.satin, P.Glt, P.Gxd) +
+      hatch(ids.satin, P.Gdk, mix(P.Gdk, "#000000", 0.35), 0.55, 0.3, 58) +
       `<clipPath id="${ids.arms}"><rect width="${W}" height="${H}"/></clipPath>`;
     if (!thumb)
       defs += `<filter id="${ids.grain}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${hashStr(p.serial) % 97}"/><feColorMatrix type="matrix" values="0 0 0 0 .05  0 0 0 0 .05  0 0 0 0 .08  0 0 0 2.2 -1.05"/></filter>`;
@@ -2017,13 +2012,13 @@
       "The tier ladder is physical: gauge, colour count, panel, binding, cord and finally the gesture. The tassel count makes it readable down to 24px on both grounds.",
       "The type is clean and robust: hand-cleaned stitch charts for figures, three Latin sizes and the Arabic in two weights, a fit ladder that never cuts a name to its initial, and three sizes and stroke weights keeping the hierarchy.",
       "The ratings are always on the front, on a patch that reads as textile, and the ID has a physical carrier woven into the patch's edge.",
-      "The folded state brings the grid aspect to about 1:1.5 for PRO in Latin, while the share shows the whole scarf.",
+      "Folded over the rail it stays compact in a grid or a profile, while the share image shows the whole scarf.",
     ],
     risks: [
       "It sits near ultras culture and near Codex's Terrace theme. ALI ·26 is the supporter-group form by design, so free-text names need moderation, and the share keeps stands and steps out of the background.",
-      "Card height varies with the gauge and the name: PRO is about 1:1.53 and CHAMPION 1:1.48, HOMA's coarse stitch makes it taller (about 1:1.7), Arabic adds rows for descenders and the tier word (about 1:1.6 to 1:2.0), and a long name on a narrow scarf goes to two lines (up to about 1:2.0 at HOMA).",
+      "The card has no fixed height: the coarse HOMA knit, Arabic names and long names all make the scarf longer, so any screen that holds it must let it grow downwards.",
       "Splitting a single-word name over two lines (YAS / MINE ·26) is legible but not how a person writes their name; it happens only where the scarf has too few stitches for the condensed 7- and 6-row capitals, and the break prefers a syllable (between two consonants).",
-      "In the share, the 84 is about 16% of the frame height in Latin (14% in Arabic, whose name and tier word add rows): the two halves and the whole length inside a 24px margin cap it below the 18% target at PRO's 37-stitch gauge.",
+      "In the share image the 84 is a little smaller than planned, because the whole scarf, both halves and the fringe, has to fit inside the story's safe margin.",
       "The placeholder club colour is a slate close to navy, so the sample still reads cool. The module's contrast logic has been rendered for the two proof colourways, not for real club palettes, and red with green should appear only when a club's own data says so.",
       "Not built: the band that knits on at gameweek close, a league 'mur des écharpes' share, long-press on the patch, and the multi-segment sway (the drag sway is a single pendulum from the rail).",
       "The Arabic charts (the five names in two weights, the five tier words), the caption and مثال need review by a native MSA reader. Other Arabic names use a sampled fallback that has not been hand-checked.",
