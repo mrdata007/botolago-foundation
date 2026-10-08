@@ -182,17 +182,12 @@ export function recapCounted(
 /* ------------------------------------------------------------------------------------------ */
 
 /**
- * The deadline the panel's invite line is about: the first counted round's, while it is ahead.
- * Null when that round is not the one the page holds, or its deadline has passed.
+ * The next Fantasy deadline the born panel is given: the page's round while its deadline is
+ * ahead, else null. The panel says whether its invite line is true (it names the first counted
+ * round from the card itself).
  */
-export function firstCountedDeadline(
-  card: MyCardDto,
-  round: RoundRef | null,
-  nowMs: number = Date.now(),
-): string | null {
-  if (!round || card.firstCountedGameweekSeq === null) return null;
-  if (round.number !== card.firstCountedGameweekSeq) return null;
-  return Date.parse(round.deadline) > nowMs ? round.deadline : null;
+export function nextDeadline(round: RoundRef | null, nowMs: number = Date.now()): string | null {
+  return round && Date.parse(round.deadline) > nowMs ? round.deadline : null;
 }
 
 /* ------------------------------------------------------------------------------------------ */

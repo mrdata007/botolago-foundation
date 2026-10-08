@@ -4,7 +4,7 @@ import type { MemberCardDto, MyCardDto } from "@/backend/manager-card/contracts"
 import { FIXTURES } from "@/backend/manager-card/fixtures";
 
 import {
-  firstCountedDeadline,
+  nextDeadline,
   firstTransferEligible,
   hintEligible,
   hubCardModel,
@@ -195,24 +195,13 @@ describe("recapCounted", () => {
   });
 });
 
-describe("firstCountedDeadline", () => {
-  it("is the deadline of the first counted round while it is ahead", () => {
-    expect(
-      firstCountedDeadline(
-        card("born0", { firstCountedGameweekSeq: 5 }),
-        round({ number: 5 }),
-        NOW,
-      ),
-    ).toBe(AHEAD);
+describe("nextDeadline", () => {
+  it("is the round's deadline while it is ahead", () => {
+    expect(nextDeadline(round(), NOW)).toBe(AHEAD);
   });
-  it("is null for another round, a passed deadline, or an unknown first round", () => {
-    const born = card("born0", { firstCountedGameweekSeq: 5 });
-    expect(firstCountedDeadline(born, round({ number: 6 }), NOW)).toBeNull();
-    expect(firstCountedDeadline(born, round({ number: 5, deadline: BEHIND }), NOW)).toBeNull();
-    expect(
-      firstCountedDeadline({ ...born, firstCountedGameweekSeq: null }, round({ number: 5 }), NOW),
-    ).toBeNull();
-    expect(firstCountedDeadline(born, null, NOW)).toBeNull();
+  it("is null once it has passed, or when there is no round", () => {
+    expect(nextDeadline(round({ deadline: BEHIND }), NOW)).toBeNull();
+    expect(nextDeadline(null, NOW)).toBeNull();
   });
 });
 
