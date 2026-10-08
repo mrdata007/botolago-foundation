@@ -33,16 +33,18 @@ one() {
   local url out w h dpr scheme mode
   IFS=$'\t' read -r url out w h dpr scheme mode <<<"$1"
   mkdir -p "$(dirname "$out")"
-  local tmp
+  local tmp json
   tmp="$(mktemp --suffix=.png)"
   case "$mode" in
-    phone) node tools/capture.mjs "$url" "$tmp" "$w" --height="$h" --viewport --dpr="$dpr" --scheme="$scheme" ;;
-    page) node tools/capture.mjs "$url" "$tmp" "$w" --height="$h" --dpr="$dpr" --scheme="$scheme" ;;
-    motion) node tools/capture-motion.mjs "$url" "$tmp" --dpr="$dpr" ;;
-    reduced) node tools/capture-motion.mjs "$url" "$tmp" --reduced --dpr="$dpr" ;;
+    phone) json="$(node tools/capture.mjs "$url" "$tmp" "$w" --height="$h" --viewport --dpr="$dpr" --scheme="$scheme")" ;;
+    page) json="$(node tools/capture.mjs "$url" "$tmp" "$w" --height="$h" --dpr="$dpr" --scheme="$scheme")" ;;
+    motion) json="$(node tools/capture-motion.mjs "$url" "$tmp" --dpr="$dpr")" ;;
+    reduced) json="$(node tools/capture-motion.mjs "$url" "$tmp" --reduced --dpr="$dpr")" ;;
   esac
   ffmpeg -y -loglevel error -i "$tmp" -c:v libwebp -quality 80 -compression_level 6 "$out"
   rm -f "$tmp"
+  # the log line names the WebP it made, not the temporary PNG
+  printf '%s\n' "${json//$tmp/${out#"$OUT"/}}"
 }
 if [ "${1:-}" = "--one" ]; then
   one "$2"
@@ -136,15 +138,17 @@ if [ "$ONLY" = all ] || [ "$ONLY" = motion ]; then
   done
 fi
 
-echo "$(wc -l <"$JOBFILE") captures, $JOBS at a time" >&2
-LOG="$OUT/capture.log"
-mkdir -p "$OUT"
-: >"$LOG"
-export -f one
-export BASE OUT PW_CORE CHROME
-# each job prints one JSON line (console errors, elements outside the frame): keep them for review
-xargs -d '\n' -P "$JOBS" -I{} bash "${BASH_SOURCE[0]}" --one {} <"$JOBFILE" | tee -a "$LOG" |
-  awk '/"errors":\[[^]]/ || /"overflow":\[[^]]/ {print "NOTE " $0}' >&2 || true
+if [ -s "$JOBFILE" ]; then
+  echo "$(wc -l <"$JOBFILE") captures, $JOBS at a time" >&2
+  LOG="$OUT/capture.log"
+  mkdir -p "$OUT"
+  : >"$LOG"
+  export -f one
+  export BASE OUT PW_CORE CHROME
+  # each job prints one JSON line (console errors, elements outside the frame): keep them for review
+  xargs -d '\n' -P "$JOBS" -I{} bash "${BASH_SOURCE[0]}" --one {} <"$JOBFILE" | tee -a "$LOG" |
+    awk '/"errors":\[[^]]/ || /"overflow":\[[^]]/ {print "NOTE " $0}' >&2 || true
+fi
 rm -f "$JOBFILE"
 
 # The index, from the registry and the files on disk.
@@ -169,7 +173,7 @@ L.push("# Onboarding captures", "");
 L.push("Screenshots of the onboarding screens (`onboarding.html`), made by `tools/capture-onboarding.sh`. Fictional sample data only; Semelle captures carry the label « Test culturel en attente » (no onboarding moment ships on Semelle until its cultural test passes).", "");
 L.push(`**${files.length} files, ${(total / 1048576).toFixed(1)} MB** (WebP, quality 80).`, "");
 L.push("## How they were made", "", "```sh", "cd design-lab/manager-cards-claude", "PW_CORE=<playwright-core/index.mjs> CHROME=<chrome> bash tools/capture-onboarding.sh   # everything", "bash tools/capture-onboarding.sh lead|others|desktop|motion|2x                          # one set", "```", "");
-L.push("Each file is one `tools/capture.mjs` call, `onboarding.html?<direction>&screen=<id>&variant=<key>&lang=<fr|ar>&scheme=<light|dark>`, converted with `ffmpeg -c:v libwebp -quality 80`. Phone screens are the 390 x 844 viewport at device pixel ratio 1 (2 in `2x/`), reduced motion on, animations frozen. The t = 0 motion proofs come from `tools/capture-motion.mjs`. The per-capture console errors and elements outside the frame are in `capture.log` (one JSON line each).", "");
+L.push("Each file is one `tools/capture.mjs` call, `onboarding.html?<direction>&screen=<id>&variant=<key>&lang=<fr|ar>&scheme=<light|dark>`, converted with `ffmpeg -c:v libwebp -quality 80`. Phone screens are the 390 x 844 viewport at device pixel ratio 1 (2 in `2x/`), reduced motion on, animations frozen. The t = 0 motion proofs come from `tools/capture-motion.mjs`. The per-capture console errors and elements outside the frame are in `capture.log` (one JSON line each, named by the WebP it made).", "");
 L.push("## Files", "");
 L.push("| Folder | Direction | What |", "|---|---|---|");
 const dirs = [["07-v2", "Écharpe v2 (the lead)", "every screen and variant, fr and ar, light and dark, 390 x 844 at 1x; `2x/` has the eight key moments at 2x; `D1-*` are the desktop screens at 1440"], ["03-v2", "Porte-clés v2", "S05, S06, S08, S09, S10, S14: fr light, ar light, ar dark"], ["01", "Lucarne", "the same six screens"], ["05-v2", "Semelle v2", "the same six screens, with the cultural-test label"], ["t1-touchline", "Touchline (reworked)", "the same six screens"], ["motion", "all five", "S05 new-serial and S08 fresh at t = 0 with motion on, and under reduced motion"]];
