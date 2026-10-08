@@ -1,3 +1,4 @@
+import { estimateAspect } from "./echarpe/estimate";
 import type { CardRenderer } from "./renderer";
 import type { CardLang, CardProfile } from "./types";
 
@@ -12,8 +13,11 @@ import type { CardLang, CardProfile } from "./types";
  * renderer has loaded; after that the box takes the markup's own shape, which changes with the
  * card (the fourth counted journée turns the forming marks into season stripes).
  *
- * Today this is the plain renderer. The Écharpe port (WP2) switches `load` to
- * `echarpe/index.ts` and `estimateAspect` to a cheap version of its `aspect`, in its last commit.
+ * Today this is Écharpe v2 (`./echarpe`). `load` waits for the Changa face its Arabic-name sampler
+ * reads (within a second and a half) before it hands the renderer over, so the first card is drawn
+ * with the right face. `estimateAspect` is Écharpe's own `estimate.ts`, the one module of the folder
+ * that is in the main bundle: it imports only the geometry and the name cleaner, no chart.
+ * The plain renderer (`./plain-renderer`) stays as the small stand-in the unit tests use.
  */
 export interface ActiveRenderer {
   readonly id: string;
@@ -25,10 +29,12 @@ export interface ActiveRenderer {
   estimateAspect(profile: CardProfile, lang: CardLang): number;
 }
 
-const PLAIN_ASPECT = 360 / 240;
-
 export const activeRenderer: ActiveRenderer = {
-  id: "plain-v1",
-  load: () => import("./plain-renderer").then((module) => module.plainRenderer),
-  estimateAspect: () => PLAIN_ASPECT,
+  id: "echarpe-v2",
+  load: async () => {
+    const module = await import("./echarpe");
+    await module.ready();
+    return module.echarpeRenderer;
+  },
+  estimateAspect,
 };
