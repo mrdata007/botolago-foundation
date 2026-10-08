@@ -141,9 +141,11 @@ export function FantasyHubTeamArea({
         pending={summaryPending}
       />
       <OwnerNextAction gameweek={gameweek} />
+      <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
       {cardLive ? (
-        // Under « Composer l’équipe », which stays the first thing the team card leads to. The
-        // fallback holds the block's height while its chunk loads, so nothing below moves.
+        // After the two rows that act (« Composer l’équipe », the transfers) and before the figures:
+        // the team card keeps its action beside it. The fallback holds the block's height while
+        // its chunk loads, so nothing below moves.
         <Suspense
           fallback={
             <div aria-hidden className="mt-2">
@@ -154,7 +156,6 @@ export function FantasyHubTeamArea({
           <HubCardBlock gameweek={gameweek} />
         </Suspense>
       ) : null}
-      <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
     </>
   );
 }
