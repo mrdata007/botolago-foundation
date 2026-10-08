@@ -17,6 +17,8 @@ import { I18nProvider } from "@/i18n/provider";
 import type { Club, Gameweek } from "@/types/domain";
 
 import { GradinsHomeView } from "./GradinsHome";
+import { LeagueRows } from "./LeagueRows";
+import { buildRows } from "./people";
 import { homeState, type HomeState } from "./gradins-state";
 
 /**
@@ -308,4 +310,52 @@ describe("every Gradins home", () => {
       expect(html).not.toMatch(/ ml-| mr-| pl-| pr-| left-| right-| text-left| text-right/);
     });
   }
+});
+
+describe("G3's table", () => {
+  const fixture = FIXTURES.rated;
+  const rows = buildRows(fixture.league!.standings, fixture.league!.members, fixture.card!.teamId);
+
+  async function table() {
+    return render(<LeagueRows rows={rows} caption="Les Lions du Derb" head onOpen={() => {}} />);
+  }
+
+  it("lists the managers in the league's own points order, and not by rating", async () => {
+    const html = await table();
+    const names = [...html.matchAll(/data-team="([^"]+)"/g)].map((m) => m[1]);
+    expect(names).toEqual(fixture.league!.standings.map((row) => row.managerId));
+    // YASMINE (92) is fourth in points: she is fourth in the table, below lower ratings.
+    const order = ["OTHMANE", "Ali", "KARIM", "YASMINE", "HAMZA", "SALMA"].map((name) =>
+      html.indexOf(`>${name}<`),
+    );
+    expect(order.every((at) => at > 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("marks the reader's own row, once, and shows the reader no report control on it", async () => {
+    const html = await table();
+    expect(html.match(/data-own="true"/g)).toHaveLength(1);
+    expect(html.match(/data-own-bar/g)).toHaveLength(1);
+    const own = html.match(/<tr[^>]*data-own="true"[\s\S]*?<\/tr>/)![0];
+    expect(own).not.toContain("data-report-trigger");
+    expect(text(own)).toContain(fr["gradins.people.you"]);
+    const other = html.match(
+      /<tr[^>]*data-team="3c000004-0000-4000-8000-000000000001"[\s\S]*?<\/tr>/,
+    )![0];
+    expect(other).toContain("data-report-trigger");
+  });
+
+  it("opens the face-à-face from the name, a button the size of the row's text", async () => {
+    const html = await table();
+    expect(html.match(/data-testid="gradins-people-open"/g)).toHaveLength(6);
+    expect(html).toContain("min-h-[var(--ui-tap-min)]");
+  });
+
+  it("says what each card says: a number and its tier, « en formation », or a dash", async () => {
+    const html = await table();
+    expect(text(html)).toContain("88 OVR · CHAMPION");
+    expect(text(html)).toContain("63 OVR · HOMA");
+    expect(text(html)).toContain("en formation 2/3");
+    expect(html).toContain(fr["card.provisional"]);
+  });
 });
