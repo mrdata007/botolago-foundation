@@ -42,6 +42,13 @@ Full diagram and commands: runbook § "Scheduler token".
 
 ## 3. Vercel "Account is blocked"
 
+> **Update 2026-10-08:** the owner disconnected Vercel from this repository.
+> Vercel no longer posts a status on new commits. The red mark stays only on
+> the older commits it already judged. Nothing in production depended on it:
+> the website is on Lovable. The Vercel project still exists, so
+> `docs/engineering/VERCEL_CUTOVER.md` stays usable as a fallback by
+> reconnecting it.
+
 | Evidence                                                                                                                                                                | What it shows                                                                                                                                                      |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `vercel.json` runs `scripts/vercel/ignore-build.mjs`, which **skips every draft-PR and work-branch build** (added 2026-09-21 after the team's deployment quota ran out) | Vercel only hosts previews; the website is Lovable (`DEPLOYMENT.md`). For draft #379 a healthy account would report "Canceled by Ignored Build Step", never build. |
@@ -92,7 +99,7 @@ added to it.
 | Level                        | State                                                                                                                                                    | What decides it                                                                                                                                                                    |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Code readiness**           | **READY on branch.** P1-01, P1-02 and P1-03 fixed and tested; CI green (application and database); 38 failing-on-`main` regression cases; review pending | Review and merge of #379                                                                                                                                                           |
-| **Infrastructure readiness** | **NOT READY**                                                                                                                                            | Secret set and verified; 8 functions deployed and smoke-tested; PITR on (Small compute or larger); Vercel resolved, or confirmed not required                                      |
+| **Infrastructure readiness** | **NOT READY**                                                                                                                                            | Secret set and verified; 8 functions deployed and smoke-tested; PITR on (Small compute or larger). Vercel: disconnected 2026-10-08, no longer a factor.                            |
 | **Broad-launch readiness**   | **NOT READY**                                                                                                                                            | Infrastructure ready **plus** P1-04/P1-05 measured PASS in the rehearsal **plus** a 500-user PASS (deadline and browsing) at the launch compute size, with production on that size |
 
 Verdict: **FIX THEN SHIP**, unchanged.
@@ -104,7 +111,7 @@ Verdict: **FIX THEN SHIP**, unchanged.
 | #   | Action                                                                                                                          | Needs                           | Cost                                                     | Doc        |
 | --- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------------------- | ---------- |
 | 1   | Review PR #379                                                                                                                  | —                               | ✅ free                                                  | PR         |
-| 2   | Vercel dashboard: find why the account is blocked; check whether `Vercel` is a required check on `main`                         | —                               | ✅ free to look. A plan upgrade to clear it would be 💳. | §3         |
+| 2   | **Done 2026-10-08:** Vercel disconnected from the repo. Still check that `Vercel` is not a required check on `main`.            | —                               | ✅ free to look. A plan upgrade to clear it would be 💳. | §3         |
 | 3   | Set the Edge Function secret `BOTOLAGO_SCHEDULER_TOKEN` from Vault, and check its digest                                        | —                               | ✅ free                                                  | runbook 1  |
 | 4   | Merge #379                                                                                                                      | 1 (and 2 if Vercel is required) | ✅ free                                                  | runbook 2  |
 | 5   | Deploy the 8 Edge Functions in the given order, with the 401 probe and 200 check after each scheduled one, and the staff checks | 3, 4                            | ✅ free                                                  | runbook 3  |

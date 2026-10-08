@@ -64,7 +64,7 @@ Order matters. Each step lists its check and its way back.
 ### 0. Before anything (no cost, no write)
 
 - **0.1** Review PR #379, and confirm `application-quality` and `database-quality` are green on its **current head** commit.
-- **0.2** Decide on Vercel (see `release-preparation.md` §3). It does not gate this release unless branch protection lists `Vercel` as a required check (GitHub → Settings → Branches → `main`).
+- **0.2** Vercel was disconnected from the repository on 2026-10-08 and posts no status any more. If branch protection still lists `Vercel` as a required check (GitHub → Settings → Branches → `main`), remove it, or the merge waits for a check that never comes.
 - **0.3** Pick a quiet window: no match live (live scores pause if step 2 goes wrong), and not hour :23 (account deletions).
 
 ### 1. Set the secret — **WRITE (configuration)**, free, safe to do first
