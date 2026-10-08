@@ -343,7 +343,8 @@
           const art = c ? cardHTML(c) : t.img ? `<img class="codex-img" src="${t.img}" alt="${esc(t.name)} (Codex), screenshot">` : "";
           return `<article class="t5"><div class="t5-rank">${t.rank}</div><div class="stage" style="--card-w:200px">${art}</div><div><span class="who">${t.source === "claude" ? "Claude" : "Codex · PR #377"}</span><h3>${esc(c ? num(c) + " " + nameOf(c) : t.name)}</h3><p lang="en" dir="ltr">${esc(t.why)}</p></div></article>`;
         })
-        .join("")}</div>`
+        .join("")}</div>` +
+      (rv.top5Next ? `<div class="prose" lang="en" dir="ltr" style="margin-block-start:28px">${rv.top5Next}</div>` : "")
     );
   }
 

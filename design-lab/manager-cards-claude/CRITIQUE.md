@@ -140,4 +140,103 @@ it found.
 - **Founder.** The squared split ring, the only square ring the system ever issues, with
   FOUNDER on its top bar.
 
-<!-- vs-codex -->
+## Against the Codex exploration (draft PR #377)
+
+Three fresh judges compared each Codex top-three card with the Claude card it competes
+with, from renders of both branches (Codex's cards were captured from its own branch, in
+`review/codex/`): a brand director, a 16-year-old from Casablanca with his 22-year-old
+cousin, and a mobile product designer who plays Fantasy. A head of design then combined
+their verdicts. **Caution:** the judges are Claude agents judging Claude's work against
+another tool's, so this is an argued opinion, not a neutral panel. Testing with Moroccan
+users is what settles it.
+
+| Codex pick | Claude rival | Verdict | Vote |
+|---|---|---|---|
+| #1 Stadium Architecture | 07 Écharpe (refined) | **Replace** | 3 of 3 |
+| #2 Touchline | 05 Semelle (refined) | **Replace, only after a cultural test** | 2 of 3 |
+| #3 Stadium Pass | 03 Porte-clés (refined) | **Replace** | 3 of 3 |
+
+- **Stadium Architecture → Écharpe.** Codex's best-finished card, but its one idea is the
+  arch the brief lists as a cliché (a headstone at 28px), and it makes a state stadium the
+  top reward, which young Moroccans now read through the GenZ 212 slogan "the stadiums are
+  ready, but where is the hospital?". Écharpe builds prestige from the stands, with the
+  founder year knitted the supporter way (ALI ·26). It still owes a LEGEND that is not
+  itself an arch, middle tiers that are more than recolours, and a better 24px token.
+- **Touchline → Semelle, conditionally.** Touchline is the only Codex shape you know
+  without the logo, but its spine is FUT's left column, its blue is not the logo blue, long
+  names overflow, it has no Arabic face and its badge drops the 84. Semelle has the most
+  original outline and the best tier ladder of the twenty. The product judge voted no:
+  showing a sole is an insult in Morocco, and this card puts the user's own name, often
+  Mohammed or a name containing God's name, on a sole. That must be tested with Moroccan
+  teenagers and parents before any more work on it.
+- **Stadium Pass → Porte-clés.** A pass is issued to you, not earned. With a mandatory Fan
+  ID planned for Botola matches, a laminated badge reading "MANAGER ACCESS" now looks like
+  official paperwork, which breaks the not-affiliated rule. Porte-clés is owned, has an
+  honest stat table and the best founder mark of all twenty (a squared ring only 2026
+  founders get). It still owes tier cues before LEGEND and a 24px token that reads as a
+  key tag rather than a capsule.
+
+### On Codex's ranking
+
+Codex ranked finish and legibility, not ownership. Stadium Architecture is its
+best-finished card and Stadium Pass its most legible, and its flat drawings would be
+cheaper to build and lighter at 24px than the knit, carbon and enamel renders here. But
+the top of the order is wrong: the number one is the arch the brief warned against, and
+the number three is the riskiest metaphor now that a Fan ID is coming (that news may have
+postdated Codex's research). All three judges independently named **Touchline** as
+Codex's best. Underneath, Codex's ten are one template in ten frames: the same big 84 with a
+tiny OVR label, front-facing bust, four-number stat row, flag + MOROCCO + crest and dotted
+founder stamp, with materials named but not drawn, no tier states, no Arabic card face and a
+person-icon token at every size. I agree with the three replacements, and would run
+Codex's ten as Touchline, Street, then Broadcast (as the share and head-to-head layer
+rather than a card), with Terrace and Stadium Architecture after them.
+
+Fairness cuts both ways: Claude's winners repeat a motif of their own, the hooded figure
+under a dome (Écharpe's LEGEND, Semelle's midsole) and round-topped bodies. The arch
+criticised in Codex's number one is partly present in this top three, and the next pass
+should remove it.
+
+## Final top five, across both explorations
+
+Each judge ranked five of the twenty; points were 5 for a first place down to 1 for a fifth.
+
+| Concept | Source | Brand | Youth | Product | Points |
+|---|---|---:|---:|---:|---:|
+| 07 Écharpe (refined) | Claude | 1 | 1 | 1 | 15 |
+| 03 Porte-clés (refined) | Claude | 2 | 3 | 2 | 11 |
+| 05 Semelle (refined) | Claude | 3 | 2 | — | 7 |
+| 01 Lucarne | Claude | 5 | — | 3 | 4 |
+| Touchline | Codex | — | 5 | 4 | 3 |
+| 10 Quatre Ombres | Claude | 4 | — | — | 2 |
+| 04 Pochoir | Claude | — | 4 | — | 2 |
+| 09 Panneau | Claude | — | — | 5 | 1 |
+
+1. **07 Écharpe (Claude, refined).** First for all three judges. The only concept in either
+   set that builds Moroccan supporter culture into the object without a cliché.
+2. **03 Porte-clés (Claude, refined).** The most adult object, owned rather than issued, with
+   the best founder mark of the twenty.
+3. **01 Lucarne (Claude).** Moved above Semelle because it carries no condition: unmistakably
+   football, legible to 24px, nothing betting-like, official or political.
+4. **05 Semelle (Claude, refined), provisional.** The best tier ladder and the strongest pull
+   for teenagers, held below Lucarne until the sole and sacred-name test runs. If it passes it
+   returns to third; if it fails it leaves, Touchline moves up and Quatre Ombres takes fifth.
+5. **Touchline (Codex), reworked.** Codex's one real silhouette, kept only with rework: no
+   FUT spine stack, the exact logo blue, the 84 and tier in its badge, long names, an Arabic
+   face and the founder year.
+
+### Fixed after the judges reported
+
+Two faults the judges found were fixed before publishing: Semelle's Arabic name lost its two
+dots under the tier tag (علي read as على, "on"), and Écharpe's knitted Arabic-side 26 read
+as "2b". Both were re-checked in every tier with all five sample names.
+
+### The next pass, if the owner continues
+
+- Test Semelle's sole and the sacred-name question with Moroccan teenagers and parents first.
+- Remove the hood-under-a-dome motif from Écharpe's LEGEND and Semelle's midsole.
+- Give every winner's middle tiers an added part, not only a new colour.
+- Redraw the 24px tokens of Écharpe and Porte-clés so they read as a scarf and a key tag.
+- Show each winner in two or three real club colourways (the sample club is a deliberately
+  neutral placeholder).
+- Carry the parts the losers donated: Panneau's raise-the-board share, Lsaq's sticker
+  export, Lucarne's top-corner moment, and Quatre Ombres' four-shadow light as a reveal.
