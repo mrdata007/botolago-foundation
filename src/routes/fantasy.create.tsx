@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
 
@@ -52,7 +52,22 @@ import { importDecisionService } from "@/services/fantasy-import-decision";
 import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { SQUAD_RULES, type FantasyPlayer, type SquadPlayer } from "@/types/fantasy";
+
+// The card's save-step line and the builder's return line are their own chunk, requested only
+// while the section is live: with the switch off this page imports nothing of the Manager Card.
+const CardSaveLine = lazy(() =>
+  import("@/components/manager-card/inline/CardSaveLine").then((module) => ({
+    default: module.CardSaveLine,
+  })),
+);
+const BuilderReturnLine = lazy(() =>
+  import("@/components/manager-card/inline/CardSaveLine").then((module) => ({
+    default: module.BuilderReturnLine,
+  })),
+);
+const BUILDER_RETURN_LINE_ID = "card-builder-return-line";
 
 export const Route = createFileRoute("/fantasy/create")({
   head: () => fantasyHead("create"),
@@ -112,6 +127,7 @@ function CreateTeamBody() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const { user, requireAuth } = useAuth();
+  const live = useManagerCardLive();
   // No `needsAuth`: a visitor builds a team first, and an account is asked for
   // only when they press "Enregistrer".
   const screen = useFantasyScreen({ needsTeam: false, needsAuth: false });
@@ -143,6 +159,8 @@ function CreateTeamBody() {
   }, [isCloud, owned.source, owned.userId, owned.snapshot?.teamId, owned.snapshot?.version]);
 
   const [draft, setDraft] = useState<CreateTeamDraft>(() => initCreateDraft());
+  // Live only: the draft a visitor built was taken over by the account just made (plan M1c).
+  const [accountReturn, setAccountReturn] = useState(false);
   const inited = useRef(false);
   useEffect(() => {
     inited.current = false;
@@ -160,6 +178,7 @@ function CreateTeamBody() {
     else if (visitorEntry && isCreateDraft(visitorEntry.payload)) {
       setDraft(visitorEntry.payload);
       fantasyDraftsStore.remove(GUEST_DRAFT_KEY);
+      if (live) setAccountReturn(true);
     } else
       setDraft(
         initCreateDraft(
@@ -167,7 +186,7 @@ function CreateTeamBody() {
         ),
       );
     inited.current = true;
-  }, [draftKey, user?.displayName]);
+  }, [draftKey, user?.displayName, live]);
   useEffect(() => {
     if (!inited.current || !draftKey) return;
     fantasyDraftsStore.save<CreateTeamDraft>(draftKey, draft);
@@ -186,6 +205,26 @@ function CreateTeamBody() {
   const gameweek = screen.gameweek;
   const summary = useMemo(() => computeSummary(draft, players), [draft, players]);
   const validation = useMemo(() => validateDraft(draft, players), [draft, players]);
+  const formRef = useRef<HTMLFormElement>(null);
+  const resumedOnName = useRef(false);
+  const focusedOnReturn = useRef(false);
+  // Back in the builder after sign-up (live only): a squad that is complete and valid opens on the
+  // name step, where the one thing left is saving it. Once, so Back to the squad stays possible.
+  useEffect(() => {
+    if (!live || !accountReturn || resumedOnName.current || screen.phase !== "ready") return;
+    resumedOnName.current = true;
+    if (validation.errors.every((code) => code === "team_name")) setStep("name");
+  }, [live, accountReturn, screen.phase, validation]);
+  // …with focus on the save button, or on the name while it is still missing, once the name step
+  // is on screen. The field is not autofocused any more while live, so nothing else takes it.
+  useEffect(() => {
+    if (!live || !accountReturn || step !== "name" || focusedOnReturn.current) return;
+    focusedOnReturn.current = true;
+    const form = formRef.current;
+    const save = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (save && !save.disabled) save.focus();
+    else form?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [live, accountReturn, step]);
   const playerOf = (id: string | null) => (id ? (players.find((p) => p.id === id) ?? null) : null);
 
   if (screen.phase !== "ready" || !gameweek) {
@@ -342,6 +381,12 @@ function CreateTeamBody() {
       if (res.ok) {
         // Counted on the server's confirmation only, never on a draft.
         track("fantasy_team_created");
+        // Live: the next screen reads the card fresh. Never awaited, never on the way to it.
+        if (live) {
+          void import("@/services/use-manager-card")
+            .then((module) => module.invalidateMyManagerCard(qc))
+            .catch(() => {});
+        }
         if (owned.userId) importDecisionService.markImported(owned.userId);
         toast.success(t("fantasy.create.success"));
         await owned.reload();
@@ -402,6 +447,7 @@ function CreateTeamBody() {
           </div>
         ) : null}
         <form
+          ref={formRef}
           className={cn("mt-4", ui.space.gutter)}
           onSubmit={(e) => {
             e.preventDefault();
@@ -417,7 +463,9 @@ function CreateTeamBody() {
               onChange={(e) => setDraft(setTeamNameOp(draft, e.target.value))}
               placeholder={t("fpl.team_name")}
               fieldClassName={cn(ui.radius.card, "min-h-[var(--ui-row-min)]", ui.rule.strong)}
-              autoFocus
+              // Live: the keyboard stays closed, so the card's line and « Entrer l’effectif » are
+              // seen before it opens.
+              autoFocus={!live}
             />
             {nameInvalid ? (
               <UiAlert tone="negative" className="mt-3">
@@ -442,6 +490,17 @@ function CreateTeamBody() {
                 className="border-b-0"
               />
             </div>
+            {live ? (
+              <Suspense fallback={null}>
+                <CardSaveLine
+                  signedIn={!!user}
+                  displayName={user?.displayName}
+                  teamName={draft.teamName}
+                  clubs={clubs}
+                  favoriteClubId={user?.favoriteClubId}
+                />
+              </Suspense>
+            ) : null}
             {blocking.length > 0 ? (
               <UiAlert tone="negative" className="mt-3">
                 <ul>
@@ -461,11 +520,17 @@ function CreateTeamBody() {
                 {t("fantasy.create.guest_note")}
               </p>
             ) : null}
+            {live && accountReturn ? (
+              <Suspense fallback={null}>
+                <BuilderReturnLine id={BUILDER_RETURN_LINE_ID} />
+              </Suspense>
+            ) : null}
             <UiButton
               type="submit"
               variant="gradient"
               className="mt-4"
               disabled={!nameCheck.ok || !validation.ok || saving}
+              aria-describedby={live && accountReturn ? BUILDER_RETURN_LINE_ID : undefined}
             >
               {saving ? t("fpl.saving") : t("fpl.enter_squad")}
             </UiButton>
