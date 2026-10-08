@@ -3,10 +3,14 @@ import { useQuery, type QueryClient } from "@tanstack/react-query";
 import type { ManagerCardStatus } from "@/backend/manager-card/contracts";
 import { fixtureIdFromSearch } from "@/backend/manager-card/fixture-selection";
 import { MANAGER_CARD_BUILD } from "@/lib/feature-flags";
-import { isServerRender } from "@/lib/ssr-prefetch";
-import { managerCardDataMode } from "./manager-card-mode";
 
 export type { ManagerCardStatus };
+
+/**
+ * `typeof window === "undefined"`, the same test as `isServerRender` in `@/lib/ssr-prefetch`,
+ * written out here so this module imports nothing the entry chunk does not already hold.
+ */
+const isServerRender = (): boolean => typeof window === "undefined";
 
 /**
  * Whether Gradins is live (plan section 3.2). Two layers decide: the build constant
@@ -47,7 +51,8 @@ export function isStatus(value: unknown): value is ManagerCardStatus {
  * `manager-card-status-server.ts`, loaded here on first use.
  */
 export async function readManagerCardStatusOnServer(fixture?: string): Promise<ManagerCardStatus> {
-  if (import.meta.env.DEV && managerCardDataMode() === "mock") {
+  // Development default is mock data, as `selectManagerCardDataMode` says; only `supabase` reads the database.
+  if (import.meta.env.DEV && import.meta.env.VITE_MANAGER_CARD_DATA_MODE !== "supabase") {
     return fixture === "featureOff" ? STATUS_OFF : DEV_STATUS_ON;
   }
   try {

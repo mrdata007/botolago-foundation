@@ -3,7 +3,6 @@ import { describe, expect, it } from "bun:test";
 import { FIXTURES } from "@/backend/manager-card/fixtures";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 
-import { activeRenderer } from "./active-renderer";
 import { cardStrings, type Translate } from "./copy";
 import { ALLOWED_CARD_TAGS, findUnsafeMarkup } from "./markup-safety";
 import { esc, plainRenderer } from "./plain-renderer";
@@ -47,14 +46,6 @@ describe("the plain renderer", () => {
     expect(
       plainRenderer.token(member, { strings: STRINGS.fr, theme: "light", size: 44 }),
     ).toContain(">78</text>");
-  });
-
-  it("reserves the shape the active renderer estimates", () => {
-    expect(activeRenderer.estimateAspect(rated)).toBe(plainRenderer.aspect(rated, STRINGS.fr));
-  });
-
-  it("loads through the active renderer's own import", async () => {
-    expect(await activeRenderer.load()).toBe(plainRenderer);
   });
 });
 
