@@ -65,17 +65,17 @@ import type { League } from "@/types/fantasy";
 // live and the league is a private one: with the switch off this page imports nothing of the
 // Manager Card.
 const LeagueCardBand = lazy(() =>
-  import("@/components/manager-card/inline/LeagueCardBand").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.LeagueCardBand,
   })),
 );
 const LeagueCompareLink = lazy(() =>
-  import("@/components/manager-card/inline/LeagueCardBand").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.LeagueCompareLink,
   })),
 );
 const LeagueRowMini = lazy(() =>
-  import("@/components/manager-card/inline/LeagueRowMini").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.LeagueRowMini,
   })),
 );

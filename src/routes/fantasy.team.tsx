@@ -57,12 +57,12 @@ import { FORMATIONS, SQUAD_RULES, type FormationKey, type SquadPlayer } from "@/
 // The card's birth panel slot and hint are their own chunks, requested only while the section is
 // live: with the switch off this screen imports nothing of the Manager Card.
 const TeamBornSlot = lazy(() =>
-  import("@/components/manager-card/inline/TeamBornSlot").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.TeamBornSlot,
   })),
 );
 const CardHint = lazy(() =>
-  import("@/components/manager-card/inline/CardHint").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.CardHint,
   })),
 );

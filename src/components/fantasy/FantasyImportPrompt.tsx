@@ -137,7 +137,7 @@ export function FantasyImportPrompt() {
     if (res.ok) {
       // Live: a team now exists, so the card is read fresh. Never awaited, never on the way on.
       if (cardLive) {
-        void import("@/services/use-manager-card")
+        void import("@/components/manager-card/inline/gradins-inline")
           .then((module) => module.invalidateMyManagerCard(qc))
           .catch(() => {});
       }

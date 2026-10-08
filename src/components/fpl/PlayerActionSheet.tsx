@@ -15,7 +15,7 @@ import type { FantasyPlayer, Position } from "@/types/fantasy";
 // The card's hint is its own chunk, requested only while the section is live: with the switch off
 // this sheet imports nothing of the Manager Card.
 const CardHint = lazy(() =>
-  import("@/components/manager-card/inline/CardHint").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.CardHint,
   })),
 );

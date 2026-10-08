@@ -13,7 +13,7 @@ import { joinDeadlineToShow } from "./fantasy-hub-layout";
 // The card's fifth point is its own chunk, requested only while the section is live: with the
 // switch off nothing of the Manager Card is imported by this page.
 const GuestIntroCardPoint = lazy(() =>
-  import("@/components/manager-card/inline/GuestIntroCardPoint").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.GuestIntroCardPoint,
   })),
 );

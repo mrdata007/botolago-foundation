@@ -17,7 +17,7 @@ import { RecapPublication } from "./RecapPublication";
 // The card's line is its own chunk, requested only while the section is live: with the switch off
 // this card imports nothing of the Manager Card.
 const RecapCardLine = lazy(() =>
-  import("@/components/manager-card/inline/RecapCardLine").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.RecapCardLine,
   })),
 );

@@ -58,12 +58,12 @@ import { SQUAD_RULES, type FantasyPlayer, type SquadPlayer } from "@/types/fanta
 // The card's save-step line and the builder's return line are their own chunk, requested only
 // while the section is live: with the switch off this page imports nothing of the Manager Card.
 const CardSaveLine = lazy(() =>
-  import("@/components/manager-card/inline/CardSaveLine").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.CardSaveLine,
   })),
 );
 const BuilderReturnLine = lazy(() =>
-  import("@/components/manager-card/inline/CardSaveLine").then((module) => ({
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
     default: module.BuilderReturnLine,
   })),
 );
@@ -383,7 +383,7 @@ function CreateTeamBody() {
         track("fantasy_team_created");
         // Live: the next screen reads the card fresh. Never awaited, never on the way to it.
         if (live) {
-          void import("@/services/use-manager-card")
+          void import("@/components/manager-card/inline/gradins-inline")
             .then((module) => module.invalidateMyManagerCard(qc))
             .catch(() => {});
         }
