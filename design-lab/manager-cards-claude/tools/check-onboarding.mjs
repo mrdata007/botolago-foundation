@@ -1387,6 +1387,8 @@ P();
 P(`Run time ${Math.round((Date.now() - t0) / 1000)}s.`);
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, lines.join("\n") + "\n");
+// the repository formats Markdown with Prettier: leave the report in that style (best effort)
+spawnSync("npx", ["--no-install", "prettier", "--write", outFile], { cwd: repo });
 
 if (flag("json")) writeFileSync(resolve(flag("json")), JSON.stringify(results));
 const total = results.length;

@@ -12,18 +12,18 @@ PW_CORE=<playwright-core/index.mjs> CHROME=<chrome> bash tools/capture-onboardin
 bash tools/capture-onboarding.sh lead|others|desktop|motion|2x                          # one set
 ```
 
-Each file is one `tools/capture.mjs` call, `onboarding.html?<direction>&screen=<id>&variant=<key>&lang=<fr|ar>&scheme=<light|dark>`, converted with `ffmpeg -c:v libwebp -quality 80`. Phone screens are the 390 x 844 viewport at device pixel ratio 1 (2 in `2x/`), reduced motion on, animations frozen. The t = 0 motion proofs come from `tools/capture-motion.mjs`. The per-capture console errors and elements outside the frame are in `capture.log` (one JSON line each; the S11 `image` lines list parts of the share image's SVG that its own SVG clips, which is not an escape).
+Each file is one `tools/capture.mjs` call, `onboarding.html?<direction>&screen=<id>&variant=<key>&lang=<fr|ar>&scheme=<light|dark>`, converted with `ffmpeg -c:v libwebp -quality 80`. Phone screens are the 390 x 844 viewport at device pixel ratio 1 (2 in `2x/`), reduced motion on, animations frozen. The t = 0 motion proofs come from `tools/capture-motion.mjs`. The per-capture console errors and elements outside the frame are in `capture.log` (one JSON line each, named by the WebP it made).
 
 ## Files
 
-| Folder | Direction | What |
-|---|---|---|
-| `07-v2/` | Écharpe v2 (the lead) | 236 files (5944 KB): every screen and variant, fr and ar, light and dark, 390 x 844 at 1x; `2x/` has the eight key moments at 2x; `D1-*` are the desktop screens at 1440 |
-| `03-v2/` | Porte-clés v2 | 57 files (1030 KB): S05, S06, S08, S09, S10, S14: fr light, ar light, ar dark |
-| `01/` | Lucarne | 57 files (1045 KB): the same six screens |
-| `05-v2/` | Semelle v2 | 57 files (1116 KB): the same six screens, with the cultural-test label |
-| `t1-touchline/` | Touchline (reworked) | 57 files (1079 KB): the same six screens |
-| `motion/` | all five | 24 files (561 KB): S05 new-serial and S08 fresh at t = 0 with motion on, and under reduced motion |
+| Folder          | Direction             | What                                                                                                                                                                     |
+| --------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `07-v2/`        | Écharpe v2 (the lead) | 236 files (5944 KB): every screen and variant, fr and ar, light and dark, 390 x 844 at 1x; `2x/` has the eight key moments at 2x; `D1-*` are the desktop screens at 1440 |
+| `03-v2/`        | Porte-clés v2         | 57 files (1030 KB): S05, S06, S08, S09, S10, S14: fr light, ar light, ar dark                                                                                            |
+| `01/`           | Lucarne               | 57 files (1045 KB): the same six screens                                                                                                                                 |
+| `05-v2/`        | Semelle v2            | 57 files (1116 KB): the same six screens, with the cultural-test label                                                                                                   |
+| `t1-touchline/` | Touchline (reworked)  | 57 files (1079 KB): the same six screens                                                                                                                                 |
+| `motion/`       | all five              | 24 files (561 KB): S05 new-serial and S08 fresh at t = 0 with motion on, and under reduced motion                                                                        |
 
 File names: `<screen>-<variant>-<fr|ar>-<light|dark>.webp`. Motion proofs: `motion/<direction>/<screen>-<variant>-<lang>-<scheme>-<t0-motion|reduced>.webp`.
 

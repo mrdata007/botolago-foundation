@@ -209,3 +209,5 @@ L.push("");
 writeFileSync(join(out, "INDEX.md"), L.join("\n"));
 console.log(`${files.length} files, ${(total / 1048576).toFixed(2)} MB`);
 ' "$OUT" "$BASE"
+# the repository formats Markdown with Prettier: leave the index in that style (best effort)
+(cd "$LAB/../.." && npx --no-install prettier --write "$OUT/INDEX.md" >/dev/null 2>&1) || true
