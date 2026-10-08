@@ -33,6 +33,7 @@ import { loadGameweekIndex } from "@/services/fantasy-gameweek-resolver";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 type Phase = "idle" | "saving" | "success" | "error";
 
@@ -140,6 +141,9 @@ export function FantasyImportPrompt() {
           .then((module) => module.invalidateMyManagerCard(qc))
           .catch(() => {});
       }
+      // Counted on the server's confirmation only, as the builder's own save is: an import creates
+      // a first team too, and until now it was missing from the activation count.
+      track("fantasy_team_created");
       importDecisionService.markImported(uid);
       setPhase("success");
       setTimeout(() => setDismissed(true), 1500);
