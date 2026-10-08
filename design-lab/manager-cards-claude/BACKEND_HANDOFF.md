@@ -413,8 +413,10 @@ placeholder rules inserted inside each test's rolled-back transaction.
     has seen**: one small table, written only by an acknowledgement RPC. This reverses D18's
     "defer any seen flag". Without it the app falls back to keys on the device: a moment can show
     again on a second phone, and the owner loses the only privacy-light measure of whether
-    managers came back to see their first rating (aggregate counts of acknowledgements). Your
-    decision.
+    managers came back to see their first rating (aggregate counts of acknowledgements).
+    **Owner's answer (2026-10-08): yes.** The onboarding plan's other eight decisions were
+    approved the same day (`ONBOARDING_PLAN.md` section 9): no browser write at save, the
+    anonymous `api.manager_card_status()`, imports counted as created teams.
 
 **Front end only:** French or English on the Latin card; Arabic tier names and SEL label; the
 direction; the Semelle cultural test (flagged by the lab's own critics in `CRITIQUE.md`: a

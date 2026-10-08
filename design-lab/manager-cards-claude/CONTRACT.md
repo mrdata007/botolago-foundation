@@ -72,3 +72,32 @@ All return HTML strings. `p` is a frozen profile (`MC.ALI`, `MC.withTier(tier)`,
 - Free to play and independent: nothing that looks like money, betting, a bank card,
   official league status, or a serial that implies scarcity for sale.
 - Root element gets `role="img"` and `aria-label="${MC.label(p, o)}"`.
+
+## Onboarding states
+
+Added for the onboarding screens (`ONBOARDING.md`, `ONBOARDING_PLAN.md` section 7). The
+fixtures live in `src/onboarding/states.js` (`MC.ONB.FIX`); `states.html?c=07&v=v2` shows every
+fixture for one direction. **A profile without these fields (every gallery profile) must render
+exactly as before**: each field below is optional, and its absence means "as today".
+
+| Field | Values | What the object does |
+|---|---|---|
+| `p.ovr` | number or `null` | `null`: the number carrier shows a dash "—", never 0, never blank. |
+| `p.tier` | tier or `null` | `null`: the base material with no tier word (decision 4). Never HOMA printed before a rating. |
+| `p.counted`, `p.minRated` | integers, e.g. 1 and 3 | While `ovr` is null, draw `counted` of `minRated` marks natively on the object (filled and empty). With a number, marks are optional (a direction may keep them complete or drop them). Absent: no marks. |
+| `p.provisional` | boolean | No change to the art. The « Provisoire » chip is app-level, beside the object. |
+| `p.serial`, `p.id` | `"482913"`, `"BOT #482913"`, or both `null` | `null`: the ID carrier shows a dash. No sentence, no placeholder. |
+| `p.founder` | 2026 or `null` | `null`: no founder part at all, no ghost. |
+| `p.club` | club object or `null` | `null`: the object's own material, no disc (lab rule 15). |
+| `p.name` | `{lat, ar}` or `null` | `null` (a guest before naming): the name carrier is drawn empty, never "?" or "Nom". |
+| `p.stats.X` | number or `null` | `null`: a dash in that stat's place. `p.statReason.X` (optional) holds the server reason code. |
+| `o.beat` | `"make"`, `"first"` or absent | One optional motion of 600ms or less ("make": the object makes its belonging parts on birth, ≤700ms; "first": the beat over a visible first number). The number and serial are fully visible in the first painted frame and never animate. Off under `prefers-reduced-motion`. No flip, count-up, cover, blur or confetti. |
+
+`MC.label(p, o)` already speaks these states (« pas encore de note » / «لا تقييم بعد», « 1
+journée comptée sur 3 »), so the root keeps `aria-label="${MC.label(p, o)}"`.
+
+`full()` and `token()` support every row above; `row()` supports the dash and shows
+« en formation k/N » / «قيد التكوين k/N» (from `MC.onbStr(o)`) in place of the number while
+forming. Banned in every state: a padlock, lock, question mark, sealed or wrapped object, frost
+or blur over the number (each reads as a loot box or a scratch card). The forming object is the
+finished object with an empty carrier, like a new scarf with no rows yet.

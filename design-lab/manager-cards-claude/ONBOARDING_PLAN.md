@@ -8,8 +8,9 @@ found fixed or turned into a stated risk (Appendix A lists each one and where it
 **Status.** Research and design only. This is not approved screen work (AGENTS.md "Screen
 work", rule 1). No app file, database or branch was changed to write it. It is shaped as an
 Impeccable brief (`reference/shape.md` Phase 3, `reference/onboard.md`). No human answered a
-discovery round, so assumptions are marked **Assumption** and the brief stops at the open
-decisions (section 9).
+discovery round, so assumptions are marked **Assumption**. **The owner approved all nine
+decisions in section 9 on 2026-10-08 ("yes to all")** and asked for the lab screens in
+section 7 to be built; `ONBOARDING.md` is that build's brief.
 
 **Provenance tags used throughout**
 
@@ -1081,7 +1082,8 @@ The full proposal is section 6a of [`BACKEND_HANDOFF.md`](BACKEND_HANDOFF.md). S
 
 ## 9. Open decisions for the owner
 
-Short, each with a recommendation. A reply such as "yes to all except 4" settles them.
+Short, each with a recommendation. **Owner's answer, 2026-10-08: yes to all nine**, so each
+recommendation below is now the decision.
 
 1. **D21. Record which moments a manager has seen, on the server.** This reverses D18's "defer
    any seen flag". **Recommend yes:** it is what stops a moment repeating on a second phone, and

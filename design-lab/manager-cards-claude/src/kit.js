@@ -135,7 +135,7 @@
   MC.s = (o = {}) => MC.STR[o.lang === "ar" ? "ar" : "lat"];
   MC.isAr = (o = {}) => o.lang === "ar";
   /** The display name for a profile in the render language. */
-  MC.nameOf = (p, o = {}) => (o.lang === "ar" ? p.name.ar : p.name.lat);
+  MC.nameOf = (p, o = {}) => (!p.name ? "" : o.lang === "ar" ? p.name.ar : p.name.lat);
   /** Arabic text font stack (Changa has Arabic; Noto Sans Arabic for small text). */
   MC.AR_DISPLAY = '"Changa", "Noto Sans Arabic", sans-serif';
   MC.AR_TEXT = '"Noto Sans Arabic", "Changa", sans-serif';
@@ -154,8 +154,56 @@
   /** Accessible summary for the card root (screen readers get one sentence, not SVG fragments). */
   MC.label = (p, o = {}) => {
     const s = MC.s(o);
-    return `${MC.nameOf(p, o)}, ${p.ovr} OVR, ${s.tiers[p.tier]}, ${s.country}, ${p.season}, ${p.id}${p.founder ? ", " + s.founderLine : ""}, ${MC.STATS.map((k) => `${s.stats[k]} ${p.stats[k]}`).join(", ")}`;
+    const t = MC.onbStr(o);
+    const v = (x) => (x == null ? t.empty : x);
+    const parts = [p.name ? MC.nameOf(p, o) : t.cardOf];
+    if (p.ovr == null) {
+      parts.push(t.noRating);
+      if (p.minRated) parts.push(t.counted(p.counted || 0, p.minRated));
+    } else parts.push(`${p.ovr} OVR`);
+    if (p.tier) parts.push(s.tiers[p.tier]);
+    parts.push(s.country, p.season);
+    if (p.id) parts.push(p.id);
+    if (p.founder) parts.push(s.founderLine);
+    if (p.ovr != null || MC.STATS.some((k) => p.stats[k] != null))
+      parts.push(MC.STATS.map((k) => `${s.stats[k]} ${v(p.stats[k])}`).join(", "));
+    return parts.join(", ");
   };
+
+  /* ---------- onboarding states (CONTRACT.md "Onboarding states") ---------- */
+  /** Plural form for Arabic counts: forms = {zero, one, two, few, many, other}. */
+  MC.arPlural = (n, forms) => forms[new Intl.PluralRules("ar").select(n)] ?? forms.other;
+  MC.ONB_STR = {
+    lat: {
+      dash: "\u2014",
+      empty: "vide",
+      cardOf: "Carte de manager",
+      noRating: "pas encore de note",
+      forming: "en formation",
+      counted: (k, n) =>
+        k === 0
+          ? `aucune journée comptée sur ${n}`
+          : `${k} journée${k > 1 ? "s" : ""} comptée${k > 1 ? "s" : ""} sur ${n}`,
+    },
+    ar: {
+      dash: "\u2014",
+      empty: "فارغة",
+      cardOf: "بطاقة المدرّب",
+      noRating: "لا تقييم بعد",
+      forming: "قيد التكوين",
+      counted: (k, n) =>
+        MC.arPlural(k, {
+          zero: `لا جولات محتسبة بعد من ${n}`,
+          one: `جولة واحدة محتسبة من ${n}`,
+          two: `جولتان محتسبتان من ${n}`,
+          few: `${k} جولات محتسبة من ${n}`,
+          many: `${k} جولة محتسبة من ${n}`,
+          other: `${k} جولة محتسبة من ${n}`,
+        }),
+    },
+  };
+  /** Onboarding words a card object may print or speak: MC.onbStr(o).forming, .dash … */
+  MC.onbStr = (o = {}) => MC.ONB_STR[o.lang === "ar" ? "ar" : "lat"];
 
   /* ---------- the neutral manager avatar (one figure, many treatments) ---------- */
   // viewBox 0 0 200 240. The manager seen from behind, at the touchline, in a bench
