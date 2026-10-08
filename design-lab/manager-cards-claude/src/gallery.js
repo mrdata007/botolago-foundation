@@ -391,7 +391,7 @@
       `<a class="icon-btn dir" href="#${prev.id}" aria-label="${esc(T().prev)}">${arrow("prev")}</a>` +
       `<a class="icon-btn dir" href="#${next.id}" aria-label="${esc(T().next)}">${arrow("next")}</a>` +
       `<button type="button" class="icon-btn" data-close aria-label="${esc(T().close)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>` +
-      `<div class="d-scroll"><div class="d-body">` +
+      `<div class="d-scroll"><div class="d-body"><div class="d-cols">` +
       `<div class="d-left">` +
       (v2
         ? `<div class="seg ver-seg" role="radiogroup" aria-label="Version">${["v1", "v2"].map((v) => `<button type="button" role="radio" aria-checked="${state.version === v}" data-version="${v}">${esc(T().version[v])}</button>`).join("")}</div>`
@@ -418,8 +418,8 @@
       (scores
         ? `<div class="d-sec"><h3>${esc(S.scores)} · ${((rv.totals && rv.totals[base.id]) || total(scores)).toFixed(1)}/130</h3><div class="scorebars">${CRITERIA.map((k, j) => `<div><span>${esc(k)}</span><b>${scores[j]}</b><i style="--v:${scores[j]}"></i></div>`).join("")}</div>${verdict ? `<p style="margin-top:14px"><b>${esc(S.verdict)}:</b> ${esc(verdict)}</p>` : ""}</div>`
         : "") +
-      `</div></div>` +
-      `<div style="grid-column:1/-1"><div class="d-sec"><h3>${esc(S.lives)}</h3><div class="lives">` +
+      `</div></div></div>` +
+      `<div><div class="d-sec"><h3>${esc(S.lives)}</h3><div class="lives">` +
       `<div class="app-light" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.appLight)}</h4>${MC.ctxRankCard(c, { ...o, tokenH: 28 })}</div>` +
       `<div class="app-dark" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.appDark)}</h4>${MC.ctxRankCard(c, { ...o, tokenH: 28 })}</div>` +
       `<div class="app-light" ${ar ? 'dir="rtl" lang="ar"' : ""}><h4>${esc(T().lives.rows)}</h4><div class="ctx-rows">${MC.ctxRows(c, o)}</div></div>` +
