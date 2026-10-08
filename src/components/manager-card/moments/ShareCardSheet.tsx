@@ -136,7 +136,9 @@ export function ShareCardSheet({
       link,
     });
   // What the sheet shows: the same sentence, with the link as its address and nothing else.
-  const visible = messageFor("copy", visibleLink(originLink("copy")));
+  // The address is a left-to-right run inside a possibly right-to-left sentence: isolated, or its
+  // slashes would reorder it. Shown only; the message that is sent keeps the real link.
+  const visible = messageFor("copy", `\u2066${visibleLink(originLink("copy"))}\u2069`);
 
   const fileName = "botolago-carte.png";
   const file =

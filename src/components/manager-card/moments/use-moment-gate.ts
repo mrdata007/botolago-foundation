@@ -38,7 +38,7 @@ export const momentStore = createMomentStore({
   markHeroShown,
 });
 
-const NOTHING: GateSnapshot = { hero: null, acked: false, momentLines: [] };
+const NOTHING: GateSnapshot = { hero: null, acked: false, collapsed: false, momentLines: [] };
 
 function stepUpNoticeOpen(): boolean {
   try {
@@ -63,9 +63,15 @@ export function useMomentBlock(active: boolean): void {
 export interface MomentGate {
   hero: HeroSpec | null;
   lines: LineSpec[];
-  ack(keys: readonly string[]): void;
-  /** The hero's keys were acknowledged: its label, line and buttons collapse, the card stays. */
+  /**
+   * Acknowledge keys (one call, whatever their number). `{ collapse: false }` is for an
+   * acknowledgement by being seen: the hero stays open for the manager to read.
+   */
+  ack(keys: readonly string[], options?: { collapse?: boolean }): void;
+  /** The hero's keys were acknowledged, by whatever means. */
   acked: boolean;
+  /** The manager closed the hero: its label, line and buttons collapse, the card stays. */
+  collapsed: boolean;
   /** The launch gate is open: a surface may count a view. */
   ready: boolean;
 }
@@ -109,9 +115,9 @@ export function useMomentGate(surface: GateSurface, card: MyCardDto | null): Mom
   }, [surface, ready, card, deadlineKnown, deadline, blocked]);
 
   const ack = useCallback(
-    (keys: readonly string[]) => {
+    (keys: readonly string[], options?: { collapse?: boolean }) => {
       if (keys.length === 0) return;
-      momentStore.markAcked(keys);
+      momentStore.markAcked(keys, options?.collapse ?? true);
       void acknowledge(keys);
     },
     [acknowledge],
@@ -121,7 +127,14 @@ export function useMomentGate(surface: GateSurface, card: MyCardDto | null): Mom
     () => (ready ? linesOf(card, snapshot.momentLines) : []),
     [ready, card, snapshot.momentLines],
   );
-  return { hero: ready ? snapshot.hero : null, lines, ack, acked: snapshot.acked, ready };
+  return {
+    hero: ready ? snapshot.hero : null,
+    lines,
+    ack,
+    acked: snapshot.acked,
+    collapsed: snapshot.collapsed,
+    ready,
+  };
 }
 
 /* ------------------------------------------------------------------------------------------ */

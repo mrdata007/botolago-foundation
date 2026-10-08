@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
 import type { Language } from "@/types/domain";
@@ -161,12 +161,16 @@ export function founderLine(template: string, name: string, cohort: number): Rea
   // The dictionary writes the mark literally (« {name} ·26 »); it is replaced by the computed
   // one in an isolate, so the interface never depends on how a neighbour reorders it.
   const pieces = template.split("·26");
-  const out: ReactNode[] = [];
-  pieces.forEach((piece, index) => {
-    out.push(fill(piece, { name: auto(name || "") }));
-    if (index < pieces.length - 1) out.push(ltr(mark));
-  });
-  return <>{out}</>;
+  return (
+    <>
+      {pieces.map((piece, index) => (
+        <Fragment key={index}>
+          {fill(piece, { name: auto(name || "") })}
+          {index < pieces.length - 1 ? ltr(mark) : null}
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 /** The state and moment lines of G1 (plan 5.3's table). Null when the card has nothing to say. */

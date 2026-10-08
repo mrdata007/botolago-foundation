@@ -142,6 +142,24 @@ describe("acknowledging", () => {
     expect(after.hero?.kind).toBe("first_fresh");
   });
 
+  it("an acknowledgement by being seen leaves the hero open; closing it afterwards collapses it", () => {
+    const store = createMomentStore(session());
+    store.evaluate("gradins", input(card("rated")));
+    const keys = store.get("gradins").hero!.keys;
+    store.markAcked(keys, false);
+    expect(store.get("gradins")).toMatchObject({ acked: true, collapsed: false });
+    expect(store.get("gradins").hero?.beat).toBeNull();
+    store.markAcked(keys);
+    expect(store.get("gradins")).toMatchObject({ acked: true, collapsed: true });
+  });
+
+  it("the × or a button collapses it at once", () => {
+    const store = createMomentStore(session());
+    store.evaluate("gradins", input(card("rated")));
+    store.markAcked(store.get("gradins").hero!.keys);
+    expect(store.get("gradins")).toMatchObject({ acked: true, collapsed: true });
+  });
+
   it("keys that are not the hero's change nothing", () => {
     const store = createMomentStore(session());
     store.evaluate("gradins", input(card("rated")));

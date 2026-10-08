@@ -7,7 +7,7 @@ import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 import type { BeatName, CardProfile } from "../types";
-import { HeroFrame } from "./HeroFrame";
+import { HeroCard, HeroFrame } from "./HeroFrame";
 import { HERO_EVENTS, heroText, momentWords } from "./moment-text";
 import { useMomentGate, useSeenFor } from "./use-moment-gate";
 
@@ -24,11 +24,13 @@ import { useMomentGate, useSeenFor } from "./use-moment-gate";
  * and so do two seconds with at least half of the block on screen. After that the label row, the
  * lines and the buttons collapse and the card stays: the stage is the ordinary stage again.
  *
- * The card is the page's own stage (`CardStage`), kept in place between the label row and the
- * lines: pass it as `children` (a node, or a function of the beat to play on it). With no
- * `children` the hero draws as one card above the stage; the stage then reads the beat from the
- * gate (`useMomentGate("gradins", card).hero?.beat`). Either way the beat plays on the stage
- * card, over a number that is already legible, once.
+ * The hero carries the card: between the label row and the lines it draws the full card at the
+ * stage's size and plays the beat on it, over a number that is already legible, once. The page
+ * leaves its own copy of the card out while the slot holds a hero (Gradins' home hides it by CSS
+ * on `[data-hero-slot]:not(:empty)`), and keeps the rating and identity lines under it. After
+ * acknowledgement the label row, the lines and the buttons collapse and the card stays. A page
+ * that would rather keep its own stage in the tree passes it as `children` (a node, or a
+ * function of the beat to play on it); then the hero is only the frame around it.
  */
 export function MomentHero({
   card,
@@ -65,13 +67,23 @@ export function MomentHero({
   }, [shown, gate.ready, hero]);
 
   useSeenFor(ref, shown && !gate.acked, () => {
-    if (hero) gate.ack(hero.keys);
+    if (hero) gate.ack(hero.keys, { collapse: false });
   });
 
+  // The card the hero carries: the page's own stage when it passes one, else the hero draws it.
   const stage = (beat: BeatName | undefined): ReactNode =>
-    typeof children === "function" ? children({ beat }) : children;
+    children === undefined ? (
+      <HeroCard profile={profile} beat={beat} />
+    ) : typeof children === "function" ? (
+      children({ beat })
+    ) : (
+      children
+    );
 
   const active = shown && !!hero;
+  // With no stage of the page's to keep in the tree, there is nothing to draw until a hero is due,
+  // and the slot the page gives the hero stays empty.
+  if (!active && children === undefined) return null;
   const text = active ? heroText(hero, card, words) : null;
   const events = active ? HERO_EVENTS[hero.kind] : null;
   const canShare = profile.ovr !== null;
@@ -85,7 +97,7 @@ export function MomentHero({
   return (
     <HeroFrame
       active={active}
-      acked={gate.acked}
+      acked={gate.collapsed}
       headingId={headingId}
       heading={text?.label}
       closeLabel={t("common.close")}
@@ -135,7 +147,7 @@ export function MomentHero({
         </div>
       }
     >
-      {children ? stage(active ? (hero?.beat ?? undefined) : undefined) : undefined}
+      {stage(active ? (hero?.beat ?? undefined) : undefined)}
     </HeroFrame>
   );
 }

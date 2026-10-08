@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 import { ManagerCard } from "../ManagerCard";
 import type { BeatName, CardProfile } from "../types";
-import { Collapsible, HeroFrame } from "./HeroFrame";
+import { Collapsible, HeroCard, HeroFrame } from "./HeroFrame";
 import { InviteFriends } from "./InviteFriends";
 import { bornText, HERO_EVENTS, momentWords, type BornText } from "./moment-text";
 import { useMomentGate, useSeenFor } from "./use-moment-gate";
@@ -19,8 +19,8 @@ import { useMomentGate, useSeenFor } from "./use-moment-gate";
  * with no number yet, and the panel says so, says exactly when the number will arrive, and offers
  * the one social act that is true (« Inviter des amis »). Above the pitch on `/fantasy/team`
  * (`surface="team"`: the card at 128 px beside the lines), or in Gradins' hero slot
- * (`surface="gradins"`: the page's own stage plays the `make` beat, so the panel draws no card of
- * its own; pass the stage as `children`, or read the beat from the gate).
+ * (`surface="gradins"`: the panel carries the card at the stage's size and plays the `make` beat on
+ * it, the way the hero does; a page that keeps its own stage in the tree passes it as `children`).
  *
  * It decides for itself whether it is due (`useMomentGate(surface, card)`): `card_created`
  * pending, no number yet, the launch gate open, no other hero shown this session, nothing else
@@ -65,11 +65,17 @@ export function CardBornPanel({
   }, [shown, gate.ready, hero]);
 
   useSeenFor(ref, shown && !gate.acked, () => {
-    if (hero) gate.ack(hero.keys);
+    if (hero) gate.ack(hero.keys, { collapse: false });
   });
 
   const stage = (beat: BeatName | undefined): ReactNode =>
-    typeof children === "function" ? children({ beat }) : children;
+    children === undefined ? (
+      <HeroCard profile={profile} beat={beat} />
+    ) : typeof children === "function" ? (
+      children({ beat })
+    ) : (
+      children
+    );
 
   const keys = hero?.keys ?? [];
   const close = () => {
@@ -82,11 +88,13 @@ export function CardBornPanel({
   };
 
   if (surface === "gradins") {
+    // Nothing to draw until the panel is due, and the page's slot stays empty.
+    if (!shown && children === undefined) return null;
     const text = shown ? bornText(card, words, nextDeadline) : null;
     return (
       <HeroFrame
         active={shown}
-        acked={gate.acked}
+        acked={gate.collapsed}
         headingId={headingId}
         heading={words.moment.m2.heading}
         closeLabel={t("common.close")}
@@ -97,7 +105,7 @@ export function CardBornPanel({
         lines={text ? <BornLines text={text} /> : null}
         actions={<InviteFriends onInvite={invite} />}
       >
-        {children ? stage(shown ? (hero?.beat ?? undefined) : undefined) : undefined}
+        {stage(shown ? (hero?.beat ?? undefined) : undefined)}
       </HeroFrame>
     );
   }
@@ -106,13 +114,13 @@ export function CardBornPanel({
   const text = bornText(card, words, nextDeadline);
   return (
     <div className={cn(ui.space.gutter, "pt-3")}>
-      <Collapsible collapsed={gate.acked} animate>
+      <Collapsible collapsed={gate.collapsed} animate>
         <section
           ref={ref}
           aria-labelledby={headingId}
           data-testid="card-born-panel"
           data-hero-kind={hero.kind}
-          data-collapsed={gate.acked ? "1" : undefined}
+          data-collapsed={gate.collapsed ? "1" : undefined}
         >
           <UiCard padding="md" className="mb-3">
             <div className="flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3">

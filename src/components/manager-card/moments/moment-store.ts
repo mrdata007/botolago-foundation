@@ -39,16 +39,19 @@ export interface GateSnapshot {
   hero: HeroSpec | null;
   /** The hero's moments were acknowledged (by the ×, a button or two seconds in view). */
   acked: boolean;
+  /** The manager closed it (the ×, a button): the label row, lines and buttons collapse. */
+  collapsed: boolean;
   /** The lines that carry a moment, kept for the page's life. */
   momentLines: readonly LineSpec[];
 }
 
-const EMPTY: GateSnapshot = { hero: null, acked: false, momentLines: [] };
+const EMPTY: GateSnapshot = { hero: null, acked: false, collapsed: false, momentLines: [] };
 
 interface Entry {
   teamId: string;
   hero: HeroSpec | null;
   acked: boolean;
+  collapsed: boolean;
   momentLines: Map<LineSpec["kind"], LineSpec>;
   snapshot: GateSnapshot;
 }
@@ -72,6 +75,7 @@ export function createMomentStore(session: GateSession) {
   const snapshotOf = (entry: Entry): GateSnapshot => ({
     hero: entry.hero ? { ...entry.hero, beat: entry.acked ? null : entry.hero.beat } : null,
     acked: entry.acked,
+    collapsed: entry.collapsed,
     momentLines: LINE_ORDER.flatMap((kind) => entry.momentLines.get(kind) ?? []),
   });
 
@@ -109,6 +113,7 @@ export function createMomentStore(session: GateSession) {
           teamId: input.card.teamId,
           hero: null,
           acked: false,
+          collapsed: false,
           momentLines: new Map(),
           snapshot: EMPTY,
         };
@@ -142,13 +147,19 @@ export function createMomentStore(session: GateSession) {
       return changed;
     },
 
-    /** Keys were acknowledged on some surface: every surface that holds them stills its beat. */
-    markAcked(keys: readonly string[]) {
+    /**
+     * Keys were acknowledged: every surface that holds them stills its beat. `collapse` says the
+     * manager closed the hero (the ×, a button), so it folds away; an acknowledgement by being
+     * looked at for two seconds leaves it open, for them to read and tap.
+     */
+    markAcked(keys: readonly string[], collapse = true) {
       const set = new Set(keys);
       let changed = false;
       for (const entry of entries.values()) {
-        if (entry.hero && !entry.acked && entry.hero.keys.some((key) => set.has(key))) {
+        if (!entry.hero || !entry.hero.keys.some((key) => set.has(key))) continue;
+        if (!entry.acked || (collapse && !entry.collapsed)) {
           entry.acked = true;
+          entry.collapsed = entry.collapsed || collapse;
           entry.snapshot = snapshotOf(entry);
           changed = true;
         }

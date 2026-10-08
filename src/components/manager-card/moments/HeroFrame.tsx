@@ -1,7 +1,10 @@
 import { X } from "lucide-react";
 import type { ReactNode, Ref } from "react";
 
-import { ui, UiCard, UiIconButton } from "@/components/ui-kit";
+import { ManagerCard } from "../ManagerCard";
+import type { BeatName, CardProfile } from "../types";
+
+import { ui, UiIconButton } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 /**
@@ -67,8 +70,8 @@ export function HeroFrame({
   onClose: () => void;
   lines: ReactNode;
   actions: ReactNode;
-  /** The stage, drawn by the page between the label row and the lines. */
-  children?: ReactNode;
+  /** The card, between the label row and the lines. */
+  children: ReactNode;
   sectionRef?: Ref<HTMLElement>;
   testId: string;
   kind: string;
@@ -91,44 +94,41 @@ export function HeroFrame({
     </div>
   );
 
-  if (children !== undefined && children !== null) {
-    return (
-      <section
-        ref={sectionRef}
-        aria-labelledby={active ? headingId : undefined}
-        data-testid={testId}
-        data-hero-kind={active ? kind : undefined}
-        data-collapsed={collapsed ? "1" : undefined}
-        className="flex flex-col"
-      >
-        <Collapsible collapsed={collapsed} animate={acked} className={ui.space.gutter}>
-          {active ? top : null}
-        </Collapsible>
-        {children}
-        <Collapsible collapsed={collapsed} animate={acked} className={ui.space.gutter}>
-          {active ? bottom : null}
-        </Collapsible>
-      </section>
-    );
-  }
-
-  if (!active) return null;
   return (
-    <div className={ui.space.gutter}>
-      <Collapsible collapsed={collapsed} animate={acked}>
-        <section
-          ref={sectionRef}
-          aria-labelledby={headingId}
-          data-testid={testId}
-          data-hero-kind={kind}
-          data-collapsed={collapsed ? "1" : undefined}
-        >
-          <UiCard padding="md" className="mb-3">
-            {top}
-            {bottom}
-          </UiCard>
-        </section>
+    <section
+      ref={sectionRef}
+      aria-labelledby={active ? headingId : undefined}
+      data-testid={testId}
+      data-hero-kind={active ? kind : undefined}
+      data-collapsed={collapsed ? "1" : undefined}
+      className="flex flex-col"
+    >
+      <Collapsible collapsed={collapsed} animate={acked} className={ui.space.gutter}>
+        {active ? top : null}
       </Collapsible>
+      {children}
+      <Collapsible collapsed={collapsed} animate={acked} className={ui.space.gutter}>
+        {active ? bottom : null}
+      </Collapsible>
+    </section>
+  );
+}
+
+/**
+ * The card a hero carries: the full card at the stage's size (240 px, 264 from 768 px), centred,
+ * with the beat of its moment, and the scarf's sway on a mouse or pen like the ordinary stage.
+ */
+export function HeroCard({ profile, beat }: { profile: CardProfile; beat: BeatName | undefined }) {
+  return (
+    <div className="flex justify-center py-2" data-stage-card="">
+      <ManagerCard
+        profile={profile}
+        width={240}
+        beat={beat}
+        sway
+        className="md:w-[264px]!"
+        testId="hero-card"
+      />
     </div>
   );
 }
