@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Trophy,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
@@ -36,8 +36,22 @@ import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { newsService } from "@/services/news";
 import { prizesService } from "@/services/prizes";
+
+// Pépites' tile and the prize welcome's wait are their own chunks, requested only while the section
+// is live: with the switch off the hub imports nothing of the Manager Card.
+const PepitesHubTile = lazy(() =>
+  import("@/components/manager-card/inline/PepitesHubTile").then((module) => ({
+    default: module.PepitesHubTile,
+  })),
+);
+const PrizeWelcomeGate = lazy(() =>
+  import("@/components/manager-card/inline/PrizeWelcomeGate").then((module) => ({
+    default: module.PrizeWelcomeGate,
+  })),
+);
 
 export const Route = createFileRoute("/fantasy/")({
   head: () => fantasyHead("hub"),
@@ -84,6 +98,7 @@ function FantasyHub() {
   const { user, status: authStatus } = useAuth();
   const screen = useFantasyScreen({ needsTeam: false, needsAuth: false });
   const { source, key } = useFantasyDataSource();
+  const live = useManagerCardLive();
   const team = screen.team;
   const gameweek = screen.gameweek;
   const layout = fantasyHubLayout({ authStatus, source, phase: screen.phase, hasTeam: !!team });
@@ -269,7 +284,17 @@ function FantasyHub() {
           on. It waits for the splash and the language chooser to let go, and
           opens over the owner's dashboard only: a visitor without a team has
           the proposition, which names the prizes inline. */}
-      {PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome />}
+      {PRIZES_ENABLED && layout.prizeWelcome ? (
+        live ? (
+          // Live: the card's moment comes first. If a hero or the born panel was shown in this
+          // session the welcome waits for the next one (plan 5.3).
+          <Suspense fallback={null}>
+            <PrizeWelcomeGate />
+          </Suspense>
+        ) : (
+          <PrizeWelcome />
+        )
+      ) : null}
     </FantasyFrame>
   );
 }
@@ -280,6 +305,7 @@ function FantasyHub() {
 
 function ShortcutTiles() {
   const { t } = useI18n();
+  const live = useManagerCardLive();
   const tiles: Array<{ to: string; label: string; icon: ReactNode }> = [
     { to: "/matches", label: t("fpl.fixtures"), icon: <CalendarDays aria-hidden /> },
     { to: "/fantasy/fixtures", label: t("fpl.fdr"), icon: <SlidersHorizontal aria-hidden /> },
@@ -321,6 +347,13 @@ function ShortcutTiles() {
           </li>
         ))}
       </ul>
+      {live ? (
+        // Pépites lives inside Fantasy while the section is live (plan 3.4): its own row, under
+        // the four shortcuts, for every audience.
+        <Suspense fallback={null}>
+          <PepitesHubTile className="mt-2" />
+        </Suspense>
+      ) : null}
     </div>
   );
 }
