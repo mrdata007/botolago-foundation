@@ -182,6 +182,13 @@
   fill: #34507a;
 }
 
+/* the cream cast-on band keeps an edge on the light ground, so it reads as knit, not as a gap */
+.app-light .c07-tk .c07-tk-cast,
+:root[data-ground="day"] .c07-tk .c07-tk-cast {
+  stroke: #8a8170;
+  stroke-width: 0.5px;
+}
+
 /* ---------- row: the "My position" card, the scarf on a stretch of barrier ---------- */
 .c07-row {
   position: relative;

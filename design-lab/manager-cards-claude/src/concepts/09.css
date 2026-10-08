@@ -57,7 +57,7 @@
   display: block;
   width: 100%;
   height: auto;
-  overflow: visible;
+  overflow: hidden; /* the sleeve leaves the frame at the bottom edge */
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   filter: var(--c09-shadow);

@@ -81,7 +81,7 @@
     S: ".####|#....|#....|.###.|....#|....#|####.",
     T: "#####|..#..|..#..|..#..|..#..|..#..|..#..",
     U: "#...#|#...#|#...#|#...#|#...#|#...#|.###.",
-    V: "#...#|#...#|#...#|#...#|#...#|.#.#.|..#..",
+    V: "#...#|#...#|#...#|.#.#.|.#.#.|..#..|..#..",
     W: "#...#|#...#|#...#|#.#.#|#.#.#|#.#.#|.#.#.",
     X: "#...#|#...#|.#.#.|..#..|.#.#.|#...#|#...#",
     Y: "#...#|#...#|#...#|.#.#.|..#..|..#..|..#..",
@@ -116,7 +116,7 @@
     K: "#.#|#.#|##.|#.#|#.#",
     L: "#..|#..|#..|#..|###",
     M: "#...#|##.##|#.#.#|#...#|#...#",
-    N: "#..#|##.#|#.##|#..#|#..#",
+    N: "#...#|##..#|#.#.#|#..##|#...#",
     O: ".#.|#.#|#.#|#.#|.#.",
     P: "##.|#.#|##.|#..|#..",
     Q: ".#.|#.#|#.#|##.|.##",
@@ -124,7 +124,7 @@
     S: ".##|#..|.#.|..#|##.",
     T: "###|.#.|.#.|.#.|.#.",
     U: "#.#|#.#|#.#|#.#|###",
-    V: "#.#|#.#|#.#|#.#|.#.",
+    V: "#...#|#...#|.#.#.|.#.#.|..#..",
     W: "#...#|#...#|#.#.#|##.##|#...#",
     X: "#.#|#.#|.#.|#.#|#.#",
     Y: "#.#|#.#|.#.|.#.|.#.",
@@ -368,7 +368,7 @@
             pats.set(colour, i);
             defs +=
               `<radialGradient id="${u}-r${i}"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".34" stop-color="${colour}"/><stop offset=".78" stop-color="${colour}"/><stop offset="1" stop-color="${colour}" stop-opacity=".35"/></radialGradient>` +
-              `<pattern id="${u}-p${i}" width="${P}" height="${P}" patternUnits="userSpaceOnUse" x="${X}" y="${Y}"><circle cx="${P / 2}" cy="${P / 2}" r="${f(P * 0.43)}" fill="url(#${u}-r${i})"/></pattern>`;
+              `<pattern id="${u}-p${i}" width="${P}" height="${P}" patternUnits="userSpaceOnUse" x="${X}" y="${Y}"><circle cx="${P / 2}" cy="${P / 2}" r="${f(P * 0.46)}" fill="url(#${u}-r${i})"/></pattern>`;
           }
           const cid = `${u}-c${n++}`;
           defs += `<clipPath id="${cid}"><path d="${d}"/></clipPath>`;
@@ -401,7 +401,7 @@
       return {
         name: (t) => sample(t, "700", "Changa", kind === "SHARE" ? 8 : 11, { aa: true }),
         tier: (t) => sample(t, "600", "Changa", kind === "SHARE" ? 6 : 8, { aa: true }),
-        small: (t) => sample(t, "600", "Changa", 7, { aa: true }),
+        small: (t) => sample(t, "600", "Changa", 6, { aa: true, sx: 0.94 }),
         unit: (t) => sample(t, "600", "Changa", kind === "SHARE" ? 6 : 8, { aa: true }),
         lamp: (t) => sample(t, "700", "Changa", kind === "SHARE" ? 6 : 8, { aa: true, ref: "2" }),
         val: (t) => sample(t, "700", "Changa", 10, { aa: true, ref: "8", over: 0 }),
@@ -517,12 +517,12 @@
     const build = (size) => {
       const lv = size * 0.32;
       const gg = size * 1.05;
-      const groups = MC.STATS.map((k) => ({ lab: S.stats[k], val: String(p.stats[k]) })).map((g) => ({
+      const groups = (c.keys || MC.STATS).map((k) => ({ lab: S.stats[k], val: String(p.stats[k]) })).map((g) => ({
         ...g,
         lw: textW(g.lab, size, wt, c.family),
         vw: textW(g.val, size, c.valWeight || wt, c.family),
       }));
-      const W = groups.reduce((s, g, i) => s + g.lw + lv + g.vw + (i < 3 ? gg : 0), 0);
+      const W = groups.reduce((s, g, i) => s + g.lw + lv + g.vw + (i < groups.length - 1 ? gg : 0), 0);
       return { groups, W, lv, gg };
     };
     let size = c.size;
@@ -548,7 +548,7 @@
         s += t(x, g.lab, c.labOp, wt);
         x += g.lw;
       }
-      if (i < 3) x += m.gg;
+      if (i < seq.length - 1) x += m.gg;
     });
     return s;
   }
@@ -734,7 +734,7 @@
       `<rect x="146" y="${y0 - 6}" width="46" height="11" rx="5.5" fill="url(#${u}-sk)"/>` +
       `<ellipse cx="152.6" cy="${y0 - 2.6}" rx="4" ry="2.4" fill="#fff" opacity=".24"/>` +
       `<path d="M151 ${y0 + 4.5}H186" stroke="${K.skinDk}" stroke-width=".8" opacity=".6"/></g>`;
-    if (!opt.noSleeve) s += sleeveSVG(u, [190, y0 + 62], [312, y0 + 140], 16, 31);
+    if (!opt.noSleeve) s += sleeveSVG(u, [190, y0 + 62], [268, y0 + 146], 13, 19);
     return s;
   }
 
@@ -770,11 +770,11 @@
         [1, "#7E8791"],
       ],
       LEGEND: [
-        [0, "#C3CAD2"],
-        [0.05, "#9AA3AD"],
-        [0.5, K.ti],
-        [0.95, "#7B848E"],
-        [1, "#6A737E"],
+        [0, "#E6EBF0"],
+        [0.035, K.ti],
+        [0.5, "#737C87"],
+        [0.965, "#5F6873"],
+        [1, "#4A535D"],
       ],
     };
     const st = stops[tier] || stops.STADE;
@@ -789,7 +789,7 @@
       tier === "CHAMPION"
         ? ["#1A1F25", "#FFFFFF", "#3C444E", "#E9EDF1"]
         : tier === "LEGEND"
-          ? ["#4A535D", "#E6EBF0", "#5F6873", "#C3CAD2"]
+          ? ["#3A424C", "#F2F5F8", "#4A535D", "#D0D6DC"]
           : tier === "HOMA"
             ? ["#6E7782", "#E6EAEE", "#7E8791", "#D0D6DC"]
             : ["#5F6873", "#F2F5F8", "#8D959F", "#C3CAD2"];
@@ -858,6 +858,12 @@
     const ys = f(c.size * 0.58);
     let lit = "";
     let lamp = "";
+    const out = () => {
+      if (!c.shade) return { lit, lamp };
+      /* the sign-writer's drop shade: the same letters in grey, a brush-width down and to the right */
+      const sh = (str) => `<g transform="translate(1.5 1.5)">${str.replace(/fill="[^"]+"/g, `fill="${c.shade}"`)}</g>`;
+      return { lit: sh(lit) + lit, lamp: sh(lamp) + lamp };
+    };
     if (!ar) {
       lit += `<text x="${c.x0}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${c.size}" fill="${c.ink}">${esc(nm)}</text>`;
       if (yr) lamp += `<text x="${f(c.x0 + nw + c.size * 0.1)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${ys}" fill="${c.lamp}">·${yr}</text>`;
@@ -867,7 +873,7 @@
       if (yr) lamp += `<text x="${f(c.x1 - nw - c.size * 0.1)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${ys}" text-anchor="end" fill="${c.lamp}">${yr}·</text>`;
       lit += `<text x="${c.x0}" y="${c.y}" font-family="Changa" font-weight="${c.tierW || 700}" font-size="${f(c.tierSize * 1.15)}" fill="${c.ink}"${tOp}>${esc(tierT)}</text>`;
     }
-    return { lit, lamp };
+    return out();
   }
   function bigRow(p, o, c) {
     const S = MC.s(o);
@@ -877,10 +883,10 @@
     const uw = textW(S.ovr, c.unitSize, 600, "Changa");
     const gap = c.unitSize * 0.3;
     const x = c.cx - (w + gap + uw) / 2;
-    return (
-      `<text x="${f(x)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${f(sz)}" fill="${c.ink}">${n}</text>` +
-      `<text x="${f(x + w + gap)}" y="${c.y}" font-family="Changa" font-weight="600" font-size="${c.unitSize}" fill="${c.ink}" fill-opacity="${c.unitOp}">${esc(S.ovr)}</text>`
-    );
+    const t = (ink) =>
+      `<text x="${f(x)}" y="${c.y}" font-family="Changa" font-weight="800" font-size="${f(sz)}" fill="${ink}">${n}</text>` +
+      `<text x="${f(x + w + gap)}" y="${c.y}" font-family="Changa" font-weight="600" font-size="${c.unitSize}" fill="${ink}"${c.shade ? "" : ` fill-opacity="${c.unitOp}"`}>${esc(S.ovr)}</text>`;
+    return c.shade ? `<g transform="translate(2.2 2.2)">${t(c.shade)}</g>` + t(c.ink) : t(c.ink);
   }
   /** The back of a painted, printed or glass board: stat column, crest, season record. */
   function vecBack(p, o, c) {
@@ -938,19 +944,24 @@
         [1, "#010102"],
       ]) + `<rect x="8" y="8" width="304" height="164" fill="url(#${u}-gf)"/>`;
     s += `<filter id="${u}-bl" filterUnits="userSpaceOnUse" x="0" y="0" width="320" height="180" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="1.8"/></filter>`;
+    s += `<radialGradient id="${u}-pool" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${K.warm}" stop-opacity=".15"/><stop offset=".6" stop-color="${K.warm}" stop-opacity=".045"/><stop offset="1" stop-color="${K.warm}" stop-opacity="0"/></radialGradient>`;
+    if (side !== "back") s += `<ellipse cx="160" cy="${opt.share ? 112 : 98}" rx="150" ry="${opt.share ? 74 : 58}" fill="url(#${u}-pool)"/>`;
     if (side === "back") {
       s += vecBack(p, o, { x0: 24, x1: 296, y0: 10, y1: 170, ink: K.warm, labOp: 0.55 });
     } else {
       const nr = nameRow(p, o, { x0: 22, x1: 298, y: 46, size: 27, ink: K.warm, lamp: K.tung, tierSize: 13, tierLs: 2.4, tierW: 600, tierOp: 0.72 });
       const br = opt.share ? bigRow(p, o, { cx: 160, y: 162, size: 128, unitSize: 22, unitOp: 0.7, ink: K.warm }) : bigRow(p, o, { cx: 160, y: 127, size: 90, unitSize: 17, unitOp: 0.7, ink: K.warm });
       const st = opt.share ? "" : statsText(p, o, { cx: 160, y: 157, size: 14.5, family: "Changa", weight: 600, valWeight: 700, fill: K.warm, labOp: 0.5, valOp: 0.92, maxW: 276 });
-      const bloom = thumb ? "" : `<g filter="url(#${u}-bl)" opacity=".7">${nr.lit}${br}</g>`;
+      const bloom = thumb ? "" : `<g filter="url(#${u}-bl)" opacity=".9">${nr.lit}${br}</g>`;
       s +=
         `<g class="c09-lit">${bloom}${nr.lit}${br}${st}</g>` +
         `<g class="c09-lamp">${thumb ? "" : `<g filter="url(#${u}-bl)" opacity=".8">${nr.lamp}</g>`}${nr.lamp}</g>`;
     }
     s += onStrip(10, 10, 300) + glassSVG(u, 8, 8, 304, 164);
-    s += `<rect x="8.5" y="8.5" width="303" height="163" fill="none" stroke="#fff" stroke-opacity=".1" stroke-width=".8"/>`;
+    /* the glass edge: polished, lit at the top, and warm where the light inside reaches it */
+    s +=
+      `<path d="M8.6 171.4V8.6H311.4" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width=".9"/><path d="M311.4 8.6V171.4H8.6" fill="none" stroke="#000" stroke-opacity=".6" stroke-width=".9"/>` +
+      (side !== "back" ? lg(`${u}-sp`, [[0, K.warm, 0], [0.5, K.warm, 0.32], [1, K.warm, 0]], H_) + `<rect x="60" y="170.6" width="200" height="1.4" fill="url(#${u}-sp)"/>` : "");
     /* the ID is laser-etched into the glass, frosted, along its foot */
     if (!thumb && !opt.share) s += engrave(160, 168, idLine(p, o), { size: 6.4, w: 600, anchor: "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
     if (!thumb && opt.share) s += engrave(160, 168, idLine(p, o), { size: 6.4, w: 600, anchor: "middle", ink: "#9AA3AD", lip: 0, ls: ".3" });
@@ -967,7 +978,7 @@
         [1, "#fff", 0],
       ]) +
       `<rect x="8" y="8" width="304" height="164" fill="url(#${u}-gl)"/>` +
-      `<path d="M190 8H232L150 172H108Z" fill="#fff" opacity=".035"/>` +
+      (thumb ? "" : `<pattern id="${u}-bs" width="58" height="2.6" patternUnits="userSpaceOnUse"><rect width="34" height=".7" fill="#fff" opacity=".028"/><rect x="30" y="1.4" width="28" height=".6" fill="#fff" opacity=".02"/></pattern><rect x="8" y="8" width="304" height="164" fill="url(#${u}-bs)"/>`) +
       `<rect x="8" y="8" width="304" height="164" fill="none" stroke="#000" stroke-opacity=".6" stroke-width=".8"/>`;
     const brush = thumb ? "" : ` filter="url(#${u}-br)"`;
     if (!thumb)
@@ -976,8 +987,9 @@
       s += `<g${brush}>${vecBack(p, o, { x0: 24, x1: 296, y0: 10, y1: 170, ink: K.paintW, labOp: 0.6 })}</g>`;
       return s + railsSVG(p, o, "HOMA", thumb);
     }
-    const nr = nameRow(p, o, { x0: 22, x1: 298, y: 48, size: 29, ink: K.paintW, lamp: K.tung, tierSize: 14, tierLs: 1.4 });
-    const br = opt.share ? bigRow(p, o, { cx: 160, y: 162, size: 128, unitSize: 22, unitOp: 0.75, ink: K.paintW }) : bigRow(p, o, { cx: 160, y: 127, size: 90, unitSize: 17, unitOp: 0.75, ink: K.paintW });
+    const shade = "#4A535D";
+    const nr = nameRow(p, o, { x0: 22, x1: 298, y: 48, size: 29, ink: K.paintW, lamp: K.tung, tierSize: 14, tierLs: 1.4, shade });
+    const br = opt.share ? bigRow(p, o, { cx: 160, y: 162, size: 128, unitSize: 22, unitOp: 0.75, ink: K.paintW, shade }) : bigRow(p, o, { cx: 160, y: 127, size: 90, unitSize: 17, unitOp: 0.75, ink: K.paintW, shade });
     const st = opt.share ? "" : statsText(p, o, { cx: 160, y: 157, size: 15, family: "Changa", weight: 700, valWeight: 800, fill: K.paintW, labOp: 0.6, maxW: 278 });
     s += `<g class="c09-lit"${brush}>${nr.lit}${br}${st}</g><g class="c09-lamp"${brush}>${nr.lamp}</g>`;
     /* a fresh BotolaGO decal, the logo exactly as supplied */
@@ -1200,74 +1212,88 @@
     const Y = (y) => f(by + y * k);
     const y0 = p.tier === "LEGEND" ? 250 : 220;
     const boardSvg = `<svg x="${bx}" y="${by}" width="336" height="${f(340 * k)}" viewBox="0 0 320 340" overflow="visible">${board(p, o, u + "b", "front", { share: true, noSleeve: true })}</svg>`;
-    /* the perimeter board at the horizon carries the four stats, split where the grip passes */
+    /* the perimeter board on the horizon carries the four stats, in two halves either side of the collar */
     const P = 3.4;
     const cols = 104;
     const F = Face(cols, 5);
-    const Lp = { P, X: f(180 - (cols * P) / 2), Y: 324.5 };
+    const stripY = 286;
+    const Lp = { P, X: f(180 - (cols * P) / 2), Y: stripY + 5.5 };
     const extra = { lit: "" };
     const half = (ks) => {
       const segs = [];
       ks.forEach((key, i) => {
         segs.push({ g: bit(S.stats[key], F35), c: K.warm, a: 0.55, gap: 2 });
-        segs.push({ g: bit(String(p.stats[key]), F35), c: K.warm, gap: i < ks.length - 1 ? 5 : 0 });
+        segs.push({ g: bit(String(p.stats[key]), F35), c: K.warm, gap: i < ks.length - 1 ? 4 : 0 });
       });
       return segs;
     };
     if (!ar) {
-      line(F, half(["CAP", "SEL"]), 46, 5, "end");
-      line(F, half(["TRF", "CON"]), 58, 5, "start");
+      line(F, half(["CAP", "SEL"]), 43, 5, "end");
+      line(F, half(["TRF", "CON"]), 61, 5, "start");
     } else {
-      extra.lit += statsText(p, { ...o }, { cx: 180, y: 340.5, size: 15, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 330, handjet: true });
+      extra.lit +=
+        statsText(p, o, { keys: ["CAP", "SEL"], cx: 282, y: stripY + 21, size: 15, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 136, handjet: true }) +
+        statsText(p, o, { keys: ["TRF", "CON"], cx: 80, y: stripY + 21, size: 15, family: "Handjet", weight: 400, fill: K.warm, labOp: 0.6, maxW: 136, handjet: true });
     }
     const led = ledRender(u + "p", Lp, F, extra);
     /* mowing stripes run to a vanishing point above the stand */
     let stripes = "";
-    for (let i = -9; i < 9; i++) stripes += `<path d="M${180 + i * 26} 348L${180 + (i + 1) * 26} 348L${180 + (i + 1) * 150} 640L${180 + i * 150} 640Z" fill="${i % 2 ? "#17482B" : "#123B23"}"/>`;
+    for (let i = -9; i < 9; i++) stripes += `<path d="M${180 + i * 24} 314L${180 + (i + 1) * 24} 314L${180 + (i + 1) * 150} 640L${180 + i * 150} 640Z" fill="${i % 2 ? "#17482B" : "#123B23"}"/>`;
     let steps = "";
-    for (let y = 222; y < 316; y += 8) steps += `<path d="M0 ${y}H360" stroke="#1C2026" stroke-width="1.2"/>`;
-    /* the manager, from behind and off-centre: the shared figure, hood up, rim-lit by the floodlights */
-    const fig = MC.avatar({ x: 188, y: 470, w: 214, h: 257, hood: true, torso: "#23272C", seam: "#3A4048", rim: "#F4EDE0" });
-    const wrist = [X(190), Y(y0 + 62)];
-    const sleeve = sleeveSVG(u, wrist, [378, 646], f(16 * k), 40);
+    for (let y = 206; y < 284; y += 8) steps += `<path d="M0 ${y}H360" stroke="#1B1F25" stroke-width="1.2"/>`;
+    /* you, from behind and off-centre: the shared figure, hood up, rim-lit by the floodlights, arm raised to the grip */
+    const fig = MC.avatar({ x: 4, y: 446, w: 214, h: 257, hood: true, torso: "#262A30", seam: "#3E444C", rim: "rgba(244,237,224,.5)" });
+    const sleeve = sleeveSVG(u, [X(190), Y(y0 + 62)], [184, 672], f(13 * k), 30);
     const logoW = 116;
     const logo = `<g transform="translate(${ar ? 360 - 22 - logoW : 22} 28)">${MC.logo("wordmark", { variant: "light", w: logoW, h: f(logoW / MC.LOGO_RATIO.wordmark), label: false })}</g>`;
     const handle = `<text x="${ar ? 22 : 338}" y="45" font-family="Manrope" font-weight="800" font-size="15" text-anchor="${ar ? "start" : "end"}" fill="#fff">@ali</text>`;
     const yr = yearOf(p);
-    const capA = ar ? `${MC.nameOf(p, o)}${yr ? " ·" + yr : ""}  ·  ${S.tiers[p.tier]}` : `${MC.nameOf(p, o)}${yr ? " ·" + yr : ""}  ·  ${S.tiers[p.tier]}`;
-    const capB = `${p.id}  ·  ${ar ? "مثال" : "Exemple"}`;
-    const caption = ar
-      ? `<text x="338" y="596" font-family="Changa" font-weight="800" font-size="19" direction="rtl" fill="${K.warm}">${esc(capA)}</text><text x="338" y="615" font-family="Manrope, 'Noto Sans Arabic', sans-serif" font-weight="700" font-size="10.5" direction="rtl" fill="#C3CAD2">${esc(capB)}</text>`
-      : `<text x="22" y="596" font-family="Changa" font-weight="800" font-size="19" fill="${K.warm}">${esc(capA)}</text><text x="22" y="615" font-family="Manrope" font-weight="700" font-size="10.5" letter-spacing=".3" fill="#C3CAD2">${esc(capB)}</text>`;
-    const figX = ar ? `<g transform="matrix(-1 0 0 1 360 0)">` : `<g>`;
+    const nm = MC.nameOf(p, o);
+    const tierT = S.tiers[p.tier];
+    /* caption at the bottom end: name with its year, tier, then the ID and the sample label */
+    let caption;
+    if (!ar) {
+      caption =
+        `<text x="338" y="594" font-family="Changa" font-weight="800" font-size="19" text-anchor="end" fill="${K.warm}">${esc(nm)}${yr ? `<tspan fill="${K.tung}" font-size="13"> ·${yr}</tspan>` : ""}<tspan fill-opacity=".7" font-weight="600" font-size="15">  ${esc(tierT)}</tspan></text>` +
+        `<text x="338" y="613" font-family="Manrope" font-weight="700" font-size="10" letter-spacing=".3" text-anchor="end" fill="#C3CAD2">${esc(p.id)}  ·  Exemple</text>`;
+    } else {
+      const nw = textW(nm, 19, 800, "Changa");
+      const yw = yr ? textW(yr + "·", 13, 800, "Changa") : 0;
+      caption =
+        `<text x="338" y="596" font-family="Changa" font-weight="800" font-size="19" text-anchor="end" fill="${K.warm}">${esc(nm)}</text>` +
+        (yr ? `<text x="${f(338 - nw - 4)}" y="596" font-family="Changa" font-weight="800" font-size="13" text-anchor="end" fill="${K.tung}">${yr}·</text>` : "") +
+        `<text x="${f(338 - nw - yw - 12)}" y="596" font-family="Changa" font-weight="600" font-size="16" text-anchor="end" fill="${K.warm}" fill-opacity=".7">${esc(tierT)}</text>` +
+        `<text x="338" y="615" font-family="Changa" font-weight="600" font-size="11" text-anchor="end" fill="#C3CAD2">مثال</text>` +
+        `<text x="${f(338 - textW("مثال", 11, 600, "Changa") - 8)}" y="615" font-family="Manrope" font-weight="700" font-size="10" text-anchor="end" fill="#C3CAD2">${esc(p.id)}  ·</text>`;
+    }
     return (
       `<div class="c09 c09-share" dir="${S.dir}" lang="${ar ? "ar" : "en"}" role="img" aria-label="${esc(MC.label(p, o))}">` +
       `<svg viewBox="0 0 360 640" width="360" height="640" direction="ltr" aria-hidden="true" focusable="false">` +
       `<defs>` +
       lg(`${u}-sky`, [
         [0, "#050608"],
-        [1, "#11151A"],
+        [1, "#12161B"],
       ]) +
       `<radialGradient id="${u}-fl" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${K.warm}" stop-opacity=".2"/><stop offset=".4" stop-color="${K.warm}" stop-opacity=".06"/><stop offset="1" stop-color="${K.warm}" stop-opacity="0"/></radialGradient>` +
       lg(`${u}-gr`, [
-        [0, "#000", 0.55],
-        [0.3, "#000", 0.1],
-        [0.8, "#000", 0.15],
-        [1, "#000", 0.5],
+        [0, "#000", 0.5],
+        [0.25, "#000", 0.08],
+        [0.75, "#000", 0.12],
+        [1, "#000", 0.55],
       ]) +
       led.defs +
       `</defs>` +
-      `<rect width="360" height="348" fill="url(#${u}-sky)"/>` +
+      `<rect width="360" height="314" fill="url(#${u}-sky)"/>` +
       `<circle cx="${ar ? 40 : 320}" cy="10" r="230" fill="url(#${u}-fl)"/>` +
-      `<rect y="214" width="360" height="106" fill="#0E1114"/>${steps}` +
-      `<rect y="318" width="360" height="30" fill="#050607"/><rect y="318" width="360" height="1.4" fill="#3A4048"/><rect y="346.6" width="360" height="1.4" fill="#1B1F24"/>` +
+      `<rect y="200" width="360" height="86" fill="#0E1114"/>${steps}` +
+      `<rect y="${stripY}" width="360" height="28" fill="#050607"/><rect y="${stripY}" width="360" height="1.4" fill="#3A4048"/><rect y="${stripY + 26.6}" width="360" height="1.4" fill="#1B1F24"/>` +
       led.html +
-      `<rect y="348" width="360" height="292" fill="#143D25"/>${stripes}<rect y="348" width="360" height="292" fill="url(#${u}-gr)"/>` +
-      `<path d="M0 431L360 419L360 422.6L0 435Z" fill="#E9ECE6" opacity=".88"/>` +
+      `<rect y="314" width="360" height="326" fill="#143D25"/>${stripes}<rect y="314" width="360" height="326" fill="url(#${u}-gr)"/>` +
+      `<path d="M0 452L360 441L360 444.6L0 456Z" fill="#E9ECE6" opacity=".85"/>` +
       /* the dugout's edge: its curved roof and its glass, at the start of the frame */
-      `${figX}<path d="M0 248C38 250 68 272 76 318L82 468L0 468Z" fill="#fff" opacity=".04"/>` +
-      `<path d="M0 238C44 240 78 264 86 316L92 470H82L76 318C68 272 38 250 0 248Z" fill="#202429"/>` +
-      `<path d="M0 238C44 240 78 264 86 316L92 470" fill="none" stroke="#C3CAD2" stroke-opacity=".4" stroke-width="1"/></g>` +
+      `<g${ar ? ' transform="matrix(-1 0 0 1 360 0)"' : ""}><path d="M0 330C30 331 52 344 58 372L62 520L0 520Z" fill="#fff" opacity=".045"/>` +
+      `<path d="M0 322C36 323 62 338 68 370L72 522H62L58 372C52 344 30 331 0 330Z" fill="#1E2227"/>` +
+      `<path d="M0 322C36 323 62 338 68 370L72 522" fill="none" stroke="#C3CAD2" stroke-opacity=".35" stroke-width="1"/></g>` +
       boardSvg +
       `<g>${fig}</g>` +
       sleeve +
@@ -1328,7 +1354,7 @@
         `<div class="c09 c09-row${o.me ? " is-me" : ""}" dir="${S.dir}" lang="${ar ? "ar" : "en"}" data-tier="${p.tier}">` +
         `<span class="c09-r-rank">${MC.ltr(o.rank != null ? o.rank : "")}</span>` +
         `<span class="c09-r-tok">${tokenSVG(p, o, 52)}</span>` +
-        `<span class="c09-r-name"><b>${esc(MC.nameOf(p, o))}${yr ? ` <i aria-hidden="true">${MC.ltr("·" + yr)}</i><span class="c09-sr">${esc(S.founderLine)}</span>` : ""}</b><small>${esc(S.tiers[p.tier])}</small></span>` +
+        `<span class="c09-r-name"><b>${esc(MC.nameOf(p, o))}${yr ? ` <i aria-hidden="true">${MC.ltr(ar ? yr + "·" : "·" + yr)}</i><span class="c09-sr">${esc(S.founderLine)}</span>` : ""}</b><small>${esc(S.tiers[p.tier])}</small></span>` +
         `<span class="c09-r-pts"><b>${MC.ltr(o.pts != null ? o.pts : "")}</b><small>${esc(S.pts)}</small></span>` +
         `</div>`
       );

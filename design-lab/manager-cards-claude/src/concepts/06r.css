@@ -278,6 +278,9 @@
   width: 116px;
 }
 .c06 .c06-sh-ex {
+  position: absolute;
+  inset-inline-start: 22px;
+  bottom: 22px;
   font: 700 10px/1 "Manrope", sans-serif;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -304,8 +307,8 @@
 .c06 .c06-sh-id {
   position: absolute;
   inset-inline-start: 22px;
-  top: 356px;
-  width: 150px;
+  top: 330px;
+  width: 160px;
   display: grid;
   justify-items: start;
   gap: 5px;

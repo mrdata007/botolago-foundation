@@ -77,6 +77,8 @@
     return m > 0 ? m : est;
   };
 
+  const fitFs = (ovr) => Math.min(140, Math.round(140 * Math.min(1, 168 / digitW(ovr, 140))));
+
   /* ---------- geometry: the fixed die ---------- */
   function sePath(a, b, N) {
     let d = "";
@@ -298,7 +300,7 @@
         `<radialGradient id="${u}-pool" gradientUnits="userSpaceOnUse" cx="${r1(cx - sg * 0.75 * R)}" cy="${r1(cy - 0.85 * R)}" r="${r1(1.25 * R)}"><stop offset="0" stop-color="#9a9a9a"/><stop offset=".5" stop-color="#3a3a3a"/><stop offset="1" stop-color="#000"/></radialGradient>` +
         `<mask id="${u}-mpool" maskUnits="userSpaceOnUse" ${box}><circle cx="${cx}" cy="${cy}" r="${R}" fill="url(#${u}-pool)"/></mask>` +
         // the jacket gets its own screen (lighter at the shoulders, solid where the country is printed), so it reads apart from the hood
-        `<linearGradient id="${u}-tt" gradientUnits="userSpaceOnUse" x1="${sg > 0 ? 40 : 160}" y1="176" x2="${sg > 0 ? 120 : 80}" y2="236"><stop offset="0" stop-color="#d8d8d8"/><stop offset=".45" stop-color="#7a7a7a"/><stop offset=".8" stop-color="#151515"/><stop offset="1" stop-color="#000"/></linearGradient>` +
+        `<linearGradient id="${u}-tt" gradientUnits="userSpaceOnUse" x1="${sg > 0 ? 60 : 140}" y1="172" x2="${sg > 0 ? 80 : 120}" y2="206"><stop offset="0" stop-color="#d8d8d8"/><stop offset=".5" stop-color="#6a6a6a"/><stop offset="1" stop-color="#000"/></linearGradient>` +
         `<mask id="${u}-mfig" maskUnits="userSpaceOnUse" ${box}>${fig({ torso: `url(#${u}-tt)`, hoodFill: `url(#${u}-tone)`, seam: false })}</mask>` +
         edgeLight(`${u}-rl`, sg * 1.7, 1.7, hi);
       face += `<g filter="url(#${u}-thr)"><rect ${box} fill="url(#${u}-ht)" mask="url(#${u}-mpool)"/></g>`;
@@ -323,7 +325,7 @@
     const legend = tier === "LEGEND";
     const stock = home ? "c08-paper" : "c08-white";
     const ovr = String(p.ovr);
-    const fs = digitW(ovr, 140) > 176 ? 115 : 140; // three digits print at 82%
+    const fs = fitFs(ovr); // a three-digit number prints smaller, inside the same die
     const base = r1(0.314 * fs);
     const digits = (attrs) => `<text x="0" y="${base}" text-anchor="middle" font-family="Changa" font-weight="800" font-size="${fs}" direction="ltr" ${attrs}>${esc(ovr)}</text>`;
     let defs =
@@ -363,7 +365,7 @@
       : `<g class="c08-under"><use href="#${u}-die" class="${stock}"/><use href="#${u}-se" fill="${mix(SI.face, "#ffffff", 0.5)}"/>` +
         `<g class="c08-ex0">${digits(`fill="${SI.ink}" fill-opacity=".45"`).replace(`>${esc(ovr)}<`, ">– –<")}</g>` +
         `<g class="c08-ex1">${digits(`fill="${SI.ink}" fill-opacity=".6"`).replace(`>${esc(ovr)}<`, ">81<")}<text x="0" y="66" text-anchor="middle" font-family="Manrope" font-weight="800" font-size="9" fill="${SI.ink}">${c.ar ? "مثال" : "Exemple"}</text></g></g>`;
-    const front = `<g class="c08-front" clip-path="url(#${u}-pc)">${keyl}${face}${dig}${tab}</g>`;
+    const front = `<g class="c08-front" clip-path="url(#${u}-pc)"><g class="c08-skin">${keyl}${face}${dig}</g>${tab}</g>`;
     const flap = flat ? "" : `<g class="c08-flap" clip-path="url(#${u}-pc)" style="display:none"><use href="#${u}-die" fill="url(#${u}-bk)" filter="url(#${u}-stk)"/></g>`;
     defs +=
       `<clipPath id="${u}-pc" clipPathUnits="userSpaceOnUse"><polygon points="-2000,-2000 2000,-2000 2000,2000 -2000,2000"/></clipPath>` +
@@ -539,8 +541,8 @@
     /* LEGEND moment hooks: the die line that the cutter traces, and one flash frame */
     if (legend) {
       body +=
-        `<use href="#${u}-kiss" class="c08-cut" fill="none" stroke="${INK}" stroke-width="1.1" pathLength="1"/>` +
-        `<rect class="c08-flashf" x="-20" y="-20" width="${VW + 40}" height="${VH + 40}" fill="#fff"/>`;
+        `<use href="#${u}-kiss" class="c08-cut" fill="none" stroke="${INK}" stroke-width="2.6" pathLength="1"/>` +
+        `<use href="#${u}-kiss" class="c08-flashf" fill="#fff"/>`;
     }
     return { defs, body };
   }
@@ -652,7 +654,7 @@
       if (SI.band) svg += `<g clip-path="url(#${u}-sec)"><rect x="-${SA}" y="-${SB}" width="${2 * SA}" height="27" fill="${SI.band}"/></g>`;
     }
     const ovr = String(p.ovr);
-    const fs = String(ovr).length > 2 ? 112 : 140;
+    const fs = fitFs(ovr);
     svg += `<text x="0" y="${r1(0.314 * fs)}" text-anchor="middle" font-family="Changa" font-weight="800" font-size="${fs}" fill="${SI.ink}" direction="ltr">${esc(ovr)}</text>`;
     // the Logo-Blue tab with the logo's ball knocked out (a plain white dot below 64px, none on the mini)
     const tabR = legend ? `x="58" y="49" width="30" height="17" rx="5"` : `x="${TAB.cx - TAB.hw}" y="${TAB.cy - TAB.hh}" width="${2 * TAB.hw}" height="${2 * TAB.hh}" rx="${TAB.r}"`;
@@ -854,6 +856,7 @@
       }
       const num = el.querySelector(".c08-num");
       const front = el.querySelector(".c08-front");
+      const skin = el.querySelector(".c08-skin");
       const flap = el.querySelector(".c08-flap");
       const flapUse = flap && flap.querySelector("use");
       const poly = el.querySelector(`[id="${u}-pc"] polygon`);
@@ -912,7 +915,7 @@
         e.stopPropagation();
         if (reduce) {
           shown = !shown;
-          front.style.visibility = shown ? "hidden" : "";
+          (skin || front).style.visibility = shown ? "hidden" : "";
           el.classList.toggle("c08-peeling", shown);
           return;
         }

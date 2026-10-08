@@ -52,7 +52,7 @@
     HOMA: { n: 0, plate: "#b59b78", bf: 1.5, wall: 2.6, wallC: "#2b1b08", wallO: 0.5, lip: 2.2, lipC: "FLUTE", edge: "#7a6448", lettering: "marker" },
     STADE: { n: 1, plate: "#d7e2ea", film: 0.55, bf: 1, wall: 0.9, wallC: "#1d3047", wallO: 0.38, lip: 0.8, lipC: "#ffffff", edge: "#5d7590", lettering: "print" },
     PRO: { n: 2, plate: "#c9a266", bf: 1, wall: 2, wallC: "#3a2408", wallO: 0.5, lip: 1, lipC: "#f6e9c9", edge: "#7a6448", lettering: "stamp" },
-    CHAMPION: { n: 3, plate: "#a7afb8", bf: 0.85, wall: 1.6, wallC: "#161c22", wallO: 0.5, lip: 1, lipC: "#f4f7fa", edge: "#5f6873", thick: 1.5, body: "#5c646e", lettering: "engrave", engr: "#2a3038" },
+    CHAMPION: { n: 3, plate: "#a7afb8", bf: 0.85, wall: 2, wallC: "#161c22", wallO: 0.62, lip: 1, lipC: "#f4f7fa", edge: "#5f6873", thick: 1.5, body: "#5c646e", lettering: "engrave", engr: "#2a3038" },
     LEGEND: { n: 3, plate: "#d4af5e", bf: 0, wall: 2.6, wallC: "#3a2706", wallO: 0.55, lip: 1.1, lipC: "#fff3cf", edge: "#7d5f22", thick: 3, body: "#7a5b1f", lettering: "engrave", engr: "#4a3410", clamps: true },
   };
   const tierOf = (p) => (TIER[p.tier] ? p.tier : "PRO");
@@ -134,8 +134,9 @@
 
     // the number: 150u, cap 96u, start x26, baseline y128 (3 digits at 82%)
     const ovr = String(p.ovr);
-    const fsN = ovr.length > 2 ? 123 : 150;
-    const n = place(digitsRun(ovr, "w800"), 26, 128, fsN);
+    const nr = digitsRun(ovr, "w800");
+    const fsN = Math.min(150, (180 * UPM) / (nr.x1 - nr.x0));
+    const n = place(nr, 26, 128, fsN);
     paths += n.paths;
     br = br.concat(n.br.map((b) => [...b, bridgeW(fsN, t)]));
 
@@ -145,7 +146,7 @@
     if (run) {
       // Arabic sits a little higher and smaller, so a descending yeh clears the avatar ring
       const fs0 = ar ? 32 : 34;
-      const box = ar ? 72 : 76;
+      const box = 72;
       const w = ((run.x1 - run.x0) * fs0) / UPM;
       const fs = w > box ? Math.max(20, (fs0 * box) / w) : fs0;
       const nm = place(run, ar ? 286 : 212, ar ? 70 : 76, fs, ar ? "end" : "start");
@@ -153,9 +154,10 @@
       br = br.concat(nm.br.map((b) => [...b, bridgeW(fs, t)]));
     } else {
       const font = ar ? MC.AR_DISPLAY : '"Changa", sans-serif';
-      const w = textW(`800 34px ${ar ? "Changa" : "Changa"}`, name, name.length * (ar ? 17 : 20));
-      const fit = w > 76 ? ` textLength="76" lengthAdjust="spacingAndGlyphs"` : "";
-      stamped = `<text x="${ar ? 290 : 212}" y="76" font-family='${font}' font-weight="800" font-size="${w > 76 ? 30 : 34}"${ar ? ' direction="rtl"' : ""}${fit}>${esc(name)}</text>`;
+      const w34 = textW("800 34px Changa", name, name.length * (ar ? 17 : 21));
+      const fs = Math.max(20, Math.min(34, (34 * 72) / w34));
+      const fit = (w34 * fs) / 34 > 72.5 ? ` textLength="72" lengthAdjust="spacingAndGlyphs"` : "";
+      stamped = `<text x="${ar ? 286 : 212}" y="${ar ? 72 : 76}" font-family='${font}' font-weight="800" font-size="${r2(fs)}"${ar ? ' direction="rtl"' : ""}${fit}>${esc(name)}</text>`;
     }
 
     // the avatar: a cut ring holding the shared figure (hood up), cropped off-centre, its hood
@@ -274,10 +276,10 @@
     if (tk === "HOMA") {
       // fresh kraft board: directional fibres, nothing worn
       if (tex)
-        pdefs += `<filter id="${u("fib")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".035 .75" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .27  0 0 0 0 .19  0 0 0 0 .09  0 0 0 2.4 -1"/></filter>` +
-          `<filter id="${u("fibL")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".03 .6" numOctaves="2" seed="17"/><feColorMatrix values="0 0 0 0 .93  0 0 0 0 .86  0 0 0 0 .72  0 0 0 2.4 -1.05"/></filter>`;
+        pdefs += `<filter id="${u("fib")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="3" seed="5"/><feColorMatrix values="0 0 0 0 .3  0 0 0 0 .2  0 0 0 0 .09  0 0 0 1.8 -.72"/></filter>` +
+          `<filter id="${u("fibL")}" ${FBOX}><feTurbulence type="fractalNoise" baseFrequency=".9 .3" numOctaves="1" seed="17"/><feColorMatrix values="0 0 0 0 .95  0 0 0 0 .88  0 0 0 0 .74  0 0 0 3 -1.75"/></filter>`;
       pdefs += `<pattern id="${u("FLUTE")}" width="2.2" height="10" patternUnits="userSpaceOnUse"><rect width="2.2" height="10" fill="#d8c29c"/><rect width=".9" height="10" fill="#8a6f49"/></pattern>`;
-      face = R(t.plate) + (tex ? R("#000", ` filter="${url("fib")}" opacity=".1"`) + R("#000", ` filter="${url("fibL")}" opacity=".1"`) : "");
+      face = R(t.plate) + (tex ? R("#000", ` filter="${url("fib")}" opacity=".13"`) + R("#000", ` filter="${url("fibL")}" opacity=".3"`) : "");
     } else if (tk === "STADE") {
       // clear acetate over the paper: the print shows through the film as well as the cuts
       face = R(t.plate, ` opacity="${t.film}"`) + `<path d="M228 -6L176 166" stroke="#fff" stroke-width="5" opacity=".22"/><path d="M236 -6L184 166" stroke="#fff" stroke-width="1.2" opacity=".55"/>`;
@@ -303,9 +305,10 @@
     let coats = "";
     if (seasons > 0) {
       const cc = [p.club && p.club.primary ? p.club.primary : NAVY, NAVY, "#1f1d1a"];
-      const outer = `M${PR} 0H${PW - PR}A${PR} ${PR} 0 0 1 ${PW} ${PR}V${PH - PR}A${PR} ${PR} 0 0 1 ${PW - PR} ${PH}H${PR}A${PR} ${PR} 0 0 1 0 ${PH - PR}V${PR}A${PR} ${PR} 0 0 1 ${PR} 0Z`;
-      for (let i = Math.min(seasons, 6) - 1; i >= 0; i--)
-        coats += `<path d="${outer}" fill="none" stroke="${cc[i % 3]}" stroke-width="${8 * (i + 1)}" opacity=".3"/>`;
+      for (let i = 0; i < Math.min(seasons, 6); i++) {
+        const d = 3 * i + 1.5;
+        coats += `<rect x="${d}" y="${d}" width="${PW - 2 * d}" height="${PH - 2 * d}" rx="${r2(Math.max(0.6, PR - d))}" fill="none" stroke="${cc[i % 3]}" stroke-width="3" opacity=".34"/>`;
+      }
     }
 
     // lettering on the plate: tier and season, the ID and the country, each in the tier's craft
@@ -343,7 +346,7 @@
     }
 
     // body thickness (metal): the plate shape, offset down and to the end, under the face
-    const body = t.thick ? `<g transform="translate(${r2(t.thick * 0.35)} ${t.thick})"><path d="${PLATE}" fill="${t.body}" mask="${url("TH")}"/></g>` : "";
+    const body = t.thick ? `<g transform="translate(${r2(t.thick * 0.35)} ${t.thick})">${R(t.body, ` mask="${url("M")}"`)}</g>` : "";
     // the cut walls: shadow on the top/start edges of every cut, a lit lip on the bottom/end
     const walls =
       R(t.wallC, ` mask="${url("WM")}" opacity="${t.wallO}"`) +
@@ -355,8 +358,8 @@
     // LEGEND: bridgeless, the counters float on the frame's fine screen mesh, seen only in the cuts
     let mesh = "";
     if (legend && !thumb) {
-      pdefs += `<pattern id="${u("mesh")}" width="1.8" height="1.8" patternUnits="userSpaceOnUse" patternTransform="rotate(22)"><rect width=".26" height="1.8" fill="#fbefc6"/><rect width="1.8" height=".26" fill="#fbefc6"/></pattern>`;
-      mesh = R(url("mesh"), ` mask="${url("H")}" opacity=".32"`);
+      pdefs += `<pattern id="${u("mesh")}" width="1.6" height="1.6" patternUnits="userSpaceOnUse" patternTransform="rotate(22)"><rect width=".2" height="1.6" fill="#fff8e2"/><rect width="1.6" height=".2" fill="#fff8e2"/></pattern>`;
+      mesh = R(url("mesh"), ` mask="${url("H")}" opacity=".16"`);
     }
     const edge = `<path d="${PLATE}" fill="none" class="c04-edge" stroke="${t.edge}" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="${THR}" fill="none" class="c04-edge" stroke="${t.edge}" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
 
@@ -450,7 +453,7 @@
     }
     defs += `<clipPath id="${u("c")}"><path d="${plate}"/></clipPath>`;
     const thick = t.thick ? (mini ? 2.2 : 2) : 0;
-    const body = thick ? `<path d="${plate}" fill="${t.body}" transform="translate(${r2(thick * 0.3)} ${thick})"/>` : "";
+    const body = thick ? `<path d="${plate}${holes}" fill-rule="evenodd" fill="${t.body}" transform="translate(${r2(thick * 0.3)} ${thick})"/>` : "";
     const clamps = t.clamps
       ? `<g fill="#a9b1ba" stroke="#3d454f" stroke-width="${mini ? 0.9 : 0.7}">${(mini ? [16, 42] : [14, 44]).map((x) => `<rect x="${x}" y="${mini ? -6.5 : -5}" width="${mini ? 10 : 12}" height="${mini ? 9 : 7.5}" rx="1.2"/>`).join("")}</g>`
       : "";
@@ -507,14 +510,16 @@
     const ink = contrast(club, fabric) >= 3 ? club : NAVY;
     // the bib, 300 × 360, drawn flat: shoulder straps, a round neck, armholes, a straight hem
     // the bib, 296 × 358, drawn flat: broad shoulder straps, a scoop neck, shallow armholes
-    const bib = "M66 0H116C120 34 132 56 150 56S180 34 184 0H234C238 40 254 64 286 72L294 76V350Q294 358 286 358H14Q6 358 6 350V76L14 72C46 64 62 40 66 0Z";
-    const binding = "M116 0C120 34 132 56 150 56S180 34 184 0M66 0C62 40 46 64 14 72M234 0C238 40 254 64 286 72";
+    const bib = "M56 0H112C116 30 130 50 150 50S184 30 188 0H244C246 32 258 50 282 56L292 58V350Q292 358 284 358H16Q8 358 8 350V58L18 56C42 50 54 32 56 0Z";
+    const binding = "M112 0C116 30 130 50 150 50S184 30 188 0M56 0C54 32 42 50 18 56M244 0C246 32 258 50 282 56";
     // the sprayed print (the plate's own cut shapes, so the bridge gaps print too)
     const name = MC.nameOf(p, o);
     const nr = glyphRun([name], "w800");
     const nm = nr ? place(nr, 150, 128, 46, "mid") : null;
-    const num = place(digitsRun(p.ovr, "w800"), 150, 302, 200, "mid");
-    const bw = bridgeW(200, t);
+    const nrun = digitsRun(p.ovr, "w800");
+    const fsB = Math.min(212, (262 * UPM) / (nrun.x1 - nrun.x0));
+    const num = place(nrun, 150, 304, fsB, "mid");
+    const bw = bridgeW(fsB, t);
     const brs = lines(num.br, bw) + (nm ? lines(nm.br, bridgeW(46, t)) : "");
     const printShapes = num.paths + (nm ? nm.paths : "");
     const nameStamp = nm ? "" : `<text x="150" y="128" text-anchor="middle" font-family="Changa" font-weight="800" font-size="46"${ar ? ' direction="rtl"' : ""}>${esc(name)}</text>`;
@@ -533,7 +538,7 @@
       `<filter id="${u("bs")}" x="-10%" y="-10%" width="120%" height="125%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>` +
       `</defs>` +
       `<rect width="360" height="640" fill="#001c49"/>` +
-      `<g transform="translate(${ar ? 34 : 26} 96) rotate(${ar ? 2.5 : -2.5} 150 180)">` +
+      `<g transform="translate(${ar ? 38 : 26} 88) rotate(${ar ? 2.5 : -2.5} 150 180) translate(12 0) scale(.92)">` +
       `<path d="${bib}" fill="#000" opacity=".38" transform="translate(4 9)" filter="url(#${u("bs")})"/>` +
       `<path d="${bib}" fill="${fabric}"/>` +
       `<g clip-path="url(#${u("bc")})"><rect x="-10" y="-10" width="320" height="380" fill="url(#${u("knit")})" opacity=".55"/>` +
@@ -542,7 +547,7 @@
       `<rect x="-10" y="-10" width="320" height="380" fill="${ink}" mask="url(#${u("pm")})"/></g>` +
       `<path d="${binding}" fill="none" stroke="${shade}" stroke-width="7" opacity=".55"/>` +
       `<path d="${binding}" fill="none" stroke="${mix(fabric, "#000000", 0.35)}" stroke-width=".9" stroke-dasharray="3 2.4" transform="translate(0 2)"/>` +
-      `<path d="M6 345H294" stroke="${mix(fabric, "#000000", 0.35)}" stroke-width=".9" stroke-dasharray="3 2.4"/>` +
+      `<path d="M8 345H292" stroke="${mix(fabric, "#000000", 0.35)}" stroke-width=".9" stroke-dasharray="3 2.4"/>` +
       `</g>` +
       `</svg>`;
     const logo = MC.logo("wordmark", { variant: "light", w: 118, label: false });
@@ -554,8 +559,8 @@
       `<div class="c04-sh-logo">${logo}</div>` +
       `<div class="c04-sh-plate">${card}</div>` +
       `<div class="c04-sh-meta"><b${ar ? ' class="ar"' : ""}>${esc(name)}${yr ? ` <span>${MC.ltr("·" + yr)}</span>` : ""}</b>` +
-      `<span class="c04-sh-tier">${esc(S.tiers[tk])}</span>` +
-      `<span class="c04-sh-line"><span>${MC.ltr(p.id)}</span><span>${ar ? "مثال" : "Exemple"}</span></span></div>` +
+      `<span class="c04-sh-line"><span class="c04-sh-tier">${esc(S.tiers[tk])}</span><span>${MC.ltr(p.id)}</span></span></div>` +
+      `<span class="c04-sh-ex">${ar ? "مثال" : "Exemple"}</span>` +
       `</div>`
     );
   }

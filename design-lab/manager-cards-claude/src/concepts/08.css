@@ -40,6 +40,9 @@
   direction: ltr;
 }
 .c08 .c08-tab { touch-action: none; }
+/* overlays never take the pointer: the ball tab must stay grabbable under the laminate */
+.c08 .c08-lam,
+.c08 .c08-cut { pointer-events: none; }
 .c08 .c08-under { visibility: hidden; }
 .c08.c08-peeling .c08-under { visibility: visible; }
 .c08 .c08-ex1 { display: none; }
@@ -73,6 +76,7 @@
     animation: c08-lift 140ms 600ms cubic-bezier(0.3, 1.4, 0.5, 1) both;
   }
   .c08.c08--motion[data-tier="LEGEND"] .c08-flashf { animation: c08-flashframe 80ms 760ms linear both; }
+  .c08.c08--motion[data-tier="LEGEND"] .c08-sheen { animation: c08-blaze 80ms 760ms linear both; }
 }
 @keyframes c08-collage {
   0% { transform: scale(1.14) rotate(-2deg); }
@@ -88,6 +92,10 @@
   0% { transform: translateY(-1.5%) scale(1.02) rotate(0deg); }
   60% { transform: translateY(0) scale(0.995) rotate(2deg); }
   100% { transform: none; }
+}
+@keyframes c08-blaze {
+  0%, 100% { opacity: calc(0.3 + var(--c08-lit, 0) * 0.6); }
+  20%, 80% { opacity: 1; }
 }
 @keyframes c08-flashframe {
   0%, 100% { opacity: 0; }

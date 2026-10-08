@@ -101,8 +101,8 @@
   const GT = geo({ W: 98, VH: 48, cx: 39, R: 34, top: 9.5, ry: 4.4, H: 31, irx: 31.4, iry: 2.9, s0: -4, tx: 58, th0: 3.5, th1: 28.5, tOut: 4.5 });
   const GM = geo({ W: 50, VH: 28, cx: 19.5, R: 17.5, top: 4.7, ry: 2.6, H: 17.6, irx: 15.6, iry: 1.6, s0: -1.6, tx: 30, th0: 6.6, th1: 17.6, tOut: 3 });
 
-  const bodyPath = (g) =>
-    `M${g.x0} ${g.top}A${g.R} ${g.ry} 0 0 0 ${g.x1} ${g.top}V${g.top + g.H}A${g.R} ${g.ry} 0 0 1 ${g.x0} ${g.top + g.H}Z`;
+  const bodyPath = (g, lift = 0) =>
+    `M${g.x0} ${f(g.top - lift)}A${g.R} ${g.ry} 0 0 0 ${g.x1} ${f(g.top - lift)}V${g.top + g.H}A${g.R} ${g.ry} 0 0 1 ${g.x0} ${g.top + g.H}Z`;
   /* A horizontal band of the cylinder between two band heights (curves with the ellipse). */
   const arcBand = (g, h0, h1) =>
     `M${g.x0} ${f(g.top + h0)}A${g.R} ${g.ry} 0 0 0 ${g.x1} ${f(g.top + h0)}L${g.x1} ${f(g.top + h1)}A${g.R} ${g.ry} 0 0 1 ${g.x0} ${f(g.top + h1)}Z`;
@@ -133,28 +133,28 @@
 
   /* The closure tab's frame: a flat panel in perspective, drawn in local units
      (x from its attached edge, y down from its top edge). */
-  function tabFrame(g, founder) {
+  function tabFrame(g, founder, ext = 0) {
     const yS = g.top + g.ry * Math.cos(Math.asin((g.tx - g.cx) / g.R)) + g.th0;
     const yE = g.top + g.th0;
     const m = (0.6 * (yE - yS)) / (g.x1 - g.tx);
     const Ht = g.th1 - g.th0;
-    const xb = g.x1 + g.tOut - g.tx;
+    const xb = g.x1 + g.tOut - g.tx + ext;
     const xt = founder ? xb + Ht * SLANT : xb + Ht * SLANT * 0.5;
     const xbe = founder ? xb : xt;
     const xe = (y) => xt - (y / Ht) * (xt - xbe);
     const poly = `M0 0H${f(xt)}L${f(xbe)} ${f(Ht)}H0Z`;
     return { x: g.tx, y: yS, k: Math.atan(m) * DEG, Ht, xt, xb: xbe, xe, poly };
   }
-  /* The LEGEND D-ring: its straight bar along the tab's free end, the D bulging past it. */
-  function dRingPath(F, inset, bulge) {
-    const y0 = F.Ht - inset;
-    const y1 = inset;
-    const a = 11.3 / DEG;
-    const n = [Math.cos(a), Math.sin(a)];
-    const P0 = [F.xe(y0) + 1.5, y0];
-    const P1 = [F.xe(y1) + 1.5, y1];
-    const k = bulge / 0.75;
-    return `M${f(P1[0])} ${f(P1[1])}C${f(P1[0] + n[0] * k)} ${f(P1[1] + n[1] * k)} ${f(P0[0] + n[0] * k)} ${f(P0[1] + n[1] * k)} ${f(P0[0])} ${f(P0[1])}Z`;
+  /* The LEGEND ring: a machined steel frame at the band's end. The strap is threaded through it
+     (over the near bar, under the far one) and the frame stands proud of the strap above and below. */
+  function ringGeo(g, F, rw, ov) {
+    const x0 = g.x1 - g.tx - rw * 0.45;
+    const r = rw * 0.42;
+    const y0 = -ov;
+    const y1 = F.Ht + ov;
+    const d = `M${f(x0 + r)} ${f(y0)}H${f(x0 + rw - r)}Q${f(x0 + rw)} ${f(y0)} ${f(x0 + rw)} ${f(y0 + r)}V${f(y1 - r)}Q${f(x0 + rw)} ${f(y1)} ${f(x0 + rw - r)} ${f(y1)}H${f(x0 + r)}Q${f(x0)} ${f(y1)} ${f(x0)} ${f(y1 - r)}V${f(y0 + r)}Q${f(x0)} ${f(y0)} ${f(x0 + r)} ${f(y0)}Z`;
+    const bar = `M${f(x0)} ${f(-1.2)}V${f(F.Ht + 1.2)}`;
+    return { x0, rw, d, bar };
   }
 
   /* Mount registry: what a rendered card needs to be re-projected while spinning. */
@@ -381,9 +381,9 @@
       `<stop offset="0" stop-color="#fff" stop-opacity=".06"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>`;
     d += `<radialGradient id="${u}-gs"><stop offset="0" stop-color="#000" stop-opacity=".75"/><stop offset=".6" stop-color="#000" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>`;
     if (T.ring) {
-      const F = tabFrame(g, true);
+      const F = tabFrame(g, true, 12);
       d +=
-        `<linearGradient id="${u}-steel" gradientUnits="userSpaceOnUse" x1="${f(F.xb)}" y1="0" x2="${f(F.xt + 26)}" y2="${f(F.Ht)}">` +
+        `<linearGradient id="${u}-steel" gradientUnits="userSpaceOnUse" x1="${f(g.x1 - g.tx - 8)}" y1="-8" x2="${f(g.x1 - g.tx + 12)}" y2="${f(F.Ht + 8)}">` +
         `<stop offset="0" stop-color="#59616c"/><stop offset=".18" stop-color="#e9eef3"/><stop offset=".34" stop-color="#8d97a3"/>` +
         `<stop offset=".52" stop-color="#f7f9fb"/><stop offset=".7" stop-color="#6c7581"/><stop offset=".86" stop-color="#c3cad3"/><stop offset="1" stop-color="#4c535d"/></linearGradient>`;
     }
@@ -491,14 +491,14 @@
   }
 
   /* ---------- the closure tab ---------- */
-  function statsOnTab(p, o, F) {
+  function statsOnTab(p, o, F, limit = Infinity) {
     const ar = MC.isAr(o);
     const S = MC.s(o);
     let s = "";
     const numFont = `800 14px "Manrope"`;
     MC.STATS.forEach((k, i) => {
       const yb = 22.5 + i * 22;
-      const xr = F.xe(yb - 5) - 6.5;
+      const xr = Math.min(F.xe(yb - 5) - 6.5, limit);
       const v = String(p.stats[k]);
       const nw = measure(v, numFont);
       const num = (x, anchor) =>
@@ -519,8 +519,9 @@
 
   function tabGroup(p, o, u, T, thumb, club) {
     const founder = !!p.founder;
-    const F = tabFrame(B, founder);
     const strap = T.ring;
+    const F = tabFrame(B, founder, strap ? 12 : 0);
+    const R = strap ? ringGeo(B, F, 12, 8) : null;
     const fill = strap ? mix(bodyTone(club, T), "#000", 0.22) : K.velcro;
     const edge = mix(fill, "#000", 0.4);
     const Ht = F.Ht;
@@ -539,6 +540,12 @@
         `<rect x="22" y="${f(Ht / 2 - 18)}" width="${f(lw)}" height="36" fill="${K.cream}"/>` +
         `<text x="${f(22 + lw / 2)}" y="${f(Ht / 2 - 3)}" text-anchor="middle" font-family="${ar ? "'Noto Sans Arabic', Changa" : "Changa"}, sans-serif" font-weight="800" font-size="${ar ? 9 : 9.5}" fill="${mix(club.body, "#000", 0.35)}"${ar ? ' direction="rtl"' : ""}>${MC.esc(S.founderLine)}</text>` +
         `<text x="${f(22 + lw / 2)}" y="${f(Ht / 2 + 11)}" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="8" fill="${mix(club.body, "#000", 0.35)}" direction="ltr">${MC.esc(p.id)}</text></g>`;
+    }
+    if (R) {
+      s += `<path d="${R.d}" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="5" transform="translate(-2.4 2)"${thumb ? "" : ` filter="url(#${u}-soft)"`}/>`;
+      s += `<path d="${R.d}" fill="none" stroke="#1b2028" stroke-width="6.4"/>`;
+      s += `<path d="${R.d}" fill="none" stroke="url(#${u}-steel)" stroke-width="4.6"/>`;
+      s += `<path d="${R.d}" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width=".8" transform="translate(-.8 -.8)"/>`;
     }
     s += `<g class="c06-tab-face">`;
     s += `<path d="${F.poly}" transform="translate(1.1 1.5)" fill="${mix(fill, "#000", 0.55)}"/>`;
@@ -565,21 +572,16 @@
     s += founder
       ? `<g fill="none" stroke="${K.cream}" stroke-width="${thumb ? 1.6 : 1.15}" stroke-dasharray="${thumb ? "none" : "2.1 1.3"}" stroke-linecap="round"><path d="M5 7H18V${f(Ht - 7)}H5Z"/><path d="M5 7L18 ${f(Ht - 7)}M18 7L5 ${f(Ht - 7)}"/></g>`
       : `<path d="M11.5 7V${f(Ht - 7)}" fill="none" stroke="${K.cream}" stroke-opacity=".8" stroke-width="1.1" stroke-dasharray="2.1 1.3"/>`;
-    if (!thumb) s += statsOnTab(p, o, F);
+    if (!thumb) s += statsOnTab(p, o, F, R ? R.x0 - 5 : Infinity);
     s += `</g>`;
-    if (strap) {
-      // LEGEND: the strap runs through a machined steel D-ring and folds over its bar
-      const dp = dRingPath(F, 7, 19);
-      s += `<path d="${dp}" fill="none" stroke="#1e242c" stroke-width="7" stroke-linejoin="round"/>`;
-      s += `<path d="${dp}" fill="none" stroke="url(#${u}-steel)" stroke-width="5" stroke-linejoin="round"/>`;
-      s += `<path d="${dp}" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".9" stroke-linejoin="round" transform="translate(-.7 -.9)"/>`;
-      const fold = `M${f(F.xe(0) - 8)} 0H${f(F.xe(0) + 4.5)}L${f(F.xe(Ht) + 4.5)} ${f(Ht)}H${f(F.xe(Ht) - 8)}Z`;
-      s += `<path d="${fold}" fill="${mix(fill, "#000", 0.18)}"/>`;
-      s += `<path d="M${f(F.xe(0) + 4.5)} 0L${f(F.xe(Ht) + 4.5)} ${f(Ht)}" stroke="#fff" stroke-opacity=".22" stroke-width="1"/>`;
-      s += `<path d="M${f(F.xe(0) - 8)} 0L${f(F.xe(Ht) - 8)} ${f(Ht)}" stroke="#000" stroke-opacity=".45" stroke-width="1.2"/>`;
-      s += `<path d="${dp}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-opacity=".5" stroke-width=".7" transform="translate(.4 .4)"/>`;
+    if (R) {
+      // the near bar crosses over the strap: it reads as threaded, not as a handle
+      s += `<path d="${R.bar}" stroke="#000" stroke-opacity=".5" stroke-width="3" transform="translate(2 1.6)"${thumb ? "" : ` filter="url(#${u}-soft)"`}/>`;
+      s += `<path d="${R.bar}" stroke="#1b2028" stroke-width="6.4" stroke-linecap="round"/>`;
+      s += `<path d="${R.bar}" stroke="url(#${u}-steel)" stroke-width="4.6" stroke-linecap="round"/>`;
+      s += `<path d="${R.bar}" stroke="#fff" stroke-opacity=".8" stroke-width=".8" transform="translate(-.9 0)"/>`;
+      s += `<path d="${F.poly}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width=".7" stroke-opacity=".6"/>`;
     }
-    s += `<path d="${F.poly}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width=".9" stroke-opacity=".8"/>`;
     s += `</g>`;
     return s;
   }
@@ -614,7 +616,7 @@
     s += `<ellipse cx="${g.cx}" cy="${g.top + 1.4}" rx="${g.irx}" ry="${g.iry}" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="2.4" clip-path="url(#${u}-in)"/>`;
     // the band body
     const body = bodyTone(club, T);
-    s += `<path d="${bodyPath(g)}" fill="${body}"/>`;
+    s += `<path d="${bodyPath(g, 0.7)}" fill="${body}"/>`;
     // selvedges and tier stripes (they curve with the band). Woven tiers bind the top edge in Logo Blue;
     // printed elastic keeps a plain edge with a printed blue line.
     s += T.ovr === "print" ? `<path d="${arcBand(g, 3.5, 6.5)}" fill="${K.blue}"/>` : `<path d="${arcBand(g, 0, 5.5)}" fill="${K.blue}"/>`;
@@ -677,7 +679,7 @@
     s += `<ellipse cx="${G.cx}" cy="${G.top}" rx="${G.R}" ry="${G.ry}" fill="${printed ? lit : "#3a78ff"}"/>`;
     s += `<ellipse cx="${G.cx}" cy="${G.top}" rx="${G.irx}" ry="${G.iry}" fill="${mix(club.body, "#000", mini ? 0.62 : 0.5)}"/>`;
     if (!printed && !mini) s += `<path d="${backBand(G, 0, 1.3)}" fill="#0a3cae" clip-path="url(#${u}-in)"/><clipPath id="${u}-in"><ellipse cx="${G.cx}" cy="${G.top}" rx="${G.irx}" ry="${G.iry}"/></clipPath>`;
-    s += `<path d="${bodyPath(G)}" fill="${bodyTone(club, T)}"/>`;
+    s += `<path d="${bodyPath(G, mini ? 0.2 : 0.3)}" fill="${bodyTone(club, T)}"/>`;
     const st = mini ? { b0: 0, b1: 1.1, s0: 2.0, sp: 1.9, sw: 1.05 } : { b0: 0, b1: 2.3, s0: 4.2, sp: 2.4, sw: 1.4 };
     s += printed ? `<path d="${arcBand(G, st.b0 + (mini ? 0.3 : 0.9), st.b1 + (mini ? 0.1 : 0.2))}" fill="${K.blue}"/>` : `<path d="${arcBand(G, st.b0, st.b1)}" fill="${K.blue}"/>`;
     for (let i = 0; i < T.stripes; i++) s += `<path d="${arcBand(G, st.s0 + i * st.sp, st.s0 + i * st.sp + st.sw)}" fill="${K.cream}"/>`;
@@ -700,9 +702,14 @@
       s += `<path d="${arcLine(G, G.H)}" fill="none" stroke="${club.sec}" stroke-width="1"/>`;
     }
     // the tab
-    const F = tabFrame(G, founder);
+    const F = tabFrame(G, founder, legend ? (mini ? 2.4 : 3.6) : 0);
+    const R = legend ? ringGeo(G, F, mini ? 2.6 : 3.6, mini ? 1.7 : 2.6) : null;
     const tf = legend ? mix(bodyTone(club, T), "#000", 0.25) : mini ? "#737b86" : "#5d6570";
     s += `<g transform="translate(${f(F.x)} ${f(F.y)}) skewY(${f(F.k)})">`;
+    if (R) {
+      s += `<path d="${R.d}" fill="none" stroke="#1b2028" stroke-width="${mini ? 1.9 : 2.5}"/>`;
+      s += `<path d="${R.d}" fill="none" stroke="#dfe4ea" stroke-width="${mini ? 1.1 : 1.5}"/>`;
+    }
     s += `<path d="${F.poly}" transform="translate(${mini ? -0.8 : -1.4} ${mini ? 0.6 : 1})" fill="#000" opacity=".35"/>`;
     s += `<path d="${F.poly}" fill="${tf}" stroke="${mix(tf, "#000", 0.45)}" stroke-width="${mini ? 0.5 : 0.7}" stroke-linejoin="round"/>`;
     if (founder) {
@@ -713,12 +720,11 @@
         s += `<rect x="${mini ? 0.9 : 1.6}" y="${mini ? 1.3 : 2.2}" width="${bw}" height="${f(F.Ht - (mini ? 2.6 : 4.4))}" fill="none" stroke="${K.cream}" stroke-width="${mini ? 0.85 : 0.8}"/>`;
       }
     }
-    if (legend) {
-      const dp = dRingPath(F, mini ? 1.6 : 3, mini ? 4.6 : 8);
-      s += `<path d="${dp}" fill="none" stroke="#2a3038" stroke-width="${mini ? 2 : 3}" stroke-linejoin="round"/>`;
-      s += `<path d="${dp}" fill="none" stroke="#d3d9e0" stroke-width="${mini ? 1.2 : 1.9}" stroke-linejoin="round"/>`;
+    if (R) {
+      s += `<path d="${R.bar}" stroke="#1b2028" stroke-width="${mini ? 1.9 : 2.5}"/>`;
+      s += `<path d="${R.bar}" stroke="#eef2f6" stroke-width="${mini ? 1.1 : 1.5}"/>`;
+      s += `<path d="${F.poly}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.5 : 0.6}" stroke-opacity=".7"/>`;
     }
-    s += `<path d="${F.poly}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.55 : 0.7}"/>`;
     s += `</g>`;
     s += `<path d="${outlinePath(G)}" class="c06-rim" fill="none" stroke="${K.rim}" stroke-width="${mini ? 0.6 : 0.75}"/>`;
     const S = MC.s(o);
@@ -752,7 +758,9 @@
     const u = MC.uid("c06s");
     const club = clubOf(p);
     const A = MC.AVATAR;
-    const X0 = 96;
+    const X0 = 146; // the figure: bottom-end, cropped at the chest so the shoulders read
+    const FS = 1.0;
+    const FY = 640 - 240 * FS + 8;
     const yy = p.founder ? String(p.founder).slice(-2) : "";
     let sc = "<defs>";
     sc += `<linearGradient id="${u}-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03060d"/><stop offset=".5" stop-color="#081224"/><stop offset=".74" stop-color="#0b1a30"/><stop offset="1" stop-color="#060c18"/></linearGradient>`;
@@ -768,12 +776,12 @@
     let w = `<rect width="360" height="640" fill="url(#${u}-sky)"/>`;
     w += `<rect width="360" height="640" fill="url(#${u}-lamp)"/>`;
     // pitch: mowing stripes receding to the far touchline
-    w += `<path d="M0 468H360V640H0Z" fill="url(#${u}-turf)"/>`;
-    const bands = [468, 476, 486, 499, 516, 538, 567, 604, 640];
+    w += `<path d="M0 508H360V640H0Z" fill="url(#${u}-turf)"/>`;
+    const bands = [508, 514, 522, 532, 545, 562, 584, 610, 640];
     for (let i = 0; i < bands.length - 1; i += 2) w += `<path d="M0 ${bands[i]}H360V${bands[i + 1]}H0Z" fill="hsl(214 90% 55% / .12)"/>`;
-    w += `<path d="M0 468H360" stroke="#dfe8f5" stroke-opacity=".42" stroke-width="1.2"/>`;
-    w += `<path d="M150 468L64 640" stroke="#dfe8f5" stroke-opacity=".3" stroke-width="1.6"/>`;
-    w += `<ellipse cx="136" cy="512" rx="82" ry="17" fill="none" stroke="#dfe8f5" stroke-opacity=".2" stroke-width="1.3"/>`;
+    w += `<path d="M0 508H360" stroke="#dfe8f5" stroke-opacity=".42" stroke-width="1.2"/>`;
+    w += `<path d="M168 508L96 640" stroke="#dfe8f5" stroke-opacity=".3" stroke-width="1.6"/>`;
+    w += `<ellipse cx="156" cy="546" rx="84" ry="16" fill="none" stroke="#dfe8f5" stroke-opacity=".22" stroke-width="1.3"/>`;
     // beam and floodlight head
     w += `<path d="M304 46L40 640H360V250Z" fill="url(#${u}-beam)"/>`;
     w += `<rect width="360" height="640" filter="url(#${u}-haze)" opacity=".12"/>`;
@@ -783,17 +791,17 @@
     for (let r = 0; r < 2; r++) for (let q = 0; q < 4; q++) lamps += `<circle cx="${-18 + q * 12}" cy="${-6 + r * 12}" r="4.2"/>`;
     w += `<g fill="#cfe0ff" filter="url(#${u}-glow)" opacity=".9">${lamps}</g><g fill="#ffffff">${lamps}</g></g>`;
     // the figure from behind, rim-lit by the floodlight, the band on its upper arm
-    w += MC.avatar({ x: X0 + 3, y: 277.5, w: 300, h: 360, torso: "#bcd2ff", seam: false, hoodFill: "#bcd2ff" });
-    w += `<svg x="${X0}" y="280" width="300" height="360" viewBox="${A.viewBox}" overflow="visible">`;
+    w += MC.avatar({ x: X0 + 3, y: FY - 0.8, w: 200 * FS, h: 240 * FS, torso: "#bcd2ff", seam: false, hoodFill: "#bcd2ff" });
+    w += `<svg x="${X0}" y="${FY}" width="${200 * FS}" height="${240 * FS}" viewBox="${A.viewBox}" overflow="visible">`;
     w += `<path d="${A.torso}" fill="url(#${u}-jk)"/><path d="${A.hood}" fill="url(#${u}-jk)"/>`;
     w += `<path d="${A.seam}" stroke="#2a3a57" stroke-width="2" fill="none"/><path d="${A.hoodSeam}" stroke="#2a3a57" stroke-width="2" fill="none"/><path d="${A.hoodRim}" stroke="#2a3a57" stroke-width="2" fill="none"/>`;
     w += `<g clip-path="url(#${u}-torso)">`;
     w += `<path d="M150 192C154 208 156 224 157 240" stroke="#05080e" stroke-width="1.8" fill="none" opacity=".85"/><path d="M152 192C156 208 158 224 159 240" stroke="#2c3d5c" stroke-width=".8" fill="none"/>`;
-    w += `<path d="M156 206Q175 212.5 194 209L195 223Q175 227 156 220.5Z" fill="${club.body}"/>`;
-    w += `<path d="M156 206Q175 212.5 194 209" stroke="${K.blue}" stroke-width="2.2" fill="none"/>`;
-    w += `<path d="M157 211Q175 217 194 213.6" stroke="${K.cream}" stroke-width=".9" fill="none"/><path d="M157 213.6Q175 219.6 194 216.2" stroke="${K.cream}" stroke-width=".9" fill="none"/>`;
-    w += `<path d="M156 206Q175 212.5 194 209L195 223Q175 227 156 220.5Z" fill="url(#${u}-jk)" opacity=".35"/>`;
-    w += `<path d="M178 211.6Q187 211.4 194 209L195 223" stroke="#dfe9ff" stroke-width="1.1" fill="none" opacity=".85"/>`;
+    w += `<path d="M155 203Q175 210 195 206L196.5 225Q175 230 155 222.5Z" fill="${club.body}"/>`;
+    w += `<path d="M155 203Q175 210 195 206L195.2 209.4Q175 213.6 155.2 206.6Z" fill="${K.blue}"/>`;
+    w += `<path d="M155.6 211.6Q175 218.4 195.4 214.4" stroke="${K.cream}" stroke-width="1.1" fill="none"/><path d="M155.8 214.8Q175 221.6 195.6 217.6" stroke="${K.cream}" stroke-width="1.1" fill="none"/>`;
+    w += `<path d="M155 203Q175 210 195 206L196.5 225Q175 230 155 222.5Z" fill="url(#${u}-jk)" opacity=".3"/>`;
+    w += `<path d="M176 209.6Q187 209.2 195 206L196.5 225" stroke="#e4ecff" stroke-width="1.3" fill="none" opacity=".9"/>`;
     w += `</g></svg>`;
     // grain over everything
     w += `<rect width="360" height="640" filter="url(#${u}-gr)" opacity=".06"/>`;
@@ -801,7 +809,8 @@
     return (
       `<div class="c06 c06-share" dir="${S.dir}"${ar ? ' lang="ar"' : ""} role="img" aria-label="${MC.esc(MC.label(p, o))}">` +
       scene +
-      `<div class="c06-sh-top"><span class="c06-sh-logo">${MC.logo("wordmark", { variant: "light", label: false })}</span><span class="c06-sh-ex">${ar ? "مثال" : "Exemple"}</span></div>` +
+      `<div class="c06-sh-top"><span class="c06-sh-logo">${MC.logo("wordmark", { variant: "light", label: false })}</span></div>` +
+      `<span class="c06-sh-ex">${ar ? "مثال" : "Exemple"}</span>` +
       `<div class="c06-sh-band" aria-hidden="true">${full(p, { ...o, motion: false, thumb: false })}</div>` +
       `<div class="c06-sh-id"><b class="c06-sh-name"><bdi>${MC.esc(MC.nameOf(p, o))}</bdi>${yy ? `<span class="c06-sh-fy">·${MC.ltr(yy)}</span>` : ""}</b>` +
       `<span class="c06-sh-tier">${MC.esc(S.tiers[p.tier])}</span>` +
@@ -936,7 +945,7 @@
       "'Who has the armband?' is a question every group of friends has already argued about. This is the first answer you earn rather than get handed by the coach.",
       "Your band leads your row in every leaderboard. The stripe count under the top edge says your tier at 24px, so friends compare it in comments and head-to-heads without opening anything.",
       "Turning it is a gesture you show people. You hold the phone out, spin the band and stop it on the front: it is filmable in a way a flat card is not.",
-      "Teenagers will want the LEGEND buckle; older Fantasy players will respect the stripes and the founder cut, which cannot be bought, only kept.",
+      "Teenagers will want the LEGEND ring; older Fantasy players will respect the stripes and the founder cut, which cannot be bought, only kept.",
     ],
     founderMark: [
       "FOUNDER 2026 is built into the object in three places. The tab's free end is cut on the wordmark's 11.3 degree slant (later cohorts get a square cut), the tab is sewn on with a box-X stitch (later cohorts get a single line), and '26 is woven in a box on the band's start side, where an armband carries its C.",
@@ -944,8 +953,8 @@
       "Tapping the tab (live card) folds it open to the woven label underneath: FOUNDER 2026 and BOT #004821. The rows set it the supporter-group way, ALI ·26.",
     ],
     small: [
-      "At 44–80px the token is the band itself in flat fills: elliptical opening, club-colour body, Logo Blue selvedge, tier stripes, the 84 in Changa 800, and the tab, slanted for founders, with a steel D-ring for LEGEND. Club colour is the body and the bottom selvedge.",
-      "At 24–32px the mini keeps four parts of the object: the opening arc, 0–3 cream stripes under the top edge (HOMA 0, STADE 1, PRO 2, CHAMPION and LEGEND 3), the 84 at 12–14px, and a tab on the lower end. The D-ring at LEGEND changes the outline; founders keep a slanted tab with a cream stitch box.",
+      "At 44–80px the token is the band itself in flat fills: elliptical opening, club-colour body, Logo Blue selvedge, tier stripes, the 84 in Changa 800, and the tab, slanted for founders, threaded through a steel ring for LEGEND. Club colour is the body and the bottom selvedge.",
+      "At 24–32px the mini keeps four parts of the object: the opening arc, 0–3 cream stripes under the top edge (HOMA 0, STADE 1, PRO 2, CHAMPION and LEGEND 3), the 84 at 12–14px, and a tab on the lower end. The steel ring at LEGEND changes the outline; founders keep a slanted tab with a cream stitch box.",
       "No filters, turbulence or text measuring run in the token or the row: they are drawn 50 times in a list.",
     ],
     rtl: [
@@ -958,11 +967,11 @@
       STADE: "Tissé: a jacquard twill, one woven stripe, and an 84 woven flat so its pick lines are visible inside the figures.",
       PRO: "Double: a denser double weave, two stripes, and an 84 in raised satin stitch whose sheen sits on the cylinder's highlight and travels when the band turns.",
       CHAMPION: "Passepoil: contrast piping on both edges thickens the outline, three stripes, the 84 is a satin appliqué edged in running stitch over a dark under-layer, and the tab is reinforced with a stitched border.",
-      LEGEND: "Boucle: the heaviest ribbed weave, the 84 moulded in white silicone relief with a raking shadow, and the velcro tab replaced by a strap through a machined steel D-ring that sticks out past the band. The strap keeps the founder slant, the box-X and the stats.",
+      LEGEND: "Boucle: the heaviest ribbed weave in a deeper tone, the 84 moulded in white silicone relief with a raking shadow, and the velcro tab replaced by a longer strap threaded through a machined steel ring at the band's end. The ring stands proud of the strap above and below. The strap keeps the founder slant, the box-X and the stats.",
     },
     legend: [
-      "LEGEND is the armband the pros wear: a white silicone 84 moulded into a heavy ribbed band, with a steel D-ring buckle. The ring is the one outline change, and it reads as a loop even at 24px.",
-      "The ceremony is specified but not built in this lab: the band arrives as a flat strip with the 84 already visible, curls into a loop around an invisible arm, threads the D-ring and cinches with one heavy haptic, then turns once and settles front-on. It is a replay, never a gate. Reduced motion shows the closed band.",
+      "LEGEND is the armband the pros wear: a white silicone 84 moulded into a heavy ribbed band, with the strap threaded through a machined steel ring. The ring standing proud of the strap, above and below, is the one outline change, and it still shows as a bright bar at 24px.",
+      "The ceremony is specified but not built in this lab: the band arrives as a flat strip with the 84 already visible, curls into a loop around an invisible arm, threads the steel ring and cinches with one heavy haptic, then turns once and settles front-on. It is a replay, never a gate. Reduced motion shows the closed band.",
     ],
     advantages: [
       "A silhouette type nobody else in either exploration has: a short band with an opening and a tab. It is not a rectangle, a ticket or a tombstone.",

@@ -86,9 +86,10 @@
   const rnW = (deg, rr = RN.r) => [r2(RN.x + rr * Math.cos((deg * Math.PI) / 180)), r2(RN.y + rr * Math.sin((deg * Math.PI) / 180))];
   // Where the charms hang on each ring, and which way they fall in the flat lay.
   const ATT = {
-    sq: { fig: sqW(34, -9), ball: sqW(31.1, 31.1), carab: sqW(-34, -2) },
-    rn: { fig: rnW(-12), ball: rnW(42), carab: rnW(196) },
+    sq: { fig: sqW(31.1, 31.1), ball: sqW(34, -9), carab: sqW(-34, -2) },
+    rn: { fig: rnW(38), ball: rnW(-14), carab: rnW(196) },
   };
+  const ROT = { fig: -26, ball: -52 };
   // The half-plane where the band runs in FRONT of the fob, before it dives into the eyelet.
   function frontClip(founder) {
     const t = founder ? [COS, SIN] : [0.819, 0.574];
@@ -118,6 +119,8 @@
         : `<linearGradient id="${id}-rg" gradientUnits="userSpaceOnUse" x1="-40" y1="-40" x2="40" y2="40"><stop offset="0" stop-color="#e6ebf0"/><stop offset=".2" stop-color="#87919d"/><stop offset=".4" stop-color="#f3f6f9"/><stop offset=".56" stop-color="#a9b2be"/><stop offset=".76" stop-color="#6b7683"/><stop offset=".9" stop-color="#c7ced6"/><stop offset="1" stop-color="#8a94a0"/></linearGradient>`) +
       // cut steel for charms and fittings
       `<linearGradient id="${id}-st" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f1f4f7"/><stop offset=".42" stop-color="#a9b2be"/><stop offset=".68" stop-color="#77818e"/><stop offset="1" stop-color="#cfd5dc"/></linearGradient>` +
+      `<linearGradient id="${id}-fg" x1="0" y1="0" x2="1" y2=".4"><stop offset="0" stop-color="#e9edf1"/><stop offset=".5" stop-color="#a3adb9"/><stop offset="1" stop-color="#6c7682"/></linearGradient>` +
+      `<linearGradient id="${id}-fh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f8fa"/><stop offset=".55" stop-color="#b3bcc7"/><stop offset="1" stop-color="#7a8490"/></linearGradient>` +
       `<radialGradient id="${id}-bl" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#ffffff"/><stop offset=".35" stop-color="#c9d0d8"/><stop offset=".8" stop-color="#7d8794"/><stop offset="1" stop-color="#5b6470"/></radialGradient>` +
       `<clipPath id="${id}-fr"><path d="${frontClip(founder)}"/></clipPath>` +
       `<clipPath id="${id}-fc"><path d="${pearD(0)}"/></clipPath>` +
@@ -222,8 +225,8 @@
       (thumb
         ? ""
         : `<filter id="${id}-mat" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">` +
-          `<feTurbulence type="fractalNoise" baseFrequency=".007 .024" numOctaves="3" seed="4" result="n"/>` +
-          `<feColorMatrix in="n" type="matrix" values="0 0 0 0 .33  0 0 0 0 .22  0 0 0 0 .16  3.4 0 0 0 -1.86" result="v"/>` +
+          `<feTurbulence type="fractalNoise" baseFrequency=".009 .019" numOctaves="3" seed="4" result="n"/>` +
+          `<feColorMatrix in="n" type="matrix" values="0 0 0 0 .32  0 0 0 0 .2  0 0 0 0 .15  2.7 0 0 0 -1.5" result="v"/>` +
           `<feComposite in="v" in2="SourceAlpha" operator="in" result="vn"/>` +
           `<feMerge result="base"><feMergeNode in="SourceGraphic"/><feMergeNode in="vn"/></feMerge>` +
           `<feGaussianBlur in="SourceAlpha" stdDeviation="9" result="b"/>` +
@@ -293,7 +296,7 @@
       `<clipPath id="${id}-sc"><path d="${pearD(3.5)}"/></clipPath>` +
       `<mask id="${id}-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="260" height="420"><rect width="260" height="420" fill="#fff"/><circle cx="130" cy="112" r="20.5" fill="#000"/></mask>`;
     // the panel seams of an old match ball: a Y junction where three panels meet
-    const seams = ["M-10 251Q130 233 270 251", "M206 241.6Q213 283 240 322", "M54 241.6Q47 283 20 322"];
+    const seams = ["M78 243H182", "M78 243L14 354", "M182 243L246 354", "M78 243L56 205", "M182 243L204 205"];
     const seam = (d) =>
       `<path d="${d}" stroke="#6f4a2b" stroke-width="2.2"/>` +
       (thumb ? "" : `<path d="${d}" stroke="#3a2a1c" stroke-width="5.4" stroke-dasharray="1.15 3.6"/>`) +
@@ -317,6 +320,7 @@
 
   /* ------------------------------------------------------------ the engraving */
   function engraving(p, o, id, ink, thumb) {
+    const tierFit = p.tier === "HOMA" || p.tier === "STADE" ? 34 : 46;
     const S = MC.s(o);
     const ar = MC.isAr(o);
     const paint = `fill="${ink.fill}"` + (ink.stroke ? ` stroke="${ink.stroke}" stroke-width="${ink.sw}" paint-order="stroke"` : "");
@@ -327,13 +331,13 @@
       const tier = S.tiers[p.tier];
       if (ar) {
         const w = wAt('700 100px "Noto Sans Arabic"', tier, 11, 0.5);
-        const fs = r2(Math.min(11, (11 * 44) / Math.max(1, w)));
-        s += `<text x="130" y="152" text-anchor="middle" font-family="Noto Sans Arabic, Changa, sans-serif" font-weight="700" font-size="${fs}" ${paint} fill-opacity=".78">${esc(tier)}</text>`;
+        const fs = r2(Math.min(11, (11 * tierFit) / Math.max(1, w)));
+        s += `<text x="130" y="159" text-anchor="middle" font-family="Noto Sans Arabic, Changa, sans-serif" font-weight="700" font-size="${fs}" ${paint} fill-opacity=".78">${esc(tier)}</text>`;
       } else {
         const ls = 0.12;
         const w = wAt("800 100px Manrope", tier, 10.5, 0.72) + tier.length * ls * 10.5;
-        const fs = r2(Math.min(10.5, (10.5 * 46) / Math.max(1, w)));
-        s += `<text x="${r2(130 + (ls * fs) / 2)}" y="151" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing="${r2(ls * fs)}" ${paint} fill-opacity=".78">${esc(tier)}</text>`;
+        const fs = r2(Math.min(10.5, (10.5 * tierFit) / Math.max(1, w)));
+        s += `<text x="${r2(130 + (ls * fs) / 2)}" y="158" text-anchor="middle" font-family="Manrope, sans-serif" font-weight="800" font-size="${fs}" letter-spacing="${r2(ls * fs)}" ${paint} fill-opacity=".78">${esc(tier)}</text>`;
       }
 
       // the stats, an engraved column down the neck: figures read down one line
@@ -417,7 +421,7 @@
         `<path d="${rrect(28.3, 4.3)}" fill="none" stroke="#0d1520" stroke-opacity=".6" stroke-width=".8"/>` +
         // the split: where the top coil ends
         `<path d="M27.6 -17V-17M28 -18.6L40.4 -15.8" stroke="#0d1520" stroke-width="1.1"/><path d="M28 -17.2L40.2 -14.4" stroke="#c9d6e8" stroke-opacity=".6" stroke-width=".6"/>`;
-      if (!thumb && part !== "front") {
+      if (!thumb) {
         // FOUNDER 2026 stamped through the bluing on the top bar: bright bare steel
         const t = S.founderLine;
         const fsMax = ar ? 7.2 : 6.4;
@@ -449,8 +453,8 @@
       `<g transform="translate(${at[0]} ${at[1]}) rotate(${rot})"><g class="c03-sw">` +
       `<circle r="4.4" fill="none" stroke="#59626d" stroke-width="2.4"/><circle r="4.4" fill="none" stroke="url(#${id}-st)" stroke-width="1.6"/>` +
       `<circle cy="9.2" r="2.5" fill="none" stroke="url(#${id}-st)" stroke-width="1.5"/>` +
-      `<rect x="-1.3" y="11" width="2.6" height="6" rx="1" fill="url(#${id}-st)"/>` +
-      MC.avatar({ x: -13, y: 11.5, w: 26, h: 31.2, torso: `url(#${id}-st)`, seam: "#4d5662", stroke: "#4a535e", strokeWidth: 4 }) +
+      `<rect x="-1.3" y="11" width="2.6" height="7" rx="1" fill="url(#${id}-st)"/>` +
+      MC.avatar({ x: -16, y: 11.4, w: 32, h: 38.4, torso: `url(#${id}-fg)`, hoodFill: `url(#${id}-fh)`, seam: "#39424c", stroke: "#3b444e", strokeWidth: 4.5 }) +
       `</g></g>`
     );
   }
@@ -517,13 +521,13 @@
     const defs =
       defsCommon(id, founder) +
       F.defs +
-      `<path id="${id}-rp" d="M29 322A101 79 0 0 0 231 322"/>`;
+      `<path id="${id}-rp" d="M34 322A96 74 0 0 0 226 322"/>`;
     const charms =
-      figureCharm(id, at.fig, -46) +
-      ballCharm(id, at.ball, -34) +
+      ballCharm(id, at.ball, ROT.ball) +
+      figureCharm(id, at.fig, ROT.fig) +
       (thumb || opts.noCaption
         ? ""
-        : `<text class="c03-cap" x="${r2(at.ball[0] + 34)}" y="${r2(at.ball[1] + 28)}" font-family="${MC.isAr(o) ? "Noto Sans Arabic, sans-serif" : "Manrope, sans-serif"}" font-weight="600" font-size="7" ${MC.isAr(o) ? 'direction="rtl" text-anchor="end"' : ""}>${MC.isAr(o) ? "مثال" : "Exemple"}</text>`);
+        : `<text class="c03-cap" x="${r2(at.ball[0] + 29.6 * Math.sin(-ROT.ball * Math.PI / 180) + 12)}" y="${r2(at.ball[1] + 29.6 * Math.cos(ROT.ball * Math.PI / 180) + 2.5)}" font-family="${MC.isAr(o) ? "Noto Sans Arabic, sans-serif" : "Manrope, sans-serif"}" font-weight="600" font-size="7" ${MC.isAr(o) ? 'direction="rtl" text-anchor="end"' : ""}>${MC.isAr(o) ? "مثال" : "Exemple"}</text>`);
     const body =
       ring(p, o, id, thumb, "back") +
       (opts.swing ? `<g transform="rotate(${opts.swing} ${EY.x} ${EY.y})">` : "") +
@@ -572,36 +576,38 @@
     const at = founder ? ATT.sq : ATT.rn;
     const showBall = size >= 64;
     // the main geometry at 1/5 scale, with thicker plies and ring so they survive
-    const G = (inner) => `<g transform="translate(-2.4 -5) scale(.2)">${inner}</g>`;
-    const step = 6.2;
+    const G = (inner) => `<g transform="translate(-1.8 -6) scale(.19)">${inner}</g>`;
+    const step = 9;
+    const TF = pearD(0) + holeD(15);
+    const TFo = (oy) => pearD(0, oy) + holeD(15, oy);
     const list = TIER[tk].ply(c);
     let ply = "";
     for (let k = list.length; k >= 1; k--) {
-      ply += `<path d="${faceD(step * k)}" fill-rule="evenodd" fill="${list[k - 1]}" stroke="#000" stroke-opacity=".35" stroke-width="1.4"/>`;
+      ply += `<path d="${TFo(step * k)}" fill-rule="evenodd" fill="${list[k - 1]}" stroke="#000" stroke-opacity=".35" stroke-width="1.4"/>`;
       if (k === list.length) ply += `<path class="c03-rim" d="${pearD(0, step * k)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     }
     let face = "";
     if (T.clear) {
       face =
-        `<path d="${faceD()}" fill-rule="evenodd" fill="#d9e8f5" fill-opacity=".25"/>` +
-        `<path d="${pearD(12)}${holeD(17)}" fill-rule="evenodd" fill="${T.body}"/>` +
-        `<path class="c03-clear" d="${faceD()}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+        `<path d="${TF}" fill-rule="evenodd" fill="#d9e8f5" fill-opacity=".25"/>` +
+        `<path d="${pearD(12)}${holeD(22)}" fill-rule="evenodd" fill="${T.body}"/>` +
+        `<path class="c03-clear" d="${TF}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
     } else if (T.nickel) {
-      face = `<path d="${faceD()}" fill-rule="evenodd" fill="url(#${id}-nk)"/><path d="${pearD(13)}${holeD(19)}" fill-rule="evenodd" fill="${T.body}"/>`;
+      face = `<path d="${TF}" fill-rule="evenodd" fill="url(#${id}-nk)"/><path d="${pearD(13)}${holeD(24)}" fill-rule="evenodd" fill="${T.body}"/>`;
     } else {
-      face = `<path d="${faceD()}" fill-rule="evenodd" fill="${T.sheen ? `url(#${id}-sh)` : T.body}"/>`;
-      if (T.line) face += `<path d="${pearD(14)}" fill="none" stroke="${T.line}" stroke-width="5" mask="url(#${id}-mk)"/><circle cx="130" cy="112" r="22" fill="none" stroke="${T.line}" stroke-width="5"/>`;
-      if (T.stitch) face += `<g fill="none" stroke="#3a2a1c" stroke-width="4.4" stroke-dasharray="11 8" stroke-linecap="round"><path d="${pearD(14)}" mask="url(#${id}-mk)"/><circle cx="130" cy="112" r="22"/></g><circle cx="130" cy="112" r="14" fill="none" stroke="#a9b2be" stroke-width="8"/>`;
+      face = `<path d="${TF}" fill-rule="evenodd" fill="${T.sheen ? `url(#${id}-sh)` : T.body}"/>`;
+      if (T.line) face += `<path d="${pearD(14)}" fill="none" stroke="${T.line}" stroke-width="5" mask="url(#${id}-mk)"/><circle cx="130" cy="112" r="24" fill="none" stroke="${T.line}" stroke-width="5"/>`;
+      if (T.stitch) face += `<g fill="none" stroke="#3a2a1c" stroke-width="4.4" stroke-dasharray="11 8" stroke-linecap="round"><path d="${pearD(14)}" mask="url(#${id}-mk)"/><circle cx="130" cy="112" r="24"/></g><circle cx="130" cy="112" r="18" fill="none" stroke="#a9b2be" stroke-width="7"/>`;
     }
     const ringS = founder
       ? `<g transform="translate(${SQ.x} ${SQ.y}) rotate(${TILT})"><path d="${rrect(42, 17)}${rrect(26, 3)}" fill-rule="evenodd" fill="url(#${id}-rg)"/><path class="c03-rimr" d="${rrect(42, 17)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/></g>`
       : `<g transform="translate(${RN.x} ${RN.y})"><path d="${circ(40)}${circ(24)}" fill-rule="evenodd" fill="url(#${id}-rg)"/><path class="c03-rimr" d="${circ(40)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/></g>`;
-    const fig = `<g transform="translate(${at.fig[0]} ${at.fig[1]}) rotate(-46)"><circle r="6" fill="none" stroke="#a9b2be" stroke-width="4"/><path transform="translate(-16 8) scale(.16)" d="${MC.AVATAR.torso}${MC.AVATAR.hood}" fill="url(#${id}-st)" stroke="#4a535e" stroke-width="12"/></g>`;
-    const ball = showBall ? `<g transform="translate(${at.ball[0]} ${at.ball[1]}) rotate(-34)"><path d="M0 3V18" stroke="#a9b2be" stroke-width="5"/><circle cy="29" r="10.5" fill="url(#${id}-bl)" stroke="#525b66" stroke-width="2"/></g>` : "";
+    const fig = `<g transform="translate(${at.fig[0]} ${at.fig[1]}) rotate(${ROT.fig})"><circle r="6" fill="none" stroke="#a9b2be" stroke-width="4"/><path transform="translate(-20 8) scale(.2)" d="${MC.AVATAR.torso}${MC.AVATAR.hood}" fill="url(#${id}-st)" stroke="#4a535e" stroke-width="10"/></g>`;
+    const ball = showBall ? `<g transform="translate(${at.ball[0]} ${at.ball[1]}) rotate(${ROT.ball})"><path d="M0 3V18" stroke="#a9b2be" stroke-width="5"/><circle cy="29" r="10.5" fill="url(#${id}-bl)" stroke="#525b66" stroke-width="2"/></g>` : "";
     const carab = tk === "LEGEND" ? `<g transform="translate(${at.carab[0]} ${at.carab[1]}) rotate(-36) scale(.95)"><path d="M-9 -4C-9 1 -4 4 1 4C7 4 11 0 11 -7L11 -46C11 -53 6 -57 0 -57C-6 -57 -9 -53 -9 -47Z" fill="none" stroke="#2f363e" stroke-width="11"/><path d="M-9 -4C-9 1 -4 4 1 4C7 4 11 0 11 -7L11 -46C11 -53 6 -57 0 -57C-6 -57 -9 -53 -9 -47Z" fill="none" stroke="#c4ccd5" stroke-width="7"/></g>` : "";
     const m = meas("800 100px Changa", String(p.ovr));
     const nfs = p.ovr >= 100 ? 18 : 22;
-    const nx = m ? r2(23.6 - (((m.r - m.l) / 2) * nfs) / 100) : 23.6;
+    const nx = m ? r2(22.9 - (((m.r - m.l) / 2) * nfs) / 100) : 22.9;
     const defs =
       (founder
         ? `<linearGradient id="${id}-rg" gradientUnits="userSpaceOnUse" x1="-40" y1="-40" x2="40" y2="40"><stop offset="0" stop-color="#9db0ca"/><stop offset=".45" stop-color="#3a4e6b"/><stop offset=".7" stop-color="#7a92b4"/><stop offset="1" stop-color="#2c3d55"/></linearGradient>`
@@ -610,12 +616,12 @@
       `<radialGradient id="${id}-bl" cx=".36" cy=".32" r=".75"><stop offset="0" stop-color="#fff"/><stop offset=".6" stop-color="#aab3be"/><stop offset="1" stop-color="#5b6470"/></radialGradient>` +
       `<linearGradient id="${id}-sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a423c"/><stop offset=".4" stop-color="#1e1b19"/><stop offset="1" stop-color="#100e0d"/></linearGradient>` +
       `<linearGradient id="${id}-nk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4f6f8"/><stop offset=".35" stop-color="#9aa3ae"/><stop offset=".6" stop-color="#e3e8ed"/><stop offset="1" stop-color="#7a8491"/></linearGradient>` +
-      `<mask id="${id}-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="260" height="420"><rect width="260" height="420" fill="#fff"/><circle cx="130" cy="112" r="22" fill="#000"/></mask>`;
-    const vbW = 48;
+      `<mask id="${id}-mk" maskUnits="userSpaceOnUse" x="0" y="0" width="260" height="420"><rect width="260" height="420" fill="#fff"/><circle cx="130" cy="112" r="24" fill="#000"/></mask>`;
+    const vbW = 46;
     return (
       `<svg viewBox="0 0 ${vbW} 80" width="${r2((size * vbW) / 80)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false"><defs>${defs}</defs>` +
       G(carab + ringS + ply + face + `<path class="c03-rim" d="${pearD(0)}" fill="none" stroke-width="1" vector-effect="non-scaling-stroke"/>` + fig + ball) +
-      `<text x="${nx}" y="68" ${m ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${nfs}" fill="${T.num}">${esc(p.ovr)}</text>` +
+      `<text x="${nx}" y="66.4" ${m ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${nfs}" fill="${T.num}">${esc(p.ovr)}</text>` +
       `</svg>`
     );
   }
@@ -624,9 +630,9 @@
   // adds a carabiner on the free top corner, which changes the outline.
   const MPEAR = (oy = 0) => {
     const y = (v) => r2(v + oy);
-    return `M10 ${y(4.2)}A3 3 0 0 1 13 ${y(7.2)}L13 ${y(8)}C13 ${y(10.2)} 18 ${y(10.8)} 18 ${y(13.6)}A8 5 0 0 1 2 ${y(13.6)}C2 ${y(10.8)} 7 ${y(10.2)} 7 ${y(8)}L7 ${y(7.2)}A3 3 0 0 1 10 ${y(4.2)}Z`;
+    return `M10 ${y(2.6)}A2.6 2.6 0 0 1 12.6 ${y(5.2)}L12.6 ${y(8.2)}C12.6 ${y(10.7)} 17.8 ${y(11.4)} 17.8 ${y(14.5)}A7.8 4.5 0 0 1 2.2 ${y(14.5)}C2.2 ${y(11.4)} 7.4 ${y(10.7)} 7.4 ${y(8.2)}L7.4 ${y(5.2)}A2.6 2.6 0 0 1 10 ${y(2.6)}Z`;
   };
-  const MHOLE = (oy = 0) => `M11 ${r2(6.7 + oy)}A1 1 0 1 0 9 ${r2(6.7 + oy)}A1 1 0 1 0 11 ${r2(6.7 + oy)}Z`;
+  const MHOLE = (oy = 0) => `M11.1 ${r2(5.3 + oy)}A1.1 1.1 0 1 0 8.9 ${r2(5.3 + oy)}A1.1 1.1 0 1 0 11.1 ${r2(5.3 + oy)}Z`;
   function miniToken(p, o, size) {
     const tk = MC.TIERS.includes(p.tier) ? p.tier : "PRO";
     const c = p.club;
@@ -646,14 +652,14 @@
     else if (T.nickel) face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/><path d="${MPEAR()}" fill="none" stroke="#c9d0d8" stroke-width="1.1"/>`;
     else face = `<path d="${FP}" fill-rule="evenodd" fill="${T.body}"/>` + (T.stitch ? `<path d="${MPEAR()}" fill="none" stroke="#7d5a3a" stroke-width=".7"/>` : "");
     const ringS = founder
-      ? `<g transform="translate(14.9 4.3) rotate(${TILT})"><path class="c03-mr" d="${rrect(3, 1)}" fill="none" stroke-width="1.35"/></g>`
-      : `<circle class="c03-mr" cx="14.9" cy="4.5" r="3.1" fill="none" stroke-width="1.3"/>`;
+      ? `<g transform="translate(14.4 4.2) rotate(${TILT})"><path class="c03-mr" d="${rrect(3, 1)}" fill="none" stroke-width="1.35"/></g>`
+      : `<circle class="c03-mr" cx="14.4" cy="4.4" r="3.1" fill="none" stroke-width="1.3"/>`;
     const carab =
       tk === "LEGEND"
-        ? `<g transform="translate(11.7 4.6) rotate(-58)"><path class="c03-mc" d="M-1.5 0C-1.5 .9 -.7 1.4 0 1.4C.9 1.4 1.6 .8 1.6 -.3V-5.6C1.6 -6.5 .9 -7.1 0 -7.1C-.8 -7.1 -1.5 -6.5 -1.5 -5.7Z" fill="none" stroke-width="1.15"/></g>`
+        ? `<g transform="translate(11.2 3.9) rotate(-52)"><path class="c03-mc" d="M-1.5 0C-1.5 .9 -.7 1.4 0 1.4C.9 1.4 1.6 .8 1.6 -.3V-5.6C1.6 -6.5 .9 -7.1 0 -7.1C-.8 -7.1 -1.5 -6.5 -1.5 -5.7Z" fill="none" stroke-width="1.15"/></g>`
         : "";
     const m = meas("800 100px Changa", String(p.ovr));
-    const fs = p.ovr >= 100 ? 6.6 : 8.4;
+    const fs = p.ovr >= 100 ? 6.4 : 8;
     const nx = m ? r2(10 - (((m.r - m.l) / 2) * fs) / 100) : 10;
     return (
       `<svg viewBox="0 0 22 24" width="${r2((size * 22) / 24)}" height="${size}" direction="ltr" aria-hidden="true" focusable="false">` +
@@ -663,7 +669,7 @@
       hole +
       carab +
       ringS +
-      `<text x="${nx}" y="16.7" ${m ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" fill="${T.num}">${esc(p.ovr)}</text>` +
+      `<text x="${nx}" y="17.2" ${m ? "" : 'text-anchor="middle"'} font-family="Changa, sans-serif" font-weight="800" font-size="${fs}" fill="${T.num}">${esc(p.ovr)}</text>` +
       `</svg>`
     );
   }

@@ -532,8 +532,8 @@
         const cx = ar ? R - colW * (i % 2) : L + colW * (i % 2);
         const yy = ruleY + 26 + Math.floor(i / 2) * 27;
         if (ar) {
-          s += tx(cx, yy, S.stats[key], "start", "c07-lb-k c07-lb-ar", 10.5, "rtl");
-          s += tx(cx - colW + 6, yy, String(p.stats[key]), "start", "c07-lb-v", 21);
+          s += tx(cx, yy, S.stats[key], "start", "c07-lb-k c07-lb-ar", 8.8, "rtl");
+          s += tx(cx - colW + 4, yy, String(p.stats[key]), "start", "c07-lb-v", 19);
         } else {
           s += tx(cx, yy, S.stats[key], "start", "c07-lb-k", 10);
           s += tx(cx + colW - 8, yy, String(p.stats[key]), "end", "c07-lb-v", 22);
@@ -643,7 +643,7 @@
     const P = palette(p);
     const thumb = !!o.thumb;
     const u = MC.uid(PFX);
-    const ids = { base: u + "-pb", rib: u + "-pr", ridge: u + "-rg", cast: u + "-pc", knot: u + "-pk", clip: u + "-cl", curl: u + "-cu", fold: u + "-fo", grain: u + "-gr", soft: u + "-sf", weave: u + "-wv", rail: u + "-rl", knotG: u + "-kg", emb: u + "-em", embSh: u + "-es", ear: u + "-ea" };
+    const ids = { base: u + "-pb", rib: u + "-pr", alt: u + "-pa", ridge: u + "-rg", cast: u + "-pc", knot: u + "-pk", clip: u + "-cl", curl: u + "-cu", fold: u + "-fo", grain: u + "-gr", soft: u + "-sf", weave: u + "-wv", rail: u + "-rl", knotG: u + "-kg", emb: u + "-em", embSh: u + "-es", ear: u + "-ea" };
     const cols = FW / G.cw;
     const sc = ar ? cols - 1 : 0; // cream selvedge (inline start)
     const ec = ar ? 0 : cols - 1; // Logo Blue selvedge (inline end)
@@ -655,7 +655,7 @@
     const nm = nameArt(p, o, G, cols);
     // rows, from the rail down
     const L = {};
-    let r = rowsOf(46 - FT);
+    let r = Math.ceil(((tier === "HOMA" ? 54 : 46) - FT) / G.ch);
     L.digits = r;
     r += dg.length;
     r += rowsOf(10);
@@ -705,10 +705,13 @@
     // defs
     const base = { ...G };
     const rib = { ...G, kind: "r" };
+    // the season's two textures: rib, and garter (or stockinette where the ground is already garter)
+    const alt = { ...G, kind: G.kind === "g" ? "v" : "g", gap: Math.max(G.gap, 0.4), leg: Math.max(G.leg, 0.26) };
     let defs =
       stitchPattern(ids.base, base) +
       stitchPattern(ids.rib, rib) +
-      `<pattern id="${ids.ridge}" width="${G.cw}" height="4" patternUnits="userSpaceOnUse" y="${FT}"><rect y="2.6" width="${G.cw}" height="1.4" fill="#000" opacity=".34"/><ellipse cx="${G.cw / 2}" cy="1.7" rx="${f2(G.cw * 0.47)}" ry="1.5" fill="#fff" opacity=".2"/><rect width="${G.cw}" height=".6" fill="#000" opacity=".18"/></pattern>` +
+      stitchPattern(ids.alt, alt) +
+      `<pattern id="${ids.ridge}" width="${G.cw}" height="4" patternUnits="userSpaceOnUse" y="${FT}"><rect y="2.8" width="${G.cw}" height="1.2" fill="#000" opacity=".42"/><ellipse cx="${G.cw / 2}" cy="1.7" rx="${f2(G.cw * 0.48)}" ry="1.4" fill="#fff" opacity=".26"/></pattern>` +
       stitchPattern(ids.cast, { cw: CAST.cw, ch: CAST.ch, kind: "v", gap: 0.18, leg: 0.3 }, { gapC: "#5A4E36" }) +
       stitchPattern(ids.knot, { ...G, kind: "v" }, { transform: "rotate(-28)" }) +
       steelGrad(ids.rail) +
@@ -748,13 +751,10 @@
     // fabric: ground, colour runs, stitch texture (base, with rib on even gameweeks)
     let fab = `<rect x="${X0}" y="${FT}" width="${FW}" height="${yFab - FT}" fill="${P.G}"/>` + gridRuns(g, P, X0, FT, G.cw, G.ch, "G");
     const segs = [];
-    let yy = FT;
-    for (const b of bands.slice().sort((a, c) => a.y0 - c.y0)) {
-      if (!b.rib) continue;
-      segs.push([yy, b.y0, ids.base], [b.y0, b.y1, ids.rib]);
-      yy = b.y1;
-    }
-    segs.push([yy, yFab, ids.base]);
+    const sorted = bands.slice().sort((a, c) => a.y0 - c.y0);
+    segs.push([FT, sorted[0].y0, ids.base]);
+    for (const b of sorted) segs.push([b.y0, b.y1, b.rib ? ids.rib : ids.alt]);
+    segs.push([sorted[sorted.length - 1].y1, yFab, ids.base]);
     for (const [a, b, id] of segs) if (b > a) fab += `<rect x="${X0}" y="${f2(a)}" width="${FW}" height="${f2(b - a)}" fill="url(#${id})"/>`;
     // a purl ridge between gameweeks: every band is closed by a raised row, so seven read as seven
     {
@@ -835,20 +835,23 @@
       its two cream selvedges showing that it is the scarf wrapped round itself. */
   function knotSvg(P, ids, ar, thumb) {
     const ell = (cx, cy, rx, ry, a) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" transform="rotate(${a} ${cx} ${cy})"`;
-    const lump = [22, 25, 19, 15, -18];
-    const lobe = [14, 44, 9, 12, 12];
-    const tie = "M5 11C15 12 29 21 42 31L37 42C25 32 13 26 2 23Z";
+    const lump = [22, 24, 18, 15, -10];
+    const lobe = [13, 42, 9, 11, 14];
+    // the tie: a strip of the scarf wrapped across the bundle, a cream selvedge on each side
+    const tie = "M16 8C21 7 28 8 32 10L29 41C25 42.5 19 42 14 39.5Z";
     const shade = (e) => `${ell(...e)} fill="url(#${ids.knotG})"/>`;
     const tex = (e) => (thumb ? "" : `${ell(...e)} fill="url(#${ids.knot})"/>`);
     let g = "";
     g += `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(1.5 2.5)">${ell(...lump)} fill="#020a1c"/>${ell(...lobe)} fill="#020a1c"/></g>`;
     g += `${ell(...lobe)} fill="${P.G}" stroke="${P.Gdk}" stroke-width=".9"/>` + tex(lobe) + shade(lobe);
     g += `${ell(...lump)} fill="${P.G}" stroke="${P.Gdk}" stroke-width=".9"/>` + tex(lump) + shade(lump);
-    g += `<path d="${tie}" fill="${P.G}"/>` + (thumb ? "" : `<path d="${tie}" fill="url(#${ids.knot})"/>`) + `<path d="${tie}" fill="#000" opacity=".12"/>`;
-    g += `<path d="M5 11C15 12 29 21 42 31" stroke="${CREAM}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
-    g += `<path d="M2 23C13 26 25 32 37 42" stroke="${CREAM}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
-    g += `<path d="M2 23C13 26 25 32 37 42" stroke="#000" stroke-opacity=".25" stroke-width="1" fill="none" transform="translate(0 2)"/>`;
-    return `<g class="c07-knot"${ar ? ` transform="matrix(-1 0 0 1 ${VW} 0)"` : ""}>${g}</g>`;
+    g += `<path d="${tie}" fill="#020a1c" opacity=".3" transform="translate(1.2 1)"/>`;
+    g += `<path d="${tie}" fill="${P.G}"/>` + (thumb ? "" : `<path d="${tie}" fill="url(#${ids.base})"/>`) + `<path d="${tie}" fill="url(#${ids.knotG})"/>`;
+    g += `<path d="M16 8C15 18 14.4 29 14 39.5" stroke="${CREAM}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    g += `<path d="M32 10C31 20 30 31 29 41" stroke="${CREAM}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    g += `<path d="${tie}" fill="none" stroke="${P.Gdk}" stroke-width=".8"/>`;
+    const grow = `translate(26 12) scale(1.3) translate(-26 -12)`;
+    return `<g class="c07-knot" transform="${ar ? `matrix(-1 0 0 1 ${VW} 0) ` : ""}${grow}">${g}</g>`;
   }
 
   /* ---------- full card: LEGEND, the scarf raised overhead ---------- */
@@ -858,7 +861,7 @@
     const P = palette(p);
     const thumb = !!o.thumb;
     const u = MC.uid(PFX);
-    const ids = { base: u + "-pb", rib: u + "-pr", ridge: u + "-rg", cast: u + "-pc", flap: u + "-pf", clip: u + "-cl", curl: u + "-cu", soft: u + "-sf", weave: u + "-wv", grain: u + "-gr", cuff: u + "-cf", sleeve: u + "-sl", fist: u + "-fi" };
+    const ids = { base: u + "-pb", rib: u + "-pr", alt: u + "-pa", ridge: u + "-rg", cast: u + "-pc", flap: u + "-pf", clip: u + "-cl", curl: u + "-cu", soft: u + "-sf", weave: u + "-wv", grain: u + "-gr", cuff: u + "-cf", sleeve: u + "-sl", fist: u + "-fi" };
     const C = LG.cw; // the heaviest gauge: 9u stitches
     const rowsN = 14; // stitches across the band, selvedges included
     const BH = rowsN * C; // 126
@@ -910,6 +913,7 @@
     let defs =
       stitchPattern(ids.base, LG, { transform: "rotate(-90)" }) +
       stitchPattern(ids.rib, { ...LG, kind: "r" }, { transform: "rotate(-90)" }) +
+      stitchPattern(ids.alt, { ...LG, kind: "g" }, { transform: "rotate(-90)" }) +
       stitchPattern(ids.flap, LG) +
       stitchPattern(ids.cast, { cw: CAST.cw, ch: CAST.ch, kind: "v", gap: 0.18, leg: 0.3 }, { gapC: "#5A4E36", transform: "rotate(-90)" }) +
       `<pattern id="${ids.ridge}" width="4" height="${C}" patternUnits="userSpaceOnUse" y="${BY}"><rect x="2.6" width="1.4" height="${C}" fill="#000" opacity=".34"/><ellipse cx="1.7" cy="${C / 2}" rx="1.5" ry="${f2(C * 0.47)}" fill="#fff" opacity=".2"/></pattern>` +
@@ -945,10 +949,9 @@
       bands.push({ gw, x: ar ? pos.season.x + pos.season.w - (k + 1) * 14 : pos.season.x + k * 14, rib: gw % 2 === 0 });
     }
     for (const b of bands) {
-      if (b.rib)
-        fab +=
-          `<rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="${P.G}"/><rect x="${b.x}" y="${BY}" width="14" height="${C}" fill="${CREAM}"/>` +
-          `<rect x="${b.x}" y="${BY + BH - C}" width="14" height="${C}" fill="${BLUE}"/><rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="url(#${ids.rib})"/>`;
+      fab +=
+        `<rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="${P.G}"/><rect x="${b.x}" y="${BY}" width="14" height="${C}" fill="${CREAM}"/>` +
+        `<rect x="${b.x}" y="${BY + BH - C}" width="14" height="${C}" fill="${BLUE}"/><rect x="${b.x}" y="${BY}" width="14" height="${BH}" fill="url(#${b.rib ? ids.rib : ids.alt})"/>`;
       if (b.gw % 5 === 0) fab += `<rect x="${b.x}" y="${BY + C}" width="14" height="${C}" fill="${CREAM}"/><rect x="${b.x}" y="${BY + C}" width="14" height="${C}" fill="url(#${ids.base})"/>`;
     }
     for (const x of bands.map((b) => b.x).concat([ar ? pos.season.x : pos.season.x + pos.season.w])) fab += `<rect x="${f2(x - 2)}" y="${BY}" width="4" height="${BH}" fill="url(#${ids.ridge})"/>`;
@@ -1008,18 +1011,20 @@
       g2 += `<path d="M${cx + dir * 4} ${mid + 44}L${cx + dir * 12} ${H + 4}" stroke="${mix(SLEEVE, "#000000", 0.35)}" stroke-width="1.4"/>`;
       g2 += `<rect x="${cx - 14}" y="${mid + 10}" width="28" height="16" fill="${SKIN_DK}"/>`;
       g2 += `<rect x="${cx - 20}" y="${mid + 20}" width="40" height="14" rx="4" fill="url(#${ids.cuff})" stroke="${mix(SLEEVE, "#000000", 0.4)}" stroke-width="1"/>`;
-      g2 += `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(1.5 2.5)"><rect x="${cx - 18}" y="${mid - 22}" width="36" height="38" rx="9" fill="#020a1c"/></g>`;
-      g2 += `<rect x="${cx - 18}" y="${mid - 14}" width="36" height="30" rx="9" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
+      g2 += `<g filter="url(#${ids.soft})" opacity=".45" transform="translate(1.5 2.5)"><rect x="${cx - 19}" y="${mid - 19}" width="38" height="36" rx="11" fill="#020a1c"/></g>`;
+      // the fist: a rounded block; the curled fingers show as four short knuckle bumps on top
+      g2 += `<rect x="${cx - 19}" y="${mid - 12}" width="38" height="29" rx="10" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
       for (let i = 0; i < 4; i++) {
-        const fx = cx - 18 + i * 9;
-        const ft = mid - 22 - (i === 1 || i === 2 ? 1.5 : 0);
-        g2 += `<rect x="${f2(fx)}" y="${f2(ft)}" width="9" height="${f2(mid + 4 - ft)}" rx="4.5" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
-        g2 += `<path d="M${f2(fx + 1.8)} ${f2(mid - 8)}Q${f2(fx + 4.5)} ${f2(mid - 6.6)} ${f2(fx + 7.2)} ${f2(mid - 8)}" stroke="${SKIN_DK}" stroke-width=".8" fill="none" opacity=".8"/>`;
-        g2 += `<path d="M${f2(fx + 3)} ${f2(ft + 4)}V${f2(ft + 9)}" stroke="#fff" stroke-opacity=".35" stroke-width="1.4" stroke-linecap="round"/>`;
+        const fx = cx - 19 + i * 9.5;
+        const ft = mid - 19 - (i === 1 || i === 2 ? 1 : 0);
+        g2 += `<path d="M${f2(fx)} ${f2(mid + 1)}V${f2(ft + 5)}Q${f2(fx)} ${f2(ft)} ${f2(fx + 4.75)} ${f2(ft)}Q${f2(fx + 9.5)} ${f2(ft)} ${f2(fx + 9.5)} ${f2(ft + 5)}V${f2(mid + 1)}Z" fill="url(#${ids.fist})" stroke="${SKIN_DK}" stroke-width="1"/>`;
+        g2 += `<path d="M${f2(fx + 2.6)} ${f2(ft + 3.2)}Q${f2(fx + 4.75)} ${f2(ft + 1.8)} ${f2(fx + 6.9)} ${f2(ft + 3.2)}" stroke="#fff" stroke-opacity=".4" stroke-width="1.2" fill="none" stroke-linecap="round"/>`;
+        g2 += `<path d="M${f2(fx + 1.6)} ${f2(mid - 6)}Q${f2(fx + 4.75)} ${f2(mid - 4.4)} ${f2(fx + 7.9)} ${f2(mid - 6)}" stroke="${SKIN_DK}" stroke-width=".8" fill="none" opacity=".75"/>`;
       }
-      // the thumb, folded across the lower joints from the inner side
-      const ix = cx - dir * 18;
-      g2 += `<path d="M${ix} ${mid + 14}C${ix - dir * 3} ${mid + 6} ${ix + dir * 2} ${mid - 1} ${ix + dir * 10} ${mid - 1}H${ix + dir * 22}C${ix + dir * 27} ${mid - 1} ${ix + dir * 27} ${mid + 7} ${ix + dir * 22} ${mid + 7}H${ix + dir * 12}C${ix + dir * 8} ${mid + 7} ${ix + dir * 6} ${mid + 11} ${ix + dir * 5} ${mid + 15}Z" fill="${SKIN}" stroke="${SKIN_DK}" stroke-width="1"/>`;
+      // the thumb, folded across the curled fingers from the inner side
+      const ix = cx - dir * 19;
+      g2 += `<path d="M${ix} ${mid + 12}C${ix - dir * 2} ${mid + 4} ${ix + dir * 2} ${mid} ${ix + dir * 9} ${mid}H${ix + dir * 25}C${ix + dir * 30} ${mid} ${ix + dir * 30} ${mid + 8} ${ix + dir * 25} ${mid + 8}H${ix + dir * 12}C${ix + dir * 8} ${mid + 8} ${ix + dir * 6} ${mid + 11} ${ix + dir * 5} ${mid + 15}Z" fill="${SKIN}" stroke="${SKIN_DK}" stroke-width="1"/>`;
+      g2 += `<path d="M${ix + dir * 12} ${mid + 2.2}H${ix + dir * 24}" stroke="#fff" stroke-opacity=".3" stroke-width="1.2" stroke-linecap="round"/>`;
       return `<g class="c07-fist" transform="rotate(${dir * 5} ${cx} ${mid})">${g2}</g>`;
     };
     const label = wovenLabel(p, o, pos.label.x, BY + 6, pos.label.w, BH - 12, "wide", thumb, ids, nm.onLabel);
@@ -1238,11 +1243,11 @@
       `<path d="M-20 352H380M-20 424H380M-20 500H380" stroke="#2C6239" stroke-width="22" opacity=".45"/><path d="M-20 308H380" stroke="#DDE8DF" stroke-width="3" opacity=".5"/></g>` +
       // the floodlight's glow
       `<rect width="360" height="640" fill="url(#${u}-fl)"/>` +
-      `<g filter="url(#${u}-bl)" opacity=".55"><ellipse cx="${ar ? 40 : 320}" cy="18" rx="46" ry="15" fill="#F4F8FF"/></g>` +
+      `<g filter="url(#${u}-bl)" opacity=".3"><ellipse cx="${ar ? 30 : 330}" cy="-6" rx="70" ry="18" fill="#F4F8FF"/></g>` +
       // the crowd barrier: top rail, uprights, a lower rail behind the scarf
       (legend
         ? ""
-        : `<rect x="${ar ? 20 : 333}" y="${railY}" width="7" height="560" fill="url(#${u}-post)"/>` +
+        : `<rect x="${ar ? 360 - 8 - sw - 16 : 8 + sw + 9}" y="${railY}" width="7" height="560" fill="url(#${u}-post)"/>` +
           `<rect x="0" y="${railY + 270}" width="360" height="9" rx="4.5" fill="url(#${u}-st)" opacity=".7"/>` +
           `<rect x="0" y="${railY - 6}" width="360" height="12" rx="6" fill="url(#${u}-st)"/>` +
           `<path d="M0 ${railY - 3}H360" stroke="#fff" stroke-opacity=".7" stroke-width="1.2"/>`) +
