@@ -1,6 +1,6 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Bell,
   Bookmark,
@@ -65,6 +65,7 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { followedTeamIdsQuery } from "@/services/follows";
 import { footballService } from "@/services/football";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import type { Club, FantasySummary } from "@/types/domain";
 import { pointsUnit } from "@/lib/points-unit";
@@ -699,8 +700,20 @@ function HelpGroup() {
 
 /* ---------------------------- danger zone / delete ------------------------ */
 
+/**
+ * The deletion request's line about the manager card. Loaded on demand, from the live branch
+ * only: a static import would make every visit to Profile download the section's code, switch or
+ * no switch.
+ */
+const CardDeletionLine = lazy(() =>
+  import("@/components/auth/CardDeletionLine").then((module) => ({
+    default: module.CardDeletionLine,
+  })),
+);
+
 function DeleteAccountSection() {
   const { t } = useI18n();
+  const live = useManagerCardLive();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -772,6 +785,14 @@ function DeleteAccountSection() {
         </div>
       </Section>
 
+      {/* Starts the card read and loads the line's code now, so the line is in the dialog the
+          moment it opens. Renders nothing. */}
+      {live ? (
+        <Suspense fallback={null}>
+          <CardDeletionLine warm />
+        </Suspense>
+      ) : null}
+
       <UiModal
         open={dialogOpen}
         onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}
@@ -793,6 +814,13 @@ function DeleteAccountSection() {
           </>
         }
       >
+        {/* The manager card goes with the account, and its number is never reissued (a card
+            only; none, no line). */}
+        {live ? (
+          <Suspense fallback={null}>
+            <CardDeletionLine />
+          </Suspense>
+        ) : null}
         {/* What is kept, and where the whole story is: the reader decides on
             facts, not on "irréversible" alone. */}
         <p className={cn("mb-3", ui.text.meta, ui.tone.muted)}>
