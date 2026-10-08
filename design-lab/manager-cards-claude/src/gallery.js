@@ -300,7 +300,7 @@
           return (
             `<article class="pair" aria-label="${esc(a.name)}">` +
             pairCols({ title: `${num(a)} ${esc(nameOf(a))} · ${esc(T().version.v1)}`, body: block(a) }, { title: `${num(a)} ${esc(nameOf(a))} · ${esc(T().version.v2)}`, body: block(b) }) +
-            `<div class="pair-notes" lang="en" dir="ltr">${(r.groups || [])
+            `<div class="pair-notes" lang="en" dir="ltr">${(r.groups || b.refinementNotes || [])
               .map((g) => `<div><h4>${esc(g.title)}</h4><ul>${g.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul></div>`)
               .join("")}</div></article>`
           );
