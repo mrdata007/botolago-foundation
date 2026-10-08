@@ -360,7 +360,8 @@
   const LOGO = "#0151fc";
   // plate gradient, ink (moulded type), inkTone, recess, stud [lit, mid, dark], tip (stud
   // face; null = stud colour), side (84 side wall), grain, gloss, part (mould line), tag,
-  // yr (the ·26 after the name), tok/topTok (token plate and stud tops)
+  // yr (the ·26 after the name), tok/topTok (token plate and stud tops), seas (the season mark's
+  // ink where the type ink would fall under 3:1 on the plate's dark edge: HOMA only; default: ink)
   const TIER = {
     HOMA: {
       // new gum rubber: honey, translucent, a crisp moulded edge
@@ -376,6 +377,7 @@
       part: 0.34,
       tag: "#97571f",
       yr: "#5a2f08",
+      seas: "#fff1d6",
       hi: "#ffeccc",
       tok: "#b8722f",
       topTok: "#eab774",
@@ -1354,7 +1356,8 @@
                 det,
               )
             : raised(val, String(sv), P, det, 1);
-        s += `<g opacity=".7">${raised(lab, esc(S.stats[k]), P, det, 0.8)}</g>` + figure;
+        // the label is the figure's name: full ink (a 0.7 veil put it at 2.9:1 on the honey plate)
+        s += raised(lab, esc(S.stats[k]), P, det, 0.8) + figure;
       });
     }
 
@@ -1367,7 +1370,11 @@
         const arc = `M${r1(wx - R)} ${wy}A${R} ${R} 0 0 1 ${r1(wx + R)} ${wy}`;
         s += `<path id="${u}-fa" d="${arc}" fill="none"/>`;
         const fl = `class="c05v2-fl${ar ? " is-ar" : ""}" font-size="${ar ? 9 : 7.8}"${dirA}`;
-        const fb = `<textPath href="#${u}-fa" startOffset="50%" text-anchor="middle">${esc(S.founderLine)}</textPath>`;
+        // the year is its own left-to-right run inside the Arabic line, so its digits cannot reorder
+        const line = ar
+          ? `${esc(S.founder)} <tspan direction="ltr" unicode-bidi="embed">${esc(p.founder)}</tspan>`
+          : esc(S.founderLine);
+        const fb = `<textPath href="#${u}-fa" startOffset="50%" text-anchor="middle">${line}</textPath>`;
         s += raised(fl, fb, P, det, 0.9);
       }
       // 6. the style code: the BotolaGO ID moulded under the clock, the country under it. With no
@@ -1391,7 +1398,14 @@
       const q = LAY.season.map(([a, b2]) => [r1(X(a)), b2]);
       if (ar) q.reverse();
       s += `<path id="${u}-se" d="M${q[0][0]} ${q[0][1]}Q${q[1][0]} ${q[1][1]} ${q[2][0]} ${q[2][1]}" fill="none"/>`;
-      s += `<g opacity=".78">${raised(`class="c05v2-se" font-size="7" direction="ltr"`, `<textPath href="#${u}-se" startOffset="50%" text-anchor="middle">${esc(p.season)}</textPath>`, P, det, 0.7)}</g>`;
+      // full ink on the plate's dark rim: a 0.78 veil took the season to 1.9:1 on the honey gum
+      s += raised(
+        `class="c05v2-se" font-size="7" direction="ltr"`,
+        `<textPath href="#${u}-se" startOffset="50%" text-anchor="middle">${esc(p.season)}</textPath>`,
+        P.seas ? { ...P, ink: P.seas } : P,
+        det,
+        0.7,
+      );
     }
     return s;
   }

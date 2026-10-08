@@ -1179,11 +1179,11 @@
     return (
       `<g class="c01-wallg" mask="url(#${u}-wmh)"><g mask="url(#${u}-wmv)">` +
       // at thumb size the wall goes thin, so the chalk Π stays the outline (the 1-bit test reads a goal, not a block)
-      `<rect ${rect} fill="#72787f"${F.thumb ? ' fill-opacity=".3"' : ""}${flat ? "" : ` filter="url(#${u}-block)"`}/>` +
+      `<rect class="c01-wallf" ${rect} fill="#72787f"${F.thumb ? ' fill-opacity=".3"' : ""}${flat ? "" : ` filter="url(#${u}-block)"`}/>` +
       (flat ? "" : `<rect ${rect} fill="url(#${u}-lamp)"/>`) +
       (F.thumb
         ? ""
-        : `<path d="${lite}" stroke="#8a9097" stroke-width=".8" opacity=".35"/><path d="${mortar}" stroke="#5f656c" stroke-width="1"/>`) +
+        : `<path d="${lite}" stroke="#8a9097" stroke-width=".8" opacity=".35"/><path class="c01-wallm" d="${mortar}" stroke="#5f656c" stroke-width="1"/>`) +
       `</g></g>`
     );
   }
@@ -1420,7 +1420,7 @@
       const y0 = 84;
       const y1 = 192;
       const edgeTop = ar
-        ? `<text x="180" y="${y0 + 16}" class="c01-pl-ar" text-anchor="middle" direction="rtl" fill="#8a8f96">${esc(S.founderLine)}</text>`
+        ? `<text x="180" y="${y0 + 16}" class="c01-pl-ar" text-anchor="middle" direction="rtl" fill="#8a8f96">${esc(S.founder)} <tspan direction="ltr" unicode-bidi="embed">${esc(p.founder)}</tspan></text>`
         : `<text x="180" y="${y0 + 15}" class="c01-pl" text-anchor="middle" fill="#8a8f96">${esc(S.founderLine)}</text>`;
       s +=
         `<rect x="${x0 - 14}" y="${y0 - 14}" width="${x1 - x0 + 28}" height="${y1 - y0 + 28}" rx="2" fill="#a9adb2" class="c01-backslab"/>` +
@@ -1882,7 +1882,9 @@
       const svg = el.querySelector("svg.c01-front");
       if (!svg) return;
       el.dataset.c01m = "1";
-      el.classList.add("is-live");
+      // Live and at rest: the back face is put at 180 degrees in the same style pass that makes it
+      // visible, so it never turns in from 0. The turn is armed by the first flip (see wake).
+      el.classList.add("is-live", "is-rest");
       const anim = o.motion !== false && !reducedMotion();
       if (!anim) el.classList.add("no-anim");
       const tier = el.dataset.tier;
@@ -2007,6 +2009,12 @@
         requestAnimationFrame(fly);
       };
 
+      // the first user flip arms the 650ms turn; the reflow makes the new transition apply to it
+      const wake = () => {
+        if (!el.classList.contains("is-rest")) return;
+        el.classList.remove("is-rest");
+        void el.offsetWidth;
+      };
       el.addEventListener("click", (e) => {
         if (el.classList.contains("is-flipped")) {
           const replay = e.target && e.target.closest && e.target.closest(".c01-replay");
@@ -2017,6 +2025,7 @@
         const pt = toSvg(e);
         if (!pt) return;
         if (pt.x >= L - 4 && pt.x <= R + 4 && pt.y >= BAR.y0 - 6 && pt.y <= BAR.y1 + 2) {
+          wake();
           el.classList.add("is-flipped");
           return;
         }

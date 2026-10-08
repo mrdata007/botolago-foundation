@@ -56,6 +56,8 @@
   --c01-tconc: #a9adb2;
   --c01-twall: rgba(169, 173, 178, 0.55);
   --c01-mcord: color-mix(in oklab, var(--c01-club, currentColor) 50%, #ffffff);
+  --c01-wallfill: #72787f;
+  --c01-wallmortar: #5f656c;
 }
 
 /* ---------- day ground ---------- */
@@ -89,6 +91,10 @@
   --c01-tconc: #8a9097;
   --c01-twall: rgba(95, 101, 108, 0.5);
   --c01-mcord: var(--c01-club, currentColor);
+  /* the HOMA wall: on the light ground its edges fade into a pale page, which lifts the grey the
+     chalk sits on; the block itself is darker so the chalk stays above 4.5:1 across that fade */
+  --c01-wallfill: #33383f;
+  --c01-wallmortar: #1d2126;
 }
 
 /* ---------- a night context inside a day page wins back ---------- */
@@ -142,6 +148,8 @@
   --c01-tconc: #a9adb2;
   --c01-twall: rgba(169, 173, 178, 0.55);
   --c01-mcord: color-mix(in oklab, var(--c01-club, currentColor) 50%, #ffffff);
+  --c01-wallfill: #72787f;
+  --c01-wallmortar: #5f656c;
 }
 
 .c01 .th-l {
@@ -186,7 +194,8 @@
 .c01.c01-card.is-live.is-flipped > .c01-back {
   transform: rotateY(0deg);
 }
-.c01.c01-card.no-anim > .c01-face {
+.c01.c01-card.no-anim > .c01-face,
+.c01.c01-card.is-rest > .c01-face {
   transition: none;
 }
 .c01.c01-card.is-hl .c01-frameg {
@@ -322,6 +331,12 @@
 }
 .c01 .c01-paint {
   fill: #001c49;
+}
+.c01 .c01-wallf {
+  fill: var(--c01-wallfill, #72787f);
+}
+.c01 .c01-wallm {
+  stroke: var(--c01-wallmortar, #5f656c);
 }
 .c01 .c01-chalkf {
   fill: #f4f6f8;

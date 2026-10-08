@@ -369,7 +369,8 @@
     sans-serif;
   font-style: normal;
   letter-spacing: 0.04em;
-  color: #6b6658;
+  /* 5.8:1 on the label's darker end (#e2d9c3); the 4.1:1 it had read as a stamp at 8.5px */
+  color: #554f40;
 }
 .c03v2.c03v2-share[dir="rtl"] .c03v2-sh-name {
   font-family: "Changa", "Noto Sans Arabic", sans-serif;
