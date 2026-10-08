@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Trophy,
 } from "lucide-react";
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
@@ -21,7 +21,7 @@ import { FantasyHubRound } from "@/components/fantasy/FantasyHubRound";
 import { DeadlineCard } from "@/components/fantasy/DeadlineCard";
 import { FantasyGuestExplainer } from "@/components/fantasy/FantasyGuestIntro";
 import { deadlineChecklist } from "@/lib/deadline-checklist";
-import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
+import { PrizeWelcome as ArrivalDialog } from "@/components/prizes/PrizeWelcome";
 import {
   FantasyHubLeagues,
   FantasyHubReminders,
@@ -40,18 +40,37 @@ import { useManagerCardLive } from "@/services/manager-card-status";
 import { newsService } from "@/services/news";
 import { prizesService } from "@/services/prizes";
 
-// Pépites' tile and the prize welcome's wait are their own chunks, requested only while the section
-// is live: with the switch off the hub imports nothing of the Manager Card.
+// Pépites' tile is its own chunk, requested only while the section is live: with the switch off
+// the hub imports nothing of the Manager Card.
 const PepitesHubTile = lazy(() =>
   import("@/components/manager-card/inline/PepitesHubTile").then((module) => ({
     default: module.PepitesHubTile,
   })),
 );
-const PrizeWelcomeGate = lazy(() =>
-  import("@/components/manager-card/inline/PrizeWelcomeGate").then((module) => ({
-    default: module.PrizeWelcomeGate,
-  })),
-);
+
+/**
+ * Whether a hero or the born panel was already shown in this session (plan 5.3), asked of the
+ * card's own storage only while the section is live and only after mount: `null` until known,
+ * and always `null` with the section off, which never loads it.
+ */
+function useHeroShownThisSession(live: boolean): boolean | null {
+  const [shown, setShown] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!live) return;
+    let cancelled = false;
+    void import("@/components/manager-card/storage")
+      .then((module) => {
+        if (!cancelled) setShown(module.heroShownThisSession());
+      })
+      .catch(() => {
+        if (!cancelled) setShown(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [live]);
+  return shown;
+}
 
 export const Route = createFileRoute("/fantasy/")({
   head: () => fantasyHead("hub"),
@@ -93,12 +112,23 @@ export const Route = createFileRoute("/fantasy/")({
  * reminders — are `FantasyHubPersonal`'s; the band, the shortcuts, the News
  * rail and the "more about" links are public and stay here.
  */
+/**
+ * The hub's arrival dialog (the prize welcome). While the section is live the card's moment comes
+ * first: it waits until it is known that no hero or born panel was shown in this session, and for
+ * the next session if one was (plan 5.3). With the section off it is the dialog, exactly.
+ */
+function PrizeWelcome() {
+  const live = useManagerCardLive();
+  const heroShown = useHeroShownThisSession(live);
+  if (live && heroShown !== false) return null;
+  return <ArrivalDialog />;
+}
+
 function FantasyHub() {
   const { t, lang } = useI18n();
   const { user, status: authStatus } = useAuth();
   const screen = useFantasyScreen({ needsTeam: false, needsAuth: false });
   const { source, key } = useFantasyDataSource();
-  const live = useManagerCardLive();
   const team = screen.team;
   const gameweek = screen.gameweek;
   const layout = fantasyHubLayout({ authStatus, source, phase: screen.phase, hasTeam: !!team });
@@ -284,17 +314,7 @@ function FantasyHub() {
           on. It waits for the splash and the language chooser to let go, and
           opens over the owner's dashboard only: a visitor without a team has
           the proposition, which names the prizes inline. */}
-      {PRIZES_ENABLED && layout.prizeWelcome ? (
-        live ? (
-          // Live: the card's moment comes first. If a hero or the born panel was shown in this
-          // session the welcome waits for the next one (plan 5.3).
-          <Suspense fallback={null}>
-            <PrizeWelcomeGate />
-          </Suspense>
-        ) : (
-          <PrizeWelcome />
-        )
-      ) : null}
+      {PRIZES_ENABLED && layout.prizeWelcome && <PrizeWelcome />}
     </FantasyFrame>
   );
 }
