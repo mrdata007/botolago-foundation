@@ -64,6 +64,13 @@ describe("the Gradins screens' imports", () => {
 });
 
 describe("the Gradins screens' styling", () => {
+  it("draws no coloured bar down the side of a card (a craft-floor ban): the club disc carries the colour", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(/ui\.edge\.(?:start|end)\b/);
+      expect(code(text), name).not.toMatch(/\bborder-[se]-(?:[2-9]|\d\d)\b/);
+    }
+  });
+
   it("uses logical properties only (start and end, never left and right)", () => {
     const physical =
       /(?:^|[\s"'`:])(?:-?(?:ml|mr|pl|pr)-|(?:left|right)-\d|text-(?:left|right)|border-[lr]\b|border-[lr]-|rounded-[lr]-|rounded-(?:tl|tr|bl|br)-)/;
