@@ -28,6 +28,7 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { HOME_DEADLINE_FIRST, PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
 import { MyClubsRow } from "@/components/home/MyClubsRow";
+import { HomeStories } from "@/components/home/HomeStories";
 import { homeClubs } from "@/components/home/my-clubs";
 import { findClub } from "@/components/fantasy/club-identity";
 import { footballService, HOME_LIST_SIZE, type FootballSeason } from "@/services/football";
@@ -521,6 +522,7 @@ function HomeContent() {
       {stripTime && gwQ.data ? (
         <DeadlineStrip gameweek={gwQ.data.number} deadline={gwQ.data.deadline} time={stripTime} />
       ) : null}
+      <HomeStories />
       {/* Phone: one column, in the order the order-N classes give. From 768px
           the three columns below are real columns (`contents` on a phone lets
           their children join the one list): tablet is the hero across the

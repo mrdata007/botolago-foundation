@@ -361,6 +361,7 @@ describe("PRONOSTICS_ENABLED / PRONOSTICS_PROMOTED", () => {
       "src/routes/pronostics.index.tsx",
       "src/lib/sitemap.ts",
       "src/routes/index.tsx",
+      "src/components/home/HomeStories.tsx",
       "src/components/matches/MatchesTabs.tsx",
       "src/routes/matches.$matchId.tsx",
       "src/routes/fantasy.leagues.$leagueId.tsx",
@@ -396,6 +397,7 @@ describe("PEPITES_ENABLED / PEPITES_PROMOTED", () => {
       "src/components/shell/primary-nav.ts",
       "src/components/shell/TopBar.tsx",
       "src/routes/index.tsx",
+      "src/components/home/HomeStories.tsx",
       "src/lib/sitemap.ts",
       "src/components/pepites/pepites-route.ts",
     ]);
