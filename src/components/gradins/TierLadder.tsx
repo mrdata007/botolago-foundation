@@ -5,7 +5,7 @@ import { CardToken } from "@/components/manager-card/CardToken";
 import { useGradinsCopy, useMomentCopy } from "@/components/manager-card/copy";
 import { fill } from "@/components/manager-card/interpolate";
 import { TierWord } from "@/components/manager-card/tier-word";
-import { fromMyCard, withTier } from "@/components/manager-card/to-profile";
+import { fromMyCard, ladderProfile } from "@/components/manager-card/to-profile";
 import { TIER_CODES } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -16,9 +16,9 @@ import { cardView, tierFell } from "./gradins-state";
 /**
  * « Votre palier »: the five tiers as the card itself at each of them, the current one marked, and
  * what the tier follows. A token is the card as it would hang at that tier (same name, club
- * colours and serial), drawn with no number: the ladder shows the five materials, never a number
- * the server did not give. The tier follows the note, journée after journée, and can fall;
- * nothing is won or lost here, and the words say so.
+ * colours and serial), drawn with no number (`ladder`: the tier's own material and a dash): the
+ * ladder shows the five materials, never a number the server did not give. The tier follows the
+ * note, journée after journée, and can fall; nothing is won or lost here, and the words say so.
  *
  *   - rated: the current token carries a selected ring and « Actuel »; the season's best when it
  *     differs; the distance to the next tier when the server gave one; a fall states the tier
@@ -38,7 +38,7 @@ export function TierLadder({
   const { lang } = useI18n();
   const view = cardView(card);
   const current = view.newSeason ? null : card.tier;
-  const base = { ...fromMyCard(card), ovr: null, provisional: false, counted: null };
+  const base = fromMyCard(card);
   const best = card.bestTier && card.bestTier !== card.tier ? card.bestTier : null;
   return (
     <div data-testid="gradins-tier-ladder">
@@ -55,12 +55,13 @@ export function TierLadder({
                 className={cn(
                   "grid h-14 w-full place-items-center",
                   ui.radius.card,
-                  here
-                    ? "ring-2 ring-[color:var(--ui-ink-fg)] ring-offset-2 ring-offset-[color:var(--ui-surface)]"
-                    : "opacity-80",
+                  // the current step is marked by its ring alone: a dimmed token would put its dash
+                  // under the 3:1 a number needs against the shirt
+                  here &&
+                    "ring-2 ring-[color:var(--ui-ink-fg)] ring-offset-2 ring-offset-[color:var(--ui-surface)]",
                 )}
               >
-                <CardToken profile={withTier(base, tier)} size={44} />
+                <CardToken profile={ladderProfile(base, tier)} size={44} />
               </span>
               <span
                 className={cn(

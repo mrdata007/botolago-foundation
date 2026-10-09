@@ -52,6 +52,24 @@ export interface TextSpec {
 const attr = (name: string, value: string | number | undefined): string =>
   value === undefined ? "" : ` ${name}="${esc(value)}"`;
 
+/**
+ * The text's CSS that has to win over the page's: the tracking and the tabular figures. Tracking is
+ * a style, not a `letter-spacing` attribute, because the app's own rule `html[dir="rtl"] * {
+ * letter-spacing: normal }` (src/styles.css) outranks a presentation attribute and would strip the
+ * Latin runs of an Arabic card (LASTREET, « OVR », the serial, the wordmark) of the tracking the
+ * plaque and the layout were drawn for; an inline style outranks that rule.
+ */
+export function trackingStyle(em: number): string {
+  return `letter-spacing:${em}em`;
+}
+
+function inlineStyle(t: TextSpec): string {
+  const parts: string[] = [];
+  if (t.tabular) parts.push("font-variant-numeric:tabular-nums");
+  if (t.tracking !== undefined) parts.push(trackingStyle(t.tracking));
+  return parts.length ? ` style="${parts.join(";")}"` : "";
+}
+
 /** One `<text>` element. */
 export function textEl(t: TextSpec): string {
   const data = t.data
@@ -68,10 +86,9 @@ export function textEl(t: TextSpec): string {
     attr("font-weight", t.weight) +
     ` font-size="${n2(t.size)}" text-anchor="middle" fill="${t.fill}"` +
     (t.fillOpacity !== undefined ? ` fill-opacity="${t.fillOpacity}"` : "") +
-    (t.tabular ? ' style="font-variant-numeric:tabular-nums"' : "") +
+    inlineStyle(t) +
     (t.central ? ' dominant-baseline="central"' : "") +
     (t.dy !== undefined ? ` dy="${t.dy}"` : "") +
-    (t.tracking !== undefined ? ` letter-spacing="${t.tracking}em"` : "") +
     (t.textLength !== undefined ? ` textLength="${n2(t.textLength)}" lengthAdjust="spacing"` : "") +
     ` direction="${t.dir}"` +
     (t.isolate ? ' unicode-bidi="isolate"' : "") +
@@ -123,6 +140,7 @@ export function toRun(t: TextSpec, scale: number): TextRun {
     colour: cssColour(t.fill, t.fillOpacity ?? 1),
     ...(t.tracking ? { tracking: round2(t.tracking * t.size * scale) } : {}),
     ...(t.place?.rotate ? { rotate: t.place.rotate } : {}),
+    ...(t.textLength ? { fitWidth: round2(t.textLength * scale) } : {}),
   };
 }
 

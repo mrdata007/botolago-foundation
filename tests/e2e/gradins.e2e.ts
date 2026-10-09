@@ -407,6 +407,53 @@ test.describe("Arabic, motion and the number", () => {
     expect(box.x + box.width / 2).toBeGreaterThan(195);
   });
 
+  for (const lang of LANGS) {
+    test(`${lang}: the card's Latin runs keep their tracking under the app's stylesheet, and its Arabic runs have none`, async ({
+      page,
+    }) => {
+      // `html[dir="rtl"] * { letter-spacing: normal }` (src/styles.css) outranks a presentation
+      // attribute: the card sets its tracking as an inline style, so LASTREET, « OVR », the serial
+      // and the wordmark are tracked in the Arabic interface too, and the plaque was sized for it
+      await page.setViewportSize({ width: 390, height: 844 });
+      await start(page, lang);
+      await gotoHydrated(page, "/gradins/carte?mc=homa", lang);
+      const stage = page.getByTestId("gradins-stage");
+      await expect(stage).toHaveAttribute("data-mc-ready", "1");
+      await expect(page.locator("html")).toHaveAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+      const runs = await stage.evaluate((root) =>
+        [...root.querySelectorAll("svg text")].map((node) => ({
+          text: node.textContent ?? "",
+          tier: node.hasAttribute("data-tier"),
+          ovrLabel: node.hasAttribute("data-ovrlabel"),
+          serial: node.getAttribute("data-meta") === "serial",
+          spacing: parseFloat(getComputedStyle(node).letterSpacing) || 0,
+        })),
+      );
+      const only = (pick: (run: (typeof runs)[number]) => boolean, what: string) => {
+        const found = runs.filter(pick);
+        expect(found.length, what).toBeGreaterThan(0);
+        return found;
+      };
+      for (const run of only((r) => r.tier, "the tier word")) {
+        expect(run.text).toBe("LASTREET");
+        expect(run.spacing, "LASTREET is tracked").toBeGreaterThan(0);
+      }
+      for (const run of only((r) => r.ovrLabel, "« OVR »")) {
+        expect(run.spacing, "« OVR » is tracked").toBeGreaterThan(0);
+      }
+      for (const run of only((r) => r.serial, "the serial")) {
+        expect(run.spacing, "the serial is tracked").toBeGreaterThan(0);
+      }
+      for (const run of only((r) => r.text === "BOTOLAGO", "the wordmark")) {
+        expect(run.spacing, "the wordmark is tracked").toBeGreaterThan(0);
+      }
+      // Arabic script is never tracked: spacing breaks the joins
+      for (const run of runs.filter((r) => /\p{Script=Arabic}/u.test(r.text))) {
+        expect(run.spacing, `Arabic run ${run.text}`).toBe(0);
+      }
+    });
+  }
+
   test("with motion reduced nothing runs, there is no replay beat button, and the hero still shows and acknowledges", async ({
     page,
   }) => {
@@ -665,6 +712,46 @@ test.describe("words and names", () => {
   }
 });
 
+test.describe("the tier ladder", () => {
+  for (const lang of LANGS) {
+    test(`${lang}: draws the five tiers as five different materials, with a dash and no number`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await start(page, lang);
+      await gotoHydrated(page, "/gradins/carte?mc=rated", lang);
+      const ladder = page.getByTestId("gradins-tier-ladder");
+      await ladder.scrollIntoViewIfNeeded();
+      const tokens = ladder.locator("li .mc-tok");
+      await expect(tokens).toHaveCount(5);
+      await expect(ladder.locator("li [data-mc-ready]")).toHaveCount(5);
+      const drawn = await tokens.evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          // the markup without what is unique to a draw: the id scope and the spoken label
+          markup: node.innerHTML
+            .replace(/mc-t-\d+/g, "T")
+            .replace(/-m\d+(?=["')])/g, "")
+            .replace(/aria-label="[^"]*"/g, ""),
+          label: node.getAttribute("aria-label") ?? "",
+          foil: node.innerHTML.includes("-foil"),
+          numbers: [...node.querySelectorAll("text")].map((t) => t.textContent),
+          opacity: getComputedStyle(node.closest("li > span") ?? node).opacity,
+        })),
+      );
+      // five different tokens: LASTREET, STADE, PRO, CHAMPION, LEGEND each in its own material
+      expect(new Set(drawn.map((d) => d.markup)).size).toBe(5);
+      // the foil is CHAMPION's and LEGEND's alone
+      expect(drawn.map((d) => d.foil)).toEqual([false, false, false, true, true]);
+      for (const d of drawn) {
+        expect(new Set(d.numbers), "a dash, never a rating").toEqual(new Set(["—"]));
+        // no dimmed token: a dash under opacity falls below 3:1 on its shirt
+        expect(d.opacity).toBe("1");
+      }
+      expect(drawn[0]!.label).toContain("LASTREET");
+    });
+  }
+});
+
 test.describe("G1 says what happens next", () => {
   for (const lang of LANGS) {
     test(`${lang}: one line under the identity line names the next round and leads to the team`, async ({
@@ -676,13 +763,13 @@ test.describe("G1 says what happens next", () => {
       const glance = page.getByTestId("gradins-glance");
       await expect(glance).toBeVisible();
       await expect(glance).toHaveAttribute("href", "/fantasy/team");
-      // on the first screen, above the bottom bar, and one 44 px line. The collectible is 296 px wide
-      // and 479 px tall (plan section 10): French still has the line above the bar (by about 1 px at
-      // 390 x 844); Arabic's taller title and rating line push it 32 px lower, so there it is allowed
-      // to start within 48 px of the bar, one short scroll, and the order below still holds.
+      // on the first screen, above the bottom bar, and one 44 px line, in both languages. The
+      // collectible is 296 px wide and 479 px tall (plan section 10). Arabic's taller line boxes (the
+      // title, the rating and the identity lines, leading 1.95) would push the line 31 px under the
+      // bar, so on a phone the stage's own padding is given back in Arabic (CardStage, GradinsHome).
       const box = (await glance.boundingBox())!;
       const nav = (await bar(page, lang).boundingBox())!;
-      expect(box.y + box.height).toBeLessThanOrEqual(nav.y + (lang === "ar" ? 48 : 0));
+      expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
       expect(Math.round(box.height)).toBe(44);
       // the identity line is above it, the people block below it
       const identity = (await page.getByTestId("gradins-identity-line").boundingBox())!;

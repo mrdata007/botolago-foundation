@@ -48,6 +48,11 @@ export interface CardProfile {
   stats: Record<StatCode, number | null>;
   /** Development fixtures only: prints the sample label on the object. */
   sample?: true;
+  /**
+   * The tier ladder's token: draw the material of `tier` although there is no number (a dash), so
+   * five tokens in a row show five materials. A card that carries a rating never needs it.
+   */
+  ladder?: true;
 }
 
 /** The words a renderer may print or speak, from the app dictionary (WP1 `cardStrings`). */

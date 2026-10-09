@@ -12,7 +12,7 @@ import { ASPECT, estimateAspect } from "./estimate";
 import { appliedBeat } from "./full";
 import { tierWord, TIER_KEYS } from "./foil";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS, MOCK_NAMES, PROFILES } from "./test-data";
-import { elementsByClass, layer, texts, textsWith } from "./test-markup";
+import { elementsByClass, layer, texts, textsWith, trackingOf } from "./test-markup";
 import { makeView, serialLine } from "./view";
 import type { BeatName, CardProfile } from "../types";
 
@@ -97,12 +97,37 @@ describe("every fixture, language and theme (plan 12.4)", () => {
         if (tier === "homa") {
           expect(words[0]!.text).toBe("LASTREET");
           expect(words[0]!.attrs.direction).toBe("ltr");
-          expect(words[0]!.attrs["letter-spacing"]).toBe("0.22em");
+          expect(trackingOf(words[0]!)).toBe("0.22em");
         }
-        if (!latin) expect(words[0]!.attrs["letter-spacing"]).toBeUndefined();
+        if (!latin) expect(trackingOf(words[0]!)).toBeUndefined();
       }
       for (const p of [PROFILES.born0, PROFILES.forming1, PROFILES.insufficient3, PROFILES.guest]) {
         expect(textsWith(draw(p, lang), "tier")).toHaveLength(0);
+      }
+    }
+  });
+
+  it("sets the tracking as an inline style, never as an attribute the page's RTL reset can strip", () => {
+    // `html[dir="rtl"] * { letter-spacing: normal }` (src/styles.css) outranks a presentation
+    // attribute and not an inline style: the Latin runs of an Arabic card keep the tracking the
+    // plaque was sized for
+    for (const lang of ["fr", "ar"] as const) {
+      const html = draw({ ...PROFILES.rated, tier: "homa", ovr: 41, serial: "482913" }, lang);
+      expect(html.includes(" letter-spacing="), lang).toBe(false);
+      const all = texts(html);
+      const word = all.find((t) => "data-tier" in t.attrs)!;
+      expect(trackingOf(word), `${lang} tier word`).toBe("0.22em");
+      expect(word.attrs.style, lang).toBe("letter-spacing:0.22em");
+      const label = all.find((t) => "data-ovrlabel" in t.attrs)!;
+      expect(trackingOf(label), `${lang} OVR`).toBe("0.2em");
+      const serial = all.find((t) => "data-meta" in t.attrs && t.attrs["data-meta"] === "serial");
+      expect(serial && trackingOf(serial), `${lang} serial`).toBe("0.04em");
+      const mark = all.find((t) => t.text === "BOTOLAGO");
+      expect(mark && trackingOf(mark), `${lang} wordmark`).toBe("0.14em");
+      // Arabic-script runs are never tracked: tracking breaks the joins
+      for (const t of all) {
+        if (/\p{Script=Arabic}/u.test(t.text))
+          expect(trackingOf(t), `${lang} ${t.text}`).toBeUndefined();
       }
     }
   });
@@ -241,6 +266,49 @@ describe("what a card says and how big it is", () => {
     }
     const p = { ...PROFILES.rated, club: { ...PROFILES.rated.club!, initials: "<b>" } };
     expect(findUnsafeMarkup(draw(p))).toEqual([]);
+  });
+
+  it("reads a hostile club colour as no club: nothing of it reaches an attribute (full, tokens, detail, image)", () => {
+    const hostile: CardProfile = {
+      ...PROFILES.rated,
+      founder: 2026,
+      club: {
+        ...PROFILES.rated.club!,
+        primary: '#000"/><img src=x onerror=alert(1)>',
+        secondary: '"><svg onload=alert(2)>',
+      },
+    };
+    const wrongSecondary: CardProfile = {
+      ...PROFILES.rated,
+      club: { ...PROFILES.rated.club!, secondary: 'red;}</style><script>"' },
+    };
+    for (const p of [hostile, wrongSecondary]) {
+      for (const lang of ["fr", "ar"] as const) {
+        const strings = lang === "ar" ? AR : FR;
+        const outputs = [
+          draw(p, lang),
+          draw(p, lang, "dark"),
+          ...([32, 44, 48, 64, 80, 120] as const).map((size) =>
+            // 48 and 120 are not ladder sizes; the renderer still has to hold them safe
+            eclatRenderer.token(p, { strings, theme: "light", size: size as never }),
+          ),
+          eclatRenderer.detail(p, "founder", { strings, theme: "light" }) ?? "",
+          eclatRenderer.image(p, strings).svg,
+        ];
+        for (const html of outputs) {
+          expect(findUnsafeMarkup(html), `${lang}`).toEqual([]);
+          expect(html.includes("onerror")).toBe(false);
+          expect(html.includes("onload")).toBe(false);
+          expect(html.includes("<script")).toBe(false);
+        }
+      }
+    }
+    // a primary that is not a colour is no club at all: the neutral shirt and disc
+    expect(makeView(hostile, FR).p.club).toBeNull();
+    // a secondary that is not a colour is none; the primary stays
+    const v = makeView(wrongSecondary, FR).p.club!;
+    expect(v.primary).toBe(PROFILES.rated.club!.primary);
+    expect(v.secondary).toBeNull();
   });
 });
 

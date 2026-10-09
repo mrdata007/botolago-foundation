@@ -14,7 +14,7 @@ import { mix } from "./foil";
 import { CHEST, DASH_FIT, DASH_HIT, JT, JT_DX, JT_DY, JT_SCALE, OUTLINE_HALF } from "./geometry";
 import type { Ink, Measure } from "./measure";
 import { centreCrease } from "./shirt";
-import type { TextSpec } from "./text";
+import { trackingStyle, type TextSpec } from "./text";
 import { esc } from "./view";
 
 export interface FitBox {
@@ -82,6 +82,24 @@ export function printOf(ovr: number | null, measure: Measure): Print {
 export const numberDefs = (id: string): string =>
   `<linearGradient id="${id}-numlight" x1="0" y1="${CHEST.y0}" x2="0" y2="${CHEST.y1}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
 
+/**
+ * The width of « OVR »'s halo stroke, in jersey units: 7 units each side of the glyph, 2.3 CSS px
+ * on the 296 px stage card. At 6 (1 px) the halo is gone once the card tilts and the label is
+ * resampled in 3D: « OVR » read 3.3:1 against it with the pointer over it, under the 4.5:1 floor.
+ */
+export const OVR_HALO = 14;
+const OVR_HALO_DARK = 0.8;
+
+/**
+ * « OVR »'s halo colour: the shirt pushed hard away from the label's fill (toward black under white
+ * letters, toward white under near-black ones). The sheen lifts a dark halo with the pointer over it,
+ * so the dark one starts close to black.
+ */
+const ovrHalo = (colours: ShirtColours): string =>
+  colours.numberFill === "#FFFFFF"
+    ? mix(colours.primary, "#000000", OVR_HALO_DARK)
+    : mix(colours.primary, "#ffffff", 0.45);
+
 export interface NumberOpts {
   id: string;
   print: Print;
@@ -118,11 +136,8 @@ export function numberLayer(o: NumberOpts): string {
     // (static, outside the group)
     `<g clip-path="url(#${id}-numclip)" opacity=".55"><g filter="url(#${id}-b4)">${centreCrease("#ffffff")}</g><rect x="292" y="300" width="416" height="606" fill="url(#${id}-volX)" opacity=".5"/></g>`;
   if (o.label) {
-    const halo =
-      colours.numberFill === "#FFFFFF"
-        ? mix(colours.primary, "#000000", 0.55)
-        : mix(colours.primary, "#ffffff", 0.45);
-    s += `<text x="503.2" y="830" class="mc-f-b" font-weight="800" font-size="32" text-anchor="middle" fill="${colours.numberFill}" stroke="${halo}" stroke-width="6" stroke-linejoin="round" paint-order="stroke" letter-spacing=".2em" direction="ltr" data-ovrlabel="1">${esc(o.label)}</text>`;
+    const halo = ovrHalo(colours);
+    s += `<text x="503.2" y="830" class="mc-f-b" font-weight="800" font-size="32" text-anchor="middle" fill="${colours.numberFill}" stroke="${halo}" stroke-width="${OVR_HALO}" stroke-linejoin="round" paint-order="stroke" style="${trackingStyle(0.2)}" direction="ltr" data-ovrlabel="1">${esc(o.label)}</text>`;
   }
   return `${s}</g>`;
 }
@@ -167,10 +182,7 @@ export function numberSpecs(o: NumberOpts): TextSpec[] {
   ];
   if (o.label) {
     const [lx, ly] = card(503.2, 830);
-    const halo =
-      colours.numberFill === "#FFFFFF"
-        ? mix(colours.primary, "#000000", 0.55)
-        : mix(colours.primary, "#ffffff", 0.45);
+    const halo = ovrHalo(colours);
     const base = {
       text: o.label,
       size: 32 * JT_SCALE,
@@ -182,8 +194,8 @@ export function numberSpecs(o: NumberOpts): TextSpec[] {
     for (const deg of EIGHT) {
       specs.push({
         ...base,
-        x: lx + 3 * JT_SCALE * Math.cos((deg * Math.PI) / 180),
-        y: ly + 3 * JT_SCALE * Math.sin((deg * Math.PI) / 180),
+        x: lx + (OVR_HALO / 2) * JT_SCALE * Math.cos((deg * Math.PI) / 180),
+        y: ly + (OVR_HALO / 2) * JT_SCALE * Math.sin((deg * Math.PI) / 180),
         fill: halo,
       });
     }

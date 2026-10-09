@@ -47,9 +47,13 @@ export const POINT_Y = 1056;
 export const RING = OUTLINE + WINDOW;
 /** The raised tab that carries the club disc and the season. */
 export const TAB = "M0 40Q0 0 40 0L206 0L206 280Q206 302 184 302L0 302Z";
-/** The foil overlay's clip: the outline's corners in % (mirrored in Arabic). */
+/**
+ * The foil overlay's clip: the outline in % with the tab cut out (the tab is 206 × 302 of 1000 ×
+ * 1618, so 20.6% × 18.7%): no foil, sheen or diffraction crosses the club disc or the season. The
+ * stylesheet holds the same polygon (and its Arabic mirror), and `holo.test.ts` compares the two.
+ */
 export const FOIL_CLIP =
-  "0 2.5%, 4% 0, 20.6% 0, 21.6% 0.6%, 100% 0.6%, 100% 87.6%, 80% 100%, 0 100%";
+  "20.6% 0.6%, 100% 0.6%, 100% 87.6%, 80% 100%, 0 100%, 0 18.7%, 20.6% 18.7%";
 
 /* ---------------------------------------------------------------------------------------------
    The shirt, in jersey space (plan 5.1): flat-lay front view

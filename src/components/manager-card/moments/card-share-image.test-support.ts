@@ -47,6 +47,9 @@ interface State {
 export const fontSize = (font: string) => Number(/([\d.]+)px/.exec(font)?.[1] ?? 10);
 /** A deterministic width: the same text in the same font measures the same in both languages. */
 export const measure = (value: string, font: string) => [...value].length * fontSize(font) * 0.55;
+/** Chromium's canvas spaces the letters of a Latin run and never those of a cursive one (Arabic). */
+const spacedBy = (value: string, spacing: number) =>
+  /[؀-ۿ]/.test(value) ? 0 : [...value].length * spacing;
 
 /** Deterministic ink above and below the baseline, in em, after what Chromium measures. */
 export function ink(value: string, font: string) {
@@ -151,7 +154,7 @@ export function recordingContext() {
       const py = rawY + state.originY;
       const spacing = Number.parseFloat(state.letterSpacing) || 0;
       const w = Math.min(
-        measure(value, state.font) + [...value].length * spacing,
+        measure(value, state.font) + spacedBy(value, spacing),
         maxWidth ?? Infinity,
       );
       const rtl = state.direction === "rtl";
@@ -209,7 +212,8 @@ export function recordingContext() {
     measureText(value: string) {
       const metrics = ink(value, state.font);
       return {
-        width: measure(value, state.font),
+        width:
+          measure(value, state.font) + spacedBy(value, Number.parseFloat(state.letterSpacing) || 0),
         actualBoundingBoxAscent: metrics.ascent,
         actualBoundingBoxDescent: metrics.descent,
       };

@@ -13,6 +13,7 @@ import {
   localProfile,
   toCardClub,
   withTier,
+  ladderProfile,
 } from "./to-profile";
 
 const own = (id: keyof typeof FIXTURES) => FIXTURES[id].card!;
@@ -131,6 +132,20 @@ describe("withTier, guestProfile and localProfile", () => {
     const profile = fromMyCard(own("rated"));
     expect(withTier(profile, "legend")).toEqual({ ...profile, tier: "legend" });
     expect(profile.tier).toBe("pro");
+  });
+
+  it("draws the ladder's token at a tier with no number, no marks and no pill, and marks it as a ladder step", () => {
+    const profile = { ...fromMyCard(own("rated")), provisional: true, counted: 4 };
+    const step = ladderProfile(profile, "champion");
+    expect(step).toEqual({
+      ...profile,
+      tier: "champion",
+      ovr: null,
+      provisional: false,
+      counted: null,
+      ladder: true,
+    });
+    expect(profile.ovr).not.toBeNull();
   });
 
   it("is the unnamed base card for a guest: nothing is filled in", () => {

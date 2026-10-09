@@ -221,7 +221,7 @@ export function OwnerHome({
         <CardStage profile={profile} beat={beat}>
           {rating}
         </CardStage>
-        <div className="mt-1 px-4">{identity}</div>
+        <div className="mt-1 px-4 max-md:rtl:mt-0">{identity}</div>
         {glance ? <RoundGlance round={glance} composeLabel={t("fpl.pick_team")} /> : null}
         <div className={cn("mt-4 hidden md:block", ui.space.gutter, "md:px-0")}>{action}</div>
       </div>

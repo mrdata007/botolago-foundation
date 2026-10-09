@@ -111,7 +111,11 @@ app's (`src/fonts.css`); Noto Sans Arabic carries the Arabic stat labels and the
 ## The tier word: LASTREET
 
 The lowest tier (key `homa`) is displayed LASTREET in French and in Arabic (a Latin word, set left to
-right and tracked in both). The renderer owns the word (`foil.ts`, `tierWord`, and `withTierNames` for
+right and tracked in both: the tracking is an inline `style` on the `<text>` (`text.ts`,
+`trackingStyle`), because the app's `html[dir="rtl"] * { letter-spacing: normal }` outranks a
+presentation attribute and would strip LASTREET, « OVR », the serial and the wordmark of their
+tracking in the Arabic interface; `tests/e2e/gradins.e2e.ts` reads the computed value under the
+app's stylesheet). The renderer owns the word (`foil.ts`, `tierWord`, and `withTierNames` for
 the label), so a card and its label say LASTREET whatever a dictionary holds. The dictionaries say
 LASTREET too now (the key is still `homa`), and the screens set the word in an isolated left-to-right
 run in Arabic (`../tier-word.tsx`).
@@ -121,10 +125,17 @@ run in Arabic (`../tier-word.tsx`).
 - `RenderOptions.compact`: the face-à-face sheet's card (136 to 200 px): no serial, wordmark, « OVR »,
   season, club initials or stat labels; every remaining text is 58 units or more, so 8 CSS px at
   136 px. `ManagerCard` takes a `compact` prop (it is part of the render-cache key); the face-à-face
-  sheet's card and the born panel's 96 px card pass it, no other card does.
+  sheet's card passes it, no other card does. Below 136 px the plate's text is under 8 CSS px, so a
+  card that small is a `CardToken` (the born panel's 80 px token), never a compact card
+  (`compact-floor.test.ts`).
 - `TextRun.face` gains `"serif"` (Instrument Serif) and `"displayLight"` (Changa 300); `weight` gains
-  300; `tracking` (letter spacing in image units) and `rotate` (degrees about the run's point) are
-  new. `moments/card-share-image.ts` maps the faces and honours both, and loads Instrument Serif,
+  300; `tracking` (letter spacing in image units), `rotate` (degrees about the run's point) and
+  `fitWidth` (the width a name line that still overflows at its smallest size is closed up to, by
+  spacing, as the card's `textLength` does; the drawer never opens it, and where the canvas does not
+  space the letters, as in Arabic, it narrows the glyphs with `fillText`'s maximum width) are new.
+- `CardProfile.ladder`: the tier ladder's token is drawn in its tier's material although it has no
+  number (`tierKeyOf` is `base` for a profile with no rating otherwise); `ladderProfile` in
+  `../to-profile.ts` builds the step. `moments/card-share-image.ts` maps the faces and honours both, and loads Instrument Serif,
   Changa Light and the figures' faces before it draws.
 - `CardRenderer.mount` is the tilt. `ManagerCard`'s `tilt` prop (it was `sway`) asks for it; the
   rule for mounting it (asked for, a renderer that has it, the card in the page, no request for less
@@ -170,7 +181,30 @@ committed.
 | Éclat's own code, minified (without the shared card words)                       | 67 kB, **21.7 kB gzip**, CSS 10 kB, 2.6 kB gzip (budget 60 kB gzip, whole chunk)                                                                                                                                                                                                                                                     |
 | Pixels against the mock, the twelve stage cards at DPR 2 (same page, same fonts) | up to 0.5 % of pixels differ by more than 24/255 per channel, all on the edges of the number, the plaque and the names (the mock measures text on a canvas at the drawn size and rounds the ink to whole pixels; this renderer measures at 1000 px); the G4 cards 0.3 to 0.9 %; the tokens 0.4 %. No layout or treatment difference. |
 
-Budgets (plan 12.5): `full()` 25 ms, `token()` 3 ms, chunk 60 kB gzip, stage markup 46 kB.
+Budgets (plan 12.5): `full()` 25 ms, `token()` 3 ms, chunk 60 kB gzip, stage markup 46 kB, and G1's
+card box in the page to `data-mc-ready` 400 ms at CPU x4.
+
+### G1, card box to `data-mc-ready` (budget 400 ms at CPU x4)
+
+Chromium 1194 with `Emulation.setCPUThrottlingRate` 4, a 390 x 844 phone, five runs per row, the
+mock data modes. The interval runs from the stage's `.mc-card` box appearing (client-only, so it marks
+the data arriving) to the first `data-mc-ready`. **Development-server figures only**: the preview
+that serves the section exists only on a development server (`MANAGER_CARD_PREVIEW` needs
+`import.meta.env.DEV`), where modules are unbundled and React is the development build, so a
+production figure could not be taken and the budget is **not shown met**.
+
+| Page                                    | Before: the chunk starts with the first card | With `preloadCardRenderer()` in the `/gradins` layout |
+| --------------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
+| `/gradins?mc=rated`, first visit (cold) | 1070 to 1188 ms                              | 599 to 744 ms                                         |
+| `/gradins?mc=rated`, reloaded (warm)    | 501 to 621 ms                                | 408 to 740 ms                                         |
+| `/gradins`, guest, first visit          | 600 to 809 ms                                | 632 to 890 ms                                         |
+| `/gradins`, guest, reloaded             | 497 to 672 ms                                | 584 to 681 ms                                         |
+
+The head start helps where the renderer's modules and faces have to be fetched (the first visit of
+a signed-in manager: about 40 % less) and changes nothing once they are cached or when the data
+arrives at once, as the mock's does: the warm rows are within the spread of the runs. What is left
+is main-thread work at x4 once the data is in, not the load. Script: a MutationObserver on
+`.mc-card` and `[data-mc-ready]`, run before and after the change on the same server.
 
 ## Looking at it
 

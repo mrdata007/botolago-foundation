@@ -300,18 +300,19 @@
 /* The sheen (every tier) and, on CHAMPION and LEGEND, a restrained diffraction: an HTML overlay above
    the art, clipped to the outline, a leaf of its own so its clip and its blend flatten nothing. The
    diffraction ends above the plaque (never over the plate's text) and has a hole over the chest (the
-   foil never crosses the number). */
+   foil never crosses the number). The clip also leaves the tab out (the club disc and the season,
+   20.6% x 18.7% of the card): no sheen or diffraction ever lightens them, on any tier. */
 .mc-eclat__foil {
   position: absolute;
   inset: 0;
   pointer-events: none;
   --z: 9.5;
   --mc-sheen-angle: 115deg;
-  clip-path: polygon(0 2.5%, 4% 0, 20.6% 0, 21.6% 0.6%, 100% 0.6%, 100% 87.6%, 80% 100%, 0 100%);
+  clip-path: polygon(20.6% 0.6%, 100% 0.6%, 100% 87.6%, 80% 100%, 0 100%, 0 18.7%, 20.6% 18.7%);
 }
 .mc-eclat[dir="rtl"] .mc-eclat__foil {
   --mc-sheen-angle: 245deg;
-  clip-path: polygon(100% 2.5%, 96% 0, 79.4% 0, 78.4% 0.6%, 0 0.6%, 0 87.6%, 20% 100%, 100% 100%);
+  clip-path: polygon(79.4% 0.6%, 0 0.6%, 0 87.6%, 20% 100%, 100% 100%, 100% 18.7%, 79.4% 18.7%);
 }
 .mc-eclat__foil::before {
   content: "";

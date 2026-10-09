@@ -95,6 +95,10 @@ export function texts(html: string): TextEl[] {
   return out;
 }
 
+/** The `letter-spacing` of a text, as the card sets it (an inline style); undefined if untracked. */
+export const trackingOf = (t: TextEl): string | undefined =>
+  /(?:^|;)\s*letter-spacing:\s*([^;]+)/.exec(t.attrs.style ?? "")?.[1]?.trim();
+
 /** The texts carrying a `data-<key>` attribute. */
 export const textsWith = (html: string, key: string): TextEl[] =>
   texts(html).filter((t) => key in t.attrs || `data-${key}` in t.attrs);

@@ -40,6 +40,13 @@ export interface TextRun {
   tracking?: number;
   /** Degrees clockwise about (x, y), for a run set along the cut corner. */
   rotate?: number;
+  /**
+   * The width, in the image's units, the run is fitted to when its natural width is larger: the
+   * card's name lines that still overflow at their smallest size are closed up by spacing, never by
+   * squeezing the glyphs (`textLength` with `lengthAdjust="spacing"` in the card's SVG). A drawer
+   * closes the run's letter spacing to this width, and never opens it.
+   */
+  fitWidth?: number;
 }
 export interface CardImageArt {
   /** Text-free SVG (a renderer's own glyphs may be geometry; every <text> is moved to `texts`). */

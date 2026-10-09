@@ -199,9 +199,12 @@ export const FOIL: Readonly<Record<TierKey, Foil>> = {
   },
 };
 
-/** The ladder step of a card: no number, no tier. */
-export const tierKeyOf = (p: Pick<CardProfile, "ovr" | "tier">): TierKey =>
-  p.ovr == null ? "base" : (p.tier ?? "base");
+/**
+ * The ladder step of a card: no number, no tier. A token the tier ladder draws (`ladder`) shows its
+ * tier's material without a number: that is the only way a tier is drawn without a rating.
+ */
+export const tierKeyOf = (p: Pick<CardProfile, "ovr" | "tier" | "ladder">): TierKey =>
+  p.ovr == null && !p.ladder ? "base" : (p.tier ?? "base");
 
 /**
  * The tier's displayed word. The lowest tier is LASTREET in both languages (a Latin word, plan D10

@@ -37,7 +37,14 @@ export function CardStage({
 }) {
   return (
     <section
-      className={cn("relative overflow-x-clip px-2 pb-[18px] pt-5 md:pt-6", className)}
+      className={cn(
+        "relative overflow-x-clip px-2 pb-[18px] pt-5 md:pt-6",
+        // Arabic's line boxes are taller (leading 1.95 on the title, the rating and the identity
+        // lines): on a phone the stage gives back the room its own padding does not need, so the
+        // round line under the identity still sits above the bottom bar (G1's acceptance)
+        "max-md:rtl:pb-0 max-md:rtl:pt-3",
+        className,
+      )}
       data-stage={profile.tier ?? "base"}
     >
       <div
@@ -64,7 +71,7 @@ export function CardStage({
         />
       </div>
       {children ? (
-        <div className="mt-3 flex flex-col items-center gap-1 px-4">{children}</div>
+        <div className="mt-3 flex flex-col items-center gap-1 px-4 max-md:rtl:mt-2">{children}</div>
       ) : null}
     </section>
   );

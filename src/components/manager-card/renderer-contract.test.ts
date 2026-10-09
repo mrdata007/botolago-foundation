@@ -141,6 +141,33 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
       }
     });
 
+    it("keeps a hostile club colour out of every attribute: full, token, detail and the share art", () => {
+      const profile: CardProfile = {
+        ...rated,
+        founder: 2026,
+        serial: "482913",
+        club: {
+          ...rated.club!,
+          primary: "red;}</style><script>",
+          secondary: '"><svg onload=alert(1)>',
+        },
+      };
+      for (const lang of ["fr", "ar"] as const) {
+        const strings = STRINGS[lang];
+        const outputs = [
+          renderer.full(profile, { strings, theme: "light" }),
+          ...SIZES.map((size) => renderer.token(profile, { strings, theme: "dark", size })),
+          renderer.detail(profile, "founder", { strings, theme: "light" }) ?? "",
+          renderer.image(profile, strings).svg,
+        ];
+        for (const html of outputs) {
+          expect(findUnsafeMarkup(html)).toEqual([]);
+          expect(html).not.toContain("<script");
+          expect(html).not.toContain("onload");
+        }
+      }
+    });
+
     it("computes its aspect without the DOM, and a token box for every size", () => {
       expect(renderer.aspect(rated, STRINGS.fr)).toBeGreaterThan(1);
       expect(renderer.aspect(rated, STRINGS.ar)).toBeGreaterThan(1);

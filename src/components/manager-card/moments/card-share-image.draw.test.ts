@@ -493,6 +493,51 @@ describe("the card's art in the new style", () => {
   });
 });
 
+describe("a long name stays inside the card's art", () => {
+  const LONG = {
+    fr: "Zinedine Abdelhakimbenmohammedelalaoui Ali",
+    ar: "عبدالرحمنمحمدالعلويالادريسيالحسني",
+  } as const;
+  for (const lang of ["fr", "ar"] as const) {
+    it(`${lang}: a line the card closes up by spacing (textLength) is drawn no wider than 790 units of the art`, async () => {
+      const { ops, model } = await draw("rated", lang, { name: LONG[lang] });
+      const fitted = model.art.texts.filter((run) => run.fitWidth);
+      expect(fitted.length, "the card fits at least one line by spacing").toBeGreaterThan(0);
+      const art = ops.find((op) => op.kind === "image" && op.shadowBlur)!;
+      const unit = (art.right - art.left) / 1000;
+      for (const run of fitted) {
+        // the budget travels with the run, in the art's units
+        expect(run.fitWidth).toBeCloseTo(790 * (model.art.width / 1000), 1);
+        const drawn = texts(ops).find(
+          (op) => op.text === run.text && op.baseline !== L.name.baseline,
+        );
+        expect(drawn, run.text).toBeDefined();
+        expect(drawn!.right - drawn!.left, run.text).toBeLessThanOrEqual(790 * unit + 0.5);
+        // and inside the card's art, on both sides
+        expect(drawn!.left).toBeGreaterThanOrEqual(art.left);
+        expect(drawn!.right).toBeLessThanOrEqual(art.right);
+        if (lang === "fr") {
+          // a Latin run is closed up by spacing, never squeezed
+          expect(drawn!.letterSpacing!).toBeLessThan(0);
+          expect(drawn!.maxWidth).toBeUndefined();
+        } else {
+          // the canvas never spaces the letters of an Arabic run (the width does not move), so it is
+          // closed up by the maximum width of `fillText`: narrowed glyphs, not a line past the art
+          expect(drawn!.letterSpacing).toBeUndefined();
+          expect(drawn!.maxWidth).toBeCloseTo(790 * unit, 1);
+        }
+      }
+    });
+  }
+
+  it("a name that fits keeps its natural spacing", async () => {
+    const { ops, model } = await draw("rated", "fr");
+    expect(model.art.texts.some((run) => run.fitWidth)).toBe(false);
+    // nothing is closed up: no run is drawn with a negative letter spacing
+    expect(texts(ops).filter((op) => (op.letterSpacing ?? 0) < 0)).toEqual([]);
+  });
+});
+
 describe("the faces the art is drawn in", () => {
   it("are asked for before the picture is drawn: the serif, Changa Light, and the figures' face in Arabic too", async () => {
     const asked: string[] = [];

@@ -5,7 +5,7 @@ import { kitTableEntries } from "@/lib/kits";
 import { contrast, FOIL, shirtColours } from "./foil";
 import { CHEST, DASH_FIT, DASH_HIT, JT_DX, JT_DY, JT_SCALE, SHIRT } from "./geometry";
 import { measureTable } from "./measure";
-import { fitNumber, printInkBox, printOf } from "./number";
+import { fitNumber, OVR_HALO, printInkBox, printOf } from "./number";
 import { FR, MOCK_CARDS, PROFILES } from "./test-data";
 import { fullCard } from "./full";
 import { inside, layer, pathPolygon, texts } from "./test-markup";
@@ -125,6 +125,33 @@ describe("the number's layer (plan 5.2)", () => {
     expect(compact).not.toContain("data-ovrlabel");
     // the mesh is not drawn at 200 px either
     expect((compact.match(/-knit\)/g) ?? []).length).toBe(0);
+  });
+
+  it("sets « OVR » on a halo that survives the tilt: 14 units or more, and 7:1 against the letters on every club", () => {
+    // at 6 units (1 CSS px) the halo vanished once the card was tilted and the label resampled: « OVR »
+    // read 3.3:1 against it with the pointer over it. A wider and darker halo holds 4.5:1 there.
+    expect(OVR_HALO).toBeGreaterThanOrEqual(14);
+    const clubs = kitTableEntries().map(({ kit }) => ({
+      id: "x",
+      initials: "XYZ",
+      name: { fr: "X", ar: "X" },
+      primary: kit.primary,
+      secondary: kit.secondary,
+    }));
+    for (const club of [...clubs, null]) {
+      for (const theme of ["light", "dark"] as const) {
+        const html = fullCard({ ...PROFILES.rated, club }, { strings: FR, theme });
+        const label = texts(layer(html, "num")!).find((t) => "data-ovrlabel" in t.attrs)!;
+        expect(Number(label.attrs["stroke-width"]), `${club?.primary} ${theme}`).toBe(OVR_HALO);
+        expect(
+          contrast(label.attrs.fill!, label.attrs.stroke!),
+          `${club?.primary} ${theme}`,
+        ).toBeGreaterThanOrEqual(7);
+      }
+    }
+    // and the halo stays clear of the number's own outline above it (the chest box ends at 796)
+    const cap = 0.74 * 32;
+    expect(830 - cap - OVR_HALO / 2).toBeGreaterThanOrEqual(CHEST.y1);
   });
 
   it("is never 0", () => {

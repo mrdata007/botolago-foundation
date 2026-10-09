@@ -1,8 +1,8 @@
 /**
  * What every drawing starts from: the profile cleaned to what the object can show (a number is an
- * integer from 1 to 99 or a dash, a serial is digits, a tier is one of the five), the strings of the
- * interface language with the tier names the card prints, the ladder step, and the one sentence a
- * screen reader hears.
+ * integer from 1 to 99 or a dash, a serial is digits, a tier is one of the five, a club colour is a
+ * hex), the strings of the interface language with the tier names the card prints, the ladder step,
+ * and the one sentence a screen reader hears.
  */
 import { cardLabel } from "../copy";
 import { STAT_CODES, TIER_CODES } from "../types";
@@ -26,6 +26,22 @@ const ESC: Readonly<Record<string, string>> = {
  */
 export function esc(value: string | number): string {
   return String(value).replace(/[&<>"']/g, (c) => ESC[c]!);
+}
+
+/** `#rgb` or `#rrggbb`, nothing else: a colour goes into an attribute, so it is checked here. */
+const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+const hexOrNull = (v: unknown): string | null => (typeof v === "string" && HEX.test(v) ? v : null);
+
+/**
+ * The club as the object can show it: a primary colour that is a real hex, else no club (the
+ * neutral shirt and disc); a secondary that is not one reads as none. The colours are written
+ * into attributes by the shirt, the disc and the token, so this is where a hostile string stops.
+ */
+function cleanClub(club: CardProfile["club"] | undefined): CardProfile["club"] {
+  if (!club || typeof club !== "object") return null;
+  const primary = hexOrNull(club.primary);
+  if (!primary) return null;
+  return { ...club, primary, secondary: hexOrNull(club.secondary) };
 }
 
 const intIn = (v: unknown, min: number, max: number): number | null =>
@@ -55,9 +71,10 @@ export function cleanProfile(p: CardProfile): CardProfile {
     season,
     serial: typeof p.serial === "string" && /^[0-9]{1,12}$/.test(p.serial) ? p.serial : null,
     founder: intIn(p.founder, 1000, 9999),
-    club: p.club,
+    club: cleanClub(p.club),
     stats,
     ...(p.sample ? { sample: true as const } : {}),
+    ...(p.ladder && tier ? { ladder: true as const } : {}),
   };
 }
 
@@ -129,7 +146,7 @@ export function tokenLabel(v: View): string {
     parts.push(s.a11y.noRating);
     if (p.minRated) parts.push(s.a11y.counted(p.counted ?? 0, p.minRated));
   } else parts.push(`${p.ovr} ${s.ovr}`);
-  if (p.tier && p.ovr != null) parts.push(s.tiers[p.tier]);
+  if (p.tier && (p.ovr != null || p.ladder)) parts.push(s.tiers[p.tier]);
   if (p.founder) parts.push(s.founderLine);
   return parts.join(s.a11y.separator);
 }

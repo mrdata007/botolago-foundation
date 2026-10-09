@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { FOIL, TIER_KEYS } from "./foil";
 import { REST } from "./field";
-import { CHEST, OUTLINE, TAB, WINDOW, WINDOW_IN } from "./geometry";
+import { CHEST, FOIL_CLIP, OUTLINE, TAB, WINDOW, WINDOW_IN } from "./geometry";
 import { eclatRenderer } from "./index";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS } from "./test-data";
 import { layer, pathBox } from "./test-markup";
@@ -83,6 +83,70 @@ describe("holographic items (plan 5.5, revision 3)", () => {
       expect(text).toContain("mask-composite: intersect");
       expect(text).toContain("mix-blend-mode: color-dodge");
     });
+  });
+
+  it("keeps the HTML overlay (sheen and diffraction) off the tab: the club disc, the initials and the season", () => {
+    // the overlay's clip is the outline with the tab cut out; read it from the stylesheet and test
+    // points of the tab and of the body against it, in both directions
+    const polygon = (sel: RegExp): [number, number][] => {
+      const m = sel.exec(CSS);
+      if (!m) throw new Error(`no clip-path for ${sel}`);
+      return m[1]!
+        .split(",")
+        .map(
+          (pt) =>
+            pt
+              .trim()
+              .split(/\s+/)
+              .map((v) => (v === "0" ? 0 : parseFloat(v))) as [number, number],
+        )
+        .map(([x, y]) => [x * 10, y * 16.18] as [number, number]);
+    };
+    const inside = (pts: [number, number][], x: number, y: number): boolean => {
+      let hit = false;
+      for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        const [xi, yi] = pts[i]!;
+        const [xj, yj] = pts[j]!;
+        if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+    const ltr = polygon(/\.mc-eclat__foil\s*\{[^}]*?clip-path:\s*polygon\(([^)]*)\)/s);
+    const rtl = polygon(
+      /\.mc-eclat\[dir="rtl"\] \.mc-eclat__foil\s*\{[^}]*?clip-path:\s*polygon\(([^)]*)\)/s,
+    );
+    // the geometry's own constant is the same polygon
+    expect(FOIL_CLIP.split(",").length).toBe(ltr.length);
+    const tab = pathBox(TAB);
+    // points of the tab: the disc's centre and rim, the initials, the season, the four corners
+    const inTab: [number, number][] = [
+      [103, 134],
+      [103, 146],
+      [103, 262],
+      [60, 134],
+      [150, 134],
+      [8, 40],
+      [198, 14],
+      [198, 290],
+      [8, 290],
+    ];
+    for (const [x, y] of inTab) {
+      expect(x >= tab.x0 && x <= tab.x1 && y >= tab.y0 && y <= tab.y1).toBe(true);
+      expect(inside(ltr, x, y), `ltr tab ${x},${y}`).toBe(false);
+      expect(inside(rtl, 1000 - x, y), `rtl tab ${1000 - x},${y}`).toBe(false);
+    }
+    // the rest of the card is still lit: the shield, the plate, the corner beside the tab
+    for (const [x, y] of [
+      [500, 800],
+      [500, 1300],
+      [900, 100],
+      [900, 1400],
+      [300, 120],
+      [103, 400],
+    ] as const) {
+      expect(inside(ltr, x, y), `ltr body ${x},${y}`).toBe(true);
+      expect(inside(rtl, 1000 - x, y), `rtl body ${1000 - x},${y}`).toBe(true);
+    }
   });
 
   it("mirrors the foil with the shapes in Arabic", () => {

@@ -4,6 +4,7 @@ import { FOIL, TIER_KEYS, contrast, lstar, shirtColours, type TierKey } from "./
 import { OUTLINE, SHIRT_TOKEN, TIER_BAR, TOKEN_WINDOW, n2 } from "./geometry";
 import { eclatRenderer } from "./index";
 import { measureTable } from "./measure";
+import { ladderProfile } from "../to-profile";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS, MOCK_TOKENS, PROFILES } from "./test-data";
 import { texts } from "./test-markup";
 import { tokenWidth } from "./token";
@@ -354,6 +355,59 @@ describe("the label and the escape", () => {
       expect(h.includes("<script"), `${size}`).toBe(false);
       expect(/aria-label="[^"]*"/.test(h)).toBe(true);
       expect(h).toContain("&lt;script&gt;");
+    }
+  });
+});
+
+describe("the tier ladder's tokens (Gradins G2)", () => {
+  const TIERS = ["homa", "stade", "pro", "champion", "legend"] as const;
+  /** The markup without what is unique per draw: the id scope. */
+  const plain = (html: string) => html.replace(/mc-t-\d+/g, "mc-t-N");
+
+  for (const theme of ["light", "dark"] as const) {
+    it(`${theme}: draws each tier in its own material, with a dash and no number`, () => {
+      const drawn = TIERS.map((tier) => tok(ladderProfile(PROFILES.rated, tier), 44, { theme }));
+      // five different tokens: the ring, the foil and the label all differ
+      expect(new Set(drawn.map(plain)).size).toBe(5);
+      TIERS.forEach((tier, i) => {
+        const html = drawn[i]!;
+        const F = FOIL[tier];
+        const ring = F.foil
+          ? /stroke="url\(#mc-t-\d+-foil\)"/
+          : new RegExp(`stroke="${F.tokEdge}"`);
+        expect(ring.test(html), `${tier} ring`).toBe(true);
+        // the foil gradient is CHAMPION's and LEGEND's alone
+        expect(html.includes("-foil"), `${tier} foil`).toBe(
+          tier === "champion" || tier === "legend",
+        );
+        // the number is a dash, never a rating the server did not give
+        expect(new Set(texts(html).map((t) => t.text)), tier).toEqual(new Set(["—"]));
+        // and the token says its tier to a screen reader
+        const label = /aria-label="([^"]*)"/.exec(html)![1]!;
+        expect(label, tier).toContain(tier === "homa" ? "LASTREET" : tier.toUpperCase());
+      });
+    });
+  }
+
+  it("is the only way a tier is drawn without a rating: the same profile without `ladder` is the base token", () => {
+    const base = plain(tok({ ...PROFILES.rated, ovr: null, tier: null }, 44));
+    for (const tier of TIERS) {
+      const bare = tok({ ...PROFILES.rated, ovr: null, tier }, 44);
+      expect(plain(bare).replace(/aria-label="[^"]*"/, "")).toBe(
+        base.replace(/aria-label="[^"]*"/, ""),
+      );
+    }
+  });
+
+  it("keeps the dash at 3:1 on the shirt for every tier and club: the number's fill is chosen for it", () => {
+    for (const tier of TIERS) {
+      for (const c of [PROFILES.rated, PROFILES.ratedWydad, PROFILES.ratedFar, PROFILES.ratedFus]) {
+        const col = shirtColours(c.club, FOIL[tier]);
+        expect(
+          contrast(col.numberFill, col.primary),
+          `${tier} ${c.club?.initials}`,
+        ).toBeGreaterThanOrEqual(3);
+      }
     }
   });
 });

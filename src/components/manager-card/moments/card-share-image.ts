@@ -241,10 +241,32 @@ function drawArtText(
     ctx.direction = run.dir;
     ctx.textAlign = run.anchor === "middle" ? "center" : run.anchor === "end" ? "end" : "start";
     // a tracked Latin run (the tier word, the labels) where the canvas can space letters
-    if ("letterSpacing" in ctx) {
-      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = run.tracking
-        ? `${run.tracking * scale}px`
-        : "0px";
+    const spaced = "letterSpacing" in ctx;
+    const tracking = run.tracking ? run.tracking * scale : 0;
+    if (spaced) {
+      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${tracking}px`;
+    }
+    // a name line that is still wider than its budget at its smallest size is closed up by spacing,
+    // as the card's SVG does (`textLength`), so it never runs past the art. Where the canvas cannot
+    // space the letters (no `letterSpacing`, or a cursive script such as Arabic, whose letters the
+    // canvas never spaces: the measured width does not move), it is closed up by `fillText`'s own
+    // maximum width instead, which narrows the glyphs: legible, and still inside the art.
+    let squeeze: number | undefined;
+    if (run.fitWidth) {
+      const target = run.fitWidth * scale;
+      const natural = ctx.measureText(run.text).width;
+      if (natural > target) {
+        if (spaced) {
+          const count = Math.max(1, [...run.text].length);
+          (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing =
+            `${tracking + (target - natural) / count}px`;
+          if (ctx.measureText(run.text).width > target + 1) {
+            (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing =
+              `${tracking}px`;
+            squeeze = target;
+          }
+        } else squeeze = target;
+      }
     }
     const x = left + run.x * scale;
     const y = top + run.y * scale;
@@ -255,7 +277,8 @@ function drawArtText(
       ctx.rotate((run.rotate * Math.PI) / 180);
       ctx.fillText(run.text, 0, 0);
       ctx.restore();
-    } else ctx.fillText(run.text, x, y);
+    } else if (squeeze !== undefined) ctx.fillText(run.text, x, y, squeeze);
+    else ctx.fillText(run.text, x, y);
   }
   ctx.restore();
 }

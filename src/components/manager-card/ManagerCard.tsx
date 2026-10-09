@@ -53,7 +53,7 @@ export function ManagerCard({
   testId?: string;
   /** Let the renderer's pointer behaviour (the tilt on a mouse or pen, the float on touch) run on this card. */
   tilt?: boolean;
-  /** The renderer's small variant for a card of 136 to 200 px (the face-à-face sheet, the born panel). */
+  /** The renderer's small variant for a card of 136 to 200 px (the face-à-face sheet). Below 136 px use a `CardToken`. */
   compact?: boolean;
 }) {
   const strings = useCardStrings();
