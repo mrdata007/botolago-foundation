@@ -1,4 +1,4 @@
-import { estimateAspect } from "./echarpe/estimate";
+import { estimateAspect } from "./eclat/estimate";
 import type { CardRenderer } from "./renderer";
 import type { CardLang, CardProfile } from "./types";
 
@@ -10,32 +10,29 @@ import type { CardLang, CardProfile } from "./types";
  * `load` is a dynamic import, so the renderer is its own chunk and is never requested until a card
  * is drawn (with the build switch off, never); a renderer that needs its fonts first awaits them
  * inside `load`. `estimateAspect` is the cheap height ÷ width the box reserves before the
- * renderer has loaded; after that the box takes the markup's own shape, which changes with the
- * card (the fourth counted journée turns the forming marks into season stripes).
+ * renderer has loaded.
  *
- * Today this is Écharpe v2 (`./echarpe`, entered through `gradins-renderer.ts`, whose name is the
- * chunk's). `load` waits for the Changa face its Arabic-name sampler
- * reads (within a second and a half) before it hands the renderer over, so the first card is drawn
- * with the right face. `estimateAspect` is Écharpe's own `estimate.ts`, the one module of the folder
- * that is in the main bundle: it imports only the geometry and the name cleaner, no chart.
- * The plain renderer (`./plain-renderer`) stays as the small stand-in the unit tests use.
+ * Today this is Éclat (`./eclat`, entered through `gradins-renderer.ts`, whose name is the chunk's).
+ * `load` waits for the faces the card measures and prints (within a second and a half) before it
+ * hands the renderer over, so the first card is drawn with the right faces. `estimateAspect` is
+ * Éclat's own `estimate.ts`, the one module of the folder that is in the main bundle: it imports
+ * nothing but a type. Every Éclat card has the same shape (1 : 1.618), so the estimate is exact and
+ * the box never changes size when the card arrives. The plain renderer (`./plain-renderer`) stays
+ * as the small stand-in the unit tests use.
  */
 export interface ActiveRenderer {
   readonly id: string;
   load(): Promise<CardRenderer>;
-  /**
-   * height ÷ width, cheap and without the DOM. `lang` is the interface language: the Arabic tier
-   * word knits more rows than the French one, so the card is taller.
-   */
+  /** height ÷ width, cheap and without the DOM. */
   estimateAspect(profile: CardProfile, lang: CardLang): number;
 }
 
 export const activeRenderer: ActiveRenderer = {
-  id: "echarpe-v2",
+  id: "eclat-v1",
   load: async () => {
-    const module = await import("./echarpe/gradins-renderer");
+    const module = await import("./eclat/gradins-renderer");
     await module.ready();
-    return module.echarpeRenderer;
+    return module.eclatRenderer;
   },
   estimateAspect,
 };

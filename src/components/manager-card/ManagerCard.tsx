@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 import { activeRenderer } from "./active-renderer";
 import { cardLabel, useCardStrings } from "./copy";
+import { mountPointerBehaviour } from "./mount-pointer";
 import { cachedRender, widthBucket } from "./render-cache";
 import { newIdScope, scopeSvgIds } from "./scope-ids";
 import { useCardRenderer, useCardTheme } from "./use-card-renderer";
@@ -23,10 +24,12 @@ import type { BeatName, CardProfile } from "./types";
  * feed it hostile names (`markup-safety.ts`).
  *
  * Ids inside the markup are made unique per mounted card (`scope-ids.ts`), since the cached markup
- * is shared. `sway` lets the renderer's pointer behaviour (`mount`) run on this card: Gradins'
- * home and card page ask for it, the sheets and panels do not. The box takes the markup's own
- * shape once it is in, so a card whose height changes (a forming card gaining its season stripes)
- * is never locked to the estimate it was reserved with.
+ * is shared. `tilt` lets the renderer's pointer behaviour (`mount`) run on this card: it turns
+ * toward a mouse or pen and floats slowly on a touch-only screen. Gradins' home and card page and
+ * the heroes ask for it, the sheets and panels do not. `compact` asks the renderer for its small
+ * variant, the face-à-face sheet's card (136 to 200 px), which draws only what stays legible
+ * there. Every card of the active renderer has one shape (`estimateAspect` is exact), so the box
+ * reserved before the chunk loads is the box the card fills: the page does not move when it arrives.
  *
  * `beat` is passed to the renderer only when the reader has not asked for less motion, the page
  * is visible and the renderer supports it, and it is dropped after `renderer.beatMs(beat) + 50`
@@ -38,7 +41,8 @@ export function ManagerCard({
   beat,
   className,
   testId,
-  sway = false,
+  tilt = false,
+  compact = false,
 }: {
   profile: CardProfile;
   /** CSS px. */
@@ -47,8 +51,10 @@ export function ManagerCard({
   className?: string;
   /** Set on the stage: `data-testid`, and `data-mc-ready="1"` once the card is in the page. */
   testId?: string;
-  /** Let the renderer's pointer behaviour (the scarf's sway on a mouse or pen) run on this card. */
-  sway?: boolean;
+  /** Let the renderer's pointer behaviour (the tilt on a mouse or pen, the float on touch) run on this card. */
+  tilt?: boolean;
+  /** The renderer's small variant for a card of 136 to 200 px (the face-à-face sheet, the born panel). */
+  compact?: boolean;
 }) {
   const strings = useCardStrings();
   const renderer = useCardRenderer();
@@ -83,21 +89,26 @@ export function ManagerCard({
       strings.lang,
       theme,
       playing ?? "",
+      compact ? "compact" : "",
       widthBucket(width),
       JSON.stringify(profile),
     ].join("|");
     return scopeSvgIds(
-      cachedRender(key, () => renderer.full(profile, { strings, theme, beat: playing })),
+      cachedRender(key, () => renderer.full(profile, { strings, theme, beat: playing, compact })),
       scope,
     );
-  }, [renderer, strings, theme, playing, width, profile, scope]);
+  }, [renderer, strings, theme, playing, compact, width, profile, scope]);
 
   // The renderer's pointer behaviour, once the card is in the page; never for reduced motion.
   useEffect(() => {
-    const host = hostRef.current;
-    if (!sway || !renderer?.mount || !host || !html || prefersReducedMotion()) return;
-    return renderer.mount(host);
-  }, [sway, renderer, html]);
+    return mountPointerBehaviour({
+      tilt,
+      renderer,
+      host: hostRef.current,
+      html,
+      reducedMotion: prefersReducedMotion(),
+    });
+  }, [tilt, renderer, html]);
 
   const label = cardLabel(profile, strings);
   return (

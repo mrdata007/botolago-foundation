@@ -32,7 +32,7 @@ function walk(directory: string): string[] {
 describe("the Gradins screens' imports", () => {
   it("never import a card direction: the card comes through the wrappers", () => {
     for (const { name, text } of sources) {
-      expect(code(text), name).not.toMatch(/from "[^"]*\/echarpe[/"]/);
+      expect(code(text), name).not.toMatch(/from "[^"]*\/eclat[/"]/);
       expect(code(text), name).not.toMatch(/from "[^"]*plain-renderer"/);
       expect(code(text), name).not.toMatch(/from "[^"]*active-renderer"/);
     }

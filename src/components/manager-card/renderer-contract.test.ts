@@ -5,7 +5,6 @@ import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 
 import { activeRenderer } from "./active-renderer";
 import { cardStrings, type Translate } from "./copy";
-import { eclatRenderer } from "./eclat";
 import { ALLOWED_CARD_TAGS, HOSTILE_NAMES, findUnsafeMarkup } from "./markup-safety";
 import { plainRenderer } from "./plain-renderer";
 import type { CardRenderer } from "./renderer";
@@ -165,9 +164,9 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
       expect(art.svg).not.toContain("<tspan");
       expect(art.width).toBeGreaterThan(0);
       expect(art.height).toBeGreaterThan(art.width);
-      // The card's own text is a run: the patch's ratings (91 on this fixture) and its serial. A
-      // direction that knits the number (Écharpe) has no run for it; one that prints it (the plain
-      // renderer) has.
+      // The card's own text is a run: the rating (84 on this fixture; 91 on the patch's) and its
+      // serial. A direction that drew the number as geometry would have no run for it; one that
+      // prints it (Éclat, the plain renderer) has.
       const spoken = art.texts.map((run) => run.text);
       expect(spoken.some((text) => text === "84" || text === "91")).toBe(true);
       expect(spoken).toContain("BOT #482913");
@@ -204,8 +203,6 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
 }
 
 describeRendererContract("plain renderer", plainRenderer);
-// TEMPORARY (WP1): Éclat under the same checks until `active-renderer.ts` serves it (WP3b)
-describeRendererContract("eclat", eclatRenderer);
 const active = await activeRenderer.load();
 if (active !== plainRenderer) describeRendererContract(`active renderer (${active.id})`, active);
 
@@ -214,15 +211,15 @@ describe("the active renderer (active-renderer.ts)", () => {
     expect(active.id).toBe(activeRenderer.id);
   });
 
-  it("reserves a box close to the shape the card really has, in either language", () => {
+  it("reserves the box the card really has, in either language: one shape, so the page never jumps", () => {
     for (const lang of ["fr", "ar"] as const) {
       for (const id of ["rated", "forming1", "founder", "longNameLatin", "arabicName"] as const) {
         const profile = fromMyCard(FIXTURES[id].card!, { sample: true });
         const estimate = activeRenderer.estimateAspect(profile, lang);
         const real = active.aspect(profile, STRINGS[lang]);
-        expect(estimate).toBeGreaterThan(1);
-        // A box that is far off makes the page jump when the card arrives.
-        expect(Math.abs(estimate - real) / real).toBeLessThan(0.15);
+        // Every Éclat card is 1 : 1.618 (plan D6), so the estimate is exact.
+        expect(estimate).toBe(1.618);
+        expect(real).toBe(1.618);
       }
     }
   });
