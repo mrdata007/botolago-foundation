@@ -168,6 +168,68 @@ for (const lang of ["fr", "ar"])
       });
       await page.close();
     }
+// Maximum valid titles/credits on a short phone must not create a blank first screen.
+for (const lang of ["fr", "ar"]) {
+  const page = await browser.newPage({
+    viewport: { width: 320, height: 568 },
+    reducedMotion: "reduce",
+  });
+  await page.addInitScript((lang) => localStorage.setItem("botolago.language", lang), lang);
+  await page.route("http://127.0.0.1:4319/rest/v1/rpc/**", (r) =>
+    r.fulfill({
+      status: 200,
+      headers: {
+        "access-control-allow-origin": "*",
+        "access-control-allow-headers": "*",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify([
+        {
+          ...stories[0],
+          generated: false,
+          titleFr: "Les nouvelles du championnat marocain et des équipes ".repeat(4).slice(0, 200),
+          titleAr: "أخبار البطولة الوطنية والفرق المغربية وآخر النتائج ".repeat(5).slice(0, 200),
+          credit: (lang === "ar"
+            ? "صورة من تصوير المصور الرياضي "
+            : "Photo du photographe sportif "
+          )
+            .repeat(12)
+            .slice(0, 300),
+        },
+      ]),
+    }),
+  );
+  await page.route("**/storage/v1/object/public/news-media/**", (r) =>
+    r.fulfill({
+      path: fileURLToPath(
+        new URL("../../../src/assets/photos/matches-header.webp", import.meta.url),
+      ),
+      contentType: "image/webp",
+    }),
+  );
+  await page.goto("http://127.0.0.1:4175/preview.html");
+  await page.getByTestId("home-stories").getByRole("button").first().click();
+  await page.waitForFunction(
+    () => document.querySelector('[data-testid="story-viewer"] img')?.naturalWidth > 0,
+  );
+  const bounds = await page.getByTestId("story-viewer").evaluate((el) => {
+    const body = el.getBoundingClientRect(),
+      stage = el.querySelector('[data-testid="story-image-stage"]').getBoundingClientRect(),
+      cap = el.querySelector("figcaption").getBoundingClientRect();
+    return {
+      topGap: stage.top - body.top,
+      stageHeight: stage.height,
+      captionTop: cap.top,
+      bodyBottom: body.bottom,
+    };
+  });
+  assert(bounds.topGap <= 1, JSON.stringify(bounds));
+  assert(bounds.stageHeight >= 160, JSON.stringify(bounds));
+  assert(bounds.captionTop < bounds.bodyBottom, JSON.stringify(bounds));
+  await page.getByTestId("story-viewer").locator("figcaption").scrollIntoViewIfNeeded();
+  await page.keyboard.press("Escape");
+  await page.close();
+}
 // Slow/broken images keep the headline and close controls usable; manual credits survive.
 {
   const page = await browser.newPage({

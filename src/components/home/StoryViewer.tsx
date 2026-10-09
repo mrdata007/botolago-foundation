@@ -22,6 +22,8 @@ function StoryFrame({
   const caption = useRef<HTMLElement>(null);
   // Match the space above the image to its caption below, so the image stays
   // centered even when the localized headline wraps or the phone rotates.
+  // The grid bounds that spacer to preserve a 10rem image on short screens;
+  // exceptionally long captions can scroll without an initial blank gap.
   useLayoutEffect(() => {
     const element = caption.current;
     if (!element) return;
@@ -38,7 +40,7 @@ function StoryFrame({
       ref={figure}
       data-testid="story-viewer"
       className={cn(
-        "mx-auto grid h-full min-h-full w-full grid-rows-[var(--story-caption-height,5rem)_minmax(var(--ui-tap-min),1fr)_auto]",
+        "mx-auto grid h-full min-h-full w-full grid-rows-[min(var(--story-caption-height,5rem),max(0px,calc(100%_-_var(--story-caption-height,5rem)_-_10rem)))_minmax(10rem,1fr)_auto]",
         ui.surface.inkPlain,
         ui.tone.onInkPlain,
       )}
@@ -46,7 +48,7 @@ function StoryFrame({
       <div aria-hidden="true" />
       <div
         data-testid="story-image-stage"
-        className="relative min-h-[var(--ui-tap-min)] touch-pan-y"
+        className="relative min-h-40 touch-pan-y"
         onPointerDown={(e) => {
           if (e.isPrimary) start.current = { x: e.clientX, y: e.clientY };
         }}
@@ -100,7 +102,10 @@ function StoryFrame({
           </div>
         )}
       </div>
-      <figcaption ref={caption} className="space-y-2 px-4 py-3 text-center sm:px-6 sm:py-4">
+      <figcaption
+        ref={caption}
+        className="space-y-2 break-words px-4 py-3 text-center sm:px-6 sm:py-4"
+      >
         <p
           className={cn(ui.text.section, "break-words")}
           data-testid="story-headline"
