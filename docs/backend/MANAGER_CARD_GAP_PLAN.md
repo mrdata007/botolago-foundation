@@ -140,10 +140,10 @@ head included): the highest migration anywhere is `20261008123400`; nothing exis
 
 | Slot             | File                                                               | Package |
 | ---------------- | ------------------------------------------------------------------ | ------- |
-| `20261009100000` | `supabase/migrations/20261009100000_manager_card_moment_acks.sql`  | P1      |
-| `20261009100100` | `supabase/migrations/20261009100100_manager_card_read_helpers.sql` | P1      |
-| `20261009100200` | `supabase/migrations/20261009100200_manager_card_api_v2.sql`       | P1      |
-| `20261009100300` | `supabase/migrations/20261009100300_manager_card_health.sql`       | P3      |
+| `20261009120000` | `supabase/migrations/20261009120000_manager_card_moment_acks.sql`  | P1      |
+| `20261009120100` | `supabase/migrations/20261009120100_manager_card_read_helpers.sql` | P1      |
+| `20261009120200` | `supabase/migrations/20261009120200_manager_card_api_v2.sql`       | P1      |
+| `20261009120300` | `supabase/migrations/20261009120300_manager_card_health.sql`       | P3      |
 
 Re-run the collision command from the brief immediately before the first push and again before
 merge; if another lane takes one of these four, move ours (they are unapplied everywhere).
@@ -156,7 +156,7 @@ named. Helpers live in `app_private`, are **not** `security definer` (they run i
 prefix, `supabase/tests/database/manager_card.test.sql:582-599`) and get no grant at all. Each gets
 a `comment on function`. Nothing ships switched on; no rules row is inserted.
 
-### 3.1 `20261009100000_manager_card_moment_acks.sql` — one table
+### 3.1 `20261009120000_manager_card_moment_acks.sql` — one table
 
 Header comment: what it is (D21: the moments a manager has seen, recorded on the server, written
 only by `api.ack_manager_card_moments`), display only, deletion by cascade from the profile.
@@ -193,7 +193,7 @@ comment on table app.manager_card_moment_acks is '…';
 - No policy (row security forced, no grants): only the definer function reads and writes it.
 - Never pruned: it is what stops a moment repeating.
 
-### 3.2 `20261009100100_manager_card_read_helpers.sql` — ten helpers
+### 3.2 `20261009120100_manager_card_read_helpers.sql` — ten helpers
 
 No api function here; the file depends on 3.1 (H8 reads the acknowledgements) and on #381's tables.
 #381's `app_private.manager_card_minimum()` and `app_private.manager_card_qualifies(integer,
@@ -341,7 +341,7 @@ forming member card. No `handle`, no moments, no user id, no e-mail.
 
 Grants for all ten: `revoke all … from public, anon, authenticated, service_role;` nothing else.
 
-### 3.3 `20261009100200_manager_card_api_v2.sql` — the five api functions
+### 3.3 `20261009120200_manager_card_api_v2.sql` — the five api functions
 
 Header comment: replaces #381's read API with the merged front end's contract (this plan, section
 2); drops what that contract does not use; off is an answer.
@@ -405,7 +405,7 @@ Counts the existing tests assert, after P1 and P3:
 | api functions matching `manager_card` (`manager_card.test.sql:612-615`)                                                                                   | 4                            | **5**                                                                                                                        |
 | card tables in `card_tables` (`manager_card.test.sql:540-548`, 24 refusals at 576-581)                                                                    | 8 / 24                       | **9 / 27** (add `app.manager_card_moment_acks`)                                                                              |
 
-### 3.4 `20261009100300_manager_card_health.sql` — the `manager_card` health check
+### 3.4 `20261009120300_manager_card_health.sql` — the `manager_card` health check
 
 Pattern of `20261006143700_account_deletion_automatic.sql:916-1018`:
 
@@ -497,9 +497,9 @@ that did not run (CLAUDE.md, "Evidence"); CI's `database-quality` job is the aut
 
 | File                                                                            | Edit                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `supabase/tests/database/manager_card.test.sql`                                 | (1) `card_tables` + acks table; 8 → 9 and 24 → 27 (lines 540-581). (2) 17 → 25 app_private functions (582-585; P3 makes it 26). (3) Grants block 600-615: the reads list becomes `api.get_my_manager_card()`, `api.get_manager_cards(uuid[])`, `api.get_my_manager_card_history(uuid,integer,integer)`, `api.ack_manager_card_moments(text[])` (authenticated + service_role, not anon); add `api.manager_card_status()` granted to anon, authenticated and service_role; "exactly four" → five. (4) The off block 846-878 (`read_calls`): calls become the new signatures; expected answers become: visitor (authenticated role, no user) and service role with reads off → `{"available": false}` (the switch is checked first now); anon → `42501` for the four signed-in ones; signed-in A at aal1 with reads off → `{"available": false}`; Y at aal1 with reads off → `{"available": false}` (switch first); add: with reads **on**, visitor and service role → `PT401 authentication_required`, Y at aal1 → `PT403 mfa_required`, Y at aal2 → reaches the answer. (5) The reads block 1050-1207: rewrite each assertion to the new shapes, keeping the same people and the same figures (A: OVR 81 champion, stats 84/85/55/99 as `{value, nullReason:null}`, `rulesVersion "v1"`, club with `slug`, `name`, `city: null`; B: TRF `{null, "no_transfers"}`; G: `club: null`; F: **now** `ratingState "forming"`, season 2089/90, `gameweeksCounted 2`, `previousSeason {label "2088/89", ovr 71, tier "pro"}`; D: not visible anywhere). Replace `api.get_manager_card(%L)` checks with `api.get_manager_cards(array[%L])` checks. History: the new arguments, `nextBeforeSeq`, the 9-key rows. (6) Line 1294: `#>> '{stats,cap}'` → `#>> '{card,stats,cap,value}'` and `->> 'ovr'` → `#>> '{card,ovr}'`. (7) Line 1429: `-> 'founderCohort'` → `#> '{card,founder,cohort}'`. (8) P3: guard at 1548-1554 excludes `ops_health_checks`. (9) Header comment: migrations `20261008123000 .. 20261009100300`; `plan(149)` → the new total. |
+| `supabase/tests/database/manager_card.test.sql`                                 | (1) `card_tables` + acks table; 8 → 9 and 24 → 27 (lines 540-581). (2) 17 → 25 app_private functions (582-585; P3 makes it 26). (3) Grants block 600-615: the reads list becomes `api.get_my_manager_card()`, `api.get_manager_cards(uuid[])`, `api.get_my_manager_card_history(uuid,integer,integer)`, `api.ack_manager_card_moments(text[])` (authenticated + service_role, not anon); add `api.manager_card_status()` granted to anon, authenticated and service_role; "exactly four" → five. (4) The off block 846-878 (`read_calls`): calls become the new signatures; expected answers become: visitor (authenticated role, no user) and service role with reads off → `{"available": false}` (the switch is checked first now); anon → `42501` for the four signed-in ones; signed-in A at aal1 with reads off → `{"available": false}`; Y at aal1 with reads off → `{"available": false}` (switch first); add: with reads **on**, visitor and service role → `PT401 authentication_required`, Y at aal1 → `PT403 mfa_required`, Y at aal2 → reaches the answer. (5) The reads block 1050-1207: rewrite each assertion to the new shapes, keeping the same people and the same figures (A: OVR 81 champion, stats 84/85/55/99 as `{value, nullReason:null}`, `rulesVersion "v1"`, club with `slug`, `name`, `city: null`; B: TRF `{null, "no_transfers"}`; G: `club: null`; F: **now** `ratingState "forming"`, season 2089/90, `gameweeksCounted 2`, `previousSeason {label "2088/89", ovr 71, tier "pro"}`; D: not visible anywhere). Replace `api.get_manager_card(%L)` checks with `api.get_manager_cards(array[%L])` checks. History: the new arguments, `nextBeforeSeq`, the 9-key rows. (6) Line 1294: `#>> '{stats,cap}'` → `#>> '{card,stats,cap,value}'` and `->> 'ovr'` → `#>> '{card,ovr}'`. (7) Line 1429: `-> 'founderCohort'` → `#> '{card,founder,cohort}'`. (8) P3: guard at 1548-1554 excludes `ops_health_checks`. (9) Header comment: migrations `20261008123000 .. 20261009120300`; `plan(149)` → the new total. |
 | `supabase/tests/database/ordinary_account_mfa_step_up.test.sql`                 | 137-160: add `'app.manager_card_moment_acks'`; 26 → 27.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql`           | 407-413: count stays 81; the description names "the three Manager Card reads and the acknowledgement (20261009100200)".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql`           | 407-413: count stays 81; the description names "the three Manager Card reads and the acknowledgement (20261009120200)".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `supabase/tests/database/ops_health_fantasy_coverage_and_scoring.test.sql` (P3) | 34-40: append `'manager_card'`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ### 5.2 New file `supabase/tests/database/manager_card_api.test.sql` (P2)
@@ -694,7 +694,7 @@ true)`, then `select api.<fn>(<named args>)::text`, parsed with `JSON.parse`, th
 
 ## 7. Guarded production apply script, runbook and AGENTS.md
 
-### 7.1 `scripts/backend/apply-20261009100000-manager-card-api-v2.sql`
+### 7.1 `scripts/backend/apply-20261009120000-manager-card-api-v2.sql`
 
 Model: `scripts/backend/apply-20261008123000-manager-card.sql` (header 1-60, preflight 68-…,
 records whole files as `statements[1]`, sha256 check, `execute`, postflight, rehearsal by
@@ -708,7 +708,7 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
   - `supabase_migrations.schema_migrations` has all five `20261008123000…123400` and none of the
     four new versions;
   - it also has `20261009091728` (PR #384, `scripts/backend/apply-fantasy-durable-progression.sql`):
-    that migration wraps `app_private.ops_health_checks()` first and `20261009100300` wraps it
+    that migration wraps `app_private.ops_health_checks()` first and `20261009120300` wraps it
     again, so the migrations must go in repository order (the refusal names the migration and its script);
   - each of the five #381 rows' `statements[1]` sha256 equals the repository file's (the same
     hashes as the 2026-10-08 script, `apply-20261008123000-manager-card.sql:1989-2007`), so the
@@ -737,7 +737,7 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
   - `app_private.ops_health_checks() -> 'checks'` ends with `name = 'manager_card'`;
   - read switch still false; compute unchanged from the preflight's reading; rules rows unchanged
     in count; card table row counts unchanged (baseline read in the preflight, compared here);
-  - nine history rows for `20261008123000…20261009100300`.
+  - nine history rows for `20261008123000…20261009120300`.
 - `rollback;` as shipped; the final `select case …` result row ("Applied…" / "Rehearsal passed…").
 
 ### 7.2 `scripts/backend/apply-manager-card-api-v2-script.test.ts`
@@ -766,7 +766,7 @@ Run: `bun test scripts/backend/apply-manager-card-api-v2-script.test.ts`.
   - "Production order": insert the new apply script after step 2 and before switching reads on, and
     #384's `20261009091728` (`scripts/backend/apply-fantasy-durable-progression.sql`) before it.
 - `AGENTS.md` (after the `manager-card-history-prune` paragraph, lines 168-173), add:
-  > Where migration 20261009100200 is applied, signed-in users also write
+  > Where migration 20261009120200 is applied, signed-in users also write
   > `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`) while the read switch
   > is on; that is ordinary app traffic, each user writing only their own rows. For a write that
   > touches that table, switch reads off for its length and restore them afterwards (this hides
@@ -793,9 +793,9 @@ database and can be written in parallel with P2/P3, but its hashes are taken las
 
 ### P1 — Migrations and the existing tests (DB; first; alone on the database)
 
-Owns: `supabase/migrations/20261009100000_manager_card_moment_acks.sql`,
-`supabase/migrations/20261009100100_manager_card_read_helpers.sql`,
-`supabase/migrations/20261009100200_manager_card_api_v2.sql`,
+Owns: `supabase/migrations/20261009120000_manager_card_moment_acks.sql`,
+`supabase/migrations/20261009120100_manager_card_read_helpers.sql`,
+`supabase/migrations/20261009120200_manager_card_api_v2.sql`,
 `supabase/tests/database/manager_card.test.sql`,
 `supabase/tests/database/ordinary_account_mfa_step_up.test.sql`,
 `supabase/tests/database/ordinary_account_mfa_step_up_reads.test.sql`,
@@ -815,9 +815,9 @@ bun test src/backend/manager-card
 bun run typecheck
 ```
 
-Commits: `BG-0158: record moment acknowledgements (20261009100000)`,
-`BG-0158: read helpers for the Gradins contract (20261009100100)`,
-`BG-0158: Gradins read API, off is an answer (20261009100200)`,
+Commits: `BG-0158: record moment acknowledgements (20261009120000)`,
+`BG-0158: read helpers for the Gradins contract (20261009120100)`,
+`BG-0158: Gradins read API, off is an answer (20261009120200)`,
 `BG-0158: update the Manager Card and step-up tests for the new API`,
 `BG-0158: regenerate database types`.
 
@@ -849,7 +849,7 @@ Commits: `BG-0158: pgTAP for the Gradins read API and acknowledgements`,
 
 ### P3 — Health check (DB; after P2; alone on the database)
 
-Owns: `supabase/migrations/20261009100300_manager_card_health.sql`,
+Owns: `supabase/migrations/20261009120300_manager_card_health.sql`,
 `supabase/tests/database/ops_health_fantasy_coverage_and_scoring.test.sql`,
 the guard lines and function count of `supabase/tests/database/manager_card.test.sql`,
 the health cases appended to `supabase/tests/database/manager_card_api.test.sql`,
@@ -858,12 +858,12 @@ the health cases appended to `supabase/tests/database/manager_card_api.test.sql`
 Does: section 3.4 and its test edits.
 
 Done when: the P1 command list again (reset, test, lint, types check).
-Commits: `BG-0158: manager_card health check (20261009100300)`,
+Commits: `BG-0158: manager_card health check (20261009120300)`,
 `BG-0158: health check tests`.
 
 ### P4 — Apply script, its test and the docs (no DB; can start while P2/P3 run; hashes last)
 
-Owns: `scripts/backend/apply-20261009100000-manager-card-api-v2.sql`,
+Owns: `scripts/backend/apply-20261009120000-manager-card-api-v2.sql`,
 `scripts/backend/apply-manager-card-api-v2-script.test.ts`,
 `docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md`, `AGENTS.md` (the one paragraph of 7.3),
 `docs/backend/ACCOUNT_DELETION_RUNBOOK.md`, `docs/backend/MANAGER_CARD_DOMAIN_PLAN.md` (one line),

@@ -3,8 +3,8 @@
 -- D21: the moments a manager has already seen (a card created, a tier reached,
 -- a season closed...) are recorded on the server so they do not come back on
 -- another device. Written only by api.ack_manager_card_moments
--- (20261009100200), read only by app_private.manager_card_moments
--- (20261009100100). Display only. Rows go with the profile (cascade) and are
+-- (20261009120200), read only by app_private.manager_card_moments
+-- (20261009120100). Display only. Rows go with the profile (cascade) and are
 -- never pruned: a row is what stops a moment repeating.
 --
 -- No foreign key to app.manager_cards (card_created can be acknowledged on a

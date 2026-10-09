@@ -1,17 +1,17 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- Apply the Gradins read API of the Manager Card (BG-0158), migrations
--- 20261009100000 to 20261009100300, on top of the five Manager Card
+-- 20261009120000 to 20261009120300, on top of the five Manager Card
 -- migrations 20261008123000 to 20261008123400 already applied:
---   * 20261009100000 app.manager_card_moment_acks, the moments a manager has
+--   * 20261009120000 app.manager_card_moment_acks, the moments a manager has
 --     seen (written only by api.ack_manager_card_moments);
---   * 20261009100100 the read helpers in app_private (no grant at all);
---   * 20261009100200 the read API of the merged front end: it adds
+--   * 20261009120100 the read helpers in app_private (no grant at all);
+--   * 20261009120200 the read API of the merged front end: it adds
 --     api.manager_card_status() and api.ack_manager_card_moments(text[]),
 --     replaces api.get_my_manager_card(), api.get_manager_cards(uuid[]) and
 --     api.get_my_manager_card_history(), and drops api.get_manager_card(uuid),
 --     the old two-argument history and the two #381 builders in app_private;
---   * 20261009100300 the manager_card health check, last in
+--   * 20261009120300 the manager_card health check, last in
 --     app_private.ops_health_checks().
 --
 -- IT CHANGES NOTHING ANYONE SEES. The read switch must be off (the script
@@ -97,14 +97,14 @@ begin
     raise exception 'stop: the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet -- run scripts/backend/apply-20261008123000-manager-card.sql first';
   end if;
   -- Repository order: 20261009091728 (PR #384) wraps app_private.ops_health_checks()
-  -- before 20261009100300 does. Applied the other way round, its rename would
+  -- before 20261009120300 does. Applied the other way round, its rename would
   -- swallow this one's wrapper and the manager_card check would no longer be last.
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261009091728') then
     raise exception 'stop: the Fantasy durable progression migration 20261009091728 is not applied yet -- apply it first (scripts/backend/apply-fantasy-durable-progression.sql), so the migrations go in repository order';
   end if;
   if exists (select 1 from supabase_migrations.schema_migrations
-    where version in ('20261009100000', '20261009100100', '20261009100200', '20261009100300')) then
-    raise exception 'stop: a Gradins read API migration (20261009100000 to 20261009100300) is already recorded as applied';
+    where version in ('20261009120000', '20261009120100', '20261009120200', '20261009120300')) then
+    raise exception 'stop: a Gradins read API migration (20261009120000 to 20261009120300) is already recorded as applied';
   end if;
   -- The installed objects are the reviewed ones: the recorded text of each of
   -- the five is the repository file the 2026-10-08 script checked.
@@ -208,15 +208,15 @@ $preflight$;
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20261009100000',
+  '20261009120000',
   'manager_card_moment_acks',
-  array[$bg_20261009100000_file$-- Manager Card (BG-0158), gap plan 3.1: the moments a manager has seen.
+  array[$bg_20261009120000_file$-- Manager Card (BG-0158), gap plan 3.1: the moments a manager has seen.
 --
 -- D21: the moments a manager has already seen (a card created, a tier reached,
 -- a season closed...) are recorded on the server so they do not come back on
 -- another device. Written only by api.ack_manager_card_moments
--- (20261009100200), read only by app_private.manager_card_moments
--- (20261009100100). Display only. Rows go with the profile (cascade) and are
+-- (20261009120200), read only by app_private.manager_card_moments
+-- (20261009120100). Display only. Rows go with the profile (cascade) and are
 -- never pruned: a row is what stops a moment repeating.
 --
 -- No foreign key to app.manager_cards (card_created can be acknowledged on a
@@ -247,14 +247,14 @@ for each statement execute function app_private.refuse_unverified_mfa_actor();
 
 comment on table app.manager_card_moment_acks is
   'The Manager Card moments a manager has seen (display only, D21). Written only by api.ack_manager_card_moments. Row security forced, no policy, no grant: only definer functions read it. Cascades from the profile; never pruned.';
-$bg_20261009100000_file$]
+$bg_20261009120000_file$]
 );
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20261009100100',
+  '20261009120100',
   'manager_card_read_helpers',
-  array[$bg_20261009100100_file$-- Manager Card (BG-0158), gap plan 3.2: ten read helpers for the Gradins contract.
+  array[$bg_20261009120100_file$-- Manager Card (BG-0158), gap plan 3.2: ten read helpers for the Gradins contract.
 --
 -- Everything the merged front end (src/backend/manager-card/contracts.ts) shows
 -- and #381 does not store is derived here at read time from #381's tables: the
@@ -263,7 +263,7 @@ values (
 -- tick is untouched.
 --
 -- The helpers live in app_private, are not security definer (they run inside the
--- security definer api functions of 20261009100200), carry no grant at all and
+-- security definer api functions of 20261009120200), carry no grant at all and
 -- do not read the caller: the api functions own the caller, the step-up and the
 -- switch. Display only.
 --
@@ -942,14 +942,14 @@ revoke all on function app_private.manager_card_member_card(uuid[])
   from public, anon, authenticated, service_role;
 comment on function app_private.manager_card_member_card(uuid[]) is
   'The cards of the given Fantasy teams for each team''s own season in the shape of memberCardSchema (14 keys), one (team_id, card) row per known team with a visible profile; unknown teams and deleted-pending profiles give no row. A team with no card row is a forming card. Set-based: one statement for the whole list. No handle, moments, user id or e-mail. No grant.';
-$bg_20261009100100_file$]
+$bg_20261009120100_file$]
 );
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20261009100200',
+  '20261009120200',
   'manager_card_api_v2',
-  array[$bg_20261009100200_file$-- Manager Card (BG-0158), gap plan 3.3: the read API of the merged Gradins front end.
+  array[$bg_20261009120200_file$-- Manager Card (BG-0158), gap plan 3.3: the read API of the merged Gradins front end.
 --
 -- Replaces #381's read API (20261008123300) with the contract in
 -- src/backend/manager-card/contracts.ts and drops what that contract does not
@@ -1253,14 +1253,14 @@ comment on function api.ack_manager_card_moments(text[]) is
   'Records Manager Card moments as seen (1..16 well-formed keys): {acknowledged, ignored}. While off everything is ignored and nothing is written. Only moments derivable now are recorded. Signed-in, step-up. Display only.';
 
 notify pgrst, 'reload schema';
-$bg_20261009100200_file$]
+$bg_20261009120200_file$]
 );
 
 insert into supabase_migrations.schema_migrations (version, name, statements)
 values (
-  '20261009100300',
+  '20261009120300',
   'manager_card_health',
-  array[$bg_20261009100300_file$-- BG-0158 P3: the `manager_card` health check.
+  array[$bg_20261009120300_file$-- BG-0158 P3: the `manager_card` health check.
 --
 -- Once the card's compute is switched on, the one silent failure that matters
 -- is "a finished gameweek never got its cards". This adds a check named
@@ -1399,7 +1399,7 @@ grant execute on function
   app_private.ops_health_checks(),
   app_private.ops_health_checks_before_manager_card()
 to postgres;
-$bg_20261009100300_file$]
+$bg_20261009120300_file$]
 );
 
 -- ---------------------------------------------------------------------------
@@ -1407,40 +1407,40 @@ $bg_20261009100300_file$]
 -- ---------------------------------------------------------------------------
 do $apply$
 declare
-  part_20261009100000 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20261009100000'
+  part_20261009120000 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261009120000'
   );
-  part_20261009100100 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20261009100100'
+  part_20261009120100 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261009120100'
   );
-  part_20261009100200 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20261009100200'
+  part_20261009120200 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261009120200'
   );
-  part_20261009100300 text := (
-    select statements[1] from supabase_migrations.schema_migrations where version = '20261009100300'
+  part_20261009120300 text := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261009120300'
   );
 begin
-  if encode(sha256(convert_to(part_20261009100000, 'UTF8')), 'hex')
-    is distinct from 'c228468d3ad3fea8d5d396a2c17f0366dba503dbe111109af1756b6992303b67' then
-    raise exception 'stop: 20261009100000 is not the repository file byte for byte -- was this script cut short or changed?';
+  if encode(sha256(convert_to(part_20261009120000, 'UTF8')), 'hex')
+    is distinct from 'c5abb7b9835ccdf8145190077816ee5d914d95ee879b63631bf39b537ab53d6c' then
+    raise exception 'stop: 20261009120000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
-  if encode(sha256(convert_to(part_20261009100100, 'UTF8')), 'hex')
-    is distinct from 'fbd2c97dfed35bd47143413eb34469f40e2cd9c5ade08831c8884bdc4b29c48f' then
-    raise exception 'stop: 20261009100100 is not the repository file byte for byte -- was this script cut short or changed?';
+  if encode(sha256(convert_to(part_20261009120100, 'UTF8')), 'hex')
+    is distinct from '0be119340a7b5b8fbdd53f3050e585adc2eb53909943e91bba61a255881fb882' then
+    raise exception 'stop: 20261009120100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
-  if encode(sha256(convert_to(part_20261009100200, 'UTF8')), 'hex')
+  if encode(sha256(convert_to(part_20261009120200, 'UTF8')), 'hex')
     is distinct from 'd1336625f45a8c89a598f2cb0a4a9ffc355ffcb398a54be11985e0fb34fbaf46' then
-    raise exception 'stop: 20261009100200 is not the repository file byte for byte -- was this script cut short or changed?';
+    raise exception 'stop: 20261009120200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
-  if encode(sha256(convert_to(part_20261009100300, 'UTF8')), 'hex')
+  if encode(sha256(convert_to(part_20261009120300, 'UTF8')), 'hex')
     is distinct from '7af53eb9008ba8d6e08c63a5235e89d94d133996c005b3c58db1ca77828ba1b1' then
-    raise exception 'stop: 20261009100300 is not the repository file byte for byte -- was this script cut short or changed?';
+    raise exception 'stop: 20261009120300 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 
-  execute part_20261009100000;
-  execute part_20261009100100;
-  execute part_20261009100200;
-  execute part_20261009100300;
+  execute part_20261009120000;
+  execute part_20261009120100;
+  execute part_20261009120200;
+  execute part_20261009120300;
 end
 $apply$;
 
@@ -1590,7 +1590,7 @@ begin
 
   -- All nine migrations are in the history.
   if (select count(*) from supabase_migrations.schema_migrations
-    where version in ('20261008123000', '20261008123100', '20261008123200', '20261008123300', '20261008123400', '20261009100000', '20261009100100', '20261009100200', '20261009100300')) <> 9 then
+    where version in ('20261008123000', '20261008123100', '20261008123200', '20261008123300', '20261008123400', '20261009120000', '20261009120100', '20261009120200', '20261009120300')) <> 9 then
     problems := problems || 'a history row is missing'::text;
   end if;
 
@@ -1608,7 +1608,7 @@ $postflight$;
 rollback;
 
 select case
-  when exists (select 1 from supabase_migrations.schema_migrations where version = '20261009100000')
+  when exists (select 1 from supabase_migrations.schema_migrations where version = '20261009120000')
     then 'Applied. The Gradins read API is in place and reads are still OFF. Next: docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;
