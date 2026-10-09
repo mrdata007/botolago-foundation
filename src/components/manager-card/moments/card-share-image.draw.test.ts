@@ -7,7 +7,7 @@ import { contrastRatio, parseHex } from "@/lib/colour";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
 
-import { echarpeRenderer } from "../echarpe";
+import { eclatRenderer } from "../eclat";
 import { plainRenderer } from "../plain-renderer";
 import { fromMyCard } from "../to-profile";
 import type { CardProfile } from "../types";
@@ -90,7 +90,7 @@ async function draw(
     throughGameweekSeq: card.throughGameweekSeq,
     lang,
     t: dict(lang),
-    renderer: echarpeRenderer,
+    renderer: eclatRenderer,
   })!;
   await renderCardShareImage(model);
   return { ops: recordings.at(-1)!.ops, model };
@@ -138,7 +138,7 @@ describe("the picture", () => {
       throughGameweekSeq: card.throughGameweekSeq,
       lang: "fr",
       t: dict("fr"),
-      renderer: echarpeRenderer,
+      renderer: eclatRenderer,
     })!;
     model.art = { ...model.art, svg: "<svg broken/>" };
     // The fake Image fails on a URL containing "broken"; a Blob URL does not, so simulate the failure.
@@ -161,7 +161,7 @@ describe("the picture", () => {
         throughGameweekSeq: card.throughGameweekSeq,
         lang: "fr",
         t: dict("fr"),
-        renderer: echarpeRenderer,
+        renderer: eclatRenderer,
       });
       expect(blob).toBeNull();
     }
@@ -307,7 +307,7 @@ describe("the layout", () => {
       throughGameweekSeq: card.throughGameweekSeq,
       lang: "fr",
       t: dict("fr"),
-      renderer: echarpeRenderer,
+      renderer: eclatRenderer,
     })!;
     model.art = { ...model.art, width: 760, height: 2000 };
     recordings = [];
@@ -384,9 +384,12 @@ describe("Arabic is the French picture mirrored", () => {
 
   it("the rating line reads from the right in Arabic: the figure first, then the unit and the tier", async () => {
     const ar = await draw("rated", "ar");
-    const figure = find(ar.ops, "84")!;
-    const unit = find(ar.ops, " OVR")!;
-    const tier = find(ar.ops, ar.model.rating.tier!)!;
+    // the rating line's own runs (the card's art also prints the number and the tier on the card)
+    const onLine = (text: string) =>
+      texts(ar.ops).find((op) => op.text === text && op.baseline === L.rating.baseline)!;
+    const figure = onLine("84");
+    const unit = onLine(" OVR");
+    const tier = onLine(ar.model.rating.tier!);
     expect(figure.right).toBe(W - L.pad);
     expect(unit.right).toBeLessThanOrEqual(figure.left + 0.5);
     expect(tier.right).toBeLessThan(unit.left);
@@ -427,3 +430,83 @@ describe("Arabic is the French picture mirrored", () => {
 function fontOf(op: Op): number {
   return Number(/([\d.]+)px/.exec(op.font ?? "")?.[1]);
 }
+
+describe("LASTREET, the lowest tier's word", () => {
+  for (const lang of ["fr", "ar"] as const) {
+    it(`${lang}: the rating line and the card's plaque draw it left to right in Changa, tracked on the card`, async () => {
+      const { ops, model } = await draw("homa", lang);
+      expect(model.rating.tier).toBe("LASTREET");
+      const line = texts(ops).find(
+        (op) => op.text === "LASTREET" && op.baseline === L.rating.baseline,
+      )!;
+      expect(line.direction).toBe("ltr");
+      expect(line.font).toContain('"Changa"');
+      // the word on the card's plaque is a run of the art, in the display face, spaced
+      const plaque = model.art.texts.find((run) => run.text === "LASTREET")!;
+      expect(plaque.dir).toBe("ltr");
+      expect(plaque.face).toBe("display");
+      expect(plaque.tracking).toBeGreaterThan(0);
+      const drawn = texts(ops).find(
+        (op) => op.text === "LASTREET" && op.baseline !== L.rating.baseline,
+      )!;
+      expect(drawn.direction).toBe("ltr");
+      expect(drawn.letterSpacing).toBeGreaterThan(0);
+      expect(texts(ops).some((op) => /HOMA|حومة/.test(op.text!))).toBe(false);
+    });
+  }
+
+  it("in Arabic the other tiers stay Arabic words, set right to left", async () => {
+    const { ops, model } = await draw("rated", "ar");
+    expect(model.rating.tier).not.toBe("PRO");
+    expect(/\p{Script=Arabic}/u.test(model.rating.tier!)).toBe(true);
+    const line = texts(ops).find(
+      (op) => op.text === model.rating.tier && op.baseline === L.rating.baseline,
+    )!;
+    expect(line.direction).toBe("rtl");
+  });
+});
+
+describe("the card's art in the new style", () => {
+  it("turns the founder's « 26 » along the cut corner and keeps it on the canvas", async () => {
+    const { ops, model } = await draw("founder", "fr");
+    const run = model.art.texts.find((r) => r.rotate)!;
+    expect(run).toBeDefined();
+    const drawn = texts(ops).find((op) => op.rotate !== undefined)!;
+    expect(Math.abs(drawn.rotate!)).toBeCloseTo(Math.abs(run.rotate!), 3);
+    expect(drawn.left).toBeGreaterThanOrEqual(0);
+    expect(drawn.right).toBeLessThanOrEqual(W);
+  });
+
+  it("names the card's second name line in its serif and the Arabic one in Changa Light", async () => {
+    const fr = await draw("longNameLatin", "fr");
+    const serif = fr.model.art.texts.find((run) => run.face === "serif")!;
+    expect(serif).toBeDefined();
+    expect(texts(fr.ops).find((op) => op.text === serif.text)!.font).toContain("Instrument Serif");
+    const ar = await draw("arabicName", "ar");
+    const light = ar.model.art.texts.find((run) => run.face === "displayLight")!;
+    expect(light).toBeDefined();
+    const drawn = texts(ar.ops).find(
+      (op) => op.text === light.text && op.baseline !== L.name.baseline,
+    )!;
+    expect(drawn.font).toContain("300");
+    expect(drawn.font).toContain('"Changa"');
+  });
+});
+
+describe("the faces the art is drawn in", () => {
+  it("are asked for before the picture is drawn: the serif, Changa Light, and the figures' face in Arabic too", async () => {
+    const asked: string[] = [];
+    const doc = (globalThis as unknown as { document: Record<string, unknown> }).document;
+    doc.fonts = {
+      load: (spec: string) => {
+        asked.push(spec);
+        return Promise.resolve([]);
+      },
+    };
+    await draw("rated", "ar");
+    expect(asked.some((spec) => spec.includes('"Instrument Serif"'))).toBe(true);
+    expect(asked.some((spec) => spec.startsWith("300 ") && spec.includes('"Changa"'))).toBe(true);
+    expect(asked.some((spec) => spec.startsWith("800 ") && spec.includes('"Manrope"'))).toBe(true);
+    expect(asked.some((spec) => spec.includes('"Noto Sans Arabic"'))).toBe(true);
+  });
+});

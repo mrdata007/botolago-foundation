@@ -194,14 +194,35 @@ function drawRuns(
 
 /**
  * The card's own faces on the canvas: the three of the share palette, plus the card's serif (the
- * second name line) and Changa Light (the Arabic one). Instrument Serif is the card's own face and
- * is loaded by the card's stylesheet, so a picture of a card that is on screen finds it.
+ * second name line) and Changa Light (the Arabic one). Instrument Serif is the card's own face,
+ * declared by the card's stylesheet, which comes with the renderer's chunk, so it is asked for
+ * here (`loadArtFonts`) as the other faces are.
  */
 const ART_SERIF = `"Instrument Serif", "Times New Roman", serif`;
 function artFont(run: TextRun, size: number): string {
   if (run.face === "serif") return `400 ${size}px ${ART_SERIF}`;
   if (run.face === "displayLight") return shareFont("display", 300, size);
   return shareFont(run.face, run.weight, size);
+}
+
+/**
+ * Loads what the art's runs are drawn in beyond the share palette's own list (`loadShareFonts`):
+ * the serif, Changa Light, and Manrope and Noto Sans Arabic at the weights the card's figures and
+ * labels use, in either language (the figures are Manrope even in the Arabic picture). A canvas
+ * does not wait for a face by itself.
+ */
+async function loadArtFonts(sample: string) {
+  if (typeof document === "undefined" || !document.fonts?.load) return;
+  await Promise.all(
+    [
+      `400 40px ${ART_SERIF}`,
+      shareFont("display", 300, 40),
+      shareFont("body", 800, 40),
+      shareFont("body", 600, 30),
+      shareFont("arabic", 700, 30),
+      shareFont("arabic", 800, 30),
+    ].map((spec) => document.fonts.load(spec, sample).catch(() => [])),
+  );
 }
 
 /** The card's own text runs, drawn on the art at its drawn size. */
@@ -458,6 +479,7 @@ async function loadArt(svg: string): Promise<HTMLImageElement | null> {
  */
 export async function renderCardShareImage(model: CardShareImageModel): Promise<Blob> {
   await loadShareFonts(model.lang, sampleOf(model));
+  await loadArtFonts(sampleOf(model));
   const [logo, art] = await Promise.all([loadImage(wordmark), loadArt(model.art.svg)]);
   if (!art) throw new Error("card_share_art");
   return await draw(model, logo, art);
