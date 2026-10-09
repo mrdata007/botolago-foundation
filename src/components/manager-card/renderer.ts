@@ -1,5 +1,5 @@
 /**
- * The card renderer interface (plan section 6.3). A direction (Écharpe today) implements it,
+ * The card renderer interface (plan section 6.3). A direction (Écharpe, then Éclat) implements it,
  * so the card's design can change without touching the screens.
  */
 import type { BeatName, CardLang, CardProfile, CardStrings, CardTheme, TokenSize } from "./types";
@@ -9,6 +9,12 @@ export interface RenderOptions {
   theme: CardTheme;
   /** One beat, or none. Ignored by tokens. Never animates the number or the serial. */
   beat?: BeatName;
+  /**
+   * The face-à-face sheet's card (Gradins G4, 136 to 200 px wide): a renderer that has a variant
+   * for it draws only what stays legible at that width (Éclat drops the micro text and the stat
+   * labels and sets every remaining run at 8 CSS px or more). Others ignore it.
+   */
+  compact?: boolean;
 }
 export interface TokenOptions {
   strings: CardStrings;
@@ -21,21 +27,29 @@ export interface TextRun {
   x: number;
   y: number;
   size: number;
-  weight: 400 | 600 | 700 | 800;
-  face: "display" | "body" | "arabic";
+  weight: 300 | 400 | 600 | 700 | 800;
+  /**
+   * `display` Changa, `body` Manrope, `arabic` Noto Sans Arabic; `serif` Instrument Serif (the
+   * second name line) and `displayLight` Changa 300 (the Arabic second name line).
+   */
+  face: "display" | "body" | "arabic" | "serif" | "displayLight";
   anchor: "start" | "middle" | "end";
   dir: "ltr" | "rtl";
   colour: string;
+  /** Letter spacing in the image's units (a Latin run only; Arabic is never tracked). */
+  tracking?: number;
+  /** Degrees clockwise about (x, y), for a run set along the cut corner. */
+  rotate?: number;
 }
 export interface CardImageArt {
-  /** Text-free SVG (knitted glyphs are geometry; every <text> is moved to `texts`). */
+  /** Text-free SVG (a renderer's own glyphs may be geometry; every <text> is moved to `texts`). */
   svg: string;
   width: number;
   height: number;
   texts: TextRun[];
 }
 export interface CardRenderer {
-  readonly id: string; // "echarpe-v2"
+  readonly id: string; // "eclat-v1"
   readonly beats: readonly BeatName[];
   /** One root element: role="img", aria-label from `label`, dir from strings.lang. */
   full(profile: CardProfile, options: RenderOptions): string;
@@ -53,11 +67,12 @@ export interface CardRenderer {
   /** Total length of a beat in ms (0 when unsupported). */
   beatMs(beat: BeatName): number;
   /**
-   * Optional pointer behaviour for a full card the app has put in the page: the scarf's sway on a
-   * mouse or pen (never touch). `el` is the element the markup was inserted into (the card's root
-   * is its first element child). Returns the cleanup. `ManagerCard` calls it after inserting the
-   * card when the screen asks for it (`sway`, Gradins' G1 and G2) and the reader has not asked for
-   * less motion, and runs the cleanup when the markup changes or the card unmounts.
+   * Optional pointer behaviour for a full card the app has put in the page: the tilt (Éclat turns
+   * toward a mouse or pen and floats slowly on a touch-only screen). `el` is the element the markup
+   * was inserted into (the card's root is its first element child). Returns the cleanup.
+   * `ManagerCard` calls it after inserting the card when the screen asks for it (`tilt`, Gradins'
+   * G1 and G2) and the reader has not asked for less motion, and runs the cleanup when the markup
+   * changes or the card unmounts.
    */
   mount?(el: HTMLElement): () => void;
 }
