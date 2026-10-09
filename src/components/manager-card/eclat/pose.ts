@@ -64,6 +64,13 @@ export const num = (v: number): string => {
   const r = Math.round(v * 1000) / 1000;
   return String(Object.is(r, -0) ? 0 : r);
 };
+/**
+ * A scale: six decimals. The shrink of a layer at height z, 1 - z / 300, is what cancels the
+ * perspective's enlargement of that height exactly (300 / (300 - z)); rounded to three decimals the
+ * layers would be 0.03 % off face-on, a tenth of a pixel at the card's edge, and every glyph would
+ * be resampled and soften.
+ */
+const scale6 = (v: number): string => String(Math.round(v * 1e6) / 1e6);
 const rad = (deg: number): number => (deg * Math.PI) / 180;
 
 /** The card's turn toward the light, at depth factor `t` (1 while a pointer is over it, 0 at rest). */
@@ -72,7 +79,7 @@ export const tilt = ([ax, ay]: Light, t = 1): string =>
 
 /** A layer at height `z`: lifted by it and shrunk by it, so it lines up with the others face-on. */
 export const depth = (z: number, t = 1): string =>
-  `translateZ(${num(z * t)}cqw) scale(${num(1 - (z * t) / PERSPECTIVE)})`;
+  `translateZ(${num(z * t)}cqw) scale(${scale6(1 - (z * t) / PERSPECTIVE)})`;
 
 /** The contact shadow's offset: it lies opposite the light and moves with it. */
 export const shadow = ([ax, ay]: Light): string =>

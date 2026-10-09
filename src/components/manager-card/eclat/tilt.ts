@@ -21,7 +21,7 @@
  * hidden and while the card is off screen, and is a compositor animation: the main thread does
  * nothing while a card floats.
  */
-import { liftCard } from "./lift";
+import { cropNum, liftCard } from "./lift";
 import {
   LAYERS,
   RIM_PLANE,
@@ -109,13 +109,41 @@ function collect(root: HTMLElement): Parts {
   };
 }
 
-/** Mounts the tilt on the card inside `el` (`ManagerCard`'s host). Returns the cleanup. */
+/**
+ * Mounts the tilt on the card inside `el` (`ManagerCard`'s host). Returns the cleanup.
+ *
+ * The host can have its markup set again after the tilt was mounted (it was, on about one page load
+ * in six, forty milliseconds after the first time, with the same string: the card's root was
+ * replaced by an identical one and the listeners stayed on the one that was removed, so the card
+ * did not tilt until the next load). The tilt therefore follows the card: it watches the host's
+ * children and mounts itself on whichever root is there.
+ */
 export function mountTilt(el: HTMLElement | null): () => void {
   if (!el || typeof window === "undefined") return () => undefined;
-  const root = el.querySelector<HTMLElement>(".mc-eclat");
-  if (!root) return () => undefined;
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return () => undefined;
+  let current: HTMLElement | null = null;
+  let stop: (() => void) | null = null;
+  const follow = (): void => {
+    const root = el.querySelector<HTMLElement>(".mc-eclat");
+    if (root === current) return;
+    stop?.();
+    stop = null;
+    current = root;
+    if (root) stop = mountOn(root);
+  };
+  follow();
+  const watcher = typeof MutationObserver !== "undefined" ? new MutationObserver(follow) : null;
+  watcher?.observe(el, { childList: true });
+  return () => {
+    watcher?.disconnect();
+    stop?.();
+    stop = null;
+    current = null;
+  };
+}
 
+/** The tilt of one card root; the cleanup puts the card back as it found it. */
+function mountOn(root: HTMLElement): () => void {
   const rtl = root.getAttribute("dir") === "rtl";
   const rest = restLight(rtl);
   liftCard(root);
@@ -216,6 +244,7 @@ export function mountTilt(el: HTMLElement | null): () => void {
 
   /** Back to the stylesheet's rest pose: no inline transform, opacity or light is left on any part. */
   const clear = (): void => {
+    cropNum(root, false);
     if (loop) cancelAnimationFrame(loop);
     loop = 0;
     lightS = rest;
@@ -261,6 +290,7 @@ export function mountTilt(el: HTMLElement | null): () => void {
     root.classList.add("mc-eclat--active");
     settling = false;
     if (first) {
+      cropNum(root, true, root.getBoundingClientRect().width);
       // the first turn toward the pointer takes the depth's 450 ms; after it the light follows at 120
       root.classList.add("mc-eclat--enter");
       enterTimer = window.setTimeout(() => root.classList.remove("mc-eclat--enter"), 450);
@@ -325,6 +355,7 @@ export function mountTilt(el: HTMLElement | null): () => void {
   const startFloat = (): void => {
     const [first] = floatLights(rtl) as [Light];
     // ease to the float's first pose over the depth's 450 ms, then float
+    cropNum(root, true, root.getBoundingClientRect().width);
     writeDepth(1);
     writePose(first, 1);
     clearTimeout(floatTimer);

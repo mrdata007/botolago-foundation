@@ -183,8 +183,10 @@
   display: block;
   pointer-events: none;
 }
-/* the jersey's cast shadow, lifted into a layer of its own: sized by its own box (lift.ts) */
-.mc-cast {
+/* the jersey's cast shadow lifted into a layer of its own, and the number layer cropped to what it
+   draws: each is sized by its own box (lift.ts) */
+.mc-cast,
+.mc-crop {
   inset: auto;
 }
 /* depths: the base, the rims' group, the shirt, the number, the frame, the holo layer, the foil

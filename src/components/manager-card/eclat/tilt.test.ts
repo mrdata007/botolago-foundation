@@ -559,6 +559,81 @@ describe("the tilt (plan 8.3)", () => {
     expect(classes.has("mc-eclat--active")).toBe(true);
   });
 
+  it("follows the card when the host's markup is set again and the root is replaced", () => {
+    const a = fakeCard();
+    const b = fakeCard();
+    let current: HTMLElement = a.el;
+    const host = {
+      querySelector: (sel: string) =>
+        (current as unknown as { querySelector: (s: string) => unknown }).querySelector(sel),
+    } as unknown as HTMLElement;
+    let callback: (() => void) | null = null;
+    let disconnected = false;
+    g.MutationObserver = class {
+      constructor(cb: () => void) {
+        callback = cb;
+      }
+      observe() {}
+      disconnect() {
+        disconnected = true;
+      }
+    };
+    try {
+      const stop = mountTilt(host);
+      expect(a.listeners.size).toBeGreaterThan(0);
+      expect(b.listeners.size).toBe(0);
+      move(a.listeners, 300, 300);
+      flush();
+      expect(a.classes.has("mc-eclat--active")).toBe(true);
+      // the same string is set again: a new root, and the old one is gone
+      current = b.el;
+      callback!();
+      expect(a.listeners.size, "the removed root is let go").toBe(0);
+      expect(a.classes.size).toBe(0);
+      expect(b.listeners.size, "the new root is tilted").toBeGreaterThan(0);
+      move(b.listeners, 300, 300);
+      flush();
+      expect(b.classes.has("mc-eclat--active")).toBe(true);
+      // a change of the host's children that leaves the same root changes nothing
+      const before = b.listeners.get("pointermove");
+      callback!();
+      expect(b.listeners.get("pointermove")).toBe(before);
+      stop();
+      expect(disconnected).toBe(true);
+      expect(b.listeners.size).toBe(0);
+    } finally {
+      delete g.MutationObserver;
+    }
+  });
+
+  it("waits for a card that is not in the host yet", () => {
+    const a = fakeCard();
+    let current: HTMLElement | null = null;
+    const host = {
+      querySelector: (sel: string) =>
+        current
+          ? (current as unknown as { querySelector: (s: string) => unknown }).querySelector(sel)
+          : null,
+    } as unknown as HTMLElement;
+    let callback: (() => void) | null = null;
+    g.MutationObserver = class {
+      constructor(cb: () => void) {
+        callback = cb;
+      }
+      observe() {}
+      disconnect() {}
+    };
+    try {
+      mountTilt(host);
+      expect(a.listeners.size).toBe(0);
+      current = a.el;
+      callback!();
+      expect(a.listeners.size).toBeGreaterThan(0);
+    } finally {
+      delete g.MutationObserver;
+    }
+  });
+
   it("can be cleaned up twice", () => {
     const { el } = fakeCard();
     const stop = mountTilt(el);

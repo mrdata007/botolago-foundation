@@ -222,9 +222,9 @@ describe("the depth, in the stylesheet and in the pose (plan 8.2)", () => {
     // stay behind the shirt
     expect(RIM_PLANE).toBeGreaterThan(Z.base);
     expect(RIM_PLANE).toBeLessThan(Z.shirt);
-    expect(depth(Z.num)).toBe("translateZ(5cqw) scale(0.983)");
-    expect(depth(Z.frame)).toBe("translateZ(8cqw) scale(0.973)");
-    expect(depth(Z.foil)).toBe("translateZ(9.5cqw) scale(0.968)");
+    expect(depth(Z.num)).toBe("translateZ(5cqw) scale(0.983333)");
+    expect(depth(Z.frame)).toBe("translateZ(8cqw) scale(0.973333)");
+    expect(depth(Z.foil)).toBe("translateZ(9.5cqw) scale(0.968333)");
     // nothing in the stylesheet sets a depth: the tilt writes it
     expect(bare).not.toMatch(/translateZ|--z\s*:/);
   });
@@ -250,7 +250,8 @@ describe("the depth, in the stylesheet and in the pose (plan 8.2)", () => {
     // a layer of height z, shrunk by z / 300 of itself, fills the same perspective box as the base
     for (const z of Object.values(Z)) {
       const scale = Number(/scale\(([\d.]+)\)/.exec(depth(z))![1]);
-      expect(scale).toBeCloseTo(1 - z / 300, 3);
+      // exact to a millionth, so that the perspective's enlargement is cancelled to a hundredth of a pixel
+      expect(Math.abs(scale * (PERSPECTIVE / (PERSPECTIVE - z)) - 1)).toBeLessThan(1e-6);
     }
     expect(depth(8, 0)).toBe("translateZ(0cqw) scale(1)");
   });

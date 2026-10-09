@@ -44,8 +44,8 @@ describe("the pose: numbers and transform strings the tilt writes (plan 8.2, 8.3
         `rotateX(${num(ay * 7 * t)}deg) rotateY(${num(ax * 9 * t)}deg)`,
       );
     }
-    expect(depth(5, 1)).toBe("translateZ(5cqw) scale(0.983)");
-    expect(depth(5, 0.5)).toBe("translateZ(2.5cqw) scale(0.992)");
+    expect(depth(5, 1)).toBe("translateZ(5cqw) scale(0.983333)");
+    expect(depth(5, 0.5)).toBe("translateZ(2.5cqw) scale(0.991667)");
   });
 
   it("slides the shadow opposite the light: 5 across, 3 down from 3", () => {

@@ -38,6 +38,14 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 /** The jersey's cast shadow lies inside this box of the card (1000 × 1618), blur included. */
 export const CAST_BOX = { x: 60, y: 200, w: 880, h: 840 } as const;
 
+/**
+ * Everything the number layer draws lies inside this box of the card (1000 × 1618): the print and
+ * its shade and highlight (jersey space 336..664 × 476..796, moved onto the card by `JT`), « OVR » and
+ * its halo under it, with room for the shadow's blur. Symmetric about the card's axis. The layer is
+ * cropped to it, so the browser rasterises and the compositor draws 16 % of a card, not all of it.
+ */
+export const NUM_BOX = { x: 280, y: 400, w: 440, h: 500 } as const;
+
 /** How much bigger than its parts a group's box may be before it is "sparse" (the browser splits it). */
 const SPARSE = 1.6;
 /** Room for thin shapes whose boxes are nearly empty, in SVG units squared. */
@@ -226,6 +234,52 @@ const unitOf = (part: Element | null, attr: string): Element | null => {
     ? parent
     : null;
 };
+
+/** The card's own centre, which a layer turns about, in the 1000 × 1618 box. */
+const CENTRE = { x: 500, y: 809 } as const;
+
+/**
+ * Crops the number layer to the box that holds what it draws (`on`), or gives it back whole. The
+ * crop is for while the card moves: the browser rasterises, repaints (the number's shade and
+ * highlight move) and the compositor draws a sixth of a card instead of all of it. The layer keeps
+ * its place in the stack, its depth and its centre of scaling (the card's, not its own), so it lines
+ * up as before. The box is put on whole CSS pixels of a card `width` px across, and the view box is
+ * moved to match, so every unit lands on the pixel it landed on in the whole layer: the glyphs are
+ * rasterised on the same grid and look the same. At rest it is the layer the renderer drew.
+ */
+export function cropNum(root: Element, on: boolean, width = 0): boolean {
+  const svg = root.querySelector<SVGElement>("svg.mc-l--num");
+  if (!svg) return false;
+  if (!on) {
+    if (!svg.classList.contains("mc-crop")) return true;
+    svg.classList.remove("mc-crop");
+    svg.setAttribute("viewBox", svg.dataset.mcViewBox ?? "0 0 1000 1618");
+    const style = svg.dataset.mcStyle;
+    if (style) svg.setAttribute("style", style);
+    else svg.removeAttribute("style");
+    return true;
+  }
+  if (svg.classList.contains("mc-crop") || !(width > 0)) return svg.classList.contains("mc-crop");
+  const k = width / 1000;
+  // the box on whole pixels, grown to the pixel (never shrunk): its edges, in card units and in px
+  const left = Math.floor(NUM_BOX.x * k);
+  const top = Math.floor(NUM_BOX.y * k);
+  const right = Math.ceil((NUM_BOX.x + NUM_BOX.w) * k);
+  const bottom = Math.ceil((NUM_BOX.y + NUM_BOX.h) * k);
+  const [x, y, w, h] = [left / k, top / k, (right - left) / k, (bottom - top) / k];
+  const n = (v: number): string => String(Math.round(v * 1e4) / 1e4);
+  svg.dataset.mcViewBox = svg.getAttribute("viewBox") ?? "0 0 1000 1618";
+  svg.dataset.mcStyle = svg.getAttribute("style") ?? "";
+  svg.setAttribute("viewBox", `${n(x)} ${n(y)} ${n(w)} ${n(h)}`);
+  svg.classList.add("mc-crop");
+  // keep what the tilt has written (its transform) and add the box
+  svg.style.left = `${left}px`;
+  svg.style.top = `${top}px`;
+  svg.style.width = `${right - left}px`;
+  svg.style.height = `${bottom - top}px`;
+  svg.style.transformOrigin = `${n(CENTRE.x * k - left)}px ${n(CENTRE.y * k - top)}px`;
+  return true;
+}
 
 /** What `liftCard` did, for the tests and the notes. */
 export interface Lifted {
