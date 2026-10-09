@@ -1,0 +1,12 @@
+Upload response 201 {"mediaAssetId":"4e17cbd0-9a1f-4524-b308-a81bd0ef6fd4","storagePath":"news/2026/10/1caed903-8e04-4069-8dc0-38ef0eb2332e.webp","publicUrl":"http://127.0.0.1:4319/storage/v1/object/public/news-media/news/2026/10/1caed903-8e04-4069-8dc0-38ef0eb2332e.webp"}
+Draft survived reload and became visible only after publishing
+Viewer opens, closes and restores focus
+PASS fr 390 light
+PASS fr 390 dark
+PASS fr 1440 light
+PASS fr 1440 dark
+PASS ar 390 light
+PASS ar 390 dark
+PASS ar 1440 light
+PASS ar 1440 dark
+Unpublish removed both circles; public RPC returned []

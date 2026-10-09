@@ -36,6 +36,7 @@ import { Route as AdminPepitesRouteImport } from './routes/admin.pepites'
 import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
+import { Route as AdminStoriesRouteImport } from './routes/admin.stories'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
@@ -232,6 +233,11 @@ const AdminSecurityRoute = AdminSecurityRouteImport.update({
 const AdminStaffRoute = AdminStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminStoriesRoute = AdminStoriesRouteImport.update({
+  id: '/stories',
+  path: '/stories',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -568,6 +574,7 @@ export interface FileRoutesByFullPath {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/stories': typeof AdminStoriesRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -652,6 +659,7 @@ export interface FileRoutesByTo {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/stories': typeof AdminStoriesRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -742,6 +750,7 @@ export interface FileRoutesById {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/stories': typeof AdminStoriesRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -833,6 +842,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/stories'
     | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
@@ -917,6 +927,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/stories'
     | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
@@ -1006,6 +1017,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/stories'
     | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
@@ -1291,6 +1303,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/admin/staff'
       preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/stories': {
+      id: '/admin/stories'
+      path: '/stories'
+      fullPath: '/admin/stories'
+      preLoaderRoute: typeof AdminStoriesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/users': {
@@ -1776,6 +1795,7 @@ interface AdminRouteChildren {
   AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
+  AdminStoriesRoute: typeof AdminStoriesRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminFootballPlayerMappingsRoute: typeof AdminFootballPlayerMappingsRoute
 }
@@ -1788,6 +1808,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
+  AdminStoriesRoute: AdminStoriesRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminFootballPlayerMappingsRoute: AdminFootballPlayerMappingsRoute,
 }

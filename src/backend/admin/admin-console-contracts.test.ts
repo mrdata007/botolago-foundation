@@ -15,6 +15,7 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/audit",
   "/admin/security",
   "/admin/news",
+  "/admin/stories",
   "/admin/prizes",
   "/admin/users",
   "/admin/users/$userId",
@@ -40,6 +41,7 @@ const SCREEN_ROUTE_FILES: Record<AdminConsoleRoute, string> = {
   "/admin/audit": "../../routes/admin.audit.tsx",
   "/admin/security": "../../routes/admin.security.tsx",
   "/admin/news": "../../routes/admin.news.tsx",
+  "/admin/stories": "../../routes/admin.stories.tsx",
   "/admin/prizes": "../../routes/admin.prizes.tsx",
   "/admin/users": "../../routes/admin.users.tsx",
   "/admin/users/$userId": "../../routes/admin.users.$userId.tsx",
@@ -167,12 +169,13 @@ describe("Frozen Admin Console contracts", () => {
         (item) => item.testId,
       );
 
-    expect(visibleTo(["editorial.read"])).toEqual(["admin-nav-news"]);
+    expect(visibleTo(["editorial.read"])).toEqual(["admin-nav-stories", "admin-nav-news"]);
     expect(visibleTo(["editorial.write"])).toEqual([]);
     expect(visibleTo([])).toEqual([]);
     expect(visibleTo(["security.manage_staff"])).not.toContain("admin-nav-news");
     expect(visibleTo(["security.read_audit", "editorial.read"])).toEqual([
       "admin-nav-audit",
+      "admin-nav-stories",
       "admin-nav-news",
     ]);
     expect(visibleTo(["prizes.manage"])).toEqual(["admin-nav-prizes"]);

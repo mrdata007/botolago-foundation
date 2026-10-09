@@ -397,6 +397,7 @@ export type Database = {
         Returns: Json
       }
       admin_get_user: { Args: { p_user_id: string }; Returns: Json }
+      admin_home_stories: { Args: never; Returns: Json }
       admin_list_active_assignments: {
         Args: { p_staff_principal_id: string }
         Returns: Json
@@ -562,6 +563,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_publish_home_story: {
+        Args: { p_id: string; p_published: boolean; p_version: number }
+        Returns: Json
+      }
       admin_reject_request: {
         Args: {
           p_approval_id: string
@@ -643,6 +648,21 @@ export type Database = {
           p_mini_league_min_members: number
           p_reason: string
           p_season_id: string
+        }
+        Returns: Json
+      }
+      admin_save_home_story: {
+        Args: {
+          p_alt_ar: string
+          p_alt_fr: string
+          p_credit: string
+          p_destination: string
+          p_id: string
+          p_media_asset_id: string
+          p_position: number
+          p_title_ar: string
+          p_title_fr: string
+          p_version: number
         }
         Returns: Json
       }
@@ -1198,6 +1218,7 @@ export type Database = {
       }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
+      home_stories: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
         Args: {
           p_coverage: Json
@@ -5528,6 +5549,62 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      home_stories: {
+        Row: {
+          alt_ar: string
+          alt_fr: string
+          created_at: string
+          credit: string | null
+          destination: string | null
+          id: string
+          media_asset_id: string
+          position: number
+          published: boolean
+          title_ar: string
+          title_fr: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          alt_ar: string
+          alt_fr: string
+          created_at?: string
+          credit?: string | null
+          destination?: string | null
+          id?: string
+          media_asset_id: string
+          position?: number
+          published?: boolean
+          title_ar: string
+          title_fr: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          alt_ar?: string
+          alt_fr?: string
+          created_at?: string
+          credit?: string | null
+          destination?: string | null
+          id?: string
+          media_asset_id?: string
+          position?: number
+          published?: boolean
+          title_ar?: string
+          title_fr?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_stories_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
             referencedColumns: ["id"]
           },
         ]
