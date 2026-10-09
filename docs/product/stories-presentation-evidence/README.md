@@ -16,3 +16,7 @@ ESLint passed. Isolated PostgreSQL exercised the real forward migration, origina
 publication scenario and replacement scenario, including paused/drained requirements,
 budget refusal, visible old image until replacement, retained history and editorial
 unpublish during generation. Full-schema CI and final live checks are release gates.
+
+Live image-size audit: original PNG 2,729,803 bytes vs 160px WebP thumbnail 7,372
+bytes, both HTTP 200. Rail/viewer now reuse the shared responsive image component,
+including its fallback when the resize service is unavailable.

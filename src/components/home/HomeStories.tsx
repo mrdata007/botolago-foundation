@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { homeStoriesRepository } from "@/backend/home-stories/repository";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { getNewsDataMode } from "@/services/news";
-import { resolveMediaUrl } from "@/lib/media";
+import { FailureAwareImage } from "@/components/common/FailureAwareImage";
+import { responsiveMedia, resolveMediaUrl } from "@/lib/media";
 import { StoryViewer } from "./StoryViewer";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -59,8 +60,12 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
               >
                 <span className="block size-[calc(var(--ui-tap-min)*1.6)] sm:size-[calc(var(--ui-tap-min)*1.8)] shrink-0 rounded-full bg-[image:var(--ui-grad-action)] p-1">
                   <span className="block size-full rounded-full bg-[color:var(--ui-page)] p-1">
-                    <img
-                      src={resolveMediaUrl({ storagePath: story.storagePath })}
+                    <FailureAwareImage
+                      {...responsiveMedia(resolveMediaUrl({ storagePath: story.storagePath }), {
+                        kind: "photo",
+                        ratio: 1,
+                        sizes: "80px",
+                      })}
                       alt=""
                       width={80}
                       height={80}

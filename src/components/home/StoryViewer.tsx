@@ -3,7 +3,8 @@ import { ChevronLeft, ChevronRight, ImageOff, X } from "lucide-react";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { ui, UiButton, UiIconButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { resolveMediaUrl } from "@/lib/media";
+import { FailureAwareImage } from "@/components/common/FailureAwareImage";
+import { responsiveMedia, resolveMediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 function StoryFrame({
@@ -45,13 +46,20 @@ function StoryFrame({
             onSwipe((dx < 0 ? 1 : -1) * (ar ? -1 : 1));
         }}
       >
-        <img
-          src={resolveMediaUrl({ storagePath: story.storagePath })}
+        <FailureAwareImage
+          {...(story.generated
+            ? responsiveMedia(resolveMediaUrl({ storagePath: story.storagePath }), {
+                kind: "photo",
+                ratio: 2 / 3,
+                sizes: "(min-width: 448px) 448px, 100vw",
+              })
+            : { src: resolveMediaUrl({ storagePath: story.storagePath }) })}
+          loading="eager"
           alt={ar ? story.altAr : story.altFr}
           className="absolute inset-0 size-full object-contain"
           draggable={false}
           onLoad={() => setStatus("ready")}
-          onError={() => setStatus("error")}
+          onFailed={() => setStatus("error")}
         />
         {status !== "ready" && (
           <div

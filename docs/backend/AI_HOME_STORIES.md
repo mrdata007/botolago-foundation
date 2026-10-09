@@ -86,6 +86,7 @@ The owner-only `ai_home_stories_queue_refresh` requires paused, drained automati
 valid still-published sources and budget for all requested replacements. It preserves
 completed attempts as `superseded`; their images stay visible until each replacement
 publishes atomically. History/media are retained. Each replacement counts as a new
-paid attempt against both existing caps. Editorial unpublishing before a claim or
+paid attempt against both existing caps. Pending refresh sources are claimed before
+newer ordinary news so unrelated articles cannot take their reserved daily budget. Editorial unpublishing before a claim or
 while its replacement is generating cancels the replacement. Failed replacements
 leave the old image available rather than deleting it. No automatic unlimited retry.

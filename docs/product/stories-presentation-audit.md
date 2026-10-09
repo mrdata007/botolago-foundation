@@ -11,7 +11,9 @@ Fresh Chromium captures; in-app Browser tools are unavailable in this environmen
    inside a 423px viewport. Caption content runs behind the pinned footer.
    `object-cover` changes the image crop with viewport height; the caption hides
    another part of the image. The truncated duplicate headline and provider credit
-   consume space without helping the reader. No image-loading/error state exists.
+   consume space without helping the reader. No image-loading/error state exists. A rail thumbnail downloads a 2,729,803-byte
+   original; the existing 160px image service returns a 7,372-byte WebP (both
+   measured with successful live HEAD requests).
 3. **Navigate — incomplete.** Buttons and Escape work; ArrowRight did not change
    the story in any audited viewport. No swipe handling exists. Keep focus trapping,
    translated controls, explicit buttons, and focus restoration.
@@ -35,6 +37,8 @@ access controls, provider-secret isolation, generation caps and editorial unpubl
 
 - A responsive viewer with the entire portrait visible, no artificial top margins,
   one headline, compact navigation, safe-area support and loading/error feedback.
+- Reuse the existing responsive image service and original-image fallback: small
+  thumbnails on Home, appropriately sized full-ratio portraits in the viewer.
 - Keyboard arrows and directional swipes in both languages; readable rail labels.
 - Hide provider credits for generated stories while preserving manual photo credits.
 - Give the model structured facts and article context, vary compositions by news

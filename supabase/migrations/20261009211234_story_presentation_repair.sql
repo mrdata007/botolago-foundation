@@ -71,7 +71,8 @@ begin
     and not exists(select 1 from app_private.ai_home_story_jobs j where j.source_story_id=s.id and j.status in ('generating','published'))
     and not exists(select 1 from app_private.ai_home_story_jobs j join app.home_stories h on h.id=j.home_story_id where j.source_story_id=s.id and j.status='superseded' and not h.published)
     and (select count(*) from app_private.ai_home_story_jobs j where j.source_story_id=s.id)<2
-  order by greatest(fr.published_at,ar.published_at) desc,s.id limit 1
+  order by exists(select 1 from app_private.ai_home_story_jobs pending where pending.source_story_id=s.id and pending.status='superseded') desc,
+    greatest(fr.published_at,ar.published_at) desc,s.id limit 1
   returning * into job;
   if job.id is null then return null; end if;
   return jsonb_build_object('id',job.id,'titleFr',job.title_fr,'titleAr',job.title_ar,'summaryFr',left(job.summary_fr,1200),'visualContext',job.visual_context);

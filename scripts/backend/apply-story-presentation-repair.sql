@@ -99,7 +99,8 @@ begin
     and not exists(select 1 from app_private.ai_home_story_jobs j where j.source_story_id=s.id and j.status in ('generating','published'))
     and not exists(select 1 from app_private.ai_home_story_jobs j join app.home_stories h on h.id=j.home_story_id where j.source_story_id=s.id and j.status='superseded' and not h.published)
     and (select count(*) from app_private.ai_home_story_jobs j where j.source_story_id=s.id)<2
-  order by greatest(fr.published_at,ar.published_at) desc,s.id limit 1
+  order by exists(select 1 from app_private.ai_home_story_jobs pending where pending.source_story_id=s.id and pending.status='superseded') desc,
+    greatest(fr.published_at,ar.published_at) desc,s.id limit 1
   returning * into job;
   if job.id is null then return null; end if;
   return jsonb_build_object('id',job.id,'titleFr',job.title_fr,'titleAr',job.title_ar,'summaryFr',left(job.summary_fr,1200),'visualContext',job.visual_context);
@@ -144,7 +145,7 @@ $source$]);
 do $apply$
 declare source text:=(select statements[1] from supabase_migrations.schema_migrations where version='20261009211234');
 begin
- if encode(sha256(convert_to(source,'UTF8')),'hex')<>'5314153d1a4d6811a4a83c3790f3e9d85a839d6945bac06b61b33ca1e93d7111' then raise exception 'stop: migration bytes changed'; end if;
+ if encode(sha256(convert_to(source,'UTF8')),'hex')<>'c96aede29814ec457b393a9b65750c678cbf4fdbe8042ff92d0e1f90928cfce4' then raise exception 'stop: migration bytes changed'; end if;
  execute source;
 end;
 $apply$;
