@@ -213,7 +213,7 @@ Everything that moves is CSS, `prefers-reduced-motion: no-preference` only.
   CHAMPION and LEGEND the diffraction slides in instead); the field reveals from the reading side in
   both languages with one keyframe, because it sits inside the group the card mirrors. Every beat
   ends in the state the card rests in, so dropping the beat's class never jumps (compared to the
-  card with no beat: identical but for anti-aliasing at edges, largest box-filtered difference 17 of
+  card with no beat: identical but for anti-aliasing at edges, largest box-filtered difference 21 of
   255).
 
 ## To add a beat
