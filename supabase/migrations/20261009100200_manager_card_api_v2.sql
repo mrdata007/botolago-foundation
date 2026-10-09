@@ -82,7 +82,7 @@ declare
   actor uuid;
   result jsonb;
 begin
-  if p_team_ids is null
+  if p_team_ids is null or cardinality(p_team_ids) > 1000
     or (select count(distinct asked.id) from unnest(p_team_ids) as asked(id)) > 100 then
     raise exception using errcode = 'PT400', message = 'validation_failed';
   end if;
@@ -216,7 +216,7 @@ declare
   acknowledged text[];
   ignored text[];
 begin
-  if p_keys is null or cardinality(p_keys) = 0
+  if p_keys is null or cardinality(p_keys) = 0 or cardinality(p_keys) > 64
     or exists (select 1 from unnest(p_keys) as k(key) where k.key is null) then
     raise exception using errcode = 'PT400', message = 'validation_failed';
   end if;

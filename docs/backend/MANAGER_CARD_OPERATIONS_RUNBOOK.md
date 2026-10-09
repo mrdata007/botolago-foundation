@@ -376,13 +376,14 @@ select count(*) as retired from app_private.manager_card_retired_serials;
 The same facts are in the ops health report as a check named `manager_card`
 (counts only, no user id), added by `20261009100300`:
 
-| Status | When                                                                                              |
-| ------ | ------------------------------------------------------------------------------------------------- |
-| ok     | Both switches off ("switched off"), or cards are current under the active rules.                  |
-| warn   | Reads on but no usable rules (the section answers off); compute on but no usable rules.           |
-| warn   | Reads on and compute off (cards are frozen).                                                      |
-| warn   | A finished gameweek has waited more than 2 hours for its cards, or a tick error in the last 24 h. |
-| fail   | Compute on, rules usable, and a finished gameweek has waited more than 12 hours. This pages you.  |
+| Status | When                                                                                                                                                                                                                                                                                                                                                               |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ok     | Both switches off ("switched off"), or cards are current under the active rules.                                                                                                                                                                                                                                                                                   |
+| warn   | Reads on but no usable rules (the section answers off); compute on but no usable rules.                                                                                                                                                                                                                                                                            |
+| warn   | Reads on and compute off (cards are frozen).                                                                                                                                                                                                                                                                                                                       |
+| warn   | A finished gameweek has waited more than 2 hours for its cards, or a tick error in the last 24 h.                                                                                                                                                                                                                                                                  |
+| fail   | Compute on, rules usable, and a finished gameweek has waited more than 12 hours. This pages you.                                                                                                                                                                                                                                                                   |
+|        | The wait counts from the latest of the gameweek's completion, the active rules row's creation and the last switch change, so switching compute on or activating rules never fails at once. While the last tick (under 30 minutes ago) said `more_pending` it is still catching up and the check warns instead. Gameweeks of cancelled Fantasy seasons are ignored. |
 
 The watchdog does not require this check yet
 (`REQUIRED_DATABASE_CHECKS` in `scripts/ops/watchdog.ts`); add it there once

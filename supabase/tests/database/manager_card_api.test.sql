@@ -29,7 +29,7 @@
 --   S  rated (not provisional): a provisional_cleared moment.
 --   V  verified MFA factor, team in FS1.   W  signed in, no team.
 begin;
-select extensions.plan(59);
+select extensions.plan(65);
 
 -- A statement's outcome: 'ok', or its SQLSTATE and message. Whatever it did is undone.
 create function pg_temp.outcome(p_sql text) returns text language plpgsql as $$
@@ -575,6 +575,11 @@ select extensions.is(
   || '#' || (pg_temp.run(pg_temp.usr('W'), 'aal1', 'api.get_manager_cards((select array_agg(gen_random_uuid()) from generate_series(1, 100))::uuid[])') ->> 'available'),
   'PT400 validation_failed#PT400 validation_failed#{"cards": [], "available": true}#true',
   'the batch read refuses 101 distinct ids and a null array with PT400, answers an empty array with no cards, and takes 100');
+select extensions.is(
+  pg_temp.run(pg_temp.usr('W'), 'aal1', 'api.get_manager_cards((select array_agg(pg_temp.id(9998)) from generate_series(1, 1001))::uuid[])') ->> '__error'
+  || '#' || (pg_temp.run(pg_temp.usr('W'), 'aal1', 'api.get_manager_cards((select array_agg(pg_temp.id(9998)) from generate_series(1, 1000))::uuid[])') ->> 'available'),
+  'PT400 validation_failed#true',
+  'the batch read refuses a raw array of 1001 ids (even all the same) before de-duplicating, and takes 1000');
 select extensions.ok(
   position(pg_temp.usr('M')::text in pg_temp.member_of(pg_temp.usr('W'), pg_temp.tm('M'))::text) = 0
   and position('example.test' in pg_temp.member_of(pg_temp.usr('W'), pg_temp.tm('M'))::text) = 0
@@ -654,6 +659,11 @@ select extensions.is(
   (select string_agg('PT400 validation_failed', ',') from generate_series(1, 7)) || '#2',
   'a malformed key, a null element, a null or empty array, 17 distinct keys and an 81-character key are PT400 validation_failed and write nothing');
 select extensions.is(
+  left(coalesce(pg_temp.ack(pg_temp.usr('M'), '(select array_agg(''card_created''::text) from generate_series(1, 65))') ->> '__error', 'ok'), 31)
+  || '#' || pg_temp.acks(pg_temp.usr('M')),
+  'PT400 validation_failed#2',
+  'a raw array of 65 keys (all the same) is PT400 validation_failed before de-duplicating, and writes nothing');
+select extensions.is(
   pg_temp.run(pg_temp.usr('M'), 'aal1', 'api.ack_manager_card_moments(array[''founder_granted'', ''card_created'', ''founder_granted''])')::text,
   '{"ignored": [], "acknowledged": ["founder_granted", "card_created"]}',
   'duplicate keys collapse in request order and an already acknowledged key counts as acknowledged');
@@ -693,11 +703,17 @@ begin
 end;
 $$;
 -- Postwork finished p_ago ago for the four finalized gameweeks (GW1-3 of FS1, GW1 of FS0).
-create function pg_temp.postwork(p_ago interval) returns text language sql as $$
+create function pg_temp.postwork_fresh(p_ago interval) returns text language sql as $$
   select format($f$insert into app_private.fantasy_gameweek_postwork
     (gameweek_id, calculation_version, price_source_version, price_player_ids, prices_completed_at, completed_at)
     select id, 1, 1, '{}', statement_timestamp() - %L::interval, statement_timestamp() - %L::interval
     from app.fantasy_gameweeks where status = 'finalized'$f$, p_ago, p_ago)
+$$;
+-- The same, with the switch and the rules row long settled, so only the gameweek's age counts.
+create function pg_temp.postwork(p_ago interval) returns text language sql as $$
+  select pg_temp.postwork_fresh(p_ago)
+    || '; update app_private.manager_card_settings set updated_at = statement_timestamp() - interval ''30 days'''
+    || '; update app_private.manager_card_rules set created_at = statement_timestamp() - interval ''30 days'''
 $$;
 
 select extensions.is(pg_temp.health(),
@@ -738,6 +754,22 @@ select extensions.is(
 select extensions.is(
   pg_temp.health('select app_private.manager_card_configure(true, true); insert into app_private.manager_card_job_log (started_at, outcome) values (statement_timestamp() - interval ''25 hours'', ''error'')'),
   'ok cards current under rules v1', 'health: a tick error older than a day is not counted');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork_fresh('13 hours')),
+  'ok cards current under rules v1', 'health: compute just switched on with old finished gameweeks does not fail (the wait counts from the switch)');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('13 hours')
+    || '; update app.fantasy_seasons set status = ''cancelled'''),
+  'ok cards current under rules v1', 'health: gameweeks of cancelled Fantasy seasons are not waiting');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('13 hours')
+    || format('; update app.fantasy_seasons set status = ''cancelled'' where id = %L', pg_temp.id(5))),
+  'fail 1 finished gameweek(s) waiting for their cards for more than 12 hours', 'health: only the non-cancelled season''s gameweeks count');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('13 hours')
+    || '; insert into app_private.manager_card_job_log (outcome) values (''more_pending'')'),
+  'warn 4 finished gameweek(s) waiting for their cards for more than 2 hours', 'health: a tick still catching up (more_pending) warns and does not fail');
+
 select extensions.is(
   (select c ->> 'name' from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') with ordinality t(c, o)
    order by o desc limit 1),

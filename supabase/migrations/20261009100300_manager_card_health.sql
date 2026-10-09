@@ -8,6 +8,15 @@
 -- warning and failure apply only while compute is on and the active rules are
 -- usable. Counts only; no user id.
 --
+-- How long a gameweek has waited starts at the latest of: its post-work
+-- completion, the active rules row's creation, and the last settings change
+-- (the compute switch). Otherwise switching compute on, or activating a new
+-- rules version, would make every old finished gameweek look 12 hours late at
+-- once and page the owner for a backlog the tick has not yet had a chance to
+-- clear. While the last tick (within 30 minutes) reported more_pending it is
+-- still catching up, so the check warns and does not fail. Gameweeks of
+-- cancelled Fantasy seasons are skipped, as the tick skips them.
+--
 -- scripts/ops/watchdog.ts REQUIRED_DATABASE_CHECKS does not list it until
 -- production has this migration.
 
@@ -26,19 +35,31 @@ declare
   v_version integer;
   v_stale integer;
   v_oldest timestamptz;
+  v_since timestamptz;
+  v_catching_up boolean;
   v_errors integer;
   v_status text;
   v_detail text;
 begin
-  select s.compute_enabled, s.read_enabled into v_compute, v_read
+  select s.compute_enabled, s.read_enabled, s.updated_at into v_compute, v_read, v_since
   from app_private.manager_card_settings s where s.id;
   v_compute := coalesce(v_compute, false);
   v_read := coalesce(v_read, false);
   select r.version, r.usable into v_version, v_usable from app_private.manager_card_active_rules() r;
   v_usable := coalesce(v_usable, false);
+  v_since := greatest(
+    v_since,
+    (select r.created_at from app_private.manager_card_rules r where r.version = v_version));
+  select coalesce(bool_and(l.outcome = 'more_pending'), false) into v_catching_up
+  from (
+    select x.outcome from app_private.manager_card_job_log x
+    where x.started_at > statement_timestamp() - interval '30 minutes'
+    order by x.id desc limit 1
+  ) l;
 
-  select count(*), min(work.completed_at) into v_stale, v_oldest
+  select count(*), min(greatest(work.completed_at, v_since)) into v_stale, v_oldest
   from app.fantasy_gameweeks gw
+  join app.fantasy_seasons season on season.id = gw.fantasy_season_id and season.status <> 'cancelled'
   join app_private.fantasy_gameweek_postwork work
     on work.gameweek_id = gw.id and work.calculation_version = gw.scoring_input_version
     and work.completed_at is not null
@@ -65,7 +86,8 @@ begin
   elsif v_read and not v_compute then
     v_status := 'warn';
     v_detail := 'reads on, compute off: cards frozen';
-  elsif v_compute and v_stale > 0 and v_oldest < statement_timestamp() - interval '12 hours' then
+  elsif v_compute and v_stale > 0 and not v_catching_up
+    and v_oldest < statement_timestamp() - interval '12 hours' then
     v_status := 'fail';
     v_detail := v_stale || ' finished gameweek(s) waiting for their cards for more than 12 hours';
   elsif v_compute and v_stale > 0 and v_oldest < statement_timestamp() - interval '2 hours' then
@@ -84,7 +106,7 @@ end;
 $$;
 
 comment on function app_private.manager_card_health() is
-  'The manager_card health check: ok / warn / fail with counts only. Fails (and pages) when compute is on, the rules are usable and a finished gameweek has waited more than 12 hours for its cards; warns after 2 hours. No grant.';
+  'The manager_card health check: ok / warn / fail with counts only. Fails (and pages) when compute is on, the rules are usable and a finished gameweek has waited more than 12 hours for its cards (counted from the latest of its completion, the rules row and the switch, and not while the tick reports more_pending); warns after 2 hours. Skips cancelled seasons. No grant.';
 
 create function app_private.ops_health_checks()
 returns jsonb
