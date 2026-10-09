@@ -123,9 +123,9 @@ export function tokenMarkup(
     };
     const f = fitNumber(text, box, half, 10000, measure);
     const out = col.numberFill === "#FFFFFF" ? mix(col.primary, "#000000", 0.6) : "#FFFFFF";
-    const t = (extra: string) =>
+    const digits = (extra: string) =>
       `<text x="${f.x.toFixed(1)}" y="${f.y.toFixed(1)}" class="mc-f-d" font-size="${f.size.toFixed(1)}" text-anchor="middle" direction="ltr" ${extra}>${esc(text)}</text>`;
-    body += `<g data-mc="ovr">${t(`fill="none" stroke="${out}" stroke-width="${(2 * half).toFixed(1)}" stroke-linejoin="round"`)}${t(`fill="${col.numberFill}"`)}</g>`;
+    body += `<g data-mc="ovr">${digits(`fill="none" stroke="${out}" stroke-width="${(2 * half).toFixed(1)}" stroke-linejoin="round"`)}${digits(`fill="${col.numberFill}"`)}</g>`;
   }
   return (
     `<span class="mc-tok mc-tok--${size}" role="img" aria-label="${esc(tokenLabel(v))}" dir="${ar ? "rtl" : "ltr"}" style="width:${tokenWidth(size)}px;height:${size}px">` +
