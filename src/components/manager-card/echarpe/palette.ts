@@ -65,6 +65,29 @@ function relief(g: string, target: number, t0: number, lightG: boolean): string 
   return contrast(other, g) > contrast(first, g) ? other : first;
 }
 
+/**
+ * What the rib the dash is knitted on reads as once the knit is on it: the ground, one stitch-shadow
+ * darker. Measured on the rendered scarf (WP6b): the rib's two column shades average about half the
+ * ground's luminance, which is this mix toward black.
+ */
+const RIB_SHADOW = 0.25;
+/** The contrast the dash keeps against that rib tone, before the knit's own shadows on both. */
+export const DASH_RIB_MIN = 4.5;
+
+/**
+ * The unknown-number dash on a pale ground: a mid-tone of the ground yarn, the lightest shade (in
+ * steps of 5% toward black from 50%) that keeps `DASH_RIB_MIN` against the rib. Falls back to the
+ * charcoal where no shade can (a ground too dark for a shade to read, which takes the cream anyway).
+ */
+export function dashShade(g: string): string {
+  const rib = mix(g, "#000000", RIB_SHADOW);
+  for (let t = 0.5; t <= 0.95; t += 0.05) {
+    const shade = mix(g, "#000000", t);
+    if (contrast(shade, rib) >= DASH_RIB_MIN && contrast(shade, g) >= FIGURE_MIN) return shade;
+  }
+  return CHAR;
+}
+
 export interface Palette {
   /** The ground yarn: the club's primary, or undyed wool. */
   G: string;
@@ -151,10 +174,12 @@ function build(club: string | null, second: string | null): Palette {
   const Sd = pick(G, [L, CREAM, CHAR], FIGURE_MIN);
   // the word on the tier strip (the strip is the stripe yarn)
   const T = pick(S, [G, CREAM, CHAR], FIGURE_MIN);
-  // the base scarf (no tier yet): the dash in whichever of cream and charcoal stands out more from
-  // the ground, and a tone-on-tone name band, a darker lot of the ground yarn, which keeps the
-  // name's own colour legible on it
-  const dash = contrast(CREAM, G) >= contrast(CHAR, G) ? CREAM : CHAR;
+  // the base scarf (no tier yet): the dash is cream where the ground is dark, as before. On a pale
+  // ground (undyed wool included) it is no longer charcoal, which knitted as a censoring bar; it is a
+  // mid-tone of the ground yarn itself, the lightest shade that stays 4.5:1 from the rib tone it is
+  // knitted on (see `dashShade`), and a tone-on-tone name band, a darker lot of the ground yarn,
+  // which keeps the name's own colour legible on it
+  const dash = contrast(CREAM, G) >= contrast(CHAR, G) ? CREAM : dashShade(G);
   const Q = lightG ? mix(G, "#000000", 0.14) : mix(G, "#000000", 0.4);
   return {
     G,

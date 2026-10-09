@@ -5,13 +5,18 @@ import { kitTableEntries } from "@/lib/kits";
 import {
   CHAR,
   CREAM,
+  DASH_RIB_MIN,
   FIGURE_MIN,
   STRIPE_MIN,
   contrast,
+  dashShade,
   mix,
   palette,
   type Palette,
 } from "./palette";
+
+/** The charcoal's red-to-blue spread is zero: a shade of the wool keeps the wool's warmth. */
+const CHAR_SPREAD = 0;
 
 const of = (primary: string | null, secondary: string | null = null): Palette =>
   palette({
@@ -74,6 +79,28 @@ describe("every yarn keeps its contrast on the ground", () => {
           }
         }
     expect(worst).toBeGreaterThanOrEqual(1);
+  });
+
+  it("the unknown-number dash is cream on a dark ground and a mid-tone of the ground on a pale one", () => {
+    // Raja's green and Wydad's red are dark enough for cream.
+    expect(of("#0a8f3a", "#ffffff").dash).toBe(CREAM);
+    expect(of("#c8102e", "#ffffff").dash).toBe(CREAM);
+    // Undyed wool and a yellow ground used to take the charcoal: a near-black bar.
+    for (const ground of [null, "#f5c400", "#e8e1d0"]) {
+      const P = of(ground);
+      expect(P.dash).not.toBe(CHAR);
+      expect(P.dash).toBe(dashShade(P.G));
+      // a shade of the ground yarn: no channel lighter than the ground's
+      const [dr, dg, db] = [1, 3, 5].map((i) => parseInt(P.dash.slice(i, i + 2), 16));
+      const [gr, gg, gb] = [1, 3, 5].map((i) => parseInt(P.G.slice(i, i + 2), 16));
+      expect(dr <= gr && dg <= gg && db <= gb).toBe(true);
+      // and on undyed wool it is a warm shade of the wool, not the neutral charcoal
+      if (!ground) expect(dr - db).toBeGreaterThan(CHAR_SPREAD);
+      // it keeps its distance from the rib it is knitted on (the rendered pixels are measured in
+      // docs/product/manager-card-section/wp6b/INDEX.md)
+      expect(contrast(P.dash, mix(P.G, "#000000", 0.25))).toBeGreaterThanOrEqual(DASH_RIB_MIN);
+      expect(contrast(P.dash, P.G)).toBeGreaterThanOrEqual(FIGURE_MIN);
+    }
   });
 
   it("an invalid colour is no club: undyed wool", () => {
