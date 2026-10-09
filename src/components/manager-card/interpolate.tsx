@@ -13,6 +13,12 @@ import { Fragment, type ReactNode } from "react";
  * `16:30`). A name, a link or a phrase is left alone. A phrase that carries its own numbers
  * (« 3 جولات منتهية ») is already isolated by the plural family that made it (`copy.ts`).
  * A placeholder with no value is left as it is, `{name}`, so a missing value shows up in review.
+ *
+ * A fraction is one figure. `{k}/{n}` (two placeholders around a slash, both given as whole
+ * numbers) is filled as the single run « 1/3 » and isolated whole, so an Arabic line never reads it
+ * as « 3/1 » (two isolated numbers either side of a slash are two runs, and the line's direction
+ * puts them in the wrong order). A template can also take the fraction ready made as one
+ * placeholder, `{kn}`; both ways give the same markup.
  */
 const FSI = String.fromCodePoint(0x2068);
 const PDI = String.fromCodePoint(0x2069);
@@ -20,6 +26,33 @@ const PDI = String.fromCodePoint(0x2069);
 const PLACEHOLDER = /\{([A-Za-z0-9_]+)\}/g;
 const ARABIC_SCRIPT = /\p{Script=Arabic}/u;
 const NUMBER_LIKE = /^[+-]?\d+(?:[./:,]\d+)*%?$/;
+/** Two placeholders around a slash: a fraction. */
+const FRACTION = /\{([A-Za-z0-9_]+)\}\/\{([A-Za-z0-9_]+)\}/g;
+const WHOLE_NUMBER = /^\d+$/;
+
+const isWhole = (value: unknown): value is string | number =>
+  (typeof value === "number" && Number.isInteger(value) && value >= 0) ||
+  (typeof value === "string" && WHOLE_NUMBER.test(value));
+
+/**
+ * The template with each `{a}/{b}` whose two values are whole numbers turned into one placeholder
+ * holding « a/b », and the values with those added. Anything else is left alone.
+ */
+function mergeFractions<V>(
+  template: string,
+  values: Record<string, V | string | number>,
+): { template: string; values: Record<string, V | string | number> } {
+  const merged: Record<string, V | string | number> = { ...values };
+  let count = 0;
+  const out = template.replace(FRACTION, (whole, a: string, b: string) => {
+    if (!(a in values) || !(b in values) || !isWhole(values[a]) || !isWhole(values[b]))
+      return whole;
+    const name = `fraction${count++}`;
+    merged[name] = `${values[a]}/${values[b]}`;
+    return `{${name}}`;
+  });
+  return count === 0 ? { template, values } : { template: out, values: merged };
+}
 
 /** Whether a template is Arabic text, so its numbers need isolating. */
 export function isArabicTemplate(template: string): boolean {
@@ -49,7 +82,12 @@ export function isolateText(value: string | number): string {
  * The template with its placeholders filled, for the interface: numbers in Arabic text come back
  * in `<bdi dir="ltr">`. Returns a plain string when nothing needed an element.
  */
-export function fill(template: string, values: Record<string, ReactNode>): ReactNode {
+export function fill(template: string, given: Record<string, ReactNode>): ReactNode {
+  const { template: source, values } = mergeFractions(template, given);
+  return fillParts(source, values);
+}
+
+function fillParts(template: string, values: Record<string, ReactNode>): ReactNode {
   const arabic = isArabicTemplate(template);
   const parts: ReactNode[] = [];
   let last = 0;
@@ -90,9 +128,10 @@ export function fill(template: string, values: Record<string, ReactNode>): React
  * The template with its placeholders filled, as text: numbers in Arabic text are wrapped in
  * U+2068 … U+2069. For share messages, accessible labels and the share picture.
  */
-export function fillText(template: string, values: Record<string, string | number>): string {
-  const arabic = isArabicTemplate(template);
-  return template.replace(PLACEHOLDER, (whole, name: string) => {
+export function fillText(template: string, given: Record<string, string | number>): string {
+  const { template: source, values } = mergeFractions(template, given);
+  const arabic = isArabicTemplate(source);
+  return source.replace(PLACEHOLDER, (whole, name: string) => {
     if (!(name in values)) return whole;
     const value = values[name]!;
     return arabic && needsIsolation(value) ? isolateText(value) : String(value);
