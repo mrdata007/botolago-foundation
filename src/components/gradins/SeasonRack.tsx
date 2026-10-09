@@ -13,10 +13,10 @@ import { Figure } from "./figures";
 import { seasonProfile } from "./season-profile";
 
 /**
- * The rack: a rail across the column and one season hanging from it for each season the card has
- * lived (plan 4.6, and the « Vos saisons » row of G1). The scarf is folded over the barrier rail
- * of the stands; here the seasons hang beside one another on the same rail, newest first, so
- * "depuis le début" is something you can see: the first season is still there, hanging.
+ * The rack: a shelf line across the column and one season standing on it for each season the card
+ * has lived (plan 4.6, and the « Vos saisons » row of G1). The seasons stand beside one another on
+ * the line, newest first, so "depuis le début" is something you can see: the first season is
+ * still there.
  *
  * `onPick` makes each season a button (G6 picks the season the page shows, `aria-pressed`);
  * without it the rack is a plain list inside whatever link wraps it (G1).

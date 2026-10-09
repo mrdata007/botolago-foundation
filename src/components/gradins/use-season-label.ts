@@ -4,8 +4,8 @@ import { useI18n } from "@/i18n/provider";
 import { defaultSeason, footballService } from "@/services/football";
 
 /**
- * The current season's label (« 2026/27 »), for the scarf a guest or an account with no team is
- * shown: the season carrier on the object. The football seasons query Home already reads; an
+ * The current season's label (« 2026/27 »), for the card a guest or an account with no team is
+ * shown: the season carried on the tab. The football seasons query Home already reads; an
  * empty string until it answers, which the card draws as an empty carrier.
  */
 export function useSeasonLabel(): string {

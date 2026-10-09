@@ -3,8 +3,9 @@
 « Éclat », the shine. The card renderer of the collectible direction: a dark lacquered plate in a
 metal shield frame, the club's match shirt in 3D on a honeycomb backboard with the manager's rating
 printed on its chest, the tier in a plaque, the name hanging under the artwork, four stats and the
-serial. Implements `CardRenderer` (`../renderer.ts`), id `eclat-v1`, and replaces Écharpe
-(`../echarpe/`) when `../active-renderer.ts` is switched to it (WP3b).
+serial. Implements `CardRenderer` (`../renderer.ts`), id `eclat-v1`, and is the card the app draws:
+`../active-renderer.ts` loads it. It replaced the first direction, whose folder was
+deleted in the commit that switched the app over (git history keeps it).
 
 Design: the Manager Card collectible plan in `docs/product/` (revision 3, with the critique and
 confirmer fixes), its brief next to it, and the direction mock (`mock.html` in the design's folder
@@ -17,7 +18,7 @@ nothing here carries a third party's name, mark or artwork.
 | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `full()`, `label()`, `aspect()`, `detail()`, `image()`, names, shirt, number                              | WP1: complete, tested, compared with the mock (below)                                                                        |
 | `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts`, the 3D, foil and beats sections of `eclat.css` | WP2: tokens per size, the holographic items, the depth, the tilt and the beats, each tested and measured in Chromium (below) |
-| `active-renderer.ts` still serves Écharpe                                                                 | WP3b switches it                                                                                                             |
+| `active-renderer.ts`, the stage, the heroes, the sheets, the share picture                                | WP3b: the app serves `eclat-v1` (see "In the app" below)                                                                     |
 
 ## Files
 
@@ -65,7 +66,7 @@ root.
   mirrored by a transform**, its x is mirrored and its `direction` set. Digits stay left to right.
 - Every manager-supplied string (the name, the initials, the season, the serial, the label) goes
   through the one `esc` (`view.ts`). Tags are the allow-list's (`../markup-safety.ts`): no new tag;
-  `pattern` and `mask` are required (honeycomb, knit, brushing, grain, the foil's cells).
+  `pattern` and `mask` are required (honeycomb, the shirt's piqué, brushing, grain, the foil's cells).
 - No `<image>`, no raster texture, no `feTurbulence`; filters are Gaussian blurs only.
 - At rest the card is flat 2D and crisp; in 3D only while a pointer moves (`.mc-eclat--active`), a
   touch-only screen floats it (`--idle`), and it eases back (`--settle`). Verified in Chromium: at
@@ -111,20 +112,38 @@ app's (`src/fonts.css`); Noto Sans Arabic carries the Arabic stat labels and the
 
 The lowest tier (key `homa`) is displayed LASTREET in French and in Arabic (a Latin word, set left to
 right and tracked in both). The renderer owns the word (`foil.ts`, `tierWord`, and `withTierNames` for
-the label), so a card and its label say LASTREET whatever the dictionary still holds until the
-dictionary change (WP3a) lands; after it, nothing here changes.
+the label), so a card and its label say LASTREET whatever a dictionary holds. The dictionaries say
+LASTREET too now (the key is still `homa`), and the screens set the word in an isolated left-to-right
+run in Arabic (`../tier-word.tsx`).
 
 ## Interface additions (all optional, `../renderer.ts`)
 
 - `RenderOptions.compact`: the face-à-face sheet's card (136 to 200 px): no serial, wordmark, « OVR »,
   season, club initials or stat labels; every remaining text is 58 units or more, so 8 CSS px at
-  136 px. **WP3b**: `ManagerCard` passes it for the sheet's card (`width ≤ 220`) and adds it to the
-  render cache key.
+  136 px. `ManagerCard` takes a `compact` prop (it is part of the render-cache key); the face-à-face
+  sheet's card and the born panel's 96 px card pass it, no other card does.
 - `TextRun.face` gains `"serif"` (Instrument Serif) and `"displayLight"` (Changa 300); `weight` gains
   300; `tracking` (letter spacing in image units) and `rotate` (degrees about the run's point) are
-  new. `moments/card-share-image.ts` maps the faces and honours both (a small change there, so the
-  folder type-checks; WP3b owns the rest of that file).
-- `CardRenderer.mount` is documented as the tilt. `ManagerCard`'s `sway` prop becomes `tilt` in WP3b.
+  new. `moments/card-share-image.ts` maps the faces and honours both, and loads Instrument Serif,
+  Changa Light and the figures' faces before it draws.
+- `CardRenderer.mount` is the tilt. `ManagerCard`'s `tilt` prop (it was `sway`) asks for it; the
+  rule for mounting it (asked for, a renderer that has it, the card in the page, no request for less
+  motion) is `../mount-pointer.ts`.
+
+## In the app
+
+- **The stage** (`gradins/CardStage.tsx`, plan 10): the card is 296 px wide on a phone (never closer
+  than 16 px to an edge) and 336 px from 768 px, centred, in a stage with 8 px each side and 18 px
+  under the card for the tilt and the shadow it casts. Every card is 1 : 1.618, so the box reserved
+  before the chunk loads (`estimate.ts`) is the box the card fills. An ellipse under the reserved box
+  stands in for the card's own shadow until the card is drawn.
+- **The heroes** (`moments/HeroFrame.tsx`) use the same widths and the tilt; the replay sheet draws
+  the card at 296 px.
+- **The share picture** (`moments/card-share-image.ts`): `image()`'s art and runs, drawn with the
+  card's faces; LASTREET is left to right and tracked in both languages.
+- **Tests**: `tests/e2e/gradins.e2e.ts` has the depth spec (flat at rest, `preserve-3d` and a number
+  layer with height under a mouse, the number still what a click at its centre lands on, flat again
+  after the pointer leaves) and the reduced-motion spec (no light written, no 3D, no animation).
 
 ## Share picture
 

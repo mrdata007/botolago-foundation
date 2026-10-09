@@ -133,7 +133,7 @@ describe("withTier, guestProfile and localProfile", () => {
     expect(profile.tier).toBe("pro");
   });
 
-  it("is the unnamed base scarf for a guest: nothing is filled in", () => {
+  it("is the unnamed base card for a guest: nothing is filled in", () => {
     expect(guestProfile()).toEqual({
       name: "",
       ovr: null,
@@ -151,7 +151,7 @@ describe("withTier, guestProfile and localProfile", () => {
     expect(guestProfile({ season: "2026/27", club })).toMatchObject({ season: "2026/27", club });
   });
 
-  it("carries a signed-in account's name and favourite club on the base scarf", () => {
+  it("carries a signed-in account's name and favourite club on the base card", () => {
     const raja: Club = {
       id: "rca",
       name: { fr: "Raja CA", ar: "الرجاء الرياضي" },

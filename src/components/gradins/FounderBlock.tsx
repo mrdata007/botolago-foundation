@@ -29,9 +29,10 @@ function cutoffText(date: string, lang: "fr" | "ar"): string {
 }
 
 /**
- * « Fondateur 2026 », for founders only (plan 4.8): the founder's cast-on drawn large (the part of
- * the card the renderer shows as its founder detail), what the mark is, the cut-off date when the
- * owner stored one, and a « Revoir » that knits the five cream rows again. Before the grant, and
+ * « Fondateur 2026 », for founders only (plan 4.8): the founder's mark drawn large (the part of
+ * the card the renderer shows as its founder detail: the capsule along the cut corner), what the
+ * mark is, the cut-off date when the owner stored one, and a « Revoir » that lights the capsule
+ * again. Before the grant, and
  * for everyone not granted, there is no such block, no teaser and no « éligible ».
  */
 export function FounderBlock({ card, profile }: { card: MyCardDto; profile: CardProfile }) {

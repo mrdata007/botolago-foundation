@@ -1,6 +1,6 @@
 /**
- * The card renderer interface (plan section 6.3). A direction (Écharpe, then Éclat) implements it,
- * so the card's design can change without touching the screens.
+ * The card renderer interface (plan section 6.3). A card direction (today Éclat) implements it, so
+ * the card's design can change without touching the screens.
  */
 import type { BeatName, CardLang, CardProfile, CardStrings, CardTheme, TokenSize } from "./types";
 

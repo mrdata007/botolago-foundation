@@ -267,7 +267,7 @@ export interface ShirtColours {
   primary: string;
   /** Collar, cuffs: the club's second colour, or the tier's dark edge. */
   secondary: string;
-  /** L* under 25 (a black shirt): the knit's dots fall, the backlight gains .15, an aura sits behind. */
+  /** L* under 25 (a black shirt): the piqué's dots fall, the backlight gains .15, an aura sits behind. */
   dark: boolean;
   /** The shirt's own highlight tint, `mix(fill, #FFF, .4)`: white would wash a club colour out. */
   hl: string;

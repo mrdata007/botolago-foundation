@@ -194,7 +194,7 @@ export function withTier(profile: CardProfile, tier: TierCode): CardProfile {
 }
 
 /**
- * The unnamed base scarf a guest sees: no name, no number, no marks, no founder part. `club` is
+ * The unnamed base card a guest sees: no name, no number, no marks, no founder part. `club` is
  * the try-on's choice, which is kept nowhere.
  */
 export function guestProfile(
@@ -216,7 +216,7 @@ export function guestProfile(
 }
 
 /**
- * A signed-in account with no team yet: its display name and favourite club on the base scarf.
+ * A signed-in account with no team yet: its display name and favourite club on the base card.
  * `club` is the app's own club record (`findClub(user.favoriteClubId)`) or an already-made one.
  */
 export function localProfile(options: {

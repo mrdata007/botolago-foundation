@@ -28,7 +28,7 @@ export interface RoundRef {
 
 /**
  * What the object on the save step draws (plan M1b):
- *   - a visitor: the base scarf with no name, no club, no serial and no number. The name the
+ *   - a visitor: the base card with no name, no club, no serial and no number. The name the
  *     card will carry is chosen at sign-up, so the team name here would be wrong after saving;
  *   - a signed-in account without a team: the card name (the display name when it is not
  *     blank, else the team name, as the board reads it) and the club the profile names, if one

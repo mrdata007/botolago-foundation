@@ -95,7 +95,7 @@ const SHEET_SETTLE_MS = 340;
 
 /**
  * The beat to hand the card: `undefined` while the sheet is still arriving, then the moment's own
- * beat. One motion at a time: the card never knits while the sheet that holds it is moving.
+ * beat. One motion at a time: the card never plays its beat while the sheet that holds it is moving.
  */
 function useBeatAfterSheet(beat: ReplayItem["beat"]): ReplayItem["beat"] | undefined {
   const [ready, setReady] = useState<ReplayItem["beat"]>(null);

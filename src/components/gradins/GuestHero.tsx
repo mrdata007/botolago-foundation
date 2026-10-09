@@ -18,7 +18,7 @@ import { useViewEvent } from "./use-view-event";
 
 /**
  * The proposition to someone with no card: a visitor, or an account with no team. Plan 4.1:
- * the base scarf, unnamed (a signed-in account's own name and favourite club on it), then what
+ * the base card, unnamed (a signed-in account's own name and favourite club on it), then what
  * the card is in a headline, a line and the way in, the try-on of a club's colours, and the four
  * points. Nothing here is a number, a promise of a rating's date, or a count of anyone.
  *
@@ -41,9 +41,9 @@ export function GuestHero({
   canCreate: boolean;
   /** The Fantasy screen has not said yet whether a team can be created. */
   loadingAction: boolean;
-  /** A signed-in account's display name, drawn on the scarf. */
+  /** A signed-in account's display name, drawn on the card. */
   profileName?: string;
-  /** A signed-in account's favourite club, which dresses the scarf until another is tried. */
+  /** A signed-in account's favourite club, which dresses the card until another is tried. */
   favouriteClub?: Club | null;
   /** The rating's minimum, when the server has said it. */
   minRated: number | null;

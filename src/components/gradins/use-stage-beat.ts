@@ -21,9 +21,9 @@ import { useLaunchGate } from "./use-launch-gate";
  * The one beat the stage asks for on its own (plan section 5.4), decided once, after the launch
  * gate opens:
  *
- *   - a guest's base scarf is made (`make`) the first time on this phone;
+ *   - a guest's base card is made (`make`) the first time on this phone;
  *   - a manager whose count of journées is above the phone's last (`readTick`) sees the newest
- *     stripe knitted (`tick`).
+ *     mark lit (`tick`).
  *
  * A beat plays once. The decision is written down before the beat starts, and a phone that cannot
  * remember (blocked storage) never plays one: it must not be nagged. `suppress` holds it back while
@@ -40,7 +40,7 @@ export function useStageBeat(input: {
   const { kind, counted, suppress = false } = input;
   // The moment gate decides its hero once the next deadline is known (the shared `["gameweek"]`
   // read, same key and options as the gate's own). A manager's stage waits for that too: while a
-  // hero is on screen it carries the card and the stage's own card is hidden, so a stripe knitted
+  // hero is on screen it carries the card and the stage's own card is hidden, so a mark lit
   // there would be spent unseen.
   const gameweek = useQuery({
     queryKey: ["gameweek"],
@@ -55,7 +55,7 @@ export function useStageBeat(input: {
     // Read the gate's decision now, not the render's: it is made in a layout effect of this very
     // commit, after the render that produced `suppress`.
     if (kind === "owner" && (suppress || momentStore.get("gradins").hero !== null)) {
-      // The hero's own beat is the stripe's: note the count so it is not knitted again tomorrow.
+      // The hero's own beat is the mark's: note the count so it is not lit again tomorrow.
       decided.current = true;
       if (counted !== null && counted > readTick()) writeDevice(DEVICE_KEYS.tick, String(counted));
       return;

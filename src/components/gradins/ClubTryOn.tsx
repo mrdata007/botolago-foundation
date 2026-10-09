@@ -11,10 +11,10 @@ import type { Club } from "@/types/domain";
  * « Essayer les couleurs d'un club »: the clubs of the Botola as 44px crest discs in a wrapping,
  * centred row (16 clubs make two rows of eight where the column is wide enough, seven and two
  * where it is not): none is ever cut at the inline edge, in either language, and nothing needs a
- * swipe to be found. A tap dresses the stage's scarf in that club's colours at once (no beat), and
+ * swipe to be found. A tap dresses the stage's card in that club's colours at once (no beat), and
  * nothing is stored: it is a preview, not a choice (the club is chosen in the profile). Plan 4.1.
  *
- * The row sits under the scarf it changes, so the change is seen where the tap is, rather than
+ * The row sits under the card it changes, so the change is seen where the tap is, rather than
  * after the proposition's buttons, where the card would be off the screen.
  */
 export function ClubTryOn({
