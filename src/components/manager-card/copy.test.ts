@@ -257,8 +257,8 @@ describe("the dictionary of the section", () => {
       key === "fantasy.hub.card_view",
   );
 
-  it("has the 183 keys of Appendix A, in both languages", () => {
-    expect(sectionKeys).toHaveLength(183);
+  it("has the 184 keys of Appendix A (183, and « Vos moments » added at the finish review), in both languages", () => {
+    expect(sectionKeys).toHaveLength(184);
     for (const key of sectionKeys) {
       expect(dictionaries.ar[key as keyof typeof dictionaries.ar]).toBeDefined();
     }

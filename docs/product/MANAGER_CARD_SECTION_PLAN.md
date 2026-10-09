@@ -567,7 +567,7 @@ Card stage. Then sections, each a `UiCard` with an h2 in the title step:
    unrated: `gradins.card.tier_none` and no token marked. A fall shows `m8.down.line`.
 3. **Numéro** (only when the serial is not null): `gradins.card.serial`.
 4. **Fondateur 2026** (founders only; section 4.8).
-5. **Revoir** (`m4.sheet.replay` as the heading): the moments that happened (section 4.6), each opening
+5. **Vos moments** (`gradins.revoir.title` as the heading; « Revoir », `m4.sheet.replay`, stays the replay button): the moments that happened (section 4.6), each opening
    the replay sheet. Under reduced motion the list stays (each opens the static stored state).
 6. Actions: primary `m4.sheet.share` (G7, only with a number), soft `m4.sheet.league` to G3.
 
@@ -653,7 +653,7 @@ début, rang par rang.
    points hollow), 64 px tall, `--ui-ink-fg` stroke. WP3 loads the `dataviz` skill before drawing it.
 4. **The table**: Journée / Note / Palier (`gradins.seasons.col_*`), newest first, 20 rows per page,
    `gradins.seasons.more` loads the next page (keyset on `gameweekSeq`). Provisional rows carry the pill.
-5. **Revoir** (`m4.sheet.replay` heading): derived, never invented: the season's first rating (earliest
+5. **Vos moments** (`gradins.revoir.title` heading; « Revoir » is the button): derived, never invented: the season's first rating (earliest
    non-null history row), the first time at each tier (earliest row per tier across seasons), founder
    (card), each closed season. Items `m12.item.*`. Each opens the replay sheet.
 
@@ -1860,6 +1860,7 @@ Typographic apostrophe ’ in French. `{final}` takes `finalRounds(n)`, `{rounds
 | `gradins.club.none`           | Votre carte n’a pas encore de club. Le club choisi dans votre profil lui donne sa couleur. | لا نادي لبطاقتك بعد. يمنحها النادي الذي تختاره في ملفك الشخصي لونه. |
 | `gradins.club.choose`         | Choisir mon club                                                                           | اختيار ناديي                                                        |
 | `gradins.seasons.title`       | Vos saisons                                                                                | مواسمك                                                              |
+| `gradins.revoir.title`        | Vos moments                                                                                | لحظاتك                                                              |
 | `gradins.seasons.season`      | Saison {season}                                                                            | موسم {season}                                                       |
 | `gradins.season.closed_label` | Fin de saison                                                                              | نهاية الموسم                                                        |
 

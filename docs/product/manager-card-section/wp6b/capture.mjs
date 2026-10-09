@@ -49,6 +49,7 @@ const SHOTS = [
   ["tryon", "g1-guest-tryon", "/gradins", false, [390], false, "tryon"],
   ["club", "g1-club-block", "/gradins?mc=forming1", true, [390], false, "club"],
   ["g2", "g2-rated", "/gradins/carte?mc=rated", true, [390], true],
+  ["g2", "g6-rated", "/gradins/saisons?mc=rated", true, [390], true],
 ];
 
 const pw = await import(PW_CORE);

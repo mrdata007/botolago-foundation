@@ -2777,6 +2777,7 @@ export const fr = {
     "Votre carte n’a pas encore de club. Le club choisi dans votre profil lui donne sa couleur.",
   "gradins.club.choose": "Choisir mon club",
   "gradins.seasons.title": "Vos saisons",
+  "gradins.revoir.title": "Vos moments",
   "gradins.seasons.season": "Saison {season}",
   "gradins.season.closed_label": "Fin de saison",
 
