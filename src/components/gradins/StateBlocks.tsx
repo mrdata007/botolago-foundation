@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
  * the error panel for a card that could not be read, and the line for an account that has no card.
  */
 
-/** A 240 × 360 stage, two text lines and three blocks, announced once as « Chargement ». */
+/** A card-shaped stage (296 px, 336 px from 768 px, 1 : 1.618), two text lines and three blocks, announced once as « Chargement ». */
 export function GradinsLoading() {
   const { t } = useI18n();
   return (
@@ -21,8 +21,8 @@ export function GradinsLoading() {
       className="px-4 pt-5"
     >
       <span className="sr-only">{t("state.loading")}</span>
-      <div className="mx-auto w-60 md:w-[264px]">
-        <UiSkeleton className={cn("aspect-[2/3] w-full", ui.radius.sheet)} />
+      <div className="mx-auto w-[min(296px,calc(100vw-32px))] md:w-[336px]">
+        <UiSkeleton className={cn("aspect-[1000/1618] w-full", ui.radius.sheet)} />
       </div>
       <div className="mx-auto mt-4 flex max-w-xs flex-col items-center gap-2">
         <UiSkeleton className="h-6 w-48" />

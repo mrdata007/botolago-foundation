@@ -191,7 +191,7 @@ export function OwnerHome({
 
   return (
     <div
-      className="pb-2 md:grid md:grid-cols-[264px_minmax(0,1fr)] md:gap-x-6 md:px-6"
+      className="pb-2 md:grid md:grid-cols-[352px_minmax(0,1fr)] md:gap-x-6 md:px-6"
       data-testid="gradins-owner"
     >
       <div className="empty:hidden md:col-span-2" data-hero-slot="" data-testid="gradins-hero-slot">

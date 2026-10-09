@@ -79,7 +79,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
 
   return (
     <div
-      className="pb-2 md:grid md:grid-cols-[264px_minmax(0,1fr)] md:gap-x-6 md:px-6"
+      className="pb-2 md:grid md:grid-cols-[352px_minmax(0,1fr)] md:gap-x-6 md:px-6"
       data-testid="gradins-card-page"
     >
       <div className="md:sticky md:top-[calc(var(--topbar-h)+16px)] md:self-start">
