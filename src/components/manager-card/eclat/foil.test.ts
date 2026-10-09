@@ -21,6 +21,9 @@ import { FR, AR } from "./test-data";
 
 /** A near-black page, as the dark theme's (the mock's); the card's edge must read against it. */
 const DARK_PAGE = "#0B1020";
+/** The pages the app really draws the card on, read from its pixels: the light page is not white. */
+const LIGHT_PAGE = "#F4F6F8";
+const DARK_PAGE_REAL = "#040A17";
 
 describe("the foil ladder (plan 5.4)", () => {
   it("has six steps in tier order, every one with seven metal stops", () => {
@@ -81,6 +84,37 @@ describe("the foil ladder (plan 5.4)", () => {
     for (const key of TIER_KEYS) {
       expect(contrast(FOIL[key].edgeL, "#FFFFFF"), `${key} light`).toBeGreaterThanOrEqual(3);
       expect(contrast(FOIL[key].edgeD, DARK_PAGE), `${key} dark`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("draws the theme edge at 3:1 against the pages the app really has, with room to spare", () => {
+    for (const key of TIER_KEYS) {
+      expect(contrast(FOIL[key].edgeL, LIGHT_PAGE), `${key} light page`).toBeGreaterThanOrEqual(4);
+      expect(contrast(FOIL[key].edgeD, DARK_PAGE_REAL), `${key} dark page`).toBeGreaterThanOrEqual(
+        3.5,
+      );
+    }
+  });
+
+  it("keeps CHAMPION's and LEGEND's light edge dark: the foil passes over that line and lifts it", () => {
+    // the foil (`holo.edge`) is painted over the 3-unit edge stroke; measured from pixels at 296 and
+    // 336 px the line reads 3.35 or more on the light page only while the stroke itself is this dark
+    for (const key of ["champion", "legend"] as const) {
+      expect(contrast(FOIL[key].edgeL, LIGHT_PAGE), key).toBeGreaterThanOrEqual(7);
+    }
+  });
+
+  it("keeps the thickness walls dark on the dark page, so the lit edge line is the silhouette", () => {
+    // `layers.ts` fills wall k (1 at the back) with `metal[3]` mixed 35 % + (7 − k) × 6 % toward black.
+    // A wall under 1.5:1 against the page is not seen as part of the card; the one that is (LASTREET's
+    // silver) must clear 3:1 at its front. Four walls of every other tier stay under 1.5, as PRO's and
+    // LEGEND's always did: before, the base, STADE and CHAMPION cards' walls climbed to 2.2:1 and the
+    // silhouette read as that ramp (1.96 to 2.28), not as the edge line
+    const wall = (key: (typeof TIER_KEYS)[number], k: number): number =>
+      contrast(mix(FOIL[key].metal[3], "#000000", 0.35 + (7 - k) * 0.06), DARK_PAGE_REAL);
+    for (const key of TIER_KEYS) {
+      if (key === "homa") expect(wall(key, 4), key).toBeGreaterThanOrEqual(3);
+      else for (const k of [1, 2, 3, 4]) expect(wall(key, k), `${key} wall ${k}`).toBeLessThan(1.5);
     }
   });
 
