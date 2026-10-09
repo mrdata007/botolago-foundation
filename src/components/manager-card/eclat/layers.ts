@@ -55,6 +55,9 @@ export function stack(v: View, parts: Parts, o: RootOptions): string {
     `mc-eclat--${o.theme}`,
     F.holo ? "mc-holo" : "",
     o.beat ? `mc-eclat--beat-${o.beat}` : "",
+    // a rated card has no mark to light, so its tick is the floodlights' pulse (the stylesheet's choice
+    // between the two is this class, not a selector that looks inside the card)
+    o.beat === "tick" && v.p.ovr != null ? "mc-eclat--pulse" : "",
     o.compact ? "mc-eclat--compact" : "",
   ]
     .filter(Boolean)

@@ -275,6 +275,14 @@
   }
 }
 
+/* under reduced motion nothing eases (the tilt is not mounted either, so no state changes) */
+@media (prefers-reduced-motion: reduce) {
+  .mc-eclat,
+  .mc-eclat--settle {
+    transition: none;
+  }
+}
+
 /* ============================== FOIL ============================== */
 /* The sheen (every tier) and, on CHAMPION and LEGEND, a restrained diffraction: an HTML overlay above
    the art, clipped to the outline, a leaf of its own so its clip and its blend flatten nothing. The
@@ -360,15 +368,14 @@
    shirt: they are drawn outside every animated group. Each beat ends in the card's resting state
    (or holds it with `both` on a property the rest state has), so dropping the class never jumps. */
 @media (prefers-reduced-motion: no-preference) {
-  /* make: the floodlights ignite, the field reveals from the reading side, a sheen crosses (600 ms) */
+  /* make: the floodlights ignite, the field reveals from the reading side, a sheen crosses (600 ms).
+     The field sits inside the group the card mirrors in Arabic, so the same clip-path reveals from
+     the left in French and from the right in Arabic: one keyframe serves both. */
   .mc-eclat--beat-make .mc-flood {
     animation: mc-ignite 180ms steps(3) both;
   }
   .mc-eclat--beat-make .mc-field {
     animation: mc-reveal 420ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both;
-  }
-  .mc-eclat--beat-make[dir="rtl"] .mc-field {
-    animation-name: mc-reveal-rtl;
   }
   /* first: the field kindles, a sheen crosses (560 ms) */
   .mc-eclat--beat-first .mc-field {
@@ -381,13 +388,14 @@
   .mc-eclat--beat-tier .mc-flood {
     animation: mc-ignite 180ms steps(3) 200ms both;
   }
-  /* tick: the newest mark fills in; with no marks (a rated card) the floodlights pulse (300 ms) */
+  /* tick: the newest mark fills in; with no marks (a rated card, which carries .mc-eclat--pulse) the
+     floodlights pulse (300 ms) */
   .mc-eclat--beat-tick .mc-mark--new {
     transform-box: fill-box;
     transform-origin: center;
     animation: mc-mark 260ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both;
   }
-  .mc-eclat--beat-tick:not(:has(.mc-mark--new)) .mc-flood {
+  .mc-eclat--beat-tick.mc-eclat--pulse .mc-flood {
     animation: mc-pulse 300ms ease both;
   }
   /* legend: the prism crosses (540 ms) */
@@ -413,8 +421,11 @@
   .mc-eclat--beat-castoff .mc-flood {
     animation: mc-settle 380ms ease-out 40ms both;
   }
-  /* the sheen crossing, on every tier: a band on the foil overlay's ::after (CHAMPION and LEGEND
-     already have the diffraction there, and it slides instead) */
+  /* the sheen crossing (make, first, tier): a white band on the foil overlay's ::after that starts
+     off the card on the reading side and ends off the card on the other, so nothing is left behind
+     when the beat's class is dropped. CHAMPION and LEGEND already use ::after for the diffraction:
+     there the diffraction itself slides in from the start of its range and fades up to its rest
+     state instead, which is also where the beat leaves it. */
   .mc-eclat--beat-make:not(.mc-holo) .mc-eclat__foil::after,
   .mc-eclat--beat-first:not(.mc-holo) .mc-eclat__foil::after,
   .mc-eclat--beat-tier:not(.mc-holo) .mc-eclat__foil::after {
@@ -429,14 +440,23 @@
       transparent 65%
     );
   }
-  .mc-eclat--beat-make .mc-eclat__foil::after {
+  .mc-eclat--beat-make:not(.mc-holo) .mc-eclat__foil::after {
     animation: mc-sweep 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
   }
-  .mc-eclat--beat-first .mc-eclat__foil::after {
+  .mc-eclat--beat-first:not(.mc-holo) .mc-eclat__foil::after {
     animation: mc-sweep 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 80ms both;
   }
-  .mc-eclat--beat-tier .mc-eclat__foil::after {
+  .mc-eclat--beat-tier:not(.mc-holo) .mc-eclat__foil::after {
     animation: mc-sweep 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
+  }
+  .mc-eclat--beat-make.mc-holo .mc-eclat__foil::after {
+    animation: mc-diffract 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
+  }
+  .mc-eclat--beat-first.mc-holo .mc-eclat__foil::after {
+    animation: mc-diffract 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 80ms both;
+  }
+  .mc-eclat--beat-tier.mc-holo .mc-eclat__foil::after {
+    animation: mc-diffract 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
   }
 
   @keyframes mc-ignite {
@@ -450,14 +470,6 @@
   @keyframes mc-reveal {
     from {
       clip-path: inset(0 100% 0 0);
-    }
-    to {
-      clip-path: inset(0);
-    }
-  }
-  @keyframes mc-reveal-rtl {
-    from {
-      clip-path: inset(0 0 0 100%);
     }
     to {
       clip-path: inset(0);
@@ -500,10 +512,16 @@
   }
   @keyframes mc-sweep {
     from {
-      transform: translateX(-120%);
+      transform: translateX(calc(var(--mc-dx) * -115%));
     }
     to {
-      transform: translateX(0);
+      transform: translateX(calc(var(--mc-dx) * 115%));
+    }
+  }
+  @keyframes mc-diffract {
+    from {
+      background-position: 0% 50%;
+      opacity: 0;
     }
   }
   @keyframes mc-prism {
