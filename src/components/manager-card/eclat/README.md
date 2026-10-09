@@ -13,11 +13,11 @@ nothing here carries a third party's name, mark or artwork.
 
 ## Status of this folder
 
-| Part                                                                                                      | State                                                                                                                                |
-| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `full()`, `label()`, `aspect()`, `detail()`, `image()`, names, shirt, number                              | WP1: complete, tested, compared with the mock (below)                                                                                |
-| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts`, the 3D, foil and beats sections of `eclat.css` | WP2's files: **a first, working version** written by WP1 so the renderer is whole and the contract passes; WP2 refines them in place |
-| `active-renderer.ts` still serves Écharpe                                                                 | WP3b switches it                                                                                                                     |
+| Part                                                                                                      | State                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `full()`, `label()`, `aspect()`, `detail()`, `image()`, names, shirt, number                              | WP1: complete, tested, compared with the mock (below)                                                                        |
+| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts`, the 3D, foil and beats sections of `eclat.css` | WP2: tokens per size, the holographic items, the depth, the tilt and the beats, each tested and measured in Chromium (below) |
+| `active-renderer.ts` still serves Écharpe                                                                 | WP3b switches it                                                                                                             |
 
 ## Files
 
@@ -36,7 +36,7 @@ nothing here carries a third party's name, mark or artwork.
 | `ornament.ts`, `plaque.ts`, `plate.ts`                    | The frame's materials and shapes, the tier plaque or forming marks, and the plate's text and furniture.                                                 |
 | `text.ts`, `ctx.ts`                                       | A text described once (`<text>` or a share-picture run), and what one card's parts share.                                                               |
 | `full.ts`                                                 | `fullCard`, `cardImage` (share art), `founderDetail`, `appliedBeat`, `buildParts`.                                                                      |
-| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts` | The layer stack and rims, the holographic layer, tokens and minis, the beat table, the tilt (WP2's, first version).                                     |
+| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts` | The layer stack and rims, the holographic layer, tokens and minis, the beats' timeline, the tilt (WP2's).                                               |
 | `ids.ts`                                                  | Unique SVG ids (`mc-<n>-…`); `../scope-ids.ts` makes the cached markup unique per mounted card.                                                         |
 | `eclat.css`                                               | Fonts (Instrument Serif), text faces, the layer stack; then the 3D, foil and beats sections.                                                            |
 | `scripts/measure-faces.ts`                                | Regenerates `metrics.ts` (Playwright, Chromium).                                                                                                        |
@@ -164,11 +164,63 @@ writes `compare-light|dark.html` (the mock's cards, on the mock's own page chrom
 share art with its runs, the tokens at every size). Serve `<out-dir>` with `/eclat.css` and `/fonts/`
 mapped to this folder's stylesheet and `public/fonts`, and open it.
 
+## Tokens and minis (plan 7)
+
+`token.ts` draws one flat SVG per size, redrawn rather than shrunk. Composition by size (the shirt is
+the short-sleeved token shirt, enlarged by `k` about its centre, moved to height `Yc`):
+
+| Size (px)  | Composition | `k`, `Yc` | Drawn                                                                               | Rating (two digits, CSS px tall, measured) |
+| ---------- | ----------- | --------- | ----------------------------------------------------------------------------------- | ------------------------------------------ |
+| 80         | card        | 1.86, 720 | shield window, shirt, tier bar, 1 px metal edge, rating in the chest box            | 13.8 to 17.4 (plan target 14)              |
+| 64         | jersey      | 1.82, 780 | whole outline as the field, 2 px ring in the tier's colour, shirt, tier bar, rating | 11.9 to 15.0 (12)                          |
+| 56, 48, 44 | jersey      | 2.04, 820 | as 64 with a foot band in place of the tier bar                                     | 9.9 to 12.5 at 48 (10)                     |
+| 32, 28     | jersey      | 2.21, 820 | as 48                                                                               | 6.9 to 8.7 at 32 (7)                       |
+| 24         | mini        | 2.21, 820 | as 32 without the rating (the row prints it)                                        | none                                       |
+
+The plan's targets came from a canvas that rounds the ink to whole pixels; measured at 1000 px
+the narrowest number ("44") is within 1.1 % of each. A one-digit 8 is set at 40.5 px at 80 and 40.7 px
+at 64 (0.3 % smaller): the boxes are the plan's. CHAMPION and LEGEND paint the ring, the tier bar, the
+foot band and the edge with the foil gradient (static). The thickness is the outline copy a pixel
+down and away from the light, on the trailing side in both languages. `token()` builds in 0.013 ms
+(median, Bun), markup 4.0 to 4.7 kB.
+
+## Motion
+
+Everything that moves is CSS, `prefers-reduced-motion: no-preference` only.
+
+- **Tilt** (`tilt.ts`, the renderer's `mount`): flat 2D at rest; with a mouse or pen over the card,
+  `.mc-eclat--active` turns the tree 7 and 9 degrees in a 300cqw perspective, the layers lift to
+  their depths (base 0, rims 1 to 7, shirt 3, number 5, frame 8, holo 9, foil overlay 9.5) and the
+  light (`--mc-ax`, `--mc-ay`) follows the pointer with a 120 ms lag; leaving eases back over 450 ms
+  (`--settle`) to the flat stack. A touch-only screen floats the card (`--idle`) while it is on screen
+  and the page is visible. A finger never tilts it, and under reduced motion nothing mounts.
+- **Beats** (`beats.ts`, `TIMELINE`): what moves in each beat, with its start and length. `BEAT_MS`
+  and `ANIMATED` are derived from it, `beats.test.ts` reads `eclat.css` and checks that the
+  stylesheet declares exactly that, and nothing a beat names holds the rating, the serial, a text
+  or the shirt. Measured in Chromium (every animation of the card, delay plus duration):
+
+  | Beat      | Moves (start + length, ms)                                     | Ends |
+  | --------- | -------------------------------------------------------------- | ---- |
+  | `make`    | floodlights 0+180, field reveal 60+420, sheen 120+480          | 600  |
+  | `tick`    | newest mark 40+260, or (a rated card) floodlight pulse 0+300   | 300  |
+  | `first`   | field 40+360, sheen 80+480                                     | 560  |
+  | `tier`    | field rises 0+420, floodlights 200+180, sheen 120+480          | 600  |
+  | `legend`  | floodlights 0+180, foil shift 0+540 (three), diffraction 0+540 | 540  |
+  | `founder` | capsule line, then fill, 0+520                                 | 520  |
+  | `castoff` | seal line 40+380, floodlights dip 40+380                       | 420  |
+
+  The sheen is a white band that crosses the card from the reading side and ends off the card (on
+  CHAMPION and LEGEND the diffraction slides in instead); the field reveals from the reading side in
+  both languages with one keyframe, because it sits inside the group the card mirrors. Every beat
+  ends in the state the card rests in, so dropping the beat's class never jumps (compared to the
+  card with no beat: identical but for anti-aliasing at edges, largest box-filtered difference 17 of
+  255).
+
 ## To add a beat
 
-Add its name to `BeatName` (`../types.ts`), its length to `BEAT_MS` (`beats.ts`, at most
-`BEAT_CAP_MS`) and its animated classes to `ANIMATED`, put its keyframes in the `no-preference` block
-of `eclat.css`, say in `appliedBeat` (`full.ts`) when it has nothing to do on a card, and add it to
-the beat tests. A beat may move only the floodlights, the field group, the foil overlay's `::after`,
-the foil shift, the marks, the capsule and the seal line, never the number, the serial, a text or the
-shirt.
+Add its name to `BeatName` (`../types.ts`), its moves to `TIMELINE` (`beats.ts`; `BEAT_MS` follows
+and may not pass `BEAT_CAP_MS`), put its keyframes in the `no-preference` block of `eclat.css` with
+the same start and length, say in `appliedBeat` (`full.ts`) when it has nothing to do on a card, and
+add it to the beat tests. A beat may move only the floodlights, the field group, the foil overlay's
+`::after`, the foil shift, the marks, the capsule and the seal line, never the number, the serial, a
+text or the shirt, and each of its keyframes must end where the card rests.
