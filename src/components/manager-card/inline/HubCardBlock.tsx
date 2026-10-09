@@ -24,8 +24,13 @@ import { fill } from "../interpolate";
 import { fromMyCard } from "../to-profile";
 import { hubCardModel, type HubCardHead, type HubCardLine } from "./inline-model";
 
-/** The a-dot and the colon bind to the word before them, so a line never starts with one. */
-const bindSeparators = (template: string) => template.replace(/ ([·:]) /g, " $1 ");
+/**
+ * The middle dot and the colon bind to the word before them, so a line never starts with one, and
+ * the journée's number binds to the word « journée » before it (Arabic writes them apart), so a
+ * line never ends on « الجولة » with its number alone on the next.
+ */
+const bind = (template: string) =>
+  template.replace(/ ([\u00b7:]) /g, "\u00a0$1 ").replace(/ (\{gw\})/g, "\u00a0$1");
 
 /**
  * The card block of the Fantasy hub (plan M3a, M3b), directly under « Composer l’équipe ».
@@ -219,21 +224,21 @@ function renderLine(
       return null;
     case "next":
       return ctx.rated
-        ? fill(bindSeparators(ctx.gradins.roundLine), {
+        ? fill(bind(ctx.gradins.roundLine), {
             gw: line.gameweek,
             deadline: ctx.deadline(line.deadline),
           })
-        : fill(bindSeparators(ctx.moment.m3.line), {
+        : fill(bind(ctx.moment.m3.line), {
             final: ctx.cardCopy.finalRounds(ctx.minRated),
             gw: line.gameweek,
             deadline: ctx.deadline(line.deadline),
           });
     case "first_counted":
-      return fill(ctx.moment.m3.firstCounted, { gw: line.gameweek });
+      return fill(bind(ctx.moment.m3.firstCounted), { gw: line.gameweek });
     case "eve":
-      return fill(ctx.moment.m3.eve, { gw: line.gameweek });
+      return fill(bind(ctx.moment.m3.eve), { gw: line.gameweek });
     case "over":
-      return fill(ctx.moment.m3.over, { gw: line.gameweek });
+      return fill(bind(ctx.moment.m3.over), { gw: line.gameweek });
     case "insufficient":
       return ctx.moment.m3.insufficient;
     case "late":

@@ -348,6 +348,13 @@ describe("HubCardBlockView", () => {
     expect(text(html)).toContain("1/3");
     expect(text(html)).toContain("التالية: الجولة");
   });
+  it("binds the journée's number to its word, so Arabic never ends a line on « الجولة » alone", async () => {
+    language = "ar";
+    const html = await render(<HubCardBlockView card={card("forming1")} gameweek={GAMEWEEK} />);
+    expect(html).toMatch(/الجولة\u00a0(?:<!-- -->)?<bdi dir="ltr"[^>]*>(?:<!-- -->)?6/);
+    // The separators already bind to the word before them.
+    expect(html).toContain("\u00a0· ");
+  });
   it("keeps the sentence's case: no uppercase, letter-spaced label anywhere in the block", async () => {
     const html = await render(<HubCardBlockView card={card("born0")} gameweek={GAMEWEEK} />);
     expect(html).not.toContain("uppercase");
