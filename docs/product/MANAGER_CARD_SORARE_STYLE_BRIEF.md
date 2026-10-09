@@ -80,14 +80,27 @@ places. The word "sorare" never appears in shipped text, class names, file names
    lit tube and the vertical BotolaGO wordmark, a trailing capsule and tube, a large art window, a
    bottom plate with labelled stats in hairline-divided columns, the name in two lines (heavy sans
    over light condensed serif, uppercase), and the identifier small at the foot.
-2. **No photo: the shirt without the player.** The art window holds a club-coloured shirt panel with a
-   V collar in the club's second colour, and on it the rating set as a giant shirt number, over a
+2. **No photo: the shirt without the player.** The art window holds a club-coloured shirt (sleeves,
+   cuffs, V collar and stitches in the club's second colour, a knit mesh, a chest disc with the club's
+   initials), and on it the rating **printed inside the chest** like a real shirt number (twill
+   outline, raised with light-following highlight and shade), over a
    generated field of light ribbons and glitch bars in the tier's colour, unique to each card (seeded
    by its serial) and stable.
 3. **A six-step foil ladder** (base, LASTREET, STADE, PRO, CHAMPION, LEGEND): unfoiled graphite, steel,
    amber, red, ice blue, violet with a prismatic foil, foil intensity rising with the tier.
-4. **Light that follows the hand.** On a mouse or pen, the card tilts up to 7°/9° and a sheen and a
-   holographic layer follow the pointer; at rest and under reduced motion a fixed sheen.
+   3a. **Premium detail** (owner, revision 2): grain, guilloche, bevelled and recessed edges, hairlines,
+   micro-print, a season stamp, captions, screw-head rivets, sharp light streaks; all vector, crisp at
+   DPR 2–3, dropping by size on tokens.
+   3b. **Holographic items for CHAMPION and LEGEND only** (owner, revision 2): rainbow diffraction foil
+   that follows the light, a diffraction grid and spectral streaks, prismatic edge foil, sparkles and
+   a BotolaGO holographic seal with the tier; LEGEND stronger than CHAMPION.
+   3c. **Real depth on every card** (owner, revision 2): five layers in CSS 3D (field, shirt, number,
+   frame, holo) with parallax, an extruded rim, a contact shadow that moves against the light, an
+   embossed number; at rest the card already leans; cards are larger on the stage (296 / 336 px).
+4. **Light that follows the hand.** On a mouse or pen, the card tilts up to 7°/9°, its layers part,
+   and the sheen, the shadow, the raised number and (top tiers) the holographic foil follow; on
+   touch-only phones a slow idle float while on screen; under reduced motion the card is still at its
+   rest lean.
 5. **Beats in the card's own material** (all ≤ 600 ms, the number never touched): tubes ignite and a
    sheen crosses (`make`), a mark lights (`tick`), the field kindles under the number (`first`), the
    foil sweeps in from the foot (`tier`), the prism crosses (`legend`), the capsule lights (`founder`),
@@ -114,8 +127,9 @@ pixels, each run against a dev server started from the tree being measured on it
   `docs/product/manager-card-sorare-style/INDEX.md`.
 - A gallery page of every fixture × tier × theme × language at full, 80, 64, 56, 44, 32, 28 and
   24 px, captured once.
-- Contrast from pixels at stage size (240 and 264 px wide), light and dark, at rest **and** with the
-  pointer over the text (worst sheen): the number ≥ 3:1 against the shirt panel under it; stat values,
+- Contrast from pixels at stage size (296 and 336 px wide), light and dark, at rest **and** with the
+  pointer over the text (worst sheen, and for CHAMPION and LEGEND the diffraction foil centred on the
+  text): the number ≥ 3:1 against the shirt under it; stat values,
   name lines and the tier word ≥ 4.5:1 against the plate; stat labels, serial and season ≥ 4.5:1; the
   card's outer edge ≥ 3:1 against the page in both themes.
 - No element escapes 390 px (rectangles, not `scrollWidth`); the card never overflows its column at
@@ -123,6 +137,22 @@ pixels, each run against a dev server started from the tree being measured on it
 - Arabic: layout mirrored (tab and rail at the right, capsule and the cut corner at the left, text
   right-aligned, stats CAP first at the right); digits Western and LTR; LASTREET isolated (`<bdi
 dir="ltr">` or LRI/PDI) and set in the Latin face, computed `letter-spacing` 0 on every Arabic run.
+- **The number inside the shirt**: for every fixture, OVR 1–99 and « — », the bounding box of the
+  `[data-mc="ovr"]` text (with its outlines) lies inside the shirt's chest box (x 306–694, y 500–830
+  of the card's viewBox), measured from element rectangles in Chromium and asserted in unit tests from
+  the metrics.
+- **Detail and crispness**: zoomed crops at DPR 2 and 3 of a PRO and a LEGEND card, at rest and
+  mid-tilt, show grain, guilloche, hairlines, stitches and micro-print without blur; the card markup
+  contains no `<image>` and no raster data; no `will-change` at rest.
+- **Holographic items**: present on CHAMPION and LEGEND (seal, sparkles, grid, prismatic edge,
+  diffraction foil), absent on every other tier (unit test and DOM query); LEGEND's foil opacity,
+  sparkle count and seal size exceed CHAMPION's; under reduced motion both stay visibly iridescent
+  (screenshot).
+- **Depth**: on every tier the full card has five layers and seven rims with distinct `translateZ`
+  and `transform-style: preserve-3d` on the tilt element (computed styles); no `filter`, `opacity`,
+  `clip-path` or `overflow` that flattens 3D on its ancestors; a pointer sweep moves `--mc-ax`/`--mc-ay`
+  and the contact shadow; screenshots at rest show the lean, the rim and the shadow, with motion and
+  with reduced motion.
 - Long names (`longNameLatin`, a 24-character single word, `arabicName`) fit their lines without
   clipping or overlap, measured from text rectangles.
 
@@ -134,7 +164,7 @@ dir="ltr">` or LRI/PDI) and set in the Latin face, computed `letter-spacing` 0 o
   centre returns it or a descendant (the foil and tilt layers have `pointer-events: none`).
 - Reduced motion: `document.getAnimations()` is empty after load on every Gradins screen, the card does
   not tilt, the static sheen shows.
-- Every beat's measured length ≤ 600 ms (`renderer.beatMs`), and the tests assert no animated group
+- Every beat's measured length ≤ 600 ms (`renderer.beatMs`; `getAnimations()` filtered to beat names, the idle float excluded), and the tests assert no animated group
   contains `data-mc="ovr"`, the serial or a `<text>`.
 - No user-visible « HOMA » or «حومة» anywhere: `rg -n "HOMA|حومة"` over `src/i18n`, rendered
   `innerText` of every screen and the share picture's text runs in both languages finds none.
