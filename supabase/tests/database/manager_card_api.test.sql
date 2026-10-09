@@ -1,5 +1,5 @@
 -- Manager Card (BG-0158): the Gradins read API and the moment acknowledgements.
--- Migrations 20261009100000 .. 20261009100200.
+-- Migrations 20261009100000 .. 20261009100300.
 --
 -- What this file proves that manager_card.test.sql does not: the five api
 -- functions' shape and grants, "off is an answer", the sign-in order (argument
@@ -29,7 +29,7 @@
 --   S  rated (not provisional): a provisional_cleared moment.
 --   V  verified MFA factor, team in FS1.   W  signed in, no team.
 begin;
-select extensions.plan(44);
+select extensions.plan(59);
 
 -- A statement's outcome: 'ok', or its SQLSTATE and message. Whatever it did is undone.
 create function pg_temp.outcome(p_sql text) returns text language plpgsql as $$
@@ -675,6 +675,93 @@ delete from auth.users where id = pg_temp.usr('M');
 select extensions.is(
   pg_temp.acks(pg_temp.usr('M')), 0::bigint,
   'deleting M''s account removes M''s acknowledgements (cascade through the profile)');
+
+-- ---------------------------------------------------------------------------
+-- Health (20261009100300): the manager_card check in ops_health_checks
+-- ---------------------------------------------------------------------------
+-- The check's status and detail with p_setup applied first; the setup is undone.
+create function pg_temp.health(p_setup text default 'select 1') returns text language plpgsql as $$
+begin
+  begin
+    execute p_setup;
+    raise exception using errcode = 'X0001',
+      message = (app_private.manager_card_health() ->> 'status') || ' ' || (app_private.manager_card_health() ->> 'detail');
+  exception
+    when sqlstate 'X0001' then return sqlerrm;
+    when others then return 'setup failed: ' || sqlstate || ' ' || sqlerrm;
+  end;
+end;
+$$;
+-- Postwork finished p_ago ago for the four finalized gameweeks (GW1-3 of FS1, GW1 of FS0).
+create function pg_temp.postwork(p_ago interval) returns text language sql as $$
+  select format($f$insert into app_private.fantasy_gameweek_postwork
+    (gameweek_id, calculation_version, price_source_version, price_player_ids, prices_completed_at, completed_at)
+    select id, 1, 1, '{}', statement_timestamp() - %L::interval, statement_timestamp() - %L::interval
+    from app.fantasy_gameweeks where status = 'finalized'$f$, p_ago, p_ago)
+$$;
+
+select extensions.is(pg_temp.health(),
+  'warn reads on, compute off: cards frozen', 'health: reads on with compute off warns that cards are frozen');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(false, false)'),
+  'ok switched off', 'health: both switches off is ok');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true)'),
+  'ok cards current under rules v1', 'health: compute on with nothing waiting is ok');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('1 hour 59 minutes')),
+  'ok cards current under rules v1', 'health: gameweeks waiting under 2 hours are still ok');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('2 hours 1 minute')),
+  'warn 4 finished gameweek(s) waiting for their cards for more than 2 hours', 'health: gameweeks waiting over 2 hours warn');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('12 hours 1 minute')),
+  'fail 4 finished gameweek(s) waiting for their cards for more than 12 hours', 'health: gameweeks waiting over 12 hours fail');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(false, true); ' || pg_temp.postwork('13 hours')),
+  'warn reads on, compute off: cards frozen', 'health: waiting gameweeks do not fail while compute is off');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('13 hours')
+    || '; insert into app_private.manager_card_evaluations (gameweek_id, rules_version, scoring_input_version)'
+    || ' select id, 1, 1 from app.fantasy_gameweeks where status = ''finalized'''),
+  'ok cards current under rules v1', 'health: evaluated gameweeks are not waiting');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, false); update app_private.manager_card_rules set active = false; '
+    || pg_temp.postwork('13 hours')),
+  'warn compute on but no usable rules', 'health: compute on without usable rules warns');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(null, true); update app_private.manager_card_rules set active = false'),
+  'warn reads on but no usable rules: the section answers off', 'health: reads on without usable rules warns');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); insert into app_private.manager_card_job_log (outcome) values (''error''), (''error'')'),
+  'warn 2 tick error(s) in the last 24 hours', 'health: tick errors in the last day warn');
+select extensions.is(
+  pg_temp.health('select app_private.manager_card_configure(true, true); insert into app_private.manager_card_job_log (started_at, outcome) values (statement_timestamp() - interval ''25 hours'', ''error'')'),
+  'ok cards current under rules v1', 'health: a tick error older than a day is not counted');
+select extensions.is(
+  (select c ->> 'name' from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') with ordinality t(c, o)
+   order by o desc limit 1),
+  'manager_card', 'ops_health_checks lists manager_card last');
+create function pg_temp.overall(p_setup text) returns text language plpgsql as $$
+begin
+  begin
+    execute p_setup;
+    raise exception using errcode = 'X0001', message = (app_private.ops_health_checks() ->> 'status') || '/'
+      || (select c ->> 'status' from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c where c ->> 'name' = 'manager_card');
+  exception when sqlstate 'X0001' then return sqlerrm;
+  end;
+end;
+$$;
+select extensions.is(
+  pg_temp.overall('select app_private.manager_card_configure(true, true); ' || pg_temp.postwork('13 hours')),
+  'fail/fail', 'a failing manager_card check makes the overall health fail (it pages)');
+select extensions.is(
+  (select string_agg(p.proname || ':' || has_function_privilege('authenticated', p.oid, 'execute')
+      || has_function_privilege('service_role', p.oid, 'execute') || has_function_privilege('anon', p.oid, 'execute'), ',' order by p.proname)
+   from pg_proc p where p.pronamespace = 'app_private'::regnamespace
+     and p.proname in ('manager_card_health', 'ops_health_checks', 'ops_health_checks_before_manager_card')),
+  'manager_card_health:falsefalsefalse,ops_health_checks:falsefalsefalse,ops_health_checks_before_manager_card:falsefalsefalse',
+  'health functions: no right for anon, authenticated or service_role');
 
 -- ---------------------------------------------------------------------------
 -- Guard

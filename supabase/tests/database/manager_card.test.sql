@@ -1,7 +1,7 @@
 -- Manager Card (BG-0158): constraints, grants, row security, the switch, the
 -- tick, the calculation (CAP, SEL, TRF, CON, OVR, tier), the reads and the acknowledgement,
 -- deletion, the permanent number, the erase lock and the prune.
--- Migrations 20261008123000 .. 20261009100200.
+-- Migrations 20261008123000 .. 20261009100300.
 --
 -- THE FIXTURE. One Fantasy season (S1, football season label "2089/90")
 -- with six gameweeks, and an earlier season S0 ("2088/89"):
@@ -583,7 +583,7 @@ select extensions.is(
 select extensions.is(
   (select count(*)::integer from pg_proc p
    where p.pronamespace = 'app_private'::regnamespace and p.proname ~ '^manager_card'),
-  25, 'twenty-five Manager Card functions live in app_private');
+  26, 'twenty-six Manager Card functions live in app_private');
 select extensions.ok(
   not exists (
     select 1 from pg_proc p
@@ -1664,6 +1664,8 @@ select extensions.ok(
   not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname !~ '^(pg_|information_schema)' and p.proname !~ 'manager_card'
+      -- ops_health_checks calls app_private.manager_card_health() (20261009100300)
+      and p.proname <> 'ops_health_checks'
       and p.prosrc ~* '(app|app_private)\.manager_card'),
   'no function outside the card''s own reads or writes a card table: no prize, ranking or Fantasy rule reads the card');
 select extensions.ok(
