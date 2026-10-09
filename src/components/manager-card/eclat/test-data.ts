@@ -199,3 +199,226 @@ export const HOSTILE_NAMES = [
   "'; DROP TABLE cards;--",
   "A&B<C>D\"E'F",
 ] as const;
+
+/* ------------------------------------------------------------------------------------------------
+   The direction mock's own cards (docs/product/manager-card-sorare-style/mock.html), as profiles:
+   the gallery and the layout tests draw exactly what the mock draws.
+   ------------------------------------------------------------------------------------------------ */
+
+const mockClub = (
+  id: string,
+  initials: string,
+  fr: string,
+  ar: string,
+  primary: string,
+  secondary: string,
+): CardClub => club(id, initials, fr, ar, primary, secondary);
+
+export const MOCK_CLUBS = {
+  raja: mockClub("rca", "RCA", "Raja CA", "الرجاء الرياضي", "#0a8f3a", "#ffffff"),
+  wydad: mockClub("war", "WAC", "Wydad AC", "الوداد الرياضي", "#c8102e", "#ffffff"),
+  far: mockClub("asfar", "FAR", "AS FAR", "الجيش الملكي", "#111111", "#c8102e"),
+  fus: mockClub("fus", "FUS", "FUS Rabat", "الفتح الرباطي", "#f28e00", "#111111"),
+  mas: mockClub("moas", "MAS", "MAS Fès", "المغرب الفاسي", "#f6d10a", "#111111"),
+} as const;
+
+const stats = (cap: number | null, sel: number | null, trf: number | null, con: number | null) => ({
+  cap,
+  sel,
+  trf,
+  con,
+});
+
+const mockProfile = (
+  p: Partial<CardProfile> &
+    Pick<CardProfile, "name" | "ovr" | "tier" | "serial" | "club" | "stats">,
+): CardProfile => ({
+  provisional: false,
+  counted: null,
+  minRated: null,
+  season: "2026/27",
+  founder: null,
+  ...p,
+});
+
+export interface MockCard {
+  caption: string;
+  profile: CardProfile;
+  /** The interface language the mock draws this card in. */
+  lang: "fr" | "ar";
+}
+
+/** The mock's first row: the six steps of the ladder, in French. */
+export const MOCK_CARDS: readonly MockCard[] = [
+  {
+    caption: "Formation 1/3 · base",
+    lang: "fr",
+    profile: mockProfile({
+      name: "Ali",
+      ovr: null,
+      tier: null,
+      counted: 1,
+      minRated: 3,
+      serial: "482913",
+      club: MOCK_CLUBS.raja,
+      stats: stats(null, null, null, null),
+    }),
+  },
+  {
+    caption: "LASTREET 61 · sans club",
+    lang: "fr",
+    profile: mockProfile({
+      name: "Hamza",
+      ovr: 61,
+      tier: "homa",
+      serial: "118204",
+      club: null,
+      stats: stats(58, 64, 60, 61),
+    }),
+  },
+  {
+    caption: "STADE 79",
+    lang: "fr",
+    profile: mockProfile({
+      name: "Karim Bennani",
+      ovr: 79,
+      tier: "stade",
+      serial: "240117",
+      club: MOCK_CLUBS.wydad,
+      stats: stats(81, 77, 80, 76),
+    }),
+  },
+  {
+    caption: "PRO 84 · Exemple",
+    lang: "fr",
+    profile: mockProfile({
+      name: "Ali",
+      ovr: 84,
+      tier: "pro",
+      serial: "482913",
+      club: MOCK_CLUBS.raja,
+      stats: stats(91, 82, 86, 78),
+      sample: true,
+    }),
+  },
+  {
+    caption: "CHAMPION 88 · holographique · nom long",
+    lang: "fr",
+    profile: mockProfile({
+      name: "Abdelkarim Benjelloun-Alaoui",
+      ovr: 88,
+      tier: "champion",
+      serial: "77031",
+      club: MOCK_CLUBS.fus,
+      stats: stats(90, 87, null, 88),
+    }),
+  },
+  {
+    caption: "LEGEND 99 · holographique · Fondateur 2026",
+    lang: "fr",
+    profile: mockProfile({
+      name: "Yasmine Alaoui",
+      ovr: 99,
+      tier: "legend",
+      serial: "5508",
+      club: MOCK_CLUBS.far,
+      founder: 2026,
+      stats: stats(95, 92, 90, 94),
+    }),
+  },
+];
+
+/** The mock's Arabic row. */
+export const MOCK_ARABIC: readonly MockCard[] = [
+  {
+    caption: "بطل 91 · هولوغرافي · اسم عربي",
+    lang: "ar",
+    profile: mockProfile({
+      name: "فاطمة الزهراء",
+      ovr: 91,
+      tier: "champion",
+      serial: "482913",
+      club: MOCK_CLUBS.raja,
+      stats: stats(91, 82, 86, 78),
+    }),
+  },
+  {
+    caption: "LASTREET 61 · واجهة عربية",
+    lang: "ar",
+    profile: mockProfile({
+      name: "Hamza",
+      ovr: 61,
+      tier: "homa",
+      serial: "118204",
+      club: MOCK_CLUBS.wydad,
+      stats: stats(58, 64, 60, 61),
+    }),
+  },
+  {
+    caption: "أسطورة 97 · مؤسس 2026",
+    lang: "ar",
+    profile: mockProfile({
+      name: "سلمى",
+      ovr: 97,
+      tier: "legend",
+      serial: "1203",
+      club: MOCK_CLUBS.far,
+      founder: 2026,
+      stats: stats(97, 95, 96, 98),
+    }),
+  },
+];
+
+/** The mock's long-name row (240 px wide). */
+export const MOCK_NAMES: readonly MockCard[] = [
+  {
+    caption: "Un seul mot de 24 lettres · STADE 8",
+    lang: "fr",
+    profile: mockProfile({
+      name: "Mohammedabdelhakimalaoui",
+      ovr: 8,
+      tier: "stade",
+      serial: "300001",
+      club: MOCK_CLUBS.mas,
+      stats: stats(8, 9, 7, 8),
+    }),
+  },
+  {
+    caption: "Nom arabe long, interface française · PRO 44",
+    lang: "fr",
+    profile: mockProfile({
+      name: "عبد الرحمن بن جلون العلوي",
+      ovr: 44,
+      tier: "pro",
+      serial: "300002",
+      club: MOCK_CLUBS.wydad,
+      stats: stats(44, 41, 47, 45),
+    }),
+  },
+  {
+    caption: "Nom latin long, interface arabe · CHAMPION 11",
+    lang: "ar",
+    profile: mockProfile({
+      name: "Les Lions du Derb Sidi Maarouf",
+      ovr: 11,
+      tier: "champion",
+      serial: "300003",
+      club: MOCK_CLUBS.raja,
+      stats: stats(11, 12, 10, 11),
+    }),
+  },
+];
+
+/** The mock's tokens: one profile per step of the ladder. */
+export const MOCK_TOKENS: readonly CardProfile[] = [
+  { name: "Ali", ovr: null, tier: null, club: MOCK_CLUBS.raja },
+  { name: "Hamza", ovr: 8, tier: "homa", club: null },
+  { name: "Karim", ovr: 44, tier: "stade", club: MOCK_CLUBS.wydad },
+  { name: "Ali", ovr: 11, tier: "pro", club: MOCK_CLUBS.raja },
+  { name: "Abdelkarim", ovr: 88, tier: "champion", club: MOCK_CLUBS.fus },
+  { name: "Yasmine", ovr: 99, tier: "legend", club: MOCK_CLUBS.far },
+].map((t) =>
+  mockProfile({ ...t, serial: null, stats: stats(null, null, null, null) } as Parameters<
+    typeof mockProfile
+  >[0]),
+);

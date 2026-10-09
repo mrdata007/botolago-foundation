@@ -192,6 +192,18 @@ function drawRuns(
   ctx.restore();
 }
 
+/**
+ * The card's own faces on the canvas: the three of the share palette, plus the card's serif (the
+ * second name line) and Changa Light (the Arabic one). Instrument Serif is the card's own face and
+ * is loaded by the card's stylesheet, so a picture of a card that is on screen finds it.
+ */
+const ART_SERIF = `"Instrument Serif", "Times New Roman", serif`;
+function artFont(run: TextRun, size: number): string {
+  if (run.face === "serif") return `400 ${size}px ${ART_SERIF}`;
+  if (run.face === "displayLight") return shareFont("display", 300, size);
+  return shareFont(run.face, run.weight, size);
+}
+
 /** The card's own text runs, drawn on the art at its drawn size. */
 function drawArtText(
   ctx: CanvasRenderingContext2D,
@@ -203,11 +215,26 @@ function drawArtText(
   ctx.save();
   ctx.textBaseline = "alphabetic";
   for (const run of texts) {
-    ctx.font = shareFont(run.face, run.weight, run.size * scale);
+    ctx.font = artFont(run, run.size * scale);
     ctx.fillStyle = run.colour;
     ctx.direction = run.dir;
     ctx.textAlign = run.anchor === "middle" ? "center" : run.anchor === "end" ? "end" : "start";
-    ctx.fillText(run.text, left + run.x * scale, top + run.y * scale);
+    // a tracked Latin run (the tier word, the labels) where the canvas can space letters
+    if ("letterSpacing" in ctx) {
+      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = run.tracking
+        ? `${run.tracking * scale}px`
+        : "0px";
+    }
+    const x = left + run.x * scale;
+    const y = top + run.y * scale;
+    if (run.rotate) {
+      // a run set along the cut corner: turned about its own point
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((run.rotate * Math.PI) / 180);
+      ctx.fillText(run.text, 0, 0);
+      ctx.restore();
+    } else ctx.fillText(run.text, x, y);
   }
   ctx.restore();
 }

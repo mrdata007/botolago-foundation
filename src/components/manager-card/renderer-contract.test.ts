@@ -5,6 +5,7 @@ import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 
 import { activeRenderer } from "./active-renderer";
 import { cardStrings, type Translate } from "./copy";
+import { eclatRenderer } from "./eclat";
 import { ALLOWED_CARD_TAGS, HOSTILE_NAMES, findUnsafeMarkup } from "./markup-safety";
 import { plainRenderer } from "./plain-renderer";
 import type { CardRenderer } from "./renderer";
@@ -203,6 +204,8 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
 }
 
 describeRendererContract("plain renderer", plainRenderer);
+// TEMPORARY (WP1): Éclat under the same checks until `active-renderer.ts` serves it (WP3b)
+describeRendererContract("eclat", eclatRenderer);
 const active = await activeRenderer.load();
 if (active !== plainRenderer) describeRendererContract(`active renderer (${active.id})`, active);
 
