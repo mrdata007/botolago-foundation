@@ -92,8 +92,3 @@ body.app-dark {
   padding: 24px;
   direction: ltr;
 }
-/* While a card is made live (mount), nothing transitions: the first frame is the card at rest. */
-.onbp-mounting,
-.onbp-mounting * {
-  transition: none !important;
-}

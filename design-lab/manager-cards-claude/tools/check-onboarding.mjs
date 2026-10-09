@@ -1,15 +1,38 @@
 // Measured acceptance checks for the onboarding screens (ONBOARDING_PLAN.md section 7, criteria
 // 1 to 16). Loads onboarding.html for every direction, language and colour scheme, and measures
 // each screen and variant with element rectangles, computed styles, text scans, getAnimations()
-// and pixel contrast read from a screenshot (never from tokens). Writes review/onboarding/CHECKS.md.
+// and pixel contrast read from rasters (never from tokens). Writes review/onboarding/CHECKS.md.
 //
 //   PW_CORE=/path/to/node_modules/playwright-core/index.mjs CHROME=/path/to/chrome \
 //   node design-lab/manager-cards-claude/tools/check-onboarding.mjs [--base=http://127.0.0.1:4350]
-//     [--only=07-v2,01] [--jobs=4] [--skip-lint] [--out=review/onboarding/CHECKS.md]
+//     [--only=07-v2,01] [--ctx=fr/light,ar/dark] [--cells=S14-founder] [--jobs=4] [--skip-lint]
+//     [--out=review/onboarding/CHECKS.md] [--json=<file>]
 //
 // Without --base the tool serves the lab itself on a free local port. Écharpe (07-v2) is measured
 // in French and Arabic, light and dark; the other four directions in French light and Arabic dark.
-// Run from the repository root (criterion 15 runs prettier, eslint and build.mjs there).
+// Run from the repository root (criterion 15 runs prettier, eslint and build.mjs there). --only,
+// --ctx and --cells narrow a run for debugging; a narrowed run's CHECKS.md is not the full report.
+//
+// CONTRAST (criterion 4, and the "painted" test of criterion 5) is graded by the INK FOOTPRINT, for
+// app text and card art alike. A screen is rasterised at device pixel ratio 2 as drawn, and again
+// with text hidden: the element's colour goes transparent, SVG text loses its fill and stroke,
+// inputs lose their value and placeholder, and transitions are off so nothing moves or fades. The
+// pixels that differ between the two rasters are the ink of the glyphs; the same pixels in the
+// second raster are the surface directly beneath them. The text colour is the mean of the
+// full-coverage ink pixels (those whose difference is within 5% of the largest, at least six); the
+// ground is each of those pixels in the bare raster; the grade is the WCAG ratio, the median over
+// them. Texts whose padded boxes meet are hidden in different rasters (one raster as drawn plus
+// one per group, usually two or three per screen), so a neighbouring text of another colour never
+// lands in a box's footprint. The layers of one text (the same string drawn over itself) are hidden
+// together. A text on the page with no ink at all (transparent, hidden, covered) fails, unless the
+// same string is painted elsewhere in the screen: that is a copy under the object (a cast shadow),
+// listed in CHECKS.md and not graded. Card art under 8px is measured and listed, not graded.
+// This replaced a 2px ring round each text's line box. The ring samples the wrong ground for card
+// art whose line box is taller than the surface it sits on (Touchline's white 84 on #0151FC is
+// 5.86:1 and the ring read 2.5 to 2.9; Lucarne's navy bar text is 15.0:1 and read 3.3 to 4.2), and
+// a neighbouring text inside the ring or the box skewed the colour of app text too (the muted
+// oklch(0.45 0.02 258) = 78,86,97 read as 63,71,82 beside a dark name). The ink method reads that
+// muted text as 78,86,97 and the app's placeholder, 4.42:1 by its tokens, as 4.39:1.
 import { createServer } from "node:http";
 import { readFileSync, readdirSync, writeFileSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { dirname, extname, join, normalize, resolve } from "node:path";
@@ -37,6 +60,7 @@ const DIRECTIONS = [
   { id: "t1-touchline", name: "Touchline", q: "c=t1-touchline" },
 ];
 const only = (flag("only") || "").split(",").filter(Boolean);
+const cellFilter = (flag("cells") || "").split(",").filter(Boolean); // e.g. --cells=S14-founder (debugging)
 const directions = DIRECTIONS.filter((d) => !only.length || only.includes(d.id));
 const ctxFilter = (flag("ctx") || "").split(",").filter(Boolean); // e.g. --ctx=fr/light
 const contextsOf = (d) =>
@@ -176,6 +200,13 @@ function installChecks() {
     });
   };
   const slotOf = (shot) => document.querySelector(`.onbp-cell[data-shot="${shot}"] .onbp-slot`);
+  // Every element that carries text to grade gets a number, so the node side can ask for exactly
+  // those elements to be hidden in one raster (see inkOff).
+  let unitSeq = 0;
+  const unitOf = (el) => {
+    if (!el.hasAttribute("data-chk-u")) el.setAttribute("data-chk-u", String(++unitSeq));
+    return Number(el.getAttribute("data-chk-u"));
+  };
 
   const cells = () =>
     [...document.querySelectorAll(".onbp-cell")].map((c) => {
@@ -322,6 +353,7 @@ function installChecks() {
         px: Math.round(px * 10) / 10,
         weight,
         large: px >= 24 || (px >= 18.66 && weight >= 700),
+        u: unitOf(el),
         card: !!el.closest("[data-onb-card]"),
         // the number a card shows (two or three digits, or the dash) is the display number
         display:
@@ -354,6 +386,7 @@ function installChecks() {
           px: fs,
           weight: Number(cs.fontWeight) || 400,
           large: false,
+          u: unitOf(inp),
           card: false,
           display: false,
           op: 1,
@@ -661,20 +694,62 @@ function installChecks() {
         blur,
         clipped,
         hit,
+        u: unitOf(el),
         box: { x: r.left - slotRect.left, y: r.top - slotRect.top, w, h },
       });
     });
     return out;
   };
 
-  /* Pixel contrast from a screenshot of one slot: text colour against the ring around it. */
-  const analyze = async (b64, boxes, dpr) => {
-    const img = await createImageBitmap(await (await fetch("data:image/png;base64," + b64)).blob());
-    const cv = document.createElement("canvas");
-    cv.width = img.width;
-    cv.height = img.height;
-    const ctx = cv.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(img, 0, 0);
+  /* Ink-footprint contrast (the method is described at the top of the tool). `inkOff(shot, units)`
+     hides the text of the numbered elements of one slot without moving anything (colour and text
+     shadow go transparent, SVG text loses its fill and stroke, inputs lose their value and
+     placeholder, transitions are off so nothing fades); `inkOn` puts everything back. The caller
+     rasterises the slot before and after. */
+  const INK_STYLE_ID = "chk-ink";
+  const inkOff = (shot, units) => {
+    const slot = slotOf(shot);
+    const want = new Set(units);
+    slot.querySelectorAll("[data-chk-u]").forEach((e) => {
+      if (want.has(Number(e.getAttribute("data-chk-u")))) e.setAttribute("data-chk-ink", "");
+    });
+    const st = document.createElement("style");
+    st.id = INK_STYLE_ID;
+    st.textContent =
+      ".onbp-slot *,.onbp-slot *::before,.onbp-slot *::after{transition:none!important}" +
+      ".onbp-slot [data-chk-ink]{color:transparent!important}" +
+      ".onbp-slot text[data-chk-ink],.onbp-slot tspan[data-chk-ink],.onbp-slot textPath[data-chk-ink]{fill:transparent!important;stroke:transparent!important}" +
+      ".onbp-slot input[data-chk-ink]::placeholder{color:transparent!important}";
+    document.head.appendChild(st);
+  };
+  const inkOn = () => {
+    document.querySelectorAll("[data-chk-ink]").forEach((e) => e.removeAttribute("data-chk-ink"));
+    void document.body.offsetHeight; // the colours return while transitions are still off
+    const st = document.getElementById(INK_STYLE_ID);
+    if (st) st.remove();
+  };
+
+  /* The ink method. `drawn` is the raster as drawn; `bare[g]` is the same raster with the text of
+     group g hidden, and a box says which group hid it. For each text box the pixels that differ
+     are the ink, and the same pixels in the bare raster are the ground under it. Returns, per
+     box: ink (the pixel count; fewer than 3 means nothing was painted), fg (the mean colour of the
+     full-coverage ink pixels), bg (the median colour of the ground under them) and ratio (fg
+     against the ground, the median over those pixels). */
+  const analyze = async (drawn, bare, boxes, dpr) => {
+    const load = async (b64) => {
+      const img = await createImageBitmap(
+        await (await fetch("data:image/png;base64," + b64)).blob(),
+      );
+      const cv = document.createElement("canvas");
+      cv.width = img.width;
+      cv.height = img.height;
+      const ctx = cv.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0);
+      return { ctx, w: img.width, h: img.height };
+    };
+    const A = await load(drawn);
+    const Bs = [];
+    for (const b64 of bare) Bs.push(await load(b64));
     const lin = (c) => {
       const s = c / 255;
       return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
@@ -685,48 +760,61 @@ function installChecks() {
       arr.sort((x, y) => x - y);
       return arr[arr.length >> 1];
     };
-    return boxes.map((b) => {
-      const pad = Math.ceil(2 * dpr);
-      const x0 = Math.max(0, Math.floor(b.x * dpr));
-      const y0 = Math.max(0, Math.floor(b.y * dpr));
-      const x1 = Math.min(img.width, Math.ceil((b.x + b.w) * dpr));
-      const y1 = Math.min(img.height, Math.ceil((b.y + b.h) * dpr));
-      const ex0 = Math.max(0, x0 - pad);
-      const ey0 = Math.max(0, y0 - pad);
-      const ex1 = Math.min(img.width, x1 + pad);
-      const ey1 = Math.min(img.height, y1 + pad);
-      if (x1 - x0 < 2 || y1 - y0 < 2) return { ratio: null };
-      const d = ctx.getImageData(ex0, ey0, ex1 - ex0, ey1 - ey0);
-      const W = ex1 - ex0;
-      const R = [];
-      const G = [];
-      const B = [];
-      const inner = [];
-      for (let y = ey0; y < ey1; y++)
-        for (let x = ex0; x < ex1; x++) {
-          const i = ((y - ey0) * W + (x - ex0)) * 4;
-          const isIn = x >= x0 && x < x1 && y >= y0 && y < y1;
-          if (isIn) inner.push([d.data[i], d.data[i + 1], d.data[i + 2]]);
-          else {
-            R.push(d.data[i]);
-            G.push(d.data[i + 1]);
-            B.push(d.data[i + 2]);
-          }
-        }
-      if (!R.length) return { ratio: null };
-      const bg = [med(R), med(G), med(B)];
-      const lb = lum(...bg);
-      const scored = inner.map((p) => ({ p, c: ratio(lum(...p), lb) })).sort((a, c) => c.c - a.c);
-      const top = scored.slice(0, Math.max(3, Math.round(scored.length * 0.03)));
-      const fg = [0, 1, 2].map((k) => top.reduce((s, t) => s + t.p[k], 0) / top.length);
-      return { ratio: Math.round(ratio(lum(...fg), lb) * 100) / 100, fg: fg.map(Math.round), bg };
+    return boxes.map((bx) => {
+      const B = Bs[bx.g];
+      const pad = Math.ceil(dpr); // one CSS pixel round the line box (diacritics, overshoot)
+      const x0 = Math.max(0, Math.floor(bx.x * dpr) - pad);
+      const y0 = Math.max(0, Math.floor(bx.y * dpr) - pad);
+      const x1 = Math.min(A.w, Math.ceil((bx.x + bx.w) * dpr) + pad);
+      const y1 = Math.min(A.h, Math.ceil((bx.y + bx.h) * dpr) + pad);
+      if (!B || x1 - x0 < 2 || y1 - y0 < 2) return { ratio: null, tiny: true, ink: 0 };
+      const da = A.ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+      const db = B.ctx.getImageData(x0, y0, x1 - x0, y1 - y0).data;
+      const ink = [];
+      let max = 0;
+      for (let i = 0; i < da.length; i += 4) {
+        const d = Math.max(
+          Math.abs(da[i] - db[i]),
+          Math.abs(da[i + 1] - db[i + 1]),
+          Math.abs(da[i + 2] - db[i + 2]),
+        );
+        if (d < 5) continue;
+        ink.push([i, d]);
+        if (d > max) max = d;
+      }
+      if (ink.length < 3) return { ratio: null, ink: ink.length };
+      // full coverage: the pixels whose difference is within 5% of the largest (at least six)
+      const core = ink
+        .sort((p, q) => q[1] - p[1])
+        .filter(([, d], n) => d >= max * 0.95 || n < 6)
+        .map(([i]) => i);
+      const fg = [0, 1, 2].map((k) => core.reduce((s, i) => s + da[i + k], 0) / core.length);
+      const lf = lum(...fg);
+      const per = core.map((i) => ratio(lf, lum(db[i], db[i + 1], db[i + 2])));
+      return {
+        ratio: Math.round(med(per) * 100) / 100,
+        ink: ink.length,
+        fg: fg.map(Math.round),
+        bg: [0, 1, 2].map((k) => med(core.map((i) => db[i + k]))),
+      };
     });
   };
 
   // the plural helper for 1, 2, 3, 5 and 11
   const plurals = () => [1, 2, 3, 5, 11].map((n) => ONB.roundsText(n, "ar"));
 
-  window.__chk = { cells, collect, motionState, rewind, settle, carriers, analyze, plurals };
+  window.__chk = {
+    cells,
+    collect,
+    motionState,
+    rewind,
+    settle,
+    carriers,
+    inkOff,
+    inkOn,
+    analyze,
+    plurals,
+  };
 }
 
 /* ---------- running the measurements ---------- */
@@ -735,6 +823,8 @@ const browser = await pw.chromium.launch({ executablePath: process.env.CHROME ||
 const results = []; // { c, dir, lang, scheme, cell, item, ok, detail }
 const notes = [];
 const micro = []; // card art text under 8px: measured, not graded
+const rasterCounts = []; // bare rasters taken per screen by the ink method
+const unpainted = []; // texts with no ink whose string is painted elsewhere in the screen: listed
 const contextsSeen = [];
 // Each job collects into its own sink, committed only when the job completes (a job that times
 // out is run again from the start, so a retry never double-counts).
@@ -787,10 +877,65 @@ async function openGrid(ctxDef, { reduced, motion, dpr }) {
   return { page, errors };
 }
 
+/* The slot rasterised for the ink method: once as drawn, and once more for each group of texts.
+   A text's ink footprint is read where that text alone was hidden, so a text of another colour
+   next to it (the line above, a label touching a number) cannot land in it. The layers of one
+   text (the same string drawn again over itself: fill, outline, shadow) are hidden together, as
+   one text; texts whose padded boxes meet go to different groups. */
+function inkGroups(boxes) {
+  const PAD = 1.5;
+  const meet = (a, b) =>
+    a.x - PAD < b.x + b.w &&
+    b.x - PAD < a.x + a.w &&
+    a.y - PAD < b.y + b.h &&
+    b.y - PAD < a.y + a.h;
+  const overlap = (a, b) => {
+    const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x);
+    const h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+    return w > 0 && h > 0 ? (w * h) / Math.min(a.w * a.h, b.w * b.h) : 0;
+  };
+  // layers of one text: the same string, boxes that overlap by more than half of the smaller
+  const root = boxes.map((_, i) => i);
+  const find = (i) => (root[i] === i ? i : (root[i] = find(root[i])));
+  boxes.forEach((a, i) =>
+    boxes.forEach((b, j) => {
+      if (j > i && a.text === b.text && overlap(a, b) > 0.5) root[find(j)] = find(i);
+    }),
+  );
+  const clusters = new Map();
+  boxes.forEach((b, i) => {
+    const r = find(i);
+    if (!clusters.has(r)) clusters.set(r, []);
+    clusters.get(r).push(b);
+  });
+  const groups = [];
+  for (const bs of clusters.values()) {
+    let g = groups.find((o) => !o.boxes.some((x) => bs.some((b) => b.u !== x.u && meet(b, x))));
+    if (!g) groups.push((g = { units: new Set(), boxes: [] }));
+    bs.forEach((b) => g.units.add(b.u));
+    g.boxes.push(...bs);
+    bs.forEach((b) => (b.g = groups.indexOf(g)));
+  }
+  return groups.map((g) => ({ ...g, units: [...g.units] }));
+}
+async function rasters(page, shot, boxes) {
+  const slot = page.locator(`.onbp-cell[data-shot="${shot}"] .onbp-slot`);
+  const drawn = (await slot.screenshot({ type: "png" })).toString("base64");
+  const bare = [];
+  for (const g of inkGroups(boxes)) {
+    await page.evaluate(([s, u]) => window.__chk.inkOff(s, u), [shot, g.units]);
+    bare.push((await slot.screenshot({ type: "png" })).toString("base64"));
+    await page.evaluate(() => window.__chk.inkOn());
+  }
+  return [drawn, bare];
+}
+
 async function staticPass(ctxDef) {
   const { page, errors } = await openGrid(ctxDef, { reduced: true, motion: false, dpr: 2 });
   const cfg = { lang: ctxDef.lang };
-  const cells = (await page.evaluate(() => window.__chk.cells())).filter((c) => c.id !== "S00");
+  const cells = (await page.evaluate(() => window.__chk.cells())).filter(
+    (c) => c.id !== "S00" && (!cellFilter.length || cellFilter.includes(c.shot)),
+  );
   const ctx = ctxDef;
   add(1, ctx, "(page)", "console", errors.length === 0, errors.slice(0, 3).join(" | "));
   ctx.seen.push(`${ctx.dir.id} ${ctx.lang}/${ctx.scheme}: ${cells.length} cells`);
@@ -821,12 +966,11 @@ async function staticPass(ctxDef) {
       document.querySelector(`.onbp-cell[data-shot="${s}"]`).scrollIntoView({ block: "center" });
     }, shot);
     const r = await page.evaluate(([s, c]) => window.__chk.collect(s, c), [shot, cfg]);
-    const png = await page
-      .locator(`.onbp-cell[data-shot="${shot}"] .onbp-slot`)
-      .screenshot({ type: "png" });
+    const [drawn, bare] = await rasters(page, shot, r.boxes);
+    ctx.rsink.push(bare.length);
     const meas = await page.evaluate(
-      ([b, boxes]) => window.__chk.analyze(b, boxes, window.devicePixelRatio),
-      [png.toString("base64"), r.boxes],
+      ([a, b, boxes]) => window.__chk.analyze(a, b, boxes, window.devicePixelRatio),
+      [drawn, bare, r.boxes],
     );
     // 1
     add(
@@ -850,13 +994,17 @@ async function staticPass(ctxDef) {
     for (const k of r.controls)
       add(3, ctx, shot, `${k.label}`, k.w >= 43.9 && k.h >= 43.9, `${k.w} x ${k.h}`);
     // 4
+    const painted = new Set(
+      r.boxes.filter((_, i) => meas[i] && meas[i].ratio != null).map((b) => b.text),
+    );
     r.boxes.forEach((b, i) => {
       const m = meas[i];
-      if (!m || m.ratio == null) return;
+      if (!m || m.tiny) return;
       const need = b.large || b.display ? 3 : 4.5;
       const item = `${b.field ? b.field : b.card ? "card art" : "screen"} "${b.text}" ${b.px}px/${b.weight}${b.display ? " display number" : b.large ? " large" : ""}`;
       // Card art under 8px is texture, not copy: measured and listed, not graded.
       if (b.card && !b.display && b.px < 8) {
+        if (m.ratio == null) return;
         ctx.msink.push({
           lang: ctx.lang,
           scheme: ctx.scheme,
@@ -866,6 +1014,30 @@ async function staticPass(ctxDef) {
           px: b.px,
           ratio: m.ratio,
         });
+        return;
+      }
+      // No ink at all: the text is on the page and not on the raster. If the same string is painted
+      // elsewhere in the screen this is a copy under the object (the cast shadow of a charm, a layer
+      // under another): listed, not graded. If it is painted nowhere, it is not readable at any ratio.
+      if (m.ratio == null) {
+        if (b.op < 0.05) return;
+        if (painted.has(b.text))
+          ctx.nsink.push({
+            dir: ctx.dir.id,
+            lang: ctx.lang,
+            scheme: ctx.scheme,
+            cell: shot,
+            text: b.text,
+          });
+        else
+          add(
+            4,
+            ctx,
+            shot,
+            item,
+            false,
+            "no glyph pixels painted (transparent, hidden or covered)",
+          );
         return;
       }
       add(
@@ -1028,7 +1200,9 @@ async function motionPass(ctxDef) {
   const { page, errors } = await openGrid(ctxDef, { reduced: false, motion: true, dpr: 2 });
   add(1, ctx, "(page, motion on)", "console", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.evaluate(() => window.__chk.rewind());
-  const cells = (await page.evaluate(() => window.__chk.cells())).filter((c) => c.id !== "S00");
+  const cells = (await page.evaluate(() => window.__chk.cells())).filter(
+    (c) => c.id !== "S00" && (!cellFilter.length || cellFilter.includes(c.shot)),
+  );
   for (const cell of cells) {
     if (cell.desktop) continue;
     await page.evaluate((s) => {
@@ -1037,12 +1211,11 @@ async function motionPass(ctxDef) {
     await page.evaluate(() => window.__chk.rewind());
     const found = await page.evaluate((s) => window.__chk.carriers(s), cell.shot);
     if (!found.length) continue;
-    const png = await page
-      .locator(`.onbp-cell[data-shot="${cell.shot}"] .onbp-slot`)
-      .screenshot({ type: "png" });
+    const boxes = found.map((f) => ({ ...f.box, u: f.u, text: f.text }));
+    const [drawn, bare] = await rasters(page, cell.shot, boxes);
     const meas = await page.evaluate(
-      ([b, boxes]) => window.__chk.analyze(b, boxes, window.devicePixelRatio),
-      [png.toString("base64"), found.map((f) => ({ ...f.box }))],
+      ([a, b, boxes]) => window.__chk.analyze(a, b, boxes, window.devicePixelRatio),
+      [drawn, bare, boxes],
     );
     // the same carriers once every animation has run to its end: an opacity that is the same at
     // both ends is the material's own (a moulded numeral), not a number held back
@@ -1063,8 +1236,10 @@ async function motionPass(ctxDef) {
         // the hit test is for the rating itself; the serial line sits under the card's texture layer
         (f.hit || f.kind === "serial");
       const px = meas[i] && meas[i].ratio != null ? meas[i].ratio : null;
-      const ok = okDom && (px == null || px >= 1.5);
-      const detail = `opacity ${f.opacity}${staticOpacity ? " (the material's own, same at the end)" : ""}, ${f.visibility}${f.blur ? ", blurred" : ""}${f.clipped ? ", clipped" : ""}${f.hit ? "" : f.kind === "serial" ? ", under the texture layer" : ", covered"}, painted contrast ${px}:1`;
+      // no ink at all is a number that is not on the raster; a box too small to read is not graded
+      const noInk = !!meas[i] && !meas[i].tiny && px == null;
+      const ok = okDom && !noInk && (px == null || px >= 1.5);
+      const detail = `opacity ${f.opacity}${staticOpacity ? " (the material's own, same at the end)" : ""}, ${f.visibility}${f.blur ? ", blurred" : ""}${f.clipped ? ", clipped" : ""}${f.hit ? "" : f.kind === "serial" ? ", under the texture layer" : ", covered"}, ${noInk ? "no glyph pixels painted" : `painted contrast ${px}:1`}`;
       const near = [...groups.values()].find(
         (g) =>
           g.kind === f.kind &&
@@ -1112,11 +1287,13 @@ for (const d of directions)
     for (const pass of [staticPass, motionPass, reducedMotionPass])
       queue.push(async () => {
         for (let attempt = 1; attempt <= 3; attempt++) {
-          const ctx = { dir: d, lang, scheme, sink: [], msink: [], seen: [] };
+          const ctx = { dir: d, lang, scheme, sink: [], msink: [], nsink: [], rsink: [], seen: [] };
           try {
             await pass(ctx);
             results.push(...ctx.sink);
             micro.push(...ctx.msink);
+            unpainted.push(...ctx.nsink);
+            rasterCounts.push(...ctx.rsink);
             contextsSeen.push(...ctx.seen);
             return;
           } catch (e) {
@@ -1192,11 +1369,11 @@ const CRITERIA = {
   ],
   4: [
     "Text contrast: 4.5:1, or 3:1 for large text (24px, or 18.66px bold)",
-    "Read from the rasterised screenshot (dpr 2): the text colour is the mean of the 3% of pixels farthest from the background, the background is the median of a 2px ring around the text box. Text under a scrim or off screen is skipped. Text drawn inside a direction's card art is listed as `card art`.",
+    "The ink footprint, for app text and card art alike. Each screen is rasterised at dpr 2 as drawn and again with its text hidden (colour transparent, SVG text without fill and stroke, inputs without value and placeholder, transitions off). The pixels that differ are the glyphs' ink and the same pixels in the bare raster are the surface directly beneath them; the text colour is the mean of the full-coverage ink pixels, the ground is those pixels in the bare raster, and the grade is the WCAG ratio, the median over them. Texts whose padded boxes meet are hidden in separate rasters, so a neighbouring text never counts as ink; the layers of one text are hidden together. A text with no ink at all fails, unless the same string is painted elsewhere in the screen (a copy under the object, such as a cast shadow: listed, not graded). Text under a scrim or off screen is skipped. Text drawn inside a direction's card art is listed as `card art`; under 8px it is texture, measured and listed, not graded.",
   ],
   5: [
     "The number is never held back (motion on, t = 0)",
-    "`motion=1`, animations rewound to 0 and paused. For every OVR, serial and dash carrier: effective opacity 1, visible, no blur, no clip or mask, a hit test that lands on it, and glyphs painted in the raster.",
+    "`motion=1`, animations rewound to 0 and paused. For every OVR, serial and dash carrier: effective opacity 1, visible, no blur, no clip or mask, a hit test that lands on it, and glyphs painted in the raster: the ink footprint (criterion 4) must exist, at least 1.5:1 against the surface beneath it.",
   ],
   6: [
     "A null number is a dash, never 0, and is spoken as no rating",
@@ -1247,7 +1424,7 @@ P(
 );
 P();
 P(
-  "Method: every screen and variant of `onboarding.html` for each direction, measured in a real Chromium (390px phone frames, desktop D1 at 1440): Écharpe v2 in French and Arabic, light and dark; Porte-clés v2, Lucarne, Semelle v2 and Touchline in French light and Arabic dark. Element rectangles, computed styles, text scans, `getAnimations()` and pixel contrast from the screenshots. Nothing here is asserted from tokens or hex values. S00 (the foundation's kit demo, not one of the plan's screens) is left out: 54 phone variants (S01 to S18) and the 2 desktop D1 variants, 56 in all.",
+  "Method: every screen and variant of `onboarding.html` for each direction, measured in a real Chromium (390px phone frames, desktop D1 at 1440): Écharpe v2 in French and Arabic, light and dark; Porte-clés v2, Lucarne, Semelle v2 and Touchline in French light and Arabic dark. Element rectangles, computed styles, text scans, `getAnimations()` and pixel contrast by the ink footprint (criterion 4: the text's own pixels against the surface beneath them, found by rasterising each screen with and without its text). Nothing here is asserted from tokens or hex values. S00 (the foundation's kit demo, not one of the plan's screens) is left out: 54 phone variants (S01 to S18) and the 2 desktop D1 variants, 56 in all.",
 );
 P();
 P(`Contexts measured: ${contextsSeen.length} (${contextsSeen.sort().join("; ")}).`);
@@ -1310,9 +1487,27 @@ for (let c = 1; c <= 14; c++) {
     }
     for (const { f, ctx } of groups.values())
       P(`- **[${ownerOf(f)}]** \`${f.dir}\` ${f.cell} · ${f.item} · ${ctx.join(" ; ")}`);
+    if (fails.some((f) => ownerOf(f) === "app")) {
+      const pairs = [
+        ...new Set(
+          fails
+            .filter((f) => ownerOf(f) === "app")
+            .map((f) => f.detail.replace(/^[\d.]+:1 \(needs [\d.]+\) /, "")),
+        ),
+      ];
+      P();
+      P(
+        `The **[app]** items are the app's own colour for an input's placeholder (${pairs.join("; ")}), mirrored on purpose: the lab does not change it, and lists it for the owner.`,
+      );
+    }
   }
   P();
   if (c === 4) {
+    if (rasterCounts.length)
+      P(
+        `*Rasters.* The ink method took ${fmt(rasterCounts.length)} screens, each as drawn plus one raster per group of texts hidden: ${(rasterCounts.reduce((a, b) => a + b, 0) / rasterCounts.length).toFixed(1)} per screen on average, at most ${Math.max(...rasterCounts)}.`,
+      );
+    P();
     P(
       "**Card art under 8px, measured and not graded.** The card objects print copy this small (the",
     );
@@ -1329,6 +1524,28 @@ for (let c = 1; c <= 14; c++) {
       P(
         `| ${dirName(d.id)} | ${fmt(m.length)} | ${m.filter((x) => x.ratio < 3).length} | ${m.filter((x) => x.ratio < 4.5).length} | ${low}:1 |`,
       );
+    }
+    P();
+    P(
+      "**Copies with no ink, listed and not graded.** A text on the page whose footprint is empty,",
+    );
+    P(
+      "while the same string is painted elsewhere in the screen: a layer or a cast-shadow copy under",
+    );
+    P("the object that the object covers. A string painted nowhere in its screen fails above.");
+    P();
+    if (!unpainted.length) P("None.");
+    else {
+      P("| Direction | Copies | Where (screen, text) |");
+      P("|---|---:|---|");
+      for (const d of directions) {
+        const u = unpainted.filter((x) => x.dir === d.id);
+        if (!u.length) continue;
+        const where = [...new Set(u.map((x) => `${x.cell} "${x.text}"`))];
+        P(
+          `| ${dirName(d.id)} | ${fmt(u.length)} | ${where.slice(0, 6).join(", ")}${where.length > 6 ? `, and ${where.length - 6} more` : ""} |`,
+        );
+      }
     }
     P();
   }

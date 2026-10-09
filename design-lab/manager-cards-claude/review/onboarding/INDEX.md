@@ -2,7 +2,7 @@
 
 Screenshots of the onboarding screens (`onboarding.html`), made by `tools/capture-onboarding.sh`. Fictional sample data only; Semelle captures carry the label « Test culturel en attente » (no onboarding moment ships on Semelle until its cultural test passes).
 
-**488 files, 10.5 MB** (WebP, quality 80).
+**500 files, 10.8 MB** (WebP, quality 80).
 
 ## How they were made
 
@@ -18,12 +18,12 @@ Each file is one `tools/capture.mjs` call, `onboarding.html?<direction>&screen=<
 
 | Folder          | Direction             | What                                                                                                                                                                     |
 | --------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `07-v2/`        | Écharpe v2 (the lead) | 236 files (5944 KB): every screen and variant, fr and ar, light and dark, 390 x 844 at 1x; `2x/` has the eight key moments at 2x; `D1-*` are the desktop screens at 1440 |
-| `03-v2/`        | Porte-clés v2         | 57 files (1030 KB): S05, S06, S08, S09, S10, S14: fr light, ar light, ar dark                                                                                            |
-| `01/`           | Lucarne               | 57 files (1045 KB): the same six screens                                                                                                                                 |
-| `05-v2/`        | Semelle v2            | 57 files (1116 KB): the same six screens, with the cultural-test label                                                                                                   |
-| `t1-touchline/` | Touchline (reworked)  | 57 files (1079 KB): the same six screens                                                                                                                                 |
-| `motion/`       | all five              | 24 files (561 KB): S05 new-serial and S08 fresh at t = 0 with motion on, and under reduced motion                                                                        |
+| `07-v2/`        | Écharpe v2 (the lead) | 236 files (5952 KB): every screen and variant, fr and ar, light and dark, 390 x 844 at 1x; `2x/` has the eight key moments at 2x; `D1-*` are the desktop screens at 1440 |
+| `03-v2/`        | Porte-clés v2         | 57 files (1035 KB): S05, S06, S08, S09, S10, S14: fr light, ar light, ar dark                                                                                            |
+| `01/`           | Lucarne               | 57 files (1047 KB): the same six screens                                                                                                                                 |
+| `05-v2/`        | Semelle v2            | 57 files (1127 KB): the same six screens, with the cultural-test label                                                                                                   |
+| `t1-touchline/` | Touchline (reworked)  | 57 files (1082 KB): the same six screens                                                                                                                                 |
+| `motion/`       | all five              | 36 files (866 KB): S05 new-serial, S08 fresh and S14 founder at t = 0 with motion on, and under reduced motion                                                           |
 
 File names: `<screen>-<variant>-<fr|ar>-<light|dark>.webp`. Motion proofs: `motion/<direction>/<screen>-<variant>-<lang>-<scheme>-<t0-motion|reduced>.webp`.
 
@@ -186,14 +186,20 @@ File names: `<screen>-<variant>-<fr|ar>-<light|dark>.webp`. Motion proofs: `moti
 - `motion/01/S05-new-serial-fr-light-t0-motion.webp`
 - `motion/01/S08-fresh-fr-light-reduced.webp`
 - `motion/01/S08-fresh-fr-light-t0-motion.webp`
+- `motion/01/S14-founder-fr-light-reduced.webp`
+- `motion/01/S14-founder-fr-light-t0-motion.webp`
 - `motion/03-v2/S05-new-serial-fr-light-reduced.webp`
 - `motion/03-v2/S05-new-serial-fr-light-t0-motion.webp`
 - `motion/03-v2/S08-fresh-fr-light-reduced.webp`
 - `motion/03-v2/S08-fresh-fr-light-t0-motion.webp`
+- `motion/03-v2/S14-founder-fr-light-reduced.webp`
+- `motion/03-v2/S14-founder-fr-light-t0-motion.webp`
 - `motion/05-v2/S05-new-serial-fr-light-reduced.webp`
 - `motion/05-v2/S05-new-serial-fr-light-t0-motion.webp`
 - `motion/05-v2/S08-fresh-fr-light-reduced.webp`
 - `motion/05-v2/S08-fresh-fr-light-t0-motion.webp`
+- `motion/05-v2/S14-founder-fr-light-reduced.webp`
+- `motion/05-v2/S14-founder-fr-light-t0-motion.webp`
 - `motion/07-v2/S05-new-serial-ar-dark-reduced.webp`
 - `motion/07-v2/S05-new-serial-ar-dark-t0-motion.webp`
 - `motion/07-v2/S05-new-serial-fr-light-reduced.webp`
@@ -202,7 +208,13 @@ File names: `<screen>-<variant>-<fr|ar>-<light|dark>.webp`. Motion proofs: `moti
 - `motion/07-v2/S08-fresh-ar-dark-t0-motion.webp`
 - `motion/07-v2/S08-fresh-fr-light-reduced.webp`
 - `motion/07-v2/S08-fresh-fr-light-t0-motion.webp`
+- `motion/07-v2/S14-founder-ar-dark-reduced.webp`
+- `motion/07-v2/S14-founder-ar-dark-t0-motion.webp`
+- `motion/07-v2/S14-founder-fr-light-reduced.webp`
+- `motion/07-v2/S14-founder-fr-light-t0-motion.webp`
 - `motion/t1-touchline/S05-new-serial-fr-light-reduced.webp`
 - `motion/t1-touchline/S05-new-serial-fr-light-t0-motion.webp`
 - `motion/t1-touchline/S08-fresh-fr-light-reduced.webp`
 - `motion/t1-touchline/S08-fresh-fr-light-t0-motion.webp`
+- `motion/t1-touchline/S14-founder-fr-light-reduced.webp`
+- `motion/t1-touchline/S14-founder-fr-light-t0-motion.webp`
