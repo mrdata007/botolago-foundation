@@ -6,7 +6,7 @@ fs.mkdirSync(`${D}/compare`, { recursive: true });
 const browser = await chromium.launch({
   executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
 });
-const page = await browser.newPage({ viewport: { width: 800, height: 600 }, deviceScaleFactor: 2 });
+let page = await browser.newPage({ viewport: { width: 800, height: 600 }, deviceScaleFactor: 2 });
 const img = async (f) => "data:image/png;base64," + fs.readFileSync(f).toString("base64");
 async function sheet(name, title, rows, colW) {
   // rows: [{label, before, after}]
@@ -26,7 +26,7 @@ if (!ONLY390)
   for (const t of ["base", "lastreet", "stade", "pro", "champion", "legend"])
     await sheet(
       `tier-${t}`,
-      `${t === "lastreet" ? "LASTREET" : t.toUpperCase()}: revision 2 and revision 3, 296 px card at DPR 2, reduced motion (rest lean)`,
+      `${t === "lastreet" ? "LASTREET" : t.toUpperCase()}: revision 2 and revision 3, 296 px card at DPR 2, reduced motion (rest pose: revision 2 leans, revision 3 is flat and crisp)`,
       [
         { label: "Dark page", before: `tier-${t}-dark.png` },
         { label: "Light page", before: `tier-${t}-light.png` },
@@ -73,6 +73,8 @@ if (!ONLY390)
     ],
     720,
   );
+// the phone-width pages are taller than WebP's 16383 px limit at DPR 2: compose them at DPR 1.5
+page = await browser.newPage({ viewport: { width: 800, height: 600 }, deviceScaleFactor: 1.5 });
 await sheet(
   "grid-390-dark",
   "Phone width 390 px, DPR 2, dark page (whole page)",

@@ -1,7 +1,7 @@
 // usage: node selfcheck.mjs <mock.html> <rev2-mock.html>  -> prints JSON results
 import { chromium } from "/home/user/mc-sorare/node_modules/playwright/index.mjs";
 import sharp from "/home/user/botolago-app/node_modules/sharp/lib/index.js";
-const [mock, rev2] = process.argv.slice(2);
+const [mock, rev2, rev3pre] = process.argv.slice(2);
 const browser = await chromium.launch({
   executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
   proxy: { server: process.env.HTTPS_PROXY },
@@ -27,7 +27,11 @@ async function open(width, theme, reduced = true, dpr = 2, file = mock) {
   });
   const page = await ctx.newPage();
   const errs = [];
-  page.on("console", (m) => m.type() === "error" && errs.push(m.text()));
+  page.on(
+    "console",
+    (m) =>
+      (m.type() === "error" || m.type() === "warning") && errs.push(m.type() + ": " + m.text()),
+  );
   page.on("pageerror", (e) => errs.push(String(e)));
   await page.goto("file://" + file);
   await page.evaluate(() => document.fonts.ready);
@@ -41,7 +45,7 @@ async function raw(buf) {
 
 // 1+2: console errors and overflow (element rectangles against the viewport)
 for (const theme of ["light", "dark"])
-  for (const w of [1440, 390]) {
+  for (const w of [1440, 390, 320]) {
     const { ctx, page, errs } = await open(w, theme);
     const ov = await page.evaluate(() => {
       const vw = document.documentElement.clientWidth;
@@ -219,121 +223,126 @@ async function contrastRun(theme, pointer) {
   const { ctx, page } = await open(1440, theme, !pointer, 2);
   const tiers = ["base", "homa", "stade", "pro", "champion", "legend"];
   const out = [];
-  for (const sec of ["full", "arabic"])
+  for (const sec of ["full", "arabic", "names", "g4"])
     for (const t of tiers) {
-      const root = page.locator(`#${sec} .mc-eclat--${t}`).first();
-      if (!(await root.count())) continue;
-      await root.evaluate((n) => n.scrollIntoView({ block: "center" }));
-      await page.waitForTimeout(150);
-      const groups = {
-        name: "text[data-name]",
-        tier: "text[data-tier]",
-        statValue: "text[data-stat]",
-        statLabel: "text[data-label]",
-        ovr: ".mc-l--num g[data-mc=ovr] text:nth-of-type(3)",
-      };
-      if (pointer) {
-        const nb = await root
-          .locator(pointer === "ovr" ? ".mc-l--num g[data-mc=ovr] rect" : "text[data-name]")
-          .first()
-          .boundingBox();
-        if (nb) {
-          await page.mouse.move(nb.x + nb.width / 2, nb.y + nb.height / 2, { steps: 6 });
-          await page.waitForTimeout(400);
+      const roots = page.locator(`#${sec} .mc-eclat--${t}`);
+      for (let ri = 0; ri < (await roots.count()); ri++) {
+        const root = roots.nth(ri);
+        await root.evaluate((n) => n.scrollIntoView({ block: "center" }));
+        await page.waitForTimeout(150);
+        const groups = {
+          name: "text[data-name]",
+          tier: "text[data-tier]",
+          statValue: "text[data-stat]",
+          statLabel: "text[data-label]",
+          ovr: ".mc-l--num g[data-mc=ovr] text:nth-of-type(3)",
+          ovrLabel: "text[data-ovrlabel]",
+          meta: "text[data-meta], g[data-meta] text",
+        };
+        if (pointer) {
+          const nb = await root
+            .locator(pointer === "ovr" ? ".mc-l--num g[data-mc=ovr] rect" : "text[data-name]")
+            .first()
+            .boundingBox();
+          if (nb) {
+            await page.mouse.move(nb.x + nb.width / 2, nb.y + nb.height / 2, { steps: 6 });
+            await page.waitForTimeout(400);
+          }
         }
-      }
-      for (const [kind, sel] of Object.entries(groups)) {
-        const els = root.locator(sel);
-        const n = await els.count();
-        for (let i = 0; i < n; i++) {
-          const el = els.nth(i);
-          const b = await el.boundingBox();
-          if (!b || b.width < 1) continue;
-          const sy = await page.evaluate(() => scrollY);
-          const clip = { x: b.x, y: b.y + sy, width: b.width, height: b.height };
-          const on = await raw(await page.screenshot({ clip, fullPage: true }));
-          const hideSel = kind === "ovr" ? ".mc-l--num" : null;
-          await el.evaluate((n, h) => {
-            const t = h ? n.closest(h) : n;
-            t.style.visibility = "hidden";
-          }, hideSel);
-          const off = await raw(await page.screenshot({ clip, fullPage: true }));
-          await el.evaluate((n, h) => {
-            const t = h ? n.closest(h) : n;
-            t.style.visibility = "";
-          }, hideSel);
-          const px = [];
-          for (let j = 0; j < on.data.length; j += 4) {
-            const a = lumc(on.data[j], on.data[j + 1], on.data[j + 2]),
-              c = lumc(off.data[j], off.data[j + 1], off.data[j + 2]);
-            px.push([Math.abs(a - c), a, c]);
-          }
-          px.sort((p, q) => q[0] - p[0]);
-          const top = px
-            .slice(0, Math.max(3, Math.floor(px.length * 0.04)))
-            .map((p) => p[1])
-            .sort((p, q) => p - q);
-          const textL = top[Math.floor(top.length / 2)];
-          const bg = px.map((p) => p[2]).sort((p, q) => p - q);
-          const med = bg[Math.floor(bg.length / 2)],
-            p10 = bg[Math.floor(bg.length * 0.1)],
-            p90 = bg[Math.floor(bg.length * 0.9)];
-          const worstBg = Math.abs(p10 - textL) < Math.abs(p90 - textL) ? p10 : p90;
-          // local ring: unchanged pixels within 3 device px of a changed pixel (the glyph's own surround)
-          const W = on.w,
-            H = on.h,
-            thr = 0.02;
-          const ch = new Uint8Array(W * H);
-          for (let q = 0; q < W * H; q++) {
-            const j = q * 4;
-            ch[q] =
-              Math.abs(
-                lumc(on.data[j], on.data[j + 1], on.data[j + 2]) -
-                  lumc(off.data[j], off.data[j + 1], off.data[j + 2]),
-              ) > thr
-                ? 1
-                : 0;
-          }
-          const ring = [];
-          for (let y = 0; y < H; y++)
-            for (let x = 0; x < W; x++) {
-              const q = y * W + x;
-              if (ch[q]) continue;
-              let near = false;
-              for (let dy = -3; dy <= 3 && !near; dy++)
-                for (let dx = -3; dx <= 3; dx++) {
-                  const yy = y + dy,
-                    xx = x + dx;
-                  if (yy >= 0 && yy < H && xx >= 0 && xx < W && ch[yy * W + xx]) {
-                    near = true;
-                    break;
-                  }
-                }
-              if (near) {
-                const j = q * 4;
-                ring.push(lumc(on.data[j], on.data[j + 1], on.data[j + 2]));
-              }
+        for (const [kind, sel] of Object.entries(groups)) {
+          const els = root.locator(sel);
+          const n = await els.count();
+          for (let i = 0; i < n; i++) {
+            const el = els.nth(i);
+            const b = await el.boundingBox();
+            if (!b || b.width < 1) continue;
+            const sy = await page.evaluate(() => scrollY);
+            const clip = { x: b.x, y: b.y + sy, width: b.width, height: b.height };
+            const on = await raw(await page.screenshot({ clip, fullPage: true }));
+            const hideSel = kind === "ovr" ? ".mc-l--num" : null;
+            await el.evaluate((n, h) => {
+              const t = h ? n.closest(h) : n;
+              t.style.visibility = "hidden";
+            }, hideSel);
+            const off = await raw(await page.screenshot({ clip, fullPage: true }));
+            await el.evaluate((n, h) => {
+              const t = h ? n.closest(h) : n;
+              t.style.visibility = "";
+            }, hideSel);
+            const px = [];
+            for (let j = 0; j < on.data.length; j += 4) {
+              const a = lumc(on.data[j], on.data[j + 1], on.data[j + 2]),
+                c = lumc(off.data[j], off.data[j + 1], off.data[j + 2]);
+              px.push([Math.abs(a - c), a, c]);
             }
-          ring.sort((p, q) => p - q);
-          const rMed = ring[Math.floor(ring.length / 2)],
-            r05 = ring[Math.floor(ring.length * 0.05)],
-            r95 = ring[Math.floor(ring.length * 0.95)];
-          const rWorst = Math.abs(r05 - textL) < Math.abs(r95 - textL) ? r05 : r95;
-          out.push({
-            sec,
-            tier: t,
-            kind,
-            i,
-            text: (await el.textContent()).slice(0, 18),
-            median: +ratio(textL, med).toFixed(2),
-            worst: +ratio(textL, worstBg).toFixed(2),
-            ringMedian: ring.length ? +ratio(textL, rMed).toFixed(2) : null,
-            ringWorst5: ring.length ? +ratio(textL, rWorst).toFixed(2) : null,
-            px: [Math.round(b.width), Math.round(b.height)],
-          });
+            px.sort((p, q) => q[0] - p[0]);
+            const top = px
+              .slice(0, Math.max(3, Math.floor(px.length * 0.04)))
+              .map((p) => p[1])
+              .sort((p, q) => p - q);
+            const textL = top[Math.floor(top.length / 2)];
+            const bg = px.map((p) => p[2]).sort((p, q) => p - q);
+            const med = bg[Math.floor(bg.length / 2)],
+              p10 = bg[Math.floor(bg.length * 0.1)],
+              p90 = bg[Math.floor(bg.length * 0.9)];
+            const worstBg = Math.abs(p10 - textL) < Math.abs(p90 - textL) ? p10 : p90;
+            // local ring: unchanged pixels within 3 device px of a changed pixel (the glyph's own surround)
+            const W = on.w,
+              H = on.h,
+              thr = 0.02;
+            const ch = new Uint8Array(W * H);
+            for (let q = 0; q < W * H; q++) {
+              const j = q * 4;
+              ch[q] =
+                Math.abs(
+                  lumc(on.data[j], on.data[j + 1], on.data[j + 2]) -
+                    lumc(off.data[j], off.data[j + 1], off.data[j + 2]),
+                ) > thr
+                  ? 1
+                  : 0;
+            }
+            const ring = [];
+            for (let y = 0; y < H; y++)
+              for (let x = 0; x < W; x++) {
+                const q = y * W + x;
+                if (ch[q]) continue;
+                let near = false;
+                for (let dy = -3; dy <= 3 && !near; dy++)
+                  for (let dx = -3; dx <= 3; dx++) {
+                    const yy = y + dy,
+                      xx = x + dx;
+                    if (yy >= 0 && yy < H && xx >= 0 && xx < W && ch[yy * W + xx]) {
+                      near = true;
+                      break;
+                    }
+                  }
+                if (near) {
+                  const j = q * 4;
+                  ring.push(lumc(on.data[j], on.data[j + 1], on.data[j + 2]));
+                }
+              }
+            ring.sort((p, q) => p - q);
+            const rMed = ring[Math.floor(ring.length / 2)],
+              r05 = ring[Math.floor(ring.length * 0.05)],
+              r95 = ring[Math.floor(ring.length * 0.95)];
+            const rWorst = Math.abs(r05 - textL) < Math.abs(r95 - textL) ? r05 : r95;
+            out.push({
+              sec,
+              tier: t,
+              card: ri,
+              kind,
+              i,
+              text: (await el.textContent()).slice(0, 18),
+              median: +ratio(textL, med).toFixed(2),
+              worst: +ratio(textL, worstBg).toFixed(2),
+              ringMedian: ring.length ? +ratio(textL, rMed).toFixed(2) : null,
+              ringWorst5: ring.length ? +ratio(textL, rWorst).toFixed(2) : null,
+              px: [Math.round(b.width), Math.round(b.height)],
+            });
+          }
         }
+        if (pointer) await page.mouse.move(2, 2);
       }
-      if (pointer) await page.mouse.move(2, 2);
     }
   await ctx.close();
   return out;
@@ -354,7 +363,8 @@ R.contrast.push({
 // 5: drawn elements per full card, revision 2 vs revision 3
 for (const [label, file] of [
   ["rev2", rev2],
-  ["rev3", mock],
+  ["rev3", rev3pre],
+  ["rev3b", mock],
 ]) {
   const { ctx, page } = await open(1440, "dark", true, 1, file);
   R.counts[label] = await page.evaluate(() =>

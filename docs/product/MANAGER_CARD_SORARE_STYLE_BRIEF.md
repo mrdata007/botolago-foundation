@@ -96,11 +96,12 @@ places. The word "sorare" never appears in shipped text, class names, file names
    a BotolaGO holographic seal with the tier; LEGEND stronger than CHAMPION.
    3c. **Real depth on every card** (owner, revision 2): five layers in CSS 3D (field, shirt, number,
    frame, holo) with parallax, an extruded rim, a contact shadow that moves against the light, an
-   embossed number; at rest the card already leans; cards are larger on the stage (296 / 336 px).
+   embossed number; at rest the card lies flat and crisp with a visible 2D thickness (critique fix,
+   plan §8.2) and tilts into 3D only while moving; cards are larger on the stage (296 / 336 px).
 4. **Light that follows the hand.** On a mouse or pen, the card tilts up to 7°/9°, its layers part,
    and the sheen, the shadow, the raised number and (top tiers) the holographic foil follow; on
-   touch-only phones a slow idle float while on screen; under reduced motion the card is still at its
-   rest lean.
+   touch-only phones a slow idle float while on screen; under reduced motion the card is still and
+   flat at its rest light.
 5. **Beats in the card's own material** (all ≤ 600 ms, the number never touched): tubes ignite and a
    sheen crosses (`make`), a mark lights (`tick`), the field kindles under the number (`first`), the
    foil sweeps in from the foot (`tier`), the prism crosses (`legend`), the capsule lights (`founder`),
@@ -125,7 +126,8 @@ structure, statistics, tier system, color identity, interactions and business lo
 10. **Football backgrounds**: a honeycomb backboard with layered gradients in each tier's colour (lines,
     raised cells or foil cells by tier), two stadium floodlights, the centre circle and halfway line, a
     backlight behind the jersey (§5.3). The sci-fi ribbons, glitch bars and pixel rain go.
-11. **About half the drawn elements removed** (measured: 205–284 → 105–118 per card): tubes, rivets,
+11. **About half the drawn elements removed** (measured: 205–284 → 105–118 per card; 121–136 after the
+    critique's material fixes, still −40 % to −52 %): tubes, rivets,
     the season stamp, guilloche, micro-print, captions, stitches, sparkles, the seal, the grid (§16).
 12. **A shield-style frame**: an embossed metal shield band round the art inside the unchanged
     asymmetric outline, a metal outer edge, physical materials per tier (§3.2, §5.4).
@@ -141,6 +143,25 @@ structure, statistics, tier system, color identity, interactions and business lo
 17. **Arabic and French**: centred names with a particle rule for long names (`LES LIONS`,
     `عبد الرحمن`), the tier word in Arabic in the Arabic interface (LASTREET stays Latin), mirrored
     capsule and rail (§3.3, §4).
+
+**Revision 3, critique fixes (2026-10-09; plan §16.1).** Independent critics reviewed the revision 3
+mock; within the owner's ten points, and without changing structure, tiers, stats or behaviour:
+
+18. **Crisp at rest**: flat 2D at rest and under reduced motion, 3D only while a pointer moves.
+19. **Hierarchy**: the shield's point rises 80, the name grows (80 / 120 / 144) and hangs from the
+    point on every tier (the base card too), the stats are centred on the card's axis, the plate keeps
+    one rhythm; the tier is a plaque, LEGEND's in moving foil.
+20. **The jersey**: rounder volume, creases that read as cloth (and cross the printed number), truer club
+    colours, a collar that wraps the neck, a tapered body with a rounded hem, a piqué knit; the chest
+    disc loses its unreadable initials; dark shirts get an aura on the backboard.
+21. **Materials**: lipped metal bands with a specular streak that travels with the light, honeycomb
+    emboss carried into the plate, PRO in crimson rather than salmon, STADE black and gold, LEGEND near
+    black with foil only where the light falls, a foil hairline shield and foil plaque of its own.
+22. **Small sizes and G4**: token shirts that keep their sleeves, a number that never shrinks as the
+    token grows, a 2 px ring in the tier's colour; a 200 px G4 card that drops the micro text and
+    enlarges what stays.
+23. **Text**: the wordmark becomes a real « BOTOLAGO » mark, two meta sizes, Arabic labels larger,
+    Arabic names placed by their ink so nothing crosses the rule.
 
 ## Acceptance criteria
 
@@ -160,8 +181,9 @@ pixels, each run against a dev server started from the tree being measured on it
   24 px, captured once.
 - Contrast from pixels at stage size (296 and 336 px wide), light and dark, at rest **and** with the
   pointer over the text (worst sheen, and for CHAMPION and LEGEND the diffraction foil centred on the
-  text): the number ≥ 3:1 against the shirt under it; stat values,
-  name lines and the tier word ≥ 4.5:1 against the plate; stat labels, serial and season ≥ 4.5:1; the
+  text): the number ≥ 3:1 against the shirt under it; « OVR » ≥ 4.5:1 against its halo; stat values,
+  name lines and the tier word ≥ 4.5:1 against the plate; stat labels, serial, season, the wordmark
+  and the sample pill ≥ 4.5:1; the forming marks (filled and empty) ≥ 3:1 against the shirt; the
   card's outer edge ≥ 3:1 against the page in both themes.
 - No element escapes 390 px (rectangles, not `scrollWidth`); the card never overflows its column at
   320 px either.
@@ -173,7 +195,7 @@ dir="ltr">` or LRI/PDI) and set in the Latin face, computed `letter-spacing` 0 o
   y 476–796; card space x 316.3–683.7, y 447.1–805.5) and inside the shirt path, measured from pixels
   in Chromium and asserted in unit tests from the ink metrics; on tokens inside their transformed
   boxes (plan §7).
-- **The jersey's dimensions** (rev. 3): `getBBox` of the shirt in jersey space is 190, 300, 810, 899;
+- **The jersey's dimensions** (rev. 3): `getBBox` of the shirt in jersey space is 190, 300, 810, 899.8;
   length ÷ pit-to-pit 1.40–1.50 and sleeve span ÷ length 0.95–1.10 (unit test); a visible hem band
   and stitch line, sleeves with cuffs, the V collar and the inside of the back.
 - **Shield and silhouette** (rev. 3): the outline path is byte-identical to revision 2 (tab and cut
@@ -181,30 +203,37 @@ dir="ltr">` or LRI/PDI) and set in the Latin face, computed `letter-spacing` 0 o
   metal (gradient strokes), visible in the close-up crops.
 - **Clutter** (rev. 3): none of these elements exists in the markup of any tier: tubes, rivets, season
   stamp, guilloche, micro-print, the tab's captions, glitch bars, pixel rain, ribbons, sparkles, the
-  holographic seal, the diffraction grid (unit test by class and by count); drawn elements per full
-  card ≤ 125.
+  holographic seal, the diffraction grid, the chest-disc initials (unit test by class and by count);
+  drawn elements per full card ≤ 140 (the mock: 121–136, revision 2: 205–284).
 - **Tier treatments** (rev. 3): each tier's honeycomb mode, floodlight count, cage (LASTREET only),
   pool (STADE only), cells (PRO only) and foil (CHAMPION, LEGEND only) as plan §5.3–5.4 (unit test); a
   close-up crop per tier in the after set.
 - **Small sizes** (rev. 3): at 80, 64, 48 and 32 px every token shows the number (none on the 24
   mini), the tier's metal edge and the jersey; no text other than the number, no pattern, mask or
-  filter in a token's markup (unit test); at 32 px a two-digit number is ≥ 7 CSS px tall (measured
-  7.4–8.9 in the mock).
+  filter in a token's markup (unit test); every token draws the short-sleeved token shirt with both
+  sleeves inside the silhouette; a two-digit number is ≥ 14 / 12 / 10 / 7 CSS px tall at 80 / 64 / 48 /
+  32 px (measured 14.1 / 12.1 / 10.1 / 7.1 at the worst in the mock); below 80 px a 2 px ring in the
+  tier's colour. The 200 px G4 card draws no text under 8 CSS px.
 - **Detail and crispness** (rev. 3): zoomed crops at DPR 2 and 3 of a PRO and a LEGEND card, at rest
   and mid-tilt, show the honeycomb emboss, the grain, the shirt's mesh, folds, seams and hem, and the
   metal edges without blur; the card markup contains no `<image>`, no raster data and no
-  `feTurbulence`; no `will-change` at rest.
+  `feTurbulence`; no `will-change` at rest; at rest the text is as sharp as a flat render (no 3D
+  transform computed on the tilt element or any layer).
 - **Holographic items** (rev. 3): present on CHAMPION and LEGEND (honeycomb foil, edge / band /
   plaque-rim foil, glints, diffraction), absent on every other tier (unit test and DOM query);
   LEGEND's foil opacities and glint count exceed CHAMPION's; the diffraction never covers the number
-  or the plate's text (its box ends at 69 % of the card height and its mask has a hole over the
+  or the plate's text (its box ends at 65 % of the card height, above the plaque, and its mask has a hole over the
   chest; contrast with the pointer over the number and over the name meets the floors); under reduced
   motion both stay visibly iridescent (screenshot).
-- **Depth**: on every tier the full card has five layers and seven rims with distinct `translateZ`
-  and `transform-style: preserve-3d` on the tilt element (computed styles); no `filter`, `opacity`,
-  `clip-path` or `overflow` that flattens 3D on its ancestors; a pointer sweep moves `--mc-ax`/`--mc-ay`
-  and the contact shadow; screenshots at rest show the lean, the rim and the shadow, with motion and
-  with reduced motion.
+- **Depth**: on every tier the full card has five layers and seven rims; at rest (and under reduced
+  motion) the layers compute `transform: none` and the rims a 2D offset that shows the card's
+  thickness; with the pointer over the card the layers have distinct `translateZ` and the tilt
+  element `transform-style: preserve-3d` (computed styles), and 600 ms after the pointer leaves the
+  card is flat again; no `filter`, `opacity`, `clip-path` or `overflow` that flattens 3D on its
+  ancestors; a pointer sweep moves `--mc-ax`/`--mc-ay` and the contact shadow; screenshots at rest
+  show the thickness and the shadow, and tilted show the lean.
+- **The tab** (critique fix): no foil crosses the tab, the club disc or the season on any tier, in
+  either language.
 - Long names (`longNameLatin`, a 24-character single word, `arabicName`) fit their lines without
   clipping or overlap, measured from text rectangles.
 

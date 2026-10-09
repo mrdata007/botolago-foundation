@@ -58,6 +58,9 @@ for (const theme of ["light", "dark"]) {
         await crop(page, `#full .mc-eclat--${cls}`, `${out}/tier-${name}-${theme}.png`);
       await crop(page, "#tokens", `${out}/tokens-${theme}.png`, 8);
       await crop(page, "#arabic", `${out}/arabic-${theme}.png`, 0);
+      if (await page.locator("#names").count())
+        await crop(page, "#names", `${out}/names-${theme}.png`, 0);
+      if (await page.locator("#g4").count()) await crop(page, "#g4", `${out}/g4-${theme}.png`, 0);
     }
     log.push(`${theme} ${w}: console errors ${errs.length ? errs.join(" | ") : "none"}`);
     await ctx.close();
