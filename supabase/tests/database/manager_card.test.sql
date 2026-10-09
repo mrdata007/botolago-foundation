@@ -1,7 +1,7 @@
 -- Manager Card (BG-0158): constraints, grants, row security, the switch, the
--- tick, the calculation (CAP, SEL, TRF, CON, OVR, tier), the four reads,
+-- tick, the calculation (CAP, SEL, TRF, CON, OVR, tier), the reads and the acknowledgement,
 -- deletion, the permanent number, the erase lock and the prune.
--- Migrations 20261008123000 .. 20261008123400.
+-- Migrations 20261008123000 .. 20261009100200.
 --
 -- THE FIXTURE. One Fantasy season (S1, football season label "2089/90")
 -- with six gameweeks, and an earlier season S0 ("2088/89"):
@@ -144,7 +144,7 @@
 -- Expected rows are checked with is_empty on a query that lists any
 -- difference, so a failure prints the offending team and gameweek.
 begin;
-select extensions.plan(149);
+select extensions.plan(161);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('bc0e0000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -541,12 +541,13 @@ create temp table card_tables (t regclass);
 insert into card_tables values ('app.manager_cards'), ('app.manager_card_seasons'),
   ('app.manager_card_gameweeks'), ('app_private.manager_card_rules'),
   ('app_private.manager_card_settings'), ('app_private.manager_card_evaluations'),
-  ('app_private.manager_card_job_log'), ('app_private.manager_card_retired_serials');
+  ('app_private.manager_card_job_log'), ('app_private.manager_card_retired_serials'),
+  ('app.manager_card_moment_acks');
 
 select extensions.is(
   (select count(*)::integer from pg_class c join card_tables ct on ct.t = c.oid
    where c.relrowsecurity and c.relforcerowsecurity),
-  8, 'row security is enabled and forced on all eight card tables');
+  9, 'row security is enabled and forced on all nine card tables');
 select extensions.ok(
   not exists (select 1 from pg_policy p join card_tables ct on ct.t = p.polrelid),
   'and no card table has a policy');
@@ -577,12 +578,12 @@ select extensions.is(
   (select string_agg(left(pg_temp.run(case when r.role = 'authenticated' then pg_temp.usr('A') end, 'aal1',
       format('(select count(*) from %s)', ct.t), r.role) ->> '__error', 5), ',' order by r.role, ct.t::text)
    from card_tables ct cross join unnest(array['anon', 'authenticated', 'service_role']) as r(role)),
-  (select string_agg('42501', ',') from generate_series(1, 24)),
+  (select string_agg('42501', ',') from generate_series(1, 27)),
   'anon, a signed-in user and the service role are each refused (permission denied) on every card table');
 select extensions.is(
   (select count(*)::integer from pg_proc p
    where p.pronamespace = 'app_private'::regnamespace and p.proname ~ '^manager_card'),
-  17, 'seventeen Manager Card functions live in app_private');
+  25, 'twenty-five Manager Card functions live in app_private');
 select extensions.ok(
   not exists (
     select 1 from pg_proc p
@@ -601,18 +602,25 @@ select extensions.ok(
   (select bool_and(has_function_privilege('authenticated', f, 'execute')
       and has_function_privilege('service_role', f, 'execute')
       and not has_function_privilege('anon', f, 'execute'))
-   from unnest(array['api.get_my_manager_card()', 'api.get_manager_card(uuid)',
-     'api.get_manager_cards(uuid[])', 'api.get_my_manager_card_history(integer,integer)']) f),
-  'the four reads are for authenticated and service_role, not anon');
+   from unnest(array['api.get_my_manager_card()', 'api.get_manager_cards(uuid[])',
+     'api.get_my_manager_card_history(uuid,integer,integer)',
+     'api.ack_manager_card_moments(text[])']) f),
+  'the four signed-in functions are for authenticated and service_role, not anon');
+select extensions.ok(
+  (select bool_and(has_function_privilege('anon', f, 'execute')
+      and has_function_privilege('authenticated', f, 'execute')
+      and has_function_privilege('service_role', f, 'execute'))
+   from unnest(array['api.manager_card_status()']) f),
+  'the status read is for anon, authenticated and service_role');
 select extensions.ok(
   not exists (
     select 1 from pg_proc p cross join lateral aclexplode(p.proacl) a
     where p.pronamespace = 'api'::regnamespace and p.proname ~ 'manager_card' and a.grantee = 0),
   'and PUBLIC holds no right on them');
 select extensions.ok(
-  (select count(*) = 4 and bool_and(p.prosecdef and p.proconfig @> array['search_path=""'])
+  (select count(*) = 5 and bool_and(p.prosecdef and p.proconfig @> array['search_path=""'])
    from pg_proc p where p.pronamespace = 'api'::regnamespace and p.proname ~ 'manager_card'),
-  'exactly four api functions, all security definer with an empty search_path');
+  'exactly five api functions, all security definer with an empty search_path');
 select extensions.is(
   (select string_agg(jobname || '@' || schedule, ',' order by jobname) from cron.job
    where jobname like 'manager-card-%'),
@@ -849,32 +857,43 @@ select extensions.is(
 create temp table read_calls (n integer, expr text);
 insert into read_calls values
   (1, 'api.get_my_manager_card()'),
-  (2, format('api.get_manager_card(%L)', pg_temp.tm('A'))),
-  (3, format('api.get_manager_cards(array[%L]::uuid[])', pg_temp.tm('A'))),
-  (4, 'api.get_my_manager_card_history(null, 20)');
+  (2, format('api.get_manager_cards(array[%L]::uuid[])', pg_temp.tm('A'))),
+  (3, 'api.get_my_manager_card_history(null, null, 20)'),
+  (4, 'api.ack_manager_card_moments(array[''card_created''])');
+create function pg_temp.off_answers() returns jsonb language sql immutable as $$
+  select jsonb_build_array(
+    '{"available": false}'::jsonb, '{"available": false}'::jsonb, '{"available": false}'::jsonb,
+    '{"acknowledged": [], "ignored": ["card_created"]}'::jsonb)
+$$;
 select extensions.is(
-  (select string_agg(pg_temp.run(null, null, expr) ->> '__error', ',' order by n) from read_calls),
-  (select string_agg('PT401 authentication_required', ',') from generate_series(1, 4)),
-  'a visitor with no user is refused: authentication_required');
+  (select jsonb_agg(pg_temp.run(null, null, expr) order by n) from read_calls),
+  pg_temp.off_answers(),
+  'a visitor with no user is answered "off" while the read switch is off: the switch is checked first');
 select extensions.is(
-  (select string_agg(pg_temp.run(null, null, expr, 'service_role') ->> '__error', ',' order by n) from read_calls),
-  (select string_agg('PT401 authentication_required', ',') from generate_series(1, 4)),
-  'and so is the service role: the reads need a signed-in user');
+  (select jsonb_agg(pg_temp.run(null, null, expr, 'service_role') order by n) from read_calls),
+  pg_temp.off_answers(),
+  'and so is the service role: off is an answer, HTTP 200, never an error');
 select extensions.is(
   (select string_agg(left(pg_temp.run(null, null, expr, 'anon') ->> '__error', 5), ',' order by n) from read_calls),
-  '42501,42501,42501,42501', 'anon is refused by the grants: permission denied');
+  '42501,42501,42501,42501', 'anon is refused by the grants on the four signed-in functions: permission denied');
 select extensions.is(
-  (select string_agg(pg_temp.run(pg_temp.usr('A'), 'aal1', expr) ->> '__error', ',' order by n) from read_calls),
-  (select string_agg('PT403 manager_card_off', ',') from generate_series(1, 4)),
-  'a signed-in user is refused while the read switch is off: manager_card_off');
+  (select jsonb_agg(pg_temp.run(pg_temp.usr('A'), 'aal1', expr) order by n) from read_calls),
+  pg_temp.off_answers(),
+  'a signed-in user is answered "off" while the read switch is off');
 select extensions.is(
-  (select string_agg(pg_temp.run(pg_temp.usr('Y'), 'aal1', expr) ->> '__error', ',' order by n) from read_calls),
-  (select string_agg('PT403 mfa_required', ',') from generate_series(1, 4)),
-  'a user with a verified factor at aal1 is stopped by the step-up first');
+  (select jsonb_agg(pg_temp.run(pg_temp.usr('Y'), 'aal1', expr) order by n) from read_calls),
+  pg_temp.off_answers(),
+  'a user with a verified factor at aal1 is answered "off" too: the switch comes before the step-up');
 select extensions.is(
-  (select string_agg(pg_temp.run(pg_temp.usr('Y'), 'aal2', expr) ->> '__error', ',' order by n) from read_calls),
-  (select string_agg('PT403 manager_card_off', ',') from generate_series(1, 4)),
-  'and at aal2 reaches the read switch');
+  (select jsonb_agg(pg_temp.run(pg_temp.usr('Y'), 'aal2', expr) order by n) from read_calls),
+  pg_temp.off_answers(),
+  'and at aal2 as well');
+select extensions.is(
+  (select string_agg(pg_temp.run(null, null, 'api.manager_card_status()', r.role)::text, '|' order by r.role)
+   from unnest(array['anon', 'authenticated', 'service_role']) as r(role)),
+  (select string_agg('{"enabled": false, "minRated": null, "minConfirmed": null}', '|' order by r.role)
+   from unnest(array['anon', 'authenticated', 'service_role']) as r(role)),
+  'the status read answers off to anon, a visitor and the service role: enabled false, no numbers');
 
 -- ---------------------------------------------------------------------------
 -- The tick answers off and no_rules without writing anything
@@ -1074,136 +1093,231 @@ values (pg_temp.usr('D'), pg_temp.id(5), pg_temp.gw(5), 60, 'stade', 60, 60, 60,
 select extensions.is(app_private.manager_card_configure(null, true),
   '{"computeEnabled": true, "readEnabled": true}'::jsonb, 'the read switch turns on');
 
+-- With the switch on and a usable rules row the reads need a user and the step-up.
+select extensions.is(
+  (select string_agg(pg_temp.run(null, null, expr) ->> '__error', ',' order by n) from read_calls),
+  (select string_agg('PT401 authentication_required', ',') from generate_series(1, 4)),
+  'with the switch on a visitor with no user is refused: authentication_required');
+select extensions.is(
+  (select string_agg(pg_temp.run(null, null, expr, 'service_role') ->> '__error', ',' order by n) from read_calls),
+  (select string_agg('PT401 authentication_required', ',') from generate_series(1, 4)),
+  'and so is the service role: the reads need a signed-in user');
+select extensions.is(
+  (select string_agg(pg_temp.run(pg_temp.usr('Y'), 'aal1', expr) ->> '__error', ',' order by n) from read_calls),
+  (select string_agg('PT403 mfa_required', ',') from generate_series(1, 4)),
+  'a user with a verified factor at aal1 is stopped by the step-up');
+select extensions.is(
+  (select string_agg(coalesce(pg_temp.run(pg_temp.usr('Y'), 'aal2', expr) ->> '__error', 'ok'), ',' order by n) from read_calls),
+  'ok,ok,ok,ok', 'and at aal2 reaches the answer');
+select extensions.is(
+  (select string_agg(pg_temp.run(null, null, 'api.manager_card_status()', r.role)::text, '|' order by r.role)
+   from unnest(array['anon', 'authenticated', 'service_role']) as r(role)),
+  (select string_agg('{"enabled": true, "minRated": 3, "minConfirmed": 5}', '|' order by r.role)
+   from unnest(array['anon', 'authenticated', 'service_role']) as r(role)),
+  'the status read answers on to everyone with the rules'' minimums');
+
 select set_config('test.serial_a', (select serial from app.manager_cards where user_id = pg_temp.usr('A')), true);
+-- The card of a user, or SQL null; the member card of a team, as another manager reads it.
+create function pg_temp.card_of(p_user uuid) returns jsonb language sql as $$
+  select pg_temp.run(p_user, 'aal1', 'api.get_my_manager_card()') -> 'card'
+$$;
+create function pg_temp.member_of(p_reader uuid, p_team uuid) returns jsonb language sql as $$
+  select pg_temp.run(p_reader, 'aal1', format('api.get_manager_cards(array[%L]::uuid[])', p_team)) -> 'cards' -> 0
+$$;
+create function pg_temp.stat(p_value integer, p_reason text default null) returns jsonb language sql as $$
+  select jsonb_build_object('value', p_value, 'nullReason', p_reason)
+$$;
+create function pg_temp.mine_core(p_user uuid) returns jsonb language sql as $$
+  select jsonb_build_object('teamId', c -> 'teamId', 'name', c -> 'name', 'handle', c -> 'handle',
+    'serial', c -> 'serial', 'founder', c -> 'founder', 'season', c -> 'season',
+    'ratingState', c -> 'ratingState', 'ovr', c -> 'ovr', 'ovrNullReason', c -> 'ovrNullReason',
+    'tier', c -> 'tier', 'provisional', c -> 'provisional', 'stats', c -> 'stats',
+    'gameweeksCounted', c -> 'gameweeksCounted', 'rulesVersion', c -> 'rulesVersion',
+    'club', c -> 'club')
+  from (select pg_temp.card_of(p_user) as c) x
+$$;
 select extensions.is(
-  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()'),
+  pg_temp.mine_core(pg_temp.usr('A')),
   jsonb_build_object(
-    'fantasyTeamId', pg_temp.tm('A'), 'name', 'Amina Test', 'handle', 'amina_mc',
-    'serial', current_setting('test.serial_a'), 'founderCohort', null,
+    'teamId', pg_temp.tm('A'), 'name', 'Amina Test', 'handle', 'amina_mc',
+    'serial', current_setting('test.serial_a'), 'founder', null,
     'season', jsonb_build_object('id', pg_temp.id(5), 'label', '2089/90'),
-    'ovr', 81, 'tier', 'champion',
-    'stats', jsonb_build_object('cap', 84, 'sel', 85, 'trf', 55, 'con', 99),
-    'provisional', true, 'gameweeksCounted', 4, 'rulesVersion', 1,
-    'club', jsonb_build_object('id', pg_temp.id(6), 'code', 'MCC',
+    'ratingState', 'provisional', 'ovr', 81, 'ovrNullReason', null, 'tier', 'champion',
+    'provisional', true,
+    'stats', jsonb_build_object('cap', pg_temp.stat(84), 'sel', pg_temp.stat(85),
+      'trf', pg_temp.stat(55), 'con', pg_temp.stat(99)),
+    'gameweeksCounted', 4, 'rulesVersion', 'v1',
+    'club', jsonb_build_object('id', pg_temp.id(6), 'slug', 'manager-card-club-1', 'code', 'MCC',
+      'name', jsonb_build_object('fr', 'Club MC', 'ar', 'MC Club'),
       'shortName', jsonb_build_object('fr', 'Club FR', 'ar', 'MC'),
-      'primaryColor', '#112233', 'secondaryColor', '#445566')),
-  'A reads her card: display name, handle, serial, season, OVR 81, stats, club (Arabic short name falls back to the Latin one)');
+      'city', null, 'primaryColor', '#112233', 'secondaryColor', '#445566')),
+  'A reads her card: display name, handle, serial, season, OVR 81, stats as {value, nullReason}, "v1", club with slug and names (Arabic falls back to the Latin name)');
 select extensions.is(
-  (select array_agg(k order by k) from jsonb_object_keys(
-    pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()')) k),
-  array['club', 'fantasyTeamId', 'founderCohort', 'gameweeksCounted', 'handle', 'name', 'ovr',
-    'provisional', 'rulesVersion', 'season', 'serial', 'stats', 'tier'],
-  'a card has exactly those thirteen fields');
+  (select array_agg(k order by k) from jsonb_object_keys(pg_temp.card_of(pg_temp.usr('A'))) k),
+  array['bestTier', 'calculatedAt', 'club', 'createdAt', 'firstCountedGameweekSeq',
+    'firstRatedGameweekSeq', 'founder', 'gameweeksCounted', 'handle', 'minConfirmed', 'minRated',
+    'moments', 'name', 'nextTier', 'ovr', 'ovrNullReason', 'previousSeason', 'provisional',
+    'ratingGameweeks', 'ratingGameweeksComplete', 'ratingState', 'rulesVersion', 'season',
+    'seasonClosed', 'seasons', 'serial', 'stats', 'teamId', 'throughGameweekSeq', 'tier'],
+  'a card has exactly those thirty fields');
 select extensions.ok(
-  position(pg_temp.usr('A')::text in pg_temp.run(pg_temp.usr('B'), 'aal1',
-      format('api.get_manager_card(%L)', pg_temp.tm('A')))::text) = 0
-  and position('example.test' in pg_temp.run(pg_temp.usr('B'), 'aal1',
-      format('api.get_manager_card(%L)', pg_temp.tm('A')))::text) = 0,
-  'it carries neither a user id nor an e-mail address');
+  position(pg_temp.usr('A')::text in pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))::text) = 0
+  and position('example.test' in pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))::text) = 0,
+  'a member card carries neither a user id nor an e-mail address');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('B'), 'aal1', format('api.get_manager_card(%L)', pg_temp.tm('A'))),
-  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()'),
-  'another signed-in manager reads A''s card by her Fantasy team: the same card');
+  (select array_agg(k order by k) from jsonb_object_keys(pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))) k),
+  array['club', 'firstRatedGameweekSeq', 'founderCohort', 'gameweeksCounted', 'minRated', 'name',
+    'ovr', 'provisional', 'ratingState', 'seasonLabel', 'serial', 'stats', 'teamId', 'tier'],
+  'and has exactly those fourteen fields (no handle, no moments)');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('B'), 'aal1', 'api.get_my_manager_card()'),
+  pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A')),
   jsonb_build_object(
-    'fantasyTeamId', pg_temp.tm('B'), 'name', 'Brahim Test', 'handle', 'brahim_mc',
-    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('B')), 'founderCohort', null,
+    'teamId', pg_temp.tm('A'), 'name', 'Amina Test',
+    'club', pg_temp.card_of(pg_temp.usr('A')) -> 'club',
+    'serial', current_setting('test.serial_a'), 'founderCohort', null, 'seasonLabel', '2089/90',
+    'ratingState', 'provisional', 'ovr', 81, 'tier', 'champion', 'provisional', true,
+    'stats', jsonb_build_object('cap', 84, 'sel', 85, 'trf', 55, 'con', 99),
+    'gameweeksCounted', 4, 'minRated', 3,
+    'firstRatedGameweekSeq', pg_temp.card_of(pg_temp.usr('A')) -> 'firstRatedGameweekSeq'),
+  'another signed-in manager reads A''s member card by her Fantasy team: the same figures');
+select extensions.is(
+  pg_temp.mine_core(pg_temp.usr('B')),
+  jsonb_build_object(
+    'teamId', pg_temp.tm('B'), 'name', 'Brahim Test', 'handle', 'brahim_mc',
+    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('B')), 'founder', null,
     'season', jsonb_build_object('id', pg_temp.id(5), 'label', '2089/90'),
-    'ovr', 54, 'tier', 'stade',
-    'stats', jsonb_build_object('cap', 1, 'sel', 86, 'trf', null, 'con', 75),
-    'provisional', true, 'gameweeksCounted', 4, 'rulesVersion', 1,
-    'club', jsonb_build_object('id', pg_temp.id(7), 'code', 'MCD',
+    'ratingState', 'provisional', 'ovr', 54, 'ovrNullReason', null, 'tier', 'stade',
+    'provisional', true,
+    'stats', jsonb_build_object('cap', pg_temp.stat(1), 'sel', pg_temp.stat(86),
+      'trf', pg_temp.stat(null, 'no_transfers'), 'con', pg_temp.stat(75)),
+    'gameweeksCounted', 4, 'rulesVersion', 'v1',
+    'club', jsonb_build_object('id', pg_temp.id(7), 'slug', 'manager-card-club-2', 'code', 'MCD',
+      'name', jsonb_build_object('fr', 'MC Deux', 'ar', 'اثنان'),
       'shortName', jsonb_build_object('fr', 'Deux FR', 'ar', 'اثنان'),
-      'primaryColor', null, 'secondaryColor', null)),
-  'B''s card: a missing stat is null, the club has both short names and no colours');
+      'city', null, 'primaryColor', null, 'secondaryColor', null)),
+  'B''s card: a missing stat is {null, no_transfers}, the club has both languages and no colours');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('G'), 'aal1', 'api.get_my_manager_card()'),
+  pg_temp.mine_core(pg_temp.usr('G')),
   jsonb_build_object(
-    'fantasyTeamId', pg_temp.tm('G'), 'name', 'Team G', 'handle', null,
-    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('G')), 'founderCohort', null,
+    'teamId', pg_temp.tm('G'), 'name', 'Team G', 'handle', null,
+    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('G')), 'founder', null,
     'season', jsonb_build_object('id', pg_temp.id(5), 'label', '2089/90'),
-    'ovr', 56, 'tier', 'stade',
-    'stats', jsonb_build_object('cap', 61, 'sel', 86, 'trf', 50, 'con', 25),
-    'provisional', true, 'gameweeksCounted', 4, 'rulesVersion', 1, 'club', null),
+    'ratingState', 'provisional', 'ovr', 56, 'ovrNullReason', null, 'tier', 'stade',
+    'provisional', true,
+    'stats', jsonb_build_object('cap', pg_temp.stat(61), 'sel', pg_temp.stat(86),
+      'trf', pg_temp.stat(50), 'con', pg_temp.stat(25)),
+    'gameweeksCounted', 4, 'rulesVersion', 'v1', 'club', null),
   'G has no display name (the team name is shown), no handle and no favourite club (club is null)');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('F'), 'aal1', 'api.get_my_manager_card()'),
+  pg_temp.mine_core(pg_temp.usr('F')),
   jsonb_build_object(
-    'fantasyTeamId', pg_temp.id(450), 'name', 'Fatima Test', 'handle', 'fatima_mc',
-    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('F')), 'founderCohort', null,
-    'season', jsonb_build_object('id', pg_temp.id(9), 'label', '2088/89'),
-    'ovr', 71, 'tier', 'pro',
-    'stats', jsonb_build_object('cap', 70, 'sel', 72, 'trf', 71, 'con', 71),
-    'provisional', false, 'gameweeksCounted', 30, 'rulesVersion', 1, 'club', null),
-  'F, under the minimum this season (2 weeks), is shown with last season''s card and its label (D7)');
-select extensions.is(
-  pg_temp.run(pg_temp.usr('A'), 'aal1', format('api.get_manager_card(%L)', pg_temp.tm('F'))),
-  jsonb_build_object(
-    'fantasyTeamId', pg_temp.tm('F'), 'name', 'Fatima Test', 'handle', 'fatima_mc',
-    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('F')), 'founderCohort', null,
+    'teamId', pg_temp.tm('F'), 'name', 'Fatima Test', 'handle', 'fatima_mc',
+    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('F')), 'founder', null,
     'season', jsonb_build_object('id', pg_temp.id(5), 'label', '2089/90'),
-    'ovr', null, 'tier', null,
-    'stats', jsonb_build_object('cap', null, 'sel', null, 'trf', null, 'con', null),
-    'provisional', true, 'gameweeksCounted', 2, 'rulesVersion', 1, 'club', null),
-  'but another manager reading F''s team sees this season with null figures, never another season''s');
+    'ratingState', 'forming', 'ovr', null, 'ovrNullReason', 'pending_minimum', 'tier', null,
+    'provisional', false,
+    'stats', jsonb_build_object('cap', pg_temp.stat(null, 'pending_minimum'),
+      'sel', pg_temp.stat(null, 'pending_minimum'), 'trf', pg_temp.stat(null, 'pending_minimum'),
+      'con', pg_temp.stat(null, 'pending_minimum')),
+    'gameweeksCounted', 2, 'rulesVersion', 'v1', 'club', null),
+  'F, under the minimum this season (2 weeks), is forming: this season, no figures, "pending_minimum" for each');
 select extensions.is(
-  (select jsonb_agg(e -> 'fantasyTeamId') from jsonb_array_elements(pg_temp.run(pg_temp.usr('A'), 'aal1',
+  pg_temp.card_of(pg_temp.usr('F')) -> 'previousSeason',
+  jsonb_build_object('label', '2088/89', 'ovr', 71, 'tier', 'pro'),
+  'and carries last season''s label and figures as previousSeason (D7, drawn by the client)');
+select extensions.is(
+  pg_temp.member_of(pg_temp.usr('A'), pg_temp.tm('F')),
+  jsonb_build_object(
+    'teamId', pg_temp.tm('F'), 'name', 'Fatima Test', 'club', null,
+    'serial', (select serial from app.manager_cards where user_id = pg_temp.usr('F')),
+    'founderCohort', null, 'seasonLabel', '2089/90', 'ratingState', 'forming', 'ovr', null,
+    'tier', null, 'provisional', false,
+    'stats', jsonb_build_object('cap', null, 'sel', null, 'trf', null, 'con', null),
+    'gameweeksCounted', 2, 'minRated', 3, 'firstRatedGameweekSeq', null),
+  'another manager reading F''s team sees this season''s forming card, never another season''s figures');
+select extensions.is(
+  (select jsonb_agg(e -> 'teamId') from jsonb_array_elements(pg_temp.run(pg_temp.usr('A'), 'aal1',
     format('api.get_manager_cards(array[%L, %L, %L, %L, %L, %L, null]::uuid[])',
-      pg_temp.tm('B'), pg_temp.tm('A'), pg_temp.tm('B'), pg_temp.id(9999), pg_temp.tm('C'), pg_temp.tm('D')))) e),
+      pg_temp.tm('B'), pg_temp.tm('A'), pg_temp.tm('B'), pg_temp.id(9999), pg_temp.tm('C'), pg_temp.tm('D'))) -> 'cards') e),
   jsonb_build_array(pg_temp.tm('B'), pg_temp.tm('A'), pg_temp.tm('C')),
   'the batch read keeps the order first asked, drops duplicates, nulls, unknown teams and the hidden profile D');
 select extensions.is(
   jsonb_array_length(pg_temp.run(pg_temp.usr('A'), 'aal1',
-    format('api.get_manager_cards(%L::uuid[])', (select array_agg(pg_temp.id(7000 + n)) from generate_series(1, 100) n))))::text
+    format('api.get_manager_cards(%L::uuid[])', (select array_agg(pg_temp.id(7000 + n)) from generate_series(1, 100) n))) -> 'cards')::text
   || ',' || jsonb_array_length(pg_temp.run(pg_temp.usr('A'), 'aal1',
-    format('api.get_manager_cards(%L::uuid[])', (select array_agg(pg_temp.tm('A')) from generate_series(1, 150) n))))::text
-  || ',' || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_manager_cards(array[]::uuid[])'))::text,
-  '0,1,[]', 'the batch takes up to 100 distinct teams (150 copies of one are one), and an empty list gives an empty list');
+    format('api.get_manager_cards(%L::uuid[])', (select array_agg(pg_temp.tm('A')) from generate_series(1, 150) n))) -> 'cards')::text
+  || ',' || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_manager_cards(array[]::uuid[])'))::text
+  || ',' || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_manager_cards(array[null]::uuid[])'))::text,
+  '0,1,{"cards": [], "available": true},{"cards": [], "available": true}',
+  'the batch takes up to 100 distinct teams (150 copies of one are one); an empty or all-null list gives an empty list');
 select extensions.is(
   (pg_temp.run(pg_temp.usr('A'), 'aal1',
     format('api.get_manager_cards(%L::uuid[])', (select array_agg(pg_temp.id(7000 + n)) from generate_series(1, 101) n))) ->> '__error')
-  || ',' || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_manager_cards(null)') ->> '__error')
-  || ',' || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_manager_card(null)') ->> '__error'),
-  'PT400 validation_failed,PT400 validation_failed,PT400 validation_failed',
-  '101 distinct teams, a null list and a null team are refused');
+  || ',' || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_manager_cards(null)') ->> '__error'),
+  'PT400 validation_failed,PT400 validation_failed',
+  '101 distinct teams and a null list are refused');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('A'), 'aal1', format('api.get_manager_card(%L)', pg_temp.id(9999)))::text,
-  null::text, 'an unknown team has no card');
+  pg_temp.run(pg_temp.usr('A'), 'aal1', format('api.get_manager_cards(array[%L]::uuid[])', pg_temp.id(9999))),
+  '{"available": true, "cards": []}'::jsonb, 'an unknown team has no card');
 select extensions.is(
-  coalesce(pg_temp.run(pg_temp.usr('A'), 'aal1', format('api.get_manager_card(%L)', pg_temp.tm('D')))::text, 'null')
-  || ',' || coalesce(pg_temp.run(pg_temp.usr('D'), 'aal1', 'api.get_my_manager_card()')::text, 'null')
-  || ',' || (pg_temp.run(pg_temp.usr('D'), 'aal1', 'api.get_my_manager_card_history(null, 20)')),
-  'null,null,{"items": [], "nextAfter": null}',
+  (pg_temp.run(pg_temp.usr('A'), 'aal1', format('api.get_manager_cards(array[%L]::uuid[])', pg_temp.tm('D'))))::text
+  || ',' || (pg_temp.run(pg_temp.usr('D'), 'aal1', 'api.get_my_manager_card()'))::text
+  || ',' || (pg_temp.run(pg_temp.usr('D'), 'aal1', 'api.get_my_manager_card_history(null, null, 20)'))::text,
+  '{"cards": [], "available": true},{"card": null, "available": true},{"items": [], "available": true, "nextBeforeSeq": null}',
   'D, whose profile is waiting to be deleted, has a saved card that no read shows: not by team, not her own, not her history');
+create function pg_temp.history(p_user uuid, p_args text) returns jsonb language sql as $$
+  select pg_temp.run(p_user, 'aal1', format('api.get_my_manager_card_history(%s)', p_args))
+$$;
+create function pg_temp.history_items(p_user uuid, p_args text) returns jsonb language sql as $$
+  select coalesce(jsonb_agg(i - 'calculatedAt' order by o), '[]')
+  from jsonb_array_elements(pg_temp.history(p_user, p_args) -> 'items') with ordinality as x(i, o)
+$$;
 select extensions.is(
-  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card_history(null, 2)'),
-  jsonb_build_object('items', jsonb_build_array(
-      jsonb_build_object('gameweekSequence', 5, 'ovr', 81, 'tier', 'champion',
-        'stats', jsonb_build_object('cap', 84, 'sel', 85, 'trf', 55, 'con', 99), 'provisional', true),
-      jsonb_build_object('gameweekSequence', 3, 'ovr', 80, 'tier', 'champion',
-        'stats', jsonb_build_object('cap', 81, 'sel', 86, 'trf', 55, 'con', 99), 'provisional', true)),
-    'nextAfter', 3),
-  'history comes newest first, two at a time, with the keyset of the last gameweek');
+  pg_temp.history_items(pg_temp.usr('A'), 'null, null, 2'),
+  jsonb_build_array(
+    jsonb_build_object('seasonId', pg_temp.id(5), 'seasonLabel', '2089/90', 'gameweekSeq', 5,
+      'ovr', 81, 'tier', 'champion', 'provisional', true, 'gameweeksCounted', 4,
+      'stats', jsonb_build_object('cap', 84, 'sel', 85, 'trf', 55, 'con', 99)),
+    jsonb_build_object('seasonId', pg_temp.id(5), 'seasonLabel', '2089/90', 'gameweekSeq', 3,
+      'ovr', 80, 'tier', 'champion', 'provisional', true, 'gameweeksCounted', 3,
+      'stats', jsonb_build_object('cap', 81, 'sel', 86, 'trf', 55, 'con', 99))),
+  'history comes newest first, two at a time, as nine-field rows');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card_history(3, 2)'),
-  jsonb_build_object('items', jsonb_build_array(
-      jsonb_build_object('gameweekSequence', 2, 'ovr', null, 'tier', null,
-        'stats', jsonb_build_object('cap', null, 'sel', null, 'trf', null, 'con', null), 'provisional', true),
-      jsonb_build_object('gameweekSequence', 1, 'ovr', null, 'tier', null,
-        'stats', jsonb_build_object('cap', null, 'sel', null, 'trf', null, 'con', null), 'provisional', true)),
-    'nextAfter', null),
-  'the next page has the last two weeks (under the minimum, so no figures) and no further page');
+  (pg_temp.history(pg_temp.usr('A'), 'null, null, 2') ->> 'nextBeforeSeq')::integer
+  || ',' || (select string_agg(distinct jsonb_typeof(i -> 'calculatedAt'), ',')
+    from jsonb_array_elements(pg_temp.history(pg_temp.usr('A'), 'null, null, 2') -> 'items') i)
+  || ',' || (pg_temp.history(pg_temp.usr('A'), 'null, null, 2') ->> 'available'),
+  '3,string,true', 'with the keyset of the last gameweek, a calculation time on every row, and available true');
 select extensions.is(
-  (select string_agg(pg_temp.run(pg_temp.usr('A'), 'aal1', format('api.get_my_manager_card_history(%s, %s)', a, l)) ->> '__error', ',' order by n)
+  pg_temp.history(pg_temp.usr('A'), 'null, 3, 2') -> 'nextBeforeSeq',
+  'null'::jsonb, 'the next page is the last one: no further keyset');
+select extensions.is(
+  pg_temp.history_items(pg_temp.usr('A'), format('%L, 3, 2', pg_temp.id(5))),
+  jsonb_build_array(
+    jsonb_build_object('seasonId', pg_temp.id(5), 'seasonLabel', '2089/90', 'gameweekSeq', 2,
+      'ovr', null, 'tier', null, 'provisional', false, 'gameweeksCounted', 2,
+      'stats', jsonb_build_object('cap', null, 'sel', null, 'trf', null, 'con', null)),
+    jsonb_build_object('seasonId', pg_temp.id(5), 'seasonLabel', '2089/90', 'gameweekSeq', 1,
+      'ovr', null, 'tier', null, 'provisional', false, 'gameweeksCounted', 1,
+      'stats', jsonb_build_object('cap', null, 'sel', null, 'trf', null, 'con', null))),
+  'the last two weeks are under the minimum, so they carry no figures (an explicit season gives the same pages)');
+select extensions.is(
+  pg_temp.history_items(pg_temp.usr('F'), format('%L, null, 20', pg_temp.id(9))),
+  jsonb_build_array(
+    jsonb_build_object('seasonId', pg_temp.id(9), 'seasonLabel', '2088/89', 'gameweekSeq', 1,
+      'ovr', 71, 'tier', 'pro', 'provisional', false, 'gameweeksCounted', 30,
+      'stats', jsonb_build_object('cap', 70, 'sel', 72, 'trf', 71, 'con', 71))),
+  'F''s history for last season (asked by season) shows that season''s one row');
+select extensions.is(
+  (select string_agg(pg_temp.history(pg_temp.usr('A'), format('null, %s, %s', a, l)) ->> '__error', ',' order by n)
    from (values (1, 'null', '0'), (2, 'null', '51'), (3, 'null', 'null'), (4, '0', '10')) as v(n, a, l)),
   'PT400 validation_failed,PT400 validation_failed,PT400 validation_failed,PT400 validation_failed',
   'a page size of 0, 51 or null, and a keyset below 1, are refused');
 select extensions.is(
-  coalesce(pg_temp.run(pg_temp.usr('Y'), 'aal2', 'api.get_my_manager_card()')::text, 'null') || ','
-    || (pg_temp.run(pg_temp.usr('Y'), 'aal2', 'api.get_my_manager_card_history(null, 20)')::text),
-  'null,{"items": [], "nextAfter": null}',
-  'a manager with no card reads null and an empty history (at aal2, with a verified factor)');
+  pg_temp.run(pg_temp.usr('Y'), 'aal2', 'api.get_my_manager_card()')::text || ','
+    || (pg_temp.run(pg_temp.usr('Y'), 'aal2', 'api.get_my_manager_card_history(null, null, 20)')::text),
+  '{"card": null, "available": true},{"items": [], "available": true, "nextBeforeSeq": null}',
+  'a manager with no team reads card null and an empty history (at aal2, with a verified factor)');
 
 -- ---------------------------------------------------------------------------
 -- A correction: GW3's player 8 scored 4, not 7. The gameweek's
@@ -1291,8 +1405,8 @@ select extensions.is_empty($q$
           e.counted, e.provisional, pg_temp.gw(5)))
 $q$, 'the season rows follow: they are the corrected card as of GW5');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()') #>> '{stats,cap}' || '/'
-    || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()') ->> 'ovr'),
+  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()') #>> '{card,stats,cap,value}' || '/'
+    || (pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()') #>> '{card,ovr}'),
   '73/78', 'and A''s read shows it (CAP 73, OVR 78)');
 
 -- ---------------------------------------------------------------------------
@@ -1426,7 +1540,7 @@ select extensions.is(
   (select string_agg(user_id::text || serial, '|' order by user_id) from app.manager_cards),
   current_setting('test.serials'), 'the grant left every number as it was');
 select extensions.is(
-  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()') -> 'founderCohort', '1'::jsonb,
+  pg_temp.run(pg_temp.usr('A'), 'aal1', 'api.get_my_manager_card()') #> '{card,founder,cohort}', '1'::jsonb,
   'the founder mark shows on A''s card');
 select extensions.is(
   pg_temp.outcome(format('select app_private.manager_card_grant_founder(null, now(), 1::smallint, null)'))
