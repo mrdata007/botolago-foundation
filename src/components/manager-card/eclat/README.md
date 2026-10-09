@@ -40,7 +40,7 @@ nothing here carries a third party's name, mark or artwork.
 | `ids.ts`                                                  | Unique SVG ids (`mc-<n>-…`); `../scope-ids.ts` makes the cached markup unique per mounted card.                                                         |
 | `eclat.css`                                               | Fonts (Instrument Serif), text faces, the layer stack; then the 3D, foil and beats sections.                                                            |
 | `scripts/measure-faces.ts`                                | Regenerates `metrics.ts` (Playwright, Chromium).                                                                                                        |
-| `scripts/gallery.ts`                                      | Writes a static gallery of every fixture, tier and size, and the mock's own cards for a side-by-side.                                                   |
+| `../../../../scripts/qa/manager-card-gallery.ts`          | Writes a static gallery of every fixture, tier and size, and the mock's own cards for a side-by-side.                                                   |
 | `test-data.ts`, `test-markup.ts`                          | Test support: the card words of both languages, a profile per case, the mock's cards; a strict reader for the markup. Not imported by the app.          |
 
 ## How a card is built
@@ -156,7 +156,7 @@ Budgets (plan 12.5): `full()` 25 ms, `token()` 3 ms, chunk 60 kB gzip, stage mar
 ## Looking at it
 
 ```
-bun src/components/manager-card/eclat/scripts/gallery.ts <out-dir>
+bun scripts/qa/manager-card-gallery.ts <out-dir>
 ```
 
 writes `compare-light|dark.html` (the mock's cards, on the mock's own page chrome) and

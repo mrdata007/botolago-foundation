@@ -1,7 +1,7 @@
 /**
  * Writes a scratch gallery of the Éclat card as static HTML, to look at it and to measure it:
  *
- *   bun src/components/manager-card/eclat/scripts/gallery.ts <out-dir> [fonts-css-url]
+ *   bun scripts/qa/manager-card-gallery.ts <out-dir> [fonts-css-url]
  *
  * `compare-<theme>.html` draws the cards of the direction mock (`mock.html`, in the collectible
  * design's folder under `docs/product/`) with the same data and the same page, so a picture of each
@@ -17,18 +17,29 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { FIXTURE_IDS, FIXTURES } from "@/backend/manager-card/fixtures";
-import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
+import { FIXTURE_IDS, FIXTURES } from "../../src/backend/manager-card/fixtures";
+import { dictionaries, type TranslationKey } from "../../src/i18n/dictionaries";
 
-import { cardStrings, type Translate } from "../../copy";
-import { fromMyCard, guestProfile } from "../../to-profile";
-import type { CardProfile, CardStrings, CardTheme, TokenSize } from "../../types";
-import { cardImage, founderDetail, fullCard } from "../full";
-import { tierWord } from "../foil";
-import { esc, makeView } from "../view";
-import { tokenMarkup } from "../token";
-import { MOCK_ARABIC, MOCK_CARDS, MOCK_NAMES, MOCK_TOKENS, type MockCard } from "../test-data";
-import { AR, FR } from "../test-data";
+import { cardStrings, type Translate } from "../../src/components/manager-card/copy";
+import { fromMyCard, guestProfile } from "../../src/components/manager-card/to-profile";
+import type {
+  CardProfile,
+  CardStrings,
+  CardTheme,
+  TokenSize,
+} from "../../src/components/manager-card/types";
+import { cardImage, founderDetail, fullCard } from "../../src/components/manager-card/eclat/full";
+import { tierWord } from "../../src/components/manager-card/eclat/foil";
+import { esc, makeView } from "../../src/components/manager-card/eclat/view";
+import { tokenMarkup } from "../../src/components/manager-card/eclat/token";
+import {
+  MOCK_ARABIC,
+  MOCK_CARDS,
+  MOCK_NAMES,
+  MOCK_TOKENS,
+  type MockCard,
+} from "../../src/components/manager-card/eclat/test-data";
+import { AR, FR } from "../../src/components/manager-card/eclat/test-data";
 
 const out = process.argv[2];
 if (!out) throw new Error("usage: gallery.ts <out-dir> [fonts-css-url]");
@@ -72,7 +83,7 @@ figcaption{font-size:13px;color:var(--muted);text-align:center}
  * same offsets on both pages and a picture of each can be set beside the other pixel for pixel.
  */
 function mockChrome(): { css: string; top: string } {
-  const root = join(dirname(fileURLToPath(import.meta.url)), "../../../../..");
+  const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
   // the mock sits in a `manager-card-…` folder of docs/product, named for the design's direction
   const product = join(root, "docs/product");
   const folder = readdirSync(product).find(
