@@ -12,6 +12,7 @@ import {
   type MomentCopy,
 } from "../copy";
 import { auto, fill, ltr } from "../interpolate";
+import { tierNode } from "../tier-node";
 import { fromHistoryRow, fromMyCard } from "../to-profile";
 import type { CardProfile, HeroKind, HeroSpec, LineSpec, ReplayItem, TierCode } from "../types";
 import type { AnalyticsEvent } from "@/lib/analytics";
@@ -31,7 +32,8 @@ export interface MomentWords {
   card: CardCopy;
   gradins: GradinsCopy;
   lang: Language;
-  tierWord(tier: TierCode | null): string;
+  /** The tier's word for a `{tier}` placeholder: LASTREET comes isolated left to right (`tierNode`). */
+  tierWord(tier: TierCode | null): ReactNode;
 }
 
 export function momentWords(t: Parameters<typeof momentCopy>[0], lang: Language): MomentWords {
@@ -41,7 +43,7 @@ export function momentWords(t: Parameters<typeof momentCopy>[0], lang: Language)
     card,
     gradins: gradinsCopy(t, lang),
     lang,
-    tierWord: (tier) => (tier ? card.tier[tier] : ""),
+    tierWord: (tier) => (tier ? tierNode(tier, card.tier[tier], lang) : ""),
   };
 }
 

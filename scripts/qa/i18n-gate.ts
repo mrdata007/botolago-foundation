@@ -158,8 +158,19 @@ export const BASELINES: Baselines = {
   // annotated in `src/i18n/i18n-allowlist.ts`, which never removes a count.
   // The other 181 keys of the section all differ between the languages.
   // W1 7 -> 9, W2 7 -> 9.
-  W1: 9,
-  W2: 9,
+  //
+  // Manager Card, LASTREET (owner decision, 2026-10-09): the lowest tier is
+  // shown as "LASTREET", one Latin word in both languages, where the French
+  // UI said "HOMA" and the Arabic UI "حومة". The key keeps its name,
+  // `card.tier.homa` (the tier code `homa` is stored, in the DTO and in the
+  // analytics event names, and none of that moves), so only its value
+  // changes: now identical in fr and ar, and with no Arabic script. One new
+  // W1 finding and one new W2 finding, both annotated in
+  // `src/i18n/i18n-allowlist.ts`, which never removes a count. The Arabic UI
+  // keeps the word in Latin script inside a left-to-right isolate
+  // (`TierWord`). W1 9 -> 10, W2 9 -> 10.
+  W1: 10,
+  W2: 10,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and

@@ -14,6 +14,7 @@ import {
   finalRounds,
   gradinsCopy,
   gwList,
+  isolateLatin,
   leagues,
   momentCopy,
   pluralCategory,
@@ -206,7 +207,7 @@ describe("cardStrings and cardLabel", () => {
     expect(strings.ovr).toBe("OVR");
     expect(strings.stats).toEqual({ cap: "CAP", sel: "SEL", trf: "TRF", con: "CON" });
     expect(strings.tiers).toEqual({
-      homa: "HOMA",
+      homa: "LASTREET",
       stade: "STADE",
       pro: "PRO",
       champion: "CHAMPION",
@@ -218,6 +219,8 @@ describe("cardStrings and cardLabel", () => {
     expect(strings.a11y.separator).toBe(", ");
     const arabic = cardStrings(ar, "ar");
     expect(arabic.tiers.pro).toBe("محترف");
+    // The lowest tier reads LASTREET in both languages: a Latin word in the Arabic UI too.
+    expect(arabic.tiers.homa).toBe("LASTREET");
     expect(arabic.a11y.separator).toBe("، ");
     expect(arabic.serial("482913")).toBe("BOT #482913");
     expect(arabic.sample).toBe("مثال");
@@ -243,6 +246,40 @@ describe("cardStrings and cardLabel", () => {
     const unnamed = { ...forming, name: "  ", club: null, serial: null, counted: null };
     expect(cardLabel(unnamed, strings)).toBe("Carte de manager, pas encore de note");
     expect(cardLabel(forming, strings)).not.toMatch(/\b0\b/);
+  });
+});
+
+describe("isolateLatin (LASTREET in text that leaves the interface)", () => {
+  const LRI = String.fromCodePoint(0x2066);
+  const PDI = String.fromCodePoint(0x2069);
+
+  it("wraps a Latin word in a left-to-right isolate in Arabic, and only there", () => {
+    expect(isolateLatin("LASTREET", "ar")).toBe(`${LRI}LASTREET${PDI}`);
+    expect(isolateLatin("LASTREET", "fr")).toBe("LASTREET");
+  });
+
+  it("leaves an Arabic word, an empty string and the other tiers' Arabic words alone", () => {
+    expect(isolateLatin("محترف", "ar")).toBe("محترف");
+    expect(isolateLatin("", "ar")).toBe("");
+    for (const tier of ["stade", "pro", "champion", "legend"] as const) {
+      const word = cardStrings(ar, "ar").tiers[tier];
+      expect(isolateLatin(word, "ar")).toBe(word);
+    }
+  });
+
+  it("is what the tier word becomes in a plain sentence: the isolates sit round it, not round the sentence", () => {
+    const strings = cardStrings(ar, "ar");
+    const sentence = `63 OVR · ${isolateLatin(strings.tiers.homa, "ar")}`;
+    expect(sentence).toContain(`${LRI}LASTREET${PDI}`);
+    expect(sentence.startsWith("63")).toBe(true);
+  });
+
+  it("is not in a card's accessible label, which is spoken and keeps the bare word", () => {
+    const homa = fromMyCard(FIXTURES.homa.card!, { sample: false });
+    const label = cardLabel(homa, cardStrings(ar, "ar"));
+    expect(label).toContain("LASTREET");
+    expect(label).not.toContain(LRI);
+    expect(label).not.toContain(PDI);
   });
 });
 

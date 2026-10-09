@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { HistoryRowDto } from "@/backend/manager-card/contracts";
 import { STANDINGS_FIGURE_CELL } from "@/components/fantasy-lists/standings";
 import { useCardCopy, useGradinsCopy } from "@/components/manager-card/copy";
+import { TierWord } from "@/components/manager-card/tier-word";
 import { ui, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -58,7 +59,7 @@ export function HistoryTable({
             <UiTD className={cn("pe-4", STANDINGS_FIGURE_CELL)}>
               <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className={cn(ui.text.secondary, ui.tone.default)}>
-                  {row.tier ? card.tier[row.tier] : DASH}
+                  {row.tier ? <TierWord tier={row.tier} /> : DASH}
                 </span>
                 {row.provisional && row.ovr !== null ? (
                   <ProvisionalBadge className="px-2 py-0.5" />

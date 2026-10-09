@@ -1,8 +1,9 @@
 import { History } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { useCardCopy, useMomentCopy } from "@/components/manager-card/copy";
+import { useMomentCopy } from "@/components/manager-card/copy";
 import { fill } from "@/components/manager-card/interpolate";
+import { TierWord } from "@/components/manager-card/tier-word";
 import type { ReplayItem } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -24,7 +25,6 @@ export function RevoirList({
   card: MyCardDto;
   onOpen: (item: ReplayItem) => void;
 }) {
-  const copy = useCardCopy();
   const moments = useMomentCopy();
   if (items.length === 0) return null;
   const labelOf = (item: ReplayItem): ReactNode => {
@@ -33,7 +33,7 @@ export function RevoirList({
         return fill(moments.m12.itemFirstRating, { gw: item.gameweekSeq ?? "" });
       case "tier":
         return fill(moments.m12.itemTier, {
-          tier: item.tier ? copy.tier[item.tier] : "",
+          tier: item.tier ? <TierWord tier={item.tier} /> : "",
           gw: item.gameweekSeq ?? "",
         });
       case "founder":

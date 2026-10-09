@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 
 import type { MyCardDto, SeasonSummaryDto } from "@/backend/manager-card/contracts";
 import { CardToken } from "@/components/manager-card/CardToken";
-import { useCardCopy, useGradinsCopy } from "@/components/manager-card/copy";
+import { useGradinsCopy } from "@/components/manager-card/copy";
 import { fill } from "@/components/manager-card/interpolate";
+import { TierWord } from "@/components/manager-card/tier-word";
 import type { TokenSize } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,6 @@ export function SeasonRack({
   size: Extract<TokenSize, 44 | 56>;
 }) {
   const gradins = useGradinsCopy();
-  const copy = useCardCopy();
   return (
     <div className="relative pt-2" data-testid="gradins-rack">
       <span
@@ -50,7 +50,12 @@ export function SeasonRack({
             season.ovr !== null ? (
               <>
                 <Figure>{season.ovr}</Figure>
-                {season.tier ? ` · ${copy.tier[season.tier]}` : ""}
+                {season.tier ? (
+                  <>
+                    {" · "}
+                    <TierWord tier={season.tier} />
+                  </>
+                ) : null}
               </>
             ) : (
               <>

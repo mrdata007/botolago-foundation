@@ -372,7 +372,7 @@ describe("G3's table", () => {
   it("says what each card says: a number and its tier, « en formation », or a dash", async () => {
     const html = await table();
     expect(text(html)).toContain("88 OVR · CHAMPION");
-    expect(text(html)).toContain("63 OVR · HOMA");
+    expect(text(html)).toContain("63 OVR · LASTREET");
     expect(text(html)).toContain("en formation 2/3");
     expect(html).toContain(fr["card.provisional"]);
   });

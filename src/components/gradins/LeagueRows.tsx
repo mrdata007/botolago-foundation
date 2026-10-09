@@ -5,6 +5,7 @@ import { STANDINGS_FIGURE_CELL, STANDINGS_NAME_CELL } from "@/components/fantasy
 import { CardToken } from "@/components/manager-card/CardToken";
 import { useCardCopy, useGradinsCopy, useMomentCopy } from "@/components/manager-card/copy";
 import { fill } from "@/components/manager-card/interpolate";
+import { TierWord } from "@/components/manager-card/tier-word";
 import { fromMember } from "@/components/manager-card/to-profile";
 import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { ui, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui-kit";
@@ -181,7 +182,12 @@ function CardLineText({ row, youLabel }: { row: PeopleRow; youLabel: ReactNode }
             <bdi dir="ltr">
               {line.ovr} {card.ovr}
             </bdi>
-            {line.tier ? ` · ${card.tier[line.tier]}` : ""}
+            {line.tier ? (
+              <>
+                {" · "}
+                <TierWord tier={line.tier} />
+              </>
+            ) : null}
           </span>
           {line.provisional ? <ProvisionalBadge className="px-2 py-0.5" /> : null}
         </>

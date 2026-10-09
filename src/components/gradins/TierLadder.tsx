@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { CardToken } from "@/components/manager-card/CardToken";
-import { useCardCopy, useGradinsCopy, useMomentCopy } from "@/components/manager-card/copy";
+import { useGradinsCopy, useMomentCopy } from "@/components/manager-card/copy";
 import { fill } from "@/components/manager-card/interpolate";
+import { TierWord } from "@/components/manager-card/tier-word";
 import { fromMyCard, withTier } from "@/components/manager-card/to-profile";
 import { TIER_CODES } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
@@ -33,7 +34,6 @@ export function TierLadder({
   fallLine?: ReactNode;
 }) {
   const gradins = useGradinsCopy();
-  const copy = useCardCopy();
   const moments = useMomentCopy();
   const { lang } = useI18n();
   const view = cardView(card);
@@ -70,7 +70,7 @@ export function TierLadder({
                   here ? ui.tone.default : ui.tone.muted,
                 )}
               >
-                {copy.tier[tier]}
+                <TierWord tier={tier} />
               </span>
               {here ? (
                 <span className={cn("text-center", ui.text.micro, ui.tone.ink)}>
@@ -94,14 +94,14 @@ export function TierLadder({
                 {gradins.cardTierBest}
                 {lang === "fr" ? "\u00A0: " : ": "}
                 <span className={cn(ui.tone.default, "[font-weight:var(--ui-weight-heavy)]")}>
-                  {copy.tier[best]}
+                  <TierWord tier={best} />
                 </span>
               </p>
             ) : null}
             {card.nextTier ? (
               <p>
                 {fill(moments.m4.sheetTierDistance, {
-                  tier: copy.tier[card.nextTier.code],
+                  tier: <TierWord tier={card.nextTier.code} />,
                   from: card.nextTier.fromOvr,
                 })}
               </p>
