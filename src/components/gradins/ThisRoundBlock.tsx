@@ -10,6 +10,7 @@ import {
   type MomentCopy,
 } from "@/components/manager-card/copy";
 import { fill } from "@/components/manager-card/interpolate";
+import { tierNode } from "@/components/manager-card/tier-node";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -93,7 +94,7 @@ function roundText(
         line: fill(moments.m10.closed, {
           season: block.season,
           ovr: block.ovr,
-          tier: block.tier ? card.tier[block.tier] : "",
+          tier: block.tier ? tierNode(block.tier, card.tier[block.tier], lang) : "",
         }),
         secondary: null,
         compose: false,

@@ -2826,7 +2826,7 @@ export const fr = {
   "card.stat_long.sel": "Votre onze de départ",
   "card.stat_long.trf": "Vos transferts",
   "card.stat_long.con": "Votre régularité",
-  "card.tier.homa": "HOMA",
+  "card.tier.homa": "LASTREET",
   "card.tier.stade": "STADE",
   "card.tier.pro": "PRO",
   "card.tier.champion": "CHAMPION",

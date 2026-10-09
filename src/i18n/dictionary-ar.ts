@@ -2665,7 +2665,7 @@ export const ar = {
   "card.stat_long.sel": "اختيار التشكيلة",
   "card.stat_long.trf": "قرارات الانتقالات",
   "card.stat_long.con": "الثبات",
-  "card.tier.homa": "حومة",
+  "card.tier.homa": "LASTREET",
   "card.tier.stade": "ملعب",
   "card.tier.pro": "محترف",
   "card.tier.champion": "بطل",

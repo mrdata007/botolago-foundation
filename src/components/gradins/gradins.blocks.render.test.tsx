@@ -56,7 +56,7 @@ describe("« Votre palier »", () => {
     const current = html.match(/<li[^>]*aria-current="true"[\s\S]*?<\/li>/)![0];
     expect(text(current)).toContain("PRO");
     expect(text(current)).toContain(fr["gradins.card.tier_now"]);
-    for (const tier of ["HOMA", "STADE", "PRO", "CHAMPION", "LEGEND"]) {
+    for (const tier of ["LASTREET", "STADE", "PRO", "CHAMPION", "LEGEND"]) {
       expect(text(html)).toContain(tier);
     }
     expect(text(html)).toContain("CHAMPION à partir de 88.");

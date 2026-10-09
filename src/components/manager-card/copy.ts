@@ -5,7 +5,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import type { Language } from "@/types/domain";
 
-import { fillText } from "./interpolate";
+import { fillText, isArabicTemplate } from "./interpolate";
 import type { CardProfile, CardStrings, StatCode } from "./types";
 
 /**
@@ -416,6 +416,24 @@ export const FORMULA_KEYS: Record<string, Record<StatCode, TranslationKey>> = {}
 /* ------------------------------------------------------------------------------------------ */
 /* What a renderer prints and speaks                                                            */
 /* ------------------------------------------------------------------------------------------ */
+
+const LRI = String.fromCodePoint(0x2066);
+const PDI = String.fromCodePoint(0x2069);
+
+/**
+ * A Latin word placed in Arabic text that leaves the interface (an image caption drawn on a
+ * canvas, an accessible sentence built by concatenation, a `title`): wrapped in the left-to-right
+ * isolate U+2066 … U+2069, so a neighbouring Arabic word, a dot or a number cannot pull it out of
+ * place. This is « LASTREET » in the Arabic interface (plan section 11).
+ *
+ * French text, empty text and a word that already carries Arabic script come back as they were.
+ * In the interface itself a tier word is a `<bdi>` (`TierWord`, `tierNode`). A card's accessible
+ * label keeps the bare word (`cardLabel`): it is spoken, not laid out.
+ */
+export function isolateLatin(text: string, lang: Language): string {
+  if (lang !== "ar" || text === "" || isArabicTemplate(text)) return text;
+  return `${LRI}${text}${PDI}`;
+}
 
 /** The words a card renderer may print or speak, in one language (the plan's `CardStrings`). */
 export function cardStrings(t: Translate, lang: Language): CardStrings {

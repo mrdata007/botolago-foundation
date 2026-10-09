@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
 import { useCardCopy } from "@/components/manager-card/copy";
+import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -142,7 +143,9 @@ export function RatingLine({
           <span aria-hidden className={cn(ui.display.team, ui.tone.muted)}>
             ·
           </span>
-          <span className={cn(ui.display.team, ui.tone.default)}>{copy.tier[tier]}</span>
+          <span className={cn(ui.display.team, ui.tone.default)}>
+            <TierWord tier={tier} />
+          </span>
         </>
       ) : null}
       {season ? (

@@ -21,6 +21,7 @@ import {
   type MomentCopy,
 } from "../copy";
 import { fill } from "../interpolate";
+import { TierWord } from "../tier-word";
 import { fromMyCard } from "../to-profile";
 import { hubCardModel, type HubCardHead, type HubCardLine } from "./inline-model";
 
@@ -177,7 +178,9 @@ function Head({
         <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{cardCopy.ovr}</span>
       </span>
       {head.tier ? (
-        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{cardCopy.tier[head.tier]}</span>
+        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>
+          <TierWord tier={head.tier} />
+        </span>
       ) : null}
       {head.provisional ? <Pill tone="quiet">{cardCopy.provisional}</Pill> : null}
     </>
@@ -247,7 +250,7 @@ function renderLine(
       return fill(ctx.moment.m10.closed, {
         season: line.season,
         ovr: line.ovr,
-        tier: ctx.cardCopy.tier[line.tier],
+        tier: <TierWord tier={line.tier} />,
       });
   }
 }
