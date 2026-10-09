@@ -169,6 +169,14 @@
 .mc-eclat--active .mc-eclat__tilt {
   will-change: transform;
 }
+/* while the pointer is over the card the light follows it with a short lag, so the first contact at
+   the card's edge is not a jump in the travelling parts */
+.mc-eclat--active {
+  transition:
+    --mc-ax 120ms ease-out,
+    --mc-ay 120ms ease-out,
+    --mc-t 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
 .mc-l {
   backface-visibility: hidden;
   transform: none;
@@ -259,6 +267,10 @@
   [class*="mc-eclat--beat-"].mc-eclat--idle {
     animation-play-state: paused;
   }
+  /* a pen over a touch-only screen's card takes the light from the float */
+  .mc-eclat--idle.mc-eclat--active {
+    animation: none;
+  }
   @keyframes mc-float {
     0% {
       --mc-ax: 0.24;
@@ -278,6 +290,7 @@
 /* under reduced motion nothing eases (the tilt is not mounted either, so no state changes) */
 @media (prefers-reduced-motion: reduce) {
   .mc-eclat,
+  .mc-eclat--active,
   .mc-eclat--settle {
     transition: none;
   }

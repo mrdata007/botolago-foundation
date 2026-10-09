@@ -7,6 +7,7 @@
  *
  * Nothing here runs under reduced motion, nor on a card that was not asked to tilt. It writes only
  * `--mc-ax` and `--mc-ay` and three classes on the card's root, and removes them again on cleanup.
+ * The float stops while the page is hidden and while the card is off screen.
  */
 
 const clamp = (v: number): number => Math.max(-1, Math.min(1, v));
@@ -57,21 +58,31 @@ export function mountTilt(el: HTMLElement | null): () => void {
   };
   root.addEventListener("pointermove", onMove);
   root.addEventListener("pointerleave", onLeave);
+  root.addEventListener("pointercancel", onLeave);
   root.addEventListener("transitionend", onEnd);
 
-  // a touch-only screen: a slow idle float while the card is on screen
+  // a touch-only screen: a slow idle float, only while the card is on screen and the page is visible
   let observer: IntersectionObserver | null = null;
-  if (window.matchMedia?.("(hover: none)").matches && typeof IntersectionObserver !== "undefined") {
-    observer = new IntersectionObserver(([entry]) =>
-      root.classList.toggle("mc-eclat--idle", !!entry?.isIntersecting),
-    );
+  let onScreen = false;
+  const doc = typeof document !== "undefined" ? document : null;
+  const syncIdle = () => root.classList.toggle("mc-eclat--idle", onScreen && !doc?.hidden);
+  const touchOnly =
+    window.matchMedia?.("(hover: none)").matches && typeof IntersectionObserver !== "undefined";
+  if (touchOnly) {
+    observer = new IntersectionObserver(([entry]) => {
+      onScreen = !!entry?.isIntersecting;
+      syncIdle();
+    });
     observer.observe(root);
+    doc?.addEventListener("visibilitychange", syncIdle);
   }
 
   return () => {
     root.removeEventListener("pointermove", onMove);
     root.removeEventListener("pointerleave", onLeave);
+    root.removeEventListener("pointercancel", onLeave);
     root.removeEventListener("transitionend", onEnd);
+    doc?.removeEventListener("visibilitychange", syncIdle);
     observer?.disconnect();
     cancelAnimationFrame(raf);
     clearTimeout(timer);

@@ -36,19 +36,31 @@ let reduce = false;
 let touch = false;
 let observed: { cb: (e: { isIntersecting: boolean }[]) => void; disconnected: boolean } | null =
   null;
+/** The page's `visibilitychange` listeners, and whether it is hidden. */
+const page = { hidden: false, listeners: new Map<string, () => void>() };
 
 beforeEach(() => {
   frames = [];
   reduce = false;
   touch = false;
   observed = null;
+  page.hidden = false;
+  page.listeners.clear();
   for (const k of [
     "window",
+    "document",
     "requestAnimationFrame",
     "cancelAnimationFrame",
     "IntersectionObserver",
   ])
     saved[k] = g[k];
+  g.document = {
+    get hidden() {
+      return page.hidden;
+    },
+    addEventListener: (type: string, fn: () => void) => page.listeners.set(type, fn),
+    removeEventListener: (type: string) => page.listeners.delete(type),
+  };
   g.window = {
     matchMedia: (q: string) => ({
       matches: q.includes("reduce") ? reduce : q.includes("hover: none") ? touch : false,
@@ -173,5 +185,108 @@ describe("the tilt (plan 8.3)", () => {
     expect(classes.size).toBe(0);
     expect(vars.size).toBe(0);
     expect(observed!.disconnected).toBe(true);
+  });
+
+  it("pauses the float while the page is hidden and resumes it when the card is still on screen", () => {
+    touch = true;
+    const { el, classes } = fakeCard();
+    const stop = mountTilt(el);
+    observed!.cb([{ isIntersecting: true }]);
+    expect(classes.has("mc-eclat--idle")).toBe(true);
+    page.hidden = true;
+    page.listeners.get("visibilitychange")!();
+    expect(classes.has("mc-eclat--idle")).toBe(false);
+    page.hidden = false;
+    page.listeners.get("visibilitychange")!();
+    expect(classes.has("mc-eclat--idle")).toBe(true);
+    // a page that comes back while the card is off screen does not start it
+    observed!.cb([{ isIntersecting: false }]);
+    page.listeners.get("visibilitychange")!();
+    expect(classes.has("mc-eclat--idle")).toBe(false);
+    // a card seen while the page is hidden does not float until the page is shown
+    page.hidden = true;
+    observed!.cb([{ isIntersecting: true }]);
+    expect(classes.has("mc-eclat--idle")).toBe(false);
+    stop();
+    expect(page.listeners.size).toBe(0);
+  });
+
+  it("listens to the page only on a touch-only screen", () => {
+    const { el } = fakeCard();
+    mountTilt(el);
+    expect(page.listeners.size).toBe(0);
+    expect(observed).toBeNull();
+  });
+
+  it("settles when the pointer is cancelled as it does when it leaves", () => {
+    const { el, classes, listeners } = fakeCard();
+    mountTilt(el);
+    listeners.get("pointermove")!({ pointerType: "mouse", clientX: 300, clientY: 300 });
+    flush();
+    listeners.get("pointercancel")!({});
+    expect(classes.has("mc-eclat--active")).toBe(false);
+    expect(classes.has("mc-eclat--settle")).toBe(true);
+  });
+
+  it("writes one light per frame: the last position of the frame wins", () => {
+    const { el, vars, listeners } = fakeCard();
+    mountTilt(el);
+    listeners.get("pointermove")!({ pointerType: "mouse", clientX: 100, clientY: 200 });
+    listeners.get("pointermove")!({ pointerType: "mouse", clientX: 250, clientY: 442.5 });
+    flush();
+    expect(vars.get("--mc-ax")).toBe("0.000");
+    expect(vars.get("--mc-ay")).toBe("0.000");
+  });
+
+  it("ignores a card with no size (hidden, not laid out) and a pointer that is not a mouse or a pen", () => {
+    const { el, classes, vars, listeners } = fakeCard();
+    const root = (
+      el as unknown as { querySelector: (s: string) => { getBoundingClientRect: () => unknown } }
+    ).querySelector(".mc-eclat");
+    root.getBoundingClientRect = () => ({ left: 0, top: 0, width: 0, height: 0 });
+    mountTilt(el);
+    listeners.get("pointermove")!({ pointerType: "mouse", clientX: 5, clientY: 5 });
+    flush();
+    expect(classes.size).toBe(0);
+    expect(vars.size).toBe(0);
+  });
+
+  it("returns to the flat stack by its own timer when no transition ends, and not if the pointer is back", async () => {
+    const { el, classes, listeners } = fakeCard();
+    mountTilt(el);
+    listeners.get("pointermove")!({ pointerType: "mouse", clientX: 300, clientY: 300 });
+    flush();
+    listeners.get("pointerleave")!({});
+    expect(classes.has("mc-eclat--settle")).toBe(true);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(classes.has("mc-eclat--settle")).toBe(false);
+    // back over the card before the end of the settle: no flat stack under the pointer
+    listeners.get("pointerleave")!({});
+    listeners.get("pointermove")!({ pointerType: "mouse", clientX: 300, clientY: 300 });
+    flush();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(classes.has("mc-eclat--active")).toBe(true);
+    expect(classes.has("mc-eclat--settle")).toBe(false);
+  });
+
+  it("only the card's own depth transition ends the settle, not another property or another element", () => {
+    const { el, classes, listeners } = fakeCard();
+    mountTilt(el);
+    const root = (el as unknown as { querySelector: (s: string) => unknown }).querySelector(
+      ".mc-eclat",
+    );
+    listeners.get("pointerleave")!({});
+    listeners.get("transitionend")!({ target: root, propertyName: "--mc-ax" });
+    listeners.get("transitionend")!({ target: {}, propertyName: "--mc-t" });
+    expect(classes.has("mc-eclat--settle")).toBe(true);
+    listeners.get("transitionend")!({ target: root, propertyName: "--mc-t" });
+    expect(classes.has("mc-eclat--settle")).toBe(false);
+  });
+
+  it("can be cleaned up twice", () => {
+    const { el } = fakeCard();
+    const stop = mountTilt(el);
+    stop();
+    expect(() => stop()).not.toThrow();
   });
 });
