@@ -112,6 +112,28 @@ describe("the number's layer (plan 5.2)", () => {
     expect(num.indexOf("-numclip)")).toBeGreaterThan(num.indexOf('data-mc="ovr"'));
   });
 
+  it("lets the body's falloff, not the shirt's lit tint, pass over the print", () => {
+    // the print's cloth is its own gradient: the dark sides of `volX` and a clear middle. The shirt's
+    // `volX` lifts its middle with the highlight tint, which pulled a white fill down to .92 to .95
+    // of white and cost the number 0.1 to 0.2 of its contrast with the shirt under it
+    expect(num).toContain("-numvol)");
+    expect(num).not.toContain("-volX)");
+    const grad = /<linearGradient id="[^"]*-numvol"[^>]*>(.*?)<\/linearGradient>/s.exec(html)![1]!;
+    const stops = [
+      ...grad.matchAll(/offset="([\d.]+)" stop-color="([^"]+)" stop-opacity="([\d.]+)"/g),
+    ];
+    expect(stops.length).toBeGreaterThanOrEqual(5);
+    for (const [, , colour] of stops) expect(colour).toBe("#000");
+    // clear between .2 and .82 of the chest's width, dark at both sides
+    for (const [, offset, , opacity] of stops) {
+      if (Number(offset) >= 0.2 && Number(offset) <= 0.82) expect(Number(opacity)).toBe(0);
+    }
+    expect(Number(stops[0]![3])).toBeGreaterThan(0.3);
+    expect(Number(stops[stops.length - 1]![3])).toBeGreaterThan(0.3);
+    // the shirt keeps its own lit `volX`
+    expect(layer(html, "shirt")!).toContain("-volX)");
+  });
+
   it("prints « OVR » under it with a halo, never on a dash or on the face-à-face card", () => {
     expect(num).toContain('data-ovrlabel="1"');
     expect(num).toContain('paint-order="stroke"');
