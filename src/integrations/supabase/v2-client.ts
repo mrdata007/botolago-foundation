@@ -47,3 +47,13 @@ export function getAdminApi() {
 export function getPepitesApi() {
   return supabaseV2.schema("api");
 }
+
+/**
+ * The Manager Card (Gradins) exposes DTO-shaped, switch-checked reads and one
+ * acknowledgement write in the api schema. Until the generated database types
+ * include its functions, the repository calls them through one typed cast
+ * (`src/backend/manager-card/supabase-repository.ts`).
+ */
+export function getManagerCardApi() {
+  return supabaseV2.schema("api");
+}

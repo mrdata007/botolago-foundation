@@ -2711,4 +2711,235 @@ export const fr = {
   "landing.final_body":
     "Choisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.",
   "landing.cta_pending": "Chargement",
+
+  /* ------------------------------------------------------------------ */
+  /* Gradins and the Manager Card (plan: docs/product/MANAGER_CARD_SECTION_PLAN.md,
+     Appendix A). Every key here is read through src/components/manager-card/copy.ts */
+  /* ------------------------------------------------------------------ */
+
+  /* Gradins (the Manager Card section): navigation, heads and section copy. */
+  "nav.gradins": "Gradins",
+  "gradins.meta.home": "Gradins — BotolaGO",
+  "gradins.meta.card": "Votre carte — BotolaGO",
+  "gradins.meta.people": "Les vôtres — BotolaGO",
+  "gradins.meta.seasons": "Vos saisons — BotolaGO",
+  "gradins.meta.description": "Votre carte de manager BotolaGO, vos ligues et vos saisons.",
+  "gradins.unavailable": "Votre carte n’est pas disponible pour ce compte.",
+  "gradins.badge_new": "Nouveau",
+
+  /* Gradins G1: guest and signed-in without a team. */
+  "gradins.guest.headline": "Votre place dans les gradins",
+  "gradins.guest.body":
+    "Votre carte de manager démarre avec votre équipe : votre nom, les couleurs de votre club, et une note qui vient de vos choix, journée après journée.",
+  "gradins.guest.sign_in": "Se connecter",
+  "gradins.guest.try_title": "Essayer les couleurs d’un club",
+  "gradins.guest.try_hint":
+    "Un aperçu seulement : votre club se choisit à la création du compte, et se change dans votre profil.",
+  "gradins.guest.point.name.title": "À votre nom",
+  "gradins.guest.point.name.body":
+    "Votre nom figure sur votre carte et dans les classements. Un prénom ou un surnom suffit.",
+  "gradins.guest.point.club.title": "Aux couleurs de votre club",
+  "gradins.guest.point.club.body":
+    "Le club choisi dans votre profil donne sa couleur à votre carte.",
+  "gradins.guest.point.rating.title": "Une note qui vient de vos choix",
+  "gradins.guest.point.rating.body":
+    "Capitaine, titulaires, transferts, régularité : votre note arrive après {final}, puis suit votre saison.",
+  "gradins.guest.point.people.title": "À côté des vôtres",
+  "gradins.guest.point.people.body":
+    "Dans vos ligues privées, les cartes de vos amis apparaissent à côté de la vôtre.",
+  "gradins.guest.free": "Le jeu est gratuit : sans achat, sans pari.",
+  "gradins.noteam.headline": "Votre carte attend votre équipe",
+
+  /* Gradins G1: the manager's home. */
+  "gradins.identity.since": "Depuis la J{gw}",
+  "gradins.leagues_one": "1 ligue",
+  "gradins.leagues_two": "2 ligues",
+  "gradins.leagues_few": "{n} ligues",
+  "gradins.leagues_other": "{n} ligues",
+  "gradins.round.title": "Cette journée",
+  "gradins.round.line": "J{gw} · date limite {deadline}",
+  "gradins.round.recalc": "Votre note est recalculée après chaque journée terminée.",
+  "gradins.stats.title": "Ce que dit votre carte",
+  "gradins.people.title": "Les vôtres",
+  "gradins.people.view_league": "Voir les cartes de la ligue",
+  "gradins.people.you": "Vous",
+  "gradins.people.empty":
+    "Créez une ligue et invitez vos amis : leurs cartes apparaîtront ici, à côté de la vôtre.",
+  "gradins.people.alone": "Personne n’a encore rejoint « {league} ».",
+  "gradins.people.cards_failed": "Impossible de charger les cartes de la ligue.",
+  "gradins.people.same_club": "Supporters de {club}",
+  "gradins.people.compare": "Comparer les cartes de la ligue",
+  "gradins.club.title": "Votre club",
+  "gradins.club.mates_one": "Dans « {league} », supporter de {club} aussi : {names}",
+  "gradins.club.mates_other": "Dans « {league} », supporters de {club} aussi : {names}",
+  "gradins.club.next_match": "Prochain match",
+  "gradins.club.none":
+    "Votre carte n’a pas encore de club. Le club choisi dans votre profil lui donne sa couleur.",
+  "gradins.club.choose": "Choisir mon club",
+  "gradins.seasons.title": "Vos saisons",
+  "gradins.revoir.title": "Vos moments",
+  "gradins.seasons.season": "Saison {season}",
+  "gradins.season.closed_label": "Fin de saison",
+
+  /* Gradins G2, G3, G4, G6 and the share sheet; the Fantasy hub's two new lines. */
+  "gradins.card.title": "Votre carte",
+  "gradins.card.where": "D’où vient votre note",
+  "gradins.card.intro": "Votre note vient de vos décisions, journée après journée.",
+  "gradins.card.intro_forming":
+    "Pas encore de note. Les quatre statistiques se remplissent avec vos journées terminées.",
+  "gradins.card.tier": "Votre palier",
+  "gradins.card.tier_now": "Actuel",
+  "gradins.card.tier_best": "Meilleur cette saison",
+  "gradins.card.tier_none": "Le palier arrive avec votre première note.",
+  "gradins.card.tier_explain": "Le palier suit votre note, journée après journée.",
+  "gradins.card.serial": "Numéro {serial} : il ne changera jamais.",
+  "gradins.h2h.title": "Face à face",
+  "gradins.seasons.counted_zero": "Aucune journée comptée",
+  "gradins.seasons.counted_one": "1 journée comptée",
+  "gradins.seasons.counted_two": "2 journées comptées",
+  "gradins.seasons.counted_few": "{n} journées comptées",
+  "gradins.seasons.counted_other": "{n} journées comptées",
+  "gradins.seasons.first_rating": "Première note à la J{gw} : {ovr}",
+  "gradins.seasons.col_round": "Journée",
+  "gradins.seasons.col_rating": "Note",
+  "gradins.seasons.col_tier": "Palier",
+  "gradins.seasons.more": "Afficher plus",
+  "gradins.seasons.empty": "Votre première journée comptée apparaîtra ici.",
+  "gradins.seasons.error": "Impossible de charger votre historique.",
+  "gradins.share.label": "Ma carte BotolaGO",
+  "gradins.share.caption": "Ma saison, rang par rang",
+  "fantasy.hub.pepites_body":
+    "Les meilleurs moins de 23 ans de la Botola Pro, pour repérer vos prochains joueurs.",
+  "fantasy.hub.card_view": "Voir votre carte",
+
+  /* The card's words, plural families and null reasons. */
+  "card.ovr": "OVR",
+  "card.serial": "BOT #{serial}",
+  "card.provisional": "Provisoire",
+  "card.sample": "Exemple",
+  "card.founder_line": "Fondateur 2026",
+  "card.stat.cap": "CAP",
+  "card.stat.sel": "SEL",
+  "card.stat.trf": "TRF",
+  "card.stat.con": "CON",
+  "card.stat_long.cap": "Vos capitaines",
+  "card.stat_long.sel": "Votre onze de départ",
+  "card.stat_long.trf": "Vos transferts",
+  "card.stat_long.con": "Votre régularité",
+  "card.tier.homa": "HOMA",
+  "card.tier.stade": "STADE",
+  "card.tier.pro": "PRO",
+  "card.tier.champion": "CHAMPION",
+  "card.tier.legend": "LEGEND",
+  "card.a11y.card_of": "Carte de manager",
+  "card.a11y.no_rating": "pas encore de note",
+  "card.a11y.separator": ", ",
+  "card.a11y.counted_zero": "aucune journée comptée sur {n}",
+  "card.a11y.counted_one": "1 journée comptée sur {n}",
+  "card.a11y.counted_two": "2 journées comptées sur {n}",
+  "card.a11y.counted_few": "{k} journées comptées sur {n}",
+  "card.a11y.counted_other": "{k} journées comptées sur {n}",
+  "card.final_one": "1 journée terminée",
+  "card.final_two": "2 journées terminées",
+  "card.final_few": "{n} journées terminées",
+  "card.final_other": "{n} journées terminées",
+  "card.rounds_one": "1 journée",
+  "card.rounds_two": "2 journées",
+  "card.rounds_few": "{n} journées",
+  "card.rounds_other": "{n} journées",
+  "card.gw_list_1": "J{a}",
+  "card.gw_list_2": "J{a}, J{b}",
+  "card.gw_list_3": "J{a}, J{b}, J{c}",
+  "card.reason.pending_minimum": "pas encore assez de journées",
+  "card.reason.no_transfers": "pas encore de transfert",
+  "card.reason.window_open": "calculé {rounds} après le transfert",
+  "card.reason.excluded_weeks_only": "semaines non comptées",
+  "card.reason.board_not_final": "classement pas encore définitif",
+  "card.reason.pre_captain_fix": "journées au capitaine attribué par défaut, non comptées",
+
+  /* Approved onboarding copy (docs/product/MANAGER_CARD_SECTION_PLAN.md, Appendix A.6). */
+  "card.onboarding.m1.intro.title": "Votre carte de manager",
+  "card.onboarding.m1.intro.body": "Elle démarre avec votre équipe. Sa note arrive après {final}.",
+  "card.onboarding.m1.save.line":
+    "À l’enregistrement, votre carte de manager démarre avec votre équipe. Sa note arrive après {final}.",
+  "card.onboarding.m1.register.hint":
+    "Sert de nom affiché sur votre carte et dans les classements. Modifiable à l’étape suivante.",
+  "card.onboarding.m1.setup.card_label": "Votre carte",
+  "card.onboarding.m1.setup.name_hint":
+    "Ce nom figure sur votre carte et dans les classements. Un prénom ou un surnom suffit.",
+  "card.onboarding.m1.setup.club_hint":
+    "Votre club donne sa couleur à votre carte. Modifiable dans votre profil.",
+  "card.onboarding.m1.builder.line": "Compte créé. Il reste à enregistrer votre équipe.",
+  "card.onboarding.m2.heading": "Votre carte de manager",
+  "card.onboarding.m2.line1": "Sa note arrive après {final} : {gws}.",
+  "card.onboarding.m2.line1_from": "Sa note arrive après {final}, à partir de la J{gw}.",
+  "card.onboarding.m2.line2":
+    "Elle mesurera vos choix : capitaine, titulaires, transferts, régularité.",
+  "card.onboarding.m2.serial": "Son numéro, {serial}, ne changera jamais.",
+  "card.onboarding.m2.invite":
+    "Invitez vos amis avant la date limite de la J{gw} : leurs journées compteront en même temps que les vôtres.",
+  "card.onboarding.m2.arrival":
+    "Nouveau : votre carte est calculée à partir de votre équipe. Sa note arrive après {final} ({k}/{n}).",
+  "card.onboarding.m3.label": "Carte en formation",
+  "card.onboarding.m3.line": "Note après {final} · prochaine : J{gw} · date limite {deadline}",
+  "card.onboarding.m3.first_counted": "Première journée comptée : J{gw}.",
+  "card.onboarding.m3.eve": "Dernière journée avant votre note : J{gw}.",
+  "card.onboarding.m3.over":
+    "J{gw} terminée, pas encore définitive. La note arrive dès qu’elle l’est.",
+  "card.onboarding.m3.insufficient":
+    "Les journées nécessaires sont comptées. La note attend encore une statistique.",
+  "card.onboarding.m3.late":
+    "Saison terminée avant votre première note : elle viendra en {season}.",
+  "card.onboarding.m3.recap": "Journée comptée pour votre carte : {k}/{n}",
+  "card.onboarding.m3.hint.cap": "Votre capitaine compte pour CAP sur votre carte.",
+  "card.onboarding.m3.hint.sel": "Votre onze de départ compte pour SEL.",
+  "card.onboarding.m3.hint.trf":
+    "Vos transferts comptent pour TRF. Sans transfert, TRF reste vide (—).",
+  "card.onboarding.m3.first_transfer": "TRF mesurera ce transfert après {final}.",
+  "card.onboarding.m4.hero.fresh.label": "Première note · J{gw}",
+  "card.onboarding.m4.hero.fresh.line": "Provisoire jusqu’à {final}.",
+  "card.onboarding.m4.hero.arrival.label": "Votre carte de manager est là",
+  "card.onboarding.m4.hero.arrival.line": "Calculée sur {final} de votre saison.",
+  "card.onboarding.m4.hero.coalesced.label":
+    "Première note : {first} (J{gw}). Aujourd’hui : {ovr}, {tier}.",
+  "card.onboarding.m4.hero.detail": "Voir le détail",
+  "card.onboarding.m4.sheet.footer": "La note est la moyenne des statistiques disponibles.",
+  "card.onboarding.m4.sheet.tier_distance": "{tier} à partir de {from}.",
+  "card.onboarding.m4.sheet.share": "Partager ma carte",
+  "card.onboarding.m4.sheet.league": "Voir ma ligue",
+  "card.onboarding.m4.sheet.replay": "Revoir",
+  "card.onboarding.m5.band": "Nouvelles notes après la J{gw} : {names}",
+  "card.onboarding.m5.row.forming": "en formation {k}/{n}",
+  "card.onboarding.m5.hint.compare": "Touchez un manager pour comparer vos cartes.",
+  "card.onboarding.m5.h2h.score": "Vous {a} · {name} {b}",
+  "card.onboarding.m6.image.provisional": "Note provisoire · J{gw}",
+  "card.onboarding.m6.msg.league":
+    "Ma carte BotolaGO : {ovr}. Et toi ? Rejoins ma ligue « {league} » : {link}",
+  "card.onboarding.m6.msg.league_provisional":
+    "Ma carte BotolaGO : {ovr} (provisoire). Et toi ? Rejoins ma ligue « {league} » : {link}",
+  "card.onboarding.m6.msg.plain": "Ma carte BotolaGO : {ovr}. Et toi ? {link}",
+  "card.onboarding.m6.msg.plain_provisional":
+    "Ma carte BotolaGO : {ovr} (provisoire). Et toi ? {link}",
+  "card.onboarding.m7.line": "Votre note n’est plus provisoire : {ovr} après {final}.",
+  "card.onboarding.m8.up.heading": "Votre carte passe {tier}.",
+  "card.onboarding.m8.up.line":
+    "{ovr} OVR après la J{gw}. Le palier suit votre note, journée après journée.",
+  "card.onboarding.m8.view": "Voir ma carte",
+  "card.onboarding.m8.down.line": "Palier actuel : {tier}. Meilleur cette saison : {best}.",
+  "card.onboarding.m9.heading": "Fondateur 2026",
+  "card.onboarding.m9.line":
+    "Votre année s’inscrit après votre nom : {name} ·26. Cette marque a été accordée une seule fois et ne le sera plus.",
+  "card.onboarding.m9.cutoff": "Accordée aux équipes 2026/27 créées avant le {date}.",
+  "card.onboarding.m10.closed":
+    "Saison {season} terminée : {ovr}, {tier}. Elle reste sur votre carte.",
+  "card.onboarding.m10.started":
+    "Saison {season} : votre carte garde sa note {prev} jusqu’à votre première note de la saison, après {final}.",
+  "card.onboarding.m12.replay.line": "À la J{gw} : {then}. Aujourd’hui : {now}.",
+  "card.onboarding.m12.item.first_rating": "La première note · J{gw}",
+  "card.onboarding.m12.item.tier": "Première fois {tier} · J{gw}",
+  "card.onboarding.m12.item.season": "Saison {season}",
+  "card.onboarding.state.deletion":
+    "Votre carte de manager et son numéro {serial} seront supprimés. Ce numéro ne sera jamais réattribué.",
+  "card.onboarding.state.deletion_noserial": "Votre carte de manager sera supprimée.",
+  "card.onboarding.state.offline.text": "Impossible de charger votre carte.",
 } as const satisfies Record<string, string>;

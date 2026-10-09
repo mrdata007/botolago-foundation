@@ -10,7 +10,7 @@ import {
   Shirt,
   Trophy,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -24,6 +24,7 @@ import { ui, UiCard, UiLinkButton, UiLivePill, UiSkeleton } from "@/components/u
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import type { FantasySummary, Gameweek } from "@/types/domain";
 import type { FantasyTeam } from "@/types/fantasy";
@@ -32,6 +33,14 @@ import { FantasyGuestIntro } from "./FantasyGuestIntro";
 import { joinTarget, type FantasyHubLayout } from "./fantasy-hub-layout";
 import { pointsUnit } from "@/lib/points-unit";
 import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-action";
+
+// The card's block is its own chunk, requested only while the section is live: with the switch
+// off the hub imports nothing of the Manager Card.
+const HubCardBlock = lazy(() =>
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+    default: module.HubCardBlock,
+  })),
+);
 
 /**
  * The Fantasy hub's personal parts — the team card's place, "Mes ligues"
@@ -85,6 +94,7 @@ export function FantasyHubTeamArea({
   prizes: boolean;
 }) {
   const { t } = useI18n();
+  const cardLive = useManagerCardLive();
   if (phase === "loading" || layout.audience === "pending") {
     return (
       <div role="status" aria-label={t("state.loading")} className="space-y-3">
@@ -132,6 +142,20 @@ export function FantasyHubTeamArea({
       />
       <OwnerNextAction gameweek={gameweek} />
       <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
+      {cardLive ? (
+        // After the two rows that act (« Composer l’équipe », the transfers) and before the figures:
+        // the team card keeps its action beside it. The fallback holds the block's height while
+        // its chunk loads, so nothing below moves.
+        <Suspense
+          fallback={
+            <div aria-hidden className="mt-2">
+              <UiSkeleton className={cn("min-h-28", ui.radius.card)} />
+            </div>
+          }
+        >
+          <HubCardBlock gameweek={gameweek} />
+        </Suspense>
+      ) : null}
     </>
   );
 }

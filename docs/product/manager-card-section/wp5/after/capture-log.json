@@ -1,0 +1,1137 @@
+[
+  {
+    "name": "hub-guest-intro-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-guest-intro-rated-fr-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-guest-intro-rated-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-guest-intro-rated-ar-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-guest-intro-rated-fr-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.41
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-guest-intro-rated-fr-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-guest-intro-rated-ar-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.41
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-guest-intro-rated-ar-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-forming-forming1-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-forming-forming1-fr-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-forming-forming1-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-forming-forming1-ar-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-forming-forming1-fr-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.41
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-forming-forming1-fr-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-forming-forming1-ar-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 7.41
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-forming-forming1-ar-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-rated-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 7,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-rated-rated-fr-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 7,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-rated-rated-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 8,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-rated-rated-ar-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 8,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-rated-rated-fr-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 7,
+      "contrastLowest": 7.4
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-rated-rated-fr-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 7,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-rated-rated-ar-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 8,
+      "contrastLowest": 7.41
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-rated-rated-ar-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 8,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-born-born0-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=born0",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-born-born0-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=born0",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 6,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-insufficient-insufficient3-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=insufficient3",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 3,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-owner-insufficient-insufficient3-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=insufficient3",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 3,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-owner-seasonClosed-seasonClosed-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=seasonClosed",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["hub-card-block", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-pepites-tile-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-pepites-tile-rated-fr-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-pepites-tile-rated-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-pepites-tile-rated-ar-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-pepites-tile-rated-fr-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.41
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-pepites-tile-rated-fr-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hub-pepites-tile-rated-ar-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 7.41
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "hub-pepites-tile-rated-ar-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": ["fantasy-intro-card-point", "fantasy-hub-pepites-tile"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 4,
+      "contrastLowest": 8.07
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "create-name-guest-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/create?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-save-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 6.04
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "create-name-guest-rated-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/create?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-save-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 6.04
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "create-name-signedin-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/create?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-save-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 6.04
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "create-name-signedin-rated-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/create?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-save-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 6.04
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "team-born-born0-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/team?mc=born0",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-born-panel"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 15,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "team-born-born0-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/team?mc=born0",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-born-panel"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 16,
+      "contrastLowest": 7.42
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "rankings-token-forming1-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/rankings?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["rank-card-token"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 18.1
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "rankings-token-forming1-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/rankings?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["rank-card-token"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 18.1
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "rankings-token-rated-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/rankings?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["rank-card-token"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 2,
+      "contrastLowest": 6.91
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hint-cap-forming1-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/team?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-hint-cap"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 5.59
+    },
+    "focus": "button button"
+  },
+  {
+    "name": "hint-cap-forming1-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/team?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-hint-cap"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 5.59
+    },
+    "focus": "button button"
+  },
+  {
+    "name": "hint-sel-forming1-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/team?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-hint-sel"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 5.59
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hint-trf-forming1-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/transfers?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-hint-trf"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 5.59
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "hint-trf-forming1-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/transfers?mc=forming1",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-hint-trf"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 5.59
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "first-transfer-line-insufficient3-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/transfers?mc=insufficient3",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["first-transfer-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 5.59
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "first-transfer-line-insufficient3-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/transfers?mc=insufficient3",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["first-transfer-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 1,
+      "contrastLowest": 5.59
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "create-name-return-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/create?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-save-line", "card-builder-return-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 2,
+      "contrastLowest": 6.04
+    },
+    "focus": "button submit Entrer l’effectif"
+  },
+  {
+    "name": "create-name-return-rated-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/create?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": ["card-save-line", "card-builder-return-line"],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 2,
+      "contrastLowest": 6.04
+    },
+    "focus": "button submit إدخال التشكيلة"
+  },
+  {
+    "name": "league-band-rated-fr-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 6.92
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "league-band-rated-fr-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 9.18
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "league-band-rated-ar-light-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 6,
+      "contrastLowest": 6.92
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "league-band-rated-ar-dark-390.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 390,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 6,
+      "contrastLowest": 9.18
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "league-band-rated-fr-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 6.92
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "league-band-rated-fr-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 5,
+      "contrastLowest": 9.18
+    },
+    "focus": "body  AccueilActualitésFantasyMatche"
+  },
+  {
+    "name": "league-band-rated-ar-light-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 6,
+      "contrastLowest": 6.92
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  },
+  {
+    "name": "league-band-rated-ar-dark-1440.png",
+    "url": "http://127.0.0.1:4185/fantasy/leagues/lg1?mc=rated",
+    "errors": [],
+    "measure": {
+      "viewport": 1440,
+      "surfaces": [
+        "league-card-band",
+        "league-compare-link",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini",
+        "league-row-mini"
+      ],
+      "offscreen": [],
+      "smallTargets": [],
+      "animations": 0,
+      "animationsInSurfaces": 0,
+      "contrastFailures": [],
+      "contrastChecked": 6,
+      "contrastLowest": 9.18
+    },
+    "focus": "body  الرئيسيةالأخبارفانتازيالمباريا"
+  }
+]

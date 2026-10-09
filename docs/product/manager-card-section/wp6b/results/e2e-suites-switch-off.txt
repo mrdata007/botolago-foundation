@@ -1,0 +1,10 @@
+Switch off, development server on port 4186 (VITE_MANAGER_CARD_PREVIEW unset, mock modes), 2 workers, 2.9 minutes:
+
+tests/e2e/anonymous.acceptance.e2e.ts: 16 passed
+tests/e2e/dark-mode-flag.e2e.ts: 14 passed
+tests/e2e/empty-states.e2e.ts: 2 passed
+tests/e2e/fantasy.journey.e2e.ts: 6 skipped
+tests/e2e/mobile-readability.e2e.ts: 32 passed
+tests/e2e/seo-rendering.e2e.ts: 9 passed
+
+79 tests: 73 passed, 6 skipped, 0 failed. fantasy.journey is skipped as a whole: it needs E2E_FANTASY_EMAIL and E2E_FANTASY_PASSWORD (a real Supabase account), which this task does not have.

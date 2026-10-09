@@ -1,0 +1,250 @@
+/* Écharpe v2, the supporter's scarf over the barrier rail. Ported from the lab's 07-v2.css (see
+   README.md). Every selector sits under the renderer's own classes (.mc-echarpe for the full card,
+   .mc-tk for tokens and minis) and every custom property is --mc-*, so nothing here reaches
+   another part of the app. The theme is not read from the page: the renderer puts
+   .mc-echarpe--dark or .mc-echarpe--light (and .mc-tk--dark, .mc-tk--light) on the root, so the
+   rim and the drop shadow are decided where the card is drawn. */
+
+.mc-echarpe {
+  --mc-drop: drop-shadow(0 1.2cqi 2cqi rgba(0, 0, 0, 0.55));
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  /* the drop shadow is sized in container units: 1cqi is 1% of the card's own width */
+  container-type: inline-size;
+}
+.mc-echarpe--light {
+  --mc-drop: drop-shadow(0 1.4cqi 2.2cqi rgba(30, 40, 60, 0.24));
+}
+.mc-echarpe .mc-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: var(--mc-drop);
+}
+/* the founder's detail is the cast-on alone: no lift off the page */
+.mc-echarpe--detail .mc-svg {
+  filter: none;
+}
+
+/* the woven patch (sizes are SVG units set on each line; the patch scales with the card) */
+.mc-echarpe .mc-pt {
+  font-family: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+  fill: #23252a;
+}
+/* a rating that does not exist yet: a dash in the figure's place */
+.mc-echarpe .mc-pt-nil {
+  fill-opacity: 0.8;
+}
+.mc-echarpe .mc-pt-k {
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  fill-opacity: 0.7;
+}
+.mc-echarpe .mc-pt-v {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+.mc-echarpe .mc-pt-meta,
+.mc-echarpe .mc-pt-foot {
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  font-variant-numeric: tabular-nums;
+}
+.mc-echarpe .mc-pt-note {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  fill-opacity: 0.66;
+}
+/* Arabic on the patch: no letter-spacing, the Arabic body face */
+.mc-echarpe .mc-pt-ar {
+  font-family: "Noto Sans Arabic", "Segoe UI Arabic", "Tahoma", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* ---------- beats: the scarf knits itself (plan 5.4, « Rang par rang ») ----------
+   The renderer wraps a row (a cast-on row, a tacking line, a stripe row, a row of the name band,
+   the bound loops) in <g class="mc-kr"> with --mc-d (delay) and --mc-t (duration). Each row is
+   revealed one stitch at a time from the reading side: a clip-path inset stepped in whole stitches
+   (26 along the fast part of the row, 10 over its last stretch, so the knitter slows as the row is
+   pulled tight). Rows are staggered in knitting order, the way a piece grows from its cast-on.
+   Never an opacity fade, a slide or a scale of the card; the number, the name's stitches, the
+   serial and the patch sit in no animated group. Hidden until their turn, so the first painted
+   frame is the scarf with those rows still to knit.
+
+   Everything is inside no-preference: under reduced motion nothing animates at all and the rows
+   are drawn finished, as always. */
+@media (prefers-reduced-motion: no-preference) {
+  .mc-echarpe .mc-kr {
+    animation: mc-stitch var(--mc-t, 190ms) both;
+    animation-delay: var(--mc-d, 0ms);
+  }
+  .mc-echarpe[dir="rtl"] .mc-kr {
+    animation-name: mc-stitch-rtl;
+  }
+  /* « La première maille » and « Fin de saison »: eight bold steps a row */
+  .mc-echarpe .mc-kr--s8 {
+    animation-name: mc-knit;
+    animation-timing-function: steps(8, end);
+  }
+  .mc-echarpe[dir="rtl"] .mc-kr--s8 {
+    animation-name: mc-knit-rtl;
+  }
+  /* « La première maille »: then 2026's year comes onto the name band */
+  .mc-echarpe--beat-founder .mc-fy {
+    animation: mc-year 120ms linear 480ms both;
+  }
+  /* « Une frange de plus »: the new tassel drops into place while the fringe swings once */
+  .mc-echarpe--beat-tier .mc-fringe {
+    animation: mc-swing 520ms cubic-bezier(0.3, 0.7, 0.3, 1) 80ms both;
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+  .mc-echarpe--beat-tier .mc-tassel-new {
+    animation: mc-drop 240ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+  }
+  /* « L'écharpe levée »: the arms rise, the fists settle. The band carries the number and the ends
+     carry the serial, so neither moves. */
+  .mc-echarpe--beat-legend .mc-lg-arms {
+    animation: mc-arms 420ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  }
+  .mc-echarpe--beat-legend .mc-lg-fists {
+    animation: mc-fists 420ms cubic-bezier(0.16, 1, 0.3, 1) 120ms both;
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+}
+@keyframes mc-stitch {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    animation-timing-function: steps(26, end);
+  }
+  62% {
+    clip-path: inset(0 28% 0 0);
+    animation-timing-function: steps(10, end);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes mc-stitch-rtl {
+  0% {
+    clip-path: inset(0 0 0 100%);
+    animation-timing-function: steps(26, end);
+  }
+  62% {
+    clip-path: inset(0 0 0 28%);
+    animation-timing-function: steps(10, end);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes mc-knit {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes mc-knit-rtl {
+  from {
+    clip-path: inset(0 0 0 100%);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes mc-year {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes mc-swing {
+  0% {
+    transform: skewX(0deg);
+  }
+  35% {
+    transform: skewX(5deg);
+  }
+  70% {
+    transform: skewX(-2deg);
+  }
+  100% {
+    transform: skewX(0deg);
+  }
+}
+@keyframes mc-drop {
+  from {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes mc-arms {
+  from {
+    transform: translateY(18px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes mc-fists {
+  from {
+    transform: translateY(12px) scaleY(0.96);
+  }
+  to {
+    transform: none;
+  }
+}
+
+/* ---------- token and mini ---------- */
+.mc-tk {
+  display: inline-block;
+  line-height: 0;
+  flex: none;
+}
+.mc-tk svg {
+  display: block;
+  overflow: visible;
+}
+/* on the dark ground the club-colour drop keeps a thin lit edge and the fringe takes a lit ply */
+.mc-tk--dark .mc-tk-sw,
+.mc-tk--dark .mc-tk-fist {
+  stroke: rgba(214, 222, 234, 0.42);
+  stroke-width: 0.6px;
+  paint-order: stroke;
+}
+.mc-tk--dark .mc-tk-tassel {
+  fill: #8796ab;
+}
+.mc-tk--dark .mc-tk-arm {
+  fill: #6b7482;
+}
+/* LEGEND's supporter (the shared avatar): lifted a step on the dark ground so the hood reads */
+.mc-tk--dark .mc-tk-av path:not([fill="none"]) {
+  fill: #6b7482;
+}
+/* an undyed-wool token (no club chosen) keeps a thin edge on the light ground too */
+.mc-tk--light.mc-tk--wool .mc-tk-sw,
+.mc-tk--light.mc-tk--wool .mc-tk-tassel {
+  stroke: #8a8170;
+  stroke-width: 0.5px;
+}
+/* the cream cast-on keeps an edge on the light ground, so it reads as knit, not as a gap */
+.mc-tk--light .mc-tk-cast {
+  stroke: #8a8170;
+  stroke-width: 0.5px;
+}
