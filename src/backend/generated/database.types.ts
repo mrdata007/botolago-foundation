@@ -161,6 +161,7 @@ export type Database = {
       }
     }
     Functions: {
+      ack_manager_card_moments: { Args: { p_keys: string[] }; Returns: Json }
       activate_fantasy_chip: {
         Args: {
           p_chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
@@ -1167,11 +1168,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
-      get_manager_card: { Args: { p_fantasy_team_id: string }; Returns: Json }
-      get_manager_cards: {
-        Args: { p_fantasy_team_ids: string[] }
-        Returns: Json
-      }
+      get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
       get_my_fantasy_history: {
         Args: {
@@ -1196,7 +1193,7 @@ export type Database = {
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
       get_my_manager_card: { Args: never; Returns: Json }
       get_my_manager_card_history: {
-        Args: { p_after_gameweek_sequence?: number; p_limit?: number }
+        Args: { p_before_seq?: number; p_limit?: number; p_season_id?: string }
         Returns: Json
       }
       get_my_notification_preferences: { Args: never; Returns: Json }
@@ -1337,6 +1334,7 @@ export type Database = {
         }
         Returns: Json
       }
+      manager_card_status: { Args: never; Returns: Json }
       mark_all_my_notifications_read: {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
@@ -5724,6 +5722,32 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "manager_cards"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      manager_card_moment_acks: {
+        Row: {
+          acknowledged_at: string
+          moment_key: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          moment_key: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          moment_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_moment_acks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
