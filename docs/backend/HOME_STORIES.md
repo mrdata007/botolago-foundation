@@ -25,7 +25,9 @@ automatically.
 ## Rollout (requires owner approval)
 
 1. Follow the repository's single-writer check and migration promotion process
-   for `20261009094920_home_stories.sql` on the intended environment.
+   for `scripts/backend/apply-home-stories.sql` on Production V2: rehearse,
+   confirm rollback, then commit. It applies the initial stories migration and
+   `20261009113132_home_stories_force_rls.sql` from exact checksummed bytes.
 2. Confirm the existing `news-media-upload` deployment, bucket and editorial
    media registration RPC are configured. No Edge Function change is required.
 3. Regenerate database types via the normal backend type workflow. The frontend
