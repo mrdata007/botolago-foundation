@@ -361,6 +361,7 @@ test.describe("entry points, once promoted", () => {
       await gotoHydrated(page, "/", lang);
       await expect(page.getByTestId("home-predictions-card")).toBeVisible();
       await expectNothingOffScreen(page);
+      await expectSwipeSlidesFit(page);
 
       await gotoHydrated(page, "/matches", lang);
       await page.getByRole("tab", { name: copy(lang, "matches.tab.predictions") }).click();

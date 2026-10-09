@@ -183,7 +183,7 @@ function fakeClient(plan: unknown, calls: { name: string; args: unknown }[]): Em
 }
 
 const env = {
-  ANTHROPIC_API_KEY: "sk-ant-test-0123456789abcdef",
+  OPENAI_KEY: "sk-test-0123456789abcdefghij",
   RESEND_API_KEY: "re_test_0123456789abcdef",
 };
 const request = () =>
@@ -195,9 +195,9 @@ const request = () =>
 function fetchStub(reply: unknown, sent: { url: string }[]): typeof fetch {
   return (async (url: string) => {
     sent.push({ url });
-    if (String(url).includes("anthropic")) {
+    if (String(url).includes("openai")) {
       return new Response(
-        JSON.stringify({ content: [{ type: "text", text: JSON.stringify(reply) }] }),
+        JSON.stringify({ choices: [{ message: { content: JSON.stringify(reply) } }] }),
       );
     }
     return new Response(JSON.stringify({ id: "mail" }));
@@ -244,7 +244,7 @@ describe("handleAiContentRequest", () => {
       fetchImpl: fetchStub(article(), sent),
     });
     expect(await response.json()).toMatchObject({ idle: true });
-    expect(sent.some((s) => s.url.includes("anthropic"))).toBe(false);
+    expect(sent.some((s) => s.url.includes("openai"))).toBe(false);
   });
 
   it("rejects a wrong scheduler token", async () => {

@@ -91,6 +91,7 @@ export const fr = {
   "home.fantasy_alerts": "Alertes {accent}Fantasy{/accent}",
   "home.news_preview": "Actu {accent}Botola{/accent}",
   "home.explore": "Explorer {accent}BotolaGO{/accent}",
+  "home.highlights": "À la une sur BotolaGO",
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
   "home.my_clubs.last_result": "Dernier résultat",

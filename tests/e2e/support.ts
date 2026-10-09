@@ -160,7 +160,11 @@ export async function expectNoClippedMatchCards(page: Page) {
   const clipped = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
     const offscreen: string[] = [];
-    for (const card of document.querySelectorAll('main a[href^="/matches/"]')) {
+    // Standings is section navigation (including Home's scrollable highlights),
+    // not a match card. Match-card bounds still apply to every match detail link.
+    for (const card of document.querySelectorAll(
+      'main a[href^="/matches/"]:not([href^="/matches/standings"])',
+    )) {
       // A card in a row the reader swipes (`data-swipe-row`: Home's band, the
       // match page's deck) waits beside the viewport by design, reachable by
       // a swipe. It is measured against its own slide instead, so what it
