@@ -218,7 +218,7 @@ export function OwnerHome({
           "[[data-hero-slot]:not(:empty)~&_[data-stage-card]]:hidden",
         )}
       >
-        <CardStage profile={profile} beat={beat}>
+        <CardStage profile={profile} beat={beat} fitHeight>
           {rating}
         </CardStage>
         <div className="mt-1 px-4 max-md:rtl:mt-0">{identity}</div>

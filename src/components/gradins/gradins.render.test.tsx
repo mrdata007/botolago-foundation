@@ -194,14 +194,25 @@ describe("G1 for a manager", () => {
     expect(html).toContain(fr["card.onboarding.m4.sheet.share"]);
   });
 
-  it("stands the card on its own: no rail, a box of the card's one shape, 296 px and 336 px from 768", async () => {
+  it("stands the card on its own: no rail, a box of the card's one shape, 336 px from 768", async () => {
     const html = await owner("rated");
     expect(html).not.toContain("data-stage-rail");
     // until the renderer's chunk has loaded, an ellipse under the reserved box; the card's own shadow replaces it
     expect(html).toContain("data-stage-shadow");
     expect(html).toContain("aspect-ratio:1 / 1.618");
-    expect(html).toContain("w-[min(296px,calc(100vw-32px))]");
     expect(html).toContain("md:w-[336px]");
+  });
+
+  it("sizes G1's card on a phone from the window's height: 232 to 296 px, the bars read from their tokens", async () => {
+    const html = await owner("rated");
+    const width = html.match(/data-stage-card="" class="([^"]*)"/)![1]!;
+    // never closer than 16 px to an edge, between 232 px and the plan's 296 px, the height's share
+    // being the window less the top bar, the bottom bar and what G1 draws around the card
+    expect(width).toContain("w-[min(calc(100vw_-_32px),clamp(232px,");
+    expect(width).toContain("100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_236px");
+    expect(width).toContain("_/_1.618),296px))]");
+    // the old fixed width is gone from the stage G1 stands
+    expect(width).not.toContain("w-[min(296px,calc(100vw-32px))]");
   });
 
   it("puts belonging first: the people, the club and the seasons before how the note is made", async () => {
