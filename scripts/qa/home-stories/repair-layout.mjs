@@ -118,7 +118,11 @@ for (const lang of ["fr", "ar"])
       assert.equal(fit.alt, lang === "ar" ? base.titleAr : base.titleFr);
       assert(fit.scroll <= 1, JSON.stringify(fit));
       assert(fit.captionBottom <= fit.bodyBottom + 1);
-      assert(!/OpenAI|Illustration IA|بالذكاء الاصطناعي/.test(await page.getByRole("dialog").innerText()));
+      assert(
+        !/OpenAI|Illustration IA|بالذكاء الاصطناعي/.test(
+          await page.getByRole("dialog").innerText(),
+        ),
+      );
       await page.keyboard.press(lang === "ar" ? "ArrowLeft" : "ArrowRight");
       assert.match(await page.getByRole("dialog").innerText(), /2 \/ 6/);
       await page.keyboard.press(lang === "ar" ? "ArrowRight" : "ArrowLeft");
