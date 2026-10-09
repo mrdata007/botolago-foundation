@@ -481,8 +481,8 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    on afterwards. Run it as a rehearsal ("Rehearsal passed"), then with
    `commit;` ("Applied"). It checks both switches are off, there is no rules
    row, the grants, the erase lock, both jobs, and that the tick answers `off`.
-   **Then the two migrations merged to main after #381 go first, in this
-   order,** each by its own guarded script, before the read API script below:
+   **Then the two pull requests merged to main after #381 (three
+   migrations) go first, in this order,** each by its own guarded script, before the read API script below:
    (a) the Fantasy durable progression migration (PR #384),
    `scripts/backend/apply-fantasy-durable-progression.sql` (migration
    `20261009091728`, see `FANTASY_DURABLE_PROGRESSION_RUNBOOK.md`); then
