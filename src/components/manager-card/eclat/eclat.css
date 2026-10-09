@@ -66,14 +66,17 @@
   aspect-ratio: 1000 / 1618;
   container-type: inline-size;
   line-height: 0;
-  /* the rest light: where the travelling parts sit when no pointer moves it (Arabic mirrors it) */
-  --mc-ax: 0.24;
-  --mc-ay: 0.64;
+  /* the rest light: where the travelling parts sit when no pointer moves it (Arabic mirrors it).
+     These two never change while the card is on screen, so every part below can inherit them for
+     nothing. The live light is --mc-ax and --mc-ay (below): not inherited. */
+  --mc-rx: 0.24;
+  --mc-ry: 0.64;
   --mc-dx: 1;
-  --mc-t: 0;
+  --mc-ax: var(--mc-rx);
+  --mc-ay: var(--mc-ry);
 }
 .mc-eclat[dir="rtl"] {
-  --mc-ax: -0.24;
+  --mc-rx: -0.24;
   --mc-dx: -1;
 }
 .mc-eclat__persp,
@@ -123,27 +126,29 @@
 /* ============================== 3D ============================== */
 /* Flat 2D at rest (and always under reduced motion), so text and hairlines are rasterised once and
    stay crisp. The 3D tree exists only while a pointer moves over the card (.mc-eclat--active), while
-   it floats on a touch-only screen (.mc-eclat--idle) and while it eases back (.mc-eclat--settle); a
-   registered number, --mc-t, fades the depth in and out so there is never a jump. Nothing in this
-   section puts a filter, an opacity below 1, an overflow, a clip-path, a mask, a blend mode or an
-   isolation on .mc-eclat, .mc-eclat__persp or .mc-eclat__tilt: each flattens preserve-3d. */
+   it floats on a touch-only screen (.mc-eclat--idle) and while it eases back (.mc-eclat--settle).
+   Nothing in this section puts a filter, an opacity below 1, an overflow, a clip-path, a mask, a
+   blend mode or an isolation on .mc-eclat, .mc-eclat__persp or .mc-eclat__tilt: each flattens
+   preserve-3d.
+
+   What moves is written by the tilt (tilt.ts, with the numbers of pose.ts) as `transform` on the
+   elements below, each of which eases to it with the transitions here, on the compositor: a card
+   that is being tilted is never restyled or repainted per frame. The light itself, --mc-ax and
+   --mc-ay, is registered as a number that is NOT inherited and is written on the elements that read
+   it (the card's root, which tests and tools read, and the foil overlay): an inherited property
+   changed on the root restyled and repainted every SVG element of the card on every frame (8 ms of
+   style and 60 ms of raster a frame, in a software-rendered browser). What the parts do at the
+   rest light is below, from --mc-rx and --mc-ry; the tilt writes inline transforms over them and
+   clears them when the card is flat again. */
 @property --mc-ax {
   syntax: "<number>";
-  inherits: true;
+  inherits: false;
   initial-value: 0;
 }
 @property --mc-ay {
   syntax: "<number>";
-  inherits: true;
+  inherits: false;
   initial-value: 0;
-}
-@property --mc-t {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 0;
-}
-.mc-eclat {
-  transition: --mc-t 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .mc-eclat__persp {
   perspective: 300cqw;
@@ -151,73 +156,78 @@
 .mc-eclat__tilt {
   transform: none;
 }
-.mc-eclat--active,
-.mc-eclat--idle {
-  --mc-t: 1;
-}
 :is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-eclat__tilt {
   transform-style: preserve-3d;
-  transform: rotateX(calc(var(--mc-ay) * 7deg * var(--mc-t)))
-    rotateY(calc(var(--mc-ax) * 9deg * var(--mc-t)));
-}
-.mc-eclat--settle {
-  transition:
-    --mc-ax 450ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    --mc-ay 450ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    --mc-t 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.mc-eclat--active .mc-eclat__tilt {
   will-change: transform;
-}
-/* while the pointer is over the card the light follows it with a short lag, so the first contact at
-   the card's edge is not a jump in the travelling parts */
-.mc-eclat--active {
-  transition:
-    --mc-ax 120ms ease-out,
-    --mc-ay 120ms ease-out,
-    --mc-t 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .mc-l {
   backface-visibility: hidden;
   transform: none;
 }
-/* depths: the base, the rims (z = k), the shirt, the number, the frame, the holo layer, the foil */
-:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) :is(.mc-l, .mc-eclat__foil) {
-  transform: translateZ(calc(var(--z) * 1cqw * var(--mc-t)))
-    scale(calc(1 - var(--z) * var(--mc-t) / 300));
+/* a layer that was split to let its moving parts live apart (lift.ts): a flat group holding the
+   layer's SVG and the pieces, which is the leaf of the 3D stack; the rims are one such group */
+.mc-leaf,
+.mc-rims {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
-.mc-l--base {
-  --z: 0;
+.mc-leaf {
+  backface-visibility: hidden;
 }
-.mc-l--shirt {
-  --z: 3;
+.mc-s {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
 }
-.mc-l--num {
-  --z: 5;
+/* the jersey's cast shadow, lifted into a layer of its own: sized by its own box (lift.ts) */
+.mc-cast {
+  inset: auto;
 }
-.mc-l--frame {
-  --z: 8;
-}
-.mc-l--holo {
-  --z: 9;
-}
-.mc-rim {
-  --z: var(--k);
+/* depths: the base, the rims' group, the shirt, the number, the frame, the holo layer, the foil
+   (pose.ts, Z): written by the tilt as translateZ and a shrink that keeps the layers lined up */
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle)
+  :is(.mc-l:not(.mc-rim), .mc-leaf, .mc-rims) {
+  transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 /* the card's thickness at rest, in 2D: the walls step down and away from the light (Arabic mirrors) */
 .mc-rim {
   transform: translate(calc(var(--o) * 0.12cqw * var(--mc-dx)), calc(var(--o) * 0.12cqw));
 }
-:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-rim {
-  transform: translate3d(
-      calc(var(--o) * 0.12cqw * var(--mc-dx) * (1 - var(--mc-t))),
-      calc(var(--o) * 0.12cqw * (1 - var(--mc-t))),
-      calc(var(--z) * 1cqw * var(--mc-t))
-    )
-    scale(calc(1 - var(--z) * var(--mc-t) / 300));
+/* how the parts that follow the light ease: with a short lag while the pointer moves them, over the
+   depth's 450 ms when the card turns toward it for the first time and when it settles back */
+.mc-eclat--active {
+  --mc-ms: 120ms;
+  --mc-ease: ease-out;
 }
-/* the card's contact shadow on the page lies opposite the light and moves with it; it is a sibling of
-   the 3D tree, so its blur flattens nothing */
+.mc-eclat--active.mc-eclat--enter,
+.mc-eclat--idle,
+.mc-eclat--settle {
+  --mc-ms: 450ms;
+  --mc-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle)
+  :is(.mc-eclat__tilt, .mc-eclat__shadow, .mc-rim, .mc-cast) {
+  transition: transform var(--mc-ms) var(--mc-ease);
+}
+/* What lies inside a layer, under a mask or a clip (the streak, the foil, the pool of light, the
+   shade and highlight of the number, the glints), is NOT given a transition: the browser would
+   promote an element with a running transform transition to a layer of its own, and a composited
+   element under a mask costs the compositor a mask layer rasterised on every frame. Those parts
+   are eased by the tilt itself, one repaint of a small SVG at a time (tilt.ts, "light"). */
+/* a layer of its own for each wall, the cast shadow and each lifted piece, only while the card
+   moves: the browser rasterises them once and the compositor only moves them */
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) :is(.mc-rim, .mc-cast) {
+  will-change: transform;
+}
+:is(.mc-eclat--active, .mc-eclat--settle) .mc-live:not(.mc-cast) {
+  will-change: transform;
+}
+/* the contact shadow on the page lies opposite the light and moves with it; it is a sibling of the
+   3D tree, so its blur flattens nothing */
 .mc-eclat__shadow {
   position: absolute;
   inset: 5% 7% -2.5% 7%;
@@ -225,7 +235,7 @@
   pointer-events: none;
   background: rgb(8 12 24 / 0.42);
   filter: blur(4.5cqw);
-  transform: translate(calc(var(--mc-ax) * -5cqw), calc(3cqw + var(--mc-ay) * 3cqw));
+  transform: translate(calc(var(--mc-rx) * -5cqw), calc(3cqw + var(--mc-ry) * 3cqw));
 }
 .mc-eclat--dark .mc-eclat__shadow {
   background: rgb(0 0 0 / 0.7);
@@ -233,67 +243,30 @@
 /* the jersey's shadow on the backboard, and the raised number's shade and highlight, follow the
    light; inside the mirrored groups x is multiplied by --mc-dx so Arabic moves the right way */
 .mc-shirt-cast {
-  transform: translate(calc(var(--mc-ax) * -14px * var(--mc-dx)), calc(var(--mc-ay) * 10px));
+  transform: translate(calc(var(--mc-rx) * -14px * var(--mc-dx)), calc(var(--mc-ry) * 10px));
 }
 .mc-num-hi {
-  transform: translate(calc(var(--mc-ax) * 4px), calc(var(--mc-ay) * -4px - 2px));
+  transform: translate(calc(var(--mc-rx) * 4px), calc(var(--mc-ry) * -4px - 2px));
 }
 .mc-num-sh {
-  transform: translate(calc(var(--mc-ax) * -6px), calc(var(--mc-ay) * 6px + 5px));
+  transform: translate(calc(var(--mc-rx) * -6px), calc(var(--mc-ry) * 6px + 5px));
 }
 /* foil slides under its fixed mask; the frame's specular streak travels along the metal; LEGEND's
    honeycomb foil follows the light */
 .mc-foil-shift {
-  transform: translate(calc(var(--mc-ax) * 50px * var(--mc-dx)), calc(var(--mc-ay) * -30px));
+  transform: translate(calc(var(--mc-rx) * 50px * var(--mc-dx)), calc(var(--mc-ry) * -30px));
 }
 .mc-spec-shift {
-  transform: translate(calc(var(--mc-ax) * 160px * var(--mc-dx)), calc(var(--mc-ay) * -100px));
+  transform: translate(calc(var(--mc-rx) * 160px * var(--mc-dx)), calc(var(--mc-ry) * -100px));
 }
 .mc-light-follow {
-  transform: translate(calc(var(--mc-ax) * 260px * var(--mc-dx)), calc(var(--mc-ay) * -220px));
+  transform: translate(calc(var(--mc-rx) * 260px * var(--mc-dx)), calc(var(--mc-ry) * -220px));
 }
 .mc-glint-a {
-  opacity: calc(0.2 + (var(--mc-ax) + 1) * 0.4);
+  opacity: calc(0.2 + (var(--mc-rx) + 1) * 0.4);
 }
 .mc-glint-b {
-  opacity: calc(0.2 + (1 - var(--mc-ax)) * 0.4);
-}
-/* a touch-only screen: a slow idle float, only while the card is on screen, never under reduced
-   motion; it pauses while a beat plays and while the page is hidden */
-@media (prefers-reduced-motion: no-preference) and (hover: none) {
-  .mc-eclat--idle {
-    animation: mc-float 7s ease-in-out infinite alternate;
-  }
-  [class*="mc-eclat--beat-"].mc-eclat--idle {
-    animation-play-state: paused;
-  }
-  /* a pen over a touch-only screen's card takes the light from the float */
-  .mc-eclat--idle.mc-eclat--active {
-    animation: none;
-  }
-  @keyframes mc-float {
-    0% {
-      --mc-ax: 0.24;
-      --mc-ay: 0.64;
-    }
-    50% {
-      --mc-ax: -0.28;
-      --mc-ay: 0.38;
-    }
-    100% {
-      --mc-ax: 0.1;
-      --mc-ay: 0.2;
-    }
-  }
-}
-
-/* under reduced motion nothing eases (the tilt is not mounted either, so no state changes) */
-@media (prefers-reduced-motion: reduce) {
-  .mc-eclat,
-  .mc-eclat--active,
-  .mc-eclat--settle {
-    transition: none;
-  }
+  opacity: calc(0.2 + (1 - var(--mc-rx)) * 0.4);
 }
 
 /* ============================== FOIL ============================== */
@@ -306,13 +279,23 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  --z: 9.5;
+  /* the foil reads the live light itself (the tilt writes it here), so it repaints alone */
+  --mc-ax: var(--mc-rx);
+  --mc-ay: var(--mc-ry);
   --mc-sheen-angle: 115deg;
   clip-path: polygon(20.6% 0.6%, 100% 0.6%, 100% 87.6%, 80% 100%, 0 100%, 0 18.7%, 20.6% 18.7%);
 }
 .mc-eclat[dir="rtl"] .mc-eclat__foil {
   --mc-sheen-angle: 245deg;
   clip-path: polygon(79.4% 0.6%, 0 0.6%, 0 87.6%, 20% 100%, 100% 100%, 100% 18.7%, 79.4% 18.7%);
+}
+.mc-eclat__foil::before,
+.mc-eclat__foil::after {
+  --mc-ax: inherit;
+  --mc-ay: inherit;
+}
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-eclat__foil {
+  transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .mc-eclat__foil::before {
   content: "";
