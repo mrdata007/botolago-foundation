@@ -11,14 +11,17 @@ import { ManagerCard } from "../ManagerCard";
 import type { BeatName, CardProfile } from "../types";
 import { Collapsible, HeroCard, HeroFrame } from "./HeroFrame";
 import { InviteFriends } from "./InviteFriends";
-import { bornText, HERO_EVENTS, momentWords, type BornText } from "./moment-text";
+import { bornText, compactBornLines, HERO_EVENTS, momentWords, type BornText } from "./moment-text";
 import { useMomentGate, useSeenFor } from "./use-moment-gate";
 
 /**
  * The card-born panel (plan moment M2, 5.1 and 5.3): the card is made with the first saved squad,
  * with no number yet, and the panel says so, says exactly when the number will arrive, and offers
  * the one social act that is true (« Inviter des amis »). Above the pitch on `/fantasy/team`
- * (`surface="team"`: the card at 128 px beside the lines), or in Gradins' hero slot
+ * (`surface="team"`: compact, about 215 px at 390, so the pitch's first row stays on the first
+ * screen: the card at 96 px beside the heading with its ×, the number when there is one and when
+ * the rating comes, then « Inviter des amis » as a 44 px text line; the sentence on why now is that
+ * action's accessible description), or in Gradins' hero slot
  * (`surface="gradins"`: the panel carries the card at the stage's size and plays the `make` beat on
  * it, the way the hero does; a page that keeps its own stage in the tree passes it as `children`).
  *
@@ -51,6 +54,7 @@ export function CardBornPanel({
   const gate = useMomentGate(surface, card);
   const hero = gate.hero;
   const headingId = useId();
+  const inviteId = useId();
   const ref = useRef<HTMLElement | null>(null);
 
   const startedAcked = useRef(gate.acked);
@@ -112,6 +116,7 @@ export function CardBornPanel({
 
   if (!shown || !hero) return null;
   const text = bornText(card, words, nextDeadline);
+  const lines = compactBornLines(text);
   return (
     <div className={cn(ui.space.gutter, "pt-3")}>
       <Collapsible collapsed={gate.collapsed} animate>
@@ -123,38 +128,44 @@ export function CardBornPanel({
           data-collapsed={gate.collapsed ? "1" : undefined}
         >
           <UiCard padding="md" className="mb-3">
-            <div className="flex min-h-[var(--ui-tap-min)] items-center justify-between gap-3">
-              <h2 id={headingId} className={cn("min-w-0 text-balance", ui.display.team)}>
-                {words.moment.m2.heading}
-              </h2>
-              <UiIconButton
-                aria-label={t("common.close")}
-                onClick={close}
-                data-testid="card-born-panel-close"
-              >
-                <X className="h-5 w-5" aria-hidden />
-              </UiIconButton>
-            </div>
-            <div className="mt-2 flex items-start gap-4">
+            <div className="flex items-start gap-3">
               <ManagerCard
                 profile={profile}
-                width={128}
+                width={96}
                 beat={hero.beat ?? undefined}
                 testId="born-card"
                 className="shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <BornLines text={text} aligned />
+                {/* The × is a 44 px control: it reaches into the card's padding rather than add to its height. */}
+                <div className="-mt-2 flex min-h-[var(--ui-tap-min)] items-center justify-between gap-2">
+                  <h2 id={headingId} className={cn("min-w-0 text-balance", ui.display.teamSm)}>
+                    {words.moment.m2.heading}
+                  </h2>
+                  <UiIconButton
+                    aria-label={t("common.close")}
+                    onClick={close}
+                    data-testid="card-born-panel-close"
+                    className="-me-1 shrink-0"
+                  >
+                    <X className="h-5 w-5" aria-hidden />
+                  </UiIconButton>
+                </div>
+                <BornLines text={{ lines, invite: null }} aligned />
               </div>
             </div>
-            <div className="mt-4 flex flex-col gap-2">
-              {text.invite ? (
-                <p className={cn(ui.text.body, ui.tone.default)} data-testid="born-invite-line">
-                  {text.invite}
-                </p>
-              ) : null}
-              <InviteFriends onInvite={invite} />
-            </div>
+            {text.invite ? (
+              // Why now. The panel leaves the pitch's first row on screen, so the sentence is the
+              // action's description for a screen reader; Gradins' hero says it in the open.
+              <p id={inviteId} className="sr-only" data-testid="born-invite-line">
+                {text.invite}
+              </p>
+            ) : null}
+            <InviteFriends
+              variant="link"
+              onInvite={invite}
+              describedBy={text.invite ? inviteId : undefined}
+            />
           </UiCard>
         </section>
       </Collapsible>

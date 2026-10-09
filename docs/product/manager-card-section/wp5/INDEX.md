@@ -124,6 +124,14 @@ the shortfall on the real page is larger.
 controls, so the controls and the pitch stay one unit below it, and it adds no wrapper of its own (the panel brings its
 gutter). It passes the page's next deadline. Nothing here can make the first row visible: the panel is WP4's.
 
+**Fixed afterwards (WP6b, finish review).** The panel is now compact on the team page: a 96 px card beside the
+heading and its ×, the number (when there is one) and when the rating comes, then « Inviter des amis » as a 44 px
+text line; the sentence on what the rating measures is not on this surface. Measured with the same script: the panel
+is **213 px** in French and Arabic (220 px with a serial in Arabic), the first row ends at **686 px (fr) and
+746 px (ar)** against 768 and 762, short by 0 px. Pictures and numbers: [`../wp6b/INDEX.md`](../wp6b/INDEX.md) and
+[`../INDEX.md`](../INDEX.md). The born fixtures name the rounds the mock Fantasy data is on (J14, J15, J16), so the
+panel and the page's « Journée 14 » tell the same story.
+
 **What the numbers say, for the product call:** for the pitch's first row to stay on the first screen the team surface
 of the panel has to be **about 295 px tall or less in French and about 229 px or less in Arabic** (419 − 124 and
 406 − 177). Two ways: slim the team surface (a 96 px card beside the two lines, the invite as a link line, the title

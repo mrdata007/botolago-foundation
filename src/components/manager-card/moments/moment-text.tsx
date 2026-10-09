@@ -253,8 +253,11 @@ export function previewEvent(tier: TierCode | null): AnalyticsEvent {
 /* ---- the born panel's words ---- */
 
 export interface BornText {
-  /** The sentences about the card: when the number comes, what it measures, its number. */
-  lines: { text: ReactNode; strong: boolean }[];
+  /**
+   * The sentences about the card: its number, when the rating comes, what it measures. `kind` lets
+   * a compact surface keep the first two and drop the third (the team page's panel).
+   */
+  lines: { text: ReactNode; strong: boolean; kind: "serial" | "timing" | "measure" }[];
   /** « Invitez vos amis avant la date limite de la J5 », only while that deadline is ahead. */
   invite: ReactNode | null;
 }
@@ -280,6 +283,7 @@ export function bornText(
             kn: ltr(`${card.gameweeksCounted}/${card.minRated}`),
           }),
           strong: true,
+          kind: "timing",
         },
       ],
       invite: null,
@@ -302,15 +306,25 @@ export function bornText(
     lines.push({
       text: fill(moment.m2.serial, { serial: serialNode(words, card.serial) }),
       strong: true,
+      kind: "serial",
     });
   }
-  lines.push({ text: timing, strong: !card.serial });
-  lines.push({ text: moment.m2.line2, strong: false });
+  lines.push({ text: timing, strong: !card.serial, kind: "timing" });
+  lines.push({ text: moment.m2.line2, strong: false, kind: "measure" });
   const deadlineAhead = nextDeadline !== null && Date.parse(nextDeadline) > now;
   return {
     lines,
     invite: deadlineAhead && first != null ? fill(moment.m2.invite, { gw: first }) : null,
   };
+}
+
+/**
+ * The born panel on the team page (plan M2): the number, when it is assigned, and when the rating
+ * comes. The sentence on what the rating measures belongs to the hero and the card page: the panel
+ * is about 220 px so the pitch's first row stays on screen at 390 × 844.
+ */
+export function compactBornLines(text: BornText): BornText["lines"] {
+  return text.lines.filter((line) => line.kind !== "measure");
 }
 
 /* ---- the replay's words ---- */

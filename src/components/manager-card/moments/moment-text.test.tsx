@@ -9,6 +9,7 @@ import type { Language } from "@/types/domain";
 import { pickHero } from "./moments";
 import {
   bornText,
+  compactBornLines,
   formatCutoff,
   heroText,
   lineText,
@@ -185,14 +186,29 @@ describe("the born panel's sentences", () => {
     const born = bornText(card("born0Serial"), words("fr"), future);
     expect(born.lines.map((line) => text(line.text))).toEqual([
       "Son numéro, BOT #482913, ne changera jamais.",
-      "Sa note arrive après 3 journées terminées : J5, J6, J7.",
+      "Sa note arrive après 3 journées terminées : J14, J15, J16.",
       "Elle mesurera vos choix : capitaine, titulaires, transferts, régularité.",
     ]);
     // Belonging is the one strong line; the rules are quiet.
     expect(born.lines.map((line) => line.strong)).toEqual([true, false, false]);
+    expect(born.lines.map((line) => line.kind)).toEqual(["serial", "timing", "measure"]);
     expect(text(born.invite)).toBe(
-      "Invitez vos amis avant la date limite de la J5 : leurs journées compteront en même temps que les vôtres.",
+      "Invitez vos amis avant la date limite de la J14 : leurs journées compteront en même temps que les vôtres.",
     );
+  });
+
+  it("the team page's panel keeps the serial and the timing and drops what the rating measures", () => {
+    const withSerial = compactBornLines(bornText(card("born0Serial"), words("fr"), future));
+    expect(withSerial.map((line) => text(line.text))).toEqual([
+      "Son numéro, BOT #482913, ne changera jamais.",
+      "Sa note arrive après 3 journées terminées : J14, J15, J16.",
+    ]);
+    const without = compactBornLines(bornText(card("born0"), words("fr"), future));
+    expect(without.map((line) => line.kind)).toEqual(["timing"]);
+    // An existing manager's arrival sentence is one line already and stays whole.
+    expect(
+      compactBornLines(bornText(card("forming1"), words("ar"), future)).map((line) => line.kind),
+    ).toEqual(["timing"]);
   });
 
   it("no serial sentence while the serial is null, and the timing leads", () => {

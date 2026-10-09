@@ -157,7 +157,7 @@ describe("« Cette journée » (M3b sub-states and the rated line)", () => {
   it("says the first counted journée before anything is final", () => {
     const block = roundBlock(card("born0"), ctx());
     expect(block).toMatchObject({ kind: "forming", counted: 0, min: 3 });
-    expect(block.kind === "forming" && block.line).toEqual({ kind: "first_counted", gw: 5 });
+    expect(block.kind === "forming" && block.line).toEqual({ kind: "first_counted", gw: 14 });
   });
 
   it("names the next round and its deadline while forming", () => {
