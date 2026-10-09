@@ -110,6 +110,33 @@ Arabic. Pictures were taken with motion allowed and the card settled (3.5 s afte
 - **Rows 40 px, a crash on the lone-manager league, a tier label cut to « CHAMPI… »**: found by the probe
   and fixed before the pictures.
 
+## G1's order, changed at the finish review (WP6b)
+
+The plan's order (section 4.1) is stage, identity, « Cette journée », stat tiles, then people, club, seasons. This
+package built belonging first (people, club, seasons, then « Cette journée » and the tiles) and did not record it.
+It is recorded now as an owner-facing deviation in plan section 5.2 item 6. Because « Cette journée » then starts far
+down the page, **one line under the identity line** (`RoundGlance.tsx`, `roundGlance` in `gradins-state.ts`) names the
+next round and its deadline from the same read, and links to `/fantasy/team` like that block's button. Measured at
+390 × 844, `forming1`, light, element rectangles (top edge, page coordinates):
+
+| Block               | French, before the line | French, with the line | Arabic, before | Arabic, with the line |
+| ------------------- | ----------------------- | --------------------- | -------------- | --------------------- |
+| Identity line       | 566                     | 566                   | 594            | 594                   |
+| The round line      | none                    | 586 to 630            | none           | 619 to 663            |
+| Les vôtres          | 606                     | 650                   | 639            | 683                   |
+| Votre club          | 887                     | 931                   | 963            | 1,007                 |
+| Vos saisons         | 1,194                   | 1,238                 | 1,323          | 1,367                 |
+| « Cette journée »   | 1,438                   | 1,482                 | 1,603          | 1,647                 |
+| Ce que dit la carte | 1,674                   | 1,718                 | 1,874          | 1,918                 |
+
+In the plan's own order « Cette journée » would start where « Les vôtres » starts now, about 606 px (French): the identity
+line's bottom plus the 20 px block gap. That position is derived from the layout, not a picture of a
+build in that order. The other numbers were measured on the page. The round line is 44 px, so everything below it moved
+down by 44 px, and « Cette journée » is 876 px further down than the plan has it, which is what the line makes up for.
+Pictures:
+[before](g1-forming1-fr-light-390-full.png) and [after](../wp6b/after/g1-forming1-fr-light-390-full.png) (French),
+[before](g1-forming1-ar-light-390-full.png) and [after](../wp6b/after/g1-forming1-ar-light-390-full.png) (Arabic).
+
 ## Deviations from the plan, and what other packages must do
 
 - **Names in « Changa 800 » (item 12).** Names in rows and in the band are weight 800 in the language's body face

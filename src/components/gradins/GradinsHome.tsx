@@ -21,10 +21,18 @@ import { CardStage, RatingLine } from "./CardStage";
 import { useStageBeat } from "./use-stage-beat";
 import { ClubBlock } from "./ClubBlock";
 import { GuestHero } from "./GuestHero";
-import { cardView, isOverForming, roundBlock, sinceRound, type HomeState } from "./gradins-state";
+import {
+  cardView,
+  isOverForming,
+  roundBlock,
+  roundGlance,
+  sinceRound,
+  type HomeState,
+} from "./gradins-state";
 import { IdentityLine } from "./IdentityLine";
 import { NoTeamHero } from "./NoTeamHero";
 import { PeopleBlock } from "./PeopleBlock";
+import { RoundGlance } from "./RoundGlance";
 import { SeasonsBlock } from "./SeasonsBlock";
 import { GradinsError, GradinsLoading, GradinsUnavailable } from "./StateBlocks";
 import { StatTiles } from "./StatTiles";
@@ -37,9 +45,10 @@ import { QuietHeading, STICKY_COLUMN_CLASS } from "./figures";
 
 /**
  * G1, the section home `/gradins` (plan section 4.1): who I am in the stands. The card hangs on
- * its rail with the number under it in text, then what the journée means for it, what its four
- * statistics say, the people of my leagues, my club and its next match, my seasons, and the way
- * to share it. All four belongings, in that order.
+ * its rail with the number under it in text and, under the identity line, one line for the next
+ * round and its deadline; then the people of my leagues, my club and its next match, my seasons
+ * (belonging first, plan 5.2 item 6), then what the journée means for the card, what its four
+ * statistics say, and the way to share it.
  *
  * `GradinsHomeView` is the screen for a resolved state; `GradinsHome` is the data-bound page.
  */
@@ -147,6 +156,7 @@ export function OwnerHome({
   useViewEvent("gradins_view_manager");
 
   const block = roundBlock(card, { gameweek, now: Date.now() });
+  const glance = roundGlance(block, { gameweek, now: Date.now() });
   const hasNumber = card.ovr !== null;
 
   const over = isOverForming(block);
@@ -212,6 +222,7 @@ export function OwnerHome({
           {rating}
         </CardStage>
         <div className="mt-1 px-4">{identity}</div>
+        {glance ? <RoundGlance round={glance} composeLabel={t("fpl.pick_team")} /> : null}
         <div className={cn("mt-4 hidden md:block", ui.space.gutter, "md:px-0")}>{action}</div>
       </div>
 

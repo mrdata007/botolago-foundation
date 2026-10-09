@@ -478,6 +478,10 @@ the import path), which is analytics only, invisible, owner-approved and shipped
 **Purpose.** "This is who I am in the stands": my card, what it says about me, my journée, my
 people, my club, my seasons. **Belonging sold:** all four pillars, in that order.
 
+> **As built (5.2 item 6):** after the identity line comes one line with the next round and its
+> deadline, then the people, club and seasons blocks, then « Cette journée » and the stat tiles. The
+> order below is the plan's; the build differs on purpose.
+
 **Layout at 390 × 844** (top to bottom): top bar → title band « Gradins » → [hero slot, only when a
 moment is due] → card stage → identity line → « Cette journée » card → « Ce que dit votre carte »
 (2 × 2 stat tiles) → « Les vôtres » card → « Votre club » card → « Vos saisons » row → the share
@@ -743,6 +747,18 @@ cut-off date exists, and a « Revoir » button playing the `founder` beat; on G6
    statistique. » (no number), so no Arabic count has to agree with a subject.
 5. Heroes (M4, M8, M9, M10, M11) play in Gradins, not on the Fantasy hub; the hub block shows the
    number at once and a « Nouveau » badge that leads to the hero.
+6. **G1's order (section 4.1), changed in the build and recorded here at the finish review.** Section
+   4.1 lists stage, identity, « Cette journée », the stat tiles, then people, club, seasons. The build
+   puts belonging first (people, club, seasons), then « Cette journée » and the stat tiles, because
+   belonging is what the owner asked the section to sell. The cost was that « Cette journée » started
+   about 1,440 px down at 390 (French, card forming), out of the first screen. So **one line under the
+   identity line** now says the next round and its deadline, from the same read and the same words as
+   « Cette journée » (`gradins.round.line`), and leads where that block's button does
+   (`/fantasy/team`). Measured at 390 × 844, French, `forming1`: « Cette journée » at about 606 px in the
+   plan's order (derived from the layout), 1,438 px in the build before the line, 1,482 px with it (the line is 44 px); the line
+   itself sits at 586 to 630 px, on the first screen. The line is absent when the season is over or no
+   round is known. To restore the plan's order, move `ThisRoundBlock` and the stat tiles above
+   `PeopleBlock` in `GradinsHome.tsx` and drop `RoundGlance`.
 
 ### 5.3 Rules kept from the approved plan
 
