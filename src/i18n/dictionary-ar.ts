@@ -85,6 +85,7 @@ export const ar = {
   "home.fantasy_alerts": "تنبيهات {accent}فانتازي{/accent}",
   "home.news_preview": "أخبار {accent}البطولة{/accent}",
   "home.explore": "استكشف {accent}بوتولاجو{/accent}",
+  "home.highlights": "أبرز أقسام BotolaGO",
   "home.view_all": "عرض الكل",
   "home.view_fantasy_team": "عرض فريقي",
   "home.my_clubs.last_result": "آخر نتيجة",
