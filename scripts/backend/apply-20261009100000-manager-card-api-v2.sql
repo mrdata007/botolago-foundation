@@ -22,9 +22,12 @@
 -- (docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md).
 --
 -- WHEN
---   After the pull request that adds this file is merged, and after the five
---   migrations of the 2026-10-08 script are applied (the script refuses
---   otherwise). Any quiet moment; not at minute 12 of an hour (the Fantasy
+--   After the pull request that adds this file is merged, after the five
+--   migrations of the 2026-10-08 script are applied, and after the Fantasy
+--   durable progression migration 20261009091728
+--   (scripts/backend/apply-fantasy-durable-progression.sql, PR #384): the
+--   script refuses otherwise, so the migrations go in repository order. Any
+--   quiet moment; not at minute 12 of an hour (the Fantasy
 --   season orchestrator). It takes short locks on app.profiles (one foreign
 --   key) and replaces app_private.ops_health_checks().
 --
@@ -53,7 +56,8 @@
 --
 -- WHAT IT DOES
 --   * refuses to run twice, or where any of the four migrations is recorded,
---     or where any of the five 2026-10-08 migrations is missing or differs
+--     or where the Fantasy durable progression migration 20261009091728 is not
+--     recorded, or where any of the five 2026-10-08 migrations is missing or differs
 --     from the reviewed repository file (sha256 of the recorded text), or where
 --     the read switch is on, or where a table or function it builds on is
 --     missing or one it creates already exists;
@@ -91,6 +95,12 @@ begin
   if (select count(*) from supabase_migrations.schema_migrations
     where version in ('20261008123000', '20261008123100', '20261008123200', '20261008123300', '20261008123400')) <> 5 then
     raise exception 'stop: the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet -- run scripts/backend/apply-20261008123000-manager-card.sql first';
+  end if;
+  -- Repository order: 20261009091728 (PR #384) wraps app_private.ops_health_checks()
+  -- before 20261009100300 does. Applied the other way round, its rename would
+  -- swallow this one's wrapper and the manager_card check would no longer be last.
+  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261009091728') then
+    raise exception 'stop: the Fantasy durable progression migration 20261009091728 is not applied yet -- apply it first (scripts/backend/apply-fantasy-durable-progression.sql), so the migrations go in repository order';
   end if;
   if exists (select 1 from supabase_migrations.schema_migrations
     where version in ('20261009100000', '20261009100100', '20261009100200', '20261009100300')) then

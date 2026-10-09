@@ -707,6 +707,9 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
 - **Preflight**, refusing (`raise exception 'stop: …'`) unless:
   - `supabase_migrations.schema_migrations` has all five `20261008123000…123400` and none of the
     four new versions;
+  - it also has `20261009091728` (PR #384, `scripts/backend/apply-fantasy-durable-progression.sql`):
+    that migration wraps `app_private.ops_health_checks()` first and `20261009100300` wraps it
+    again, so the migrations must go in repository order (the refusal names the migration and its script);
   - each of the five #381 rows' `statements[1]` sha256 equals the repository file's (the same
     hashes as the 2026-10-08 script, `apply-20261008123000-manager-card.sql:1989-2007`), so the
     installed objects are the reviewed ones;
@@ -760,7 +763,8 @@ Run: `bun test scripts/backend/apply-manager-card-api-v2-script.test.ts`.
   - "Health checks": the `manager_card` check and its thresholds.
   - New "Latency": the budgets and the measured numbers from P2.
   - "Account deletion": the acknowledgements cascade.
-  - "Production order": insert the new apply script after step 2 and before switching reads on.
+  - "Production order": insert the new apply script after step 2 and before switching reads on, and
+    #384's `20261009091728` (`scripts/backend/apply-fantasy-durable-progression.sql`) before it.
 - `AGENTS.md` (after the `manager-card-history-prune` paragraph, lines 168-173), add:
   > Where migration 20261009100200 is applied, signed-in users also write
   > `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`) while the read switch
