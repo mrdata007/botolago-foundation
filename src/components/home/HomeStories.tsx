@@ -43,7 +43,10 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
   return (
     <>
       <nav aria-label={t("home.highlights")} data-testid="home-stories" className="min-w-0 py-4">
-        <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-p-1 p-1 sm:gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul
+          data-swipe-row
+          className="flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain scroll-p-1 p-1 sm:gap-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {stories.map((story, index) => (
             <li key={story.id} className="w-24 shrink-0 snap-start">
               <button
@@ -124,6 +127,7 @@ function SectionHighlights() {
   return (
     <nav aria-label={t("home.highlights")} data-testid="home-stories" className="min-w-0 py-4">
       <ul
+        data-swipe-row
         className={cn(
           "flex snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain p-1 sm:gap-5",
           "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
