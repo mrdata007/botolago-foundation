@@ -26,9 +26,11 @@ const EVENT: Record<CardHintKind, AnalyticsEvent> = {
 
 /**
  * One line that names the statistic a decision feeds (plan M3e): the captain choice counts for
- * CAP, the starting eleven for SEL, the transfers for TRF. An inline info alert directly above
- * the control being used, dismissible; it never covers a control and never blocks the deadline
- * flow.
+ * CAP, the starting eleven for SEL, the transfers for TRF. An info alert directly above the
+ * control being used (the captain's first action, the transfers' mode toggle, the substitution
+ * bar's cancel button), dismissible, and it never blocks the deadline flow. The SEL one sits in a
+ * bar that already floats over the pitch, so it adds one alert's height to that overlay for as
+ * long as it is shown; the pitch scrolls under it.
  *
  * Each is shown once per phone: the device key is written when the hint first appears, so a
  * closed sheet that opens again does not repeat it, and a phone that cannot store anything counts

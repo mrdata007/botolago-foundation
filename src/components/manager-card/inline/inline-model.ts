@@ -1,7 +1,8 @@
 import type { MemberCardDto, MyCardDto } from "@/backend/manager-card/contracts";
 import type { FantasyGameweekStatus } from "@/types/domain";
 
-import type { TierCode } from "../types";
+import { guestProfile, localProfile } from "../to-profile";
+import type { CardClub, CardProfile, TierCode } from "../types";
 
 /**
  * What the Fantasy screens say about the card, as pure decisions (plan sections 4.1, 5.1 and the
@@ -19,6 +20,31 @@ export interface RoundRef {
   /** ISO. */
   deadline: string;
   status?: FantasyGameweekStatus;
+}
+
+/* ------------------------------------------------------------------------------------------ */
+/* The save step (M1b)                                                                         */
+/* ------------------------------------------------------------------------------------------ */
+
+/**
+ * What the object on the save step draws (plan M1b):
+ *   - a visitor: the base scarf with no name, no club, no serial and no number. The name the
+ *     card will carry is chosen at sign-up, so the team name here would be wrong after saving;
+ *   - a signed-in account without a team: the card name (the display name when it is not
+ *     blank, else the team name, as the board reads it) and the club the profile names, if one
+ *     resolves. A club that does not resolve leaves the object in its own material.
+ */
+export function saveLineProfile(input: {
+  signedIn: boolean;
+  displayName: string | null | undefined;
+  teamName: string;
+  club: CardClub | null;
+}): CardProfile {
+  if (!input.signedIn) return guestProfile();
+  return localProfile({
+    displayName: input.displayName?.trim() || input.teamName.trim(),
+    club: input.club,
+  });
 }
 
 /* ------------------------------------------------------------------------------------------ */

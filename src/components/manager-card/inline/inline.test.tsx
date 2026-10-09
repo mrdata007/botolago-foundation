@@ -65,7 +65,8 @@ afterAll(() => {
 });
 
 const { GuestIntroCardPoint } = await import("./GuestIntroCardPoint");
-const { CardSaveLine, BuilderReturnLine, saveLineProfile } = await import("./CardSaveLine");
+const { CardSaveLine, BuilderReturnLine } = await import("./CardSaveLine");
+const { saveLineProfile } = await import("./inline-model");
 const { HubCardBlockView } = await import("./HubCardBlock");
 const { RankCardTokenView } = await import("./RankCardToken");
 const { RecapCardLineView } = await import("./RecapCardLine");

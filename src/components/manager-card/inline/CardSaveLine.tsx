@@ -11,29 +11,8 @@ import type { Club } from "@/types/domain";
 import { CardToken } from "../CardToken";
 import { useCardCopy, useMomentCopy } from "../copy";
 import { fill } from "../interpolate";
-import { cardClubFromClub, guestProfile, localProfile } from "../to-profile";
-import type { CardClub, CardProfile } from "../types";
-
-/**
- * What the object on the save step draws (plan M1b):
- *   - a visitor: the base scarf with no name, no club, no serial and no number. The name the
- *     card will carry is chosen at sign-up, so the team name here would be wrong after saving;
- *   - a signed-in account without a team: the card name (the display name when it is not
- *     blank, else the team name, as the board reads it) and the club the profile names, if one
- *     resolves. A club that does not resolve leaves the object in its own material.
- */
-export function saveLineProfile(input: {
-  signedIn: boolean;
-  displayName: string | null | undefined;
-  teamName: string;
-  club: CardClub | null;
-}): CardProfile {
-  if (!input.signedIn) return guestProfile();
-  return localProfile({
-    displayName: input.displayName?.trim() || input.teamName.trim(),
-    club: input.club,
-  });
-}
+import { cardClubFromClub } from "../to-profile";
+import { saveLineProfile } from "./inline-model";
 
 /**
  * The save step's one line (plan M1b): a 64 px row between the captain rows and the guest note,

@@ -11,7 +11,7 @@ import { useCardStrings, useGradinsCopy, useMomentCopy } from "../copy";
 import { fill } from "../interpolate";
 import { fromMember } from "../to-profile";
 import { newlyRated } from "./inline-model";
-import { useLeagueTeamIds } from "./LeagueRowMini";
+import { useLeagueTeamIds } from "./league-team-ids";
 
 /** At most three minis and three names: a band is a glance, never a list. */
 const MAX_SHOWN = 3;
