@@ -4,7 +4,7 @@
  * Woken by pg_cron through pg_net with the scheduler token. Each run:
  *   1. asks the database what is worth writing (api.service_ai_content_plan),
  *      which also enforces the on/off switch and the daily cap;
- *   2. has Claude write French and Arabic from the supplied FACTS only;
+ *   2. has the model write French and Arabic from the supplied FACTS only;
  *   3. rejects anything that fails the checks below -- the article is simply
  *      not published and the same job comes back next run;
  *   4. publishes through api.service_ai_content_publish (cap and switch are
@@ -21,9 +21,9 @@ import {
   type EmailRpcClient,
 } from "./notification-email-dispatch.ts";
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const RESEND_URL = "https://api.resend.com/emails";
-const DEFAULT_MODEL = "claude-sonnet-5-5";
+const DEFAULT_MODEL = "gpt-4o";
 const MAX_JOBS_PER_RUN = 3;
 const SANITIZER_VERSION = "ai-content-v1";
 
@@ -320,27 +320,33 @@ function readingTimeMinutes(html: string): number {
   return Math.min(60, Math.max(1, Math.ceil(words / 220)));
 }
 
-// ----------------------------------------------------------- Claude call
+// ----------------------------------------------------------- OpenAI call
 
-async function askClaude(
+async function askModel(
   job: ContentJob,
   config: { apiKey: string; model: string },
   fetchImpl: typeof fetch,
 ): Promise<string | null> {
   let response: Response;
   try {
-    response = await fetchImpl(ANTHROPIC_URL, {
+    response = await fetchImpl(OPENAI_URL, {
       method: "POST",
       headers: {
-        "x-api-key": config.apiKey,
-        "anthropic-version": "2023-06-01",
+        authorization: `Bearer ${config.apiKey}`,
         "content-type": "application/json",
       },
       body: JSON.stringify({
         model: config.model,
         max_tokens: 4000,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: "user", content: buildUserMessage(job) }],
+        temperature: 0.7,
+        // The system prompt already asks for a single JSON object; JSON mode
+        // makes the reply reliably parseable. Needs a JSON-mode-capable model
+        // (gpt-4o / gpt-4.1 family); parseGenerated still guards the shape.
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: buildUserMessage(job) },
+        ],
       }),
       signal: AbortSignal.timeout(90_000),
     });
@@ -349,13 +355,11 @@ async function askClaude(
   }
   if (!response.ok) return null;
   try {
-    const body = (await response.json()) as { content?: { type?: string; text?: string }[] };
-    return (
-      body.content
-        ?.filter((block) => block.type === "text" && typeof block.text === "string")
-        .map((block) => block.text)
-        .join("") ?? null
-    );
+    const body = (await response.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const content = body.choices?.[0]?.message?.content;
+    return typeof content === "string" ? content : null;
   } catch {
     return null;
   }
@@ -487,7 +491,7 @@ export async function handleAiContentRequest(
     }
   };
 
-  const apiKey = deps.environment.ANTHROPIC_API_KEY?.trim() ?? "";
+  const apiKey = deps.environment.OPENAI_KEY?.trim() ?? "";
   const model = deps.environment.AI_CONTENT_MODEL?.trim() || DEFAULT_MODEL;
 
   let plan: { enabled?: boolean; jobs?: ContentJob[] };
@@ -507,7 +511,7 @@ export async function handleAiContentRequest(
   }
 
   for (const job of plan.jobs.slice(0, MAX_JOBS_PER_RUN)) {
-    const raw = await askClaude(job, { apiKey, model }, fetchImpl);
+    const raw = await askModel(job, { apiKey, model }, fetchImpl);
     const article = raw ? parseGenerated(raw) : null;
     if (!article || inventedScores(job, article).length > 0) {
       summary.rejected += 1;
