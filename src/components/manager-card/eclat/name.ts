@@ -6,9 +6,14 @@
  * Pure: it takes a `measure` (canvas in a browser, the committed table elsewhere) and gives lines
  * with their size and baseline. The full name is always in the label and in the DOM under the card;
  * what is drawn may drop the last words of a very long second line, never a part of a word.
+ *
+ * The budget is a margin for the INK, not for the advance. A line is centred by its advance
+ * (`text-anchor="middle"` at x 500), and a face's first and last letters overhang or fall short of
+ * their advance by a few units (the serif's « A » reaches 2.2 units left of its origin at 70), so a
+ * line fitted by advance alone put its ink 1 to 2 units past x 105 or x 895.
  */
 import { LABEL_BUDGET, NAME_BUDGET, POINT_Y, RULE_Y } from "./geometry";
-import type { Measure } from "./measure";
+import type { Ink, Measure } from "./measure";
 
 /** Particles that take the next word onto the first line (compared after uppercasing). */
 export const PARTICLES: ReadonlySet<string> = new Set([
@@ -85,6 +90,8 @@ export interface NameOptions {
 }
 
 const round1 = (v: number): number => Number(v.toFixed(1));
+/** A size to one decimal, never above the fit: rounding up would put the ink back over the margin. */
+const floor1 = (v: number): number => Math.floor(v * 10 + 1e-6) / 10;
 
 interface Fitted {
   text: string;
@@ -93,9 +100,21 @@ interface Fitted {
 }
 
 /**
+ * The widest a line of `text` may be set so that its ink stays inside the budget (half of it each
+ * side of x 500), given how far the ink reaches either side of the line's centre at size 1: the
+ * advance centred on 500 puts the ink from `x0 − w ÷ 2` to `x1 − w ÷ 2`.
+ */
+function inkSize(m: Ink): number {
+  const reach = Math.max(m.w / 2 - m.x0, m.x1 - m.w / 2);
+  return reach > 0 ? NAME_BUDGET / 2 / reach : Infinity;
+}
+
+/**
  * One line to the budget: at most `max`, shrunk to fit; below `min` the last words go (only when
  * `canDrop`), and a line that still does not fit at `min` is set at `min` with its spacing opened
- * or closed to the budget (`lengthAdjust="spacing"`), never its glyphs.
+ * or closed to a length that keeps its ink in the budget (`lengthAdjust="spacing"`), never its
+ * glyphs. The size is never larger than the advance fit (the line's width ÷ 790): the ink fit only
+ * ever shrinks a line whose first or last letter overhangs.
  */
 function fitLine(
   words: readonly string[],
@@ -108,14 +127,19 @@ function fitLine(
   const list = [...words];
   for (;;) {
     const text = list.join(" ");
-    const w1 = measure(text, face).w;
-    const size = Math.min(max, NAME_BUDGET / w1);
-    if (size >= min) return { text, size: round1(size) };
+    const m = measure(text, face);
+    const size = Math.min(max, NAME_BUDGET / m.w, inkSize(m));
+    if (size >= min) return { text, size: floor1(size) };
     if (canDrop && list.length > 1) {
       list.pop();
       continue;
     }
-    return { text, size: min, ...(w1 * min > NAME_BUDGET ? { textLength: NAME_BUDGET } : {}) };
+    if (m.w * min <= NAME_BUDGET && inkSize(m) >= min) return { text, size: min };
+    // spaced to a length: the first glyph starts at the line's start and the last ends at its end, so the
+    // ink reaches past the length by the first letter's overhang on the left and the last one's on the right
+    const left = Math.min(0, m.x0) * min;
+    const right = Math.min(0, m.w - m.x1) * min;
+    return { text, size: min, textLength: round1(NAME_BUDGET + 2 * Math.min(left, right)) };
   }
 }
 

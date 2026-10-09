@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { HOSTILE_NAMES } from "../markup-safety";
 import { RULE_Y, NAME_BUDGET, POINT_Y } from "./geometry";
 import { measureTable } from "./measure";
-import { cleanName, fitLabel, layoutName, PARTICLES } from "./name";
+import { cleanName, fitLabel, layoutName, PARTICLES, type NameLine } from "./name";
 
 const lay = (name: string, o: { plaque?: boolean; compact?: boolean } = {}) =>
   layoutName(name, {
@@ -11,6 +11,28 @@ const lay = (name: string, o: { plaque?: boolean; compact?: boolean } = {}) =>
     compact: o.compact ?? false,
     measure: measureTable,
   });
+
+/**
+ * Where a line's ink lies on the card (x, 0 to 1000): the line is centred on x 500 by its advance, so
+ * the ink runs from `500 − advance ÷ 2 + x0` to `500 − advance ÷ 2 + x1`, the advance being the
+ * length the line is set to (`textLength`, its glyphs spaced, the first starting at the line's start
+ * and the last ending at its end) or the measured width at the line's size.
+ */
+function inkSpan(l: NameLine): { x0: number; x1: number } {
+  const m = measureTable(l.text, l.face);
+  if (l.textLength === undefined) {
+    const start = 500 - (m.w * l.size) / 2;
+    return { x0: start + m.x0 * l.size, x1: start + m.x1 * l.size };
+  }
+  const start = 500 - l.textLength / 2;
+  return {
+    x0: start + Math.min(0, m.x0) * l.size,
+    x1: start + l.textLength + Math.max(0, m.x1 - m.w) * l.size,
+  };
+}
+
+/** The margin the plan gives every name line: x 105 to 895. */
+const MARGIN = { x0: 500 - NAME_BUDGET / 2, x1: 500 + NAME_BUDGET / 2 };
 
 /** The fixtures of plan 4. */
 const FIXTURES = [
@@ -113,6 +135,65 @@ describe("the fit (plan 4)", () => {
     }
   });
 
+  it("keeps the ink of every line inside the 105 to 895 margin, not only its advance", () => {
+    const names = [
+      ...FIXTURES,
+      // the 24-character single word of the brief: its serif « A » reaches 2.2 units left of its origin
+      "Abdelrahmanebenjellounel",
+      "Mohammed Abdelrahmanebenjellounel",
+      "Abdelrahmanebenjellounel Ali",
+    ];
+    for (const name of names) {
+      for (const compact of [false, true]) {
+        for (const plaque of [true, false]) {
+          for (const l of lay(name, { compact, plaque }).lines) {
+            const { x0, x1 } = inkSpan(l);
+            expect(x0, `${name} ink left`).toBeGreaterThanOrEqual(MARGIN.x0 - 0.1);
+            expect(x1, `${name} ink right`).toBeLessThanOrEqual(MARGIN.x1 + 0.1);
+          }
+        }
+      }
+    }
+  });
+
+  it("measured: the 24-character word was fitted by advance and its ink ran 2.2 units over the margin", () => {
+    const l = lay("Mohammedabdelhakimalaoui").lines[0]!;
+    const word = lay("Abdelrahmanebenjellounel").lines[0]!;
+    // the advance fit alone would have been 790 ÷ the advance; the ink fit takes at most a few tenths off it
+    const advanceFit = NAME_BUDGET / measureTable(word.text, word.face).w;
+    expect(word.size).toBeLessThanOrEqual(advanceFit);
+    expect(word.size).toBeGreaterThan(advanceFit - 1);
+    expect(word.size).toBeLessThan(Math.round(advanceFit * 10) / 10);
+    expect(inkSpan(word).x0).toBeGreaterThanOrEqual(MARGIN.x0 - 0.1);
+    expect(inkSpan(l).x0).toBeGreaterThanOrEqual(MARGIN.x0 - 0.1);
+  });
+
+  it("keeps the ink inside the margin for every letter that can start or end a word, in both faces", () => {
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+    for (const first of letters) {
+      for (const last of letters) {
+        for (const length of [8, 14, 20, 26, 40]) {
+          const word = first + "ABDELRAHMANEBENJELLOUNEL".repeat(3).slice(0, length - 2) + last;
+          for (const l of lay(word).lines) {
+            const { x0, x1 } = inkSpan(l);
+            expect(x0, `${word} left`).toBeGreaterThanOrEqual(MARGIN.x0 - 0.1);
+            expect(x1, `${word} right`).toBeLessThanOrEqual(MARGIN.x1 + 0.1);
+          }
+        }
+      }
+    }
+  });
+
+  it("never sets a line larger than its advance fit: the ink fit only shrinks", () => {
+    for (const name of FIXTURES) {
+      for (const l of lay(name).lines) {
+        const m = measureTable(l.text, l.face);
+        if (l.textLength === undefined)
+          expect(l.size, name).toBeLessThanOrEqual(NAME_BUDGET / m.w + 0.05);
+      }
+    }
+  });
+
   it("keeps the sizes of the plan: 80 / 120 for two words, 144 for a short one", () => {
     expect(lay("Ali").lines[0]!.size).toBe(144);
     const two = lay("Yasmine Alaoui").lines;
@@ -145,7 +226,9 @@ describe("the fit (plan 4)", () => {
   it("sets a single word that still does not fit at its minimum with its spacing opened or closed", () => {
     const l = lay("Ab".repeat(30)).lines[0]!;
     expect(l.size).toBe(64);
-    expect(l.textLength).toBe(NAME_BUDGET);
+    // the length is the budget less what the first and last letters overhang, so the ink keeps the margin
+    expect(l.textLength).toBeLessThanOrEqual(NAME_BUDGET);
+    expect(l.textLength).toBeGreaterThan(NAME_BUDGET - 10);
     const first = lay("Mohammedabdelhakimalaoui Ali").lines[0]!;
     expect(first.size).toBeGreaterThanOrEqual(56);
   });
