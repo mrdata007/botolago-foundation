@@ -22,7 +22,6 @@ export const storyInputSchema = z.object({
 });
 export const homeStorySchema = storyInputSchema.extend({
   generated: z.boolean().default(false),
-  sourceName: z.string().nullable().default(null),
   id: z.string().uuid(),
   storagePath: z.string().regex(/^news\/[a-z0-9/_-]+\.(avif|jpg|jpeg|png|webp)$/),
   published: z.boolean(),

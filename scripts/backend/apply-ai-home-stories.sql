@@ -141,7 +141,7 @@ begin
     raise exception using errcode='22023',message='generated_image_missing';
   end if;
   insert into app.media_assets(kind,storage_path,validation_status,validated_at,mime_type,width,height,alt_text,credit)
-    values('image',storage_path,'validated',clock_timestamp(),'image/png',p_width,p_height,left('Illustration IA : '||job.title_fr,300),'BotolaGO · OpenAI') returning id into asset;
+    values('article_hero',storage_path,'validated',clock_timestamp(),'image/png',p_width,p_height,left('Illustration IA : '||job.title_fr,300),'BotolaGO · OpenAI') returning id into asset;
   insert into app.home_stories(title_fr,title_ar,alt_fr,alt_ar,media_asset_id,credit,published)
     values(job.title_fr,job.title_ar,left('Illustration IA : '||job.title_fr,300),left('صورة توضيحية بالذكاء الاصطناعي: '||job.title_ar,300),asset,'BotolaGO · OpenAI',true) returning id into story;
   update app_private.ai_home_story_jobs set status='published',finished_at=clock_timestamp(),home_story_id=story,model=p_model where id=job.id;
@@ -166,7 +166,7 @@ returns jsonb language sql stable security invoker set search_path='' as $$
     'altFr',story.alt_fr,'altAr',story.alt_ar,'mediaAssetId',story.media_asset_id,
     'storagePath',media.storage_path,'credit',story.credit,'destination',null,
     'position',story.position,'published',story.published,'version',story.version,
-    'generated',job.id is not null,'sourceName',job.source_name)
+    'generated',job.id is not null)
   from app.media_assets media left join app_private.ai_home_story_jobs job on job.home_story_id=story.id
   where media.id=story.media_asset_id
 $$;
@@ -198,7 +198,7 @@ $source$]);
 do $apply$
 declare source text:=(select statements[1] from supabase_migrations.schema_migrations where version='20261009195943');
 begin
-  if encode(sha256(convert_to(source,'UTF8')),'hex')<>'3ca4938f51464260921ecfdae94d6defca2337a46a672cd0f1053778a1553826' then raise exception 'stop: migration bytes changed'; end if;
+  if encode(sha256(convert_to(source,'UTF8')),'hex')<>'eeb38c49f2342f8141ce12d1dbc25a6bdd4e728777f9e1016e0523e72b01f8e7' then raise exception 'stop: migration bytes changed'; end if;
   execute source;
 end;
 $apply$;

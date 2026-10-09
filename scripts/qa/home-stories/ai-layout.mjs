@@ -16,7 +16,6 @@ const base = {
   published: true,
   version: 1,
   generated: true,
-  sourceName: "BotolaGO",
 };
 const stories = Array.from({ length: 6 }, (_, i) => ({
   ...base,

@@ -9,8 +9,8 @@ one of the newest news stories published in both French and Arabic within 72 hou
 It copies the two exact headlines, generates a portrait conceptual illustration,
 stores the PNG in `news-media`, and publishes the Home story in one SQL transaction.
 The viewer overlays the localized headline as accessible text; the model is told
-not to draw text or fabricate a documentary image of the event. It shows AI and
-source attribution. Neither the circles nor the viewer navigate to sections.
+not to draw text or fabricate a documentary image of the event. It shows an AI disclosure. Source publisher metadata stays private, consistent
+with the news pages. Neither the circles nor the viewer navigate to sections.
 Empty public feeds render no rail. Admin keeps manual uploads and unpublishing.
 
 Default model: `gpt-image-2.5-flare`, medium quality, 1024×1536 PNG. Override only
@@ -40,13 +40,14 @@ have committed. These occasional orphan objects are retained for manual review.
    is disabled because its body validates the scheduler token against the database
    before claims, storage writes or provider calls. Unauthorized POSTs must return401.
 3. Publish the website from the reviewed merge commit. Verify the release header.
-4. With no competing writer, activate and dispatch once through a guarded transaction:
-   `select app_private.ai_home_stories_configure(true,6);`
-   `select app_private.ai_home_stories_tick();`
+4. With no competing writer, rehearse `scripts/backend/activate-ai-home-stories.sql`,
+   verify rollback, then commit that first activation and single dispatch.
 5. Observe job state and public image/headlines, then verify FR/AR mobile/desktop.
 
 Pause with `select app_private.ai_home_stories_configure(false);`. Publication
-rechecks that switch, so in-flight jobs cannot publish after pausing. Inspect
+rechecks that switch, so in-flight jobs cannot publish after pausing. Pausing does
+not cancel already dispatched Edge workers or storage uploads: drain those workers
+before another database/storage write, following the inventory in `AGENTS.md`. Inspect
 `app_private.ai_home_story_jobs` for status, safe error codes, model and timestamps.
 News that has no published edition in both languages is skipped until translated;
 no missing translation is fabricated. Provider billing/access errors require

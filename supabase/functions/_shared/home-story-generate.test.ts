@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import sharp from "sharp";
+import { deflateSync } from "node:zlib";
 import {
   decodeStoryImage,
   handleImageStoryRequest,
@@ -11,14 +13,33 @@ const job = {
   titleAr: "ديربي الدار البيضاء",
   summaryFr: "Les deux équipes se préparent.",
 };
+const validPng = await sharp({
+  create: { width: 1024, height: 1536, channels: 3, background: "#123456" },
+})
+  .png()
+  .toBuffer();
 function png() {
-  const bytes = new Uint8Array(40);
-  bytes.set([137, 80, 78, 71, 13, 10, 26, 10]);
-  bytes.set([73, 72, 68, 82], 12);
-  const view = new DataView(bytes.buffer);
-  view.setUint32(16, 1024);
-  view.setUint32(20, 1536);
-  return btoa(String.fromCharCode(...bytes));
+  return validPng.toString("base64");
+}
+function chunk(type: string, body: Uint8Array) {
+  const bytes = Buffer.alloc(body.length + 12);
+  bytes.writeUInt32BE(body.length);
+  bytes.write(type, 4);
+  bytes.set(body, 8);
+  let crc = 0xffffffff;
+  for (const byte of bytes.subarray(4, -4)) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit++) crc = crc & 1 ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+  }
+  bytes.writeUInt32BE((crc ^ 0xffffffff) >>> 0, bytes.length - 4);
+  return bytes;
+}
+function rasterPng(raster: Uint8Array) {
+  return Buffer.concat([
+    validPng.subarray(0, 33),
+    chunk("IDAT", deflateSync(raster)),
+    chunk("IEND", new Uint8Array()),
+  ]).toString("base64");
 }
 function fixture(
   options: {
@@ -142,12 +163,45 @@ describe("automatic news illustrations", () => {
     expect(f.uploads).toHaveLength(0);
     expect(f.calls.at(-1)?.args?.p_error_code).toBe("invalid_image");
   });
-  test("rejects a wrong portrait size", () => {
-    const bytes = Uint8Array.from(atob(png()), (c) => c.charCodeAt(0));
-    new DataView(bytes.buffer).setUint32(16, 1);
-    expect(() => decodeStoryImage(btoa(String.fromCharCode(...bytes)))).toThrow(
+  test("accepts a complete decodable RGB and RGBA portrait", async () => {
+    expect(await decodeStoryImage(png())).toEqual(new Uint8Array(validPng));
+    const rgba = await sharp(validPng).ensureAlpha().png().toBuffer();
+    expect((await decodeStoryImage(rgba.toString("base64"))).length).toBe(rgba.length);
+  });
+  test("rejects a wrong portrait size", async () => {
+    const small = await sharp(validPng).resize(512, 768).png().toBuffer();
+    await expect(decodeStoryImage(small.toString("base64"))).rejects.toThrow(
       "invalid_image_dimensions",
     );
+  });
+  test("truncated, corrupt and incomplete PNGs never reach storage", async () => {
+    const corrupt = Buffer.from(validPng);
+    corrupt[40] ^= 1;
+    for (const bytes of [
+      validPng.subarray(0, 40),
+      validPng.subarray(0, -1),
+      validPng.subarray(0, -12),
+      Buffer.concat([validPng.subarray(0, 33), chunk("IEND", new Uint8Array())]),
+      Buffer.concat([validPng, Buffer.from([0])]),
+      corrupt,
+    ]) {
+      const f = fixture({ image: bytes.toString("base64") });
+      await f.run();
+      expect(f.uploads).toHaveLength(0);
+      expect(f.calls.at(-1)?.args?.p_error_code).toBe("invalid_image");
+    }
+  });
+  test("checks the inflated raster length and scanline filters with valid chunk CRCs", async () => {
+    const rowLength = 1 + 1024 * 3;
+    const raster = new Uint8Array(rowLength * 1536);
+    await expect(decodeStoryImage(rasterPng(raster.subarray(0, -1)))).rejects.toThrow(
+      "invalid_image",
+    );
+    await expect(decodeStoryImage(rasterPng(new Uint8Array(raster.length + 1)))).rejects.toThrow(
+      "invalid_image",
+    );
+    raster[rowLength * 17] = 5;
+    await expect(decodeStoryImage(rasterPng(raster))).rejects.toThrow("invalid_image");
   });
   test("storage failure cannot publish a broken image", async () => {
     const f = fixture({ storageError: true });

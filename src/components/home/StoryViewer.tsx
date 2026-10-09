@@ -93,12 +93,6 @@ export function StoryViewer({
           <p className={cn(ui.display.section, "break-words")} data-testid="story-headline">
             {ar ? story.titleAr : story.titleFr}
           </p>
-          {story.sourceName && (
-            <p className={cn(ui.text.meta, ui.tone.onInkMuted)}>
-              {ar ? "المصدر: " : "Source : "}
-              {story.sourceName}
-            </p>
-          )}
           {story.credit && <p className={cn(ui.text.meta, ui.tone.onInkMuted)}>{story.credit}</p>}
         </figcaption>
       </figure>

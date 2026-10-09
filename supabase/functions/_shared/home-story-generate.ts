@@ -38,32 +38,101 @@ export function imageStoryPrompt(job: ImageStoryJob): string {
     JSON.stringify({ headline: job.titleFr, summary: job.summaryFr }),
   ].join("\n\n");
 }
-export function decodeStoryImage(base64: unknown): Uint8Array {
-  if (
-    typeof base64 !== "string" ||
-    base64.length === 0 ||
-    base64.length > Math.ceil(MAX_BYTES / 3) * 4
-  )
-    throw new StoryGenerationError("invalid_image");
+// Validate every chunk and the decompressed raster before marking media validated.
+// The provider contract is a non-interlaced, 8-bit RGB/RGBA PNG; fail closed on
+// other encodings rather than publishing bytes the worker cannot validate.
+const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, n) => {
+  for (let bit = 0; bit < 8; bit++) n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1;
+  return n >>> 0;
+});
+function crc32(bytes: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const byte of bytes) crc = CRC_TABLE[(crc ^ byte) & 255] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+export async function decodeStoryImage(base64: unknown): Promise<Uint8Array> {
+  const invalid = () => new StoryGenerationError("invalid_image");
+  if (typeof base64 !== "string" || !base64.length || base64.length > Math.ceil(MAX_BYTES / 3) * 4)
+    throw invalid();
   let bytes: Uint8Array;
   try {
     bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
   } catch {
-    throw new StoryGenerationError("invalid_image");
+    throw invalid();
   }
   if (
     bytes.byteLength > MAX_BYTES ||
-    bytes.byteLength < 33 ||
+    bytes.byteLength < 57 ||
     sniffImageMimeType(bytes) !== "image/png"
   )
-    throw new StoryGenerationError("invalid_image");
+    throw invalid();
   const data = new DataView(bytes.buffer);
-  if (
-    String.fromCharCode(...bytes.slice(12, 16)) !== "IHDR" ||
-    data.getUint32(16) !== 1024 ||
-    data.getUint32(20) !== 1536
-  )
-    throw new StoryGenerationError("invalid_image_dimensions");
+  let offset = 8;
+  let channels = 0;
+  let ended = false;
+  let dataEnded = false;
+  const compressed: Uint8Array[] = [];
+  while (offset < bytes.length) {
+    if (offset + 12 > bytes.length) throw invalid();
+    const length = data.getUint32(offset);
+    const end = offset + 12 + length;
+    if (end > bytes.length) throw invalid();
+    const type = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));
+    if (
+      !/^[A-Za-z]{4}$/.test(type) ||
+      crc32(bytes.subarray(offset + 4, end - 4)) !== data.getUint32(end - 4)
+    )
+      throw invalid();
+    if (offset === 8) {
+      if (type !== "IHDR" || length !== 13) throw invalid();
+      if (data.getUint32(16) !== 1024 || data.getUint32(20) !== 1536)
+        throw new StoryGenerationError("invalid_image_dimensions");
+      channels = bytes[25] === 2 ? 3 : bytes[25] === 6 ? 4 : 0;
+      if (!channels || bytes[24] !== 8 || bytes[26] !== 0 || bytes[27] !== 0 || bytes[28] !== 0)
+        throw invalid();
+    } else if (type === "IDAT") {
+      if (dataEnded) throw invalid();
+      compressed.push(bytes.slice(offset + 8, end - 4));
+    } else if (type === "IEND") {
+      if (length !== 0 || !compressed.length || end !== bytes.length) throw invalid();
+      ended = true;
+    } else {
+      // Only ancillary metadata is accepted outside IHDR/IDAT/IEND. PLTE is
+      // optional for RGB but unnecessary here; rejecting it keeps this narrow.
+      if (type[0] === type[0].toUpperCase()) throw invalid();
+      if (compressed.length) dataEnded = true;
+    }
+    offset = end;
+  }
+  if (!ended) throw invalid();
+  const rowLength = 1 + 1024 * channels;
+  const expectedLength = 1536 * rowLength;
+  let decodedLength = 0;
+  const reader = new Blob(compressed as BlobPart[])
+    .stream()
+    .pipeThrough(new DecompressionStream("deflate"))
+    .getReader();
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (decodedLength + value.length > expectedLength) throw invalid();
+      // Every scanline starts with one of the five defined PNG filter types.
+      for (
+        let i = (rowLength - (decodedLength % rowLength)) % rowLength;
+        i < value.length;
+        i += rowLength
+      )
+        if (value[i] > 4) throw invalid();
+      decodedLength += value.length;
+    }
+    if (decodedLength !== expectedLength) throw invalid();
+  } catch {
+    await reader.cancel().catch(() => {});
+    throw invalid();
+  } finally {
+    reader.releaseLock();
+  }
   return bytes;
 }
 async function generate(job: ImageStoryJob, deps: ImageStoryDependencies) {
@@ -91,7 +160,7 @@ async function generate(job: ImageStoryJob, deps: ImageStoryDependencies) {
     }
     if (!response.ok) throw new StoryGenerationError(`provider_http_${response.status}`);
     const payload = (await response.json()) as { data?: { b64_json?: unknown }[] };
-    const bytes = decodeStoryImage(payload.data?.[0]?.b64_json);
+    const bytes = await decodeStoryImage(payload.data?.[0]?.b64_json);
     const upload = await deps.storage.from("news-media").upload(path, bytes.buffer as ArrayBuffer, {
       contentType: "image/png",
       cacheControl: "31536000",
