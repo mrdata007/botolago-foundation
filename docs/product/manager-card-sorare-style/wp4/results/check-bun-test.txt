@@ -1,0 +1,80 @@
+=== check-bun-test: bun test
+bun test v1.4.2 (744846f84)
+
+scripts/backend/pepites-weekly-email-e2e.test.ts:
+[pepites-weekly-email-e2e] Skipped: it writes append-only rows, so it runs only when PEPITES_E2E_DB_URL names a disposable database.
+
+scripts/backend/football-live-refresh-e2e.test.ts:
+[football-live-refresh-e2e] Skipped: it writes to a database, so it runs only when LIVE_REFRESH_E2E_DB_URL names one (a local stack started with `supabase db start`).
+
+scripts/backend/historical-performance-e2e-wire-format.test.ts:
+[historical-performance-e2e-wire-format] Skipped: it writes to a database, so it runs only when BG0011_E2E_DB_URL names one (a local stack started with `supabase db start`).
+
+scripts/backend/pepites-editions-concurrency.test.ts:
+[pepites-editions-concurrency] Skipped: it writes append-only rows, so it runs only when PEPITES_E2E_DB_URL names a disposable database (a local stack after `supabase db reset`).
+
+scripts/backend/g7-current-runtime-configuration-correction.test.ts:
+G7_CURRENT_RUNTIME_CORRECTION_ALREADY_APPLIED
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+G7_CURRENT_RUNTIME_CORRECTION_ALREADY_APPLIED
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+G7_CURRENT_RUNTIME_CORRECTION_ALREADY_APPLIED
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+G7_CURRENT_RUNTIME_CORRECTION_ALREADY_APPLIED
+G7_CURRENT_RUNTIME_CONFIGURATION_CORRECTION_PASS
+
+scripts/backend/g7-historical-performance-backfill-runner.test.ts:
+G7_HISTORICAL_PERFORMANCE_BACKFILL_CAPTURE_ONLY_PASS
+::add-mask::0dda84c41aad495380d58a61233decb4a760231cd840492dbb1daf312232a204
+G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=g7-historical-performance-backfill-result.json
+::add-mask::7dcadad43b4446ab824c451b149697d52ef04ed6016c4c51bfd8291f992629ed
+G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=g7-historical-performance-backfill-result.json
+::add-mask::f249393745ec412b8fe3f279255b51689e8955de20ed42f69f8e0806814bed50
+G7_HISTORICAL_PERFORMANCE_BACKFILL_CAPTURE_ONLY_PASS
+G7_HISTORICAL_PERFORMANCE_RESTORE_PASS
+G7_HISTORICAL_PERFORMANCE_RESTORE_NOOP marker=restore-verified
+G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=g7-historical-performance-backfill-result.json
+G7_HISTORICAL_PERFORMANCE_BACKFILL_CAPTURE_ONLY_PASS
+G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=g7-historical-performance-backfill-result.json
+::add-mask::9e0baf6fc12043f68293d516a604ab3e84a0d48975874d4bb946ddec67f0c388
+G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=g7-historical-performance-backfill-result.json
+::add-mask::ae91059e751f4323a73c0da2d3e966b6597e74d4b8d94839981651e3f8f3acdb
+G7_HISTORICAL_PERFORMANCE_BACKFILL_CAPTURE_ONLY_PASS
+G7_HISTORICAL_PERFORMANCE_RESTORE_PASS
+G7_HISTORICAL_PERFORMANCE_RESTORE_ONLY_PASS
+G7_HISTORICAL_PERFORMANCE_BACKFILL_CAPTURE_ONLY_PASS
+G7_HISTORICAL_PERFORMANCE_BACKFILL_CAPTURE_ONLY_PASS
+G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=g7-historical-performance-backfill-result.json
+G7_HISTORICAL_PERFORMANCE_RESTORE_ONLY_PASS
+::add-mask::bde9d36abca84218812894fd8bcb16a5013a1f0e885946d7a638fef8c360a4bd
+G7_HISTORICAL_PERFORMANCE_BACKFILL_PASS evidence=g7-historical-performance-backfill-result.json
+
+scripts/backend/push-dispatch-e2e.test.ts:
+[push-dispatch-e2e] Skipped: it writes to a database, so it runs only when PUSH_DISPATCH_E2E_DB_URL names one (a local stack started with `supabase db start`).
+
+src/backend/news/editorial-session.test.ts:
+241 |       utc: "2026-09-22 18:10 UTC",
+242 |     });
+243 |   });
+244 | 
+245 |   test("Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027)", () => {
+246 |     expect(describeScheduledAt("2027-02-20T18:10:00.000Z", "fr", "Africa/Casablanca").local).toBe(
+                                                                                                   ^
+error: expect(received).toBe(expected)
+
+Expected: "samedi 20 février 2027 à 18:10 (GMT)"
+Received: "samedi 20 février 2027 à 18:10 (GMT+0)"
+
+      at <anonymous> (/home/user/mc-sorare/src/backend/news/editorial-session.test.ts:246:94)
+(fail) the scheduled time as the editor reads it > Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027) [0.48ms]
+
+ 7054 pass
+ 17 skip
+ 1 fail
+ 89047 expect() calls
+Ran 7072 tests across 541 files. [46.05s]
+--- exit 1

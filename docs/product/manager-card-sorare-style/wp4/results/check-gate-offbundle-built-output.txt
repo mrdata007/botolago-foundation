@@ -1,0 +1,1 @@
+Manager Card off-bundle gate: 329 chunks; the section's code is in ManagerCard-DUJRynob.js, to-profile-BsVTdYY0.js, use-manager-card-B6ijahLq.js, manager-card-BzEdvlHq.js and no ordinary page imports it.

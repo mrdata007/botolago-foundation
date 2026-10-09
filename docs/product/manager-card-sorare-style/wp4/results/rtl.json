@@ -1,0 +1,741 @@
+{
+  "base": "http://127.0.0.1:4194",
+  "rows": [
+    {
+      "width": 390,
+      "fixture": "rated",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "fixture": "founder",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": 0.88,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": 0.14,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "fixture": "legend",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "أسطورة",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:أسطورة:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "fixture": "homa",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "LASTREET",
+        "tierDir": "ltr",
+        "tierFamily": "Changa",
+        "tierLs": "9.68px",
+        "bdiLastreet": 2,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "fixture": "forming1",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": null,
+        "tierDir": null,
+        "tierFamily": null,
+        "tierLs": null,
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "fixture": "arabicName",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "name:فاطمة:Changa/800/ls0",
+          "name:الزهراء:Changa/300/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "fixture": "longNameLatin",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 390,
+      "fixture": "clubNull",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": null,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 296
+      },
+      "ar": {
+        "initialsX": null,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 296,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "rated",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "founder",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": 0.88,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": 0.14,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "legend",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "أسطورة",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:أسطورة:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "homa",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "LASTREET",
+        "tierDir": "ltr",
+        "tierFamily": "Changa",
+        "tierLs": "9.68px",
+        "bdiLastreet": 2,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "forming1",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": null,
+        "tierDir": null,
+        "tierFamily": null,
+        "tierLs": null,
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "arabicName",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "name:فاطمة:Changa/800/ls0",
+          "name:الزهراء:Changa/300/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "longNameLatin",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": 0.1,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": 0.9,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    },
+    {
+      "width": 1440,
+      "fixture": "clubNull",
+      "checks": {
+        "htmlDir": true,
+        "cardDir": true,
+        "tab": true,
+        "sample": true,
+        "founder": true,
+        "statsOrder": true,
+        "statsMirrorOfFr": true,
+        "arabicRunsNoSpacing": true,
+        "latinTrackedInArabic": true,
+        "digitsWestern": true,
+        "digitsLtr": true,
+        "lastreetLatinLtr": true
+      },
+      "ok": true,
+      "fr": {
+        "initialsX": null,
+        "founderX": null,
+        "statsX": [0.25, 0.42, 0.58, 0.75],
+        "cardW": 336
+      },
+      "ar": {
+        "initialsX": null,
+        "founderX": null,
+        "statsX": [0.75, 0.58, 0.42, 0.25],
+        "labels": ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+        "tier": "محترف",
+        "tierDir": "rtl",
+        "tierFamily": "Changa",
+        "tierLs": "normal",
+        "bdiLastreet": 1,
+        "plainLastreet": 0,
+        "cardW": 336,
+        "arabicRuns": [
+          "sample:مثال:Noto Sans Arabic/800/ls0",
+          "tier:محترف:Changa/800/ls0",
+          "label:القائد:Noto Sans Arabic/700/ls0",
+          "label:التشكيلة:Noto Sans Arabic/700/ls0",
+          "label:الانتقالات:Noto Sans Arabic/700/ls0",
+          "label:الثبات:Noto Sans Arabic/700/ls0"
+        ]
+      }
+    }
+  ]
+}

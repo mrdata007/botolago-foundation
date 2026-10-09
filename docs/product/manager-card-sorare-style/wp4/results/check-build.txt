@@ -1,0 +1,1195 @@
+=== check-build: bun run build
+$ bun scripts/qa/legal-placeholder-gate.ts && vite build
+legal-placeholder-gate: no unfilled placeholders. OK.
+The plugin "vite-tsconfig-paths" is detected. Vite now supports tsconfig paths resolution natively via the resolve.tsconfigPaths option. You can remove the plugin and set resolve.tsconfigPaths: true in your Vite config instead.
+vite v8.0.16 building client environment for production...
+[2Ktransforming...[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/home/user/botolago-app/node_modules/postcss/lib/input.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:url" has been externalized for browser compatibility, imported by "/home/user/botolago-app/node_modules/postcss/lib/input.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:url" has been externalized for browser compatibility, imported by "/home/user/botolago-app/node_modules/postcss/lib/map-generator.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/home/user/botolago-app/node_modules/postcss/lib/map-generator.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:fs" has been externalized for browser compatibility, imported by "/home/user/botolago-app/node_modules/postcss/lib/previous-map.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin rolldown:vite-resolve] Module "node:path" has been externalized for browser compatibility, imported by "/home/user/botolago-app/node_modules/postcss/lib/previous-map.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+✓ 3009 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/public/assets/botolago-mark-light-Co-4oQMn.svg                       5.43 kB │ gzip:   2.73 kB
+.output/public/assets/botolago-mark-color-B08aaeEZ.svg                       5.48 kB │ gzip:   2.80 kB
+.output/public/assets/botolago-wordmark-color-DW9xtM1W.svg                   8.78 kB │ gzip:   3.82 kB
+.output/public/assets/botolago-wordmark-light-B2pMfDk-.svg                   8.80 kB │ gzip:   3.82 kB
+.output/public/assets/not-found-BTMUv1n-.webp                               14.49 kB
+.output/public/assets/topic-press-DkXsMHAn.webp                             15.91 kB
+.output/public/assets/topic-referee-DtgYhdRV.webp                           18.40 kB
+.output/public/assets/home-band-live-800-Bwvhi9Rp.webp                      20.73 kB
+.output/public/assets/home-band-stadium-800-CDrgQbty.webp                   20.76 kB
+.output/public/assets/plate-interviews-qphnw2wS.webp                        21.50 kB
+.output/public/assets/topic-coach-PWDVPMNm.webp                             25.94 kB
+.output/public/assets/plate-transfers-BqZRj-n0.webp                         30.25 kB
+.output/public/assets/ranking-empty-BLhkpK_F.webp                           30.32 kB
+.output/public/assets/topic-transfer-DpmpKYCD.webp                          31.70 kB
+.output/public/assets/stadium-night-800-U9gA_52B.webp                       32.21 kB
+.output/public/assets/points-pending-4hqhSE2l.webp                          34.11 kB
+.output/public/assets/standings-soon-DhowpQiW.webp                          37.95 kB
+.output/public/assets/topic-club-board-Btax6Zk3.webp                        41.80 kB
+.output/public/assets/matches-header-BzD6zCjr.webp                          43.55 kB
+.output/public/assets/topic-injury-DcdwGHBW.webp                            45.26 kB
+.output/public/assets/empty-news-BbeQxgbo.webp                              47.08 kB
+.output/public/assets/welcome-720-CMMcJ-Ko.webp                             47.51 kB
+.output/public/assets/manager-cover-CuqIC6Hb.webp                           50.04 kB
+.output/public/assets/home-band-live-L38EIkp2.webp                          52.44 kB
+.output/public/assets/topic-trophy-DGA0owcL.webp                            53.68 kB
+.output/public/assets/rules-hero-CUTr7m4Z.webp                              54.14 kB
+.output/public/assets/podium-soon-7wjBvBRy.webp                             54.22 kB
+.output/public/assets/help-hero-bJhSmXIo.webp                               55.85 kB
+.output/public/assets/home-band-stadium-CE9OAIEM.webp                       56.55 kB
+.output/public/assets/plate-for-you-DQioWIye.webp                           57.99 kB
+.output/public/assets/no-connection-D1cZUGM4.webp                           62.82 kB
+.output/public/assets/topic-goal-BEYxjzf1.webp                              63.37 kB
+.output/public/assets/empty-matches-BHHHSI-2.webp                           64.27 kB
+.output/public/assets/create-team-CPFwiLhB.webp                             64.50 kB
+.output/public/assets/empty-watchlist-DIcyWJ6B.webp                         65.00 kB
+.output/public/assets/topic-training-D4fJgy-7.webp                          65.65 kB
+.output/public/assets/plate-latest-GMRvvp3K.webp                            69.49 kB
+.output/public/assets/topic-matchday-CW0GNCwV.webp                          71.32 kB
+.output/public/assets/empty-leagues-CSLCNXa7.webp                           72.74 kB
+.output/public/assets/plate-analysis-BJMzD-_a.webp                          76.13 kB
+.output/public/assets/welcome-DtTMxlyF.webp                                 98.74 kB
+.output/public/assets/welcome-wide-CgExXDOL.webp                            99.64 kB
+.output/public/assets/topic-stadium-CrykZwKm.webp                          101.18 kB
+.output/public/assets/topic-fans-Cx8EJXIh.webp                             156.23 kB
+.output/public/assets/gradins-renderer-Cg0YnVTU.css                         10.27 kB │ gzip:   2.61 kB
+.output/public/assets/styles-DmKLJ9lL.css                                  206.40 kB │ gzip:  34.21 kB
+.output/public/assets/site-origin-B2MdjMax.js                                0.04 kB │ gzip:   0.06 kB
+.output/public/assets/create-team-OAVpwuH9.js                                0.05 kB │ gzip:   0.07 kB
+.output/public/assets/podium-soon-DYPAypi4.js                                0.05 kB │ gzip:   0.07 kB
+.output/public/assets/empty-leagues-Diq4CqMb.js                              0.05 kB │ gzip:   0.07 kB
+.output/public/assets/empty-matches-3Gw0fdIp.js                              0.05 kB │ gzip:   0.07 kB
+.output/public/assets/points-pending-D2cgJcbx.js                             0.06 kB │ gzip:   0.08 kB
+.output/public/assets/standings-soon-D8TsWopu.js                             0.06 kB │ gzip:   0.08 kB
+.output/public/assets/stadium-night-800-CCcYzaSd.js                          0.06 kB │ gzip:   0.08 kB
+.output/public/assets/functional-route-helpers-Cdvq5jwj.js                   0.09 kB │ gzip:   0.10 kB
+.output/public/assets/types-DQEWgzoR.js                                      0.09 kB │ gzip:   0.10 kB
+.output/public/assets/minus-DLRm5H3s.js                                      0.10 kB │ gzip:   0.12 kB
+.output/public/assets/home-band-stadium-800-BLyQoyEe.js                      0.11 kB │ gzip:   0.10 kB
+.output/public/assets/esm-D4Xd89JB.js                                        0.11 kB │ gzip:   0.11 kB
+.output/public/assets/points-unit-BnF1kzl6.js                                0.12 kB │ gzip:   0.11 kB
+.output/public/assets/chevron-left-CPPeDLu8.js                               0.12 kB │ gzip:   0.13 kB
+.output/public/assets/chevron-right-DyaUJvgn.js                              0.12 kB │ gzip:   0.13 kB
+.output/public/assets/admin.pepites-DL94HNg0.js                              0.14 kB │ gzip:   0.13 kB
+.output/public/assets/auth-DL94HNg0.js                                       0.14 kB │ gzip:   0.13 kB
+.output/public/assets/matchContext-B3bI0Yqa.js                               0.14 kB │ gzip:   0.12 kB
+.output/public/assets/pepites-DL94HNg0.js                                    0.14 kB │ gzip:   0.13 kB
+.output/public/assets/pronostics-DL94HNg0.js                                 0.14 kB │ gzip:   0.13 kB
+.output/public/assets/plus-BdBU_SLB.js                                       0.14 kB │ gzip:   0.14 kB
+.output/public/assets/root-CDpNo7ef.js                                       0.14 kB │ gzip:   0.12 kB
+.output/public/assets/arrow-down-CurY9Yhh.js                                 0.15 kB │ gzip:   0.15 kB
+.output/public/assets/arrow-right-DB5KGhTx.js                                0.15 kB │ gzip:   0.15 kB
+.output/public/assets/clock-3-BEWX9NMp.js                                    0.16 kB │ gzip:   0.16 kB
+.output/public/assets/clock-ChAAh8oi.js                                      0.16 kB │ gzip:   0.16 kB
+.output/public/assets/search-CrESuot_.js                                     0.16 kB │ gzip:   0.16 kB
+.output/public/assets/circle-check-CPDSQHUQ.js                               0.17 kB │ gzip:   0.16 kB
+.output/public/assets/ban-1nmkeoKZ.js                                        0.17 kB │ gzip:   0.16 kB
+.output/public/assets/circle-dot-9ynaV2Fi.js                                 0.17 kB │ gzip:   0.14 kB
+.output/public/assets/terms-uAbBrWbr.js                                      0.17 kB │ gzip:   0.16 kB
+.output/public/assets/user-round-CKkAmhw9.js                                 0.17 kB │ gzip:   0.17 kB
+.output/public/assets/privacy-DNp_2_HY.js                                    0.17 kB │ gzip:   0.16 kB
+.output/public/assets/gameweek-presentation-Bi6bdRMn.js                      0.18 kB │ gzip:   0.13 kB
+.output/public/assets/user-CWgEDE1D.js                                       0.18 kB │ gzip:   0.17 kB
+.output/public/assets/at-sign-Zmxg6zzR.js                                    0.19 kB │ gzip:   0.18 kB
+.output/public/assets/PepitesShareSheet-ClIvupl5.js                          0.19 kB │ gzip:   0.17 kB
+.output/public/assets/lock-DVUeMSkR.js                                       0.19 kB │ gzip:   0.18 kB
+.output/public/assets/mail-BLRlTp21.js                                       0.20 kB │ gzip:   0.19 kB
+.output/public/assets/stretched-link-C3lDdaJ0.js                             0.20 kB │ gzip:   0.13 kB
+.output/public/assets/plate-name-D4uohpEe.js                                 0.20 kB │ gzip:   0.19 kB
+.output/public/assets/useRouterState-CmzNx0jb.js                             0.20 kB │ gzip:   0.17 kB
+.output/public/assets/player-name-B6y3Yrhw.js                                0.21 kB │ gzip:   0.17 kB
+.output/public/assets/target-Pt1IHNRf.js                                     0.21 kB │ gzip:   0.15 kB
+.output/public/assets/chip-copy-WLLmh5UA.js                                  0.22 kB │ gzip:   0.13 kB
+.output/public/assets/bookmark-l1phqeBm.js                                   0.22 kB │ gzip:   0.19 kB
+.output/public/assets/copy-BY9gszh3.js                                       0.22 kB │ gzip:   0.19 kB
+.output/public/assets/timer-ogKkSrbL.js                                      0.23 kB │ gzip:   0.18 kB
+.output/public/assets/errors-nLTeAu9L.js                                     0.23 kB │ gzip:   0.16 kB
+.output/public/assets/message-circle-DwLJlRwK.js                             0.23 kB │ gzip:   0.20 kB
+.output/public/assets/globe-CVgguhfP.js                                      0.23 kB │ gzip:   0.18 kB
+.output/public/assets/link-2-Cl8Vpk3O.js                                     0.23 kB │ gzip:   0.19 kB
+.output/public/assets/arrow-down-up-6-VOg4iN.js                              0.23 kB │ gzip:   0.18 kB
+.output/public/assets/league-invite-JvC76mC3.js                              0.23 kB │ gzip:   0.18 kB
+.output/public/assets/welcome-CfpUGJx6.js                                    0.23 kB │ gzip:   0.16 kB
+.output/public/assets/circle-question-mark-CTwpxFu2.js                       0.24 kB │ gzip:   0.20 kB
+.output/public/assets/settings-2-BubmG_Ty.js                                 0.24 kB │ gzip:   0.18 kB
+.output/public/assets/flag-DLPRO2tQ.js                                       0.24 kB │ gzip:   0.20 kB
+.output/public/assets/eye-8NwzZ-mJ.js                                        0.24 kB │ gzip:   0.19 kB
+.output/public/assets/zap-BurCkQu6.js                                        0.25 kB │ gzip:   0.20 kB
+.output/public/assets/gradins-BFoDVOtg.js                                    0.26 kB │ gzip:   0.21 kB
+.output/public/assets/shield-ZEN0EZej.js                                     0.26 kB │ gzip:   0.22 kB
+.output/public/assets/useNavigate-DngURzg6.js                                0.26 kB │ gzip:   0.21 kB
+.output/public/assets/pencil-BLRG3Ejk.js                                     0.26 kB │ gzip:   0.22 kB
+.output/public/assets/coins-Bcrd7W3G.js                                      0.27 kB │ gzip:   0.22 kB
+.output/public/assets/link-2-off-DdBAnJ64.js                                 0.28 kB │ gzip:   0.21 kB
+.output/public/assets/Section-CZvVQywi.js                                    0.28 kB │ gzip:   0.22 kB
+.output/public/assets/ClientOnly-BB9vnFrJ.js                                 0.29 kB │ gzip:   0.22 kB
+.output/public/assets/users-DwJzXUpE.js                                      0.29 kB │ gzip:   0.22 kB
+.output/public/assets/shield-check-BlEL7-yS.js                               0.31 kB │ gzip:   0.24 kB
+.output/public/assets/trash-2-nQXtsoPH.js                                    0.32 kB │ gzip:   0.21 kB
+.output/public/assets/standings-oC2gHUdM.js                                  0.32 kB │ gzip:   0.23 kB
+.output/public/assets/report-targets-ByysaSbn.js                             0.32 kB │ gzip:   0.21 kB
+.output/public/assets/page-availability-BHFB1BeU.js                          0.33 kB │ gzip:   0.23 kB
+.output/public/assets/rank-ordinal-C07YGr42.js                               0.33 kB │ gzip:   0.22 kB
+.output/public/assets/WebOnly-CDK05qTB.js                                    0.34 kB │ gzip:   0.26 kB
+.output/public/assets/shield-alert-BxDVgyL0.js                               0.34 kB │ gzip:   0.25 kB
+.output/public/assets/key-round-DOSTbCFS.js                                  0.34 kB │ gzip:   0.25 kB
+.output/public/assets/share-2-D1n3SmOc.js                                    0.34 kB │ gzip:   0.23 kB
+.output/public/assets/esm-DXnrqUJa.js                                        0.35 kB │ gzip:   0.26 kB
+.output/public/assets/hourglass-BSHXiJnN.js                                  0.35 kB │ gzip:   0.23 kB
+.output/public/assets/FlipScore-nYbcuy2v.js                                  0.35 kB │ gzip:   0.25 kB
+.output/public/assets/esm-CSpJ87eZ.js                                        0.35 kB │ gzip:   0.26 kB
+.output/public/assets/esm-CWNpTh2M.js                                        0.35 kB │ gzip:   0.26 kB
+.output/public/assets/calendar-clock-CvLvHA4v.js                             0.37 kB │ gzip:   0.24 kB
+.output/public/assets/web-BK1qMJEb.js                                        0.37 kB │ gzip:   0.25 kB
+.output/public/assets/esm-CMxq1tkw.js                                        0.37 kB │ gzip:   0.26 kB
+.output/public/assets/jouer--9p6QOD6.js                                      0.37 kB │ gzip:   0.27 kB
+.output/public/assets/QueryClientProvider-B9a9e39S.js                        0.38 kB │ gzip:   0.27 kB
+.output/public/assets/v2-client-B6zcyP9G.js                                  0.39 kB │ gzip:   0.16 kB
+.output/public/assets/trending-up-DQCPYL-c.js                                0.40 kB │ gzip:   0.28 kB
+.output/public/assets/my-clubs-Rce4seSo.js                                   0.40 kB │ gzip:   0.27 kB
+.output/public/assets/sliders-horizontal-Cv__pjNu.js                         0.41 kB │ gzip:   0.23 kB
+.output/public/assets/eye-off-CcVBau0r.js                                    0.42 kB │ gzip:   0.26 kB
+.output/public/assets/medal-DT5XcQYf.js                                      0.42 kB │ gzip:   0.27 kB
+.output/public/assets/club-crest-style-XXElFRUc.js                           0.43 kB │ gzip:   0.29 kB
+.output/public/assets/StatusBarStrip-CgspIdYb.js                             0.44 kB │ gzip:   0.31 kB
+.output/public/assets/step-up-BcGt42Ur.js                                    0.44 kB │ gzip:   0.29 kB
+.output/public/assets/back-navigation-6Ft5_L3u.js                            0.45 kB │ gzip:   0.30 kB
+.output/public/assets/star-DD0lsQzf.js                                       0.46 kB │ gzip:   0.28 kB
+.output/public/assets/club-identity-DE6LrQvA.js                              0.47 kB │ gzip:   0.29 kB
+.output/public/assets/arrow-up-narrow-wide-MXwyjxM6.js                       0.50 kB │ gzip:   0.26 kB
+.output/public/assets/PlayerKitDisc-BScTKqLm.js                              0.51 kB │ gzip:   0.36 kB
+.output/public/assets/_._lovable.oauth.consent-BfmHFzw9.js                   0.51 kB │ gzip:   0.34 kB
+.output/public/assets/UserDisc-Q8eBeeYx.js                                   0.54 kB │ gzip:   0.39 kB
+.output/public/assets/storage-TCTAB-Hd.js                                    0.56 kB │ gzip:   0.28 kB
+.output/public/assets/prize-art-CBFKu06f.js                                  0.59 kB │ gzip:   0.36 kB
+.output/public/assets/PlayerStatusBadge-DNh7h2jK.js                          0.59 kB │ gzip:   0.39 kB
+.output/public/assets/AnimatedNumber-CTPs3CjE.js                             0.59 kB │ gzip:   0.31 kB
+.output/public/assets/BrandedText-QLuHxiBS.js                                0.61 kB │ gzip:   0.45 kB
+.output/public/assets/report-content-CRD39ndl.js                             0.61 kB │ gzip:   0.40 kB
+.output/public/assets/useMatch-R5gaeoS8.js                                   0.62 kB │ gzip:   0.39 kB
+.output/public/assets/manager-card-status-server-DFpbzVCN.js                 0.64 kB │ gzip:   0.41 kB
+.output/public/assets/MatchesTabs-CMdBY2-q.js                                0.68 kB │ gzip:   0.39 kB
+.output/public/assets/ShareButton-DfborlOu.js                                0.68 kB │ gzip:   0.42 kB
+.output/public/assets/trophy-CgXe7s7T.js                                     0.70 kB │ gzip:   0.37 kB
+.output/public/assets/gradins-card-deletion-line-BfLjVICz.js                 0.71 kB │ gzip:   0.44 kB
+.output/public/assets/fantasy-watchlist-DzuAVlz_.js                          0.72 kB │ gzip:   0.41 kB
+.output/public/assets/format-time-B-WFYd8V.js                                0.73 kB │ gzip:   0.35 kB
+.output/public/assets/fantasy-D2wBeDtf.js                                    0.73 kB │ gzip:   0.47 kB
+.output/public/assets/web-CLV3_Izo.js                                        0.74 kB │ gzip:   0.25 kB
+.output/public/assets/validation-ByOIuiEv.js                                 0.74 kB │ gzip:   0.36 kB
+.output/public/assets/fantasy-hub-layout-BsuXthqx.js                         0.75 kB │ gzip:   0.32 kB
+.output/public/assets/FantasyUnavailableState-w1MhqeIg.js                    0.82 kB │ gzip:   0.41 kB
+.output/public/assets/account-standing-_5LybcWD.js                           0.83 kB │ gzip:   0.45 kB
+.output/public/assets/use-live-matches-B4iGhhrm.js                           0.83 kB │ gzip:   0.49 kB
+.output/public/assets/web-DKO0JWqT.js                                        0.85 kB │ gzip:   0.40 kB
+.output/public/assets/RankOrdinal-DFm7E5Ix.js                                0.85 kB │ gzip:   0.44 kB
+.output/public/assets/use-fantasy-availability-PijGdHbJ.js                   0.85 kB │ gzip:   0.48 kB
+.output/public/assets/match-kickoff-vf73WbQp.js                              0.87 kB │ gzip:   0.45 kB
+.output/public/assets/team-validation-dVGvW62n.js                            0.87 kB │ gzip:   0.41 kB
+.output/public/assets/native-app-CpbuGLUU.js                                 0.87 kB │ gzip:   0.46 kB
+.output/public/assets/GameweekStatusText-BBEk7YU9.js                         0.92 kB │ gzip:   0.44 kB
+.output/public/assets/auth-classes-DXxnCm5o.js                               0.94 kB │ gzip:   0.43 kB
+.output/public/assets/FantasyFrame-QdW3EtBk.js                               0.96 kB │ gzip:   0.53 kB
+.output/public/assets/PepitesShareButton-CsyuXQ64.js                         0.98 kB │ gzip:   0.54 kB
+.output/public/assets/follows-XJodyHAq.js                                    0.99 kB │ gzip:   0.51 kB
+.output/public/assets/AssuranceRetry-BSed9Vqg.js                             1.05 kB │ gzip:   0.60 kB
+.output/public/assets/tslib.es6-Tae09705.js                                  1.06 kB │ gzip:   0.52 kB
+.output/public/assets/ssr-prefetch-CfFcd3TE.js                               1.09 kB │ gzip:   0.59 kB
+.output/public/assets/match-days-Cd-Fay9M.js                                 1.11 kB │ gzip:   0.63 kB
+.output/public/assets/gradins-card-setup-row-CCm1C2Ts.js                     1.15 kB │ gzip:   0.63 kB
+.output/public/assets/consent-segments-65nNlWBD.js                           1.17 kB │ gzip:   0.47 kB
+.output/public/assets/preload-helper-zJ_50EbN.js                             1.19 kB │ gzip:   0.68 kB
+.output/public/assets/web-DAmnJdum.js                                        1.19 kB │ gzip:   0.55 kB
+.output/public/assets/leagues-copy-D3GQDuvM.js                               1.23 kB │ gzip:   0.43 kB
+.output/public/assets/esm-Bc68C3Bm.js                                        1.33 kB │ gzip:   0.71 kB
+.output/public/assets/Logo-C5cP56IR.js                                       1.33 kB │ gzip:   0.67 kB
+.output/public/assets/analytics-qAjwn1CS.js                                  1.38 kB │ gzip:   0.71 kB
+.output/public/assets/ClubCrest-BbujJa0W.js                                  1.39 kB │ gzip:   0.76 kB
+.output/public/assets/LeagueList-_nBxVMpk.js                                 1.42 kB │ gzip:   0.74 kB
+.output/public/assets/deadline-D9jQyM7I.js                                   1.45 kB │ gzip:   0.62 kB
+.output/public/assets/standings-copy-DKI56yQ0.js                             1.47 kB │ gzip:   0.50 kB
+.output/public/assets/SearchField-BjAS4uXb.js                                1.54 kB │ gzip:   0.76 kB
+.output/public/assets/fantasy-next-action-D7EoFbNU.js                        1.58 kB │ gzip:   0.53 kB
+.output/public/assets/FailureAwareImage-CNs0L68j.js                          1.70 kB │ gzip:   0.91 kB
+.output/public/assets/PlayerPhoto-BfXic2Oj.js                                1.72 kB │ gzip:   0.92 kB
+.output/public/assets/invite-link-BOKswGbk.js                                1.72 kB │ gzip:   0.83 kB
+.output/public/assets/LegalDocumentView-CEd13evI.js                          1.74 kB │ gzip:   0.72 kB
+.output/public/assets/useFantasyScreen-BXB0TYV5.js                           1.74 kB │ gzip:   0.81 kB
+.output/public/assets/morocco-time-Cj--aPfD.js                               1.75 kB │ gzip:   0.85 kB
+.output/public/assets/GameweekSelector-DdfUeYIG.js                           1.75 kB │ gzip:   0.79 kB
+.output/public/assets/use-unsaved-changes-guard-UgruqnnH.js                  1.79 kB │ gzip:   0.79 kB
+.output/public/assets/saved-articles-CfnjH-Pa.js                             1.79 kB │ gzip:   0.99 kB
+.output/public/assets/LanguageSwitcher-FoPdxoyR.js                           1.83 kB │ gzip:   0.90 kB
+.output/public/assets/ManagerCard-BO99eDsZ.js                                1.87 kB │ gzip:   1.05 kB
+.output/public/assets/media-xScUovRN.js                                      1.90 kB │ gzip:   1.00 kB
+.output/public/assets/errors-CoGW96Cm.js                                     1.95 kB │ gzip:   0.75 kB
+.output/public/assets/clubs.index-LqsQpkNS.js                                1.96 kB │ gzip:   1.00 kB
+.output/public/assets/useSelector-DSe8QkO8.js                                1.96 kB │ gzip:   0.85 kB
+.output/public/assets/_._lovable.oauth.consent-BPx14bAq.js                   2.11 kB │ gzip:   0.97 kB
+.output/public/assets/auth.forgot-password-CXDKnZq0.js                       2.15 kB │ gzip:   1.06 kB
+.output/public/assets/CupInfo-BdKqERj8.js                                    2.19 kB │ gzip:   0.88 kB
+.output/public/assets/SectionHeader-zI2r8VZo.js                              2.21 kB │ gzip:   0.89 kB
+.output/public/assets/ReportNameMenu-Bvwt3FJp.js                             2.23 kB │ gzip:   1.02 kB
+.output/public/assets/PageBackground-BR9G7osw.js                             2.30 kB │ gzip:   1.05 kB
+.output/public/assets/FantasyScreenGate-frfqshSt.js                          2.37 kB │ gzip:   0.97 kB
+.output/public/assets/SeasonRack-D1DB171N.js                                 2.38 kB │ gzip:   1.10 kB
+.output/public/assets/InviteLinkShare-C5UEgnaU.js                            2.40 kB │ gzip:   1.05 kB
+.output/public/assets/admin.audit-PR_POdMi.js                                2.59 kB │ gzip:   1.25 kB
+.output/public/assets/leagues-store-BJCyuJ4n.js                              2.60 kB │ gzip:   1.11 kB
+.output/public/assets/fantasy.help-CNlrmZTK.js                               2.69 kB │ gzip:   1.19 kB
+.output/public/assets/AdminDestructiveAction-7eaKJ4QY.js                     2.80 kB │ gzip:   1.41 kB
+.output/public/assets/States-DqxdsO0j.js                                     2.82 kB │ gzip:   1.14 kB
+.output/public/assets/LeaguePredictionsStandings-COLics1c.js                 2.83 kB │ gzip:   1.27 kB
+.output/public/assets/prize-presentation-DSXJp70X.js                         2.86 kB │ gzip:   0.77 kB
+.output/public/assets/use-match-votes-C3apLolM.js                            2.88 kB │ gzip:   1.41 kB
+.output/public/assets/use-card-renderer-CvlNv6aT.js                          2.88 kB │ gzip:   1.47 kB
+.output/public/assets/auth.verify-BAXNyZsL.js                                2.89 kB │ gzip:   1.31 kB
+.output/public/assets/auth.callback-CEfXQ29F.js                              2.90 kB │ gzip:   1.38 kB
+.output/public/assets/Skeletons-DfAP2QNa.js                                  2.91 kB │ gzip:   0.76 kB
+.output/public/assets/CreateLeagueInvite-FO1M6RV2.js                         2.97 kB │ gzip:   1.34 kB
+.output/public/assets/use-native-image-actions-qIIi7nlS.js                   2.98 kB │ gzip:   1.43 kB
+.output/public/assets/pepites.semaine._n-g0PaE51x.js                         3.01 kB │ gzip:   1.27 kB
+.output/public/assets/utils-DCvbpOtd.js                                      3.25 kB │ gzip:   1.51 kB
+.output/public/assets/pronostics.ligues.rejoindre-Dh68EdXk.js                3.29 kB │ gzip:   1.32 kB
+.output/public/assets/pepites-BjabdZ1W.js                                    3.36 kB │ gzip:   1.28 kB
+.output/public/assets/mutation-BiZvR9Bz.js                                   3.37 kB │ gzip:   1.13 kB
+.output/public/assets/use-pepites-DbcAy-cb.js                                3.46 kB │ gzip:   1.32 kB
+.output/public/assets/auth.update-password-CQ0aeV2v.js                       3.46 kB │ gzip:   1.45 kB
+.output/public/assets/contracts-Xnz2MIl-.js                                  3.50 kB │ gzip:   1.22 kB
+.output/public/assets/suppression-compte-Dic_aEnA.js                         3.94 kB │ gzip:   1.04 kB
+.output/public/assets/pepites.methode-CjRP1Z7w.js                            3.99 kB │ gzip:   1.41 kB
+.output/public/assets/prizes-CFefEWnT.js                                     4.04 kB │ gzip:   1.98 kB
+.output/public/assets/test-world-C84uZiEj.js                                 4.04 kB │ gzip:   1.73 kB
+.output/public/assets/ShareImageSheet-D0aIiVvc.js                            4.07 kB │ gzip:   1.71 kB
+.output/public/assets/useNextFixtures-u7-LzeSa.js                            4.07 kB │ gzip:   1.82 kB
+.output/public/assets/journee._publicId-DapPdXiB.js                          4.13 kB │ gzip:   1.56 kB
+.output/public/assets/use-all-history-BoQYLKYi.js                            4.20 kB │ gzip:   1.95 kB
+.output/public/assets/pepites-design-DtXIWh9Y.js                             4.30 kB │ gzip:   1.81 kB
+.output/public/assets/auth.mfa-challenge-Ddi5uTGN.js                         4.32 kB │ gzip:   1.82 kB
+.output/public/assets/unsubscribe-CJzJfjVB.js                                4.37 kB │ gzip:   1.70 kB
+.output/public/assets/use-manager-card-De6bqJS4.js                           4.38 kB │ gzip:   1.84 kB
+.output/public/assets/to-profile-BFKJN5am.js                                 4.39 kB │ gzip:   1.90 kB
+.output/public/assets/pronostics.ligues._leagueId-CSgXUyEi.js                4.42 kB │ gzip:   1.75 kB
+.output/public/assets/admin.security-DNGP-Jp9.js                             4.47 kB │ gzip:   2.07 kB
+.output/public/assets/fantasy.leagues-Bfq70Eb3.js                            4.77 kB │ gzip:   1.92 kB
+.output/public/assets/second-factor-DH1fOJPv.js                              5.19 kB │ gzip:   2.15 kB
+.output/public/assets/AppShell-9KRT3Np3.js                                   5.21 kB │ gzip:   2.15 kB
+.output/public/assets/contracts-BezdJYvo.js                                  5.22 kB │ gzip:   1.49 kB
+.output/public/assets/moment-text-BGvqcyFF.js                                5.28 kB │ gzip:   1.97 kB
+.output/public/assets/notifications-CW0O0DGC.js                              5.58 kB │ gzip:   2.02 kB
+.output/public/assets/fantasy.profile-CQmJRNX_.js                            5.64 kB │ gzip:   2.23 kB
+.output/public/assets/supabase-security-operations-repository-lLONtTcI.js    5.70 kB │ gzip:   1.71 kB
+.output/public/assets/pepites.revelation-BwIMr0Pa.js                         5.70 kB │ gzip:   2.44 kB
+.output/public/assets/auth.login-CYNuFduW.js                                 5.73 kB │ gzip:   2.36 kB
+.output/public/assets/AuthShell-DcSiqZAM.js                                  5.80 kB │ gzip:   2.37 kB
+.output/public/assets/admin.news.new-VNlnsCHQ.js                             5.90 kB │ gzip:   2.89 kB
+.output/public/assets/use-moment-gate-CgZBdjHQ.js                            5.91 kB │ gzip:   2.46 kB
+.output/public/assets/admin.football.player-mappings-Bfq026XQ.js             5.93 kB │ gzip:   2.09 kB
+.output/public/assets/matches.standings-BUOUJduQ.js                          5.94 kB │ gzip:   2.49 kB
+.output/public/assets/article-meta-CN764mZG.js                               6.13 kB │ gzip:   2.67 kB
+.output/public/assets/use-gradins-people-oWsBQBlI.js                         6.18 kB │ gzip:   2.61 kB
+.output/public/assets/fantasy.leagues.join-BkHPUyrQ.js                       6.36 kB │ gzip:   2.35 kB
+.output/public/assets/use-view-event-CCrjOcMJ.js                             6.54 kB │ gzip:   2.60 kB
+.output/public/assets/supabase-control-plane-repository-BGS1W0P-.js          6.55 kB │ gzip:   1.92 kB
+.output/public/assets/PepitesVisuals-DkdEwkKx.js                             6.65 kB │ gzip:   2.53 kB
+.output/public/assets/admin.approvals-0zaFW9oz.js                            6.77 kB │ gzip:   2.56 kB
+.output/public/assets/FplChipInfo-54YCuzfo.js                                6.82 kB │ gzip:   2.58 kB
+.output/public/assets/auth.register-DWW37jSc.js                              6.87 kB │ gzip:   2.47 kB
+.output/public/assets/JerseyVisual-DjhKZ_fG.js                               6.88 kB │ gzip:   2.09 kB
+.output/public/assets/user-presentation-BoHXDgBo.js                          7.11 kB │ gzip:   3.23 kB
+.output/public/assets/gradins.saisons-CwYp4uyh.js                            7.23 kB │ gzip:   2.83 kB
+.output/public/assets/manager-card-BxwFJhnO.js                               7.41 kB │ gzip:   2.62 kB
+.output/public/assets/fantasy-mutation-controller-DzMYLiAa.js                7.46 kB │ gzip:   3.47 kB
+.output/public/assets/profile.security-DSorpUEe.js                           7.49 kB │ gzip:   2.66 kB
+.output/public/assets/FixturePredictionCard-CO9DtSRK.js                      7.58 kB │ gzip:   2.41 kB
+.output/public/assets/fantasy.fixtures-ByK1DYYd.js                           7.79 kB │ gzip:   2.89 kB
+.output/public/assets/pepites.index-BYc41Mrr.js                              7.92 kB │ gzip:   2.94 kB
+.output/public/assets/dist-CNX07YIy.js                                       7.96 kB │ gzip:   3.17 kB
+.output/public/assets/dev.player-mappings-sample-DrebC0ac.js                 8.00 kB │ gzip:   3.57 kB
+.output/public/assets/gradins.carte-D9j4_6zW.js                              8.12 kB │ gzip:   3.13 kB
+.output/public/assets/CardBornPanel-DRGvy8yH.js                              8.12 kB │ gzip:   3.15 kB
+.output/public/assets/StandingsTable-DU866px4.js                             8.25 kB │ gzip:   2.62 kB
+.output/public/assets/prizes.index-CDmhRYrc.js                               8.43 kB │ gzip:   2.93 kB
+.output/public/assets/web-C2Iugj6g.js                                        8.51 kB │ gzip:   2.85 kB
+.output/public/assets/jsx-runtime-C27Mmbu5.js                                8.53 kB │ gzip:   3.26 kB
+.output/public/assets/data-dsc0LmWY.js                                       8.63 kB │ gzip:   3.43 kB
+.output/public/assets/admin.users-DKUGk1lf.js                                8.77 kB │ gzip:   3.52 kB
+.output/public/assets/news-BqTzySX1.js                                       9.06 kB │ gzip:   3.61 kB
+.output/public/assets/SquadListTable-C2b88U7G.js                             9.28 kB │ gzip:   3.24 kB
+.output/public/assets/gradins.les-votres-DajTHx_E.js                         9.31 kB │ gzip:   3.43 kB
+.output/public/assets/prizes.terms-Dw8LC24i.js                               9.47 kB │ gzip:   3.84 kB
+.output/public/assets/news-BUBXFQxR.js                                       9.61 kB │ gzip:   3.48 kB
+.output/public/assets/MatchCard-1Ubp-hIY.js                                  9.75 kB │ gzip:   3.80 kB
+.output/public/assets/pepites.comparer-COno1Z-6.js                           9.95 kB │ gzip:   3.63 kB
+.output/public/assets/admin-format-QOpRo4Tt.js                              10.26 kB │ gzip:   4.41 kB
+.output/public/assets/input-otp-xD9R6srT.js                                 10.38 kB │ gzip:   4.12 kB
+.output/public/assets/admin.staff-Cyndg2VN.js                               10.44 kB │ gzip:   3.94 kB
+.output/public/assets/ArticleCard-DJWsCHEh.js                               10.46 kB │ gzip:   4.51 kB
+.output/public/assets/mock-repository-BNF_H4Mq.js                           10.57 kB │ gzip:   4.61 kB
+.output/public/assets/admin.users._userId-Do0LKeyE.js                       11.17 kB │ gzip:   4.05 kB
+.output/public/assets/admin.news-B7BCwzKd.js                                11.21 kB │ gzip:   4.36 kB
+.output/public/assets/share-image-ChNdBhId.js                               11.30 kB │ gzip:   4.62 kB
+.output/public/assets/fantasy.top-players-BSB7o46G.js                       11.40 kB │ gzip:   3.84 kB
+.output/public/assets/matches.index-CYdukCv0.js                             11.52 kB │ gzip:   4.52 kB
+.output/public/assets/copy-bO2uA9Wh.js                                      11.87 kB │ gzip:   3.53 kB
+.output/public/assets/fantasy.players-DKgC3acg.js                           11.99 kB │ gzip:   4.13 kB
+.output/public/assets/news._articleId-sAFFwTyK.js                           12.18 kB │ gzip:   4.70 kB
+.output/public/assets/fantasy.leagues._leagueId-BcHU-Wcu.js                 12.57 kB │ gzip:   4.69 kB
+.output/public/assets/auth.profile-setup-DvdLniRS.js                        12.75 kB │ gzip:   4.90 kB
+.output/public/assets/fantasy.rules-GF7y_XOi.js                             12.92 kB │ gzip:   4.33 kB
+.output/public/assets/fantasy.players._playerId-CFfeTEPt.js                 13.05 kB │ gzip:   4.28 kB
+.output/public/assets/BottomNav-Bc03r0ov.js                                 13.41 kB │ gzip:   5.22 kB
+.output/public/assets/admin.staff._principalId-hy5VuL73.js                  13.60 kB │ gzip:   4.23 kB
+.output/public/assets/editorial-markdown-2J_M8yFi.js                        14.41 kB │ gzip:   4.65 kB
+.output/public/assets/pepites.classement-BIbYo2h5.js                        14.57 kB │ gzip:   4.19 kB
+.output/public/assets/gradins-inline-CVX9Ub5o.js                            14.70 kB │ gzip:   4.56 kB
+.output/public/assets/PepitesParts-doTH-mfR.js                              15.81 kB │ gzip:   5.38 kB
+.output/public/assets/admin-1uOrMQjl.js                                     16.10 kB │ gzip:   5.73 kB
+.output/public/assets/fantasy.rankings-D6YByblC.js                          16.57 kB │ gzip:   5.85 kB
+.output/public/assets/StatTiles-djnNPOd4.js                                 17.24 kB │ gzip:   6.43 kB
+.output/public/assets/SquadBuilderScreen-BqsyhPI7.js                        17.60 kB │ gzip:   5.55 kB
+.output/public/assets/fantasy.team-HujHQ4fH.js                              19.54 kB │ gzip:   7.30 kB
+.output/public/assets/profile-DO9-1Kca.js                                   20.47 kB │ gzip:   6.88 kB
+.output/public/assets/fantasy.create-DEC26jOa.js                            20.51 kB │ gzip:   7.33 kB
+.output/public/assets/fantasy.transfers-BAbmXEKr.js                         20.51 kB │ gzip:   7.84 kB
+.output/public/assets/admin.pepites.index-CiL5a2rp.js                       22.08 kB │ gzip:   7.74 kB
+.output/public/assets/clubs._clubId-ostzNq1X.js                             22.11 kB │ gzip:   6.69 kB
+.output/public/assets/pronostics.index-CH7rggIi.js                          22.24 kB │ gzip:   6.88 kB
+.output/public/assets/gradins.index-Bb5KlgS2.js                             22.75 kB │ gzip:   7.36 kB
+.output/public/assets/mock-mapping-repository-C3Hdxgy1.js                   22.94 kB │ gzip:   6.68 kB
+.output/public/assets/admin.prizes-tgLkNF1p.js                              23.48 kB │ gzip:   5.98 kB
+.output/public/assets/auth-DJoMoo1t.js                                      23.61 kB │ gzip:   7.14 kB
+.output/public/assets/useQuery-CSVU8Wk4.js                                  23.66 kB │ gzip:   7.86 kB
+.output/public/assets/SeasonPicker-DgfYEi5K.js                              23.82 kB │ gzip:   8.12 kB
+.output/public/assets/admin.pepites.donnees-CPKCmn16.js                     23.87 kB │ gzip:   7.91 kB
+.output/public/assets/fantasy.points-Coz15DNC.js                            24.63 kB │ gzip:   9.01 kB
+.output/public/assets/admin.news._articleEditionId-w-HqBeZG.js              24.71 kB │ gzip:   8.83 kB
+.output/public/assets/football-DLkbqWi5.js                                  26.32 kB │ gzip:   8.81 kB
+.output/public/assets/fantasy-hub-share-DCA-SiKX.js                         26.33 kB │ gzip:   8.35 kB
+.output/public/assets/LandingPage-Dr7CYJuO.js                               29.53 kB │ gzip:   8.20 kB
+.output/public/assets/pepites.joueur._playerId-aBbDLHT2.js                  29.71 kB │ gzip:   8.67 kB
+.output/public/assets/dist-DjtL7prN.js                                      32.57 kB │ gzip:   9.13 kB
+.output/public/assets/routes-BNfMsZdc.js                                    37.14 kB │ gzip:  12.40 kB
+.output/public/assets/fantasy.index-CYADFedM.js                             40.17 kB │ gzip:  11.12 kB
+.output/public/assets/LegalRoutePage-ITlvIHin.js                            41.69 kB │ gzip:  13.87 kB
+.output/public/assets/AuthProvider-B0KyYpXH.js                              57.80 kB │ gzip:  18.38 kB
+.output/public/assets/gradins-renderer-EyFIwsHy.js                          67.24 kB │ gzip:  22.25 kB
+.output/public/assets/matches._matchId-BQYIql0P.js                          69.25 kB │ gzip:  18.37 kB
+.output/public/assets/schemas-Cy8GbiKL.js                                   70.37 kB │ gzip:  18.76 kB
+.output/public/assets/primitives-C9E27PlF.js                               121.22 kB │ gzip:  37.35 kB
+.output/public/assets/dictionary-ar-DjY9nxx3.js                            181.43 kB │ gzip:  42.93 kB
+.output/public/assets/client-DcIcdEXd.js                                   204.83 kB │ gzip:  52.58 kB
+.output/public/assets/provider-DxhQiE1S.js                                 206.23 kB │ gzip:  58.17 kB
+.output/public/assets/sanitizer-wX0g4aBw.js                                231.52 kB │ gzip:  91.88 kB
+.output/public/assets/index-Xg_yRgKn.js                                    499.60 kB │ gzip: 158.06 kB
+.output/public/assets/PlayerMappingsScreen-DeGmOxB0.js                     503.19 kB │ gzip:  86.96 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.79s
+vite v8.0.16 building ssr environment for production...
+[2Ktransforming...✓ 903 modules transformed.
+rendering chunks...
+computing gzip size...
+node_modules/.nitro/vite/services/ssr/assets/botolago-mark-light-Co-4oQMn.svg                       5.43 kB │ gzip:   2.73 kB
+node_modules/.nitro/vite/services/ssr/assets/botolago-mark-color-B08aaeEZ.svg                       5.48 kB │ gzip:   2.80 kB
+node_modules/.nitro/vite/services/ssr/assets/botolago-wordmark-color-DW9xtM1W.svg                   8.78 kB │ gzip:   3.82 kB
+node_modules/.nitro/vite/services/ssr/assets/botolago-wordmark-light-B2pMfDk-.svg                   8.80 kB │ gzip:   3.82 kB
+node_modules/.nitro/vite/services/ssr/assets/not-found-BTMUv1n-.webp                               14.49 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-press-DkXsMHAn.webp                             15.91 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-referee-DtgYhdRV.webp                           18.40 kB
+node_modules/.nitro/vite/services/ssr/assets/home-band-live-800-Bwvhi9Rp.webp                      20.73 kB
+node_modules/.nitro/vite/services/ssr/assets/home-band-stadium-800-CDrgQbty.webp                   20.76 kB
+node_modules/.nitro/vite/services/ssr/assets/plate-interviews-qphnw2wS.webp                        21.50 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-coach-PWDVPMNm.webp                             25.94 kB
+node_modules/.nitro/vite/services/ssr/assets/plate-transfers-BqZRj-n0.webp                         30.25 kB
+node_modules/.nitro/vite/services/ssr/assets/ranking-empty-BLhkpK_F.webp                           30.32 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-transfer-DpmpKYCD.webp                          31.70 kB
+node_modules/.nitro/vite/services/ssr/assets/stadium-night-800-U9gA_52B.webp                       32.21 kB
+node_modules/.nitro/vite/services/ssr/assets/points-pending-4hqhSE2l.webp                          34.11 kB
+node_modules/.nitro/vite/services/ssr/assets/standings-soon-DhowpQiW.webp                          37.95 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-club-board-Btax6Zk3.webp                        41.80 kB
+node_modules/.nitro/vite/services/ssr/assets/matches-header-BzD6zCjr.webp                          43.55 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-injury-DcdwGHBW.webp                            45.26 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-news-BbeQxgbo.webp                              47.08 kB
+node_modules/.nitro/vite/services/ssr/assets/welcome-720-CMMcJ-Ko.webp                             47.51 kB
+node_modules/.nitro/vite/services/ssr/assets/manager-cover-CuqIC6Hb.webp                           50.04 kB
+node_modules/.nitro/vite/services/ssr/assets/home-band-live-L38EIkp2.webp                          52.44 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-trophy-DGA0owcL.webp                            53.68 kB
+node_modules/.nitro/vite/services/ssr/assets/rules-hero-CUTr7m4Z.webp                              54.14 kB
+node_modules/.nitro/vite/services/ssr/assets/podium-soon-7wjBvBRy.webp                             54.22 kB
+node_modules/.nitro/vite/services/ssr/assets/help-hero-bJhSmXIo.webp                               55.85 kB
+node_modules/.nitro/vite/services/ssr/assets/home-band-stadium-CE9OAIEM.webp                       56.55 kB
+node_modules/.nitro/vite/services/ssr/assets/plate-for-you-DQioWIye.webp                           57.99 kB
+node_modules/.nitro/vite/services/ssr/assets/no-connection-D1cZUGM4.webp                           62.82 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-goal-BEYxjzf1.webp                              63.37 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-matches-BHHHSI-2.webp                           64.27 kB
+node_modules/.nitro/vite/services/ssr/assets/create-team-CPFwiLhB.webp                             64.50 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-watchlist-DIcyWJ6B.webp                         65.00 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-training-D4fJgy-7.webp                          65.65 kB
+node_modules/.nitro/vite/services/ssr/assets/plate-latest-GMRvvp3K.webp                            69.49 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-matchday-CW0GNCwV.webp                          71.32 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-leagues-CSLCNXa7.webp                           72.74 kB
+node_modules/.nitro/vite/services/ssr/assets/plate-analysis-BJMzD-_a.webp                          76.13 kB
+node_modules/.nitro/vite/services/ssr/assets/welcome-DtTMxlyF.webp                                 98.74 kB
+node_modules/.nitro/vite/services/ssr/assets/welcome-wide-CgExXDOL.webp                            99.64 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-stadium-CrykZwKm.webp                          101.18 kB
+node_modules/.nitro/vite/services/ssr/assets/topic-fans-Cx8EJXIh.webp                             156.23 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins-renderer-Cg0YnVTU.css                         10.27 kB │ gzip:   2.61 kB
+node_modules/.nitro/vite/services/ssr/assets/styles-DmKLJ9lL.css                                  206.40 kB │ gzip:  34.21 kB
+node_modules/.nitro/vite/services/ssr/assets/create-team-Deu2ktob.js                                0.16 kB │ gzip:   0.13 kB
+node_modules/.nitro/vite/services/ssr/assets/podium-soon-DTkzBUcN.js                                0.16 kB │ gzip:   0.13 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-leagues-Dm97WuGM.js                              0.17 kB │ gzip:   0.14 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-matches-C8Y2HMSS.js                              0.17 kB │ gzip:   0.14 kB
+node_modules/.nitro/vite/services/ssr/assets/points-pending-CDTvqorL.js                             0.17 kB │ gzip:   0.13 kB
+node_modules/.nitro/vite/services/ssr/assets/standings-soon-BrQibWzN.js                             0.17 kB │ gzip:   0.13 kB
+node_modules/.nitro/vite/services/ssr/assets/stadium-night-800-BnYK3nQe.js                          0.18 kB │ gzip:   0.14 kB
+node_modules/.nitro/vite/services/ssr/assets/site-origin-UeggYDAu.js                                0.20 kB │ gzip:   0.17 kB
+node_modules/.nitro/vite/services/ssr/assets/types-BbxQdHdH.js                                      0.23 kB │ gzip:   0.17 kB
+node_modules/.nitro/vite/services/ssr/assets/functional-route-helpers-sUc1aMln.js                   0.23 kB │ gzip:   0.18 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.rules-XQN2rATo.js                              0.23 kB │ gzip:   0.19 kB
+node_modules/.nitro/vite/services/ssr/assets/empty-plugin-adapters-vASgrNC1.js                      0.24 kB │ gzip:   0.17 kB
+node_modules/.nitro/vite/services/ssr/assets/auth-CGwJ9iLr.js                                       0.25 kB │ gzip:   0.19 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites-DUnCQC7K.js                                    0.25 kB │ gzip:   0.19 kB
+node_modules/.nitro/vite/services/ssr/assets/pronostics-ChELJWJE.js                                 0.25 kB │ gzip:   0.19 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.pepites-CVwMaScA.js                              0.26 kB │ gzip:   0.19 kB
+node_modules/.nitro/vite/services/ssr/assets/terms-nUeZoyZj.js                                      0.30 kB │ gzip:   0.22 kB
+node_modules/.nitro/vite/services/ssr/assets/privacy-BxF7as4A.js                                    0.31 kB │ gzip:   0.22 kB
+node_modules/.nitro/vite/services/ssr/assets/home-band-stadium-800-CGLwjHg2.js                      0.36 kB │ gzip:   0.17 kB
+node_modules/.nitro/vite/services/ssr/assets/welcome-BaIe2Rqj.js                                    0.42 kB │ gzip:   0.24 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins-2GQoAvRy.js                                    0.42 kB │ gzip:   0.28 kB
+node_modules/.nitro/vite/services/ssr/assets/PepitesShareSheet-D64kLSbz.js                          0.43 kB │ gzip:   0.28 kB
+node_modules/.nitro/vite/services/ssr/assets/errors-Cx0sI5aU.js                                     0.50 kB │ gzip:   0.29 kB
+node_modules/.nitro/vite/services/ssr/assets/points-unit-MUunH6aO.js                                0.53 kB │ gzip:   0.35 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.mfa-challenge-BW5T0UTq.js                         0.56 kB │ gzip:   0.35 kB
+node_modules/.nitro/vite/services/ssr/assets/jouer-CGGd57ja.js                                      0.58 kB │ gzip:   0.35 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.verify-C_GQi6TW.js                                0.59 kB │ gzip:   0.37 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-C7ONc0RG.js                                    0.61 kB │ gzip:   0.32 kB
+node_modules/.nitro/vite/services/ssr/assets/chip-copy-IxEPsJ5C.js                                  0.65 kB │ gzip:   0.38 kB
+node_modules/.nitro/vite/services/ssr/assets/pronostics.ligues._leagueId-DiEqYfOJ.js                0.65 kB │ gzip:   0.39 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.users-LCz4G1Ug.js                                0.67 kB │ gzip:   0.37 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.football.player-mappings-CD_5lfcw.js             0.68 kB │ gzip:   0.35 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.security-wLOXVJxM.js                             0.69 kB │ gzip:   0.38 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.leagues._leagueId-wrLfnIvP.js                  0.71 kB │ gzip:   0.40 kB
+node_modules/.nitro/vite/services/ssr/assets/gameweek-presentation-DhZ3vonz.js                      0.75 kB │ gzip:   0.39 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.pepites.donnees-CFxpBRuW.js                      0.77 kB │ gzip:   0.41 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.news._articleEditionId-CtKHr9V9.js               0.77 kB │ gzip:   0.42 kB
+node_modules/.nitro/vite/services/ssr/assets/stretched-link-CNkm6qmK.js                             0.80 kB │ gzip:   0.47 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.login-vbgS_XxS.js                                 0.80 kB │ gzip:   0.50 kB
+node_modules/.nitro/vite/services/ssr/assets/league-invite-CadGzaGC.js                              0.81 kB │ gzip:   0.45 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.pepites.index-2Kasp_rf.js                        0.84 kB │ gzip:   0.44 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.news.new-DAkDM8kP.js                             0.84 kB │ gzip:   0.45 kB
+node_modules/.nitro/vite/services/ssr/assets/news-feed-query-Bcip2WRM.js                            0.85 kB │ gzip:   0.49 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.prizes-CAUG_yKB.js                               0.85 kB │ gzip:   0.48 kB
+node_modules/.nitro/vite/services/ssr/assets/storage-CiOE0bVF.js                                    0.87 kB │ gzip:   0.39 kB
+node_modules/.nitro/vite/services/ssr/assets/rank-ordinal-CsubZizN.js                               0.89 kB │ gzip:   0.51 kB
+node_modules/.nitro/vite/services/ssr/assets/_._lovable.oauth.consent-C2Q5Z_u7.js                   0.90 kB │ gzip:   0.51 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.staff-C4w497Rm.js                                0.91 kB │ gzip:   0.50 kB
+node_modules/.nitro/vite/services/ssr/assets/_._lovable.oauth.consent-BQBqw8BS.js                   0.92 kB │ gzip:   0.54 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.revelation-D6CTSDuv.js                         0.92 kB │ gzip:   0.53 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.profile-setup-DvFVVnu1.js                         0.94 kB │ gzip:   0.56 kB
+node_modules/.nitro/vite/services/ssr/assets/FlipScore-CcSiPUw3.js                                  0.95 kB │ gzip:   0.54 kB
+node_modules/.nitro/vite/services/ssr/assets/notification-link-Bdcm0hC1.js                          0.95 kB │ gzip:   0.42 kB
+node_modules/.nitro/vite/services/ssr/assets/dev.player-mappings-sample-DM49Boj2.js                 0.96 kB │ gzip:   0.46 kB
+node_modules/.nitro/vite/services/ssr/assets/UserDisc-DuGul2Nq.js                                   0.97 kB │ gzip:   0.60 kB
+node_modules/.nitro/vite/services/ssr/assets/player-name-Bq7m4tDh.js                                1.04 kB │ gzip:   0.60 kB
+node_modules/.nitro/vite/services/ssr/assets/PlayerKitDisc-DJ8F6xfO.js                              1.06 kB │ gzip:   0.61 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.register-DYCNWjG7.js                              1.07 kB │ gzip:   0.63 kB
+node_modules/.nitro/vite/services/ssr/assets/start-CELIfrm3.js                                      1.07 kB │ gzip:   0.56 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.players-D_JVC-fV.js                            1.12 kB │ gzip:   0.65 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.audit-wuYMBRoj.js                                1.13 kB │ gzip:   0.62 kB
+node_modules/.nitro/vite/services/ssr/assets/PlayerStatusBadge-Cy1WiU9m.js                          1.14 kB │ gzip:   0.68 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.users._userId-uwvvrq6s.js                        1.15 kB │ gzip:   0.63 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.comparer-1kngWs7c.js                           1.17 kB │ gzip:   0.59 kB
+node_modules/.nitro/vite/services/ssr/assets/plate-name-Dglj9MSw.js                                 1.18 kB │ gzip:   0.70 kB
+node_modules/.nitro/vite/services/ssr/assets/Section-6Qbw1UNE.js                                    1.20 kB │ gzip:   0.74 kB
+node_modules/.nitro/vite/services/ssr/assets/validation-DpPsi1xj.js                                 1.22 kB │ gzip:   0.49 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.staff._principalId-CIl3FL76.js                   1.24 kB │ gzip:   0.68 kB
+node_modules/.nitro/vite/services/ssr/assets/format-time-gEqwlPfX.js                                1.28 kB │ gzip:   0.53 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.transfers-BdY7ewwL.js                          1.29 kB │ gzip:   0.73 kB
+node_modules/.nitro/vite/services/ssr/assets/my-clubs-Cbuz19v_.js                                   1.31 kB │ gzip:   0.67 kB
+node_modules/.nitro/vite/services/ssr/assets/prize-art-S07vdhTR.js                                  1.34 kB │ gzip:   0.64 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.approvals-xXlGjKhy.js                            1.35 kB │ gzip:   0.74 kB
+node_modules/.nitro/vite/services/ssr/assets/back-navigation-DnsKL8C8.js                            1.37 kB │ gzip:   0.69 kB
+node_modules/.nitro/vite/services/ssr/assets/matches-search-cjtAViGz.js                             1.41 kB │ gzip:   0.68 kB
+node_modules/.nitro/vite/services/ssr/assets/MatchesTabs-tK_L2FjC.js                                1.44 kB │ gzip:   0.72 kB
+node_modules/.nitro/vite/services/ssr/assets/unsubscribe-Ct-S4czD.js                                1.49 kB │ gzip:   0.83 kB
+node_modules/.nitro/vite/services/ssr/assets/FantasyUnavailableState-DaBTJzl2.js                    1.49 kB │ gzip:   0.71 kB
+node_modules/.nitro/vite/services/ssr/assets/team-validation-CjW-56Th.js                            1.50 kB │ gzip:   0.56 kB
+node_modules/.nitro/vite/services/ssr/assets/ShareButton-Bo16PLla.js                                1.50 kB │ gzip:   0.81 kB
+node_modules/.nitro/vite/services/ssr/assets/report-targets-DNA4E6Eo.js                             1.55 kB │ gzip:   0.73 kB
+node_modules/.nitro/vite/services/ssr/assets/use-unsaved-changes-guard-B4Ryonjs.js                  1.59 kB │ gzip:   0.83 kB
+node_modules/.nitro/vite/services/ssr/assets/BrandedText-DoMRIFYX.js                                1.59 kB │ gzip:   0.91 kB
+node_modules/.nitro/vite/services/ssr/assets/PepitesShareButton-BLznOhkr.js                         1.60 kB │ gzip:   0.79 kB
+node_modules/.nitro/vite/services/ssr/assets/AnimatedNumber-BL6rJAYh.js                             1.67 kB │ gzip:   0.72 kB
+node_modules/.nitro/vite/services/ssr/assets/createStart-nCdFfZ97.js                                1.68 kB │ gzip:   0.59 kB
+node_modules/.nitro/vite/services/ssr/assets/manager-card-status-server-BtU9ioDq.js                 1.70 kB │ gzip:   0.81 kB
+node_modules/.nitro/vite/services/ssr/assets/public-recap-CSeLhPje.js                               1.71 kB │ gzip:   0.89 kB
+node_modules/.nitro/vite/services/ssr/assets/RankOrdinal-CwlAy8Aa.js                                1.80 kB │ gzip:   0.88 kB
+node_modules/.nitro/vite/services/ssr/assets/leagues-copy-CjbnygNS.js                               1.81 kB │ gzip:   0.63 kB
+node_modules/.nitro/vite/services/ssr/assets/_._lovable.oauth.consent-YX8tiSl8.js                   1.82 kB │ gzip:   0.80 kB
+node_modules/.nitro/vite/services/ssr/assets/club-crest-style-DZOUBj6N.js                           1.89 kB │ gzip:   1.01 kB
+node_modules/.nitro/vite/services/ssr/assets/standings-CTkSIqQ6.js                                  1.89 kB │ gzip:   0.99 kB
+node_modules/.nitro/vite/services/ssr/assets/step-up-DatQKJZh.js                                    1.89 kB │ gzip:   0.94 kB
+node_modules/.nitro/vite/services/ssr/assets/input-otp-Bmio1ZFH.js                                  1.90 kB │ gzip:   0.75 kB
+node_modules/.nitro/vite/services/ssr/assets/use-fantasy-availability-DOjihrIV.js                   2.01 kB │ gzip:   0.94 kB
+node_modules/.nitro/vite/services/ssr/assets/WebOnly-SOPsLEGj.js                                    2.01 kB │ gzip:   1.06 kB
+node_modules/.nitro/vite/services/ssr/assets/news._articleId-CoMJcZkw.js                            2.02 kB │ gzip:   0.99 kB
+node_modules/.nitro/vite/services/ssr/assets/sanitizer-BCC9smP4.js                                  2.06 kB │ gzip:   0.94 kB
+node_modules/.nitro/vite/services/ssr/assets/v2-client-DIvYPpRj.js                                  2.09 kB │ gzip:   0.85 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins-card-deletion-line-obLBJaYe.js                 2.10 kB │ gzip:   1.08 kB
+node_modules/.nitro/vite/services/ssr/assets/GameweekStatusText-BWMstyf7.js                         2.18 kB │ gzip:   1.03 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.semaine._n-Crnq1jtF.js                         2.20 kB │ gzip:   0.96 kB
+node_modules/.nitro/vite/services/ssr/assets/suppression-compte-CNNVRhBG.js                         2.21 kB │ gzip:   0.97 kB
+node_modules/.nitro/vite/services/ssr/assets/FplChipInfo-J2xfe6m3.js                                2.24 kB │ gzip:   1.16 kB
+node_modules/.nitro/vite/services/ssr/assets/AssuranceRetry-CL4Q0y1K.js                             2.26 kB │ gzip:   1.07 kB
+node_modules/.nitro/vite/services/ssr/assets/report-content-DRGdQF2J.js                             2.29 kB │ gzip:   1.20 kB
+node_modules/.nitro/vite/services/ssr/assets/use-live-matches-gv5MSzBV.js                           2.31 kB │ gzip:   1.11 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.classement-CqZXnt1_.js                         2.33 kB │ gzip:   0.97 kB
+node_modules/.nitro/vite/services/ssr/assets/follows-BZiSewOi.js                                    2.34 kB │ gzip:   1.04 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.news-By1brQt8.js                                 2.35 kB │ gzip:   1.19 kB
+node_modules/.nitro/vite/services/ssr/assets/journee._publicId-D2-DudBD.js                          2.36 kB │ gzip:   1.12 kB
+node_modules/.nitro/vite/services/ssr/assets/account-standing-D_ZfO5xn.js                           2.39 kB │ gzip:   1.13 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-watchlist-BLgjevL6.js                          2.44 kB │ gzip:   1.13 kB
+node_modules/.nitro/vite/services/ssr/assets/use-notification-preferences-DFrxuxSR.js               2.44 kB │ gzip:   1.01 kB
+node_modules/.nitro/vite/services/ssr/assets/StatusBarStrip-CnjW_KrP.js                             2.45 kB │ gzip:   1.24 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.points-jDnicspP.js                             2.46 kB │ gzip:   1.32 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-next-action-BQGczMoX.js                        2.48 kB │ gzip:   0.81 kB
+node_modules/.nitro/vite/services/ssr/assets/pronostics.index-DdMxlll-.js                           2.51 kB │ gzip:   1.14 kB
+node_modules/.nitro/vite/services/ssr/assets/query-client-CUohMnJR.js                               2.51 kB │ gzip:   1.30 kB
+node_modules/.nitro/vite/services/ssr/assets/client-XeZ4Nnhe.js                                     2.52 kB │ gzip:   1.17 kB
+node_modules/.nitro/vite/services/ssr/assets/functional-route-BRVHh7Ev.js                           2.53 kB │ gzip:   0.90 kB
+node_modules/.nitro/vite/services/ssr/assets/LeagueList-BEQpEuEs.js                                 2.62 kB │ gzip:   1.18 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.joueur._playerId-CzoIdE_B.js                   2.68 kB │ gzip:   1.06 kB
+node_modules/.nitro/vite/services/ssr/assets/use-my-notifications-BfsyFHak.js                       2.68 kB │ gzip:   1.06 kB
+node_modules/.nitro/vite/services/ssr/assets/standings-copy-BnPxkhgs.js                             2.75 kB │ gzip:   0.99 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-DU09M6uF.js                                    2.77 kB │ gzip:   1.34 kB
+node_modules/.nitro/vite/services/ssr/assets/route-access.functions-J0G2ljc1.js                     2.81 kB │ gzip:   1.10 kB
+node_modules/.nitro/vite/services/ssr/assets/__23tanstack-start-server-fn-resolver-Gk7wgSpb.js      2.91 kB │ gzip:   0.94 kB
+node_modules/.nitro/vite/services/ssr/assets/consent-segments-CdqkZ-Ws.js                           2.93 kB │ gzip:   1.22 kB
+node_modules/.nitro/vite/services/ssr/assets/SearchField-SgQqYr_C.js                                2.94 kB │ gzip:   1.30 kB
+node_modules/.nitro/vite/services/ssr/assets/request-response-BKqJFgdN.js                           3.04 kB │ gzip:   1.03 kB
+node_modules/.nitro/vite/services/ssr/assets/FailureAwareImage-DDMDYsVt.js                          3.04 kB │ gzip:   1.26 kB
+node_modules/.nitro/vite/services/ssr/assets/saved-articles-DgqpVD_x.js                             3.11 kB │ gzip:   1.29 kB
+node_modules/.nitro/vite/services/ssr/assets/native-app-D-j8E1Wa.js                                 3.17 kB │ gzip:   1.52 kB
+node_modules/.nitro/vite/services/ssr/assets/use-card-renderer-Cm1fzuQU.js                          3.23 kB │ gzip:   1.39 kB
+node_modules/.nitro/vite/services/ssr/assets/GameweekSelector-BTXkOt42.js                           3.30 kB │ gzip:   1.44 kB
+node_modules/.nitro/vite/services/ssr/assets/matches.standings-BsqFxxUX.js                          3.34 kB │ gzip:   1.40 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.forgot-password-mMlReolJ.js                       3.40 kB │ gzip:   1.31 kB
+node_modules/.nitro/vite/services/ssr/assets/_._lovable.oauth.consent-BSc4QYnS.js                   3.47 kB │ gzip:   1.31 kB
+node_modules/.nitro/vite/services/ssr/assets/PageBackground-CjMSgSnt.js                             3.50 kB │ gzip:   1.27 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.players._playerId-BvG9M4Ta.js                  3.53 kB │ gzip:   1.78 kB
+node_modules/.nitro/vite/services/ssr/assets/clubs.index-DbjX6qg_.js                                3.56 kB │ gzip:   1.56 kB
+node_modules/.nitro/vite/services/ssr/assets/useFantasyScreen-DCGfzqDS.js                           3.62 kB │ gzip:   1.24 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins-card-setup-row-DoSESsgw.js                     3.62 kB │ gzip:   1.70 kB
+node_modules/.nitro/vite/services/ssr/assets/account-model-cdgdHbHk.js                              3.64 kB │ gzip:   1.79 kB
+node_modules/.nitro/vite/services/ssr/assets/club-identity-CUDINLaA.js                              3.68 kB │ gzip:   1.78 kB
+node_modules/.nitro/vite/services/ssr/assets/match-days-DNa9mmba.js                                 3.75 kB │ gzip:   1.72 kB
+node_modules/.nitro/vite/services/ssr/assets/system-bars-BIsIXsNs.js                                3.82 kB │ gzip:   1.61 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-hub-layout-BSE-wivv.js                         3.95 kB │ gzip:   1.58 kB
+node_modules/.nitro/vite/services/ssr/assets/ClubCrest-ZiKoy9yi.js                                  4.07 kB │ gzip:   1.97 kB
+node_modules/.nitro/vite/services/ssr/assets/colour-BrJWhpB8.js                                     4.14 kB │ gzip:   1.78 kB
+node_modules/.nitro/vite/services/ssr/assets/leagues-store-D_0hg5T0.js                              4.19 kB │ gzip:   1.42 kB
+node_modules/.nitro/vite/services/ssr/assets/FantasyScreenGate-CmSpC03n.js                          4.25 kB │ gzip:   1.58 kB
+node_modules/.nitro/vite/services/ssr/assets/ReportNameMenu-Cr2hfZ-G.js                             4.25 kB │ gzip:   1.80 kB
+node_modules/.nitro/vite/services/ssr/assets/InviteLinkShare-DtDGSUr1.js                            4.28 kB │ gzip:   1.62 kB
+node_modules/.nitro/vite/services/ssr/assets/prize-presentation-hbxIWum5.js                         4.29 kB │ gzip:   1.38 kB
+node_modules/.nitro/vite/services/ssr/assets/deadline-QjiBEfR1.js                                   4.32 kB │ gzip:   1.68 kB
+node_modules/.nitro/vite/services/ssr/assets/analytics-Cfr-_o7y.js                                  4.33 kB │ gzip:   2.04 kB
+node_modules/.nitro/vite/services/ssr/assets/auth-classes-CuZnx7SK.js                               4.37 kB │ gzip:   2.06 kB
+node_modules/.nitro/vite/services/ssr/assets/ssr-prefetch-BKOtwtBv.js                               4.37 kB │ gzip:   1.86 kB
+node_modules/.nitro/vite/services/ssr/assets/SeasonRack-DSlOtM9E.js                                 4.47 kB │ gzip:   1.77 kB
+node_modules/.nitro/vite/services/ssr/assets/PlayerPhoto-D0wsSmOG.js                                4.51 kB │ gzip:   2.12 kB
+node_modules/.nitro/vite/services/ssr/assets/LanguageSwitcher-SZnwrlmB.js                           4.54 kB │ gzip:   2.02 kB
+node_modules/.nitro/vite/services/ssr/assets/CupInfo-aq7HSdEy.js                                    4.58 kB │ gzip:   1.84 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.help-CCp2NHIF.js                               4.62 kB │ gzip:   1.80 kB
+node_modules/.nitro/vite/services/ssr/assets/matches.index-B4Uzpno-.js                              4.73 kB │ gzip:   2.01 kB
+node_modules/.nitro/vite/services/ssr/assets/LegalDocumentView-lljm3pIj.js                          4.74 kB │ gzip:   2.01 kB
+node_modules/.nitro/vite/services/ssr/assets/Logo-iNFKTV3K.js                                       4.86 kB │ gzip:   2.12 kB
+node_modules/.nitro/vite/services/ssr/assets/invite-link-D0g-4N6F.js                                4.92 kB │ gzip:   2.06 kB
+node_modules/.nitro/vite/services/ssr/assets/CreateLeagueInvite-CprihK0F.js                         5.05 kB │ gzip:   1.90 kB
+node_modules/.nitro/vite/services/ssr/assets/match-kickoff-BWS1mvme.js                              5.05 kB │ gzip:   2.20 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.audit-Cj2GLywX.js                                5.07 kB │ gzip:   1.97 kB
+node_modules/.nitro/vite/services/ssr/assets/manager-card-status-B4i4qUGu.js                        5.12 kB │ gzip:   2.15 kB
+node_modules/.nitro/vite/services/ssr/assets/Skeletons-oMWUVypl.js                                  5.13 kB │ gzip:   1.42 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.verify-DYMIboto.js                                5.19 kB │ gzip:   1.73 kB
+node_modules/.nitro/vite/services/ssr/assets/States-CFrdmRIm.js                                     5.25 kB │ gzip:   1.96 kB
+node_modules/.nitro/vite/services/ssr/assets/media-Cqui2U7x.js                                      5.43 kB │ gzip:   2.25 kB
+node_modules/.nitro/vite/services/ssr/assets/use-native-image-actions-ULIZHtrK.js                   5.43 kB │ gzip:   2.24 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.callback-fZXAvyzB.js                              5.50 kB │ gzip:   1.94 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites-route-CvHKiFXE.js                              5.52 kB │ gzip:   2.05 kB
+node_modules/.nitro/vite/services/ssr/assets/FantasyFrame-pvBKiuRV.js                               5.54 kB │ gzip:   2.58 kB
+node_modules/.nitro/vite/services/ssr/assets/SectionHeader-CQb4k5Lg.js                              5.59 kB │ gzip:   2.26 kB
+node_modules/.nitro/vite/services/ssr/assets/match-refresh-DSbbk1S7.js                              5.62 kB │ gzip:   2.36 kB
+node_modules/.nitro/vite/services/ssr/assets/morocco-time-B9Mtp-z-.js                               5.64 kB │ gzip:   2.34 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.semaine._n-cFNZx3F8.js                         5.65 kB │ gzip:   1.98 kB
+node_modules/.nitro/vite/services/ssr/assets/matches._matchId-Djb1m8Av.js                           5.81 kB │ gzip:   2.52 kB
+node_modules/.nitro/vite/services/ssr/assets/pronostics.ligues.rejoindre-bWhHflRC.js                5.86 kB │ gzip:   2.00 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.update-password-CkJN64o-.js                       5.93 kB │ gzip:   1.96 kB
+node_modules/.nitro/vite/services/ssr/assets/LeaguePredictionsStandings-CGULBDgy.js                 6.14 kB │ gzip:   2.13 kB
+node_modules/.nitro/vite/services/ssr/assets/admin-C1uk4lj7.js                                      6.17 kB │ gzip:   2.48 kB
+node_modules/.nitro/vite/services/ssr/assets/routes-CJkOivpg.js                                     6.46 kB │ gzip:   2.73 kB
+node_modules/.nitro/vite/services/ssr/assets/match-day-query-CYadkpAk.js                            6.53 kB │ gzip:   2.66 kB
+node_modules/.nitro/vite/services/ssr/assets/prizes-BaRyTdpp.js                                     6.57 kB │ gzip:   2.68 kB
+node_modules/.nitro/vite/services/ssr/assets/suppression-compte-CfDv8QIO.js                         6.62 kB │ gzip:   1.64 kB
+node_modules/.nitro/vite/services/ssr/assets/contracts-Dq_1A7cr.js                                  6.70 kB │ gzip:   1.91 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites-CPjGH6Pc.js                                    6.79 kB │ gzip:   1.89 kB
+node_modules/.nitro/vite/services/ssr/assets/SeasonPicker-DiFIJUpo.js                               6.92 kB │ gzip:   2.16 kB
+node_modules/.nitro/vite/services/ssr/assets/clubs._clubId-buuR-CAt.js                              7.00 kB │ gzip:   2.94 kB
+node_modules/.nitro/vite/services/ssr/assets/test-world-D9zKMaUn.js                                 7.00 kB │ gzip:   2.54 kB
+node_modules/.nitro/vite/services/ssr/assets/editorial-session-D9inlU3O.js                          7.07 kB │ gzip:   3.28 kB
+node_modules/.nitro/vite/services/ssr/assets/journee._publicId-S95Mpi7V.js                          7.15 kB │ gzip:   2.46 kB
+node_modules/.nitro/vite/services/ssr/assets/route-access.server-C2DsksAB.js                        7.17 kB │ gzip:   2.82 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.methode-D9Jjio26.js                            7.32 kB │ gzip:   2.14 kB
+node_modules/.nitro/vite/services/ssr/assets/unsubscribe-ByRH7wI5.js                                7.33 kB │ gzip:   2.51 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.security-CDELrgx9.js                             7.41 kB │ gzip:   2.66 kB
+node_modules/.nitro/vite/services/ssr/assets/ShareImageSheet-DPk1dgdw.js                            7.51 kB │ gzip:   2.57 kB
+node_modules/.nitro/vite/services/ssr/assets/use-match-votes-Bmye5mLm.js                            7.56 kB │ gzip:   3.02 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-meta-C0XtQOQD.js                               7.77 kB │ gzip:   2.17 kB
+node_modules/.nitro/vite/services/ssr/assets/pronostics.ligues._leagueId-BQlnBzbx.js                7.84 kB │ gzip:   2.49 kB
+node_modules/.nitro/vite/services/ssr/assets/ManagerCard-n_BRsw9L.js                                7.91 kB │ gzip:   3.41 kB
+node_modules/.nitro/vite/services/ssr/assets/news-data-CGk3lGcI.js                                  7.92 kB │ gzip:   3.59 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.mfa-challenge-QkwUIDsl.js                         7.95 kB │ gzip:   2.38 kB
+node_modules/.nitro/vite/services/ssr/assets/provider-Ch36cF2J.js                                   8.05 kB │ gzip:   3.25 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-mutation-controller-DKJxwl2q.js                8.08 kB │ gzip:   3.14 kB
+node_modules/.nitro/vite/services/ssr/assets/route-access.functions-H5ZvfxEU.js                     8.30 kB │ gzip:   1.46 kB
+node_modules/.nitro/vite/services/ssr/assets/use-all-history-CasK9j2V.js                            8.38 kB │ gzip:   3.25 kB
+node_modules/.nitro/vite/services/ssr/assets/use-pepites-DUcjUWEs.js                                8.48 kB │ gzip:   2.72 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.leagues-BmLINQ3F.js                            8.49 kB │ gzip:   2.79 kB
+node_modules/.nitro/vite/services/ssr/assets/AdminDestructiveAction-BdXDsa6v.js                     8.70 kB │ gzip:   3.58 kB
+node_modules/.nitro/vite/services/ssr/assets/notifications-Clmb-eUS.js                              8.89 kB │ gzip:   2.59 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.news.new-Cxw8JiUO.js                             9.06 kB │ gzip:   3.59 kB
+node_modules/.nitro/vite/services/ssr/assets/useNextFixtures-D03q-gY2.js                            9.28 kB │ gzip:   3.78 kB
+node_modules/.nitro/vite/services/ssr/assets/moment-text-DWuDQVtn.js                                9.60 kB │ gzip:   3.26 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.profile-DRlIIeY7.js                            9.76 kB │ gzip:   3.22 kB
+node_modules/.nitro/vite/services/ssr/assets/supabase-security-operations-repository-9H3Usxm9.js    9.83 kB │ gzip:   2.07 kB
+node_modules/.nitro/vite/services/ssr/assets/contracts-D-QjOa7j.js                                  9.90 kB │ gzip:   2.38 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.football.player-mappings-DkHEl1zg.js             9.98 kB │ gzip:   2.78 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.login-BaC7qMyt.js                                10.06 kB │ gzip:   3.23 kB
+node_modules/.nitro/vite/services/ssr/assets/AppShell-CvDl_PUe.js                                  10.21 kB │ gzip:   3.66 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.revelation-C5XDBF21.js                        10.29 kB │ gzip:   3.51 kB
+node_modules/.nitro/vite/services/ssr/assets/to-profile-D7mpGt7f.js                                10.69 kB │ gzip:   4.08 kB
+node_modules/.nitro/vite/services/ssr/assets/dev.player-mappings-sample-Db2r2lfZ.js                10.88 kB │ gzip:   4.00 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.leagues.join-SIori2eY.js                      10.90 kB │ gzip:   3.30 kB
+node_modules/.nitro/vite/services/ssr/assets/prizes.terms-B6dncekM.js                              10.94 kB │ gzip:   4.08 kB
+node_modules/.nitro/vite/services/ssr/assets/supabase-control-plane-repository-D9z_SW75.js         11.09 kB │ gzip:   2.37 kB
+node_modules/.nitro/vite/services/ssr/assets/AuthShell-DWhlch9Q.js                                 11.27 kB │ gzip:   4.26 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites-design-B6PGjnyB.js                            11.60 kB │ gzip:   4.71 kB
+node_modules/.nitro/vite/services/ssr/assets/data-D5YbLluD.js                                      11.77 kB │ gzip:   3.89 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.register-BoE6SyIx.js                             11.80 kB │ gzip:   3.45 kB
+node_modules/.nitro/vite/services/ssr/assets/user-presentation-C8mju5V5.js                         12.06 kB │ gzip:   4.48 kB
+node_modules/.nitro/vite/services/ssr/assets/profile.security-CJnszH_f.js                          12.07 kB │ gzip:   3.19 kB
+node_modules/.nitro/vite/services/ssr/assets/matches.standings-FAA_uU3m.js                         12.14 kB │ gzip:   4.17 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.approvals-B51F-wTf.js                           12.45 kB │ gzip:   3.81 kB
+node_modules/.nitro/vite/services/ssr/assets/FixturePredictionCard-63kYjxWf.js                     12.53 kB │ gzip:   3.52 kB
+node_modules/.nitro/vite/services/ssr/assets/use-gradins-people-DoCt45h3.js                        12.65 kB │ gzip:   4.45 kB
+node_modules/.nitro/vite/services/ssr/assets/use-manager-card-DKhQ0ej9.js                          12.72 kB │ gzip:   4.40 kB
+node_modules/.nitro/vite/services/ssr/assets/prizes.index-Dge-S_dg.js                              12.86 kB │ gzip:   3.82 kB
+node_modules/.nitro/vite/services/ssr/assets/esm-dTkWQIwJ.js                                       12.86 kB │ gzip:   3.78 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.index-nmebqu3w.js                             13.95 kB │ gzip:   4.24 kB
+node_modules/.nitro/vite/services/ssr/assets/use-moment-gate-yrcHzNgz.js                           14.03 kB │ gzip:   4.84 kB
+node_modules/.nitro/vite/services/ssr/assets/AdminSurfaces-hARvrGRT.js                             14.11 kB │ gzip:   5.69 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins.saisons-irF_I6rV.js                           14.24 kB │ gzip:   4.59 kB
+node_modules/.nitro/vite/services/ssr/assets/manager-card-bGCwHLyS.js                              14.40 kB │ gzip:   4.28 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.users-g4EVOTrL.js                               14.61 kB │ gzip:   4.50 kB
+node_modules/.nitro/vite/services/ssr/assets/JerseyVisual-Bdld3iyY.js                              14.75 kB │ gzip:   4.07 kB
+node_modules/.nitro/vite/services/ssr/assets/use-view-event-4k_t7cmt.js                            15.31 kB │ gzip:   5.60 kB
+node_modules/.nitro/vite/services/ssr/assets/PepitesVisuals-CxKv2sVl.js                            15.47 kB │ gzip:   5.68 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.fixtures-Cg4JHXKm.js                          15.71 kB │ gzip:   5.42 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins.carte-Crxm6w2e.js                             16.42 kB │ gzip:   5.41 kB
+node_modules/.nitro/vite/services/ssr/assets/CardBornPanel-DIEcWGlL.js                             16.45 kB │ gzip:   5.62 kB
+node_modules/.nitro/vite/services/ssr/assets/admin-format-oaL7ivuM.js                              17.17 kB │ gzip:   6.12 kB
+node_modules/.nitro/vite/services/ssr/assets/club-palette-B0aPWKTu.js                              17.21 kB │ gzip:   6.13 kB
+node_modules/.nitro/vite/services/ssr/assets/second-factor-D21cHZQa.js                             17.23 kB │ gzip:   6.37 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins.les-votres-QMlDblIt.js                        17.24 kB │ gzip:   5.39 kB
+node_modules/.nitro/vite/services/ssr/assets/StandingsTable-B2mn7CkN.js                            17.25 kB │ gzip:   5.14 kB
+node_modules/.nitro/vite/services/ssr/assets/MatchCard-DiEyz_vD.js                                 17.33 kB │ gzip:   5.49 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.comparer-zbOz2oMl.js                          17.44 kB │ gzip:   5.03 kB
+node_modules/.nitro/vite/services/ssr/index.js                                                     17.63 kB │ gzip:   6.57 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.staff-DpLnqtv_.js                               17.74 kB │ gzip:   5.36 kB
+node_modules/.nitro/vite/services/ssr/assets/mock-repository-YD54g24_.js                           18.18 kB │ gzip:   6.01 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.users._userId-JqtK-PIT.js                       18.29 kB │ gzip:   5.25 kB
+node_modules/.nitro/vite/services/ssr/assets/SquadListTable-Ck4y8Cjy.js                            18.52 kB │ gzip:   6.21 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.leagues._leagueId-ambzlOwB.js                 18.74 kB │ gzip:   5.55 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.top-players-B3h4j9Lg.js                       19.07 kB │ gzip:   5.17 kB
+node_modules/.nitro/vite/services/ssr/assets/auth.profile-setup-DN5W1Yth.js                        19.26 kB │ gzip:   5.66 kB
+node_modules/.nitro/vite/services/ssr/assets/route-access-BEM3R2Fg.js                              19.36 kB │ gzip:   5.66 kB
+node_modules/.nitro/vite/services/ssr/assets/news-BuPy1FCm.js                                      19.77 kB │ gzip:   6.40 kB
+node_modules/.nitro/vite/services/ssr/assets/news-DKRkRynV.js                                      20.24 kB │ gzip:   6.91 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.news-C58ggW1g.js                                20.42 kB │ gzip:   6.56 kB
+node_modules/.nitro/vite/services/ssr/assets/article-meta-9wco4xX5.js                              20.81 kB │ gzip:   7.65 kB
+node_modules/.nitro/vite/services/ssr/assets/copy-DJBfB4wj.js                                      20.89 kB │ gzip:   6.34 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.players-CDrW0zxu.js                           21.06 kB │ gzip:   6.24 kB
+node_modules/.nitro/vite/services/ssr/assets/use-predictions-round-DrS8_iro.js                     22.10 kB │ gzip:   7.56 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.rules-D8lgcIKn.js                             22.57 kB │ gzip:   6.95 kB
+node_modules/.nitro/vite/services/ssr/assets/BottomNav-D8_RGF6o.js                                 23.13 kB │ gzip:   7.48 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.staff._principalId-Cim2pVkQ.js                  23.97 kB │ gzip:   5.65 kB
+node_modules/.nitro/vite/services/ssr/assets/news._articleId-DyNKz48P.js                           24.23 kB │ gzip:   7.97 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.players._playerId-CDHkNc1Y.js                 24.30 kB │ gzip:   7.32 kB
+node_modules/.nitro/vite/services/ssr/assets/ArticleCard-DOF81G0d.js                               25.26 kB │ gzip:   9.41 kB
+node_modules/.nitro/vite/services/ssr/assets/matches.index-TYVN1g6G.js                             25.43 kB │ gzip:   8.35 kB
+node_modules/.nitro/vite/services/ssr/assets/admin-CTEumMQC.js                                     26.06 kB │ gzip:   7.95 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.rankings-BLw_pde0.js                          26.10 kB │ gzip:   7.68 kB
+node_modules/.nitro/vite/services/ssr/assets/share-image-D7jLAJnm.js                               27.77 kB │ gzip:   9.34 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.classement-Y6aPfuu4.js                        28.02 kB │ gzip:   7.12 kB
+node_modules/.nitro/vite/services/ssr/assets/editorial-markdown-6e6zMikl.js                        28.72 kB │ gzip:   8.01 kB
+node_modules/.nitro/vite/services/ssr/assets/profile-mf6nYioZ.js                                   30.03 kB │ gzip:   8.66 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-runtime-DhlLbkJZ.js                           30.85 kB │ gzip:   9.17 kB
+node_modules/.nitro/vite/services/ssr/assets/SquadBuilderScreen-D6Wo4pAD.js                        32.34 kB │ gzip:   9.10 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.team-C6vC3v4m.js                              32.49 kB │ gzip:   9.85 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.create-Bt18d2DA.js                            32.59 kB │ gzip:   9.62 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.transfers-DQSA-Xs-.js                         34.51 kB │ gzip:  10.22 kB
+node_modules/.nitro/vite/services/ssr/assets/StatTiles-BFdmX02X.js                                 35.00 kB │ gzip:  11.48 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.pepites.index-BFTp88NE.js                       35.15 kB │ gzip:   9.72 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins-inline-CWsqbg2Q.js                            36.55 kB │ gzip:  11.30 kB
+node_modules/.nitro/vite/services/ssr/assets/mock-mapping-repository-Dl3EFMt8.js                   37.33 kB │ gzip:   9.70 kB
+node_modules/.nitro/vite/services/ssr/assets/PepitesParts-CFJjSBqq.js                              37.53 kB │ gzip:  12.13 kB
+node_modules/.nitro/vite/services/ssr/assets/pronostics.index-D6Z7MW69.js                          37.87 kB │ gzip:   9.71 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-owned-provider-5UEXrmmz.js                    38.36 kB │ gzip:  10.45 kB
+node_modules/.nitro/vite/services/ssr/assets/admin2.pepites.donnees-kMS7-p_d.js                    39.38 kB │ gzip:  10.35 kB
+node_modules/.nitro/vite/services/ssr/assets/_tanstack-start-manifest_v-DKGp4ex2.js                39.84 kB │ gzip:   6.79 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.news._articleEditionId-CNeGBqrB.js              39.97 kB │ gzip:  11.08 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.points-mOJozaHE.js                            40.25 kB │ gzip:  12.11 kB
+node_modules/.nitro/vite/services/ssr/assets/clubs._clubId-BiQiOdAQ.js                             41.98 kB │ gzip:  11.19 kB
+node_modules/.nitro/vite/services/ssr/assets/auth-CXHmvsbv.js                                      43.24 kB │ gzip:  11.17 kB
+node_modules/.nitro/vite/services/ssr/assets/admin.prizes-BkevKbV8.js                              43.50 kB │ gzip:   9.23 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins.index-B1yNzP27.js                             46.44 kB │ gzip:  13.32 kB
+node_modules/.nitro/vite/services/ssr/assets/LegalRoutePage-DCtSy_Fv.js                            48.37 kB │ gzip:  14.85 kB
+node_modules/.nitro/vite/services/ssr/assets/LandingPage-B_8wm1Ei.js                               48.68 kB │ gzip:  12.11 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy-hub-share-BlilrddB.js                         49.52 kB │ gzip:  12.66 kB
+node_modules/.nitro/vite/services/ssr/assets/pepites.joueur._playerId-DWiTBL9A.js                  52.94 kB │ gzip:  13.87 kB
+node_modules/.nitro/vite/services/ssr/assets/football-DyPl2zUZ.js                                  59.70 kB │ gzip:  17.47 kB
+node_modules/.nitro/vite/services/ssr/assets/server-DrU-RMH1.js                                    60.03 kB │ gzip:  15.40 kB
+node_modules/.nitro/vite/services/ssr/assets/primitives-BKy9IoLk.js                                65.49 kB │ gzip:  19.31 kB
+node_modules/.nitro/vite/services/ssr/assets/fantasy.index-CQjzp6Es.js                             70.24 kB │ gzip:  18.31 kB
+node_modules/.nitro/vite/services/ssr/assets/routes-CBUhCzzC.js                                    75.58 kB │ gzip:  22.69 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins-renderer-rK_NABj_.js                         111.19 kB │ gzip:  34.39 kB
+node_modules/.nitro/vite/services/ssr/assets/AuthProvider-TUJfsumX.js                             124.92 kB │ gzip:  33.95 kB
+node_modules/.nitro/vite/services/ssr/assets/router-DCMCUWoY.js                                   131.11 kB │ gzip:  39.12 kB
+node_modules/.nitro/vite/services/ssr/assets/matches._matchId-BxVV39Ew.js                         133.64 kB │ gzip:  35.49 kB
+node_modules/.nitro/vite/services/ssr/assets/dictionary-ar-BEJ_jqVT.js                            189.06 kB │ gzip:  43.37 kB
+node_modules/.nitro/vite/services/ssr/assets/provider-fTd7bj_r.js                                 216.82 kB │ gzip:  60.11 kB
+node_modules/.nitro/vite/services/ssr/assets/PlayerMappingsScreen-CRXpGSaN.js                     679.48 kB │ gzip: 108.58 kB
+
+[33m[PLUGIN_TIMINGS] [0mYour build spent significant time in plugins. Here is a breakdown:
+  - vite-tsconfig-paths (35%)
+  - tanstack-start-core:import-protection (33%)
+  - tanstack-start-core:import-protection-transform-cache (16%)
+  - tanstack-router:code-splitter:compile-reference-file (7%)
+  - tanstack-router:code-splitter:compile-virtual-file (4%)
+See https://rolldown.rs/options/checks#plugintimings for more details.
+
+✓ built in 6.69s
+
+[nitro] o Building [Nitro] (preset: cloudflare-module, compatibility: 2026-10-09)
+[nitro] √ Generated public .output/public
+vite v8.0.16 building nitro environment for production...
+
+ WARN  inlineDynamicImports option is ignored because the codeSplitting option is specified.
+
+[2Ktransforming...✓ 2846 modules transformed.
+rendering chunks...
+computing gzip size...
+.output/server/_libs/radix-ui__number.mjs                                   0.19 kB │ gzip:   0.16 kB
+.output/server/_ssr/create-team-Deu2ktob.mjs                                0.20 kB │ gzip:   0.16 kB
+.output/server/_ssr/podium-soon-DTkzBUcN.mjs                                0.20 kB │ gzip:   0.16 kB
+.output/server/_ssr/empty-leagues-Dm97WuGM.mjs                              0.21 kB │ gzip:   0.16 kB
+.output/server/_ssr/empty-matches-C8Y2HMSS.mjs                              0.21 kB │ gzip:   0.16 kB
+.output/server/_ssr/points-pending-CDTvqorL.mjs                             0.22 kB │ gzip:   0.16 kB
+.output/server/_ssr/standings-soon-BrQibWzN.mjs                             0.22 kB │ gzip:   0.16 kB
+.output/server/_ssr/stadium-night-800-BnYK3nQe.mjs                          0.23 kB │ gzip:   0.17 kB
+.output/server/_ssr/empty-plugin-adapters-vASgrNC1.mjs                      0.24 kB │ gzip:   0.17 kB
+.output/server/_libs/zod.mjs                                                0.25 kB │ gzip:   0.19 kB
+.output/server/_ssr/site-origin-UeggYDAu.mjs                                0.26 kB │ gzip:   0.21 kB
+.output/server/_ssr/fantasy.rules-XQN2rATo.mjs                              0.28 kB │ gzip:   0.22 kB
+.output/server/_ssr/functional-route-helpers-sUc1aMln.mjs                   0.28 kB │ gzip:   0.22 kB
+.output/server/_ssr/home-band-stadium-800-CGLwjHg2.mjs                      0.35 kB │ gzip:   0.20 kB
+.output/server/_libs/capacitor__push-notifications.mjs                      0.41 kB │ gzip:   0.26 kB
+.output/server/_libs/radix-ui__primitive.mjs                                0.42 kB │ gzip:   0.23 kB
+.output/server/_ssr/auth-CGwJ9iLr.mjs                                       0.43 kB │ gzip:   0.27 kB
+.output/server/_ssr/pepites-DUnCQC7K.mjs                                    0.43 kB │ gzip:   0.28 kB
+.output/server/_ssr/pronostics-ChELJWJE.mjs                                 0.43 kB │ gzip:   0.28 kB
+.output/server/_ssr/admin.pepites-CVwMaScA.mjs                              0.44 kB │ gzip:   0.28 kB
+.output/server/_ssr/terms-nUeZoyZj.mjs                                      0.45 kB │ gzip:   0.30 kB
+.output/server/_ssr/privacy-BxF7as4A.mjs                                    0.46 kB │ gzip:   0.30 kB
+.output/server/_libs/escape-string-regexp.mjs                               0.46 kB │ gzip:   0.31 kB
+.output/server/_ssr/welcome-BaIe2Rqj.mjs                                    0.48 kB │ gzip:   0.28 kB
+.output/server/_ssr/errors-Cx0sI5aU.mjs                                     0.56 kB │ gzip:   0.33 kB
+.output/server/_libs/clsx.mjs                                               0.56 kB │ gzip:   0.32 kB
+.output/server/_ssr/PepitesShareSheet-D64kLSbz.mjs                          0.59 kB │ gzip:   0.37 kB
+.output/server/_ssr/points-unit-MUunH6aO.mjs                                0.59 kB │ gzip:   0.40 kB
+.output/server/_ssr/fantasy.leagues._leagueId-wrLfnIvP.mjs                  0.60 kB │ gzip:   0.34 kB
+.output/server/_libs/radix-ui__react-direction.mjs                          0.60 kB │ gzip:   0.32 kB
+.output/server/_ssr/auth.login-vbgS_XxS.mjs                                 0.61 kB │ gzip:   0.39 kB
+.output/server/_chunks/ssr-renderer.mjs                                     0.63 kB │ gzip:   0.37 kB
+.output/server/_ssr/auth.register-DYCNWjG7.mjs                              0.63 kB │ gzip:   0.41 kB
+.output/server/_ssr/auth.mfa-challenge-BW5T0UTq.mjs                         0.65 kB │ gzip:   0.42 kB
+.output/server/_ssr/fantasy.transfers-BdY7ewwL.mjs                          0.66 kB │ gzip:   0.39 kB
+.output/server/_ssr/fantasy-C7ONc0RG.mjs                                    0.67 kB │ gzip:   0.36 kB
+.output/server/_ssr/auth.verify-C_GQi6TW.mjs                                0.68 kB │ gzip:   0.44 kB
+.output/server/_ssr/admin.audit-wuYMBRoj.mjs                                0.70 kB │ gzip:   0.39 kB
+.output/server/_ssr/admin.staff-C4w497Rm.mjs                                0.70 kB │ gzip:   0.40 kB
+.output/server/_ssr/admin.users-LCz4G1Ug.mjs                                0.70 kB │ gzip:   0.40 kB
+.output/server/_ssr/chip-copy-IxEPsJ5C.mjs                                  0.70 kB │ gzip:   0.42 kB
+.output/server/_ssr/admin.prizes-CAUG_yKB.mjs                               0.70 kB │ gzip:   0.40 kB
+.output/server/_ssr/admin.approvals-xXlGjKhy.mjs                            0.71 kB │ gzip:   0.40 kB
+.output/server/_ssr/admin.security-wLOXVJxM.mjs                             0.71 kB │ gzip:   0.40 kB
+.output/server/_ssr/admin.users._userId-uwvvrq6s.mjs                        0.72 kB │ gzip:   0.40 kB
+.output/server/_ssr/admin.staff._principalId-CIl3FL76.mjs                   0.73 kB │ gzip:   0.41 kB
+.output/server/_ssr/pronostics.ligues._leagueId-DiEqYfOJ.mjs                0.74 kB │ gzip:   0.44 kB
+.output/server/_libs/nanoid.mjs                                             0.75 kB │ gzip:   0.43 kB
+.output/server/_ssr/admin.news._articleEditionId-CtKHr9V9.mjs               0.75 kB │ gzip:   0.41 kB
+.output/server/_ssr/admin.football.player-mappings-CD_5lfcw.mjs             0.77 kB │ gzip:   0.42 kB
+.output/server/_ssr/gradins-2GQoAvRy.mjs                                    0.78 kB │ gzip:   0.40 kB
+.output/server/_ssr/gameweek-presentation-DhZ3vonz.mjs                      0.80 kB │ gzip:   0.42 kB
+.output/server/_ssr/admin.news.new-DAkDM8kP.mjs                             0.83 kB │ gzip:   0.46 kB
+.output/server/_ssr/auth.profile-setup-DvFVVnu1.mjs                         0.83 kB │ gzip:   0.49 kB
+.output/server/_ssr/stretched-link-CNkm6qmK.mjs                             0.85 kB │ gzip:   0.51 kB
+.output/server/_ssr/admin.pepites.donnees-CFxpBRuW.mjs                      0.86 kB │ gzip:   0.47 kB
+.output/server/_ssr/league-invite-CadGzaGC.mjs                              0.87 kB │ gzip:   0.49 kB
+.output/server/_ssr/fantasy.players-D_JVC-fV.mjs                            0.88 kB │ gzip:   0.52 kB
+.output/server/_ssr/jouer-CGGd57ja.mjs                                      0.90 kB │ gzip:   0.48 kB
+.output/server/_ssr/admin.pepites.index-2Kasp_rf.mjs                        0.93 kB │ gzip:   0.50 kB
+.output/server/_libs/is-plain-object.mjs                                    0.93 kB │ gzip:   0.50 kB
+.output/server/_ssr/storage-CiOE0bVF.mjs                                    0.93 kB │ gzip:   0.43 kB
+.output/server/_ssr/rank-ordinal-CsubZizN.mjs                               0.93 kB │ gzip:   0.54 kB
+.output/server/_ssr/news-feed-query-Bcip2WRM.mjs                            0.95 kB │ gzip:   0.55 kB
+.output/server/_ssr/pepites.revelation-D6CTSDuv.mjs                         1.01 kB │ gzip:   0.59 kB
+.output/server/_ssr/notification-link-Bdcm0hC1.mjs                          1.01 kB │ gzip:   0.47 kB
+.output/server/_ssr/dev.player-mappings-sample-DM49Boj2.mjs                 1.05 kB │ gzip:   0.53 kB
+.output/server/_libs/capacitor__share.mjs                                   1.07 kB │ gzip:   0.50 kB
+.output/server/_ssr/start-CELIfrm3.mjs                                      1.07 kB │ gzip:   0.59 kB
+.output/server/_ssr/fantasy.points-jDnicspP.mjs                             1.08 kB │ gzip:   0.63 kB
+.output/server/_ssr/player-name-Bq7m4tDh.mjs                                1.08 kB │ gzip:   0.64 kB
+.output/server/_._lovable.oauth.consent-C2Q5Z_u7.mjs                        1.12 kB │ gzip:   0.59 kB
+.output/server/_ssr/UserDisc-DuGul2Nq.mjs                                   1.13 kB │ gzip:   0.69 kB
+.output/server/_ssr/FlipScore-CcSiPUw3.mjs                                  1.13 kB │ gzip:   0.63 kB
+.output/server/_._lovable.oauth.consent-BQBqw8BS.mjs                        1.14 kB │ gzip:   0.62 kB
+.output/server/_libs/hookable.mjs                                           1.18 kB │ gzip:   0.52 kB
+.output/server/_ssr/plate-name-Dglj9MSw.mjs                                 1.23 kB │ gzip:   0.74 kB
+.output/server/_ssr/PlayerKitDisc-DJ8F6xfO.mjs                              1.25 kB │ gzip:   0.70 kB
+.output/server/_ssr/pepites.comparer-1kngWs7c.mjs                           1.26 kB │ gzip:   0.65 kB
+.output/server/_ssr/validation-DpPsi1xj.mjs                                 1.28 kB │ gzip:   0.53 kB
+.output/server/_ssr/PlayerStatusBadge-Cy1WiU9m.mjs                          1.30 kB │ gzip:   0.76 kB
+.output/server/_ssr/format-time-gEqwlPfX.mjs                                1.34 kB │ gzip:   0.57 kB
+.output/server/_ssr/Section-6Qbw1UNE.mjs                                    1.37 kB │ gzip:   0.83 kB
+.output/server/_ssr/my-clubs-Cbuz19v_.mjs                                   1.37 kB │ gzip:   0.70 kB
+.output/server/_ssr/unsubscribe-Ct-S4czD.mjs                                1.38 kB │ gzip:   0.79 kB
+.output/server/_ssr/prize-art-S07vdhTR.mjs                                  1.39 kB │ gzip:   0.68 kB
+.output/server/_ssr/matches-search-cjtAViGz.mjs                             1.45 kB │ gzip:   0.72 kB
+.output/server/_ssr/news._articleId-CoMJcZkw.mjs                            1.49 kB │ gzip:   0.71 kB
+.output/server/_libs/capacitor__app.mjs                                     1.55 kB │ gzip:   0.65 kB
+.output/server/_ssr/createStart-nCdFfZ97.mjs                                1.57 kB │ gzip:   0.59 kB
+.output/server/_ssr/report-targets-DNA4E6Eo.mjs                             1.60 kB │ gzip:   0.77 kB
+.output/server/_ssr/MatchesTabs-tK_L2FjC.mjs                                1.63 kB │ gzip:   0.81 kB
+.output/server/_ssr/back-navigation-DnsKL8C8.mjs                            1.63 kB │ gzip:   0.83 kB
+.output/server/_ssr/FantasyUnavailableState-DaBTJzl2.mjs                    1.72 kB │ gzip:   0.80 kB
+.output/server/_ssr/ShareButton-Bo16PLla.mjs                                1.72 kB │ gzip:   0.90 kB
+.output/server/_ssr/public-recap-CSeLhPje.mjs                               1.73 kB │ gzip:   0.91 kB
+.output/server/_ssr/PepitesShareButton-BLznOhkr.mjs                         1.76 kB │ gzip:   0.87 kB
+.output/server/_ssr/BrandedText-DoMRIFYX.mjs                                1.78 kB │ gzip:   1.00 kB
+.output/server/_runtime.mjs                                                 1.80 kB │ gzip:   0.82 kB
+.output/server/_ssr/leagues-copy-CjbnygNS.mjs                               1.84 kB │ gzip:   0.67 kB
+.output/server/_._lovable.oauth.consent-YX8tiSl8.mjs                        1.85 kB │ gzip:   0.81 kB
+.output/server/_ssr/use-unsaved-changes-guard-B4Ryonjs.mjs                  1.85 kB │ gzip:   0.97 kB
+.output/server/_ssr/AnimatedNumber-BL6rJAYh.mjs                             1.88 kB │ gzip:   0.82 kB
+.output/server/_ssr/standings-CTkSIqQ6.mjs                                  1.93 kB │ gzip:   1.02 kB
+.output/server/_ssr/club-crest-style-DZOUBj6N.mjs                           1.93 kB │ gzip:   1.05 kB
+.output/server/_ssr/step-up-DatQKJZh.mjs                                    1.98 kB │ gzip:   1.00 kB
+.output/server/_ssr/RankOrdinal-CwlAy8Aa.mjs                                2.07 kB │ gzip:   0.96 kB
+.output/server/_ssr/use-fantasy-availability-DOjihrIV.mjs                   2.08 kB │ gzip:   0.99 kB
+.output/server/_ssr/fantasy.players._playerId-BvG9M4Ta.mjs                  2.13 kB │ gzip:   1.09 kB
+.output/server/_ssr/v2-client-DIvYPpRj.mjs                                  2.13 kB │ gzip:   0.89 kB
+.output/server/_ssr/sanitizer-BCC9smP4.mjs                                  2.25 kB │ gzip:   1.04 kB
+.output/server/_ssr/WebOnly-SOPsLEGj.mjs                                    2.29 kB │ gzip:   1.18 kB
+.output/server/_ssr/suppression-compte-CNNVRhBG.mjs                         2.30 kB │ gzip:   1.03 kB
+.output/server/_ssr/pepites.semaine._n-Crnq1jtF.mjs                         2.30 kB │ gzip:   1.02 kB
+.output/server/_ssr/gradins-card-deletion-line-obLBJaYe.mjs                 2.32 kB │ gzip:   1.16 kB
+.output/server/_ssr/report-content-DRGdQF2J.mjs                             2.35 kB │ gzip:   1.24 kB
+.output/server/_ssr/GameweekStatusText-BWMstyf7.mjs                         2.38 kB │ gzip:   1.12 kB
+.output/server/_ssr/input-otp-Bmio1ZFH.mjs                                  2.40 kB │ gzip:   0.87 kB
+.output/server/_libs/capacitor__preferences.mjs                             2.40 kB │ gzip:   0.89 kB
+.output/server/_ssr/follows-BZiSewOi.mjs                                    2.41 kB │ gzip:   1.09 kB
+.output/server/_ssr/pepites.classement-CqZXnt1_.mjs                         2.43 kB │ gzip:   1.04 kB
+.output/server/_ssr/admin.news-By1brQt8.mjs                                 2.44 kB │ gzip:   1.25 kB
+.output/server/_ssr/journee._publicId-D2-DudBD.mjs                          2.45 kB │ gzip:   1.18 kB
+.output/server/_ssr/account-standing-D_ZfO5xn.mjs                           2.51 kB │ gzip:   1.20 kB
+.output/server/_ssr/fantasy-next-action-BQGczMoX.mjs                        2.54 kB │ gzip:   0.86 kB
+.output/server/_ssr/client-XeZ4Nnhe.mjs                                     2.58 kB │ gzip:   1.21 kB
+.output/server/_ssr/pronostics.index-DdMxlll-.mjs                           2.60 kB │ gzip:   1.20 kB
+.output/server/_ssr/use-live-matches-gv5MSzBV.mjs                           2.60 kB │ gzip:   1.24 kB
+.output/server/_ssr/FplChipInfo-J2xfe6m3.mjs                                2.62 kB │ gzip:   1.26 kB
+.output/server/_ssr/query-client-CUohMnJR.mjs                               2.63 kB │ gzip:   1.37 kB
+.output/server/_ssr/StatusBarStrip-CnjW_KrP.mjs                             2.64 kB │ gzip:   1.33 kB
+.output/server/_ssr/fantasy-watchlist-BLgjevL6.mjs                          2.70 kB │ gzip:   1.27 kB
+.output/server/_ssr/matches.standings-BsqFxxUX.mjs                          2.70 kB │ gzip:   1.08 kB
+.output/server/_ssr/use-notification-preferences-DFrxuxSR.mjs               2.73 kB │ gzip:   1.14 kB
+.output/server/_ssr/route-access.functions-J0G2ljc1.mjs                     2.76 kB │ gzip:   1.09 kB
+.output/server/_ssr/pepites.joueur._playerId-CzoIdE_B.mjs                   2.78 kB │ gzip:   1.13 kB
+.output/server/_ssr/standings-copy-BnPxkhgs.mjs                             2.80 kB │ gzip:   1.02 kB
+.output/server/_ssr/AssuranceRetry-CL4Q0y1K.mjs                             2.81 kB │ gzip:   1.22 kB
+.output/server/_ssr/manager-card-status-B4i4qUGu.mjs                        2.87 kB │ gzip:   1.32 kB
+.output/server/_ssr/use-my-notifications-BfsyFHak.mjs                       2.94 kB │ gzip:   1.20 kB
+.output/server/_libs/picocolors.mjs                                         3.01 kB │ gzip:   0.95 kB
+.output/server/_ssr/LeagueList-BEQpEuEs.mjs                                 3.04 kB │ gzip:   1.27 kB
+.output/server/_ssr/routes-CJkOivpg.mjs                                     3.04 kB │ gzip:   1.17 kB
+.output/server/__23tanstack-start-server-fn-resolver-Gk7wgSpb.mjs           3.05 kB │ gzip:   1.00 kB
+.output/server/_ssr/request-response-BKqJFgdN.mjs                           3.07 kB │ gzip:   1.06 kB
+.output/server/_ssr/functional-route-BRVHh7Ev.mjs                           3.11 kB │ gzip:   0.99 kB
+.output/server/_ssr/fantasy-DU09M6uF.mjs                                    3.13 kB │ gzip:   1.48 kB
+.output/server/_ssr/matches.index-B4Uzpno-.mjs                              3.21 kB │ gzip:   1.35 kB
+.output/server/_ssr/native-app-D-j8E1Wa.mjs                                 3.23 kB │ gzip:   1.56 kB
+.output/server/_ssr/consent-segments-CdqkZ-Ws.mjs                           3.27 kB │ gzip:   1.34 kB
+.output/server/_ssr/SearchField-SgQqYr_C.mjs                                3.32 kB │ gzip:   1.39 kB
+.output/server/_ssr/use-card-renderer-Cm1fzuQU.mjs                          3.32 kB │ gzip:   1.48 kB
+.output/server/_ssr/saved-articles-DgqpVD_x.mjs                             3.43 kB │ gzip:   1.40 kB
+.output/server/_libs/deepmerge.mjs                                          3.56 kB │ gzip:   1.12 kB
+.output/server/_ssr/FailureAwareImage-DDMDYsVt.mjs                          3.57 kB │ gzip:   1.40 kB
+.output/server/_ssr/GameweekSelector-BTXkOt42.mjs                           3.65 kB │ gzip:   1.54 kB
+.output/server/_ssr/account-model-cdgdHbHk.mjs                              3.69 kB │ gzip:   1.83 kB
+.output/server/_ssr/club-identity-CUDINLaA.mjs                              3.73 kB │ gzip:   1.82 kB
+.output/server/_ssr/PageBackground-CjMSgSnt.mjs                             3.78 kB │ gzip:   1.34 kB
+.output/server/_ssr/match-days-DNa9mmba.mjs                                 3.81 kB │ gzip:   1.77 kB
+.output/server/_ssr/useFantasyScreen-DCGfzqDS.mjs                           3.87 kB │ gzip:   1.37 kB
+.output/server/_ssr/fantasy-hub-layout-BSE-wivv.mjs                         4.00 kB │ gzip:   1.62 kB
+.output/server/_ssr/gradins-card-setup-row-DoSESsgw.mjs                     4.06 kB │ gzip:   1.82 kB
+.output/server/_ssr/auth.forgot-password-mMlReolJ.mjs                       4.10 kB │ gzip:   1.46 kB
+.output/server/_ssr/system-bars-BIsIXsNs.mjs                                4.10 kB │ gzip:   1.76 kB
+.output/server/_ssr/clubs.index-DbjX6qg_.mjs                                4.12 kB │ gzip:   1.66 kB
+.output/server/_._lovable.oauth.consent-BSc4QYnS.mjs                        4.20 kB │ gzip:   1.45 kB
+.output/server/_ssr/colour-BrJWhpB8.mjs                                     4.20 kB │ gzip:   1.83 kB
+.output/server/_ssr/analytics-Cfr-_o7y.mjs                                  4.24 kB │ gzip:   2.02 kB
+.output/server/_ssr/leagues-store-D_0hg5T0.mjs                              4.25 kB │ gzip:   1.46 kB
+.output/server/_ssr/ClubCrest-ZiKoy9yi.mjs                                  4.28 kB │ gzip:   2.06 kB
+.output/server/_ssr/prize-presentation-hbxIWum5.mjs                         4.34 kB │ gzip:   1.42 kB
+.output/server/_ssr/auth-classes-CuZnx7SK.mjs                               4.42 kB │ gzip:   2.11 kB
+.output/server/_ssr/ssr-prefetch-BKOtwtBv.mjs                               4.43 kB │ gzip:   1.90 kB
+.output/server/_ssr/deadline-QjiBEfR1.mjs                                   4.59 kB │ gzip:   1.80 kB
+.output/server/_libs/parse-srcset.mjs                                       4.73 kB │ gzip:   1.58 kB
+.output/server/_ssr/InviteLinkShare-DtDGSUr1.mjs                            4.76 kB │ gzip:   1.72 kB
+.output/server/_ssr/Logo-iNFKTV3K.mjs                                       4.78 kB │ gzip:   2.17 kB
+.output/server/_ssr/ReportNameMenu-Cr2hfZ-G.mjs                             4.80 kB │ gzip:   1.94 kB
+.output/server/_ssr/invite-link-D0g-4N6F.mjs                                4.92 kB │ gzip:   2.08 kB
+.output/server/_ssr/LanguageSwitcher-SZnwrlmB.mjs                           4.95 kB │ gzip:   2.11 kB
+.output/server/_ssr/matches._matchId-Djb1m8Av.mjs                           4.99 kB │ gzip:   2.14 kB
+.output/server/_ssr/PlayerPhoto-D0wsSmOG.mjs                                5.02 kB │ gzip:   2.26 kB
+.output/server/_ssr/SeasonRack-DSlOtM9E.mjs                                 5.02 kB │ gzip:   1.85 kB
+.output/server/_ssr/FantasyScreenGate-CmSpC03n.mjs                          5.08 kB │ gzip:   1.73 kB
+.output/server/_ssr/CupInfo-aq7HSdEy.mjs                                    5.16 kB │ gzip:   1.93 kB
+.output/server/_ssr/fantasy.help-CCp2NHIF.mjs                               5.25 kB │ gzip:   1.93 kB
+.output/server/_ssr/LegalDocumentView-lljm3pIj.mjs                          5.26 kB │ gzip:   2.11 kB
+.output/server/_ssr/media-Cqui2U7x.mjs                                      5.49 kB │ gzip:   2.29 kB
+.output/server/_ssr/pepites-route-CvHKiFXE.mjs                              5.57 kB │ gzip:   2.09 kB
+.output/server/_ssr/morocco-time-B9Mtp-z-.mjs                               5.70 kB │ gzip:   2.39 kB
+.output/server/_ssr/use-native-image-actions-ULIZHtrK.mjs                   5.71 kB │ gzip:   2.36 kB
+.output/server/_ssr/match-refresh-DSbbk1S7.mjs                              5.73 kB │ gzip:   2.43 kB
+.output/server/_ssr/CreateLeagueInvite-CprihK0F.mjs                         5.84 kB │ gzip:   2.07 kB
+.output/server/_ssr/States-CFrdmRIm.mjs                                     5.87 kB │ gzip:   2.06 kB
+.output/server/_ssr/FantasyFrame-pvBKiuRV.mjs                               5.88 kB │ gzip:   2.67 kB
+.output/server/_ssr/admin.audit-Cj2GLywX.mjs                                5.92 kB │ gzip:   2.11 kB
+.output/server/_ssr/auth.callback-fZXAvyzB.mjs                              6.08 kB │ gzip:   2.08 kB
+.output/server/_ssr/auth.verify-DYMIboto.mjs                                6.11 kB │ gzip:   1.86 kB
+.output/server/_ssr/clubs._clubId-buuR-CAt.mjs                              6.21 kB │ gzip:   2.60 kB
+.output/server/_ssr/Skeletons-oMWUVypl.mjs                                  6.22 kB │ gzip:   1.51 kB
+.output/server/_ssr/SectionHeader-CQb4k5Lg.mjs                              6.31 kB │ gzip:   2.39 kB
+.output/server/_ssr/admin-C1uk4lj7.mjs                                      6.35 kB │ gzip:   2.48 kB
+.output/server/_ssr/pepites.semaine._n-cFNZx3F8.mjs                         6.43 kB │ gzip:   2.10 kB
+.output/server/_ssr/prizes-BaRyTdpp.mjs                                     6.50 kB │ gzip:   2.70 kB
+.output/server/_ssr/match-day-query-CYadkpAk.mjs                            6.53 kB │ gzip:   2.68 kB
+.output/server/_ssr/contracts-Dq_1A7cr.mjs                                  6.62 kB │ gzip:   2.00 kB
+.output/server/_ssr/pronostics.ligues.rejoindre-bWhHflRC.mjs                6.66 kB │ gzip:   2.13 kB
+.output/server/_ssr/LeaguePredictionsStandings-CGULBDgy.mjs                 6.90 kB │ gzip:   2.27 kB
+.output/server/_ssr/auth.update-password-CkJN64o-.mjs                       6.96 kB │ gzip:   2.13 kB
+.output/server/_ssr/test-world-D9zKMaUn.mjs                                 7.03 kB │ gzip:   2.57 kB
+.output/server/_ssr/editorial-session-D9inlU3O.mjs                          7.17 kB │ gzip:   3.35 kB
+.output/server/_ssr/route-access.server-C2DsksAB.mjs                        7.21 kB │ gzip:   2.87 kB
+.output/server/_libs/@radix-ui/react-arrow+[...].mjs                        7.56 kB │ gzip:   2.39 kB
+.output/server/_ssr/fantasy-meta-C0XtQOQD.mjs                               7.67 kB │ gzip:   2.18 kB
+.output/server/_ssr/use-match-votes-Bmye5mLm.mjs                            7.77 kB │ gzip:   3.14 kB
+.output/server/_ssr/SeasonPicker-DiFIJUpo.mjs                               7.79 kB │ gzip:   2.35 kB
+.output/server/_ssr/suppression-compte-CfDv8QIO.mjs                         7.87 kB │ gzip:   1.77 kB
+.output/server/_libs/tanstack__react-query.mjs                              7.93 kB │ gzip:   2.02 kB
+.output/server/_ssr/news-data-CGk3lGcI.mjs                                  7.97 kB │ gzip:   3.63 kB
+.output/server/_ssr/journee._publicId-S95Mpi7V.mjs                          8.06 kB │ gzip:   2.59 kB
+.output/server/_ssr/route-access.functions-H5ZvfxEU.mjs                     8.23 kB │ gzip:   1.45 kB
+.output/server/_ssr/ManagerCard-n_BRsw9L.mjs                                8.24 kB │ gzip:   3.51 kB
+.output/server/_ssr/pepites.methode-D9Jjio26.mjs                            8.32 kB │ gzip:   2.26 kB
+.output/server/_ssr/unsubscribe-ByRH7wI5.mjs                                8.34 kB │ gzip:   2.65 kB
+.output/server/_ssr/provider-Ch36cF2J.mjs                                   8.42 kB │ gzip:   3.36 kB
+.output/server/_ssr/ShareImageSheet-DPk1dgdw.mjs                            8.43 kB │ gzip:   2.71 kB
+.output/server/_ssr/admin.security-CDELrgx9.mjs                             8.53 kB │ gzip:   2.81 kB
+.output/server/_libs/launder.mjs                                            8.60 kB │ gzip:   2.38 kB
+.output/server/_ssr/use-pepites-DUcjUWEs.mjs                                8.67 kB │ gzip:   2.84 kB
+.output/server/_ssr/pronostics.ligues._leagueId-BQlnBzbx.mjs                8.84 kB │ gzip:   2.62 kB
+.output/server/_ssr/use-all-history-CasK9j2V.mjs                            8.87 kB │ gzip:   3.36 kB
+.output/server/_ssr/fantasy-mutation-controller-DKJxwl2q.mjs                8.95 kB │ gzip:   3.28 kB
+.output/server/_ssr/auth.mfa-challenge-QkwUIDsl.mjs                         8.99 kB │ gzip:   2.53 kB
+.output/server/_ssr/AdminDestructiveAction-BdXDsa6v.mjs                     9.11 kB │ gzip:   3.72 kB
+.output/server/_ssr/contracts-D-QjOa7j.mjs                                  9.71 kB │ gzip:   2.49 kB
+.output/server/_libs/h3-v2+srvx.mjs                                         9.76 kB │ gzip:   3.02 kB
+.output/server/_ssr/fantasy.leagues-BmLINQ3F.mjs                            9.85 kB │ gzip:   2.97 kB
+.output/server/_libs/@radix-ui/react-collection+[...].mjs                   9.87 kB │ gzip:   2.53 kB
+.output/server/_ssr/useNextFixtures-D03q-gY2.mjs                            9.88 kB │ gzip:   3.91 kB
+.output/server/_ssr/moment-text-DWuDQVtn.mjs                                9.93 kB │ gzip:   3.37 kB
+.output/server/_ssr/supabase-security-operations-repository-9H3Usxm9.mjs    9.95 kB │ gzip:   2.16 kB
+.output/server/_ssr/admin.news.new-Cxw8JiUO.mjs                            10.06 kB │ gzip:   3.73 kB
+.output/server/_ssr/admin.football.player-mappings-DkHEl1zg.mjs            10.26 kB │ gzip:   2.88 kB
+.output/server/_libs/dayjs.mjs                                             10.29 kB │ gzip:   3.63 kB
+.output/server/_ssr/notifications-Clmb-eUS.mjs                             10.34 kB │ gzip:   2.77 kB
+.output/server/_ssr/supabase-control-plane-repository-D9z_SW75.mjs         10.74 kB │ gzip:   2.35 kB
+.output/server/_ssr/to-profile-D7mpGt7f.mjs                                10.93 kB │ gzip:   4.18 kB
+.output/server/_ssr/AppShell-CvDl_PUe.mjs                                  11.11 kB │ gzip:   3.79 kB
+.output/server/_ssr/dev.player-mappings-sample-Db2r2lfZ.mjs                11.26 kB │ gzip:   4.08 kB
+.output/server/_ssr/prizes.terms-B6dncekM.mjs                              11.28 kB │ gzip:   4.20 kB
+.output/server/_ssr/fantasy.profile-DRlIIeY7.mjs                           11.29 kB │ gzip:   3.36 kB
+.output/server/_ssr/pepites.revelation-C5XDBF21.mjs                        11.44 kB │ gzip:   3.65 kB
+.output/server/_ssr/auth.login-BaC7qMyt.mjs                                11.45 kB │ gzip:   3.39 kB
+.output/server/_ssr/pepites-design-B6PGjnyB.mjs                            11.59 kB │ gzip:   4.75 kB
+.output/server/_ssr/user-presentation-C8mju5V5.mjs                         12.00 kB │ gzip:   4.53 kB
+.output/server/_ssr/data-D5YbLluD.mjs                                      12.03 kB │ gzip:   3.98 kB
+.output/server/_ssr/esm-dTkWQIwJ.mjs                                       12.07 kB │ gzip:   3.74 kB
+.output/server/_libs/supabase__functions-js.mjs                            12.40 kB │ gzip:   3.43 kB
+.output/server/_ssr/AuthShell-DWhlch9Q.mjs                                 12.40 kB │ gzip:   4.37 kB
+.output/server/_ssr/fantasy.leagues.join-SIori2eY.mjs                      12.47 kB │ gzip:   3.47 kB
+.output/server/_libs/tanstack__history.mjs                                 12.52 kB │ gzip:   3.72 kB
+.output/server/_libs/input-otp.mjs                                         12.60 kB │ gzip:   4.46 kB
+.output/server/_ssr/auth.register-BoE6SyIx.mjs                             13.36 kB │ gzip:   3.63 kB
+.output/server/_ssr/matches.standings-FAA_uU3m.mjs                         13.39 kB │ gzip:   4.31 kB
+.output/server/_ssr/admin.approvals-B51F-wTf.mjs                           13.67 kB │ gzip:   3.94 kB
+.output/server/_ssr/profile.security-CJnszH_f.mjs                          13.86 kB │ gzip:   3.38 kB
+.output/server/_ssr/use-gradins-people-DoCt45h3.mjs                        13.92 kB │ gzip:   4.58 kB
+.output/server/_libs/@radix-ui/react-popover+[...].mjs                     14.09 kB │ gzip:   3.34 kB
+.output/server/_ssr/FixturePredictionCard-63kYjxWf.mjs                     14.21 kB │ gzip:   3.70 kB
+.output/server/_ssr/use-moment-gate-yrcHzNgz.mjs                           14.26 kB │ gzip:   4.94 kB
+.output/server/_libs/h3+rou3+srvx.mjs                                      14.26 kB │ gzip:   4.24 kB
+.output/server/_ssr/prizes.index-Dge-S_dg.mjs                              14.74 kB │ gzip:   3.99 kB
+.output/server/_ssr/AdminSurfaces-hARvrGRT.mjs                             14.84 kB │ gzip:   5.80 kB
+.output/server/_ssr/pepites.index-nmebqu3w.mjs                             15.67 kB │ gzip:   4.39 kB
+.output/server/_ssr/use-view-event-4k_t7cmt.mjs                            15.76 kB │ gzip:   5.67 kB
+.output/server/_ssr/gradins.saisons-irF_I6rV.mjs                           16.09 kB │ gzip:   4.73 kB
+.output/server/_ssr/admin.users-g4EVOTrL.mjs                               16.32 kB │ gzip:   4.66 kB
+.output/server/_ssr/PepitesVisuals-CxKv2sVl.mjs                            16.35 kB │ gzip:   5.80 kB
+.output/server/_ssr/JerseyVisual-Bdld3iyY.mjs                              16.86 kB │ gzip:   4.22 kB
+.output/server/_ssr/admin-format-oaL7ivuM.mjs                              17.06 kB │ gzip:   6.20 kB
+.output/server/_ssr/second-factor-D21cHZQa.mjs                             17.14 kB │ gzip:   6.40 kB
+.output/server/_ssr/club-palette-B0aPWKTu.mjs                              17.23 kB │ gzip:   6.17 kB
+.output/server/_ssr/ssr.mjs                                                17.30 kB │ gzip:   6.53 kB
+.output/server/_ssr/fantasy.fixtures-Cg4JHXKm.mjs                          17.54 kB │ gzip:   5.58 kB
+.output/server/_ssr/CardBornPanel-DIEcWGlL.mjs                             18.06 kB │ gzip:   5.77 kB
+.output/server/_ssr/gradins.carte-Crxm6w2e.mjs                             18.18 kB │ gzip:   5.52 kB
+.output/server/_ssr/MatchCard-DiEyz_vD.mjs                                 18.72 kB │ gzip:   5.62 kB
+.output/server/_libs/domhandler.mjs                                        19.00 kB │ gzip:   4.19 kB
+.output/server/_ssr/pepites.comparer-zbOz2oMl.mjs                          19.11 kB │ gzip:   5.20 kB
+.output/server/_ssr/StandingsTable-B2mn7CkN.mjs                            19.28 kB │ gzip:   5.29 kB
+.output/server/_ssr/route-access-BEM3R2Fg.mjs                              19.32 kB │ gzip:   5.78 kB
+.output/server/_ssr/admin.staff-DpLnqtv_.mjs                               19.45 kB │ gzip:   5.52 kB
+.output/server/_ssr/gradins.les-votres-QMlDblIt.mjs                        19.47 kB │ gzip:   5.52 kB
+.output/server/_ssr/SquadListTable-Ck4y8Cjy.mjs                            20.09 kB │ gzip:   6.38 kB
+.output/server/_ssr/news-DKRkRynV.mjs                                      20.24 kB │ gzip:   6.94 kB
+.output/server/_libs/@capacitor-community/media+[...].mjs                  20.43 kB │ gzip:   5.69 kB
+.output/server/_ssr/article-meta-9wco4xX5.mjs                              20.78 kB │ gzip:   7.68 kB
+.output/server/_ssr/admin.users._userId-JqtK-PIT.mjs                       20.96 kB │ gzip:   5.43 kB
+.output/server/_ssr/fantasy.leagues._leagueId-ambzlOwB.mjs                 21.22 kB │ gzip:   5.73 kB
+.output/server/_ssr/auth.profile-setup-DN5W1Yth.mjs                        21.25 kB │ gzip:   5.82 kB
+.output/server/_ssr/types-BbxQdHdH.mjs                                     21.56 kB │ gzip:   6.56 kB
+.output/server/_ssr/news-BuPy1FCm.mjs                                      21.56 kB │ gzip:   6.51 kB
+.output/server/_libs/@capacitor/filesystem+[...].mjs                       21.75 kB │ gzip:   5.62 kB
+.output/server/_ssr/fantasy.top-players-B3h4j9Lg.mjs                       21.80 kB │ gzip:   5.38 kB
+.output/server/_ssr/admin.news-C58ggW1g.mjs                                22.40 kB │ gzip:   6.73 kB
+.output/server/_ssr/use-predictions-round-DrS8_iro.mjs                     22.50 kB │ gzip:   7.65 kB
+.output/server/_ssr/fantasy.players-CDrW0zxu.mjs                           23.69 kB │ gzip:   6.42 kB
+.output/server/_ssr/BottomNav-D8_RGF6o.mjs                                 24.71 kB │ gzip:   7.65 kB
+.output/server/_ssr/pepites-CPjGH6Pc.mjs                                   24.79 kB │ gzip:   7.55 kB
+.output/server/_ssr/fantasy.rules-D8lgcIKn.mjs                             24.95 kB │ gzip:   7.14 kB
+.output/server/_ssr/ArticleCard-DOF81G0d.mjs                               25.23 kB │ gzip:   9.40 kB
+.output/server/_ssr/admin.staff._principalId-Cim2pVkQ.mjs                  25.71 kB │ gzip:   5.78 kB
+.output/server/_libs/@floating-ui/dom+[...].mjs                            25.88 kB │ gzip:   6.58 kB
+.output/server/_libs/@floating-ui/core+[...].mjs                           25.93 kB │ gzip:   6.37 kB
+.output/server/_ssr/news._articleId-DyNKz48P.mjs                           26.31 kB │ gzip:   8.09 kB
+.output/server/_ssr/use-manager-card-DKhQ0ej9.mjs                          26.85 kB │ gzip:   8.29 kB
+.output/server/_ssr/fantasy.players._playerId-CDHkNc1Y.mjs                 26.96 kB │ gzip:   7.48 kB
+.output/server/_libs/sanitize-html.mjs                                     27.27 kB │ gzip:   7.32 kB
+.output/server/_ssr/matches.index-TYVN1g6G.mjs                             27.39 kB │ gzip:   8.49 kB
+.output/server/_ssr/share-image-D7jLAJnm.mjs                               27.82 kB │ gzip:   9.38 kB
+.output/server/_ssr/editorial-markdown-6e6zMikl.mjs                        28.41 kB │ gzip:   8.06 kB
+.output/server/_ssr/admin-CTEumMQC.mjs                                     28.84 kB │ gzip:   8.10 kB
+.output/server/_ssr/fantasy.rankings-BLw_pde0.mjs                          28.90 kB │ gzip:   7.81 kB
+.output/server/_libs/@tanstack/router-core+[...].mjs                       29.84 kB │ gzip:   8.01 kB
+.output/server/_ssr/fantasy-runtime-DhlLbkJZ.mjs                           30.82 kB │ gzip:   9.20 kB
+.output/server/_libs/@floating-ui/react-dom+[...].mjs                      31.28 kB │ gzip:   7.98 kB
+.output/server/_ssr/pepites.classement-Y6aPfuu4.mjs                        31.95 kB │ gzip:   7.32 kB
+.output/server/_libs/domutils.mjs                                          33.87 kB │ gzip:   7.42 kB
+.output/server/_ssr/fantasy.create-Bt18d2DA.mjs                            34.17 kB │ gzip:   9.75 kB
+.output/server/_ssr/profile-mf6nYioZ.mjs                                   34.62 kB │ gzip:   8.92 kB
+.output/server/_ssr/SquadBuilderScreen-D6Wo4pAD.mjs                        35.48 kB │ gzip:   9.30 kB
+.output/server/_ssr/fantasy.team-C6vC3v4m.mjs                              35.52 kB │ gzip:  10.23 kB
+.output/server/_libs/supabase__supabase-js.mjs                             36.28 kB │ gzip:  10.75 kB
+.output/server/_ssr/fantasy.transfers-DQSA-Xs-.mjs                         36.31 kB │ gzip:  10.37 kB
+.output/server/_ssr/StatTiles-BFdmX02X.mjs                                 36.54 kB │ gzip:  11.60 kB
+.output/server/_ssr/mock-mapping-repository-Dl3EFMt8.mjs                   37.29 kB │ gzip:   9.72 kB
+.output/server/_ssr/gradins-inline-CWsqbg2Q.mjs                            38.35 kB │ gzip:  11.41 kB
+.output/server/_ssr/fantasy-owned-provider-5UEXrmmz.mjs                    38.46 kB │ gzip:  10.50 kB
+.output/server/_ssr/admin.pepites.index-BFTp88NE.mjs                       38.96 kB │ gzip:   9.93 kB
+.output/server/_tanstack-start-manifest_v-DKGp4ex2.mjs                     39.92 kB │ gzip:   6.84 kB
+.output/server/_ssr/PepitesParts-CFJjSBqq.mjs                              40.45 kB │ gzip:  12.29 kB
+.output/server/_ssr/pronostics.index-D6Z7MW69.mjs                          41.95 kB │ gzip:   9.92 kB
+.output/server/_ssr/auth-CXHmvsbv.mjs                                      42.92 kB │ gzip:  11.15 kB
+.output/server/_ssr/admin.news._articleEditionId-CNeGBqrB.mjs              42.95 kB │ gzip:  11.31 kB
+.output/server/_ssr/fantasy.points-mOJozaHE.mjs                            42.95 kB │ gzip:  12.29 kB
+.output/server/_ssr/admin2.pepites.donnees-kMS7-p_d.mjs                    43.37 kB │ gzip:  10.58 kB
+.output/server/_libs/htmlparser2.mjs                                       44.20 kB │ gzip:   9.03 kB
+.output/server/_ssr/clubs._clubId-BiQiOdAQ.mjs                             46.83 kB │ gzip:  11.42 kB
+.output/server/_ssr/admin.prizes-BkevKbV8.mjs                              46.99 kB │ gzip:   9.35 kB
+.output/server/_libs/@radix-ui/react-select+[...].mjs                      47.05 kB │ gzip:  10.19 kB
+.output/server/_ssr/fantasy-hub-share-BlilrddB.mjs                         48.29 kB │ gzip:  12.62 kB
+.output/server/_ssr/LegalRoutePage-DCtSy_Fv.mjs                            48.79 kB │ gzip:  15.02 kB
+.output/server/_ssr/gradins.index-B1yNzP27.mjs                             49.95 kB │ gzip:  13.45 kB
+.output/server/_libs/supabase__phoenix.mjs                                 50.55 kB │ gzip:  12.78 kB
+.output/server/_libs/sonner.mjs                                            51.93 kB │ gzip:  11.78 kB
+.output/server/_ssr/LandingPage-B_8wm1Ei.mjs                               53.87 kB │ gzip:  12.34 kB
+.output/server/_libs/entities.mjs                                          55.87 kB │ gzip:  26.30 kB
+.output/server/_libs/lucide-react.mjs                                      57.86 kB │ gzip:  10.58 kB
+.output/server/_ssr/pepites.joueur._playerId-DWiTBL9A.mjs                  58.20 kB │ gzip:  14.08 kB
+.output/server/_ssr/server-DrU-RMH1.mjs                                    58.97 kB │ gzip:  15.34 kB
+.output/server/_libs/@radix-ui/react-dropdown-menu+[...].mjs               62.43 kB │ gzip:  12.40 kB
+.output/server/_ssr/football-DyPl2zUZ.mjs                                  64.47 kB │ gzip:  19.33 kB
+.output/server/_ssr/primitives-BKy9IoLk.mjs                                70.43 kB │ gzip:  19.64 kB
+.output/server/_libs/@radix-ui/react-dialog+[...].mjs                      70.55 kB │ gzip:  17.11 kB
+.output/server/_libs/tanstack__query-core.mjs                              73.26 kB │ gzip:  15.35 kB
+.output/server/_ssr/fantasy.index-CQjzp6Es.mjs                             77.43 kB │ gzip:  18.68 kB
+.output/server/_libs/supabase__realtime-js.mjs                             78.34 kB │ gzip:  20.01 kB
+.output/server/_ssr/routes-CBUhCzzC.mjs                                    81.04 kB │ gzip:  22.90 kB
+.output/server/_libs/tailwind-merge.mjs                                    85.66 kB │ gzip:  15.23 kB
+.output/server/_libs/dom-serializer+[...].mjs                             102.69 kB │ gzip:  36.65 kB
+.output/server/index.mjs                                                  105.14 kB │ gzip:  23.01 kB
+.output/server/_libs/supabase__postgrest-js.mjs                           105.43 kB │ gzip:  21.67 kB
+.output/server/_ssr/gradins-renderer-rK_NABj_.mjs                         109.95 kB │ gzip:  34.24 kB
+.output/server/_libs/@supabase/storage-js+[...].mjs                       118.97 kB │ gzip:  22.12 kB
+.output/server/_ssr/AuthProvider-TUJfsumX.mjs                             122.83 kB │ gzip:  33.64 kB
+.output/server/_ssr/router-DCMCUWoY.mjs                                   131.85 kB │ gzip:  39.05 kB
+.output/server/_ssr/matches._matchId-BxVV39Ew.mjs                         145.36 kB │ gzip:  35.93 kB
+.output/server/_libs/postcss+source-map-js.mjs                            181.90 kB │ gzip:  40.62 kB
+.output/server/_ssr/dictionary-ar-BEJ_jqVT.mjs                            189.13 kB │ gzip:  43.42 kB
+.output/server/_ssr/provider-fTd7bj_r.mjs                                 218.15 kB │ gzip:  60.22 kB
+.output/server/_libs/supabase__auth-js.mjs                                302.35 kB │ gzip:  60.30 kB
+.output/server/_ssr/PlayerMappingsScreen-CRXpGSaN.mjs                     688.52 kB │ gzip: 108.61 kB
+.output/server/_libs/@tanstack/react-router+[...].mjs                     757.55 kB │ gzip: 160.45 kB
+.output/server/_libs/@lovable.dev/mcp-js+[...].mjs                        985.90 kB │ gzip: 206.32 kB
+
+✓ built in 1.85s
+[nitro] i Using auto generated worker name: tanstack-start-ts
+i Generated .output/server/wrangler.json
+i Generated .wrangler/deploy/config.json
+i Generated .output/public/_headers
+i Generated .output/nitro.json
+
+[nitro] √ You can preview this build using npx vite preview
+[nitro] √ You can deploy this build using npx nitro deploy --prebuilt
+--- exit 0

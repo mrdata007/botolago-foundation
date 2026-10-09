@@ -16,20 +16,34 @@ them again). `capture-log.json` and `capture-log-gallery.json` are the scripts' 
 
 ## What is not here, and why
 
-- **`switch-off/`**: the section-off pictures are not taken again. With the section off the page is the app's
-  own, and that is checked by `tests/e2e/gradins-off.e2e.ts` (9 tests on the production build) and the
-  off-bundle gate, both run for the commit that adds this folder, rather than by pictures.
-- **Three pictures were taken twice.** `g1-rated-fr-light-390`, `g1-rated-fr-dark-390` and `g1-rated-ar-light-390`
-  were the first pictures of the run on a cold development server and showed the loading skeleton
-  (`drawn.cards` 0 in the first log); the three were captured again with `--match` and the log holds the
-  second capture (`retaken` in `capture-log.json`).
+- **`switch-off/`**: the section-off pictures are not taken again here. The switch-off comparison against `main`
+  (production builds of both trees, 0.0000 % on every picture, byte-identical server HTML) is in
+  [`../wp4/results/switch-off-compare.txt`](../wp4/results/switch-off-compare.txt), and the built-output
+  Playwright spec `tests/e2e/gradins-off.e2e.ts` was run for the commit that adds this folder.
+- **No picture was taken twice in this run.** The development server was warmed up first (one browser visit to
+  eight routes, so Vite had compiled the card's modules), and the log shows 307 captured, 0 failed, no problem
+  and no skeleton: every card drawn carries `data-mc-ready` (the founder pages and the replay sheet count the
+  founder detail's crop as a card without that attribute, as in the BEFORE set).
 - **`picture-forming1-*`, G1 « Club » and « Saisons » at 1440, the recap line, the late signer's line and the
   import prompt's block**: absent for the reasons the BEFORE set gives.
 - **Motion**: the pictures are at rest. The tilt, the beats and the idle float are measured in
   `src/components/manager-card/eclat/README.md` and the Playwright suite, not pictured.
 
+## Two subfolders (not part of the name-for-name set)
+
+- **`gallery/`** (28 sheets): every fixture and tier at every size, light and dark, French and Arabic, by
+  [`../wp4/capture-gallery-all.mjs`](../wp4/capture-gallery-all.mjs): `full-fixtures-<lang>-<theme>` (every fixture with a card and the
+  guest at 296 px), `full-tiers-…` (six tiers on four clubs at 264 px), `tokens-fixtures-…` (every fixture at 80, 64, 56, 48, 44, 32, 28
+  and 24 px), `tokens-tiers-<size>-…` (six tiers on every club and on none at 80, 64, 48 and 32 px). Cards at rest, as `ManagerCard` and
+  `CardToken` insert them. Log: `gallery/capture-log-gallery-all.json`.
+- **`detail/`** (28 close-ups) by [`../wp4/detail-crops.mjs`](../wp4/detail-crops.mjs), 3 device pixels per CSS pixel:
+  `art-<tier>-fr-<theme>` (the shield, the shirt and the number of each tier), `plate-<tier>-fr-dark` (plaque, name, stats, serial),
+  `art-legend-ar-dark` and `plate-legend-ar-dark`, and `crisp-<pro|legend>-dpr<2|3>-<rest|tilt>` (a PRO and a LEGEND card whole, at
+  rest and with the pointer over the upper part). The first take of the four tilted pictures had no tilt in three of them (the page had
+  just loaded); they were taken again alone and the log records the computed transform of each.
+
 ## Servers
 
-One development server, on port 4193 only, started for this run from the tree above and stopped by its process
-id at the end. Nothing is left running. No database, migration, Edge Function, deployment or Lovable call was
+One development server, on port 4194 only, started for this run from the tree above and stopped by its process
+id at the end of the WP4 measurements. Nothing is left running. No database, migration, Edge Function, deployment or Lovable call was
 made, and nothing was pushed.

@@ -1,0 +1,79 @@
+=== check-gate-i18n: bun scripts/qa/i18n-gate.ts
+
+i18n gate
+=========
+
+errors: none
+
+W1 keys whose fr and ar values are identical: 10 (baseline 10) at baseline
+  · app.name — suppressed: Brand name; deliberately untranslated in both languages.
+  · auth.register.accept_terms.tail — suppressed: Sentence-final full stop of the consent sentence, split out so the two document names can be links; a full stop is '.' in both languages.
+  · auth.terms_notice.tail — suppressed: Sentence-final full stop of the consent notice, split out so the two document names can be links; a full stop is '.' in both languages.
+  · card.ovr — suppressed: A unit of the Manager Card's rating (« 84 OVR »): a unit / an identifier format, the same in both languages.
+  · card.serial — suppressed: The Manager Card's serial format (« BOT #482913 »): a unit / an identifier format, the same in both languages.
+  · card.tier.homa — suppressed: LASTREET is the tier's name, a Latin word in both languages, owner 2026-10-09. The tier code stays `homa`; the Arabic UI isolates the word left to right (`TierWord`).
+  · fantasy.stat.none — suppressed: BG-0071 — an en dash standing for 'no value yet' in a numeric stat cell. Punctuation, not copy; an Arabic-script substitute would read as a character rather than as an absent number.
+  · language.arabic — suppressed: Endonym: the Arabic option is labelled 'العربية' in the French UI too.
+  · language.french — suppressed: Endonym: the French option is labelled 'Français' in the Arabic UI too.
+  · notfound.code — suppressed: HTTP status code 404, not natural-language copy.
+
+W2 ar values containing no Arabic script: 10 (baseline 10) at baseline
+  · app.name — suppressed: Brand name in Latin script by design.
+  · auth.email_placeholder — suppressed: Example email address; an address is not localized.
+  · auth.register.accept_terms.tail — suppressed: A full stop carries no script.
+  · auth.terms_notice.tail — suppressed: A full stop carries no script.
+  · card.ovr — suppressed: A unit written in Latin letters in both languages (a unit / an identifier format).
+  · card.serial — suppressed: An identifier format, Latin letters and digits in both languages (a unit / an identifier format).
+  · card.tier.homa — suppressed: LASTREET is the tier's name, a Latin word in both languages, owner 2026-10-09; the Arabic UI keeps it in Latin script inside a left-to-right isolate.
+  · fantasy.stat.none — suppressed: An en dash carries no script.
+  · language.french — suppressed: French endonym, written in Latin script by definition.
+  · notfound.code — suppressed: Numeric HTTP status code.
+
+W3 dictionary keys not referenced anywhere in src/: 251 (baseline 251) at baseline
+  - app.name — no literal, prefix or quoted reference
+  - auth.error.provider_unavailable — no literal, prefix or quoted reference
+  - auth.password_placeholder — no literal, prefix or quoted reference
+  - auth.register.password_strength — no literal, prefix or quoted reference
+  - auth.remember_me — no literal, prefix or quoted reference
+  - common.apply — no literal, prefix or quoted reference
+  - common.back — no literal, prefix or quoted reference
+  - common.filter — no literal, prefix or quoted reference
+  - common.search — no literal, prefix or quoted reference
+  - fantasy.action.cancel — no literal, prefix or quoted reference
+  - fantasy.action.save_draft — no literal, prefix or quoted reference
+  - fantasy.average — no literal, prefix or quoted reference
+  - fantasy.bank — no literal, prefix or quoted reference
+  - fantasy.bench — no literal, prefix or quoted reference
+  - fantasy.bench_short — no literal, prefix or quoted reference
+  - fantasy.cancel — no literal, prefix or quoted reference
+  - fantasy.change_formation — no literal, prefix or quoted reference
+  - fantasy.coming_soon — no literal, prefix or quoted reference
+  - fantasy.confirm — no literal, prefix or quoted reference
+  - fantasy.create.add_slot — no literal, prefix or quoted reference
+  - … 231 more
+
+W4 t() call sites whose argument is not a literal key: 64 (baseline 64) at baseline
+  - src/components/common/MatchCard.tsx:197 — template prefix `matches.a11y.status_`
+  - src/components/common/PlayerRow.tsx:64 — template prefix `player.pos.`
+  - src/components/fantasy/ConflictBar.tsx:61 — opaque expression
+  - src/components/fantasy/ConflictBar.tsx:62 — opaque expression
+  - src/components/fantasy/FantasyOnboarding.tsx:119 — opaque expression
+  - src/components/fantasy/FantasyOnboarding.tsx:150 — opaque expression
+  - src/components/fantasy/PlayerShirt.tsx:67 — template prefix `player.status.`
+  - src/components/fantasy/PlayerStatusBadge.tsx:43 — template prefix `player.status.`
+  - src/components/fpl/FplPlayerCard.tsx:236 — template prefix `player.status.`
+  - src/components/fpl/FplPlayerCard.tsx:283 — template prefix `player.pos.`
+  - src/components/fpl/FplPlayerCard.tsx:286 — template prefix `player.pos.`
+  - src/components/matches/MatchTabs.tsx:63 — opaque expression
+  - src/components/shell/BottomNav.tsx:171 — opaque expression
+  - src/components/shell/BottomNav.tsx:228 — opaque expression
+  - src/components/shell/TopBar.tsx:169 — opaque expression
+  - src/lib/validation.ts:1 — opaque expression
+  - src/routes/auth.forgot-password.tsx:100 — opaque expression
+  - src/routes/auth.login.tsx:276 — opaque expression
+  - src/routes/auth.login.tsx:296 — opaque expression
+  - src/routes/auth.login.tsx:321 — opaque expression
+  - … 44 more
+
+RESULT: pass
+--- exit 0

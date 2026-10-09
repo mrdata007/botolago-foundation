@@ -1,0 +1,2245 @@
+{
+  "base": "http://127.0.0.1:4194",
+  "results": [
+    {
+      "fx": "forming1",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 9.25,
+      "pass": true,
+      "sides": {
+        "left": 9.4,
+        "right": 9.25,
+        "top": 9.57
+      }
+    },
+    {
+      "fx": "forming1",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.8,
+      "pass": null,
+      "sides": {
+        "left": 6.76,
+        "right": 7.56,
+        "top": 5.8
+      },
+      "informative": true
+    },
+    {
+      "fx": "forming1",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 9.4,
+      "pass": null,
+      "sides": {
+        "left": 9.4,
+        "right": 14.88,
+        "top": 9.57
+      },
+      "informative": true
+    },
+    {
+      "fx": "forming1",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 3.15,
+      "pass": true,
+      "sides": {
+        "left": 3.17,
+        "right": 3.15,
+        "top": 3.5
+      }
+    },
+    {
+      "fx": "forming1",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.83,
+      "pass": null,
+      "sides": {
+        "left": 2.21,
+        "right": 1.83,
+        "top": 3.44
+      },
+      "informative": true
+    },
+    {
+      "fx": "forming1",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 3.17,
+        "right": 2.21,
+        "top": 3.5
+      },
+      "informative": true
+    },
+    {
+      "fx": "forming1",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 3.15,
+      "pass": true,
+      "sides": {
+        "left": 3.15,
+        "right": 3.17,
+        "top": 3.68
+      }
+    },
+    {
+      "fx": "forming1",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.83,
+      "pass": null,
+      "sides": {
+        "left": 1.83,
+        "right": 2.28,
+        "top": 3.49
+      },
+      "informative": true
+    },
+    {
+      "fx": "forming1",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 2.21,
+        "right": 3.17,
+        "top": 3.68
+      },
+      "informative": true
+    },
+    {
+      "fx": "forming1",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 8.99,
+      "pass": true,
+      "sides": {
+        "left": 9.57,
+        "right": 9.12,
+        "top": 8.99
+      }
+    },
+    {
+      "fx": "forming1",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.23,
+      "pass": null,
+      "sides": {
+        "left": 7.71,
+        "right": 6.76,
+        "top": 5.23
+      },
+      "informative": true
+    },
+    {
+      "fx": "forming1",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 8.99,
+      "pass": null,
+      "sides": {
+        "left": 15.01,
+        "right": 9.12,
+        "top": 8.99
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 9.8,
+      "pass": true,
+      "sides": {
+        "left": 10.35,
+        "right": 9.8,
+        "top": 11.92
+      }
+    },
+    {
+      "fx": "homa",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.55,
+      "pass": null,
+      "sides": {
+        "left": 10.24,
+        "right": 5.55,
+        "top": 10.04
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 4.2,
+      "pass": null,
+      "sides": {
+        "left": 10.35,
+        "right": 4.2,
+        "top": 11.92
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.12,
+      "pass": true,
+      "sides": {
+        "left": 5.34,
+        "right": 5.12,
+        "top": 5.43
+      }
+    },
+    {
+      "fx": "homa",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.69,
+      "pass": null,
+      "sides": {
+        "left": 1.69,
+        "right": 1.91,
+        "top": 2.08
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 5.34,
+      "pass": null,
+      "sides": {
+        "left": 5.34,
+        "right": 8.3,
+        "top": 5.43
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.9,
+      "pass": true,
+      "sides": {
+        "left": 5.43,
+        "right": 5.1,
+        "top": 4.9
+      }
+    },
+    {
+      "fx": "homa",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.69,
+      "pass": null,
+      "sides": {
+        "left": 1.95,
+        "right": 1.69,
+        "top": 2.08
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 4.9,
+      "pass": null,
+      "sides": {
+        "left": 8.28,
+        "right": 5.1,
+        "top": 4.9
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 9.8,
+      "pass": true,
+      "sides": {
+        "left": 9.8,
+        "right": 10.35,
+        "top": 12.13
+      }
+    },
+    {
+      "fx": "homa",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.55,
+      "pass": null,
+      "sides": {
+        "left": 5.55,
+        "right": 10.21,
+        "top": 10.12
+      },
+      "informative": true
+    },
+    {
+      "fx": "homa",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 4.2,
+      "pass": null,
+      "sides": {
+        "left": 4.2,
+        "right": 10.35,
+        "top": 12.13
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 10.12,
+      "pass": true,
+      "sides": {
+        "left": 10.52,
+        "right": 10.12,
+        "top": 10.36
+      }
+    },
+    {
+      "fx": "tierDown",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.66,
+      "pass": null,
+      "sides": {
+        "left": 10.44,
+        "right": 4.66,
+        "top": 7.55
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.28,
+      "pass": null,
+      "sides": {
+        "left": 10.52,
+        "right": 2.28,
+        "top": 10.36
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.28,
+      "pass": true,
+      "sides": {
+        "left": 4.28,
+        "right": 4.28,
+        "top": 4.36
+      }
+    },
+    {
+      "fx": "tierDown",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.53,
+      "pass": null,
+      "sides": {
+        "left": 1.53,
+        "right": 2.23,
+        "top": 2.51
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 4.28,
+      "pass": null,
+      "sides": {
+        "left": 4.28,
+        "right": 14.87,
+        "top": 4.36
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 10.12,
+      "pass": true,
+      "sides": {
+        "left": 10.12,
+        "right": 10.73,
+        "top": 10.45
+      }
+    },
+    {
+      "fx": "tierDown",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.66,
+      "pass": null,
+      "sides": {
+        "left": 4.66,
+        "right": 10.61,
+        "top": 7.9
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.28,
+      "pass": null,
+      "sides": {
+        "left": 2.28,
+        "right": 10.73,
+        "top": 10.45
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 3.99,
+      "pass": true,
+      "sides": {
+        "left": 4.36,
+        "right": 4.08,
+        "top": 3.99
+      }
+    },
+    {
+      "fx": "tierDown",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.53,
+      "pass": null,
+      "sides": {
+        "left": 2.27,
+        "right": 1.53,
+        "top": 2.27
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierDown",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 3.99,
+      "pass": null,
+      "sides": {
+        "left": 14.87,
+        "right": 4.08,
+        "top": 3.99
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      }
+    },
+    {
+      "fx": "rated",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 3.19,
+        "right": 2.21,
+        "top": 3.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.03,
+      "pass": true,
+      "sides": {
+        "left": 6.03,
+        "right": 6.93,
+        "top": 6.14
+      }
+    },
+    {
+      "fx": "rated",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 4.44,
+        "right": 6.88,
+        "top": 5.62
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.03,
+      "pass": null,
+      "sides": {
+        "left": 6.03,
+        "right": 18.16,
+        "top": 6.14
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.65,
+      "pass": true,
+      "sides": {
+        "left": 7.28,
+        "right": 6.03,
+        "top": 5.65
+      }
+    },
+    {
+      "fx": "rated",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 7.28,
+        "right": 4.44,
+        "top": 4.67
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 5.65,
+      "pass": null,
+      "sides": {
+        "left": 18.1,
+        "right": 6.03,
+        "top": 5.65
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      }
+    },
+    {
+      "fx": "rated",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 2.21,
+        "right": 3.34,
+        "top": 3.56
+      },
+      "informative": true
+    },
+    {
+      "fx": "rated",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 10.76,
+      "pass": true,
+      "sides": {
+        "left": 12.37,
+        "right": 10.76,
+        "top": 11.01
+      }
+    },
+    {
+      "fx": "tierUp",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 8.98,
+      "pass": null,
+      "sides": {
+        "left": 12.32,
+        "right": 8.98,
+        "top": 10.01
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.23,
+      "pass": null,
+      "sides": {
+        "left": 12.37,
+        "right": 2.23,
+        "top": 11.01
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.94,
+      "pass": false,
+      "sides": {
+        "left": 2.94,
+        "right": 3.32,
+        "top": 4.33
+      }
+    },
+    {
+      "fx": "tierUp",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.41,
+      "pass": null,
+      "sides": {
+        "left": 1.41,
+        "right": 1.96,
+        "top": 2.11
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.94,
+      "pass": null,
+      "sides": {
+        "left": 2.94,
+        "right": 15.07,
+        "top": 4.33
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 10.51,
+      "pass": true,
+      "sides": {
+        "left": 10.51,
+        "right": 12.4,
+        "top": 11.83
+      }
+    },
+    {
+      "fx": "tierUp",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 8.23,
+      "pass": null,
+      "sides": {
+        "left": 8.23,
+        "right": 12.29,
+        "top": 10.85
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.23,
+      "pass": null,
+      "sides": {
+        "left": 2.23,
+        "right": 12.4,
+        "top": 11.83
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.86,
+      "pass": false,
+      "sides": {
+        "left": 3.33,
+        "right": 2.86,
+        "top": 4.02
+      }
+    },
+    {
+      "fx": "tierUp",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.39,
+      "pass": null,
+      "sides": {
+        "left": 2.03,
+        "right": 1.39,
+        "top": 2.11
+      },
+      "informative": true
+    },
+    {
+      "fx": "tierUp",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 2.86,
+      "pass": null,
+      "sides": {
+        "left": 15.07,
+        "right": 2.86,
+        "top": 4.02
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 8.59,
+      "pass": true,
+      "sides": {
+        "left": 9.09,
+        "right": 8.59,
+        "top": 11.02
+      }
+    },
+    {
+      "fx": "legend",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 8.48,
+      "pass": null,
+      "sides": {
+        "left": 8.99,
+        "right": 8.48,
+        "top": 9.73
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 8.59,
+      "pass": null,
+      "sides": {
+        "left": 9.09,
+        "right": 8.59,
+        "top": 11.02
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.98,
+      "pass": false,
+      "sides": {
+        "left": 3.03,
+        "right": 2.98,
+        "top": 4.62
+      }
+    },
+    {
+      "fx": "legend",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.77,
+      "pass": null,
+      "sides": {
+        "left": 1.77,
+        "right": 2.08,
+        "top": 2.14
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 3.03,
+      "pass": null,
+      "sides": {
+        "left": 3.03,
+        "right": 17.73,
+        "top": 4.62
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 8.33,
+      "pass": true,
+      "sides": {
+        "left": 8.33,
+        "right": 9.29,
+        "top": 11.05
+      }
+    },
+    {
+      "fx": "legend",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 8.12,
+      "pass": null,
+      "sides": {
+        "left": 8.12,
+        "right": 9.2,
+        "top": 10.12
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 8.33,
+      "pass": null,
+      "sides": {
+        "left": 8.33,
+        "right": 9.29,
+        "top": 11.05
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 3,
+      "pass": true,
+      "sides": {
+        "left": 3.14,
+        "right": 3,
+        "top": 4.19
+      }
+    },
+    {
+      "fx": "legend",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 1.77,
+      "pass": null,
+      "sides": {
+        "left": 2.17,
+        "right": 1.77,
+        "top": 1.93
+      },
+      "informative": true
+    },
+    {
+      "fx": "legend",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 3,
+      "pass": null,
+      "sides": {
+        "left": 17.69,
+        "right": 3,
+        "top": 4.19
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.03,
+      "pass": true,
+      "sides": {
+        "left": 6.03,
+        "right": 6.93,
+        "top": 6.14
+      }
+    },
+    {
+      "fx": "founder",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 4.44,
+        "right": 6.88,
+        "top": 5.62
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.03,
+      "pass": null,
+      "sides": {
+        "left": 6.03,
+        "right": 18.16,
+        "top": 6.14
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      }
+    },
+    {
+      "fx": "founder",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 3.19,
+        "right": 2.21,
+        "top": 3.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      }
+    },
+    {
+      "fx": "founder",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 2.21,
+        "right": 3.34,
+        "top": 3.56
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.65,
+      "pass": true,
+      "sides": {
+        "left": 7.28,
+        "right": 6.03,
+        "top": 5.65
+      }
+    },
+    {
+      "fx": "founder",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 7.28,
+        "right": 4.44,
+        "top": 4.67
+      },
+      "informative": true
+    },
+    {
+      "fx": "founder",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 5.65,
+      "pass": null,
+      "sides": {
+        "left": 18.1,
+        "right": 6.03,
+        "top": 5.65
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      }
+    },
+    {
+      "fx": "clubNull",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 3.19,
+        "right": 2.21,
+        "top": 3.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.03,
+      "pass": true,
+      "sides": {
+        "left": 6.03,
+        "right": 6.93,
+        "top": 6.14
+      }
+    },
+    {
+      "fx": "clubNull",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 4.44,
+        "right": 6.88,
+        "top": 5.62
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.03,
+      "pass": null,
+      "sides": {
+        "left": 6.03,
+        "right": 18.16,
+        "top": 6.14
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.65,
+      "pass": true,
+      "sides": {
+        "left": 7.28,
+        "right": 6.03,
+        "top": 5.65
+      }
+    },
+    {
+      "fx": "clubNull",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 7.28,
+        "right": 4.44,
+        "top": 4.67
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 5.65,
+      "pass": null,
+      "sides": {
+        "left": 18.1,
+        "right": 6.03,
+        "top": 5.65
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      }
+    },
+    {
+      "fx": "clubNull",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 2.21,
+        "right": 3.34,
+        "top": 3.56
+      },
+      "informative": true
+    },
+    {
+      "fx": "clubNull",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.03,
+      "pass": true,
+      "sides": {
+        "left": 6.03,
+        "right": 6.93,
+        "top": 6.14
+      }
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 4.44,
+        "right": 6.88,
+        "top": 5.62
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.03,
+      "pass": null,
+      "sides": {
+        "left": 6.03,
+        "right": 18.16,
+        "top": 6.14
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      }
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 3.19,
+        "right": 2.21,
+        "top": 3.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.65,
+      "pass": true,
+      "sides": {
+        "left": 7.28,
+        "right": 6.03,
+        "top": 5.65
+      }
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 7.28,
+        "right": 4.44,
+        "top": 4.67
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 5.65,
+      "pass": null,
+      "sides": {
+        "left": 18.1,
+        "right": 6.03,
+        "top": 5.65
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      }
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 2.21,
+        "right": 3.34,
+        "top": 3.56
+      },
+      "informative": true
+    },
+    {
+      "fx": "longNameLatin",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.03,
+      "pass": true,
+      "sides": {
+        "left": 6.03,
+        "right": 6.93,
+        "top": 6.14
+      }
+    },
+    {
+      "fx": "arabicName",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 4.44,
+        "right": 6.88,
+        "top": 5.62
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "fr",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.03,
+      "pass": null,
+      "sides": {
+        "left": 6.03,
+        "right": 18.16,
+        "top": 6.14
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      }
+    },
+    {
+      "fx": "arabicName",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 3.19,
+        "right": 2.21,
+        "top": 3.39
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "fr",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.06,
+        "right": 6.02,
+        "top": 6.26
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 5.65,
+      "pass": true,
+      "sides": {
+        "left": 7.28,
+        "right": 6.03,
+        "top": 5.65
+      }
+    },
+    {
+      "fx": "arabicName",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 4.44,
+      "pass": null,
+      "sides": {
+        "left": 7.28,
+        "right": 4.44,
+        "top": 4.67
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "ar",
+      "theme": "light",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 5.65,
+      "pass": null,
+      "sides": {
+        "left": 18.1,
+        "right": 6.03,
+        "top": 5.65
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edge",
+      "label": "outermost line of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 6.02,
+      "pass": true,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      }
+    },
+    {
+      "fx": "arabicName",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeBand",
+      "label": "first 2 CSS px of the frame vs page (walls hidden)",
+      "floor": 3,
+      "value": 2.21,
+      "pass": null,
+      "sides": {
+        "left": 2.21,
+        "right": 3.34,
+        "top": 3.56
+      },
+      "informative": true
+    },
+    {
+      "fx": "arabicName",
+      "lang": "ar",
+      "theme": "dark",
+      "width": 390,
+      "cardWidth": 296,
+      "pose": "rest",
+      "kind": "edgeWithWalls",
+      "label": "outermost line of the silhouette with the thickness walls vs page",
+      "floor": 3,
+      "value": 6.02,
+      "pass": null,
+      "sides": {
+        "left": 6.02,
+        "right": 6.06,
+        "top": 6.39
+      },
+      "informative": true
+    }
+  ]
+}

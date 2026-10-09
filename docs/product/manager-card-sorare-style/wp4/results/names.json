@@ -1,0 +1,1490 @@
+{
+  "base": "http://127.0.0.1:4194",
+  "rule": 1404,
+  "budget": {
+    "x0": 105,
+    "x1": 895
+  },
+  "rows": [
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.25-733.75] y 1137.77-1283.6 size 80",
+        "BENJELLOUN-ALAOUI [104.93-895.88] y 1237.82-1374.72 size 104.2"
+      ],
+      "inks": ["[266.37-731.4] y 1185.27-1235.86", "[106.4-893.6] y 1265.63-1364.58"],
+      "widestRect": 790.95,
+      "widestInk": 787.2,
+      "ruleGapInk": 39.42,
+      "lineGapInk": 29.76,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.25-733.75] y 1137.77-1283.6 size 80",
+        "BENJELLOUN-ALAOUI [104.93-895.88] y 1237.82-1374.72 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 790.95,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.31-733.69] y 1138.01-1286.66 size 80",
+        "BENJELLOUN-ALAOUI [104.99-896.06] y 1237.25-1375.77 size 104.2"
+      ],
+      "inks": ["[266.05-731.42] y 1184.97-1235.64", "[106.42-893.58] y 1266.05-1364.86"],
+      "widestRect": 791.06,
+      "widestInk": 787.16,
+      "ruleGapInk": 39.14,
+      "lineGapInk": 30.41,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.31-733.69] y 1138.01-1286.66 size 80",
+        "BENJELLOUN-ALAOUI [104.99-896.06] y 1237.25-1375.77 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 791.06,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.29-733.85] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.04-894.96] y 1236.97-1371.97 size 104.2"
+      ],
+      "inks": ["[266.25-731.25] y 1186.25-1236.25", "[106.25-893.75] y 1266.25-1365"],
+      "widestRect": 789.92,
+      "widestInk": 787.5,
+      "ruleGapInk": 39,
+      "lineGapInk": 30,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.29-733.85] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.04-894.96] y 1236.97-1371.97 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 789.92,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.41-733.59] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.18-894.82] y 1235.72-1373.22 size 104.2"
+      ],
+      "inks": ["[265.63-731.25] y 1185.94-1235.94", "[106.25-893.75] y 1265.63-1365.63"],
+      "widestRect": 789.65,
+      "widestInk": 787.5,
+      "ruleGapInk": 38.38,
+      "lineGapInk": 29.69,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.41-733.59] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.18-894.82] y 1235.72-1373.22 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 789.65,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.49-734.86] y 1140.41-1287.46 size 80",
+        "BENJELLOUN-ALAOUI [105.24-898.25] y 1239.05-1371.4 size 104.2"
+      ],
+      "inks": ["[266.54-731.62] y 1183.82-1235.29", "[106.62-893.38] y 1264.71-1365.81"],
+      "widestRect": 793.01,
+      "widestInk": 786.76,
+      "ruleGapInk": 38.19,
+      "lineGapInk": 29.41,
+      "problems": []
+    },
+    {
+      "name": "longNameLatin (fixture)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.49-734.86] y 1140.41-1287.46 size 80",
+        "BENJELLOUN-ALAOUI [105.24-898.25] y 1239.05-1371.4 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 793.01,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 336,
+      "theme": "light",
+      "lines": [
+        "فاطمة [373.33-626.67] y 1137.77-1283.6 size 80",
+        "الزهراء [380.05-619.95] y 1228.89-1398.53 size 92"
+      ],
+      "inks": ["[377.98-621.28] y 1174.85-1235.86", "[381.7-610.12] y 1278.27-1366.07"],
+      "widestRect": 253.35,
+      "widestInk": 243.3,
+      "ruleGapInk": 37.93,
+      "lineGapInk": 42.41,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 336,
+      "theme": "dark",
+      "lines": [
+        "فاطمة [373.33-626.67] y 1137.77-1283.6 size 80",
+        "الزهراء [380.05-619.95] y 1228.89-1398.53 size 92"
+      ],
+      "inks": [],
+      "widestRect": 253.35,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 296,
+      "theme": "light",
+      "lines": [
+        "فاطمة [373.36-626.64] y 1138.01-1286.66 size 80",
+        "الزهراء [380.07-619.93] y 1230.5-1399.42 size 92"
+      ],
+      "inks": ["[377.53-621.62] y 1174.83-1235.64", "[381.76-610.64] y 1278.72-1365.71"],
+      "widestRect": 253.27,
+      "widestInk": 244.09,
+      "ruleGapInk": 38.29,
+      "lineGapInk": 43.07,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 296,
+      "theme": "dark",
+      "lines": [
+        "فاطمة [373.36-626.64] y 1138.01-1286.66 size 80",
+        "الزهراء [380.07-619.93] y 1230.5-1399.42 size 92"
+      ],
+      "inks": [],
+      "widestRect": 253.27,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 200,
+      "theme": "light",
+      "lines": [
+        "فاطمة [373.36-626.64] y 1135.98-1285.98 size 80",
+        "الزهراء [380.2-619.8] y 1226.97-1396.97 size 92"
+      ],
+      "inks": ["[377.5-621.25] y 1175-1236.25", "[381.25-610] y 1278.75-1366.25"],
+      "widestRect": 253.28,
+      "widestInk": 243.75,
+      "ruleGapInk": 37.75,
+      "lineGapInk": 42.5,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 200,
+      "theme": "dark",
+      "lines": [
+        "فاطمة [373.36-626.64] y 1135.98-1285.98 size 80",
+        "الزهراء [380.2-619.8] y 1226.97-1396.97 size 92"
+      ],
+      "inks": [],
+      "widestRect": 253.28,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 160,
+      "theme": "light",
+      "lines": [
+        "فاطمة [373.39-626.61] y 1135.98-1285.98 size 80",
+        "الزهراء [380.13-619.87] y 1229.47-1398.22 size 92"
+      ],
+      "inks": ["[378.13-621.88] y 1175-1235.94", "[381.25-610.94] y 1278.13-1365.63"],
+      "widestRect": 253.22,
+      "widestInk": 243.75,
+      "ruleGapInk": 38.38,
+      "lineGapInk": 42.19,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 160,
+      "theme": "dark",
+      "lines": [
+        "فاطمة [373.39-626.61] y 1135.98-1285.98 size 80",
+        "الزهراء [380.13-619.87] y 1229.47-1398.22 size 92"
+      ],
+      "inks": [],
+      "widestRect": 253.22,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 136,
+      "theme": "light",
+      "lines": [
+        "فاطمة [373.45-626.55] y 1140.41-1287.46 size 80",
+        "الزهراء [380.11-619.89] y 1231.7-1400.82 size 92"
+      ],
+      "inks": ["[376.84-621.32] y 1174.63-1235.29", "[380.51-610.29] y 1277.57-1365.81"],
+      "widestRect": 253.1,
+      "widestInk": 244.49,
+      "ruleGapInk": 38.19,
+      "lineGapInk": 42.28,
+      "problems": []
+    },
+    {
+      "name": "arabicName (fixture)",
+      "lang": "ar",
+      "px": 136,
+      "theme": "dark",
+      "lines": [
+        "فاطمة [373.45-626.55] y 1140.41-1287.46 size 80",
+        "الزهراء [380.11-619.89] y 1231.7-1400.82 size 92"
+      ],
+      "inks": [],
+      "widestRect": 253.1,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 336,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [102.38-895.57] y 1247.53-1336.82 size 69.8"],
+      "inks": ["[104.17-893.6] y 1264.88-1331.85"],
+      "widestRect": 793.2,
+      "widestInk": 789.43,
+      "ruleGapInk": 72.15,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 336,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [102.38-895.57] y 1247.53-1336.82 size 69.8"],
+      "inks": [],
+      "widestRect": 793.2,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 296,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [101.8-896.38] y 1248.42-1336.25 size 69.8"],
+      "inks": ["[103.89-893.58] y 1264.36-1331.08"],
+      "widestRect": 794.58,
+      "widestInk": 789.7,
+      "ruleGapInk": 72.92,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 103.89 to 893.58, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 296,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [101.8-896.38] y 1248.42-1336.25 size 69.8"],
+      "inks": [],
+      "widestRect": 794.58,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 200,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [100.74-895.47] y 1245.97-1335.97 size 69.8"],
+      "inks": ["[103.75-893.75] y 1265-1331.25"],
+      "widestRect": 794.72,
+      "widestInk": 790,
+      "ruleGapInk": 72.75,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 103.75 to 893.75, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 200,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [100.74-895.47] y 1245.97-1335.97 size 69.8"],
+      "inks": [],
+      "widestRect": 794.72,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 160,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [99.27-896.93] y 1247.22-1334.72 size 69.8"],
+      "inks": ["[103.13-893.75] y 1264.06-1331.25"],
+      "widestRect": 797.66,
+      "widestInk": 790.63,
+      "ruleGapInk": 72.75,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 103.13 to 893.75, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 160,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [99.27-896.93] y 1247.22-1334.72 size 69.8"],
+      "inks": [],
+      "widestRect": 797.66,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 136,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [98.06-895.1] y 1249.82-1338.05 size 69.8"],
+      "inks": ["[102.94-893.38] y 1264.71-1332.72"],
+      "widestRect": 797.04,
+      "widestInk": 790.44,
+      "ruleGapInk": 71.28,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 102.94 to 893.38, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word",
+      "lang": "fr",
+      "px": 136,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [98.06-895.1] y 1249.82-1338.05 size 69.8"],
+      "inks": [],
+      "widestRect": 797.04,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 336,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [102.38-895.57] y 1247.53-1336.82 size 69.8"],
+      "inks": ["[104.17-893.6] y 1264.88-1331.85"],
+      "widestRect": 793.2,
+      "widestInk": 789.43,
+      "ruleGapInk": 72.15,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 336,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [102.38-895.57] y 1247.53-1336.82 size 69.8"],
+      "inks": [],
+      "widestRect": 793.2,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 296,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [101.8-896.38] y 1248.42-1336.25 size 69.8"],
+      "inks": ["[103.89-893.58] y 1264.36-1331.08"],
+      "widestRect": 794.58,
+      "widestInk": 789.7,
+      "ruleGapInk": 72.92,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 103.89 to 893.58, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 296,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [101.8-896.38] y 1248.42-1336.25 size 69.8"],
+      "inks": [],
+      "widestRect": 794.58,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 200,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [100.74-895.47] y 1245.97-1335.97 size 69.8"],
+      "inks": ["[103.75-893.75] y 1265-1331.25"],
+      "widestRect": 794.72,
+      "widestInk": 790,
+      "ruleGapInk": 72.75,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 103.75 to 893.75, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 200,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [100.74-895.47] y 1245.97-1335.97 size 69.8"],
+      "inks": [],
+      "widestRect": 794.72,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 160,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [99.27-896.93] y 1247.22-1334.72 size 69.8"],
+      "inks": ["[103.13-893.75] y 1264.06-1331.25"],
+      "widestRect": 797.66,
+      "widestInk": 790.63,
+      "ruleGapInk": 72.75,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 103.13 to 893.75, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 160,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [99.27-896.93] y 1247.22-1334.72 size 69.8"],
+      "inks": [],
+      "widestRect": 797.66,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 136,
+      "theme": "light",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [98.06-895.1] y 1249.82-1338.05 size 69.8"],
+      "inks": ["[102.94-893.38] y 1264.71-1332.72"],
+      "widestRect": 797.04,
+      "widestInk": 790.44,
+      "ruleGapInk": 71.28,
+      "lineGapInk": null,
+      "problems": ["ink of \"ABDELRAHMANEBENJELLOUNEL\" spans 102.94 to 893.38, outside 105 to 895"]
+    },
+    {
+      "name": "24-character single word, Arabic interface",
+      "lang": "ar",
+      "px": 136,
+      "theme": "dark",
+      "lines": ["ABDELRAHMANEBENJELLOUNEL [98.06-895.1] y 1249.82-1338.05 size 69.8"],
+      "inks": [],
+      "widestRect": 797.04,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "light",
+      "lines": [
+        "LES LIONS [324.17-675.83] y 1137.77-1283.6 size 80",
+        "DU DERB SIDI MAAROUF [105.12-895.41] y 1249.72-1371.74 size 93.5"
+      ],
+      "inks": ["[328.13-674.11] y 1184.52-1237.35", "[106.4-893.6] y 1273.81-1343.75"],
+      "widestRect": 790.29,
+      "widestInk": 787.2,
+      "ruleGapInk": 60.25,
+      "lineGapInk": 36.46,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "dark",
+      "lines": [
+        "LES LIONS [324.17-675.83] y 1137.77-1283.6 size 80",
+        "DU DERB SIDI MAAROUF [105.12-895.41] y 1249.72-1371.74 size 93.5"
+      ],
+      "inks": [],
+      "widestRect": 790.29,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "light",
+      "lines": [
+        "LES LIONS [324.19-676.94] y 1138.01-1286.66 size 80",
+        "DU DERB SIDI MAAROUF [105.28-894.72] y 1250.77-1372.39 size 93.5"
+      ],
+      "inks": ["[327.7-673.99] y 1184.12-1237.33", "[107.26-893.58] y 1273.65-1342.91"],
+      "widestRect": 789.43,
+      "widestInk": 786.32,
+      "ruleGapInk": 61.09,
+      "lineGapInk": 36.32,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "dark",
+      "lines": [
+        "LES LIONS [324.19-676.94] y 1138.01-1286.66 size 80",
+        "DU DERB SIDI MAAROUF [105.28-894.72] y 1250.77-1372.39 size 93.5"
+      ],
+      "inks": [],
+      "widestRect": 789.43,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "light",
+      "lines": [
+        "LES LIONS [324.18-675.82] y 1135.98-1285.98 size 80",
+        "DU DERB SIDI MAAROUF [105.27-896.6] y 1246.97-1371.97 size 93.5"
+      ],
+      "inks": ["[327.5-673.75] y 1185-1237.5", "[106.25-893.75] y 1273.75-1343.75"],
+      "widestRect": 791.33,
+      "widestInk": 787.5,
+      "ruleGapInk": 60.25,
+      "lineGapInk": 36.25,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "dark",
+      "lines": [
+        "LES LIONS [324.18-675.82] y 1135.98-1285.98 size 80",
+        "DU DERB SIDI MAAROUF [105.27-896.6] y 1246.97-1371.97 size 93.5"
+      ],
+      "inks": [],
+      "widestRect": 791.33,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "light",
+      "lines": [
+        "LES LIONS [324.27-679.58] y 1135.98-1285.98 size 80",
+        "DU DERB SIDI MAAROUF [105.57-894.43] y 1248.22-1373.22 size 93.5"
+      ],
+      "inks": ["[328.13-675] y 1184.38-1237.5", "[106.25-893.75] y 1273.44-1343.75"],
+      "widestRect": 788.87,
+      "widestInk": 787.5,
+      "ruleGapInk": 60.25,
+      "lineGapInk": 35.94,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "dark",
+      "lines": [
+        "LES LIONS [324.27-679.58] y 1135.98-1285.98 size 80",
+        "DU DERB SIDI MAAROUF [105.57-894.43] y 1248.22-1373.22 size 93.5"
+      ],
+      "inks": [],
+      "widestRect": 788.87,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "light",
+      "lines": [
+        "LES LIONS [324.33-675.67] y 1140.41-1287.46 size 80",
+        "DU DERB SIDI MAAROUF [105.35-894.65] y 1246.4-1371.4 size 93.5"
+      ],
+      "inks": ["[327.21-674.63] y 1183.82-1237.13", "[106.62-893.38] y 1273.9-1343.75"],
+      "widestRect": 789.29,
+      "widestInk": 786.76,
+      "ruleGapInk": 60.25,
+      "lineGapInk": 36.76,
+      "problems": []
+    },
+    {
+      "name": "particles (Les Lions du Derb Sidi Maarouf)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "dark",
+      "lines": [
+        "LES LIONS [324.33-675.67] y 1140.41-1287.46 size 80",
+        "DU DERB SIDI MAAROUF [105.35-894.65] y 1246.4-1371.4 size 93.5"
+      ],
+      "inks": [],
+      "widestRect": 789.29,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 336,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.17-686.83] y 1137.77-1283.6 size 80",
+        "بن جلون العلوي [197.41-802.59] y 1228.89-1398.53 size 92"
+      ],
+      "inks": ["[317.71-684.52] y 1174.85-1258.93", "[203.87-794.64] y 1278.27-1381.7"],
+      "widestRect": 605.19,
+      "widestInk": 590.77,
+      "ruleGapInk": 22.3,
+      "lineGapInk": 19.35,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 336,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.17-686.83] y 1137.77-1283.6 size 80",
+        "بن جلون العلوي [197.41-802.59] y 1228.89-1398.53 size 92"
+      ],
+      "inks": [],
+      "widestRect": 605.19,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 296,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.21-686.79] y 1138.01-1286.66 size 80",
+        "بن جلون العلوي [197.5-802.5] y 1230.5-1399.42 size 92"
+      ],
+      "inks": ["[317.57-684.12] y 1174.83-1258.45", "[203.55-794.76] y 1278.72-1381.76"],
+      "widestRect": 604.99,
+      "widestInk": 591.22,
+      "ruleGapInk": 22.24,
+      "lineGapInk": 20.27,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 296,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.21-686.79] y 1138.01-1286.66 size 80",
+        "بن جلون العلوي [197.5-802.5] y 1230.5-1399.42 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.99,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 200,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.2-686.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.77-802.23] y 1226.97-1396.97 size 92"
+      ],
+      "inks": ["[317.5-683.75] y 1175-1260", "[203.75-795] y 1278.75-1382.5"],
+      "widestRect": 604.45,
+      "widestInk": 591.25,
+      "ruleGapInk": 21.5,
+      "lineGapInk": 18.75,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 200,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.2-686.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.77-802.23] y 1226.97-1396.97 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.45,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 160,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.28-688.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.71-802.29] y 1229.47-1398.22 size 92"
+      ],
+      "inks": ["[317.19-684.38] y 1175-1259.38", "[203.13-795.31] y 1278.13-1382.81"],
+      "widestRect": 604.59,
+      "widestInk": 592.19,
+      "ruleGapInk": 21.19,
+      "lineGapInk": 18.75,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 160,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.28-688.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.71-802.29] y 1229.47-1398.22 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.59,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 136,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.36-690.22] y 1140.41-1287.46 size 80",
+        "بن جلون العلوي [197.61-802.39] y 1231.7-1400.82 size 92"
+      ],
+      "inks": ["[318.01-683.82] y 1174.63-1259.19", "[204.04-794.12] y 1277.57-1382.35"],
+      "widestRect": 604.78,
+      "widestInk": 590.07,
+      "ruleGapInk": 21.65,
+      "lineGapInk": 18.38,
+      "problems": []
+    },
+    {
+      "name": "long Arabic with ibn (عبد الرحمن بن جلون العلوي)",
+      "lang": "ar",
+      "px": 136,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.36-690.22] y 1140.41-1287.46 size 80",
+        "بن جلون العلوي [197.61-802.39] y 1231.7-1400.82 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.78,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 336,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.17-686.83] y 1137.77-1283.6 size 80",
+        "بن جلون العلوي [197.41-802.59] y 1228.89-1398.53 size 92"
+      ],
+      "inks": ["[317.71-684.52] y 1174.85-1258.93", "[203.87-794.64] y 1278.27-1381.7"],
+      "widestRect": 605.19,
+      "widestInk": 590.77,
+      "ruleGapInk": 22.3,
+      "lineGapInk": 19.35,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 336,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.17-686.83] y 1137.77-1283.6 size 80",
+        "بن جلون العلوي [197.41-802.59] y 1228.89-1398.53 size 92"
+      ],
+      "inks": [],
+      "widestRect": 605.19,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 296,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.21-686.79] y 1138.01-1286.66 size 80",
+        "بن جلون العلوي [197.5-802.5] y 1230.5-1399.42 size 92"
+      ],
+      "inks": ["[317.57-684.12] y 1174.83-1258.45", "[203.55-794.76] y 1278.72-1381.76"],
+      "widestRect": 604.99,
+      "widestInk": 591.22,
+      "ruleGapInk": 22.24,
+      "lineGapInk": 20.27,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 296,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.21-686.79] y 1138.01-1286.66 size 80",
+        "بن جلون العلوي [197.5-802.5] y 1230.5-1399.42 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.99,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 200,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.2-686.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.77-802.23] y 1226.97-1396.97 size 92"
+      ],
+      "inks": ["[317.5-683.75] y 1175-1260", "[203.75-795] y 1278.75-1382.5"],
+      "widestRect": 604.45,
+      "widestInk": 591.25,
+      "ruleGapInk": 21.5,
+      "lineGapInk": 18.75,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 200,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.2-686.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.77-802.23] y 1226.97-1396.97 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.45,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 160,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.28-688.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.71-802.29] y 1229.47-1398.22 size 92"
+      ],
+      "inks": ["[317.19-684.38] y 1175-1259.38", "[203.13-795.31] y 1278.13-1382.81"],
+      "widestRect": 604.59,
+      "widestInk": 592.19,
+      "ruleGapInk": 21.19,
+      "lineGapInk": 18.75,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 160,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.28-688.8] y 1135.98-1285.98 size 80",
+        "بن جلون العلوي [197.71-802.29] y 1229.47-1398.22 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.59,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 136,
+      "theme": "light",
+      "lines": [
+        "عبد الرحمن [313.36-690.22] y 1140.41-1287.46 size 80",
+        "بن جلون العلوي [197.61-802.39] y 1231.7-1400.82 size 92"
+      ],
+      "inks": ["[318.01-683.82] y 1174.63-1259.19", "[204.04-794.12] y 1277.57-1382.35"],
+      "widestRect": 604.78,
+      "widestInk": 590.07,
+      "ruleGapInk": 21.65,
+      "lineGapInk": 18.38,
+      "problems": []
+    },
+    {
+      "name": "long Arabic name, French interface",
+      "lang": "fr",
+      "px": 136,
+      "theme": "dark",
+      "lines": [
+        "عبد الرحمن [313.36-690.22] y 1140.41-1287.46 size 80",
+        "بن جلون العلوي [197.61-802.39] y 1231.7-1400.82 size 92"
+      ],
+      "inks": [],
+      "widestRect": 604.78,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 336,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.25-733.75] y 1137.77-1283.6 size 80",
+        "BENJELLOUN-ALAOUI [104.93-895.88] y 1237.82-1374.72 size 104.2"
+      ],
+      "inks": ["[266.37-731.4] y 1185.27-1235.86", "[106.4-893.6] y 1265.63-1364.58"],
+      "widestRect": 790.95,
+      "widestInk": 787.2,
+      "ruleGapInk": 39.42,
+      "lineGapInk": 29.76,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 336,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.25-733.75] y 1137.77-1283.6 size 80",
+        "BENJELLOUN-ALAOUI [104.93-895.88] y 1237.82-1374.72 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 790.95,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 296,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.31-733.69] y 1138.01-1286.66 size 80",
+        "BENJELLOUN-ALAOUI [104.99-896.06] y 1237.25-1375.77 size 104.2"
+      ],
+      "inks": ["[266.05-731.42] y 1184.97-1235.64", "[106.42-893.58] y 1266.05-1364.86"],
+      "widestRect": 791.06,
+      "widestInk": 787.16,
+      "ruleGapInk": 39.14,
+      "lineGapInk": 30.41,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 296,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.31-733.69] y 1138.01-1286.66 size 80",
+        "BENJELLOUN-ALAOUI [104.99-896.06] y 1237.25-1375.77 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 791.06,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 200,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.29-733.85] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.04-894.96] y 1236.97-1371.97 size 104.2"
+      ],
+      "inks": ["[266.25-731.25] y 1186.25-1236.25", "[106.25-893.75] y 1266.25-1365"],
+      "widestRect": 789.92,
+      "widestInk": 787.5,
+      "ruleGapInk": 39,
+      "lineGapInk": 30,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 200,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.29-733.85] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.04-894.96] y 1236.97-1371.97 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 789.92,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 160,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.41-733.59] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.18-894.82] y 1235.72-1373.22 size 104.2"
+      ],
+      "inks": ["[265.63-731.25] y 1185.94-1235.94", "[106.25-893.75] y 1265.63-1365.63"],
+      "widestRect": 789.65,
+      "widestInk": 787.5,
+      "ruleGapInk": 38.38,
+      "lineGapInk": 29.69,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 160,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.41-733.59] y 1135.98-1285.98 size 80",
+        "BENJELLOUN-ALAOUI [105.18-894.82] y 1235.72-1373.22 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 789.65,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 136,
+      "theme": "light",
+      "lines": [
+        "ABDELKARIM [266.49-734.86] y 1140.41-1287.46 size 80",
+        "BENJELLOUN-ALAOUI [105.24-898.25] y 1239.05-1371.4 size 104.2"
+      ],
+      "inks": ["[266.54-731.62] y 1183.82-1235.29", "[106.62-893.38] y 1264.71-1365.81"],
+      "widestRect": 793.01,
+      "widestInk": 786.76,
+      "ruleGapInk": 38.19,
+      "lineGapInk": 29.41,
+      "problems": []
+    },
+    {
+      "name": "long Latin name, Arabic interface",
+      "lang": "ar",
+      "px": 136,
+      "theme": "dark",
+      "lines": [
+        "ABDELKARIM [266.49-734.86] y 1140.41-1287.46 size 80",
+        "BENJELLOUN-ALAOUI [105.24-898.25] y 1239.05-1371.4 size 104.2"
+      ],
+      "inks": [],
+      "widestRect": 793.01,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "light",
+      "lines": ["ALI [417.18-579.85] y 1173.12-1360.62 size 144"],
+      "inks": ["[417.41-577.38] y 1210.57-1316.22"],
+      "widestRect": 162.67,
+      "widestInk": 159.97,
+      "ruleGapInk": 87.78,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "dark",
+      "lines": ["ALI [417.18-579.85] y 1173.12-1360.62 size 144"],
+      "inks": [],
+      "widestRect": 162.67,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "light",
+      "lines": ["ALI [416.78-579.84] y 1174.09-1359.9 size 144"],
+      "inks": ["[417.23-577.7] y 1210.3-1315.88"],
+      "widestRect": 163.06,
+      "widestInk": 160.47,
+      "ruleGapInk": 88.12,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "dark",
+      "lines": ["ALI [416.78-579.84] y 1174.09-1359.9 size 144"],
+      "inks": [],
+      "widestRect": 163.06,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "light",
+      "lines": ["ALI [415.2-579.8] y 1170.97-1360.97 size 144"],
+      "inks": ["[417.5-577.5] y 1211.25-1316.25"],
+      "widestRect": 164.61,
+      "widestInk": 160,
+      "ruleGapInk": 87.75,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "dark",
+      "lines": ["ALI [415.2-579.8] y 1170.97-1360.97 size 144"],
+      "inks": [],
+      "widestRect": 164.61,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "light",
+      "lines": ["ALI [413.96-581.42] y 1172.22-1359.72 size 144"],
+      "inks": ["[417.19-576.56] y 1209.38-1315.63"],
+      "widestRect": 167.46,
+      "widestInk": 159.38,
+      "ruleGapInk": 88.38,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "dark",
+      "lines": ["ALI [413.96-581.42] y 1172.22-1359.72 size 144"],
+      "inks": [],
+      "widestRect": 167.46,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "light",
+      "lines": ["ALI [412.8-580.72] y 1176.29-1360.11 size 144"],
+      "inks": ["[417.28-577.21] y 1209.56-1316.18"],
+      "widestRect": 167.92,
+      "widestInk": 159.93,
+      "ruleGapInk": 87.82,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "one short word (ALI)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "dark",
+      "lines": ["ALI [412.8-580.72] y 1176.29-1360.11 size 144"],
+      "inks": [],
+      "widestRect": 167.92,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "light",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 336,
+      "theme": "dark",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "light",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 296,
+      "theme": "dark",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "light",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 200,
+      "theme": "dark",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "light",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 160,
+      "theme": "dark",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "light",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    },
+    {
+      "name": "empty name (guest)",
+      "lang": "fr",
+      "px": 136,
+      "theme": "dark",
+      "lines": [],
+      "inks": [],
+      "widestRect": 0,
+      "widestInk": 0,
+      "ruleGapInk": null,
+      "lineGapInk": null,
+      "problems": []
+    }
+  ]
+}

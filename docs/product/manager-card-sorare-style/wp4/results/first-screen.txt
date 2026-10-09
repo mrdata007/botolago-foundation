@@ -1,0 +1,22 @@
+390 x 844: margin above the bottom bar (px, negative = under it): identity line / next-round line
+  forming1       fr   51.55 /    7.55   ar   46.61 /    2.61
+  rated          fr   51.55 /    7.55   ar   46.61 /    2.61
+  founder        fr   51.55 /    7.55   ar   46.61 /    2.61
+  legend         fr   51.55 /    7.55   ar   46.61 /    2.61
+  homa           fr   51.55 /    7.55   ar   46.61 /    2.61
+  clubNull       fr   51.55 /    7.55   ar   46.61 /    2.61
+  arabicName     fr   51.55 /    7.55   ar   46.61 /    2.61
+  longNameLatin  fr   51.55 /    7.55   ar   46.61 /    2.61
+  tierUp         fr   51.55 /    7.55   ar   46.61 /    2.61
+  seasonClosed   fr   51.55 /    null   ar   46.61 /    null
+360 x 740: margin above the bottom bar (px, negative = under it): identity line / next-round line
+  forming1       fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  rated          fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  founder        fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  legend         fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  homa           fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  clubNull       fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  arabicName     fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  longNameLatin  fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  tierUp         fr  -52.45 /  -96.45   ar  -57.39 / -101.39
+  seasonClosed   fr  -52.45 /    null   ar  -57.39 /    null

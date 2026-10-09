@@ -1,0 +1,99 @@
+NOTE: this run used the script before its edge reading was reworked and before its mark reading took the empty marks too. Its 'edge' and 'edgeWithWalls' rows and its 'mark' rows are superseded by contrast-edge-*.txt and contrast-marks.txt (same script, final version); every other row is the final script's.
+
+forming1 fr light 390: 34 readings, 1 below floor
+forming1 fr dark 390: 34 readings, 2 below floor
+forming1 ar light 390: 34 readings, 1 below floor
+forming1 ar dark 390: 34 readings, 2 below floor
+homa fr light 390: 36 readings, 1 below floor
+homa fr dark 390: 36 readings, 0 below floor
+homa ar light 390: 36 readings, 1 below floor
+homa ar dark 390: 36 readings, 0 below floor
+tierDown fr light 390: 36 readings, 1 below floor
+tierDown fr dark 390: 36 readings, 0 below floor
+tierDown ar light 390: 36 readings, 1 below floor
+tierDown ar dark 390: 36 readings, 0 below floor
+rated fr light 390: 36 readings, 0 below floor
+rated fr dark 390: 36 readings, 1 below floor
+rated ar light 390: 36 readings, 0 below floor
+rated ar dark 390: 36 readings, 1 below floor
+tierUp fr light 390: 36 readings, 1 below floor
+tierUp fr dark 390: 36 readings, 0 below floor
+tierUp ar light 390: 36 readings, 1 below floor
+tierUp ar dark 390: 36 readings, 0 below floor
+legend fr light 390: 36 readings, 1 below floor
+legend fr dark 390: 36 readings, 0 below floor
+legend ar light 390: 36 readings, 2 below floor
+legend ar dark 390: 36 readings, 1 below floor
+founder fr dark 390: 38 readings, 1 below floor
+founder fr light 390: 38 readings, 0 below floor
+founder ar light 390: 38 readings, 0 below floor
+founder ar dark 390: 38 readings, 1 below floor
+clubNull fr light 390: 34 readings, 0 below floor
+clubNull fr dark 390: 34 readings, 1 below floor
+clubNull ar light 390: 34 readings, 0 below floor
+clubNull ar dark 390: 34 readings, 1 below floor
+longNameLatin fr dark 390: 38 readings, 1 below floor
+longNameLatin fr light 390: 38 readings, 0 below floor
+longNameLatin ar light 390: 38 readings, 0 below floor
+longNameLatin ar dark 390: 38 readings, 1 below floor
+arabicName fr light 390: 38 readings, 0 below floor
+arabicName fr dark 390: 38 readings, 1 below floor
+arabicName ar dark 390: 38 readings, 1 below floor
+arabicName ar light 390: 38 readings, 0 below floor
+
+rest     edge       n=  40  lowest   1.39 (floor 3)  at tierUp ar light 390 "frame's metal edge vs page"  under floor: 20
+rest     edgeWithWalls n=  40  lowest   1.39 (floor 3)  at tierUp ar light 390 "silhouette with the thickness walls vs page"  under floor: 24
+rest     number     n=  40  lowest   3.01 (floor 3)  at legend ar light 390 "OVR figure vs shirt"  under floor: 0
+rest     statValue  n= 160  lowest  11.70 (floor 4.5)  at homa fr light 390 "66"  under floor: 0
+rest     statLabel  n= 160  lowest   6.74 (floor 4.5)  at forming1 fr light 390 "SEL"  under floor: 0
+rest     name       n=  48  lowest  11.70 (floor 4.5)  at homa fr light 390 "ALI"  under floor: 0
+rest     serial     n=  40  lowest   9.72 (floor 4.5)  at tierUp fr light 390 "BOT #482913"  under floor: 0
+rest     season     n=  40  lowest  15.32 (floor 4.5)  at tierDown fr light 390 "2026/27"  under floor: 0
+rest     wordmark   n=  40  lowest   9.30 (floor 4.5)  at homa ar dark 390 "BOTOLAGO"  under floor: 0
+rest     sample     n=  40  lowest   9.66 (floor 4.5)  at tierUp ar light 390 "مثال"  under floor: 0
+rest     initials   n=  36  lowest   5.05 (floor 4.5)  at forming1 fr light 390 "RCA"  under floor: 0
+rest     mark       n=   4  lowest  16.41 (floor 3)  at forming1 fr light 390 "on"  under floor: 0
+rest     ovrLabel   n=  36  lowest  13.62 (floor 4.5)  at legend fr light 390 "OVR"  under floor: 0
+rest     tier       n=  36  lowest   7.60 (floor 4.5)  at rated fr light 390 "PRO"  under floor: 0
+rest     founder    n=   4  lowest  18.03 (floor 4.5)  at founder fr dark 390 "26"  under floor: 0
+pointer  number     n=  40  lowest   2.94 (floor 3)  at forming1 ar light 390 "OVR figure vs shirt"  under floor: 6
+pointer  statValue  n= 160  lowest  11.70 (floor 4.5)  at homa ar light 390 "58"  under floor: 0
+pointer  statLabel  n= 160  lowest   6.53 (floor 4.5)  at forming1 ar light 390 "التشكيلة"  under floor: 0
+pointer  name       n=  48  lowest  11.70 (floor 4.5)  at founder fr dark 390 "ALI"  under floor: 0
+pointer  serial     n=  40  lowest  10.73 (floor 4.5)  at legend ar light 390 "BOT #482913"  under floor: 0
+pointer  season     n=  40  lowest  15.05 (floor 4.5)  at tierDown fr light 390 "2026/27"  under floor: 0
+pointer  wordmark   n=  40  lowest   5.68 (floor 4.5)  at tierUp fr light 390 "BOTOLAGO"  under floor: 0
+pointer  sample     n=  40  lowest  11.18 (floor 4.5)  at legend ar light 390 "مثال"  under floor: 0
+pointer  initials   n=  36  lowest   5.05 (floor 4.5)  at forming1 fr light 390 "RCA"  under floor: 0
+pointer  mark       n=   4  lowest  12.91 (floor 3)  at forming1 ar light 390 "on"  under floor: 0
+pointer  ovrLabel   n=  36  lowest   8.76 (floor 4.5)  at legend fr light 390 "OVR"  under floor: 0
+pointer  tier       n=  36  lowest   7.38 (floor 4.5)  at rated fr light 390 "PRO"  under floor: 0
+pointer  founder    n=   4  lowest  14.19 (floor 4.5)  at founder fr light 390 "26"  under floor: 0
+
+1448 readings, 26 below their floor, 0 errors
+BELOW {"fx":"forming1","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"number","label":"OVR figure vs shirt","floor":3,"value":2.96,"pass":false,"worst":1.85,"alt":3.93,"pixels":6840}
+BELOW {"fx":"forming1","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.83,"pass":false,"sides":{"left":2.21,"right":1.83,"top":3.44}}
+BELOW {"fx":"forming1","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"number","label":"OVR figure vs shirt","floor":3,"value":2.96,"pass":false,"worst":1.85,"alt":3.93,"pixels":6840}
+BELOW {"fx":"forming1","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"number","label":"OVR figure vs shirt","floor":3,"value":2.94,"pass":false,"worst":1.69,"alt":3.93,"pixels":6839}
+BELOW {"fx":"forming1","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.83,"pass":false,"sides":{"left":1.83,"right":2.28,"top":3.49}}
+BELOW {"fx":"forming1","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"number","label":"OVR figure vs shirt","floor":3,"value":2.94,"pass":false,"worst":1.69,"alt":3.93,"pixels":6839}
+BELOW {"fx":"homa","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.69,"pass":false,"sides":{"left":1.69,"right":1.91,"top":2.08}}
+BELOW {"fx":"homa","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.69,"pass":false,"sides":{"left":1.95,"right":1.69,"top":2.08}}
+BELOW {"fx":"tierDown","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.53,"pass":false,"sides":{"left":1.53,"right":2.23,"top":2.51}}
+BELOW {"fx":"tierDown","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.53,"pass":false,"sides":{"left":2.27,"right":1.53,"top":2.27}}
+BELOW {"fx":"rated","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":3.19,"right":2.21,"top":3.39}}
+BELOW {"fx":"rated","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":2.21,"right":3.34,"top":3.56}}
+BELOW {"fx":"tierUp","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.41,"pass":false,"sides":{"left":1.41,"right":1.96,"top":2.11}}
+BELOW {"fx":"tierUp","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.39,"pass":false,"sides":{"left":2.03,"right":1.39,"top":2.11}}
+BELOW {"fx":"legend","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.77,"pass":false,"sides":{"left":1.77,"right":2.08,"top":2.14}}
+BELOW {"fx":"legend","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":1.77,"pass":false,"sides":{"left":2.17,"right":1.77,"top":1.93}}
+BELOW {"fx":"legend","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"number","label":"OVR figure vs shirt","floor":3,"value":2.96,"pass":false,"worst":1.18,"alt":3.57,"pixels":39918}
+BELOW {"fx":"legend","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"number","label":"OVR figure vs shirt","floor":3,"value":2.96,"pass":false,"worst":1.18,"alt":3.57,"pixels":39918}
+BELOW {"fx":"founder","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":3.19,"right":2.21,"top":3.39}}
+BELOW {"fx":"founder","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":2.21,"right":3.34,"top":3.56}}
+BELOW {"fx":"clubNull","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":3.19,"right":2.21,"top":3.39}}
+BELOW {"fx":"clubNull","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":2.21,"right":3.34,"top":3.56}}
+BELOW {"fx":"longNameLatin","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":3.19,"right":2.21,"top":3.39}}
+BELOW {"fx":"longNameLatin","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":2.21,"right":3.34,"top":3.56}}
+BELOW {"fx":"arabicName","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":3.19,"right":2.21,"top":3.39}}
+BELOW {"fx":"arabicName","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"frame's metal edge vs page","floor":3,"value":2.21,"pass":false,"sides":{"left":2.21,"right":3.34,"top":3.56}}

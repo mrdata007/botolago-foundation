@@ -1,0 +1,3 @@
+=== check-gate-offbundle: bun scripts/qa/manager-card-off-bundle-gate.ts
+Manager Card off-bundle gate: 329 chunks; the section's code is in manager-card-BxwFJhnO.js, ManagerCard-BO99eDsZ.js, to-profile-BFKJN5am.js, use-manager-card-De6bqJS4.js and no ordinary page imports it.
+--- exit 0

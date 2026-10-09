@@ -1,0 +1,313 @@
+{
+  "base": "http://127.0.0.1:4194",
+  "pictures": [
+    {
+      "name": "full-fixtures-fr-light",
+      "dpr": 1,
+      "cards": 25,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1944,
+      "height": 2663,
+      "problems": []
+    },
+    {
+      "name": "full-tiers-fr-light",
+      "dpr": 1,
+      "cards": 24,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1732,
+      "height": 1921,
+      "problems": []
+    },
+    {
+      "name": "tokens-fixtures-fr-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 200,
+      "rows": 25,
+      "renderer": "eclat-v1",
+      "width": 980,
+      "height": 2413,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-80-fr-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 891,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-64-fr-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 747,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-48-fr-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 603,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-32-fr-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 459,
+      "problems": []
+    },
+    {
+      "name": "full-fixtures-fr-dark",
+      "dpr": 1,
+      "cards": 25,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1944,
+      "height": 2663,
+      "problems": []
+    },
+    {
+      "name": "full-tiers-fr-dark",
+      "dpr": 1,
+      "cards": 24,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1732,
+      "height": 1921,
+      "problems": []
+    },
+    {
+      "name": "tokens-fixtures-fr-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 200,
+      "rows": 25,
+      "renderer": "eclat-v1",
+      "width": 980,
+      "height": 2413,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-80-fr-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 891,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-64-fr-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 747,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-48-fr-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 603,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-32-fr-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 459,
+      "problems": []
+    },
+    {
+      "name": "full-fixtures-ar-light",
+      "dpr": 1,
+      "cards": 25,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1944,
+      "height": 2663,
+      "problems": []
+    },
+    {
+      "name": "full-tiers-ar-light",
+      "dpr": 1,
+      "cards": 24,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1732,
+      "height": 1921,
+      "problems": []
+    },
+    {
+      "name": "tokens-fixtures-ar-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 200,
+      "rows": 25,
+      "renderer": "eclat-v1",
+      "width": 980,
+      "height": 2413,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-80-ar-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 891,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-64-ar-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 747,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-48-ar-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 603,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-32-ar-light",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 459,
+      "problems": []
+    },
+    {
+      "name": "full-fixtures-ar-dark",
+      "dpr": 1,
+      "cards": 25,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1944,
+      "height": 2663,
+      "problems": []
+    },
+    {
+      "name": "full-tiers-ar-dark",
+      "dpr": 1,
+      "cards": 24,
+      "tokens": 0,
+      "rows": 0,
+      "renderer": "eclat-v1",
+      "width": 1732,
+      "height": 1921,
+      "problems": []
+    },
+    {
+      "name": "tokens-fixtures-ar-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 200,
+      "rows": 25,
+      "renderer": "eclat-v1",
+      "width": 980,
+      "height": 2413,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-80-ar-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 891,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-64-ar-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 747,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-48-ar-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 603,
+      "problems": []
+    },
+    {
+      "name": "tokens-tiers-32-ar-dark",
+      "dpr": 2,
+      "cards": 0,
+      "tokens": 54,
+      "rows": 9,
+      "renderer": "eclat-v1",
+      "width": 760,
+      "height": 459,
+      "problems": []
+    }
+  ]
+}

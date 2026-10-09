@@ -1,0 +1,33 @@
+FULL CARD (app renderer, Chromium)
+tier       fixtures  drawn min..max   markup kB min..max   holoLayer  holoClass  image feTurb willChange removedNames layers/rims
+base         12      118..127           38.1..39.6          false/false   false/false   false  false  false  none  base+shirt+num+frame/7
+homa          4      131..132           41.0..41.6          false/false   false/false   false  false  false  none  base+shirt+num+frame/7
+stade         4      130..131           40.0..40.5          false/false   false/false   false  false  false  none  base+shirt+num+frame/7
+pro          20      124..130           39.0..40.3          false/false   false/false   false  false  false  none  base+shirt+num+frame/7
+champion      4      129..130           41.2..41.6          true/true     true/true     false  false  false  none  base+shirt+num+frame+holo/7
+legend        4      131..132           42.2..42.7          true/true     true/true     false  false  false  none  base+shirt+num+frame+holo/7
+drawn elements over 48 cards: min 118, max 132 (brief: <= 140; revision 2: 205 to 284)
+markup size over 48 cards: 38.1 to 42.7 kB
+<image>: 0, feTurbulence: 0, will-change in markup: 0, removed-decoration names: 0
+holo layer on: champion, legend only; other tiers have it: 0
+
+TOKENS
+ 80 px  texts 2 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 24,9.79,40.45,18.2  box 49x80
+ 64 px  texts 2 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 101.13,30,12.5,22.75  box 40x64
+ 56 px  texts 2 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 115.57,30,12.75,26  box 35x56
+ 48 px  texts 2 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 134.83,30,14.87,30.34  box 30x48
+ 44 px  texts 2 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 147.09,30,16.22,33.1  box 27x44
+ 32 px  texts 2 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 202.25,30,20.59,45.51  box 20x32
+ 28 px  texts 2 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 231.14,30,23.53,52.01  box 17x28
+ 24 px  texts 0 (outside the number: 0)  patterns 0  masks 0  filters 0  images 0  svgs 1  ring stroke(units) 269.67,30,27.45,60.68  box 15x24
+
+TWO-DIGIT NUMBER on a token, painted height from pixels (OVR 10 to 99)
+ 80 px  smallest 16 CSS px (OVR 44), largest 19.5, all inside the token box: true  (n=90)
+ 64 px  smallest 13.63 CSS px (OVR 44), largest 16.63, all inside the token box: true  (n=90)
+ 48 px  smallest 11.63 CSS px (OVR 44), largest 14.13, all inside the token box: true  (n=90)
+ 32 px  smallest 8.63 CSS px (OVR 44), largest 10.38, all inside the token box: true  (n=90)
+
+FACE-A-FACE CARD, smallest text in CSS px and what is absent
+200 px  card 200  smallest 12 (sample "EXEMPLE", rated fr)  text kinds present: name,other,sample,stat,tier
+160 px  card 160  smallest 9.6 (sample "EXEMPLE", rated fr)  text kinds present: name,other,sample,stat,tier
+136 px  card 136  smallest 8.16 (sample "EXEMPLE", rated fr)  text kinds present: name,other,sample,stat,tier

@@ -1,0 +1,1 @@
+Manager Card fixture gate: 727 files in .output, no fixture found.

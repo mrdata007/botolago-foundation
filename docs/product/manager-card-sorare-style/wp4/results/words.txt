@@ -1,0 +1,4 @@
+46 screens (23 routes x 2 languages): HOMA or حومة found on 0; errors 0
+LASTREET shown on 38 screens (19 of them in Arabic); isolated in a <bdi dir=ltr> on 34; bare LASTREET text nodes in Arabic outside a bdi or a ltr SVG run: 0
+console/network problems (fr): 0
+console/network problems (ar): 0

@@ -1,0 +1,49 @@
+forming1 fr light 390: 3 readings, 0 below floor
+forming1 fr dark 390: 3 readings, 0 below floor
+forming1 ar dark 390: 3 readings, 0 below floor
+forming1 ar light 390: 3 readings, 0 below floor
+homa fr dark 390: 3 readings, 0 below floor
+homa fr light 390: 3 readings, 0 below floor
+homa ar light 390: 3 readings, 0 below floor
+homa ar dark 390: 3 readings, 0 below floor
+tierDown fr dark 390: 3 readings, 0 below floor
+tierDown fr light 390: 3 readings, 0 below floor
+tierDown ar dark 390: 3 readings, 0 below floor
+tierDown ar light 390: 3 readings, 0 below floor
+rated fr dark 390: 3 readings, 0 below floor
+rated fr light 390: 3 readings, 0 below floor
+rated ar light 390: 3 readings, 0 below floor
+rated ar dark 390: 3 readings, 0 below floor
+tierUp fr dark 390: 3 readings, 0 below floor
+tierUp fr light 390: 3 readings, 1 below floor
+tierUp ar dark 390: 3 readings, 0 below floor
+tierUp ar light 390: 3 readings, 1 below floor
+legend fr dark 390: 3 readings, 0 below floor
+legend fr light 390: 3 readings, 1 below floor
+legend ar dark 390: 3 readings, 0 below floor
+legend ar light 390: 3 readings, 0 below floor
+founder fr light 390: 3 readings, 0 below floor
+founder fr dark 390: 3 readings, 0 below floor
+founder ar dark 390: 3 readings, 0 below floor
+founder ar light 390: 3 readings, 0 below floor
+clubNull fr dark 390: 3 readings, 0 below floor
+clubNull fr light 390: 3 readings, 0 below floor
+clubNull ar light 390: 3 readings, 0 below floor
+clubNull ar dark 390: 3 readings, 0 below floor
+longNameLatin fr light 390: 3 readings, 0 below floor
+longNameLatin fr dark 390: 3 readings, 0 below floor
+longNameLatin ar light 390: 3 readings, 0 below floor
+longNameLatin ar dark 390: 3 readings, 0 below floor
+arabicName fr light 390: 3 readings, 0 below floor
+arabicName fr dark 390: 3 readings, 0 below floor
+arabicName ar light 390: 3 readings, 0 below floor
+arabicName ar dark 390: 3 readings, 0 below floor
+
+rest     edge       n=  40  lowest   2.86 (floor 3)  at tierUp ar light 390 "outermost line of the frame vs page (walls hidden)"  under floor: 3
+rest     edgeBand   n=  40  lowest   1.39 (floor 3)  at tierUp ar light 390 "first 2 CSS px of the frame vs page (walls hidden)"  under floor: 20
+rest     edgeWithWalls n=  40  lowest   2.21 (floor 3)  at forming1 fr dark 390 "outermost line of the silhouette with the thickness walls vs page"  under floor: 8
+
+120 readings, 3 below their floor, 0 errors
+BELOW {"fx":"tierUp","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"outermost line of the frame vs page (walls hidden)","floor":3,"value":2.94,"pass":false,"sides":{"left":2.94,"right":3.32,"top":4.33}}
+BELOW {"fx":"tierUp","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"outermost line of the frame vs page (walls hidden)","floor":3,"value":2.86,"pass":false,"sides":{"left":3.33,"right":2.86,"top":4.02}}
+BELOW {"fx":"legend","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"rest","kind":"edge","label":"outermost line of the frame vs page (walls hidden)","floor":3,"value":2.98,"pass":false,"sides":{"left":3.03,"right":2.98,"top":4.62}}

@@ -1,7 +1,7 @@
 # Manager Card collectible redesign: the AFTER set
 
 The collectible (Éclat, renderer `eclat-v1`) on every surface that draws it, captured from the
-redesign branch after the review fixes (§17 of
+redesign branch at the review-fix commit `5e903f60` (§17 of
 [`../../MANAGER_CARD_SORARE_STYLE_PLAN.md`](../../MANAGER_CARD_SORARE_STYLE_PLAN.md)), so it can be laid
 beside the BEFORE set ([`../before/INDEX.md`](../before/INDEX.md)) **name for name**: every file here has the
 file name of a file there (`g1-rated-fr-light-390.webp` is the same page, state, language, theme and
@@ -11,15 +11,15 @@ a database: the server ran in the mock data modes.
 
 ## Where the pictures come from
 
-| What                     | Value                                                                                                                                                                                                                                                                               |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tree captured            | `/home/user/mc-sorare`, branch `claude/manager-card-sorare-style` at `c493bb3c` **plus the review fixes** that the commit adding this folder holds (they were uncommitted when the pictures were taken; their source and test files are listed by `git show --stat` of that commit) |
-| Renderer in the pictures | `eclat-v1`: the card's root class is `mc-eclat …` (191 pictures), its tokens are `mc-tok` (105 pictures), 11 pictures draw no card art (the text-only surfaces). Recorded per picture in `capture-log.json`, `drawn.root`                                                           |
-| Server                   | `bun run dev` of that tree on **port 4193**, started for this run and stopped by its process id afterwards; no other server was measured. The same command as the BEFORE set (its page), with `--port 4193` and `VITE_MANAGER_CARD_PREVIEW=1`                                       |
-| Scripts                  | The BEFORE set's, unchanged: `node docs/product/manager-card-sorare-style/before/capture-before.mjs --base=http://127.0.0.1:4193 --out=<dir> --jobs=3`, then `before/capture-gallery.mjs`, then `before/to-webp.py` (WebP quality 92, never resized)                                |
-| Browser and viewports    | Chromium `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, Playwright from the repository; 390 × 844 at device scale 2 (780 × 1688 files) and 1440 × 900 at scale 1; the share picture is 1080 × 1920 (its own pixels)                                                          |
-| Clock and motion         | clock fixed at 2026-10-08T20:00:00Z (a countdown reads the same as in the BEFORE set), `prefers-reduced-motion: reduce` (the card is at rest)                                                                                                                                       |
-| Account and data         | the mock auth's demo account seeded into storage (« guest » pictures are signed out); the development fixtures of `src/backend/manager-card/fixtures.ts` chosen with `?mc=<fixture>`; the card prints « Exemple » / «مثال» (`sample`) as the preview does                           |
+| What                     | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tree captured            | `/home/user/mc-sorare`, branch `claude/manager-card-sorare-style` at `5e903f60`, with `src/`, `public/`, `scripts/` and `tests/` exactly as committed (`git status --short` empty before the run; during it the only change was this documentation folder). This run replaces the first one (port 4193, taken before the review fixes were committed): 295 of the 307 pictures and all 12 gallery pictures came out byte-identical to it, and the 12 that differ are share-sheet pictures (under 0.3 % of their pixels differ) |
+| Renderer in the pictures | `eclat-v1`: the card's root class is `mc-eclat …` (191 pictures), its tokens are `mc-tok` (105 pictures), 11 pictures draw no card art (the text-only surfaces). Recorded per picture in `capture-log.json`, `drawn.root`                                                                                                                                                                                                                                                                                                      |
+| Server                   | `bun run dev` of that tree on **port 4194**, started for this run and stopped by its process id afterwards; no other server was measured. The same command as the BEFORE set (its page), with `--port 4194` and `VITE_MANAGER_CARD_PREVIEW=1`                                                                                                                                                                                                                                                                                  |
+| Scripts                  | The BEFORE set's, unchanged: `node docs/product/manager-card-sorare-style/before/capture-before.mjs --base=http://127.0.0.1:4194 --out=<dir> --jobs=3`, then `before/capture-gallery.mjs`, then `before/to-webp.py` (WebP quality 92, never resized)                                                                                                                                                                                                                                                                           |
+| Browser and viewports    | Chromium `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`, Playwright from the repository; 390 × 844 at device scale 2 (780 × 1688 files) and 1440 × 900 at scale 1; the share picture is 1080 × 1920 (its own pixels)                                                                                                                                                                                                                                                                                                     |
+| Clock and motion         | clock fixed at 2026-10-08T20:00:00Z (a countdown reads the same as in the BEFORE set), `prefers-reduced-motion: reduce` (the card is at rest)                                                                                                                                                                                                                                                                                                                                                                                  |
+| Account and data         | the mock auth's demo account seeded into storage (« guest » pictures are signed out); the development fixtures of `src/backend/manager-card/fixtures.ts` chosen with `?mc=<fixture>`; the card prints « Exemple » / «مثال» (`sample`) as the preview does                                                                                                                                                                                                                                                                      |
 
 The eight surfaces the review asked to see are `g2` (votre carte), `g3` (les vôtres), `g4` (face à face,
 French and Arabic), `g6` (seasons), `hero`, `share` (the sheet), `picture` (the exported image itself, French
@@ -237,20 +237,34 @@ them again). `capture-log.json` and `capture-log-gallery.json` are the scripts' 
 
 ## What is not here, and why
 
-- **`switch-off/`**: the section-off pictures are not taken again. With the section off the page is the app's
-  own, and that is checked by `tests/e2e/gradins-off.e2e.ts` (9 tests on the production build) and the
-  off-bundle gate, both run for the commit that adds this folder, rather than by pictures.
-- **Three pictures were taken twice.** `g1-rated-fr-light-390`, `g1-rated-fr-dark-390` and `g1-rated-ar-light-390`
-  were the first pictures of the run on a cold development server and showed the loading skeleton
-  (`drawn.cards` 0 in the first log); the three were captured again with `--match` and the log holds the
-  second capture (`retaken` in `capture-log.json`).
+- **`switch-off/`**: the section-off pictures are not taken again here. The switch-off comparison against `main`
+  (production builds of both trees, 0.0000 % on every picture, byte-identical server HTML) is in
+  [`../wp4/results/switch-off-compare.txt`](../wp4/results/switch-off-compare.txt), and the built-output
+  Playwright spec `tests/e2e/gradins-off.e2e.ts` was run for the commit that adds this folder.
+- **No picture was taken twice in this run.** The development server was warmed up first (one browser visit to
+  eight routes, so Vite had compiled the card's modules), and the log shows 307 captured, 0 failed, no problem
+  and no skeleton: every card drawn carries `data-mc-ready` (the founder pages and the replay sheet count the
+  founder detail's crop as a card without that attribute, as in the BEFORE set).
 - **`picture-forming1-*`, G1 « Club » and « Saisons » at 1440, the recap line, the late signer's line and the
   import prompt's block**: absent for the reasons the BEFORE set gives.
 - **Motion**: the pictures are at rest. The tilt, the beats and the idle float are measured in
   `src/components/manager-card/eclat/README.md` and the Playwright suite, not pictured.
 
+## Two subfolders (not part of the name-for-name set)
+
+- **`gallery/`** (28 sheets): every fixture and tier at every size, light and dark, French and Arabic, by
+  [`../wp4/capture-gallery-all.mjs`](../wp4/capture-gallery-all.mjs): `full-fixtures-<lang>-<theme>` (every fixture with a card and the
+  guest at 296 px), `full-tiers-…` (six tiers on four clubs at 264 px), `tokens-fixtures-…` (every fixture at 80, 64, 56, 48, 44, 32, 28
+  and 24 px), `tokens-tiers-<size>-…` (six tiers on every club and on none at 80, 64, 48 and 32 px). Cards at rest, as `ManagerCard` and
+  `CardToken` insert them. Log: `gallery/capture-log-gallery-all.json`.
+- **`detail/`** (28 close-ups) by [`../wp4/detail-crops.mjs`](../wp4/detail-crops.mjs), 3 device pixels per CSS pixel:
+  `art-<tier>-fr-<theme>` (the shield, the shirt and the number of each tier), `plate-<tier>-fr-dark` (plaque, name, stats, serial),
+  `art-legend-ar-dark` and `plate-legend-ar-dark`, and `crisp-<pro|legend>-dpr<2|3>-<rest|tilt>` (a PRO and a LEGEND card whole, at
+  rest and with the pointer over the upper part). The first take of the four tilted pictures had no tilt in three of them (the page had
+  just loaded); they were taken again alone and the log records the computed transform of each.
+
 ## Servers
 
-One development server, on port 4193 only, started for this run from the tree above and stopped by its process
-id at the end. Nothing is left running. No database, migration, Edge Function, deployment or Lovable call was
+One development server, on port 4194 only, started for this run from the tree above and stopped by its process
+id at the end of the WP4 measurements. Nothing is left running. No database, migration, Edge Function, deployment or Lovable call was
 made, and nothing was pushed.

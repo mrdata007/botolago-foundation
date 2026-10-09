@@ -1,5 +1,5 @@
 {
-  "base": "http://127.0.0.1:4193",
+  "base": "http://127.0.0.1:4194",
   "fixedTime": "2026-10-08T20:00:00.000Z",
   "pictures": [
     {
@@ -3994,6 +3994,5 @@
       "problems": []
     }
   ],
-  "failed": [],
-  "retaken": ["g1-rated-ar-light-390", "g1-rated-fr-dark-390", "g1-rated-fr-light-390"]
+  "failed": []
 }

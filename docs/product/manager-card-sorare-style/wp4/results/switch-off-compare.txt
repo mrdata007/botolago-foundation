@@ -1,0 +1,4 @@
+30 screenshots compared, worst fantasy-ar-light-1440.png at 0.0000%
+requests: no new data or document request and none for the section's code; up to 0 shared chunk(s) re-split per page ()
+5 server bodies: 5 identical
+OFF MEANS IDENTICAL: no difference found.

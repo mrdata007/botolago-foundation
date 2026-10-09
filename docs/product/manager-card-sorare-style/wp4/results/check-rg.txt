@@ -1,0 +1,19 @@
+$ rg -in sorare src public
+exit 1 (1 = no match)
+
+$ rg -n "HOMA|حومة" src/i18n
+exit 1 (1 = no match)
+
+$ rg -n -i "echarpe|écharpe|knit|scarf|tassel" src tests scripts
+src/components/prizes/prize-admin-form.test.ts:105:    const created = prize(3, "Écharpe");
+src/components/prizes/prize-admin-form.test.ts:108:      new: { ...EMPTY_PRIZE_FORM, nameFr: "Écharpe" },
+src/components/manager-card/eclat/number.test.ts:127:    expect((compact.match(/-knit\)/g) ?? []).length).toBe(0);
+src/components/manager-card/eclat/number.ts:132:    (o.compact ? "" : nt("", `fill="url(#${id}-knit)" opacity=".3"`)) +
+src/components/manager-card/eclat/shirt.ts:3: * 3D with vector shading only: a piqué knit, sleeve volume across each sleeve's axis, the body as a
+src/components/manager-card/eclat/shirt.ts:31:    <pattern id="${id}-knit" width="7" height="6" patternUnits="userSpaceOnUse"><circle cx="1.75" cy="1.5" r="1.2" fill="#00
+src/components/manager-card/eclat/shirt.ts:32:    <linearGradient id="${id}-knitmG" x1="292" y1="0" x2="708" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-c
+src/components/manager-card/eclat/shirt.ts:33:    <mask id="${id}-knitm" maskUnits="userSpaceOnUse" x="150" y="260" width="700" height="680"><rect x="150" y="260" width="
+src/components/manager-card/eclat/shirt.ts:72:      ${o.compact ? "" : `<path d="${SHIRT}" fill="url(#${id}-knit)" mask="url(#${id}-knitm)"/>`}
+src/components/manager-card/eclat/shirt.test.ts:117:    expect(compact).not.toContain("-knit)");
+src/components/manager-card/eclat/shirt.test.ts:118:    expect(shirt(MOCK_CARDS[3]!.profile)).toContain("-knit)");
+exit 0

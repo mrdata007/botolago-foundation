@@ -1,0 +1,2215 @@
+{
+  "base": "http://127.0.0.1:4194",
+  "rows": [
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins?mc=rated",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins?mc=forming1",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins?mc=founder",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins?mc=arabicName",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins?mc=homa",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins",
+      "vw": 320,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 320,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 320,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [256, 288],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 320,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/fantasy?mc=rated",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/fantasy?mc=legend",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 320,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 320,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins?mc=rated",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins?mc=forming1",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins?mc=founder",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins?mc=arabicName",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins?mc=homa",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins",
+      "vw": 360,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 360,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 360,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 360,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/fantasy?mc=rated",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/fantasy?mc=legend",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 360,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 360,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins?mc=rated",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins?mc=forming1",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins?mc=founder",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins?mc=arabicName",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins?mc=homa",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins",
+      "vw": 390,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 390,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 390,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296, 326],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 390,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/fantasy?mc=rated",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/fantasy?mc=legend",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 390,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 390,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins?mc=rated",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins?mc=forming1",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins?mc=founder",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins?mc=arabicName",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins?mc=homa",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins",
+      "vw": 768,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 768,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 768,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [216, 336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 768,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/fantasy?mc=rated",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/fantasy?mc=legend",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 768,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 768,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 768,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins?mc=rated",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins?mc=forming1",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins?mc=founder",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins?mc=arabicName",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins?mc=homa",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins",
+      "vw": 1440,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 1440,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 1440,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [216, 336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 1440,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/fantasy?mc=rated",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/fantasy?mc=legend",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 1440,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "fr",
+      "width": 1440,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 1440,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins?mc=rated",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins?mc=forming1",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins?mc=founder",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins?mc=arabicName",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins?mc=homa",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins",
+      "vw": 320,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 320,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 320,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [256, 288],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 320,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 320,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [288],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/fantasy?mc=rated",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/fantasy?mc=legend",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 320,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 320,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 320,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins?mc=rated",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins?mc=forming1",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins?mc=founder",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins?mc=arabicName",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins?mc=homa",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins",
+      "vw": 360,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 360,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 360,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 360,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 360,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/fantasy?mc=rated",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/fantasy?mc=legend",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 360,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 360,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 360,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins?mc=rated",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins?mc=forming1",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins?mc=founder",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins?mc=arabicName",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins?mc=homa",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins",
+      "vw": 390,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 390,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 390,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296, 326],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 390,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 390,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [296],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/fantasy?mc=rated",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/fantasy?mc=legend",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 390,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 390,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 390,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins?mc=rated",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins?mc=forming1",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins?mc=founder",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins?mc=arabicName",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins?mc=homa",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins",
+      "vw": 768,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 768,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 768,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [216, 336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 768,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 768,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/fantasy?mc=rated",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/fantasy?mc=legend",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 768,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 768,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 768,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 768,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins?mc=rated",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins?mc=forming1",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins?mc=founder",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins?mc=longNameLatin",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins?mc=arabicName",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins?mc=homa",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins",
+      "vw": 1440,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token24": [15]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins/carte?mc=rated",
+      "vw": 1440,
+      "items": 6,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins/carte?mc=founder",
+      "vw": 1440,
+      "items": 7,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [216, 336],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins/les-votres?mc=rated",
+      "vw": 1440,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27],
+        "token28": [17]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins/saisons?mc=rated",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token56": [35]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/gradins?mc=born0Serial",
+      "vw": 1440,
+      "items": 5,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "card": [336],
+        "token28": [17],
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/fantasy?mc=rated",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/fantasy?mc=legend",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token64": [40]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/fantasy/team?mc=born0",
+      "vw": 1440,
+      "items": 0,
+      "outside": [],
+      "clipped": [],
+      "widths": {}
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/fantasy/rankings?mc=rated",
+      "vw": 1440,
+      "items": 1,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token44": [27]
+      }
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "route": "/fantasy/leagues/lg1?mc=rated",
+      "vw": 1440,
+      "items": 8,
+      "outside": [],
+      "clipped": [],
+      "widths": {
+        "token24": [15],
+        "token28": [17]
+      }
+    }
+  ]
+}

@@ -1,0 +1,475 @@
+{
+  "base": "http://127.0.0.1:4194",
+  "rows": [
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=homa",
+      "homa": 0,
+      "lastreet": 9,
+      "textLength": 1839,
+      "attributes": 30,
+      "bdiLastreet": 4,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=rated",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2873,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=forming1",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1949,
+      "attributes": 30,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=tierUp",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2916,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=tierDown",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1807,
+      "attributes": 30,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=legend",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2905,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=founder",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 3000,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=seasonClosed",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2765,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=returning",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2854,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/carte?mc=homa",
+      "homa": 0,
+      "lastreet": 5,
+      "textLength": 1543,
+      "attributes": 25,
+      "bdiLastreet": 2,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/carte?mc=rated",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1536,
+      "attributes": 25,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/carte?mc=tierDown",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1536,
+      "attributes": 25,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/carte?mc=founder",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2213,
+      "attributes": 27,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/les-votres?mc=homa",
+      "homa": 0,
+      "lastreet": 5,
+      "textLength": 457,
+      "attributes": 29,
+      "bdiLastreet": 2,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/les-votres?mc=rated",
+      "homa": 0,
+      "lastreet": 3,
+      "textLength": 452,
+      "attributes": 29,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/saisons?mc=homa",
+      "homa": 0,
+      "lastreet": 3,
+      "textLength": 327,
+      "attributes": 19,
+      "bdiLastreet": 2,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/saisons?mc=rated",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 317,
+      "attributes": 19,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/fantasy?mc=homa",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2133,
+      "attributes": 27,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/fantasy?mc=rated",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 2135,
+      "attributes": 27,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/fantasy/team?mc=homa",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 481,
+      "attributes": 86,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/fantasy/rankings?mc=homa",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1411,
+      "attributes": 49,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/fantasy/leagues/lg1?mc=homa",
+      "homa": 0,
+      "lastreet": 4,
+      "textLength": 582,
+      "attributes": 30,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/profile?mc=homa",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 593,
+      "attributes": 18,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "fr",
+      "path": "(console)",
+      "problems": []
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=homa",
+      "homa": 0,
+      "lastreet": 9,
+      "textLength": 1798,
+      "attributes": 30,
+      "bdiLastreet": 4,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=rated",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2849,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=forming1",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1899,
+      "attributes": 30,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=tierUp",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2847,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=tierDown",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1772,
+      "attributes": 30,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=legend",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2866,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=founder",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2940,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=seasonClosed",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2725,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=returning",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2822,
+      "attributes": 32,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/carte?mc=homa",
+      "homa": 0,
+      "lastreet": 5,
+      "textLength": 1479,
+      "attributes": 25,
+      "bdiLastreet": 2,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/carte?mc=rated",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1472,
+      "attributes": 25,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/carte?mc=tierDown",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1479,
+      "attributes": 25,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/carte?mc=founder",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 2137,
+      "attributes": 27,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/les-votres?mc=homa",
+      "homa": 0,
+      "lastreet": 5,
+      "textLength": 432,
+      "attributes": 29,
+      "bdiLastreet": 2,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/les-votres?mc=rated",
+      "homa": 0,
+      "lastreet": 3,
+      "textLength": 429,
+      "attributes": 29,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/saisons?mc=homa",
+      "homa": 0,
+      "lastreet": 3,
+      "textLength": 290,
+      "attributes": 19,
+      "bdiLastreet": 2,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/saisons?mc=rated",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 284,
+      "attributes": 19,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/fantasy?mc=homa",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1808,
+      "attributes": 27,
+      "bdiLastreet": 1,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/fantasy?mc=rated",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 1809,
+      "attributes": 27,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/fantasy/team?mc=homa",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 480,
+      "attributes": 86,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/fantasy/rankings?mc=homa",
+      "homa": 0,
+      "lastreet": 2,
+      "textLength": 1298,
+      "attributes": 49,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/fantasy/leagues/lg1?mc=homa",
+      "homa": 0,
+      "lastreet": 4,
+      "textLength": 516,
+      "attributes": 30,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/profile?mc=homa",
+      "homa": 0,
+      "lastreet": 0,
+      "textLength": 489,
+      "attributes": 18,
+      "bdiLastreet": 0,
+      "bareInArabic": 0
+    },
+    {
+      "lang": "ar",
+      "path": "(console)",
+      "problems": []
+    }
+  ]
+}

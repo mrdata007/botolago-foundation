@@ -1,0 +1,5986 @@
+{
+  "base": "http://127.0.0.1:4194",
+  "reduced": [
+    {
+      "lang": "fr",
+      "path": "g1 guest",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=forming1",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=founder",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=legend",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=homa",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=seasonClosed",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=seasonStarted",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=born0Serial",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=tierUp",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=returning",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins?mc=launchArrival",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/carte?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/carte?mc=founder",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/les-votres?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/gradins/saisons?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/fantasy?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 0
+    },
+    {
+      "lang": "fr",
+      "path": "/fantasy/team?mc=born0",
+      "reduced": true,
+      "animations": [
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger relative px-2 pb-3 pt-2",
+          "state": "finished"
+        }
+      ],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 5
+    },
+    {
+      "lang": "ar",
+      "path": "g1 guest",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=forming1",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=founder",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=legend",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=homa",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=seasonClosed",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=seasonStarted",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=born0Serial",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=tierUp",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=returning",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins?mc=launchArrival",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/carte?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 1,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/carte?mc=founder",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 2,
+      "animationCount": 0,
+      "lightWritten": false,
+      "tilt": "none",
+      "layers3d": 0,
+      "activeClass": false,
+      "animationsAfter": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/les-votres?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/gradins/saisons?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/fantasy?mc=rated",
+      "reduced": true,
+      "animations": [],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 0
+    },
+    {
+      "lang": "ar",
+      "path": "/fantasy/team?mc=born0",
+      "reduced": true,
+      "animations": [
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger flex items-start justify-evenly gap-1",
+          "state": "finished"
+        },
+        {
+          "name": "enter-rise",
+          "on": "enter-rise stagger relative px-2 pb-3 pt-2",
+          "state": "finished"
+        }
+      ],
+      "running": 0,
+      "cards": 0,
+      "animationCount": 5
+    }
+  ],
+  "beats": [
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-mark"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 540,
+      "animationCount": 5,
+      "names": ["mc-prism-shift", "mc-ignite", "mc-prism"],
+      "longest": 540,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "founder",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 520,
+      "animationCount": 1,
+      "names": ["mc-capsule"],
+      "longest": 520,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-mark"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 540,
+      "animationCount": 5,
+      "names": ["mc-prism-shift", "mc-ignite", "mc-prism"],
+      "longest": 540,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "founder",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 520,
+      "animationCount": 1,
+      "names": ["mc-capsule"],
+      "longest": 520,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "make",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-mark"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tick",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "first",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "tier",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 540,
+      "animationCount": 5,
+      "names": ["mc-prism-shift", "mc-ignite", "mc-prism"],
+      "longest": 540,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "legend",
+      "fixture": "founder",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "founder",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 520,
+      "animationCount": 1,
+      "names": ["mc-capsule"],
+      "longest": 520,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "beat": "castoff",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "make",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-reveal", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-mark"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tick",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 300,
+      "animationCount": 1,
+      "names": ["mc-pulse"],
+      "longest": 300,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-diffract"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "first",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 560,
+      "animationCount": 2,
+      "names": ["mc-kindle", "mc-sweep"],
+      "longest": 560,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 600,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-diffract"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "tier",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 600,
+      "animationCount": 3,
+      "names": ["mc-rise", "mc-ignite", "mc-sweep"],
+      "longest": 600,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 540,
+      "animationCount": 5,
+      "names": ["mc-prism-shift", "mc-ignite", "mc-prism"],
+      "longest": 540,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "legend",
+      "fixture": "founder",
+      "applied": false,
+      "declared": 540,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "rated",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "forming1",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "legend",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "tierUp",
+      "applied": false,
+      "declared": 520,
+      "animationCount": 0,
+      "names": [],
+      "longest": 0,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "founder",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 520,
+      "animationCount": 1,
+      "names": ["mc-capsule"],
+      "longest": 520,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "rated",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "forming1",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "legend",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "tierUp",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "beat": "castoff",
+      "fixture": "founder",
+      "applied": true,
+      "declared": 420,
+      "animationCount": 2,
+      "names": ["mc-settle", "mc-seal"],
+      "longest": 420,
+      "animatedHoldText": 0,
+      "samples": [
+        {
+          "t": 0,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 100,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 300,
+          "opacity": 1,
+          "hit": true
+        },
+        {
+          "t": 599,
+          "opacity": 1,
+          "hit": true
+        }
+      ]
+    }
+  ],
+  "depth": [
+    {
+      "lang": "fr",
+      "fixture": "rated",
+      "rest": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "",
+        "ay": "",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "overA": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "-0.500",
+        "ay": "0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 367.9,
+        "shadowY": 215.3,
+        "flatteners": []
+      },
+      "overB": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "0.600",
+        "ay": "-0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 349.4,
+        "shadowY": 207.2,
+        "flatteners": []
+      },
+      "after600": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "afterSettled": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "animationsAfterSettled": 0
+    },
+    {
+      "lang": "ar",
+      "fixture": "rated",
+      "rest": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, -2.",
+        "ax": "",
+        "ay": "",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 635.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "overA": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "-0.500",
+        "ay": "0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 639.9,
+        "shadowY": 215.3,
+        "flatteners": []
+      },
+      "overB": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "0.600",
+        "ay": "-0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 621.4,
+        "shadowY": 207.2,
+        "flatteners": []
+      },
+      "after600": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, -2.",
+        "ax": "-0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 635.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "afterSettled": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, -2.",
+        "ax": "-0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 635.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "animationsAfterSettled": 0
+    },
+    {
+      "lang": "fr",
+      "fixture": "legend",
+      "rest": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "",
+        "ay": "",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "overA": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 5,
+        "layerZ": [null, 10.08, 16.8, 26.88, 30.24],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "-0.500",
+        "ay": "0.400",
+        "cls": "mc-eclat mc-holo mc-eclat--active",
+        "shadowX": 367.9,
+        "shadowY": 215.3,
+        "flatteners": []
+      },
+      "overB": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 5,
+        "layerZ": [null, 10.08, 16.8, 26.88, 30.24],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "0.600",
+        "ay": "-0.400",
+        "cls": "mc-eclat mc-holo mc-eclat--active",
+        "shadowX": 349.4,
+        "shadowY": 207.2,
+        "flatteners": []
+      },
+      "after600": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "afterSettled": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "animationsAfterSettled": 0
+    },
+    {
+      "lang": "fr",
+      "fixture": "tierUp",
+      "rest": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "",
+        "ay": "",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "overA": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 5,
+        "layerZ": [null, 10.08, 16.8, 26.88, 30.24],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "-0.500",
+        "ay": "0.400",
+        "cls": "mc-eclat mc-holo mc-eclat--active",
+        "shadowX": 367.9,
+        "shadowY": 215.3,
+        "flatteners": []
+      },
+      "overB": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 5,
+        "layerZ": [null, 10.08, 16.8, 26.88, 30.24],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "0.600",
+        "ay": "-0.400",
+        "cls": "mc-eclat mc-holo mc-eclat--active",
+        "shadowX": 349.4,
+        "shadowY": 207.2,
+        "flatteners": []
+      },
+      "after600": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "afterSettled": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "animationsAfterSettled": 0
+    },
+    {
+      "lang": "fr",
+      "fixture": "homa",
+      "rest": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "",
+        "ay": "",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "overA": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "-0.500",
+        "ay": "0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 367.9,
+        "shadowY": 215.3,
+        "flatteners": []
+      },
+      "overB": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "0.600",
+        "ay": "-0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 349.4,
+        "shadowY": 207.2,
+        "flatteners": []
+      },
+      "after600": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "afterSettled": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "animationsAfterSettled": 0
+    },
+    {
+      "lang": "fr",
+      "fixture": "forming1",
+      "rest": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "",
+        "ay": "",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "overA": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "-0.500",
+        "ay": "0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 367.9,
+        "shadowY": 215.3,
+        "flatteners": []
+      },
+      "overB": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 4,
+        "layerZ": [null, 10.08, 16.8, 26.88],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "0.600",
+        "ay": "-0.400",
+        "cls": "mc-eclat mc-eclat--active",
+        "shadowX": 349.4,
+        "shadowY": 207.2,
+        "flatteners": []
+      },
+      "after600": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "afterSettled": {
+        "layerCount": 4,
+        "layerNames": ["base", "shirt", "num", "frame"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, 2.8",
+        "ax": "0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-eclat--dark",
+        "shadowX": 355.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "animationsAfterSettled": 0
+    },
+    {
+      "lang": "ar",
+      "fixture": "legend",
+      "rest": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, -2.",
+        "ax": "",
+        "ay": "",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 635.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "overA": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 5,
+        "layerZ": [null, 10.08, 16.8, 26.88, 30.24],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "-0.500",
+        "ay": "0.400",
+        "cls": "mc-eclat mc-holo mc-eclat--active",
+        "shadowX": 639.9,
+        "shadowY": 215.3,
+        "flatteners": []
+      },
+      "overB": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "matrix3d(0.9",
+        "tiltStyle": "preserve-3d",
+        "willChangeTilt": "transform",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 5,
+        "layerZ": [null, 10.08, 16.8, 26.88, 30.24],
+        "rimFirst": "matrix3d(0.996667, 0, ",
+        "ax": "0.600",
+        "ay": "-0.400",
+        "cls": "mc-eclat mc-holo mc-eclat--active",
+        "shadowX": 621.4,
+        "shadowY": 207.2,
+        "flatteners": []
+      },
+      "after600": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, -2.",
+        "ax": "-0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 635.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "afterSettled": {
+        "layerCount": 5,
+        "layerNames": ["base", "shirt", "num", "frame", "holo"],
+        "rimCount": 7,
+        "foilOverlay": true,
+        "tilt": "none",
+        "tiltStyle": "flat",
+        "willChangeTilt": "auto",
+        "willChangeLayers": ["auto"],
+        "layerTransforms3d": 0,
+        "layerZ": [null, null, null, null, null],
+        "rimFirst": "matrix(1, 0, 0, 1, -2.",
+        "ax": "-0.240",
+        "ay": "0.640",
+        "cls": "mc-eclat mc-holo",
+        "shadowX": 635.5,
+        "shadowY": 217.7,
+        "flatteners": []
+      },
+      "animationsAfterSettled": 0
+    }
+  ],
+  "tilt": []
+}
