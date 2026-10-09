@@ -12,6 +12,7 @@ import {
   nextSeasonLabel,
   registrationIsClosed,
   roundBlock,
+  roundGlance,
   sinceRound,
   tierFell,
   type CardRead,
@@ -157,7 +158,7 @@ describe("« Cette journée » (M3b sub-states and the rated line)", () => {
   it("says the first counted journée before anything is final", () => {
     const block = roundBlock(card("born0"), ctx());
     expect(block).toMatchObject({ kind: "forming", counted: 0, min: 3 });
-    expect(block.kind === "forming" && block.line).toEqual({ kind: "first_counted", gw: 5 });
+    expect(block.kind === "forming" && block.line).toEqual({ kind: "first_counted", gw: 14 });
   });
 
   it("names the next round and its deadline while forming", () => {
@@ -251,5 +252,46 @@ describe("« Cette journée » (M3b sub-states and the rated line)", () => {
     expect(nextSeasonLabel("2026/27")).toBe("2027/28");
     expect(nextSeasonLabel("2099/00")).toBe("2100/01");
     expect(nextSeasonLabel("Saison")).toBeNull();
+  });
+});
+
+describe("the one-line round summary under the identity line (plan 5.2 item 6)", () => {
+  const ctx = (gw: Gameweek | null = gameweek()) => ({ gameweek: gw, now: NOW });
+  const glance = (id: FixtureId, c = ctx()) => roundGlance(roundBlock(card(id), c), c);
+
+  it("is the next round and its deadline while there is something to play", () => {
+    const next = { number: 14, deadline: gameweek().deadline };
+    for (const id of ["born0", "forming1", "eve2", "rated", "cleared", "seasonStarted"] as const) {
+      expect(glance(id)).toEqual(next);
+    }
+  });
+
+  it("reads the same round as « Cette journée » does", () => {
+    const c = ctx();
+    const rated = roundBlock(card("rated"), c);
+    expect(rated.kind === "rated" && roundGlance(rated, c)).toEqual(
+      rated.kind === "rated" ? rated.round : null,
+    );
+    const forming = roundBlock(card("forming1"), c);
+    expect(forming.kind === "forming" && forming.line).toMatchObject({
+      kind: "next",
+      gw: roundGlance(forming, c)!.number,
+    });
+  });
+
+  it("is nothing when the season is over, or when no round is known", () => {
+    expect(glance("seasonClosed")).toBeNull();
+    const closedForming = { ...card("forming1"), seasonClosed: true };
+    expect(roundGlance(roundBlock(closedForming, ctx()), ctx())).toBeNull();
+    expect(glance("rated", ctx(null))).toBeNull();
+    expect(glance("forming1", ctx(null))).toBeNull();
+  });
+
+  it("falls to the staged next round once this round's deadline has passed", () => {
+    const past = gameweek({
+      deadline: new Date(NOW - HOUR).toISOString(),
+      enrolment: { id: "n", number: 15, deadline: new Date(NOW + 100 * HOUR).toISOString() },
+    });
+    expect(glance("rated", ctx(past))?.number).toBe(15);
   });
 });

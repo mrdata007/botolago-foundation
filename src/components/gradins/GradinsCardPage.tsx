@@ -177,8 +177,8 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         <FounderBlock card={card} profile={profile} />
 
         {items.length > 0 ? (
-          <section data-testid="gradins-replay" aria-label={moments.m4.sheetReplay}>
-            <SectionHeader title={moments.m4.sheetReplay} />
+          <section data-testid="gradins-replay" aria-label={copy.revoirTitle}>
+            <SectionHeader title={copy.revoirTitle} />
             <UiCard padding="md">
               <RevoirList
                 items={items}

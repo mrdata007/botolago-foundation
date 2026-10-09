@@ -22,9 +22,10 @@ import { CAPTION_CLASS, PersonName } from "./figures";
  * league: there is no honest data for either, and counts of supporters are banned. What is true
  * is shown: the club, the people you actually play with, the match.
  *
- * The header is the app's own club header (the Home « Mes clubs » card): the club's colours come
- * from the club palette as a tint and a 4px start edge, the crest is the disc. A card with no
- * club says so and offers the profile, where the club is chosen.
+ * The header is the app's own club header (the Home « Mes clubs » card) without its side bar:
+ * the club's colours come from the club palette as a tint, and the crest disc carries the colour.
+ * A coloured bar down one side of a card is a craft-floor ban, so the header has none. A card
+ * with no club says so and offers the profile, where the club is chosen.
  */
 export function ClubBlock({
   dto,
@@ -91,7 +92,6 @@ export function ClubBlock({
           className={cn(
             "flex min-h-[var(--ui-row-min)] items-center gap-3 px-4 py-3",
             ui.club.tint,
-            ui.edge.start,
           )}
         >
           <ClubCrest club={club} size="md" />

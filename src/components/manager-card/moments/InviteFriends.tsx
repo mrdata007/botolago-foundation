@@ -25,14 +25,30 @@ import { fantasyService } from "@/services/fantasy-runtime";
  *
  * `onInvite` fires when the sheet opens (the born panel counts `card_born_invite` and
  * acknowledges the moment).
+ *
+ * `variant="link"` is the team page's compact panel: the same action as an underlined 44 px text
+ * line instead of the full-width soft button, so the panel leaves the pitch's first row on screen.
  */
-export function InviteFriends({ onInvite }: { onInvite?: () => void }) {
+export function InviteFriends({
+  onInvite,
+  variant = "button",
+  describedBy,
+}: {
+  onInvite?: () => void;
+  variant?: "button" | "link";
+  /** The id of a sentence that says why now: read after the button's name. */
+  describedBy?: string;
+}) {
   const { t } = useI18n();
   const [open, setOpen] = useState(false);
+  const link = variant === "link";
   return (
     <>
       <UiButton
-        variant="soft"
+        variant={link ? "ghost" : "soft"}
+        size={link ? "sm" : "md"}
+        className={link ? "-mb-2 -ms-3 underline underline-offset-4" : undefined}
+        aria-describedby={describedBy}
         data-testid="invite-friends"
         onClick={() => {
           setOpen(true);

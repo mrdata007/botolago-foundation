@@ -64,6 +64,13 @@ describe("the Gradins screens' imports", () => {
 });
 
 describe("the Gradins screens' styling", () => {
+  it("draws no coloured bar down the side of a card (a craft-floor ban): the club disc carries the colour", () => {
+    for (const { name, text } of sources) {
+      expect(code(text), name).not.toMatch(/ui\.edge\.(?:start|end)\b/);
+      expect(code(text), name).not.toMatch(/\bborder-[se]-(?:[2-9]|\d\d)\b/);
+    }
+  });
+
   it("uses logical properties only (start and end, never left and right)", () => {
     const physical =
       /(?:^|[\s"'`:])(?:-?(?:ml|mr|pl|pr)-|(?:left|right)-\d|text-(?:left|right)|border-[lr]\b|border-[lr]-|rounded-[lr]-|rounded-(?:tl|tr|bl|br)-)/;
@@ -109,6 +116,30 @@ describe("the Gradins screens' words", () => {
       for (const match of code(text).matchAll(/\bt\("([a-z0-9_.]+)"\)/g)) {
         expect(fr, `${name}: ${match[1]}`).toContain(`"${match[1]}"`);
       }
+    }
+  });
+});
+
+describe("« Revoir » is the button and « Vos moments » is the section", () => {
+  it("names the list of moments « Vos moments » / «لحظاتك», never the replay button's own word", () => {
+    const heading = /<SectionHeader title=\{([^}]+)\}/g;
+    for (const name of ["GradinsCardPage.tsx", "GradinsSeasonsPage.tsx"]) {
+      const text = code(readFileSync(join(HERE, name), "utf8"));
+      const titles = [...text.matchAll(heading)].map((match) => match[1]);
+      expect(titles, name).toContain("copy.revoirTitle");
+      expect(titles, name).not.toContain("moments.m4.sheetReplay");
+      expect(text, name).toContain("aria-label={copy.revoirTitle}");
+    }
+  });
+
+  it("has its own words in both languages, different from the replay button's", async () => {
+    const { dictionaries } = await import("@/i18n/dictionaries");
+    expect(dictionaries.fr["gradins.revoir.title"]).toBe("Vos moments");
+    expect(dictionaries.ar["gradins.revoir.title"]).toBe("لحظاتك");
+    for (const lang of ["fr", "ar"] as const) {
+      expect(dictionaries[lang]["gradins.revoir.title"]).not.toBe(
+        dictionaries[lang]["card.onboarding.m4.sheet.replay"],
+      );
     }
   });
 });

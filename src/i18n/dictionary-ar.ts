@@ -2618,6 +2618,7 @@ export const ar = {
   "gradins.club.none": "لا نادي لبطاقتك بعد. يمنحها النادي الذي تختاره في ملفك الشخصي لونه.",
   "gradins.club.choose": "اختيار ناديي",
   "gradins.seasons.title": "مواسمك",
+  "gradins.revoir.title": "لحظاتك",
   "gradins.seasons.season": "موسم {season}",
   "gradins.season.closed_label": "نهاية الموسم",
 

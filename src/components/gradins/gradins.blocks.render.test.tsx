@@ -15,7 +15,9 @@ import { FIXTURES } from "@/backend/manager-card/fixtures";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import { fromMyCard } from "@/components/manager-card/to-profile";
+import type { Club } from "@/types/domain";
 
+import { ClubTryOn } from "./ClubTryOn";
 import { FounderBlock } from "./FounderBlock";
 import { deriveReplayItems } from "./replay-items";
 import { RevoirList } from "./RevoirList";
@@ -147,5 +149,33 @@ describe("the season's line", () => {
     expect(many.filter((row) => row.ovr !== null).length).toBeGreaterThan(1);
     const two = await render(<Sparkline rows={many} />);
     expect(two).toContain("<svg");
+  });
+});
+
+describe("the guest's club try-on", () => {
+  const clubs: Club[] = Array.from({ length: 16 }, (_, i) => ({
+    id: `club-${i}`,
+    name: { fr: `Club ${i}`, ar: `نادي ${i}` },
+    shortName: { fr: `C${i}`, ar: `ن${i}` },
+    city: { fr: "Casablanca", ar: "الدار البيضاء" },
+    primaryColor: "#0a8f3a",
+    crestPlaceholder: `C${i}`,
+  }));
+
+  it("wraps the sixteen discs instead of scrolling them, so none is cut at the inline edge", async () => {
+    const html = await render(<ClubTryOn clubs={clubs} selectedId={null} onPick={() => {}} />);
+    const list = html.match(/<ul[^>]*>/)![0];
+    expect(list).toContain("flex-wrap");
+    expect(list).toContain("justify-center");
+    // a row that scrolls hides the clubs past the edge; a wrapped row hides none
+    expect(list).not.toContain("overflow-x");
+    expect(list).not.toContain("snap-");
+    expect(html.match(/<button/g)).toHaveLength(16);
+  });
+
+  it("keeps every disc a 44 px target and marks the one worn", async () => {
+    const html = await render(<ClubTryOn clubs={clubs} selectedId="club-3" onPick={() => {}} />);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(html.match(/min-h-\[var\(--ui-tap-min\)\]/g)?.length).toBe(16);
   });
 });

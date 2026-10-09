@@ -217,6 +217,7 @@ export function gradinsCopy(t: Translate, lang: Language) {
     clubNone: t("gradins.club.none"),
     clubChoose: t("gradins.club.choose"),
     seasonsTitle: t("gradins.seasons.title"),
+    revoirTitle: t("gradins.revoir.title"),
     seasonsSeason: t("gradins.seasons.season"),
     seasonClosedLabel: t("gradins.season.closed_label"),
     cardTitle: t("gradins.card.title"),

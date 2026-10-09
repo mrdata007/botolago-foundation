@@ -39,6 +39,38 @@ describe("fill (the interface)", () => {
     expect(fill("Vous {a} · {name}", { a: 3 })).toBe("Vous 3 · {name}");
   });
 
+  it("isolates a fraction whole: {k}/{n} is one left-to-right run, never « 3/1 » in Arabic", () => {
+    expect(markup(fill("قيد التكوين {k}/{n}", { k: 1, n: 3 }))).toBe(
+      'قيد التكوين <bdi dir="ltr">1/3</bdi>',
+    );
+    // inside a sentence, with another number beside it
+    expect(markup(fill("بعد {final} ({k}/{n}).", { final: "3 جولات", k: 2, n: 3 }))).toBe(
+      'بعد 3 جولات (<bdi dir="ltr">2/3</bdi>).',
+    );
+    // whole numbers given as strings
+    expect(markup(fill("{k}/{n}", { k: "2", n: "3" }))).toBe("2/3");
+    expect(markup(fill("جولة {k}/{n}", { k: "2", n: "3" }))).toBe('جولة <bdi dir="ltr">2/3</bdi>');
+  });
+
+  it("a ready-made {kn} fraction gives the same markup as {k}/{n}", () => {
+    const merged = markup(fill("قيد التكوين {k}/{n}", { k: 1, n: 3 }));
+    expect(markup(fill("قيد التكوين {kn}", { kn: "1/3" }))).toBe(merged);
+    expect(markup(fill("قيد التكوين {kn}", { kn: ltr("1/3") }))).toBe(merged);
+    // the callers that merge by hand (`{k}/{n}` replaced by `{kn}`) keep working
+    expect(markup(fill("قيد التكوين {k}/{n}".replace("{k}/{n}", "{kn}"), { kn: "1/3" }))).toBe(
+      merged,
+    );
+  });
+
+  it("leaves French fractions as plain text, and a slash between other things alone", () => {
+    expect(fill("en formation {k}/{n}", { k: 1, n: 3 })).toBe("en formation 1/3");
+    // one value is not a whole number: no fraction, each placeholder on its own
+    expect(markup(fill("{a}/{b} ·", { a: "Raja", b: 3 }))).toBe("Raja/3 ·");
+    expect(markup(fill("جولة {a}/{b}", { a: "x", b: 3 }))).toBe('جولة x/<bdi dir="ltr">3</bdi>');
+    // a fraction with a missing value stays visible for review
+    expect(fill("{k}/{n}", { k: 1 })).toBe("1/{n}");
+  });
+
   it("repeats a placeholder", () => {
     expect(fill("{n} / {n}", { n: 2 })).toBe("2 / 2");
   });
@@ -62,6 +94,12 @@ describe("fillText (messages, labels, the picture)", () => {
     );
   });
 
+  it("wraps a fraction whole: « 1/3 » is one run in Arabic text", () => {
+    expect(fillText("قيد التكوين {k}/{n}", { k: 1, n: 3 })).toBe(`قيد التكوين ${FSI}1/3${PDI}`);
+    expect(fillText("en formation {k}/{n}", { k: 1, n: 3 })).toBe("en formation 1/3");
+    expect(fillText("قيد التكوين {kn}", { kn: "1/3" })).toBe(`قيد التكوين ${FSI}1/3${PDI}`);
+  });
+
   it("wraps a number-like string and a plain number alike", () => {
     expect(fillText("الجولة {gw}: {ovr}", { gw: "5", ovr: 84 })).toBe(
       `الجولة ${FSI}5${PDI}: ${FSI}84${PDI}`,
@@ -74,5 +112,22 @@ describe("helpers", () => {
     expect(isArabicTemplate("الجولة {gw}")).toBe(true);
     expect(isArabicTemplate("J{gw}")).toBe(false);
     expect(isolateText("Karim")).toBe(`${FSI}Karim${PDI}`);
+  });
+});
+
+describe("the dictionary's fractions", () => {
+  it("every Arabic value with {k}/{n} fills to one isolated run, with no manual merge", async () => {
+    const { dictionaries } = await import("@/i18n/dictionaries");
+    const keys = Object.keys(dictionaries.ar).filter((key) =>
+      dictionaries.ar[key as keyof typeof dictionaries.ar].includes("{k}/{n}"),
+    );
+    expect(keys.length).toBeGreaterThanOrEqual(3);
+    for (const key of keys) {
+      const html = markup(
+        fill(dictionaries.ar[key as keyof typeof dictionaries.ar], { k: 1, n: 3, final: "x" }),
+      );
+      expect(html, key).toContain('<bdi dir="ltr">1/3</bdi>');
+      expect(html, key).not.toContain("</bdi>/<bdi");
+    }
   });
 });

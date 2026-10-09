@@ -274,6 +274,18 @@ export function roundBlock(card: MyCardDto, ctx: RoundContext): RoundBlock {
   return { kind: "rated", round: nextRound(ctx) };
 }
 
+/**
+ * The one-line round summary under the identity line (WP6b, plan 5.2 item 6): the next round and
+ * its deadline, from the same read as « Cette journée », while there is still something to play
+ * (the same cases in which that block offers « Composer l'équipe »). Null when the season is over
+ * or no round is known: the line is then not shown.
+ */
+export function roundGlance(block: RoundBlock, ctx: RoundContext): NextRound | null {
+  if (block.kind === "closed") return null;
+  if (block.kind === "forming" && block.line.kind === "late") return null;
+  return block.kind === "rated" ? block.round : nextRound(ctx);
+}
+
 /** The identity line's journée: « Depuis la J5 », when the server knows the first counted journée. */
 export function sinceRound(card: MyCardDto): number | null {
   return card.firstCountedGameweekSeq;

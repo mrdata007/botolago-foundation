@@ -8,9 +8,11 @@ import { CAPTION_CLASS } from "./figures";
 import type { Club } from "@/types/domain";
 
 /**
- * « Essayer les couleurs d'un club »: the clubs of the Botola as 44px crest discs in one row that
- * swipes. A tap dresses the stage's scarf in that club's colours at once (no beat), and nothing
- * is stored: it is a preview, not a choice (the club is chosen in the profile). Plan 4.1.
+ * « Essayer les couleurs d'un club »: the clubs of the Botola as 44px crest discs in a wrapping,
+ * centred row (16 clubs make two rows of eight where the column is wide enough, seven and two
+ * where it is not): none is ever cut at the inline edge, in either language, and nothing needs a
+ * swipe to be found. A tap dresses the stage's scarf in that club's colours at once (no beat), and
+ * nothing is stored: it is a preview, not a choice (the club is chosen in the profile). Plan 4.1.
  *
  * The row sits under the scarf it changes, so the change is seen where the tap is, rather than
  * after the proposition's buttons, where the card would be off the screen.
@@ -31,16 +33,13 @@ export function ClubTryOn({
     <div data-testid="gradins-try-on">
       <p className={cn("px-4 text-center", CAPTION_CLASS)}>{copy.guestTryTitle}</p>
       <ul
-        className={cn(
-          "mt-2 flex snap-x scroll-px-4 gap-1 overflow-x-auto px-4 pb-1 [scrollbar-width:none]",
-          "[&::-webkit-scrollbar]:hidden",
-        )}
+        className={cn("mx-auto mt-2 flex max-w-[24rem] flex-wrap justify-center", ui.space.gutter)}
         aria-label={copy.guestTryTitle}
       >
         {clubs.map((club) => {
           const selected = club.id === selectedId;
           return (
-            <li key={club.id} className="shrink-0 snap-start">
+            <li key={club.id} className="shrink-0">
               <button
                 type="button"
                 aria-pressed={selected}

@@ -461,6 +461,8 @@ const RATED = rated(84, {
 });
 
 const SEASON_2627_FINAL = historyFor(SEASON, 1, 30, 86);
+/** The development Fantasy data's current round is 14: a card saved now is rated from 14, 15, 16. */
+const FIRST_THREE_AHEAD = [14, 15, 16];
 
 const BUILT: Record<FixtureId, ManagerCardFixture> = {
   featureOff: make("featureOff", "Status switched off", RATED, { status: STATUS_OFF }),
@@ -471,15 +473,17 @@ const BUILT: Record<FixtureId, ManagerCardFixture> = {
     behaviour: "unavailable",
   }),
   noCard: make("noCard", "Signed in, no card (deleted-pending path)", null),
+  // A card saved before its first journée counts: the journées that rate it are the next three,
+  // so they are the ones the development Fantasy data is on (round 14, `src/mocks/data.ts`).
   born0: make(
     "born0",
     "Saved, 0/3, serial not yet assigned",
-    card({ serial: null, moments: [cardCreated()] }),
+    card({ serial: null, ratingGameweeks: FIRST_THREE_AHEAD, moments: [cardCreated()] }),
   ),
   born0Serial: make(
     "born0Serial",
     "Saved, 0/3, serial assigned",
-    card({ moments: [cardCreated()] }),
+    card({ ratingGameweeks: FIRST_THREE_AHEAD, moments: [cardCreated()] }),
   ),
   forming1: make(
     "forming1",

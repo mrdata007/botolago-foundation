@@ -478,6 +478,10 @@ the import path), which is analytics only, invisible, owner-approved and shipped
 **Purpose.** "This is who I am in the stands": my card, what it says about me, my journée, my
 people, my club, my seasons. **Belonging sold:** all four pillars, in that order.
 
+> **As built (5.2 item 6):** after the identity line comes one line with the next round and its
+> deadline, then the people, club and seasons blocks, then « Cette journée » and the stat tiles. The
+> order below is the plan's; the build differs on purpose.
+
 **Layout at 390 × 844** (top to bottom): top bar → title band « Gradins » → [hero slot, only when a
 moment is due] → card stage → identity line → « Cette journée » card → « Ce que dit votre carte »
 (2 × 2 stat tiles) → « Les vôtres » card → « Votre club » card → « Vos saisons » row → the share
@@ -563,7 +567,7 @@ Card stage. Then sections, each a `UiCard` with an h2 in the title step:
    unrated: `gradins.card.tier_none` and no token marked. A fall shows `m8.down.line`.
 3. **Numéro** (only when the serial is not null): `gradins.card.serial`.
 4. **Fondateur 2026** (founders only; section 4.8).
-5. **Revoir** (`m4.sheet.replay` as the heading): the moments that happened (section 4.6), each opening
+5. **Vos moments** (`gradins.revoir.title` as the heading; « Revoir », `m4.sheet.replay`, stays the replay button): the moments that happened (section 4.6), each opening
    the replay sheet. Under reduced motion the list stays (each opens the static stored state).
 6. Actions: primary `m4.sheet.share` (G7, only with a number), soft `m4.sheet.league` to G3.
 
@@ -649,7 +653,7 @@ début, rang par rang.
    points hollow), 64 px tall, `--ui-ink-fg` stroke. WP3 loads the `dataviz` skill before drawing it.
 4. **The table**: Journée / Note / Palier (`gradins.seasons.col_*`), newest first, 20 rows per page,
    `gradins.seasons.more` loads the next page (keyset on `gameweekSeq`). Provisional rows carry the pill.
-5. **Revoir** (`m4.sheet.replay` heading): derived, never invented: the season's first rating (earliest
+5. **Vos moments** (`gradins.revoir.title` heading; « Revoir » is the button): derived, never invented: the season's first rating (earliest
    non-null history row), the first time at each tier (earliest row per tier across seasons), founder
    (card), each closed season. Items `m12.item.*`. Each opens the replay sheet.
 
@@ -743,6 +747,18 @@ cut-off date exists, and a « Revoir » button playing the `founder` beat; on G6
    statistique. » (no number), so no Arabic count has to agree with a subject.
 5. Heroes (M4, M8, M9, M10, M11) play in Gradins, not on the Fantasy hub; the hub block shows the
    number at once and a « Nouveau » badge that leads to the hero.
+6. **G1's order (section 4.1), changed in the build and recorded here at the finish review.** Section
+   4.1 lists stage, identity, « Cette journée », the stat tiles, then people, club, seasons. The build
+   puts belonging first (people, club, seasons), then « Cette journée » and the stat tiles, because
+   belonging is what the owner asked the section to sell. The cost was that « Cette journée » started
+   about 1,440 px down at 390 (French, card forming), out of the first screen. So **one line under the
+   identity line** now says the next round and its deadline, from the same read and the same words as
+   « Cette journée » (`gradins.round.line`), and leads where that block's button does
+   (`/fantasy/team`). Measured at 390 × 844, French, `forming1`: « Cette journée » at about 606 px in the
+   plan's order (derived from the layout), 1,438 px in the build before the line, 1,482 px with it (the line is 44 px); the line
+   itself sits at 586 to 630 px, on the first screen. The line is absent when the season is over or no
+   round is known. To restore the plan's order, move `ThisRoundBlock` and the stat tiles above
+   `PeopleBlock` in `GradinsHome.tsx` and drop `RoundGlance`.
 
 ### 5.3 Rules kept from the approved plan
 
@@ -1844,6 +1860,7 @@ Typographic apostrophe ’ in French. `{final}` takes `finalRounds(n)`, `{rounds
 | `gradins.club.none`           | Votre carte n’a pas encore de club. Le club choisi dans votre profil lui donne sa couleur. | لا نادي لبطاقتك بعد. يمنحها النادي الذي تختاره في ملفك الشخصي لونه. |
 | `gradins.club.choose`         | Choisir mon club                                                                           | اختيار ناديي                                                        |
 | `gradins.seasons.title`       | Vos saisons                                                                                | مواسمك                                                              |
+| `gradins.revoir.title`        | Vos moments                                                                                | لحظاتك                                                              |
 | `gradins.seasons.season`      | Saison {season}                                                                            | موسم {season}                                                       |
 | `gradins.season.closed_label` | Fin de saison                                                                              | نهاية الموسم                                                        |
 

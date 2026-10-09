@@ -203,6 +203,22 @@ describe("G1 for a manager", () => {
     expect(at('data-testid="gradins-seasons"')).toBeLessThan(at('data-testid="gradins-round"'));
   });
 
+  it("keeps what happens next on the first screen: one line under the identity line", async () => {
+    const html = await owner("forming1");
+    const at = (needle: string) => html.indexOf(needle);
+    const glance = html.match(/<a[^>]*data-testid="gradins-glance"[\s\S]*?<\/a>/)![0];
+    // The next round and its deadline, in the words « Cette journée » uses, and where its button leads.
+    expect(text(glance)).toContain("J14 · date limite");
+    expect(text(glance)).toContain(fr["fpl.pick_team"]);
+    expect(glance).toContain('href="/fantasy/team"');
+    expect(at('data-testid="gradins-identity-line"')).toBeLessThan(
+      at('data-testid="gradins-glance"'),
+    );
+    expect(at('data-testid="gradins-glance"')).toBeLessThan(at('data-testid="gradins-people"'));
+    // And it is the same round the block names further down.
+    expect(text(html.match(/data-testid="gradins-round"[\s\S]*?<\/section>/)![0])).toContain("J14");
+  });
+
   it("shows a dash and the reason for a statistic that is not there, never a zero", async () => {
     const html = await owner("ratedTrfNull");
     const trf = html.match(/data-stat="trf"[\s\S]*?<\/li>/)![0];
@@ -238,6 +254,7 @@ describe("G1 for a manager", () => {
     expect(headings(html)).toContain(fr["gradins.season.closed_label"]);
     expect(text(html)).toContain("Saison 2026/27 terminée : 86, PRO.");
     expect(html).not.toContain('href="/fantasy/team"');
+    expect(html).not.toContain('data-testid="gradins-glance"');
   });
 
   it("shows last season's number labelled with its season in a new season", async () => {
