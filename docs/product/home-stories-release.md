@@ -44,3 +44,10 @@ Complete CI database suite, concurrency checks and database lint passed in
 Its only remaining database gate was type drift. The authoritative generated
 artifact (SHA256 4a94640dae5402c64856145f2503446210f028e633626d92b4f4a6c563a91e72)
 was verified and committed, adding the new table and four API routine types.
+
+The final production-bundle smoke suite passed locally: 3/3 tests covering French,
+Arabic, hydration/data, release metadata, robots/sitemap and unknown routes.
+The stub now explicitly answers `home_stories` with an empty published feed.
+Stories use the existing `data-swipe-row` marker, and the Home prediction-entry
+journey checks that every swipe item fits its own bounds as well as checking
+the viewport. This distinguishes reachable off-screen slides from clipped UI.
