@@ -3,9 +3,9 @@
  *
  *   bun src/components/manager-card/eclat/scripts/gallery.ts <out-dir> [fonts-css-url]
  *
- * `compare-<theme>.html` draws the cards of the direction mock (`docs/product/manager-card-sorare-
- * style/mock.html`) with the same data and the same page, so a picture of each can be set beside the
- * mock's; `all-<theme>.html` draws every fixture of the Manager Card section in both languages, the
+ * `compare-<theme>.html` draws the cards of the direction mock (`mock.html`, in the collectible
+ * design's folder under `docs/product/`) with the same data and the same page, so a picture of each
+ * can be set beside the mock's; `all-<theme>.html` draws every fixture of the Manager Card section in both languages, the
  * six tiers, the long names, the face-à-face card at its three widths and the tokens at every size.
  * It needs a server that answers `/eclat.css` (the card's stylesheet) and the app's fonts
  * (`/fonts/…`, `fonts-css-url`, default `/mock-fonts.css`).
@@ -13,7 +13,7 @@
  * No tilt is mounted: the cards are at their rest pose, flat and crisp, which is what the mock
  * shows at rest. Nothing here is imported by the app.
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -73,7 +73,13 @@ figcaption{font-size:13px;color:var(--muted);text-align:center}
  */
 function mockChrome(): { css: string; top: string } {
   const root = join(dirname(fileURLToPath(import.meta.url)), "../../../../..");
-  const html = readFileSync(join(root, "docs/product/manager-card-sorare-style/mock.html"), "utf8");
+  // the mock sits in a `manager-card-…` folder of docs/product, named for the design's direction
+  const product = join(root, "docs/product");
+  const folder = readdirSync(product).find(
+    (d) => d.startsWith("manager-card-") && existsSync(join(product, d, "mock.html")),
+  );
+  if (!folder) throw new Error("the direction mock was not found under docs/product");
+  const html = readFileSync(join(product, folder, "mock.html"), "utf8");
   const css = html.slice(
     html.indexOf("<style>") + "<style>".length,
     html.indexOf("/* ---------- the card (eclat.css, abridged)"),
@@ -85,6 +91,7 @@ function mockChrome(): { css: string; top: string } {
 const page = (title: string, theme: CardTheme, body: string): string =>
   `<!doctype html><html lang="fr" data-theme="${theme}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><link rel="stylesheet" href="${fonts}"><link rel="stylesheet" href="/eclat.css"><style>${css}</style></head><body><h1>${esc(title)}</h1>${body}</body></html>`;
 
+const dirOf = (lang: "fr" | "ar"): "ltr" | "rtl" => (lang === "ar" ? "rtl" : "ltr");
 const stage = (html: string, cls = "", dir: "ltr" | "rtl" = "ltr"): string =>
   `<div class="stage ${cls}"${dir === "rtl" ? ' dir="rtl" lang="ar"' : ""}>${html}</div>`;
 const fig = (inner: string, caption: string): string =>
@@ -131,7 +138,7 @@ for (const theme of ["light", "dark"] as const) {
   ).join("");
   const names = MOCK_NAMES.map((c) =>
     fig(
-      stage(fullCard(c.profile, { strings: MOCK[c.lang], theme }), "stage--s", c.lang),
+      stage(fullCard(c.profile, { strings: MOCK[c.lang], theme }), "stage--s", dirOf(c.lang)),
       c.caption,
     ),
   ).join("");
@@ -174,7 +181,10 @@ for (const theme of ["light", "dark"] as const) {
   const fx = (lang: "fr" | "ar") =>
     fixtureCards
       .map(([id, p]) =>
-        fig(stage(fullCard(p, { strings: APP[lang], theme }), "stage--m", lang), `${id} · ${lang}`),
+        fig(
+          stage(fullCard(p, { strings: APP[lang], theme }), "stage--m", dirOf(lang)),
+          `${id} · ${lang}`,
+        ),
       )
       .join("");
   const tierCards = MOCK_CARDS.map((c) => c.profile);
@@ -182,7 +192,7 @@ for (const theme of ["light", "dark"] as const) {
     tierCards
       .map((p) =>
         fig(
-          stage(fullCard(p, { strings: MOCK[lang], theme }), "", lang),
+          stage(fullCard(p, { strings: MOCK[lang], theme }), "", dirOf(lang)),
           `${p.tier ?? "base"} · ${lang}`,
         ),
       )

@@ -1,4 +1,4 @@
-/* Éclat, the collectible Manager Card (plan MANAGER_CARD_SORARE_STYLE_PLAN.md, revision 3). Every
+/* Éclat, the collectible Manager Card (the Manager Card collectible plan, docs/product, revision 3). Every
    selector sits under the renderer's own classes (.mc-eclat for the full card, .mc-tok for tokens
    and minis) and every custom property is --mc-*, so nothing here reaches another part of the app.
    The theme is not read from the page: the renderer puts .mc-eclat--dark or .mc-eclat--light on the

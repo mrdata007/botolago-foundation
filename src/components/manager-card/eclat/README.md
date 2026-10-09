@@ -6,9 +6,9 @@ printed on its chest, the tier in a plaque, the name hanging under the artwork, 
 serial. Implements `CardRenderer` (`../renderer.ts`), id `eclat-v1`, and replaces Écharpe
 (`../echarpe/`) when `../active-renderer.ts` is switched to it (WP3b).
 
-Design: `docs/product/MANAGER_CARD_SORARE_STYLE_PLAN.md` (revision 3, the critique and confirmer
-fixes) and the direction mock `docs/product/manager-card-sorare-style/mock.html`, which the markup
-matches. Brief: `MANAGER_CARD_SORARE_STYLE_BRIEF.md`. Nothing in this folder reads a database, and
+Design: the Manager Card collectible plan in `docs/product/` (revision 3, with the critique and
+confirmer fixes), its brief next to it, and the direction mock (`mock.html` in the design's folder
+there), which the markup matches. Nothing in this folder reads a database, and
 nothing here carries a third party's name, mark or artwork.
 
 ## Status of this folder

@@ -201,7 +201,7 @@ export const HOSTILE_NAMES = [
 ] as const;
 
 /* ------------------------------------------------------------------------------------------------
-   The direction mock's own cards (docs/product/manager-card-sorare-style/mock.html), as profiles:
+   The cards of the collectible design's direction mock (docs/product, the mock's own page), as profiles:
    the gallery and the layout tests draw exactly what the mock draws.
    ------------------------------------------------------------------------------------------------ */
 
