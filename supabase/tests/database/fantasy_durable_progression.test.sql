@@ -122,8 +122,8 @@ select 'f6400000-0000-4000-8000-000000000001', 1,
   encode(extensions.digest(document::text, 'sha256'), 'hex'), document, true, statement_timestamp()
 from (select app_private.fantasy_scoring_input_document('f6400000-0000-4000-8000-000000000001') document) input;
 insert into app.fantasy_team_gameweek_results
-  (fantasy_team_id, gameweek_id, raw_score, captain_bonus, bench_boost_score, transfer_hits,
-   provisional_score, final_score, state, calculation_version, calculated_at)
+  (fantasy_team_id, gameweek_id, starting_points, bench_points, captain_points, transfer_hit,
+   provisional_score, final_score, state, calculation_version, finalized_at)
 select id, 'f6400000-0000-4000-8000-000000000001', 0, 0, 0, 0, 0, 0, 'final', 1, statement_timestamp()
 from app.fantasy_teams;
 select api.service_run_fantasy_price_batch('f6400000-0000-4000-8000-000000000001', 1, null, 1000);
