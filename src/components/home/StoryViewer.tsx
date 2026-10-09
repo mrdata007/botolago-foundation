@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, ImageOff, X } from "lucide-react";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { ui, UiButton, UiIconButton, UiSheet } from "@/components/ui-kit";
@@ -6,6 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { FailureAwareImage } from "@/components/common/FailureAwareImage";
 import { responsiveMedia, resolveMediaUrl } from "@/lib/media";
 import { cn } from "@/lib/utils";
+import { useDarkStatusBand } from "@/lib/system-bars";
 
 function StoryFrame({
   story,
@@ -17,19 +18,35 @@ function StoryFrame({
   onSwipe: (delta: number) => void;
 }) {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const figure = useRef<HTMLElement>(null);
+  const caption = useRef<HTMLElement>(null);
+  // Match the space above the image to its caption below, so the image stays
+  // centered even when the localized headline wraps or the phone rotates.
+  useLayoutEffect(() => {
+    const element = caption.current;
+    if (!element) return;
+    const measure = () =>
+      figure.current?.style.setProperty("--story-caption-height", `${element.offsetHeight}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const start = useRef<{ x: number; y: number } | null>(null);
   return (
     <figure
+      ref={figure}
       data-testid="story-viewer"
       className={cn(
-        "mx-auto flex h-full min-h-full w-full flex-col",
+        "mx-auto grid h-full min-h-full w-full grid-rows-[var(--story-caption-height,5rem)_minmax(var(--ui-tap-min),1fr)_auto]",
         ui.surface.inkPlain,
         ui.tone.onInkPlain,
       )}
     >
+      <div aria-hidden="true" />
       <div
         data-testid="story-image-stage"
-        className="relative min-h-[var(--ui-tap-min)] flex-1 touch-pan-y"
+        className="relative min-h-[var(--ui-tap-min)] touch-pan-y"
         onPointerDown={(e) => {
           if (e.isPrimary) start.current = { x: e.clientX, y: e.clientY };
         }}
@@ -55,7 +72,9 @@ function StoryFrame({
               })
             : { src: resolveMediaUrl({ storagePath: story.storagePath }) })}
           loading="eager"
-          alt={ar ? story.altAr : story.altFr}
+          alt={
+            story.generated ? (ar ? story.titleAr : story.titleFr) : ar ? story.altAr : story.altFr
+          }
           className="absolute inset-0 size-full object-contain"
           draggable={false}
           onLoad={() => setStatus("ready")}
@@ -81,7 +100,7 @@ function StoryFrame({
           </div>
         )}
       </div>
-      <figcaption className="shrink-0 space-y-2 px-4 py-3 sm:px-6 sm:py-4">
+      <figcaption ref={caption} className="space-y-2 px-4 py-3 text-center sm:px-6 sm:py-4">
         <p
           className={cn(ui.text.section, "break-words")}
           data-testid="story-headline"
@@ -89,11 +108,7 @@ function StoryFrame({
         >
           {ar ? story.titleAr : story.titleFr}
         </p>
-        {story.generated ? (
-          <p className={cn(ui.text.meta, ui.tone.onInkMuted)}>
-            {ar ? "صورة توضيحية بالذكاء الاصطناعي" : "Illustration IA"}
-          </p>
-        ) : story.credit ? (
+        {!story.generated && story.credit ? (
           <p className={cn(ui.text.meta, ui.tone.onInkMuted)}>{story.credit}</p>
         ) : null}
       </figcaption>
@@ -114,6 +129,7 @@ export function StoryViewer({
   onClose: () => void;
   restoreFocus: () => void;
 }) {
+  useDarkStatusBand();
   const { lang, t } = useI18n();
   const ar = lang === "ar";
   useEffect(() => {
@@ -155,13 +171,11 @@ export function StoryViewer({
       header={
         <div
           className={cn(
-            "flex shrink-0 items-center justify-between gap-3 px-4 pb-2",
-            ui.safe.top,
+            "flex shrink-0 items-center justify-end px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]",
             ui.surface.inkPlain,
             ui.tone.onInkPlain,
           )}
         >
-          <span className={ui.text.subtitle}>{ar ? "آخر الأخبار" : "À la une"}</span>
           <UiIconButton variant="glass" aria-label={t("fpl.close")} onClick={onClose}>
             <X className="size-5" aria-hidden />
           </UiIconButton>

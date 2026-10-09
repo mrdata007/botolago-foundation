@@ -1,0 +1,3 @@
+Before: prior release c3442d59, actual generated portrait, fresh live audit from this chat. The owner also supplied phone screenshots of the older duplicate-header layout.
+
+After: this branch, local fixture using the repository’s landscape stadium photo. This deliberately checks full-image containment; production stories are portraits. The image stage center stays within 1 CSS pixel of the available body center across all 12 language/viewport/theme cases. Full captions fit without scrolling. Manual credits, loading/error states and navigation pass. Real portrait screenshots will be checked after publication.

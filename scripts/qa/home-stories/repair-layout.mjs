@@ -102,15 +102,23 @@ for (const lang of ["fr", "ar"])
           scroll = el.parentElement;
         return {
           fit: getComputedStyle(img).objectFit,
+          centerOffset: (() => {
+            const stage = img.parentElement.getBoundingClientRect();
+            const body = el.getBoundingClientRect();
+            return Math.abs(stage.y + stage.height / 2 - body.y - body.height / 2);
+          })(),
+          alt: img.alt,
           scroll: scroll.scrollHeight - scroll.clientHeight,
           captionBottom: caption.getBoundingClientRect().bottom,
           bodyBottom: scroll.getBoundingClientRect().bottom,
         };
       });
       assert.equal(fit.fit, "contain");
+      assert(fit.centerOffset <= 1, JSON.stringify(fit));
+      assert.equal(fit.alt, lang === "ar" ? base.titleAr : base.titleFr);
       assert(fit.scroll <= 1, JSON.stringify(fit));
       assert(fit.captionBottom <= fit.bodyBottom + 1);
-      assert(!(await page.getByTestId("story-viewer").innerText()).includes("OpenAI"));
+      assert(!/OpenAI|Illustration IA|بالذكاء الاصطناعي/.test(await page.getByRole("dialog").innerText()));
       await page.keyboard.press(lang === "ar" ? "ArrowLeft" : "ArrowRight");
       assert.match(await page.getByRole("dialog").innerText(), /2 \/ 6/);
       await page.keyboard.press(lang === "ar" ? "ArrowRight" : "ArrowLeft");
