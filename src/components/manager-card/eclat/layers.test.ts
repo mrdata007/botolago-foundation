@@ -182,3 +182,125 @@ describe("the frame's furniture", () => {
     expect(elementsByClass(without, "g", "mc-capsule")).toHaveLength(0);
   });
 });
+
+describe("the depth, in the stylesheet (plan 8.2)", () => {
+  const css = readFileSync(join(import.meta.dir, "eclat.css"), "utf8");
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  /** The declarations of every rule whose selector is exactly `sel`, joined. */
+  const rule = (sel: string): string => {
+    const re = new RegExp(
+      `(?:^|[};])\\s*${sel.replace(/[.[\]*"=()|^$+?\\]/g, "\\$&")}\\s*\\{([^{}]*)\\}`,
+      "gm",
+    );
+    const all = [...bare.matchAll(re)].map((m) => m[1]!.replace(/\s+/g, " ").trim());
+    if (!all.length) throw new Error(`no rule for ${sel}`);
+    return all.join(" ");
+  };
+
+  it("sets each layer at its depth: base 0, shirt 3, number 5, frame 8, holo 9, foil overlay 9.5, rims 1 to 7", () => {
+    expect(rule(".mc-l--base")).toBe("--z: 0;");
+    expect(rule(".mc-l--shirt")).toBe("--z: 3;");
+    expect(rule(".mc-l--num")).toBe("--z: 5;");
+    expect(rule(".mc-l--frame")).toBe("--z: 8;");
+    expect(rule(".mc-l--holo")).toBe("--z: 9;");
+    expect(rule(".mc-rim")).toContain("--z: var(--k);");
+    expect(rule(".mc-eclat__foil")).toContain("--z: 9.5;");
+  });
+
+  it("turns the card by 7 and 9 degrees toward the pointer, in a perspective of three card widths", () => {
+    expect(rule(".mc-eclat__persp")).toContain("perspective: 300cqw;");
+    const tilt = rule(":is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-eclat__tilt");
+    expect(tilt).toContain("transform-style: preserve-3d;");
+    expect(tilt).toContain("rotateX(calc(var(--mc-ay) * 7deg * var(--mc-t)))");
+    expect(tilt).toContain("rotateY(calc(var(--mc-ax) * 9deg * var(--mc-t)))");
+    // and only then: at rest there is no transform at all
+    expect(rule(".mc-eclat__tilt")).toContain("transform: none;");
+  });
+
+  it("lifts each layer by its depth and shrinks it so the layers still line up face-on", () => {
+    const lift = rule(
+      ":is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) :is(.mc-l, .mc-eclat__foil)",
+    );
+    expect(lift).toContain("translateZ(calc(var(--z) * 1cqw * var(--mc-t)))");
+    expect(lift).toContain("scale(calc(1 - var(--z) * var(--mc-t) / 300))");
+    // at rest the layers carry no transform of their own, so every one is rasterised once, unresampled
+    expect(rule(".mc-l")).toContain("transform: none;");
+  });
+
+  it("hands the rims' two-dimensional step over to real depth through --mc-t", () => {
+    expect(rule(".mc-rim")).toContain(
+      "transform: translate(calc(var(--o) * 0.12cqw * var(--mc-dx)), calc(var(--o) * 0.12cqw));",
+    );
+    const moving = rule(":is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-rim");
+    expect(moving).toContain("calc(var(--o) * 0.12cqw * var(--mc-dx) * (1 - var(--mc-t)))");
+    expect(moving).toContain("calc(var(--z) * 1cqw * var(--mc-t))");
+  });
+
+  it("registers the light and the depth as numbers, so they ease and animate", () => {
+    for (const name of ["--mc-ax", "--mc-ay", "--mc-t"]) {
+      expect(bare).toMatch(
+        new RegExp(`@property ${name}\\s*\\{\\s*syntax:\\s*"<number>";\\s*inherits:\\s*true;`),
+      );
+    }
+  });
+
+  it("has the contact shadow lie opposite the light, in light and dark, outside the 3D tree", () => {
+    const sh = rule(".mc-eclat__shadow");
+    expect(sh).toContain("inset: 5% 7% -2.5% 7%;");
+    expect(sh).toContain("filter: blur(4.5cqw);");
+    expect(sh).toContain(
+      "transform: translate(calc(var(--mc-ax) * -5cqw), calc(3cqw + var(--mc-ay) * 3cqw));",
+    );
+    expect(sh).toContain("background: rgb(8 12 24 / 0.42);");
+    expect(rule(".mc-eclat--dark .mc-eclat__shadow")).toContain("rgb(0 0 0 / 0.7)");
+    const html = draw(MOCK_CARDS[3]!.profile);
+    // a sibling of the perspective box, drawn before it, so its blur flattens nothing
+    expect(html.indexOf("mc-eclat__shadow")).toBeLessThan(html.indexOf("mc-eclat__persp"));
+    expect(html.match(/mc-eclat__shadow[^>]*><\/div><div class="mc-eclat__persp"/)).not.toBeNull();
+  });
+
+  it("raises the number: a shade and a highlight that follow the light, in the number layer only", () => {
+    expect(rule(".mc-num-hi")).toBe(
+      "transform: translate(calc(var(--mc-ax) * 4px), calc(var(--mc-ay) * -4px - 2px));",
+    );
+    expect(rule(".mc-num-sh")).toBe(
+      "transform: translate(calc(var(--mc-ax) * -6px), calc(var(--mc-ay) * 6px + 5px));",
+    );
+    const html = draw(MOCK_CARDS[3]!.profile);
+    for (const name of ["base", "shirt", "frame"]) {
+      expect(layer(html, name)!.includes("mc-num-"), name).toBe(false);
+    }
+    expect(layer(html, "num")!.includes("mc-num-hi")).toBe(true);
+    expect(layer(html, "num")!.includes("mc-num-sh")).toBe(true);
+  });
+
+  it("asks the browser for a layer of its own only while a pointer moves", () => {
+    const hints = [...bare.matchAll(/([^{}]+)\{[^{}]*will-change[^{}]*\}/g)].map((m) =>
+      m[1]!.trim(),
+    );
+    expect(hints).toEqual([".mc-eclat--active .mc-eclat__tilt"]);
+    expect(bare.includes("backface-visibility: hidden")).toBe(true);
+  });
+
+  it("is the sheen's angle that turns round for Arabic, and the sheen that follows the light", () => {
+    expect(rule(".mc-eclat__foil")).toContain("--mc-sheen-angle: 115deg;");
+    expect(rule('.mc-eclat[dir="rtl"] .mc-eclat__foil')).toContain("--mc-sheen-angle: 245deg;");
+    const before = rule(".mc-eclat__foil::before");
+    expect(before).toContain("mix-blend-mode: soft-light;");
+    expect(before).toContain("calc(50% + var(--mc-ax) * 40%)");
+    expect(before).toContain("rgb(255 255 255 / var(--mc-sheen))");
+  });
+
+  it("sets the sheen and the foil's strength as the card's own variables, per tier", () => {
+    for (const key of TIER_KEYS) {
+      const p =
+        key === "base"
+          ? MOCK_CARDS[0]!.profile
+          : MOCK_CARDS.find((c) => c.profile.tier === key)!.profile;
+      const style = /<div class="mc-eclat [^"]*" role="img"[^>]*style="([^"]*)"/.exec(draw(p))![1]!;
+      expect(style, key).toMatch(/^--mc-sheen:[\d.]+;--mc-holo:[\d.]+$/);
+      const holo = Number(/--mc-holo:([\d.]+)/.exec(style)![1]);
+      expect(holo > 0, key).toBe(key === "champion" || key === "legend");
+    }
+  });
+});

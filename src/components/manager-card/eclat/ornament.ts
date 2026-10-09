@@ -72,7 +72,7 @@ function plaqueShapes(c: Ctx, plaque: Plaque): string {
   const P = plaque.path;
   const foilFill =
     F.plaqueFoil && plaque.word
-      ? `<g clip-path="url(#${id}-plq)"><rect ${moving("foil", c.flat)} x="${n2(plaque.x0 - 60)}" y="1040" width="${n2(plaque.w + 120)}" height="132" fill="url(#${id}-foil)"/></g>`
+      ? `<g clip-path="url(#${id}-plq)"><rect ${moving("foil", c.flat)} x="${n2(plaque.x0 - 60)}" y="1030" width="${n2(plaque.w + 120)}" height="152" fill="url(#${id}-foil)"/></g>`
       : `<path d="${P}" fill="${mix(F.plate, "#000000", 0.35)}"/>`;
   return (
     `<path d="${P}" fill="#000" fill-opacity=".5" transform="translate(0 5)" filter="url(#${id}-b5)"/>` +

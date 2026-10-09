@@ -104,7 +104,7 @@ function honeycomb(F: Foil, id: string, o: FieldOpts): string {
   if (F.hex.mode === "line") hex = R("hexD") + R("hexL") + R("hexM");
   else if (F.hex.mode === "cells") hex = R("hexC") + R("hexL");
   else {
-    const foilRect = `<rect ${moving("foil", o.flat)} x="-50" y="-30" width="1050" height="1120" fill="url(#${id}-foil)"/>`;
+    const foilRect = `<rect ${moving("foil", o.flat)} x="-50" y="-30" width="1050" height="1130" fill="url(#${id}-foil)"/>`;
     hex =
       R("hexD", `opacity=".45"`) +
       `<g mask="url(#${id}-cells)" opacity="${F.hex.op}">${F.hex.follow ? `<g mask="url(#${id}-lightm)">${foilRect}</g>` : foilRect}</g>` +

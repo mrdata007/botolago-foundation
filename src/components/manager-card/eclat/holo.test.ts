@@ -1,11 +1,17 @@
 import { describe, expect, it } from "bun:test";
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { FOIL, TIER_KEYS } from "./foil";
-import { TAB, WINDOW_IN } from "./geometry";
+import { REST } from "./field";
+import { CHEST, OUTLINE, TAB, WINDOW, WINDOW_IN } from "./geometry";
 import { eclatRenderer } from "./index";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS } from "./test-data";
-import { layer } from "./test-markup";
+import { layer, pathBox } from "./test-markup";
 import type { CardProfile } from "../types";
+
+const CSS = readFileSync(join(import.meta.dir, "eclat.css"), "utf8");
 
 const profileOf = (key: (typeof TIER_KEYS)[number]): CardProfile =>
   key === "base" ? MOCK_CARDS[0]!.profile : MOCK_CARDS.find((c) => c.profile.tier === key)!.profile;
@@ -84,5 +90,98 @@ describe("holographic items (plan 5.5, revision 3)", () => {
     expect(ar.startsWith('<g transform="matrix(-1 0 0 1 1000 0)">')).toBe(true);
     const fr = layer(draw(profileOf("champion")), "holo")!;
     expect(fr.includes("matrix(-1")).toBe(false);
+  });
+});
+
+/** The rule `.<cls> { transform: translate(calc(var(--mc-ax) * Xpx ...), calc(var(--mc-ay) * Ypx ...)) }`. */
+function followed(cls: string): { x: number; y: number } {
+  const m = new RegExp(
+    `\\.${cls}\\s*\\{\\s*transform:\\s*translate\\(\\s*calc\\(var\\(--mc-ax\\) \\* (-?[\\d.]+)px[^)]*\\)\\),\\s*calc\\(var\\(--mc-ay\\) \\* (-?[\\d.]+)px`,
+  ).exec(CSS);
+  if (!m) throw new Error(`no light-following rule for .${cls}`);
+  return { x: Number(m[1]), y: Number(m[2]) };
+}
+
+describe("the foil moves with the light and is still all there at rest (plan 5.5, 8.2)", () => {
+  it("rests where the share art and a reduced-motion card draw it: the stylesheet's rest light gives the flat transforms", () => {
+    const AX = 0.24;
+    const AY = 0.64;
+    const at = (cls: string) => {
+      const f = followed(cls);
+      return `translate(${+(AX * f.x).toFixed(2)} ${+(AY * f.y).toFixed(2)})`;
+    };
+    expect(at("mc-foil-shift")).toBe(REST.foil);
+    expect(at("mc-spec-shift")).toBe(REST.spec);
+    expect(at("mc-light-follow")).toBe(REST.light);
+    expect(at("mc-shirt-cast")).toBe(REST.cast);
+    // the root's own rest light is that same pair, mirrored in Arabic
+    expect(CSS).toMatch(/--mc-ax:\s*0\.24;\s*--mc-ay:\s*0\.64;/);
+    expect(CSS).toMatch(/\.mc-eclat\[dir="rtl"\]\s*\{\s*--mc-ax:\s*-0\.24;\s*--mc-dx:\s*-1/);
+  });
+
+  it("keeps each foil rectangle over what its mask shows at the largest shift of the light", () => {
+    const f = followed("mc-foil-shift");
+    // the light runs from -1 to 1 on both axes; Arabic multiplies x by -1 inside the mirrored group
+    const shifts = [-1, 1].flatMap((ax) => [-1, 1].map((ay) => [ax * f.x, ay * f.y] as const));
+    const covers = (
+      r: { x: number; y: number; w: number; h: number },
+      b: ReturnType<typeof pathBox>,
+      what: string,
+    ) => {
+      for (const [dx, dy] of shifts) {
+        expect(r.x + dx, `${what} left at ${dx},${dy}`).toBeLessThanOrEqual(b.x0);
+        expect(r.x + r.w + dx, `${what} right at ${dx},${dy}`).toBeGreaterThanOrEqual(b.x1);
+        expect(r.y + dy, `${what} top at ${dx},${dy}`).toBeLessThanOrEqual(b.y0);
+        expect(r.y + r.h + dy, `${what} bottom at ${dx},${dy}`).toBeGreaterThanOrEqual(b.y1);
+      }
+    };
+    const rect = (markup: string) =>
+      [
+        ...markup.matchAll(
+          /<rect class="mc-foil-shift" x="(-?[\d.]+)" y="(-?[\d.]+)" width="([\d.]+)" height="([\d.]+)"/g,
+        ),
+      ].map((m) => ({ x: +m[1]!, y: +m[2]!, w: +m[3]!, h: +m[4]! }));
+    for (const key of ["champion", "legend"] as const) {
+      const html = draw(profileOf(key));
+      // the edge, the band and the tab's rim: the whole card
+      const edge = rect(layer(html, "holo")!);
+      expect(edge, key).toHaveLength(1);
+      covers(edge[0]!, pathBox(OUTLINE), `${key} edge`);
+      // the honeycomb's cells: the shield window
+      const cells = rect(layer(html, "base")!);
+      expect(cells, key).toHaveLength(1);
+      covers(cells[0]!, pathBox(WINDOW), `${key} cells`);
+    }
+    // LEGEND's plaque: the plaque's own box
+    const legend = draw(profileOf("legend"));
+    const plaque = rect(layer(legend, "frame")!);
+    expect(plaque).toHaveLength(1);
+    const clip = /<clipPath id="[^"]*-plq"><path d="([^"]*)"/.exec(layer(legend, "frame")!)!;
+    covers(plaque[0]!, pathBox(clip[1]!), "legend plaque");
+  });
+
+  it("puts the glints where nothing is printed: clear of the number, the tab and the plate's text", () => {
+    for (const key of ["champion", "legend"] as const) {
+      const holo = layer(draw(profileOf(key)), "holo")!;
+      const glints = [...holo.matchAll(/<path class="mc-glint-([ab])" d="M([\d.]+) ([\d.-]+)/g)];
+      expect(glints.length).toBe(key === "legend" ? 4 : 2);
+      glints.forEach((g, i) => expect(g[1]).toBe(i % 2 ? "b" : "a"));
+      for (const g of glints) {
+        // the star's path starts at its top point: M x (y - s)
+        const x = +g[2]!;
+        const y = +g[3]! + 20;
+        const clearOfNumber =
+          x < CHEST.x0 - 20 || x > CHEST.x1 + 20 || y < CHEST.y0 - 20 || y > CHEST.y1 + 20;
+        expect(clearOfNumber, `${key} ${x},${y}`).toBe(true);
+        // above the plaque's words (the first name line starts at 1090)
+        expect(y, `${key} ${x},${y}`).toBeLessThan(1070);
+      }
+    }
+  });
+
+  it("is the same card with the foil frozen: no animation property outside a no-preference block touches it", () => {
+    const m = /\.mc-foil-shift\s*\{([^}]*)\}/.exec(CSS)![1]!;
+    expect(m.includes("animation")).toBe(false);
+    expect(m.includes("transition")).toBe(false);
   });
 });

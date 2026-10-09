@@ -5,6 +5,10 @@
  * glints. The foil is the tier's own narrow palette and it moves with the light. The foil in the
  * honeycomb cells is `field.ts`'s; the foil plaque is `ornament.ts`'s; the sheen and the diffraction
  * are CSS (`eclat.css`). Nothing here touches the number or the plate's text.
+ *
+ * The foil slides under its fixed mask by up to 50 units across and 30 up or down (`.mc-foil-shift`),
+ * so each foil rectangle is cut larger than what its mask shows: after the largest shift it still
+ * covers the whole card (`holo.test.ts` checks every one against the shift the stylesheet applies).
  */
 import type { Ctx } from "./ctx";
 import { moving } from "./field";
@@ -49,7 +53,7 @@ export function holoLayer(c: Ctx, plaque: Plaque): string {
     )
     .join("");
   return mirror(
-    `<defs>${mask}</defs><g mask="url(#${id}-hm)"><rect ${moving("foil", c.flat)} x="-62" y="-30" width="1100" height="1678" fill="url(#${id}-foil)"/></g>${glints}`,
+    `<defs>${mask}</defs><g mask="url(#${id}-hm)"><rect ${moving("foil", c.flat)} x="-62" y="-40" width="1124" height="1698" fill="url(#${id}-foil)"/></g>${glints}`,
     ar,
   );
 }
