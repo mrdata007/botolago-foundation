@@ -428,9 +428,14 @@ The budgets for the reads, as database time for one call:
 
 The contract test (`scripts/backend/manager-card-contract-e2e.test.ts`) prints
 the measured numbers on every run and checks the budgets when
-`MANAGER_CARD_E2E_STRICT_TIMING=1`. Measured numbers: not recorded yet. Fill
-this in from the first run on the finished migrations (date, machine, the five
-figures). The status call is the one the website makes on every page load; if
+`MANAGER_CARD_E2E_STRICT_TIMING=1`. Measured numbers (2026-10-09, the local
+Supabase stack on the build machine, database time from `explain (analyze)`,
+median of 9 runs with 100 extra managers loaded; these are local-stack numbers,
+not production): `manager_card_status` 0.5 ms, `get_my_manager_card` 6.1 ms,
+`get_manager_cards` of 100 ids 10.8 ms, `get_my_manager_card_history` (20 rows)
+1.1 ms, `ack_manager_card_moments` 5.3 ms. The batch read was 205 ms for 100 ids
+(median of 5, about 1 ms a team) before it was made set-based. Re-measure on
+production after the apply and record it here. The status call is the one the website makes on every page load; if
 it ever passes its budget, the website's 800 ms limit hides the section rather
 than slow the page.
 

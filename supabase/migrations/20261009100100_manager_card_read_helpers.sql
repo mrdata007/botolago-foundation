@@ -628,14 +628,20 @@ revoke all on function app_private.manager_card_my_card(uuid)
 comment on function app_private.manager_card_my_card(uuid) is
   'The caller''s card for the current Fantasy season in the shape of myCardSchema (30 keys), or null (no profile, deleted-pending, no season, no team). Figures are null under the minimum. Display only. No grant.';
 
--- H10. Another manager's card, the fourteen keys of memberCardSchema, or null.
-create function app_private.manager_card_member_card(p_fantasy_team_id uuid)
-returns jsonb
+-- H10. Other managers' cards, the fourteen keys of memberCardSchema each, for a
+-- list of Fantasy teams at once. One row per known team with a visible profile;
+-- unknown teams and deleted-pending profiles give no row. It takes the whole
+-- list on purpose: called once per team (a function per row, each call with its
+-- own nested club, label and rules calls) it cost about 1 ms a team on the local
+-- stack, 200 ms for 100 teams; as one statement over the list it takes under
+-- 10 ms.
+create function app_private.manager_card_member_card(p_fantasy_team_ids uuid[])
+returns table (team_id uuid, card jsonb)
 language sql
 stable
 set search_path = ''
 as $$
-  select jsonb_build_object(
+  select t.id, jsonb_build_object(
     'teamId', t.id,
     'name', coalesce(nullif(btrim(p.display_name), ''), t.name),
     'club', app_private.manager_card_club(t.user_id),
@@ -674,9 +680,9 @@ as $$
         when s.provisional then 'provisional'
         else 'rated' end as state
   ) st
-  where t.id = p_fantasy_team_id;
+  where t.id = any (p_fantasy_team_ids);
 $$;
-revoke all on function app_private.manager_card_member_card(uuid)
+revoke all on function app_private.manager_card_member_card(uuid[])
   from public, anon, authenticated, service_role;
-comment on function app_private.manager_card_member_card(uuid) is
-  'One manager''s card for the season of the given Fantasy team in the shape of memberCardSchema (14 keys), or null (unknown team, deleted-pending profile). A team with no card row is a forming card. No handle, moments, user id or e-mail. No grant.';
+comment on function app_private.manager_card_member_card(uuid[]) is
+  'The cards of the given Fantasy teams for each team''s own season in the shape of memberCardSchema (14 keys), one (team_id, card) row per known team with a visible profile; unknown teams and deleted-pending profiles give no row. A team with no card row is a forming card. Set-based: one statement for the whole list. No handle, moments, user id or e-mail. No grant.';

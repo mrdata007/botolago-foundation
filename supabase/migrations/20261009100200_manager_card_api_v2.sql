@@ -106,10 +106,7 @@ begin
       where t.id is not null
       group by t.id
     ) asked
-    cross join lateral (
-      select app_private.manager_card_member_card(asked.id) as card
-    ) built
-    where built.card is not null
+    join app_private.manager_card_member_card(p_team_ids) built on built.team_id = asked.id
   ) found;
   return jsonb_build_object('available', true, 'cards', result);
 end;

@@ -328,9 +328,10 @@ R = `app.manager_card_seasons (user, CS)` (may be none), C = card row (may be no
 | `createdAt`                | C.created_at, else null                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `moments`                  | `jsonb_agg(moment order by occurred_at nulls first, moment_key)` of H8 where `pending`, else `[]`                                                                                                                                                                                                                                                                                                                                                                                |
 
-**H10. `app_private.manager_card_member_card(p_fantasy_team_id uuid)`** `returns jsonb`,
-`language sql stable`. T = the team (any season, as #381: answered for the team's own season, no
-D7 fallback, `…123300…sql:36-39`); U = T.user_id; SQL null when the team is unknown or the profile
+**H10. `app_private.manager_card_member_card(p_fantasy_team_ids uuid[])`** `returns table (team_id uuid, card jsonb)`,
+`language sql stable`, set-based (one row per known team in the list, so a batch of 100 is one statement; a function
+called per team measured 200 ms for 100). T = the team (any season, as #381: answered for the team's own season, no
+D7 fallback, `…123300…sql:36-39`); U = T.user_id; no row when the team is unknown or the profile
 has `deleted_at`. R = `manager_card_seasons (U, T.fantasy_season_id)`; C = card row. Exactly these
 14 keys (`contracts.ts:177-200`): `teamId`, `name` (H9 rule), `club` H6(U), `serial`,
 `founderCohort` (C or null), `seasonLabel` H4, `ratingState` (H9 rule), `ovr`, `tier`,
