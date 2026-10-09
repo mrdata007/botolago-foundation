@@ -63,3 +63,14 @@ With only the Vite component harness above running (no database/server required)
 run `node scripts/qa/home-stories/reauth-browser.mjs`. Playwright intercepts every
 local story request. It returns `recent_auth_required` for writes and verifies
 FR/AR sign-in recovery, the return URL and retained form text.
+
+## Automatic illustrations
+
+`bash scripts/qa/home-stories/run-ai-db.sh` checks the real automation migration
+and the same lifecycle scenario as database CI against one disposable database.
+The bootstrap supplies only table/cron/storage shapes; it sends no network jobs.
+
+With the component preview running, `node scripts/qa/home-stories/ai-layout.mjs`
+checks eight locale/width/theme combinations, image-only viewer behavior, full
+headlines, Escape/focus restoration and the hidden empty feed. It intercepts all
+local RPCs and uses a local image fixture; screenshots are in `/tmp/ai-stories-layout`.

@@ -58,7 +58,6 @@ await page
 await page
   .getByLabel("Description de l’image en arabe", { exact: true })
   .fill("الجماهير في الملعب");
-await page.getByLabel("Destination facultative", { exact: true }).selectOption("/matches");
 const secondUpload = page.waitForResponse((r) =>
   r.url().includes("/functions/v1/news-media-upload"),
 );
@@ -79,10 +78,7 @@ await page.getByTestId("home-stories").getByRole("button").first().click();
 await page.getByTestId("story-viewer").waitFor();
 await page.getByRole("button", { name: "Suivant", exact: true }).click();
 await page.getByRole("heading", { name: "Jour de match", exact: true }).waitFor();
-assert.equal(
-  await page.getByRole("link", { name: "En savoir plus" }).getAttribute("href"),
-  "/matches",
-);
+assert.equal(await page.getByRole("link", { name: "En savoir plus" }).count(), 0);
 await page.getByRole("button", { name: "Précédent", exact: true }).click();
 await page.screenshot({ path: "/tmp/botolago-stories/viewer-fr-390.png" });
 await page.keyboard.press("Escape");

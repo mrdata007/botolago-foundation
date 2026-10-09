@@ -1,0 +1,12 @@
+-- Additional fixtures for the disposable plain-Postgres harness only.
+create schema storage; create schema cron;
+create table storage.objects(bucket_id text,name text);
+create function cron.schedule(text,text,text) returns bigint language sql as $$select 1::bigint$$;
+create table app.publishers(id uuid primary key,name text);
+create table app.stories(id uuid primary key,original_language text,deleted_at timestamptz,publisher_id uuid);
+create table app.article_editions(id uuid primary key,story_id uuid,language text,slug text,title text,summary text,body_html text,reading_time_minutes integer,sanitizer_version text,status text,visibility text,published_at timestamptz);
+alter table app.media_assets alter column id set default gen_random_uuid();
+alter table app.media_assets add column kind text,add column validated_at timestamptz,add column width integer,add column height integer,add column alt_text text;
+create function app_private.is_service_request() returns boolean language sql as $$select current_setting('request.jwt.claim.role',true)='service_role'$$;
+create table app_private.notification_email_settings(id boolean,functions_base_url text);
+create function app_private.invoke_scheduled_function(text,text,jsonb) returns bigint language sql as $$select 1::bigint$$;

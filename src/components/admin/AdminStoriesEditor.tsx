@@ -7,7 +7,6 @@ import {
   type HomeStoriesRepository,
 } from "@/backend/home-stories/repository";
 import {
-  STORY_DESTINATIONS,
   STORY_IMAGE_TYPES,
   storyInputSchema,
   type HomeStory,
@@ -21,7 +20,6 @@ import {
   UiCard,
   UiInput,
   UiLinkButton,
-  UiSelect,
   UiSkeleton,
 } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -48,7 +46,7 @@ export function AdminStoriesEditor({
   repository?: Pick<HomeStoriesRepository, "list" | "save" | "publish">;
   upload?: typeof uploadStoryImage;
 }) {
-  const { lang, t } = useI18n();
+  const { lang } = useI18n();
   const ar = lang === "ar";
   const qc = useQueryClient();
   const query = useQuery({
@@ -101,7 +99,10 @@ export function AdminStoriesEditor({
     setBusy(true);
     setNotice(null);
     try {
-      const result = await repository.save(storyInputSchema.parse(form), editing ?? undefined);
+      const result = await repository.save(
+        storyInputSchema.parse({ ...form, destination: null }),
+        editing ?? undefined,
+      );
       setEditing(result);
       setForm(result);
       setDirty(false);
@@ -161,18 +162,13 @@ export function AdminStoriesEditor({
       setBusy(false);
     }
   };
-  const destinationLabels = [
-    t("nav.news"),
-    t("nav.fantasy"),
-    t("nav.matches"),
-    t("matches.table_preview"),
-    t("home.discover.predictions"),
-    t("nav.pepites"),
-    t("clubs.title"),
-    ar ? "الجوائز" : "Lots à gagner",
-  ];
   return (
     <div className="grid min-w-0 gap-5" data-testid="admin-stories-editor">
+      <p className={cn(ui.text.secondary, ui.tone.muted)}>
+        {ar
+          ? "تُنشأ صور الأخبار تلقائياً من أحدث المقالات المنشورة باللغتين. يمكنك مراجعتها أو إخفاؤها هنا، أو رفع صورة يدوياً."
+          : "Les images d’actualité sont créées automatiquement à partir des derniers articles publiés dans les deux langues. Vous pouvez les consulter, les dépublier ou ajouter une image manuellement."}
+      </p>
       {notice && (
         <UiAlert tone={notice.error ? "caution" : "positive"} title={notice.text}>
           {notice.reauthenticate && (
@@ -289,7 +285,7 @@ export function AdminStoriesEditor({
                 label={ar ? "العنوان بالفرنسية" : "Titre en français"}
                 dir="ltr"
                 required
-                maxLength={60}
+                maxLength={200}
                 value={form.titleFr}
                 onChange={(e) => update("titleFr", e.target.value)}
               />
@@ -297,7 +293,7 @@ export function AdminStoriesEditor({
                 label={ar ? "العنوان بالعربية" : "Titre en arabe"}
                 dir="rtl"
                 required
-                maxLength={60}
+                maxLength={200}
                 value={form.titleAr}
                 onChange={(e) => update("titleAr", e.target.value)}
               />
@@ -358,23 +354,6 @@ export function AdminStoriesEditor({
               </figure>
             )}
             <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-              <UiSelect
-                label={ar ? "رابط اختياري" : "Destination facultative"}
-                value={form.destination ?? ""}
-                onChange={(e) =>
-                  update(
-                    "destination",
-                    e.target.value ? (e.target.value as StoryInput["destination"]) : null,
-                  )
-                }
-              >
-                <option value="">{ar ? "بدون رابط" : "Sans lien"}</option>
-                {STORY_DESTINATIONS.map((to, i) => (
-                  <option key={to} value={to}>
-                    {destinationLabels[i]}
-                  </option>
-                ))}
-              </UiSelect>
               <UiInput
                 label={ar ? "الترتيب (الأصغر أولاً)" : "Ordre (le plus petit d’abord)"}
                 type="number"

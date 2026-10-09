@@ -11,8 +11,8 @@ export const STORY_DESTINATIONS = [
   "/prizes",
 ] as const;
 export const storyInputSchema = z.object({
-  titleFr: z.string().trim().min(1).max(60),
-  titleAr: z.string().trim().min(1).max(60),
+  titleFr: z.string().trim().min(1).max(200),
+  titleAr: z.string().trim().min(1).max(200),
   altFr: z.string().trim().min(1).max(300),
   altAr: z.string().trim().min(1).max(300),
   mediaAssetId: z.string().uuid(),
@@ -21,6 +21,8 @@ export const storyInputSchema = z.object({
   position: z.number().int().min(0).max(999),
 });
 export const homeStorySchema = storyInputSchema.extend({
+  generated: z.boolean().default(false),
+  sourceName: z.string().nullable().default(null),
   id: z.string().uuid(),
   storagePath: z.string().regex(/^news\/[a-z0-9/_-]+\.(avif|jpg|jpeg|png|webp)$/),
   published: z.boolean(),
