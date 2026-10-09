@@ -15,3 +15,15 @@ Relevant worker/repository/feature tests: 88 passed. UI-kit contract: 188 passed
 TypeScript and changed-source ESLint passed. The initial isolated browser run was
 blocked by a shared Vite optimize cache; the committed preview now has its own
 cache and all eight cases passed. No production data was used in these tests.
+
+The full Home page also passed four FR/AR mobile/desktop checks against the local
+backend stub. `home-spacing.json` records the measured separation from headlines
+to the matchday banner (at least 20px). Main-page screenshots are `home-*.png`.
+The first full-schema CI run rejected the article fixture's too-short body HTML;
+the fixture now supplies valid rich-text bodies and uses the supported unlisted
+visibility state to test withdrawal. No production migration change was needed.
+
+Production rehearsal of `apply-ai-home-stories.sql` passed and rolled back:
+169 migration rows, 0 home stories, 85 media rows and 696 audit rows before/after;
+no automation table remained. No active production-writing workflow, database
+client or cron job was present at preflight. Persistent apply is still pending CI.
