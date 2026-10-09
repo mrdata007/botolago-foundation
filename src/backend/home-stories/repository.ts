@@ -2,8 +2,8 @@ import { z } from "zod";
 import { getNewsApi, supabaseV2 } from "@/integrations/supabase/v2-client";
 import { homeStorySchema, storyInputSchema, validateStoryFile, type StoryInput } from "./contracts";
 
-// Narrow RPC adapter while the forward-only migration awaits deployment and
-// generated types. All responses and write inputs are validated at this boundary.
+// Narrow RPC adapter for injectable tests. Generated database types include
+// these routines; responses and write inputs are also validated at runtime.
 export interface StoriesApi {
   rpc(
     name: string,

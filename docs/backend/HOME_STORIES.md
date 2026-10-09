@@ -30,8 +30,8 @@ automatically.
    `20261009113132_home_stories_force_rls.sql` from exact checksummed bytes.
 2. Confirm the existing `news-media-upload` deployment, bucket and editorial
    media registration RPC are configured. No Edge Function change is required.
-3. Regenerate database types via the normal backend type workflow. The frontend
-   currently uses a narrow RPC adapter with validated inputs/responses.
+3. Database types are regenerated from the complete CI migration chain and
+   committed. The frontend also validates RPC inputs/responses at runtime.
 4. Publish the reviewed frontend via the documented website deployment path.
 5. With real staff accounts, verify upload → draft → reload → publish → public
    viewer → unpublish, plus rejection for a non-publisher.
