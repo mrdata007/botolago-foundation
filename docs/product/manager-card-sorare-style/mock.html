@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Manager Card mock</title>
-    <!-- Direction mock for MANAGER_CARD_SORARE_STYLE_PLAN.md (revision 2: detail, number in the shirt, holographic top tiers, depth). Static, not app code. Fonts from Google Fonts for the mock only; the app self-hosts them. -->
+    <!-- Direction mock for MANAGER_CARD_SORARE_STYLE_PLAN.md, revision 3 (honeycomb fields, shield frame, 3D jersey at real proportions, 40 % less clutter, small sizes). Static, not app code. Fonts from Google Fonts for the mock only; the app self-hosts them. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -15,18 +15,18 @@
       :root {
         --page: #f4f6f9;
         --ink: #111827;
-        --muted: #5a667d;
+        --muted: #4f5b70;
       }
       :root[data-theme="dark"] {
         --page: #0b1020;
         --ink: #e7ecf3;
-        --muted: #9aa6b8;
+        --muted: #a3aec0;
       }
       @media (prefers-color-scheme: dark) {
         :root:not([data-theme="light"]) {
           --page: #0b1020;
           --ink: #e7ecf3;
-          --muted: #9aa6b8;
+          --muted: #a3aec0;
         }
       }
       * {
@@ -40,6 +40,10 @@
           15px/1.5 Manrope,
           system-ui,
           sans-serif;
+      }
+      ::selection {
+        background: #c77dff;
+        color: #0d0314;
       }
       header {
         padding: 24px 16px 8px;
@@ -56,6 +60,14 @@
           sans-serif;
         margin: 0;
         flex: 1 1 auto;
+      }
+      h2 {
+        font:
+          800 17px/1.3 Changa,
+          sans-serif;
+        max-width: 1240px;
+        margin: 28px auto 0;
+        padding: 0 16px;
       }
       button {
         font:
@@ -78,11 +90,13 @@
         margin: 0 auto;
         padding: 0 16px;
         color: var(--muted);
+        max-inline-size: 75ch;
+        margin-inline: max(0px, calc((100% - 1240px) / 2));
       }
       .row {
         max-width: 1240px;
         margin: 0 auto;
-        padding: 28px 16px;
+        padding: 24px 16px;
         display: flex;
         flex-wrap: wrap;
         gap: 36px 28px;
@@ -105,12 +119,26 @@
         width: min(296px, calc(100vw - 32px));
         padding: 6px 0 18px;
       }
-      .tokens {
-        display: flex;
-        gap: 14px;
-        align-items: flex-end;
-        flex-wrap: wrap;
-        justify-content: center;
+      .stage--s {
+        width: min(240px, calc(100vw - 32px));
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: auto repeat(5, auto);
+        gap: 14px 22px;
+        align-items: end;
+        justify-items: center;
+      }
+      .grid .h {
+        font-size: 12px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+      }
+      .grid .t {
+        font-size: 12px;
+        color: var(--muted);
+        justify-self: end;
+        align-self: center;
       }
 
       /* ---------- the card (eclat.css, abridged) ---------- */
@@ -173,7 +201,7 @@
         --z: 3;
       }
       .mc-l--num {
-        --z: 6;
+        --z: 5;
       }
       .mc-l--frame {
         --z: 8;
@@ -184,7 +212,7 @@
       .mc-rim {
         --z: var(--k);
       }
-      /* the contact shadow moves against the light */
+      /* the card's contact shadow on the page moves against the light */
       .mc-eclat__shadow {
         position: absolute;
         inset: 5% 7% -2.5% 7%;
@@ -197,14 +225,27 @@
       .mc-eclat--dark .mc-eclat__shadow {
         background: rgb(0 0 0 / 0.7);
       }
-      /* raised number: highlight and shade copies follow the light */
+      /* the jersey's shadow on the backboard, and the raised number, follow the light */
+      .mc-shirt-cast {
+        transform: translate(calc(var(--mc-ax) * -14px), calc(var(--mc-ay) * 10px));
+      }
       .mc-num-hi {
-        transform: translate(calc(var(--mc-ax) * 5px), calc(var(--mc-ay) * -5px - 2px));
+        transform: translate(calc(var(--mc-ax) * 4px), calc(var(--mc-ay) * -4px - 2px));
       }
       .mc-num-sh {
-        transform: translate(calc(var(--mc-ax) * -7px), calc(var(--mc-ay) * 7px + 7px));
+        transform: translate(calc(var(--mc-ax) * -6px), calc(var(--mc-ay) * 6px + 5px));
       }
-      /* foil overlay */
+      /* foil slides under its fixed mask (honeycomb cells, edges, plaque rim) */
+      .mc-foil-shift {
+        transform: translate(calc(var(--mc-ax) * 50px), calc(var(--mc-ay) * -30px));
+      }
+      .mc-glint-a {
+        opacity: calc(0.2 + (var(--mc-ax) + 1) * 0.4);
+      }
+      .mc-glint-b {
+        opacity: calc(0.2 + (1 - var(--mc-ax)) * 0.4);
+      }
+      /* sheen (every tier) and the restrained diffraction (CHAMPION, LEGEND), above the art only */
       .mc-eclat__foil {
         position: absolute;
         inset: 0;
@@ -243,50 +284,58 @@
         mix-blend-mode: soft-light;
         background: linear-gradient(
           var(--mc-sheen-angle),
-          transparent calc(50% + var(--mc-ax) * 40% - 22%),
+          transparent calc(50% + var(--mc-ax) * 40% - 20%),
           rgb(255 255 255 / var(--mc-sheen)) calc(50% + var(--mc-ax) * 40%),
-          transparent calc(50% + var(--mc-ax) * 40% + 22%)
+          transparent calc(50% + var(--mc-ax) * 40% + 20%)
         );
       }
       .mc-holo .mc-eclat__foil::after {
         content: "";
         position: absolute;
-        inset: 0;
+        inset: 0 0 31% 0;
         mix-blend-mode: color-dodge;
         opacity: var(--mc-holo);
-        background: repeating-linear-gradient(
+        background: linear-gradient(
           var(--mc-sheen-angle),
-          #ff4d6d 0%,
-          #ffb347 2%,
-          #fff36b 4%,
-          #6bff95 6%,
-          #4dd6ff 8%,
-          #7a6bff 10%,
-          #ff6bd6 12%
+          transparent 0%,
+          var(--f1) 30%,
+          var(--f2) 42%,
+          var(--f3) 54%,
+          var(--f4) 66%,
+          transparent 92%
         );
-        background-size: 400% 400%;
-        background-position: calc(50% + var(--mc-ax) * 50%) calc(50% - var(--mc-ay) * 50%);
-        -webkit-mask-image: radial-gradient(
-          circle at calc(50% + var(--mc-ax) * 45%) calc(50% - var(--mc-ay) * 45%),
-          #000 0,
-          rgb(0 0 0 / 0.45) 38%,
-          rgb(0 0 0 / 0.18) 80%
-        );
-        mask-image: radial-gradient(
-          circle at calc(50% + var(--mc-ax) * 45%) calc(50% - var(--mc-ay) * 45%),
-          #000 0,
-          rgb(0 0 0 / 0.45) 38%,
-          rgb(0 0 0 / 0.18) 80%
-        );
+        background-size: 260% 260%;
+        background-position: calc(50% + var(--mc-ax) * 50%) calc(50% - var(--mc-ay) * 30%);
+        -webkit-mask-image:
+          radial-gradient(
+            ellipse 70% 60% at calc(50% + var(--mc-ax) * 40%) calc(45% - var(--mc-ay) * 30%),
+            #000 0,
+            rgb(0 0 0 / 0.35) 55%,
+            transparent 100%
+          ),
+          radial-gradient(ellipse 24% 18% at 50% 54%, transparent 70%, #000 100%);
+        mask-image:
+          radial-gradient(
+            ellipse 70% 60% at calc(50% + var(--mc-ax) * 40%) calc(45% - var(--mc-ay) * 30%),
+            #000 0,
+            rgb(0 0 0 / 0.35) 55%,
+            transparent 100%
+          ),
+          radial-gradient(ellipse 24% 18% at 50% 54%, transparent 70%, #000 100%);
+        -webkit-mask-composite: source-in;
+        mask-composite: intersect;
       }
-      .mc-spark-a {
-        opacity: calc(0.25 + (var(--mc-ax) + 1) * 0.375);
+      .mc-eclat--champion {
+        --f1: #4fe0f0;
+        --f2: #a6f0ff;
+        --f3: #46d9c8;
+        --f4: #8fb4ff;
       }
-      .mc-spark-b {
-        opacity: calc(0.25 + (1 - var(--mc-ax)) * 0.375);
-      }
-      .mc-seal-holo {
-        filter: hue-rotate(calc(var(--mc-ax) * 120deg));
+      .mc-eclat--legend {
+        --f1: #ff8ad8;
+        --f2: #c59bff;
+        --f3: #7ff0e0;
+        --f4: #ffe3a8;
       }
       .mc-f-d {
         font-family: Changa, sans-serif;
@@ -306,13 +355,17 @@
       .mc-f-a {
         font-family: "Noto Sans Arabic", sans-serif;
       }
-      .mc-flat svg {
+      .mc-tok {
+        display: block;
+      }
+      .mc-tok svg {
         display: block;
         width: 100%;
         height: 100%;
+        overflow: visible;
       }
       @media (prefers-reduced-motion: no-preference) {
-        .mc-beat .mc-tube {
+        .mc-beat .mc-flood {
           animation: mc-ignite 180ms steps(3) both;
         }
         .mc-beat .mc-field {
@@ -370,101 +423,149 @@
   </head>
   <body>
     <header>
-      <h1>Manager Card · direction mock</h1>
+      <h1>Manager Card · direction mock, revision 3</h1>
       <button id="theme" type="button">Thème clair / sombre</button>
       <button id="replay" type="button">Rejouer « make »</button>
     </header>
     <p class="note">
-      Follows MANAGER_CARD_SORARE_STYLE_PLAN.md (revision 2). Move a mouse or pen over a card: it
-      tilts, its layers part in depth, the light, the raised number and the holographic foil follow.
-      Sample data; club colours from the app's kit table.
+      Follows MANAGER_CARD_SORARE_STYLE_PLAN.md (revision 3): a framed match shirt at real
+      proportions on a honeycomb backboard, a shield frame in the tier's metal, the name under the
+      artwork. Move a mouse or pen over a card: it tilts, its layers part, the light, the jersey's
+      shadow, the raised number and (CHAMPION, LEGEND) the foil follow. Sample data; club colours
+      from the app's kit table.
     </p>
     <div class="row" id="full"></div>
+    <h2>Interface arabe</h2>
     <div class="row" id="arabic" dir="rtl" lang="ar"></div>
+    <h2>Noms longs</h2>
+    <div class="row" id="names"></div>
+    <h2>Petites tailles · 80 · 64 · 48 · 32 · 24 px</h2>
     <div class="row" id="tokens"></div>
 
     <script>
-      const SPECTRUM = [
-        "#FF4D6D",
-        "#FFB347",
-        "#FFF36B",
-        "#6BFF95",
-        "#4DD6FF",
-        "#7A6BFF",
-        "#FF6BD6",
-      ];
+      /* ---------------- tier ladder (revision 3) ---------------- */
       const FOIL = {
         base: {
           plate: "#12151B",
           deep: "#262B35",
           glow: "#6B7484",
-          tube: "#3A414D",
-          label: "#8C95A3",
+          light: "#AAB3C0",
+          label: "#A3ACB9",
           edgeL: "#3A414D",
           edgeD: "#59616E",
-          sheen: 0.12,
+          sheen: 0.08,
+          beams: [0, 0.05],
+          back: 0.22,
+          hex: { mode: "line", op: 0.5 },
+          metal: ["#22262D", "#4A515C", "#2B3038", "#6A727E", "#30353D", "#555C67", "#1E2228"],
         },
         homa: {
           plate: "#111418",
-          deep: "#3B4450",
+          deep: "#343B45",
           glow: "#C7D0DC",
-          tube: "#EEF3F9",
-          label: "#9BA5B2",
+          light: "#E8EEF5",
+          label: "#B5BFCA",
           edgeL: "#5C6672",
           edgeD: "#AEB8C5",
-          sheen: 0.24,
+          sheen: 0.16,
+          beams: [0.04, 0.08],
+          back: 0.3,
+          hex: { mode: "line", op: 0.42 },
+          cage: true,
+          brushed: true,
+          metal: ["#5D6670", "#D9DFE6", "#8E98A3", "#F4F7FA", "#78828D", "#C3CAD2", "#4E5660"],
           word: "LASTREET",
           wordFill: "#E6ECF3",
         },
         stade: {
-          plate: "#1C1403",
-          deep: "#7A4E12",
+          plate: "#0E0B05",
+          deep: "#4A3510",
           glow: "#F2B544",
-          tube: "#FFF2DA",
-          label: "#AA9C7E",
+          light: "#FFE2A6",
+          label: "#CDBB95",
           edgeL: "#9A6B16",
           edgeD: "#E9B055",
-          sheen: 0.26,
+          sheen: 0.18,
+          beams: [0.12, 0.2],
+          back: 0.36,
+          pool: true,
+          hex: { mode: "line", op: 0.75, tint: true },
+          metal: ["#5A3D0C", "#C99634", "#FFE9B0", "#9C6C1C", "#F0C566", "#6E4A10", "#D7A748"],
           word: "STADE",
+          wordFill: "#F6C96A",
         },
         pro: {
-          plate: "#1D0507",
-          deep: "#8E1F27",
+          plate: "#1A0407",
+          deep: "#6E0F18",
           glow: "#F0545A",
-          tube: "#FFE1E2",
-          label: "#B6A3A2",
+          light: "#FFC2C2",
+          label: "#D6B9B9",
           edgeL: "#B1262E",
           edgeD: "#EA6263",
-          sheen: 0.26,
+          sheen: 0.18,
+          beams: [0.06, 0.12],
+          back: 0.34,
+          hex: { mode: "cells", op: 1 },
+          metal: ["#4A080E", "#B3242D", "#F27C80", "#7E1219", "#D8434A", "#5A0B11", "#C2333B"],
           word: "PRO",
+          wordFill: "#FF9396",
         },
         champion: {
           plate: "#03111C",
-          deep: "#155C80",
+          deep: "#0D4A63",
           glow: "#5FD0EE",
-          tube: "#E0F5FC",
-          label: "#86A0AE",
+          light: "#D8F6FF",
+          label: "#A9C9D6",
           edgeL: "#1F6F96",
           edgeD: "#6FCFE5",
-          sheen: 0.28,
+          sheen: 0.2,
+          beams: [0.08, 0.14],
+          back: 0.34,
+          hex: { mode: "holo", op: 0.45 },
+          foil: ["#4FE0F0", "#3FB8C9", "#A6F0FF", "#6FA8FF", "#46D9C8", "#BDF6FF"],
+          metal: ["#0B3A48", "#3FAFC9", "#D9F8FF", "#1E7C93", "#8BE3F2", "#0E4B5C", "#5CC9DF"],
           word: "CHAMPION",
-          holo: { foil: 0.3, grid: 0.16, sparks: 16, seal: 1 },
-          ribbon: ["#5FD0EE", "#7A6BFF", "#6BFF95", "#B8F0FF"],
+          wordFill: "#8FE6F7",
+          holo: { css: 0.16, edge: 0.55, band: 0.35, glints: 2 },
         },
         legend: {
-          plate: "#13041C",
-          deep: "#6A2380",
-          glow: "#E061E8",
-          tube: "#F9E1FD",
-          label: "#9C93A6",
+          plate: "#0D0314",
+          deep: "#3E1158",
+          glow: "#C77DFF",
+          light: "#F0D8FF",
+          label: "#C3B4D0",
           edgeL: "#8E3A9A",
           edgeD: "#DE5EE4",
-          sheen: 0.32,
+          sheen: 0.22,
+          beams: [0.08, 0.14],
+          back: 0.4,
+          hex: { mode: "holo", op: 0.6 },
+          foil: ["#FF8AD8", "#C59BFF", "#8FB4FF", "#7FF0E0", "#FFE3A8", "#E6A6FF"],
+          metal: ["#2A0A3C", "#8E44B8", "#F2D6FF", "#5A1E7A", "#C98BEA", "#3A0F52", "#A866D0"],
           word: "LEGEND",
-          holo: { foil: 0.42, grid: 0.26, sparks: 34, seal: 2 },
-          ribbon: ["#FF6AD5", "#C774E8", "#AD8CFF", "#8795E8", "#94D0FF", "#5EE7DF", "#FFE29A"],
+          wordFill: "#E9B8FF",
+          holo: { css: 0.24, edge: 0.85, band: 0.6, glints: 4 },
         },
       };
+
+      const PARTICLES = new Set([
+        "LE",
+        "LA",
+        "LES",
+        "EL",
+        "AL",
+        "DE",
+        "DU",
+        "DES",
+        "ABD",
+        "ABOU",
+        "ABU",
+        "عبد",
+        "أبو",
+        "ابو",
+        "ابن",
+        "بن",
+      ]);
       const AR_TIER = {
         stade: "ملعب",
         pro: "محترف",
@@ -472,20 +573,35 @@
         legend: "أسطورة",
         homa: "LASTREET",
       };
+
+      /* ---------------- geometry (viewBox 0 0 1000 1618, LTR; Arabic mirrors shapes as a group) ---------------- */
       const OUTLINE =
         "M0 40Q0 0 40 0L206 0L216 10L972 10Q1000 10 1000 38L1000 1418L800 1618L28 1618Q0 1618 0 1590Z";
+      // the art window is a heater shield: flat top, straight sides to y 880, two curves to a point at (500, 1136)
       const WINDOW =
-        "M80 22H964Q982 22 982 40V1092Q982 1110 964 1110H80Q62 1110 62 1092V40Q62 22 80 22Z";
-      const RING = OUTLINE + WINDOW; // the frame: outline minus the window (evenodd)
+        "M62 46Q62 22 86 22H914Q938 22 938 46V880C938 990 600 1060 500 1136C400 1060 62 990 62 880Z";
+      const RING = OUTLINE + WINDOW;
+      const TAB = "M0 40Q0 0 40 0L206 0L206 280Q206 302 184 302L0 302Z";
+      // the shirt, flat-lay front view: HPS y 300, hem apex y 899, pit-to-pit 416, sleeve span 620 (ratios in plan §5.1)
       const SHIRT =
-        "M270 1110L270 440L214 462L196 350Q206 300 268 276L352 252L432 250L500 322L568 250L648 252L732 276Q794 300 804 350L786 462L730 440L730 1110Z";
+        "M422 300L318 330L190 418L226 552L292 492C298 600 302 760 298 888Q500 910 702 888C698 760 702 600 708 492L774 552L810 418L682 330L578 300Q500 316 422 300Z";
+      const SLEEVE_L = "M318 330L190 418L226 552L292 492C298 440 308 380 318 330Z";
+      const SLEEVE_R = "M682 330L810 418L774 552L708 492C702 440 692 380 682 330Z";
+      const NECK_IN = "M422 300Q500 316 578 300L500 384Z";
+      const HEM = "M298 870Q500 892 702 870L702 888Q500 910 298 888Z";
+      const CUFF_L = "M190 418L226 552L244 539L208 405Z";
+      const CUFF_R = "M810 418L774 552L756 539L792 405Z";
+      const CHEST = { x0: 336, x1: 664, y0: 476, y1: 796, cy: 636 }; // the number's box (jersey space)
+      // jersey space -> card space: x' = 1.12 x - 60, y' = 1.12 y - 86 (HPS y 250, hem apex y 921, span x 153-847)
+      const JT = "matrix(1.12 0 0 1.12 -60 -86)";
+      const OUTLINE_HALF = 10; // half the number's outer outline stroke (20)
+
       const esc = (s) =>
         String(s).replace(
           /[&<>"']/g,
           (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
         );
       let uid = 0;
-
       function fnv(str) {
         let h = 0x811c9dc5;
         for (const ch of str) {
@@ -535,134 +651,221 @@
           .join("");
       const star = (x, y, s) =>
         `M${x} ${y - s}Q${x} ${y} ${x + s} ${y}Q${x} ${y} ${x} ${y + s}Q${x} ${y} ${x - s} ${y}Q${x} ${y} ${x} ${y - s}Z`;
+      function hexPath(cx, cy, r) {
+        let d = "";
+        for (let k = 0; k < 6; k++) {
+          const a = (Math.PI / 3) * k;
+          d += `${k ? "L" : "M"}${(cx + r * Math.cos(a)).toFixed(2)} ${(cy + r * Math.sin(a)).toFixed(2)}`;
+        }
+        return d + "Z";
+      }
+      // honeycomb tile, flat-top hexes of radius 30: tile 90 x 51.96, five hexes (four corners, one centre)
+      const HEX_W = 90,
+        HEX_H = 51.96;
+      const hexTile = (r) =>
+        [
+          [0, 0],
+          [90, 0],
+          [0, 51.96],
+          [90, 51.96],
+          [45, 25.98],
+        ]
+          .map(([x, y]) => hexPath(x, y, r))
+          .join("");
+      // micro mesh of the shirt fabric: hexes of radius 4.6 (tile 13.8 x 7.97)
+      const knitTile = [
+        [0, 0],
+        [13.8, 0],
+        [0, 7.97],
+        [13.8, 7.97],
+        [6.9, 3.98],
+      ]
+        .map(([x, y]) => hexPath(x, y, 4.2))
+        .join("");
 
-      /* ---------------- layers (shapes are drawn LTR and mirrored as a group in Arabic; text never) ---------------- */
-
-      function fieldShapes(F, seed, tierKey, id) {
-        const r = mulberry(fnv(seed));
-        const R = (a, b) => a + (b - a) * r();
-        let s = "";
-        if (tierKey !== "base") {
-          for (let i = 0; i < 6; i++) {
-            const y0 = 110 + 150 * i + R(-50, 50),
-              c1 = y0 + (r() < 0.5 ? -1 : 1) * R(80, 240),
-              c2 = y0 + (r() < 0.5 ? -1 : 1) * R(80, 240),
-              y1 = y0 + R(-110, 110);
-            const d = `M-80 ${y0.toFixed(1)}C330 ${c1.toFixed(1)} 670 ${c2.toFixed(1)} 1080 ${y1.toFixed(1)}`;
-            const w = R(5, 24),
-              o = R(0.3, 0.7),
-              stroke = F.holo ? `url(#${id}-ribbon)` : F.glow;
-            if (i % 2)
-              s += `<path d="${d}" stroke="${stroke}" stroke-width="${(w * 2).toFixed(1)}" opacity="${(o * 0.55).toFixed(2)}" fill="none" filter="url(#${id}-b10)"/>`;
-            s += `<path d="${d}" stroke="${stroke}" stroke-width="${w.toFixed(1)}" opacity="${o.toFixed(2)}" fill="none" stroke-linecap="round"/>`;
-            s += `<path d="${d}" stroke="${F.tube}" stroke-width="1.6" opacity="${(o * 0.9).toFixed(2)}" fill="none"/>`; // specular core
-          }
-        }
-        const k = tierKey === "base" ? 0.5 : 1,
-          barCol = tierKey === "base" ? "#8C95A3" : null;
-        for (let i = 0; i < 22; i++) {
-          const w = R(20, 150),
-            y = Math.round(R(36, 600) / 12) * 12,
-            x = R(70, 960 - w);
-          s += `<rect x="${x.toFixed(1)}" y="${y}" width="${w.toFixed(1)}" height="${r() < 0.5 ? 8 : 13}" fill="${barCol || (i < 14 ? F.tube : F.glow)}" opacity="${((i < 14 ? R(0.35, 0.85) : 0.6) * k).toFixed(2)}"/>`;
-          if (r() < 0.5)
-            s += `<rect x="${(x + w + 6).toFixed(1)}" y="${y}" width="${R(4, 14).toFixed(1)}" height="8" fill="${barCol || F.tube}" opacity="${(0.5 * k).toFixed(2)}"/>`;
-        }
-        for (let i = 0; i < 56; i++) {
-          const band = r() < 0.5,
-            x = band ? 70 + 12 * Math.floor(R(0, 14)) : 776 + 12 * Math.floor(R(0, 17)),
-            y = 36 + 12 * Math.floor(R(0, 52));
-          s += `<rect x="${x}" y="${y}" width="6" height="6" fill="${barCol || F.tube}" opacity="${(R(0.08, 0.35) * k).toFixed(2)}"/>`;
-        }
-        return s;
+      /* ---------------- text metrics for the number (ink box from canvas, as metrics.ts will) ---------------- */
+      const cv = document.createElement("canvas").getContext("2d");
+      function ink(text, size, weight = 800, family = "Changa") {
+        cv.font = `${weight} ${size}px ${family}`;
+        cv.textAlign = "center";
+        const m = cv.measureText(text);
+        return {
+          l: m.actualBoundingBoxLeft,
+          r: m.actualBoundingBoxRight,
+          a: m.actualBoundingBoxAscent,
+          d: m.actualBoundingBoxDescent,
+        };
+      }
+      // fit the number's ink (plus its outline) inside a box; returns size, x and baseline for text-anchor middle
+      function fitNumber(text, box, half, maxSize) {
+        const m1 = ink(text, 100);
+        const w1 = (m1.l + m1.r) / 100,
+          h1 = (m1.a + m1.d) / 100;
+        const bw = box.x1 - box.x0 - 2 * half - 12,
+          bh = box.y1 - box.y0 - 2 * half - 12;
+        const size = Math.min(maxSize, bw / w1, bh / h1);
+        const m = ink(text, size);
+        const cx = (box.x0 + box.x1) / 2,
+          cy = box.cy ?? (box.y0 + box.y1) / 2;
+        return { size, x: cx - (m.r - m.l) / 2, y: cy + (m.a - m.d) / 2, ink: m };
       }
 
-      function baseLayer(p, F, tierKey, id) {
+      /* ---------------- shared defs ---------------- */
+      function defsFor(F, id, club, seed) {
+        // the card's fingerprint: the honeycomb's phase, seeded by the serial (whole units, 0-89 x 0-51)
+        const rnd = mulberry(fnv(seed));
+        const ox = Math.floor(rnd() * HEX_W),
+          oy = Math.floor(rnd() * 52);
+        const ph = (dx, dy) => `patternTransform="translate(${ox + dx} ${oy + dy})"`;
+        return `<defs>
+    <clipPath id="${id}-win"><path d="${WINDOW}"/></clipPath>
+    <clipPath id="${id}-out"><path d="${OUTLINE}"/></clipPath>
+    <clipPath id="${id}-shirt"><path d="${SHIRT}"/></clipPath>
+    <clipPath id="${id}-tab"><path d="${TAB}"/></clipPath>
+    <linearGradient id="${id}-field" x1="0" y1="22" x2="0" y2="1136" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.deep}"/><stop offset=".55" stop-color="${mix(F.deep, F.plate, 0.62)}"/><stop offset="1" stop-color="${F.plate}"/></linearGradient>
+    <radialGradient id="${id}-back" cx="580" cy="460" r="440" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.glow}" stop-opacity=".9"/><stop offset=".5" stop-color="${F.glow}" stop-opacity=".25"/><stop offset="1" stop-color="${F.glow}" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${id}-vig" cx="520" cy="540" r="760" gradientUnits="userSpaceOnUse"><stop offset=".5" stop-color="${F.plate}" stop-opacity="0"/><stop offset="1" stop-color="${F.plate}" stop-opacity=".9"/></radialGradient>
+    <linearGradient id="${id}-foot" x1="0" y1="820" x2="0" y2="1136" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.plate}" stop-opacity="0"/><stop offset="1" stop-color="${F.plate}" stop-opacity=".75"/></linearGradient>
+    <linearGradient id="${id}-beam" x1="0" y1="22" x2="0" y2="980" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.light}" stop-opacity="1"/><stop offset=".55" stop-color="${F.light}" stop-opacity=".35"/><stop offset="1" stop-color="${F.light}" stop-opacity="0"/></linearGradient>
+    <radialGradient id="${id}-lamp"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".35" stop-color="${F.light}" stop-opacity=".6"/><stop offset="1" stop-color="${F.light}" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${id}-pool" cx="500" cy="930" r="320" gradientTransform="translate(0 698) scale(1 .25)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.light}" stop-opacity=".55"/><stop offset="1" stop-color="${F.light}" stop-opacity="0"/></radialGradient>
+    <radialGradient id="${id}-hexfadeG" cx="560" cy="470" r="620" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <mask id="${id}-hexfade" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1618"><rect width="1000" height="1618" fill="url(#${id}-hexfadeG)"/></mask>
+    <pattern id="${id}-hexD" width="${HEX_W}" height="${HEX_H}" patternUnits="userSpaceOnUse" ${ph(1.6, 2.2)}><path d="${hexTile(30)}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="2.6"/></pattern>
+    <pattern id="${id}-hexL" width="${HEX_W}" height="${HEX_H}" patternUnits="userSpaceOnUse" ${ph(-1, -1.2)}><path d="${hexTile(30)}" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="1.4"/></pattern>
+    <pattern id="${id}-hexM" width="${HEX_W}" height="${HEX_H}" patternUnits="userSpaceOnUse" ${ph(0, 0)}><path d="${hexTile(30)}" fill="none" stroke="${F.hex.tint ? F.glow : F.light}" stroke-opacity="${F.hex.tint ? 0.32 : 0.12}" stroke-width="1.3"/></pattern>
+    <linearGradient id="${id}-cell" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
+    <pattern id="${id}-hexC" width="${HEX_W}" height="${HEX_H}" patternUnits="userSpaceOnUse" ${ph(0, 0)}><path d="${hexTile(27)}" fill="${F.deep}" fill-opacity=".75"/><path d="${hexTile(27)}" fill="url(#${id}-cell)"/></pattern>
+    <pattern id="${id}-hexW" width="${HEX_W}" height="${HEX_H}" patternUnits="userSpaceOnUse" ${ph(0, 0)}><path d="${hexTile(27)}" fill="#fff"/></pattern>
+    <mask id="${id}-cells" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1618"><rect width="1000" height="1618" fill="url(#${id}-hexW)"/></mask>
+    ${F.foil ? `<linearGradient id="${id}-foil" x1="0" y1="0" x2="260" y2="180" gradientUnits="userSpaceOnUse" spreadMethod="reflect">${stops(F.foil)}</linearGradient>` : ""}
+    ${F.cage ? `<pattern id="${id}-cage" width="44" height="44" patternUnits="userSpaceOnUse"><path d="M0 22L22 0L44 22L22 44Z" fill="none" stroke="${F.light}" stroke-opacity=".5" stroke-width="1.6"/></pattern><linearGradient id="${id}-cagefadeG" x1="0" y1="22" x2="0" y2="560" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient><mask id="${id}-cagefade" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1618"><rect width="1000" height="1618" fill="url(#${id}-cagefadeG)"/></mask>` : ""}
+    <pattern id="${id}-brush" width="240" height="5" patternUnits="userSpaceOnUse"><rect y=".4" width="240" height=".7" fill="#fff" fill-opacity=".1"/><rect x="40" y="2.4" width="200" height=".6" fill="#fff" fill-opacity=".06"/><rect y="3.8" width="170" height=".7" fill="#000" fill-opacity=".14"/></pattern>
+    <pattern id="${id}-grain" width="17" height="17" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r=".9" fill="#fff" fill-opacity=".06"/><circle cx="11" cy="2" r=".7" fill="#000" fill-opacity=".16"/><circle cx="7" cy="12" r=".8" fill="#fff" fill-opacity=".05"/><circle cx="14" cy="10" r=".9" fill="#000" fill-opacity=".12"/></pattern>
+    <pattern id="${id}-knit" width="13.8" height="7.97" patternUnits="userSpaceOnUse"><path d="${knitTile}" fill="none" stroke="#000" stroke-opacity=".16" stroke-width=".8"/><path d="${knitTile}" fill="none" stroke="#fff" stroke-opacity=".07" stroke-width=".5" transform="translate(-.5 -.5)"/></pattern>
+    <linearGradient id="${id}-metal" x1="0" y1="0" x2="1000" y2="1618" gradientUnits="userSpaceOnUse">${stops(F.metal)}</linearGradient>
+    <linearGradient id="${id}-bevel" x1="0" y1="0" x2="1000" y2="1618" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
+    <linearGradient id="${id}-plateG" x1="0" y1="1100" x2="0" y2="1618" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.deep}" stop-opacity=".5"/><stop offset=".45" stop-color="${F.deep}" stop-opacity="0"/></linearGradient>
+    <linearGradient id="${id}-volX" x1="292" y1="0" x2="708" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".34"/><stop offset=".22" stop-color="#000" stop-opacity=".08"/><stop offset=".58" stop-color="#fff" stop-opacity=".05"/><stop offset=".8" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#000" stop-opacity=".16"/></linearGradient>
+    <linearGradient id="${id}-volY" x1="0" y1="300" x2="0" y2="906" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>
+    <radialGradient id="${id}-key" cx="660" cy="360" r="380" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="${id}-slvL" x1="252" y1="372" x2="262" y2="530" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".08"/><stop offset=".45" stop-color="#000" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></linearGradient>
+    <linearGradient id="${id}-slvR" x1="748" y1="372" x2="738" y2="530" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".24"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".32"/></linearGradient>
+    <linearGradient id="${id}-rib" x1="0" y1="290" x2="0" y2="390" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient>
+    <linearGradient id="${id}-rim" x1="320" y1="760" x2="760" y2="340" gradientUnits="userSpaceOnUse"><stop offset=".55" stop-color="${F.light}" stop-opacity="0"/><stop offset="1" stop-color="${F.light}" stop-opacity=".7"/></linearGradient>
+    <linearGradient id="${id}-numlight" x1="0" y1="${CHEST.y0}" x2="0" y2="${CHEST.y1}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="${id}-capsule" x1="830" y1="1524" x2="914" y2="1440" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.deep}"/><stop offset="1" stop-color="${F.glow}"/></linearGradient>
+    <filter id="${id}-b5" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="5"/></filter>
+    <filter id="${id}-b8" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="${id}-b14" x="-40%" y="-10%" width="180%" height="120%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="14"/></filter>
+    <filter id="${id}-b18" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="18"/></filter>
+  </defs>`;
+      }
+
+      /* ---------------- layers (shapes drawn LTR and mirrored as a group in Arabic; text never) ---------------- */
+      function baseLayer(F, id, tierKey) {
+        const [bA, bB] = F.beams;
+        const beam = (x0, xl, xr, op) =>
+          op
+            ? `<path d="M${x0 - 16} 22L${x0 + 16} 22L${xr} 980L${xl} 980Z" fill="url(#${id}-beam)" opacity="${op}" filter="url(#${id}-b14)"/><ellipse cx="${x0}" cy="30" rx="80" ry="30" fill="url(#${id}-lamp)" opacity="${Math.min(1, op * 3.2).toFixed(2)}"/>`
+            : "";
+        let hex = "";
+        if (F.hex.mode === "line")
+          hex = `<g mask="url(#${id}-hexfade)" opacity="${F.hex.op}"><rect width="1000" height="1136" fill="url(#${id}-hexD)"/><rect width="1000" height="1136" fill="url(#${id}-hexL)"/><rect width="1000" height="1136" fill="url(#${id}-hexM)"/></g>`;
+        else if (F.hex.mode === "cells")
+          hex = `<g mask="url(#${id}-hexfade)" opacity="${F.hex.op}"><rect width="1000" height="1136" fill="url(#${id}-hexC)"/><rect width="1000" height="1136" fill="url(#${id}-hexL)"/></g>`;
+        else
+          hex = `<g mask="url(#${id}-hexfade)"><rect width="1000" height="1136" fill="url(#${id}-hexD)" opacity=".6"/><g mask="url(#${id}-cells)" opacity="${F.hex.op}"><rect class="mc-foil-shift" x="-50" y="-30" width="1100" height="1200" fill="url(#${id}-foil)"/></g><rect width="1000" height="1136" fill="url(#${id}-hexL)"/></g>`;
         return `<path d="${OUTLINE}" fill="${F.plate}"/>
-    <path d="${WINDOW}" fill="url(#${id}-window)"/>
-    <g class="mc-field" clip-path="url(#${id}-win)">${fieldShapes(F, p.serial || p.name + "|" + p.season, tierKey, id)}
-      ${F.holo ? `<rect x="62" y="22" width="920" height="1088" fill="url(#${id}-spectrum)" mask="url(#${id}-grid)" opacity="${F.holo.grid}"/>` : ""}
-      <rect x="62" y="22" width="920" height="1088" fill="url(#${id}-grain)"/>
-    </g>
-    <path d="${WINDOW}" fill="url(#${id}-vignette)"/>`;
+    <g clip-path="url(#${id}-win)">
+      <rect width="1000" height="1140" fill="url(#${id}-field)"/>
+      <g class="mc-field">
+        ${hex}
+        ${F.cage ? `<rect width="1000" height="1136" fill="url(#${id}-cage)" mask="url(#${id}-cagefade)" opacity=".28"/>` : ""}
+        <rect width="1000" height="1136" fill="url(#${id}-grain)"/>
+        <circle cx="500" cy="630" r="318" fill="none" stroke="#000" stroke-opacity=".4" stroke-width="5" transform="translate(2 3)"/>
+        <circle cx="500" cy="630" r="318" fill="none" stroke="${F.light}" stroke-opacity=".16" stroke-width="3"/>
+        <path d="M62 630H938" stroke="#000" stroke-opacity=".4" stroke-width="5" transform="translate(0 3)"/>
+        <path d="M62 630H938" stroke="${F.light}" stroke-opacity=".16" stroke-width="3"/>
+      </g>
+      <rect width="1000" height="1136" fill="url(#${id}-back)" opacity="${F.back}"/>
+      <g class="mc-flood">${beam(262, 330, 640, bA)}${beam(846, 380, 720, bB)}</g>
+      ${F.pool ? `<ellipse cx="500" cy="930" rx="330" ry="84" fill="url(#${id}-pool)"/>` : ""}
+      <rect width="1000" height="1136" fill="url(#${id}-vig)"/>
+      <rect width="1000" height="1136" fill="url(#${id}-foot)"/>
+      <g class="mc-shirt-cast"><path d="${SHIRT}" fill="#000" opacity=".7" filter="url(#${id}-b18)" transform="translate(-20 30) ${JT}"/></g>
+    </g>`;
       }
 
       function shirtLayer(club, F, id) {
         const sec = club ? club.secondary || "#ffffff" : F.edgeD;
-        const fill = club ? club.primary : mix(F.plate, "#ffffff", 0.07);
-        const stitch = `stroke="${club ? sec : "#ffffff"}" stroke-opacity="${club ? 0.5 : 0.25}" stroke-width="1.6" stroke-dasharray="6 5" fill="none"`;
-        return `<g clip-path="url(#${id}-win)">
+        const fill = club ? club.primary : mix(F.plate, "#ffffff", 0.16);
+        const disc = club
+          ? `<circle cx="600" cy="428" r="24" fill="${mix(club.primary, "#000000", 0.22)}" stroke="${sec}" stroke-width="3.5"/><circle cx="600" cy="428" r="24" fill="url(#${id}-rib)" opacity=".6"/>`
+          : "";
+        return `<g clip-path="url(#${id}-win)"><g transform="${JT}">
     <path d="${SHIRT}" fill="${fill}"/>
-    <path d="${SHIRT}" fill="url(#${id}-mesh)"/>
-    <path d="${SHIRT}" fill="url(#${id}-cloth)"/>
-    ${club ? "" : `<path d="${SHIRT}" fill="none" stroke="${F.glow}" stroke-opacity=".55" stroke-width="2.5"/>`}
-    <path d="M196 350L214 462L232 455L214 346Z" fill="${sec}" opacity="${club ? 0.95 : 0.6}"/>
-    <path d="M804 350L786 462L768 455L786 346Z" fill="${sec}" opacity="${club ? 0.95 : 0.6}"/>
-    <path d="M226 352L242 450M774 352L758 450" ${stitch}/>
-    <path d="M440 264L284 434M560 264L716 434M286 452V1070M714 452V1070" ${stitch}/>
-    <path d="M432 250Q500 234 568 250" stroke="${sec}" stroke-width="10" fill="none"/>
-    <path d="M432 250L500 322L568 250" stroke="${sec}" stroke-width="18" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
-    <path d="M446 266L500 316L554 266" stroke="#ffffff" stroke-opacity=".22" stroke-width="2" fill="none"/>
-    ${club ? `<circle cx="628" cy="398" r="30" fill="${mix(club.primary, "#000000", 0.25)}" stroke="${sec}" stroke-width="4"/><circle cx="628" cy="398" r="23" fill="none" stroke="${sec}" stroke-opacity=".45" stroke-width="1.2"/>` : ""}
-    <path d="${SHIRT}" fill="url(#${id}-fade)"/>
-  </g>`;
+    <path d="${NECK_IN}" fill="${mix(fill, "#000000", 0.55)}"/>
+    <path d="M422 300Q500 316 578 300" stroke="${mix(sec, "#000000", 0.35)}" stroke-width="12" fill="none"/>
+    <g clip-path="url(#${id}-shirt)">
+      <path d="${SHIRT}" fill="url(#${id}-knit)"/>
+      <path d="${SLEEVE_L}" fill="url(#${id}-slvL)"/>
+      <path d="${SLEEVE_R}" fill="url(#${id}-slvR)"/>
+      <path d="${SHIRT}" fill="url(#${id}-volX)"/>
+      <path d="${SHIRT}" fill="url(#${id}-volY)"/>
+      <path d="${SHIRT}" fill="url(#${id}-key)"/>
+      <g filter="url(#${id}-b8)">
+        <path d="M306 520C350 600 392 690 404 800" stroke="#000" stroke-opacity=".34" stroke-width="18" fill="none"/>
+        <path d="M512 400C504 540 512 700 504 862" stroke="#fff" stroke-opacity=".07" stroke-width="30" fill="none"/>
+        <path d="M470 560C478 660 470 760 476 860" stroke="#000" stroke-opacity=".12" stroke-width="14" fill="none"/>
+        <path d="M328 514C370 594 412 684 426 790" stroke="#fff" stroke-opacity=".09" stroke-width="10" fill="none"/>
+        <path d="M694 520C652 600 610 690 600 800" stroke="#000" stroke-opacity=".18" stroke-width="16" fill="none"/>
+        <path d="M676 514C636 594 596 684 584 790" stroke="#fff" stroke-opacity=".14" stroke-width="10" fill="none"/>
+        <path d="M300 846C360 830 420 862 500 850S640 832 700 848" stroke="#000" stroke-opacity=".2" stroke-width="12" fill="none"/>
+        <path d="M300 832C360 816 420 848 500 836S640 818 700 834" stroke="#fff" stroke-opacity=".08" stroke-width="8" fill="none"/>
+        <path d="M296 470C270 486 248 510 232 540" stroke="#000" stroke-opacity=".3" stroke-width="12" fill="none"/>
+        <path d="M704 470C730 486 752 510 768 540" stroke="#000" stroke-opacity=".2" stroke-width="12" fill="none"/>
+        <path d="M418 304L500 392L582 304" stroke="#000" stroke-opacity=".45" stroke-width="22" fill="none" transform="translate(0 10)"/>
+      </g>
+      <path d="M318 330C306 380 298 440 292 492M682 330C694 380 702 440 708 492" stroke="#000" stroke-opacity=".32" stroke-width="3" fill="none"/>
+      <path d="M321 334C309 384 301 444 295 496M685 334C697 384 705 444 711 496" stroke="#fff" stroke-opacity=".14" stroke-width="1.4" fill="none"/>
+      <path d="${HEM}" fill="#000" fill-opacity=".14"/>
+      <path d="M298 872Q500 894 702 872" stroke="#fff" stroke-opacity=".18" stroke-width="1.6" fill="none"/>
+      <path d="M298 887Q500 909 702 887" stroke="#000" stroke-opacity=".45" stroke-width="5" fill="none"/>
+      <path d="${CUFF_L}" fill="${sec}"/><path d="${CUFF_R}" fill="${sec}"/>
+      <path d="${CUFF_L}" fill="url(#${id}-slvL)"/><path d="${CUFF_R}" fill="url(#${id}-slvR)"/>
+      <path d="${SHIRT}" fill="none" stroke="url(#${id}-rim)" stroke-width="10"/>
+    </g>
+    <path d="M418 296L500 380L582 296" stroke="${sec}" stroke-width="18" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M418 296L500 380L582 296" stroke="url(#${id}-rib)" stroke-width="18" fill="none" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M422 290L500 371L578 290" stroke="#fff" stroke-opacity=".3" stroke-width="1.4" fill="none"/>
+    ${disc}
+  </g></g>`;
       }
 
-      function card(p, { lang = "fr", theme = "light", beat = false, flat = false } = {}) {
+      function card(p, { lang = "fr", theme = "light", beat = false } = {}) {
         const id = "mc" + ++uid,
           ar = lang === "ar";
         const tierKey = p.ovr == null ? "base" : p.tier || "base";
         const F = FOIL[tierKey];
         const X = (x) => (ar ? 1000 - x : x);
-        const start = ar ? "end" : "start";
         const edge = theme === "dark" ? F.edgeD : F.edgeL;
         const mirror = (s) => (ar ? `<g transform="matrix(-1 0 0 1 1000 0)">${s}</g>` : s);
-        const t = (x, y, cls, size, txt, attrs = "") => {
-          const rtlRun = /direction="rtl"/.test(attrs);
-          const a = rtlRun ? (ar ? "start" : "end") : start;
-          return `<text x="${X(x)}" y="${y}" class="${cls}" font-size="${size}" text-anchor="${a}" ${attrs}>${esc(txt)}</text>`;
-        };
-        const r = mulberry(fnv("spark" + (p.serial || p.name)));
-        const R = (a, b) => a + (b - a) * r();
+        const defs = defsFor(F, id, p.club, p.serial || p.name + "|" + p.season);
 
-        const defs = `<defs>
-    <clipPath id="${id}-win"><path d="${WINDOW}"/></clipPath>
-    <clipPath id="${id}-out"><path d="${OUTLINE}"/></clipPath>
-    <linearGradient id="${id}-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${F.deep}" stop-opacity=".55"/><stop offset=".3" stop-color="${F.plate}"/><stop offset="1" stop-color="${F.plate}"/></linearGradient>
-    <radialGradient id="${id}-window" cx="780" cy="90" r="1150" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.glow}" stop-opacity=".85"/><stop offset=".38" stop-color="${F.deep}" stop-opacity=".9"/><stop offset="1" stop-color="${F.plate}"/></radialGradient>
-    <linearGradient id="${id}-vignette" x1="0" y1="22" x2="0" y2="1110" gradientUnits="userSpaceOnUse"><stop offset=".78" stop-color="${F.plate}" stop-opacity="0"/><stop offset="1" stop-color="${F.plate}"/></linearGradient>
-    <linearGradient id="${id}-fade" x1="0" y1="250" x2="0" y2="1110" gradientUnits="userSpaceOnUse"><stop offset=".8" stop-color="${F.plate}" stop-opacity="0"/><stop offset="1" stop-color="${F.plate}"/></linearGradient>
-    <linearGradient id="${id}-cloth" x1="196" y1="0" x2="804" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".22" stop-color="#fff" stop-opacity=".12"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>
-    <linearGradient id="${id}-bevel" x1="0" y1="0" x2="1000" y2="1618" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient>
-    <linearGradient id="${id}-recess" x1="62" y1="22" x2="982" y2="1110" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".6"/><stop offset=".5" stop-color="#000" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity=".25"/></linearGradient>
-    <linearGradient id="${id}-plategl" x1="0" y1="1110" x2="0" y2="1618" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.deep}" stop-opacity=".25"/><stop offset=".35" stop-color="${F.deep}" stop-opacity="0"/></linearGradient>
-    <linearGradient id="${id}-capsule" x1="0" y1="1150" x2="0" y2="1402" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.glow}" stop-opacity=".9"/><stop offset="1" stop-color="${F.deep}"/></linearGradient>
-    <linearGradient id="${id}-spectrum" x1="0" y1="0" x2="1000" y2="1618" gradientUnits="userSpaceOnUse" spreadMethod="reflect">${stops(SPECTRUM)}</linearGradient>
-    ${F.holo ? `<linearGradient id="${id}-ribbon" x1="0" y1="0" x2="1000" y2="500" gradientUnits="userSpaceOnUse">${stops(F.ribbon)}</linearGradient>` : ""}
-    <pattern id="${id}-grain" width="17" height="17" patternUnits="userSpaceOnUse"><circle cx="3" cy="4" r=".9" fill="#fff" fill-opacity=".08"/><circle cx="11" cy="2" r=".7" fill="#000" fill-opacity=".18"/><circle cx="7" cy="12" r=".8" fill="#fff" fill-opacity=".06"/><circle cx="14" cy="10" r=".9" fill="#000" fill-opacity=".14"/><circle cx="1" cy="15" r=".6" fill="#fff" fill-opacity=".07"/></pattern>
-    <pattern id="${id}-mesh" width="7" height="7" patternUnits="userSpaceOnUse"><path d="M0 7L7 0" stroke="#fff" stroke-opacity=".09" stroke-width=".9"/><path d="M0 0L7 7" stroke="#000" stroke-opacity=".1" stroke-width=".9"/><path d="M3.5 0V7" stroke="#fff" stroke-opacity=".04" stroke-width=".6"/></pattern>
-    <pattern id="${id}-lines" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(-28)"><path d="M0 0V11" stroke="#fff" stroke-width="1.2"/></pattern>
-    <mask id="${id}-grid"><rect x="0" y="0" width="1000" height="1618" fill="url(#${id}-lines)"/></mask>
-    <filter id="${id}-b6" x="-200%" y="-20%" width="500%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="6"/></filter>
-    <filter id="${id}-b10" x="-10%" y="-50%" width="120%" height="200%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="10"/></filter>
-    <filter id="${id}-b5" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="5"/></filter>
-  </defs>`;
-
-        /* base, shirt */
-        const L_base = mirror(baseLayer(p, F, tierKey, id));
+        const L_base = mirror(baseLayer(F, id, tierKey));
         let L_shirt = mirror(shirtLayer(p.club, F, id));
         if (p.club)
-          L_shirt += `<text x="${X(628)}" y="404" class="mc-f-d" font-size="17" text-anchor="middle" fill="${contrast("#ffffff", mix(p.club.primary, "#000000", 0.25)) >= 4.5 ? "#fff" : "#0E1116"}" letter-spacing="${ar ? 0 : ".02em"}">${esc(p.club.initials)}</text>`;
+          L_shirt += `<text transform="${JT}" x="${X(600)}" y="433.5" class="mc-f-d" font-size="15" text-anchor="middle" fill="${contrast("#ffffff", mix(p.club.primary, "#000000", 0.22)) >= 4.5 ? "#fff" : "#0E1116"}" letter-spacing="${ar ? 0 : ".02em"}" direction="ltr">${esc(p.club.initials)}</text>`;
 
-        /* the number, a printed shirt number inside the chest box x 306–694 (fit on load) */
-        const num = p.ovr == null ? "—" : String(p.ovr),
-          ny = p.ovr == null ? 720 : 800,
-          nsize = p.ovr == null ? 260 : 330;
-        const fillN = p.club
-          ? contrast("#ffffff", p.club.primary) >= 3
-            ? "#FFFFFF"
-            : "#0E1116"
-          : "#FFFFFF";
+        /* the number, printed on the chest: ink + outline inside CHEST, centred at (500, 636) */
+        const num = p.ovr == null ? "—" : String(p.ovr);
+        const fit =
+          p.ovr == null
+            ? fitNumber(num, { x0: 380, x1: 620, y0: 560, y1: 640, cy: 600 }, OUTLINE_HALF, 220)
+            : fitNumber(num, CHEST, OUTLINE_HALF, 300);
+        const prim = p.club ? p.club.primary : mix(F.plate, "#ffffff", 0.16);
+        const fillN = contrast("#FFFFFF", prim) >= 3 ? "#FFFFFF" : "#0E1116";
         const twill = p.club
           ? p.club.secondary && contrast(p.club.secondary, fillN) >= 1.6
             ? p.club.secondary
@@ -671,21 +874,25 @@
               : "#FFFFFF"
           : F.glow;
         const nt = (cls, extra) =>
-          `<text x="500" y="${ny}" class="mc-f-d mc-numtxt ${cls}" font-size="${nsize}" text-anchor="middle" direction="ltr" ${extra}>${num}</text>`;
+          `<text x="${fit.x.toFixed(1)}" y="${fit.y.toFixed(1)}" class="mc-f-d mc-numtxt ${cls}" font-size="${fit.size.toFixed(1)}" text-anchor="middle" direction="ltr" ${extra}>${num}</text>`;
+        const box = p.ovr == null ? { x0: 380, x1: 620, y0: 556, y1: 644 } : CHEST;
         let L_num =
+          `<g transform="${JT}">` +
           nt("", `fill="#000" opacity=".35" filter="url(#${id}-b5)" transform="translate(0 8)"`) +
-          nt("mc-num-sh", `fill="#000" opacity=".42"`) +
-          nt("mc-num-hi", `fill="#fff" opacity=".55"`) +
-          `<g data-mc="ovr"><rect x="306" y="${p.ovr == null ? 560 : 500}" width="388" height="${p.ovr == null ? 200 : 330}" fill="transparent"/>` +
+          nt("mc-num-sh", `fill="#000" opacity=".38"`) +
+          nt("mc-num-hi", `fill="#fff" opacity=".42"`) +
+          `<g data-mc="ovr"><rect x="${box.x0}" y="${box.y0}" width="${box.x1 - box.x0}" height="${box.y1 - box.y0}" fill="transparent"/>` +
           nt(
             "",
-            `fill="none" stroke="${F.plate}" stroke-opacity=".75" stroke-width="22" stroke-linejoin="round"`,
+            `fill="none" stroke="${mix(prim, "#000000", 0.55)}" stroke-opacity=".8" stroke-width="${2 * OUTLINE_HALF}" stroke-linejoin="round"`,
           ) +
-          nt("", `fill="none" stroke="${twill}" stroke-width="11" stroke-linejoin="round"`) +
+          nt("", `fill="none" stroke="${twill}" stroke-width="10" stroke-linejoin="round"`) +
           nt("", `fill="${fillN}"`) +
+          nt("", `fill="url(#${id}-knit)" opacity=".3"`) +
+          nt("", `fill="url(#${id}-numlight)"`) +
           `</g>`;
         if (p.ovr != null)
-          L_num += `<text x="500" y="868" class="mc-f-b" font-weight="800" font-size="30" text-anchor="middle" fill="${fillN}" fill-opacity=".85" letter-spacing=".18em">OVR</text>`;
+          L_num += `<text x="500" y="844" class="mc-f-b" font-weight="800" font-size="26" text-anchor="middle" fill="${fillN}" fill-opacity=".86" letter-spacing=".2em" direction="ltr">OVR</text>`;
         if (p.ovr == null && p.counted != null && p.counted < p.min) {
           const n = p.min,
             w = 60,
@@ -694,216 +901,151 @@
           for (let i = 0; i < n; i++) {
             const on = ar ? n - 1 - i < p.counted : i < p.counted;
             L_num += on
-              ? `<rect x="${x0 + i * (w + g)}" y="790" width="${w}" height="16" rx="8" fill="${FOIL.stade.tube}" opacity=".55" filter="url(#${id}-b6)"/><rect x="${x0 + i * (w + g)}" y="790" width="${w}" height="16" rx="8" fill="${FOIL.stade.tube}"/>`
-              : `<rect x="${x0 + i * (w + g) + 1}" y="791" width="${w - 2}" height="14" rx="7" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2"/>`;
+              ? `<rect x="${x0 + i * (w + g)}" y="690" width="${w}" height="16" rx="8" fill="#FFF2DA" opacity=".55" filter="url(#${id}-b5)"/><rect x="${x0 + i * (w + g)}" y="690" width="${w}" height="16" rx="8" fill="#FFF2DA"/>`
+              : `<rect x="${x0 + i * (w + g) + 1}" y="691" width="${w - 2}" height="14" rx="7" fill="none" stroke="${fillN}" stroke-opacity=".5" stroke-width="2"/>`;
           }
         }
+        L_num += `</g>`;
 
-        /* frame: the ring (outline minus window), furniture, text */
-        let guil = "";
-        for (let i = 0; i < 16; i++) {
-          const y0 = 1128 + i * 30;
-          let d = `M0 ${y0}`;
-          for (let x = 0; x <= 1000; x += 20)
-            d += `L${x} ${(y0 + Math.sin((x / 1000) * Math.PI * 6 + i * 0.5) * 9).toFixed(1)}`;
-          guil += `<path d="${d}" stroke="#fff" stroke-opacity=".05" stroke-width=".8" fill="none"/>`;
-        }
-        for (let i = 0; i < 8; i++)
-          guil += `<ellipse cx="872" cy="1276" rx="${70 - i * 5}" ry="${150 - i * 9}" fill="none" stroke="#fff" stroke-opacity=".035" stroke-width=".8"/>`;
+        /* frame: plate, shield band, metal edge, tab, plaque, founder capsule, then text */
+        const word = p.ovr != null && p.tier ? (ar ? AR_TIER[p.tier] : F.word) : null;
+        const latinWord = word != null && /^[A-Z]+$/.test(word);
+        // plaque: an elongated hexagon under the shield point, sized to the word (+ 104 units)
+        const wordW = word
+          ? latinWord
+            ? ink(word, 44).l + ink(word, 44).r + 0.22 * 44 * (word.length - 1)
+            : ink(word, 44, 800).l + ink(word, 44, 800).r
+          : 0;
+        const plaqueW = word ? Math.max(240, wordW + 104) : 0;
+        const px0 = 500 - plaqueW / 2,
+          px1 = 500 + plaqueW / 2;
+        const PLAQUE = word
+          ? `M${px0} 1186L${px0 + 24} 1150H${px1 - 24}L${px1} 1186L${px1 - 24} 1222H${px0 + 24}Z`
+          : "";
+        const capsule = p.founder
+          ? `<g transform="rotate(-45 872 1482)"><rect x="808" y="1458" width="128" height="48" rx="24" fill="#000" fill-opacity=".45" transform="translate(0 3)"/><rect x="808" y="1458" width="128" height="48" rx="24" fill="url(#${id}-capsule)" stroke="url(#${id}-metal)" stroke-width="3"/></g>`
+          : "";
         const frameShapes = `
     <path d="${RING}" fill-rule="evenodd" fill="${F.plate}"/>
-    <path d="${RING}" fill-rule="evenodd" fill="url(#${id}-plate)"/>
+    <path d="${RING}" fill-rule="evenodd" fill="url(#${id}-plateG)"/>
     <path d="${RING}" fill-rule="evenodd" fill="url(#${id}-grain)"/>
-    <path d="M0 1110H1000V1418L800 1618H28Q0 1618 0 1590Z" fill="url(#${id}-plategl)"/>
-    <g clip-path="url(#${id}-out)">${guil}</g>
-    <path d="${WINDOW}" fill="none" stroke="url(#${id}-recess)" stroke-width="10"/>
-    <path d="${WINDOW}" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.2"/>
-    <rect x="1" y="1109" width="998" height="1.5" fill="#fff" fill-opacity=".2"/><rect x="1" y="1116" width="998" height=".8" fill="#fff" fill-opacity=".08"/>
-    <rect x="0" y="330" width="62" height="780" fill="${F.plate}" fill-opacity=".6"/>
-    <rect x="61" y="330" width="1.2" height="780" fill="#fff" fill-opacity=".12"/>
-    <g class="mc-tube"><rect x="25" y="360" width="10" height="280" rx="5" fill="${F.glow}" opacity=".9" filter="url(#${id}-b6)"/><rect x="25" y="360" width="10" height="280" rx="5" fill="${F.tube}"/><rect x="27" y="366" width="2.4" height="268" rx="1.2" fill="#fff" fill-opacity=".8"/></g>
-    <path d="M0 40Q0 0 40 0L206 0L206 370Q206 392 184 392L0 392Z" fill="${F.plate}" fill-opacity=".9"/>
-    <path d="M0 40Q0 0 40 0L206 0L206 370Q206 392 184 392L0 392Z" fill="url(#${id}-grain)"/>
-    <path d="M10 46Q10 10 46 10L196 10L196 366Q196 382 180 382L10 382Z" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="1"/>
-    <path d="M0 40Q0 0 40 0L206 0L206 370Q206 392 184 392L0 392Z" fill="none" stroke="#fff" stroke-opacity=".18" stroke-width="1.5"/>
-    <rect x="836" y="1150" width="72" height="252" rx="36" fill="${p.founder ? `url(#${id}-capsule)` : "#000"}" fill-opacity="${p.founder ? 1 : 0.38}" stroke="${p.founder ? F.tube : "#fff"}" stroke-opacity="${p.founder ? 1 : 0.14}" stroke-width="${p.founder ? 2 : 1.5}"/>
-    <rect x="844" y="1158" width="56" height="236" rx="28" fill="none" stroke="#fff" stroke-opacity=".08" stroke-width="1"/>
-    <g class="mc-tube"><rect x="965" y="1150" width="10" height="240" rx="5" fill="${F.glow}" opacity=".9" filter="url(#${id}-b6)"/><rect x="965" y="1150" width="10" height="240" rx="5" fill="${F.tube}"/><rect x="967" y="1156" width="2.4" height="228" rx="1.2" fill="#fff" fill-opacity=".8"/></g>
-    ${[
-      [24, 1592],
-      [974, 34],
-      [974, 1124],
-      [24, 1124],
-    ]
-      .map(
-        ([x, y]) =>
-          `<circle cx="${x}" cy="${y}" r="6.5" fill="${mix(F.plate, "#ffffff", 0.35)}"/><circle cx="${x}" cy="${y}" r="6.5" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="1"/><path d="M${x - 3.5} ${y}H${x + 3.5}" stroke="#000" stroke-opacity=".55" stroke-width="1.2"/><circle cx="${x - 2}" cy="${y - 2.5}" r="1.4" fill="#fff" fill-opacity=".6"/>`,
-      )
-      .join("")}
-    ${p.club ? `<circle cx="103" cy="222" r="50" fill="${p.club.primary}" stroke="${p.club.secondary || "#ffffff"}" stroke-opacity="${p.club.secondary ? 1 : 0.5}" stroke-width="7"/><circle cx="103" cy="222" r="40" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="1"/>` : ""}
-    <circle cx="920" cy="160" r="40" fill="#000" fill-opacity=".28" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/><circle cx="920" cy="160" r="33" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width=".8" stroke-dasharray="2 3"/>
-    <path d="${OUTLINE}" fill="none" stroke="url(#${id}-bevel)" stroke-width="10" clip-path="url(#${id}-out)"/>
+    ${F.brushed ? `<path d="${RING}" fill-rule="evenodd" fill="url(#${id}-brush)"/>` : ""}
+    <g clip-path="url(#${id}-win)"><path d="${WINDOW}" fill="none" stroke="#000" stroke-opacity=".6" stroke-width="44" filter="url(#${id}-b8)"/></g>
+    <path d="${WINDOW}" fill="none" stroke="#000" stroke-opacity=".45" stroke-width="28"/>
+    <path d="${WINDOW}" fill="none" stroke="url(#${id}-metal)" stroke-width="22"/>
+    ${F.brushed ? `<path d="${WINDOW}" fill="none" stroke="url(#${id}-brush)" stroke-width="22"/>` : ""}
+    <path d="${WINDOW}" fill="none" stroke="url(#${id}-bevel)" stroke-width="22"/>
+    <path d="${WINDOW}" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="1.6"/>
+    <g clip-path="url(#${id}-out)">
+      <path d="${OUTLINE}" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="30"/>
+      <path d="${OUTLINE}" fill="none" stroke="url(#${id}-metal)" stroke-width="24"/>
+      ${F.brushed ? `<path d="${OUTLINE}" fill="none" stroke="url(#${id}-brush)" stroke-width="24"/>` : ""}
+      <path d="${OUTLINE}" fill="none" stroke="url(#${id}-bevel)" stroke-width="24"/>
+    </g>
+    <path d="${TAB}" fill="#000" fill-opacity=".45" transform="translate(0 6)" filter="url(#${id}-b5)"/>
+    <path d="${TAB}" fill="${F.plate}"/>
+    <path d="${TAB}" fill="url(#${id}-grain)"/>
+    <g clip-path="url(#${id}-tab)"><path d="${TAB}" fill="none" stroke="url(#${id}-metal)" stroke-width="16"/><path d="${TAB}" fill="none" stroke="url(#${id}-bevel)" stroke-width="16"/></g>
+    ${p.club ? `<circle cx="103" cy="134" r="56" fill="#000" fill-opacity=".4" transform="translate(0 4)" filter="url(#${id}-b5)"/><circle cx="103" cy="134" r="54" fill="${p.club.primary}"/><circle cx="103" cy="134" r="54" fill="url(#${id}-rib)" opacity=".5"/><circle cx="103" cy="134" r="51" fill="none" stroke="${p.club.secondary || "#ffffff"}" stroke-opacity="${p.club.secondary ? 1 : 0.5}" stroke-width="6"/>` : ""}
+    ${word ? `<path d="${PLAQUE}" fill="#000" fill-opacity=".5" transform="translate(0 5)" filter="url(#${id}-b5)"/><path d="${PLAQUE}" fill="${mix(F.plate, "#000000", 0.35)}"/><path d="${PLAQUE}" fill="none" stroke="url(#${id}-metal)" stroke-width="4"/><path d="M${px0 + 26} 1155H${px1 - 26}" stroke="#fff" stroke-opacity=".12" stroke-width="1.2"/>` : ""}
+    ${capsule}
     <path d="${OUTLINE}" fill="none" stroke="${edge}" stroke-width="3"/>
     ${theme === "dark" ? `<path d="${OUTLINE}" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.5" transform="translate(-1.5 -1.5) scale(1.003)"/>` : ""}`;
+
         let text = "";
-        text += `<text x="${X(103)}" y="${p.club ? 318 : 200}" class="mc-f-b" font-weight="800" font-size="30" text-anchor="middle" fill="#fff" fill-opacity=".9" style="font-variant-numeric:tabular-nums" direction="ltr">${esc(p.season)}</text>`;
-        text += `<text x="${X(103)}" y="${p.club ? 346 : 228}" class="${ar ? "mc-f-a" : "mc-f-b"}" font-weight="700" font-size="${ar ? 17 : 15}" text-anchor="middle" fill="${F.label}" letter-spacing="${ar ? 0 : ".22em"}">${ar ? "الموسم" : "SAISON"}</text>`;
-        if (p.club) {
-          text += `<text x="${X(103)}" y="234" class="mc-f-d" font-size="34" text-anchor="middle" fill="${contrast("#ffffff", p.club.primary) >= 4.5 ? "#fff" : "#0E1116"}" letter-spacing="${ar ? 0 : ".02em"}">${esc(p.club.initials)}</text>`;
-          text += `<text x="${X(103)}" y="66" class="mc-f-b" font-weight="800" font-size="16" text-anchor="middle" fill="#fff" fill-opacity=".7" letter-spacing="${ar ? 0 : ".14em"}" data-fit-w="160">${esc(ar ? p.club.ar : p.club.name.toUpperCase())}</text>`;
-        }
-        text += `<text x="${X(920)}" y="157" class="mc-f-d" font-size="22" text-anchor="middle" fill="#fff" fill-opacity=".85" direction="ltr">${esc(p.season.slice(2, 4))}</text><text x="${X(920)}" y="178" class="mc-f-b" font-weight="800" font-size="11" text-anchor="middle" fill="#fff" fill-opacity=".6" letter-spacing=".12em" direction="ltr">${esc(p.season.slice(-2))}</text>`;
+        text += `<text x="${X(103)}" y="${p.club ? 262 : 166}" class="mc-f-b" font-weight="800" font-size="28" text-anchor="middle" fill="#fff" fill-opacity=".92" style="font-variant-numeric:tabular-nums" direction="ltr">${esc(p.season)}</text>`;
+        if (p.club)
+          text += `<text x="${X(103)}" y="146" class="mc-f-d" font-size="34" text-anchor="middle" fill="${contrast("#ffffff", p.club.primary) >= 4.5 ? "#fff" : "#0E1116"}" letter-spacing="${ar ? 0 : ".02em"}" direction="ltr">${esc(p.club.initials)}</text>`;
         if (p.sample)
-          text += `<rect x="${ar ? 48 : 744}" y="44" width="208" height="48" rx="24" fill="#000" fill-opacity=".5"/><text x="${ar ? 152 : 848}" y="78" class="mc-f-b" font-weight="800" font-size="26" text-anchor="middle" fill="#fff" letter-spacing="${ar ? 0 : ".1em"}">${ar ? "مثال" : "EXEMPLE"}</text>`;
-        const arStats = ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
-          stats = [
-            ["CAP", p.stats[0]],
-            ["SEL", p.stats[1]],
-            ["TRF", p.stats[2]],
-            ["CON", p.stats[3]],
-          ],
-          xs = [56, 196, 336, 476];
-        stats.forEach(([lab, val], i) => {
-          text += ar
-            ? t(
-                xs[i],
-                1180,
-                "mc-f-a",
-                30,
-                arStats[i],
-                `font-weight="700" fill="${F.label}" direction="rtl" data-fit-label="1"`,
-              )
-            : t(
-                xs[i],
-                1178,
-                "mc-f-b",
-                34,
-                lab,
-                `font-weight="700" fill="${F.label}" letter-spacing=".08em"`,
-              );
-          text += t(
-            xs[i],
-            1240,
-            "mc-f-b",
-            56,
-            val == null ? "—" : val,
-            `font-weight="800" fill="#fff" direction="ltr" style="font-variant-numeric:tabular-nums"`,
-          );
-        });
-        [172, 312, 452].forEach(
-          (x) =>
-            (text += `<rect x="${X(x) - 0.6}" y="1146" width="1.2" height="104" fill="#fff" fill-opacity=".24"/>`),
-        );
-        if (p.ovr != null && p.tier) {
-          const word = ar ? AR_TIER[p.tier] : F.word,
-            latin = /^[A-Z]+$/.test(word),
-            ta = latin ? start : ar ? "start" : "end";
-          text += `<text x="${X(600)}" y="1179.5" class="mc-f-d" font-size="36" text-anchor="${ta}" fill="#000" fill-opacity=".55" letter-spacing="${latin ? ".12em" : 0}" direction="${latin ? "ltr" : "rtl"}">${esc(word)}</text>`;
-          text += `<text x="${X(600)}" y="1178" class="mc-f-d" font-size="36" text-anchor="${ta}" fill="${F.wordFill || F.glow}" letter-spacing="${latin ? ".12em" : 0}" direction="${latin ? "ltr" : "rtl"}">${esc(word)}</text>`;
-        }
+          text += `<rect x="${ar ? 84 : 716}" y="48" width="200" height="46" rx="23" fill="#000" fill-opacity=".55"/><text x="${ar ? 184 : 816}" y="80" class="${ar ? "mc-f-a" : "mc-f-b"}" font-weight="800" font-size="${ar ? 26 : 24}" text-anchor="middle" fill="#fff" letter-spacing="${ar ? 0 : ".12em"}">${ar ? "مثال" : "EXEMPLE"}</text>`;
+        if (word)
+          text += `<text x="${latinWord ? 500 + 0.11 * 44 : 500}" y="1201" class="mc-f-d" font-size="44" text-anchor="middle" fill="${F.wordFill}" letter-spacing="${latinWord ? ".22em" : 0}" direction="${latinWord ? "ltr" : "rtl"}" unicode-bidi="isolate" data-tier="1">${esc(word)}</text>`;
+        // name: two lines centred under the artwork (fit to 800 units)
         const isAr = /\p{Script=Arabic}/u.test(p.name);
         const words = (isAr ? p.name : p.name.toLocaleUpperCase("fr"))
             .trim()
             .split(/\s+/)
             .filter(Boolean),
           dirN = isAr ? "rtl" : "ltr";
+        const nameT = (y, cls, size, txt, min) =>
+          `<text x="500" y="${y}" class="${cls}" font-size="${size}" text-anchor="middle" fill="#fff" direction="${dirN}" unicode-bidi="isolate" data-fit="${min}" data-name="1">${esc(txt)}</text>`;
         if (words.length === 0)
-          text += `<rect x="${ar ? 580 : 56}" y="1477" width="364" height="2" fill="#fff" fill-opacity=".22"/>`;
+          text += `<rect x="330" y="1330" width="340" height="2" fill="#fff" fill-opacity=".22"/>`;
         else if (words.length === 1)
-          text += t(
-            56,
-            1452,
-            isAr ? "mc-f-dl" : "mc-f-s",
-            156,
-            words[0],
-            `fill="#fff" direction="${dirN}" data-fit="1"`,
-          );
+          text += nameT(1370, isAr ? "mc-f-d" : "mc-f-s", isAr ? 104 : 132, words[0], 76);
         else {
-          text += t(
-            56,
-            1352,
-            "mc-f-d",
-            92,
-            words[0],
-            `fill="#fff" direction="${dirN}" data-fit="1"`,
-          );
-          text += t(
-            56,
-            1478,
+          // line 1 = the first word; with three words or more, a leading particle takes the next word along
+          const lead = words.length >= 3 && PARTICLES.has(words[0].toLocaleUpperCase("fr")) ? 2 : 1;
+          text += nameT(1306, "mc-f-d", 72, words.slice(0, lead).join(" "), 52);
+          text += nameT(
+            1400,
             isAr ? "mc-f-dl" : "mc-f-s",
-            isAr ? 112 : 132,
-            words.slice(1).join(" "),
-            `fill="#fff" direction="${dirN}" data-fit="1"`,
+            isAr ? 100 : 108,
+            words.slice(lead).join(" "),
+            72,
           );
         }
-        text += t(
-          56,
-          1572,
-          "mc-f-b",
-          38,
-          p.serial ? `BOT #${p.serial}` : "BOT —",
-          `font-weight="600" fill="#fff" fill-opacity=".78" direction="ltr" style="font-variant-numeric:tabular-nums" letter-spacing=".02em"`,
+        text += `<rect x="190" y="1424" width="620" height="1.4" fill="#fff" fill-opacity=".14"/>`;
+        const arStats = ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
+          labs = ["CAP", "SEL", "TRF", "CON"],
+          xs = [200, 380, 560, 740];
+        xs.forEach((x0, i) => {
+          const x = X(x0);
+          text += ar
+            ? `<text x="${x}" y="1472" class="mc-f-a" font-weight="700" font-size="28" text-anchor="middle" fill="${F.label}" direction="rtl" data-fit-label="1" data-label="1">${arStats[i]}</text>`
+            : `<text x="${x}" y="1470" class="mc-f-b" font-weight="800" font-size="30" text-anchor="middle" fill="${F.label}" letter-spacing=".08em" direction="ltr" data-label="1">${labs[i]}</text>`;
+          const v = p.stats[i];
+          text += `<text x="${x}" y="1528" class="mc-f-b" font-weight="800" font-size="52" text-anchor="middle" fill="#fff" direction="ltr" style="font-variant-numeric:tabular-nums" data-stat="1">${v == null ? "—" : v}</text>`;
+        });
+        [290, 470, 650].forEach(
+          (x) =>
+            (text += `<rect x="${X(x) - 0.7}" y="1446" width="1.4" height="88" fill="#fff" fill-opacity=".14"/>`),
         );
-        const micro =
-          `BOTOLAGO · ${p.season} · ${p.serial ? "BOT #" + p.serial : "BOT —"} · `.repeat(6);
-        text += `<text transform="translate(${X(52)} 1100) rotate(-90)" class="mc-f-b" font-weight="700" font-size="9.5" fill="#fff" fill-opacity=".34" letter-spacing=".12em" direction="ltr" text-anchor="start" data-clip-w="760">${esc(micro)}</text>`;
-        text += `<text x="${X(56)}" y="1604" class="mc-f-b" font-weight="700" font-size="9.5" fill="#fff" fill-opacity=".3" letter-spacing=".14em" direction="ltr" text-anchor="${start}" data-clip-w="700">${esc(micro)}</text>`;
+        text += `<text x="500" y="1594" class="mc-f-b" font-weight="600" font-size="30" text-anchor="middle" fill="#fff" fill-opacity=".8" direction="ltr" style="font-variant-numeric:tabular-nums" letter-spacing=".04em">${esc(p.serial ? `BOT #${p.serial}` : "BOT —")}</text>`;
         if (p.founder)
-          text += `<text transform="translate(${X(872)} 1276) rotate(-90)" class="mc-f-d" font-size="34" text-anchor="middle" dominant-baseline="central" fill="#fff" direction="ltr">·${String(p.founder).slice(-2)}</text>`;
-        text += `<text transform="translate(${X(31)} 880) rotate(-90)" class="mc-f-d" font-size="30" text-anchor="middle" dominant-baseline="central" fill="#fff" fill-opacity=".8" letter-spacing=".04em" direction="ltr">BotolaGO</text>`;
+          text += `<text transform="translate(${X(872)} 1482) rotate(${ar ? 45 : -45})" class="mc-f-d" font-size="30" text-anchor="middle" dominant-baseline="central" fill="#fff" direction="ltr">·${String(p.founder).slice(-2)}</text>`;
+        text += `<text transform="translate(${X(32)} 720) rotate(-90)" class="mc-f-d" font-size="26" text-anchor="middle" dominant-baseline="central" fill="#000" fill-opacity=".55" letter-spacing=".06em" direction="ltr" dy="1.5">BotolaGO</text><text transform="translate(${X(32)} 720) rotate(-90)" class="mc-f-d" font-size="26" text-anchor="middle" dominant-baseline="central" fill="#fff" fill-opacity=".6" letter-spacing=".06em" direction="ltr">BotolaGO</text>`;
         const L_frame = mirror(frameShapes) + text;
 
-        /* holographic layer: CHAMPION and LEGEND only */
+        /* holographic layer: CHAMPION and LEGEND only (foil edges, shield band, plaque rim, glints) */
         let L_holo = "";
         if (F.holo) {
           const H = F.holo;
-          L_holo += `<path d="${OUTLINE}" fill="none" stroke="url(#${id}-spectrum)" stroke-width="${H.seal > 1 ? 9 : 6}" opacity="${H.seal > 1 ? 0.9 : 0.7}" clip-path="url(#${id}-out)"/>`;
-          for (let i = 0; i < H.sparks; i++) {
-            let x, y;
-            do {
-              x = R(80, 960);
-              y = R(40, 1090);
-            } while (x > 290 && x < 710 && y > 470 && y < 890);
-            const s = R(5, H.seal > 1 ? 20 : 15);
-            L_holo += `<path class="${i % 2 ? "mc-spark-a" : "mc-spark-b"}" d="${star(+x.toFixed(1), +y.toFixed(1), +s.toFixed(1))}" fill="${i % 3 ? "#ffffff" : SPECTRUM[i % 7]}"/>`;
-          }
-          const cx = X(880),
-            cy = 1036,
-            rr = H.seal > 1 ? 68 : 58;
-          let rings = "";
-          for (let k = 0; k < 12; k++) {
-            const a = k * 15;
-            rings += `<ellipse cx="${cx}" cy="${cy}" rx="${rr * 0.72}" ry="${rr * 0.26}" transform="rotate(${a} ${cx} ${cy})" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".7"/>`;
-          }
-          L_holo += `<g class="mc-seal-holo"><circle cx="${cx}" cy="${cy + 4}" r="${rr}" fill="#000" opacity=".35" filter="url(#${id}-b5)"/>
-      <circle cx="${cx}" cy="${cy}" r="${rr}" fill="url(#${id}-spectrum)"/>
-      <circle cx="${cx}" cy="${cy}" r="${rr}" fill="url(#${id}-lines)" opacity=".25"/>${rings}
-      <circle cx="${cx}" cy="${cy}" r="${rr - 5}" fill="none" stroke="#fff" stroke-opacity=".8" stroke-width="1.5"/>
-      ${H.seal > 1 ? `<circle cx="${cx}" cy="${cy}" r="${rr - 11}" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1" stroke-dasharray="3 3"/>` : ""}
-      <path d="${star(cx, cy - 14, 13)}" fill="#fff"/></g>
-      <text x="${cx}" y="${cy + 16}" class="mc-f-d" font-size="${ar ? 17 : 13}" text-anchor="middle" fill="#0E1116" letter-spacing="${ar ? 0 : ".1em"}" direction="${ar ? "rtl" : "ltr"}">${esc(ar ? AR_TIER[p.tier] : F.word)}</text>
-      <text x="${cx}" y="${cy + 31}" class="mc-f-b" font-weight="800" font-size="8.5" text-anchor="middle" fill="#0E1116" fill-opacity=".8" letter-spacing=".16em" direction="ltr">BOTOLAGO</text>`;
+          const mask = `<mask id="${id}-hm" maskUnits="userSpaceOnUse" x="0" y="0" width="1000" height="1618"><g clip-path="url(#${id}-out)"><path d="${OUTLINE}" fill="none" stroke="#fff" stroke-opacity="${H.edge}" stroke-width="22"/></g><path d="${WINDOW}" fill="none" stroke="#fff" stroke-opacity="${H.band}" stroke-width="20"/>${PLAQUE ? `<path d="${PLAQUE}" fill="none" stroke="#fff" stroke-width="4"/>` : ""}</mask>`;
+          const glintAt = [
+            [938, 880],
+            [500, 1136],
+            [62, 880],
+            [1000, 38],
+          ].slice(0, H.glints);
+          L_holo += mirror(
+            `<defs>${mask}</defs><g mask="url(#${id}-hm)"><rect class="mc-foil-shift" x="-50" y="-30" width="1100" height="1678" fill="url(#${id}-foil)"/></g>` +
+              glintAt
+                .map(
+                  ([x, y], i) =>
+                    `<path class="${i % 2 ? "mc-glint-b" : "mc-glint-a"}" d="${star(x, y, i === 1 ? 20 : 16)}" fill="#fff"/>`,
+                )
+                .join(""),
+          );
         }
 
         const label = [
           "Carte de manager",
           p.name,
           p.ovr == null ? "pas encore de note" : `${p.ovr} OVR`,
-          p.tier ? F.word : null,
+          word,
           p.club?.name,
           p.serial ? `BOT #${p.serial}` : null,
         ]
           .filter(Boolean)
           .join(", ");
-        const vars = `--mc-sheen:${F.sheen};--mc-holo:${F.holo ? F.holo.foil : 0}`;
+        const vars = `--mc-sheen:${F.sheen};--mc-holo:${F.holo ? F.holo.css : 0}`;
         const cls = `mc-eclat mc-eclat--${tierKey} mc-eclat--${theme}${F.holo ? " mc-holo" : ""}${beat ? " mc-beat" : ""}`;
-        const svg = (layer, body, z) =>
+        const svg = (layer, body) =>
           `<svg class="mc-l mc-l--${layer}" viewBox="0 0 1000 1618" aria-hidden="true" focusable="false" style="direction:ltr">${body}</svg>`;
-        if (flat)
-          return `<div class="${cls} mc-flat" role="img" aria-label="${esc(label)}" dir="${ar ? "rtl" : "ltr"}" style="${vars}"><svg viewBox="0 0 1000 1618" aria-hidden="true" style="direction:ltr">${defs}${L_base}${L_shirt}${L_num}${L_frame}${L_holo}</svg></div>`;
         let rims = "";
         for (let k = 1; k <= 7; k++)
-          rims += `<svg class="mc-l mc-rim" style="--k:${k}" viewBox="0 0 1000 1618" aria-hidden="true">${mirror(`<path d="${RING}" fill-rule="evenodd" fill="${mix(edge, "#000000", 0.25 + k * 0.07)}"/>`)}</svg>`;
+          rims += `<svg class="mc-l mc-rim" style="--k:${k}" viewBox="0 0 1000 1618" aria-hidden="true" focusable="false">${mirror(`<path d="${RING}" fill-rule="evenodd" fill="${mix(edge, "#000000", 0.25 + k * 0.07)}"/>`)}</svg>`;
         return `<div class="${cls}" role="img" aria-label="${esc(label)}" dir="${ar ? "rtl" : "ltr"}" style="${vars}">
     <div class="mc-eclat__shadow" aria-hidden="true"></div>
     <div class="mc-eclat__persp"><div class="mc-eclat__tilt">
@@ -913,43 +1055,113 @@
     </div></div></div>`;
       }
 
-      /* fit: names to 744 units, the number to the shirt's chest box (388 wide incl. its outline), labels, microprint */
+      /* ---------------- tokens and minis (one flat SVG each, plan §7 revision 3) ---------------- */
+      const TOKEN_WINDOW =
+        "M62 46Q62 22 86 22H914Q938 22 938 46V1120C938 1240 600 1380 500 1470C400 1380 62 1240 62 1120Z";
+      function token(p, size, { lang = "fr", theme = "light" } = {}) {
+        const id = "tk" + ++uid,
+          ar = lang === "ar";
+        const tierKey = p.ovr == null ? "base" : p.tier || "base";
+        const F = FOIL[tierKey];
+        const u = 1618 / size; // viewBox units per CSS pixel
+        const edge = theme === "dark" ? F.edgeD : F.edgeL;
+        const prim = p.club ? p.club.primary : mix(F.plate, "#ffffff", 0.16);
+        const sec = p.club ? p.club.secondary || "#ffffff" : F.edgeD;
+        const level = size >= 64 ? "card" : size >= 28 ? "jersey" : "mini";
+        // jersey placement: scale k about the jersey centre (500, 603), moved to (500, Yc)
+        const [k, Yc] =
+          size >= 80
+            ? [1.36, 740]
+            : size >= 64
+              ? [1.42, 740]
+              : size >= 44
+                ? [1.9, 860]
+                : [2.1, 860];
+        const T = `translate(500 ${Yc}) scale(${k}) translate(-500 -603)`;
+        const metal = F.foil ? `url(#${id}-foil)` : `url(#${id}-metal)`;
+        let s = `<defs><clipPath id="${id}-out"><path d="${OUTLINE}"/></clipPath><clipPath id="${id}-win"><path d="${TOKEN_WINDOW}"/></clipPath>
+      <linearGradient id="${id}-metal" x1="0" y1="0" x2="1000" y2="1618" gradientUnits="userSpaceOnUse">${stops(F.metal)}</linearGradient>
+      ${F.foil ? `<linearGradient id="${id}-foil" x1="0" y1="0" x2="1000" y2="1618" gradientUnits="userSpaceOnUse">${stops(F.foil)}</linearGradient>` : ""}
+      <linearGradient id="${id}-field" x1="0" y1="0" x2="0" y2="1618" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${mix(F.deep, F.glow, 0.25)}"/><stop offset=".6" stop-color="${F.deep}"/><stop offset="1" stop-color="${F.plate}"/></linearGradient>
+      <radialGradient id="${id}-back" cx="580" cy="600" r="600" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.glow}" stop-opacity=".55"/><stop offset="1" stop-color="${F.glow}" stop-opacity="0"/></radialGradient>
+      <linearGradient id="${id}-vol" x1="292" y1="0" x2="708" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".3"/><stop offset=".75" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient></defs>`;
+        const mir = (x) => (ar ? `<g transform="matrix(-1 0 0 1 1000 0)">${x}</g>` : x);
+        let art = `<path d="${OUTLINE}" fill="${mix(edge, "#000000", 0.45)}" transform="translate(${ar ? -u : u} ${u})"/>`;
+        art += `<path d="${OUTLINE}" fill="${F.plate}"/>`;
+        const inner = level === "card" ? TOKEN_WINDOW : OUTLINE;
+        art += `<g clip-path="url(#${id}-out)"><path d="${inner}" fill="url(#${id}-field)"/><path d="${inner}" fill="url(#${id}-back)"/>`;
+        let shirt = "";
+        if (level !== "mini" || true) {
+          shirt += `<path d="${SHIRT}" fill="${prim}"/>`;
+          shirt += `<path d="${NECK_IN}" fill="${mix(prim, "#000000", 0.55)}"/>`;
+          if (level === "card") shirt += `<path d="${SHIRT}" fill="url(#${id}-vol)"/>`;
+          if (size >= 80)
+            shirt += `<path d="${CUFF_L}" fill="${sec}"/><path d="${CUFF_R}" fill="${sec}"/>`;
+          shirt += `<path d="M418 296L500 380L582 296" stroke="${sec}" stroke-width="${level === "card" ? 22 : 34}" fill="none" stroke-linejoin="round"/>`;
+          shirt += `<path d="${SHIRT}" fill="none" stroke="#000" stroke-opacity=".35" stroke-width="${(u * 0.9) / k}"/>`;
+        }
+        art += `<g clip-path="url(#${id}-${level === "card" ? "win" : "out"})"><g transform="${T}">${mir(shirt)}</g></g></g>`;
+        if (level === "card") {
+          art += `<path d="${TOKEN_WINDOW}" fill="none" stroke="${metal}" stroke-width="${2 * u}"/>`;
+          art += `<path d="M330 1534L360 1500H640L670 1534L640 1568H360Z" fill="${metal}"/>`;
+        } else {
+          // a foot band in the tier's metal carries the tier identity
+          art += `<g clip-path="url(#${id}-out)"><rect x="0" y="${1618 - 3 * u}" width="1000" height="${3 * u}" fill="${metal}"/></g>`;
+        }
+        // the edge: one pixel of the tier metal inside, one of the theme edge outside
+        art += `<g clip-path="url(#${id}-out)"><path d="${OUTLINE}" fill="none" stroke="${metal}" stroke-width="${2 * u}"/></g>`;
+        art += `<path d="${OUTLINE}" fill="none" stroke="${edge}" stroke-width="${0.9 * u}"/>`;
+        s += mir(art);
+        // the number (not on the 24 mini): fitted inside the scaled chest box (48 and 32: the body width at chest height)
+        if (level !== "mini") {
+          const num = p.ovr == null ? "—" : String(p.ovr);
+          const half = level === "card" ? 1.1 * u : 0.8 * u;
+          const bx =
+            level === "card"
+              ? {
+                  x0: 500 + (CHEST.x0 - 500) * k,
+                  x1: 500 + (CHEST.x1 - 500) * k,
+                  y0: Yc + (CHEST.y0 - 603) * k,
+                  y1: Yc + (CHEST.y1 - 603) * k,
+                  cy: Yc + (CHEST.cy - 603) * k,
+                }
+              : {
+                  x0: 500 + (304 - 500) * k,
+                  x1: 500 + (696 - 500) * k,
+                  y0: Yc + (430 - 603) * k,
+                  y1: Yc + (840 - 603) * k,
+                  cy: Yc + (640 - 603) * k,
+                };
+          const f = fitNumber(num, bx, half, 10000);
+          const fillN = contrast("#FFFFFF", prim) >= 3 ? "#FFFFFF" : "#0E1116";
+          const out = fillN === "#FFFFFF" ? mix(prim, "#000000", 0.6) : "#FFFFFF";
+          s += `<g data-mc="ovr"><text x="${f.x.toFixed(1)}" y="${f.y.toFixed(1)}" class="mc-f-d" font-size="${f.size.toFixed(1)}" text-anchor="middle" direction="ltr" fill="none" stroke="${out}" stroke-width="${(2 * half).toFixed(1)}" stroke-linejoin="round">${num}</text><text x="${f.x.toFixed(1)}" y="${f.y.toFixed(1)}" class="mc-f-d" font-size="${f.size.toFixed(1)}" text-anchor="middle" direction="ltr" fill="${fillN}">${num}</text></g>`;
+        }
+        const label = [
+          p.name,
+          p.ovr == null ? "pas encore de note" : `${p.ovr} OVR`,
+          p.tier && p.ovr != null ? F.word : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
+        return `<span class="mc-tok mc-tok--${size}" role="img" aria-label="${esc(label)}" dir="${ar ? "rtl" : "ltr"}" style="width:${Math.round(size * 0.618)}px;height:${size}px"><svg viewBox="0 0 1000 1618" aria-hidden="true" focusable="false" style="direction:ltr">${s}</svg></span>`;
+      }
+
+      /* fit: name lines to 790 units (shrink to the line's min, then textLength), Arabic stat labels to 150 */
       function fit(root) {
         root.querySelectorAll("svg text[data-fit]").forEach((el) => {
           const max = +el.getAttribute("font-size"),
-            min = el.classList.contains("mc-f-d") ? 60 : 84,
+            min = +el.dataset.fit,
             w = el.getComputedTextLength();
-          if (w > 744) el.setAttribute("font-size", Math.max((max * 744) / w, min).toFixed(1));
-          if (el.getComputedTextLength() > 744) {
-            el.setAttribute("textLength", 744);
+          if (w > 790) el.setAttribute("font-size", Math.max((max * 790) / w, min).toFixed(1));
+          if (el.getComputedTextLength() > 790) {
+            el.setAttribute("textLength", 790);
             el.setAttribute("lengthAdjust", "spacingAndGlyphs");
           }
         });
         root.querySelectorAll("svg text[data-fit-label]").forEach((el) => {
           const w = el.getComputedTextLength();
-          if (w > 128) el.setAttribute("font-size", Math.max((30 * 128) / w, 24).toFixed(1));
-        });
-        root.querySelectorAll("svg text[data-fit-w]").forEach((el) => {
-          const m = +el.dataset.fitW,
-            w = el.getComputedTextLength();
-          if (w > m) el.setAttribute("font-size", ((16 * m) / w).toFixed(1));
-        });
-        root.querySelectorAll("svg text[data-clip-w]").forEach((el) => {
-          const m = +el.dataset.clipW;
-          let s = el.textContent;
-          while (el.getComputedTextLength() > m && s.length) {
-            s = s.slice(0, -1);
-            el.textContent = s;
-          }
-        });
-        root.querySelectorAll("svg.mc-l--num, .mc-flat svg").forEach((svg) => {
-          const texts = [...svg.querySelectorAll("text.mc-numtxt")];
-          if (!texts.length) return;
-          const size = +texts[0].getAttribute("font-size"),
-            w = texts[texts.length - 1].getComputedTextLength() + 22;
-          const box = 388 - 2 * 18;
-          const s = Math.min(size, (size * box) / w);
-          texts.forEach((el) => el.setAttribute("font-size", s.toFixed(1)));
+          if (w > 150) el.setAttribute("font-size", Math.max((28 * 150) / w, 22).toFixed(1));
         });
       }
 
@@ -1012,6 +1224,13 @@
         name: "FUS Rabat",
         ar: "الفتح الرباطي",
         primary: "#f28e00",
+        secondary: "#111111",
+      };
+      const MAS = {
+        initials: "MAS",
+        name: "MAS Fès",
+        ar: "المغرب الفاسي",
+        primary: "#f6d10a",
         secondary: "#111111",
       };
       const S = (cap, sel, trf, con) => [cap, sel, trf, con];
@@ -1093,6 +1312,93 @@
           },
         },
       ];
+      const ARABIC = [
+        {
+          cap: "بطل 91 · هولوغرافي · اسم عربي",
+          p: {
+            name: "فاطمة الزهراء",
+            ovr: 91,
+            tier: "champion",
+            season: "2026/27",
+            serial: "482913",
+            club: RAJA,
+            stats: S(91, 82, 86, 78),
+          },
+        },
+        {
+          cap: "LASTREET 61 · واجهة عربية",
+          p: {
+            name: "Hamza",
+            ovr: 61,
+            tier: "homa",
+            season: "2026/27",
+            serial: "118204",
+            club: WYDAD,
+            stats: S(58, 64, 60, 61),
+          },
+        },
+        {
+          cap: "أسطورة 97 · مؤسس 2026",
+          p: {
+            name: "سلمى",
+            ovr: 97,
+            tier: "legend",
+            season: "2026/27",
+            serial: "1203",
+            club: FAR,
+            founder: 2026,
+            stats: S(97, 95, 96, 98),
+          },
+        },
+      ];
+      const NAMES = [
+        {
+          cap: "Un seul mot de 24 lettres · STADE 8",
+          p: {
+            name: "Mohammedabdelhakimalaoui",
+            ovr: 8,
+            tier: "stade",
+            season: "2026/27",
+            serial: "300001",
+            club: MAS,
+            stats: S(8, 9, 7, 8),
+          },
+        },
+        {
+          cap: "Nom arabe long, interface française · PRO 44",
+          p: {
+            name: "عبد الرحمن بن جلون العلوي",
+            ovr: 44,
+            tier: "pro",
+            season: "2026/27",
+            serial: "300002",
+            club: WYDAD,
+            stats: S(44, 41, 47, 45),
+          },
+        },
+        {
+          cap: "Nom latin long, interface arabe · CHAMPION 11",
+          lang: "ar",
+          p: {
+            name: "Les Lions du Derb Sidi Maarouf",
+            ovr: 11,
+            tier: "champion",
+            season: "2026/27",
+            serial: "300003",
+            club: RAJA,
+            stats: S(11, 12, 10, 11),
+          },
+        },
+      ];
+      const TOKENS = [
+        { name: "Ali", ovr: null, tier: null, club: RAJA },
+        { name: "Hamza", ovr: 8, tier: "homa", club: null },
+        { name: "Karim", ovr: 44, tier: "stade", club: WYDAD },
+        { name: "Ali", ovr: 11, tier: "pro", club: RAJA },
+        { name: "Abdelkarim", ovr: 88, tier: "champion", club: FUS },
+        { name: "Yasmine", ovr: 99, tier: "legend", club: FAR },
+      ];
+      const SIZES = [80, 64, 48, 32, 24];
       let theme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
       function render(beat = false) {
         document.documentElement.dataset.theme = theme;
@@ -1101,53 +1407,23 @@
           (c) =>
             `<figure><div class="stage">${card(c.p, { theme, beat })}</div><figcaption>${esc(c.cap)}</figcaption></figure>`,
         ).join("");
-        document.getElementById("arabic").innerHTML = [
-          {
-            cap: "بطل 91 · هولوغرافي · اسم عربي",
-            p: {
-              name: "فاطمة الزهراء",
-              ovr: 91,
-              tier: "champion",
-              season: "2026/27",
-              serial: "482913",
-              club: RAJA,
-              stats: S(91, 82, 86, 78),
-            },
-          },
-          {
-            cap: "LASTREET 61 · واجهة عربية",
-            p: {
-              name: "Hamza",
-              ovr: 61,
-              tier: "homa",
-              season: "2026/27",
-              serial: "118204",
-              club: WYDAD,
-              stats: S(58, 64, 60, 61),
-            },
-          },
-          {
-            cap: "قيد التكوين 2/3",
-            p: {
-              name: "سلمى",
-              ovr: null,
-              tier: null,
-              counted: 2,
-              min: 3,
-              season: "2026/27",
-              serial: null,
-              club: RAJA,
-              stats: S(null, null, null, null),
-            },
-          },
-        ]
-          .map(
-            (c) =>
-              `<figure><div class="stage">${card(c.p, { lang: "ar", theme, beat })}</div><figcaption>${esc(c.cap)}</figcaption></figure>`,
-          )
-          .join("");
+        document.getElementById("arabic").innerHTML = ARABIC.map(
+          (c) =>
+            `<figure><div class="stage">${card(c.p, { lang: "ar", theme, beat })}</div><figcaption>${esc(c.cap)}</figcaption></figure>`,
+        ).join("");
+        document.getElementById("names").innerHTML = NAMES.map(
+          (c) =>
+            `<figure><div class="stage stage--s" ${c.lang === "ar" ? 'dir="rtl" lang="ar"' : ""}>${card(c.p, { lang: c.lang || "fr", theme, beat })}</div><figcaption>${esc(c.cap)}</figcaption></figure>`,
+        ).join("");
+        const ladder = ["base", "LASTREET", "STADE", "PRO", "CHAMPION", "LEGEND"];
         document.getElementById("tokens").innerHTML =
-          `<figure><div class="tokens">${[80, 64, 56, 44, 32, 28, 24].map((h) => `<div style="width:${Math.round(h * 0.618)}px;height:${h}px">${card(CARDS[5].p, { theme, flat: true })}</div>`).join("")}</div><figcaption>LEGEND 99, flat, at 80 · 64 · 56 · 44 · 32 · 28 · 24 px (proportion only: the app's tokens drop detail per §7)</figcaption></figure>`;
+          `<div class="grid"><span></span>${SIZES.map((s) => `<span class="h">${s} px</span>`).join("")}` +
+          TOKENS.map(
+            (p, i) =>
+              `<span class="t">${ladder[i]} ${p.ovr == null ? "—" : p.ovr}</span>` +
+              SIZES.map((s) => token(p, s, { theme })).join(""),
+          ).join("") +
+          `</div>`;
         fit(document);
         document.querySelectorAll(".stage").forEach(mountTilt);
       }

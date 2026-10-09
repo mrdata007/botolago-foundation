@@ -111,6 +111,37 @@ places. The word "sorare" never appears in shipped text, class names, file names
    Arabic.
 8. **The Écharpe direction removed** (code, styles, tests, the stage's rail); history keeps it.
 
+**Revision 3 (owner feedback on revision 2, 2026-10-09; plan §16).** The owner's words: « fix the
+jersey they are too long. make sure the dimensions are correct. add hexagonal honeycomb background
+with layered gradients for each cards color, add geometric texture, and a shield-style card frame.
+make the jerseys 3D », then ten points on backgrounds, clutter, the jersey, hierarchy, the six tiers,
+lighting, materials, small sizes, holography and Arabic/French, with « Preserve the existing card
+structure, statistics, tier system, color identity, interactions and business logic ». What changes:
+
+9. **The jersey at real proportions, in 3D**: length 1.44 × pit-to-pit, span across the sleeves ≈ the
+   length, a visible hem, sleeves, cuffs and a collar in proportion; fabric mesh, folds, seams, volume
+   shading, a rim light, a cast shadow on the backboard (plan §5.1). The number is refitted to the new
+   chest (§5.2).
+10. **Football backgrounds**: a honeycomb backboard with layered gradients in each tier's colour (lines,
+    raised cells or foil cells by tier), two stadium floodlights, the centre circle and halfway line, a
+    backlight behind the jersey (§5.3). The sci-fi ribbons, glitch bars and pixel rain go.
+11. **About half the drawn elements removed** (measured: 205–284 → 105–118 per card): tubes, rivets,
+    the season stamp, guilloche, micro-print, captions, stitches, sparkles, the seal, the grid (§16).
+12. **A shield-style frame**: an embossed metal shield band round the art inside the unchanged
+    asymmetric outline, a metal outer edge, physical materials per tier (§3.2, §5.4).
+13. **Hierarchy**: under the shield's point the tier word in a metal plaque, then the name, then the
+    stats, centred; the name is tied to the artwork (§3.3).
+14. **Six tier treatments**: base graphite, LASTREET brushed silver and a street cage, STADE black and
+    gold with spotlights, PRO crimson with raised dark-red hex tiles, CHAMPION cyan–teal foil, LEGEND
+    deep purple with prismatic foil, the most prestigious (§5.4).
+15. **Restrained holography** on CHAMPION and LEGEND only: foil in the honeycomb cells and on the edges
+    and plaque, in each tier's narrow palette, never over the number or the plate's text (§5.5).
+16. **Small sizes redrawn**: at 80, 64, 48 and 32 px the token keeps the OVR, the tier's metal and
+    colour and an enlarged jersey; every texture and text drops (§7).
+17. **Arabic and French**: centred names with a particle rule for long names (`LES LIONS`,
+    `عبد الرحمن`), the tier word in Arabic in the Arabic interface (LASTREET stays Latin), mirrored
+    capsule and rail (§3.3, §4).
+
 ## Acceptance criteria
 
 Measured as CLAUDE.md "Evidence" says: overflow from element rectangles, contrast from rasterised
@@ -137,17 +168,38 @@ pixels, each run against a dev server started from the tree being measured on it
 - Arabic: layout mirrored (tab and rail at the right, capsule and the cut corner at the left, text
   right-aligned, stats CAP first at the right); digits Western and LTR; LASTREET isolated (`<bdi
 dir="ltr">` or LRI/PDI) and set in the Latin face, computed `letter-spacing` 0 on every Arabic run.
-- **The number inside the shirt**: for every fixture, OVR 1–99 and « — », the bounding box of the
-  `[data-mc="ovr"]` text (with its outlines) lies inside the shirt's chest box (x 306–694, y 500–830
-  of the card's viewBox), measured from element rectangles in Chromium and asserted in unit tests from
-  the metrics.
-- **Detail and crispness**: zoomed crops at DPR 2 and 3 of a PRO and a LEGEND card, at rest and
-  mid-tilt, show grain, guilloche, hairlines, stitches and micro-print without blur; the card markup
-  contains no `<image>` and no raster data; no `will-change` at rest.
-- **Holographic items**: present on CHAMPION and LEGEND (seal, sparkles, grid, prismatic edge,
-  diffraction foil), absent on every other tier (unit test and DOM query); LEGEND's foil opacity,
-  sparkle count and seal size exceed CHAMPION's; under reduced motion both stay visibly iridescent
-  (screenshot).
+- **The number inside the shirt** (rev. 3): for every fixture, OVR 1–99 and « — », the painted ink of
+  the `[data-mc="ovr"]` group (with its outlines) lies inside the chest box (jersey space x 336–664,
+  y 476–796; card space x 316.3–683.7, y 447.1–805.5) and inside the shirt path, measured from pixels
+  in Chromium and asserted in unit tests from the ink metrics; on tokens inside their transformed
+  boxes (plan §7).
+- **The jersey's dimensions** (rev. 3): `getBBox` of the shirt in jersey space is 190, 300, 810, 899;
+  length ÷ pit-to-pit 1.40–1.50 and sleeve span ÷ length 0.95–1.10 (unit test); a visible hem band
+  and stitch line, sleeves with cuffs, the V collar and the inside of the back.
+- **Shield and silhouette** (rev. 3): the outline path is byte-identical to revision 2 (tab and cut
+  corner); the art window is the shield path of plan §3.2; the shield band and the outer edge are
+  metal (gradient strokes), visible in the close-up crops.
+- **Clutter** (rev. 3): none of these elements exists in the markup of any tier: tubes, rivets, season
+  stamp, guilloche, micro-print, the tab's captions, glitch bars, pixel rain, ribbons, sparkles, the
+  holographic seal, the diffraction grid (unit test by class and by count); drawn elements per full
+  card ≤ 125.
+- **Tier treatments** (rev. 3): each tier's honeycomb mode, floodlight count, cage (LASTREET only),
+  pool (STADE only), cells (PRO only) and foil (CHAMPION, LEGEND only) as plan §5.3–5.4 (unit test); a
+  close-up crop per tier in the after set.
+- **Small sizes** (rev. 3): at 80, 64, 48 and 32 px every token shows the number (none on the 24
+  mini), the tier's metal edge and the jersey; no text other than the number, no pattern, mask or
+  filter in a token's markup (unit test); at 32 px a two-digit number is ≥ 7 CSS px tall (measured
+  7.4–8.9 in the mock).
+- **Detail and crispness** (rev. 3): zoomed crops at DPR 2 and 3 of a PRO and a LEGEND card, at rest
+  and mid-tilt, show the honeycomb emboss, the grain, the shirt's mesh, folds, seams and hem, and the
+  metal edges without blur; the card markup contains no `<image>`, no raster data and no
+  `feTurbulence`; no `will-change` at rest.
+- **Holographic items** (rev. 3): present on CHAMPION and LEGEND (honeycomb foil, edge / band /
+  plaque-rim foil, glints, diffraction), absent on every other tier (unit test and DOM query);
+  LEGEND's foil opacities and glint count exceed CHAMPION's; the diffraction never covers the number
+  or the plate's text (its box ends at 69 % of the card height and its mask has a hole over the
+  chest; contrast with the pointer over the number and over the name meets the floors); under reduced
+  motion both stay visibly iridescent (screenshot).
 - **Depth**: on every tier the full card has five layers and seven rims with distinct `translateZ`
   and `transform-style: preserve-3d` on the tilt element (computed styles); no `filter`, `opacity`,
   `clip-path` or `overflow` that flattens 3D on its ancestors; a pointer sweep moves `--mc-ax`/`--mc-ay`

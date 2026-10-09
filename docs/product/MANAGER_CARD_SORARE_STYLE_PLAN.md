@@ -7,7 +7,12 @@ Branch `claude/manager-card-sorare-style` from `main` `8fae526c`. Written 2026-1
 director; nothing here has been built yet. **Revision 2 (same day, owner feedback on the mock):** more
 pixels and fine detail (§3.2, §5.6), the number printed inside the shirt (§5.2), holographic items on
 CHAMPION and LEGEND only (§5.5), real depth on every card (§8). Where revision 2 and an older line
-disagree, revision 2 wins.
+disagree, revision 2 wins. **Revision 3 (same day, owner feedback on revision 2; record in §16):** the
+jersey at measured proportions and drawn in 3D (§5.1), the number refitted to its chest (§5.2), a
+honeycomb backboard with floodlights and pitch lines instead of the sci-fi field (§5.3), a shield-shaped
+metal frame inside the unchanged outline (§3.2), the name under the artwork with the tier in a plaque
+(§3.3), about half the drawn elements removed (§16), six material treatments (§5.4), restrained foil
+(§5.5), tokens redrawn per size (§7). Where revision 3 and an older line disagree, revision 3 wins.
 
 Where this spec gives a number, use that number. Where it says "measure", measure in Chromium on the
 built card and write the value into the module's README. Where something is not covered, follow the
@@ -18,24 +23,27 @@ commit message.
 
 ## 0. Decisions (the build's defaults; owner questions in §15)
 
-| #   | Decision                                                                                                                                                                                                                                                                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| D1  | Model: Sorare's football card of the **2026-27 generation** (dark lacquered plate, raised tab, cut corner, lit tubes, two-face name). The rating is the centrepiece, as Sorare's in-app hex score is beside every card; on our card it is the shirt number.                                                  |
-| D2  | No photo: **the shirt without the player.** A club-coloured shirt panel with a V collar fills the art window; the rating sits on it as a giant shirt number; behind it a generated field of light ribbons and glitch bars in the tier colour, seeded by the serial, unique and stable.                       |
-| D3  | The card is a **dark object in both app themes** (Sorare's are). Theme changes only the outer edge, the rim and the drop shadow.                                                                                                                                                                             |
-| D4  | Six-step foil ladder: base (no tier) graphite · LASTREET steel · STADE amber · PRO red · CHAMPION ice blue · LEGEND violet + prism.                                                                                                                                                                          |
-| D5  | Name in two lines: first word in **Changa 800** caps; the rest in **Instrument Serif 400** caps (new, self-hosted, OFL, loaded only by the card chunk). Arabic names: Changa 800 over Changa 300.                                                                                                            |
-| D6  | Fixed aspect 1 : 1.618 for every card (no height that changes with the data).                                                                                                                                                                                                                                |
-| D7  | No card back, no flip: a flip hides the number (brief: never hidden), and the back would repeat the stats the page already shows under the card.                                                                                                                                                             |
-| D8  | Tilt, depth parallax and moving light on mouse and pen; on touch-only devices a slow idle float (7 s, ±0.3 of the tilt range) while the card is on screen; no device orientation; under reduced motion the card is still and keeps its static depth.                                                         |
-| D9  | New renderer `src/components/manager-card/eclat/` (« éclat », the shine), id `eclat-v1`. Écharpe (`echarpe/`) is **deleted** in the last integration commit; git history keeps it.                                                                                                                           |
-| D10 | Tier `homa` is displayed **LASTREET** in French and Arabic (Latin word, isolated in Arabic). Key unchanged everywhere.                                                                                                                                                                                       |
-| D11 | Our serial stays `BOT #482913`. No « x/1000 »: our cards have no supply cap and the plan bans scarcity and count wording.                                                                                                                                                                                    |
-| D12 | **Premium detail** (rev. 2): grain, guilloche, bevels, recessed window walls, hairlines, micro-print, captions, a season stamp, screw-head rivets, sharper light streaks, a stitched mesh shirt with sleeves, cuffs and a chest disc. All vector (no raster image), crisp at DPR 2–3; it drops by size (§7). |
-| D13 | **The number is printed on the shirt** (rev. 2): fitted inside the chest box with margin, outlined like tackle-twill, raised with light-following highlight and shade. Never outside the shirt; « — » too.                                                                                                   |
-| D14 | **Holographic items for CHAMPION and LEGEND only** (rev. 2): pointer-following rainbow diffraction foil, a diffraction grid in the field, spectral ribbons, prismatic edge foil, sparkles and a BotolaGO holographic seal with the tier; LEGEND stronger. Other tiers: none.                                 |
-| D15 | **Depth on every card** (rev. 2): the full card is five stacked layers in CSS 3D (field, shirt, number, frame, holo) plus a 7-step extruded rim, with parallax, a moving contact shadow and an embossed number; CSS and SVG only (no WebGL). Tokens get static depth.                                        |
-| D16 | Stage card width (rev. 2): **296 px** on phones (`min(296px, 100vw − 32px)`), **336 px** from 768 px; G4 stays 200 px.                                                                                                                                                                                       |
+| #   | Decision                                                                                                                                                                                                                                                                                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Model: Sorare's football card of the **2026-27 generation** (dark lacquered plate, raised tab, cut corner, lit tubes, two-face name). The rating is the centrepiece, as Sorare's in-app hex score is beside every card; on our card it is the shirt number.                                                                                                                               |
+| D2  | No photo: **the shirt without the player** (rev. 3): a club-coloured match shirt at measured flat-lay proportions, drawn in 3D (volume, folds, fabric mesh, hem, cast shadow), framed in a shield on a honeycomb backboard in the tier colour with two floodlights and the centre circle. The rating is printed on its chest.                                                             |
+| D3  | The card is a **dark object in both app themes** (Sorare's are). Theme changes only the outer edge, the rim and the drop shadow.                                                                                                                                                                                                                                                          |
+| D4  | Six-step foil ladder: base (no tier) graphite · LASTREET steel · STADE amber · PRO red · CHAMPION ice blue · LEGEND violet + prism.                                                                                                                                                                                                                                                       |
+| D5  | Name in two lines: first word in **Changa 800** caps; the rest in **Instrument Serif 400** caps (new, self-hosted, OFL, loaded only by the card chunk). Arabic names: Changa 800 over Changa 300.                                                                                                                                                                                         |
+| D6  | Fixed aspect 1 : 1.618 for every card (no height that changes with the data).                                                                                                                                                                                                                                                                                                             |
+| D7  | No card back, no flip: a flip hides the number (brief: never hidden), and the back would repeat the stats the page already shows under the card.                                                                                                                                                                                                                                          |
+| D8  | Tilt, depth parallax and moving light on mouse and pen; on touch-only devices a slow idle float (7 s, ±0.3 of the tilt range) while the card is on screen; no device orientation; under reduced motion the card is still and keeps its static depth.                                                                                                                                      |
+| D9  | New renderer `src/components/manager-card/eclat/` (« éclat », the shine), id `eclat-v1`. Écharpe (`echarpe/`) is **deleted** in the last integration commit; git history keeps it.                                                                                                                                                                                                        |
+| D10 | Tier `homa` is displayed **LASTREET** in French and Arabic (Latin word, isolated in Arabic). Key unchanged everywhere.                                                                                                                                                                                                                                                                    |
+| D11 | Our serial stays `BOT #482913`. No « x/1000 »: our cards have no supply cap and the plan bans scarcity and count wording.                                                                                                                                                                                                                                                                 |
+| D12 | **Premium through material, not ornament** (rev. 3): metal edging and an embossed shield band, the honeycomb emboss, grain, brushed metal (LASTREET), the shirt's mesh, folds and seams. Revision 2's ornaments (tubes, rivets, stamp, guilloche, micro-print, captions, ribbons, glitch bars, pixel rain) are removed (§16). All vector, crisp at DPR 2–3; tokens drop all texture (§7). |
+| D13 | **The number is printed on the shirt** (rev. 2): fitted inside the chest box with margin, outlined like tackle-twill, raised with light-following highlight and shade. Never outside the shirt; « — » too.                                                                                                                                                                                |
+| D14 | **Holographic foil for CHAMPION and LEGEND only, restrained** (rev. 3): foil in the honeycomb cells, on the outer edge, the shield band and the plaque rim, a soft diffraction kept off the number and the plate's text, two / four glints; each tier's own narrow palette; LEGEND stronger. No seal, no sparkle field, no seven-hue rainbow. Other tiers: none.                          |
+| D15 | **Depth on every card** (rev. 2): the full card is five stacked layers in CSS 3D (field, shirt, number, frame, holo) plus a 7-step extruded rim, with parallax, a moving contact shadow and an embossed number; CSS and SVG only (no WebGL). Tokens get static depth.                                                                                                                     |
+| D16 | Stage card width (rev. 2): **296 px** on phones (`min(296px, 100vw − 32px)`), **336 px** from 768 px; G4 stays 200 px.                                                                                                                                                                                                                                                                    |
+| D17 | **Shield frame** (rev. 3): the art window is a heater shield with an embossed metal band; the outline (tab, cut corner) is unchanged (§3.2).                                                                                                                                                                                                                                              |
+| D18 | **Hierarchy** (rev. 3): under the shield's point, centred: the tier word in a metal plaque, the name, the stats, the serial (§3.3).                                                                                                                                                                                                                                                       |
+| D19 | **The founder capsule sits along the cut corner** (rev. 3), only on founders; the tubes become two floodlights in the field (§3.3, §5.3, §9).                                                                                                                                                                                                                                             |
 
 **Legal guardrail.** Match the style and layout language closely; never copy Sorare's logo, wordmark,
 rarity names, season badges or artwork files, never trace or sample their images, never write
@@ -97,11 +105,12 @@ holographic variants add a rainbow layer that shifts with the angle; rarer cards
 
 A dark, lacquered collectible in the exact proportions and furniture of a current Sorare football card,
 coloured end to end by its tier. Where Sorare puts the player, we put **the player's shirt without the
-player**: the club's colours as a shirt panel with a V collar, and on it the manager's rating as a giant
-white shirt number, standing in a field of tier-coloured light ribbons and glitch bars generated from the
-card's serial, so no two cards are the same. The name sits low in Sorare's two-face set (heavy sans over
-light serif), the four stats run across the plate in labelled hairline columns, the identifier sits at
-the foot. On a desk the card leans toward the pointer and a sheen and a foil follow it; on a phone it
+player**: the club's match shirt at real proportions, drawn in 3D, framed in a metal shield on a
+honeycomb backboard lit by two floodlights, and on its chest the manager's rating printed as a shirt
+number (revision 3). The honeycomb's phase comes from the card's serial, so no two cards are the same.
+Under the shield's point the tier sits in a metal plaque and the name hangs right below it in Sorare's
+two-face set (heavy sans over light serif); the four stats run across the plate in labelled hairline
+columns, the identifier sits at the foot. On a desk the card leans toward the pointer and a sheen and a foil follow it; on a phone it
 holds a fixed sheen. Rarer tiers carry more foil, LEGEND a prism.
 
 ---
@@ -126,189 +135,336 @@ The tab rises 10 above the body between x 0 and 206 (step at 45°); the bottom-t
 `clip-path: polygon()` of the foil overlay uses its corners in % (`0 2.5%, 4% 0, 20.6% 0, 21.6% 0.6%,
 100% 0.6%, 100% 87.6%, 80% 100%, 0 100%`, mirrored in Arabic).
 
-### 3.2 Layers, bottom to top (revision 2)
+### 3.2 Layers, bottom to top (revision 3)
 
 The full card is **five SVG layers** stacked in CSS 3D (§8), plus seven rim SVGs. Every layer uses the
 same viewBox; shapes are drawn LTR and mirrored as a group in Arabic; text is never mirrored. The SVG
-`<defs>` (gradients, patterns, filters, clip paths) live once in the base layer; the other layers
-reference them by id (ids are document-wide and made unique per card by `scope-ids.ts`). `WINDOW` =
-`M80 22H964Q982 22 982 40V1092Q982 1110 964 1110H80Q62 1110 62 1092V40Q62 22 80 22Z`; `RING` =
-`OUTLINE + WINDOW` filled with `fill-rule="evenodd"` (the frame with the window cut out).
+`<defs>` (gradients, patterns, masks, filters, clip paths) live once in the base layer; the other layers
+reference them by id (ids are document-wide and made unique per card by `scope-ids.ts`); the holo layer
+carries its own one `<mask>` in a local `<defs>`.
 
-| Layer (z, §8)                          | Contents, bottom to top                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **base** (0)                           | `OUTLINE` filled `plate`; `WINDOW` filled with the radial gradient (centre (780, 90), r 1150: 0 `glow` .85, .38 `deep` .9, 1 `plate`); the field (§5.3) clipped to `WINDOW`, with, for CHAMPION and LEGEND, the diffraction grid (§5.5); the grain pattern (§5.6) over the window; the window vignette (linear 0 → .78 transparent → 1 `plate`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| rims (1–7)                             | Seven copies of `RING`, each in its own SVG at z 1…7 (§8), filled `mix(edge, #000, .25 + .07 k)`: the card's thickness and the window's inner walls, visible when the card turns.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| **shirt** (3)                          | §5.1, clipped to `WINDOW` (the frame above hides the sleeve ends behind the tab and the window edge).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| **number** (6)                         | §5.2: the fabric shadow copy, the shade copy, the highlight copy, then `<g data-mc="ovr">` (hit rect, two outline copies, the fill), « OVR », the forming marks.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| **frame** (8)                          | `RING` filled `plate`, then the plate gradient (0 `deep` .55 → .3 `plate`), then the grain; the bottom plate glow (y 1110 → 1618: 0 `deep` .25 → .35 transparent); the guilloche (§5.6) clipped to `OUTLINE`; the window **recess** (`WINDOW` stroked 10 units with a gradient from `#000` .6 at top-leading to `#FFF` .25 at bottom-trailing: the walls of a sunken window); the window hairline (`WINDOW` stroked 1.2 white .22); the plate's double top hairline (y 1109 1.5 white .2; y 1116 0.8 white .08); the leading rail (x 0–62, y 330–1110, `plate` .6, a 1.2 white .12 trailing hairline) and its tube; the tab (fill `plate` .9, grain, an inner hairline inset 10 units white .12, outer stroke 1.5 white .18) and its contents; the capsule (and its inner hairline inset 8, white .08) and the trailing tube; the four rivets; the season stamp; the **bevel** (`OUTLINE` stroked 10, clipped to `OUTLINE`, gradient top-leading `#FFF` .38 → .45 transparent → .55 transparent → bottom-trailing `#000` .5); the edge (`OUTLINE` stroked 3 `edge`); the dark theme's outer rim; then every text of §3.3. |
-| **holo** (9), CHAMPION and LEGEND only | §5.5: prismatic edge foil, sparkles, the holographic seal.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| foil overlay (9.5, HTML)               | `<div class="mc-eclat__foil">`: the sheen (every tier) and the diffraction foil (CHAMPION, LEGEND), §8.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+**The shield window** (rev. 3, replaces the rounded rectangle; the outline of §3.1 is unchanged):
 
-**Tubes** (rail x 25–35, y 360–640; trailing x 965–975, y 1150–1390; `rx 5`): a blurred copy in `glow`
-.9 (stdDeviation 6) under the `tube` fill, plus a 2.4-unit specular core (inset 2 units, white .8).
-**Rivets** at (24, 1592), (974, 34), (974, 1124), (24, 1124): r 6.5, fill `mix(plate, #FFF, .35)`, a
-1-unit `#000` .5 ring, a slot (7 × 1.2, `#000` .55) and a 1.4-unit white .6 glint at (−2, −2.5).
+```
+WINDOW = M62 46 Q62 22 86 22 H914 Q938 22 938 46 V880
+         C938 990 600 1060 500 1136  C400 1060 62 990 62 880 Z
+RING   = OUTLINE + WINDOW   (fill-rule="evenodd": the frame with the shield cut out)
+TAB    = M0 40 Q0 0 40 0 L206 0 L206 280 Q206 302 184 302 L0 302 Z
+```
+
+A heater shield, symmetric about x 500: flat top, straight sides to y 880 (the "shoulders" where the
+curve starts), two cubic curves meeting in a point at (500, 1136). The trailing strip x 938–1000 is now
+plain frame, the mirror of the leading rail x 0–62. **Reconciling "shield frame" with "preserve the
+asymmetric silhouette":** the outer outline (raised tab at the top-leading corner, cut bottom-trailing
+corner) is untouched; the shield is the embossed metal **inner** frame round the art, so the card reads
+as a crest mounted in the familiar asymmetric plate.
+
+**Jersey space.** The shirt and the number are drawn in their own coordinates (§5.1–5.2) and placed on
+the card with `JT = matrix(1.12 0 0 1.12 -60 -86)` (x' = 1.12 x − 60, y' = 1.12 y − 86). The transform
+is symmetric about x 500, so it commutes with the Arabic mirror. Clip paths that must stay in card space
+(the window) sit on a group **outside** `JT`; clips, gradients and patterns used inside the jersey are
+in jersey space.
+
+| Layer (z, §8)                          | Contents, bottom to top                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **base** (0)                           | `OUTLINE` filled `plate`; then, clipped to `WINDOW`: the field gradient; `<g class="mc-field">` = honeycomb (§5.3, per tier), the LASTREET cage, grain, the pitch lines; the backlight; `<g class="mc-flood">` = the two floodlights; the STADE pool; the vignette; the foot shade; `<g class="mc-shirt-cast">` = the jersey's cast shadow (§5.1). Exact values §5.3.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| rims (1–7)                             | Seven copies of `RING`, each in its own SVG at z 1…7 (§8), filled `mix(edge, #000, .25 + .07 k)`: the card's thickness and the shield's inner walls, visible when the card turns.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| **shirt** (3)                          | `<g clip-path="url(#win)"><g transform="JT">` §5.1 `</g></g>`, then the chest-disc initials (`<text transform="JT">`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| **number** (5)                         | `<g transform="JT">` §5.2: the fabric shadow copy, the shade copy, the highlight copy, then `<g data-mc="ovr">` (hit rect, outer outline, twill, fill, mesh, light), « OVR », the forming marks `</g>`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **frame** (8)                          | In order: `RING` filled `plate`; `RING` filled the plate gradient (linear y 1100 → 1618: 0 `deep` .5, .45 `deep` 0); `RING` filled grain; (LASTREET) `RING` filled the brush pattern. **Shield band**: the inner shadow (`WINDOW` stroked 44 `#000` .6, blur `b8`, clipped to `WINDOW`), the groove (`WINDOW` stroked 28 `#000` .45), the metal (`WINDOW` stroked 22 `url(#metal)`), (LASTREET) the brush (stroke 22), the bevel (stroke 22 `url(#bevel)`), the ridge (stroke 1.6 `#000` .35). **Outer edge**, clipped to `OUTLINE`: stroke 30 `#000` .5, stroke 24 metal, (LASTREET) stroke 24 brush, stroke 24 bevel (so 12 units of metal show inside the outline with a 3-unit dark groove inside it). **Tab**: shadow (`TAB` `#000` .45, translate (0, 6), blur `b5`), fill `plate`, grain, rim (`TAB` stroked 16 metal and 16 bevel, clipped to `TAB`), the club disc (§3.3). **Plaque** (§3.3). **Founder capsule** (§3.3). The theme edge (`OUTLINE` stroked 3 `edge`), the dark theme's outer rim (as revision 2). Then every text of §3.3. |
+| **holo** (9), CHAMPION and LEGEND only | §5.5: foil through the edge / band / plaque-rim mask, glints.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| foil overlay (9.5, HTML)               | `<div class="mc-eclat__foil">`: the sheen (every tier) and the restrained diffraction (CHAMPION, LEGEND), §5.5 and §8.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+
+**Gradients shared by the frame** (all `gradientUnits="userSpaceOnUse"`): `metal` linear (0, 0) →
+(1000, 1618) with the tier's seven metal stops at 0, 1/6 … 1 (§5.4); `bevel` linear (0, 0) → (1000,
+1618): 0 `#FFF` .45, .4 `#FFF` 0, .6 `#000` 0, 1 `#000` .5. `brush` pattern 240 × 5: rect y .4 h .7
+`#FFF` .1 (full width), rect x 40 y 2.4 w 200 h .6 `#FFF` .06, rect y 3.8 w 170 h .7 `#000` .14. `grain`
+pattern 17 × 17: circles (3, 4) r .9 `#FFF` .06, (11, 2) r .7 `#000` .16, (7, 12) r .8 `#FFF` .05,
+(14, 10) r .9 `#000` .12.
+
+**Removed in revision 3** (do not build; full list §16): the tubes, the rivets, the season stamp, the
+guilloche, both micro-print lines, the tab's club caption and season caption, the tab's inner
+hairline, the rail's darkened panel and hairline, the plate's double hairline, the trailing capsule
+slot.
 
 Every layer but the number takes no pointer events (`pointer-events: none` on the SVG); in the number
 layer only `[data-mc="ovr"]` does. The foil, holo and frame layers therefore never steal
 `elementFromPoint` from the number.
 
-### 3.3 Furniture and text positions (LTR; mirror x in Arabic)
+### 3.3 Furniture and text positions (revision 3; LTR, mirror x in Arabic)
 
-| Element           | Position                                                                                                            | Face, size, weight, case, tracking                                                                                          | Colour                                                                              |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Club name caption | tab, centre x 103, baseline 66, fitted to 160 units                                                                 | Manrope 800, 16, caps, tracking .14em (Latin), 0 (Arabic); `club.name[lang]`                                                | `#FFFFFF` .7                                                                        |
-| Season            | tab, centre x 103, baseline 318 (no club: 200)                                                                      | Manrope 800, 30, `font-variant-numeric: tabular-nums`                                                                       | `#FFFFFF` .9                                                                        |
-| Season caption    | tab, centre x 103, baseline 346 (no club: 228)                                                                      | Manrope 700, 15, caps, tracking .22em; Arabic Noto Sans Arabic 700, 17; new key `card.caption.season` « Saison » / «الموسم» | `label`                                                                             |
-| Club disc         | tab, centre (103, 222), r 50, inner hairline r 40 white .3                                                          | fill `club.primary`; ring 7 units `club.secondary` (else white .5)                                                          | —                                                                                   |
-| Club initials     | disc centre, baseline 234                                                                                           | Changa 800, 34, caps, tracking .02em (Latin), 0 (Arabic)                                                                    | white or `#0E1116`, whichever is ≥ 4.5:1 on `primary`                               |
-| Sample pill       | x 744–952 (anchored at the trailing end), y 44–92, `rx 24`                                                          | Manrope 800, 26, caps, tracking .1em (Latin); fill `#000` .5                                                                | `#FFFFFF`                                                                           |
-| Number            | §5.2                                                                                                                | Changa 800                                                                                                                  | §5.2                                                                                |
-| « OVR »           | centre x 500, baseline 868 (inside the shirt)                                                                       | Manrope 800, 30, tracking .18em                                                                                             | the number's fill at .85                                                            |
-| Season stamp      | window, centre (920, 160), r 40, `#000` .28, ring 1.5 white .5, dashed inner ring r 33                              | « 26 » Changa 800 22 at baseline 157, « 27 » Manrope 800 11 at 178 (the two halves of the season)                           | `#FFFFFF` .85 / .6                                                                  |
-| Micro-print       | rail: x 52, from y 1100 upward, rotated −90°, clipped to 760 units; plate foot: x 56, baseline 1604, clipped to 700 | Manrope 700, 9.5, tracking .12em; the string « BOTOLAGO · {season} · BOT #{serial} · » repeated (no words to translate)     | `#FFFFFF` .34 / .3                                                                  |
-| Stat labels       | x 56, 196, 336, 476 (start), baseline 1178                                                                          | Manrope 700, 34, caps, tracking .08em                                                                                       | `label`                                                                             |
-| Stat values       | same x, baseline 1240                                                                                               | Manrope 800, 56, tabular-nums                                                                                               | `#FFFFFF`                                                                           |
-| Stat dividers     | x 172, 312, 452; y 1146–1250; 1.5 units                                                                             | —                                                                                                                           | `#FFFFFF` .22                                                                       |
-| Tier word         | x 600 (start), baseline 1178                                                                                        | Changa 800, 36, caps, tracking .12em (Latin words, incl. LASTREET in Arabic)                                                | `glow` (`lastreet`: `#E6ECF3`), with a 1-unit `#000` .5 shadow at dy 1.5 (engraved) |
-| Name line 1       | x 56, baseline 1352                                                                                                 | Changa 800, max 92, min 60, caps                                                                                            | `#FFFFFF`                                                                           |
-| Name line 2       | x 56, baseline 1478                                                                                                 | Instrument Serif 400, max 132, min 84, caps                                                                                 | `#FFFFFF`                                                                           |
-| Serial            | x 56, baseline 1572                                                                                                 | Manrope 600, 38, tabular-nums, tracking .02em                                                                               | `#FFFFFF` .74                                                                       |
+The plate is re-ordered so the name hangs directly under the artwork (owner, revision 3: "the
+manager's name must not look disconnected"): **shield point → tier plaque → name → stats → serial**,
+all centred on x 500. Centred text needs no mirroring (`X(500) = 500`).
 
-Stat value null → « — ». **Arabic stat labels** (`القائد`, `التشكيلة`, `الانتقالات`, `الثبات`) are
-set in Noto Sans Arabic 700 (`var(--ui-font-body)` in Arabic), size 30, letter-spacing 0, each shrunk to
-fit 128 units (min 24); they are ornamental duplicates of the stat tiles the page prints in the DOM.
+| Element         | Position (viewBox units)                                                                                                                                                                                                                                                                                    | Face, size, weight, case, tracking                                                                                                                                               | Colour                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Club disc       | tab, centre (103, 134): shadow r 56 `#000` .4 at (0, 4) blur `b5`; disc r 54 `club.primary`; the rib gradient over it at .5; ring r 51, stroke 6 `club.secondary` (else white .5)                                                                                                                           | —                                                                                                                                                                                | —                                                     |
+| Club initials   | (103, 146), anchor middle, `direction="ltr"`                                                                                                                                                                                                                                                                | Changa 800, 34, tracking .02em (Latin UI), 0 (Arabic UI)                                                                                                                         | white or `#0E1116`, whichever is ≥ 4.5:1 on `primary` |
+| Season          | (103, 262); no club: (103, 166)                                                                                                                                                                                                                                                                             | Manrope 800, 28, tabular-nums, `direction="ltr"`                                                                                                                                 | `#FFFFFF` .92                                         |
+| Sample pill     | rect x 716–916 (Arabic 84–284), y 48–94, `rx 23`, `#000` .55; text centre (816, 80) (Arabic 184)                                                                                                                                                                                                            | Manrope 800 24, tracking .12em; Arabic «مثال» Noto Sans Arabic 800 26                                                                                                            | `#FFFFFF`                                             |
+| Number, « OVR » | §5.2                                                                                                                                                                                                                                                                                                        | —                                                                                                                                                                                | —                                                     |
+| Tier plaque     | an elongated hexagon centred on x 500: `M x0 1186 L x0+24 1150 H x1−24 L x1 1186 L x1−24 1222 H x0+24 Z`, width `max(240, wordInk + 104)`; under it a shadow copy `#000` .5 at (0, 5) blur `b5`; fill `mix(plate, #000, .35)`; stroke 4 `url(#metal)`; a top hairline `M x0+26 1155 H x1−26` white .12, 1.2 | —                                                                                                                                                                                | —                                                     |
+| Tier word       | (500, 1201), anchor middle. Latin words (also LASTREET in Arabic): x 504.84 (half the tracking, which Chromium adds after the last glyph), `direction="ltr"`. Arabic words: x 500, `direction="rtl"`, `unicode-bidi="isolate"`                                                                              | Changa 800, 44; tracking .22em (Latin), 0 (Arabic)                                                                                                                               | `wordFill` (§5.4)                                     |
+| Name line 1     | (500, 1306), anchor middle                                                                                                                                                                                                                                                                                  | Changa 800, max 72, min 52, caps                                                                                                                                                 | `#FFFFFF`                                             |
+| Name line 2     | (500, 1400), anchor middle                                                                                                                                                                                                                                                                                  | Instrument Serif 400, max 108, min 72, caps; Arabic script: Changa 300, max 100, min 72                                                                                          | `#FFFFFF`                                             |
+| One-word name   | (500, 1370), anchor middle                                                                                                                                                                                                                                                                                  | Instrument Serif 400, max 132, min 76 (Arabic script: Changa 800, max 104)                                                                                                       | `#FFFFFF`                                             |
+| Empty name      | rect x 330–670, y 1330, h 2                                                                                                                                                                                                                                                                                 | —                                                                                                                                                                                | white .22                                             |
+| Name/stats rule | rect x 190–810, y 1424, h 1.4                                                                                                                                                                                                                                                                               | —                                                                                                                                                                                | white .14                                             |
+| Stat labels     | centres x 200, 380, 560, 740 (Arabic: 800, 620, 440, 260, so CAP is rightmost), baseline 1470 (Arabic 1472), anchor middle                                                                                                                                                                                  | Manrope 800, 30, caps, tracking .08em; Arabic Noto Sans Arabic 700, 28, fitted to 150 units (min 22)                                                                             | `label` (§5.4)                                        |
+| Stat values     | same x, baseline 1528                                                                                                                                                                                                                                                                                       | Manrope 800, 52, tabular-nums, `direction="ltr"`                                                                                                                                 | `#FFFFFF`                                             |
+| Stat dividers   | x 290, 470, 650 (mirrored in Arabic), y 1446–1534, 1.4 wide                                                                                                                                                                                                                                                 | —                                                                                                                                                                                | white .14                                             |
+| Serial          | (500, 1594), anchor middle                                                                                                                                                                                                                                                                                  | Manrope 600, 30, tabular-nums, tracking .04em                                                                                                                                    | `#FFFFFF` .8                                          |
+| Founder capsule | along the cut corner: a group `rotate(-45 872 1482)` holding a shadow rect (x 808, y 1458, 128 × 48, rx 24, `#000` .45, translate (0, 3)) and the capsule (same rect, fill linear (830, 1524) → (914, 1440) `deep` → `glow`, stroke 3 `url(#metal)`). Arabic: mirrored with the shapes                      | « ·26 » (last two digits of `founder`): `translate(872 1482) rotate(−45)` (Arabic `translate(128 1482) rotate(45)`), anchor middle, `dominant-baseline="central"`, Changa 800 30 | `#FFFFFF`                                             |
+| Wordmark        | leading rail, `translate(32 720) rotate(−90)` (Arabic x 968), anchor middle: an engraved pair, first `#000` .55 at `dy` 1.5, then `#FFF` .6                                                                                                                                                                 | Changa 800, 26, tracking .06em, « BotolaGO »                                                                                                                                     | —                                                     |
 
-**Anchors and direction.** `text-anchor` resolves against the run's own `direction`: an RTL run's
-`start` is its right edge. In the Arabic interface every Latin or digit run is `direction="ltr"`
-with `text-anchor="end"` at the mirrored x; every Arabic run is `direction="rtl"` with
-`text-anchor="start"` at the mirrored x; in the French interface an Arabic run is `direction="rtl"`
-with `text-anchor="end"` at x. The mock's `t()` helper is the reference. Stat label words are the app's (`strings.stats`): CAP · SEL · TRF · CON /
-the Arabic short forms. In Arabic the four columns run right to left (CAP at x 944 end-anchored, then
-804, 664, 524) and dividers at 828, 688, 548; the tier word starts at x 400 end-anchored.
+Not a founder: **no capsule at all** (revision 3; the empty slot was clutter). Stat value null →
+« — ». Arabic stat labels (`القائد`, `التشكيلة`, `الانتقالات`, `الثبات`) are ornamental duplicates of the
+stat tiles the page prints in the DOM. Removed from revision 2: the club-name caption, the « SAISON »
+caption (the key `card.caption.season` is **not** added), the season stamp, the micro-print, the stat
+tier word at x 600.
 
-**Contrast checks this layout must pass** (measure from pixels, §12): labels ≥ 4.5:1 on the plate;
-values, names, tier word ≥ 4.5:1; serial ≥ 4.5:1; season ≥ 4.5:1 on the tab.
+**Anchors and direction.** Centre-anchored runs are direction-neutral; set `direction` on each run as
+above (Latin and digits `ltr`, Arabic `rtl` with `unicode-bidi="isolate"`). Digits stay LTR.
+
+**Contrast this layout must pass** (measure from pixels, §12): name lines, stat values, stat labels,
+serial, season and the tier word ≥ 4.5:1 against what is under them; the number ≥ 3:1 against the
+shirt. Revision 3 mock, measured (scratchpad `v3/design-selfcheck.md`): names ≥ 11.8, tier word ≥ 6.9,
+values ≥ 8.7, labels ≥ 4.9 (with the pointer over the number; 5.3 at rest), the number ≥ 3.35 (white on Raja green, the worst club).
 
 ---
 
-## 4. Names
+## 4. Names (revision 3)
 
 **Split.** Clean as today (`knitName`'s first steps, moved to `eclat/name.ts`): trim, collapse spaces,
 drop emoji and symbols, drop control and bidi characters; Arabic script: drop tatweel and harakat.
 Latin script: uppercase with `toLocaleUpperCase("fr")` **keeping accents** (É, Ç), apostrophes and
 hyphens. Then:
 
-- two or more words → line 1 = first word, line 2 = the rest;
-- one word → line 2 only (the serif line), baseline 1452, max 156, min 84; line 1 empty;
-- empty (unnamed guest) → no text; an empty name line: a 2-unit rule at y 1478, x 56–420, white .22.
+- two words → line 1 = first word, line 2 = the second;
+- three words or more → line 1 = the first word, **unless the first word is a particle** (`LE`, `LA`,
+  `LES`, `EL`, `AL`, `DE`, `DU`, `DES`, `ABD`, `ABOU`, `ABU`, `عبد`, `أبو`, `ابو`, `ابن`, `بن`,
+  compared after uppercasing): then line 1 = the first two words (`LES LIONS` / `DU DERB SIDI MAAROUF`,
+  `عبد الرحمن` / `بن جلون العلوي`); line 2 = the rest;
+- one word → the one-word line only (§3.3); line 1 empty;
+- empty (unnamed guest) → no text; the empty name rule of §3.3.
 
-**Fit.** Width budget for each line: 744 units (x 56–800). Font size = `min(max, budget ÷ width(text at
+**Fit.** Every line is centred on x 500 with a width budget of **790 units** (x 105–895; the measured
+ink of the widest fixture then stays inside x 100–900). Font size = `min(max, budget ÷ width(text at
 size 1))`. If that is below the line's min: drop the last word of line 2 and try again (never cut
 inside a word, never an ellipsis); if line 2 has one word left and still does not fit at min, set it at
-min with `textLength = 744` and `lengthAdjust="spacingAndGlyphs"`. The full name is always in the label
-and in the DOM under the card.
+min with `textLength = 790` and `lengthAdjust="spacingAndGlyphs"`. The full name is always in the label
+and in the DOM under the card. Sizes, faces and mins: §3.3.
 
 **Measuring.** `full()` takes an injected `measure(text, face, weight): number` (width at size 1). In
 the browser, `eclat/measure.ts` uses a canvas `measureText` after `document.fonts.load` of the three
-faces (Changa 800, Changa 300, Instrument Serif 400; wait at most 1.5 s, like `raster.ts`), caching per
-string. On the server and in tests, `eclat/metrics.ts` gives committed advance widths (generated once in
-Chromium by `eclat/scripts/measure-faces.ts`, a Playwright script, and committed as data: A–Z, À–Ü,
-digits, space, `-`, `'`, `.` for Changa 800 and Instrument Serif 400; Arabic falls back to 0.52 em per
-letter for Changa 800 and 0.46 em for Changa 300). `active-renderer.load()` awaits `ready()` (the font
-load) before handing the renderer over, as today.
+faces (Changa 300/800, Instrument Serif 400; wait at most 1.5 s, like `raster.ts`), caching per
+string. On the server and in tests, `eclat/metrics.ts` gives committed advance widths **and ink boxes**
+(`actualBoundingBoxLeft/Right/Ascent/Descent` at size 100 for the digits 0–9 and « — » in Changa 800,
+needed by §5.2), generated once in Chromium by `eclat/scripts/measure-faces.ts`, a Playwright script,
+and committed as data: A–Z, À–Ü, digits, space, `-`, `'`, `.` for Changa 800 and Instrument Serif 400;
+Arabic falls back to 0.52 em per letter for Changa 800 and 0.46 em for Changa 300.
+`active-renderer.load()` awaits `ready()` (the font load) before handing the renderer over, as today.
 
-**Arabic script names.** Line 1 Changa 800 (max 92, min 60), line 2 **Changa 300** (max 112, min 76);
-`direction="rtl"`, `unicode-bidi="isolate"`, letter-spacing 0. In the Arabic interface they are
-end-anchored at x 944; in the French interface start-anchored at x 56 with `direction="rtl"` on the run.
-A Latin name in the Arabic interface keeps the Latin faces and is end-anchored at x 944 with
-`direction="ltr"`.
+**Arabic script names.** `direction="rtl"`, `unicode-bidi="isolate"`, letter-spacing 0, centred like
+every other name. A Latin name in the Arabic interface keeps the Latin faces and `direction="ltr"`.
 
-Fixtures to check by eye and by rectangles: `Ali`, `Les Lions du Derb`, `Abdelkarim
-Benjelloun-Alaoui` (line 2 BENJELLOUN-ALAOUI fits at ≈ 92), `فاطمة الزهراء`, a 24-letter single word,
-an empty name, every hostile name of `markup-safety.ts`.
+Fixtures to check by eye and by rectangles (all in the mock's « Noms longs » row or the main rows):
+`Ali`, `Les Lions du Derb Sidi Maarouf` (Arabic UI), `Abdelkarim Benjelloun-Alaoui` (line 2
+BENJELLOUN-ALAOUI fits at ≈ 92), `فاطمة الزهراء`, `عبد الرحمن بن جلون العلوي` (French UI),
+`Mohammedabdelhakimalaoui` (24 letters, one word: textLength at min 76), an empty name, every hostile
+name of `markup-safety.ts`.
 
 ---
 
 ## 5. The no-photo centre and the foil ladder
 
-### 5.1 The shirt (the club), revision 2
+### 5.1 The shirt (the club), revision 3: real proportions, drawn in 3D
 
-- **Silhouette** (LTR, mirrored in Arabic): `M270 1110L270 440L214 462L196 350Q206 300 268 276L352 252
-L432 250L500 322L568 250L648 252L732 276Q794 300 804 350L786 462L730 440L730 1110Z`: body x 270–730,
-  short sleeves to x 196 / 804, a V neck. Sleeve tops reach under the tab; the frame layer covers them.
-- **Fill** `club.primary`; then the **mesh** pattern (7 × 7: a 0.9-unit diagonal white .09, the other
-  diagonal `#000` .10, a 0.6-unit vertical white .04: the knit of a football shirt); then the cloth
-  light (left → right: 0 `#000` .18, .22 `#FFF` .12, .5 transparent, 1 `#000` .28); then the fade into
-  the plate (y 250 → 1110: .8 transparent → 1 `plate`).
-- **Cuffs**: `M196 350L214 462L232 455L214 346Z` and its mirror `M804 350L786 462L768 455L786 346Z` in
-  `club.secondary` .95.
-- **Collar**: back-neck band `M432 250Q500 234 568 250` stroked 10 `secondary`; the V
-  `M432 250L500 322L568 250` stroked 18 `secondary`, round joins and caps; an inner trim line
-  `M446 266L500 316L554 266` 2 units white .22.
-- **Stitches** (dashed `6 5`, 1.6 units, `secondary` .5): raglan seams `M440 264L284 434` and
-  `M560 264L716 434`, side seams x 286 and 714 from y 452 to 1070, cuff stitches `M226 352L242 450` and
-  `M774 352L758 450`.
-- **Chest disc** (the crest's place, never a crest): centre (628, 398) r 30, fill `mix(primary, #000,
-.25)`, ring 4 `secondary`, inner hairline r 23 `secondary` .45, the club initials Changa 800 17 at
-  baseline 404 (white or `#0E1116`, ≥ 4.5:1). Arabic: mirrored to (372, 398).
-- **No club**: a training bib — same silhouette, fill `mix(plate, #FFF, .07)`, cuffs, collar and
-  stitches in `edge` (dark column) / white .25, a 2.5-unit keyline in `glow` .55, no chest disc.
-- Never a sponsor, a real kit pattern, a crest or any logo.
+**Proportions, measured.** A men's M football shirt laid flat measures about 50.8 cm across the
+chest (pit to pit), 73.7 cm long (high point of the shoulder to the hem) and 21 cm along a short
+sleeve (size-charts.com soccer shirt table); vintage Inter Milan shirts listed flat measure 50 × 68 cm
+(S) and 60 × 75 cm (L) (Grailed listings). So **length ≈ 1.45 × pit-to-pit** (1.25–1.45 across the
+sources), the shoulder seam-to-seam width ≈ 0.88 × pit-to-pit, and with the sleeves dropping about 35°
+from horizontal on a flat lay the span across the sleeves comes out **about equal to the length** (the
+owner's check). Revision 2's shirt was 460 wide and ≈ 850 long with no hem (1.85 : 1, too long).
 
-### 5.2 The number, printed inside the shirt (revision 2)
+Revision 3, in **jersey space** (placed on the card by `JT`, §3.2; card-space values in brackets):
 
-- **Chest box**: x 306–694 (the body minus 36 units each side), y 500–830; the number with all its
-  outlines must lie inside it. Font: Changa 800, `text-anchor="middle"` at x 500, `direction="ltr"`.
-  Size = `min(330, 330 × 352 ÷ (width at 330 + 22))` (352 = box width − 2 × 18 margin; 22 = the outer
-  outline). Baseline 800. Two digits at most (the view clamps 1–99); one digit sits at 330.
-  The box is checked on the glyphs' ink (cap height and advances from `metrics.ts`, or `getBBox()`
-  narrowed to the cap height in the browser), not the font's em box, which runs below the baseline.
-- **Layers of the print**, bottom to top: (1) fabric shadow — a copy, `#000` .35, blur stdDeviation 5,
-  translated (0, 8); (2) shade — a copy, `#000` .42, class `mc-num-sh`; (3) highlight — a copy,
-  `#FFF` .55, class `mc-num-hi` (both moved by the light, §8); (4) `<g data-mc="ovr">`: the hit rect
-  (x 306–694, y 500–830; dash: y 560–760), the outer outline (stroke 22 `plate` .75, round joins), the
-  twill outline (stroke 11), the fill.
+| Measure                      | Jersey space                     | On the card (× 1.12) | Ratio                              |
+| ---------------------------- | -------------------------------- | -------------------- | ---------------------------------- |
+| High point of shoulder (HPS) | y 300, neck x 422–578            | y 250                | neck width 156 = 0.38 × pit-to-pit |
+| Hem (centre / sides)         | y 899 (curve apex) / 888         | y 920.9 / 908.6      | length 599 = **1.44 × pit-to-pit** |
+| Pit to pit                   | x 292–708 = 416                  | 466                  | —                                  |
+| Shoulder points              | (318, 330), (682, 330): 364 wide | 408                  | 0.875 × pit-to-pit, slope 16°      |
+| Sleeve (top edge)            | (318, 330) → (190, 418): 155     | 174                  | 19 cm on a 73.7 cm shirt, 35° down |
+| Cuff opening                 | (190, 418) → (226, 552): 139     | 156                  | —                                  |
+| Span across the sleeves      | x 190–810 = 620                  | 694                  | **1.04 × length**                  |
+| Front V depth                | to (500, 384), 84 below the HPS  | y 344                | —                                  |
+
+Paths (jersey space, LTR; the shapes are mirrored with the card in Arabic):
+
+```
+SHIRT    = M422 300 L318 330 L190 418 L226 552 L292 492 C298 600 302 760 298 888
+           Q500 910 702 888 C698 760 702 600 708 492 L774 552 L810 418 L682 330 L578 300
+           Q500 316 422 300 Z
+SLEEVE_L = M318 330 L190 418 L226 552 L292 492 C298 440 308 380 318 330 Z   (SLEEVE_R: x → 1000 − x)
+NECK_IN  = M422 300 Q500 316 578 300 L500 384 Z                               (the inside of the back, seen through the V)
+HEM      = M298 870 Q500 892 702 870 L702 888 Q500 910 298 888 Z
+CUFF_L   = M190 418 L226 552 L244 539 L208 405 Z                                (CUFF_R: x → 1000 − x)
+```
+
+**Drawing, bottom to top** (inside `<g clip-path="url(#win)"><g transform="JT">`; `fill` = `primary`,
+`sec` = `secondary`; no club: `fill = mix(plate, #FFF, .16)`, `sec = edge dark`):
+
+1. `SHIRT` filled `fill`; `NECK_IN` filled `mix(fill, #000, .55)`; the back-neck tape `M422 300 Q500 316
+578 300` stroked 12 `mix(sec, #000, .35)`.
+2. Inside `<g clip-path="url(#shirt)">` (clip = `SHIRT`, jersey space):
+   - **fabric mesh**: `SHIRT` filled `knit` — a pattern 13.8 × 7.97 of five flat-top hexagons r 4.2 at
+     (0, 0), (13.8, 0), (0, 7.97), (13.8, 7.97), (6.9, 3.98), stroked `#000` .16 / 0.8 and again
+     `#FFF` .07 / 0.5 translated (−.5, −.5) (a performance-mesh knit);
+   - **sleeve volume**: `SLEEVE_L` filled linear (252, 372) → (262, 530): 0 `#FFF` .08, .45 `#000` .05,
+     1 `#000` .42; `SLEEVE_R` filled linear (748, 372) → (738, 530): 0 `#FFF` .24, .5 `#FFF` 0, 1 `#000`
+     .32 (the lit side);
+   - **body volume**: `SHIRT` filled `volX` linear x 292 → 708: 0 `#000` .34, .22 `#000` .08, .58 `#FFF`
+     .05, .8 `#FFF` .08, 1 `#000` .16; then `volY` linear y 300 → 906: 0 `#FFF` .12, .35 `#FFF` 0, 1
+     `#000` .3; then the **key light** radial centre (660, 360) r 380: 0 `#FFF` .12 → 1 `#FFF` 0;
+   - **folds**, one group with filter `b8` (stdDeviation 8), every path `fill="none"`:
+     `M306 520 C350 600 392 690 404 800` `#000` .34 w 18 ·
+     `M512 400 C504 540 512 700 504 862` `#FFF` .07 w 30 ·
+     `M470 560 C478 660 470 760 476 860` `#000` .12 w 14 ·
+     `M328 514 C370 594 412 684 426 790` `#FFF` .09 w 10 ·
+     `M694 520 C652 600 610 690 600 800` `#000` .18 w 16 ·
+     `M676 514 C636 594 596 684 584 790` `#FFF` .14 w 10 ·
+     `M300 846 C360 830 420 862 500 850 S640 832 700 848` `#000` .2 w 12 ·
+     `M300 832 C360 816 420 848 500 836 S640 818 700 834` `#FFF` .08 w 8 ·
+     `M296 470 C270 486 248 510 232 540` `#000` .3 w 12 ·
+     `M704 470 C730 486 752 510 768 540` `#000` .2 w 12 ·
+     the collar's shadow `M418 304 L500 392 L582 304` `#000` .45 w 22 translated (0, 10);
+   - **armhole seams**: `M318 330 C306 380 298 440 292 492 M682 330 C694 380 702 440 708 492` `#000` .32
+     w 3, and the same shifted by (3, 4) `#FFF` .14 w 1.4;
+   - **hem**: `HEM` filled `#000` .14; the stitch line `M298 872 Q500 894 702 872` `#FFF` .18 w 1.6; the
+     hem's underside `M298 887 Q500 909 702 887` `#000` .45 w 5;
+   - **cuffs**: `CUFF_L`, `CUFF_R` filled `sec`, then each filled its sleeve's gradient;
+   - **rim light**: `SHIRT` stroked 10 with linear (320, 760) → (760, 340): .55 `light` 0, 1 `light` .7.
+3. The **V collar**: `M418 296 L500 380 L582 296` stroked 18 `sec` (round joins and caps), again stroked
+   18 with the rib gradient (linear y 290 → 390: 0 `#FFF` .22, 1 `#000` .3), and a trim
+   `M422 290 L500 371 L578 290` `#FFF` .3 w 1.4.
+4. **Chest disc** (the crest's place, never a crest), only with a club: circle (600, 428) r 24, fill
+   `mix(primary, #000, .22)`, stroke 3.5 `sec`, the rib gradient over it at .6. The initials (a
+   `<text transform="JT">`, x 600 / Arabic 400, baseline 433.5, anchor middle) Changa 800 15, white or
+   `#0E1116` (≥ 4.5:1 on the disc).
+
+**Cast shadow** (base layer, §5.3): `SHIRT` filled `#000` .7, filter `b18` (stdDeviation 18),
+`transform="translate(-20 30) JT"`, inside `<g class="mc-shirt-cast">` (moves against the light, §8).
+
+Never a sponsor, a real kit pattern, a crest or any logo. The training bib of revision 2 is replaced by
+the same shirt in `mix(plate, #FFF, .16)` with trims in `edge dark`.
+
+### 5.2 The number, printed inside the shirt (revision 3)
+
+- **Chest box** (jersey space): x 336–664, y 476–796, ink centred at (500, 636) (card space x
+  316.3–683.7, y 447.1–805.5). The number with all its outlines must lie inside it. Font: Changa 800,
+  `text-anchor="middle"`, `direction="ltr"`. **Fit on the ink, not the em box**: with `w1`, `h1` = the
+  ink width and height at size 1 (from `metrics.ts`, §4), size = `min(300, (328 − 2 × 10 − 12) ÷ w1,
+(320 − 2 × 10 − 12) ÷ h1)` (10 = half the outer outline, 12 = margin); then
+  `x = 500 − (inkRight − inkLeft) ÷ 2`, `baseline = 636 + (inkAscent − inkDescent) ÷ 2` at that size.
+  Measured sizes (Chromium, revision 3 mock): 8 → 300, 11 → 283.3, 44 → 243.2, 88 → 251.7,
+  99 → 254.1; the painted ink of every one lies inside the box and inside the shirt (pixel scan,
+  scratchpad `v3/design-selfcheck.md`). Number height ≈ 0.31 × the shirt's length (599) (≈ 23 cm on a
+  73.7 cm shirt: between the 10–15 cm of a front number and the 25–35 cm of a back number in the UEFA
+  Equipment Regulations, art. 10, scaled to a chest).
+- **Layers of the print**, bottom to top, all inside `<g transform="JT">`: (1) fabric shadow — a copy,
+  `#000` .35, filter `b5`, translated (0, 8); (2) shade — `#000` .38, class `mc-num-sh`; (3)
+  highlight — `#FFF` .42, class `mc-num-hi` (both moved by the light, §8); (4) `<g data-mc="ovr">`:
+  the hit rect (the chest box; dash: x 380–620, y 556–644), the outer outline (stroke 20
+  `mix(primary, #000, .55)` .8, round joins), the twill (stroke 10), the fill, the **mesh** (a copy
+  filled `knit`, opacity .3: the print takes the fabric's texture), the **print light** (a copy filled
+  linear y 476 → 796: 0 `#FFF` .22, .55 `#FFF` 0).
 - **Fill**: `#FFFFFF` if ≥ 3:1 on `club.primary`, else `#0E1116`. **Twill**: `club.secondary` if its
   contrast with the fill is ≥ 1.6, else `mix(primary, #000, .45)` under a white fill, else white. No
-  club: fill white, twill `glow`.
-- **Null rating**: « — » at size 260, baseline 720, the same print layers; the forming marks under it
-  (§6, now 60 × 16, gap 18, top y 790).
+  club: fill by the same test on `mix(plate, #FFF, .16)`, twill `glow`.
+- **« OVR »**: (500, 844) jersey space, Manrope 800 26, tracking .2em, the number's fill at .86.
+- **Null rating**: « — » fitted to the box x 380–620, y 560–640 centred at y 600 (max 220), the same
+  print layers; the forming marks under it (§6): N capsules 60 × 16, `rx 8`, gap 18, top y 690, centred
+  on x 500; filled `#FFF2DA` with a blurred copy (`b5`) under it, empty ones stroked 2 in the number's
+  fill at .5.
 - The number group is never inside a beat's animated element, a mask or a clip that changes; the light
   moves only the shade and highlight copies, which sit outside the group.
 
-### 5.3 The field (generated, unique per card), revision 2
+### 5.3 The field (revision 3): honeycomb backboard, floodlights, pitch lines
 
-Seed = FNV-1a 32-bit of `serial ?? (name + "|" + season)`; PRNG mulberry32. Inside the window:
+Revision 2's ribbons, glitch bars and pixel rain are **removed**. The field is a lit backboard in the
+tier's colour, every item clipped to `WINDOW`, in this order (card space):
 
-1. **Ribbons**: 6 cubic Béziers from x −80 to 1080. For ribbon i: start y = 110 + 150 i + r(−50, 50);
-   controls at x 330 and 670 with y = start ± r(80, 240); end y = start + r(−110, 110). Stroke `glow`
-   (CHAMPION and LEGEND: the tier's spectral gradient, §5.5), width r(5, 24), opacity r(.3, .7),
-   round caps. Odd ribbons get a soft copy under them (width × 2, opacity × .55, stdDeviation 10).
-   **Every ribbon gets a 1.6-unit specular core** in `tube` at opacity × .9 (the sharp light streak).
-2. **Glitch bars**: 22 rects, y = r(36, 600) on 12-unit rows, height 8 or 13, width r(20, 150);
-   fill `tube` r(.35, .85) for 14, `glow` .6 for 8; half of them get a 4–14-unit "tail" rect 6 units
-   after their end.
-3. **Pixel rain**: 56 squares 6 × 6 on a 12-unit grid, bands x 70–238 and 776–980, y 36–660, opacity
-   r(.08, .35), fill `tube`.
-4. Base (no tier): items 2 and 3 only, in `#8C95A3`, half the opacities.
+1. **Field gradient**: rect 0, 0, 1000 × 1140 filled linear y 22 → 1136: 0 `deep`, .55
+   `mix(deep, plate, .62)`, 1 `plate`.
+2. `<g class="mc-field">` (the beats' reveal target):
+   - **Honeycomb** (§5.4 says which mode). Hexagons are flat-top, radius 30; the pattern tile is
+     **90 × 51.96** with five hexagons centred at (0, 0), (90, 0), (0, 51.96), (90, 51.96), (45, 25.98)
+     (`hexPath(cx, cy, r)` = six `L` points at angles 0°, 60° … 300°, two decimals). Built as `<pattern>`
+     elements (allowed by `markup-safety.ts`), never as generated paths. Every honeycomb pattern carries
+     `patternTransform="translate(ox + dx, oy + dy)"` where **(ox, oy) is the card's fingerprint**:
+     mulberry32 seeded with FNV-1a of `serial ?? name + "|" + season`, `ox = floor(r() × 90)`,
+     `oy = floor(r() × 52)` (same card, same phase; another serial, another phase).
+     - `hexD` stroke `#000` .55 w 2.6, (dx, dy) = (1.6, 2.2) — the cast edge of the emboss;
+     - `hexL` stroke `#FFF` .2 w 1.4, (−1, −1.2) — the lit edge;
+     - `hexM` stroke `light` .12 w 1.3 (STADE: `glow` .32), (0, 0) — the face line;
+     - `hexC` (PRO): each hexagon r 27 filled `deep` .75 and again filled the cell gradient
+       (objectBoundingBox, y 0 → 1: 0 `#FFF` .16, .45 `#FFF` 0, 1 `#000` .45) — raised dark-red tiles;
+     - `hexW` (mask for CHAMPION and LEGEND): each hexagon r 27 filled `#FFF`.
+     - Modes: **line** = `<g mask="url(#hexfade)" opacity="op">` with rects (0, 0, 1000 × 1136) filled
+       `hexD`, `hexL`, `hexM`; **cells** = the same group with `hexC` then `hexL`; **holo** = the group
+       with `hexD` at .6, then `<g mask="url(#cells)" opacity="op">` holding the moving foil rect
+       (`class="mc-foil-shift"`, x −50, y −30, 1100 × 1200, filled `foil`, §5.5), then `hexL`.
+     - `hexfade` mask: a rect filled radial centre (560, 470) r 620: 0 `#FFF`, .55 `#FFF` .55, 1 `#FFF` 0
+       (the honeycomb shows round the jersey and fades to the frame). `cells` mask: a rect filled `hexW`.
+   - **LASTREET cage** (street football's fence): rect filled the pattern 44 × 44
+     `M0 22 L22 0 L44 22 L22 44 Z` stroked `light` .5 w 1.6, opacity .28, masked by a linear fade y 22
+     → 560 (`#FFF` → `#FFF` 0).
+   - **Grain**: rect filled `grain` (§3.2).
+   - **Pitch lines** (the centre circle round the jersey and the halfway line behind it): circle
+     (500, 630) r 318 and `M62 630 H938`, each drawn twice — `#000` .4 w 5 translated (2, 3) / (0, 3),
+     then `light` .16 w 3 (an embossed line).
+3. **Backlight** (soft directional light behind the jersey): rect filled radial centre (580, 460) r 440:
+   0 `glow` .9, .5 `glow` .25, 1 `glow` 0, at opacity `back` (§5.4).
+4. `<g class="mc-flood">` **floodlights** (two; base: only the second): a beam
+   `M x0−16 22 L x0+16 22 L xr 980 L xl 980 Z` filled linear y 22 → 980 (0 `light` 1, .55 `light`
+   .35, 1 `light` 0), filter `b14`, opacity `beamA`/`beamB`, with (x0, xl, xr) = (262, 330, 640) and
+   (846, 380, 720); and its lamp, an ellipse (x0, 30) rx 80 ry 30 filled radial (0 `#FFF` 1, .35 `light`
+   .6, 1 `light` 0) at `min(1, 3.2 × beam opacity)`.
+5. **STADE pool**: ellipse (500, 930) rx 330 ry 84 filled radial centre (500, 930) r 320 with
+   `gradientTransform="translate(0 698) scale(1 .25)"`: 0 `light` .55 → 1 `light` 0.
+6. **Vignette**: radial centre (520, 540) r 760: .5 `plate` 0 → 1 `plate` .9. **Foot**: linear y 820 →
+   1136: `plate` 0 → `plate` .75 (darkens the shield's point).
+7. The jersey's **cast shadow** (§5.1).
 
-The field is static. It is the card's fingerprint: the same card always draws the same field; a
-different serial draws a different one.
+The field is static apart from the foil shift. It is the card's fingerprint through the honeycomb
+phase.
 
-### 5.4 The foil ladder (tokens)
+### 5.4 The foil ladder (revision 3 tokens)
 
-A TypeScript table in `eclat/foil.ts`, literal hex (the share image's SVG cannot read CSS variables).
+A TypeScript table in `eclat/foil.ts`, literal hex. `tube` and the ribbon gradient are gone; `light` is
+the floodlight and rim-light colour; `metal` is the seven-stop frame gradient (§3.2); `foil` is the
+CHAMPION/LEGEND holographic gradient.
 
-| Tier (`code`) | Display  | `plate`   | `deep`    | `glow`    | `tube`    | `label`   | `edge` light | `edge` dark | Sheen α | Holo (rev. 2)                                         | Ribbon gradient                                                                                            |
-| ------------- | -------- | --------- | --------- | --------- | --------- | --------- | ------------ | ----------- | ------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `null` (base) | —        | `#12151B` | `#262B35` | `#6B7484` | `#3A414D` | `#8C95A3` | `#3A414D`    | `#59616E`   | .12     | none                                                  | —                                                                                                          |
-| `homa`        | LASTREET | `#111418` | `#3B4450` | `#C7D0DC` | `#EEF3F9` | `#9BA5B2` | `#5C6672`    | `#AEB8C5`   | .24     | none                                                  | —                                                                                                          |
-| `stade`       | STADE    | `#1C1403` | `#7A4E12` | `#F2B544` | `#FFF2DA` | `#AA9C7E` | `#9A6B16`    | `#E9B055`   | .26     | none                                                  | —                                                                                                          |
-| `pro`         | PRO      | `#1D0507` | `#8E1F27` | `#F0545A` | `#FFE1E2` | `#B6A3A2` | `#B1262E`    | `#EA6263`   | .26     | none                                                  | —                                                                                                          |
-| `champion`    | CHAMPION | `#03111C` | `#155C80` | `#5FD0EE` | `#E0F5FC` | `#86A0AE` | `#1F6F96`    | `#6FCFE5`   | .28     | foil .30, grid .16, 16 sparks, seal r 58              | `#5FD0EE` 0, `#7A6BFF` .33, `#6BFF95` .67, `#B8F0FF` 1                                                     |
-| `legend`      | LEGEND   | `#13041C` | `#6A2380` | `#E061E8` | `#F9E1FD` | `#9C93A6` | `#8E3A9A`    | `#DE5EE4`   | .32     | foil .42, grid .26, 34 sparks, seal r 68, double ring | prism: `#FF6AD5` 0, `#C774E8` .18, `#AD8CFF` .36, `#8795E8` .52, `#94D0FF` .68, `#5EE7DF` .84, `#FFE29A` 1 |
+| Tier (`code`) | Display  | `plate`   | `deep`    | `glow`    | `light`   | `label`   | `edge` light / dark   | Sheen α | Beams A / B | `back` | Honeycomb                    | `wordFill` |
+| ------------- | -------- | --------- | --------- | --------- | --------- | --------- | --------------------- | ------- | ----------- | ------ | ---------------------------- | ---------- |
+| `null` (base) | —        | `#12151B` | `#262B35` | `#6B7484` | `#AAB3C0` | `#A3ACB9` | `#3A414D` / `#59616E` | .08     | 0 / .05     | .22    | line, .50                    | —          |
+| `homa`        | LASTREET | `#111418` | `#343B45` | `#C7D0DC` | `#E8EEF5` | `#B5BFCA` | `#5C6672` / `#AEB8C5` | .16     | .04 / .08   | .30    | line, .42 + cage + brushed   | `#E6ECF3`  |
+| `stade`       | STADE    | `#0E0B05` | `#4A3510` | `#F2B544` | `#FFE2A6` | `#CDBB95` | `#9A6B16` / `#E9B055` | .18     | .12 / .20   | .36    | line (gold face), .75 + pool | `#F6C96A`  |
+| `pro`         | PRO      | `#1A0407` | `#6E0F18` | `#F0545A` | `#FFC2C2` | `#D6B9B9` | `#B1262E` / `#EA6263` | .18     | .06 / .12   | .34    | cells, 1                     | `#FF9396`  |
+| `champion`    | CHAMPION | `#03111C` | `#0D4A63` | `#5FD0EE` | `#D8F6FF` | `#A9C9D6` | `#1F6F96` / `#6FCFE5` | .20     | .08 / .14   | .34    | holo, .45                    | `#8FE6F7`  |
+| `legend`      | LEGEND   | `#0D0314` | `#3E1158` | `#C77DFF` | `#F0D8FF` | `#C3B4D0` | `#8E3A9A` / `#DE5EE4` | .22     | .08 / .14   | .40    | holo, .60                    | `#E9B8FF`  |
+
+| Tier       | `metal` stops (0 → 1, seven)                                          | `foil` stops (0 → 1, six)                                   | Material read                                     |
+| ---------- | --------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------- |
+| base       | `#22262D` `#4A515C` `#2B3038` `#6A727E` `#30353D` `#555C67` `#1E2228` | —                                                           | dark graphite, minimal light                      |
+| `homa`     | `#5D6670` `#D9DFE6` `#8E98A3` `#F4F7FA` `#78828D` `#C3CAD2` `#4E5660` | —                                                           | brushed silver on charcoal, street cage           |
+| `stade`    | `#5A3D0C` `#C99634` `#FFE9B0` `#9C6C1C` `#F0C566` `#6E4A10` `#D7A748` | —                                                           | deep black and metallic gold, spotlights          |
+| `pro`      | `#4A080E` `#B3242D` `#F27C80` `#7E1219` `#D8434A` `#5A0B11` `#C2333B` | —                                                           | crimson, raised dark-red hex tiles, red metal     |
+| `champion` | `#0B3A48` `#3FAFC9` `#D9F8FF` `#1E7C93` `#8BE3F2` `#0E4B5C` `#5CC9DF` | `#4FE0F0` `#3FB8C9` `#A6F0FF` `#6FA8FF` `#46D9C8` `#BDF6FF` | cyan–teal chrome, controlled iridescence          |
+| `legend`   | `#2A0A3C` `#8E44B8` `#F2D6FF` `#5A1E7A` `#C98BEA` `#3A0F52` `#A866D0` | `#FF8AD8` `#C59BFF` `#8FB4FF` `#7FF0E0` `#FFE3A8` `#E6A6FF` | deep purple and black, prismatic foil (strongest) |
 
 Light and dark app themes (D3): the card's inside is identical; `edge` takes the light or dark column
 (light ≥ 3:1 against `#FFFFFF`, dark ≥ 3:1 against the dark page — measure); the dark theme adds the
@@ -316,81 +472,109 @@ outer rim; the contact shadow (§8) is `rgb(8 12 24 / .42)` in light and `rgb(0 
 **No CSS `filter` on the card root or on any 3D ancestor** (a filter flattens `preserve-3d`); shadows
 are their own element.
 
-### 5.5 Holographic items (CHAMPION and LEGEND only, revision 2)
+### 5.5 Holographic items (CHAMPION and LEGEND only, revision 3: restrained)
 
-`SPECTRUM` = `#FF4D6D`, `#FFB347`, `#FFF36B`, `#6BFF95`, `#4DD6FF`, `#7A6BFF`, `#FF6BD6` (a
-`linearGradient` (0,0) → (1000,1618), `spreadMethod="reflect"`).
+Revision 2's seal, sparkle field, diffraction grid, spectral ribbons and seven-hue `SPECTRUM` are
+**removed** ("avoid rainbow overload, excessive sparkles"). What stays is foil on material, in each
+tier's own narrow palette (`foil`, §5.4), moving with the light:
 
-| Item             | Where                                                                       | Spec                                                                                                                                                                                                                                                                                                                                                                                                                               | CHAMPION      | LEGEND                            |
-| ---------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | --------------------------------- |
-| Diffraction foil | foil overlay `::after`                                                      | `repeating-linear-gradient(angle, SPECTRUM at 0, 2, 4 … 12 %)`, `background-size: 400%`, position `calc(50% + ax × 50%) calc(50% − ay × 50%)`, `mix-blend-mode: color-dodge`, masked by a radial gradient centred on the light (`#000` → .45 at 38 % → .18): the rainbow follows the pointer.                                                                                                                                      | opacity .30   | opacity .42                       |
-| Diffraction grid | base layer, in the window                                                   | `SPECTRUM` rect masked by a pattern of 1.2-unit lines every 11 units rotated −28°                                                                                                                                                                                                                                                                                                                                                  | opacity .16   | opacity .26                       |
-| Spectral ribbons | base layer (§5.3)                                                           | the ribbon gradient of §5.4 instead of `glow`                                                                                                                                                                                                                                                                                                                                                                                      | cool spectrum | full prism                        |
-| Prismatic edge   | holo layer                                                                  | `OUTLINE` stroked with `SPECTRUM`, clipped to `OUTLINE` (inner half only, the `edge` stroke stays outside for the ≥ 3:1 boundary)                                                                                                                                                                                                                                                                                                  | width 6, .7   | width 9, .9                       |
-| Sparkles         | holo layer                                                                  | four-point stars (`M x y−s Q x y x+s y Q x y x y+s Q x y x−s y Q x y x y−s Z`), drawn paths, seeded, never inside the chest box (x 290–710, y 470–890); fill white, every third one a `SPECTRUM` colour; two classes whose opacity follows the light: `.25 + (ax + 1) × .375` and `.25 + (1 − ax) × .375`                                                                                                                          | 16, s 5–15    | 34, s 5–20                        |
-| Holographic seal | holo layer, centre (880, 1036) (Arabic (120, 1036)), over the window's foot | a soft shadow disc; a disc filled `SPECTRUM`; the line pattern at .25; 12 rotated ellipses (rx .72 r, ry .26 r, 0.7 white .35: guilloche); a ring r − 5 (1.5 white .8); a drawn star at (cx, cy − 14) s 13; the tier word (Changa 800 13; Arabic 17) and « BOTOLAGO » (Manrope 800 8.5, tracking .16em) in `#0E1116`. The group has `filter: hue-rotate(calc(var(--mc-ax) × 120deg))` (a leaf element, so it does not flatten 3D). | r 58          | r 68, a dashed second ring r − 11 |
+| Item            | Where                               | Spec                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | CHAMPION                                                   | LEGEND                                               |
+| --------------- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ---------------------------------------------------- |
+| `foil` gradient | base-layer defs                     | linear (0, 0) → (260, 180), `gradientUnits="userSpaceOnUse"`, `spreadMethod="reflect"`, the six `foil` stops                                                                                                                                                                                                                                                                                                                                                                               | —                                                          | —                                                    |
+| Honeycomb foil  | base layer, honeycomb **holo** mode | §5.3: foil seen through the hexagon cells only                                                                                                                                                                                                                                                                                                                                                                                                                                             | .45                                                        | .60                                                  |
+| Edge, band, rim | holo layer                          | `<mask id="hm">` (userSpaceOnUse, 0 0 1000 1618) = `OUTLINE` stroked 22 `#FFF` at opacity `edge`, clipped to `OUTLINE` (11 units inside); `WINDOW` stroked 20 `#FFF` at `band`; the plaque path stroked 4 `#FFF`. Then `<g mask="url(#hm)">` holding the moving rect (`mc-foil-shift`, x −50, y −30, 1100 × 1678, filled `foil`). Mirrored with the shapes in Arabic.                                                                                                                      | edge .55, band .35                                         | edge .85, band .60                                   |
+| Glints          | holo layer                          | four-point stars (`star(x, y, s)`, as revision 2) filled `#FFF`, classes `mc-glint-a`/`-b` alternating, at (938, 880) s 16, (500, 1136) s 20, then (62, 880) s 16, (1000, 38) s 16                                                                                                                                                                                                                                                                                                         | first 2                                                    | all 4                                                |
+| Diffraction     | foil overlay `::after` (HTML, §8)   | `linear-gradient(angle, transparent 0, f1 30%, f2 42%, f3 54%, f4 66%, transparent 92%)`, `background-size: 260%`, position `calc(50% + ax × 50%) calc(50% − ay × 30%)`, `mix-blend-mode: color-dodge`, `inset: 0 0 31% 0` (**never over the plate's text**), masked by the light-following ellipse intersected with a hole over the chest (`radial-gradient(ellipse 24% 18% at 50% 54%, transparent 70%, #000 100%)`, `mask-composite: intersect`): **the foil never crosses the number** | opacity .16; f1–f4 `#4FE0F0` `#A6F0FF` `#46D9C8` `#8FB4FF` | opacity .24; `#FF8AD8` `#C59BFF` `#7FF0E0` `#FFE3A8` |
 
-Under reduced motion every item is still there and still iridescent, frozen at the rest light (ax .24,
-ay .64; Arabic ax −.24). Tiers below CHAMPION have none of these, and the tests assert it.
+LEGEND outranks CHAMPION by: stronger honeycomb foil (.60 vs .45), a stronger edge and band (.85/.60 vs
+.55/.35), a wider prismatic palette, four glints against two, a stronger diffraction (.24 vs .16) and
+the deepest plate. Under reduced motion every item is still there and still iridescent, frozen at the
+rest light (ax .24, ay .64; Arabic ax −.24). Tiers below CHAMPION have none of these, and the tests
+assert it.
 
-### 5.6 Fine detail (all tiers, revision 2)
+### 5.6 Fine detail and materials (all tiers, revision 3)
 
-- **Grain**: a 17 × 17 pattern of five dots (r .6–.9; white .06–.08 and `#000` .14–.18) over the window
-  (base layer) and over the frame and tab (frame layer).
-- **Guilloche**: 16 sine lines across the bottom plate, line i: y = 1128 + 30 i + 9 sin(6π x/1000 +
-  .5 i), sampled every 20 units, 0.8 white .05; and 8 concentric ellipses round the capsule centre
-  (872, 1276), rx 70 − 5k, ry 150 − 9k, 0.8 white .035.
-- **Bevel, recess, hairlines, rivets, stamp, captions, micro-print**: §3.2 and §3.3.
-- **Crispness**: everything is vector; no `<image>`, no raster texture, no `feTurbulence`. Filters are
-  only the three Gaussian blurs (6, 10, 5) with `color-interpolation-filters="sRGB"`. Hairlines ≥ 0.8
-  units (0.24 px at 296 px wide, visible as a tone at DPR 2–3, intended).
+- **Kept as material**: grain (field, plate, tab), the shield band's groove / metal / bevel / ridge,
+  the outer edge's groove / metal / bevel, the brushed pattern (LASTREET), the honeycomb emboss, the
+  shirt's mesh, folds, seams, hem stitch and rim light, the plaque's hairline.
+- **Removed** (§16): guilloche, micro-print, rivets, the season stamp, captions, tubes, glitch bars,
+  pixel rain, ribbons, sparkles, seal, diffraction grid, the trailing capsule slot, stitched raglan
+  and side seams, cuff stitches, the disc's inner hairline.
+- **Crispness**: everything is vector; no `<image>`, no raster texture, **no `feTurbulence`** (the
+  fabric is a vector pattern). Filters are only Gaussian blurs with `color-interpolation-filters="sRGB"`:
+  `b5` (stdDeviation 5; region −20 % / 140 %), `b8` (8), `b14` (14; region x −40 % w 180 %, y −10 % h
+  120 %), `b18` (18). Hairlines ≥ 0.8 units.
 
 ---
 
 ## 6. Every state, drawn
 
-| State (fixture)                                            | Number     | Tier / foil                    | Marks                                                                                                                                                                              | Other                                                                                                                                                                                                                                           |
-| ---------------------------------------------------------- | ---------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Rated (`rated` 84 PRO)                                     | 84         | `pro`, tier word PRO           | none                                                                                                                                                                               | Provisional changes nothing in the art.                                                                                                                                                                                                         |
-| Forming (`born0` 0/3, `forming1` 1/3, `eve2`, `notFinal2`) | « — »      | base, no tier word             | N capsules centred under the dash inside the shirt: each 60 × 16, `rx 8`, gap 18, top y 790; k filled (`#FFF2DA` with a blurred copy under it), the rest stroked 2 units white .45 | —                                                                                                                                                                                                                                               |
-| `insufficient3` (3/3, OVR null)                            | « — »      | base                           | none (k ≥ N)                                                                                                                                                                       | —                                                                                                                                                                                                                                               |
-| Null tier with a number (never expected)                   | the number | base                           | none                                                                                                                                                                               | —                                                                                                                                                                                                                                               |
-| `homa` 61                                                  | 61         | `homa`, tier word **LASTREET** | —                                                                                                                                                                                  | —                                                                                                                                                                                                                                               |
-| `tierUp` 88, `legend` 93, `tierDown` 79                    | as given   | `champion`, `legend`, `stade`  | —                                                                                                                                                                                  | —                                                                                                                                                                                                                                               |
-| Serial null (`born0`)                                      | —          | —                              | —                                                                                                                                                                                  | Serial line `BOT —` (`serialLine`, as today)                                                                                                                                                                                                    |
-| Founder (`founder`)                                        | —          | —                              | —                                                                                                                                                                                  | Capsule lit: fill linear gradient `glow` .9 → `deep`; « ·26 » (last two digits of `founder`) Changa 800 34, white, rotated −90° at the capsule centre, reading bottom → top; the capsule's stroke `tube` 2 units. Not a founder: empty capsule. |
-| Club null (`clubNull`)                                     | —          | —                              | —                                                                                                                                                                                  | Tab without the disc and the club caption (season at baseline 200, its caption at 228); the bib (§5.1).                                                                                                                                         |
-| Unnamed guest (`guestProfile()`)                           | « — »      | base                           | as counted                                                                                                                                                                         | Empty name line §4.                                                                                                                                                                                                                             |
-| Guest with a club tried on                                 | « — »      | base                           | —                                                                                                                                                                                  | Panel in that club's colours.                                                                                                                                                                                                                   |
-| `sample`                                                   | —          | —                              | —                                                                                                                                                                                  | « EXEMPLE » / «مثال» pill §3.3.                                                                                                                                                                                                                 |
-| `seasonStarted` (2027/28 forming, previous 86)             | « — »      | base                           | 0/3                                                                                                                                                                                | Season `2027/28` in the tab; the previous season's number stays in the DOM line, not on the card.                                                                                                                                               |
-| Long Latin, Arabic name                                    | —          | —                              | —                                                                                                                                                                                  | §4.                                                                                                                                                                                                                                             |
+| State (fixture)                                            | Number     | Tier / foil                    | Marks                                                                                                                                                                                                                    | Other                                                                                                                                                                       |
+| ---------------------------------------------------------- | ---------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rated (`rated` 84 PRO)                                     | 84         | `pro`, tier word PRO           | none                                                                                                                                                                                                                     | Provisional changes nothing in the art.                                                                                                                                     |
+| Forming (`born0` 0/3, `forming1` 1/3, `eve2`, `notFinal2`) | « — »      | base, no tier word             | N capsules centred under the dash inside the shirt (§5.2, jersey space): each 60 × 16, `rx 8`, gap 18, top y 690; k filled (`#FFF2DA` with a blurred copy under it), the rest stroked 2 units in the number's fill at .5 | —                                                                                                                                                                           |
+| `insufficient3` (3/3, OVR null)                            | « — »      | base                           | none (k ≥ N)                                                                                                                                                                                                             | —                                                                                                                                                                           |
+| Null tier with a number (never expected)                   | the number | base                           | none                                                                                                                                                                                                                     | —                                                                                                                                                                           |
+| `homa` 61                                                  | 61         | `homa`, tier word **LASTREET** | —                                                                                                                                                                                                                        | —                                                                                                                                                                           |
+| `tierUp` 88, `legend` 93, `tierDown` 79                    | as given   | `champion`, `legend`, `stade`  | —                                                                                                                                                                                                                        | —                                                                                                                                                                           |
+| Serial null (`born0`)                                      | —          | —                              | —                                                                                                                                                                                                                        | Serial line `BOT —` (`serialLine`, as today)                                                                                                                                |
+| Founder (`founder`)                                        | —          | —                              | —                                                                                                                                                                                                                        | The capsule along the cut corner (§3.3, rev. 3): fill `deep` → `glow`, stroke 3 metal; « ·26 » Changa 800 30, white, rotated −45° (Arabic +45°). Not a founder: no capsule. |
+| Club null (`clubNull`)                                     | —          | —                              | —                                                                                                                                                                                                                        | Tab without the disc (season at baseline 166); the neutral shirt (§5.1).                                                                                                    |
+| Unnamed guest (`guestProfile()`)                           | « — »      | base                           | as counted                                                                                                                                                                                                               | Empty name line §4.                                                                                                                                                         |
+| Guest with a club tried on                                 | « — »      | base                           | —                                                                                                                                                                                                                        | Panel in that club's colours.                                                                                                                                               |
+| `sample`                                                   | —          | —                              | —                                                                                                                                                                                                                        | « EXEMPLE » / «مثال» pill §3.3.                                                                                                                                             |
+| `seasonStarted` (2027/28 forming, previous 86)             | « — »      | base                           | 0/3                                                                                                                                                                                                                      | Season `2027/28` in the tab; the previous season's number stays in the DOM line, not on the card.                                                                           |
+| Long Latin, Arabic name                                    | —          | —                              | —                                                                                                                                                                                                                        | §4.                                                                                                                                                                         |
 
 `label()` stays `cardLabel(cleanProfile(p), s)`; what is spoken is what is drawn.
 
 ---
 
-## 7. Every surface and size
+## 7. Every surface and size (revision 3)
 
 `tokenBox(profile, size)` = `{ width: round(size × 0.618), height: size }` for every profile. Tokens and
 minis are a `<span>` of that box with **one flat SVG** (no 3D layers, no foil overlay, no beats, no
-filters, no blur), whole-pixel geometry where it matters. Their depth is static: a 1-px rim copy of the
-outline in `mix(edge, #000, .45)` offset (1, 1) px (mirrored in Arabic) under the card, a 1-px top-
-leading highlight (white .3) and bottom-trailing shade (`#000` .4) along the outline.
+filters, no blur, no patterns, no masks). **They are redrawn per size, not shrunk**: below 80 px the
+frame furniture, the plate's text and every texture are unreadable, so each size keeps only the OVR,
+the tier identity (metal and field colour) and the jersey, and the jersey is **enlarged** inside the
+silhouette so the number stays legible.
 
-| Surface (component)                                                                                                                                                               | Size                      | What is drawn                                                                                                                                                                                                                                                                                             | What drops                                                                                                           |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| G1 stage (`CardStage` in `GradinsHome`, `GuestHero`, `NoTeamHero`), G2 (`GradinsCardPage`), hero frames (`HeroFrame`, `MomentHero`), M2 (`CardBornPanel`), replay (`ReplaySheet`) | full, 296 px (≥ 768: 336) | everything, in 3D (§8)                                                                                                                                                                                                                                                                                    | —                                                                                                                    |
-| G4 face-à-face (`HeadToHeadSheet`)                                                                                                                                                | full, 200 px              | everything at the static rest pose; no `tilt` prop                                                                                                                                                                                                                                                        | micro-print (illegible at 200)                                                                                       |
-| Founder block (`FounderBlock`, `detail(p, "founder")`)                                                                                                                            | crop                      | viewBox `560 1100 440 518` of the flat card (capsule, trailing tube, cut corner, the serial's end), Arabic `0 1100 440 518`, max 22 rem wide, own root `role="img"`                                                                                                                                       | —                                                                                                                    |
-| Tokens 80, 64 (`HubCardBlock`, `gradins-card-setup-row`, `SeasonRack`)                                                                                                            | 49 × 80, 40 × 64          | outline with static depth, plate, radial glow, 3 ribbons (no cores), the shirt silhouette with collar and cuffs (no mesh, no stitches), the number at the §5.2 fit with one outline (twill) and no copies; CHAMPION/LEGEND: prismatic edge 1.5 px and the seal as a 6-px spectral dot; at 80 the tab disc | grain, guilloche, micro-print, captions, stamp, rivets, stats, name, serial, glitch bars, sparkles, foil, chest disc |
-| Tokens 56, 44 (`LeagueBand`, `TierLadder`, `RankCardToken`, `CardSaveLine`)                                                                                                       | 35 × 56, 27 × 44          | outline with static depth, plate, radial glow, shirt silhouette flat, number with twill outline; CHAMPION/LEGEND: prismatic edge 1 px                                                                                                                                                                     | ribbons, collar trim, cuffs, disc, seal                                                                              |
-| Minis 32, 28 (`LeagueRows`, `LeagueRowMini`)                                                                                                                                      | 20 × 32, 17 × 28          | outline (tab and cut corner kept), `deep` plate, the shirt as a flat club rect with a V notch, number (no outline) at 0.42 × height; CHAMPION/LEGEND: a 1-px spectral edge                                                                                                                                | everything else                                                                                                      |
-| Mini 24 (`GuestPoints`, `LeagueCardBand`, `GuestIntroCardPoint`)                                                                                                                  | 15 × 24                   | outline, `deep` plate, club rect, edge (spectral for CHAMPION/LEGEND)                                                                                                                                                                                                                                     | the number (the row prints it)                                                                                       |
-| Share picture (`card-share-image.ts`, `image()`)                                                                                                                                  | 760 × 1229.7 art          | the five layers flattened into one SVG at the rest pose (no 3D), the sheen and, for CHAMPION/LEGEND, a diffraction band baked as a static gradient; every text as a `TextRun`                                                                                                                             | the HTML foil overlay, the rims, the contact shadow                                                                  |
+Let `u = 1618 ÷ size` (viewBox units per CSS pixel). Composition by size: **card** at ≥ 64 px,
+**jersey** at 28–63 px (`k` 1.9 from 44 px, 2.1 below), **mini** below 28 px. The jersey is drawn with the paths of §5.1 under
+`T = translate(500 Yc) scale(k) translate(−500 −603)` (603 = the jersey's vertical centre in jersey
+space), mirrored with the card in Arabic. `TOKEN_WINDOW = M62 46 Q62 22 86 22 H914 Q938 22 938 46 V1120
+C938 1240 600 1380 500 1470 C400 1380 62 1240 62 1120 Z` (a taller shield). Gradients for tokens:
+`metal` (§5.4; CHAMPION/LEGEND use their `foil` stops instead), `field` linear y 0 → 1618: 0
+`mix(deep, glow, .25)`, .6 `deep`, 1 `plate`; `back` radial (580, 600) r 600: `glow` .55 → 0; `vol`
+linear x 292 → 708: 0 `#000` .3, .75 `#FFF` .12, 1 `#000` .14.
 
-Numbers on tokens and minis: white or `#0E1116` by contrast against the panel, as §5.2, ≥ 3:1. A null
-number on a token draws « — » at the same size; on the 24 mini nothing.
+Static depth on every token: the outline copy filled `mix(edge, #000, .45)` translated (u, u) (Arabic
+(−u, u)) under the card. Edge on every token: inside, `OUTLINE` stroked `2u` with the metal, clipped to
+the outline (one pixel of metal); outside, `OUTLINE` stroked `0.9u` in `edge`.
+
+| Size (surfaces)                                                                                                                      | Composition | `k`, `Yc` | Drawn                                                                                                                                                                                                                                                                                                                                        | Dropped                                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ----------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| full, 296 / 336 px (G1, G2, hero frames, M2, replay); G4 200 px at the rest pose                                                     | card        | —         | everything, in 3D (§8)                                                                                                                                                                                                                                                                                                                       | at 200 px only: the shirt's mesh pattern and the grain (they turn to noise)                                                                      |
+| 80 px, 49 × 80 (`HubCardBlock`, `gradins-card-setup-row`, `SeasonRack`)                                                              | card        | 1.36, 740 | plate, `TOKEN_WINDOW` filled `field` + `back`, the jersey (fill, `NECK_IN`, `vol`, cuffs in `sec`, the V collar stroked 22 `sec`, a keyline `SHIRT` stroked `0.9u ÷ k` `#000` .35) clipped to the window, `TOKEN_WINDOW` stroked `2u` metal, the **tier bar** `M330 1534 L360 1500 H640 L670 1534 L640 1568 H360 Z` filled metal, the number | name, stats, serial, season, tab contents, honeycomb, floodlights, pitch lines, folds, mesh, seams, hem, disc, plaque text, glints, foil overlay |
+| 64 px, 40 × 64 (same surfaces)                                                                                                       | card        | 1.42, 740 | as 80 without the cuffs                                                                                                                                                                                                                                                                                                                      | as 80, and the cuffs                                                                                                                             |
+| 56, 48, 44 px: 35 × 56, 30 × 48, 27 × 44 (`LeagueBand`, `TierLadder`, `RankCardToken`, `CardSaveLine`; 48 is the owner's check size) | jersey      | 1.9, 860  | plate, the whole outline filled `field` + `back`, the jersey flat (fill, `NECK_IN`, the V stroked 34 `sec`, keyline) clipped to the outline, a **metal foot band** (rect y `1618 − 3u`, height `3u`, clipped to the outline), the number                                                                                                     | the shield window and band, the tier bar, `vol`, cuffs                                                                                           |
+| 32, 28 px: 20 × 32, 17 × 28 (`LeagueRows`, `LeagueRowMini`)                                                                          | jersey      | 2.1, 860  | as 48                                                                                                                                                                                                                                                                                                                                        | as 48                                                                                                                                            |
+| 24 px, 15 × 24 (`GuestPoints`, `LeagueCardBand`, `GuestIntroCardPoint`)                                                              | mini        | 2.1, 860  | as 32 without the number (the row prints it)                                                                                                                                                                                                                                                                                                 | the number                                                                                                                                       |
+| Share picture (`card-share-image.ts`, `image()`)                                                                                     | card        | —         | the five layers flattened into one SVG at the rest pose (no 3D), the sheen and, for CHAMPION/LEGEND, the foil at its rest position; every text as a `TextRun`                                                                                                                                                                                | the HTML foil overlay, the rims, the contact shadow                                                                                              |
+| Founder block (`FounderBlock`, `detail(p, "founder")`)                                                                               | crop        | —         | viewBox `560 1100 440 518` of the flat card (the cut corner with the founder capsule, the serial's end), Arabic `0 1100 440 518`, max 22 rem wide, own root `role="img"`                                                                                                                                                                     | —                                                                                                                                                |
+
+**The number on tokens** (`<g data-mc="ovr">`, two texts: an outline then the fill): fill white or
+`#0E1116` by ≥ 3:1 on `primary`; outline stroke `2 × half` in `mix(primary, #000, .6)` under a white
+fill, else white; `half = 1.1u` (card composition) or `0.8u` (jersey composition). Fit box (card
+units): card composition = the chest box of §5.2 transformed by `T` (x `500 + (x − 500) k`, y
+`Yc + (y − 603) k`, centre y `Yc + 33k`); jersey composition = the body at chest height, jersey-space
+x 304–696, y 430–840, centre y 640, transformed by `T`. Size = the §5.2 ink fit with max 10000 (the box
+decides). A null number draws « — » at the same fit; nothing on the 24 mini.
+
+Measured in the revision 3 mock (ink height × width in CSS px, PRO, Raja): 32 px: two digits 7.4–8.9
+× 14.5–14.7 (15–18 device px tall at DPR 2), one digit 15.1 tall; 48 px: 10.3–12.4 tall; 64 px:
+8.1–9.7; 80 px: 9.9–11.8. Holographic tiers on tokens: the edge, the tier bar and the foot band take the
+`foil` gradient (static), nothing moves.
 
 Share picture: `CARD_IMAGE_LAYOUT.card` (y 352–1496) already fits the art by scale; the art is drawn at
 707 × 1144. `TextRun.face` gains `"serif"` (Instrument Serif) and `"displayLight"` (Changa 300); the
@@ -400,7 +584,7 @@ values, the tier word, the two name lines, the serial, the founder « ·26 ».
 
 ---
 
-## 8. Depth, light and tilt (revision 2)
+## 8. Depth, light and tilt (revision 2, depths and light-following parts revised in revision 3)
 
 ### 8.1 Markup
 
@@ -444,20 +628,31 @@ rotateY(calc(var(--mc-ax) * 9deg)) }`. **At rest the card already leans** (≈ 4
   shows without any motion.
 - Each layer `.mc-l { position: absolute; inset: 0; pointer-events: none; backface-visibility: hidden;
 transform: translateZ(calc(var(--z) * 1cqw)) scale(calc(1 - var(--z) / 300)) }` (the scale cancels
-  the perspective's magnification so the layers align face-on). Depths `--z`: base 0, rims 1…7, shirt
-  3, number 6, frame 8, holo 9, foil 9.5. The window is a box 8 % of the card's width deep: the shirt
-  and number float inside it, the frame is the front surface, the rims are its side walls.
+  the perspective's magnification so the layers align face-on). Depths `--z` (rev. 3): base 0, rims
+  1…7, shirt 3, **number 5** (the print sits on the cloth), frame 8, holo 9, foil 9.5. The window is a
+  box 8 % of the card's width deep: the shirt and number float inside it, the frame is the front
+  surface, the rims are its side walls.
 - **Contact shadow** `.mc-eclat__shadow { position: absolute; inset: 5% 7% -2.5% 7%; border-radius:
 6cqw; background: <§5.4>; filter: blur(4.5cqw); transform: translate(calc(var(--mc-ax) * -5cqw),
 calc(3cqw + var(--mc-ay) * 3cqw)) }`: it lies opposite the light and moves with it. It is a sibling of
   the 3D tree, so its filter flattens nothing.
-- **Raised number**: `.mc-num-hi { transform: translate(calc(var(--mc-ax) * 5px), calc(var(--mc-ay) *
--5px - 2px)) }`, `.mc-num-sh { transform: translate(calc(var(--mc-ax) * -7px), calc(var(--mc-ay) *
-7px + 7px)) }` (SVG user units): the highlight sits toward the light, the shade away from it.
+- **Raised number** (rev. 3 offsets): `.mc-num-hi { transform: translate(calc(var(--mc-ax) * 4px),
+calc(var(--mc-ay) * -4px - 2px)) }`, `.mc-num-sh { transform: translate(calc(var(--mc-ax) * -6px),
+calc(var(--mc-ay) * 6px + 5px)) }` (SVG user units, jersey space): the highlight sits toward the light,
+  the shade away from it.
+- **The jersey's cast shadow** (rev. 3): `.mc-shirt-cast { transform: translate(calc(var(--mc-ax) *
+-14px), calc(var(--mc-ay) * 10px)) }` — on the backboard, opposite the light.
+- **Foil shift** (rev. 3, CHAMPION and LEGEND): `.mc-foil-shift { transform: translate(calc(var(--mc-ax)
+
+* 50px), calc(var(--mc-ay) \* -30px)) }`; the rect is x −50 … 1050, so it never leaves its mask's area
+and its rectangle never reaches past the card by more than 50 units (keeps the 320 px overflow probe
+clean). **Glints**: `.mc-glint-a { opacity: calc(.2 + (ax + 1) × .4) }`, `.mc-glint-b { opacity:
+  calc(.2 + (1 − ax) × .4) }`.
+
 - **Sheen** (every tier), foil `::before`: `linear-gradient(var(--mc-sheen-angle), transparent
-calc(50% + ax × 40% − 22%), rgb(255 255 255 / var(--mc-sheen)) calc(50% + ax × 40%), transparent
-calc(50% + ax × 40% + 22%))`, `soft-light`; angle 115deg, 245deg in Arabic. Diffraction (`::after`):
-  §5.5.
+calc(50% + ax × 40% − 20%), rgb(255 255 255 / var(--mc-sheen)) calc(50% + ax × 40%), transparent
+calc(50% + ax × 40% + 20%))`, `soft-light`; angle 115deg, 245deg in Arabic; sheen α per tier §5.4
+  (rev. 3, lower than revision 2 so the number keeps 3:1). Diffraction (`::after`): §5.5.
 - **Flattening rules** (each one breaks the depth): no `filter`, `opacity < 1`, `overflow` other than
   visible, `clip-path`, `mask`, `mix-blend-mode` or `isolation` on `.mc-eclat`, `.mc-eclat__persp` or
   `.mc-eclat__tilt`. The foil's `clip-path` and blend live on the foil itself, a leaf.
@@ -485,8 +680,10 @@ cubic-bezier(.2,.8,.2,1)`), write the rest values, remove `--active`.
 
 ### 8.4 Performance of the depth
 
-Seven rims are seven tiny SVGs with one path each; the five layers share one `<defs>`. Budget: the
-stage card's markup ≤ 60 kB, `full()` ≤ 25 ms, 60 fps while tilting on a mid laptop (no frame > 20 ms
+Seven rims are seven tiny SVGs with one path each; the five layers share one `<defs>`. Revision 3
+mock: 31–34 kB of markup per stage card (revision 2: 39–52 kB); in a headless software-raster pointer
+sweep the median frame halved against revision 2 (16.7 ms vs 33.4 ms, relative only). Budget: the
+stage card's markup ≤ 40 kB (rev. 3), `full()` ≤ 25 ms, 60 fps while tilting on a mid laptop (no frame > 20 ms
 in a 3-second pointer sweep, Performance panel trace), and the idle float ≤ 2 % CPU on a throttled ×4
 profile. WebGL / three.js is not used: the CSS 3D gives the depth the owner asked for at zero bundle
 cost, and a WebGL runtime would add ≈ 150 kB gzip to the card chunk, over the 60 kB budget.
@@ -496,24 +693,24 @@ cost, and a WebGL runtime would add ≈ 150 kB gzip to the card chunk, over the 
 ## 9. Beats (motion contract)
 
 All CSS, inside `@media (prefers-reduced-motion: no-preference)`, scoped `.mc-eclat--beat-<name>`.
-Only these elements ever animate: the tubes (`.mc-tube`), the field group (`.mc-field`), the foil
-overlay's `::after` sweep, the forming marks (`.mc-mark`), the capsule (`.mc-capsule`), the seal line
+Only these elements ever animate: the floodlights (`.mc-flood`, rev. 3: the tubes are gone), the field
+group (`.mc-field`), the foil overlay's `::after` sweep, the foil shift (`.mc-foil-shift`), the forming marks (`.mc-mark`), the capsule (`.mc-capsule`), the seal line
 (`.mc-seal`). **Never** the number group, the serial, the tier word, any `<text>`, the shirt panel. The
 tests parse each beat's markup and assert no animated class contains `data-mc="ovr"`, the serial or a
 `<text>`.
 
-| Beat      | When (unchanged moments)              | What moves                                                                                                                                                                                                                                                                                                                                                                                                       | Total  |
-| --------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| `make`    | M2 born, M4 arrival, guest first view | Tubes ignite: opacity .15 → 1 in `steps(3)`, 180 ms, the leading tube at 0, the trailing at 60. Field reveals from the reading side: `clip-path: inset(0 100% 0 0)` → `inset(0)` (Arabic `inset(0 0 0 100%)`), 420 ms, `cubic-bezier(.16,1,.3,1)`, delay 60. Sheen sweep: the foil's `::after` (a 30 %-wide white .35 soft-light band) translates −120 % → 220 %, 480 ms, `cubic-bezier(.3,.7,.2,1)`, delay 120. | 600 ms |
-| `tick`    | G1, a new counted journée             | The newest filled mark: `transform: scale(.4)` → 1 and its glow opacity 0 → 1, 260 ms `cubic-bezier(.16,1,.3,1)`, delay 40. If no marks (rated), the trailing tube pulses opacity 1 → .4 → 1, 300 ms.                                                                                                                                                                                                            | 300 ms |
-| `first`   | M4 fresh, replay of a first rating    | The field kindles: `.mc-field` opacity .35 → 1, 360 ms ease-out, delay 40; the sheen sweep as `make`, delay 80.                                                                                                                                                                                                                                                                                                  | 560 ms |
-| `tier`    | M8 up to STADE, PRO, CHAMPION         | The foil arrives from the foot: `.mc-field` `clip-path: inset(100% 0 0 0)` → `inset(0)`, 420 ms `cubic-bezier(.16,1,.3,1)`; tubes ignite (as `make`) at 200; sheen sweep at 120.                                                                                                                                                                                                                                 | 600 ms |
-| `legend`  | M8 up to LEGEND                       | The prism crosses: the holo layer's `background-position` 0 % → 100 %, 540 ms `cubic-bezier(.3,.7,.2,1)`; tubes ignite at 0.                                                                                                                                                                                                                                                                                     | 540 ms |
-| `founder` | M9, G2 founder Revoir                 | The capsule lights: its stroke `stroke-dashoffset` length → 0, 360 ms, then its fill opacity 0 → 1, 160 ms at 360 (the « ·26 » text is drawn above the fill and never moves).                                                                                                                                                                                                                                    | 520 ms |
-| `castoff` | M10 season closed                     | A seal line (y 1110, 2 units, `tube`) draws from the reading side: `stroke-dashoffset` 1000 → 0, 380 ms `cubic-bezier(.2,.8,.2,1)`, delay 40; the tubes settle to opacity .6 over the same time.                                                                                                                                                                                                                 | 420 ms |
+| Beat      | When (unchanged moments)              | What moves                                                                                                                                                                                                                                                                                                                                                                                       | Total  |
+| --------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| `make`    | M2 born, M4 arrival, guest first view | Floodlights ignite (rev. 3): `.mc-flood` opacity .15 → 1 in `steps(3)`, 180 ms. Field reveals from the reading side: `clip-path: inset(0 100% 0 0)` → `inset(0)` (Arabic `inset(0 0 0 100%)`), 420 ms, `cubic-bezier(.16,1,.3,1)`, delay 60. Sheen sweep: the foil's `::after` (a 30 %-wide white .35 soft-light band) translates −120 % → 220 %, 480 ms, `cubic-bezier(.3,.7,.2,1)`, delay 120. | 600 ms |
+| `tick`    | G1, a new counted journée             | The newest filled mark: `transform: scale(.4)` → 1 and its glow opacity 0 → 1, 260 ms `cubic-bezier(.16,1,.3,1)`, delay 40. If no marks (rated), the floodlights pulse opacity 1 → .4 → 1, 300 ms.                                                                                                                                                                                               | 300 ms |
+| `first`   | M4 fresh, replay of a first rating    | The field kindles: `.mc-field` opacity .35 → 1, 360 ms ease-out, delay 40; the sheen sweep as `make`, delay 80.                                                                                                                                                                                                                                                                                  | 560 ms |
+| `tier`    | M8 up to STADE, PRO, CHAMPION         | The foil arrives from the foot: `.mc-field` `clip-path: inset(100% 0 0 0)` → `inset(0)`, 420 ms `cubic-bezier(.16,1,.3,1)`; floodlights ignite (as `make`) at 200; sheen sweep at 120.                                                                                                                                                                                                           | 600 ms |
+| `legend`  | M8 up to LEGEND                       | The prism crosses (rev. 3): the diffraction's `background-position` 0 % → 100 % and `.mc-foil-shift` translate −50 → 50 units, 540 ms `cubic-bezier(.3,.7,.2,1)`; floodlights ignite at 0.                                                                                                                                                                                                       | 540 ms |
+| `founder` | M9, G2 founder Revoir                 | The capsule lights: its stroke `stroke-dashoffset` length → 0, 360 ms, then its fill opacity 0 → 1, 160 ms at 360 (the « ·26 » text is drawn above the fill and never moves).                                                                                                                                                                                                                    | 520 ms |
+| `castoff` | M10 season closed                     | A seal line (rev. 3: `WINDOW` stroked 2 units `light`, in the frame layer, class `.mc-seal`) draws round the shield from the top-leading corner: `stroke-dasharray` = its length (`pathLength="1000"`), `stroke-dashoffset` 1000 → 0, 380 ms `cubic-bezier(.2,.8,.2,1)`, delay 40; the floodlights settle to opacity .6 over the same time.                                                      | 420 ms |
 
-Beats run on the layers' own elements (the tubes in the frame layer, `.mc-field` in the base layer, the
-foil's sweep); the idle float (§8.3) is not a beat, is paused during one, and is excluded when the beats'
+Beats run on the layers' own elements (the floodlights and `.mc-field` in the base layer, the capsule
+and the seal line in the frame layer, the foil's sweep); the idle float (§8.3) is not a beat, is paused during one, and is excluded when the beats'
 lengths are measured (`getAnimations()` filtered to `mc-beat-*` names). The `legend` beat moves the
 diffraction foil's `background-position`.
 
@@ -542,7 +739,7 @@ reserved box before the chunk loads. The card is centred; widths **296 px** (`mi
   `"card.tier.homa": "LASTREET"`. No key renamed; `TierCode` stays `"homa"`; the DTO, contracts,
   fixtures (`homa` id and thresholds), analytics event names (`card_share_preview_homa`) and the
   database are untouched.
-- New key (revision 2) `card.caption.season`: « Saison » / «الموسم», the tab's caption.
+- ~~New key `card.caption.season`~~: **not added** (revision 3 removes the tab's caption).
 - i18n gate: the key reads the same in both languages and has no Arabic script → add it to
   `IDENTICAL_ALLOWED` and `NO_ARABIC_SCRIPT_ALLOWED` in `src/i18n/i18n-allowlist.ts` with the reason
   (« LASTREET is the tier's name, a Latin word in both languages, owner 2026-10-09 »), and move
@@ -585,11 +782,11 @@ src/components/manager-card/eclat/
   name.ts              cleaning, split and fit (§4); pure, takes `measure`
   measure.ts           browser canvas measure + ready() font loading (Changa 300/800, Instrument Serif)
   metrics.ts           committed advance widths (data) + fallback measure
-  field.ts             seeded ribbons, bars, rain (§5.3); pure
+  field.ts             honeycomb (seeded phase), cage, pitch lines, backlight, floodlights, pool (§5.3, rev. 3); pure
   shirt.ts             the shirt, mesh, cuffs, collar, stitches, chest disc, bib (§5.1)
   number.ts            the chest-box fit and the print layers (§5.2)
-  holo.ts              diffraction grid, prismatic edge, sparkles, seal (§5.5)
-  ornament.ts          grain, guilloche, bevel, recess, rivets, stamp, micro-print (§5.6)
+  holo.ts              honeycomb foil, edge / band / plaque-rim foil mask, glints (§5.5, rev. 3)
+  ornament.ts          frame materials: metal, bevel, brush, grain, shield band, outer edge, tab rim, plaque, capsule (§3.2–3.3, §5.6, rev. 3)
   layers.ts            assembles the five layers and the rims (§8.1); flatten() for tokens, detail and image
   full.ts              fullCard, cardAspect (constant), cardImage (text runs), founderDetail, appliedBeat
   token.ts             tokens and minis (§7)
@@ -618,10 +815,17 @@ the share image passes faces by name.
 - `ManagerCard.tsx`: prop `sway` → `tilt`; doc comments updated. `CardToken.tsx` unchanged.
 - `active-renderer.ts`: `id: "eclat-v1"`, `load` imports `./eclat/gradins-renderer`, awaits `ready()`,
   returns `eclatRenderer`; `estimateAspect` from `./eclat/estimate`.
-- `markup-safety.ts`: allowed tags unchanged (div, svg, g, defs, clipPath, linearGradient,
-  radialGradient, stop, path, rect, circle, text, filter, feGaussianBlur are all already there); drop
-  `pattern`, `feTurbulence`, `feColorMatrix`, `mask` only if nothing uses them any more (check the plain
-  renderer).
+- `markup-safety.ts` (rev. 3, checked against `ALLOWED_CARD_TAGS`): **no new tag**. Revision 3 uses
+  `div`, `span`, `svg`, `g`, `defs`, `clipPath`, `pattern`, `linearGradient`, `radialGradient`,
+  `stop`, `path`, `rect`, `circle`, `ellipse`, `text`, `mask`, `filter`, `feGaussianBlur`, all on the
+  list. `pattern` and `mask` are now **required** (honeycomb, knit, brush, grain, cage; the honeycomb
+  fade, the foil cells, the edge foil): do not drop them. `feTurbulence` and `feColorMatrix` stay
+  allowed but unused by eclat (the plain renderer may still use them; check before any removal). The
+  attributes used (`patternTransform`, `gradientTransform`, `spreadMethod`, `maskUnits`,
+  `unicode-bidi`, `textLength`, `lengthAdjust`, `pathLength`, `class`, `style` with custom properties)
+  pass `findUnsafeMarkup` (it checks tag names, `on*` attribute names, `javascript:` URLs and angle
+  brackets in values). The CSS-only pieces (the diffraction's `mask-composite`, the custom-property
+  transforms) live in `eclat.css`, outside the markup.
 
 ### 12.3 Écharpe removal (last integration commit, after every test is green on eclat)
 
@@ -641,21 +845,31 @@ must then find only history-neutral words, listed in the PR if any remain.
   for null, no `>0<`; the serial carrier; founder capsule only for founders; club null bib; tier word
   per tier and none for null; LASTREET with `direction="ltr"`; Arabic mirrored (the tab's x > 794);
   beats: animated classes never contain the number, serial or text; `beatMs ≤ 600`.
-- `eclat/name.test.ts`: the fixtures of §4 fit inside 744 with the committed metrics; word-drop rule;
-  hostile names escaped.
-- `eclat/field.test.ts`: same seed → identical markup; two serials → different; base tier has no
-  ribbons.
+- `eclat/name.test.ts`: the fixtures of §4 fit inside 790 (rev. 3) with the committed metrics;
+  word-drop rule; the particle rule (`Les Lions du Derb Sidi Maarouf` → `LES LIONS` /
+  `DU DERB SIDI MAAROUF`; `عبد الرحمن بن جلون العلوي` → `عبد الرحمن` / `بن جلون العلوي`; `Ali Ben` stays
+  `ALI` / `BEN`); hostile names escaped.
+- `eclat/field.test.ts` (rev. 3): same seed → identical markup; two serials → different honeycomb
+  `patternTransform`; every tier has the honeycomb in its mode (base/LASTREET/STADE line, PRO cells,
+  CHAMPION/LEGEND holo); only LASTREET has the cage, only STADE the pool; base has one floodlight, the
+  others two; no ribbon, glitch bar or pixel-rain element remains.
+- `eclat/shirt.test.ts` (rev. 3): the shirt path is the §5.1 constant; its bbox in card space after `JT`
+  is x 152.8–847.2, y 250–920.9 (`getBBox` of `SHIRT` in jersey space: 190, 300, 810, 899; length ÷
+  pit-to-pit between 1.40 and 1.50, span ÷ length between 0.95 and 1.10); the hem, cuffs, collar and cast shadow are present; no club → the neutral shirt, no disc.
 - `eclat/foil.test.ts`: every ladder colour pair of §3.3 meets its floor with `contrastRatio`; `edge`
   light ≥ 3:1 on `#FFFFFF`; white/ink choice on every club of the kit table ≥ 3:1 (number) and ≥ 4.5:1
   (initials).
 - `eclat/tilt.test.ts` (happy-dom): mouse moves write the variables; touch does not; cleanup removes
   listeners.
-- `eclat/number.test.ts`: for every OVR 1–99, « — », both themes and every club of the kit table,
-  the number's box (from the committed metrics, incl. the 22-unit outline) lies inside the chest box
-  x 306–694, y 500–830; fill ≥ 3:1 on the shirt.
-- `eclat/holo.test.ts`: CHAMPION and LEGEND markup has the holo layer, the seal, sparkles, the grid
-  and the `mc-holo` class; base, LASTREET, STADE and PRO have none of them; LEGEND has more sparkles
-  and a larger seal than CHAMPION.
+- `eclat/number.test.ts` (rev. 3): for every OVR 1–99, « — », both themes and every club of the kit
+  table, the number's ink box (from the committed ink metrics, plus 10 units of outline on each side)
+  lies inside the chest box x 336–664, y 476–796 in jersey space (dash: 380–620 × 556–644) and its four
+  corners inside `SHIRT`; fill ≥ 3:1 on the shirt. Tokens: the same inside their transformed boxes (§7)
+  at 80, 64, 48, 32.
+- `eclat/holo.test.ts` (rev. 3): CHAMPION and LEGEND markup has the holo layer, the `hm` mask, the foil
+  shift rect, the honeycomb cells mask and the `mc-holo` class; base, LASTREET, STADE and PRO have none
+  of them; LEGEND has more glints (4 vs 2) and higher foil opacities than CHAMPION; no seal, no sparkle
+  field, no grid in any tier.
 - `eclat/layers.test.ts`: the full card has five layers + seven rims in z order, only the number layer
   takes pointer events, no `filter`/`opacity`/`clip-path` style on the 3D ancestors; tokens are one
   flat SVG; the size table of §7 (what drops) is asserted per size.
@@ -667,7 +881,8 @@ must then find only history-neutral words, listed in the PR if any remain.
 
 ### 12.5 Performance
 
-`full()` builds one string; the field is ~70 elements; no `feTurbulence`. Budgets as plan 6.6: `full()`
+`full()` builds one string; a full card is ≈ 105–118 drawn elements (rev. 3, measured in the mock),
+four blur filters (`b5`, `b8`, `b14`, `b18`), no `feTurbulence`. Budgets as plan 6.6: `full()`
 ≤ 25 ms, `token()` ≤ 3 ms, chunk ≤ 60 kB gzip (Écharpe's charts are gone, expect ≈ 25 kB), G1 data to
 `data-mc-ready` ≤ 400 ms at CPU × 4. Record in `eclat/README.md`.
 
@@ -723,5 +938,68 @@ bun run dev -- --host 127.0.0.1 --port <port> --strictPort`, fixtures with `?mc=
    alternative is Changa 300 for both scripts, closer to the app, further from Sorare's look.
 3. **On phones the card floats slowly by itself** (7 s, only while on screen, never under reduced
    motion). Alternative: still on phones, depth shown only by the rest lean and the shadow.
-4. **The shirt panel carries the club's colours; with no club, a neutral bib.** Alternative: no shirt,
+4. **The shirt panel carries the club's colours; with no club, a neutral shirt.** Alternative: no shirt,
    the number alone on the field (more abstract, loses the club).
+5. **Revision 3: the name under the artwork, centred, with the tier in a plaque at the shield's point
+   and the stats below the name** (owner asked for the name to be tied to the artwork). Alternative:
+   revision 2's order (stats above the name, left-aligned, tier word in the stats row).
+6. **Revision 3: the founder capsule along the cut corner, founders only.** Alternative: the trailing
+   vertical capsule of revision 2, with an empty slot for non-founders.
+
+---
+
+## 16. Revision 3 record (owner feedback on revision 2, 2026-10-09)
+
+**The feedback, in short:** the jerseys are too long, get the dimensions right; a hexagonal honeycomb
+background with layered gradients in each card's colour, geometric texture, a shield-style frame;
+3D jerseys; ten numbered points (football backgrounds, ≈ 40 % less clutter, a premium 3D jersey, a
+clear hierarchy of name / OVR / tier with the name tied to the artwork, six tier treatments, lighting
+and depth, physical materials with the asymmetric silhouette kept, small sizes that drop micro-detail,
+restrained holography for CHAMPION and LEGEND, Arabic and French). Structure, statistics, tiers,
+colour identity, interactions and business logic are unchanged.
+
+**Decisions (rev. 3)**
+
+| #   | Decision                                                                                                                                                                               |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Jersey at measured flat-lay proportions (length 1.44 × pit-to-pit, span 1.04 × length, visible hem) drawn in 3D with vector shading only (§5.1).                                       |
+| R2  | A shield-shaped embossed metal inner frame inside the unchanged outline (§3.2).                                                                                                        |
+| R3  | Backgrounds are a honeycomb backboard (emboss, cells or foil per tier), floodlights, the centre circle and halfway line; no ribbons, bars or pixel rain (§5.3).                        |
+| R4  | The plate reads shield point → tier plaque → name → stats → serial, centred; the tier word sits in a metal plaque at the shield's point (§3.3).                                        |
+| R5  | The founder capsule moves to the cut corner and exists only for founders; the tubes become floodlights; the season stamp, captions, micro-print, rivets and guilloche go (list below). |
+| R6  | Holography is foil on material in a narrow tier palette, kept off the number and the plate's text (§5.5).                                                                              |
+| R7  | Tokens are recomposed per size with an enlarged jersey; no texture below full size (§7).                                                                                               |
+| R8  | Everything stays inside the markup-safety allow-list (no new tags; §12.2).                                                                                                             |
+
+**What was removed for clutter** (from the revision 2 card, all tiers unless named): 22 glitch bars and
+their tails; 56 pixel-rain squares; 6 light ribbons with their soft copies and specular cores; 16
+guilloche lines and 8 capsule ellipses; both micro-print lines; the season stamp (disc, dashed ring,
+two numbers); the tab's club-name caption and « SAISON » caption; the tab's inner hairline; the leading
+tube and the trailing tube (with their glow copies and cores); the four rivets; the rail's dark panel
+and its hairline; the plate's second hairline; the empty capsule slot on non-founders; the shirt's
+dashed raglan, side and cuff stitches; the collar's inner trim line (replaced by one highlight); the
+disc's inner hairline; on CHAMPION and LEGEND the 16 / 34 sparkles, the holographic seal (disc,
+twelve guilloche ellipses, rings, star, two captions) and the diffraction grid. **Measured**: drawn
+elements per full card (outside defs, masks, patterns and clip paths; rims excluded) fall from
+205–284 to 105–118 (−49 % to −58 %), and the card's markup from 39–52 kB to 31–34 kB.
+
+**Research used (revision 3)**
+
+| Source                                                                                                                                                                                                                                                                                         | What it gave                                                                                         |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| [size-charts.com, football jersey size guide](https://size-charts.com/topics/sports-size-chart/football-jersey-size-soccer-shirt-size-guide/)                                                                                                                                                  | Men's M: body width 50.8 cm, body length 73.66 cm, sleeve 20.96 cm (garment dimensions).             |
+| Grailed listings of a Nike Inter Milan 2000-01 home shirt, [L](https://www.grailed.com/listings/85138945-nike-inter-milano-nike-2000-2001-home-football-shirt-size-l-bnwt) and [S](https://www.grailed.com/listings/85139164-nike-inter-milano-nike-2000-2001-home-football-shirt-size-s-bnwt) | Flat pit-to-pit 60 / 50 cm, back length 75 / 68 cm: length 1.25–1.36 × pit-to-pit.                   |
+| [Toffs, what is pit-to-pit](https://www.toffs.com/the-terrace/what-is-pit-to-pit-measurement.html)                                                                                                                                                                                             | How a flat lay is measured (armpit to armpit; shoulder top to hem).                                  |
+| [UEFA Equipment Regulations, art. 10 Numbers](https://documents.uefa.com/r/kAuxpRxKhaqJDwAnTtB4CQ/_xmVDZGRigAabXoSDMpTsw)                                                                                                                                                                      | Back numbers 25–35 cm high, stroke 2–5 cm; front numbers 10–15 cm; numbers 1–99.                     |
+| [FIFPlay, the FUT 16 card design](https://www.fifplay.com/fifa-16-ultimate-team-new-card-design/)                                                                                                                                                                                              | FUT puts the name directly under the player art and the attributes below it: the order R4 follows.   |
+| Revision 2 research (§1)                                                                                                                                                                                                                                                                       | The 2022-23 and 2023-24 Sorare generations' honeycomb field and hexagonal window, the frame's metal. |
+
+Honeycomb in football is the goal net's hexagonal mesh and the hexagonal jacquard of current match
+shirts; the shirt's knit (§5.1) and the backboard (§5.3) use the same hexagon, at 4.2 and 30 units.
+
+**Self-check of the revision 3 mock** (Chromium 1194, DPR 2; scratchpad `v3/design-selfcheck.md`, the
+pictures in `manager-card-sorare-style/design-v2-v3/`): no console error at 1440 and 390 in either
+theme; no element rectangle outside the viewport at 390 (max right 390.0, min left 0); the number's
+painted ink inside the chest box and inside the shirt for 8, 11, 44, 88, 99 and « — »; contrast medians
+from pixels: names ≥ 11.8, tier word ≥ 6.9, stat values ≥ 8.7, stat labels ≥ 4.9 (with the pointer over the number; 5.3 at rest), the number ≥ 3.35
+on its shirt; at 32 px two digits are 7.4–8.9 CSS px tall.
