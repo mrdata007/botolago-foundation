@@ -8,7 +8,7 @@ import type { EmailRpcClient } from "../_shared/notification-email-dispatch.ts";
 // supabase/config.toml).
 //
 // Secrets (Supabase → Edge Functions → Secrets):
-//   OPENAI_API_KEY   required
+//   OPENAI_KEY       required
 //   AI_CONTENT_MODEL optional, default gpt-4o (must support JSON mode)
 //   RESEND_API_KEY   required for the owner email (shared with the other
 //                    email functions; EMAIL_FROM / EMAIL_REPLY_TO optional)

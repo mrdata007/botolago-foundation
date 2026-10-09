@@ -491,7 +491,7 @@ export async function handleAiContentRequest(
     }
   };
 
-  const apiKey = deps.environment.OPENAI_API_KEY?.trim() ?? "";
+  const apiKey = deps.environment.OPENAI_KEY?.trim() ?? "";
   const model = deps.environment.AI_CONTENT_MODEL?.trim() || DEFAULT_MODEL;
 
   let plan: { enabled?: boolean; jobs?: ContentJob[] };

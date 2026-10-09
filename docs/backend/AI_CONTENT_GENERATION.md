@@ -36,7 +36,7 @@ publishes it, then emails the owner.
 
 ## Owner set-up (once)
 
-1. Supabase → Edge Functions → Secrets: `OPENAI_API_KEY` (required);
+1. Supabase → Edge Functions → Secrets: `OPENAI_KEY` (required);
    optional `AI_CONTENT_MODEL` (default `gpt-4o`; must support JSON mode, e.g.
    the `gpt-4o` / `gpt-4.1` family — avoid reasoning models that reject
    `max_tokens`/`temperature`). `RESEND_API_KEY` and the ops-alert address

@@ -183,7 +183,7 @@ function fakeClient(plan: unknown, calls: { name: string; args: unknown }[]): Em
 }
 
 const env = {
-  OPENAI_API_KEY: "sk-test-0123456789abcdefghij",
+  OPENAI_KEY: "sk-test-0123456789abcdefghij",
   RESEND_API_KEY: "re_test_0123456789abcdef",
 };
 const request = () =>
