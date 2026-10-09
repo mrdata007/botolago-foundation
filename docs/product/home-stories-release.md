@@ -51,3 +51,10 @@ The stub now explicitly answers `home_stories` with an empty published feed.
 Stories use the existing `data-swipe-row` marker, and the Home prediction-entry
 journey checks that every swipe item fits its own bounds as well as checking
 the viewport. This distinguishes reachable off-screen slides from clipped UI.
+
+The required CI run 37926924517 passed both application-quality and database-quality.
+The remaining review request was expired-session recovery: story publish/unpublish
+and edits to published content now reuse Admin's translated reauthentication copy
+and sign-in action, returning to `/admin/stories`. The editor keeps its form state
+on rejection. Twelve story unit tests and both FR/AR component browser journeys
+passed; [recovery evidence](home-stories-evidence/admin/reauthentication.txt).

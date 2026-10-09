@@ -56,3 +56,10 @@ Stop both local servers, then remove only this fixture:
 ```sh
 docker rm -f botolago-stories-test
 ```
+
+## Expired publishing session
+
+With only the Vite component harness above running (no database/server required),
+run `node scripts/qa/home-stories/reauth-browser.mjs`. Playwright intercepts every
+local story request. It returns `recent_auth_required` for writes and verifies
+FR/AR sign-in recovery, the return URL and retained form text.

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { storyErrorNotice, type StoryNotice } from "@/backend/home-stories/errors";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   homeStoriesRepository,
@@ -19,6 +20,7 @@ import {
   UiButton,
   UiCard,
   UiInput,
+  UiLinkButton,
   UiSelect,
   UiSkeleton,
 } from "@/components/ui-kit";
@@ -58,7 +60,7 @@ export function AdminStoriesEditor({
   const [storagePath, setStoragePath] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<{ error: boolean; text: string } | null>(null);
+  const [notice, setNotice] = useState<StoryNotice | null>(null);
   useUnsavedChangesGuard(
     dirty,
     ar
@@ -73,14 +75,6 @@ export function AdminStoriesEditor({
     setForm((old) => ({ ...old, [key]: value }));
     setDirty(true);
   };
-  const errorMessage = (error: unknown) =>
-    error instanceof Error && error.message.includes("story_conflict")
-      ? ar
-        ? "عُدّلت القصة في مكان آخر. أعد تحميل القائمة ثم افتح القصة من جديد."
-        : "Cette story a été modifiée ailleurs. Actualisez la liste puis rouvrez-la."
-      : ar
-        ? "تعذّر إتمام العملية. تحقق من الصورة والحقول وصلاحياتك ثم أعد المحاولة."
-        : "Opération impossible. Vérifiez l’image, les champs et vos droits, puis réessayez.";
   const choose = (story: HomeStory | null) => {
     if (
       dirty &&
@@ -114,7 +108,7 @@ export function AdminStoriesEditor({
       await refresh();
       setNotice({ error: false, text: ar ? "تم حفظ القصة." : "Story enregistrée." });
     } catch (error) {
-      setNotice({ error: true, text: errorMessage(error) });
+      setNotice(storyErrorNotice(error, lang));
     } finally {
       setBusy(false);
     }
@@ -128,7 +122,7 @@ export function AdminStoriesEditor({
       update("mediaAssetId", result.mediaAssetId);
       setStoragePath(result.storagePath);
     } catch (error) {
-      setNotice({ error: true, text: errorMessage(error) });
+      setNotice(storyErrorNotice(error, lang));
     } finally {
       setBusy(false);
     }
@@ -162,7 +156,7 @@ export function AdminStoriesEditor({
             : "Story retirée de l’accueil.",
       });
     } catch (error) {
-      setNotice({ error: true, text: errorMessage(error) });
+      setNotice(storyErrorNotice(error, lang));
     } finally {
       setBusy(false);
     }
@@ -179,7 +173,21 @@ export function AdminStoriesEditor({
   ];
   return (
     <div className="grid min-w-0 gap-5" data-testid="admin-stories-editor">
-      {notice && <UiAlert tone={notice.error ? "caution" : "positive"} title={notice.text} />}
+      {notice && (
+        <UiAlert tone={notice.error ? "caution" : "positive"} title={notice.text}>
+          {notice.reauthenticate && (
+            <UiLinkButton
+              to="/auth/login"
+              search={{ next: "/admin/stories" }}
+              size="sm"
+              className="mt-3"
+              data-testid="admin-reauthenticate"
+            >
+              {ar ? "إعادة المصادقة" : "Se réauthentifier"}
+            </UiLinkButton>
+          )}
+        </UiAlert>
+      )}
       <section aria-label={ar ? "قائمة القصص" : "Stories existantes"} className="grid gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className={ui.display.header}>{ar ? "قصصك" : "Vos stories"}</h3>
