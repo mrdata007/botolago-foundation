@@ -158,8 +158,8 @@ mock; within the owner's ten points, and without changing structure, tiers, stat
     emboss carried into the plate, PRO in crimson rather than salmon, STADE black and gold, LEGEND near
     black with foil only where the light falls, a foil hairline shield and foil plaque of its own.
 22. **Small sizes and G4**: token shirts that keep their sleeves, a number that never shrinks as the
-    token grows, a 2 px ring in the tier's colour; a 200 px G4 card that drops the micro text and
-    enlarges what stays.
+    token grows, a 2 px ring in the tier's colour; a G4 card (200 px, and 160 / 136–138 px on
+    phones) that drops the micro text and the stat labels and enlarges what stays (confirmer fix).
 23. **Text**: the wordmark becomes a real « BOTOLAGO » mark, two meta sizes, Arabic labels larger,
     Arabic names placed by their ink so nothing crosses the rule.
 
@@ -213,7 +213,8 @@ dir="ltr">` or LRI/PDI) and set in the Latin face, computed `letter-spacing` 0 o
   filter in a token's markup (unit test); every token draws the short-sleeved token shirt with both
   sleeves inside the silhouette; a two-digit number is ≥ 14 / 12 / 10 / 7 CSS px tall at 80 / 64 / 48 /
   32 px (measured 14.1 / 12.1 / 10.1 / 7.1 at the worst in the mock); below 80 px a 2 px ring in the
-  tier's colour. The 200 px G4 card draws no text under 8 CSS px.
+  tier's colour. The G4 card draws no text under 8 CSS px at 200, 160 and 136 px (confirmer fix).
+  The base card's name sits where every rated card's does (its forming marks fill the plaque).
 - **Detail and crispness** (rev. 3): zoomed crops at DPR 2 and 3 of a PRO and a LEGEND card, at rest
   and mid-tilt, show the honeycomb emboss, the grain, the shirt's mesh, folds, seams and hem, and the
   metal edges without blur; the card markup contains no `<image>`, no raster data and no

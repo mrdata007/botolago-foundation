@@ -104,13 +104,56 @@ R.layout = await page.evaluate(() => {
       rule,
       nameLastToRule: ink.length ? +(rule - ink[ink.length - 1].bottom).toFixed(1) : null,
       lineGap: ink.length === 2 ? +(ink[1].top - ink[0].bottom).toFixed(1) : null,
-      fromTop: ink.length ? +(ink[0].top - (word ? 1142 : 1056)).toFixed(1) : null,
+      fromTop: ink.length ? +(ink[0].top - +lines[0].dataset.top).toFixed(1) : null,
+      plaque: !!fr.querySelector("[data-pip]") ? "marks" : word ? "word" : "none",
       statCentreMean: +(centres.reduce((a, b) => a + b, 0) / 4).toFixed(1),
       statCentres: centres.map((v) => +v.toFixed(1)),
       labels,
       capsuleClearance: capsule,
     });
   });
+  return out;
+});
+// 1b. name block balance: point (1056) → name ink → rule, base with marks, base without a plaque, rated cards
+R.balance = await page.evaluate(() => {
+  const base = CARDS[0].p;
+  const cases = [
+    ["base, forming marks", base],
+    ["base, no plaque (counted unknown)", { ...base, counted: null, min: null }],
+    [
+      "base, no plaque, two-word name",
+      { ...base, name: "Karim Bennani", counted: null, min: null },
+    ],
+    ["LASTREET", CARDS[1].p],
+    ["STADE, two words", CARDS[2].p],
+    ["PRO", CARDS[3].p],
+  ];
+  const host = document.createElement("div");
+  host.style.cssText = "position:absolute;left:0;top:0;width:296px";
+  document.body.appendChild(host);
+  const out = cases.map(([label, p]) => {
+    host.innerHTML = card(p, { theme: "dark" });
+    fit(host);
+    const fr = host.querySelector(".mc-l--frame");
+    const lines = [...fr.querySelectorAll("text[data-name]")];
+    const top = +lines[0].getAttribute("y") - inkOf(lines[0]).a;
+    const last = lines[lines.length - 1];
+    const bottom = +last.getAttribute("y") + inkOf(last).d;
+    const rule = +fr.querySelector("[data-rule]").getAttribute("y");
+    return {
+      label,
+      plaque: fr.querySelector("[data-pip]")
+        ? "marks"
+        : fr.querySelector("[data-tier]")
+          ? "word"
+          : "none",
+      nameInk: [+top.toFixed(1), +bottom.toFixed(1)],
+      pointToName: +(top - 1056).toFixed(1),
+      plaqueToName: fr.querySelector("[data-pip],[data-tier]") ? +(top - 1142).toFixed(1) : null,
+      nameToRule: +(rule - bottom).toFixed(1),
+    };
+  });
+  host.remove();
   return out;
 });
 // 2. computed transforms at rest (reduced motion and, below, motion allowed)
@@ -127,15 +170,18 @@ R.transformsReduced = await page.evaluate(() => {
 R.g4 = await page.evaluate(() =>
   [...document.querySelectorAll("#g4 .mc-eclat")].map((c) => {
     const w = c.getBoundingClientRect().width;
-    return [...c.querySelectorAll(".mc-l--frame text, .mc-l--num text:not(.mc-numtxt)")].map(
-      (t) => ({
-        t: t.textContent.slice(0, 16),
-        px: +((+t.getAttribute("font-size") * w) / 1000).toFixed(1),
-      }),
-    );
+    return {
+      w: +w.toFixed(1),
+      runs: [...c.querySelectorAll(".mc-l--frame text, .mc-l--num text:not(.mc-numtxt)")].map(
+        (t) => ({
+          t: t.textContent.slice(0, 16),
+          px: +((+t.getAttribute("font-size") * w) / 1000).toFixed(1),
+        }),
+      ),
+    };
   }),
 );
-// 4. pips: non-text contrast against the shirt (pip shown vs hidden)
+// 4. forming marks: non-text contrast against the plaque under them (marks shown vs hidden)
 R.pips = [];
 {
   const root = page.locator("#full .mc-eclat--base").first();
@@ -147,16 +193,18 @@ R.pips = [];
     const b = await el.boundingBox();
     const clip = { x: b.x - 2, y: b.y - 2, width: b.width + 4, height: b.height + 4 };
     const on = await raw(await page.screenshot({ clip }));
-    // background = the shirt with every pip and its glow hidden
-    await root.evaluate((n) =>
-      n
-        .querySelectorAll(".mc-l--num rect[y='686'], .mc-l--num rect[y='688']")
-        .forEach((r) => (r.style.visibility = "hidden")),
-    );
+    // background = the plaque with every mark and its glow hidden
+    const hide = (v) =>
+      root.evaluate((n, v) => {
+        n.querySelectorAll("[data-pip]").forEach((r) => {
+          r.style.visibility = v;
+          const g = r.previousElementSibling;
+          if (g && g.tagName === "rect" && !g.dataset.pip) g.style.visibility = v;
+        });
+      }, v);
+    await hide("hidden");
     const off = await raw(await page.screenshot({ clip }));
-    await root.evaluate((n) =>
-      n.querySelectorAll(".mc-l--num rect").forEach((r) => (r.style.visibility = "")),
-    );
+    await hide("");
     const ch = [],
       bg = [];
     for (let j = 0; j < on.data.length; j += 4) {
@@ -167,17 +215,17 @@ R.pips = [];
         bg.push(c);
       }
     }
-    // the pip's stroke (ring) and fill: report the contrast of the outer ring against the shirt and of the fill against the ring
     ch.sort((p, q) => p - q);
     bg.sort((p, q) => p - q);
     const lo = ch[Math.floor(ch.length * 0.02)],
       hi = ch[Math.floor(ch.length * 0.98)],
-      shirt = bg[bg.length >> 1];
+      plaque = bg[bg.length >> 1];
     R.pips.push({
       state: await el.getAttribute("data-pip"),
-      brightPartVsShirt: +ratio(hi, shirt).toFixed(2),
-      darkPartVsShirt: +ratio(lo, shirt).toFixed(2),
+      brightPartVsPlaque: +ratio(hi, plaque).toFixed(2),
+      darkPartVsPlaque: +ratio(lo, plaque).toFixed(2),
       heightCssPx: +b.height.toFixed(1),
+      widthCssPx: +b.width.toFixed(1),
     });
   }
 }

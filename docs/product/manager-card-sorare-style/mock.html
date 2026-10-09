@@ -123,8 +123,21 @@
       .stage--s {
         width: min(240px, calc(100vw - 32px));
       }
+      /* G4: the face-to-face sheet's card, at its three real widths (plan §7) */
       .stage--g4 {
-        width: min(200px, calc(50vw - 24px));
+        width: min(var(--g4w), calc(50vw - 24px));
+        padding: 0;
+      }
+      .g4pair {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+      }
+      .g4pair__cards {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
       }
       .grid {
         display: grid;
@@ -498,7 +511,7 @@
     <div class="row" id="arabic" dir="rtl" lang="ar"></div>
     <h2>Noms longs</h2>
     <div class="row" id="names"></div>
-    <h2>Face-à-face (G4) · 200 px</h2>
+    <h2>Face-à-face (G4) · 200 · 160 · 136 px</h2>
     <div class="row" id="g4"></div>
     <h2>Petites tailles · 80 · 64 · 48 · 32 · 24 px</h2>
     <div class="row" id="tokens"></div>
@@ -992,7 +1005,8 @@
             : `${k} journées comptées sur ${n}`;
       }
 
-      /* the full card. opts.compact = the 200 px G4 card (plan §7): micro text dropped, meta text enlarged */
+      /* the full card. opts.compact = the G4 card, 200 px from 768, 136–160 px on phones (plan §7):
+         micro text and stat labels dropped, every remaining run ≥ 58 units (≥ 8 CSS px at 136 px) */
       function card(p, { lang = "fr", theme = "light", beat = false, compact = false } = {}) {
         const id = "mc" + ++uid,
           ar = lang === "ar";
@@ -1048,42 +1062,41 @@
             fillN === "#FFFFFF" ? mix(prim, "#000000", 0.55) : mix(prim, "#ffffff", 0.45);
           L_num += `<text x="503.2" y="830" class="mc-f-b" font-weight="800" font-size="32" text-anchor="middle" fill="${fillN}" stroke="${lblStroke}" stroke-width="6" stroke-linejoin="round" paint-order="stroke" letter-spacing=".2em" direction="ltr" data-ovrlabel="1">OVR</text>`;
         }
-        if (p.ovr == null && p.counted != null && p.counted < p.min) {
-          const n = p.min,
-            w = 60,
-            g = 18,
-            x0 = 500 - (n * w + (n - 1) * g) / 2;
-          for (let i = 0; i < n; i++) {
-            const on = ar ? n - 1 - i < p.counted : i < p.counted;
-            const x = x0 + i * (w + g);
-            L_num += on
-              ? `<rect x="${x}" y="686" width="${w}" height="22" rx="11" fill="#FFF2DA" opacity=".55" filter="url(#${id}-b5)"/><rect x="${x}" y="686" width="${w}" height="22" rx="11" fill="#FFF2DA" stroke="${mix(prim, "#000000", 0.55)}" stroke-width="3" data-pip="on"/>`
-              : `<rect x="${x + 2}" y="688" width="${w - 4}" height="18" rx="9" fill="${mix(prim, "#000000", 0.62)}" stroke="#FFF2DA" stroke-width="4" data-pip="off"/>`;
-          }
-        }
         L_num += `</g>`;
 
         /* frame: plate, plate emboss, shield band, metal edge, travelling specular, tab, plaque, founder capsule, then text */
         const word = p.ovr != null && p.tier ? (ar ? AR_TIER[p.tier] : F.word) : null;
         const latinWord = word != null && /^[A-Z]+$/.test(word);
+        const wfs = compact ? 60 : 44; // the tier word: 44, or 60 on the G4 card (≥ 8 CSS px down to 136 px)
         // plaque: an elongated hexagon under the shield point, sized to the word (+ 104 units)
         const wordW = word
           ? latinWord
-            ? ink(word, 44).l + ink(word, 44).r + 0.22 * 44 * (word.length - 1)
-            : ink(word, 44, 800).l + ink(word, 44, 800).r
+            ? ink(word, wfs).l + ink(word, wfs).r + 0.22 * wfs * (word.length - 1)
+            : ink(word, wfs, 800).l + ink(word, wfs, 800).r
           : 0;
-        const plaqueW = word ? Math.max(240, wordW + 104) : 0;
+        // base card still forming: its plaque carries the forming marks instead of a tier word (§3.3)
+        const marksN =
+          word == null && p.ovr == null && p.counted != null && p.min != null && p.counted < p.min
+            ? p.min
+            : 0;
+        const [mw, mh, mg] = compact ? [72, 28, 22] : [60, 22, 18];
+        const marksW = marksN ? marksN * mw + (marksN - 1) * mg : 0;
+        const plaqueW = word
+          ? Math.max(240, wordW + 104)
+          : marksN
+            ? Math.max(240, marksW + 104)
+            : 0;
         const px0 = 500 - plaqueW / 2,
           px1 = 500 + plaqueW / 2;
-        const PLAQUE = word
+        const PLAQUE = plaqueW
           ? `M${px0} 1106L${px0 + 24} 1070H${px1 - 24}L${px1} 1106L${px1 - 24} 1142H${px0 + 24}Z`
           : "";
         const capsule = p.founder
           ? `<g transform="rotate(-45 872 1482)"><rect x="808" y="1458" width="128" height="48" rx="24" fill="#000" fill-opacity=".45" transform="translate(0 3)"/><rect x="808" y="1458" width="128" height="48" rx="24" fill="url(#${id}-capsule)" stroke="url(#${id}-metal)" stroke-width="3"/></g>`
           : "";
-        const plaque = word
+        const plaque = plaqueW
           ? `<path d="${PLAQUE}" fill="#000" fill-opacity=".5" transform="translate(0 5)" filter="url(#${id}-b5)"/>` +
-            (F.plaqueFoil
+            (F.plaqueFoil && word
               ? `<g clip-path="url(#${id}-plq)"><rect class="mc-foil-shift" x="${px0 - 60}" y="1040" width="${plaqueW + 120}" height="132" fill="url(#${id}-foil)"/></g>`
               : `<path d="${PLAQUE}" fill="${mix(F.plate, "#000000", 0.35)}"/>`) +
             `<path d="${PLAQUE}" fill="none" stroke="url(#${id}-metal)" stroke-width="4"/><path d="M${px0 + 26} 1075H${px1 - 26}" stroke="#fff" stroke-opacity="${F.plaqueFoil ? 0.4 : 0.12}" stroke-width="1.2"/>`
@@ -1128,28 +1141,40 @@
         let text = "";
         if (!compact)
           text += `<text x="${X(103)}" y="262" class="mc-f-b" font-weight="800" font-size="30" text-anchor="middle" fill="#fff" fill-opacity=".92" style="font-variant-numeric:tabular-nums" direction="ltr" data-meta="season">${esc(p.season)}</text>`;
-        if (p.club)
-          text += `<text x="${X(103)}" y="${compact ? 148 : 146}" class="mc-f-d" font-size="${compact ? 40 : 34}" text-anchor="middle" fill="${contrast("#ffffff", p.club.primary) >= 4.5 ? "#fff" : "#0E1116"}" letter-spacing="${ar ? 0 : ".02em"}" direction="ltr" data-meta="initials">${esc(p.club.initials)}</text>`;
+        if (p.club && !compact)
+          text += `<text x="${X(103)}" y="146" class="mc-f-d" font-size="34" text-anchor="middle" fill="${contrast("#ffffff", p.club.primary) >= 4.5 ? "#fff" : "#0E1116"}" letter-spacing="${ar ? 0 : ".02em"}" direction="ltr" data-meta="initials">${esc(p.club.initials)}</text>`;
         if (p.sample) {
-          const [pw, phh, fs] = compact ? [300, 64, 40] : [230, 50, 30];
+          const [pw, phh, fs] = compact ? [380, 84, 60] : [230, 50, 30];
           const pxl = ar ? 64 : 936 - pw;
           text += `<rect x="${pxl}" y="44" width="${pw}" height="${phh}" rx="${phh / 2}" fill="#000" fill-opacity=".55"/><text x="${pxl + pw / 2 + (ar ? 0 : 0.04 * fs)}" y="${44 + phh / 2 + fs * 0.36}" class="${ar ? "mc-f-a" : "mc-f-b"}" font-weight="800" font-size="${fs}" text-anchor="middle" fill="#fff" letter-spacing="${ar ? 0 : ".08em"}" data-meta="sample">${ar ? "مثال" : "EXEMPLE"}</text>`;
         }
         if (word)
-          text += `<text x="${latinWord ? 500 + 0.11 * 44 : 500}" y="1121" class="mc-f-d" font-size="44" text-anchor="middle" fill="${F.wordInk || F.wordFill}" letter-spacing="${latinWord ? ".22em" : 0}" direction="${latinWord ? "ltr" : "rtl"}" unicode-bidi="isolate" data-tier="1">${esc(word)}</text>`;
-        // name: under the artwork, centred; with no tier word the block moves up by the plaque's height (86)
+          text += `<text x="${latinWord ? 500 + 0.11 * wfs : 500}" y="${compact ? 1127 : 1121}" class="mc-f-d" font-size="${wfs}" text-anchor="middle" fill="${F.wordInk || F.wordFill}" letter-spacing="${latinWord ? ".22em" : 0}" direction="${latinWord ? "ltr" : "rtl"}" unicode-bidi="isolate" data-tier="1">${esc(word)}</text>`;
+        if (marksN) {
+          const x0 = 500 - marksW / 2,
+            y0 = 1106 - mh / 2;
+          for (let i = 0; i < marksN; i++) {
+            const on = ar ? marksN - 1 - i < p.counted : i < p.counted;
+            const x = x0 + i * (mw + mg);
+            text += on
+              ? `<rect x="${x}" y="${y0}" width="${mw}" height="${mh}" rx="${mh / 2}" fill="#FFF2DA" opacity=".35" filter="url(#${id}-b5)"/><rect x="${x}" y="${y0}" width="${mw}" height="${mh}" rx="${mh / 2}" fill="#FFF2DA" stroke="${mix(F.plate, "#000000", 0.5)}" stroke-width="3" data-pip="on"/>`
+              : `<rect x="${x + 2}" y="${y0 + 2}" width="${mw - 4}" height="${mh - 4}" rx="${(mh - 4) / 2}" fill="${mix(F.plate, "#000000", 0.25)}" stroke="#FFF2DA" stroke-opacity=".8" stroke-width="4" data-pip="off"/>`;
+          }
+        }
+        // name: under the artwork, centred, below the plaque; with no plaque at all it is centred by its ink
+        // between the shield's point and the rule (fit() places it)
         const isAr = /\p{Script=Arabic}/u.test(p.name);
         const words = (isAr ? p.name : p.name.toLocaleUpperCase("fr"))
             .trim()
             .split(/\s+/)
             .filter(Boolean),
           dirN = isAr ? "rtl" : "ltr";
-        const up = word ? 0 : 86;
-        const top = word ? 1142 : POINT_Y; // the name's ink must stay ≥ 20 units below this
+        const up = 0;
+        const top = plaqueW ? 1142 : POINT_Y; // the name's ink must stay ≥ 20 units below this
         const nameT = (y, cls, size, txt, min, line) =>
-          `<text x="500" y="${y}" class="${cls}" font-size="${size}" text-anchor="middle" fill="#fff" direction="${dirN}" unicode-bidi="isolate" data-fit="${min}" data-name="${line}" data-top="${top}">${esc(txt)}</text>`;
+          `<text x="500" y="${y}" class="${cls}" font-size="${size}" text-anchor="middle" fill="#fff" direction="${dirN}" unicode-bidi="isolate" data-fit="${min}" data-name="${line}" data-top="${top}"${plaqueW ? "" : ' data-centre="1"'}>${esc(txt)}</text>`;
         if (words.length === 0)
-          text += `<rect x="330" y="${1300 - up}" width="340" height="2" fill="#fff" fill-opacity=".22"/>`;
+          text += `<rect x="330" y="${plaqueW ? 1300 : (POINT_Y + RULE_Y) / 2 - 1}" width="340" height="2" fill="#fff" fill-opacity=".22"/>`;
         else if (words.length === 1)
           text += nameT(
             1316 - up,
@@ -1162,7 +1187,14 @@
         else {
           // line 1 = the first word; with three words or more, a leading particle takes the next word along
           const lead = words.length >= 3 && PARTICLES.has(words[0].toLocaleUpperCase("fr")) ? 2 : 1;
-          text += nameT(1236 - up, "mc-f-d", 80, words.slice(0, lead).join(" "), 56, "1");
+          text += nameT(
+            1236 - up,
+            "mc-f-d",
+            80,
+            words.slice(0, lead).join(" "),
+            compact ? 60 : 56,
+            "1",
+          );
           text += nameT(
             1342 - up,
             isAr ? "mc-f-dl" : "mc-f-s",
@@ -1176,18 +1208,21 @@
         const arStats = ["القائد", "التشكيلة", "الانتقالات", "الثبات"],
           labs = ["CAP", "SEL", "TRF", "CON"];
         const labY = 1462,
-          valY = compact ? 1530 : 1520;
+          valY = compact ? 1515 : 1520;
         STAT_X.forEach((x0, i) => {
           const x = X(x0);
-          text += ar
-            ? `<text x="${x}" y="${labY - 2}" class="mc-f-a" font-weight="700" font-size="${compact ? 44 : 34}" text-anchor="middle" fill="${F.label}" direction="rtl" data-fit-label="${compact ? 36 : 26}" data-label="1">${arStats[i]}</text>`
-            : `<text x="${x + 0.04 * (compact ? 40 : 30)}" y="${labY}" class="mc-f-b" font-weight="800" font-size="${compact ? 40 : 30}" text-anchor="middle" fill="${F.label}" letter-spacing=".08em" direction="ltr" data-label="1">${labs[i]}</text>`;
+          if (!compact)
+            text += ar
+              ? `<text x="${x}" y="${labY - 2}" class="mc-f-a" font-weight="700" font-size="34" text-anchor="middle" fill="${F.label}" direction="rtl" data-fit-label="26" data-label="1">${arStats[i]}</text>`
+              : `<text x="${x + 0.04 * 30}" y="${labY}" class="mc-f-b" font-weight="800" font-size="30" text-anchor="middle" fill="${F.label}" letter-spacing=".08em" direction="ltr" data-label="1">${labs[i]}</text>`;
           const v = p.stats[i];
-          text += `<text x="${x}" y="${valY}" class="mc-f-b" font-weight="800" font-size="52" text-anchor="middle" fill="#fff" direction="ltr" style="font-variant-numeric:tabular-nums" data-stat="1">${v == null ? "—" : v}</text>`;
+          text += `<text x="${x}" y="${valY}" class="mc-f-b" font-weight="800" font-size="${compact ? 64 : 52}" text-anchor="middle" fill="#fff" direction="ltr" style="font-variant-numeric:tabular-nums" data-stat="1">${v == null ? "—" : v}</text>`;
         });
         STAT_DIV.forEach(
           (x) =>
-            (text += `<rect x="${X(x) - 0.7}" y="1436" width="1.4" height="${valY + 6 - 1436}" fill="#fff" fill-opacity=".14"/>`),
+            (text += compact
+              ? `<rect x="${X(x) - 0.7}" y="1452" width="1.4" height="80" fill="#fff" fill-opacity=".14"/>`
+              : `<rect x="${X(x) - 0.7}" y="1436" width="1.4" height="${valY + 6 - 1436}" fill="#fff" fill-opacity=".14"/>`),
         );
         if (!compact)
           text += `<text x="500" y="1584" class="mc-f-b" font-weight="600" font-size="30" text-anchor="middle" fill="#fff" fill-opacity=".8" direction="ltr" style="font-variant-numeric:tabular-nums" letter-spacing=".04em" data-meta="serial">${esc(p.serial ? `BOT #${p.serial}` : "BOT —")}</text>`;
@@ -1397,6 +1432,13 @@
             let yF = +first.getAttribute("y");
             if (yL - mL.a - (yF + mF.d) < 12) yF = yL - mL.a - 12 - mF.d;
             first.setAttribute("y", yF.toFixed(1));
+          }
+          if (lines[0].dataset.centre) {
+            // no plaque: the block's ink centred between the shield's point and the rule
+            const tp = +lines[0].getAttribute("y") - inkOf(lines[0]).a,
+              bt = +last.getAttribute("y") + mL.d,
+              dy = (+lines[0].dataset.top + rule) / 2 - (tp + bt) / 2;
+            lines.forEach((l) => l.setAttribute("y", (+l.getAttribute("y") + dy).toFixed(1)));
           }
           const t = +lines[0].dataset.top,
             mT = inkOf(lines[0]);
@@ -1675,13 +1717,23 @@
           (c) =>
             `<figure><div class="stage stage--s" ${c.lang === "ar" ? 'dir="rtl" lang="ar"' : ""}>${card(c.p, { lang: c.lang || "fr", theme, beat })}</div><figcaption>${esc(c.cap)}</figcaption></figure>`,
         ).join("");
-        // G4 face-à-face: two full cards at 200 px, at the rest pose, micro text dropped (plan §7)
-        document.getElementById("g4").innerHTML = [CARDS[3], CARDS[5]]
-          .map(
-            (c) =>
-              `<figure><div class="stage stage--g4">${card(c.p, { theme, compact: true })}</div><figcaption>${esc(c.cap.split(" · ")[0])} · 200 px</figcaption></figure>`,
-          )
-          .join("");
+        // G4 face-à-face: two cards side by side, at rest, micro text and stat labels dropped (plan §7).
+        // The sheet gives each card min(160 px, (viewport − 44) / 2) on phones and 200 px from 768 px.
+        const G4 = [
+          [200, "200 px · feuille à partir de 768 px", [CARDS[3], CARDS[5]], "fr"],
+          [160, "160 px · feuille sur téléphone", [CARDS[3], CARDS[5]], "fr"],
+          [160, "160 px · interface arabe", [ARABIC[0], ARABIC[2]], "ar"],
+          [136, "136 px · écran de 320 px", [CARDS[0], CARDS[4]], "fr"],
+        ];
+        document.getElementById("g4").innerHTML = G4.map(
+          ([w, cap, pair, lang]) =>
+            `<figure class="g4pair" data-g4w="${w}"><div class="g4pair__cards"${lang === "ar" ? ' dir="rtl" lang="ar"' : ""}>${pair
+              .map(
+                (c) =>
+                  `<div class="stage stage--g4" style="--g4w:${w}px">${card(c.p, { lang, theme, compact: true })}</div>`,
+              )
+              .join("")}</div><figcaption>${esc(cap)}</figcaption></figure>`,
+        ).join("");
         const ladder = ["base", "LASTREET", "STADE", "PRO", "CHAMPION", "LEGEND"];
         document.getElementById("tokens").innerHTML =
           `<div class="grid"><span></span>${SIZES.map((s) => `<span class="h">${s} px</span>`).join("")}` +

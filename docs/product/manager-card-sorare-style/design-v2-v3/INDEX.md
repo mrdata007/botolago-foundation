@@ -30,6 +30,7 @@ node scripts/selfcheck.mjs <mock.html> <rev2 mock.html> <rev3-pre mock.html> > s
 node scripts/extra.mjs <mock.html> <rev2 mock.html> <rev3-pre mock.html> > extra-final.json  # layout, pips, sharpness, texture
 node scripts/numcon.mjs <mock.html> dark > numcon-final.json ; node scripts/halo.mjs <mock.html> > halo-final.json
 node scripts/ov.mjs <mock.html> ; node scripts/tiltcheck.mjs <mock.html>   # overflow 320/390/1440, tilt lifecycle
+node scripts/g4widths.mjs <mock.html> <out dir>        # G4 cards: width and smallest text run at 1440/320/390
 node scripts/critic-jersey/shirtonly.mjs <dir> ; node scripts/critic-jersey/big.mjs <dir>  # <dir>/rev3.html = the mock
 python3 meas.py ; python3 sep.py ; python3 field.py ; python3 band.py              # run inside <dir>
 python3 scripts/gen_md.py                                # SELFCHECK.md from the outputs above
@@ -64,10 +65,12 @@ measured live in the browser, never from these files.
 `tier-{base,lastreet,stade,pro,champion,legend}-{dark,light}.png` (one card at 296 px, DPR 2),
 `tokens-{dark,light}.png`, `arabic-{dark,light}.png`, `tilt-{pro,legend}-dark.png`, and
 `capture-log.txt` (console errors: none in either revision). `after/` adds
-`names-{dark,light}.png` (the long-name row, new in revision 3) and `g4-{dark,light}.png` (the 200 px
-face-à-face row, new with the critique fixes; revision 2 had no 200 px view).
+`names-{dark,light}.png` (the long-name row, new in revision 3), `g4-{dark,light}.png` (the
+face-à-face row at 1440 px: pairs at 200, 160 (French and Arabic) and 136 px, new with the critique
+fixes and widened by the confirmer fixes; revision 2 had no G4 view) and `g4-320-dark.png` (the same row
+on a 320 px screen, every card 136 px).
 
-## Self-check (revision 3 with the critique fixes)
+## Self-check (revision 3 with the critique and confirmer fixes)
 
 [`SELFCHECK.md`](SELFCHECK.md), measured on the committed mock. In short: no console error or warning
 at 1440, 390 and 320 px in either theme; no element rectangle outside the viewport at 320 and 390;
@@ -77,7 +80,9 @@ initials, serial, wordmark, sample) ≥ 5.15, the number's fill ≥ 3.27 against
 against its halo (3.7 against bare Raja green, whose white ceiling is 4.2), forming marks ≥ 3:1 by
 their fill; two-digit token numbers ≥ 14.1 / 12.1 / 10.1 / 7.1 CSS px at 80 / 64 / 48 / 32; at rest
 the text is as sharp as a flat render (95.4 = 95.4 at DPR 2; revision 3 was 43.7 against 102.4);
-G4 text ≥ 8 CSS px; drawn elements per card 205–284 (rev 2) → 121–136. Not met and reported: the
+G4 text ≥ 8 CSS px at 200, 160 and 136 px (min 12.0 / 9.6 / 8.2); the base card's name at the rated
+cards' position (plaque → name 68, name → rule 88), its forming marks in the plaque at 15.6:1 (filled)
+and 10.0:1 (empty ring); drawn elements per card 205–284 (rev 2) → 121–136. Not met and reported: the
 jersey critic's shading-spread target (≥ 38; now 27–31) and colour-distance target (ΔE ≤ 10; now
 8.4–15.8), shirt/field separation on LEGEND's black FAR shirt (1.05–1.48 at the critic's probe
 points), and background fine texture at or below revision 2 (LEGEND 25 → 17 %, but still above
@@ -106,3 +111,8 @@ and piqué knit, no chest initials; lipped metal with a travelling specular stre
 black and gold, LEGEND near black; LASTREET's lighter shirt and tab placeholder; the « BOTOLAGO »
 wordmark; token shirts that keep their sleeves and a 2 px tier ring; a 200 px G4 row; larger « OVR »,
 pips and Arabic labels; Arabic names placed by their ink.
+
+Confirmer fixes (plan §16.2): the G4 card specified at its real phone widths (160 px, 136–138 px on a
+320 px screen) with the stat labels and club initials dropped and every remaining run ≥ 8 CSS px; the
+base card's forming marks moved from the shirt into the plaque, so its name sits where every rated
+card's does (a base card with no marks centres its name by its ink between the point and the rule).

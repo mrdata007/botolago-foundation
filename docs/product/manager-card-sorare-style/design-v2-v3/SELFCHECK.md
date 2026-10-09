@@ -1,6 +1,6 @@
-# Manager Card revision 3 with the critique fixes: design self-check
+# Manager Card revision 3 with the critique and confirmer fixes: design self-check
 
-Measured 2026-10-09 in Chromium 1194 (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`) on `docs/product/manager-card-sorare-style/mock.html` as committed (file://, no dev server). Scripts in `scripts/` (`selfcheck.mjs`, `extra.mjs`, `numcon.mjs`, `halo.mjs`, `ov.mjs`, `tiltcheck.mjs`; the jersey critic's own scripts in `scripts/critic-jersey/`). DPR 2, `reducedMotion: reduce` unless stated. « rev 3 » below = the revision 3 mock before the critique (commit `2f2f487d`); « rev 3b » = this commit.
+Measured 2026-10-09 in Chromium 1194 (`/opt/pw-browsers/chromium-1194/chrome-linux/chrome`) on `docs/product/manager-card-sorare-style/mock.html` as committed (file://, no dev server). Scripts in `scripts/` (`selfcheck.mjs`, `extra.mjs`, `numcon.mjs`, `halo.mjs`, `ov.mjs`, `tiltcheck.mjs`; the jersey critic's own scripts in `scripts/critic-jersey/`). DPR 2, `reducedMotion: reduce` unless stated. « rev 3 » below = the revision 3 mock before the critique (commit `2f2f487d`); « rev 3b » = this commit (revision 3 with the critique fixes and the confirmer's two fixes, plan §16.2).
 
 ## Console messages
 
@@ -49,30 +49,30 @@ Targets (critique): two digits ≥ 14 / 12 / 10 / 7 CSS px tall at 80 / 64 / 48 
 
 ## Contrast from rasterised pixels (`selfcheck.mjs`)
 
-Method as in revision 3 (text shot vs the same shot with the element hidden; `bbox` = median background in the element's rectangle, `ring` = unchanged pixels within 3 device px of the glyphs). Rows now cover the main, Arabic, long-name and 200 px G4 rows. For the number and « OVR » this method reads the twill or the halo as the text on dark-on-light prints, so their direct readings are in the next table.
+Method as in revision 3 (text shot vs the same shot with the element hidden; `bbox` = median background in the element's rectangle, `ring` = unchanged pixels within 3 device px of the glyphs). Rows now cover the main, Arabic, long-name and G4 rows (in the G4 row, the first card of each tier: the 200 px pair, the 160 px Arabic pair and the 136 px pair). For the number and « OVR » this method reads the twill or the halo as the text on dark-on-light prints, so their direct readings are in the next table.
 
 | page, pose                    | kind      | n   | min bbox median                        | min ring median                        |
 | ----------------------------- | --------- | --- | -------------------------------------- | -------------------------------------- |
-| light, rest                   | name      | 21  | 11.3 (full stade KARIM)                | 11.48 (full stade KARIM)               |
-| light, rest                   | tier      | 13  | 7.09 (full pro PRO)                    | 7.09 (full pro PRO)                    |
-| light, rest                   | statValue | 56  | 12.11 (full homa 64)                   | 12.11 (full homa 64)                   |
-| light, rest                   | statLabel | 56  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
-| light, rest                   | meta      | 53  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
-| dark, rest                    | name      | 21  | 11.3 (full stade KARIM)                | 11.48 (full stade KARIM)               |
-| dark, rest                    | tier      | 13  | 7.09 (full pro PRO)                    | 7.09 (full pro PRO)                    |
-| dark, rest                    | statValue | 56  | 12.11 (full homa 64)                   | 12.11 (full homa 64)                   |
-| dark, rest                    | statLabel | 56  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
-| dark, rest                    | meta      | 53  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
-| dark, pointer over the name   | name      | 21  | 10.36 (names stade MOHAMMEDABDELHAKIM) | 10.32 (names stade MOHAMMEDABDELHAKIM) |
-| dark, pointer over the name   | tier      | 13  | 7.09 (full pro PRO)                    | 7.09 (full pro PRO)                    |
-| dark, pointer over the name   | statValue | 56  | 12.11 (full homa 64)                   | 12.11 (full homa 64)                   |
-| dark, pointer over the name   | statLabel | 56  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
-| dark, pointer over the name   | meta      | 53  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
-| dark, pointer over the number | name      | 21  | 11.13 (names stade MOHAMMEDABDELHAKIM) | 10.78 (names stade MOHAMMEDABDELHAKIM) |
-| dark, pointer over the number | tier      | 13  | 7.09 (full pro PRO)                    | 7.09 (full pro PRO)                    |
-| dark, pointer over the number | statValue | 56  | 12.11 (full homa 64)                   | 12.11 (full homa 64)                   |
-| dark, pointer over the number | statLabel | 56  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
-| dark, pointer over the number | meta      | 53  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
+| light, rest                   | name      | 30  | 11.3 (full stade KARIM)                | 11.48 (full stade KARIM)               |
+| light, rest                   | tier      | 18  | 6.87 (g4 pro PRO)                      | 7.09 (full pro PRO)                    |
+| light, rest                   | statValue | 80  | 12.11 (full homa 64)                   | 12.11 (full homa 64)                   |
+| light, rest                   | statLabel | 48  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
+| light, rest                   | meta      | 52  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
+| dark, rest                    | name      | 30  | 11.3 (full stade KARIM)                | 11.48 (full stade KARIM)               |
+| dark, rest                    | tier      | 18  | 6.87 (g4 pro PRO)                      | 7.09 (full pro PRO)                    |
+| dark, rest                    | statValue | 80  | 12.11 (full homa 64)                   | 12.11 (full homa 64)                   |
+| dark, rest                    | statLabel | 48  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
+| dark, rest                    | meta      | 52  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
+| dark, pointer over the name   | name      | 30  | 10.33 (names stade MOHAMMEDABDELHAKIM) | 10.21 (names stade MOHAMMEDABDELHAKIM) |
+| dark, pointer over the name   | tier      | 18  | 6.87 (g4 pro PRO)                      | 7.09 (full pro PRO)                    |
+| dark, pointer over the name   | statValue | 80  | 12.11 (full homa 64)                   | 12.11 (full homa 64)                   |
+| dark, pointer over the name   | statLabel | 48  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
+| dark, pointer over the name   | meta      | 52  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
+| dark, pointer over the number | name      | 30  | 10.28 (names stade MOHAMMEDABDELHAKIM) | 10 (names stade MOHAMMEDABDELHAKIM)    |
+| dark, pointer over the number | tier      | 18  | 6.87 (g4 pro PRO)                      | 7.09 (full pro PRO)                    |
+| dark, pointer over the number | statValue | 80  | 12.11 (full homa 64)                   | 11.55 (names champion 11)              |
+| dark, pointer over the number | statLabel | 48  | 6.86 (full homa SEL)                   | 6.86 (full homa SEL)                   |
+| dark, pointer over the number | meta      | 52  | 5.15 (arabic champion RCA)             | 5.15 (arabic champion RCA)             |
 
 ## The number and « OVR » against the shirt (`numcon.mjs`, `halo.mjs`)
 
@@ -93,25 +93,42 @@ Fill pixels located by repainting the fill magenta (overlays above it hidden); b
 | names  | pro      | 5.43                 | 5.37                  |
 | names  | champion | 3.8                  | 3.75                  |
 | g4     | pro      | 3.81                 | —                     |
+| g4     | legend   | 14.87                | —                     |
+| g4     | champion | 3.75                 | —                     |
 | g4     | legend   | 15                   | —                     |
+| g4     | base     | 3.22                 | —                     |
+| g4     | champion | 5.48                 | —                     |
 
 « OVR » fill against its own halo: min 8.91 over 11 cards. White on Raja green (#0a8f3a) cannot exceed 4.2:1, so the halo carries the 4.5:1.
 
-## Forming marks (base card, Raja shirt)
+## Forming marks (base card, in the plaque under the shield's point; 296 px card)
 
-| mark | bright part vs shirt | dark part vs shirt | height CSS px |
-| ---- | -------------------- | ------------------ | ------------- |
-| on   | 3.8                  | 2.84               | 8.3           |
-| off  | 2.95                 | 3.94               | 7.3           |
-| off  | 3.23                 | 3.4                | 7.3           |
+| mark | bright part vs plaque | dark part vs plaque | width × height CSS px |
+| ---- | --------------------- | ------------------- | --------------------- |
+| on   | 15.59                 | 1.17                | 18.6 × 7.4            |
+| off  | 10.03                 | 1.2                 | 17.8 × 6.5            |
+| off  | 10.14                 | 1.44                | 17.8 × 6.5            |
 
-Filled marks: the cream fill (3.8:1). Empty marks: the dark fill 3.4–3.9:1; the 4-unit cream ring 3.0–3.2 (antialiased).
+Filled mark: the cream fill against the plaque. Empty mark: its cream ring against the plaque (the dark part is the mark's own interior, close to the plaque by design).
+
+## Name block balance (viewBox units; DOM ink at the drawn size, `extra.mjs`)
+
+Shield point y 1056, plaque 1070–1142, rule y 1404.
+
+| card                              | plaque | name ink  | point → name | plaque → name | name → rule |
+| --------------------------------- | ------ | --------- | ------------ | ------------- | ----------- |
+| base, forming marks               | marks  | 1210–1316 | 154          | 68            | 88          |
+| base, no plaque (counted unknown) | none   | 1177–1283 | 121          | —             | 121         |
+| base, no plaque, two-word name    | none   | 1151–1309 | 95           | —             | 95          |
+| LASTREET                          | word   | 1209–1316 | 153          | 67            | 88          |
+| STADE, two words                  | word   | 1186–1344 | 130          | 44            | 60          |
+| PRO                               | word   | 1210–1316 | 154          | 68            | 88          |
 
 ## Layout (viewBox units, `extra.mjs`)
 
 | row    | tier     | dir | name lines (size: ink top–bottom)                           | ink to rule | gap between lines | below plaque/point | stat centres' mean x | capsule clearance |
 | ------ | -------- | --- | ----------------------------------------------------------- | ----------- | ----------------- | ------------------ | -------------------- | ----------------- |
-| full   | base     | ltr | ALI 144: 1124–1230                                          | 174         | —                 | 68                 | 500                  | —                 |
+| full   | base     | ltr | ALI 144: 1210–1316                                          | 88          | —                 | 68                 | 500                  | —                 |
 | full   | homa     | ltr | HAMZA 144: 1209–1316                                        | 88          | —                 | 67                 | 500                  | —                 |
 | full   | stade    | ltr | KARIM 80: 1186–1236; BENNANI 120: 1254–1344                 | 60          | 18                | 44                 | 500                  | —                 |
 | full   | pro      | ltr | ALI 144: 1210–1316                                          | 88          | —                 | 68                 | 500                  | —                 |
@@ -123,8 +140,14 @@ Filled marks: the cream fill (3.8:1). Empty marks: the dark fill 3.4–3.9:1; th
 | names  | stade    | ltr | MOHAMMEDABDELHAK 67.4: 1266–1317                            | 87          | —                 | 124                | 500                  | —                 |
 | names  | pro      | ltr | عبد الرحمن 80: 1175–1259; بن جلون العلوي 92: 1278–1382      | 22          | 19                | 33                 | 500.1                | —                 |
 | names  | champion | rtl | LES LIONS 80: 1184–1238; DU DERB SIDI MAA 93.6: 1273–1343   | 61          | 35                | 42                 | 500.1                | —                 |
+| g4     | pro      | ltr | ALI 144: 1210–1316                                          | 88          | —                 | 68                 | 500.1                | —                 |
+| g4     | legend   | ltr | YASMINE 80: 1184–1238; ALAOUI 120: 1254–1344                | 60          | 16                | 42                 | 500.2                | 31.7              |
 | g4     | pro      | ltr | ALI 144: 1210–1316                                          | 88          | —                 | 68                 | 500                  | —                 |
-| g4     | legend   | ltr | YASMINE 80: 1184–1238; ALAOUI 120: 1254–1344                | 60          | 16                | 42                 | 500                  | 35.5              |
+| g4     | legend   | ltr | YASMINE 80: 1184–1238; ALAOUI 120: 1254–1344                | 60          | 16                | 42                 | 500                  | 32.1              |
+| g4     | champion | rtl | فاطمة 80: 1175–1236; الزهراء 92: 1278–1366                  | 38          | 42                | 33                 | 500                  | —                 |
+| g4     | legend   | rtl | سلمى 112: 1245–1349                                         | 55          | —                 | 103                | 500                  | 32.1              |
+| g4     | base     | ltr | ALI 144: 1210–1316                                          | 88          | —                 | 68                 | 500.8                | —                 |
+| g4     | champion | ltr | ABDELKARIM 80: 1186–1236; BENJELLOUN-ALAOU 104.3: 1265–1365 | 39          | 29                | 44                 | 500.8                | —                 |
 
 ## Crispness and depth
 
@@ -139,10 +162,18 @@ Filled marks: the cream fill (3.8:1). Empty marks: the dark fill 3.4–3.9:1; th
 | rev3b dpr2    | 95.4    | 95.4  |
 | rev3b dpr3    | 95.8    | 95.8  |
 
-## G4 at 200 px: every remaining text run
+## G4 (face-à-face) at 200, 160 and 136 px: every remaining text run, CSS px
 
-- RCA 8 px, EXEMPLE 8 px, PRO 8.8 px, ALI 28.8 px, CAP 8 px, 91 10.4 px, SEL 8 px, 82 10.4 px, TRF 8 px, 86 10.4 px, CON 8 px, 78 10.4 px
-- FAR 8 px, LEGEND 8.8 px, YASMINE 16 px, ALAOUI 24 px, CAP 8 px, 95 10.4 px, SEL 8 px, 92 10.4 px, TRF 8 px, 90 10.4 px, CON 8 px, 94 10.4 px
+Font size × the card's rendered width ÷ 1000, after `fit()`. The 136 px pair is the 320 px viewport case ((320 − 48) ÷ 2 in the mock; the app's sheet gives 138).
+
+- **200 px** (min 12): EXEMPLE 12, PRO 12, ALI 28.8, 91 12.8, 82 12.8, 86 12.8, 78 12.8
+- **200 px** (min 12): LEGEND 12, YASMINE 16, ALAOUI 24, 95 12.8, 92 12.8, 90 12.8, 94 12.8
+- **160 px** (min 9.6): EXEMPLE 9.6, PRO 9.6, ALI 23, 91 10.2, 82 10.2, 86 10.2, 78 10.2
+- **160 px** (min 9.6): LEGEND 9.6, YASMINE 12.8, ALAOUI 19.2, 95 10.2, 92 10.2, 90 10.2, 94 10.2
+- **160 px** (min 9.6): بطل 9.6, فاطمة 12.8, الزهراء 14.7, 91 10.2, 82 10.2, 86 10.2, 78 10.2
+- **160 px** (min 9.6): أسطورة 9.6, سلمى 17.9, 97 10.2, 95 10.2, 96 10.2, 98 10.2
+- **136 px** (min 8.7): ALI 19.6, — 8.7, — 8.7, — 8.7, — 8.7
+- **136 px** (min 8.2): CHAMPION 8.2, ABDELKARIM 10.9, BENJELLOUN-ALAOU 14.2, 90 8.7, 87 8.7, — 8.7, 88 8.7
 
 ## Background texture (Sobel on background-only regions: top band, both sides below the sleeves, under the hem; % of pixels)
 
@@ -185,7 +216,7 @@ legend    L sleeve 20/21 dE27 cr1.05 | R sleeve 44/33 dE31 cr1.48 | L shoulder 4
 ### Field colour (`field.py`)
 
 ```
-base      top L* 16.5 C*  6.6 rgb[36 41 50] | side L* 10.8 rgb[26 29 37] | under-hem L* 15.1 rgb[35 38 45] | lamp L* 19.8 vs side-low L*  9.8
+base      top L* 16.5 C*  6.6 rgb[36 41 50] | side L* 10.8 rgb[26 29 37] | under-hem L* 14.6 rgb[34 37 43] | lamp L* 19.8 vs side-low L*  9.8
 homa      top L* 25.1 C*  5.8 rgb[54 60 68] | side L* 16.8 rgb[37 42 48] | under-hem L* 22.9 rgb[52 55 59] | lamp L* 30.9 vs side-low L* 15.0
 stade     top L*  9.6 C*  8.0 rgb[32 26 15] | side L*  5.7 rgb[23 18  8] | under-hem L* 22.8 rgb[58 54 47] | lamp L* 25.1 vs side-low L*  5.6
 pro       top L* 23.0 C* 38.4 rgb[104  26  33] | side L* 16.3 rgb[80 17 23] | under-hem L* 21.8 rgb[76 43 47] | lamp L* 29.6 vs side-low L* 15.8
@@ -214,7 +245,7 @@ legend band x933 down y60..880: 84 88 90 85 77 75 74 68 86 61 60 62 64 66
 
 | tier     | rev 2 | rev 3 | rev 3b | rev 2 → 3b | rev 3b markup bytes |
 | -------- | ----- | ----- | ------ | ---------- | ------------------- |
-| base     | 205   | 105   | 121    | -41 %      | 39245               |
+| base     | 205   | 105   | 125    | -39 %      | 39712               |
 | homa     | 214   | 105   | 129    | -40 %      | 41967               |
 | stade    | 224   | 111   | 130    | -42 %      | 41133               |
 | pro      | 224   | 110   | 126    | -44 %      | 39996               |
