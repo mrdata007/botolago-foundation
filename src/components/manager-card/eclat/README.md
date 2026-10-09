@@ -369,6 +369,12 @@ averages 14.1 ms a draw and LEGEND 336 px 16.6 ms, the LEGEND target of 55 a sec
 reliably met at 336 px here**. A GPU compositor draws the same layers in a fraction of that; this
 sandbox cannot show it. At 296 px, the width of a phone, every tier holds 57 to 59.
 
+Why 336 px costs more than its area says: from a card 316 px wide on, the layers are taller than
+512 CSS px and the browser tiles them (PRO, measured by forcing the card's width: 36 quads a draw
+up to 312 px, 102 from 320 px; 738 raster tasks a sweep against 3141), which adds about 5 % to the
+draw. The area is the larger part of it (draw time on PRO: 10.0 ms at 296 px, 10.9 at 312, 12.3 at
+320, 14.0 at 336).
+
 The one long task over 50 ms that remains at 336 px comes at the pointer's first entry: the main
 thread is blocked in the commit while the compositor rasterises the 3D layers of a card that was flat
 (`will-change` is deliberately absent at rest, so that a page of cards holds no layers). It is once
