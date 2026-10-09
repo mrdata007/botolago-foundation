@@ -7,8 +7,10 @@ trap 'docker rm -f botolago-stories-test >/dev/null' EXIT
 sql() { docker exec -i botolago-stories-test psql -U postgres -v ON_ERROR_STOP=1; }
 sql < scripts/qa/home-stories/ai-bootstrap.sql
 sql < supabase/migrations/20261009195943_ai_home_stories.sql
+sql < supabase/migrations/20261009211234_story_presentation_repair.sql
 python3 - <<'PY' | sql
 from pathlib import Path
-source=Path('supabase/tests/database/ai_home_stories.test.sql').read_text()
-print(source.split('$scenario$')[1])
+for name in ['ai_home_stories','story_presentation_repair']:
+ source=Path('supabase/tests/database/'+name+'.test.sql').read_text()
+ print('begin;'+source.split('$scenario$')[1]+'rollback;')
 PY

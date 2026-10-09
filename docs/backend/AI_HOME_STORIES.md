@@ -65,3 +65,28 @@ Its image is a local fixture; production verification checks an actual generated
 Sources checked during implementation:
 [OpenAI Images API](https://developers.openai.com/api/reference/resources/images/methods/generate),
 [Supabase background tasks](https://supabase.com/docs/guides/functions/background-tasks).
+
+## Presentation repair and replacement (10 October 2026, Dubai)
+
+The viewer contains the full image, displays the headline once, supports buttons,
+arrows and swipes, and handles loading failures. AI images show a compact disclosure;
+provider credits are hidden, while manual photo credits remain visible.
+
+Migration `20261009211234` snapshots a private visual brief: article body (bounded
+and stripped of markup), published match context and tagged clubs. The image prompt
+uses these facts for a distinctive news cover with short club labels/verified score.
+It avoids anonymous stock footballers and the repeated navy collage treatment.
+
+`apply-story-presentation-repair.sql` installs through the guarded migration path,
+leaving automation paused and existing public images untouched. Deploy the new worker
+and publish the website before rehearsing/committing `refresh-initial-home-stories.sql`.
+That queues only the three original images and restores the six-attempt UTC daily cap.
+
+The owner-only `ai_home_stories_queue_refresh` requires paused, drained automation,
+valid still-published sources and budget for all requested replacements. It preserves
+completed attempts as `superseded`; their images stay visible until each replacement
+publishes atomically. History/media are retained. Each replacement counts as a new
+paid attempt against both existing caps. Pending refresh sources are claimed before
+newer ordinary news so unrelated articles cannot take their reserved daily budget. Editorial unpublishing before a claim or
+while its replacement is generating cancels the replacement. Failed replacements
+leave the old image available rather than deleting it. No automatic unlimited retry.

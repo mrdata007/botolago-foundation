@@ -3,7 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { homeStoriesRepository } from "@/backend/home-stories/repository";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { getNewsDataMode } from "@/services/news";
-import { resolveMediaUrl } from "@/lib/media";
+import { FailureAwareImage } from "@/components/common/FailureAwareImage";
+import { responsiveMedia, resolveMediaUrl } from "@/lib/media";
 import { StoryViewer } from "./StoryViewer";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -32,14 +33,14 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
       <section
         aria-label={t("home.highlights")}
         data-testid="home-stories"
-        className="min-w-0 pb-10 pt-3 sm:pb-8 sm:pt-4"
+        className="min-w-0 pb-8 pt-3 sm:pb-8 sm:pt-4"
       >
         <ul
           data-swipe-row
           className="flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-p-1 p-1 sm:gap-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {stories.map((story, index) => (
-            <li key={story.id} className="w-20 shrink-0 snap-start sm:w-24">
+            <li key={story.id} className="w-24 shrink-0 snap-start sm:w-28">
               <button
                 type="button"
                 aria-haspopup="dialog"
@@ -59,8 +60,12 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
               >
                 <span className="block size-[calc(var(--ui-tap-min)*1.6)] sm:size-[calc(var(--ui-tap-min)*1.8)] shrink-0 rounded-full bg-[image:var(--ui-grad-action)] p-1">
                   <span className="block size-full rounded-full bg-[color:var(--ui-page)] p-1">
-                    <img
-                      src={resolveMediaUrl({ storagePath: story.storagePath })}
+                    <FailureAwareImage
+                      {...responsiveMedia(resolveMediaUrl({ storagePath: story.storagePath }), {
+                        kind: "photo",
+                        ratio: 1,
+                        sizes: "80px",
+                      })}
                       alt=""
                       width={80}
                       height={80}
@@ -71,7 +76,7 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
                 </span>
                 <span
                   className={cn(
-                    "line-clamp-2 w-full break-words text-center [font-weight:var(--ui-weight-heavy)] group-hover:underline",
+                    "line-clamp-3 min-h-[3lh] w-full break-words text-center [font-weight:var(--ui-weight-heavy)] group-hover:underline",
                     ui.text.secondary,
                   )}
                 >
