@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Clock3, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -51,7 +51,21 @@ import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { FORMATIONS, SQUAD_RULES, type FormationKey, type SquadPlayer } from "@/types/fantasy";
+
+// The card's birth panel slot and hint are their own chunks, requested only while the section is
+// live: with the switch off this screen imports nothing of the Manager Card.
+const TeamBornSlot = lazy(() =>
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+    default: module.TeamBornSlot,
+  })),
+);
+const CardHint = lazy(() =>
+  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+    default: module.CardHint,
+  })),
+);
 
 export const Route = createFileRoute("/fantasy/team")({
   head: () => fantasyHead("team"),
@@ -122,6 +136,7 @@ function PickTeamBody() {
   const { user } = useAuth();
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
+  const cardLive = useManagerCardLive();
   const isCloud = owned.source === "cloud";
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     minimumFractionDigits: 1,
@@ -564,6 +579,14 @@ function PickTeamBody() {
       />
       <FplStatBar hero items={stripItems} />
 
+      {cardLive ? (
+        // The card's birth panel (plan M2), above the controls so they and the pitch stay one
+        // unit below it. Whether it shows is the moment gate's call.
+        <Suspense fallback={null}>
+          <TeamBornSlot gameweek={gameweek} />
+        </Suspense>
+      ) : null}
+
       <div className={cn("grid gap-2 pt-3", ui.space.gutter)}>
         <ul className="flex flex-wrap gap-1.5" data-testid="team-facts">
           {[
@@ -694,6 +717,12 @@ function PickTeamBody() {
               ui.space.gutter,
             )}
           >
+            {cardLive ? (
+              // The first substitution teaches that the starting eleven counts for SEL (plan M3e).
+              <Suspense fallback={null}>
+                <CardHint kind="sel" className="mb-2" />
+              </Suspense>
+            ) : null}
             <UiButton
               variant="ink"
               className={ui.shadow.lifted}
