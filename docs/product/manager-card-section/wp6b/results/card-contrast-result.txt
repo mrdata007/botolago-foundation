@@ -1,0 +1,5 @@
+400 boxes in 36 card states; below their floor: 0
+lowest number dark: 5.99
+lowest number light: 5.99
+lowest text dark: 5.01
+lowest text light: 5.01

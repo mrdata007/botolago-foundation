@@ -51,7 +51,12 @@ for (const lang of ["fr", "ar"] as const) {
   test(`${lang}: the bar is today's and Pépites is lit on its own pages`, async ({
     page,
   }, testInfo) => {
-    const diagnostics = observePage(page, { allowExpectedResourceConsoleError: true });
+    // The production build's stub backend (E2E_BUILT_OUTPUT=1) has no Pépites RPCs and answers
+    // `pepites_version` with a 404, as it does for the base tree; that is the stub, not the section.
+    const diagnostics = observePage(page, {
+      allowExpectedResourceConsoleError: true,
+      allowResponse: (_status, url) => url.pathname.endsWith("/rpc/pepites_version"),
+    });
     await page.setViewportSize({ width: 390, height: 844 });
     await initializeLanguage(page, lang);
     await gotoHydrated(page, "/", lang);

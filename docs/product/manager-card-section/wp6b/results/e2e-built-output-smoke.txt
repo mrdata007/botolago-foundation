@@ -1,0 +1,5 @@
+built output, alone:
+  3 passed (16.6s)
+origin/main 3f9c57fc built output, alone:
+  3 passed (18.0s)
+(run together with gradins-off.e2e.ts on the same stub, the smoke test fails on pepites_version: the off spec visits /pepites and the stub counts the unanswered RPC; they must not share one run)

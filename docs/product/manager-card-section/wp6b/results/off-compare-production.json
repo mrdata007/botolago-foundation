@@ -1,0 +1,770 @@
+{
+  "screenshots": {
+    "fantasy-ar-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "fantasy-ar-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "fantasy-fr-dark-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "fantasy-fr-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "fantasy-fr-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-ar-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-ar-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-fr-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-fr-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-returning-ar-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-returning-ar-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-returning-fr-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "home-returning-fr-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-fantasy-ar-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-fantasy-ar-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-fantasy-fr-dark-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-fantasy-fr-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-fantasy-fr-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-home-returning-ar-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-home-returning-ar-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-home-returning-fr-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-home-returning-fr-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-pepites-ar-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-pepites-ar-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-pepites-fr-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "nav-pepites-fr-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "pepites-ar-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "pepites-ar-light-390.png": {
+      "percent": 0,
+      "box": null
+    },
+    "pepites-fr-light-1440.png": {
+      "percent": 0,
+      "box": null
+    },
+    "pepites-fr-light-390.png": {
+      "percent": 0,
+      "box": null
+    }
+  },
+  "bodies": {
+    "fantasy.html": {
+      "equal": true,
+      "bytes": [47084, 47084],
+      "first": null
+    },
+    "home-returning.html": {
+      "equal": true,
+      "bytes": [108699, 108699],
+      "first": null
+    },
+    "home.html": {
+      "equal": true,
+      "bytes": [108699, 108699],
+      "first": null
+    },
+    "matches.html": {
+      "equal": true,
+      "bytes": [66447, 66447],
+      "first": null
+    },
+    "pepites.html": {
+      "equal": true,
+      "bytes": [32504, 32504],
+      "first": null
+    }
+  },
+  "requests": {
+    "home-fr-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "home-ar-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "home-fr-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "home-ar-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "home-returning-fr-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "home-returning-ar-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "home-returning-fr-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "home-returning-ar-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/my-clubs-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "fantasy-fr-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "fantasy-ar-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "fantasy-fr-dark-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "fantasy-fr-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "fantasy-ar-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/CreateLeagueInvite-#.js",
+        "GET /assets/FantasyScreenGate-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/gameweek-presentation-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/link-2-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/trending-up-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "pepites-fr-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "pepites-ar-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "pepites-fr-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "pepites-ar-light-1440": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/use-native-image-actions-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    },
+    "matches-fr-light-390": {
+      "onlyBranch": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ],
+      "onlyBase": [],
+      "regroupedChunks": [
+        "GET /assets/ClientOnly-#.js",
+        "GET /assets/FlipScore-#.js",
+        "GET /assets/fantasy-hub-share-#.js",
+        "GET /assets/jsx-runtime-#.js",
+        "GET /assets/mutation-#.js",
+        "GET /assets/tslib.es6-#.js",
+        "GET /assets/utils-#.js"
+      ]
+    }
+  },
+  "storage": {
+    "home-fr-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "home-ar-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "home-fr-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "home-ar-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "home-returning-fr-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "home-returning-ar-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "home-returning-fr-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "home-returning-ar-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "fantasy-fr-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "fantasy-ar-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "fantasy-fr-dark-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "fantasy-fr-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "fantasy-ar-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "pepites-fr-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "pepites-ar-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "pepites-fr-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "pepites-ar-light-1440": {
+      "onlyBranch": [],
+      "onlyBase": []
+    },
+    "matches-fr-light-390": {
+      "onlyBranch": [],
+      "onlyBase": []
+    }
+  },
+  "errors": {
+    "home-fr-light-390": {
+      "base": [],
+      "branch": []
+    },
+    "home-ar-light-390": {
+      "base": [],
+      "branch": []
+    },
+    "home-fr-light-1440": {
+      "base": [],
+      "branch": []
+    },
+    "home-ar-light-1440": {
+      "base": [],
+      "branch": []
+    },
+    "home-returning-fr-light-390": {
+      "base": [],
+      "branch": []
+    },
+    "home-returning-ar-light-390": {
+      "base": [],
+      "branch": []
+    },
+    "home-returning-fr-light-1440": {
+      "base": [],
+      "branch": []
+    },
+    "home-returning-ar-light-1440": {
+      "base": [],
+      "branch": []
+    },
+    "fantasy-fr-light-390": {
+      "base": [],
+      "branch": []
+    },
+    "fantasy-ar-light-390": {
+      "base": [],
+      "branch": []
+    },
+    "fantasy-fr-dark-390": {
+      "base": [],
+      "branch": []
+    },
+    "fantasy-fr-light-1440": {
+      "base": [],
+      "branch": []
+    },
+    "fantasy-ar-light-1440": {
+      "base": [],
+      "branch": []
+    },
+    "pepites-fr-light-390": {
+      "base": ["Failed to load resource: the server responded with a status of 404 (Not Found)"],
+      "branch": ["Failed to load resource: the server responded with a status of 404 (Not Found)"]
+    },
+    "pepites-ar-light-390": {
+      "base": ["Failed to load resource: the server responded with a status of 404 (Not Found)"],
+      "branch": ["Failed to load resource: the server responded with a status of 404 (Not Found)"]
+    },
+    "pepites-fr-light-1440": {
+      "base": ["Failed to load resource: the server responded with a status of 404 (Not Found)"],
+      "branch": ["Failed to load resource: the server responded with a status of 404 (Not Found)"]
+    },
+    "pepites-ar-light-1440": {
+      "base": ["Failed to load resource: the server responded with a status of 404 (Not Found)"],
+      "branch": ["Failed to load resource: the server responded with a status of 404 (Not Found)"]
+    },
+    "matches-fr-light-390": {
+      "base": [],
+      "branch": []
+    }
+  },
+  "redirects": {
+    "/gradins": {
+      "status": 307,
+      "location": "/fantasy"
+    },
+    "/gradins/carte": {
+      "status": 307,
+      "location": "/fantasy"
+    },
+    "/gradins/les-votres": {
+      "status": 307,
+      "location": "/fantasy"
+    },
+    "/gradins/saisons": {
+      "status": 307,
+      "location": "/fantasy"
+    }
+  },
+  "failures": []
+}

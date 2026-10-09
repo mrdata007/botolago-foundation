@@ -1,0 +1,37 @@
+{
+  "throttle": 4,
+  "g1": [
+    {
+      "lang": "fr",
+      "kind": "G1 data to card, first visit",
+      "ms": [624, 827, 746, 713, 758],
+      "median": 746
+    },
+    {
+      "lang": "fr",
+      "kind": "G1 data to card, second visit",
+      "ms": [542, 428, 399, 433, 415],
+      "median": 428
+    },
+    {
+      "lang": "ar",
+      "kind": "G1 data to card, first visit",
+      "ms": [769, 410, 376, 430, 414],
+      "median": 414
+    },
+    {
+      "lang": "ar",
+      "kind": "G1 data to card, second visit",
+      "ms": [388, 419, 394, 337, 406],
+      "median": 394
+    }
+  ],
+  "renderer": {
+    "full() rated, French": 1.5,
+    "full() founder, Arabic, dark": 2.5,
+    "full() legend": 1.1,
+    "token() 44 px": 0,
+    "token() 24 px": 0,
+    "full() Arabic name sampled on a canvas (first draw)": 344.9
+  }
+}

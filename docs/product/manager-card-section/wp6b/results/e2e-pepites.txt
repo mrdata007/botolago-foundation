@@ -1,0 +1,4 @@
+  1 failed
+  25 passed (2.5m)
+(the one failure was the first test on a cold Vite cache: html[data-lang] not set within 10 s; re-run warm: passed)
+  1 passed (11.6s)
