@@ -143,6 +143,57 @@ async function expectNothingPastTheEdge(page: Page) {
   expect(found, "content past the edge of the window").toEqual([]);
 }
 
+/** A session in which the hero has already been shown: only the stage is on the first screen. */
+async function withoutHero(page: Page) {
+  await page.addInitScript(() => sessionStorage.setItem("botolago.card.hero_session.v1", "1"));
+}
+
+/** Two frames, so that a layout the window's new size asks for is the one measured. */
+async function settle(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+}
+
+/**
+ * The headings under `main` whose text is wider than the box it is in, as « text: the box, what the
+ * text needs ». Not `scrollWidth > clientWidth` (the text of `truncate` and of `overflow: clip` is
+ * laid out whole and only painted short, and a page that clips its overflow hides the difference):
+ * a `Range` over the heading's contents has the width its text needs, and that is compared with the
+ * width of the box (less its padding and border). A heading that wraps onto a second line is whole.
+ */
+async function cutHeadings(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const found: string[] = [];
+    for (const heading of document.querySelectorAll(
+      "main h1, main h2, main h3, main [role='heading']",
+    )) {
+      const box = heading.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+      const style = getComputedStyle(heading);
+      const room =
+        box.width -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight) -
+        parseFloat(style.borderLeftWidth) -
+        parseFloat(style.borderRightWidth);
+      const range = document.createRange();
+      range.selectNodeContents(heading);
+      const need = range.getBoundingClientRect().width;
+      if (need > room + 0.5) {
+        const label = (heading.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 28);
+        found.push(
+          `« ${label} »: a box of ${room.toFixed(1)} px, the text needs ${need.toFixed(1)}`,
+        );
+      }
+    }
+    return found;
+  });
+}
+
 /**
  * Asks the page for less motion, and checks that it took. The project's `reducedMotion: "reduce"`
  * (playwright.config.ts) did not reach the page's media query in the sandbox's Chromium (the page
@@ -786,6 +837,68 @@ test.describe("G1 says what happens next", () => {
     await expect(page.getByTestId("gradins-owner")).toBeVisible();
     await expect(page.getByTestId("gradins-glance")).toHaveCount(0);
   });
+});
+
+test.describe("no heading is cut", () => {
+  for (const lang of LANGS) {
+    test(`${lang}: « ${copy(lang, "gradins.people.title")} » and the other headings of G1 are whole at 768, 1024, 1280 and 1440 px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await start(page, lang);
+      await withoutHero(page);
+      await gotoHydrated(page, "/gradins?mc=rated", lang);
+      for (const width of [768, 1024, 1280, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        await settle(page);
+        const title = page
+          .getByTestId("gradins-people")
+          .getByRole("heading", { name: copy(lang, "gradins.people.title") });
+        await expect(title, `${lang} ${width}`).toBeVisible();
+        const measured = await title.evaluate((heading) => {
+          const range = document.createRange();
+          range.selectNodeContents(heading);
+          return {
+            box: heading.getBoundingClientRect().width,
+            need: range.getBoundingClientRect().width,
+          };
+        });
+        expect(measured.need, `${lang} ${width}: the heading's text`).toBeLessThanOrEqual(
+          measured.box + 0.5,
+        );
+        // and the way to the whole table is still there, whole, and a 44 px target
+        const link = page.getByTestId("gradins-people").getByRole("link", {
+          name: copy(lang, "gradins.people.view_league"),
+        });
+        const linkBox = (await link.boundingBox())!;
+        const peopleBox = (await page.getByTestId("gradins-people").boundingBox())!;
+        expect(linkBox.height, `${lang} ${width}`).toBeGreaterThanOrEqual(44);
+        expect(linkBox.x, `${lang} ${width}: the link inside the block`).toBeGreaterThanOrEqual(
+          peopleBox.x - 8.5,
+        );
+        expect(linkBox.x + linkBox.width, `${lang} ${width}`).toBeLessThanOrEqual(
+          peopleBox.x + peopleBox.width + 0.5,
+        );
+        expect(await cutHeadings(page), `${lang} ${width}`).toEqual([]);
+      }
+    });
+
+    for (const screen of SCREENS) {
+      test(`${lang} ${screen.id}: no heading is cut at 320, 390, 768 and 1440 px`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: 390, height: 900 });
+        await start(page, lang, { signedIn: !screen.visitor });
+        await gotoHydrated(page, screen.path, lang);
+        await expect(page.locator("main").first()).toBeVisible();
+        for (const width of [320, 390, 768, 1440]) {
+          await page.setViewportSize({ width, height: 900 });
+          await settle(page);
+          expect(await cutHeadings(page), `${lang} ${width} ${screen.id}`).toEqual([]);
+        }
+      });
+    }
+  }
 });
 
 test.describe("the team page's born panel", () => {

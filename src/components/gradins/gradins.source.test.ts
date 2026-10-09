@@ -73,6 +73,16 @@ describe("the stage's room", () => {
   });
 });
 
+describe("the people block's heading", () => {
+  it("is not cut: it is not a SectionHeader (which truncates its title beside a link); the link wraps under it", () => {
+    const text = code(readFileSync(join(HERE, "PeopleBlock.tsx"), "utf8"));
+    expect(text).not.toMatch(/<SectionHeader\b/);
+    expect(text).toContain("flex-wrap");
+    const heading = text.match(/<h2 className=\{cn\(([^)]*)\)\}/)![1]!;
+    expect(heading).not.toContain("truncate");
+  });
+});
+
 describe("the Gradins screens' styling", () => {
   it("draws no coloured bar down the side of a card (a craft-floor ban): the club disc carries the colour", () => {
     for (const { name, text } of sources) {
