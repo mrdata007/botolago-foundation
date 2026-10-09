@@ -283,14 +283,19 @@ hyphens. Then:
 - one word → the one-word line only (§3.3); line 1 empty;
 - empty (unnamed guest) → no text; the empty name rule of §3.3.
 
-**Fit.** Every line is centred on x 500 with a width budget of **790 units** (x 105–895; the measured
-ink of the widest fixture then stays inside x 100–900). Font size = `min(max, budget ÷ width(text at
-size 1))`. If that is below the line's min: drop the last word of line 2 and try again (never cut
-inside a word, never an ellipsis); if line 2 (or the one-word line) has one word left and still does
-not fit at min, set it at min with `textLength = 790` and `lengthAdjust="spacing"` (never
-`spacingAndGlyphs`, which pinches the glyphs; the one-word min is 64, where the 24-letter fixture needs
-almost no correction). The full name is always in the label and in the DOM under the card. Sizes, faces
-and mins: §3.3.
+**Fit.** Every line is centred on x 500 with a width budget of **790 units** (x 105–895), and the
+budget is the margin of the line's **ink**, not of its advance (round 2: the 24-letter serif word, fitted by
+advance, put its « A » 2.2 units left of x 105 on 8 of 100 drawings). Font size = `min(max, budget ÷
+width(text at size 1), budget ÷ 2 ÷ reach)` where `reach` is how far the ink goes from the line's centre
+on its wider side (`max(w ÷ 2 − x0, x1 − w ÷ 2)`, size 1), floored to a tenth; the ink fit only ever
+shrinks a line that is already at the advance fit, by up to a few tenths of a unit of size. If that is
+below the line's min: drop the last word of line 2 and try again (never cut inside a word, never an
+ellipsis); if line 2 (or the one-word line) has one word left and still does not fit at min, set it at
+min with `textLength` and `lengthAdjust="spacing"` (never `spacingAndGlyphs`, which pinches the glyphs;
+the one-word min is 64, where the 24-letter fixture needs almost no correction). `textLength` is 790
+less twice the larger overhang of the line's first and last letters past their advance, so the ink of a
+spaced line keeps the margin too (786 for the serif « A » at 64). The full name is always in the label
+and in the DOM under the card. Sizes, faces and mins: §3.3.
 
 **Vertical placement by ink** (critique fix: baselines alone let Arabic descenders cross the rule).
 After sizing, measure each line's ink (`actualBoundingBoxAscent/Descent` of the face at its size, from
@@ -324,7 +329,8 @@ every other name. A Latin name in the Arabic interface keeps the Latin faces and
 Fixtures to check by eye and by rectangles (all in the mock's « Noms longs » row or the main rows):
 `Ali`, `Les Lions du Derb Sidi Maarouf` (Arabic UI), `Abdelkarim Benjelloun-Alaoui` (line 2
 BENJELLOUN-ALAOUI fits at ≈ 92), `فاطمة الزهراء`, `عبد الرحمن بن جلون العلوي` (French UI),
-`Mohammedabdelhakimalaoui` (24 letters, one word: 67.4 at the 790 budget, no textLength needed), an
+`Mohammedabdelhakimalaoui` (24 letters, one word: 67.4 at the 790 budget, no textLength needed;
+`Abdelrahmanebenjellounel` fits at 69.4, not 69.8, so the « A »'s overhang keeps x 105), an
 empty name, every hostile
 name of `markup-safety.ts`.
 
@@ -463,7 +469,10 @@ Never a sponsor, a real kit pattern, a crest or any logo. With no club the shirt
   (a copy filled linear y 476 → 796: 0 `#FFF` .22, .55 `#FFF` 0); then, **outside** the group,
   static and non-interactive, the **cloth on the print** (critique fix: the folds stopped sharply at
   the glyph edges): `<g clip-path="url(#numclip)" opacity=".55">` holding the centre crease of §5.1
-  (filter `b4`, its light in `#FFF`) and a rect x 292–708, y 300–906 filled `volX` at .5; `numclip` is
+  (filter `b4`, its light in `#FFF`) and a rect x 292–708, y 300–906 filled `numvol` at .5 (round 2:
+  `volX`'s dark sides, 0 `#000` .34, .1 .12, .2 0, then clear to .82, .92 .12, 1 .36, with none of its
+  `hl` lift in the middle: that tint pulled a white fill down to .92–.95 of white, 0.1–0.2 of contrast
+  against the shirt); `numclip` is
   a `clipPath` containing a copy of the fill `<text>` (jersey space). The group is never animated and
   takes no pointer events.
 - **Fill**: `#FFFFFF` if ≥ 3:1 on `club.primary`, else `#0E1116`. **Twill**: `club.secondary` if its
@@ -565,28 +574,42 @@ seven-stop frame gradient (§3.2); `spec` the colour of the travelling specular 
 the 2 px token ring below 80 px (§7); `foil` is the CHAMPION/LEGEND holographic gradient. Critique
 fixes in bold.
 
-| Tier (`code`) | Display  | `plate`   | `deep`        | `glow`    | `light`   | `label`   | `edge` light / dark   | Sheen α | Beams A / B   | `back`  | Honeycomb                                  | `wordFill`            |
-| ------------- | -------- | --------- | ------------- | --------- | --------- | --------- | --------------------- | ------- | ------------- | ------- | ------------------------------------------ | --------------------- |
-| `null` (base) | —        | `#12151B` | `#262B35`     | `#6B7484` | `#AAB3C0` | `#A3ACB9` | `#3A414D` / `#59616E` | .08     | 0 / .05       | .22     | line, .50                                  | —                     |
-| `homa`        | LASTREET | `#111418` | `#343B45`     | `#C7D0DC` | `#E8EEF5` | `#B5BFCA` | `#5C6672` / `#AEB8C5` | .16     | .04 / .08     | **.45** | line, .42 + cage + brushed field and frame | `#E6ECF3`             |
-| `stade`       | STADE    | `#0E0B05` | **`#1A140A`** | `#F2B544` | `#FFE2A6` | `#CDBB95` | `#9A6B16` / `#E9B055` | .18     | **.18 / .28** | .36     | line (gold face), .75 + pool + gold band   | `#F6C96A`             |
-| `pro`         | PRO      | `#1A0407` | `#6E0F18`     | `#F0545A` | `#FFC2C2` | `#D6B9B9` | `#B1262E` / `#EA6263` | .18     | .06 / .12     | .34     | cells, 1                                   | `#FF9396`             |
-| `champion`    | CHAMPION | `#03111C` | `#0D4A63`     | `#5FD0EE` | `#D8F6FF` | `#A9C9D6` | `#1F6F96` / `#6FCFE5` | .20     | .08 / .14     | .34     | holo, **.30**                              | `#8FE6F7`             |
-| `legend`      | LEGEND   | `#0D0314` | **`#1E0730`** | `#C77DFF` | `#F0D8FF` | `#C3B4D0` | `#8E3A9A` / `#DE5EE4` | .22     | **.04 / .08** | .40     | holo, .60 **inside the light** (`lightm`)  | **`#1A0626` on foil** |
+| Tier (`code`) | Display  | `plate`   | `deep`        | `glow`    | `light`   | `label`   | `edge` light / dark       | Sheen α | Beams A / B   | `back`  | Honeycomb                                  | `wordFill`            |
+| ------------- | -------- | --------- | ------------- | --------- | --------- | --------- | ------------------------- | ------- | ------------- | ------- | ------------------------------------------ | --------------------- |
+| `null` (base) | —        | `#12151B` | `#262B35`     | `#6B7484` | `#AAB3C0` | `#A3ACB9` | `#3A414D` / **`#626C7B`** | .08     | 0 / .05       | .22     | line, .50                                  | —                     |
+| `homa`        | LASTREET | `#111418` | `#343B45`     | `#C7D0DC` | `#E8EEF5` | `#B5BFCA` | `#5C6672` / `#AEB8C5`     | .16     | .04 / .08     | **.45** | line, .42 + cage + brushed field and frame | `#E6ECF3`             |
+| `stade`       | STADE    | `#0E0B05` | **`#1A140A`** | `#F2B544` | `#FFE2A6` | `#CDBB95` | `#9A6B16` / `#E9B055`     | .18     | **.18 / .28** | .36     | line (gold face), .75 + pool + gold band   | `#F6C96A`             |
+| `pro`         | PRO      | `#1A0407` | `#6E0F18`     | `#F0545A` | `#FFC2C2` | `#D6B9B9` | `#B1262E` / `#EA6263`     | .18     | .06 / .12     | .34     | cells, 1                                   | `#FF9396`             |
+| `champion`    | CHAMPION | `#03111C` | `#0D4A63`     | `#5FD0EE` | `#D8F6FF` | `#A9C9D6` | **`#145678`** / `#6FCFE5` | .20     | .08 / .14     | .34     | holo, **.30**                              | `#8FE6F7`             |
+| `legend`      | LEGEND   | `#0D0314` | **`#1E0730`** | `#C77DFF` | `#F0D8FF` | `#C3B4D0` | **`#69257A`** / `#DE5EE4` | .22     | **.04 / .08** | .40     | holo, .60 **inside the light** (`lightm`)  | **`#1A0626` on foil** |
 
 STADE also has `fieldMix` .8 (the field's middle stop), `beamCol` `#FFD27A` and the beam cores (§5.3).
 
 | Tier       | `metal` stops (0 → 1, seven)                                              | `spec`    | `tokEdge` | `foil` stops (0 → 1, six)                                   | Material read                                     |
 | ---------- | ------------------------------------------------------------------------- | --------- | --------- | ----------------------------------------------------------- | ------------------------------------------------- |
-| base       | `#22262D` `#4A515C` `#2B3038` `#6A727E` `#30353D` `#555C67` `#1E2228`     | `#B8C0CC` | `#454C57` | —                                                           | dark graphite, minimal light                      |
+| base       | `#22262D` `#4A515C` `#2B3038` **`#575D67`** `#30353D` `#555C67` `#1E2228` | `#B8C0CC` | `#454C57` | —                                                           | dark graphite, minimal light                      |
 | `homa`     | `#5D6670` `#D9DFE6` `#8E98A3` `#F4F7FA` `#78828D` `#C3CAD2` `#4E5660`     | `#FFFFFF` | `#C9D1DA` | —                                                           | brushed silver on charcoal, street cage           |
-| `stade`    | `#5A3D0C` `#C99634` `#FFE9B0` `#9C6C1C` `#F0C566` `#6E4A10` `#D7A748`     | `#FFF4D6` | `#E9B055` | —                                                           | deep black and metallic gold, spotlights          |
+| `stade`    | `#5A3D0C` `#C99634` `#FFE9B0` **`#805917`** `#F0C566` `#6E4A10` `#D7A748` | `#FFF4D6` | `#E9B055` | —                                                           | deep black and metallic gold, spotlights          |
 | `pro`      | **`#3A0509` `#9E1C24` `#E0424A` `#6E0E15` `#C0303A` `#8A141C` `#4A080E`** | `#FFD0D0` | `#E0424A` | —                                                           | crimson, raised dark-red hex tiles, red metal     |
-| `champion` | `#0B3A48` `#3FAFC9` `#D9F8FF` `#1E7C93` `#8BE3F2` `#0E4B5C` `#5CC9DF`     | `#E8FCFF` | foil      | `#4FE0F0` `#3FB8C9` `#A6F0FF` `#6FA8FF` `#46D9C8` `#BDF6FF` | cyan–teal chrome, controlled iridescence          |
+| `champion` | `#0B3A48` `#3FAFC9` `#D9F8FF` **`#196679`** `#8BE3F2` `#0E4B5C` `#5CC9DF` | `#E8FCFF` | foil      | `#4FE0F0` `#3FB8C9` `#A6F0FF` `#6FA8FF` `#46D9C8` `#BDF6FF` | cyan–teal chrome, controlled iridescence          |
 | `legend`   | `#2A0A3C` `#8E44B8` `#F2D6FF` `#5A1E7A` `#C98BEA` `#3A0F52` `#A866D0`     | `#FBEFFF` | foil      | `#FF8AD8` `#C59BFF` `#8FB4FF` `#7FF0E0` `#FFE3A8` `#E6A6FF` | deep purple and black, prismatic foil (strongest) |
 
 PRO's metal lost the wide `#F27C80` pink stop (critique fix: the frame read salmon); the pink now
 lives only in its narrow specular streak (`spec` `#FFD0D0`).
+
+Round 2, contrast (measured from rasterised pixels at 296 and 336 px, `wp4/contrast-card.mjs`; the
+changed tokens are in bold above). (a) **Light edge of CHAMPION and LEGEND**: the foil (`holo.edge` .55
+and .85) is painted over the 3-unit edge stroke and lifted the line to 2.83–2.98:1 on the light page;
+`edge` light goes from `#1F6F96` to `#145678` and from `#8E3A9A` to `#69257A` (the foil opacities are
+unchanged), and the line reads 3.4:1 or more. (b) **Dark theme**: `edge` dark of the base card `#59616E`
+→ `#626C7B` (3.15 → 3.7:1 against the page). The seven thickness walls are `metal[3]` mixed 35–71 %
+toward black (`layers.ts`), so the back wall cannot reach 3:1 against a near-black page with any
+colour (white would read 2.2:1); what can be chosen is whether the walls are seen. PRO's and LEGEND's
+always sat under 1.5:1 and the silhouette was their lit edge line (6.0 and 6.4:1); the base, STADE and
+CHAMPION walls climbed to 2.2:1 and the silhouette read as that ramp (1.96–2.28). `metal[3]` of those
+three goes down by about a fifth so that their first four walls also stay under 1.5:1 and the lit
+edge line is the silhouette (3.7, 10.2 and 11.1:1); LASTREET's silver walls stay lit (4.2:1 at the
+fourth). Page colours measured: light `#F4F6F8`, dark `#040A17`.
 
 Light and dark app themes (D3): the card's inside is identical; `edge` takes the light or dark column
 (light ≥ 3:1 against `#FFFFFF`, dark ≥ 3:1 against the dark page — measure); the dark theme adds the
@@ -813,8 +836,14 @@ foil x −50 … 1000, edge foil x −62 … 1038, specular 0 … 1000. **Glints
     calc(.2 + (ax + 1) × .4) }`, `.mc-glint-b { opacity: calc(.2 + (1 − ax) × .4) }`.
 - **Sheen** (every tier), foil `::before`: `linear-gradient(var(--mc-sheen-angle), transparent
 calc(50% + ax × 40% − 20%), rgb(255 255 255 / var(--mc-sheen)) calc(50% + ax × 40%), transparent
-calc(50% + ax × 40% + 20%))`, `soft-light`; angle 115deg, 245deg in Arabic. Diffraction (`::after`):
-  §5.5.
+calc(50% + ax × 40% + 20%))`, `soft-light`; angle 115deg, 245deg in Arabic. Round 2 (contrast): a
+  `mask-image` on the `::before` thins the sheen to a fifth over the chest, `radial-gradient(ellipse 24%
+14% at 50% 38.7%, rgb(0 0 0 / .2) 0, rgb(0 0 0 / .2) 60%, #000 100%)`, centred on the number (the
+  diffraction's own hole is 30 % × 26 % of its box). Soft-light lifts a mid-tone shirt by .03 to .04
+  of luminance and leaves a white print as it is, which took the number to 3.0–3.1:1 against its shirt
+  with the pointer over it; with the hole it reads 3.39 or more (`wp4/contrast-card.mjs`, every
+  fixture, fr and ar, light and dark, 296 and 336 px, rest and pointer). The mask is on the foil's own
+  leaf, so the flattening rules below hold. Diffraction (`::after`): §5.5.
 - **Flattening rules** (each one breaks the depth while it is on): no `filter`, `opacity < 1`,
   `overflow` other than visible, `clip-path`, `mask`, `mix-blend-mode` or `isolation` on `.mc-eclat`,
   `.mc-eclat__persp` or `.mc-eclat__tilt`. The foil's `clip-path` and blend live on the foil itself, a
