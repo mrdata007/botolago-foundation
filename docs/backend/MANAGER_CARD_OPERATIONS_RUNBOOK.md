@@ -481,22 +481,28 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    on afterwards. Run it as a rehearsal ("Rehearsal passed"), then with
    `commit;` ("Applied"). It checks both switches are off, there is no rules
    row, the grants, the erase lock, both jobs, and that the tick answers `off`.
-   **Then the Fantasy durable progression migration (PR #384) goes first,**
+   **Then the two migrations merged to main after #381 go first, in this
+   order,** each by its own guarded script, before the read API script below:
+   (a) the Fantasy durable progression migration (PR #384),
    `scripts/backend/apply-fantasy-durable-progression.sql` (migration
-   `20261009091728`, see `FANTASY_DURABLE_PROGRESSION_RUNBOOK.md`), before the
-   read API script below. The migrations go in repository order:
+   `20261009091728`, see `FANTASY_DURABLE_PROGRESSION_RUNBOOK.md`); then
+   (b) Home stories (PR #386), `scripts/backend/apply-home-stories.sql`
+   (migrations `20261009094920` and `20261009113132`, see `HOME_STORIES.md`).
+   The migrations go in repository order, and the four below are last:
    `20261009091728` replaces `app_private.ops_health_checks()` with a wrapper
    that adds `fantasy_progression`, and `20261009120300` wraps that wrapper to
    add `manager_card` last. Applied the other way round, #384's rename would
    take the Manager Card wrapper and put `fantasy_progression` after
-   `manager_card`. Both scripts enforce the order: #384's refuses unless the
-   newest recorded migration is `20261008123400` (so before any of the four
-   below), and the read API script refuses unless `20261009091728` is recorded.
+   `manager_card`. Every script in the chain enforces the order by wanting its
+   predecessor to be the newest recorded migration: #384's refuses unless that
+   is `20261008123400`, Home stories' unless it is `20261009091728`, and the
+   read API script unless it is exactly `20261009113132`.
    **Then the read API apply script,**
    `scripts/backend/apply-20261009120000-manager-card-api-v2.sql` (migrations
    `20261009120000` to `20261009120300`). It changes nothing anyone sees: it
-   refuses to run if the read switch is on, or if `20261009091728` is not
-   recorded yet. Rehearse, then `commit;`. It
+   refuses to run if the read switch is on, or if the newest recorded
+   migration is not `20261009113132` (its message names the one it found and
+   what to apply first). Rehearse, then `commit;`. It
    replaces the first read functions with the ones the Gradins screens call, and
    adds the status call, the acknowledgements and the health check. Do it before
    anything is switched on.

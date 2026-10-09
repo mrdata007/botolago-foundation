@@ -12,9 +12,9 @@ import { join } from "node:path";
  * be carried byte for byte, once, in order, and the hash it checks must be the
  * file's. It must stay a rehearsal unless edited on purpose, refuse before
  * writing anything unless production is as reviewed (the five earlier
- * migrations recorded and unchanged, the Fantasy durable progression migration
- * 20261009091728 of PR #384 recorded so the migrations go in repository order,
- * none of the four recorded, reads off),
+ * migrations recorded and unchanged, none of the four recorded, the newest
+ * recorded migration exactly the last repository migration before these four,
+ * so the migrations go in repository order, reads off),
  * never switch anything or insert a rules row, and check the result afterwards.
  */
 
@@ -129,8 +129,8 @@ describe("apply-20261009120000-manager-card-api-v2.sql", () => {
     for (const guard of [
       "set local lock_timeout = '5s';",
       "the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet",
-      "the Fantasy durable progression migration 20261009091728 is not applied yet",
       "a Gradins read API migration (20261009120000 to 20261009120300) is already recorded as applied",
+      "the newest applied migration is %, expected 20261009113132",
       "is not the reviewed repository file",
       "the tables this builds on are missing",
       "the functions this builds on are missing",
@@ -168,35 +168,67 @@ describe("apply-20261009120000-manager-card-api-v2.sql", () => {
     expect(code(script.slice(0, firstWrite))).not.toContain("lifecycle_tick_enabled");
   });
 
-  test("requires the Fantasy durable progression migration (PR #384) first, in repository order", () => {
+  test("requires the newest recorded migration to be the last repository migration before ours", () => {
     const firstWrite = script.indexOf("insert into supabase_migrations.schema_migrations");
+    const expected = "20261009113132";
     const message =
-      "stop: the Fantasy durable progression migration 20261009091728 is not applied yet -- apply it first (scripts/backend/apply-fantasy-durable-progression.sql), so the migrations go in repository order";
+      "stop: the newest applied migration is %, expected 20261009113132 -- apply every earlier repository migration first (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132), so the migrations go in repository order";
     expect(occurrences(script, message)).toBe(1);
-    const guard = script.indexOf(
-      "if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261009091728') then",
-    );
+    const condition =
+      "if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261009113132' then";
+    expect(occurrences(script, condition)).toBe(1);
+    const guard = script.indexOf(condition);
     expect(guard).toBeGreaterThan(0);
     expect(guard).toBeLessThan(firstWrite);
-    // The guard raises the message, right after it opens.
-    expect(script.slice(guard, guard + 400)).toContain(`raise exception '${message}'`);
-    // It sits in the preflight, after the five 2026-10-08 migrations are known to be there.
+    // The guard raises the message right after it opens, naming the version it found.
+    expect(script.slice(guard, guard + 700)).toContain(
+      `raise exception '${message}', (select max(version) from supabase_migrations.schema_migrations);`,
+    );
+    // The old single-migration guard is gone: nothing asks only for 20261009091728.
+    expect(script).not.toContain("where version = '20261009091728'");
+    expect(script).not.toContain(
+      "is not applied yet -- apply it first (scripts/backend/apply-fantasy",
+    );
+    // It sits in the preflight, after the five 2026-10-08 migrations are known to be there
+    // and after the check that none of the four is recorded (a re-run then says so, not
+    // "the newest is 20261009120300").
     expect(
       script.indexOf("the five Manager Card migrations 20261008123000 to 20261008123400"),
     ).toBeLessThan(guard);
-    // The migration it names is a repository file, and the script it names applies it.
-    expect(readdirSync(join(root, "supabase/migrations"))).toContain(
-      "20261009091728_fantasy_durable_progression.sql",
-    );
+    expect(script.indexOf("is already recorded as applied")).toBeLessThan(guard);
+    // The version it expects is the repository's: the migration just before our first one.
+    const repository = readdirSync(join(root, "supabase/migrations"))
+      .filter((file) => file.endsWith(".sql"))
+      .sort();
+    const first = repository.findIndex((file) => file.startsWith(MIGRATIONS[0].version));
+    expect(first).toBeGreaterThan(0);
+    expect(repository[first - 1].slice(0, 14)).toBe(expected);
+    // Ours are consecutive in the repository, so nothing else sits between them.
+    expect(
+      repository.slice(first, first + MIGRATIONS.length).map((file) => file.slice(0, 14)),
+    ).toEqual(MIGRATIONS.map((m) => m.version));
+    // The migrations the message names are repository files, and the scripts that apply them exist.
+    for (const version of ["20261009091728", "20261009094920", "20261009113132"]) {
+      expect(repository.some((file) => file.startsWith(version))).toBe(true);
+    }
     expect(read("scripts/backend/apply-fantasy-durable-progression.sql")).toContain(
       "version='20261009091728'",
     );
-    // Repository order: the migration named here comes before our health wrapper's.
-    expect("20261009091728" < "20261009120300").toBe(true);
+    expect(read("scripts/backend/apply-home-stories.sql")).toContain("'20261009113132'");
+    // Each earlier script wants its predecessor newest, so the chain is enforced end to end.
+    expect(read("scripts/backend/apply-fantasy-durable-progression.sql")).toContain(
+      "(select max(version) from supabase_migrations.schema_migrations) <> '20261008123400'",
+    );
+    expect(read("scripts/backend/apply-home-stories.sql")).toContain(
+      "(select max(version) from supabase_migrations.schema_migrations) <> '20261009091728'",
+    );
+    // Repository order: the migration #384 adds comes before our health wrapper's.
+    expect("20261009091728" < MIGRATIONS[3].version).toBe(true);
     // The header says so too.
     const header = script.slice(0, script.indexOf("begin;"));
-    expect(header).toContain("20261009091728");
+    expect(header).toContain(expected);
     expect(header).toContain("apply-fantasy-durable-progression.sql");
+    expect(header).toContain("apply-home-stories.sql");
   });
 
   test("afterwards: grants, dropped functions, acks table, status, health, unchanged rows", () => {

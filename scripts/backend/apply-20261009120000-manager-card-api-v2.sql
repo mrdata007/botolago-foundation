@@ -23,13 +23,15 @@
 --
 -- WHEN
 --   After the pull request that adds this file is merged, after the five
---   migrations of the 2026-10-08 script are applied, and after the Fantasy
---   durable progression migration 20261009091728
---   (scripts/backend/apply-fantasy-durable-progression.sql, PR #384): the
---   script refuses otherwise, so the migrations go in repository order. Any
---   quiet moment; not at minute 12 of an hour (the Fantasy
---   season orchestrator). It takes short locks on app.profiles (one foreign
---   key) and replaces app_private.ops_health_checks().
+--   migrations of the 2026-10-08 script are applied, and after every earlier
+--   repository migration, in order: the Fantasy durable progression migration
+--   20261009091728 (scripts/backend/apply-fantasy-durable-progression.sql,
+--   PR #384), then Home stories 20261009094920 and 20261009113132
+--   (scripts/backend/apply-home-stories.sql, PR #386). The newest migration
+--   recorded must be exactly 20261009113132: the script refuses otherwise, so
+--   the migrations go in repository order. Any quiet moment; not at minute 12
+--   of an hour (the Fantasy season orchestrator). It takes short locks on
+--   app.profiles (one foreign key) and replaces app_private.ops_health_checks().
 --
 -- BEFORE YOU RUN IT (AGENTS.md, "Before writing")
 --   * Make sure nothing else is writing to this database: no GitHub Actions
@@ -56,9 +58,10 @@
 --
 -- WHAT IT DOES
 --   * refuses to run twice, or where any of the four migrations is recorded,
---     or where the Fantasy durable progression migration 20261009091728 is not
---     recorded, or where any of the five 2026-10-08 migrations is missing or differs
---     from the reviewed repository file (sha256 of the recorded text), or where
+--     or where the newest recorded migration is not exactly 20261009113132
+--     (the last repository migration before these four), or where any of the
+--     five 2026-10-08 migrations is missing or differs from the reviewed
+--     repository file (sha256 of the recorded text), or where
 --     the read switch is on, or where a table or function it builds on is
 --     missing or one it creates already exists;
 --   * records each of the four migration files in
@@ -96,15 +99,20 @@ begin
     where version in ('20261008123000', '20261008123100', '20261008123200', '20261008123300', '20261008123400')) <> 5 then
     raise exception 'stop: the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet -- run scripts/backend/apply-20261008123000-manager-card.sql first';
   end if;
-  -- Repository order: 20261009091728 (PR #384) wraps app_private.ops_health_checks()
-  -- before 20261009120300 does. Applied the other way round, its rename would
-  -- swallow this one's wrapper and the manager_card check would no longer be last.
-  if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261009091728') then
-    raise exception 'stop: the Fantasy durable progression migration 20261009091728 is not applied yet -- apply it first (scripts/backend/apply-fantasy-durable-progression.sql), so the migrations go in repository order';
-  end if;
   if exists (select 1 from supabase_migrations.schema_migrations
     where version in ('20261009120000', '20261009120100', '20261009120200', '20261009120300')) then
     raise exception 'stop: a Gradins read API migration (20261009120000 to 20261009120300) is already recorded as applied';
+  end if;
+  -- Repository order: these four sort after every other repository migration,
+  -- and the last of those is 20261009113132 (Home stories). The newest
+  -- recorded migration must be exactly that one. It matters beyond tidiness:
+  -- 20261009091728 (PR #384) wraps app_private.ops_health_checks() before
+  -- 20261009120300 does, and applied the other way round its rename would
+  -- swallow this one's wrapper and the manager_card check would no longer be
+  -- last. Each earlier script requires the one before it to be the newest
+  -- recorded migration, so this one comparison stands for the whole chain.
+  if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261009113132' then
+    raise exception 'stop: the newest applied migration is %, expected 20261009113132 -- apply every earlier repository migration first (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132), so the migrations go in repository order', (select max(version) from supabase_migrations.schema_migrations);
   end if;
   -- The installed objects are the reviewed ones: the recorded text of each of
   -- the five is the repository file the 2026-10-08 script checked.

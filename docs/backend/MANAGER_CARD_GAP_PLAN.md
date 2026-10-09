@@ -148,6 +148,14 @@ head included): the highest migration anywhere is `20261008123400`; nothing exis
 Re-run the collision command from the brief immediately before the first push and again before
 merge; if another lane takes one of these four, move ours (they are unapplied everywhere).
 
+**Moved on 2026-10-09.** The four were first chosen before Home stories (PR #386) reached main. It
+added `20261009094920` and `20261009113132`, and the second sorts after the slots first chosen, so
+repository order would no longer have matched apply order (the guarded script could not have said
+which migration goes first). Nothing had been applied anywhere but a local stack, so the four moved
+in place, keeping their names, their order and the 100-second gaps, to the slots in the table above
+(`20261009120000` to `20261009120300`). Re-checked after `git fetch origin` against main, every
+remote branch and the local branches: the newest migration anywhere else is `20261009113132`.
+
 Common rules for every function below: `set search_path = ''`; every name schema-qualified;
 `revoke all on function … from public, anon, authenticated, service_role;` then only the grants
 named. Helpers live in `app_private`, are **not** `security definer` (they run inside the
@@ -707,9 +715,14 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
 - **Preflight**, refusing (`raise exception 'stop: …'`) unless:
   - `supabase_migrations.schema_migrations` has all five `20261008123000…123400` and none of the
     four new versions;
-  - it also has `20261009091728` (PR #384, `scripts/backend/apply-fantasy-durable-progression.sql`):
-    that migration wraps `app_private.ops_health_checks()` first and `20261009120300` wraps it
-    again, so the migrations must go in repository order (the refusal names the migration and its script);
+  - the newest recorded migration is **exactly `20261009113132`** (Home stories, PR #386: the last
+    repository migration before these four), checked after the "none of the four is recorded" test
+    so a re-run says so. `20261009091728` (PR #384) wraps `app_private.ops_health_checks()` first and
+    `20261009120300` wraps it again, so the migrations must go in repository order. The chain is
+    #381's five, then `apply-fantasy-durable-progression.sql` (wants `20261008123400` newest), then
+    `apply-home-stories.sql` (wants `20261009091728` newest), then this one; each script wants its
+    predecessor newest, so this one comparison stands for all of it. The refusal names the version
+    it found and the migrations to apply first;
   - each of the five #381 rows' `statements[1]` sha256 equals the repository file's (the same
     hashes as the 2026-10-08 script, `apply-20261008123000-manager-card.sql:1989-2007`), so the
     installed objects are the reviewed ones;
@@ -764,7 +777,9 @@ Run: `bun test scripts/backend/apply-manager-card-api-v2-script.test.ts`.
   - New "Latency": the budgets and the measured numbers from P2.
   - "Account deletion": the acknowledgements cascade.
   - "Production order": insert the new apply script after step 2 and before switching reads on, and
-    #384's `20261009091728` (`scripts/backend/apply-fantasy-durable-progression.sql`) before it.
+    before it, in this order, #384's `20261009091728`
+    (`scripts/backend/apply-fantasy-durable-progression.sql`) and Home stories'
+    `20261009094920` and `20261009113132` (`scripts/backend/apply-home-stories.sql`, PR #386).
 - `AGENTS.md` (after the `manager-card-history-prune` paragraph, lines 168-173), add:
   > Where migration 20261009120200 is applied, signed-in users also write
   > `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`) while the read switch
