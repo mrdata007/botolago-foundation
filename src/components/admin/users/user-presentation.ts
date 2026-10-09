@@ -1,4 +1,5 @@
 import type { AdminErrorCode } from "@/backend/admin/errors";
+import { ADMIN_REFUSAL_TEXT } from "@/components/admin/admin-refusal";
 import type {
   AdminUserDto,
   BanDurationKey,
@@ -96,38 +97,15 @@ const USER_ERROR_MESSAGES: Record<UserAdminErrorCode, Record<Lang, string>> = {
   },
 };
 
-const ACCESS_ERROR_MESSAGES: Partial<Record<AdminErrorCode, Record<Lang, string>>> = {
-  recent_auth_required: {
-    fr: "Par sécurité, cette action demande une connexion de moins de 15 minutes. Déconnectez-vous, reconnectez-vous, puis réessayez.",
-    ar: "لدواعٍ أمنية، يتطلب هذا الإجراء تسجيل دخول لم يمضِ عليه أكثر من 15 دقيقة. سجّل الخروج ثم الدخول وأعد المحاولة.",
-  },
-  mfa_required: {
-    fr: "Activez la validation en deux étapes pour utiliser l’administration.",
-    ar: "فعّل التحقق بخطوتين لاستخدام لوحة الإدارة.",
-  },
-  mfa_assurance_insufficient: {
-    fr: "Validez votre connexion avec votre code à deux étapes, puis réessayez.",
-    ar: "أكّد تسجيل دخولك برمز التحقق بخطوتين ثم أعد المحاولة.",
-  },
-  permission_missing: {
-    fr: "Votre rôle ne permet pas cette action.",
-    ar: "دورك لا يسمح بهذا الإجراء.",
-  },
-  staff_role_expired: {
-    fr: "Votre rôle a expiré.",
-    ar: "انتهت صلاحية دورك.",
-  },
-  idempotency_conflict: {
-    fr: "Cette action a déjà été envoyée avec d’autres valeurs. Actualisez la page.",
-    ar: "أُرسل هذا الإجراء من قبل بقيم مختلفة. حدّث الصفحة.",
-  },
-};
-
-/** One sentence for an error code, whichever layer produced it. */
+/**
+ * One sentence for an error code, whichever layer produced it. The access
+ * refusals (the 15-minute rule, the second factor, the role) are the whole
+ * console's, so they come from `admin-refusal.ts`; the stale sign-in one now
+ * points at "Se reconnecter" instead of "déconnectez-vous, reconnectez-vous".
+ */
 export function userAdminErrorMessage(code: string, lang: Lang): string {
   const known =
-    USER_ERROR_MESSAGES[code as UserAdminErrorCode] ??
-    ACCESS_ERROR_MESSAGES[code as AdminErrorCode];
+    USER_ERROR_MESSAGES[code as UserAdminErrorCode] ?? ADMIN_REFUSAL_TEXT[code as AdminErrorCode];
   if (known) return known[lang];
   return lang === "ar"
     ? `تعذّر إتمام العملية (${code}).`

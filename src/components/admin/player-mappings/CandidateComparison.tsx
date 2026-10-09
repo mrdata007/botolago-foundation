@@ -17,6 +17,7 @@ import {
   type OptionScope,
 } from "@/backend/football/identity/review-queue";
 import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
+import { refusedWith, screenNoticeFor } from "@/components/admin/admin-refusal";
 import {
   ADMIN_PANEL_CLASS,
   AdminEmptyState,
@@ -425,10 +426,12 @@ export function CandidateComparison({
                   setSelectedId(null);
                   onChanged();
                 } catch (error) {
-                  setMessage({
-                    tone: "alert",
-                    text: mappingErrorMessage(copy, mapMappingError(error).code),
-                  });
+                  const code = mapMappingError(error).code;
+                  const text = screenNoticeFor(code, mappingErrorMessage(copy, code));
+                  setMessage(text ? { tone: "alert", text } : null);
+                  // The confirm step keeps the motive, and offers "Se
+                  // reconnecter" when the sign-in is older than 15 minutes.
+                  return refusedWith(code);
                 }
               }}
             />

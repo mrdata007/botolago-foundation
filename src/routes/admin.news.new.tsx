@@ -13,7 +13,7 @@ import {
 } from "@/backend/news/sanitizer";
 import { markdownToEditorialHtml } from "@/backend/news/editorial-markdown";
 import { mapNewsError } from "@/backend/news/errors";
-import { parseTranslationSearch } from "@/backend/news/editorial-session";
+import { describeEditorialError, parseTranslationSearch } from "@/backend/news/editorial-session";
 import type { NewsLanguage } from "@/backend/news/contracts";
 import { ADMIN_CARD_CLASS, AdminBackLink, AdminNotice } from "@/components/admin/AdminSurfaces";
 import { ui, UiButton, UiInput, UiSelect, UiTextarea } from "@/components/ui-kit";
@@ -128,7 +128,10 @@ function AdminNewsNewRoute() {
       });
     } catch (error) {
       setMessage(
-        `${rtl ? "تعذّر إنشاء المسودة" : "Création du brouillon impossible"}: ${mapNewsError(error as Error).code}`,
+        `${rtl ? "تعذّر إنشاء المسودة" : "Création du brouillon impossible"} : ${describeEditorialError(
+          mapNewsError(error as Error).code,
+          lang,
+        )}`,
       );
     } finally {
       setBusy(false);

@@ -45,6 +45,13 @@ describe("prize labels", () => {
     expect(prizeAdminErrorMessage(fr, "prize_settings_conflict")).toBe(
       dictionaries.fr["prizes.admin.error.settings_conflict"],
     );
+    // The 15-minute rule in words, not "Action refusée : recent_auth_required".
+    expect(prizeAdminErrorMessage(fr, "recent_auth_required")).toBe(
+      dictionaries.fr["prizes.admin.error.recent_auth"],
+    );
+    expect(prizeAdminErrorMessage(ar, "recent_auth_required")).toBe(
+      dictionaries.ar["prizes.admin.error.recent_auth"],
+    );
     expect(prizeAdminErrorMessage(fr, "staff_access_denied")).toBe(
       "Action refusée : staff_access_denied",
     );

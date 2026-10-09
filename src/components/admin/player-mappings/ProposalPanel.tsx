@@ -7,6 +7,7 @@ import type {
 import { mapMappingError } from "@/backend/football/identity/mapping-errors";
 import { dualControlFor, readOptionSignals } from "@/backend/football/identity/review-queue";
 import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
+import { refusedWith, screenNoticeFor } from "@/components/admin/admin-refusal";
 import { ADMIN_PANEL_CLASS, AdminNotice } from "@/components/admin/AdminSurfaces";
 import {
   destructiveActionReducer,
@@ -85,7 +86,10 @@ export function ProposalPanel({
   const control = dualControlFor(proposal, availability, viewer);
   const p = copy.proposal;
 
-  const run = async (work: () => Promise<void>) => {
+  /** `fromConfirmStep`: the work was confirmed in an `AdminDestructiveAction`,
+   *  which keeps the motive on a refusal and shows its own "Se reconnecter"
+   *  prompt for a stale sign-in, so this panel does not say that one twice. */
+  const run = async (work: () => Promise<void>, fromConfirmStep = false) => {
     setMessage(null);
     setBusy(true);
     try {
@@ -93,7 +97,11 @@ export function ProposalPanel({
       setMessage({ tone: "info", text: p.done });
       onChanged();
     } catch (error) {
-      setMessage({ tone: "alert", text: mappingErrorMessage(copy, mapMappingError(error).code) });
+      const code = mapMappingError(error).code;
+      const text = mappingErrorMessage(copy, code);
+      const shown = fromConfirmStep ? screenNoticeFor(code, text) : text;
+      setMessage(shown ? { tone: "alert", text: shown } : null);
+      return refusedWith(code);
     } finally {
       setBusy(false);
     }
@@ -337,7 +345,7 @@ export function ProposalPanel({
               confirmLabel={p.approveConfirm}
               confirmPrompt={p.approvePrompt(proposal.fingerprint)}
               onConfirm={(reason) =>
-                run(() => actions.decide(proposal, "approve", reason, acknowledged))
+                run(() => actions.decide(proposal, "approve", reason, acknowledged), true)
               }
             />
             <AdminDestructiveAction
@@ -352,7 +360,9 @@ export function ProposalPanel({
               triggerLabel={p.reject}
               confirmLabel={p.rejectConfirm}
               confirmPrompt={p.rejectPrompt}
-              onConfirm={(reason) => run(() => actions.decide(proposal, "reject", reason, false))}
+              onConfirm={(reason) =>
+                run(() => actions.decide(proposal, "reject", reason, false), true)
+              }
             />
           </div>
         </div>
@@ -386,7 +396,7 @@ export function ProposalPanel({
             triggerLabel={p.cancel}
             confirmLabel={p.cancelConfirm}
             confirmPrompt={p.cancelPrompt}
-            onConfirm={(reason) => run(() => actions.cancel(proposal, reason))}
+            onConfirm={(reason) => run(() => actions.cancel(proposal, reason), true)}
           />
         )}
 

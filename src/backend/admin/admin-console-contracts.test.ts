@@ -3,6 +3,7 @@ import {
   ADMIN_CONSOLE_NAV_ITEMS,
   ADMIN_CONSOLE_SCREENS,
   ADMIN_STATE_TEST_IDS,
+  visibleAdminNavItems,
   type AdminConsoleRoute,
 } from "./admin-console-contracts";
 import { getAdminCopy } from "./route-access";
@@ -161,19 +162,22 @@ describe("Frozen Admin Console contracts", () => {
   });
 
   it("shows a nav entry only to a principal holding its permission", () => {
-    // Mirrors the filter the Admin shell applies to ADMIN_CONSOLE_NAV_ITEMS.
+    // The filter the Admin shell renders (`visibleAdminNavItems`), less the
+    // dashboard entry every authorized principal gets (tested below).
     const visibleTo = (permissions: readonly string[]) =>
-      ADMIN_CONSOLE_NAV_ITEMS.filter((item) => permissions.includes(item.permission)).map(
-        (item) => item.testId,
-      );
+      visibleAdminNavItems(permissions)
+        .map((item) => item.testId)
+        .filter((testId) => testId !== "admin-nav-dashboard");
 
     expect(visibleTo(["editorial.read"])).toEqual(["admin-nav-news"]);
     expect(visibleTo(["editorial.write"])).toEqual([]);
     expect(visibleTo([])).toEqual([]);
     expect(visibleTo(["security.manage_staff"])).not.toContain("admin-nav-news");
+    // Nav order, not permission order: Actualités comes before the security
+    // sections (owner's order, critique of 2026-10-06).
     expect(visibleTo(["security.read_audit", "editorial.read"])).toEqual([
-      "admin-nav-audit",
       "admin-nav-news",
+      "admin-nav-audit",
     ]);
     expect(visibleTo(["prizes.manage"])).toEqual(["admin-nav-prizes"]);
     expect(visibleTo(["fantasy.manage_rankings"])).not.toContain("admin-nav-prizes");
@@ -181,6 +185,59 @@ describe("Frozen Admin Console contracts", () => {
     // Moderating without reading is not a combination any role grants, and the
     // nav follows the page's own gate: the directory is a read surface.
     expect(visibleTo(["users.moderate"])).not.toContain("admin-nav-users");
+  });
+
+  it("opens with the dashboard, for every authorized principal, current only on /admin", () => {
+    const [first] = ADMIN_CONSOLE_NAV_ITEMS;
+    expect(first).toMatchObject({
+      route: "/admin",
+      permission: null,
+      exact: true,
+      testId: "admin-nav-dashboard",
+      labels: { fr: "Tableau de bord", ar: "لوحة المتابعة" },
+    });
+    // No permission at all still shows the way back to the console's home...
+    expect(visibleAdminNavItems([]).map((item) => item.testId)).toEqual(["admin-nav-dashboard"]);
+    // ...and it is the only entry without one: every section keeps its gate.
+    expect(ADMIN_CONSOLE_NAV_ITEMS.filter((item) => item.permission === null)).toHaveLength(1);
+  });
+
+  it("orders the sections by how often the owner opens them", () => {
+    // Owner's order (critique of 2026-10-06): the work first, security last.
+    // Actualités used to be fifth, off-screen at 390px.
+    const all = visibleAdminNavItems(
+      ADMIN_CONSOLE_NAV_ITEMS.flatMap((item) => (item.permission ? [item.permission] : [])),
+    ).map((item) => item.testId);
+    const expected = [
+      "admin-nav-dashboard",
+      "admin-nav-news",
+      "admin-nav-prizes",
+      "admin-nav-users",
+      "admin-nav-pepites",
+      "admin-nav-pepites-data",
+      "admin-nav-player-mappings",
+      "admin-nav-staff",
+      "admin-nav-approvals",
+      "admin-nav-audit",
+      "admin-nav-security",
+    ];
+    // Pépites entries exist only in a build where Pépites is on.
+    expect(all).toEqual(expected.filter((testId) => all.includes(testId)));
+    expect(all.slice(0, 2)).toEqual(["admin-nav-dashboard", "admin-nav-news"]);
+    expect(all.at(-1)).toBe("admin-nav-security");
+  });
+
+  it("names Pépites in Arabic script in the Arabic nav", () => {
+    const pepites = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/pepites");
+    if (!pepites) return; // a build without Pépites
+    expect(pepites.labels.ar).toBe("جواهر");
+    for (const item of ADMIN_CONSOLE_NAV_ITEMS) {
+      // Every Arabic label carries Arabic script; none is the French word.
+      expect({ route: item.route, arabic: /[؀-ۿ]/.test(item.labels.ar) }).toEqual({
+        route: item.route,
+        arabic: true,
+      });
+    }
   });
 
   it("links the user directory from the nav, gated on users.read_support", () => {
@@ -288,12 +345,16 @@ describe("Frozen Admin Console contracts", () => {
 
   it("renders the console nav from the contract list, in the shell", async () => {
     const shell = (await readRouteSources())["/admin"];
-    expect(shell).toContain("ADMIN_CONSOLE_NAV_ITEMS");
+    // The shell maps `visibleAdminNavItems`, which filters ADMIN_CONSOLE_NAV_ITEMS
+    // (the test above runs that very filter).
+    expect(shell).toContain("visibleAdminNavItems");
     expect(shell).toContain('data-testid="admin-navigation"');
     // Driven by the list, not by five hand-written links, so a contract entry
     // cannot exist without a link.
     expect(shell).toContain("data-testid={item.testId}");
-    expect(shell).toMatch(/ADMIN_CONSOLE_NAV_ITEMS[\s\S]{0,400}\.map\(\(item\)/);
+    expect(shell).toMatch(/visibleAdminNavItems\([^)]*\)\.map\(\(item\)/);
+    // The dashboard entry is current only on /admin itself.
+    expect(shell).toMatch(/activeOptions=\{\{ exact: [^}]*item\.exact/);
     expect(ADMIN_CONSOLE_NAV_ITEMS.length).toBeGreaterThanOrEqual(5);
   });
 

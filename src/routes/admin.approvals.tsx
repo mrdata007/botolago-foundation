@@ -17,6 +17,17 @@ import {
 } from "@/components/admin/AdminSurfaces";
 import { AdminDestructiveAction } from "@/components/admin/AdminDestructiveAction";
 import {
+  approvalOperationLabel,
+  approvalOperationRole,
+  approvalStatusLabel,
+  executionStatusLabel,
+} from "@/components/admin/admin-labels";
+import {
+  describeAdminRefusal,
+  refusedWith,
+  screenNoticeFor,
+} from "@/components/admin/admin-refusal";
+import {
   destructiveActionReducer,
   IDLE_DESTRUCTIVE_ACTION,
 } from "@/components/admin/destructive-action";
@@ -80,10 +91,13 @@ function AdminApprovalsRoute() {
       setItems(page.items);
     } catch (error) {
       setMessage(
-        `${rtl ? "تعذّر تحميل الموافقات" : "Approbations indisponibles"}: ${mapAdminError(error).code}`,
+        `${rtl ? "تعذّر تحميل الموافقات" : "Approbations indisponibles"} : ${describeAdminRefusal(
+          mapAdminError(error).code,
+          lang,
+        )}`,
       );
     }
-  }, [access, reads, rtl]);
+  }, [access, reads, rtl, lang]);
 
   useEffect(() => {
     void reload();
@@ -114,12 +128,42 @@ function AdminApprovalsRoute() {
           context,
         );
       }
-      setMessage(rtl ? "تم تسجيل الانتقال وتدقيقه." : "Transition enregistrée et auditée.");
+      setMessage(
+        rtl ? "تم تسجيل القرار وتدقيقه." : "Décision enregistrée et consignée dans l’audit.",
+      );
       await reload();
     } catch (error) {
-      setMessage(`${rtl ? "رُفض الانتقال" : "Transition refusée"}: ${mapAdminError(error).code}`);
+      const code = mapAdminError(error).code;
+      setMessage(
+        screenNoticeFor(
+          code,
+          `${rtl ? "رُفض القرار" : "Décision refusée"} : ${describeAdminRefusal(code, lang)}`,
+        ),
+      );
+      // Reported to the confirm step: it keeps the motive, and offers
+      // "Se reconnecter" when the sign-in is too old.
+      return refusedWith(code);
     }
   };
+
+  /** "« Attribution du rôle … » pour le compte <id>": the request, named. */
+  const requestSubject = (item: ApprovalQueueItemDto) => (
+    <>
+      {"« "}
+      <span className="[font-weight:var(--ui-weight-body)]">
+        {approvalOperationLabel(item.operationType, lang)}
+      </span>
+      {" »"}
+      {item.targetEntityId && (
+        <>
+          {rtl ? " للحساب " : " pour le compte "}
+          <AdminDatum className="[font-weight:var(--ui-weight-body)]">
+            {item.targetEntityId}
+          </AdminDatum>
+        </>
+      )}
+    </>
+  );
 
   return (
     <AdminFunctionalRoute
@@ -127,8 +171,8 @@ function AdminApprovalsRoute() {
       title={rtl ? "الموافقات ذات التحكم المزدوج" : "Approbations à double contrôle"}
       description={
         rtl
-          ? "تقتصر المرحلة 7D على تعيين platform_admin."
-          : "Phase 7D est limitée à l’affectation platform_admin."
+          ? "يمرّ دور واحد اليوم عبر التحكم المزدوج: مدير المنصة. يجب أن يوافق مسؤول ثانٍ على كل طلب قبل تنفيذه."
+          : "Un seul rôle passe aujourd’hui par le double contrôle : administrateur de la plateforme. Chaque demande doit être approuvée par un second administrateur avant d’être exécutée."
       }
       testId="admin-approvals-queue"
     >
@@ -174,26 +218,54 @@ function AdminApprovalsRoute() {
                       data-testid="admin-approval-detail"
                       data-approval-status={item.status}
                     >
-                      {/* Operation type and status are machine values: only the
-                          value is forced LTR, the card keeps its direction. */}
-                      <div className="flex flex-wrap items-center gap-2">
-                        <AdminDatum className={`${ui.text.bodyStrong} ${ui.tone.default}`}>
-                          {item.operationType}
-                        </AdminDatum>
+                      {/* What the request does and where it stands, in words.
+                          The raw operation and status stay on the element as
+                          data, for tests and support; the reader gets the
+                          label. */}
+                      <div
+                        className="flex flex-wrap items-center gap-2"
+                        data-operation-type={item.operationType}
+                      >
+                        <span className={`${ui.text.bodyStrong} ${ui.tone.default}`}>
+                          {approvalOperationLabel(item.operationType, lang)}
+                        </span>
                         <UiBadge tone={statusTone(item.status)}>
-                          <AdminDatum mono={false}>{item.status}</AdminDatum>
+                          {approvalStatusLabel(item.status, lang)}
                         </UiBadge>
                       </div>
 
                       <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-                        <AdminField label={rtl ? "معرّف الطلب" : "Identifiant"}>
-                          <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
-                            {item.approvalId}
-                          </AdminDatum>
+                        {approvalOperationRole(item.operationType, lang) && (
+                          <AdminField label={rtl ? "الدور" : "Rôle"}>
+                            {approvalOperationRole(item.operationType, lang)}
+                          </AdminField>
+                        )}
+                        {/* The queue carries the account's id, not its name:
+                            naming the person needs the database to return it. */}
+                        {item.targetEntityId && (
+                          <AdminField label={rtl ? "الحساب المعني" : "Compte concerné"}>
+                            <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
+                              {item.targetEntityId}
+                            </AdminDatum>
+                          </AdminField>
+                        )}
+                        <AdminField label={rtl ? "مقدّم الطلب" : "Demandée par"}>
+                          {item.requesterPrincipalId === access.context.staffPrincipalId
+                            ? rtl
+                              ? "أنت"
+                              : "Vous"
+                            : rtl
+                              ? "مسؤول آخر"
+                              : "Un autre administrateur"}
                         </AdminField>
                         <AdminField label={rtl ? "حالة التنفيذ" : "Exécution"}>
-                          <AdminDatum mono={false} className={`${ui.text.meta} ${ui.tone.muted}`}>
-                            {item.executionStatus}
+                          <span data-execution-status={item.executionStatus}>
+                            {executionStatusLabel(item.executionStatus, lang)}
+                          </span>
+                        </AdminField>
+                        <AdminField label={rtl ? "معرّف الطلب" : "Identifiant de la demande"}>
+                          <AdminDatum className={`${ui.text.meta} ${ui.tone.muted}`}>
+                            {item.approvalId}
                           </AdminDatum>
                         </AdminField>
                       </dl>
@@ -225,9 +297,7 @@ function AdminApprovalsRoute() {
                                       Only its source moves onto the ramp; the
                                       weight that marks the object of a
                                       destructive sentence does not change. */}
-                                  <AdminDatum className="[font-weight:var(--ui-weight-body)]">
-                                    {item.operationType}
-                                  </AdminDatum>
+                                  {requestSubject(item)}
                                   {rtl
                                     ? "؟ تصبح قابلة للتنفيذ بعد ذلك."
                                     : " ? Elle devient exécutable ensuite."}
@@ -248,9 +318,7 @@ function AdminApprovalsRoute() {
                               confirmPrompt={
                                 <>
                                   {rtl ? "رفض الطلب " : "Rejeter la demande "}
-                                  <AdminDatum className="[font-weight:var(--ui-weight-body)]">
-                                    {item.operationType}
-                                  </AdminDatum>
+                                  {requestSubject(item)}
                                   {rtl
                                     ? "؟ القرار نهائي ولا يمكن الموافقة على الطلب بعده."
                                     : " ? La décision est définitive : la demande ne pourra plus être approuvée."}
@@ -272,9 +340,7 @@ function AdminApprovalsRoute() {
                                 confirmPrompt={
                                   <>
                                     {rtl ? "إلغاء طلبك " : "Annuler votre demande "}
-                                    <AdminDatum className="[font-weight:var(--ui-weight-body)]">
-                                      {item.operationType}
-                                    </AdminDatum>
+                                    {requestSubject(item)}
                                     {rtl
                                       ? "؟ لن يكون بالإمكان الموافقة عليه بعد ذلك."
                                       : " ? Elle ne pourra plus être approuvée."}
@@ -300,9 +366,7 @@ function AdminApprovalsRoute() {
                             confirmPrompt={
                               <>
                                 {rtl ? "تنفيذ الطلب " : "Exécuter la demande "}
-                                <AdminDatum className="[font-weight:var(--ui-weight-body)]">
-                                  {item.operationType}
-                                </AdminDatum>
+                                {requestSubject(item)}
                                 {rtl
                                   ? "؟ يجري التنفيذ مرة واحدة فقط ولا يمكن التراجع عنه."
                                   : " ? L’exécution n’a lieu qu’une seule fois et ne peut pas être annulée."}

@@ -1908,6 +1908,8 @@ export const ar = {
   "prizes.admin.flags.remove_confirm": "تأكيد إعادة الإدماج",
   "prizes.admin.flags.since": "مستبعد منذ {date}",
   "prizes.admin.error.generic": "رُفض الإجراء: {code}",
+  "prizes.admin.error.recent_auth":
+    "لدواعٍ أمنية، يتطلب هذا الإجراء تسجيل دخول لم يمضِ عليه أكثر من 15 دقيقة. أعد تسجيل الدخول، ثم حاول مجدداً.",
   "prizes.admin.error.settings_conflict":
     "هذا التغيير سيُعدِّل مجموعة أو نهاية موسم مُنحت جوائزها بالفعل.",
   "prizes.admin.error.tier_active": "توجد جائزة أخرى مُفعَّلة لهذا المستوى: عطِّلها أولاً.",

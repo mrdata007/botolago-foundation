@@ -5,10 +5,12 @@ import { loadAdminUsersRouteAccess } from "@/backend/admin/route-access.function
 import { AdminFunctionalLoading, AdminFunctionalRoute } from "@/backend/admin/functional-route";
 import { adminRepositoryContext } from "@/backend/admin/functional-route-helpers";
 import {
+  ADMIN_USER_STATUSES,
   ADMIN_USERS_PAGE_SIZE,
   type AdminUserCursor,
   type AdminUserStatus,
 } from "@/backend/admin/users-contracts";
+import { arrivalStatus } from "@/components/admin/dashboard-links";
 import { mapUserAdminError, SupabaseUsersAdminRepository } from "@/backend/admin/users-repository";
 import {
   ADMIN_CARD_CLASS,
@@ -41,6 +43,13 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/users")({
   ssr: false,
+  // `?status=banned` opens the list on that chip: the dashboard's "Comptes
+  // bannis" tile links here. Read once, for the first fetch; the chips keep
+  // the filter in memory as before.
+  validateSearch: (search: Record<string, unknown>): { status?: AdminUserStatus } => {
+    const status = arrivalStatus(search.status, ADMIN_USER_STATUSES);
+    return status ? { status } : {};
+  },
   loader: () => loadAdminUsersRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminUsersRoute,
@@ -120,9 +129,12 @@ function AdminUsersListRoute() {
   const applyFilters = (change: Partial<AdminUsersFilters>) =>
     search({ ...state.filters, query, ...change });
 
+  // The filter the page was opened with (a dashboard tile), for the first
+  // fetch only.
+  const { status: arrival } = Route.useSearch();
   useEffect(() => {
     if (access.state !== "authorized") return;
-    search(ADMIN_USERS_EMPTY_FILTERS);
+    search({ ...ADMIN_USERS_EMPTY_FILTERS, status: arrival ?? "" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [access.state]);
 

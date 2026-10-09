@@ -22,6 +22,7 @@ import type {
 } from "@/backend/news/contracts";
 import { mapNewsError } from "@/backend/news/errors";
 import {
+  describeEditorialError,
   describeScheduledAt,
   formatEditorialTimestamp,
   scheduleHealthProblem,
@@ -37,12 +38,20 @@ import {
   AdminSkeletonList,
   type AdminFilterChip as FilterChip,
 } from "@/components/admin/AdminSurfaces";
+import { arrivalStatus } from "@/components/admin/dashboard-links";
 import { ui, UiBadge, UiButton, UiCard, UiInput, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/news")({
   ssr: false,
+  // `?status=published` opens the list on that chip: the dashboard's
+  // "Articles publiés" tile links here. Read once, for the first fetch; the
+  // chips keep the filter in memory as before.
+  validateSearch: (search: Record<string, unknown>): { status?: EditorialStatus } => {
+    const status = arrivalStatus(search.status, STATUSES);
+    return status ? { status } : {};
+  },
   loader: () => loadAdminNewsReadRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsRoute,
@@ -357,9 +366,10 @@ function AdminNewsListRoute() {
         dispatch({
           type: "failure",
           generation: issued,
-          message: `${rtl ? "تعذّر تحميل المقالات" : "Chargement des articles impossible"}: ${
-            mapNewsError(error as Error).code
-          }`,
+          message: `${rtl ? "تعذّر تحميل المقالات" : "Chargement des articles impossible"} : ${describeEditorialError(
+            mapNewsError(error as Error).code,
+            rtl ? "ar" : "fr",
+          )}`,
         });
       }
     },
@@ -389,9 +399,12 @@ function AdminNewsListRoute() {
   const applyFilters = (change: Partial<AdminNewsFilters>) =>
     search({ ...state.filters, query, ...change });
 
+  // The filter the page was opened with (a dashboard tile), for the first
+  // fetch only.
+  const { status: arrival } = Route.useSearch();
   useEffect(() => {
     if (access.state !== "authorized") return;
-    search(ADMIN_NEWS_EMPTY_FILTERS);
+    search({ ...ADMIN_NEWS_EMPTY_FILTERS, status: arrival ?? "" });
     // The scheduler runs in the database every minute; if it is not, every
     // "Programmé" article silently stays private, so say so here.
     repository

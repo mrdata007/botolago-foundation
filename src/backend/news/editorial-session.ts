@@ -207,6 +207,33 @@ const EDITORIAL_ERROR_TEXT: Partial<Record<NewsErrorCode, { fr: string; ar: stri
     fr: "session expirée : reconnectez-vous",
     ar: "انتهت الجلسة: سجّل الدخول من جديد",
   },
+  // The editor's other usual failures. Its messages used to append the code
+  // in brackets after the sentence, "(editorial_conflict)"; they no longer
+  // do, so these are said in words too.
+  editorial_conflict: {
+    fr: "l’article a été modifié ailleurs entre-temps : rechargez la page",
+    ar: "عُدّل المقال في مكان آخر في الأثناء: أعد تحميل الصفحة",
+  },
+  stale_update: {
+    fr: "l’article a été modifié ailleurs entre-temps : rechargez la page",
+    ar: "عُدّل المقال في مكان آخر في الأثناء: أعد تحميل الصفحة",
+  },
+  article_not_found: {
+    fr: "cet article n’existe pas ou a été supprimé",
+    ar: "هذا المقال غير موجود أو حُذف",
+  },
+  placement_requires_published_article: {
+    fr: "le placement n’est possible qu’une fois l’article publié",
+    ar: "لا يمكن تحديد الموضع إلا بعد نشر المقال",
+  },
+  invalid_media_payload: {
+    fr: "l’image n’a pas été acceptée (format, dimensions ou texte alternatif)",
+    ar: "لم تُقبل الصورة (الصيغة أو الأبعاد أو النص البديل)",
+  },
+  data_unavailable: {
+    fr: "le service ne répond pas pour le moment, réessayez dans un instant",
+    ar: "الخدمة لا تستجيب حالياً، أعد المحاولة بعد قليل",
+  },
 };
 
 /** A CMS error in the editor's language, falling back to the code itself. */

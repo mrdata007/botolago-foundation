@@ -43,6 +43,12 @@ import {
   AdminDatum,
   AdminNotice,
 } from "@/components/admin/AdminSurfaces";
+import { EditorialMoveDialog } from "@/components/admin/EditorialMoveDialog";
+import {
+  editorialMoveCopy,
+  isDestructiveMove,
+  moveNeedsDialog,
+} from "@/components/admin/editorial-move";
 import { ui, UiBadge, UiButton, UiInput, UiLinkButton, UiTextarea } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { resolveMediaUrl } from "@/lib/media";
@@ -286,6 +292,11 @@ function AdminNewsEditRoute() {
     setNotice(text === null ? null : { text, tone });
   const [busy, setBusy] = useState(false);
   const [scheduledAtLocal, setScheduledAtLocal] = useState("");
+  // The status move waiting on the confirmation dialog, if one is open.
+  const [pendingMove, setPendingMove] = useState<{
+    target: EditorialStatus;
+    scheduledAtIso: string | null;
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const bodyImageInputRef = useRef<HTMLInputElement | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement | null>(null);
@@ -328,7 +339,10 @@ function AdminNewsEditRoute() {
       setDirty(false);
     } catch (error) {
       setMessage(
-        `${rtl ? "تعذّر تحميل المقال" : "Chargement de l’article impossible"}: ${mapNewsError(error as Error).code}`,
+        `${rtl ? "تعذّر تحميل المقال" : "Chargement de l’article impossible"} : ${describeEditorialError(
+          mapNewsError(error as Error).code,
+          lang,
+        )}`,
       );
     } finally {
       setBusy(false);
@@ -375,8 +389,9 @@ function AdminNewsEditRoute() {
       setDirty(true);
     };
 
-  const save = async () => {
-    if (access.state !== "authorized" || !article) return;
+  /** Saves the form; `true` once the server holds the text on screen. */
+  const save = async (): Promise<boolean> => {
+    if (access.state !== "authorized" || !article) return false;
     setBusy(true);
     setMessage(null);
     try {
@@ -403,52 +418,82 @@ function AdminNewsEditRoute() {
       setArticle({ ...article, updatedAt: result.updatedAt, title, subtitle: subtitle || null });
       setDirty(false);
       setMessage(rtl ? "تم الحفظ." : "Enregistré.", "info");
+      return true;
     } catch (error) {
       const mapped = mapNewsError(error as Error);
+      // Described in words; the code is no longer appended after it.
       setMessage(
         mapped.code === "editorial_conflict"
           ? rtl
             ? "تم تعديل المقال في مكان آخر. أعد التحميل قبل الحفظ."
             : "L’article a été modifié ailleurs. Rechargez avant d’enregistrer."
-          : `${rtl ? "تعذّر الحفظ" : "Enregistrement impossible"} : ${describeEditorialError(mapped.code, lang)} (${mapped.code})`,
+          : `${rtl ? "تعذّر الحفظ" : "Enregistrement impossible"} : ${describeEditorialError(mapped.code, lang)}`,
       );
+      return false;
     } finally {
       setBusy(false);
     }
   };
 
-  const transition = async (targetStatus: EditorialStatus) => {
-    if (access.state !== "authorized" || !article) return;
-    let scheduledAtIso: string | null = null;
-    if (targetStatus === "scheduled") {
-      if (!scheduledAtLocal) {
-        setMessage(
-          rtl
-            ? "اختر تاريخ ووقت النشر المجدول أولاً."
-            : "Choisissez d’abord une date et une heure de publication programmée.",
-        );
-        return;
-      }
-      const parsed = new Date(scheduledAtLocal);
-      if (Number.isNaN(parsed.getTime())) {
-        setMessage(rtl ? "تاريخ الجدولة غير صالح." : "Date de programmation invalide.");
-        return;
-      }
-      if (parsed.getTime() <= Date.now()) {
-        setMessage(
-          rtl ? "يجب أن يكون موعد النشر في المستقبل." : "La date programmée doit être future.",
-        );
-        return;
-      }
-      scheduledAtIso = parsed.toISOString();
+  /**
+   * The publication time a "Programmer" press carries, `null` for every other
+   * move, or `false` (with the reason on screen) when it cannot be sent.
+   */
+  const scheduleFor = (targetStatus: EditorialStatus): string | null | false => {
+    if (targetStatus !== "scheduled") return null;
+    if (!scheduledAtLocal) {
+      setMessage(
+        rtl
+          ? "اختر تاريخ ووقت النشر المجدول أولاً."
+          : "Choisissez d’abord une date et une heure de publication programmée.",
+      );
+      return false;
     }
-    if (
-      dirty &&
-      !window.confirm(
-        rtl ? "توجد تغييرات غير محفوظة. المتابعة؟" : "Modifications non enregistrées. Continuer ?",
-      )
-    )
+    const parsed = new Date(scheduledAtLocal);
+    if (Number.isNaN(parsed.getTime())) {
+      setMessage(rtl ? "تاريخ الجدولة غير صالح." : "Date de programmation invalide.");
+      return false;
+    }
+    if (parsed.getTime() <= Date.now()) {
+      setMessage(
+        rtl ? "يجب أن يكون موعد النشر في المستقبل." : "La date programmée doit être future.",
+      );
+      return false;
+    }
+    return parsed.toISOString();
+  };
+
+  /**
+   * A status button was pressed. Publier, Dépublier, Archiver and Refuser
+   * open the confirmation first, and so does any move while there are unsaved
+   * edits (`moveNeedsDialog`); the rest run as before.
+   */
+  const requestTransition = (targetStatus: EditorialStatus) => {
+    if (access.state !== "authorized" || !article) return;
+    const scheduledAtIso = scheduleFor(targetStatus);
+    if (scheduledAtIso === false) return;
+    if (moveNeedsDialog(targetStatus, dirty)) {
+      setPendingMove({ target: targetStatus, scheduledAtIso });
       return;
+    }
+    void transition(targetStatus, scheduledAtIso);
+  };
+
+  /**
+   * The dialog's commit. With unsaved edits it saves first and moves only if
+   * the save went through: the old native prompt moved the last SAVED text
+   * while the screen showed another.
+   */
+  const confirmPendingMove = async () => {
+    const move = pendingMove;
+    setPendingMove(null);
+    if (!move) return;
+    if (dirty && !(await save())) return;
+    await transition(move.target, move.scheduledAtIso);
+  };
+
+  const transition = async (targetStatus: EditorialStatus, scheduledAtIso: string | null) => {
+    if (access.state !== "authorized" || !article) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -482,7 +527,7 @@ function AdminNewsEditRoute() {
         `${rtl ? "تعذّر تغيير الحالة" : "Changement de statut impossible"} : ${describeEditorialError(
           mapNewsError(error as Error).code,
           lang,
-        )} (${mapNewsError(error as Error).code})`,
+        )}`,
       );
     } finally {
       setBusy(false);
@@ -501,7 +546,10 @@ function AdminNewsEditRoute() {
       setMessage(rtl ? "تم تحديد الموضع." : "Placement défini.", "info");
     } catch (error) {
       setMessage(
-        `${rtl ? "تعذّر تحديد الموضع" : "Placement impossible"}: ${mapNewsError(error as Error).code}`,
+        `${rtl ? "تعذّر تحديد الموضع" : "Placement impossible"} : ${describeEditorialError(
+          mapNewsError(error as Error).code,
+          lang,
+        )}`,
       );
     } finally {
       setBusy(false);
@@ -685,6 +733,29 @@ function AdminNewsEditRoute() {
   // Arabic article is typed RTL even while the UI is in French.
   const articleDir = article?.language === "ar" ? "rtl" : "ltr";
 
+  // The step forward, kept in the sticky toolbar beside Enregistrer so it is
+  // never hunted for at the foot of the form -- only "Envoyer en relecture"
+  // and "Publier", and only where the status section offers it too.
+  const forward = article ? FORWARD_TRANSITION[article.status] : undefined;
+  const toolbarForward =
+    forward &&
+    (forward === "in_review" || forward === "published") &&
+    nextStatuses.includes(forward)
+      ? forward
+      : null;
+
+  const pendingCopy =
+    pendingMove && article
+      ? editorialMoveCopy({
+          target: pendingMove.target,
+          current: article.status,
+          dirty,
+          articleLanguage: article.language,
+          moveLabel: TRANSITION_LABELS[pendingMove.target][lang],
+          lang,
+        })
+      : null;
+
   return (
     <AdminFunctionalRoute
       access={access}
@@ -819,7 +890,11 @@ function AdminNewsEditRoute() {
                 `w-full`, so `sm:flex-none` alone handed each one the whole
                 row and stacked them as two full-width bars on a desktop. */}
             <div className={cn("mt-3 flex flex-wrap gap-2 pt-3", ui.rule.blockStart)}>
+              {/* One gradient at a time: Enregistrer while there are unsaved
+                  edits, the step forward otherwise. Without a step forward in
+                  the toolbar, Enregistrer keeps the gradient as before. */}
               <UiButton
+                variant={toolbarForward && !dirty ? "outline" : "gradient"}
                 className="flex-1 sm:w-auto sm:flex-none"
                 disabled={busy || !dirty || !isEditable}
                 onClick={() => void save()}
@@ -857,10 +932,40 @@ function AdminNewsEditRoute() {
                     ? "معاينة"
                     : "Aperçu"}
               </UiButton>
+              {toolbarForward && (
+                // Its own full-width row on a phone (three labels do not fit
+                // one 358px row), at the row's end from `sm` up. Same move,
+                // same confirmation as the status section's button.
+                <UiButton
+                  variant={dirty ? "outline" : "gradient"}
+                  className="basis-full sm:ms-auto sm:w-auto sm:basis-auto"
+                  disabled={busy}
+                  onClick={() => requestTransition(toolbarForward)}
+                  data-testid="admin-news-toolbar-forward"
+                  data-target-status={toolbarForward}
+                >
+                  {TRANSITION_LABELS[toolbarForward][lang]}
+                </UiButton>
+              )}
             </div>
           </div>
 
           {notice && <AdminNotice tone={notice.tone}>{notice.text}</AdminNotice>}
+
+          {pendingMove && pendingCopy && (
+            <EditorialMoveDialog
+              open
+              onOpenChange={(open) => {
+                if (!open) setPendingMove(null);
+              }}
+              copy={pendingCopy}
+              headline={title.trim() || (rtl ? "(بلا عنوان)" : "(sans titre)")}
+              headlineDir={articleDir}
+              destructive={isDestructiveMove(pendingMove.target)}
+              busy={busy}
+              onCommit={() => void confirmPendingMove()}
+            />
+          )}
 
           {imported && (
             <AdminNotice tone="alert">
@@ -1203,7 +1308,7 @@ function AdminNewsEditRoute() {
                   }
                   size="sm"
                   disabled={busy || (next === "scheduled" && !scheduledAtLocal)}
-                  onClick={() => void transition(next)}
+                  onClick={() => requestTransition(next)}
                   data-testid={`admin-news-transition-${next}`}
                 >
                   {next === "scheduled" && article.status === "scheduled"

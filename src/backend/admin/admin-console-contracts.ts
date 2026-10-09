@@ -328,7 +328,75 @@ export const ADMIN_CONSOLE_SCREENS = [
 // Rendered by the Admin shell, filtered on the caller's server-resolved
 // permissions: an entry here is a link, never an authority. Each target route
 // re-checks its own permission in its loader.
+//
+// The order is the owner's, by how often each section is opened (critique of
+// 2026-10-06): the dashboard, then the editorial and community work, then the
+// football data, then the security sections. On a phone the row scrolls
+// sideways, so what comes first is what is on screen without scrolling.
 export const ADMIN_CONSOLE_NAV_ITEMS = [
+  // The way back to the console's home. Every authorized staff member may
+  // open `/admin` (its screens carry no permission), so this entry needs
+  // none; `exact` keeps it from reading as current on every page beneath it.
+  {
+    route: "/admin",
+    permission: null,
+    exact: true,
+    testId: "admin-nav-dashboard",
+    labels: { fr: "Tableau de bord", ar: "لوحة المتابعة" },
+  },
+  {
+    route: "/admin/news",
+    permission: "editorial.read",
+    testId: "admin-nav-news",
+    labels: { fr: "Actualités", ar: "الأخبار" },
+  },
+  {
+    route: "/admin/prizes",
+    permission: "prizes.manage",
+    testId: "admin-nav-prizes",
+    labels: {
+      fr: fr["prizes.admin.nav"],
+      // Written out like the other items' labels: importing the Arabic
+      // dictionary here put all of it in every page's first download, because
+      // the admin shell's loading screen stays in the main bundle.
+      // admin-console-contracts.test.ts checks it against the dictionary.
+      ar: "الجوائز",
+    },
+  },
+  {
+    route: "/admin/users",
+    permission: "users.read_support",
+    testId: "admin-nav-users",
+    labels: { fr: "Utilisateurs", ar: "المستخدمون" },
+  },
+  // Pépites: only in a build where Pépites is on (`PEPITES_ENABLED`), like
+  // its public pages. The Arabic label is the section's Arabic name, as the
+  // bottom nav writes it (جواهر), not the French word in Latin script.
+  ...(PEPITES_ENABLED
+    ? ([
+        {
+          route: "/admin/pepites",
+          permission: "pepites.edit",
+          testId: "admin-nav-pepites",
+          labels: { fr: "Pépites", ar: "جواهر" },
+        },
+        {
+          route: "/admin/pepites/donnees",
+          permission: "football.read_operations",
+          testId: "admin-nav-pepites-data",
+          labels: { fr: "Données joueurs", ar: "بيانات اللاعبين" },
+        },
+      ] as const)
+    : ([] as const)),
+  // Player mapping: the reviewer queue for provider players. Reading needs
+  // football.read_operations; proposing and approving need
+  // football.manage_mappings, which the database checks on every call.
+  {
+    route: "/admin/football/player-mappings",
+    permission: "football.read_operations",
+    testId: "admin-nav-player-mappings",
+    labels: { fr: "Rapprochement joueurs", ar: "مطابقة اللاعبين" },
+  },
   {
     route: "/admin/staff",
     permission: "security.manage_staff",
@@ -353,67 +421,26 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     testId: "admin-nav-security",
     labels: { fr: "Sécurité", ar: "الأمان" },
   },
-  {
-    route: "/admin/news",
-    permission: "editorial.read",
-    testId: "admin-nav-news",
-    labels: { fr: "Actualités", ar: "الأخبار" },
-  },
-  {
-    route: "/admin/users",
-    permission: "users.read_support",
-    testId: "admin-nav-users",
-    labels: { fr: "Utilisateurs", ar: "المستخدمون" },
-  },
-  {
-    route: "/admin/prizes",
-    permission: "prizes.manage",
-    testId: "admin-nav-prizes",
-    labels: {
-      fr: fr["prizes.admin.nav"],
-      // Written out like the other items' labels: importing the Arabic
-      // dictionary here put all of it in every page's first download, because
-      // the admin shell's loading screen stays in the main bundle.
-      // admin-console-contracts.test.ts checks it against the dictionary.
-      ar: "الجوائز",
-    },
-  },
-  // Pépites: only in a build where Pépites is on (`PEPITES_ENABLED`), like
-  // its public pages.
-  ...(PEPITES_ENABLED
-    ? ([
-        {
-          route: "/admin/pepites",
-          permission: "pepites.edit",
-          testId: "admin-nav-pepites",
-          labels: { fr: "Pépites", ar: "Pépites" },
-        },
-        {
-          route: "/admin/pepites/donnees",
-          permission: "football.read_operations",
-          testId: "admin-nav-pepites-data",
-          labels: { fr: "Données joueurs", ar: "بيانات اللاعبين" },
-        },
-      ] as const)
-    : ([] as const)),
-  // Player mapping: the reviewer queue for provider players. Reading needs
-  // football.read_operations; proposing and approving need
-  // football.manage_mappings, which the database checks on every call.
-  {
-    route: "/admin/football/player-mappings",
-    permission: "football.read_operations",
-    testId: "admin-nav-player-mappings",
-    labels: { fr: "Rapprochement joueurs", ar: "مطابقة اللاعبين" },
-  },
 ] as const satisfies readonly {
-  readonly route: Exclude<
-    AdminConsoleRoute,
-    "/admin" | "/admin/staff/$principalId" | "/admin/users/$userId"
-  >;
-  readonly permission: AdminPermission;
+  readonly route: Exclude<AdminConsoleRoute, "/admin/staff/$principalId" | "/admin/users/$userId">;
+  /** `null`: shown to every authorized staff member (the dashboard only). */
+  readonly permission: AdminPermission | null;
+  /** Current only on this exact path, not on the pages beneath it. */
+  readonly exact?: boolean;
   readonly testId: string;
   readonly labels: { readonly fr: string; readonly ar: string };
 }[];
+
+/**
+ * The nav entries shown to a caller holding `permissions`, in nav order. The
+ * shell and its tests share this filter, so the test cannot drift from what
+ * renders.
+ */
+export function visibleAdminNavItems(permissions: readonly string[]) {
+  return ADMIN_CONSOLE_NAV_ITEMS.filter(
+    (item) => item.permission === null || permissions.includes(item.permission),
+  );
+}
 
 export const ADMIN_STATE_TEST_IDS = {
   loading: "admin-access-gate",

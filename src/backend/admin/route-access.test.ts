@@ -449,6 +449,58 @@ describe("selectAdminPanel", () => {
     expect(panel.content).toBe(fr.states.unauthenticated);
   });
 
+  it("names the sign-in after what the reader has to do", () => {
+    // "Se réauthentifier" used to greet a visitor who had never signed in.
+    const ar = getAdminCopy("ar");
+    const never = selectAdminPanel("unauthenticated", fr, "missing_token");
+    expect(never.signInAction).toBe("signIn");
+    expect(fr.signIn[never.signInAction]).toBe("Se connecter");
+    expect(ar.signIn[never.signInAction]).toBe("تسجيل الدخول");
+
+    const expired = selectAdminPanel("unauthenticated", fr, "invalid_token", "expired");
+    expect(fr.signIn[expired.signInAction]).toBe("Se reconnecter");
+
+    // Signed in, but the second factor or a recent sign-in is owed: a
+    // genuine re-authentication keeps its word.
+    for (const state of ["recent_auth_required", "mfa_required"] as const) {
+      const panel = selectAdminPanel(state, fr);
+      expect(fr.signIn[panel.signInAction]).toBe("Se réauthentifier");
+      expect(ar.signIn[panel.signInAction]).toBe("إعادة المصادقة");
+    }
+  });
+
+  it("prints no raw reference to a visitor who simply is not signed in", () => {
+    // `unauthenticated/missing_token` was a raw code on the one panel a
+    // stranger sees. Every refusal that needs diagnosing keeps its reference.
+    expect(selectAdminPanel("unauthenticated", fr, "missing_token").showReference).toBe(false);
+    expect(selectAdminPanel("unauthenticated", fr, "invalid_token", "expired").showReference).toBe(
+      true,
+    );
+    expect(selectAdminPanel("unauthenticated", fr, "backend_unauthenticated").showReference).toBe(
+      true,
+    );
+    expect(selectAdminPanel("unauthenticated", fr).showReference).toBe(true);
+    for (const state of [
+      "forbidden",
+      "mfa_required",
+      "recent_auth_required",
+      "suspended",
+      "revoked",
+      "backend_unavailable",
+    ] as const) {
+      expect({ state, shown: selectAdminPanel(state, fr).showReference }).toEqual({
+        state,
+        shown: true,
+      });
+    }
+    expect(selectAdminPanel("loading", fr).showReference).toBe(false);
+  });
+
+  it("labels the loading panel in the reader's language, never 'Loading'", () => {
+    expect(getAdminCopy("fr").loadingLabel).toBe("Chargement de la page");
+    expect(getAdminCopy("ar").loadingLabel).toMatch(/[؀-ۿ]/);
+  });
+
   it("builds every reference from the fixed vocabulary only", () => {
     // The reference is printed verbatim in the UI, so it must never become a
     // channel for anything the server did not choose from a closed set.
