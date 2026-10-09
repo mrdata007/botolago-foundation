@@ -106,7 +106,7 @@ function Side({
   return (
     <div className="flex min-w-0 flex-col items-center gap-2">
       <div className="w-full max-w-40 md:max-w-[200px]">
-        <ManagerCard profile={profile} width={200} />
+        <ManagerCard profile={profile} width={200} compact />
       </div>
       <div className="flex min-w-0 max-w-full items-center gap-1">
         <p className={cn("min-w-0 truncate text-center", ui.display.header, ui.tone.default)}>

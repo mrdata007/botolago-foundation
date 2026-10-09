@@ -115,18 +115,19 @@ export function HeroFrame({
 }
 
 /**
- * The card a hero carries: the full card at the stage's size (240 px, 264 from 768 px), centred,
- * with the beat of its moment, and the scarf's sway on a mouse or pen like the ordinary stage.
+ * The card a hero carries: the full card at the stage's size (296 px, 336 px from 768 px), centred
+ * with 16 px each side, with the beat of its moment, and the tilt on a mouse or pen like the
+ * ordinary stage.
  */
 export function HeroCard({ profile, beat }: { profile: CardProfile; beat: BeatName | undefined }) {
   return (
-    <div className="flex justify-center py-2" data-hero-card="">
+    <div className="flex justify-center px-4 pb-[18px] pt-2" data-hero-card="">
       <ManagerCard
         profile={profile}
-        width={240}
+        width={296}
         beat={beat}
-        sway
-        className="md:w-[264px]!"
+        tilt
+        className="md:w-[336px]!"
         testId="hero-card"
       />
     </div>

@@ -194,6 +194,16 @@ describe("G1 for a manager", () => {
     expect(html).toContain(fr["card.onboarding.m4.sheet.share"]);
   });
 
+  it("stands the card on its own: no rail, a box of the card's one shape, 296 px and 336 px from 768", async () => {
+    const html = await owner("rated");
+    expect(html).not.toContain("data-stage-rail");
+    // until the renderer's chunk has loaded, an ellipse under the reserved box; the card's own shadow replaces it
+    expect(html).toContain("data-stage-shadow");
+    expect(html).toContain("aspect-ratio:1 / 1.618");
+    expect(html).toContain("w-[min(296px,calc(100vw-32px))]");
+    expect(html).toContain("md:w-[336px]");
+  });
+
   it("puts belonging first: the people, the club and the seasons before how the note is made", async () => {
     const html = await owner("rated");
     const at = (needle: string) => html.indexOf(needle);

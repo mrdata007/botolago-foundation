@@ -132,6 +132,7 @@ export function CardBornPanel({
               <ManagerCard
                 profile={profile}
                 width={96}
+                compact
                 beat={hero.beat ?? undefined}
                 testId="born-card"
                 className="shrink-0"

@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
 import { useCardCopy } from "@/components/manager-card/copy";
@@ -10,20 +10,17 @@ import { cn } from "@/lib/utils";
 import { Figure, ProvisionalBadge } from "./figures";
 
 /**
- * Where the card hangs (plan section 4.0). The scarf is folded over the barrier rail of the
- * stands, so the stage draws that rail: a 6px rounded line across the whole column at the height
- * of the card's own steel rail, the card in front of it. The card is the one expressive object on
- * the page; the line is what makes it hang somewhere instead of floating.
+ * Where the card stands (plan section 10). The collectible is the one expressive object on the
+ * page and it is lit from within its own drawing: its contact shadow, its thickness and its light
+ * come with the markup (the renderer's `tilt` moves them with the pointer). The stage therefore
+ * draws nothing around it but room: 8 px each side and 18 px under the card for the tilt's travel
+ * and the shadow it casts, and, until the renderer's chunk has arrived and the card draws its own,
+ * an ellipse under the reserved box so the box does not look like a hole.
  *
- * Full cards are 240px wide on phones and 264px from 768px, centred; the column grows with the
- * card's height (a HOMA, an Arabic name, a long name are taller), so nothing is clipped.
- *
- * The rail's height follows the card's width, through a container query unit, so it stays on the
- * card's rail at both widths: the hanging cards' steel rail is centred 15 of 264 units from their
- * top (the renderer's viewBox). LEGEND's raised scarf has no rail to hang from; it gets none.
+ * Full cards are 296 px wide on phones (never closer than 16 px to either edge) and 336 px from
+ * 768 px, centred. Every card has one shape (1 : 1.618), so the box reserved before the chunk loads
+ * is exactly the box the card fills.
  */
-const RAIL_CENTRE = 15 / 264;
-
 export function CardStage({
   profile,
   beat,
@@ -38,34 +35,30 @@ export function CardStage({
   className?: string;
   testId?: string;
 }) {
-  const hangs = profile.tier !== "legend";
   return (
     <section
-      className={cn("relative overflow-x-clip pb-1 pt-5 md:pt-6", className)}
+      className={cn("relative overflow-x-clip px-2 pb-[18px] pt-5 md:pt-6", className)}
       data-stage={profile.tier ?? "base"}
     >
       <div
         data-stage-card=""
-        className="relative mx-auto w-60 [container-type:inline-size] md:w-[264px]"
+        className="group/stage relative mx-auto w-[min(296px,calc(100vw-32px))] max-w-full md:w-[336px]"
       >
-        {hangs ? (
-          <span
-            aria-hidden
-            data-stage-rail=""
-            className="pointer-events-none absolute z-0 h-1.5 rounded-full bg-[color:var(--ui-rule-strong)]"
-            style={
-              {
-                insetInline: "-50vw",
-                top: `calc(${(RAIL_CENTRE * 100).toFixed(3)}cqw - 3px)`,
-              } as CSSProperties
-            }
-          />
-        ) : null}
+        <span
+          aria-hidden
+          data-stage-shadow=""
+          className={cn(
+            "pointer-events-none absolute -bottom-[15px] start-[7%] z-0 h-[18px] w-[86%]",
+            "bg-[radial-gradient(closest-side,color-mix(in_oklab,black_28%,transparent),transparent)]",
+            "dark:bg-[radial-gradient(closest-side,color-mix(in_oklab,black_50%,transparent),transparent)]",
+            "group-has-[[data-mc-ready]]/stage:hidden",
+          )}
+        />
         <ManagerCard
           profile={profile}
-          width={264}
+          width={336}
           beat={beat}
-          sway
+          tilt
           testId={testId}
           className="relative z-10"
         />

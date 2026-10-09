@@ -63,7 +63,7 @@ export function ReplaySheet({
           <ManagerCard
             key={`${item.kind}:${item.seasonId ?? ""}:${item.gameweekSeq ?? ""}:${item.tier ?? ""}`}
             profile={view.profile}
-            width={224}
+            width={296}
             beat={beat ?? undefined}
             testId="replay-card"
           />
