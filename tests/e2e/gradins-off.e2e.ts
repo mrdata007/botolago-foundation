@@ -125,7 +125,7 @@ test("no page makes a request, writes a storage key or draws an element that bel
   const touched = requests
     .filter((pathname) => !pathname.endsWith("/backend/manager-card/fixture-selection.ts"))
     .filter((pathname) =>
-      /\/src\/(components\/(gradins|manager-card)\/|backend\/manager-card\/|services\/manager-card\.ts)|\/assets\/[^/]*(gradins|manager-card|echarpe)/i.test(
+      /\/src\/(components\/(gradins|manager-card)\/|backend\/manager-card\/|services\/manager-card\.ts)|\/assets\/[^/]*(gradins|manager-card|eclat)/i.test(
         pathname,
       ),
     );
