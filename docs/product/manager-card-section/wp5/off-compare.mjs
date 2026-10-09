@@ -6,7 +6,8 @@
  * clock fixed; for each scenario the script writes the body's markup (scripts and the dev-only
  * `data-tsd-source` attribute removed, one tag per line), which element has focus, the storage keys
  * written, the same-origin requests made (module paths without their `?t=` stamp) and the console
- * errors. Run it once per server, then diff the two folders:
+ * errors, and, as `*.ssr.html`, the server's own markup before any script has run. Run it once per
+ * server, then diff the two folders:
  *
  *   node off-compare.mjs --out=/tmp/off-base      # server on 4185 serving the base tree
  *   node off-compare.mjs --out=/tmp/off-branch    # server on 4185 serving this branch
@@ -126,6 +127,14 @@ async function main() {
       page.on("console", (message) => {
         if (message.type() === "error") errors.push(message.text().slice(0, 200));
       });
+      // The server's own markup, before any script has run (scripts and the dev-only source
+      // attribute removed, one tag per line).
+      const served = await context.request.get(`${BASE}${scenario.path}`);
+      const ssr = (await served.text())
+        .replace(/<script[\s\S]*?<\/script>/g, "")
+        .replace(/ data-tsd-source="[^"]*"/g, "")
+        .replace(/></g, ">\n<");
+      writeFileSync(join(OUT, `${scenario.id}-${lang}.ssr.html`), `${ssr}\n`);
       await page
         .goto(`${BASE}${scenario.path}`, { waitUntil: "load" })
         .catch((error) => errors.push(`goto ${error.message}`));

@@ -36,6 +36,9 @@ const BASE = flag("base", "http://127.0.0.1:4185");
 const OUT = flag("out", new URL("./", import.meta.url).pathname);
 const ONLY = flag("only", "").split(",").filter(Boolean);
 const MEASURE = args.includes("--measure");
+// `--phase=before`: the same screens on the base tree (no card surface), scrolled to what stands where
+// the card surface will, so each pair compares like with like.
+const PHASE = flag("phase", "after");
 
 const DEMO_USER = (lang) => ({
   id: "usr_demo",
@@ -60,6 +63,7 @@ const DEMO_USER = (lang) => ({
 export const SHOTS = [
   {
     id: "hub-guest-intro",
+    before: 'a[href="/fantasy/rules"]',
     path: "/fantasy",
     auth: "guest",
     mc: "rated",
@@ -73,6 +77,7 @@ export const SHOTS = [
   },
   {
     id: "hub-owner-forming",
+    before: 'a[href="/fantasy/transfers"]@last',
     path: "/fantasy",
     auth: "owner",
     mc: "forming1",
@@ -86,6 +91,7 @@ export const SHOTS = [
   },
   {
     id: "hub-owner-rated",
+    before: 'a[href="/fantasy/transfers"]@last',
     path: "/fantasy",
     auth: "owner",
     mc: "rated",
@@ -98,10 +104,33 @@ export const SHOTS = [
     ],
   },
   {
-    id: "hub-owner-late",
+    id: "hub-owner-born",
+    before: 'a[href="/fantasy/transfers"]@last',
     path: "/fantasy",
     auth: "owner",
-    mc: "forming1",
+    mc: "born0",
+    scroll: '[data-testid="hub-card-block"]',
+    langs: ["fr", "ar"],
+    themes: ["light"],
+    viewports: [[390, 844]],
+  },
+  {
+    id: "hub-owner-insufficient",
+    before: 'a[href="/fantasy/transfers"]@last',
+    path: "/fantasy",
+    auth: "owner",
+    mc: "insufficient3",
+    scroll: '[data-testid="hub-card-block"]',
+    langs: ["fr", "ar"],
+    themes: ["light"],
+    viewports: [[390, 844]],
+  },
+  {
+    id: "hub-owner-seasonClosed",
+    before: 'a[href="/fantasy/transfers"]@last',
+    path: "/fantasy",
+    auth: "owner",
+    mc: "seasonClosed",
     scroll: '[data-testid="hub-card-block"]',
     langs: ["fr"],
     themes: ["light"],
@@ -109,6 +138,7 @@ export const SHOTS = [
   },
   {
     id: "hub-pepites-tile",
+    before: 'a[href="/fantasy/top-players"]',
     path: "/fantasy",
     auth: "guest",
     mc: "rated",
@@ -122,6 +152,7 @@ export const SHOTS = [
   },
   {
     id: "create-name-guest",
+    before: 'form button[type="submit"]',
     path: "/fantasy/create",
     auth: "guest",
     mc: "rated",
@@ -134,6 +165,7 @@ export const SHOTS = [
   },
   {
     id: "create-name-signedin",
+    before: 'form button[type="submit"]',
     path: "/fantasy/create",
     auth: "noTeam",
     mc: "rated",
@@ -201,7 +233,30 @@ export const SHOTS = [
     viewports: [[390, 844]],
   },
   {
+    id: "first-transfer-line",
+    path: "/fantasy/transfers",
+    auth: "owner",
+    mc: "insufficient3",
+    act: "transfer",
+    scroll: '[data-testid="first-transfer-line"]',
+    langs: ["fr", "ar"],
+    themes: ["light"],
+    viewports: [[390, 844]],
+  },
+  {
+    id: "create-name-return",
+    path: "/fantasy/create",
+    auth: "owner",
+    mc: "rated",
+    prep: "noTeam",
+    act: "return",
+    langs: ["fr", "ar"],
+    themes: ["light"],
+    viewports: [[390, 844]],
+  },
+  {
     id: "league-band",
+    before: "table",
     path: "/fantasy/leagues/lg1",
     auth: "owner",
     mc: "rated",
@@ -267,18 +322,25 @@ async function main() {
           await page.waitForTimeout(Number(process.env.WAIT ?? 4500));
           if (shot.step === "name") await fillSquadAndGoToName(page);
           if (shot.act) await act(page, shot.act);
-          if (shot.scroll) {
-            await page
-              .locator(shot.scroll)
-              .first()
+          const target = PHASE === "before" ? shot.before : shot.scroll;
+          if (target) {
+            const last = target.endsWith("@last");
+            const found = page.locator(last ? target.slice(0, -"@last".length) : target);
+            await (last ? found.last() : found.first())
               .evaluate((node) => node.scrollIntoView({ block: "center" }))
-              .catch(() => errors.push(`no ${shot.scroll}`));
+              .catch(() => errors.push(`no ${target}`));
             await page.waitForTimeout(500);
           }
           const name = `${shot.id}-${shot.mc}-${lang}-${theme}-${width}.png`;
           await page.screenshot({ path: join(OUT, name) });
           const record = { name, url: page.url(), errors: errors.slice(0, 4) };
-          if (MEASURE) record.measure = await measure(page, shot);
+          if (MEASURE) record.measure = await measure(page);
+          record.focus = await page.evaluate(() => {
+            const active = document.activeElement;
+            return active
+              ? `${active.tagName.toLowerCase()} ${active.getAttribute("type") ?? ""} ${active.getAttribute("placeholder") ?? active.textContent?.trim().slice(0, 30) ?? ""}`.trim()
+              : null;
+          });
           log.push(record);
           console.log(JSON.stringify(record));
           await context.close();
@@ -312,7 +374,57 @@ async function fillSquadAndGoToName(page) {
   await page.waitForTimeout(800);
 }
 
+/**
+ * M1c, back in the builder: a squad built as a visitor, taken over by the account made since. In
+ * mock mode a visitor's draft lives under the device's own key, so the visitor's key is written
+ * from it (what the real builder does for a visitor) and the page is loaded again.
+ */
+async function returnFromSignUp(page) {
+  await fillSquadAndGoToName(page);
+  // A name typed as a visitor: the save button is then enabled and takes the focus.
+  await page.locator("form input").first().fill("Atlas Stars");
+  await page.waitForTimeout(600);
+  await page.evaluate(() => {
+    const raw = localStorage.getItem("botolago.fantasy.drafts");
+    const map = raw ? JSON.parse(raw) : {};
+    for (const [flat, entry] of Object.entries(map)) {
+      if (entry.key?.uid !== "__local__" || entry.key.kind !== "create-team") continue;
+      const key = { ...entry.key, uid: "__guest__" };
+      map[`${key.uid}::${key.teamId}::${key.baseVersion}::${key.kind}`] = { ...entry, key };
+      delete map[flat];
+    }
+    localStorage.setItem("botolago.fantasy.drafts", JSON.stringify(map));
+  });
+  await page.reload({ waitUntil: "load" });
+  await page.waitForTimeout(6000);
+}
+
+/** Mark a defender out, take the first affordable same-position player in, then « Suivant »: the confirmation. */
+async function makeTransfer(page) {
+  await page.locator(`main button[aria-label*=", "]`).nth(2).click();
+  await page
+    .getByRole("button", { name: /Transférer|نقل/ })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog").first();
+  await dialog.waitFor({ state: "visible", timeout: 5000 });
+  const rows = dialog.locator("li button:not([disabled])");
+  const total = await rows.count();
+  for (let index = total - 1; index >= 0; index -= 1) {
+    await rows.nth(index).click();
+    const closed = await dialog.waitFor({ state: "hidden", timeout: 1200 }).then(
+      () => true,
+      () => false,
+    );
+    if (closed) break;
+  }
+  await page.getByRole("button", { name: /^(Suivant|التالي)$/ }).click();
+  await page.waitForTimeout(1200);
+}
+
 async function act(page, name) {
+  if (name === "return") await returnFromSignUp(page);
+  if (name === "transfer") await makeTransfer(page);
   if (name === "hint-cap") {
     await page.locator(`main button[aria-label*=", "]`).nth(2).click();
     await page.waitForTimeout(900);
@@ -324,33 +436,179 @@ async function act(page, name) {
   }
 }
 
-/** Element rectangles, never scrollWidth: what escapes the viewport, what is under 44 px. */
-async function measure(page, shot) {
-  return page.evaluate(() => {
+/** The surfaces this package draws: what the measures below look at, and nothing else on the page. */
+const MINE = [
+  "fantasy-intro-card-point",
+  "card-save-line",
+  "card-builder-return-line",
+  "hub-card-block",
+  "rank-card-token",
+  "recap-card-line",
+  "first-transfer-line",
+  "fantasy-hub-pepites-tile",
+  "league-card-band",
+  "league-compare-link",
+  "league-row-mini",
+  "card-hint-cap",
+  "card-hint-sel",
+  "card-hint-trf",
+  // WP4's panel, in the slot this package gives it: measured for the page it sits in.
+  "card-born-panel",
+];
+
+/**
+ * Element rectangles, never scrollWidth (`html, body { overflow-x: clip }` hides overflow): for
+ * each surface of this package and everything inside it, what leaves the viewport, which control
+ * is under 44 x 44 (an `aria-hidden` mini is not a control), the animations running, and the
+ * contrast of each text read from the rasterised pixels: the text colour is painted on a canvas to
+ * get its sRGB value (`oklch` does not parse naively), the backdrop is the modal colour of the
+ * element's own screenshot, and the ratio is WCAG's. Large text (24 px, or 18.66 px bold) needs 3,
+ * the rest 4.5.
+ */
+async function measure(page) {
+  const found = await page.evaluate((mine) => {
     const viewport = document.documentElement.clientWidth;
-    const out = { viewport, offscreen: [], smallTargets: [] };
-    for (const node of document.querySelectorAll("main *, [data-testid]")) {
-      const rect = node.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) continue;
-      if (rect.right > viewport + 1 || rect.left < -1) {
-        out.offscreen.push(
-          `${node.tagName.toLowerCase()}${node.getAttribute("data-testid") ? `[${node.getAttribute("data-testid")}]` : ""} ${Math.round(rect.left)}..${Math.round(rect.right)}`,
+    const paint = (color) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 1;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.clearRect(0, 0, 1, 1);
+      context.fillStyle = color;
+      context.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = context.getImageData(0, 0, 1, 1).data;
+      return [r, g, b, a];
+    };
+    const roots = mine.flatMap((id) => [...document.querySelectorAll(`[data-testid="${id}"]`)]);
+    const out = {
+      viewport,
+      surfaces: roots.map((root) => root.getAttribute("data-testid")),
+      offscreen: [],
+      smallTargets: [],
+      texts: [],
+      // Running animations anywhere on the page, and the ones that belong to a surface of this
+      // package. A finished page animation (the pitch's one-time rise) is not a running one.
+      animations: document.getAnimations().filter((a) => a.playState === "running").length,
+      animationsInSurfaces: document
+        .getAnimations()
+        .filter((a) => roots.some((root) => root.contains(a.effect?.target ?? null))).length,
+    };
+    const seen = new Set();
+    for (const root of roots) {
+      for (const node of [root, ...root.querySelectorAll("*")]) {
+        if (seen.has(node)) continue;
+        seen.add(node);
+        const rect = node.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) continue;
+        if (rect.right > viewport + 1 || rect.left < -1) {
+          out.offscreen.push(
+            `${node.tagName.toLowerCase()} ${Math.round(rect.left)}..${Math.round(rect.right)}`,
+          );
+        }
+        const interactive = node.matches("a, button") && !node.closest('[aria-hidden="true"]');
+        if (interactive && (rect.width < 43.5 || rect.height < 43.5)) {
+          out.smallTargets.push(
+            `${node.tagName.toLowerCase()} ${Math.round(rect.width)}x${Math.round(rect.height)}`,
+          );
+        }
+        const hasText = [...node.childNodes].some(
+          (child) => child.nodeType === 3 && child.textContent.trim(),
         );
+        if (
+          hasText &&
+          !node.closest(".sr-only") &&
+          getComputedStyle(node).visibility !== "hidden"
+        ) {
+          const style = getComputedStyle(node);
+          const size = parseFloat(style.fontSize);
+          const bold = Number(style.fontWeight) >= 700;
+          out.texts.push({
+            text: node.textContent.trim().slice(0, 40),
+            rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height },
+            fg: paint(style.color),
+            large: size >= 24 || (size >= 18.66 && bold),
+          });
+        }
       }
     }
-    for (const node of document.querySelectorAll("a, button")) {
-      const rect = node.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0) continue;
-      if (rect.width < 44 - 0.5 || rect.height < 44 - 0.5) {
-        out.smallTargets.push(
-          `${node.tagName.toLowerCase()} ${Math.round(rect.width)}x${Math.round(rect.height)} "${(node.getAttribute("aria-label") || node.textContent || "").trim().slice(0, 30)}"`,
-        );
-      }
-    }
-    out.offscreen = out.offscreen.slice(0, 10);
-    out.smallTargets = out.smallTargets.slice(0, 15);
     return out;
-  });
+  }, MINE);
+
+  const lum = ([r, g, b]) => {
+    const channel = (value) => {
+      const v = value / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+  };
+  const ratio = (a, b) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const contrast = [];
+  for (const item of found.texts) {
+    const { x, y, width, height } = item.rect;
+    if (y + height < 0 || y > (await page.viewportSize()).height || width < 2 || height < 2)
+      continue;
+    const clip = {
+      x: Math.max(0, x),
+      y: Math.max(0, y),
+      width: Math.min(width, found.viewport - Math.max(0, x)),
+      height,
+    };
+    if (clip.width < 2) continue;
+    const shot = await page.screenshot({ clip, animations: "disabled" });
+    const backdrop = await page.evaluate(
+      async ([b64, fg]) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${b64}`;
+        await image.decode();
+        const canvas = document.createElement("canvas");
+        canvas.width = image.width;
+        canvas.height = image.height;
+        const context = canvas.getContext("2d", { willReadFrequently: true });
+        context.drawImage(image, 0, 0);
+        const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+        // The backdrop is what most of the box is painted with, glyph pixels apart: the pixels
+        // that are not the text's own colour (nor its anti-aliasing), grouped by colour, the
+        // largest group averaged.
+        const buckets = new Map();
+        for (let index = 0; index < data.length; index += 4) {
+          const r = data[index];
+          const g = data[index + 1];
+          const b = data[index + 2];
+          if (Math.abs(r - fg[0]) + Math.abs(g - fg[1]) + Math.abs(b - fg[2]) < 90) continue;
+          const key = `${r >> 4},${g >> 4},${b >> 4}`;
+          const bucket = buckets.get(key) ?? { count: 0, r: 0, g: 0, b: 0 };
+          bucket.count += 1;
+          bucket.r += r;
+          bucket.g += g;
+          bucket.b += b;
+          buckets.set(key, bucket);
+        }
+        const [top] = [...buckets.values()].sort((a, b) => b.count - a.count);
+        return top ? [top.r / top.count, top.g / top.count, top.b / top.count] : fg;
+      },
+      [shot.toString("base64"), item.fg],
+    );
+    const value = ratio(item.fg, backdrop);
+    contrast.push({
+      text: item.text,
+      ratio: Math.round(value * 100) / 100,
+      needs: item.large ? 3 : 4.5,
+      ok: value >= (item.large ? 3 : 4.5),
+    });
+  }
+  return {
+    viewport: found.viewport,
+    surfaces: found.surfaces,
+    offscreen: found.offscreen.slice(0, 10),
+    smallTargets: found.smallTargets.slice(0, 10),
+    animations: found.animations,
+    animationsInSurfaces: found.animationsInSurfaces,
+    contrastFailures: contrast.filter((entry) => !entry.ok),
+    contrastChecked: contrast.length,
+    contrastLowest: contrast.length ? Math.min(...contrast.map((entry) => entry.ratio)) : null,
+  };
 }
 
 if (import.meta.main) await main();
