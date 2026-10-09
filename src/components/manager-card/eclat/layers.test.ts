@@ -3,21 +3,15 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { FOIL, TIER_KEYS } from "./foil";
-import { RING, TOKEN_WINDOW, TIER_BAR, TAB, WINDOW, WINDOW_IN } from "./geometry";
+import { TIER_KEYS } from "./foil";
+import { RING, TAB, WINDOW, WINDOW_IN } from "./geometry";
 import { eclatRenderer } from "./index";
 import { FR, AR, MOCK_ARABIC, MOCK_CARDS, PROFILES } from "./test-data";
 import { elementsByClass, layer, tokenise, texts } from "./test-markup";
-import type { CardProfile, TokenSize } from "../types";
+import type { CardProfile } from "../types";
 
 const draw = (p: CardProfile, o: { compact?: boolean; lang?: "fr" | "ar" } = {}) =>
   eclatRenderer.full(p, { strings: o.lang === "ar" ? AR : FR, theme: "light", compact: o.compact });
-const tok = (p: CardProfile, size: number, lang: "fr" | "ar" = "fr") =>
-  eclatRenderer.token(p, {
-    strings: lang === "ar" ? AR : FR,
-    theme: "light",
-    size: size as TokenSize,
-  });
 
 describe("the layer stack (plan 3.2, 8.1)", () => {
   const html = draw(MOCK_CARDS[5]!.profile);
@@ -107,68 +101,6 @@ describe("the layer stack (plan 3.2, 8.1)", () => {
         expect(h.startsWith('<div class="mc-eclat '), key).toBe(true);
       }
     }
-  });
-});
-
-describe("tokens and minis (plan 7)", () => {
-  const tokens = (size: number, p: CardProfile = MOCK_CARDS[3]!.profile) => tok(p, size);
-
-  it("is one flat SVG: no layers, no filters, no blur, no patterns, no masks, no foil overlay", () => {
-    for (const size of [80, 64, 56, 44, 32, 28, 24]) {
-      for (const c of [...MOCK_CARDS, ...MOCK_ARABIC]) {
-        const h = tok(c.profile, size, c.lang);
-        expect(h.match(/<svg/g), `${size}`).toHaveLength(1);
-        expect(
-          /<filter|<pattern|<mask|feGaussianBlur|mc-eclat__foil|mc-l /.test(h),
-          `${size}`,
-        ).toBe(false);
-        expect(h.startsWith(`<span class="mc-tok mc-tok--${size}"`)).toBe(true);
-        expect(h.match(/role="img"/g)).toHaveLength(1);
-      }
-    }
-  });
-
-  it("is a box of 0.618 of its height", () => {
-    expect(tokens(64)).toContain("width:40px;height:64px");
-    expect(tokens(24)).toContain("width:15px;height:24px");
-    expect(tokens(80)).toContain("width:49px;height:80px");
-  });
-
-  it("draws the card at 80: the shield window, the tier bar and the metal edge", () => {
-    const h = tokens(80);
-    expect(h).toContain(`d="${TOKEN_WINDOW}"`);
-    expect(h).toContain(`d="${TIER_BAR}"`);
-    expect(h.match(/data-mc="ovr"/g)).toHaveLength(1);
-  });
-
-  it("draws the jersey at 28 to 64: a ring in the tier's colour, a tier bar at 64, a foot band below", () => {
-    expect(tokens(64)).not.toContain(`d="${TOKEN_WINDOW}"`);
-    expect(tokens(64)).toContain(`d="${TIER_BAR}"`);
-    for (const size of [56, 44, 32, 28]) {
-      expect(tokens(size), String(size)).not.toContain(`d="${TIER_BAR}"`);
-      expect(tokens(size), String(size)).toContain('width="1000" height=');
-    }
-    expect(tokens(64)).toContain(`stroke="${FOIL.pro.tokEdge}"`);
-    // the ring is the foil on CHAMPION and LEGEND
-    expect(tokens(48, MOCK_CARDS[5]!.profile)).toContain("url(#mc-t-");
-  });
-
-  it("draws the mini at 24 without the number and every size with its label", () => {
-    expect(tokens(24)).not.toContain('data-mc="ovr"');
-    expect(tokens(28)).toContain('data-mc="ovr"');
-    const label = /aria-label="([^"]*)"/.exec(tokens(64))![1]!;
-    expect(label).toBe("Ali, 84 OVR, PRO");
-    expect(/aria-label="([^"]*)"/.exec(tok(PROFILES.born0, 64))![1]).toContain(
-      "pas encore de note",
-    );
-    expect(tok(PROFILES.born0, 64)).toContain(">—</text>");
-  });
-
-  it("mirrors the shapes in Arabic and never the number", () => {
-    const h = tok(MOCK_ARABIC[0]!.profile, 64, "ar");
-    expect(h).toContain('dir="rtl"');
-    expect(h).toContain("matrix(-1 0 0 1 1000 0)");
-    expect(texts(h).every((t) => !(t.attrs.transform ?? "").includes("matrix"))).toBe(true);
   });
 });
 

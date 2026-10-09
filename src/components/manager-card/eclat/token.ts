@@ -75,8 +75,10 @@ export function tokenMarkup(
     `<radialGradient id="${id}-back" cx="500" cy="660" r="620" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.glow}" stop-opacity=".55"/><stop offset="1" stop-color="${F.glow}" stop-opacity="0"/></radialGradient>` +
     `<linearGradient id="${id}-vol" x1="316" y1="0" x2="684" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".26"/><stop offset=".62" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".22"/></linearGradient></defs>`;
 
-  // static depth: the outline copy under the card, a pixel down and away from the light
-  let art = `<path d="${OUTLINE}" fill="${mix(edge, "#000000", 0.45)}" transform="translate(${n2(ar ? -u : u)} ${n2(u)})"/>`;
+  // static depth: the outline copy under the card, a pixel down and away from the light. It sits in
+  // the group that is mirrored in Arabic, so the same offset lands on the other side of the screen
+  // (the card's thickness shows at the trailing edge in both languages, as the full card's rims do)
+  let art = `<path d="${OUTLINE}" fill="${mix(edge, "#000000", 0.45)}" transform="translate(${n2(u)} ${n2(u)})"/>`;
   art += `<path d="${OUTLINE}" fill="${F.plate}"/>`;
   const inner = level === "card" ? TOKEN_WINDOW : OUTLINE;
   art += `<g clip-path="url(#${id}-out)"><path d="${inner}" fill="url(#${id}-field)"/><path d="${inner}" fill="url(#${id}-back)"/>`;
