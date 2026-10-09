@@ -50,5 +50,44 @@ route. Its old prefix selector counted the new scrollable Classement shortcut
 as a match card and falsely reported its intentional off-screen position.
 Actual match detail links retain the existing bounds checks.
 
-The row uses existing section artwork and feature flags. It adds no data calls,
-viewer, unread tracking, publishing flow or changes to game rules.
+These initial captures cover the section shortcut fallback. The expanded
+admin-managed stories implementation is verified below. Game rules are unchanged.
+
+## Admin uploads and published viewer
+
+The owner expanded the scope to real admin uploads. The final component harness
+uses actual story SQL and the existing upload handler with local file storage.
+It is outside the application route tree; the plain “Stories” page heading is
+fixture scaffolding, not the production admin shell.
+
+- [Empty admin form](admin/admin-empty.png)
+- [French mobile admin](admin/admin-fr-390-light.png) / [dark](admin/admin-fr-390-dark.png)
+- [Arabic mobile admin](admin/admin-ar-390-light.png) / [dark](admin/admin-ar-390-dark.png)
+- [French desktop admin](admin/admin-fr-1440-light.png) / [dark](admin/admin-fr-1440-dark.png)
+- [Arabic desktop admin](admin/admin-ar-1440-light.png) / [dark](admin/admin-ar-1440-dark.png)
+- [French mobile viewer](admin/viewer-fr-390-light.png) / [dark](admin/viewer-fr-390-dark.png)
+- [Arabic mobile viewer](admin/viewer-ar-390-light.png) / [dark](admin/viewer-ar-390-dark.png)
+- [French desktop viewer](admin/viewer-fr-1440-light.png) / [dark](admin/viewer-fr-1440-dark.png)
+- [Arabic desktop viewer](admin/viewer-ar-1440-light.png) / [dark](admin/viewer-ar-1440-dark.png)
+
+Checks: two HTTP 201 uploads, draft persistence after reload, publication-only
+visibility, next/previous navigation and destination link, Escape/focus return,
+all element bounds inside the viewport in eight locale/size/theme states, and
+unpublishing both stories leaving the public RPC empty. No browser errors.
+
+Final code verification: TypeScript and changed-source ESLint passed; **494
+unit tests passed** (22 files), including existing upload byte validation and
+admin permission tests. The final anonymous public-route regression passed
+**4/4** FR/AR mobile/desktop scenarios. Production bundle built successfully
+against the repository's local stub backend.
+
+The isolated SQL assertions verify authorization, publication, optimistic
+locking, validation and audit writes with the real staff authorization functions.
+Auth/media schemas and media registration use local fixtures; live Supabase
+storage and a deployed staff session remain rollout checks. No production or
+shared database writes were performed. Before fixture resets, only this task's
+connection was active; the private container has no network or cron jobs.
+
+[Browser log](admin/browser.txt), [SQL result](admin/database.txt),
+[reproduce](../../../scripts/qa/home-stories/README.md),
+[rollout](../../backend/HOME_STORIES.md).
