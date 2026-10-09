@@ -34,13 +34,17 @@ authenticated, service_role` (never `anon`).
 
 ## Shared names and slots
 
-| Slot             | File                          | Lane |
-| ---------------- | ----------------------------- | ---- |
-| `20261008123000` | `manager_card_schema.sql`     | 1    |
-| `20261008123100` | `manager_card_erase_lock.sql` | 1    |
-| `20261008123200` | `manager_card_compute.sql`    | 2    |
-| `20261008123300` | `manager_card_api.sql`        | 3    |
-| `20261008123400` | `manager_card_jobs.sql`       | 2    |
+| Slot             | File                            | Lane                            |
+| ---------------- | ------------------------------- | ------------------------------- |
+| `20261008123000` | `manager_card_schema.sql`       | 1                               |
+| `20261008123100` | `manager_card_erase_lock.sql`   | 1                               |
+| `20261008123200` | `manager_card_compute.sql`      | 2                               |
+| `20261008123300` | `manager_card_api.sql`          | 3                               |
+| `20261008123400` | `manager_card_jobs.sql`         | 2                               |
+| `20261009100000` | `manager_card_moment_acks.sql`  | P1 (`MANAGER_CARD_GAP_PLAN.md`) |
+| `20261009100100` | `manager_card_read_helpers.sql` | P1                              |
+| `20261009100200` | `manager_card_api_v2.sql`       | P1                              |
+| `20261009100300` | `manager_card_health.sql`       | P3                              |
 
 Objects (Lane 1 creates the tables; others use these exact names):
 

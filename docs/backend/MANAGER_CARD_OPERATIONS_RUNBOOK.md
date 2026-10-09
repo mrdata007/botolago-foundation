@@ -1,6 +1,8 @@
 # Manager Card operations runbook
 
-BG-0158. Migrations `20261008123000` to `20261008123400`. The design and the
+BG-0158. Migrations `20261008123000` to `20261008123400`, then
+`20261009100000` to `20261009100300` (the read API the Gradins screens use,
+see `MANAGER_CARD_GAP_PLAN.md`). The design and the
 owner's decisions are in `MANAGER_CARD_DOMAIN_PLAN.md`; this file is what the
 owner and on-call do with it. The card is each manager's football identity,
 built from their Fantasy play: an overall rating (OVR), a tier, four stats
@@ -17,13 +19,17 @@ asks a prize or a league to look at a card, stop: it is not allowed.
 
 ## What ships, and that it ships off
 
-Applying the migrations (through the guarded script, see "Production order")
-creates tables, functions and two scheduled jobs. It switches nothing on and
-inserts no rules:
+Applying the migrations (through the guarded scripts, see "Production order")
+creates tables, functions and two scheduled jobs. They switch nothing on and
+insert no rules:
 
 - both switches are `false` (`app_private.manager_card_settings`, one row);
 - there is no rules row (`app_private.manager_card_rules` is empty);
-- the four read functions refuse with `manager_card_off`;
+- the reads answer `{"available": false}`, not an error, and
+  `api.manager_card_status()` answers `{"enabled": false, ...}` (anyone can call
+  it, signed in or not). The section stays hidden;
+- the acknowledgement call answers that everything is ignored and writes
+  nothing;
 - `manager-card-tick` runs every 15 minutes and answers `{"outcome":"off"}`
   without writing anything, the job log included;
 - the account erasure now also waits for the card's lock (see "Account
@@ -35,10 +41,10 @@ One row in `app_private.manager_card_settings`, changed only by
 `app_private.manager_card_configure(p_compute, p_read)`, which only the
 `postgres` role can run. **`null` leaves that switch as it is.**
 
-| Switch    | What it lets happen                                                                              |
-| --------- | ------------------------------------------------------------------------------------------------ |
-| `compute` | The tick may calculate and write cards. It still needs an active rules row.                      |
-| `read`    | The four `api.get_*manager_card*` functions answer signed-in users instead of `manager_card_off` |
+| Switch    | What it lets happen                                                                  |
+| --------- | ------------------------------------------------------------------------------------ |
+| `compute` | The tick may calculate and write cards. It still needs an active rules row.          |
+| `read`    | The status, the three reads and the acknowledgement answer for real instead of "off" |
 
 ```sql
 select app_private.manager_card_configure(true, null);   -- compute on, read untouched
@@ -46,6 +52,11 @@ select app_private.manager_card_configure(null, true);   -- read on, compute unt
 select app_private.manager_card_configure(false, null);  -- compute off, read untouched
 select app_private.manager_card_configure(false, false); -- both off
 ```
+
+The read switch alone is not enough: the section is "ready" only when reads are
+on **and** one active rules row has usable numbers (a minimum of at least 1,
+four rising tier cut-offs between 1 and 99). Until then everything answers off,
+so a bad rules row hides the section instead of breaking it.
 
 Each call answers `{"computeEnabled": ..., "readEnabled": ...}`. Switch compute
 on first and let the first evaluation finish and be checked; switch read on only
@@ -78,6 +89,20 @@ time:
 
 Then switch compute on (see "Production order"). Each script says at the top
 what it does and how to run it.
+
+## The app's switch
+
+The Gradins section has a second switch, in the website code:
+`MANAGER_CARD_ENABLED` in `src/lib/feature-flags.ts`. It is `false` today. It
+can go to `true` before or after the read switch, because the section shows
+only when both agree. **The read switch is the launch.** The website asks
+`api.manager_card_status()` on the server and keeps the answer for about a
+minute (`src/services/manager-card-status-server.ts`). So:
+
+- switching reads on shows Gradins within about a minute, with no republish;
+- switching reads off hides it within about a minute, with no republish.
+
+Changing `MANAGER_CARD_ENABLED` itself needs a Lovable publish.
 
 ## Rules v1
 
@@ -140,7 +165,7 @@ The numbers above are **shape only**. Replace every one from calibration.
 
 | Key                           | What it means                                                                                                                                                                                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `minimum_gameweeks`           | Finished weeks a team needs before it has a card. Under it, OVR, tier and stats are all empty. The read functions also use it to choose which season's card to show (last season's, with its label, until the new season reaches it).                   |
+| `minimum_gameweeks`           | Finished weeks a team needs before it has a card. Under it, OVR, tier and stats are all empty. The app also uses it to show last season's figures, with their label, until the new season reaches it.                                                   |
 | `provisional_below`           | From the minimum up to this many weeks, the card is marked provisional.                                                                                                                                                                                 |
 | `trf_window_gameweeks`        | How many gameweeks after a transfer are used to judge it (the new player's points minus the sold player's). At least 1.                                                                                                                                 |
 | `cap_ignore_deadlines_before` | CAP skips weeks whose deadline is before this moment. Set it to when PR #376 reached production: before it, a manager who never picked a captain got the goalkeeper by default. See below. Optional in the code, but the owner decided to set it (D12). |
@@ -247,6 +272,18 @@ Read what it was first (`select compute_enabled, read_enabled from
 app_private.manager_card_settings;`) and restore exactly that. Pausing compute
 does not hide cards: they stay as they were until compute is back on.
 
+Signed-in users also write one table, `app.manager_card_moment_acks`: the
+moments (new tier, new season and so on) a manager has already seen. They write
+it through `api.ack_manager_card_moments`, only their own rows, and only while
+the read switch is on. For a write that touches that table, switch reads off for
+its length and restore them afterwards. This hides Gradins for that time:
+
+```sql
+select app_private.manager_card_configure(null, false);
+-- ...the write...
+select app_private.manager_card_configure(null, true);  -- only if it was on before
+```
+
 The daily prune `manager-card-history-prune` runs whatever the switch says. It
 deletes this tick's `cron.job_run_details` rows older than 7 days and
 `app_private.manager_card_job_log` rows older than 180 days, and never touches a
@@ -336,6 +373,21 @@ from app.manager_cards;
 select count(*) as retired from app_private.manager_card_retired_serials;
 ```
 
+The same facts are in the ops health report as a check named `manager_card`
+(counts only, no user id), added by `20261009100300`:
+
+| Status | When                                                                                              |
+| ------ | ------------------------------------------------------------------------------------------------- |
+| ok     | Both switches off ("switched off"), or cards are current under the active rules.                  |
+| warn   | Reads on but no usable rules (the section answers off); compute on but no usable rules.           |
+| warn   | Reads on and compute off (cards are frozen).                                                      |
+| warn   | A finished gameweek has waited more than 2 hours for its cards, or a tick error in the last 24 h. |
+| fail   | Compute on, rules usable, and a finished gameweek has waited more than 12 hours. This pages you.  |
+
+The watchdog does not require this check yet
+(`REQUIRED_DATABASE_CHECKS` in `scripts/ops/watchdog.ts`); add it there once
+production has the migration.
+
 Signs of trouble: a tick `error` in the job log; `cron.job_run_details` showing
 `failed`; the "evaluable but not evaluated" query returning rows for hours while
 compute is on; the tier shares far from the aim (the scales were calibrated on
@@ -362,6 +414,26 @@ week on. Do it outside match days. While it runs, it holds the card lock for
 the length of each tick, which the account erasure and the founder grant wait
 for (they retry; nothing is lost).
 
+## Latency
+
+The budgets for the reads, as database time for one call:
+
+| Call                                       | Budget |
+| ------------------------------------------ | ------ |
+| `api.manager_card_status()`                | 5 ms   |
+| `api.get_my_manager_card()`                | 40 ms  |
+| `api.get_manager_cards` with 100 team ids  | 80 ms  |
+| `api.get_my_manager_card_history` (a page) | 20 ms  |
+| `api.ack_manager_card_moments`             | 30 ms  |
+
+The contract test (`scripts/backend/manager-card-contract-e2e.test.ts`) prints
+the measured numbers on every run and checks the budgets when
+`MANAGER_CARD_E2E_STRICT_TIMING=1`. Measured numbers: not recorded yet. Fill
+this in from the first run on the finished migrations (date, machine, the five
+figures). The status call is the one the website makes on every page load; if
+it ever passes its budget, the website's 800 ms limit hides the section rather
+than slow the page.
+
 ## Account deletion
 
 Deleting an account (`docs/backend/ACCOUNT_DELETION_RUNBOOK.md`) removes the
@@ -374,6 +446,10 @@ card:
   and nothing else, to `app_private.manager_card_retired_serials` (no user id,
   no link to the person). It is never issued again;
 - the FOUNDER mark goes with the account;
+- the moments the user acknowledged (`app.manager_card_moment_acks`) go the same
+  way, by cascade from the profile. Nothing is kept: they hold no number. They
+  need no extra lock, because the tick never writes them and a user who is
+  waiting to be erased cannot acknowledge anything;
 - an account that is waiting to be erased (its profile has `deleted_at`) shows
   **no card** and is skipped by the tick;
 - the erasure takes the card's lock (`botolago:manager-card`) without waiting,
@@ -398,6 +474,13 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    on afterwards. Run it as a rehearsal ("Rehearsal passed"), then with
    `commit;` ("Applied"). It checks both switches are off, there is no rules
    row, the grants, the erase lock, both jobs, and that the tick answers `off`.
+   **Then the read API apply script,**
+   `scripts/backend/apply-20261009100000-manager-card-api-v2.sql` (migrations
+   `20261009100000` to `20261009100300`). It changes nothing anyone sees: it
+   refuses to run if the read switch is on. Rehearse, then `commit;`. It
+   replaces the first read functions with the ones the Gradins screens call, and
+   adds the status call, the acknowledgements and the health check. Do it before
+   anything is switched on.
 3. **Calibration and rules v1.** Owner-granted aggregate-only read, calibrate,
    set `cap_ignore_deadlines_before` to the day PR #376 shipped, insert version
    1 (see "Rules v1").
@@ -405,9 +488,10 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    first (see "The founder grant").
 5. **Switches on.** Compute first (`manager_card_configure(true, null)`), wait for
    the tick, check the health queries and a few cards by hand, then read
-   (`manager_card_configure(null, true)`). The Manager Card screens are a
-   separate piece of work and ship after the backend is on.
+   (`manager_card_configure(null, true)`). Reads on is the launch of Gradins
+   (see "The app's switch"); `MANAGER_CARD_ENABLED` must be `true` in the
+   published website too.
 
 To turn it all back off at any point: `select
 app_private.manager_card_configure(false, false);`. Nothing is lost; cards stay
-in place and the read functions refuse again.
+in place and the reads answer off again. Gradins hides within about a minute.

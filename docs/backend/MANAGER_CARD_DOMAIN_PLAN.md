@@ -248,6 +248,8 @@ the schema is pushed.
 
 ## 5. Read functions
 
+Superseded by `MANAGER_CARD_GAP_PLAN.md` (the merged front end's contract); formulas and D1–D20 unchanged.
+
 All `security definer`, `set search_path = ''`, arguments of plain types only,
 `perform app_private.assert_mfa_step_up();`, refused with `PT403
 manager_card_off` while `read_enabled` is false, granted to `authenticated` and

@@ -171,6 +171,14 @@ null, false);` before a write that touches fixtures or notifications, and
    days, and never touches the card tables. Pause it by name for a write that
    touches those two tables, then set it back to `true`:
    `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-history-prune'), active := false);`
+   Where migration 20261009100200 is applied, signed-in users also write
+   `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`)
+   while the read switch is on; that is ordinary app traffic, each user
+   writing only their own rows. For a write that touches that table, switch
+   reads off for its length and restore them afterwards (this hides Gradins
+   for that time):
+   `select app_private.manager_card_configure(null, false);`
+   `select app_private.manager_card_configure(null, true);`
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 
