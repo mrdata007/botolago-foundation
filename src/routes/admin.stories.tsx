@@ -22,8 +22,8 @@ function AdminStoriesRoute() {
       title={ar ? "القصص" : "Stories"}
       description={
         ar
-          ? "ارفع صورك وانشر قصص البطولة على الصفحة الرئيسية."
-          : "Téléversez vos images et publiez les stories de la Botola sur l’accueil."
+          ? "صور الأخبار المنشأة تلقائياً وعناوينها على الرئيسية."
+          : "Les actualités en images et leurs titres, publiés automatiquement sur l’accueil."
       }
     >
       {access.state === "authorized" && (

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { ui, UiButton, UiSheet } from "@/components/ui-kit";
@@ -38,21 +37,6 @@ export function StoryViewer({
       className="h-[100dvh] max-h-[100dvh] rounded-none sm:max-w-[var(--ui-column-max)] sm:rounded-t-[var(--ui-radius-sheet)]"
       footer={
         <div className="grid gap-3">
-          {story.destination && (
-            <Link
-              to={story.destination}
-              onClick={onClose}
-              className={cn(
-                "flex min-h-[var(--ui-tap-min)] items-center justify-center",
-                ui.surface.selected,
-                ui.radius.full,
-                ui.text.bodyStrong,
-                ui.focus,
-              )}
-            >
-              {ar ? "اكتشف المزيد" : "En savoir plus"}
-            </Link>
-          )}
           <div className="flex items-center justify-between gap-3">
             <UiButton
               variant="outline"
@@ -82,20 +66,35 @@ export function StoryViewer({
       }
     >
       <figure
-        className={cn("flex min-h-full flex-col justify-center gap-3 p-3", ui.surface.inkPlain)}
+        className={cn(
+          "relative mx-auto flex min-h-full w-full max-w-[28rem] flex-col justify-end overflow-hidden",
+          ui.surface.inkPlain,
+        )}
         data-testid="story-viewer"
       >
         <img
           key={story.id}
           src={resolveMediaUrl({ storagePath: story.storagePath })}
           alt={ar ? story.altAr : story.altFr}
-          className="mx-auto max-h-[70dvh] w-full object-contain"
+          className="absolute inset-0 size-full object-cover"
         />
-        {story.credit && (
-          <figcaption className={cn("text-center", ui.text.meta, ui.tone.onInkMuted)}>
-            {story.credit}
-          </figcaption>
-        )}
+        <figcaption
+          className={cn(
+            "relative mt-64 grid gap-3 p-5 sm:mt-80 sm:p-6",
+            ui.surface.inkPlain,
+            ui.tone.onInkPlain,
+          )}
+        >
+          {story.generated && (
+            <span className={cn(ui.text.meta, ui.tone.onInkMuted)}>
+              {ar ? "صورة توضيحية بالذكاء الاصطناعي" : "Illustration générée par IA"}
+            </span>
+          )}
+          <p className={cn(ui.display.section, "break-words")} data-testid="story-headline">
+            {ar ? story.titleAr : story.titleFr}
+          </p>
+          {story.credit && <p className={cn(ui.text.meta, ui.tone.onInkMuted)}>{story.credit}</p>}
+        </figcaption>
       </figure>
     </UiSheet>
   );
