@@ -62,6 +62,11 @@ The worker, per request:
      per-account table (preferences, follows, notifications and deliveries,
      predictions and standings, match votes, saved articles, Pépites follows,
      the request itself, bans, MFA factors, identities, sessions);
+     the Manager Card (`app.manager_cards`, `manager_card_seasons`,
+     `manager_card_gameweeks`) goes the same way, by cascade from the profile,
+     and its permanent number is **retired**: an AFTER DELETE trigger copies
+     the serial, and nothing else, to `app_private.manager_card_retired_serials`
+     (no user id), so it is never issued again (20261008123000);
    - one row in `app_private.account_deletion_log`: request id, dates,
      attempts, counts. No user id, address or name;
 4. sends the confirmation e-mail (Resend, FR or AR, idempotency key per
@@ -161,8 +166,8 @@ select cron.alter_job((select jobid from cron.job where jobname = 'account-delet
 ```
 
 **Other writers.** The erasure takes, without waiting, the advisory locks the
-Fantasy lifecycle tick, Pronostics scoring, the Pépites tick and prize
-evaluation hold while they write. If one of them is running, the erasure
+Fantasy lifecycle tick, Pronostics scoring, the Pépites tick, prize
+evaluation and the Manager Card tick (`botolago:manager-card`, 20261008123100) hold while they write. If one of them is running, the erasure
 refuses with `account_deletion_writer_busy`, the worker releases the request,
 and the next hourly run erases it. A run of these refusals shows in the health
 check as a failed last attempt.

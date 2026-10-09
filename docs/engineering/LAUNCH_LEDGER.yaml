@@ -4880,3 +4880,23 @@ tasks:
       available for reuse in future QA passes; not cleaned up since no delete_fantasy_team RPC
       exists and deletion was not requested.
     commits_produced: 'None. This was a verification-only pass: independent re-audit found the existing implementation already matches the supplied Figma reference on every screen compared, and the one real functional finding (bounded load latency) is a working-as-designed safeguard already tracked, not a new defect requiring a fix. No discrepancy required changing the implementation.'
+  BG-0158:
+    title: Manager Card backend (OVR, tier, four stats, permanent number, founder)
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: RUNNING # built (PR #381, draft, CI green); installed on production 2026-10-08 switched off; waiting on calibration and rules v1
+    depends_on: []
+    plan: docs/backend/MANAGER_CARD_DOMAIN_PLAN.md
+    brief: docs/engineering/tasks/BG-0158/engineering-brief.yaml
+    evidence:
+      - "design: repository facts checked against origin/main 3f9c57fc on 2026-10-08; owner answered yes to D1-D20 the same day"
+      - "five migrations 20261008123000-123400, built by Sonnet lanes and reviewed; CI backend-quality green on 10b3bd7 (run 37782701338): full pgTAP suite incl. manager_card.test.sql (149 checks), db lint, generated types"
+      - "calculation matches an independent Python reference row for row; a second run changes nothing; ~5.5 s per evaluation at 4,003 teams / gameweek 4 locally"
+      - "production 2026-10-08: owner ran apply-20261008123000-manager-card.sql in the SQL Editor; rehearsal passed, commit applied, Fantasy tick paused and restored; ships off with no rules (docs/production/APPLIED_2026_10_08_MANAGER_CARD.md); session read-back pending (connector signed out)"
+    remaining:
+      - "session: read-only check of production once the Supabase connector is reconnected"
+      - "owner: recalibrate after at least 5 finished gameweeks (2026-10-08 dry run: 2 gameweeks, 7 teams, nothing installable), then rules v1 by scripts/backend/apply-manager-card-rules-v1.sql"
+      - "owner: founder grant on or after 2026-11-01 (cut-off 31 October end of day, Moroccan time) by scripts/backend/manager-card-founder-grant.sql"
+      - "owner: switches on once the card screens exist (onboarding planned in another session)"
+      - "owner: review and merge PR #381"
