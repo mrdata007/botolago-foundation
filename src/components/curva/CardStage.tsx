@@ -12,6 +12,7 @@ import { useMotionAllowed } from "./use-replay-beat";
 import { cn } from "@/lib/utils";
 
 import { CardBack } from "./CardBack";
+import { tiltAllowed } from "./flip-state";
 import { Figure, ProvisionalBadge } from "./figures";
 import { deltaArrow, signedDelta } from "./rating-change";
 import type { RatingBadge } from "./use-rating-change";
@@ -91,6 +92,8 @@ export function CardStage({
   const motion = useMotionCopy();
   const [back, setBack] = useState(false);
   const [turning, setTurning] = useState(false);
+  // Counts the turns, so a second tap in the middle of one restarts the safety timer below.
+  const [turnKey, setTurnKey] = useState(0);
   const [announce, setAnnounce] = useState("");
   const stage = useStageEntrance({
     enabled: !!entrance,
@@ -103,14 +106,17 @@ export function CardStage({
     if (!turning) return;
     const timer = window.setTimeout(() => setTurning(false), tokenMs("--duration-hero", 420) + 120);
     return () => window.clearTimeout(timer);
-  }, [turning]);
+  }, [turning, turnKey]);
 
   const flip = () => {
     const next = !back;
     setBack(next);
     setAnnounce(next ? motion.flip.shownBack : motion.flip.shownFront);
     // Under reduced motion the faces swap at once: no turn, no 3D context at all.
-    if (motionOk && !prefersReducedMotion()) setTurning(true);
+    if (motionOk && !prefersReducedMotion()) {
+      setTurning(true);
+      setTurnKey((n) => n + 1);
+    }
   };
   // False on the server, in the first client render and under reduced motion: the faces then swap
   // by being shown and hidden, with no 3D context and no transform at all.
@@ -191,7 +197,7 @@ export function CardStage({
                     profile={profile}
                     width={336}
                     beat={beat}
-                    tilt={!back && !stage.entering}
+                    tilt={tiltAllowed({ back, turning, entering: stage.entering })}
                     testId={testId}
                     className="relative"
                   />
