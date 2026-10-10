@@ -102,8 +102,11 @@ still fits. The client's quota guard (`minRemaining`, default 100, in
   half-time scores; filter on `tournament.uniqueTournament.id == 937`. Live
   polling therefore costs one request per poll, as budgeted (≈ 960 a month at
   2 min). `matches/get-live` and `matches/list-live` do not exist (404).
-- Quota on 2026-10-10 after both runs: 268 of 500 left; the key still reports
-  the free 500 limit.
+- Paid tier active from 2026-10-10 17:05 UTC (provider-probe run 38070242572):
+  **10,000 requests a month** on the GitHub `staging-load-test` key, about four
+  times the ≈ 2,500 needed. The same key still has to be set as the Supabase
+  Edge secret `RAPIDAPI_KEY` on staging (and later production) before any
+  SofaScore Edge job runs.
 
 ## 5. Phases
 
@@ -145,7 +148,7 @@ Open from review:
 
 ## 7. Owner prerequisites
 
-- Subscribe the RapidAPI app to the chosen paid SofaScore tier (§4).
+- ~~Subscribe to a paid SofaScore tier~~ — done 2026-10-10 (10,000 a month).
 - `RAPIDAPI_KEY` in staging Supabase secrets (never in the repo or chat).
 - Approve the P1 probe run (≈ 18 requests of quota).
 
