@@ -1799,6 +1799,7 @@ export type Database = {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
       }
+      service_claim_ai_home_story: { Args: never; Returns: Json }
       service_claim_email_deliveries: {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
@@ -1817,6 +1818,15 @@ export type Database = {
       }
       service_claim_push_deliveries: {
         Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_complete_ai_home_story: {
+        Args: {
+          p_height: number
+          p_job_id: string
+          p_model: string
+          p_width: number
+        }
         Returns: Json
       }
       service_complete_fantasy_gameweek: {
@@ -1874,6 +1884,10 @@ export type Database = {
       service_evaluate_fantasy_prizes: {
         Args: { p_limit?: number }
         Returns: Json
+      }
+      service_fail_ai_home_story: {
+        Args: { p_error_code: string; p_job_id: string }
+        Returns: undefined
       }
       service_fantasy_deadline_watch: {
         Args: {

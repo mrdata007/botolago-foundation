@@ -8,12 +8,11 @@ anonymous or authenticated browser roles. Writes are audited and use a version
 check to reject conflicting edits.
 
 Upload JPEG, PNG, WebP or AVIF (10 MB maximum), enter French/Arabic titles and
-image descriptions, optionally add a photo credit and destination, then save.
+image descriptions, optionally add a photo credit, then save.
 New stories are drafts. Publishing makes a validated image appear in Home's
 circular row; unpublishing removes it on the next public refresh (60 seconds,
 or navigation/refocus). Ordering uses the numeric position, then creation time.
-Readers open a manual image viewer with previous/next, close and an optional
-internal link. No video, automatic playback, scheduled expiry or unread state.
+Readers open a manual image viewer with previous/next, close and a localized headline. No video, automatic playback, scheduled expiry or unread state.
 
 The existing `news-media-upload` Edge Function validates file bytes and staff
 access, uploads the image and registers its media record. Its `news-media`
@@ -36,8 +35,9 @@ automatically.
 5. With real staff accounts, verify upload → draft → reload → publish → public
    viewer → unpublish, plus rejection for a non-publisher.
 
-Until the migration is available or if there are no published stories, Home
-keeps the section shortcut row. Admin errors are visible and disable editing
+If there are no published stories, Home hides the row. Section shortcuts are no
+longer used as a fallback. Automatic news illustrations are documented in
+[AI_HOME_STORIES.md](AI_HOME_STORIES.md). Admin errors are visible and disable editing
 when its initial read fails. Roll back the frontend if needed; keep the additive
 migration and stored records. Unpublishing is the normal content rollback.
 

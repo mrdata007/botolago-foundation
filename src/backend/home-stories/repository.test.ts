@@ -71,7 +71,7 @@ describe("home story boundaries", () => {
   test("both descriptions and bounded positions are required", () => {
     expect(storyInputSchema.safeParse({ ...story, position: -1 }).success).toBe(false);
     expect(storyInputSchema.safeParse({ ...story, altFr: "" }).success).toBe(false);
-    expect(storyInputSchema.safeParse({ ...story, titleFr: "x".repeat(61) }).success).toBe(false);
+    expect(storyInputSchema.safeParse({ ...story, titleFr: "x".repeat(201) }).success).toBe(false);
   });
   test("rejects SVG, empty and oversized files", () => {
     for (const file of [
