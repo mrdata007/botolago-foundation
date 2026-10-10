@@ -481,8 +481,9 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    on afterwards. Run it as a rehearsal ("Rehearsal passed"), then with
    `commit;` ("Applied"). It checks both switches are off, there is no rules
    row, the grants, the erase lock, both jobs, and that the tick answers `off`.
-   **Then the five pull requests merged to main after #381 (six
-   migrations) go first, in this order,** each by its own guarded script, before the read API script below:
+   **Then the six pull requests merged to main after #381 (seven
+   migrations) go first, in this order,** each by its own guarded script (except
+   (g), which has none), before the read API script below:
    (a) the Fantasy durable progression migration (PR #384),
    `scripts/backend/apply-fantasy-durable-progression.sql` (migration
    `20261009091728`, see `FANTASY_DURABLE_PROGRESSION_RUNBOOK.md`); then
@@ -510,8 +511,13 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    `scripts/backend/apply-compact-story-labels.sql` (migration
    `20261010055425`, see `AI_HOME_STORIES.md`). Before it, wait until the
    three replacement images have finished generating: it also refuses while a
-   story is still generating (« Edge worker not drained »). PR #387 (AI
-   content), PR #391 (story viewer) and PR #392 (story player) add no
+   story is still generating (« Edge worker not drained »); then
+   (g) the removal of public AI notices (PR #396), migration
+   `20261010073509` (`supabase/migrations/20261010073509_no_public_ai_notices.sql`).
+   It has no apply script of its own: apply it through the reviewed migration
+   path (`RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md`), after (f) and before the
+   read API script, which refuses until it is the newest recorded migration.
+   PR #387 (AI content), PR #391 (story viewer) and PR #392 (story player) add no
    migration.
    The migrations go in repository order, and the four below are last:
    `20261009091728` replaces `app_private.ops_health_checks()` with a wrapper
@@ -536,7 +542,7 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    Home stories' script expects 166 rows before and leaves 168, while AI home
    stories' wants exactly 169. From there they do: AI home stories wants 169
    and leaves 170, the repair wants 170 and leaves 171, the refresh wants 171
-   and leaves 171, the compact story labels want 171 and leave 172. Before
+   and leaves 171, the compact story labels want 171 and leave 172, and (g) leaves 173. Before
    running AI home stories, read
    `select count(*), max(version) from supabase_migrations.schema_migrations;`
    and, if it refuses with « migration baseline changed », find out why with
