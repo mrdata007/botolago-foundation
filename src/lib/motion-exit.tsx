@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ComponentPropsWithoutRef,
   type ReactNode,
@@ -10,6 +11,7 @@ import {
 
 import { prefersReducedMotion } from "@/lib/motion";
 import type { Bezier, DurationName, ExitMode, ExitTag } from "./motion-lib";
+import { loadMotion, loadedMotion, motionFailed, type MotionLib } from "./motion-loader";
 
 /**
  * Things that leave (docs/engineering/MOTION_PLAN_4.md).
@@ -40,63 +42,90 @@ export const EASE_EMPHASIZED = [0.2, 0.9, 0.1, 1] as const;
 
 export type { ExitMode };
 
-type Lib = typeof import("./motion-lib");
+type Lib = MotionLib;
 
-let loaded: Lib | null = null;
-let pending: Promise<Lib> | null = null;
-let failed = false;
+type Registry = {
+  lib: Lib | null;
+  /** The elements this presence draws while still plain (to tell when a swap is safe). */
+  nodes: Set<HTMLElement>;
+};
+const LibContext = createContext<Registry>({ lib: null, nodes: new Set() });
 
 /**
- * Fetches Motion (its own chunk) once, after the first paint of the first
- * `ExitPresence`. Until it has arrived, and always under reduced motion, the
- * wrappers draw plain elements: a child that is removed in that time is
- * simply gone, so nothing is ever left stuck on screen.
+ * Whether the plain tree can be swapped for the animated one without anyone
+ * noticing: focus is not inside it, nothing in it is mid-animation, and (with
+ * `idleOnly`) it is not showing anything at all (a search panel that is open).
  */
-function loadMotion(): Promise<Lib> {
-  pending ??= import("./motion-lib").then((module) => (loaded = module));
-  return pending;
+function swapIsSafe(nodes: ReadonlySet<HTMLElement>, idleOnly: boolean): boolean {
+  if (nodes.size === 0) return true;
+  if (idleOnly) return false;
+  const active = typeof document === "undefined" ? null : document.activeElement;
+  for (const node of nodes) {
+    if (!node.isConnected) continue;
+    if (active && node.contains(active)) return false;
+    if (
+      typeof node.getAnimations === "function" &&
+      node.getAnimations({ subtree: true }).length > 0
+    )
+      return false;
+  }
+  return true;
 }
-
-const LibContext = createContext<Lib | null>(null);
 
 /**
  * Wraps the children that may leave. Keep it mounted and put the conditional
  * (or the `.map`) inside it: an element removed from inside plays its exit.
+ *
+ * Motion arrives after the page does. The swap from plain to animated remounts
+ * the children, so it waits until that cannot be seen: not while focus is
+ * inside, not while something in it is animating, and with `idleOnly` not
+ * while it shows anything (checked every 200ms).
  */
 export function ExitPresence({
   children,
   mode = "sync",
+  idleOnly = false,
 }: {
   children?: ReactNode;
   mode?: ExitMode;
+  idleOnly?: boolean;
 }) {
   const reduced = prefersReducedMotion();
-  const [lib, setLib] = useState<Lib | null>(loaded);
+  const [lib, setLib] = useState<Lib | null>(loadedMotion());
+  const nodes = useRef(new Set<HTMLElement>()).current;
   useEffect(() => {
-    if (reduced || lib || failed) return;
+    if (reduced || lib || motionFailed()) return;
     let live = true;
+    let timer: ReturnType<typeof setInterval> | undefined;
     loadMotion().then(
       (module) => {
-        if (live) setLib(module);
+        if (!live) return;
+        const trySwap = () => {
+          if (!swapIsSafe(nodes, idleOnly)) return false;
+          setLib(module);
+          return true;
+        };
+        if (!trySwap()) {
+          timer = setInterval(() => {
+            if (trySwap()) clearInterval(timer);
+          }, 200);
+        }
       },
-      // Offline, or the chunk is gone: stay with plain elements, which still
-      // leave at once. Not retried, so a bad network does not loop.
-      () => {
-        failed = true;
-      },
+      () => undefined,
     );
     return () => {
       live = false;
+      if (timer) clearInterval(timer);
     };
-  }, [reduced, lib]);
+  }, [reduced, lib, nodes, idleOnly]);
 
   // Reduced motion: no presence at all, so a removed child is gone in the
   // same commit instead of a frame later.
   if (reduced || !lib) {
-    return <LibContext.Provider value={null}>{children}</LibContext.Provider>;
+    return <LibContext.Provider value={{ lib: null, nodes }}>{children}</LibContext.Provider>;
   }
   return (
-    <LibContext.Provider value={lib}>
+    <LibContext.Provider value={{ lib, nodes }}>
       <lib.Presence mode={mode}>{children}</lib.Presence>
     </LibContext.Provider>
   );
@@ -122,10 +151,28 @@ function ExitItem({
   duration: DurationName;
   ease: Bezier;
 }) {
-  const lib = useContext(LibContext);
+  const { lib, nodes } = useContext(LibContext);
   if (!lib) {
     const Plain = Tag as "div";
-    return <Plain {...(rest as ComponentPropsWithoutRef<"div">)} />;
+    const { ref: outer, ...plain } = rest as ComponentPropsWithoutRef<"div"> & {
+      ref?: Ref<HTMLElement>;
+    };
+    return (
+      <Plain
+        {...plain}
+        ref={(node: HTMLDivElement | null) => {
+          if (!node) return;
+          nodes.add(node);
+          if (typeof outer === "function") outer(node);
+          else if (outer) (outer as { current: HTMLElement | null }).current = node;
+          return () => {
+            nodes.delete(node);
+            if (typeof outer === "function") outer(null);
+            else if (outer) (outer as { current: HTMLElement | null }).current = null;
+          };
+        }}
+      />
+    );
   }
   return (
     <lib.Item

@@ -89,10 +89,10 @@ describe("moveFocusAfterDismiss", () => {
     expect(focusLog).toEqual(["h1"]);
     expect(heading.tabIndex).toBe(-1);
   });
-  it("also moves focus when it was nowhere (the body)", () => {
+  it("leaves focus alone when it was on the body (a click that focused nothing)", () => {
     const { root, focusLog } = fakeRoot(IDS, "body");
-    moveFocusAfterDismiss(root, IDS, "a");
-    expect(focusLog).toEqual(["dismiss:b"]);
+    expect(moveFocusAfterDismiss(root, IDS, "a")).toBeNull();
+    expect(focusLog).toEqual([]);
   });
   it("leaves focus alone when it was on another card", () => {
     const { root, focusLog } = fakeRoot(IDS, "dismiss:c");

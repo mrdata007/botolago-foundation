@@ -152,7 +152,7 @@ export function GlobalSearch({
           ui.focus,
         )}
       />
-      <ExitPresence>
+      <ExitPresence idleOnly>
         {showPanel ? (
           <ExitFade
             as="ul"
@@ -168,7 +168,7 @@ export function GlobalSearch({
           >
             {/* Rows that drop out while typing fade where they stand (out of
                 the flow), so the ones that stay do not jump. */}
-            <ExitPresence mode="popLayout">
+            <ExitPresence mode="popLayout" idleOnly>
               {results.length === 0 ? (
                 <ExitFade
                   as="li"

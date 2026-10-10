@@ -85,7 +85,7 @@ describe("motion-exit conventions", () => {
       for (const name of readdirSync(dir)) {
         const path = join(dir, name);
         if (statSync(path).isDirectory()) walk(path);
-        else if (/\.(ts|tsx)$/.test(name) && !/motion-(exit|lib)\.tsx?$/.test(path)) {
+        else if (/\.(ts|tsx)$/.test(name) && !/motion-(exit|lib|loader)\.tsx?$/.test(path)) {
           if (
             /from\s+["']motion(\/react)?["']|from\s+["']framer-motion["']/.test(
               readFileSync(path, "utf8"),

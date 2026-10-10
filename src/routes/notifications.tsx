@@ -11,7 +11,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { authOutlineClass } from "@/components/auth/auth-classes";
@@ -23,8 +23,9 @@ import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { formatRelativeTime } from "@/lib/format-time";
 import { notificationDestination } from "@/lib/notification-link";
-import { staggerStyle, useArrivals } from "@/lib/motion";
+import { prefersReducedMotion, staggerStyle, tokenMs, useArrivals } from "@/lib/motion";
 import { ExitCollapse, ExitPresence } from "@/lib/motion-exit";
+import { motionLoaded } from "@/lib/motion-loader";
 import { moveFocusAfterDismiss } from "@/lib/notification-focus";
 import { cn } from "@/lib/utils";
 import {
@@ -98,6 +99,22 @@ function Inbox() {
     () => (inboxQ.data?.pages ?? []).flatMap((page) => page.items).filter((c) => !hidden.has(c.id)),
     [inboxQ.data, hidden],
   );
+
+  // The empty state waits for the last card to finish leaving, so it appears
+  // where the list was instead of showing under the fading card and jumping up.
+  const [emptyShown, setEmptyShown] = useState(cards.length === 0);
+  useEffect(() => {
+    if (cards.length > 0) {
+      setEmptyShown(false);
+      return;
+    }
+    if (emptyShown) return;
+    const wait =
+      prefersReducedMotion() || !motionLoaded() ? 0 : tokenMs("--duration-sheet", 320) + 40;
+    const timer = setTimeout(() => setEmptyShown(true), wait);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards.length]);
 
   // Cards that arrive at the top while the page is open fade in one by one.
   const arrived = useArrivals(cards.map((card) => card.id));
@@ -252,7 +269,7 @@ function Inbox() {
               </ExitPresence>
             </ul>
           </UiCard>
-          {cards.length === 0 ? (
+          {cards.length === 0 && emptyShown ? (
             <EmptyState>
               <p className={cn(ui.display.section, ui.tone.default)}>
                 {t("notifications.empty_title")}

@@ -21,6 +21,14 @@ animate an element that arrives, not one React has already removed). Follows
   `ExitPresence`. Until it arrives, and under reduced motion, the wrappers draw
   plain elements, so an element removed in that time is simply gone. The
   shared first-load chunk stays at its old size.
+- Size, stated plainly: the lazy chunks total about 29.3 KB gzip
+  (`motion-lib` 26.1 KB plus a 3.2 KB shared helper chunk), which is over the
+  20 KB figure above. None of it is on first load: the shell chunk stays at
+  about 6.2 KB gzip (5.2 KB on `main`). The chunk is prefetched when the
+  browser is idle (not under reduced motion), and the swap from plain to
+  animated elements waits until nobody can see it (focus outside, nothing
+  animating, and for the search panel while it is closed). Whether the 20 KB
+  budget is meant to apply to a lazy chunk is the owner's call.
 - One shared wrapper in `src/lib/motion-exit.tsx`, so screens never import
   `motion/react` directly. It provides the `LazyMotion` boundary and the
   `MotionConfig reducedMotion="user"` setting, and reads its durations and

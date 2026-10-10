@@ -30,8 +30,7 @@ export interface FocusRoot {
 const dismissSelector = (id: string) => `[data-dismiss-id="${id.replace(/["\\]/g, "\\$&")}"]`;
 
 /**
- * Moves focus off a card that is being dismissed, if it was on it (or nowhere
- * in particular). Returns the target it chose, or null when focus was
+ * Moves focus off a card that is being dismissed, if it was on it. Returns the target it chose, or null when focus was
  * elsewhere and was left alone.
  */
 export function moveFocusAfterDismiss(
@@ -41,8 +40,10 @@ export function moveFocusAfterDismiss(
 ): DismissFocusTarget | null {
   const leaving = root.querySelector(dismissSelector(dismissed))?.closest("li") ?? null;
   const active = root.activeElement;
-  const focusWasHere = !active || active === root.body || !!leaving?.contains(active);
-  if (!focusWasHere) return null;
+  // Only when focus is on the leaving card: it is about to be lost with it. A
+  // browser that does not focus a button on a mouse click (Safari) leaves
+  // focus on the body, and that is left alone.
+  if (!active || !leaving?.contains(active)) return null;
   const target = dismissFocusTarget(ids, dismissed);
   const element =
     target.kind === "card"
