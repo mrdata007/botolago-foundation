@@ -33,7 +33,11 @@ function storage() {
   return { client, uploaded, removed };
 }
 
-function user(results: { paths?: RpcResult; submit?: RpcResult }) {
+// What api.get_my_staff_context answers for staff allowed to correct football
+// records, with an aal2 session.
+const PHOTO_STAFF_CONTEXT = { accessAllowed: true, permissions: ["football.correct"] };
+
+function user(results: { paths?: RpcResult; submit?: RpcResult; staffContext?: RpcResult }) {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const client: UserScopedClient = {
     auth: {
@@ -44,6 +48,10 @@ function user(results: { paths?: RpcResult; submit?: RpcResult }) {
     },
     schema: () => ({
       rpc: async (name, args) => {
+        // The staff pre-flight; kept out of `calls`, which records the writes.
+        if (name === "get_my_staff_context") {
+          return results.staffContext ?? { data: PHOTO_STAFF_CONTEXT, error: null };
+        }
         calls.push({ name, args });
         if (name === "admin_player_photo_upload_paths") {
           return (
@@ -165,4 +173,39 @@ describe("handlePlayerPhotoUploadRequest", () => {
     expect(files.uploaded).toEqual([]);
     expect(caller.calls).toEqual([]);
   });
+
+  const refusals: Array<[string, RpcResult]> = [
+    [
+      "a signed-in account that is not staff",
+      { data: null, error: { code: "PT403", message: "staff_access_denied" } },
+    ],
+    [
+      "staff without football.correct",
+      { data: { accessAllowed: true, permissions: ["editorial.write"] }, error: null },
+    ],
+    [
+      "staff whose session is not cleared for access (no aal2)",
+      { data: { accessAllowed: false, permissions: ["football.correct"] }, error: null },
+    ],
+  ];
+  for (const [label, staffContext] of refusals) {
+    it(`refuses ${label} with 403 before the multipart body is read`, async () => {
+      const files = storage();
+      const caller = user({ staffContext });
+      const incoming = request();
+      const response = await handlePlayerPhotoUploadRequest(incoming, {
+        serviceClient: files.client,
+        createUserClient: () => caller.client,
+      });
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        error: "not_allowed",
+        code: "PT403",
+        message: "permission_missing",
+      });
+      expect(incoming.bodyUsed).toBe(false);
+      expect(caller.calls).toEqual([]);
+      expect(files.uploaded).toEqual([]);
+    });
+  }
 });

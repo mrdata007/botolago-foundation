@@ -8,6 +8,9 @@ import {
 import type { EmailRpcClient } from "./notification-email-dispatch.ts";
 
 const TOKEN = "c".repeat(64);
+const SCHEDULER = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN };
+// Well formed, but not the configured token.
+const WRONG_TOKEN = "9".repeat(64);
 const API_KEY = "re_test_0123456789abcdef";
 const A = {
   requestId: "11111111-1111-4111-8111-111111111111",
@@ -31,7 +34,6 @@ interface Call {
 
 function fakeClient(
   options: {
-    tokenValid?: boolean;
     claims?: unknown;
     eraseError?: Record<string, string>;
   } = {},
@@ -44,8 +46,6 @@ function fakeClient(
           calls.push({ name, args });
           const ok = (data: unknown) => Promise.resolve({ data, error: null });
           switch (name) {
-            case "service_verify_scheduler_token":
-              return ok(options.tokenValid ?? true);
             case "service_claim_account_deletions":
               return ok(options.claims ?? [A, D]);
             case "service_erase_account": {
@@ -104,7 +104,7 @@ describe("account deletion worker", () => {
     const { avatars, removed } = store({ [A.userId]: ["avatar.jpg"] });
     const { fetchImpl, sent } = provider();
     const response = await handleAccountDeletionRequest(request(), {
-      environment: { RESEND_API_KEY: API_KEY },
+      environment: { ...SCHEDULER, RESEND_API_KEY: API_KEY },
       client,
       avatars,
       fetchImpl,
@@ -120,16 +120,15 @@ describe("account deletion worker", () => {
 
     // Files first, then the erasure, then the record: for each account in turn.
     expect(calls.map((call) => call.name)).toEqual([
-      "service_verify_scheduler_token",
       "service_claim_account_deletions",
       "service_erase_account",
       "service_record_account_deletion_email",
       "service_erase_account",
       "service_record_account_deletion_email",
     ]);
-    expect(calls[2].args).toEqual({ p_request_id: A.requestId, p_avatar_objects_removed: 1 });
-    expect(calls[3].args).toEqual({ p_request_id: A.requestId, p_outcome: "sent" });
-    expect(calls[5].args).toEqual({ p_request_id: D.requestId, p_outcome: "no_address" });
+    expect(calls[1].args).toEqual({ p_request_id: A.requestId, p_avatar_objects_removed: 1 });
+    expect(calls[2].args).toEqual({ p_request_id: A.requestId, p_outcome: "sent" });
+    expect(calls[4].args).toEqual({ p_request_id: D.requestId, p_outcome: "no_address" });
 
     expect(sent).toHaveLength(1);
     const body = JSON.parse(String(sent[0].init.body)) as Record<string, unknown>;
@@ -145,7 +144,7 @@ describe("account deletion worker", () => {
     const { client, calls } = fakeClient({ claims: [A] });
     const { avatars } = store({ [A.userId]: ["avatar.png"] }, true);
     const response = await handleAccountDeletionRequest(request(), {
-      environment: {},
+      environment: SCHEDULER,
       client,
       avatars,
     });
@@ -166,7 +165,7 @@ describe("account deletion worker", () => {
       },
     });
     const { avatars } = store({});
-    await handleAccountDeletionRequest(request(), { environment: {}, client, avatars });
+    await handleAccountDeletionRequest(request(), { environment: SCHEDULER, client, avatars });
     const releases = calls.filter((call) => call.name === "service_release_account_deletion");
     expect(releases.map((call) => call.args.p_error)).toEqual([
       "account_deletion_staff_account",
@@ -178,7 +177,7 @@ describe("account deletion worker", () => {
     const { client, calls } = fakeClient({ claims: [A] });
     const { avatars } = store({});
     const response = await handleAccountDeletionRequest(request(), {
-      environment: {},
+      environment: SCHEDULER,
       client,
       avatars,
     });
@@ -187,25 +186,37 @@ describe("account deletion worker", () => {
   });
 
   it("refuses a caller without the scheduler token, and anything but POST", async () => {
-    const { client, calls } = fakeClient({ tokenValid: false });
+    const { client, calls } = fakeClient();
     const { avatars } = store({});
     expect(
-      (await handleAccountDeletionRequest(request(), { environment: {}, client, avatars })).status,
+      (
+        await handleAccountDeletionRequest(request(WRONG_TOKEN), {
+          environment: SCHEDULER,
+          client,
+          avatars,
+        })
+      ).status,
     ).toBe(401);
     expect(
-      (await handleAccountDeletionRequest(request("nope"), { environment: {}, client, avatars }))
-        .status,
+      (
+        await handleAccountDeletionRequest(request("nope"), {
+          environment: SCHEDULER,
+          client,
+          avatars,
+        })
+      ).status,
     ).toBe(401);
     expect(
       (
         await handleAccountDeletionRequest(request(TOKEN, "GET"), {
-          environment: {},
+          environment: SCHEDULER,
           client,
           avatars,
         })
       ).status,
     ).toBe(405);
-    expect(calls.map((call) => call.name)).toEqual(["service_verify_scheduler_token"]);
+    // Refused in-process: not even the token is checked through the database.
+    expect(calls).toEqual([]);
   });
 });
 
