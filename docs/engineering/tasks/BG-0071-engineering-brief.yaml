@@ -1,0 +1,279 @@
+task_id: BG-0071
+role: Researcher
+attempt: 1
+researched_commit: f0782d6 (origin/main, read-only clone)
+area: fantasy
+severity: P1
+launch_window: not a GW1 blocker (no points exist before GW1 closes) — MUST be live before GW2 opens (~2026-09-25/26) or the picking screens show a dead game for the whole first week.
+
+objective: >
+  The three numbers a manager uses to pick players — total points, form, and
+  ownership % — are hardcoded to 0 on every Fantasy screen in the cloud (production)
+  data path. The scoring engine computes and persists per-player per-gameweek points
+  correctly; the UI never reads them. Ownership is additionally zero at the database
+  level because app.fantasy_players.selected_by_count is defined and exposed but never
+  written by any RPC. Wire all three to real data, define "form" as the FPL convention
+  (mean points over the last 5 completed gameweeks), and render a dash — not 0.0 —
+  before any gameweek has scored.
+
+findings:
+  # ---------------------------------------------------------------- F1: frontend hardcodes zeros
+  - classification: VERIFIED
+    statement: >
+      The cloud DTO→domain mapper for a Fantasy player sets totalPoints: 0, form: 0,
+      ownership: 0 unconditionally. Every player list, picker, and detail page in
+      production consumes this mapper.
+    evidence: "src/services/fantasy-runtime.ts:47-49 (playerFromDto); :375-390 (top players mapper sets price 0, ownershipPercent 0, form 0)"
+  - classification: VERIFIED
+    statement: >
+      Those three fields are rendered and used for sorting on four surfaces:
+      /fantasy/players (sort keys points|form|price|ownership; card rows show all
+      three), the squad-builder Add Player screen (columns Forme / Prix / Sélectionné,
+      sort by form and selected), /fantasy/players/$playerId (Overview stats,
+      History tab, Stats tab), and the picker drawer.
+    evidence: "src/routes/fantasy.players.tsx:46,84-86,198-208,263-279; src/components/fpl/AddPlayerScreen.tsx:12,75-76,180,227; src/routes/fantasy.players.$playerId.tsx:156-158,163-167,215-218"
+  - classification: VERIFIED
+    statement: >
+      QA screenshots on production show the result: every player at Forme 0.0 and
+      Sélectionné 0.0% in the Add Player list.
+    evidence: "docs/qa/fpl-screens/auth_add_player.png; journey/mobile_03_add_player.png"
+
+  # ---------------------------------------------------------------- F2: points DO exist server-side
+  - classification: VERIFIED
+    statement: >
+      Per-player per-gameweek points are persisted in
+      app.fantasy_player_gameweek_points (provisional_points, final_points,
+      minutes_played, did_play, finalized_at) keyed by (fantasy_player_id, gameweek_id),
+      with an index on (gameweek_id, provisional_points desc).
+    evidence: "supabase/migrations/20260720141850_fantasy_scoring_leagues_operations.sql:36-59"
+  - classification: VERIFIED
+    statement: >
+      The lifecycle rehearsal wrote 539 player result rows for GW1 in 3.6 s, so the
+      table is populated by the real worker on every gameweek close.
+    evidence: "docs/qa/FANTASY_LAUNCH_HARDENING_2026_09_18.md §2 table row 'Scoring snapshot'"
+  - classification: VERIFIED
+    statement: >
+      api.fantasy_top_players(p_gameweek_id, p_limit) already reads this table and is
+      the only read RPC that does. It returns points for ONE gameweek, top-N only —
+      not a per-player season aggregate, not form.
+    evidence: "supabase/migrations/20260720173500_fantasy_route_read_contracts.sql:95-126"
+  - classification: VERIFIED
+    statement: >
+      api.fantasy_player_pool(...) — the RPC behind every list/picker — joins
+      fantasy_players, positions, players, teams and returns id, price, status,
+      selectedByCount. It does NOT join fantasy_player_gameweek_points and returns
+      no points or form.
+    evidence: "supabase/migrations/20260720141854_fantasy_api_security.sql:261-316"
+
+  # ---------------------------------------------------------------- F3: ownership is zero in the DB
+  - classification: VERIFIED
+    statement: >
+      app.fantasy_players.selected_by_count (bigint, default 0, check >= 0) is
+      declared and returned by fantasy_player_pool as selectedByCount, but a grep of
+      all 67 migrations finds no UPDATE, trigger, or worker that writes it. Team
+      creation and transfer application do not touch it.
+    evidence: "grep -rn selected_by_count supabase/migrations → only :219 (column), :225 (check), api_security:308 (read)"
+  - classification: VERIFIED
+    statement: >
+      The frontend contract parses selectedByCount but the runtime mapper discards it
+      (ownership: 0). Even if the column were maintained, nothing displays it.
+    evidence: "src/backend/fantasy/contracts.ts:46; src/services/fantasy-runtime.ts:49"
+  - classification: VERIFIED
+    statement: >
+      The price-movement worker already computes the denominator needed for
+      ownership %: count of active fantasy_teams for the season
+      (active_team_count, stored per movement run).
+    evidence: "supabase/migrations/20260720163222_fantasy_ruleset_v1.sql:247-251,716,760"
+  - classification: VERIFIED
+    statement: >
+      Current squad membership is derivable without a counter:
+      app.fantasy_squad_memberships (fantasy_team_id, fantasy_player_id) with a
+      partial index where sold_at is null.
+    evidence: "supabase/migrations/20260720141847_fantasy_teams_transfers_chips.sql:30-53"
+
+  # ---------------------------------------------------------------- F4: no definition of "form" exists
+  - classification: VERIFIED
+    statement: >
+      No migration, ruleset document, or TypeScript module defines how player "form"
+      is calculated. The i18n keys fantasy.form / fpl.form exist; the number behind
+      them was never specified. (The recent_form_weight in
+      20260803173344_fantasy_preactivation_hardening.sql is a TEAM-strength input
+      for fixture difficulty, not player form.)
+    evidence: "grep over supabase/migrations, docs/backend/FANTASY_RULES_V1.md, src/backend/fantasy → no player-form definition"
+  - classification: INFERRED
+    statement: >
+      Every screen is modelled on FPL, whose form is the mean points per gameweek
+      over the last 5 completed gameweeks (fewer if fewer have been played), to one
+      decimal. Adopting the same definition is the least-surprise choice for the
+      target audience and needs no new stored state.
+    evidence: "product convention; UI naming (Forme, fpl.form) follows FPL"
+
+root_cause:
+  classification: VERIFIED
+  description: >
+    The V2 backend was built domain-by-domain with the frontend frozen as the spec.
+    The Fantasy read contracts (fantasy_player_pool, top_players) were scoped to what
+    the squad-builder needed to VALIDATE a squad (position, club, price, status), not
+    to what a manager needs to CHOOSE one. The runtime mapper stubbed the three
+    missing fields to 0 so the typed domain model would compile, and no ledger task
+    ever owned "player statistics on the picking screens". selected_by_count was
+    added to the catalog table as a placeholder for the price-movement domain and
+    was never given a writer.
+
+required_changes:
+  - component: supabase/migrations (new, forward-only)
+    change: >
+      Add api.fantasy_player_season_stats(p_season_id uuid, p_through_gameweek_id uuid
+      default null) returning, per active+eligible fantasy player in the season:
+      fantasyPlayerId, totalPoints (sum of coalesce(final_points, provisional_points)
+      over gameweeks with status in (provisional, finalized)), form (avg of the same
+      over the LAST 5 completed gameweeks by sequence, numeric(4,1), null when 0
+      completed), gameweeksPlayed, minutes, ownershipCount (count of
+      fantasy_squad_memberships where sold_at is null joined to fantasy_teams
+      status='active' for the season), activeTeamCount (count of active teams —
+      same query the price worker uses). Grant execute to anon, authenticated.
+      stable, security definer, search_path=''. Anonymous callable: it exposes only
+      aggregate public data.
+    reason: >
+      One bounded read that serves every screen; keeps fantasy_player_pool's
+      keyset pagination untouched (F2, F3).
+  - component: supabase/migrations (same file)
+    change: >
+      Add api.fantasy_player_gameweek_history(p_fantasy_player_id uuid) returning
+      one row per gameweek the player has a points row for: gameweekSequence,
+      points, minutesPlayed, state (provisional|final), and the opponent short
+      name(s) from fantasy_fixture_assignments → fixtures. Grant to anon,
+      authenticated.
+    reason: "Feeds the player-detail History tab (F1, currently zeros)."
+  - component: supabase/migrations (same file)
+    change: >
+      Either (a) DROP app.fantasy_players.selected_by_count and remove it from the
+      fantasy_player_pool payload, or (b) maintain it. Recommendation: (a). A derived
+      count with no writer is a latent lie; the new stats RPC computes ownership from
+      squad memberships, which cannot drift. If (b) is chosen instead, it must be a
+      trigger on fantasy_squad_memberships insert / sold_at update, with a pgTAP
+      test proving create-team, transfer-in, transfer-out, Free Hit restore, and
+      Wildcard all leave the counter equal to the live membership count.
+    reason: "F3 — remove the placeholder or make it truthful; never leave both."
+  - component: src/backend/fantasy/contracts.ts + src/backend/generated/database.types.ts
+    change: >
+      Add zod schemas for the two new RPC payloads; regenerate types
+      (bun run backend:types:generate) and commit CI's output verbatim (BG-0047
+      lesson).
+    reason: "Typed boundary; keeps backend:types:check green."
+  - component: src/services/fantasy-v2.ts (cloud repository)
+    change: "Add getPlayerSeasonStats(seasonId) and getPlayerGameweekHistory(playerId) calling the new RPCs."
+    reason: "Repository boundary per GREENFIELD_MASTER_PLAN §1."
+  - component: src/services/fantasy-runtime.ts
+    change: >
+      Fetch season stats once per player-list load (React Query, keyed on
+      seasonId + current gameweek id, staleTime ≥ 60 s) and merge by
+      fantasyPlayerId into playerFromDto: totalPoints, form (null → undefined),
+      ownership = round(ownershipCount / activeTeamCount * 100, 1) with 0 when
+      activeTeamCount = 0. Remove the literal zeros at :47-49 and :385-390.
+      getTopPlayers must also fill price and ownershipPercent from the same map.
+    reason: "F1 — the actual defect."
+  - component: src/types/fantasy.ts
+    change: "form: number → form: number | null (null = no completed gameweek yet)."
+    reason: "Lets the UI distinguish 'no data' from 'scored zero'."
+  - component: src/routes/fantasy.players.tsx, src/components/fpl/AddPlayerScreen.tsx, src/routes/fantasy.players.$playerId.tsx, src/components/fantasy/PlayerPickerDrawer.tsx
+    change: >
+      Render "–" (i18n key fantasy.stat.none, FR "–", AR "–") when form is null or
+      no gameweek has completed; keep 0 when a player genuinely scored 0. Sort by
+      form must treat null as lowest. History tab reads
+      getPlayerGameweekHistory. No layout or visual change.
+    reason: "Zero and no-data must look different to a manager."
+  - component: src/i18n/dictionaries.ts
+    change: "Add fantasy.stat.none identically in fr and ar blocks; run scripts/qa/i18n-gate.ts."
+    reason: "i18n gate E2 rejects missing/empty keys."
+  - component: supabase/tests/database (new file fantasy_player_season_stats.test.sql)
+    change: >
+      pgTAP: seed 3 players, 3 gameweeks (2 finalized, 1 open), memberships across
+      2 active + 1 archived team; assert totalPoints sums only completed
+      gameweeks, form averages the last 5 by sequence (test with 6+ gameweeks that
+      the 6th-oldest is excluded), form is null with 0 completed, ownershipCount
+      ignores sold_at rows and archived teams, anon can execute, and the RPC
+      refuses a season id from another tenant with PT404.
+    reason: "Verification standard used by every other Fantasy RPC."
+  - component: src/services/fantasy-runtime.test.ts (or new)
+    change: "Unit test: merge of stats into playerFromDto; null-form → '–'; ownership rounding; activeTeamCount=0 guard."
+    reason: "Frontend regression guard."
+
+constraints:
+  - Forward-only migration; no edit to existing migrations (docs/backend/MIGRATIONS.md).
+  - No change to api.fantasy_player_pool's signature or ordering — the squad builder's keyset pagination and the 22 Playwright journeys depend on it.
+  - No new browser-side computation of points; the database remains the scoring authority (GREENFIELD_MASTER_PLAN §1 rule 5).
+  - Anonymous execute is required: /fantasy/players is a public route (BG-0063 precedent — anonymous rankings 401 was a launch blocker).
+  - Must not touch the lifecycle worker, scoring, or price movement paths (lane closed per BG-0056 mandate).
+  - Production promotion goes through the reviewed migration path (RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md), not Lovable.
+
+risks:
+  - The stats RPC is a full-season aggregate over up to 539 players × N gameweeks per call; with anon access it is a cheap DoS surface. Mitigation — mark stable, cache 60 s client-side, add index (fantasy_player_id, gameweek_id) if the PK order does not already serve the aggregate, and measure EXPLAIN on the staging replica with 30 synthetic gameweeks before promotion.
+  - Removing selected_by_count (option a) touches fantasy_player_pool's payload; contracts.ts:46 parses it as required. Change to optional first, ship, then drop the column in a second migration.
+  - Provisional vs final: between "provisional" and "finalized" the numbers will move. Show state on the History tab; do not hide provisional points (managers expect live-ish numbers).
+
+contradictions: []
+
+unknowns:
+  - Whether the owner wants form = last 5 (FPL) or last 3 (shorter Botola season, 30 GWs). Default to 5; make the window a constant in the RPC, not a ruleset column, so it can change without a ruleset version bump.
+  - Whether "ownership" denominator should be all active teams or only teams that have submitted a lineup for the current gameweek. Default to all active teams (matches the price worker).
+
+acceptance_tests:
+  - On staging with ≥ 2 finalized gameweeks, /fantasy/players sorted by points shows the same top-10 as api.fantasy_top_players summed across those gameweeks.
+  - Before any gameweek completes, every player shows "–" for form and 0 for total points, in FR and AR, on 390 px and 1280 px; no "0.0".
+  - A player owned by 2 of 4 active teams shows 50.0% ownership; selling him from one drops it to 25.0% on the next load; an archived team's squad does not count.
+  - Player detail History tab lists one row per completed gameweek with points, minutes and opponent; the Overview form equals the mean of the last 5 rows.
+  - bun test, backend:db:test, backend:types:check, i18n-gate, lint, typecheck all green; Playwright fantasy.journey.e2e.ts 18/18 unchanged.
+  - Anonymous call to the new RPCs succeeds; call with a foreign season id returns PT404, not data.
+
+implementation_scope:
+  builder_type: Builder-Backend (migration + pgTAP) then Builder-Frontend (runtime, routes, i18n)
+  allowed_paths:
+    - supabase/migrations/2026092*_fantasy_player_statistics.sql
+    - supabase/tests/database/fantasy_player_season_stats.test.sql
+    - src/backend/fantasy/contracts.ts
+    - src/backend/generated/database.types.ts
+    - src/services/fantasy-v2.ts
+    - src/services/fantasy-runtime.ts
+    - src/services/fantasy-runtime.test.ts
+    - src/types/fantasy.ts
+    - src/routes/fantasy.players.tsx
+    - src/routes/fantasy.players.$playerId.tsx
+    - src/components/fpl/AddPlayerScreen.tsx
+    - src/components/fantasy/PlayerPickerDrawer.tsx
+    - src/i18n/dictionaries.ts
+    - docs/backend/FANTASY_RULES_V1.md (append a "Player statistics presentation" section defining form)
+  forbidden_paths:
+    - supabase/migrations/* (existing files)
+    - src/backend/fantasy/scoring.ts, finalization.ts, pricing.ts, ranking.ts
+    - scripts/backend/fantasy-season-orchestrator.ts, fantasy-lifecycle-runner.ts
+    - api.fantasy_player_pool (signature or ordering)
+    - .github/workflows/*
+    - .env.production
+
+status: DONE
+
+# ---------------------------------------------------------------- ledger entry (paste into docs/engineering/LAUNCH_LEDGER.yaml)
+ledger_entry: |
+  BG-0071:
+    title: Player statistics (total points, form, ownership) are hardcoded to 0 on every picking screen; selected_by_count has no writer
+    area: fantasy
+    severity: P1
+    user_impact: >
+      After GW1 closes, every player list, the squad-builder picker, and the player detail
+      page still show 0 points / 0.0 form / 0.0% selected for all 539 players, all season.
+      The points exist in app.fantasy_player_gameweek_points; the UI never reads them, and
+      the ownership counter is never written. Picking is the game; the picking screens carry
+      no information.
+    owner: Chief
+    state: READY
+    depends_on: []
+    deadline: before GW2 opens (first close of GW1 ≈ 2026-09-25)
+    evidence:
+      - docs/engineering/tasks/BG-0071/engineering-brief.yaml
+      - src/services/fantasy-runtime.ts:47-49 (totalPoints/form/ownership = 0)
+      - grep selected_by_count over supabase/migrations → declared, read, never written
+    note: >
+      Not a GW1 blocker (no data exists before the first close). Lane is distinct from the
+      closed BG-0056 Fantasy regression mandate: adds two read RPCs and a mapper fix, touches
+      no lifecycle, scoring, or pricing code.
