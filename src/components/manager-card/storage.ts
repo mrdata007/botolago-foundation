@@ -28,6 +28,8 @@ export type DeviceKey = (typeof DEVICE_KEYS)[keyof typeof DEVICE_KEYS];
 export const SESSION_KEYS = {
   /** One hero (or the born panel) per session, on any surface. */
   hero: "botolago.card.hero_session.v1",
+  /** The stage's entrance on Curva played (or was passed over) once in this session. */
+  entrance: "botolago.card.entrance_session.v1",
 } as const;
 export type SessionKey = (typeof SESSION_KEYS)[keyof typeof SESSION_KEYS];
 
@@ -175,4 +177,32 @@ export function markHeroShown(): void {
 /** For tests only: forget the in-memory flag. */
 export function resetHeroSessionForTests(): void {
   heroShownInMemory = false;
+}
+
+// Where sessionStorage is blocked the flag lives here, so the entrance still plays once per page
+// load rather than on every arrival.
+let entranceShownInMemory = false;
+
+/** Whether the stage's entrance was already played, or passed over, in this session. */
+export function entranceShownThisSession(): boolean {
+  if (entranceShownInMemory) return true;
+  try {
+    return session()?.getItem(SESSION_KEYS.entrance) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markEntranceShown(): void {
+  entranceShownInMemory = true;
+  try {
+    session()?.setItem(SESSION_KEYS.entrance, "1");
+  } catch {
+    /* blocked: the in-memory flag stands */
+  }
+}
+
+/** For tests only: forget the in-memory flag. */
+export function resetEntranceSessionForTests(): void {
+  entranceShownInMemory = false;
 }
