@@ -106,6 +106,14 @@ join app.seasons s on s.id = m.internal_entity_id
 where m.provider_name = 'sportsmonks' and m.entity_type = 'season'
   and m.external_id = '28647' and m.active`;
 
+const SEASONS_SQL = `select c.slug as competition, s.id as season_id, s.label, s.status,
+  (select count(*) from app.fixtures f where f.season_id = s.id) as fixtures,
+  (select string_agg(m.provider_name || ':' || m.external_id, ',')
+     from app_private.football_provider_mappings m
+     where m.entity_type = 'season' and m.internal_entity_id = s.id) as provider_ids
+from app.seasons s join app.competitions c on c.id = s.competition_id
+order by s.starts_on desc nulls last limit 30`;
+
 export const snapshotSql = (seasonId: string) => {
   if (!UUID.test(seasonId)) throw new Error("sofascore_fetch_invalid: season id is not a uuid");
   return `select jsonb_build_object(
@@ -148,10 +156,14 @@ export async function resolveIds(
     return { competitionId: given.competitionId, seasonId: given.seasonId };
   }
   const rows = await query(RESOLVE_SQL);
-  if (rows.length !== 1)
+  if (rows.length !== 1) {
+    // Read-only listing so the run page shows which seasons this database holds.
+    const seasons = await query(SEASONS_SQL);
+    console.log(JSON.stringify({ seasons }, null, 2));
     throw new Error(
       `sofascore_fetch_season_not_unique: ${rows.length} Botola 2026/27 seasons found; pass --competition-id and --season-id`,
     );
+  }
   return { competitionId: String(rows[0].competition_id), seasonId: String(rows[0].season_id) };
 }
 
