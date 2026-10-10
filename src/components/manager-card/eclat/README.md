@@ -82,9 +82,10 @@ Cleaned (`name.ts`): trim, collapse spaces, drop emoji, symbols, control and dir
 tatweel and harakat; uppercase in French keeping accents; apostrophes, dots and hyphens stay, and a
 dash set between spaces is a hyphen. Split: two words → one each; three or more → the first word,
 or the first two when the first is a particle (`LES LIONS` / `DU DERB SIDI MAAROUF`,
-`عبد الرحمن` / `بن جلون العلوي`); one word → the one-word line. Fit: 790 units; below a line's
+`عبد الرحمن` / `بن جلون العلوي`); one word → the one-word line. Fit: 790 units of ink (x 105 to 895, a first or last letter that
+overhangs its advance shrinks the line a little); below a line's
 minimum the last words of line 2 go (never part of a word); a single word still too wide is set at
-its minimum with `textLength` and `lengthAdjust="spacing"`. Placed by ink: the last line's ink ends at
+its minimum with `textLength` (790 less the overhang) and `lengthAdjust="spacing"`. Placed by ink: the last line's ink ends at
 least 14 above the rule, two lines keep 12 between their inks, the first line's ink stays 20 below the
 plaque. The full name is always in the label and in the text the page prints under the card.
 

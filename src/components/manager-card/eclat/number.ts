@@ -78,9 +78,15 @@ export function printOf(ovr: number | null, measure: Measure): Print {
   return { text, fit: fitNumber(text, CHEST, OUTLINE_HALF, 300, measure), hit: CHEST };
 }
 
-/** The print's light gradient, over the fill. */
+/**
+ * The print's light gradient, over the fill, and the body's falloff on the print: `volX`'s dark
+ * sides (292 to 708) without its lit middle. The shirt's own `volX` lifts the middle with the shirt's
+ * highlight tint; on a print that tint pulled a white fill down to .92 to .95 of white, which cost
+ * the number 0.1 to 0.2 of its contrast with the shirt under it (plan 5.2).
+ */
 export const numberDefs = (id: string): string =>
-  `<linearGradient id="${id}-numlight" x1="0" y1="${CHEST.y0}" x2="0" y2="${CHEST.y1}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>`;
+  `<linearGradient id="${id}-numlight" x1="0" y1="${CHEST.y0}" x2="0" y2="${CHEST.y1}" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
+  `<linearGradient id="${id}-numvol" x1="292" y1="0" x2="708" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#000" stop-opacity=".34"/><stop offset=".1" stop-color="#000" stop-opacity=".12"/><stop offset=".2" stop-color="#000" stop-opacity="0"/><stop offset=".82" stop-color="#000" stop-opacity="0"/><stop offset=".92" stop-color="#000" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".36"/></linearGradient>`;
 
 /**
  * The width of « OVR »'s halo stroke, in jersey units: 7 units each side of the glyph, 2.3 CSS px
@@ -134,7 +140,7 @@ export function numberLayer(o: NumberOpts): string {
     `</g>` +
     // the print follows the cloth: the chest crease and the body's falloff, clipped to the glyphs
     // (static, outside the group)
-    `<g clip-path="url(#${id}-numclip)" opacity=".55"><g filter="url(#${id}-b4)">${centreCrease("#ffffff")}</g><rect x="292" y="300" width="416" height="606" fill="url(#${id}-volX)" opacity=".5"/></g>`;
+    `<g clip-path="url(#${id}-numclip)" opacity=".55"><g filter="url(#${id}-b4)">${centreCrease("#ffffff")}</g><rect x="292" y="300" width="416" height="606" fill="url(#${id}-numvol)" opacity=".5"/></g>`;
   if (o.label) {
     const halo = ovrHalo(colours);
     s += `<text x="503.2" y="830" class="mc-f-b" font-weight="800" font-size="32" text-anchor="middle" fill="${colours.numberFill}" stroke="${halo}" stroke-width="${OVR_HALO}" stroke-linejoin="round" paint-order="stroke" style="${trackingStyle(0.2)}" direction="ltr" data-ovrlabel="1">${esc(o.label)}</text>`;

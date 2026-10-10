@@ -506,8 +506,11 @@ describe("a long name stays inside the card's art", () => {
       const art = ops.find((op) => op.kind === "image" && op.shadowBlur)!;
       const unit = (art.right - art.left) / 1000;
       for (const run of fitted) {
-        // the budget travels with the run, in the art's units
-        expect(run.fitWidth).toBeCloseTo(790 * (model.art.width / 1000), 1);
+        // the budget travels with the run, in the art's units: 790 less what the line's first and last
+        // letters overhang (the name is fitted by its ink, so the ink keeps the 105 to 895 margin)
+        const budget = 790 * (model.art.width / 1000);
+        expect(run.fitWidth!).toBeLessThanOrEqual(budget + 0.05);
+        expect(run.fitWidth!).toBeGreaterThan(budget - 10 * (model.art.width / 1000));
         const drawn = texts(ops).find(
           (op) => op.text === run.text && op.baseline !== L.name.baseline,
         );
