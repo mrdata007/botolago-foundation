@@ -1,6 +1,6 @@
 # Navigation speed: no page transition between same-level destinations
 
-Status: approved by the owner on 2026-10-10 ("Drop the page slide on the main tabs"); implementation not started.
+Status: built on `claude/snappier-navigation`; pull request not yet open. Approved by the owner on 2026-10-10 ("Drop the page slide on the main tabs").
 
 ## Measured on the live site
 
@@ -36,3 +36,10 @@ decides; the router still passes `defaultViewTransition`, which now answers `fal
 - Unit tests cover the new cases; existing tests pass.
 - Measured before/after: transition fired yes/no, tap to new content, long frames, long tasks, in
   French and Arabic, on 390x844 with 4x CPU.
+
+## Result (dev server, 390x844 DPR 3, 4x CPU, median of 4 runs, French and Arabic)
+
+Tap to the first frame of the new page: bottom-nav and Matches/Classement/Pronostics moves went from
+about 560 to 1000 ms (view transition ready, dev build) to about 20 to 30 ms with no
+`startViewTransition` call. Drill-down and back still run the transition. Absolute dev-build numbers
+exceed production's; the comparison is main against this branch, same machine, same run.
