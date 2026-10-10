@@ -105,9 +105,7 @@ jobs:
           MODE: ${{ inputs.mode }}
           TEAMS: ${{ inputs.teams }}
         run: |
-          # The step shell runs with -e; turn it off so the bridge's exit code
-          # (2 = items to review) reaches the handling below instead of failing the step.
-          set +e -uo pipefail
+          set -euo pipefail
           dir="$RUNNER_TEMP/bridge"
           report="$RUNNER_TEMP/sofascore-id-bridge.json"
           args=(--mode "$MODE" --events "$dir/events.json" --snapshot "$dir/snapshot.json"
@@ -117,8 +115,13 @@ jobs:
             printf '%s' "$TEAMS" > "$dir/teams.json"
             args+=(--teams "$dir/teams.json")
           fi
+          # Capture the bridge review result without hiding report-writing failures.
+          set +e
           bun scripts/backend/sofascore-id-bridge.ts "${args[@]}" | tee "$report"
-          status=${PIPESTATUS[0]}
+          pipeline_status=("${PIPESTATUS[@]}")
+          set -e
+          status=${pipeline_status[0]}
+          if [[ "${pipeline_status[1]}" != "0" ]]; then exit "${pipeline_status[1]}"; fi
           {
             echo "## SofaScore ID bridge (production, read only): $MODE"
             echo
