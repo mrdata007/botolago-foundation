@@ -137,6 +137,15 @@ export function cardView(card: MyCardDto): CardView {
   };
 }
 
+/** Which text box the rating line under the card is, when the card has no number. */
+export type WaitingBox = "rounds" | "stats";
+
+/** The box `RatingLine` draws for these figures, or null for the bare rated line. */
+export function waitingBox(ovr: number | null, counted: number, min: number): WaitingBox | null {
+  if (ovr !== null) return null;
+  return counted >= min ? "stats" : "rounds";
+}
+
 /** Whether the number shown is a real number (never 0, never a guess). */
 export function hasNumber(view: CardView): boolean {
   return view.ovr !== null;

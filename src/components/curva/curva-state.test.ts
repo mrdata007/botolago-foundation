@@ -12,6 +12,7 @@ import {
   nextSeasonLabel,
   registrationIsClosed,
   roundBlock,
+  waitingBox,
   roundGlance,
   sinceRound,
   tierFell,
@@ -297,5 +298,13 @@ describe("the one-line round summary under the identity line (plan 5.2 item 6)",
       enrolment: { id: "n", number: 15, deadline: new Date(NOW + 100 * HOUR).toISOString() },
     });
     expect(glance("rated", ctx(past))?.number).toBe(15);
+  });
+});
+
+describe("the waiting box under the card (G1 reserves its height)", () => {
+  it("is the forming box below the minimum, the statistics box at it, none with a number", () => {
+    expect(waitingBox(null, 1, 2)).toBe("rounds");
+    expect(waitingBox(null, 2, 2)).toBe("stats");
+    expect(waitingBox(84, 2, 2)).toBeNull();
   });
 });

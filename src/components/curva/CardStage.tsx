@@ -13,6 +13,7 @@ import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
+import { waitingBox, type WaitingBox } from "./curva-state";
 import { Figure, ProvisionalBadge } from "./figures";
 
 /** The card on a phone: 296 px, and never closer than 16 px to either edge. */
@@ -52,15 +53,6 @@ const FIT_HEIGHT_WIDTH_ROUNDS_BOX =
 /** `FIT_HEIGHT_WIDTH` under the two-line box of a card waiting for a statistic. */
 const FIT_HEIGHT_WIDTH_STATS_BOX =
   "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_292px)_/_1.618),296px))]";
-
-/** Which text box the rating line under the card is, when the card has no number. */
-export type WaitingBox = "rounds" | "stats";
-
-/** The box `RatingLine` draws for these figures, or null for the bare rated line. */
-export function waitingBox(ovr: number | null, counted: number, min: number): WaitingBox | null {
-  if (ovr !== null) return null;
-  return counted >= min ? "stats" : "rounds";
-}
 
 /**
  * Where the card stands (plan section 10). The collectible is the one expressive object on the

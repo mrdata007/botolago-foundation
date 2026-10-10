@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { useManagerCardStatus } from "@/services/manager-card-status";
 import type { Club, Gameweek } from "@/types/domain";
 
-import { CardStage, RatingLine, waitingBox } from "./CardStage";
+import { CardStage, RatingLine } from "./CardStage";
 import { useStageBeat } from "./use-stage-beat";
 import { ClubBlock } from "./ClubBlock";
 import { GuestHero } from "./GuestHero";
@@ -28,6 +28,7 @@ import {
   roundGlance,
   sinceRound,
   type HomeState,
+  waitingBox,
 } from "./curva-state";
 import { IdentityLine } from "./IdentityLine";
 import { NoTeamHero } from "./NoTeamHero";
