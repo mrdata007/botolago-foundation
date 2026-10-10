@@ -199,3 +199,74 @@ describe("SportsMonks production access probe", () => {
     ).rejects.toThrow("fixture_sample_scope_mismatch");
   });
 });
+
+describe("provider data envelope failures", () => {
+  it("rejects HTTP-success error envelopes without leaking provider values or keys", async () => {
+    let calls = 0;
+    const payload = { message: TOKEN, errors: { [TOKEN]: TOKEN }, [TOKEN]: TOKEN };
+    const error = await requestSportsMonksJson("/v3/football/fixtures/19893370", {}, TOKEN, {
+      fetch: async () => {
+        calls++;
+        return json(payload);
+      },
+    }).catch((error) => error);
+    expect(error.code).toBe("provider_invalid_data_envelope");
+    expect(error.diagnostic).toEqual({
+      httpStatus: 200,
+      endpoint: "fixtures",
+      field: "data",
+      valueType: "missing",
+      envelopeType: "object",
+      errorFieldTypes: [
+        { field: "message", valueType: "string" },
+        { field: "error", valueType: "missing" },
+        { field: "errors", valueType: "object" },
+        { field: "code", valueType: "missing" },
+        { field: "status", valueType: "missing" },
+      ],
+    });
+    expect(calls).toBe(1);
+    const evidence = sportsMonksProbeFailureEvidence(error, COMMIT, NOW);
+    expect(evidence.diagnostic).toEqual(error.diagnostic);
+    expect(JSON.stringify(evidence)).not.toContain(TOKEN);
+  });
+
+  it("rejects null, scalar and root-array envelopes while preserving valid objects and lists", async () => {
+    for (const payload of [
+      null,
+      [],
+      "unexpected",
+      { data: null },
+      { data: 0 },
+      { data: "unexpected" },
+    ]) {
+      await expect(
+        requestSportsMonksJson("/v3/football/fixtures/19893370", {}, TOKEN, {
+          fetch: async () => json(payload),
+        }),
+      ).rejects.toThrow("provider_invalid_data_envelope");
+    }
+    for (const payload of [{ data: { id: 19893370 } }, { data: [] }]) {
+      expect(
+        await requestSportsMonksJson("/v3/football/fixtures/19893370", {}, TOKEN, {
+          fetch: async () => json(payload),
+        }),
+      ).toEqual(payload);
+    }
+  });
+
+  it("preserves access-denied and invalid-JSON failures", async () => {
+    for (const status of [401, 403]) {
+      await expect(
+        requestSportsMonksJson("/v3/football/fixtures/19893370", {}, TOKEN, {
+          fetch: async () => json({ message: TOKEN }, status),
+        }),
+      ).rejects.toThrow("provider_access_denied");
+    }
+    await expect(
+      requestSportsMonksJson("/v3/football/fixtures/19893370", {}, TOKEN, {
+        fetch: async () => new Response("not JSON", { status: 200 }),
+      }),
+    ).rejects.toThrow("invalid_provider_json");
+  });
+});

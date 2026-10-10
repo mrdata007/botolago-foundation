@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   fixtureWindows,
+  currentSeasonRecoveryFailure,
+  CurrentSeasonRecoveryError,
   normalizeCurrentMembership,
   readAllProviderRows,
   validateCurrentReadiness,
@@ -13,7 +15,10 @@ import {
   normalizeCurrentTeamRoster,
   loadCurrentSeasonSquad,
 } from "./current-season-recovery";
-import type { SportsMonksProbeEvidence } from "./sportsmonks-production-probe";
+import {
+  SportsMonksProbeError,
+  type SportsMonksProbeEvidence,
+} from "./sportsmonks-production-probe";
 
 const sha = "a".repeat(40);
 const probe: SportsMonksProbeEvidence = {
@@ -503,5 +508,23 @@ describe("current season recovery boundaries", () => {
     expect(() => validateCurrentSquads(squads)).not.toThrow();
     squads[1].memberships[0].externalPlayerId = "100";
     expect(() => validateCurrentSquads(squads)).toThrow("duplicate_current_player_membership");
+  });
+});
+
+test("recovery preserves known provider failures and hides unexpected error messages", () => {
+  const diagnostic = { httpStatus: 200, field: "data", valueType: "missing" };
+  expect(
+    currentSeasonRecoveryFailure(
+      new SportsMonksProbeError("provider_invalid_data_envelope", diagnostic),
+    ),
+  ).toEqual({ errorCode: "provider_invalid_data_envelope", diagnostic });
+  expect(currentSeasonRecoveryFailure(new SportsMonksProbeError("provider_access_denied"))).toEqual(
+    { errorCode: "provider_access_denied" },
+  );
+  expect(
+    currentSeasonRecoveryFailure(new CurrentSeasonRecoveryError("invalid_provider_rows")),
+  ).toEqual({ errorCode: "invalid_provider_rows" });
+  expect(currentSeasonRecoveryFailure(new Error("secret-provider-token"))).toEqual({
+    errorCode: "current_season_recovery_failed",
   });
 });

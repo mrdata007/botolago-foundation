@@ -18,7 +18,10 @@ type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<
 type Sleep = (milliseconds: number) => Promise<void>;
 
 export class SportsMonksProbeError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly diagnostic?: Record<string, unknown>,
+  ) {
     super(code);
     this.name = "SportsMonksProbeError";
   }
@@ -78,6 +81,7 @@ export interface SportsMonksProbeFailureEvidence {
   readonly observedAt: string;
   readonly verdict: "fail";
   readonly errorCode: string;
+  readonly diagnostic?: Record<string, unknown>;
 }
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -146,6 +150,9 @@ export function sportsMonksProbeFailureEvidence(
     observedAt: observedAt.toISOString(),
     verdict: "fail",
     errorCode: ERROR_CODE_PATTERN.test(rawCode) ? rawCode : "unexpected_probe_failure",
+    ...(error instanceof SportsMonksProbeError && error.diagnostic
+      ? { diagnostic: error.diagnostic }
+      : {}),
   };
 }
 
@@ -188,6 +195,33 @@ async function responseJson(response: Response): Promise<unknown> {
   }
 }
 
+/** Fixed field names and types only: provider text, keys and URLs may contain secrets. */
+function envelopeDiagnostic(payload: unknown, status: number, path: string): JsonRecord {
+  const valueType = (value: unknown): string =>
+    value === undefined
+      ? "missing"
+      : value === null
+        ? "null"
+        : Array.isArray(value)
+          ? "array"
+          : typeof value;
+  const envelope = isRecord(payload) ? payload : {};
+  const resource = path.slice(`${SPORTSMONKS_BASE_PATH}/`.length).split("/")[0];
+  return {
+    httpStatus: status,
+    endpoint: ["fixtures", "leagues", "teams", "rounds", "squads", "players"].includes(resource)
+      ? resource
+      : "other",
+    field: "data",
+    valueType: valueType(envelope.data),
+    envelopeType: valueType(payload),
+    errorFieldTypes: ["message", "error", "errors", "code", "status"].map((field) => ({
+      field,
+      valueType: valueType(envelope[field]),
+    })),
+  };
+}
+
 export async function requestSportsMonksJson(
   path: string,
   query: Readonly<Record<string, string>>,
@@ -226,7 +260,18 @@ export async function requestSportsMonksJson(
       clearTimeout(timeout);
     }
 
-    if (response.ok) return responseJson(response);
+    if (response.ok) {
+      const payload = await responseJson(response);
+      // HTTP success does not prove that a football data envelope was returned.
+      // Do not manufacture data, unwrap an error, or guess access failure from text.
+      if (!isRecord(payload) || (!isRecord(payload.data) && !Array.isArray(payload.data))) {
+        throw new SportsMonksProbeError(
+          "provider_invalid_data_envelope",
+          envelopeDiagnostic(payload, response.status, path),
+        );
+      }
+      return payload;
+    }
     if ((response.status === 429 || response.status >= 500) && attempt < MAX_ATTEMPTS) {
       await sleep(safeRetryDelay(response, now()));
       continue;

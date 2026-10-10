@@ -12,6 +12,7 @@ import {
 } from "../../supabase/functions/_shared/sportsmonks-fixtures";
 import {
   requestSportsMonksJson,
+  SportsMonksProbeError,
   runSportsMonksProductionProbe,
   type SportsMonksProbeEvidence,
 } from "./sportsmonks-production-probe";
@@ -42,6 +43,18 @@ export class CurrentSeasonRecoveryError extends Error {
     super(code);
   }
 }
+/** Keep known provider failures actionable; never persist an arbitrary exception message. */
+export function currentSeasonRecoveryFailure(error: unknown): Row {
+  if (error instanceof CurrentSeasonRecoveryError || error instanceof SportsMonksProbeError)
+    return {
+      errorCode: error.code,
+      ...(error instanceof SportsMonksProbeError && error.diagnostic
+        ? { diagnostic: error.diagnostic }
+        : {}),
+    };
+  return { errorCode: "current_season_recovery_failed" };
+}
+
 function fail(code: string): never {
   throw new CurrentSeasonRecoveryError(code);
 }
@@ -736,8 +749,7 @@ async function main(): Promise<void> {
     console.log("CURRENT_SEASON_RECOVERY_PASS");
   } catch (error) {
     evidence.verdict = "fail";
-    evidence.errorCode =
-      error instanceof CurrentSeasonRecoveryError ? error.code : "current_season_recovery_failed";
+    Object.assign(evidence, currentSeasonRecoveryFailure(error));
     await save();
     console.error(`CURRENT_SEASON_RECOVERY_FAIL code=${evidence.errorCode}`);
     process.exitCode = 1;

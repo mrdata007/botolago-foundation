@@ -295,7 +295,8 @@ function safeFailure(error: unknown): Row {
       code: error.code,
       ...(error.diagnostic ? { diagnostic: { ...error.diagnostic } } : {}),
     };
-  if (error instanceof SportsMonksProbeError) return { code: error.code };
+  if (error instanceof SportsMonksProbeError)
+    return { code: error.code, ...(error.diagnostic ? { diagnostic: error.diagnostic } : {}) };
   return { code: "current_performance_ingestion_failed" };
 }
 

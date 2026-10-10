@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { CurrentPerformanceError, type IncompleteFixture } from "./current-season-performances";
 import {
   assessCoverage,
+  safeDiagnostic,
   assessScoring,
   calendarSyncSchema,
   deadlineWatchSchema,
@@ -1416,4 +1417,21 @@ describe("season backlog reliability", () => {
     expect(summary.verdict).toBe("escalate");
     expect(renderHealthSummary(summary)).toContain("| Deferred gameweeks | 1 |");
   });
+});
+
+test("provider envelope metadata survives the orchestrator evidence sanitizer", () => {
+  const diagnostic = {
+    httpStatus: 200,
+    endpoint: "fixtures",
+    field: "data",
+    valueType: "missing",
+    envelopeType: "object",
+    errorFieldTypes: [
+      { field: "message", valueType: "string" },
+      { field: "errors", valueType: "object" },
+    ],
+  };
+  expect(
+    safeDiagnostic(Object.assign(new Error("provider_invalid_data_envelope"), { diagnostic })),
+  ).toEqual(diagnostic);
 });
