@@ -166,9 +166,35 @@ function effectiveEvents(
 }
 
 export function planSofascoreIdBridge(input: BridgeInput): BridgePlan {
-  const { events, teams, fixtures, rounds, existing } = input;
+  const { events, fixtures, rounds, existing } = input;
   const rows: PlannedMapping[] = [];
   const conflicts: Conflict[] = [];
+
+  // Two SofaScore teams paired with one internal team is a review mistake: report
+  // it and leave both out, so none of their matches can be mapped under the
+  // wrong identity.
+  const sofascoreIdsByInternal = new Map<string, number[]>();
+  for (const [sofascoreId, internalId] of input.teams) {
+    sofascoreIdsByInternal.set(internalId, [
+      ...(sofascoreIdsByInternal.get(internalId) ?? []),
+      sofascoreId,
+    ]);
+  }
+  const teams = new Map(input.teams);
+  for (const [internalId, sofascoreIds] of sofascoreIdsByInternal) {
+    if (sofascoreIds.length < 2) continue;
+    const [first, ...others] = [...sofascoreIds].sort((a, b) => a - b);
+    for (const other of others) {
+      conflicts.push({
+        entityType: "team",
+        externalId: String(other),
+        internalId,
+        existingExternalId: String(first),
+        existingInternalId: internalId,
+      });
+    }
+    for (const id of sofascoreIds) teams.delete(id);
+  }
   const alreadyMapped: BridgeReport["alreadyMapped"][number][] = [];
   const repoints: Repoint[] = [];
 
@@ -203,14 +229,20 @@ export function planSofascoreIdBridge(input: BridgeInput): BridgePlan {
       });
       return "conflict";
     }
-    if (
-      rows.some(
-        (r) =>
-          r.entityType === entityType &&
-          (r.externalId === externalId || r.internalId === internalId),
-      )
-    ) {
-      return "same";
+    const planned = rows.find(
+      (r) =>
+        r.entityType === entityType && (r.externalId === externalId || r.internalId === internalId),
+    );
+    if (planned) {
+      if (planned.externalId === externalId && planned.internalId === internalId) return "same";
+      conflicts.push({
+        entityType,
+        externalId,
+        internalId,
+        existingExternalId: planned.externalId,
+        existingInternalId: planned.internalId,
+      });
+      return "conflict";
     }
     rows.push({ entityType, externalId, internalId, flags });
     return "created";
@@ -293,8 +325,8 @@ export function planSofascoreIdBridge(input: BridgeInput): BridgePlan {
   // An event wanted by more than one fixture is ambiguous for all of them.
   const claims = new Map<number, number>();
   for (const c of choices) {
-    if (c.candidates.length === 1) {
-      const id = c.candidates[0].event.id;
+    for (const candidate of c.candidates) {
+      const id = candidate.event.id;
       claims.set(id, (claims.get(id) ?? 0) + 1);
     }
   }

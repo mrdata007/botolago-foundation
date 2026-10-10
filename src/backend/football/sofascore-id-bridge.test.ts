@@ -62,6 +62,54 @@ describe("casablancaDate", () => {
 });
 
 describe("planSofascoreIdBridge", () => {
+  test("an event also wanted by an ambiguous fixture is not mapped by the round fallback", () => {
+    // f1 sees two same-day events; f2 reaches one of them (101) by round only.
+    const plan = planSofascoreIdBridge(
+      base({
+        events: [
+          ev(100, 1, 2, "2026-08-22T18:00:00Z", 1),
+          ev(101, 1, 2, "2026-08-22T20:00:00Z", 2),
+        ],
+        fixtures: [
+          fx("f1", 1, 2, "2026-08-22T18:00:00Z", 1),
+          fx("f2", 1, 2, "2026-09-30T18:00:00Z", 2),
+        ],
+        rounds: [
+          { id: "round-1", roundNumber: 1 },
+          { id: "round-2", roundNumber: 2 },
+        ],
+      }),
+    );
+    expect(plan.rows.filter((r) => r.entityType === "fixture")).toEqual([]);
+    expect(plan.report.fixturesMultiMatch.map((m) => m.fixtureId).sort()).toEqual(["f1", "f2"]);
+  });
+
+  test("two SofaScore teams paired with one internal team are a conflict and map nothing", () => {
+    const duplicated = new Map<number, string>([
+      [1, T(1)],
+      [2, T(2)],
+      [3, T(1)],
+    ]);
+    const plan = planSofascoreIdBridge(
+      base({
+        teams: duplicated,
+        events: [ev(100, 1, 2, "2026-08-22T18:00:00Z"), ev(102, 3, 2, "2026-08-29T18:00:00Z")],
+        fixtures: [fx("f1", 1, 2, "2026-08-22T18:00:00Z")],
+      }),
+    );
+    expect(plan.report.conflicts).toContainEqual({
+      entityType: "team",
+      externalId: "3",
+      internalId: T(1),
+      existingExternalId: "1",
+      existingInternalId: T(1),
+    });
+    const mapped = plan.rows.map((r) => `${r.entityType}:${r.externalId}`);
+    expect(mapped).not.toContain("team:1");
+    expect(mapped).not.toContain("team:3");
+    expect(mapped.filter((m) => m.startsWith("fixture:"))).toEqual([]);
+  });
+
   test("normal match creates competition, season, round, team and fixture rows", () => {
     const plan = planSofascoreIdBridge(
       base({
