@@ -77,6 +77,9 @@ const AMBIGUOUS = [
 const T_GENERIC = `(?<t>${GENERIC.join("|")})`;
 const T_ANY = `(?<t>${[...GENERIC, ...UNAMBIGUOUS, ...AMBIGUOUS].join("|")})`;
 const T_NAME = `(?<t>${[...UNAMBIGUOUS, ...AMBIGUOUS].join("|")})`;
+const T_NO_AMBIGUOUS = `(?<t>${[...GENERIC, ...UNAMBIGUOUS].join("|")})`;
+/** Empty marker group: the match sits in a proven credit context, so lowercase `ai`/`ia` count. */
+const PROVEN = "(?<p>)";
 
 const VERBS = [
   // French
@@ -145,6 +148,76 @@ const VERBS = [
   "باستخدام",
 ];
 const VERB = `${START}(?:${VERBS.join("|")})${W}*`;
+
+/** Real generation verbs. "signé"/"signed" is a transfer, not a generation, so it is absent. */
+const GEN_VERBS = [
+  "redig",
+  "ecri[ts]",
+  "genere",
+  "cree",
+  "produi[ts]",
+  "illustre",
+  "realise",
+  "elabore",
+  "concu",
+  "traduit",
+  "assiste",
+  "alimente",
+  "propulse",
+  "fabrique",
+  "compose",
+  "dessine",
+  "generated",
+  "written",
+  "created",
+  "produced",
+  "made",
+  "drafted",
+  "illustrated",
+  "authored",
+  "composed",
+  "translated",
+  "edited",
+  "assisted",
+  "powered",
+  "enhanced",
+  "crafted",
+  "rendered",
+  "designed",
+  "drawn",
+  "painted",
+  "كتب",
+  "كتابة",
+  "انش",
+  "ولد",
+  "توليد",
+  "تولد",
+  "انتج",
+  "انتاج",
+  "صمم",
+  "تصميم",
+  "رسم",
+  "اعد",
+  "ترجم",
+  "صنع",
+];
+const GEN_VERB = `${START}(?:${GEN_VERBS.join("|")})${W}*`;
+/** The preposition that must directly follow a generation verb to make a credit. */
+const CREDIT_PREP = [
+  "avec",
+  "par",
+  "via",
+  "by",
+  "with",
+  "using",
+  "en\\s+utilisant",
+  "grace\\s+a",
+  "بواسطة",
+  "باستخدام",
+  "بمساعدة",
+  "عبر",
+].join("|");
+const HELP_OF = "(?:(?:l'aide|the\\s+help|help|the\\s+aid|assistance)\\s+(?:of|de|d')\\s*)?";
 
 const CONNECT = [
   "avec",
@@ -224,9 +297,61 @@ const LABEL = [
   "اعداد",
 ].join("|");
 
+const SUBJECT_VERBS = [
+  "redig\\w*",
+  "ecri\\w*",
+  "genere\\w*",
+  "cree\\w*",
+  "produi\\w*",
+  "illustre\\w*",
+  "realise\\w*",
+  "elabore\\w*",
+  "concu\\w*",
+  "traduit\\w*",
+  "compos\\w*",
+  "dessin\\w*",
+  "fabriqu\\w*",
+  "wrote",
+  "written",
+  "writes?",
+  "draft\\w*",
+  "generat\\w*",
+  "creat\\w*",
+  "produc\\w*",
+  "illustrat\\w*",
+  "authored",
+  "translat\\w*",
+  "made",
+  "designed",
+  "drew",
+  "drawn",
+  "painted",
+  "rendered",
+  "crafted",
+  "كتب\\w*",
+  "انش\\w*",
+  "ولد\\w*",
+  "انتج\\w*",
+  "صمم\\w*",
+  "رسم\\w*",
+  "اعد\\w*",
+  "ترجم\\w*",
+  "صنع\\w*",
+  "حرر\\w*",
+].join("|");
+const AUX =
+  "(?:a|as|ont|has|have|had|avait|also|just|then|aussi|egalement|deja|already|vient|de|ete|been)";
+const DET = "(?:cet|ce|cette|ces|this|these|that|the|هذا|هذه|هذان|ذلك|تلك)";
+const AR_SUBJECT_VERBS = "(?:كتب|انش|ولد|انتج|صمم|رسم|اعد|ترجم|صنع|حرر)";
+const LABEL_SEP = "(?::|·|•|\\||–|—|\\s-\\s)";
+const BOTOLAGO = "(?:BotolaGO\\s*[·•|–—/]\\s*)?";
+
 const PATTERNS: RegExp[] = [
-  // "rédigé par GPT-4", "created with DALL-E", "généré par Mistral", "تم إنشاؤه بواسطة ..."
-  `${VERB}\\s+${GAP}(?:\\p{L}{1,2}')?${T_ANY}${END}`,
+  // "rédigé par l'IA", "created with DALL-E": generic and unambiguous terms after a verb within the clause
+  `${VERB}\\s+${GAP}(?:\\p{L}{1,2}')?${T_NO_AMBIGUOUS}${END}`,
+  // Proven credit syntax: a generation verb directly followed by par/by/avec/with/via/using/بواسطة and the term.
+  // Names that are also people or places are only ever credited this way; lowercase ai/ia count here too.
+  `${GEN_VERB}\\s+(?:${CREDIT_PREP})\\s+${HELP_OF}${ARTICLE}${PROVEN}${T_ANY}${END}`,
   // "avec l'IA", "powered by AI", "بالذكاء الاصطناعي" (generic terms only: a bare preposition proves nothing for names)
   `${START}(?:${CONNECT})\\s+${ARTICLE}${T_GENERIC}${END}`,
   `${START}[وف]?ب(?:ال)?ذكاء\\s+(?:ال)?(?:اصطناعي|صناعي)`,
@@ -235,20 +360,23 @@ const PATTERNS: RegExp[] = [
   // "AI-generated", "IA générative", "AI-assisted"
   `(?<t>AI|IA)[\\s-]+(?:generat|assist|writ|creat|produc|made|power|author|illustrat|translat|draft|enhanc|edit|driven|based|redig|cree|produit)\\w*`,
   `(?<t>IA)\\s+generative`,
-  // Credit lines: "Crédit : Midjourney", "© OpenAI", "BotolaGO · Gemini"
-  `${START}(?:${LABEL})\\s*(?::|·|•|\\||–|—|\\s-\\s)?\\s*(?:BotolaGO\\s*[·•|–—/]\\s*)?${T_NAME}${END}`,
+  // Credit lines with an explicit separator: "Crédit : Midjourney", "Image : ia", "BotolaGO · Gemini"
+  `${START}(?:${LABEL.replace("|©", "")})\\s*${LABEL_SEP}\\s*${BOTOLAGO}${PROVEN}${T_ANY}${END}`,
+  `©\\s*${BOTOLAGO}${PROVEN}${T_ANY}${END}`,
   `[·•|–—]\\s*${T_NAME}\\s*$`,
-  // "Claude a rédigé cet article", "ChatGPT wrote this text"
-  `${T_NAME}\\s+(?:a|ont|has|have)\\s+(?:redige|ecrit|genere|cree|produit|illustre|written|generated|created|produced|drafted)\\w*\\s+(?:cet|ce|cette|ces|this|these|the)\\s`,
-  `${T_NAME}\\s+(?:wrote|drafted)\\s+(?:this|these|the)\\s`,
-].map((source) => new RegExp(source, "giu"));
+  // Subject-first: "Claude a rédigé cet article", "L'IA a écrit ce texte", "Artificial intelligence wrote this article"
+  `${START}${T_ANY}\\s+(?:${AUX}\\s+){0,3}(?:${SUBJECT_VERBS})\\s+${DET}${END}`,
+  // Arabic verb-first: "كتب الذكاء الاصطناعي هذا المقال"
+  `${START}${AR_SUBJECT_VERBS}${W}*\\s+${T_ANY}\\s+${DET}${END}`,
+].map((source) => new RegExp(source, "giud"));
 
 const NAME_PATTERN = new RegExp(`^(?:${UNAMBIGUOUS.join("|")})$`, "iu");
 
-function isAiTerm(term: string, after: string): boolean {
+function isAiTerm(term: string, after: string, proven: boolean): boolean {
   const bare = term.trim();
-  // "ai" and "ia" are ordinary words in French ("j'ai"); only the capitalised acronym counts.
-  if (/^(?:ai|ia)$/i.test(bare)) return bare === bare.toUpperCase();
+  // "ai" and "ia" are ordinary words in French ("j'ai"); outside a proven credit context
+  // only the capitalised acronym counts.
+  if (/^(?:ai|ia)$/i.test(bare)) return proven || bare === bare.toUpperCase();
   // "Claude Le Roy", "Claude Puel": a capitalised word after the first name is a surname.
   if (/^claude$/i.test(bare)) {
     return !/^\s+\p{Lu}/u.test(after) || /^\s+(?:AI|IA|Opus|Sonnet|Haiku|Code|\d)/u.test(after);
@@ -269,8 +397,9 @@ export function containsPublicAiNotice(text: string): boolean {
     pattern.lastIndex = 0;
     for (const m of normalized.matchAll(pattern)) {
       const term = m.groups?.t ?? "";
-      const end = (m.index ?? 0) + m[0].length;
-      if (isAiTerm(term, normalized.slice(end))) return true;
+      // Text right after the term itself (not the whole match) decides the "Claude Le Roy" surname case.
+      const termEnd = m.indices?.groups?.t?.[1] ?? (m.index ?? 0) + m[0].length;
+      if (isAiTerm(term, normalized.slice(termEnd), m.groups?.p !== undefined)) return true;
     }
   }
   return false;
