@@ -5,6 +5,7 @@ import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { useMomentCopy } from "@/components/manager-card/copy";
 import { useCardStrings } from "@/components/manager-card/copy";
+import { useInnerHtml } from "@/components/manager-card/inner-html";
 import { fill } from "@/components/manager-card/interpolate";
 import { scopeSvgIds, newIdScope } from "@/components/manager-card/scope-ids";
 import { useCardRenderer, useCardTheme } from "@/components/manager-card/use-card-renderer";
@@ -48,6 +49,7 @@ export function FounderBlock({ card, profile }: { card: MyCardDto; profile: Card
     const art = renderer?.detail(profile, "founder", { strings, theme, beat });
     return art ? scopeSvgIds(art, scope) : null;
   }, [renderer, profile, strings, theme, beat, scope]);
+  const inner = useInnerHtml(html);
   if (!card.founder) return null;
   const name = card.name.trim().toLocaleUpperCase(lang === "ar" ? "ar" : "fr");
   return (
@@ -58,7 +60,7 @@ export function FounderBlock({ card, profile }: { card: MyCardDto; profile: Card
           <div
             className="mx-auto w-full max-w-[22rem]"
             data-founder-art=""
-            dangerouslySetInnerHTML={{ __html: html }}
+            dangerouslySetInnerHTML={inner}
           />
         ) : null}
         <p className={cn("text-pretty", ui.text.secondary, ui.tone.default)}>

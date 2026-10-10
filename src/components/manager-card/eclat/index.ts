@@ -9,7 +9,7 @@
  */
 import { BEAT_MS } from "./beats";
 import "./eclat.css";
-import { cardAspect, cardImage, founderDetail, fullCard } from "./full";
+import { beatRoot, cardAspect, cardImage, founderDetail, fullCard } from "./full";
 import { measureText, ready } from "./measure";
 import { tierPalette } from "./palette";
 import { mountTilt } from "./tilt";
@@ -44,6 +44,7 @@ export const eclatRenderer: CardRenderer = {
   label,
   palette: tierPalette,
   beatMs: (beat) => (Object.hasOwn(BEAT_MS, beat) ? BEAT_MS[beat] : 0),
+  beatRoot: (profile, options, beat) => beatRoot(profile, options.strings, beat),
   mount: mountTilt,
 };
 
