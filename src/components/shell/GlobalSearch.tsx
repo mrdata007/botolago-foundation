@@ -12,6 +12,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useI18n } from "@/i18n/provider";
 import { highlightParts, searchEntries, type SearchEntry } from "@/lib/global-search";
 import { staggerStyle } from "@/lib/motion";
+import { ExitFade, ExitPresence } from "@/lib/motion-exit";
 import { recallSearchQuery, rememberSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -151,68 +152,86 @@ export function GlobalSearch({
           ui.focus,
         )}
       />
-      {showPanel ? (
-        <ul
-          id={listId}
-          role="listbox"
-          className={cn(
-            "absolute inset-x-0 top-full z-40 mt-2 max-h-80 overflow-auto p-1",
-            "bg-[color:var(--ui-surface)] shadow-[var(--ui-shadow-column)]",
-            "border border-[color:var(--ui-rule)]",
-            ui.radius.card,
-          )}
-        >
-          {results.length === 0 ? (
-            <li className={cn("px-3 py-3", ui.text.meta, ui.tone.muted)}>
-              {loading ? t("nav.search.loading") : t("nav.search.empty")}
-            </li>
-          ) : (
-            results.map((entry, index) => (
-              <li
-                key={`${entry.kind}:${entry.id}`}
-                role="option"
-                aria-selected={index === active}
-                // mousedown, not click: the field's blur would close the
-                // list before a click lands.
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  go(entry);
-                }}
-                onMouseEnter={() => setActive(index)}
-                style={staggerStyle(index)}
-                className={cn(
-                  // The name first, on its own lines, and what it is under it:
-                  // beside the name, the metadata took the width and the
-                  // player's name was the part that got cut.
-                  "enter-rise stagger flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
-                  ui.radius.control,
-                  ui.text.meta,
-                  index === active && "bg-[color:var(--ui-surface-sunken)]",
-                )}
-              >
-                <span className="min-w-0 break-words [font-weight:var(--ui-weight-heavy)]">
-                  {highlightParts(entry.label, text).map((part, position) =>
-                    part.match ? (
-                      <mark
-                        key={position}
-                        className="rounded-[2px] bg-[color:color-mix(in_oklab,var(--ui-accent-spring)_50%,transparent)] text-inherit"
-                      >
-                        {part.text}
-                      </mark>
-                    ) : (
-                      <span key={position}>{part.text}</span>
-                    ),
-                  )}
-                </span>
-                <span className={cn("min-w-0 break-words", ui.text.micro, ui.tone.muted)}>
-                  {entry.hint ? `${entry.hint} · ` : ""}
-                  {entry.kind === "club" ? t("nav.search.club") : t("nav.search.player")}
-                </span>
-              </li>
-            ))
-          )}
-        </ul>
-      ) : null}
+      <ExitPresence>
+        {showPanel ? (
+          <ExitFade
+            as="ul"
+            key="panel"
+            id={listId}
+            role="listbox"
+            className={cn(
+              "absolute inset-x-0 top-full z-40 mt-2 max-h-80 overflow-auto p-1",
+              "bg-[color:var(--ui-surface)] shadow-[var(--ui-shadow-column)]",
+              "border border-[color:var(--ui-rule)]",
+              ui.radius.card,
+            )}
+          >
+            {/* Rows that drop out while typing fade where they stand (out of
+                the flow), so the ones that stay do not jump. */}
+            <ExitPresence mode="popLayout">
+              {results.length === 0 ? (
+                <ExitFade
+                  as="li"
+                  key="empty"
+                  className={cn("px-3 py-3", ui.text.meta, ui.tone.muted)}
+                >
+                  {loading ? t("nav.search.loading") : t("nav.search.empty")}
+                </ExitFade>
+              ) : null}
+              {results.map((entry, index) => (
+                <ExitFade
+                  as="li"
+                  key={`${entry.kind}:${entry.id}`}
+                  role="option"
+                  aria-selected={index === active}
+                  // mousedown, not click: the field's blur would close the
+                  // list before a click lands.
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    go(entry);
+                  }}
+                  onMouseEnter={() => setActive(index)}
+                >
+                  {/* The arrival (`enter-rise`) is on the inside: a CSS
+                      animation that fills holds `opacity`, which would hide
+                      the row's fade-out. */}
+                  <div
+                    style={staggerStyle(index)}
+                    className={cn(
+                      // The name first, on its own lines, and what it is under it:
+                      // beside the name, the metadata took the width and the
+                      // player's name was the part that got cut.
+                      "enter-rise stagger flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
+                      ui.radius.control,
+                      ui.text.meta,
+                      index === active && "bg-[color:var(--ui-surface-sunken)]",
+                    )}
+                  >
+                    <span className="min-w-0 break-words [font-weight:var(--ui-weight-heavy)]">
+                      {highlightParts(entry.label, text).map((part, position) =>
+                        part.match ? (
+                          <mark
+                            key={position}
+                            className="rounded-[2px] bg-[color:color-mix(in_oklab,var(--ui-accent-spring)_50%,transparent)] text-inherit"
+                          >
+                            {part.text}
+                          </mark>
+                        ) : (
+                          <span key={position}>{part.text}</span>
+                        ),
+                      )}
+                    </span>
+                    <span className={cn("min-w-0 break-words", ui.text.micro, ui.tone.muted)}>
+                      {entry.hint ? `${entry.hint} · ` : ""}
+                      {entry.kind === "club" ? t("nav.search.club") : t("nav.search.player")}
+                    </span>
+                  </div>
+                </ExitFade>
+              ))}
+            </ExitPresence>
+          </ExitFade>
+        ) : null}
+      </ExitPresence>
     </div>
   );
 }

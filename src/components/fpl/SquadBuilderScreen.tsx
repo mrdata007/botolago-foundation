@@ -6,6 +6,7 @@ import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { ui, UiBanner, UiButton, UiHeader, UiIconButton, UiSegmented } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { getKitForClub } from "@/lib/kits";
+import { ExitSwap } from "@/lib/motion-exit";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position, SquadPlayer } from "@/types/fantasy";
@@ -139,27 +140,32 @@ export function SquadBuilderScreen({
           ? t("player.pos.MID")
           : t("player.pos.FWD");
 
+  // The slot's key stays the slot number (the pitch's reorder slide reads it).
+  // Inside, the content is keyed by the player, or "empty", so a transfer out
+  // cross-fades the card into the empty slot, and undo or reset plays back.
   const card = (s: BuilderSlot) => {
     const dimmed = replaceMode && s.position !== incoming!.position;
-    return s.player ? (
-      <FplPlayerCard
-        key={s.slot}
-        player={s.player}
-        club={clubOf(s.player.clubId)}
-        sub={s.sub ?? nf.format(s.player.price)}
-        captain={s.isCaptain}
-        vice={s.isViceCaptain}
-        highlighted={s.highlighted}
-        dimmed={dimmed}
-        onClick={dimmed ? undefined : () => onSlotTap(s)}
-      />
-    ) : (
-      <FplEmptySlot
-        key={s.slot}
-        position={s.position}
-        className={dimmed ? "opacity-45" : undefined}
-        onClick={dimmed ? undefined : () => onSlotTap(s)}
-      />
+    return (
+      <ExitSwap key={s.slot} swapKey={s.player?.id ?? "empty"}>
+        {s.player ? (
+          <FplPlayerCard
+            player={s.player}
+            club={clubOf(s.player.clubId)}
+            sub={s.sub ?? nf.format(s.player.price)}
+            captain={s.isCaptain}
+            vice={s.isViceCaptain}
+            highlighted={s.highlighted}
+            dimmed={dimmed}
+            onClick={dimmed ? undefined : () => onSlotTap(s)}
+          />
+        ) : (
+          <FplEmptySlot
+            position={s.position}
+            className={dimmed ? "opacity-45" : undefined}
+            onClick={dimmed ? undefined : () => onSlotTap(s)}
+          />
+        )}
+      </ExitSwap>
     );
   };
 

@@ -1,6 +1,6 @@
 # Motion plan, round 4: things that leave
 
-Status: **in progress on `claude/motion-round-4-exits`; draft pull request, not merged.**
+Status: **built on `claude/motion-round-4-exits`; draft pull request, not merged.**
 Scope approved by the owner on 2026-10-10: add Motion (motion.dev) only for
 exit animations, the one thing the app's CSS toolkit cannot do (it can
 animate an element that arrives, not one React has already removed). Follows
@@ -10,11 +10,12 @@ animate an element that arrives, not one React has already removed). Follows
 
 - `motion`, pinned exactly to `13.4.4` (released 2026-09-25; not the new 14.x
   major).
-- Only `LazyMotion` + `domAnimation` + the `m.*` components and
-  `AnimatePresence`, from `motion/react`. Never the full `motion.*`
-  components, which bundle every feature. Budget: no more than about 20 KB
-  gzip added to the client, measured from `vite build` output before and
-  after.
+- Only `LazyMotion` with `domMin` (the animation and exit features, without
+  the hover, tap and focus gestures that `domAnimation` adds and nothing here
+  uses), the `m.*` components and `AnimatePresence`, from `motion/react`.
+  Never the full `motion.*` components, which bundle every feature. Budget:
+  no more than about 20 KB gzip added to the client, measured from
+  `vite build` output before and after.
 - One shared wrapper in `src/lib/motion-exit.tsx`, so screens never import
   `motion/react` directly. It provides the `LazyMotion` boundary and the
   `MotionConfig reducedMotion="user"` setting, and reads its durations and
