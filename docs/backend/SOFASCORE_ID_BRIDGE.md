@@ -169,3 +169,10 @@ and the bridge script gets no database credentials. Run `propose-teams`, review
 the proposed `{sofascoreTeamId: internalUuid}` pairing, then `dry-run` with the
 approved JSON. Writing the mapping on production remains an owner-run step
 through the release runbook.
+
+Dispatch this production workflow from `main` as the repository owner
+(`mrdata007`). Set `expected_commit` to the full 40-character SHA of the
+reviewed main commit approved for the run. The workflow rejects other branches,
+other actors, reruns and a SHA that differs from the dispatched commit before
+checking out code or exposing production credentials. Checkout is pinned to
+that reviewed SHA; credentials are supplied only to the read-only fetch step.

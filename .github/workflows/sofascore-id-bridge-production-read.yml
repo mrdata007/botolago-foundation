@@ -12,6 +12,10 @@ name: SofaScore ID bridge (production, read only)
 on:
   workflow_dispatch:
     inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for this read-only run
+        required: true
+        type: string
       mode:
         description: "propose-teams or dry-run (both read only)"
         required: true
@@ -37,7 +41,12 @@ permissions:
 jobs:
   bridge:
     name: SofaScore ID bridge production ${{ inputs.mode }} (read only)
-    if: github.repository == 'mrdata007/botolago-foundation'
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.triggering_actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: production-admin-activation
@@ -46,19 +55,26 @@ jobs:
       - name: Validate manual dispatch
         shell: bash
         env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
           MODE: ${{ inputs.mode }}
           TEAMS: ${{ inputs.teams }}
         run: |
           set -euo pipefail
+          [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" && "${GITHUB_REPOSITORY:-}" == "mrdata007/botolago-foundation" ]] || { echo "Owner workflow dispatch required."; exit 2; }
+          [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] || { echo "Production reads may run only from main."; exit 2; }
+          [[ "${GITHUB_ACTOR:-}" == "mrdata007" && "${GITHUB_TRIGGERING_ACTOR:-}" == "mrdata007" ]] || { echo "Only the owner may dispatch this workflow."; exit 2; }
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "Workflow reruns are forbidden; dispatch a reviewed commit again."; exit 2; }
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ && "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the reviewed main commit."; exit 2; }
           case "$MODE" in
             propose-teams) ;;
             dry-run) test -n "$TEAMS" ;;
             *) exit 2 ;;
           esac
 
-      - name: Check out the repository
+      - name: Check out the reviewed main commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
+          ref: ${{ inputs.expected_commit }}
           persist-credentials: false
 
       - uses: oven-sh/setup-bun@v2
