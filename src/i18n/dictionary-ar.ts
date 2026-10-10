@@ -2648,7 +2648,7 @@ export const ar = {
   "gradins.seasons.empty": "تظهر هنا أول جولة محتسبة لك.",
   "gradins.seasons.error": "تعذّر تحميل سجلّك.",
   "gradins.share.label": "بطاقتي في BotolaGO",
-  "gradins.share.caption": "موسمي، جولةً بعد جولة",
+  "gradins.share.caption": "بطاقتي في \u2066BotolaGO\u2069",
   "fantasy.hub.pepites_body": "أفضل لاعبي البطولة الاحترافية دون 23 سنة، لاكتشاف لاعبيك القادمين.",
   "fantasy.hub.card_view": "عرض بطاقتك",
 

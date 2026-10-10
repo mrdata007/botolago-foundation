@@ -2808,7 +2808,7 @@ export const fr = {
   "gradins.seasons.empty": "Votre première journée comptée apparaîtra ici.",
   "gradins.seasons.error": "Impossible de charger votre historique.",
   "gradins.share.label": "Ma carte BotolaGO",
-  "gradins.share.caption": "Ma saison, rang par rang",
+  "gradins.share.caption": "Ma carte BotolaGO",
   "fantasy.hub.pepites_body":
     "Les meilleurs moins de 23 ans de la Botola Pro, pour repérer vos prochains joueurs.",
   "fantasy.hub.card_view": "Voir votre carte",

@@ -252,10 +252,10 @@ describe("what it says", () => {
 
   it("the caption and the address", async () => {
     const fr = await draw("rated", "fr");
-    expect(find(fr.ops, "Ma saison, rang par rang")).toBeDefined();
+    expect(find(fr.ops, "Ma carte BotolaGO")).toBeDefined();
     expect(find(fr.ops, "botolago.com")).toBeDefined();
     const ar = await draw("rated", "ar");
-    expect(find(ar.ops, "موسمي، جولةً بعد جولة")).toBeDefined();
+    expect(find(ar.ops, "بطاقتي في \u2066BotolaGO\u2069")).toBeDefined();
   });
 
   it("the art's own text runs are drawn over the card at its drawn size", async () => {

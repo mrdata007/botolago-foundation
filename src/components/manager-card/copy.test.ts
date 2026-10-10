@@ -313,7 +313,7 @@ describe("the dictionary of the section", () => {
     expect(g.nav).toBe("Gradins");
     expect(g.guestHeadline).toBe("Votre place dans les gradins");
     expect(g.guestPointRatingBody).toContain("{final}");
-    expect(g.shareCaption).toBe("Ma saison, rang par rang");
+    expect(g.shareCaption).toBe("Ma carte BotolaGO");
     expect(g.hubPepitesBody).toContain("moins de 23 ans");
     expect(g.leagues(2)).toBe("2 ligues");
     const c = cardCopy(ar, "ar");
