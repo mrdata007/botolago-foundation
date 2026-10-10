@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useState, type JSX, type ReactNode } from "react";
+import { useCallback, useState, type JSX, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import type { MyCardDto } from "@/backend/manager-card/contracts";
@@ -9,7 +9,9 @@ import { CardBornPanel } from "@/components/manager-card/moments/CardBornPanel";
 import { MomentHero } from "@/components/manager-card/moments/MomentHero";
 import { MomentLines } from "@/components/manager-card/moments/MomentLines";
 import { ShareCardSheet } from "@/components/manager-card/moments/ShareCardSheet";
-import { useMomentGate } from "@/components/manager-card/moments/use-moment-gate";
+import { pickHero } from "@/components/manager-card/moments/moments";
+import { momentStore, useMomentGate } from "@/components/manager-card/moments/use-moment-gate";
+import { heroShownThisSession } from "@/components/manager-card/storage";
 import { fromMyCard } from "@/components/manager-card/to-profile";
 import { ui, UiLinkButton, UiButton, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -18,6 +20,7 @@ import { useManagerCardStatus } from "@/services/manager-card-status";
 import type { Club, Gameweek } from "@/types/domain";
 
 import { CardStage, RatingLine } from "./CardStage";
+import { useRatingBadge } from "./use-rating-change";
 import { useStageBeat } from "./use-stage-beat";
 import { ClubBlock } from "./ClubBlock";
 import { GuestHero } from "./GuestHero";
@@ -153,7 +156,29 @@ export function OwnerHome({
     counted: card.gameweeksCounted,
     suppress: gate.hero !== null,
   });
+  const badge = useRatingBadge({
+    ovr: view.ovr,
+    newSeason: view.newSeason,
+    seasonId: card.season.id,
+  });
   useViewEvent("curva_view_manager");
+
+  // Whether a hero is, or is about to be, this visit's moment (it would carry the card and hide the
+  // stage's copy). Asked when the stage mounts: the store's decision if it has made one, else the
+  // rules' (`pickHero`, with no deadline known: the conservative answer).
+  const heroDue = useCallback(
+    () =>
+      momentStore.get("curva").hero !== null ||
+      pickHero(card.moments, {
+        surface: "curva",
+        card,
+        minutesToDeadline: null,
+        heroShownThisSession: heroShownThisSession(),
+        launchGateOpen: true,
+        latestEvaluatedGameweekSeq: card.throughGameweekSeq,
+      }).hero !== null,
+    [card],
+  );
 
   const block = roundBlock(card, { gameweek, now: Date.now() });
   const glance = roundGlance(block, { gameweek, now: Date.now() });
@@ -169,6 +194,7 @@ export function OwnerHome({
       min={card.minRated}
       season={view.newSeason ? view.numberSeason : null}
       formingLabel={moments.m3.label}
+      change={badge}
     />
   );
   const identity = (
@@ -218,7 +244,7 @@ export function OwnerHome({
           "[[data-hero-slot]:not(:empty)~&_[data-stage-card]]:hidden",
         )}
       >
-        <CardStage profile={profile} beat={beat} fitHeight>
+        <CardStage profile={profile} beat={beat} fitHeight flippable entrance={{ heroDue }}>
           {rating}
         </CardStage>
         <div className="mt-1 px-4 max-md:rtl:mt-0">{identity}</div>
