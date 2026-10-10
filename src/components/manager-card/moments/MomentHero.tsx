@@ -73,7 +73,7 @@ export function MomentHero({
   // The card the hero carries: the page's own stage when it passes one, else the hero draws it.
   const stage = (beat: BeatName | undefined): ReactNode =>
     children === undefined ? (
-      <HeroCard profile={profile} beat={beat} />
+      <HeroCard profile={profile} beat={beat} burst={hero?.kind === "tier_up" ? hero.tier : null} />
     ) : typeof children === "function" ? (
       children({ beat })
     ) : (

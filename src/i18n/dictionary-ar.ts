@@ -2785,4 +2785,10 @@ export const ar = {
     "ستُحذف بطاقتك كمدرّب ورقمها {serial}، ولن يُعاد إسناد هذا الرقم أبدًا.",
   "card.onboarding.state.deletion_noserial": "ستُحذف بطاقتك كمدرّب.",
   "card.onboarding.state.offline.text": "تعذّر تحميل البطاقة.",
+  "card_motion.flip.label": "اقلب البطاقة",
+  "card_motion.flip.shown_front": "الوجه الأمامي للبطاقة",
+  "card_motion.flip.shown_back": "ظهر البطاقة",
+  "card_motion.flip.back_label": "ظهر البطاقة",
+  "card_motion.delta.up": "ارتفع التقييم بمقدار {n}",
+  "card_motion.delta.down": "انخفض التقييم بمقدار {n}",
 } as const satisfies Record<string, string>;

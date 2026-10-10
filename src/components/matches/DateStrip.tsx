@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react";
 import matchesBandPhoto from "@/assets/photos/matches-header.webp";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { scrollBehavior } from "@/lib/motion";
 import { capitalizeFirst } from "@/lib/match-days";
 import { ui, UiButton, UiChip, UiIconButton } from "@/components/ui-kit";
 import { addMatchDays, isSameMatchDay, startOfMatchDay } from "@/lib/match-kickoff";
@@ -121,7 +122,7 @@ export function DateStrip({
     const scrollerBox = scroller.getBoundingClientRect();
     const activeBox = active.getBoundingClientRect();
     const delta = activeBox.left - scrollerBox.left + activeBox.width / 2 - scrollerBox.width / 2;
-    scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior: "smooth" });
+    scroller.scrollTo({ left: scroller.scrollLeft + delta, behavior: scrollBehavior() });
   }, [selectedDay]);
 
   const shiftBy = (delta: number) => {

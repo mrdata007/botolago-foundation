@@ -44,6 +44,7 @@ import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { keepSameOwnerData, useFantasyDataSource } from "@/services/fantasy-data-source";
+import { scrollBehavior } from "@/lib/motion";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { pageForRank, type RankingsSort } from "@/services/fantasy-rankings";
 import { fantasyService } from "@/services/fantasy-runtime";
@@ -176,7 +177,7 @@ function RankingsPage() {
     setSearch("");
     setPage(pageForRank(data.myRank.rank, PAGE_SIZE));
     requestAnimationFrame(() =>
-      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      tableRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" }),
     );
   };
 
@@ -214,10 +215,11 @@ function RankingsPage() {
       />
 
       <section
+        key={tab}
         role="tabpanel"
         id={`rankings-panel-${tab}`}
         aria-labelledby={`rankings-tab-${tab}`}
-        className={cn("space-y-5 px-4 pb-8 pt-6", ui.surface.page)}
+        className={cn("tab-panel-in space-y-5 px-4 pb-8 pt-6", ui.surface.page)}
       >
         {rankingsQ.isError ? (
           <UiErrorState onRetry={() => void rankingsQ.refetch()} />

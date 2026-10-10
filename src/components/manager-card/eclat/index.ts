@@ -11,6 +11,7 @@ import { BEAT_MS } from "./beats";
 import "./eclat.css";
 import { cardAspect, cardImage, founderDetail, fullCard } from "./full";
 import { measureText, ready } from "./measure";
+import { tierPalette } from "./palette";
 import { mountTilt } from "./tilt";
 import { tokenMarkup, tokenWidth } from "./token";
 import { label, makeView } from "./view";
@@ -41,6 +42,7 @@ export const eclatRenderer: CardRenderer = {
     part === "founder" ? founderDetail(profile, options, measureText) : null,
   image: (profile, strings) => cardImage(profile, strings, measureText),
   label,
+  palette: tierPalette,
   beatMs: (beat) => (Object.hasOwn(BEAT_MS, beat) ? BEAT_MS[beat] : 0),
   mount: mountTilt,
 };

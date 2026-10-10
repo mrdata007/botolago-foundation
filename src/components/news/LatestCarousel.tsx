@@ -5,6 +5,7 @@ import type { ArticleCardDto } from "@/backend/news/contracts";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { ui, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import { presentArticleForDisplay } from "./news-data";
@@ -53,7 +54,7 @@ export function LatestCarousel({
 
   const goTo = (index: number) => {
     const slide = scroller.current?.children[index] as HTMLElement | undefined;
-    slide?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+    slide?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest", inline: "start" });
   };
 
   if (count === 0) return null;
