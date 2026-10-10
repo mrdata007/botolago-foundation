@@ -1,7 +1,7 @@
 ## Format
 
 WebP for the card pictures, as the BEFORE set (`before/to-webp.py`, quality 92, method 6, never resized): 319
-files, 23.0 MB (the PNGs the scripts write were 115.2 MB and are not committed: re-running the scripts writes
+files, 23.0 MB (the PNGs the scripts write were 113.3 MB and are not committed: re-running the scripts writes
 them again). `capture-log.json` and `capture-log-gallery.json` are the scripts' own logs.
 
 ## What was measured while capturing
@@ -44,6 +44,6 @@ them again). `capture-log.json` and `capture-log-gallery.json` are the scripts' 
 
 ## Servers
 
-One development server, on port 4194 only, started for this run from the tree above and stopped by its process
+One development server, on port 4490 only, started for this run from the tree above and stopped by its process
 id at the end of the WP4 measurements. Nothing is left running. No database, migration, Edge Function, deployment or Lovable call was
 made, and nothing was pushed.

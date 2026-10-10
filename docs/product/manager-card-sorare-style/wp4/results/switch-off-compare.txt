@@ -1,4 +1,4 @@
-$ node docs/product/manager-card-section/wp1/compare-off.mjs <origin/main c8fc3a48 capture> <this branch capture>   (round 2; both trees built by wp1/build-tree.ts against the stub on 4441, each served alone on 4441, captured by before/capture-switch-off.mjs)
+$ node docs/product/manager-card-section/wp1/compare-off.mjs <origin/main c8fc3a48 capture> <this branch capture>   (round 2 review fixes 18f921ee; both trees built by wp1/build-tree.ts against the stub on 4490, each served alone on 4490 with wp1/serve-built.ts, captured by before/capture-switch-off.mjs)
 30 screenshots compared, worst fantasy-ar-light-1440.png at 0.0000%
 requests: no new data or document request and none for the section's code; up to 0 shared chunk(s) re-split per page ()
 5 server bodies: 5 identical

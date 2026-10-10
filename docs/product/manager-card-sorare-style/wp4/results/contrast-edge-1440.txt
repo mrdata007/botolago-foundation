@@ -1,26 +1,33 @@
-rated fr dark 1440: 3 readings, 0 below floor
-rated fr light 1440: 3 readings, 0 below floor
-rated ar dark 1440: 3 readings, 0 below floor
-rated ar light 1440: 3 readings, 0 below floor
-legend fr dark 1440: 3 readings, 0 below floor
-legend fr light 1440: 3 readings, 0 below floor
-legend ar dark 1440: 3 readings, 0 below floor
-legend ar light 1440: 3 readings, 0 below floor
-homa fr dark 1440: 3 readings, 0 below floor
-homa fr light 1440: 3 readings, 0 below floor
-homa ar light 1440: 3 readings, 0 below floor
-homa ar dark 1440: 3 readings, 0 below floor
-tierUp fr light 1440: 3 readings, 0 below floor
-tierUp fr dark 1440: 3 readings, 0 below floor
-tierUp ar light 1440: 3 readings, 0 below floor
-tierUp ar dark 1440: 3 readings, 0 below floor
-forming1 fr light 1440: 3 readings, 0 below floor
-forming1 fr dark 1440: 3 readings, 0 below floor
-forming1 ar light 1440: 3 readings, 0 below floor
-forming1 ar dark 1440: 3 readings, 0 below floor
+forming1 fr light 1440: 18 readings, 0 below floor
+forming1 fr dark 1440: 18 readings, 0 below floor
+forming1 ar light 1440: 18 readings, 0 below floor
+forming1 ar dark 1440: 18 readings, 0 below floor
+homa fr light 1440: 18 readings, 0 below floor
+homa fr dark 1440: 18 readings, 0 below floor
+homa ar light 1440: 18 readings, 0 below floor
+homa ar dark 1440: 18 readings, 0 below floor
+tierDown fr light 1440: 18 readings, 0 below floor
+tierDown fr dark 1440: 18 readings, 0 below floor
+tierDown ar light 1440: 18 readings, 0 below floor
+tierDown ar dark 1440: 18 readings, 0 below floor
+rated fr light 1440: 18 readings, 0 below floor
+rated fr dark 1440: 18 readings, 0 below floor
+rated ar light 1440: 18 readings, 0 below floor
+rated ar dark 1440: 18 readings, 0 below floor
+tierUp fr light 1440: 18 readings, 0 below floor
+tierUp fr dark 1440: 18 readings, 0 below floor
+tierUp ar light 1440: 18 readings, 0 below floor
+tierUp ar dark 1440: 18 readings, 0 below floor
+legend fr light 1440: 18 readings, 0 below floor
+legend fr dark 1440: 18 readings, 0 below floor
+legend ar light 1440: 18 readings, 0 below floor
+legend ar dark 1440: 18 readings, 0 below floor
 
-rest     edge       n=  20  lowest   3.46 (floor 3)  at legend ar light 1440 "outermost line of the frame vs page (walls hidden)"  under floor: 0
-rest     edgeBand   n=  20  lowest   1.44 (floor 3)  at tierUp ar light 1440 "first 2 CSS px of the frame vs page (walls hidden)"  under floor: 10
-rest     edgeWithWalls n=  20  lowest   3.46 (floor 3)  at legend ar light 1440 "outermost line of the silhouette with the thickness walls vs page"  under floor: 0
+rest     edge       n=  24  lowest   3.70 (floor 3)  at forming1 fr dark 1440 "outermost line of the frame vs page (walls hidden)"  under floor: 0
+rest     edgeBand   n=  24  lowest   3.70 (floor 3)  at forming1 fr dark 1440 "first 2 CSS px of the frame vs page (walls hidden)"  under floor: 0
+rest     edgeWithWalls n=  24  lowest   3.70 (floor 3)  at forming1 fr dark 1440 "outermost line of the silhouette with the thickness walls vs page"  under floor: 0
+pointer  edge       n= 120  lowest   3.25 (floor 3)  at tierDown fr light 1440 "outermost line of the frame vs page (walls hidden) [pointer bottom-right]"  under floor: 0
+pointer  edgeBand   n= 120  lowest   2.69 (floor 3)  at forming1 fr dark 1440 "first 2 CSS px of the frame vs page (walls hidden) [pointer bottom-right]"  under floor: 7
+pointer  edgeWithWalls n= 120  lowest   1.81 (floor 3)  at tierDown fr dark 1440 "outermost line of the silhouette with the thickness walls vs page [pointer top-right]"  under floor: 20
 
-60 readings, 0 below their floor, 0 errors
+432 readings, 0 below their floor, 0 errors

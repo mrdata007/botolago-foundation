@@ -1,7 +1,7 @@
-$ bun run format:check   (branch, exit 2) and the same in a detached worktree of origin/main c8fc3a48 (exit 2)
-files prettier lists: branch 84, main 84; syntax errors reported: 11 on each side
+$ bun run format:check   (branch, exit 2) and the same in an extract of origin/main c8fc3a48 (exit 2)
+files prettier lists: branch 84, main 84; syntax errors reported: 11 on the branch, 11 on main
 the two sorted lists are identical: this branch adds no unformatted file
-$ prettier --check <the 179 .ts .tsx .css .md .json .mjs .js .html .yaml files this branch adds or changes against origin/main>: All matched files use Prettier code style!
+$ prettier --check <the 183 .ts .tsx .css .md .json .mjs .js .html .yaml files this branch adds or changes against origin/main (the result files the scripts write were formatted with prettier --write first)>: All matched files use Prettier code style!
 
 the list:
 [warn] .github/workflows/gate2c-production-historical-catalog-canary.yml

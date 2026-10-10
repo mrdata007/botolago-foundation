@@ -1,5155 +1,4497 @@
 {
- "base": "http://127.0.0.1:4440",
- "full": [
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "forming1",
-   "tier": null,
-   "markupBytes": 39460,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "homa",
-   "tier": "homa",
-   "markupBytes": 41476,
-   "drawn": 131,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "tierDown",
-   "tier": "stade",
-   "markupBytes": 40452,
-   "drawn": 130,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "rated",
-   "tier": "pro",
-   "markupBytes": 39479,
-   "drawn": 125,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "tierUp",
-   "tier": "champion",
-   "markupBytes": 41686,
-   "drawn": 129,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "legend",
-   "tier": "legend",
-   "markupBytes": 42689,
-   "drawn": 131,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "founder",
-   "tier": "pro",
-   "markupBytes": 40309,
-   "drawn": 129,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "founder-year": 1,
-    "wordmark": 1
-   },
-   "hasFounder": true
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "clubNull",
-   "tier": "pro",
-   "markupBytes": 39624,
-   "drawn": 124,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "longNameLatin",
-   "tier": "pro",
-   "markupBytes": 39802,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "arabicName",
-   "tier": "pro",
-   "markupBytes": 39770,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "born0",
-   "tier": null,
-   "markupBytes": 39446,
-   "drawn": 125,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "light",
-   "fixture": "insufficient3",
-   "tier": null,
-   "markupBytes": 38641,
-   "drawn": 118,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "forming1",
-   "tier": null,
-   "markupBytes": 39803,
-   "drawn": 127,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "homa",
-   "tier": "homa",
-   "markupBytes": 41835,
-   "drawn": 132,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "tierDown",
-   "tier": "stade",
-   "markupBytes": 40804,
-   "drawn": 131,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "rated",
-   "tier": "pro",
-   "markupBytes": 39823,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "tierUp",
-   "tier": "champion",
-   "markupBytes": 41901,
-   "drawn": 130,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "legend",
-   "tier": "legend",
-   "markupBytes": 42904,
-   "drawn": 132,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "founder",
-   "tier": "pro",
-   "markupBytes": 40524,
-   "drawn": 130,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "founder-year": 1,
-    "wordmark": 1
-   },
-   "hasFounder": true
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "clubNull",
-   "tier": "pro",
-   "markupBytes": 39839,
-   "drawn": 125,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "longNameLatin",
-   "tier": "pro",
-   "markupBytes": 40017,
-   "drawn": 127,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "arabicName",
-   "tier": "pro",
-   "markupBytes": 39985,
-   "drawn": 127,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "born0",
-   "tier": null,
-   "markupBytes": 39661,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "fr",
-   "theme": "dark",
-   "fixture": "insufficient3",
-   "tier": null,
-   "markupBytes": 38856,
-   "drawn": 119,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "forming1",
-   "tier": null,
-   "markupBytes": 39838,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "homa",
-   "tier": "homa",
-   "markupBytes": 41877,
-   "drawn": 131,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "tierDown",
-   "tier": "stade",
-   "markupBytes": 40751,
-   "drawn": 130,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "rated",
-   "tier": "pro",
-   "markupBytes": 39836,
-   "drawn": 125,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "tierUp",
-   "tier": "champion",
-   "markupBytes": 41865,
-   "drawn": 129,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "legend",
-   "tier": "legend",
-   "markupBytes": 42956,
-   "drawn": 131,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "founder",
-   "tier": "pro",
-   "markupBytes": 40534,
-   "drawn": 129,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "founder-year": 1,
-    "wordmark": 1
-   },
-   "hasFounder": true
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "clubNull",
-   "tier": "pro",
-   "markupBytes": 39875,
-   "drawn": 124,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "longNameLatin",
-   "tier": "pro",
-   "markupBytes": 40030,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "arabicName",
-   "tier": "pro",
-   "markupBytes": 39998,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "born0",
-   "tier": null,
-   "markupBytes": 39693,
-   "drawn": 125,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "light",
-   "fixture": "insufficient3",
-   "tier": null,
-   "markupBytes": 38886,
-   "drawn": 118,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "forming1",
-   "tier": null,
-   "markupBytes": 40053,
-   "drawn": 127,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "homa",
-   "tier": "homa",
-   "markupBytes": 42092,
-   "drawn": 132,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "tierDown",
-   "tier": "stade",
-   "markupBytes": 40966,
-   "drawn": 131,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "rated",
-   "tier": "pro",
-   "markupBytes": 40051,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "tierUp",
-   "tier": "champion",
-   "markupBytes": 42080,
-   "drawn": 130,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "legend",
-   "tier": "legend",
-   "markupBytes": 43171,
-   "drawn": 132,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame",
-    "holo"
-   ],
-   "rims": 7,
-   "holoLayer": true,
-   "holoClass": true,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "founder",
-   "tier": "pro",
-   "markupBytes": 40749,
-   "drawn": 130,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "founder-year": 1,
-    "wordmark": 1
-   },
-   "hasFounder": true
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "clubNull",
-   "tier": "pro",
-   "markupBytes": 40090,
-   "drawn": 125,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "longNameLatin",
-   "tier": "pro",
-   "markupBytes": 40245,
-   "drawn": 127,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "arabicName",
-   "tier": "pro",
-   "markupBytes": 40213,
-   "drawn": 127,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "ovrlabel": 1,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "tier": 1,
-    "name": 2,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "born0",
-   "tier": null,
-   "markupBytes": 39908,
-   "drawn": 126,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  },
-  {
-   "lang": "ar",
-   "theme": "dark",
-   "fixture": "insufficient3",
-   "tier": null,
-   "markupBytes": 39101,
-   "drawn": 119,
-   "image": false,
-   "feTurbulence": false,
-   "willChange": false,
-   "removedNames": [],
-   "layers": [
-    "base",
-    "shirt",
-    "num",
-    "frame"
-   ],
-   "rims": 7,
-   "holoLayer": false,
-   "holoClass": false,
-   "textKinds": {
-    "other": 10,
-    "season": 1,
-    "initials": 1,
-    "sample": 1,
-    "name": 1,
-    "label": 4,
-    "stat": 4,
-    "serial": 1,
-    "wordmark": 1
-   },
-   "hasFounder": false
-  }
- ],
- "tokens": [
-  {
-   "size": 80,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 80,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 49,
-   "height": 80,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "24",
-    "9.79",
-    "40.45",
-    "40.45",
-    "18.2"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 64,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 40,
-   "height": 64,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "101.13",
-    "30",
-    "12.5",
-    "22.75"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 56,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 35,
-   "height": 56,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "115.57",
-    "30",
-    "12.75",
-    "26"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 48,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 30,
-   "height": 48,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "134.83",
-    "30",
-    "14.87",
-    "30.34"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 44,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 27,
-   "height": 44,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "147.09",
-    "30",
-    "16.22",
-    "33.1"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 32,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 20,
-   "height": 32,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "202.25",
-    "30",
-    "20.59",
-    "45.51"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 28,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 17,
-   "height": 28,
-   "texts": 2,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "231.14",
-    "30",
-    "23.53",
-    "52.01"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "rated",
-   "theme": "light",
-   "tier": "pro",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "rated",
-   "theme": "dark",
-   "tier": "pro",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "legend",
-   "theme": "light",
-   "tier": "legend",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "legend",
-   "theme": "dark",
-   "tier": "legend",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "tierUp",
-   "theme": "light",
-   "tier": "champion",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "tierUp",
-   "theme": "dark",
-   "tier": "champion",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "homa",
-   "theme": "light",
-   "tier": "homa",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "homa",
-   "theme": "dark",
-   "tier": "homa",
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "forming1",
-   "theme": "light",
-   "tier": null,
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  },
-  {
-   "size": 24,
-   "fixture": "forming1",
-   "theme": "dark",
-   "tier": null,
-   "width": 15,
-   "height": 24,
-   "texts": 0,
-   "textsOutsideNumber": 0,
-   "patterns": 0,
-   "masks": 0,
-   "filters": 0,
-   "images": 0,
-   "ringStroke": [
-    "269.67",
-    "30",
-    "27.45",
-    "60.68"
-   ],
-   "svgCount": 1
-  }
- ],
- "digits": [
-  {
-   "size": 80,
-   "minHeight": 16,
-   "at": 44,
-   "maxHeight": 19.5,
-   "allInsideBox": true,
-   "n": 90
-  },
-  {
-   "size": 64,
-   "minHeight": 13.63,
-   "at": 44,
-   "maxHeight": 16.63,
-   "allInsideBox": true,
-   "n": 90
-  },
-  {
-   "size": 48,
-   "minHeight": 11.63,
-   "at": 44,
-   "maxHeight": 14.13,
-   "allInsideBox": true,
-   "n": 90
-  },
-  {
-   "size": 32,
-   "minHeight": 8.63,
-   "at": 44,
-   "maxHeight": 10.38,
-   "allInsideBox": true,
-   "n": 90
-  }
- ],
- "compact": [
-  {
-   "px": 200,
-   "lang": "fr",
-   "fixture": "rated",
-   "texts": [
+  "base": "http://127.0.0.1:4490",
+  "full": [
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "forming1",
+      "tier": null,
+      "markupBytes": 39461,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "homa",
+      "tier": "homa",
+      "markupBytes": 41477,
+      "drawn": 131,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "tierDown",
+      "tier": "stade",
+      "markupBytes": 40453,
+      "drawn": 130,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "rated",
+      "tier": "pro",
+      "markupBytes": 39480,
+      "drawn": 125,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "tierUp",
+      "tier": "champion",
+      "markupBytes": 41835,
+      "drawn": 129,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "legend",
+      "tier": "legend",
+      "markupBytes": 42838,
+      "drawn": 131,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "founder",
+      "tier": "pro",
+      "markupBytes": 40310,
+      "drawn": 129,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "founder-year": 1,
+        "wordmark": 1
+      },
+      "hasFounder": true
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "clubNull",
+      "tier": "pro",
+      "markupBytes": 39625,
+      "drawn": 124,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 12
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "longNameLatin",
+      "tier": "pro",
+      "markupBytes": 39803,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 12
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "arabicName",
+      "tier": "pro",
+      "markupBytes": 39771,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 28.8
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "born0",
+      "tier": null,
+      "markupBytes": 39447,
+      "drawn": 125,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 12.8
+      "lang": "fr",
+      "theme": "light",
+      "fixture": "insufficient3",
+      "tier": null,
+      "markupBytes": 38642,
+      "drawn": 118,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 12.8
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "forming1",
+      "tier": null,
+      "markupBytes": 39804,
+      "drawn": 127,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 12.8
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "homa",
+      "tier": "homa",
+      "markupBytes": 41836,
+      "drawn": 132,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     },
     {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 12.8
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "tierDown",
+      "tier": "stade",
+      "markupBytes": 40805,
+      "drawn": 131,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "rated",
+      "tier": "pro",
+      "markupBytes": 39824,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "tierUp",
+      "tier": "champion",
+      "markupBytes": 42050,
+      "drawn": 130,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "legend",
+      "tier": "legend",
+      "markupBytes": 43053,
+      "drawn": 132,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "founder",
+      "tier": "pro",
+      "markupBytes": 40525,
+      "drawn": 130,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "founder-year": 1,
+        "wordmark": 1
+      },
+      "hasFounder": true
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "clubNull",
+      "tier": "pro",
+      "markupBytes": 39840,
+      "drawn": 125,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "longNameLatin",
+      "tier": "pro",
+      "markupBytes": 40018,
+      "drawn": 127,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "arabicName",
+      "tier": "pro",
+      "markupBytes": 39986,
+      "drawn": 127,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "born0",
+      "tier": null,
+      "markupBytes": 39662,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "fr",
+      "theme": "dark",
+      "fixture": "insufficient3",
+      "tier": null,
+      "markupBytes": 38857,
+      "drawn": 119,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "forming1",
+      "tier": null,
+      "markupBytes": 39839,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "homa",
+      "tier": "homa",
+      "markupBytes": 41878,
+      "drawn": 131,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "tierDown",
+      "tier": "stade",
+      "markupBytes": 40752,
+      "drawn": 130,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "rated",
+      "tier": "pro",
+      "markupBytes": 39837,
+      "drawn": 125,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "tierUp",
+      "tier": "champion",
+      "markupBytes": 42014,
+      "drawn": 129,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "legend",
+      "tier": "legend",
+      "markupBytes": 43105,
+      "drawn": 131,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "founder",
+      "tier": "pro",
+      "markupBytes": 40535,
+      "drawn": 129,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "founder-year": 1,
+        "wordmark": 1
+      },
+      "hasFounder": true
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "clubNull",
+      "tier": "pro",
+      "markupBytes": 39876,
+      "drawn": 124,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "longNameLatin",
+      "tier": "pro",
+      "markupBytes": 40031,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "arabicName",
+      "tier": "pro",
+      "markupBytes": 39999,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "born0",
+      "tier": null,
+      "markupBytes": 39694,
+      "drawn": 125,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "light",
+      "fixture": "insufficient3",
+      "tier": null,
+      "markupBytes": 38887,
+      "drawn": 118,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "forming1",
+      "tier": null,
+      "markupBytes": 40054,
+      "drawn": 127,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "homa",
+      "tier": "homa",
+      "markupBytes": 42093,
+      "drawn": 132,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "tierDown",
+      "tier": "stade",
+      "markupBytes": 40967,
+      "drawn": 131,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "rated",
+      "tier": "pro",
+      "markupBytes": 40052,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "tierUp",
+      "tier": "champion",
+      "markupBytes": 42229,
+      "drawn": 130,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "legend",
+      "tier": "legend",
+      "markupBytes": 43320,
+      "drawn": 132,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame", "holo"],
+      "rims": 7,
+      "holoLayer": true,
+      "holoClass": true,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "founder",
+      "tier": "pro",
+      "markupBytes": 40750,
+      "drawn": 130,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "founder-year": 1,
+        "wordmark": 1
+      },
+      "hasFounder": true
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "clubNull",
+      "tier": "pro",
+      "markupBytes": 40091,
+      "drawn": 125,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "longNameLatin",
+      "tier": "pro",
+      "markupBytes": 40246,
+      "drawn": 127,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "arabicName",
+      "tier": "pro",
+      "markupBytes": 40214,
+      "drawn": 127,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "ovrlabel": 1,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "tier": 1,
+        "name": 2,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "born0",
+      "tier": null,
+      "markupBytes": 39909,
+      "drawn": 126,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
+    },
+    {
+      "lang": "ar",
+      "theme": "dark",
+      "fixture": "insufficient3",
+      "tier": null,
+      "markupBytes": 39102,
+      "drawn": 119,
+      "image": false,
+      "feTurbulence": false,
+      "willChange": false,
+      "removedNames": [],
+      "layers": ["base", "shirt", "num", "frame"],
+      "rims": 7,
+      "holoLayer": false,
+      "holoClass": false,
+      "textKinds": {
+        "other": 10,
+        "season": 1,
+        "initials": 1,
+        "sample": 1,
+        "name": 1,
+        "label": 4,
+        "stat": 4,
+        "serial": 1,
+        "wordmark": 1
+      },
+      "hasFounder": false
     }
-   ],
-   "card": 200
-  },
-  {
-   "px": 200,
-   "lang": "fr",
-   "fixture": "founder",
-   "texts": [
+  ],
+  "tokens": [
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 12
+      "size": 80,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 12
+      "size": 80,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 49,
+      "height": 80,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["24", "9.79", "40.45", "40.45", "18.2"],
+      "svgCount": 1
     },
     {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 28.8
+      "size": 64,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
     },
     {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 12.8
+      "size": 64,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
     },
     {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 12.8
+      "size": 64,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
     },
     {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 12.8
+      "size": 64,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
     },
     {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 12.8
+      "size": 64,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
+    },
+    {
+      "size": 64,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
+    },
+    {
+      "size": 64,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
+    },
+    {
+      "size": 64,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
+    },
+    {
+      "size": 64,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
+    },
+    {
+      "size": 64,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 40,
+      "height": 64,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["101.13", "30", "12.5", "22.75"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 56,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 35,
+      "height": 56,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["115.57", "30", "12.75", "26"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 48,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 30,
+      "height": 48,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["134.83", "30", "14.87", "30.34"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 44,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 27,
+      "height": 44,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["147.09", "30", "16.22", "33.1"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 32,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 20,
+      "height": 32,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["202.25", "30", "20.59", "45.51"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 28,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 17,
+      "height": 28,
+      "texts": 2,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["231.14", "30", "23.53", "52.01"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "rated",
+      "theme": "light",
+      "tier": "pro",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "rated",
+      "theme": "dark",
+      "tier": "pro",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "legend",
+      "theme": "light",
+      "tier": "legend",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "legend",
+      "theme": "dark",
+      "tier": "legend",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "tierUp",
+      "theme": "light",
+      "tier": "champion",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "tierUp",
+      "theme": "dark",
+      "tier": "champion",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "homa",
+      "theme": "light",
+      "tier": "homa",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "homa",
+      "theme": "dark",
+      "tier": "homa",
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "forming1",
+      "theme": "light",
+      "tier": null,
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
+    },
+    {
+      "size": 24,
+      "fixture": "forming1",
+      "theme": "dark",
+      "tier": null,
+      "width": 15,
+      "height": 24,
+      "texts": 0,
+      "textsOutsideNumber": 0,
+      "patterns": 0,
+      "masks": 0,
+      "filters": 0,
+      "images": 0,
+      "ringStroke": ["269.67", "30", "27.45", "60.68"],
+      "svgCount": 1
     }
-   ],
-   "card": 200
-  },
-  {
-   "px": 200,
-   "lang": "fr",
-   "fixture": "longNameLatin",
-   "texts": [
+  ],
+  "digits": [
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 80,
+      "minHeight": 16,
+      "at": 44,
+      "maxHeight": 19.5,
+      "allInsideBox": true,
+      "n": 90
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 64,
+      "minHeight": 13.63,
+      "at": 44,
+      "maxHeight": 16.63,
+      "allInsideBox": true,
+      "n": 90
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
+      "size": 48,
+      "minHeight": 11.63,
+      "at": 44,
+      "maxHeight": 14.13,
+      "allInsideBox": true,
+      "n": 90
     },
     {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 12
-    },
-    {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 12
-    },
-    {
-     "kind": "name",
-     "text": "ABDELKARIM",
-     "cssPx": 16
-    },
-    {
-     "kind": "name",
-     "text": "BENJELLOUN-ALA",
-     "cssPx": 20.82
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 12.8
+      "size": 32,
+      "minHeight": 8.63,
+      "at": 44,
+      "maxHeight": 10.38,
+      "allInsideBox": true,
+      "n": 90
     }
-   ],
-   "card": 200
-  },
-  {
-   "px": 200,
-   "lang": "fr",
-   "fixture": "forming1",
-   "texts": [
+  ],
+  "compact": [
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 200,
+      "lang": "fr",
+      "fixture": "rated",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 12
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 12
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 28.8
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 12.8
+        }
+      ],
+      "card": 200
     },
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 200,
+      "lang": "fr",
+      "fixture": "founder",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 12
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 12
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 28.8
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 12.8
+        }
+      ],
+      "card": 200
     },
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 200,
+      "lang": "fr",
+      "fixture": "longNameLatin",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 12
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 12
+        },
+        {
+          "kind": "name",
+          "text": "ABDELKARIM",
+          "cssPx": 16
+        },
+        {
+          "kind": "name",
+          "text": "BENJELLOUN-ALA",
+          "cssPx": 20.82
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 12.8
+        }
+      ],
+      "card": 200
     },
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 200,
+      "lang": "fr",
+      "fixture": "forming1",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 44
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 12
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 28.8
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 12.8
+        }
+      ],
+      "card": 200
     },
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 200,
+      "lang": "fr",
+      "fixture": "tierUp",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 50.22
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 12
+        },
+        {
+          "kind": "tier",
+          "text": "CHAMPION",
+          "cssPx": 12
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 28.8
+        },
+        {
+          "kind": "stat",
+          "text": "94",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "89",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "83",
+          "cssPx": 12.8
+        }
+      ],
+      "card": 200
     },
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 200,
+      "lang": "ar",
+      "fixture": "arabicName",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "sample",
+          "text": "مثال",
+          "cssPx": 12
+        },
+        {
+          "kind": "tier",
+          "text": "محترف",
+          "cssPx": 12
+        },
+        {
+          "kind": "name",
+          "text": "فاطمة",
+          "cssPx": 16
+        },
+        {
+          "kind": "name",
+          "text": "الزهراء",
+          "cssPx": 18.4
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 12.8
+        }
+      ],
+      "card": 200
     },
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 200,
+      "lang": "ar",
+      "fixture": "rated",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 49.58
+        },
+        {
+          "kind": "sample",
+          "text": "مثال",
+          "cssPx": 12
+        },
+        {
+          "kind": "tier",
+          "text": "محترف",
+          "cssPx": 12
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 28.8
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 12.8
+        }
+      ],
+      "card": 200
     },
     {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 44
+      "px": 160,
+      "lang": "fr",
+      "fixture": "rated",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 23.04
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 10.24
+        }
+      ],
+      "card": 160
     },
     {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 12
+      "px": 160,
+      "lang": "fr",
+      "fixture": "founder",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 23.04
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 10.24
+        }
+      ],
+      "card": 160
     },
     {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 28.8
+      "px": 160,
+      "lang": "fr",
+      "fixture": "longNameLatin",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "name",
+          "text": "ABDELKARIM",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "name",
+          "text": "BENJELLOUN-ALA",
+          "cssPx": 16.66
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 10.24
+        }
+      ],
+      "card": 160
     },
     {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 12.8
+      "px": 160,
+      "lang": "fr",
+      "fixture": "forming1",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 35.2
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 23.04
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 10.24
+        }
+      ],
+      "card": 160
     },
     {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 12.8
+      "px": 160,
+      "lang": "fr",
+      "fixture": "tierUp",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 40.18
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "tier",
+          "text": "CHAMPION",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 23.04
+        },
+        {
+          "kind": "stat",
+          "text": "94",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "89",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "83",
+          "cssPx": 10.24
+        }
+      ],
+      "card": 160
     },
     {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 12.8
+      "px": 160,
+      "lang": "ar",
+      "fixture": "arabicName",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "sample",
+          "text": "مثال",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "tier",
+          "text": "محترف",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "name",
+          "text": "فاطمة",
+          "cssPx": 12.8
+        },
+        {
+          "kind": "name",
+          "text": "الزهراء",
+          "cssPx": 14.72
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 10.24
+        }
+      ],
+      "card": 160
     },
     {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 12.8
+      "px": 160,
+      "lang": "ar",
+      "fixture": "rated",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 39.66
+        },
+        {
+          "kind": "sample",
+          "text": "مثال",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "tier",
+          "text": "محترف",
+          "cssPx": 9.6
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 23.04
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 10.24
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 10.24
+        }
+      ],
+      "card": 160
+    },
+    {
+      "px": 136,
+      "lang": "fr",
+      "fixture": "rated",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 19.58
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 8.7
+        }
+      ],
+      "card": 136
+    },
+    {
+      "px": 136,
+      "lang": "fr",
+      "fixture": "founder",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 19.58
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 8.7
+        }
+      ],
+      "card": 136
+    },
+    {
+      "px": 136,
+      "lang": "fr",
+      "fixture": "longNameLatin",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "tier",
+          "text": "PRO",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "name",
+          "text": "ABDELKARIM",
+          "cssPx": 10.88
+        },
+        {
+          "kind": "name",
+          "text": "BENJELLOUN-ALA",
+          "cssPx": 14.16
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 8.7
+        }
+      ],
+      "card": 136
+    },
+    {
+      "px": 136,
+      "lang": "fr",
+      "fixture": "forming1",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "other",
+          "text": "—",
+          "cssPx": 29.92
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 19.58
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "—",
+          "cssPx": 8.7
+        }
+      ],
+      "card": 136
+    },
+    {
+      "px": 136,
+      "lang": "fr",
+      "fixture": "tierUp",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "other",
+          "text": "88",
+          "cssPx": 34.15
+        },
+        {
+          "kind": "sample",
+          "text": "EXEMPLE",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "tier",
+          "text": "CHAMPION",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 19.58
+        },
+        {
+          "kind": "stat",
+          "text": "94",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "89",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "83",
+          "cssPx": 8.7
+        }
+      ],
+      "card": 136
+    },
+    {
+      "px": 136,
+      "lang": "ar",
+      "fixture": "arabicName",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "sample",
+          "text": "مثال",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "tier",
+          "text": "محترف",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "name",
+          "text": "فاطمة",
+          "cssPx": 10.88
+        },
+        {
+          "kind": "name",
+          "text": "الزهراء",
+          "cssPx": 12.51
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 8.7
+        }
+      ],
+      "card": 136
+    },
+    {
+      "px": 136,
+      "lang": "ar",
+      "fixture": "rated",
+      "texts": [
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "other",
+          "text": "84",
+          "cssPx": 33.71
+        },
+        {
+          "kind": "sample",
+          "text": "مثال",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "tier",
+          "text": "محترف",
+          "cssPx": 8.16
+        },
+        {
+          "kind": "name",
+          "text": "ALI",
+          "cssPx": 19.58
+        },
+        {
+          "kind": "stat",
+          "text": "91",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "82",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "86",
+          "cssPx": 8.7
+        },
+        {
+          "kind": "stat",
+          "text": "78",
+          "cssPx": 8.7
+        }
+      ],
+      "card": 136
     }
-   ],
-   "card": 200
-  },
-  {
-   "px": 200,
-   "lang": "fr",
-   "fixture": "tierUp",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 50.22
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 12
-    },
-    {
-     "kind": "tier",
-     "text": "CHAMPION",
-     "cssPx": 12
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 28.8
-    },
-    {
-     "kind": "stat",
-     "text": "94",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "89",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "83",
-     "cssPx": 12.8
-    }
-   ],
-   "card": 200
-  },
-  {
-   "px": 200,
-   "lang": "ar",
-   "fixture": "arabicName",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "sample",
-     "text": "مثال",
-     "cssPx": 12
-    },
-    {
-     "kind": "tier",
-     "text": "محترف",
-     "cssPx": 12
-    },
-    {
-     "kind": "name",
-     "text": "فاطمة",
-     "cssPx": 16
-    },
-    {
-     "kind": "name",
-     "text": "الزهراء",
-     "cssPx": 18.4
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 12.8
-    }
-   ],
-   "card": 200
-  },
-  {
-   "px": 200,
-   "lang": "ar",
-   "fixture": "rated",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 49.58
-    },
-    {
-     "kind": "sample",
-     "text": "مثال",
-     "cssPx": 12
-    },
-    {
-     "kind": "tier",
-     "text": "محترف",
-     "cssPx": 12
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 28.8
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 12.8
-    }
-   ],
-   "card": 200
-  },
-  {
-   "px": 160,
-   "lang": "fr",
-   "fixture": "rated",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 23.04
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 10.24
-    }
-   ],
-   "card": 160
-  },
-  {
-   "px": 160,
-   "lang": "fr",
-   "fixture": "founder",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 23.04
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 10.24
-    }
-   ],
-   "card": 160
-  },
-  {
-   "px": 160,
-   "lang": "fr",
-   "fixture": "longNameLatin",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "name",
-     "text": "ABDELKARIM",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "name",
-     "text": "BENJELLOUN-ALA",
-     "cssPx": 16.66
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 10.24
-    }
-   ],
-   "card": 160
-  },
-  {
-   "px": 160,
-   "lang": "fr",
-   "fixture": "forming1",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 35.2
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 23.04
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 10.24
-    }
-   ],
-   "card": 160
-  },
-  {
-   "px": 160,
-   "lang": "fr",
-   "fixture": "tierUp",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 40.18
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "tier",
-     "text": "CHAMPION",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 23.04
-    },
-    {
-     "kind": "stat",
-     "text": "94",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "89",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "83",
-     "cssPx": 10.24
-    }
-   ],
-   "card": 160
-  },
-  {
-   "px": 160,
-   "lang": "ar",
-   "fixture": "arabicName",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "sample",
-     "text": "مثال",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "tier",
-     "text": "محترف",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "name",
-     "text": "فاطمة",
-     "cssPx": 12.8
-    },
-    {
-     "kind": "name",
-     "text": "الزهراء",
-     "cssPx": 14.72
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 10.24
-    }
-   ],
-   "card": 160
-  },
-  {
-   "px": 160,
-   "lang": "ar",
-   "fixture": "rated",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 39.66
-    },
-    {
-     "kind": "sample",
-     "text": "مثال",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "tier",
-     "text": "محترف",
-     "cssPx": 9.6
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 23.04
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 10.24
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 10.24
-    }
-   ],
-   "card": 160
-  },
-  {
-   "px": 136,
-   "lang": "fr",
-   "fixture": "rated",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 19.58
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 8.7
-    }
-   ],
-   "card": 136
-  },
-  {
-   "px": 136,
-   "lang": "fr",
-   "fixture": "founder",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 19.58
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 8.7
-    }
-   ],
-   "card": 136
-  },
-  {
-   "px": 136,
-   "lang": "fr",
-   "fixture": "longNameLatin",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "tier",
-     "text": "PRO",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "name",
-     "text": "ABDELKARIM",
-     "cssPx": 10.88
-    },
-    {
-     "kind": "name",
-     "text": "BENJELLOUN-ALA",
-     "cssPx": 14.16
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 8.7
-    }
-   ],
-   "card": 136
-  },
-  {
-   "px": 136,
-   "lang": "fr",
-   "fixture": "forming1",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "other",
-     "text": "—",
-     "cssPx": 29.92
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 19.58
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "—",
-     "cssPx": 8.7
-    }
-   ],
-   "card": 136
-  },
-  {
-   "px": 136,
-   "lang": "fr",
-   "fixture": "tierUp",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "other",
-     "text": "88",
-     "cssPx": 34.15
-    },
-    {
-     "kind": "sample",
-     "text": "EXEMPLE",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "tier",
-     "text": "CHAMPION",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 19.58
-    },
-    {
-     "kind": "stat",
-     "text": "94",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "89",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "83",
-     "cssPx": 8.7
-    }
-   ],
-   "card": 136
-  },
-  {
-   "px": 136,
-   "lang": "ar",
-   "fixture": "arabicName",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "sample",
-     "text": "مثال",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "tier",
-     "text": "محترف",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "name",
-     "text": "فاطمة",
-     "cssPx": 10.88
-    },
-    {
-     "kind": "name",
-     "text": "الزهراء",
-     "cssPx": 12.51
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 8.7
-    }
-   ],
-   "card": 136
-  },
-  {
-   "px": 136,
-   "lang": "ar",
-   "fixture": "rated",
-   "texts": [
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "other",
-     "text": "84",
-     "cssPx": 33.71
-    },
-    {
-     "kind": "sample",
-     "text": "مثال",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "tier",
-     "text": "محترف",
-     "cssPx": 8.16
-    },
-    {
-     "kind": "name",
-     "text": "ALI",
-     "cssPx": 19.58
-    },
-    {
-     "kind": "stat",
-     "text": "91",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "82",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "86",
-     "cssPx": 8.7
-    },
-    {
-     "kind": "stat",
-     "text": "78",
-     "cssPx": 8.7
-    }
-   ],
-   "card": 136
-  }
- ]
+  ]
 }

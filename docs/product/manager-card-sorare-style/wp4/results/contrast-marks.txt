@@ -2,8 +2,8 @@ forming1 fr light 390: 6 readings, 0 below floor
 forming1 fr dark 390: 6 readings, 0 below floor
 forming1 ar light 390: 6 readings, 0 below floor
 forming1 ar dark 390: 6 readings, 0 below floor
-eve2 fr light 390: 6 readings, 0 below floor
 eve2 fr dark 390: 6 readings, 0 below floor
+eve2 fr light 390: 6 readings, 0 below floor
 eve2 ar light 390: 6 readings, 0 below floor
 eve2 ar dark 390: 6 readings, 0 below floor
 notFinal2 fr light 390: 6 readings, 0 below floor

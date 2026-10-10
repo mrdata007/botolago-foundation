@@ -1,23 +1,15 @@
-=== check-bun-test: bun test   (round 2 integration, 8775151f + the round 2 commits; exit 1)
-(fail) the scheduled time as the editor reads it > Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027) [0.49ms]
-
-
- 7127 pass
+=== check-bun-test: bun test   (round 2 review fixes 18f921ee; exit 1: the one failure fails the same on origin/main c8fc3a48)
+(fail) the scheduled time as the editor reads it > Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027) [0.78ms]
+ 7133 pass
  17 skip
  1 fail
- 96586 expect() calls
-Ran 7145 tests across 547 files. [50.35s]
+ 96662 expect() calls
+Ran 7151 tests across 547 files. [42.91s]
+exit 1
 
---- the one failure, the same on origin/main c8fc3a48 (bun test src/backend/news/editorial-session.test.ts in a detached worktree of main):
-error: expect(received).toBe(expected)
-
-Expected: "samedi 20 février 2027 à 18:10 (GMT)"
-Received: "samedi 20 février 2027 à 18:10 (GMT+0)"
-
-      at <anonymous> (/home/user/mc-integ-main/src/backend/news/editorial-session.test.ts:246:94)
-(fail) the scheduled time as the editor reads it > Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027) [0.44ms]
+--- the same test on origin/main c8fc3a48 (bun test src/backend/news/editorial-session.test.ts in an extract of it):
 
  27 pass
  1 fail
  72 expect() calls
-Ran 28 tests across 1 file. [96.00ms]
+Ran 28 tests across 1 file. [86.00ms]

@@ -3,6 +3,8 @@
 **Draft — do not merge or publish without the owner.** Nothing here is merged, published, deployed or applied: no migration,
 no function, no database. The section stays switched off exactly as it ships today.
 
+Branch `claude/manager-card-sorare-style`, last source commit `18f921ee` (round 2 and its review fixes, on top of `origin/main` `c8fc3a48`); the evidence below was measured on it.
+
 ## What this is
 
 - The manager card now looks like a premium football collectible: a club-coloured shirt in proper proportions and in 3D, a shirt number printed on the chest,
@@ -32,33 +34,46 @@ All pictures are taken with the development preview and mock data (no real accou
 
 ## What was checked, in plain words
 
-- **Tests and checks:** the whole test suite passes (7,127 tests) except one that already fails on `main` (this machine prints « GMT+0 » where an old news test expects « GMT »); type check, lint, the build and the three build gates pass; the two browser suites pass (98 tests on the new screens, 9 on the switched-off app).
+- **Tests and checks:** the whole test suite passes (7,133 tests) except one that already fails on `main` (this machine prints « GMT+0 » where an old news test expects « GMT »); type check, lint, the build and the three build gates pass; the two browser suites pass (99 tests on the new screens, 9 on the switched-off app).
 - **Switch off:** identical to `main` (above).
-- **Text you can read:** every word and mark on the card was measured from the picture itself on 64 cards, at rest and with the pointer sitting on the text: all of them clear their floor, including the shirt number against its shirt with the pointer on it (3.41 or more) and the card's outer edge on a white page and on a dark one (3.46 or more); 2,408 readings, none below. The page's own text on the same screens is clean in the dark theme and signed out (and in the light theme but for one decorative dot, below).
+- **Text you can read:** every word and mark on the card was measured from the picture itself on 64 cards, at rest and with the pointer sitting on the text: all of them clear their floor, including the shirt number against its shirt with the pointer on it (3.39 or more) and the card's outer edge on a white page and on a dark one: 3.70 or more at rest and 3.16 or more with the pointer on the card, read at five places; 3,368 readings, none below. The page's own text on the same screens is clean in the dark theme and signed out (and in the light theme but for one decorative dot, below).
 - **The number sits inside the shirt:** OVR 1 to 99 and the dash, on every fixture, in both languages and themes: 147 of 147 inside the chest and the shirt.
 - **No clutter:** 118 to 132 drawn elements per card, down from 205 to 284.
 - **Small sizes:** the two-digit number is 16, 13.6, 11.6 and 8.6 px tall at 80, 64, 48 and 32 px.
 - **Arabic:** mirrored on 16 of 16 card pairs; digits stay Western; no letter spacing on Arabic words; no « HOMA » anywhere, on 46 screens.
 - **Phones:** no card or token escapes the screen at 320, 360, 390, 768 and 1440 px (740 measured); the repository's layout probe finds nothing on 294 checks.
-- **Motion:** every beat is 600 ms or less, nothing ever covers the number (400 samples), and with reduced motion no Gradins screen has an animation (0 of 32).
+- **Motion:** every beat is 600 ms or less, nothing ever covers the number (400 samples), with reduced motion no Gradins screen has an animation (0 of 32), and on a phone the floating card keeps its depth after the first half second and after a tap.
 
-## Things to look at before this goes anywhere
+## What round 2 fixed
 
-Items 1 to 5 and 7 were open in the first version of this description; round 2 acted on them (the evidence index says how, with the numbers).
+The first review's findings were fixed in round 2, and a second review of the result found four more, fixed in the last commit (`18f921ee`). Every number was measured again after it.
 
-1. **French, tablets and desktops: « Les vôtres » was cut to « Les … ». Fixed.** The link now goes under the heading instead of cutting it; no heading is cut on any Gradins screen at any width tried.
-2. **The first screen on a phone. Fixed down to a 740 px screen; this changes the plan.** On G1 the card is now 232 to 296 px wide by the phone's height (the plan said a fixed 296 px, D16 and section 10 now say what the code does), so the next-round line sits 19.9 px (French) and 27 px (Arabic) above the bottom bar at 390 × 844 and 7 to 8 px at 360 × 740, for every state. On phones shorter than about 730 px (an iPhone SE, 375 × 667) it still falls under the bar, with the card at its 232 px floor; a smaller card would not stay legible. Please confirm the smaller G1 card.
-3. **The tilt: much better, still not shown at 60 on a graphics card.** In the only browser available here (no graphics card) the median frame is 16.7 ms, 60 fps, at normal and at 4× slower CPU (it was 33 to 83 ms a frame); a few pauses of 56 to 75 ms per 3 s remain, and the 336 px card on a busy machine averages 47 to 58 fps. It needs a look on a real phone and laptop.
-4. **Contrast: fixed.** The number against its shirt with the pointer on it reads 3.41 or more (it was 2.94 to 2.98 on 8 of 24 cards), and CHAMPION's and LEGEND's outer edge on a white page 3.46 or more (it was 2.83 to 2.98). One decision to review: to give the dark page's edge the same, the metal walls of the base card, STADE and CHAMPION are about a fifth darker, so their first walls are dimmer in the dark theme than in your design preview (plan section 18 says how to undo it).
-5. **Speed to the first card (400 ms at 4× slower CPU):** 446 to 558 ms medians in the development server (it was 523 to 678), none of 40 runs under 400. A production figure exists only for the guest page (308 ms, measured by the performance lane in a scratch build with the preview gates forced on); the signed-in page cannot be built that way.
-6. **« Ma saison, rang par rang »** (the share picture's heading) still speaks of knitting.
-7. **A new font:** « Instrument Serif » for the second line of the name (your earlier yes). DESIGN.md now declares it, with the card's materials, shadow and corner; the design detector still lists its « overused font » notice for it on three lines of `eclat.css`, which I left as a notice (no ignore was added).
-8. **The design preview's full-page grids** showed half-drawn cards in their lower rows; that was the capture (one full-page screenshot of 3D layers), not the preview. They were retaken by stitching viewport screenshots.
+- **French, tablets and desktops:** « Les vôtres » is no longer cut to « Les … »; the link goes under the heading.
+- **The first screen on a phone:** the card is 232 to 296 px by the phone's height, so the next-round line sits 19.9 px (French) and 27 px (Arabic) above the bottom bar at 390 × 844 and 7 to 8 px at 360 × 740, for every state.
+- **Contrast:** the number against its shirt with the pointer on it reads 3.39 or more (it was 2.94 to 2.98), and the outer edge on a white page no longer sits under 3:1.
+- **The tilt:** the median frame is 16.7 ms (60 fps) at normal speed, it was 33 to 83 ms before round 2.
+- **Names:** 100 of 100 test names fit their margin (8 did not).
+- **The review of round 2, four findings:**
+  1. **On a phone the floating card turned flat after half a second** (and after any tap or scroll that began on it): it lost its layers' depth and the number's crop. It keeps them now; new unit and browser tests fail on the old code.
+  2. **The float started in the middle of a beat.** It waits for the beat to end now.
+  3. **The card's outer edge was only checked at rest.** With the pointer on the card, the normal state on a computer, it fell under 3:1 on 5 of 6 tiers (44 of 120 readings at 296 px, 43 of 120 at 336 px, as low as 1.55). The line is thicker now and the foil of CHAMPION and LEGEND stops short of it: 0 of 320 pointer readings under 3:1, 3.16 at the lowest.
+  4. **A browser test that said « flat again » did not look at the parts the tilt moves.** It does now, and it sees a leftover planted on purpose.
+
+## What remains, for you
+
+1. **One visible change from the edge fix:** the card's outer line is about 1 px thicker on every card, and on CHAMPION and LEGEND a dark line in the tier's colour frames the foil on a light page. Please look at the close-ups (`after/detail/art-legend-fr-light.webp` against the design preview).
+2. **The smaller G1 card:** it was a fixed 296 px in the plan and is 232 to 296 px by the phone's height now (plan D16 and section 10 say so). On phones shorter than about 730 px (an iPhone SE, 375 × 667) the next-round line still falls under the bar, with the card at its 232 px floor; a smaller card would not stay legible. Please confirm.
+3. **The dark page's walls:** to give the dark page's edge 3:1, the metal walls of the base card, STADE and CHAMPION are about a fifth darker, so their first walls are dimmer in the dark theme than in your design preview (plan section 18 says how to undo it). With a pointer on a turned card the silhouette with those walls drawn reads as low as 1.81 at 336 px on the dark page (no floor in the brief; the lit edge line itself is above 3).
+4. **The tilt on a graphics card is not shown.** In the only browser available (no graphics card) a few pauses of 50 to 79 ms remain per 3 s (0 to 1 at normal speed, 1 to 4 at 4× slower CPU), and LEGEND at 4× slower has a median frame of 16.7 or 33.3 ms depending on the run. It needs a look on a real phone and laptop; the touch float was only checked in Chromium's touch emulation.
+5. **Speed to the first card (400 ms at 4× slower CPU):** 453 to 576 ms medians in the development server, 1 of 40 runs under 400 (394). A production figure exists only for the guest page (308 ms, from the performance lane's scratch build).
+6. **One decorative dot:** the repository's contrast probe reads the « · » between the rating and the tier at 2.28:1 on 5 Arabic light-theme screens; read from the pixels it is 8.27:1 (the probe's threshold on an almost empty box). Not changed.
+7. **« Ma saison, rang par rang »** (the share picture's heading) still speaks of knitting.
+8. **A new font:** « Instrument Serif » for the second line of the name (your earlier yes). DESIGN.md now declares it, with the card's materials, shadow and corner; the design detector still lists its « overused font » notice on three lines of `eclat.css`, which I left as a notice (no ignore was added).
 
 ## What was not checked
 
 - A real phone, Safari, a screen reader, a real backend or account.
-- The tilt on a graphics card.
+- The tilt and the touch float on a graphics card or a real touch screen.
 - The speed of the first card in a production build.
 
 ## The brief (copied in, as AGENTS.md "Screen work" rule 3 asks)

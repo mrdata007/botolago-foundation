@@ -1,4 +1,4 @@
-=== check-gate-i18n: bun scripts/qa/i18n-gate.ts
+=== check-gate-i18n: bun scripts/qa/i18n-gate.ts   (round 2 review fixes 18f921ee)
 
 i18n gate
 =========

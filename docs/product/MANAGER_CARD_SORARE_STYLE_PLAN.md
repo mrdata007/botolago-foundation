@@ -1355,13 +1355,11 @@ change was measured with (Chromium 1194, DPR 2 or 3, mock data modes, a developm
     0.44 px at 296 px) lost its contrast. `EDGE_W` is now 10 (5 units show: 1.5 px at 296 px, 1.7 px at 336) and the foil's mask
     keeps that band clear (a black stroke of the same width along the outline, `holo.ts`). The colours are unchanged. The
     brief's criterion is read again at five pointer places (`wp4/contrast-card.mjs`, the centre and the 15 % / 85 % corners).
-    The first review text suggested 6 units drawn above the holo layer; a stroke along the outline shows only its inner half, so
-    that is 3 units shown, and in a trial of the width on the running card (same method) 6 units without clearing the foil left
-    CHAMPION and LEGEND at 1.65 to 2.06 on the light page, and with the foil cleared 3.06 and 3.13 at 296 px and 3 of 60
-    readings under 3 at 336 px (HOMA dark 2.45, STADE light 2.98). 10 units with the foil cleared holds both sizes with the
-    pointer, so that was chosen instead of a layer above the holo. One visible change, for the owner: the outer line of the
-    frame is about 1 px thicker, and on CHAMPION and LEGEND the foil no longer reaches the very edge: a dark line (the tier's
-    edge colour) frames it on a light page.
+    The review suggested 6 units drawn above the holo layer; a stroke along the outline shows only its inner half, so that is 3 units shown. That layer
+    order was not tried. In a trial of the width on the running card (same method), 6 units in place left CHAMPION and LEGEND at 1.65 to 2.06 on the
+    light page with the foil over them, and with the foil's band cleared 3.06 and 3.13 at 296 px and 3 of 60 readings under 3 at 336 px (HOMA dark 2.45,
+    STADE light 2.98); 10 units with the band cleared holds both sizes with the pointer, so that was chosen. One visible change, for the owner: the outer line of the
+    frame is about 1 px thicker, and on CHAMPION and LEGEND the foil no longer reaches the very edge: a dark line (the tier's edge colour) frames it on a light page.
   - _The e2e that says « flat again » did not look at what the tilt moves (should-fix)._ `depth()` now reads the frame's and the
     rims' leaves, the cast and the lifted pieces as well as the layers, and `will-change` on every element; both the rest and
     the after-leaving blocks (and the reduced-motion one) assert no 3D transform and no `will-change`. Planting a `translateZ` and a

@@ -1,7 +1,7 @@
 # Before / after comparison sheets (the app)
 
 The incumbent card (the Écharpe, `main` at `8fae526c`, [`../before/`](../before/INDEX.md)) beside the collectible
-(Éclat, this branch at `98a02df1`, round 2, [`../after/`](../after/INDEX.md)): the same surface, state, data, clock and theme, French and Arabic.
+(Éclat, this branch at `18f921ee`, round 2, [`../after/`](../after/INDEX.md)): the same surface, state, data, clock and theme, French and Arabic.
 Each sheet is made from the two sets' pictures of one name (`<screen>-<fixture>-<lang>-<theme>-<width>`); only the sheet is scaled
 (390 px pictures at 1x of their 2x files, 1440 px pictures at 0.55, the 1080 px share picture at 0.36). The sets themselves are not resized.
 Made by [`../wp4/compare.py`](../wp4/compare.py).
@@ -15,7 +15,7 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 
 | Fixture      | Theme | Width | Sheet                                                            |  KB |
 | ------------ | ----- | ----- | ---------------------------------------------------------------- | --: |
-| `rated`      | light | 390   | [`g1-rated-light-390.webp`](g1-rated-light-390.webp)             | 136 |
+| `rated`      | light | 390   | [`g1-rated-light-390.webp`](g1-rated-light-390.webp)             | 137 |
 | `rated`      | light | 1440  | [`g1-rated-light-1440.webp`](g1-rated-light-1440.webp)           |  81 |
 | `rated`      | dark  | 390   | [`g1-rated-dark-390.webp`](g1-rated-dark-390.webp)               | 133 |
 | `rated`      | dark  | 1440  | [`g1-rated-dark-1440.webp`](g1-rated-dark-1440.webp)             |  79 |
@@ -25,7 +25,7 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 | `forming1`   | dark  | 1440  | [`g1-forming1-dark-1440.webp`](g1-forming1-dark-1440.webp)       |  89 |
 | `founder`    | light | 390   | [`g1-founder-light-390.webp`](g1-founder-light-390.webp)         | 136 |
 | `founder`    | light | 1440  | [`g1-founder-light-1440.webp`](g1-founder-light-1440.webp)       |  82 |
-| `founder`    | dark  | 390   | [`g1-founder-dark-390.webp`](g1-founder-dark-390.webp)           | 132 |
+| `founder`    | dark  | 390   | [`g1-founder-dark-390.webp`](g1-founder-dark-390.webp)           | 131 |
 | `founder`    | dark  | 1440  | [`g1-founder-dark-1440.webp`](g1-founder-dark-1440.webp)         |  79 |
 | `legend`     | light | 390   | [`g1-legend-light-390.webp`](g1-legend-light-390.webp)           | 121 |
 | `legend`     | light | 1440  | [`g1-legend-light-1440.webp`](g1-legend-light-1440.webp)         |  77 |
@@ -36,7 +36,7 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 | `homa`       | dark  | 390   | [`g1-homa-dark-390.webp`](g1-homa-dark-390.webp)                 | 129 |
 | `homa`       | dark  | 1440  | [`g1-homa-dark-1440.webp`](g1-homa-dark-1440.webp)               |  99 |
 | `clubNull`   | light | 390   | [`g1-clubNull-light-390.webp`](g1-clubNull-light-390.webp)       | 132 |
-| `clubNull`   | light | 1440  | [`g1-clubNull-light-1440.webp`](g1-clubNull-light-1440.webp)     |  95 |
+| `clubNull`   | light | 1440  | [`g1-clubNull-light-1440.webp`](g1-clubNull-light-1440.webp)     |  94 |
 | `clubNull`   | dark  | 390   | [`g1-clubNull-dark-390.webp`](g1-clubNull-dark-390.webp)         | 129 |
 | `clubNull`   | dark  | 1440  | [`g1-clubNull-dark-1440.webp`](g1-clubNull-dark-1440.webp)       |  93 |
 | `guest`      | light | 390   | [`g1-guest-light-390.webp`](g1-guest-light-390.webp)             | 127 |
@@ -92,10 +92,10 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 
 | Fixture     | Theme | Width | Sheet                                                                  |  KB |
 | ----------- | ----- | ----- | ---------------------------------------------------------------------- | --: |
-| `founder`   | light | 390   | [`replay-founder-light-390.webp`](replay-founder-light-390.webp)       | 118 |
+| `founder`   | light | 390   | [`replay-founder-light-390.webp`](replay-founder-light-390.webp)       | 117 |
 | `returning` | light | 390   | [`replay-returning-light-390.webp`](replay-returning-light-390.webp)   | 113 |
-| `returning` | light | 1440  | [`replay-returning-light-1440.webp`](replay-returning-light-1440.webp) |  67 |
-| `returning` | dark  | 390   | [`replay-returning-dark-390.webp`](replay-returning-dark-390.webp)     | 106 |
+| `returning` | light | 1440  | [`replay-returning-light-1440.webp`](replay-returning-light-1440.webp) |  66 |
+| `returning` | dark  | 390   | [`replay-returning-dark-390.webp`](replay-returning-dark-390.webp)     | 107 |
 | `returning` | dark  | 1440  | [`replay-returning-dark-1440.webp`](replay-returning-dark-1440.webp)   |  61 |
 
 ## M4 hero (`hero`)
@@ -104,11 +104,11 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 | --------- | ----- | ----- | -------------------------------------------------------------- | --: |
 | `rated`   | light | 390   | [`hero-rated-light-390.webp`](hero-rated-light-390.webp)       | 136 |
 | `rated`   | light | 1440  | [`hero-rated-light-1440.webp`](hero-rated-light-1440.webp)     |  76 |
-| `rated`   | dark  | 390   | [`hero-rated-dark-390.webp`](hero-rated-dark-390.webp)         | 133 |
+| `rated`   | dark  | 390   | [`hero-rated-dark-390.webp`](hero-rated-dark-390.webp)         | 132 |
 | `rated`   | dark  | 1440  | [`hero-rated-dark-1440.webp`](hero-rated-dark-1440.webp)       |  74 |
 | `legend`  | light | 390   | [`hero-legend-light-390.webp`](hero-legend-light-390.webp)     | 126 |
 | `legend`  | light | 1440  | [`hero-legend-light-1440.webp`](hero-legend-light-1440.webp)   |  78 |
-| `legend`  | dark  | 390   | [`hero-legend-dark-390.webp`](hero-legend-dark-390.webp)       | 122 |
+| `legend`  | dark  | 390   | [`hero-legend-dark-390.webp`](hero-legend-dark-390.webp)       | 121 |
 | `legend`  | dark  | 1440  | [`hero-legend-dark-1440.webp`](hero-legend-dark-1440.webp)     |  75 |
 | `founder` | light | 390   | [`hero-founder-light-390.webp`](hero-founder-light-390.webp)   | 144 |
 | `founder` | light | 1440  | [`hero-founder-light-1440.webp`](hero-founder-light-1440.webp) |  83 |
@@ -144,7 +144,7 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 | Fixture | Theme | Width | Sheet                                                                    |  KB |
 | ------- | ----- | ----- | ------------------------------------------------------------------------ | --: |
 | `rated` | light | 390   | [`league-band-rated-light-390.webp`](league-band-rated-light-390.webp)   | 102 |
-| `rated` | light | 1440  | [`league-band-rated-light-1440.webp`](league-band-rated-light-1440.webp) |  70 |
+| `rated` | light | 1440  | [`league-band-rated-light-1440.webp`](league-band-rated-light-1440.webp) |  69 |
 | `rated` | dark  | 390   | [`league-band-rated-dark-390.webp`](league-band-rated-dark-390.webp)     | 100 |
 | `rated` | dark  | 1440  | [`league-band-rated-dark-1440.webp`](league-band-rated-dark-1440.webp)   |  67 |
 
@@ -153,9 +153,9 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 | Fixture   | Theme | Width | Sheet                                                          |  KB |
 | --------- | ----- | ----- | -------------------------------------------------------------- | --: |
 | `rated`   | light | 390   | [`share-rated-light-390.webp`](share-rated-light-390.webp)     |  87 |
-| `rated`   | light | 1440  | [`share-rated-light-1440.webp`](share-rated-light-1440.webp)   |  59 |
+| `rated`   | light | 1440  | [`share-rated-light-1440.webp`](share-rated-light-1440.webp)   |  60 |
 | `rated`   | dark  | 390   | [`share-rated-dark-390.webp`](share-rated-dark-390.webp)       |  82 |
-| `rated`   | dark  | 1440  | [`share-rated-dark-1440.webp`](share-rated-dark-1440.webp)     |  55 |
+| `rated`   | dark  | 1440  | [`share-rated-dark-1440.webp`](share-rated-dark-1440.webp)     |  54 |
 | `founder` | light | 390   | [`share-founder-light-390.webp`](share-founder-light-390.webp) |  88 |
 | `legend`  | light | 390   | [`share-legend-light-390.webp`](share-legend-light-390.webp)   |  87 |
 
@@ -164,9 +164,9 @@ The design preview's own before/after (revision 2 against revision 3 of `mock.ht
 | Fixture         | Theme | Width | Sheet                                                                            |  KB |
 | --------------- | ----- | ----- | -------------------------------------------------------------------------------- | --: |
 | `rated`         | light | 1080  | [`picture-rated-light-1080.webp`](picture-rated-light-1080.webp)                 | 117 |
-| `legend`        | light | 1080  | [`picture-legend-light-1080.webp`](picture-legend-light-1080.webp)               | 111 |
+| `legend`        | light | 1080  | [`picture-legend-light-1080.webp`](picture-legend-light-1080.webp)               | 110 |
 | `founder`       | light | 1080  | [`picture-founder-light-1080.webp`](picture-founder-light-1080.webp)             | 120 |
-| `homa`          | light | 1080  | [`picture-homa-light-1080.webp`](picture-homa-light-1080.webp)                   | 110 |
-| `longNameLatin` | light | 1080  | [`picture-longNameLatin-light-1080.webp`](picture-longNameLatin-light-1080.webp) | 128 |
-| `arabicName`    | light | 1080  | [`picture-arabicName-light-1080.webp`](picture-arabicName-light-1080.webp)       | 116 |
+| `homa`          | light | 1080  | [`picture-homa-light-1080.webp`](picture-homa-light-1080.webp)                   | 111 |
+| `longNameLatin` | light | 1080  | [`picture-longNameLatin-light-1080.webp`](picture-longNameLatin-light-1080.webp) | 127 |
+| `arabicName`    | light | 1080  | [`picture-arabicName-light-1080.webp`](picture-arabicName-light-1080.webp)       | 117 |
 | `clubNull`      | light | 1080  | [`picture-clubNull-light-1080.webp`](picture-clubNull-light-1080.webp)           | 111 |
