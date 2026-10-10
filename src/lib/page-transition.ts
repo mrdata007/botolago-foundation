@@ -103,3 +103,31 @@ export const defaultViewTransition = {
       reducedMotion: prefersReducedMotion(),
     }),
 };
+
+/**
+ * Whether this browser can label a view transition with a type. The router
+ * only consults `defaultViewTransition.types` (and so only honours a `false`
+ * from it) where `:active-view-transition-type()` is supported. Elsewhere it
+ * starts a bare, untyped transition on every navigation: a plain cross-fade,
+ * since the slides are keyed on the types, and same-level moves would get it
+ * too. `true` on the server, where nothing transitions anyway.
+ */
+export function supportsTypedViewTransitions(
+  css: { supports?: (condition: string) => boolean } | undefined = typeof window === "undefined"
+    ? undefined
+    : window.CSS,
+): boolean {
+  if (typeof window === "undefined" && css === undefined) return true;
+  return css?.supports?.("selector(:active-view-transition-type(a))") === true;
+}
+
+/**
+ * The router's `defaultViewTransition`: the typed transitions where the
+ * browser supports them, and none at all where it does not, so a browser
+ * without types never cross-fades between same-level pages.
+ */
+export function viewTransitionOption(
+  typed: boolean = supportsTypedViewTransitions(),
+): typeof defaultViewTransition | false {
+  return typed ? defaultViewTransition : false;
+}

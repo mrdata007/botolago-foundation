@@ -1,7 +1,14 @@
 import { describe, expect, it } from "bun:test";
 
 import { liveNavItems, primaryNavItems } from "@/components/shell/primary-nav";
-import { SAME_LEVEL_ROOTS, pageTransitionKind, pageTransitionTypes } from "./page-transition";
+import {
+  SAME_LEVEL_ROOTS,
+  defaultViewTransition,
+  pageTransitionKind,
+  pageTransitionTypes,
+  supportsTypedViewTransitions,
+  viewTransitionOption,
+} from "./page-transition";
 
 describe("pageTransitionKind", () => {
   it("goes forward into a page inside the current one", () => {
@@ -82,5 +89,21 @@ describe("pageTransitionTypes", () => {
 
   it("is nothing on the first page, which has nothing to move from", () => {
     expect(pageTransitionTypes({ ...base, fromPath: undefined })).toBe(false);
+  });
+});
+
+describe("viewTransitionOption", () => {
+  it("keeps the typed transitions where the browser supports transition types", () => {
+    expect(viewTransitionOption(true)).toBe(defaultViewTransition);
+  });
+
+  it("turns page transitions off where types are unsupported, so same-level moves never cross-fade", () => {
+    expect(viewTransitionOption(false)).toBe(false);
+  });
+
+  it("reads type support from CSS.supports", () => {
+    expect(supportsTypedViewTransitions({ supports: () => true })).toBe(true);
+    expect(supportsTypedViewTransitions({ supports: () => false })).toBe(false);
+    expect(supportsTypedViewTransitions({})).toBe(false);
   });
 });
