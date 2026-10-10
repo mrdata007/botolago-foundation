@@ -153,7 +153,6 @@ describe("parseSofascoreEventList", () => {
       period: "post_match",
       rawStatusType: "finished",
       rawStatusCode: 100,
-      statusUnknown: false,
       home: { id: "47696", name: "Home" },
       away: { id: "55039", name: "Away" },
       homeScore: 2,
@@ -196,14 +195,25 @@ describe("parseSofascoreEventList", () => {
     expect(page.foreignTournamentCount).toBe(1);
   });
 
-  test("an unknown status is flagged, not thrown", () => {
+  test("an unknown status is left out and reported, never guessed", () => {
     const odd = event({ id: 3, home: 1, away: 2, ts: 1790000000, type: "weird", code: 77 });
-    const page = parseSofascoreEventList({ events: [odd], hasNextPage: false });
-    expect(page.events[0]).toMatchObject({
-      status: "scheduled",
-      statusUnknown: true,
-      rawStatusType: "weird",
+    const liveOddCode = event({
+      id: 6,
+      home: 1,
+      away: 2,
+      ts: 1790000000,
+      type: "inprogress",
+      code: 999,
     });
+    const page = parseSofascoreEventList({
+      events: [odd, liveOddCode, finishedNew],
+      hasNextPage: false,
+    });
+    expect(page.events.map((e) => e.sofascoreEventId)).toEqual(["17132480"]);
+    expect(page.unknownStatus).toEqual([
+      { sofascoreEventId: "3", rawStatusType: "weird", rawStatusCode: 77 },
+      { sofascoreEventId: "6", rawStatusType: "inprogress", rawStatusCode: 999 },
+    ]);
   });
 
   test("one malformed event is dropped and counted", () => {

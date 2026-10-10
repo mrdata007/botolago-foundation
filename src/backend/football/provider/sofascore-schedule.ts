@@ -103,7 +103,7 @@ export function mapSofascoreStatus(type: string, code: number): SofascoreStatusM
     default:
       break;
   }
-  // Placeholder that cannot be mistaken for a live or final match.
+  // Placeholder only: parseSofascoreEventList leaves out every unknown event.
   return { status: "scheduled", period: "pre_match", unknown: true };
 }
 
@@ -166,8 +166,6 @@ export interface SofascoreScheduleEvent {
   /** Raw `status.type` and `status.code`, kept for audit and re-mapping. */
   readonly rawStatusType: string;
   readonly rawStatusCode: number;
-  /** True when the raw status was not recognised and `status` is a placeholder. */
-  readonly statusUnknown: boolean;
   readonly home: SofascoreTeamRef;
   readonly away: SofascoreTeamRef;
   /** Null when the provider sent no score (not played). */
@@ -189,6 +187,18 @@ export interface SofascoreEventPage {
   readonly foreignTournamentCount: number;
   /** Events dropped because they did not match the expected shape. */
   readonly malformedCount: number;
+  /**
+   * Events left out because their status was not recognised. They are never
+   * passed on under a guessed status: a guess could reopen a live or abandoned
+   * match. Kept here so a caller can report them for review.
+   */
+  readonly unknownStatus: readonly SofascoreUnknownStatusEvent[];
+}
+
+export interface SofascoreUnknownStatusEvent {
+  readonly sofascoreEventId: string;
+  readonly rawStatusType: string;
+  readonly rawStatusCode: number;
 }
 
 export interface SofascoreEventListOptions {
@@ -222,6 +232,7 @@ export function parseSofascoreEventList(
   const events: SofascoreScheduleEvent[] = [];
   let foreignTournamentCount = 0;
   let malformedCount = 0;
+  const unknownStatus: SofascoreUnknownStatusEvent[] = [];
   for (const candidate of page.data.events) {
     const parsed = eventSchema.safeParse(candidate);
     if (!parsed.success) {
@@ -237,6 +248,14 @@ export function parseSofascoreEventList(
       continue;
     }
     const mapped = mapSofascoreStatus(event.status.type, event.status.code);
+    if (mapped.unknown) {
+      unknownStatus.push({
+        sofascoreEventId: String(event.id),
+        rawStatusType: event.status.type,
+        rawStatusCode: event.status.code,
+      });
+      continue;
+    }
     const half1Home = event.homeScore?.period1;
     const half1Away = event.awayScore?.period1;
     events.push({
@@ -247,7 +266,6 @@ export function parseSofascoreEventList(
       period: mapped.period,
       rawStatusType: event.status.type,
       rawStatusCode: event.status.code,
-      statusUnknown: mapped.unknown,
       home: { id: String(event.homeTeam.id), name: event.homeTeam.name },
       away: { id: String(event.awayTeam.id), name: event.awayTeam.name },
       homeScore: event.homeScore?.current ?? null,
@@ -259,7 +277,13 @@ export function parseSofascoreEventList(
       seasonId: String(event.season.id),
     });
   }
-  return { events, hasNextPage: page.data.hasNextPage, foreignTournamentCount, malformedCount };
+  return {
+    events,
+    hasNextPage: page.data.hasNextPage,
+    foreignTournamentCount,
+    malformedCount,
+    unknownStatus,
+  };
 }
 
 export interface CollapsedEvents {
