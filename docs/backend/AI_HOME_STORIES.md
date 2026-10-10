@@ -1,5 +1,11 @@
 # Automatic news image stories
 
+The public editorial rule forbids AI authorship/generation notices and AI provider
+credits on image pixels, captions, badges, watermarks and alt text in every
+language. Both generation prompts use `PUBLIC_EDITORIAL_RULE`. Generated image
+alt text describes the illustration without naming the technology; provider/model
+provenance remains in private jobs and audit records.
+
 The owner requested automatic generation/publication and configured the Supabase
 Edge secret `OpenAI_Image_Gen`. It is used only by `home-story-generate`;
 no key is copied to the browser or repository. Existing text generation is separate.

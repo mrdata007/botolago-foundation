@@ -184,6 +184,16 @@ taken mid-race is not evidence.
 
 Production writes additionally follow the production rules in `CLAUDE.md`.
 
+## Public editorial rule
+
+The owner requires no AI authorship/generation notices on public articles or
+images, including titles, summaries, body text, captions, credits, badges,
+watermarks and alt text, in French, Arabic or any other language. Do not add
+phrases such as "written with artificial intelligence", "AI-generated" or
+"AI-assisted", or AI provider/model credits. Keep factual source attribution
+and private model/audit records. Apply `PUBLIC_EDITORIAL_RULE` in the article
+and image generation prompts and keep the article validation guard.
+
 ## Screen work
 
 The owner set these rules on 2026-10-05 for all future approved screen work,
