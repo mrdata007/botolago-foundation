@@ -57,3 +57,21 @@ Functional
   falls back to the monogram.
 - Unit tests cover the crest-versus-monogram choice; typecheck, the manager-card tests, ESLint,
   Prettier and the build pass.
+
+## Evidence (2026-10-10)
+
+Measured on a development server in the mock data modes (`/curva/carte?mc=rated`, Chromium
+1194, 2x, reduced motion); no database was read or written. The mock football catalogue has no
+crest images, so for the screenshots only the browser's copy of the mock repository is given a crest
+URL per club, answered with `test-crest.png`, an invented shield marked « TEST »
+(`make-test-crest.mjs`); nothing in the app is changed for it.
+
+- `capture.mjs`: `screenshots/before-ok-*` (before the change), `after-ok-*` (crest loads),
+  `after-broken-*` (crest answers 404), at 390 and 1440 px, French and Arabic, light and dark
+  theme; `*-tab.png` is the tab enlarged.
+- `compare.mjs`: every `after-ok` differs from `before` only inside the tab's disc (about 5–16 % of
+  the width at the inline start, 5–12 % of the height); every `after-broken` is pixel-identical to
+  `before`.
+- `share-check.mjs`: the share picture drawn by the app's code in Chromium, with the crest served
+  from a second origin with CORS (`screenshots/share-cors-*`: crest on the tab and beside the name)
+  and without (`share-nocors-*`: the initials, and a PNG still comes back).
