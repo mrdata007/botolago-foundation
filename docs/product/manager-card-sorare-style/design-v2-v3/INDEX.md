@@ -23,9 +23,10 @@ revision 3 is flat 2D at rest) except the tilt crops, which allow motion and hol
 
 ```
 node scripts/capture.mjs <mock.html> <out dir>        # full pages, tier crops, tokens, Arabic row, tilt
+node scripts/capture-stitched.mjs <mock.html> <out dir>  # the four whole-page pictures again, by stitching viewport screenshots
 node scripts/crop-names.mjs <mock.html> <png> "#names" dark|light
 node scripts/quant.mjs <png …>                         # palette compression of the full pages and rows
-node scripts/compose.mjs [390]                         # the comparison sheets (Playwright HTML → WebP)
+node scripts/compose.mjs [390|grids]                  # the comparison sheets (Playwright HTML → WebP); grids = the three whole-page sheets only
 node scripts/selfcheck.mjs <mock.html> <rev2 mock.html> <rev3-pre mock.html> > selfcheck-final.json
 node scripts/extra.mjs <mock.html> <rev2 mock.html> <rev3-pre mock.html> > extra-final.json  # layout, pips, sharpness, texture
 node scripts/numcon.mjs <mock.html> dark > numcon-final.json ; node scripts/halo.mjs <mock.html> > halo-final.json
@@ -42,6 +43,22 @@ The scripts were run from the session scratchpad; they import Playwright from
 those two paths to run them elsewhere. The full-page PNGs and the row PNGs are palette-compressed
 (sharp `palette: true, quality: 92`); the tier, tilt and token crops are lossless. Contrast was
 measured live in the browser, never from these files.
+
+## Full-page captures (`after/full-*.png`, `compare/grid-*.webp`)
+
+The first set of whole-page pictures of revision 3 showed several cards in the lower rows half drawn
+(blocks of flat colour: the Arabic row, the long names, the small tokens, and on the light page one card of
+the first row). It is an artefact of the capture, not a rendering bug in the mock. Measured on 2026-10-10
+with Chromium 1194: the mock opened at 1440 × 900 and at 390 × 844 and scrolled to `#arabic`, `#names` and
+`#tokens` draws every card whole in a viewport-sized screenshot (no console error, both widths); the row
+crops of `capture.mjs` (it scrolls the row into view first) were whole too, and so were revision 2's
+whole-page pictures, whose cards are flat. Only a single `fullPage` screenshot of revision 3 is damaged: its
+cards are `preserve-3d` layers, and below the first viewport headless, software-rastered Chromium draws
+them in part when it captures the page in one go. The four `after/full-*.png` were therefore taken again by
+`scripts/capture-stitched.mjs` (one viewport screenshot per scroll step, 5 steps at 1440, 11 at 390, DPR 2,
+reduced motion, console errors none: `after/capture-stitched-log.txt`), and the three grid sheets rebuilt
+with `compose.mjs grids`. The mock itself is unchanged. Nothing else was recaptured; `before/` was already
+whole.
 
 ## Comparison sheets (`compare/`)
 

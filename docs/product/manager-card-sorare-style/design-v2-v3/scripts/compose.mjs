@@ -22,7 +22,8 @@ async function sheet(name, title, rows, colW) {
   console.log(name, (fs.statSync(`${D}/compare/${name}.webp`).size / 1024).toFixed(0) + " kB");
 }
 const ONLY390 = process.argv[2] === "390";
-if (!ONLY390)
+const GRIDS = process.argv[2] === "grids"; // only the three whole-page sheets (after capture-stitched.mjs)
+if (!ONLY390 && !GRIDS)
   for (const t of ["base", "lastreet", "stade", "pro", "champion", "legend"])
     await sheet(
       `tier-${t}`,
@@ -33,7 +34,7 @@ if (!ONLY390)
       ],
       336,
     );
-if (!ONLY390)
+if (!ONLY390 && !GRIDS)
   await sheet(
     "tilt",
     "Pointer over the top-trailing corner (motion on): PRO and LEGEND, dark page",
@@ -43,7 +44,7 @@ if (!ONLY390)
     ],
     352,
   );
-if (!ONLY390)
+if (!ONLY390 && !GRIDS)
   await sheet(
     "arabic",
     "Arabic interface row, 1440 px, DPR 2",
@@ -53,7 +54,7 @@ if (!ONLY390)
     ],
     760,
   );
-if (!ONLY390)
+if (!ONLY390 && !GRIDS)
   await sheet(
     "tokens",
     "Small sizes. Before: one flat LEGEND card at 80, 64, 56, 44, 32, 28, 24 px. After: every tier at 80, 64, 48, 32, 24 px",
