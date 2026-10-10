@@ -57,6 +57,27 @@ Edge Function <fn>/index.ts: environment = Deno.env.toObject()  ─▶  handler(
 - **Scope.** Edge Function secrets are project-wide. The other six functions ignore this one. Supabase's documentation says setting a secret needs no redeploy.
 - **Rotation.** Change Vault and the secret together. Between the two, wake-ups answer 401 and simply retry on the next tick.
 
+## The short way: one workflow (owner, no terminal)
+
+`.github/workflows/scheduler-token-release.yml` runs steps 1 and 3 below for
+you, in that order, with the same checks:
+
+1. Merge PR #379 (step 2).
+2. GitHub → Actions → **Scheduler token release (PR 379)** → Run workflow on
+   `main`. `expected_commit`: the merge commit's full SHA. `confirmation`:
+   `RUN_SCHEDULER_TOKEN_RELEASE`. Approve the `production-admin-activation`
+   environment when asked.
+3. The run copies the Vault token into the Edge Function secret without ever
+   showing it, deploys the functions one at a time, and stops at the first one
+   that answers wrong (503 = secret missing, then rollback R1). It also waits
+   for real wake-ups after `football-live-refresh` and stops if they are
+   refused.
+4. Afterwards do only 3.3's `ops_alert_test()`, 3.4 and step 4.
+
+`home-story-generate` (added on `main` after this PR was cut) had the same
+P1-01 flaw and is fixed in this PR too. The workflow redeploys it only if it
+is already deployed in production.
+
 ## Step-by-step
 
 Order matters. Each step lists its check and its way back.
