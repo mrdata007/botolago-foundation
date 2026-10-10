@@ -62,6 +62,8 @@ const limit = (args: Args, fallback: number) =>
 const text = (value: unknown) => (typeof value === "string" ? value : undefined);
 
 const RPC: Record<string, Handler> = {
+  // No published image stories yet: Home shows its section shortcuts.
+  home_stories: () => [],
   football_season_catalog: (args) => football.getSeasons(language(args), limit(args, 12), context),
   football_team_catalog: (args) => football.getTeams(language(args), limit(args, 100)),
   football_home_matches: (args) => football.getHomeMatches(language(args), limit(args, 3), context),

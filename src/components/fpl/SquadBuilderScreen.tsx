@@ -86,6 +86,7 @@ export function SquadBuilderScreen({
   onReset,
   resetDisabled,
   banner,
+  aboveToggle,
   listColumns,
   incoming,
   onCancelIncoming,
@@ -114,6 +115,11 @@ export function SquadBuilderScreen({
   /** Hidden (not just disabled) when true: the reference shows Reset only once changes exist. */
   resetDisabled?: boolean;
   banner?: ReactNode;
+  /**
+   * A block between the strip and the « Terrain | Liste » toggle (the Manager Card's hint on the
+   * transfers screen). It brings its own spacing; absent, the screen is what it was.
+   */
+  aboveToggle?: ReactNode;
   listColumns: SquadListColumn[];
   /** Player chosen from "Add Player" who still needs a slot (replace mode). */
   incoming?: FantasyPlayer | null;
@@ -214,6 +220,7 @@ export function SquadBuilderScreen({
         footer={<DeadlineLine gameweek={gameweek} deadlineIso={deadlineIso} />}
       />
       {banner ? <UiBanner>{banner}</UiBanner> : null}
+      {aboveToggle}
 
       <div className={cn("pt-3", ui.space.gutter)}>
         <UiSegmented

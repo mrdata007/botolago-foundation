@@ -1,0 +1,588 @@
+/* Éclat, the collectible Manager Card (the Manager Card collectible plan, docs/product, revision 3). Every
+   selector sits under the renderer's own classes (.mc-eclat for the full card, .mc-tok for tokens
+   and minis) and every custom property is --mc-*, so nothing here reaches another part of the app.
+   The theme is not read from the page: the renderer puts .mc-eclat--dark or .mc-eclat--light on the
+   root, so the rim and the drop shadow are decided where the card is drawn.
+
+   Sections: BASE (fonts, text faces, the layer stack) is this file's first part. 3D, FOIL and BEATS
+   follow, each between its own markers, so the depth, the foil and the beats can change without
+   touching the base. */
+
+/* ============================== BASE ============================== */
+
+/* The second name line's face. It is the card's own: declared here, never in src/fonts.css, so it
+   is requested only when a card is drawn. Changa and Manrope are the app's (src/fonts.css). */
+/* instrument-serif-latin-ext-400-normal */
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(/fonts/instrument-serif-latin-ext-400-normal.woff2) format("woff2");
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+/* instrument-serif-latin-400-normal */
+@font-face {
+  font-family: "Instrument Serif";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url(/fonts/instrument-serif-latin-400-normal.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* the card's text faces: display (Changa 800), light (Changa 300), the serif second line, Manrope
+   for figures and Latin labels, Noto Sans Arabic for the Arabic labels */
+.mc-eclat .mc-f-d,
+.mc-tok .mc-f-d {
+  font-family: var(--ui-font-display, "Changa", ui-sans-serif, system-ui, sans-serif);
+  font-weight: 800;
+}
+.mc-eclat .mc-f-dl {
+  font-family: var(--ui-font-display, "Changa", ui-sans-serif, system-ui, sans-serif);
+  font-weight: 300;
+}
+.mc-eclat .mc-f-s {
+  font-family: "Instrument Serif", "Times New Roman", serif;
+  font-weight: 400;
+}
+.mc-eclat .mc-f-b {
+  font-family: "Manrope", var(--ui-font-body, ui-sans-serif), system-ui, sans-serif;
+}
+.mc-eclat .mc-f-a {
+  font-family: "Noto Sans Arabic", var(--ui-font-body, ui-sans-serif), system-ui, sans-serif;
+}
+
+/* the root: a fixed 1 : 1.618 box, sized in its own container units */
+.mc-eclat {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1000 / 1618;
+  container-type: inline-size;
+  line-height: 0;
+  /* the rest light: where the travelling parts sit when no pointer moves it (Arabic mirrors it).
+     These two never change while the card is on screen, so every part below can inherit them for
+     nothing. The live light is --mc-ax and --mc-ay (below): not inherited. */
+  --mc-rx: 0.24;
+  --mc-ry: 0.64;
+  --mc-dx: 1;
+  --mc-ax: var(--mc-rx);
+  --mc-ay: var(--mc-ry);
+}
+.mc-eclat[dir="rtl"] {
+  --mc-rx: -0.24;
+  --mc-dx: -1;
+}
+.mc-eclat__persp,
+.mc-eclat__tilt {
+  position: absolute;
+  inset: 0;
+}
+
+/* the five layers and the rims are stacked SVGs of the same box; none takes the pointer but the
+   number, so the foil, the frame and the holo layers never steal a click from it */
+.mc-l {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+.mc-l--num [data-mc="ovr"] {
+  pointer-events: auto;
+}
+
+/* a token or a mini: one flat SVG in a span of its own size */
+.mc-tok {
+  display: block;
+}
+.mc-tok svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* the founder's detail: the crop of the flat card, drawn on its own */
+.mc-eclat--detail {
+  aspect-ratio: auto;
+  /* it holds no depth and no container units, and an inline-size container would collapse in a
+     shrink-to-fit parent */
+  container-type: normal;
+}
+.mc-eclat--detail svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ============================== 3D ============================== */
+/* Flat 2D at rest (and always under reduced motion), so text and hairlines are rasterised once and
+   stay crisp. The 3D tree exists only while a pointer moves over the card (.mc-eclat--active), while
+   it floats on a touch-only screen (.mc-eclat--idle) and while it eases back (.mc-eclat--settle).
+   Nothing in this section puts a filter, an opacity below 1, an overflow, a clip-path, a mask, a
+   blend mode or an isolation on .mc-eclat, .mc-eclat__persp or .mc-eclat__tilt: each flattens
+   preserve-3d.
+
+   What moves is written by the tilt (tilt.ts, with the numbers of pose.ts) as `transform` on the
+   elements below, each of which eases to it with the transitions here, on the compositor: a card
+   that is being tilted is never restyled or repainted per frame. The light itself, --mc-ax and
+   --mc-ay, is registered as a number that is NOT inherited and is written on the elements that read
+   it (the card's root, which tests and tools read, and the foil overlay): an inherited property
+   changed on the root restyled and repainted every SVG element of the card on every frame (8 ms of
+   style and 60 ms of raster a frame, in a software-rendered browser). What the parts do at the
+   rest light is below, from --mc-rx and --mc-ry; the tilt writes inline transforms over them and
+   clears them when the card is flat again. */
+@property --mc-ax {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --mc-ay {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+.mc-eclat__persp {
+  perspective: 300cqw;
+}
+.mc-eclat__tilt {
+  transform: none;
+}
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-eclat__tilt {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.mc-l {
+  backface-visibility: hidden;
+  transform: none;
+}
+/* a layer that was split to let its moving parts live apart (lift.ts): a flat group holding the
+   layer's SVG and the pieces, which is the leaf of the 3D stack; the rims are one such group */
+.mc-leaf,
+.mc-rims {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mc-leaf {
+  backface-visibility: hidden;
+}
+.mc-s {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+/* the jersey's cast shadow lifted into a layer of its own, and the number layer cropped to what it
+   draws: each is sized by its own box (lift.ts) */
+.mc-cast,
+.mc-crop {
+  inset: auto;
+}
+/* depths: the base, the rims' group, the shirt, the number, the frame, the holo layer, the foil
+   (pose.ts, Z): written by the tilt as translateZ and a shrink that keeps the layers lined up */
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle)
+  :is(.mc-l:not(.mc-rim), .mc-leaf, .mc-rims) {
+  transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* the card's thickness at rest, in 2D: the walls step down and away from the light (Arabic mirrors) */
+.mc-rim {
+  transform: translate(calc(var(--o) * 0.12cqw * var(--mc-dx)), calc(var(--o) * 0.12cqw));
+}
+/* how the parts that follow the light ease: with a short lag while the pointer moves them, over the
+   depth's 450 ms when the card turns toward it for the first time and when it settles back */
+.mc-eclat--active {
+  --mc-ms: 120ms;
+  --mc-ease: ease-out;
+}
+.mc-eclat--active.mc-eclat--enter,
+.mc-eclat--idle,
+.mc-eclat--settle {
+  --mc-ms: 450ms;
+  --mc-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle)
+  :is(.mc-eclat__tilt, .mc-eclat__shadow, .mc-rim, .mc-cast) {
+  transition: transform var(--mc-ms) var(--mc-ease);
+}
+/* What lies inside a layer, under a mask or a clip (the streak, the foil, the pool of light, the
+   shade and highlight of the number, the glints), is NOT given a transition: the browser would
+   promote an element with a running transform transition to a layer of its own, and a composited
+   element under a mask costs the compositor a mask layer rasterised on every frame. Those parts
+   are eased by the tilt itself, one repaint of a small SVG at a time (tilt.ts, "light"). */
+/* a layer of its own for each wall, the cast shadow and each lifted piece, only while the card
+   moves: the browser rasterises them once and the compositor only moves them */
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) :is(.mc-rim, .mc-cast) {
+  will-change: transform;
+}
+:is(.mc-eclat--active, .mc-eclat--settle) .mc-live:not(.mc-cast) {
+  will-change: transform;
+}
+/* the contact shadow on the page lies opposite the light and moves with it; it is a sibling of the
+   3D tree, so its blur flattens nothing */
+.mc-eclat__shadow {
+  position: absolute;
+  inset: 5% 7% -2.5% 7%;
+  border-radius: 6cqw;
+  pointer-events: none;
+  background: rgb(8 12 24 / 0.42);
+  filter: blur(4.5cqw);
+  transform: translate(calc(var(--mc-rx) * -5cqw), calc(3cqw + var(--mc-ry) * 3cqw));
+}
+.mc-eclat--dark .mc-eclat__shadow {
+  background: rgb(0 0 0 / 0.7);
+}
+/* the jersey's shadow on the backboard, and the raised number's shade and highlight, follow the
+   light; inside the mirrored groups x is multiplied by --mc-dx so Arabic moves the right way */
+.mc-shirt-cast {
+  transform: translate(calc(var(--mc-rx) * -14px * var(--mc-dx)), calc(var(--mc-ry) * 10px));
+}
+.mc-num-hi {
+  transform: translate(calc(var(--mc-rx) * 4px), calc(var(--mc-ry) * -4px - 2px));
+}
+.mc-num-sh {
+  transform: translate(calc(var(--mc-rx) * -6px), calc(var(--mc-ry) * 6px + 5px));
+}
+/* foil slides under its fixed mask; the frame's specular streak travels along the metal; LEGEND's
+   honeycomb foil follows the light */
+.mc-foil-shift {
+  transform: translate(calc(var(--mc-rx) * 50px * var(--mc-dx)), calc(var(--mc-ry) * -30px));
+}
+.mc-spec-shift {
+  transform: translate(calc(var(--mc-rx) * 160px * var(--mc-dx)), calc(var(--mc-ry) * -100px));
+}
+.mc-light-follow {
+  transform: translate(calc(var(--mc-rx) * 260px * var(--mc-dx)), calc(var(--mc-ry) * -220px));
+}
+.mc-glint-a {
+  opacity: calc(0.2 + (var(--mc-rx) + 1) * 0.4);
+}
+.mc-glint-b {
+  opacity: calc(0.2 + (1 - var(--mc-rx)) * 0.4);
+}
+
+/* ============================== FOIL ============================== */
+/* The sheen (every tier) and, on CHAMPION and LEGEND, a restrained diffraction: an HTML overlay above
+   the art, clipped to the outline, a leaf of its own so its clip and its blend flatten nothing. The
+   diffraction ends above the plaque (never over the plate's text) and has a hole over the chest (the
+   foil never crosses the number). The clip also leaves the tab out (the club disc and the season,
+   20.6% x 18.7% of the card): no sheen or diffraction ever lightens them, on any tier. */
+.mc-eclat__foil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* the foil reads the live light itself (the tilt writes it here), so it repaints alone */
+  --mc-ax: var(--mc-rx);
+  --mc-ay: var(--mc-ry);
+  --mc-sheen-angle: 115deg;
+  clip-path: polygon(20.6% 0.6%, 100% 0.6%, 100% 87.6%, 80% 100%, 0 100%, 0 18.7%, 20.6% 18.7%);
+}
+.mc-eclat[dir="rtl"] .mc-eclat__foil {
+  --mc-sheen-angle: 245deg;
+  clip-path: polygon(79.4% 0.6%, 0 0.6%, 0 87.6%, 20% 100%, 100% 100%, 100% 18.7%, 79.4% 18.7%);
+}
+.mc-eclat__foil::before,
+.mc-eclat__foil::after {
+  --mc-ax: inherit;
+  --mc-ay: inherit;
+}
+:is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-eclat__foil {
+  transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.mc-eclat__foil::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: soft-light;
+  background: linear-gradient(
+    var(--mc-sheen-angle),
+    transparent calc(50% + var(--mc-ax) * 40% - 20%),
+    rgb(255 255 255 / var(--mc-sheen)) calc(50% + var(--mc-ax) * 40%),
+    transparent calc(50% + var(--mc-ax) * 40% + 20%)
+  );
+  /* the sheen thins to a fifth over the chest (centred on the number, 38.7% down): soft-light lifts a
+     mid-tone shirt by .03 to .04 of luminance and leaves a white print as it is, which took the number's
+     contrast with its shirt to 3.0 to 3.1:1 with the pointer on it; with this it reads 3.4:1 or more */
+  -webkit-mask-image: radial-gradient(
+    ellipse 24% 14% at 50% 38.7%,
+    rgb(0 0 0 / 0.2) 0,
+    rgb(0 0 0 / 0.2) 60%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 24% 14% at 50% 38.7%,
+    rgb(0 0 0 / 0.2) 0,
+    rgb(0 0 0 / 0.2) 60%,
+    #000 100%
+  );
+}
+.mc-holo .mc-eclat__foil::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 35% 0;
+  mix-blend-mode: color-dodge;
+  opacity: var(--mc-holo);
+  background: linear-gradient(
+    var(--mc-sheen-angle),
+    transparent 0%,
+    var(--f1) 30%,
+    var(--f2) 42%,
+    var(--f3) 54%,
+    var(--f4) 66%,
+    transparent 92%
+  );
+  background-size: 260% 260%;
+  background-position: calc(50% + var(--mc-ax) * 50%) calc(50% - var(--mc-ay) * 30%);
+  -webkit-mask-image:
+    radial-gradient(
+      ellipse 70% 60% at calc(50% + var(--mc-ax) * 40%) calc(45% - var(--mc-ay) * 30%),
+      #000 0,
+      rgb(0 0 0 / 0.35) 55%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 30% 26% at 50% 59.5%, transparent 70%, #000 100%);
+  mask-image:
+    radial-gradient(
+      ellipse 70% 60% at calc(50% + var(--mc-ax) * 40%) calc(45% - var(--mc-ay) * 30%),
+      #000 0,
+      rgb(0 0 0 / 0.35) 55%,
+      transparent 100%
+    ),
+    radial-gradient(ellipse 30% 26% at 50% 59.5%, transparent 70%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.mc-eclat--champion {
+  --f1: #4fe0f0;
+  --f2: #a6f0ff;
+  --f3: #46d9c8;
+  --f4: #8fb4ff;
+}
+.mc-eclat--legend {
+  --f1: #ff8ad8;
+  --f2: #c59bff;
+  --f3: #7ff0e0;
+  --f4: #ffe3a8;
+}
+
+/* ============================== BEATS ============================== */
+/* Motion contract (plan 9): CSS only, inside no-preference, scoped to the beat's class. Only the
+   floodlights, the field group, the foil overlay's ::after, the foil shift, the forming marks, the
+   capsule and the seal line move. Never the number group, the serial, the tier word, any text or the
+   shirt: they are drawn outside every animated group. Each beat ends in the card's resting state
+   (or holds it with `both` on a property the rest state has), so dropping the class never jumps. */
+@media (prefers-reduced-motion: no-preference) {
+  /* make: the floodlights ignite, the field reveals from the reading side, a sheen crosses (600 ms).
+     The field sits inside the group the card mirrors in Arabic, so the same clip-path reveals from
+     the left in French and from the right in Arabic: one keyframe serves both. */
+  .mc-eclat--beat-make .mc-flood {
+    animation: mc-ignite 180ms steps(3) both;
+  }
+  .mc-eclat--beat-make .mc-field {
+    animation: mc-reveal 420ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both;
+  }
+  /* first: the field kindles, a sheen crosses (560 ms) */
+  .mc-eclat--beat-first .mc-field {
+    animation: mc-kindle 360ms ease-out 40ms both;
+  }
+  /* tier: the foil arrives from the foot, the floodlights ignite, a sheen crosses (600 ms) */
+  .mc-eclat--beat-tier .mc-field {
+    animation: mc-rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .mc-eclat--beat-tier .mc-flood {
+    animation: mc-ignite 180ms steps(3) 200ms both;
+  }
+  /* tick: the newest mark fills in; with no marks (a rated card, which carries .mc-eclat--pulse) the
+     floodlights pulse (300 ms) */
+  .mc-eclat--beat-tick .mc-mark--new {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: mc-mark 260ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both;
+  }
+  .mc-eclat--beat-tick.mc-eclat--pulse .mc-flood {
+    animation: mc-pulse 300ms ease both;
+  }
+  /* legend: the prism crosses (540 ms) */
+  .mc-eclat--beat-legend .mc-flood {
+    animation: mc-ignite 180ms steps(3) both;
+  }
+  .mc-eclat--beat-legend .mc-foil-shift {
+    animation: mc-prism-shift 540ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  }
+  .mc-eclat--beat-legend .mc-eclat__foil::after {
+    animation: mc-prism 540ms cubic-bezier(0.3, 0.7, 0.2, 1) both;
+  }
+  /* founder: the capsule's line draws, then it fills (520 ms) */
+  .mc-eclat--beat-founder .mc-capsule rect:last-child {
+    stroke-dasharray: 1000;
+    animation: mc-capsule 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  /* castoff: a seal line draws round the shield while the floodlights settle (420 ms) */
+  .mc-eclat--beat-castoff .mc-seal {
+    stroke-dasharray: 1000;
+    animation: mc-seal 380ms cubic-bezier(0.2, 0.8, 0.2, 1) 40ms both;
+  }
+  .mc-eclat--beat-castoff .mc-flood {
+    animation: mc-settle 380ms ease-out 40ms both;
+  }
+  /* the sheen crossing (make, first, tier): a white band on the foil overlay's ::after that starts
+     off the card on the reading side and ends off the card on the other, so nothing is left behind
+     when the beat's class is dropped. CHAMPION and LEGEND already use ::after for the diffraction:
+     there the diffraction itself slides in from the start of its range and fades up to its rest
+     state instead, which is also where the beat leaves it. */
+  .mc-eclat--beat-make:not(.mc-holo) .mc-eclat__foil::after,
+  .mc-eclat--beat-first:not(.mc-holo) .mc-eclat__foil::after,
+  .mc-eclat--beat-tier:not(.mc-holo) .mc-eclat__foil::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    mix-blend-mode: soft-light;
+    background: linear-gradient(
+      var(--mc-sheen-angle),
+      transparent 35%,
+      rgb(255 255 255 / 0.35) 50%,
+      transparent 65%
+    );
+  }
+  .mc-eclat--beat-make:not(.mc-holo) .mc-eclat__foil::after {
+    animation: mc-sweep 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
+  }
+  .mc-eclat--beat-first:not(.mc-holo) .mc-eclat__foil::after {
+    animation: mc-sweep 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 80ms both;
+  }
+  .mc-eclat--beat-tier:not(.mc-holo) .mc-eclat__foil::after {
+    animation: mc-sweep 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
+  }
+  .mc-eclat--beat-make.mc-holo .mc-eclat__foil::after {
+    animation: mc-diffract 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
+  }
+  .mc-eclat--beat-first.mc-holo .mc-eclat__foil::after {
+    animation: mc-diffract 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 80ms both;
+  }
+  .mc-eclat--beat-tier.mc-holo .mc-eclat__foil::after {
+    animation: mc-diffract 480ms cubic-bezier(0.3, 0.7, 0.2, 1) 120ms both;
+  }
+
+  @keyframes mc-ignite {
+    from {
+      opacity: 0.15;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes mc-reveal {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0);
+    }
+  }
+  @keyframes mc-rise {
+    from {
+      clip-path: inset(100% 0 0 0);
+    }
+    to {
+      clip-path: inset(0);
+    }
+  }
+  @keyframes mc-kindle {
+    from {
+      opacity: 0.35;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes mc-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+  @keyframes mc-mark {
+    from {
+      transform: scale(0.4);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes mc-sweep {
+    from {
+      transform: translateX(calc(var(--mc-dx) * -115%));
+    }
+    to {
+      transform: translateX(calc(var(--mc-dx) * 115%));
+    }
+  }
+  @keyframes mc-diffract {
+    from {
+      background-position: 0% 50%;
+      opacity: 0;
+    }
+  }
+  @keyframes mc-prism {
+    from {
+      background-position: 0% 50%;
+    }
+  }
+  @keyframes mc-prism-shift {
+    from {
+      transform: translate(-50px, 0);
+    }
+  }
+  @keyframes mc-capsule {
+    from {
+      stroke-dashoffset: 1000;
+      fill-opacity: 0;
+    }
+    69% {
+      stroke-dashoffset: 0;
+      fill-opacity: 0;
+    }
+    to {
+      stroke-dashoffset: 0;
+      fill-opacity: 1;
+    }
+  }
+  @keyframes mc-seal {
+    from {
+      stroke-dashoffset: 1000;
+      opacity: 1;
+    }
+    80% {
+      stroke-dashoffset: 0;
+      opacity: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+      opacity: 0;
+    }
+  }
+  @keyframes mc-settle {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+}

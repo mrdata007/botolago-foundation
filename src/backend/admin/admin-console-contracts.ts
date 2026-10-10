@@ -10,6 +10,7 @@ export type AdminConsoleRoute =
   | "/admin/audit"
   | "/admin/security"
   | "/admin/news"
+  | "/admin/stories"
   | "/admin/prizes"
   | "/admin/users"
   | "/admin/users/$userId"
@@ -352,6 +353,12 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     permission: "security.revoke_staff",
     testId: "admin-nav-security",
     labels: { fr: "Sécurité", ar: "الأمان" },
+  },
+  {
+    route: "/admin/stories",
+    permission: "editorial.read",
+    testId: "admin-nav-stories",
+    labels: { fr: "Stories", ar: "القصص" },
   },
   {
     route: "/admin/news",

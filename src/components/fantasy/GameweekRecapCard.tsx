@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 
 import { ShareImageSheet, type ShareSheetEvent } from "@/components/common/ShareImageSheet";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
@@ -7,11 +7,20 @@ import { track, type AnalyticsEvent } from "@/lib/analytics";
 import { pointsUnit } from "@/lib/points-unit";
 import { cn } from "@/lib/utils";
 import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-action";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import type { GameweekRecap } from "@/services/gameweek-recap";
 import type { Gameweek } from "@/types/domain";
 import { publicRecapPath } from "@/lib/public-recap";
 import { renderRecapImage } from "./recap-image";
 import { RecapPublication } from "./RecapPublication";
+
+// The card's line is its own chunk, requested only while the section is live: with the switch off
+// this card imports nothing of the Manager Card.
+const RecapCardLine = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.RecapCardLine,
+  })),
+);
 
 /** Isolates a run (a name, a figure) so an Arabic line keeps its order. */
 const iso = (value: string) => `⁨${value}⁩`;
@@ -61,6 +70,7 @@ export function GameweekRecapCard({
   allowPublish?: boolean;
 }) {
   const { t, lang } = useI18n();
+  const cardLive = useManagerCardLive();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const withUnit = (n: number) => `${nf.format(n)} ${pointsUnit(n, t)}`;
 
@@ -170,6 +180,12 @@ export function GameweekRecapCard({
         <bdi className={cn(ui.score.lg, ui.tone.default)}>{nf.format(recap.total)}</bdi>
         <span className={cn(ui.text.label, ui.tone.muted)}>{pointsUnit(recap.total, t)}</span>
       </p>
+      {cardLive ? (
+        // While the card forms and this round counted for it (plan M3d).
+        <Suspense fallback={null}>
+          <RecapCardLine gameweek={recap.gameweek} className="mt-2" />
+        </Suspense>
+      ) : null}
 
       {lines.length > 0 ? (
         <ul className={cn("mt-3 grid gap-1.5", ui.text.secondary, ui.tone.default)}>

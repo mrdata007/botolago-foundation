@@ -23,6 +23,7 @@ import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/i18n/provider";
 import { authService } from "@/services/auth";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import {
   validateEmail,
   validateName,
@@ -61,9 +62,23 @@ function strengthColor(strength: number): string {
   return "bg-[color:var(--ui-positive)]";
 }
 
+/**
+ * The error line of a field whose hint sits above it: what `UiInput` draws with `reserveError`
+ * (one line box of its own text, always mounted so it can be announced), for the one field whose
+ * hint has to come first. The kit puts a hint after the error line, with an empty line between
+ * the box and the hint, and drops the hint while there is an error, which would move the line.
+ */
+const RESERVED_ERROR_LINE = cn(
+  "min-h-[calc(var(--ui-text-meta)*var(--ui-leading-flat))]",
+  ui.text.meta,
+  ui.tone.negative,
+);
+
 function RegisterPage() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
+  // The manager card (plan M1c): while Curva is live, « Nom complet » says what the name is for.
+  const live = useManagerCardLive();
   const { next = "/" } = Route.useSearch();
   const ids = {
     name: useId(),
@@ -159,6 +174,28 @@ function RegisterPage() {
     navigate({ to: "/auth/profile-setup", search: { next } });
   };
 
+  const fullNameError = errors.fullName ? t(errors.fullName) : undefined;
+  const nameField = (
+    <UiInput
+      id={ids.name}
+      label={t("auth.register.full_name")}
+      type="text"
+      autoComplete="name"
+      placeholder={t("auth.register.full_name_placeholder")}
+      value={fullName}
+      onChange={(e) => setFullName(e.target.value)}
+      {...(live
+        ? {
+            hint: t("card.onboarding.m1.register.hint"),
+            "aria-invalid": fullNameError ? true : undefined,
+            "aria-describedby": `${ids.name}-error`,
+          }
+        : { error: fullNameError, reserveError: true })}
+      fieldClassName={authFieldClass(!!errors.fullName)}
+      leading={<User className={authFieldIconClass} aria-hidden />}
+    />
+  );
+
   return (
     <AuthShell
       title={t("auth.register.title")}
@@ -200,19 +237,21 @@ function RegisterPage() {
       }
     >
       <form onSubmit={onSubmit} noValidate className="grid gap-3">
-        <UiInput
-          id={ids.name}
-          label={t("auth.register.full_name")}
-          type="text"
-          autoComplete="name"
-          placeholder={t("auth.register.full_name_placeholder")}
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          error={errors.fullName ? t(errors.fullName) : undefined}
-          reserveError
-          fieldClassName={authFieldClass(!!errors.fullName)}
-          leading={<User className={authFieldIconClass} aria-hidden />}
-        />
+        {live ? (
+          <div className="flex flex-col gap-1">
+            {nameField}
+            <p
+              id={`${ids.name}-error`}
+              role="alert"
+              aria-live="polite"
+              className={RESERVED_ERROR_LINE}
+            >
+              {fullNameError}
+            </p>
+          </div>
+        ) : (
+          nameField
+        )}
 
         <UiInput
           id={ids.username}

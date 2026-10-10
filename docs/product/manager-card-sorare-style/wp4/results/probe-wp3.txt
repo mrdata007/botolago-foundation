@@ -1,0 +1,191 @@
+$ BASE=http://127.0.0.1:4440 node docs/product/manager-card-section/wp3/probe.mjs   (round 2, the integration tree; 4440)
+g1-guest fr 390: ok
+g1-guest fr 390 reduced: ok
+g1-noteam fr 390: ok
+g1-noteam fr 390 reduced: ok
+g1-forming1 fr 390: ok
+g1-forming1 fr 390 reduced: ok
+g1-rated fr 390: ok
+g1-rated fr 390 reduced: ok
+g1-founder fr 390: ok
+g1-founder fr 390 reduced: ok
+g1-seasonClosed fr 390: ok
+g1-seasonClosed fr 390 reduced: ok
+g1-seasonStarted fr 390: ok
+g1-seasonStarted fr 390 reduced: ok
+g1-offline fr 390: ok
+g1-offline fr 390 reduced: ok
+g1-born0 fr 390: ok
+g1-born0 fr 390 reduced: ok
+g1-born0Serial fr 390: ok
+g1-born0Serial fr 390 reduced: ok
+g1-forming1Arrival fr 390: ok
+g1-forming1Arrival fr 390 reduced: ok
+g1-launchArrival fr 390: ok
+g1-launchArrival fr 390 reduced: ok
+g1-returning fr 390: ok
+g1-returning fr 390 reduced: ok
+g1-tierUp fr 390: ok
+g1-tierUp fr 390 reduced: ok
+g1-legend fr 390: ok
+g1-legend fr 390 reduced: ok
+g2-rated fr 390: ok
+g2-rated fr 390 reduced: ok
+g2-ratedTrfNull fr 390: ok
+g2-ratedTrfNull fr 390 reduced: ok
+g2-insufficient3 fr 390: ok
+g2-insufficient3 fr 390 reduced: ok
+g2-founder fr 390: ok
+g2-founder fr 390 reduced: ok
+g2-tierDown fr 390: ok
+g2-tierDown fr 390 reduced: ok
+g3-rated fr 390: ok
+g3-rated fr 390 reduced: ok
+g3-noLeague fr 390: ok
+g3-noLeague fr 390 reduced: ok
+g3-alone fr 390: ok
+g3-alone fr 390 reduced: ok
+g4-rated fr 390: ok
+g4-rated fr 390 reduced: ok
+g6-rated fr 390: ok
+g6-rated fr 390 reduced: ok
+g6-born0 fr 390: ok
+g6-born0 fr 390 reduced: ok
+g6-seasonStarted fr 390: ok
+g6-seasonStarted fr 390 reduced: ok
+g1-guest fr 1440: ok
+g1-guest fr 1440 reduced: ok
+g1-noteam fr 1440: ok
+g1-noteam fr 1440 reduced: ok
+g1-forming1 fr 1440: ok
+g1-forming1 fr 1440 reduced: ok
+g1-rated fr 1440: ok
+g1-rated fr 1440 reduced: ok
+g1-founder fr 1440: ok
+g1-founder fr 1440 reduced: ok
+g1-seasonClosed fr 1440: ok
+g1-seasonClosed fr 1440 reduced: ok
+g1-seasonStarted fr 1440: ok
+g1-seasonStarted fr 1440 reduced: ok
+g1-offline fr 1440: ok
+g1-offline fr 1440 reduced: ok
+g2-rated fr 1440: ok
+g2-rated fr 1440 reduced: ok
+g2-ratedTrfNull fr 1440: ok
+g2-ratedTrfNull fr 1440 reduced: ok
+g2-insufficient3 fr 1440: ok
+g2-insufficient3 fr 1440 reduced: ok
+g2-founder fr 1440: ok
+g2-founder fr 1440 reduced: ok
+g2-tierDown fr 1440: ok
+g2-tierDown fr 1440 reduced: ok
+g3-rated fr 1440: ok
+g3-rated fr 1440 reduced: ok
+g3-noLeague fr 1440: ok
+g3-noLeague fr 1440 reduced: ok
+g3-alone fr 1440: ok
+g3-alone fr 1440 reduced: ok
+g4-rated fr 1440: ok
+g4-rated fr 1440 reduced: ok
+g6-rated fr 1440: ok
+g6-rated fr 1440 reduced: ok
+g6-born0 fr 1440: ok
+g6-born0 fr 1440 reduced: ok
+g6-seasonStarted fr 1440: ok
+g6-seasonStarted fr 1440 reduced: ok
+g1-guest ar 390: ok
+g1-guest ar 390 reduced: ok
+g1-noteam ar 390: ok
+g1-noteam ar 390 reduced: ok
+g1-forming1 ar 390: ok
+g1-forming1 ar 390 reduced: ok
+g1-rated ar 390: ok
+g1-rated ar 390 reduced: ok
+g1-founder ar 390: ok
+g1-founder ar 390 reduced: ok
+g1-seasonClosed ar 390: ok
+g1-seasonClosed ar 390 reduced: ok
+g1-seasonStarted ar 390: ok
+g1-seasonStarted ar 390 reduced: ok
+g1-offline ar 390: ok
+g1-offline ar 390 reduced: ok
+g1-born0 ar 390: ok
+g1-born0 ar 390 reduced: ok
+g1-born0Serial ar 390: ok
+g1-born0Serial ar 390 reduced: ok
+g1-forming1Arrival ar 390: ok
+g1-forming1Arrival ar 390 reduced: ok
+g1-launchArrival ar 390: ok
+g1-launchArrival ar 390 reduced: ok
+g1-returning ar 390: ok
+g1-returning ar 390 reduced: ok
+g1-tierUp ar 390: ok
+g1-tierUp ar 390 reduced: ok
+g1-legend ar 390: ok
+g1-legend ar 390 reduced: ok
+g2-rated ar 390: ok
+g2-rated ar 390 reduced: ok
+g2-ratedTrfNull ar 390: ok
+g2-ratedTrfNull ar 390 reduced: ok
+g2-insufficient3 ar 390: ok
+g2-insufficient3 ar 390 reduced: ok
+g2-founder ar 390: ok
+g2-founder ar 390 reduced: ok
+g2-tierDown ar 390: ok
+g2-tierDown ar 390 reduced: ok
+g3-rated ar 390: ok
+g3-rated ar 390 reduced: ok
+g3-noLeague ar 390: ok
+g3-noLeague ar 390 reduced: ok
+g3-alone ar 390: ok
+g3-alone ar 390 reduced: ok
+g4-rated ar 390: ok
+g4-rated ar 390 reduced: ok
+g6-rated ar 390: ok
+g6-rated ar 390 reduced: ok
+g6-born0 ar 390: ok
+g6-born0 ar 390 reduced: ok
+g6-seasonStarted ar 390: ok
+g6-seasonStarted ar 390 reduced: ok
+g1-guest ar 1440: ok
+g1-guest ar 1440 reduced: ok
+g1-noteam ar 1440: ok
+g1-noteam ar 1440 reduced: ok
+g1-forming1 ar 1440: ok
+g1-forming1 ar 1440 reduced: ok
+g1-rated ar 1440: ok
+g1-rated ar 1440 reduced: ok
+g1-founder ar 1440: ok
+g1-founder ar 1440 reduced: ok
+g1-seasonClosed ar 1440: ok
+g1-seasonClosed ar 1440 reduced: ok
+g1-seasonStarted ar 1440: ok
+g1-seasonStarted ar 1440 reduced: ok
+g1-offline ar 1440: ok
+g1-offline ar 1440 reduced: ok
+g2-rated ar 1440: ok
+g2-rated ar 1440 reduced: ok
+g2-ratedTrfNull ar 1440: ok
+g2-ratedTrfNull ar 1440 reduced: ok
+g2-insufficient3 ar 1440: ok
+g2-insufficient3 ar 1440 reduced: ok
+g2-founder ar 1440: ok
+g2-founder ar 1440 reduced: ok
+g2-tierDown ar 1440: ok
+g2-tierDown ar 1440 reduced: ok
+g3-rated ar 1440: ok
+g3-rated ar 1440 reduced: ok
+g3-noLeague ar 1440: ok
+g3-noLeague ar 1440 reduced: ok
+g3-alone ar 1440: ok
+g3-alone ar 1440 reduced: ok
+g4-rated ar 1440: ok
+g4-rated ar 1440 reduced: ok
+g6-rated ar 1440: ok
+g6-rated ar 1440 reduced: ok
+g6-born0 ar 1440: ok
+g6-born0 ar 1440 reduced: ok
+g6-seasonStarted ar 1440: ok
+g6-seasonStarted ar 1440 reduced: ok
+
+188 screens measured, 0 finding(s)

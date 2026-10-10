@@ -10,14 +10,23 @@ import {
   Trophy,
   Users,
 } from "lucide-react";
-import { useId, type ComponentType } from "react";
+import { lazy, Suspense, useId, type ComponentType } from "react";
 
 import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
 import { ui, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { SQUAD_RULES } from "@/types/fantasy";
 import { joinDeadlineToShow } from "./fantasy-hub-layout";
+
+// The card's fifth point is its own chunk, requested only while the section is live: with the
+// switch off nothing of the Manager Card is imported by this page.
+const GuestIntroCardPoint = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.GuestIntroCardPoint,
+  })),
+);
 
 /** Where a signed-out visitor lands once signed in: the builder, not the hub. */
 export const GUEST_CREATE_NEXT = "/fantasy/create";
@@ -88,6 +97,7 @@ function OpenIntro({
   const signInNoteId = useId();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const deadline = joinDeadlineToShow(joinBy, useDeadlineCountdown(joinBy?.deadline));
+  const cardLive = useManagerCardLive();
 
   return (
     <section
@@ -192,13 +202,13 @@ function OpenIntro({
         </p>
       ) : null}
 
-      <HowItWorks />
+      <HowItWorks cardPoint={cardLive} />
     </section>
   );
 }
 
 /** The four points and the rules link: how the game works, for anyone who wants it. */
-function HowItWorks() {
+function HowItWorks({ cardPoint = false }: { cardPoint?: boolean }) {
   const { t, lang } = useI18n();
   const howId = useId();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
@@ -258,6 +268,13 @@ function HowItWorks() {
             </span>
           </li>
         ))}
+        {/* The card is a result, not a step: after the deadline point, while the section is live.
+            Not in the registration-closed explainer, which says nothing about the card. */}
+        {cardPoint ? (
+          <Suspense fallback={null}>
+            <GuestIntroCardPoint />
+          </Suspense>
+        ) : null}
       </ul>
 
       <div className="mt-3 flex justify-center">

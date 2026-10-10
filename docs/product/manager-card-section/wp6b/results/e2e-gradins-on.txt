@@ -1,0 +1,60 @@
+  ✓   1 tests/e2e/gradins.e2e.ts:191:5 › the bar, Pépites inside Fantasy, the switch read as off › fr: the bar reads Accueil · Actualités · Fantasy · Matches · Gradins at 390 and as text links at 1440 
+  ✓   2 tests/e2e/gradins.e2e.ts:218:5 › the bar, Pépites inside Fantasy, the switch read as off › fr: on every Pépites page the Fantasy item is the current one 
+  ✓   3 tests/e2e/gradins.e2e.ts:236:5 › the bar, Pépites inside Fantasy, the switch read as off › fr: the hub shows the Pépites tile and Pépites keeps its address, its canonical and the way back 
+  ✓   4 tests/e2e/gradins.e2e.ts:191:5 › the bar, Pépites inside Fantasy, the switch read as off › ar: the bar reads Accueil · Actualités · Fantasy · Matches · Gradins at 390 and as text links at 1440 
+  ✓   5 tests/e2e/gradins.e2e.ts:218:5 › the bar, Pépites inside Fantasy, the switch read as off › ar: on every Pépites page the Fantasy item is the current one 
+  ✓   6 tests/e2e/gradins.e2e.ts:236:5 › the bar, Pépites inside Fantasy, the switch read as off › ar: the hub shows the Pépites tile and Pépites keeps its address, its canonical and the way back 
+  ✓   7 tests/e2e/gradins.e2e.ts:261:3 › the bar, Pépites inside Fantasy, the switch read as off › a status that reads off gives today's bar, sends /gradins home, and logs nothing 
+  ✓   8 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 guest: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓   9 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 forming: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  10 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  11 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 founder: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  12 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 season closed: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  13 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 season started: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  14 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 born: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  15 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g1 tier up: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  16 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g2 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  17 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g2 insufficient: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  18 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g2 founder: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  19 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g3 league: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  20 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g6 seasons: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  21 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr light g6 empty: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  22 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 guest: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  23 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 forming: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  24 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  25 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 founder: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  26 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 season closed: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  27 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 season started: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  28 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 born: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  29 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g1 tier up: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  30 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g2 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  31 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g2 insufficient: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  32 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g2 founder: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  33 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g3 league: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  34 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g6 seasons: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  35 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar light g6 empty: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  36 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr dark g1 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  37 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr dark g2 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  38 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › fr dark g3 league: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  39 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar dark g1 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  40 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar dark g2 rated: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  41 tests/e2e/gradins.e2e.ts:297:5 › every screen and state › ar dark g3 league: no console error or failed request, nothing past the edge, 44 px targets and 48 px rows 
+  ✓  42 tests/e2e/gradins.e2e.ts:337:3 › every screen and state › an offline card read shows the error panel and a retry, not a stale number 
+  ✓  43 tests/e2e/gradins.e2e.ts:347:3 › every screen and state › a card read that says « not available » shows the unavailable line and the way to Profil 
+  ✓  44 tests/e2e/gradins.e2e.ts:358:3 › Arabic, motion and the number › ar: right to left, no letter-spacing, the back pill and the own-row bar at the right 
+  ✓  45 tests/e2e/gradins.e2e.ts:394:3 › Arabic, motion and the number › with motion reduced nothing runs, there is no replay beat button, and the hero still shows and acknowledges 
+  ✓  46 tests/e2e/gradins.e2e.ts:434:5 › Arabic, motion and the number › with motion on › the number is never held back: at every frame its element is opaque and on top 
+  ✓  47 tests/e2e/gradins.e2e.ts:479:3 › Arabic, motion and the number › an unknown number is a dash that is announced, never a 0 
+  ✓  48 tests/e2e/gradins.e2e.ts:510:5 › words and names › fr: no banned word, no name in a heading, no leading-zero serial, ·26 only for the founder 
+  ✓  49 tests/e2e/gradins.e2e.ts:510:5 › words and names › ar: no banned word, no name in a heading, no leading-zero serial, ·26 only for the founder 
+  ✓  50 tests/e2e/gradins.e2e.ts:537:5 › G1 says what happens next › fr: one line under the identity line names the next round and leads to the team 
+  ✓  51 tests/e2e/gradins.e2e.ts:537:5 › G1 says what happens next › ar: one line under the identity line names the next round and leads to the team 
+  ✓  52 tests/e2e/gradins.e2e.ts:559:3 › G1 says what happens next › a season that is over has no such line 
+  ✓  53 tests/e2e/gradins.e2e.ts:571:7 › the team page's born panel › fr born0: about 215 px, with the pitch's first row on the first screen at 390 x 844 
+  ✓  54 tests/e2e/gradins.e2e.ts:571:7 › the team page's born panel › fr born0Serial: about 215 px, with the pitch's first row on the first screen at 390 x 844 
+  ✓  55 tests/e2e/gradins.e2e.ts:571:7 › the team page's born panel › ar born0: about 215 px, with the pitch's first row on the first screen at 390 x 844 
+  ✓  56 tests/e2e/gradins.e2e.ts:571:7 › the team page's born panel › ar born0Serial: about 215 px, with the pitch's first row on the first screen at 390 x 844 
+  ✓  57 tests/e2e/gradins.e2e.ts:613:3 › one hero per session, acknowledged once › the hub's « Nouveau », the M2 panel and a G1 hero in one session: only the panel expands, and it is acknowledged once 
+  ✓  58 tests/e2e/gradins.e2e.ts:658:3 › one hero per session, acknowledged once › Gradins first: the hero expands there, the × acknowledges once, and the team page then shows no panel 
+  ✓  59 tests/e2e/gradins.e2e.ts:685:3 › one hero per session, acknowledged once › a returning manager gets one coalesced hero and both keys are acknowledged in one call 
+  59 passed (4.1m)

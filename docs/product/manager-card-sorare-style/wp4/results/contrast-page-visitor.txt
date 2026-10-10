@@ -1,0 +1,8 @@
+# contrast probe, flags: --all --visitor, widths 390, 1 routes, retried runs: 0, routes with no result: 0
+
+=== /gradins (exit 0)
+fr 390 /gradins: 41 texts in view over 2 screen(s), 10 hidden under something, 41 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins: 40 texts in view over 2 screen(s), 11 hidden under something, 40 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+
+light theme: 81 pixel measurements, 0 below AA
+

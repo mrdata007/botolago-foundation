@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Check, Clock3, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Clock3, X } from "lucide-react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
+import { MFA_CHALLENGE_PATH } from "@/auth/second-factor";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { findClub } from "@/components/fpl/club-lookup";
 import {
@@ -21,14 +22,16 @@ import { FplPitch } from "@/components/fpl/FplPitch";
 import { FplPlayerCard } from "@/components/fpl/FplPlayerCard";
 import { FplStatBar, type FplStatItem } from "@/components/fpl/FplStatBar";
 import { GameweekStatusText } from "@/components/fpl/GameweekStatusText";
+import { PickTeamConfirmBar } from "@/components/fpl/PickTeamConfirmBar";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadListTable } from "@/components/fpl/SquadListTable";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { useNextFixtures } from "@/components/fpl/useNextFixtures";
-import { ui, UiButton, UiHeader, UiIconButton, UiSegmented } from "@/components/ui-kit";
+import { ui, UiButton, UiHeader, UiSegmented } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
+import { useUnsavedChangesGuard } from "@/lib/use-unsaved-changes-guard";
 import { cn } from "@/lib/utils";
 import {
   activateChip,
@@ -48,7 +51,21 @@ import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { FORMATIONS, SQUAD_RULES, type FormationKey, type SquadPlayer } from "@/types/fantasy";
+
+// The card's birth panel slot and hint are their own chunks, requested only while the section is
+// live: with the switch off this screen imports nothing of the Manager Card.
+const TeamBornSlot = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.TeamBornSlot,
+  })),
+);
+const CardHint = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.CardHint,
+  })),
+);
 
 export const Route = createFileRoute("/fantasy/team")({
   head: () => fantasyHead("team"),
@@ -81,8 +98,9 @@ function formationOf(
 /**
  * FPL-008/009/010 "Pick Team" reconstructed: Back header, the chips, the
  * pitch with fixture plates and the labelled bench. Pending changes (lineup
- * edits or a chip activation) switch the header to "✕ Cancel / ✓ Confirm" as
- * in the reference.
+ * edits or a chip activation) bring up a bar above the bottom navigation with
+ * what is waiting, "Annuler" and "Confirmer" (`PickTeamConfirmBar`, BG-0157);
+ * the header keeps its Back pill, and leaving asks first.
  *
  * Option A (A-Team): the sub-page header carries the gameweek as its kicker;
  * the navy strip under it leads with the deadline — what Pick Team is
@@ -94,7 +112,9 @@ function formationOf(
  */
 function PickTeamPage() {
   return (
-    <FantasyFrame bottomNav>
+    // `stickyBottomBar`: the confirmation bar sticks to the window's foot from
+    // `md` too, which a column clipping with `overflow: hidden` would stop.
+    <FantasyFrame bottomNav stickyBottomBar>
       <PickTeamBody />
     </FantasyFrame>
   );
@@ -116,6 +136,7 @@ function PickTeamBody() {
   const { user } = useAuth();
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
+  const cardLive = useManagerCardLive();
   const isCloud = owned.source === "cloud";
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
     minimumFractionDigits: 1,
@@ -164,6 +185,25 @@ function PickTeamBody() {
     }
     draftInit.current = true;
   }, [draftKey, team]);
+
+  // ---- Leave guard (BG-0157) ----
+  // A line-up, captain or chip change not yet confirmed asks before any way
+  // out drops it: Back, a bottom-menu tab, the browser's Back, a reload. Not
+  // while it is being saved, and not once it is saved or cancelled (both clear
+  // `localSquad` and `pendingChip`). Called before the early return below so
+  // the hook order never changes; `confirmPending` further down is the same
+  // condition. The cloud draft is untouched: a signed-in reader who leaves
+  // anyway still finds the line-up waiting on return.
+  //
+  // The second-factor challenge is let through: a cloud save refused until the
+  // one-time code is in sends the reader there (SecondFactorGate), and a
+  // prompt in its way would strand them on a screen whose every save is
+  // refused. Nothing is lost: a signed-in line-up waits in its draft.
+  useUnsavedChangesGuard(
+    (localSquad !== null || pendingChip !== null) && !saving,
+    t("fantasy.team.unsaved.leave_confirm"),
+    { letThrough: (pathname) => pathname === MFA_CHALLENGE_PATH },
+  );
 
   if (screen.phase !== "ready" || !team || !gameweek) {
     return (
@@ -532,31 +572,20 @@ function PickTeamBody() {
       <UiHeader
         kicker={`${t("fpl.gameweek")} ${gameweek.number}`}
         title={t("fpl.pick_team")}
+        // The Back pill stays while changes are pending: Annuler and the one
+        // Confirmer are in the bar at the foot (BG-0157), not swapped in here,
+        // where they scrolled away with the header.
         backTo="/fantasy"
-        leading={
-          confirmPending ? (
-            // A round ✕ in the Back control's place, not a second labelled
-            // pill: with "✓ Confirmer" at the other end, two pills left the
-            // title 130px for its 138 (measured) and cut "Composer l’équipe".
-            <UiIconButton
-              aria-label={t("fpl.cancel")}
-              title={t("fpl.cancel")}
-              onClick={cancelChanges}
-            >
-              <X aria-hidden />
-            </UiIconButton>
-          ) : undefined
-        }
-        trailing={
-          confirmPending ? (
-            <UiButton size="sm" variant="ink" onClick={onConfirm} disabled={saving}>
-              <Check className="h-4 w-4" aria-hidden />
-              {saving ? t("fpl.saving") : t("fpl.confirm")}
-            </UiButton>
-          ) : null
-        }
       />
       <FplStatBar hero items={stripItems} />
+
+      {cardLive ? (
+        // The card's birth panel (plan M2), above the controls so they and the pitch stay one
+        // unit below it. Whether it shows is the moment gate's call.
+        <Suspense fallback={null}>
+          <TeamBornSlot gameweek={gameweek} />
+        </Suspense>
+      ) : null}
 
       <div className={cn("grid gap-2 pt-3", ui.space.gutter)}>
         <ul className="flex flex-wrap gap-1.5" data-testid="team-facts">
@@ -666,6 +695,17 @@ function PickTeamBody() {
         />
       )}
 
+      {/* While a substitute is being chosen, only the substitution bar shows. */}
+      {confirmPending && !selectedId ? (
+        <PickTeamConfirmBar
+          pendingChip={pendingChip}
+          lineupDirty={dirty}
+          saving={saving}
+          onCancel={cancelChanges}
+          onConfirm={onConfirm}
+        />
+      ) : null}
+
       {selectedId ? (
         <>
           {/* Room for the bar below, so the bench can still scroll clear of it. */}
@@ -677,6 +717,12 @@ function PickTeamBody() {
               ui.space.gutter,
             )}
           >
+            {cardLive ? (
+              // The first substitution teaches that the starting eleven counts for SEL (plan M3e).
+              <Suspense fallback={null}>
+                <CardHint kind="sel" className="mb-2" />
+              </Suspense>
+            ) : null}
             <UiButton
               variant="ink"
               className={ui.shadow.lifted}

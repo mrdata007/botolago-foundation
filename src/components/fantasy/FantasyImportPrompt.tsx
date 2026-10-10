@@ -12,7 +12,7 @@
 // Failure modes (mapping/network/RLS/conflict/validation/gameweek_unresolved)
 // keep local state intact and never mark the UID.
 
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { ui, UiButton } from "@/components/ui-kit";
@@ -25,6 +25,7 @@ import { validateTeam } from "@/lib/team-validation";
 import type { FantasyPlayer, FantasyTeam } from "@/types/fantasy";
 import { importDecisionService, isImportPromptEligible } from "@/services/fantasy-import-decision";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
 import { LocalFantasyRepository, DEFAULT_SEASON } from "@/services/fantasy-owned-repository";
 import { importLocalTeamToCloud } from "@/services/fantasy-import-service";
@@ -32,6 +33,15 @@ import { loadGameweekIndex } from "@/services/fantasy-gameweek-resolver";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
+import { track } from "@/lib/analytics";
+
+// Live: while this prompt is on screen the card's heroes and born panel stay shut. A chunk of its
+// own, requested only while the section is live.
+const MomentBlock = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.MomentBlock,
+  })),
+);
 
 type Phase = "idle" | "saving" | "success" | "error";
 
@@ -47,6 +57,7 @@ export function FantasyImportPrompt() {
   const owned = useFantasyOwned();
   const qc = useQueryClient();
   const nav = useNavigate();
+  const cardLive = useManagerCardLive();
 
   const isAuthenticated = status === "authenticated" && !!user?.id;
   const uid = user?.id ?? null;
@@ -132,6 +143,15 @@ export function FantasyImportPrompt() {
       },
     );
     if (res.ok) {
+      // Live: a team now exists, so the card is read fresh. Never awaited, never on the way on.
+      if (cardLive) {
+        void import("@/components/manager-card/inline/curva-inline")
+          .then((module) => module.invalidateMyManagerCard(qc))
+          .catch(() => {});
+      }
+      // Counted on the server's confirmation only, as the builder's own save is: an import creates
+      // a first team too, and until now it was missing from the activation count.
+      track("fantasy_team_created");
       importDecisionService.markImported(uid);
       setPhase("success");
       setTimeout(() => setDismissed(true), 1500);
@@ -176,6 +196,11 @@ export function FantasyImportPrompt() {
       dir={dir}
       className={cn("mx-3 my-3 p-4", ui.surface.card)}
     >
+      {cardLive ? (
+        <Suspense fallback={null}>
+          <MomentBlock />
+        </Suspense>
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           {/* `ui.tone.ink` (`--ui-ink-fg`) is the theme-correct brand

@@ -252,6 +252,51 @@ export const PEPITES_ENABLED: boolean = true;
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
 
 /**
+ * Curva (the Manager Card section) — OFF.
+ *
+ * Owner decision, 2026-10-08: a new section, Curva, takes Pépites' place in
+ * the main navigation and Pépites moves inside Fantasy, at the same moment.
+ * It is built in the app behind this switch so that merging and publishing
+ * change nothing anyone sees. Plan: docs/product/MANAGER_CARD_SECTION_PLAN.md.
+ *
+ * Two layers decide whether it shows:
+ *   1. this build constant, which the owner flips in a one-line commit once
+ *      the backend is applied (it can be flipped before the database switch);
+ *   2. the database's own answer, `api.manager_card_status()`, read during the
+ *      server render only. Off, missing, failing or slow all read as off.
+ * Live = both. Set this false and republish for an application-level rollback;
+ * turning the database read switch off hides the section without a republish.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/components/shell/primary-nav.ts` — the fifth slot, the Fantasy tab on /pepites
+ *   - `src/routes/__root.tsx` — the server-side status read (beforeLoad)
+ *   - `src/routes/curva.tsx` — the /curva routes (redirect to /fantasy when not live)
+ *   - `src/routes/fantasy.index.tsx` — the Pépites tile, the card block
+ *   - `src/components/pepites/PepitesHome.tsx` — the back pill to Fantasy
+ *   - every inline card surface listed in the plan, section 5.1
+ */
+export const MANAGER_CARD_ENABLED: boolean = false;
+
+/**
+ * Development preview of Curva: `VITE_MANAGER_CARD_PREVIEW=1` on a development
+ * server only. `import.meta.env.DEV` is replaced by `false` in a production
+ * build, so this is `false` there and every branch it guards is removed.
+ *
+ * The `typeof` guard is for code that imports this module outside Vite: the
+ * Playwright runner (Node) loads it from `tests/e2e/pronostics.e2e.ts`, where
+ * `import.meta.env` is undefined and reading `.DEV` would throw. In a build Vite
+ * replaces `import.meta.env` with an object, so the guard folds to `true` and
+ * the whole expression to `false`.
+ */
+export const MANAGER_CARD_PREVIEW: boolean =
+  typeof import.meta.env !== "undefined" &&
+  import.meta.env.DEV === true &&
+  import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1";
+
+/** The build lets Curva exist; the database status decides whether it shows. */
+export const MANAGER_CARD_BUILD: boolean = MANAGER_CARD_ENABLED || MANAGER_CARD_PREVIEW;
+
+/**
  * Home puts the Fantasy card first in the 24 hours before a Fantasy deadline
  * (a countdown-first variant of the phone layout). Off until the owner asks
  * for it: the match-first order stays the default.

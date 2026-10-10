@@ -131,6 +131,8 @@ export function PepitesBeforeFirstEdition({
   stats,
   statsPending = false,
   footer,
+  backTo,
+  backLabel,
 }: {
   previous: PreviousSeason;
   firstRound: number;
@@ -140,6 +142,9 @@ export function PepitesBeforeFirstEdition({
   /** Whether the ranking read behind `stats` is still loading. */
   statsPending?: boolean;
   footer: ReactNode;
+  /** A back pill above the title band, as on the home's edition view (see `PepitesPageTitle`). */
+  backTo?: string;
+  backLabel?: string;
 }) {
   const { t, lang } = useI18n();
   const [leader, ...rest] = previous.entries.slice(0, 10).map((entry) => ({
@@ -151,6 +156,8 @@ export function PepitesBeforeFirstEdition({
     <PepitesShell
       pageHeader={
         <PepitesPageTitle
+          backTo={backTo}
+          backLabel={backLabel}
           title={
             // The list below is labelled by this heading.
             <span id="pepites-previous-title" data-testid="pepites-previous-title">

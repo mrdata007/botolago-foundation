@@ -91,6 +91,7 @@ export const fr = {
   "home.fantasy_alerts": "Alertes {accent}Fantasy{/accent}",
   "home.news_preview": "Actu {accent}Botola{/accent}",
   "home.explore": "Explorer {accent}BotolaGO{/accent}",
+  "home.highlights": "À la une sur BotolaGO",
   "home.view_all": "Tout voir",
   "home.view_fantasy_team": "Voir mon équipe",
   "home.my_clubs.last_result": "Dernier résultat",
@@ -709,36 +710,13 @@ export const fr = {
   "fantasy.rules.formation_desc": "Alignez 11 joueurs dans une formation valide chaque journée.",
   "fantasy.rules.captaincy": "Capitanat",
   "fantasy.rules.captaincy_desc":
-    "Les points du capitaine sont multipliés par {c} (par {t} avec le Triple Capitaine). S'il ne joue pas, le vice-capitaine prend le relais.",
+    "Le capitaine marque le double de ses points. Le vice-capitaine prend le relais si besoin.",
   "fantasy.rules.transfers_r": "Transferts",
-  "fantasy.rules.transfers_desc":
-    "Transferts gratuits : {free} par journée, cumulables jusqu'à {max}. Chaque transfert supplémentaire coûte {hit} points. Avec le Joker ou le Free Hit, les transferts ne coûtent aucun point.",
   "fantasy.rules.deadlines": "Dates limites",
   "fantasy.rules.deadlines_desc":
     "Chaque journée a une date limite. Les modifications après la date limite sont refusées.",
   "fantasy.rules.scoring": "Barème de points",
-  "fantasy.rules.scoring_desc": "Les points de chaque action, selon le poste du joueur.",
-  "fantasy.rules.scoring_event": "Action",
-  "fantasy.rules.scoring_none": "– : aucun point pour ce poste.",
-  "fantasy.rules.scoring_official":
-    "Seules les minutes et les passes décisives officielles comptent.",
-  "fantasy.rules.scoring_no_bonus": "Pas de points bonus ni de prime de joueur du match.",
-  "fantasy.rules.pos.GK": "Gardien",
-  "fantasy.rules.pos.DEF": "Défenseur",
-  "fantasy.rules.pos.MID": "Milieu",
-  "fantasy.rules.pos.FWD": "Attaquant",
-  "fantasy.rules.event.appearance_short": "Moins de {n} min jouées",
-  "fantasy.rules.event.appearance_full": "{n} min jouées ou plus",
-  "fantasy.rules.event.saves": "Tous les {n} arrêts",
-  "fantasy.rules.event.goals_conceded": "Tous les {n} buts encaissés",
-  "fantasy.rules.event.direct_red_card": "Carton rouge direct",
-  "fantasy.rules.event.second_yellow_dismissal": "Expulsion sur deux jaunes (total)",
-  "fantasy.rules.chips": "Jetons",
-  "fantasy.rules.chips_desc": "Un seul jeton par journée.",
-  "fantasy.rules.chips_final": "Une fois confirmé, un jeton ne peut plus être annulé.",
-  "fantasy.rules.chip_window_season": "Une fois dans la saison",
-  "fantasy.rules.chip_window_range": "Une fois, journées {from} à {to}",
-  "fantasy.rules.chip_window_from": "Une fois, de la journée {from} à la fin de la saison",
+  "fantasy.rules.scoring_desc": "Points par poste, selon le barème du jeu.",
   "fantasy.recap.public.title": "Rendre ma journée publique",
   "fantasy.recap.public.explain":
     "La page publique montre votre pseudo, la journée, le total, le capitaine et le coût des transferts. Jamais votre e-mail, votre nom, vos ligues ni votre prochaine équipe.",
@@ -789,6 +767,36 @@ export const fr = {
   "fantasy.rules.tiebreak": "Départages",
   "fantasy.rules.tiebreak_desc":
     "En cas d'égalité de points, la meilleure place revient au manager qui a perdu le moins de points en transferts, puis qui a fait le moins de transferts, puis qui a le meilleur score à la dernière journée, puis dont l'équipe a été créée le plus tôt.",
+  "fantasy.rules.transfers_rule":
+    "{free} transfert gratuit par journée, cumulable jusqu'à {max}. Chaque transfert supplémentaire coûte {hit} points.",
+  "fantasy.rules.table_event": "Action",
+  "fantasy.rules.table_na": "Ne s'applique pas",
+  "fantasy.rules.row.appearance": "Participation",
+  "fantasy.rules.row.appearance_short": "Moins de {n} min jouées",
+  "fantasy.rules.row.appearance_full": "{n} min ou plus",
+  "fantasy.rules.row.goal": "But",
+  "fantasy.rules.row.official_assist": "Passe décisive",
+  "fantasy.rules.row.clean_sheet": "Cage inviolée",
+  "fantasy.rules.row.saves": "Arrêts (tous les {n})",
+  "fantasy.rules.row.penalty_save": "Penalty arrêté",
+  "fantasy.rules.row.goals_conceded": "Buts encaissés (tous les {n})",
+  "fantasy.rules.row.penalty_miss": "Penalty manqué",
+  "fantasy.rules.row.yellow_card": "Carton jaune",
+  "fantasy.rules.row.direct_red_card": "Carton rouge direct",
+  "fantasy.rules.row.second_yellow_dismissal": "Expulsion sur second jaune (total)",
+  "fantasy.rules.row.own_goal": "But contre son camp",
+  "fantasy.rules.scoring_unavailable": "Le barème détaillé n'est pas disponible pour le moment.",
+  "fantasy.rules.chips": "Jetons",
+  "fantasy.rules.chip_window_season": "Une fois, à la journée de votre choix",
+  "fantasy.rules.chip_window_range": "Une fois entre la J{from} et la J{to}",
+  "fantasy.rules.chip_window_single": "Une fois, à la J{n}",
+  "fantasy.rules.chip_window_from": "Une fois, à partir de la J{from}",
+  "fantasy.rules.chip_uses_once": "Une fois dans la saison",
+  "fantasy.rules.chip_uses_twice": "Deux fois dans la saison",
+  "fantasy.rules.chip_uses_n": "{n} fois dans la saison",
+  "fantasy.rules.full_minutes_note":
+    "Cage inviolée et buts encaissés : comptent seulement à partir de {n} min jouées.",
+  "fantasy.rules.value_unavailable": "Indisponible pour le moment.",
   "fantasy.onboarding.title": "Bienvenue sur Fantasy BotolaGO",
   "fantasy.onboarding.step1_title": "Composez votre équipe",
   "fantasy.onboarding.step1_body":
@@ -985,6 +993,12 @@ export const fr = {
   "fantasy.hub.invite_copied": "Lien copié",
   "fantasy.hub.invite_message": "Rejoins ma ligue « {name} » sur BotolaGO : {link}",
   "fantasy.hub.invite_ready": "Ligue « {name} » créée. Invitez vos amis :",
+  // BG-0157 (2): the team card's figure names the round it belongs to, and
+  // its block opens Points at that round. With no result yet: no round, no 0.
+  "fantasy.hub.points_round": "Points · J{n}",
+  "fantasy.hub.points_none": "Aucun point pour l'instant",
+  "fantasy.hub.points_open": "Voir mes points de la journée {n}",
+  "fantasy.hub.points_open_any": "Voir mes points",
   "fantasy.bench_short": "Banc",
   "fantasy.xpts": "xPts",
   "fantasy.chip.bench_boost": "Bench Boost",
@@ -1036,6 +1050,9 @@ export const fr = {
   "fantasy.leagues.left": "Vous avez quitté la ligue",
   "fantasy.fixtures.subtitle":
     "Indice de difficulté de 1 (facile) à 5 (difficile) calculé à partir de la force des équipes.",
+  "fantasy.fixtures.cell_name": "{club} ({venue}), difficulté {n} sur 5",
+  "fantasy.fixtures.venue_key": "{home} = à domicile · {away} = à l'extérieur",
+  "fantasy.fixtures.key_explain": "Explication de la difficulté",
   "fpl.group.GK": "Gardiens",
   "fpl.group.DEF": "Défenseurs",
   "fpl.group.MID": "Milieux",
@@ -1133,7 +1150,7 @@ export const fr = {
   "fpl.private": "Privée",
   "fpl.public": "Publique",
   "fpl.private_code_help": "Saisissez le code de la ligue privée fourni par son administrateur.",
-  "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Gérer les ligues ».",
+  "fpl.create_own_league": "Vous pouvez créer votre propre ligue depuis « Créer une ligue ».",
   "fpl.private_league_code": "Code de ligue privée",
   "fpl.invalid_code":
     "Code invalide. Vérifiez le code et confirmez avec l’administrateur de la ligue si le problème persiste.",
@@ -1353,6 +1370,16 @@ export const fr = {
   "fantasy.leagues.gameweek": "Journée",
   "fantasy.leagues.rules_summary":
     "Points cumulés depuis le début de la saison. Le classement se met à jour après chaque journée.",
+  "fantasy.leagues.create_submit": "Créer",
+  "fantasy.leagues.invite_friends": "Inviter des amis",
+  "fantasy.leagues.invite_confirm":
+    "Un nouveau code est créé pour inviter vos amis. L'ancien code ne fonctionnera plus.",
+  "fantasy.leagues.invite_failed": "Impossible de créer un lien d'invitation pour le moment.",
+  "fantasy.leagues.invite_owner_only":
+    "Seul le créateur de la ligue peut inviter de nouveaux membres.",
+  "fantasy.leagues.leave_title": "Quitter « {league} » ?",
+  "fantasy.leagues.leave_body":
+    "Vous disparaîtrez de son classement. Pour revenir, il vous faudra un code d'invitation.",
   "common.confirm": "Confirmer",
   "common.cancel": "Annuler",
 
@@ -1795,6 +1822,11 @@ export const fr = {
   "fantasy.team.hint.swap": "Touchez deux joueurs du même poste pour les échanger.",
   "fantasy.team.hint.position_incompatible":
     "Ces joueurs occupent des postes différents et ne peuvent pas être échangés.",
+  /* BG-0157 (1) — Pick Team's confirmation bar and its leave guard. */
+  "fantasy.team.unsaved.status": "Modifications non enregistrées",
+  "fantasy.team.unsaved.chip": "{chip} : à confirmer",
+  "fantasy.team.unsaved.leave_confirm":
+    "Vos changements ne sont pas confirmés et ne compteront pas pour cette journée. Quitter quand même ?",
   "fantasy.empty.subtitle": "Composez votre équipe de 15 joueurs pour commencer.",
   "fantasy.empty.builder_open": "Ouvrir le composeur d'équipe",
   "fantasy.error.import_validation":
@@ -2691,4 +2723,234 @@ export const fr = {
   "landing.final_body":
     "Choisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.",
   "landing.cta_pending": "Chargement",
+
+  /* ------------------------------------------------------------------ */
+  /* Curva and the Manager Card (plan: docs/product/MANAGER_CARD_SECTION_PLAN.md,
+     Appendix A). Every key here is read through src/components/manager-card/copy.ts */
+  /* ------------------------------------------------------------------ */
+
+  /* Curva (the Manager Card section): navigation, heads and section copy. */
+  "nav.curva": "Curva",
+  "curva.meta.home": "Curva — BotolaGO",
+  "curva.meta.card": "Votre carte — BotolaGO",
+  "curva.meta.people": "Les vôtres — BotolaGO",
+  "curva.meta.seasons": "Vos saisons — BotolaGO",
+  "curva.meta.description": "Votre carte de manager BotolaGO, vos ligues et vos saisons.",
+  "curva.unavailable": "Votre carte n’est pas disponible pour ce compte.",
+  "curva.badge_new": "Nouveau",
+
+  /* Curva G1: guest and signed-in without a team. */
+  "curva.guest.headline": "Votre place dans la Curva",
+  "curva.guest.body":
+    "Votre carte de manager démarre avec votre équipe : votre nom, les couleurs de votre club, et une note qui vient de vos choix, journée après journée.",
+  "curva.guest.sign_in": "Se connecter",
+  "curva.guest.try_title": "Essayer les couleurs d’un club",
+  "curva.guest.try_hint":
+    "Un aperçu seulement : votre club se choisit à la création du compte, et se change dans votre profil.",
+  "curva.guest.point.name.title": "À votre nom",
+  "curva.guest.point.name.body":
+    "Votre nom figure sur votre carte et dans les classements. Un prénom ou un surnom suffit.",
+  "curva.guest.point.club.title": "Aux couleurs de votre club",
+  "curva.guest.point.club.body": "Le club choisi dans votre profil donne sa couleur à votre carte.",
+  "curva.guest.point.rating.title": "Une note qui vient de vos choix",
+  "curva.guest.point.rating.body":
+    "Capitaine, titulaires, transferts, régularité : votre note arrive après {final}, puis suit votre saison.",
+  "curva.guest.point.people.title": "À côté des vôtres",
+  "curva.guest.point.people.body":
+    "Dans vos ligues privées, les cartes de vos amis apparaissent à côté de la vôtre.",
+  "curva.guest.free": "Le jeu est gratuit : sans achat, sans pari.",
+  "curva.noteam.headline": "Votre carte attend votre équipe",
+
+  /* Curva G1: the manager's home. */
+  "curva.identity.since": "Depuis la J{gw}",
+  "curva.leagues_one": "1 ligue",
+  "curva.leagues_two": "2 ligues",
+  "curva.leagues_few": "{n} ligues",
+  "curva.leagues_other": "{n} ligues",
+  "curva.round.title": "Cette journée",
+  "curva.round.line": "J{gw} · date limite {deadline}",
+  "curva.round.recalc": "Votre note est recalculée après chaque journée terminée.",
+  "curva.stats.title": "Ce que dit votre carte",
+  "curva.people.title": "Les vôtres",
+  "curva.people.view_league": "Voir les cartes de la ligue",
+  "curva.people.you": "Vous",
+  "curva.people.empty":
+    "Créez une ligue et invitez vos amis : leurs cartes apparaîtront ici, à côté de la vôtre.",
+  "curva.people.alone": "Personne n’a encore rejoint « {league} ».",
+  "curva.people.cards_failed": "Impossible de charger les cartes de la ligue.",
+  "curva.people.same_club": "Supporters de {club}",
+  "curva.people.compare": "Comparer les cartes de la ligue",
+  "curva.club.title": "Votre club",
+  "curva.club.mates_one": "Dans « {league} », supporter de {club} aussi : {names}",
+  "curva.club.mates_other": "Dans « {league} », supporters de {club} aussi : {names}",
+  "curva.club.next_match": "Prochain match",
+  "curva.club.none":
+    "Votre carte n’a pas encore de club. Le club choisi dans votre profil lui donne sa couleur.",
+  "curva.club.choose": "Choisir mon club",
+  "curva.seasons.title": "Vos saisons",
+  "curva.revoir.title": "Vos moments",
+  "curva.seasons.season": "Saison {season}",
+  "curva.season.closed_label": "Fin de saison",
+
+  /* Curva G2, G3, G4, G6 and the share sheet; the Fantasy hub's two new lines. */
+  "curva.card.title": "Votre carte",
+  "curva.card.where": "D’où vient votre note",
+  "curva.card.intro": "Votre note vient de vos décisions, journée après journée.",
+  "curva.card.intro_forming":
+    "Pas encore de note. Les quatre statistiques se remplissent avec vos journées terminées.",
+  "curva.card.tier": "Votre palier",
+  "curva.card.tier_now": "Actuel",
+  "curva.card.tier_best": "Meilleur cette saison",
+  "curva.card.tier_none": "Le palier arrive avec votre première note.",
+  "curva.card.tier_explain": "Le palier suit votre note, journée après journée.",
+  "curva.card.serial": "Numéro {serial} : il ne changera jamais.",
+  "curva.h2h.title": "Face à face",
+  "curva.seasons.counted_zero": "Aucune journée comptée",
+  "curva.seasons.counted_one": "1 journée comptée",
+  "curva.seasons.counted_two": "2 journées comptées",
+  "curva.seasons.counted_few": "{n} journées comptées",
+  "curva.seasons.counted_other": "{n} journées comptées",
+  "curva.seasons.first_rating": "Première note à la J{gw} : {ovr}",
+  "curva.seasons.col_round": "Journée",
+  "curva.seasons.col_rating": "Note",
+  "curva.seasons.col_tier": "Palier",
+  "curva.seasons.more": "Afficher plus",
+  "curva.seasons.empty": "Votre première journée comptée apparaîtra ici.",
+  "curva.seasons.error": "Impossible de charger votre historique.",
+  "curva.share.label": "Ma carte BotolaGO",
+  "curva.share.caption": "Ma carte BotolaGO",
+  "fantasy.hub.pepites_body":
+    "Les meilleurs moins de 23 ans de la Botola Pro, pour repérer vos prochains joueurs.",
+  "fantasy.hub.card_view": "Voir votre carte",
+
+  /* The card's words, plural families and null reasons. */
+  "card.ovr": "OVR",
+  "card.serial": "BOT #{serial}",
+  "card.provisional": "Provisoire",
+  "card.sample": "Exemple",
+  "card.founder_line": "Fondateur 2026",
+  "card.stat.cap": "CAP",
+  "card.stat.sel": "SEL",
+  "card.stat.trf": "TRF",
+  "card.stat.con": "CON",
+  "card.stat_long.cap": "Vos capitaines",
+  "card.stat_long.sel": "Votre onze de départ",
+  "card.stat_long.trf": "Vos transferts",
+  "card.stat_long.con": "Votre régularité",
+  "card.tier.homa": "LASTREET",
+  "card.tier.stade": "STADE",
+  "card.tier.pro": "PRO",
+  "card.tier.champion": "CHAMPION",
+  "card.tier.legend": "LEGEND",
+  "card.a11y.card_of": "Carte de manager",
+  "card.a11y.no_rating": "pas encore de note",
+  "card.a11y.separator": ", ",
+  "card.a11y.counted_zero": "aucune journée comptée sur {n}",
+  "card.a11y.counted_one": "1 journée comptée sur {n}",
+  "card.a11y.counted_two": "2 journées comptées sur {n}",
+  "card.a11y.counted_few": "{k} journées comptées sur {n}",
+  "card.a11y.counted_other": "{k} journées comptées sur {n}",
+  "card.final_one": "1 journée terminée",
+  "card.final_two": "2 journées terminées",
+  "card.final_few": "{n} journées terminées",
+  "card.final_other": "{n} journées terminées",
+  "card.rounds_one": "1 journée",
+  "card.rounds_two": "2 journées",
+  "card.rounds_few": "{n} journées",
+  "card.rounds_other": "{n} journées",
+  "card.gw_list_1": "J{a}",
+  "card.gw_list_2": "J{a}, J{b}",
+  "card.gw_list_3": "J{a}, J{b}, J{c}",
+  "card.reason.pending_minimum": "pas encore assez de journées",
+  "card.reason.no_transfers": "pas encore de transfert",
+  "card.reason.window_open": "calculé {rounds} après le transfert",
+  "card.reason.excluded_weeks_only": "semaines non comptées",
+  "card.reason.board_not_final": "classement pas encore définitif",
+  "card.reason.pre_captain_fix": "journées au capitaine attribué par défaut, non comptées",
+
+  /* Approved onboarding copy (docs/product/MANAGER_CARD_SECTION_PLAN.md, Appendix A.6). */
+  "card.onboarding.m1.intro.title": "Votre carte de manager",
+  "card.onboarding.m1.intro.body": "Elle démarre avec votre équipe. Sa note arrive après {final}.",
+  "card.onboarding.m1.save.line":
+    "À l’enregistrement, votre carte de manager démarre avec votre équipe. Sa note arrive après {final}.",
+  "card.onboarding.m1.register.hint":
+    "Sert de nom affiché sur votre carte et dans les classements. Modifiable à l’étape suivante.",
+  "card.onboarding.m1.setup.card_label": "Votre carte",
+  "card.onboarding.m1.setup.name_hint":
+    "Ce nom figure sur votre carte et dans les classements. Un prénom ou un surnom suffit.",
+  "card.onboarding.m1.setup.club_hint":
+    "Votre club donne sa couleur à votre carte. Modifiable dans votre profil.",
+  "card.onboarding.m1.builder.line": "Compte créé. Il reste à enregistrer votre équipe.",
+  "card.onboarding.m2.heading": "Votre carte de manager",
+  "card.onboarding.m2.line1": "Sa note arrive après {final} : {gws}.",
+  "card.onboarding.m2.line1_from": "Sa note arrive après {final}, à partir de la J{gw}.",
+  "card.onboarding.m2.line2":
+    "Elle mesurera vos choix : capitaine, titulaires, transferts, régularité.",
+  "card.onboarding.m2.serial": "Son numéro, {serial}, ne changera jamais.",
+  "card.onboarding.m2.invite":
+    "Invitez vos amis avant la date limite de la J{gw} : leurs journées compteront en même temps que les vôtres.",
+  "card.onboarding.m2.arrival":
+    "Nouveau : votre carte est calculée à partir de votre équipe. Sa note arrive après {final} ({k}/{n}).",
+  "card.onboarding.m3.label": "Carte en formation",
+  "card.onboarding.m3.line": "Note après {final} · prochaine : J{gw} · date limite {deadline}",
+  "card.onboarding.m3.first_counted": "Première journée comptée : J{gw}.",
+  "card.onboarding.m3.eve": "Dernière journée avant votre note : J{gw}.",
+  "card.onboarding.m3.over":
+    "J{gw} terminée, pas encore définitive. La note arrive dès qu’elle l’est.",
+  "card.onboarding.m3.insufficient":
+    "Les journées nécessaires sont comptées. La note attend encore une statistique.",
+  "card.onboarding.m3.late":
+    "Saison terminée avant votre première note : elle viendra en {season}.",
+  "card.onboarding.m3.recap": "Journée comptée pour votre carte : {k}/{n}",
+  "card.onboarding.m3.hint.cap": "Votre capitaine compte pour CAP sur votre carte.",
+  "card.onboarding.m3.hint.sel": "Votre onze de départ compte pour SEL.",
+  "card.onboarding.m3.hint.trf":
+    "Vos transferts comptent pour TRF. Sans transfert, TRF reste vide (—).",
+  "card.onboarding.m3.first_transfer": "TRF mesurera ce transfert après {final}.",
+  "card.onboarding.m4.hero.fresh.label": "Première note · J{gw}",
+  "card.onboarding.m4.hero.fresh.line": "Provisoire jusqu’à {final}.",
+  "card.onboarding.m4.hero.arrival.label": "Votre carte de manager est là",
+  "card.onboarding.m4.hero.arrival.line": "Calculée sur {final} de votre saison.",
+  "card.onboarding.m4.hero.coalesced.label":
+    "Première note : {first} (J{gw}). Aujourd’hui : {ovr}, {tier}.",
+  "card.onboarding.m4.hero.detail": "Voir le détail",
+  "card.onboarding.m4.sheet.footer": "La note est la moyenne des statistiques disponibles.",
+  "card.onboarding.m4.sheet.tier_distance": "{tier} à partir de {from}.",
+  "card.onboarding.m4.sheet.share": "Partager ma carte",
+  "card.onboarding.m4.sheet.league": "Voir ma ligue",
+  "card.onboarding.m4.sheet.replay": "Revoir",
+  "card.onboarding.m5.band": "Nouvelles notes après la J{gw} : {names}",
+  "card.onboarding.m5.row.forming": "en formation {k}/{n}",
+  "card.onboarding.m5.hint.compare": "Touchez un manager pour comparer vos cartes.",
+  "card.onboarding.m5.h2h.score": "Vous {a} · {name} {b}",
+  "card.onboarding.m6.image.provisional": "Note provisoire · J{gw}",
+  "card.onboarding.m6.msg.league":
+    "Ma carte BotolaGO : {ovr}. Et toi ? Rejoins ma ligue « {league} » : {link}",
+  "card.onboarding.m6.msg.league_provisional":
+    "Ma carte BotolaGO : {ovr} (provisoire). Et toi ? Rejoins ma ligue « {league} » : {link}",
+  "card.onboarding.m6.msg.plain": "Ma carte BotolaGO : {ovr}. Et toi ? {link}",
+  "card.onboarding.m6.msg.plain_provisional":
+    "Ma carte BotolaGO : {ovr} (provisoire). Et toi ? {link}",
+  "card.onboarding.m7.line": "Votre note n’est plus provisoire : {ovr} après {final}.",
+  "card.onboarding.m8.up.heading": "Votre carte passe {tier}.",
+  "card.onboarding.m8.up.line":
+    "{ovr} OVR après la J{gw}. Le palier suit votre note, journée après journée.",
+  "card.onboarding.m8.view": "Voir ma carte",
+  "card.onboarding.m8.down.line": "Palier actuel : {tier}. Meilleur cette saison : {best}.",
+  "card.onboarding.m9.heading": "Fondateur 2026",
+  "card.onboarding.m9.line":
+    "Votre année s’inscrit après votre nom : {name} ·26. Cette marque a été accordée une seule fois et ne le sera plus.",
+  "card.onboarding.m9.cutoff": "Accordée aux équipes 2026/27 créées avant le {date}.",
+  "card.onboarding.m10.closed":
+    "Saison {season} terminée : {ovr}, {tier}. Elle reste sur votre carte.",
+  "card.onboarding.m10.started":
+    "Saison {season} : votre carte garde sa note {prev} jusqu’à votre première note de la saison, après {final}.",
+  "card.onboarding.m12.replay.line": "À la J{gw} : {then}. Aujourd’hui : {now}.",
+  "card.onboarding.m12.item.first_rating": "La première note · J{gw}",
+  "card.onboarding.m12.item.tier": "Première fois {tier} · J{gw}",
+  "card.onboarding.m12.item.season": "Saison {season}",
+  "card.onboarding.state.deletion":
+    "Votre carte de manager et son numéro {serial} seront supprimés. Ce numéro ne sera jamais réattribué.",
+  "card.onboarding.state.deletion_noserial": "Votre carte de manager sera supprimée.",
+  "card.onboarding.state.offline.text": "Impossible de charger votre carte.",
 } as const satisfies Record<string, string>;

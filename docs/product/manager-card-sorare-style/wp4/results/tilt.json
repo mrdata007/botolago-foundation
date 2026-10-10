@@ -1,0 +1,68 @@
+{
+  "base": "http://127.0.0.1:4490",
+  "reduced": [],
+  "beats": [],
+  "depth": [],
+  "tilt": [
+    {
+      "cpu": 1,
+      "fixture": "control",
+      "frames": 176,
+      "medianMs": 16.7,
+      "p95Ms": 16.7,
+      "over20": 0,
+      "over33": 0,
+      "longTasks": []
+    },
+    {
+      "cpu": 1,
+      "fixture": "rated",
+      "frames": 169,
+      "medianMs": 16.7,
+      "p95Ms": 16.8,
+      "over20": 7,
+      "over33": 7,
+      "longTasks": [56]
+    },
+    {
+      "cpu": 1,
+      "fixture": "legend",
+      "frames": 172,
+      "medianMs": 16.7,
+      "p95Ms": 16.8,
+      "over20": 5,
+      "over33": 5,
+      "longTasks": [62]
+    },
+    {
+      "cpu": 4,
+      "fixture": "control",
+      "frames": 176,
+      "medianMs": 16.7,
+      "p95Ms": 16.8,
+      "over20": 0,
+      "over33": 0,
+      "longTasks": []
+    },
+    {
+      "cpu": 4,
+      "fixture": "rated",
+      "frames": 133,
+      "medianMs": 16.7,
+      "p95Ms": 50,
+      "over20": 30,
+      "over33": 30,
+      "longTasks": [65, 65, 52, 50]
+    },
+    {
+      "cpu": 4,
+      "fixture": "legend",
+      "frames": 93,
+      "medianMs": 33.3,
+      "p95Ms": 50.1,
+      "over20": 59,
+      "over33": 59,
+      "longTasks": [73, 69, 54, 57]
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeftRight, Info, Shield, ShieldHalf, Trash2, Undo2, X } from "lucide-react";
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
 import { ui, UiIconButton, UiSheet } from "@/components/ui-kit";
@@ -8,8 +8,17 @@ import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
 import { getKitForClub } from "@/lib/kits";
 import { cn } from "@/lib/utils";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import type { Club } from "@/types/domain";
 import type { FantasyPlayer, Position } from "@/types/fantasy";
+
+// The card's hint is its own chunk, requested only while the section is live: with the switch off
+// this sheet imports nothing of the Manager Card.
+const CardHint = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.CardHint,
+  })),
+);
 
 /**
  * Bottom action sheet opened from a player on the pitch.
@@ -56,6 +65,7 @@ export function PlayerActionSheet({
   onUndo?: () => void;
 }) {
   const { t, tr } = useI18n();
+  const cardLive = useManagerCardLive();
   if (!player) return null;
 
   const kit = getKitForClub(club, player.kitPattern);
@@ -123,6 +133,13 @@ export function PlayerActionSheet({
       description={club ? tr(club.shortName) : undefined}
       header={header}
     >
+      {cardLive && isStarter && onCaptain ? (
+        // Directly above the control being used (plan M3e): the captain choice counts for CAP.
+        // Once per phone, only for a card with no number yet, dismissible.
+        <Suspense fallback={null}>
+          <CardHint kind="cap" className="mx-4 mb-1 mt-3" />
+        </Suspense>
+      ) : null}
       <CaptainActions isStarter={isStarter} onCaptain={onCaptain} onVice={onVice} />
       {onSubstitute
         ? action(

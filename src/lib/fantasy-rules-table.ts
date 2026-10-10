@@ -1,22 +1,30 @@
-// The rules page's scoring table and chip list, built from the season's
-// ruleset as the server returns it (`api.fantasy_rules`).
-//
-// No point value is written here. The page used to state the scoring in one
-// sentence of copy ("défenseur ou gardien : 6 pts"), which drifted from the
-// ruleset (a goalkeeper's goal is 10) and left most of it out. Now the server's
-// `positions[]` (goal and clean-sheet points per position) and `scoring[]`
-// (every other category, with its position and threshold) are the only source,
-// so the page cannot disagree with the game. `fantasy-rules-table.test.ts`
-// feeds this the production payload and checks every cell against the table in
-// `docs/backend/FANTASY_RULES_V1.md`.
+import { z } from "zod";
 
-import type { FantasyRulesDto } from "@/backend/fantasy/contracts";
+/**
+ * BG-0157 (5) — the rules page's scoring table and chips list, read from
+ * `api.fantasy_rules` and nothing else.
+ *
+ * The server returns three lists the page used to ignore:
+ *
+ * - `positions`: per position, in display order, with the goal and
+ *   clean-sheet points (they live on the position, not in `scoring`);
+ * - `scoring`: every other category, `{ category, points, threshold,
+ *   position }`, where `position: null` means "every position";
+ * - `chips`: one row per allocation, with the rounds it can be played in.
+ *
+ * The contract types `scoring` as `unknown[]` on purpose, so this module
+ * parses every row on its own and drops the ones it cannot read rather than
+ * failing the page. It computes no points: each figure in the model is a
+ * figure the server sent, placed in a cell. A position an event has no row
+ * for is `null` ("—" on screen), which is not the same thing as a row that
+ * says 0.
+ */
 
-export const RULE_POSITIONS = ["GK", "DEF", "MID", "FWD"] as const;
-export type RulePosition = (typeof RULE_POSITIONS)[number];
+export const RULES_TABLE_POSITIONS = ["GK", "DEF", "MID", "FWD"] as const;
+export type RulesTablePosition = (typeof RULES_TABLE_POSITIONS)[number];
 
-/** The rulebook's row order. A category the page does not know is appended after these. */
-export const SCORING_ROW_ORDER = [
+/** The table's rows, top to bottom. `goal` and `clean_sheet` come from `positions`. */
+export const SCORING_ROW_KINDS = [
   "appearance_short",
   "appearance_full",
   "goal",
@@ -31,150 +39,230 @@ export const SCORING_ROW_ORDER = [
   "second_yellow_dismissal",
   "own_goal",
 ] as const;
-export type KnownScoringCategory = (typeof SCORING_ROW_ORDER)[number];
+export type ScoringRowKind = (typeof SCORING_ROW_KINDS)[number];
 
-export interface ScoringRow {
-  /** Stable key: category, plus the threshold when it has one. */
-  key: string;
-  category: string;
+/** The categories `scoring` carries: every row kind but the two read from `positions`. */
+type ScoringCategory = Exclude<ScoringRowKind, "goal" | "clean_sheet">;
+const SCORING_CATEGORIES = SCORING_ROW_KINDS.filter(
+  (kind): kind is ScoringCategory => kind !== "goal" && kind !== "clean_sheet",
+);
+
+/** Categories whose label carries their threshold ("every {n} saves"). */
+const THRESHOLD_CATEGORIES: ReadonlySet<ScoringCategory> = new Set([
+  "appearance_full",
+  "saves",
+  "goals_conceded",
+]);
+
+export interface ScoringTableRow {
+  readonly kind: ScoringRowKind;
   /**
-   * The number the row's label needs: the minutes of a full appearance (for
-   * both appearance rows), the saves or goals conceded per point. `null` when
-   * the row has none.
+   * The number the row's label carries, or `null` when it carries none. For
+   * `appearance_short` it is the full-appearance threshold ("under {n}
+   * minutes"), `null` when the ruleset has no full-appearance row.
    */
-  labelValue: number | null;
-  /** Points per position; `null` where the ruleset has no rule for that position. */
-  points: Record<RulePosition, number | null>;
+  readonly n: number | null;
+  /** Points per column, in `columns` order. `null`: the event does not apply. */
+  readonly cells: readonly (number | null)[];
 }
 
-interface ScoringEntry {
-  category: string;
-  points: number;
-  threshold: number | null;
-  position: RulePosition | null;
+export interface ScoringTable {
+  readonly columns: readonly RulesTablePosition[];
+  readonly rows: readonly ScoringTableRow[];
+  /**
+   * The full-appearance threshold in minutes, `null` when the ruleset has
+   * none. The scorer counts a clean sheet and goals conceded only from it
+   * (`src/backend/fantasy/scoring.ts`), which the page says under the table.
+   */
+  readonly fullAppearanceMinutes: number | null;
 }
 
-function isPosition(value: unknown): value is RulePosition {
-  return typeof value === "string" && (RULE_POSITIONS as readonly string[]).includes(value);
-}
+const points = z.number().int().min(-50).max(50);
 
-/** `scoring[]` is typed `unknown[]` by the contract; anything malformed is skipped, never guessed. */
-function parseEntry(raw: unknown): ScoringEntry | null {
-  if (!raw || typeof raw !== "object") return null;
-  const entry = raw as Record<string, unknown>;
-  if (typeof entry.category !== "string" || typeof entry.points !== "number") return null;
-  const threshold = typeof entry.threshold === "number" ? entry.threshold : null;
-  if (entry.position != null && !isPosition(entry.position)) return null;
-  return {
-    category: entry.category,
-    points: entry.points,
-    threshold,
-    position: (entry.position as RulePosition | null | undefined) ?? null,
-  };
-}
+// `threshold` is `numeric(12,4)` in the database; jsonb carries it as a JSON
+// number, but a numeric string is accepted too rather than losing the row.
+const threshold = z
+  .union([
+    z.number(),
+    z
+      .string()
+      .regex(/^\d+(\.\d+)?$/)
+      .transform(Number),
+  ])
+  .pipe(z.number().finite().nonnegative());
 
-const emptyPoints = (): Record<RulePosition, number | null> => ({
-  GK: null,
-  DEF: null,
-  MID: null,
-  FWD: null,
+const positionRow = z.object({
+  code: z.enum(RULES_TABLE_POSITIONS),
+  goalPoints: points,
+  cleanSheetPoints: points,
 });
 
+const scoringRow = z.object({
+  category: z.enum(SCORING_CATEGORIES as [ScoringCategory, ...ScoringCategory[]]),
+  points,
+  threshold: threshold.nullable().optional(),
+  position: z.enum(RULES_TABLE_POSITIONS).nullable().optional(),
+});
+type ScoringRow = {
+  readonly category: ScoringCategory;
+  readonly points: number;
+  readonly threshold: number | null;
+  readonly position: RulesTablePosition | null;
+};
+
+function readRows<T>(rows: unknown, schema: z.ZodType<T>): T[] {
+  if (!Array.isArray(rows)) return [];
+  const read: T[] = [];
+  for (const row of rows) {
+    const parsed = schema.safeParse(row);
+    if (parsed.success) read.push(parsed.data);
+  }
+  return read;
+}
+
+function readScoringRows(rows: unknown): ScoringRow[] {
+  return readRows(rows, scoringRow)
+    .map((row) => ({
+      category: row.category,
+      points: row.points,
+      threshold: row.threshold ?? null,
+      position: row.position ?? null,
+    }))
+    .filter(
+      // "Every 0 saves" or "60 minutes or more" without its 60 cannot be
+      // labelled truthfully: such a row is malformed, not a rule.
+      (row) => !THRESHOLD_CATEGORIES.has(row.category) || (row.threshold ?? 0) > 0,
+    );
+}
+
 /**
- * One row per event, in the rulebook's order, each with the points for the
- * four positions. A rule without a position applies to all four.
+ * The scoring table, or `null` when the server sent no usable positions or
+ * no usable scoring rows — the page then says the detailed scale is
+ * unavailable instead of showing a partial or invented one.
  */
-export function scoringRows(rules: Pick<FantasyRulesDto, "positions" | "scoring">): ScoringRow[] {
-  const entries = rules.scoring.map(parseEntry).filter((e): e is ScoringEntry => e !== null);
-  const fullMinutes =
-    entries.find((entry) => entry.category === "appearance_full")?.threshold ?? null;
+export function buildScoringTable(input: {
+  readonly positions?: unknown;
+  readonly scoring?: unknown;
+}): ScoringTable | null {
+  const positions: z.infer<typeof positionRow>[] = [];
+  for (const row of readRows(input.positions, positionRow)) {
+    if (!positions.some((known) => known.code === row.code)) positions.push(row);
+  }
+  const scoring = readScoringRows(input.scoring);
+  if (positions.length === 0 || scoring.length === 0) return null;
 
-  const rows = new Map<string, ScoringRow>();
-  const rowFor = (category: string, threshold: number | null): ScoringRow => {
-    // The appearance rows carry their own minimum (1 and 60) as thresholds;
-    // they are one row each whatever it is.
-    const keyed = category.startsWith("appearance_") ? null : threshold;
-    const key = keyed === null ? category : `${category}:${keyed}`;
-    let row = rows.get(key);
-    if (!row) {
-      row = {
-        key,
-        category,
-        labelValue: category.startsWith("appearance_") ? fullMinutes : keyed,
-        points: emptyPoints(),
-      };
-      rows.set(key, row);
+  const columns = positions.map((position) => position.code);
+  const fullAppearance = scoring
+    .filter((row) => row.category === "appearance_full" && row.threshold !== null)
+    .map((row) => row.threshold as number);
+  const fullAppearanceMinutes = fullAppearance.length > 0 ? Math.min(...fullAppearance) : null;
+
+  const rows: ScoringTableRow[] = [];
+  for (const kind of SCORING_ROW_KINDS) {
+    if (kind === "goal") {
+      rows.push({ kind, n: null, cells: positions.map((position) => position.goalPoints) });
+      continue;
     }
-    return row;
-  };
-
-  // Goals and clean sheets are per-position columns of the ruleset.
-  if (rules.positions.length > 0) {
-    const goal = rowFor("goal", null);
-    const cleanSheet = rowFor("clean_sheet", null);
-    for (const position of rules.positions) {
-      goal.points[position.code] = position.goalPoints;
-      cleanSheet.points[position.code] = position.cleanSheetPoints;
+    if (kind === "clean_sheet") {
+      rows.push({ kind, n: null, cells: positions.map((position) => position.cleanSheetPoints) });
+      continue;
+    }
+    const ofKind = scoring.filter((row) => row.category === kind);
+    // One table row per threshold, smallest first (a ruleset could score
+    // "every 3 saves" and "every 6 saves" separately).
+    const thresholds = [...new Set(ofKind.map((row) => row.threshold))].sort(
+      (a, b) => (a ?? -1) - (b ?? -1),
+    );
+    for (const rowThreshold of thresholds) {
+      const group = ofKind.filter((row) => row.threshold === rowThreshold);
+      // A row naming a position wins over the every-position row for that
+      // column; the every-position row fills the rest.
+      const cells = columns.map(
+        (code) =>
+          group.find((row) => row.position === code)?.points ??
+          group.find((row) => row.position === null)?.points ??
+          null,
+      );
+      if (cells.every((cell) => cell === null)) continue;
+      rows.push({
+        kind,
+        n:
+          kind === "appearance_short"
+            ? fullAppearanceMinutes
+            : THRESHOLD_CATEGORIES.has(kind)
+              ? rowThreshold
+              : null,
+        cells,
+      });
     }
   }
-  for (const entry of entries) {
-    const row = rowFor(entry.category, entry.threshold);
-    for (const position of entry.position ? [entry.position] : RULE_POSITIONS) {
-      row.points[position] = entry.points;
-    }
-  }
-
-  const rank = (category: string) => {
-    const index = (SCORING_ROW_ORDER as readonly string[]).indexOf(category);
-    return index === -1 ? SCORING_ROW_ORDER.length : index;
-  };
-  return [...rows.values()].sort(
-    (a, b) => rank(a.category) - rank(b.category) || a.key.localeCompare(b.key),
-  );
-}
-
-export function isKnownCategory(category: string): category is KnownScoringCategory {
-  return (SCORING_ROW_ORDER as readonly string[]).includes(category);
-}
-
-/** A row with no points for any position is not worth a line of the table. */
-export function scoresAnything(row: ScoringRow): boolean {
-  return RULE_POSITIONS.some((position) => (row.points[position] ?? 0) !== 0);
+  return { columns, rows, fullAppearanceMinutes };
 }
 
 /* ------------------------------------------------------------------ */
 /* Chips                                                               */
 /* ------------------------------------------------------------------ */
 
-export type RuleChipType = FantasyRulesDto["chips"][number]["chipType"];
+/** The order the rules page lists the chips in. */
+export const RULES_CHIP_ORDER = ["wildcard", "triple_captain", "free_hit", "bench_boost"] as const;
+export type RulesChipType = (typeof RULES_CHIP_ORDER)[number];
 
-/** PRODUCT.md's order: Joker, Triple Capitaine, Free Hit, Bench Boost. */
-export const CHIP_ORDER: readonly RuleChipType[] = [
-  "wildcard",
-  "triple_captain",
-  "free_hit",
-  "bench_boost",
-];
-
-export interface ChipRule {
-  type: RuleChipType;
-  /** One window per allocation: each is one use, from `from` to `to` (null: to the season's end). */
-  windows: Array<{ from: number; to: number | null }>;
-  cancellable: boolean;
+/** The rounds one allocation can be played in; `to: null` runs to the season's end. */
+export interface ChipWindow {
+  readonly from: number;
+  readonly to: number | null;
 }
 
-export function chipRules(rules: Pick<FantasyRulesDto, "chips">): ChipRule[] {
-  const byType = new Map<RuleChipType, ChipRule>();
-  for (const chip of rules.chips) {
-    const rule = byType.get(chip.chipType) ?? {
-      type: chip.chipType,
-      windows: [],
-      cancellable: false,
-    };
-    rule.windows.push({ from: chip.startsAtGameweek, to: chip.endsAtGameweek });
-    rule.cancellable = rule.cancellable || chip.cancellable;
-    byType.set(chip.chipType, rule);
+export interface RulesChip {
+  readonly chip: RulesChipType;
+  /** One window per allocation, earliest first. A Wildcard split in two has two. */
+  readonly windows: readonly ChipWindow[];
+}
+
+const gameweek = z.number().int().positive();
+const chipRow = z
+  .object({
+    chipType: z.enum(RULES_CHIP_ORDER),
+    startsAtGameweek: gameweek,
+    endsAtGameweek: gameweek.nullable().optional(),
+  })
+  .refine((row) => row.endsAtGameweek == null || row.endsAtGameweek >= row.startsAtGameweek);
+
+/** The chips the ruleset allocates, each with the rounds it can be played in. */
+export function buildChipList(chips: unknown): RulesChip[] {
+  const read = readRows(chips, chipRow);
+  return RULES_CHIP_ORDER.flatMap((chip) => {
+    const windows = read
+      .filter((row) => row.chipType === chip)
+      .map((row) => ({ from: row.startsAtGameweek, to: row.endsAtGameweek ?? null }))
+      .sort((a, b) => a.from - b.from);
+    return windows.length > 0 ? [{ chip, windows }] : [];
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Templates                                                           */
+/* ------------------------------------------------------------------ */
+
+export type TemplatePart =
+  | { readonly kind: "text"; readonly text: string }
+  | { readonly kind: "slot"; readonly name: string };
+
+/**
+ * A dictionary line split around its `{name}` slots, so a screen can put
+ * each figure in its own `<bdi>` instead of splicing a string: "{free}
+ * انتقال مجاني…" keeps its digits in place inside an Arabic line.
+ */
+export function templateParts(template: string): TemplatePart[] {
+  const parts: TemplatePart[] = [];
+  const slot = /\{(\w+)\}/g;
+  let last = 0;
+  for (const match of template.matchAll(slot)) {
+    const at = match.index ?? 0;
+    if (at > last) parts.push({ kind: "text", text: template.slice(last, at) });
+    parts.push({ kind: "slot", name: match[1] });
+    last = at + match[0].length;
   }
-  for (const rule of byType.values()) rule.windows.sort((a, b) => a.from - b.from);
-  return CHIP_ORDER.filter((type) => byType.has(type)).map((type) => byType.get(type)!);
+  if (last < template.length) parts.push({ kind: "text", text: template.slice(last) });
+  return parts;
 }

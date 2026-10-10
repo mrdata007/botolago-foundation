@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { ui, UiChip, UiEmptyState, UiIconLinkButton, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { useManagerCardLive } from "@/services/manager-card-status";
 
 import { editionItems, formatNumber, POSITION_GROUPS, positionShort } from "./pepites-format";
 import {
@@ -98,6 +99,10 @@ function HomeChips({
  */
 export function PepitesHome() {
   const { t, lang } = useI18n();
+  // While Curva is live, Pépites lives inside Fantasy (plan 3.4): the title band names the way
+  // back. Off, the band has no back pill, as before.
+  const live = useManagerCardLive();
+  const back = live ? { backTo: "/fantasy", backLabel: t("nav.fantasy") } : {};
   const [filter, setFilter] = useState<HomeFilter>(null);
   const viewer = usePepitesViewer();
   const pointerQuery = useVersionPointer(viewer);
@@ -185,6 +190,7 @@ export function PepitesHome() {
       <PepitesShell
         pageHeader={
           <PepitesPageTitle
+            {...back}
             title={
               // The Top 10 below is labelled by this heading.
               <span id="pepites-edition-title" data-testid="pepites-edition-title">
@@ -247,6 +253,7 @@ export function PepitesHome() {
         stats={stats}
         statsPending={ranking.isPending}
         footer={footer}
+        {...back}
       />
     );
   }

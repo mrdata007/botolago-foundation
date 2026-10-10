@@ -1669,6 +1669,83 @@ tasks:
       before it gave a right one (82 findings, then 62, then 13, now 0), and that history is
       the reason to open an element before believing a count.
 
+  BG-0157:
+    title: Fantasy weekly routine (Pick Team unsaved bar, hub score round, Arabic countdown digits, league invite and leave, rules scoring table, fixture difficulty numbers)
+    area: design
+    severity: P1
+    user_impact: >
+      The six confirmed major findings on the Fantasy weekly routine from the 2026-10-06 Impeccable
+      critique of every screen. A captain or line-up change showed its only Confirmer in a header that
+      scrolled away and was dropped without a word on leaving. The hub's score never said which round it
+      was for, could be last round's or a false 0, and the hub had no way to Points before the deadline.
+      In Arabic the deadline countdown read 4 minutes as 40. A private league could not invite anyone and
+      "Quitter la ligue" left on the first tap. The rules page said a goalkeeper's goal is 6 points (the
+      server gives 10) and left out most of the scoring. Fixture difficulty was shown by colour alone.
+    owner: Chief
+    state: RUNNING # implemented on claude/brave-gates-to1i3m (brief e369a4f), reviewed and re-checked; awaiting the owner's review of the draft pull request
+    depends_on: []
+    brief: docs/engineering/tasks/BG-0157/screen-brief.md
+    evidence:
+      - >
+        Pick Team: PickTeamConfirmBar sticks above the bottom menu (from md at the column foot, FantasyFrame
+        stickyBottomBar) with a status line, Annuler and Confirmer; the header keeps its back pill. Measured
+        at 390x844 after a captain change and a scroll to the bench: Confirmer 674..722 under a menu top of
+        767.6 (FR) / 761.6 (AR), light and dark. useUnsavedChangesGuard asks on Back, the bottom menu,
+        browser Back and reload with a change pending, never with nothing pending or after save or cancel,
+        and lets the second-factor challenge through (letThrough) so a refused cloud save can reach it
+      - >
+        hub: FantasySummary.pointsGameweek is the history row's sequence; the card reads "55 pts · Points ·
+        J13" in the sample, a dash and no 0 (Total included) with no result, the neutral label when the
+        summary fails; the team block links to /fantasy/profile and the points block to
+        /fantasy/points?gw=13, both >= 44px with focus rings, the link's name starting with its visible
+        text. Points opens on ?gw, else the round in play, else the figure's round, else the current one
+      - >
+        countdown: both pads use a Latin 0 and an ar-MA-u-nu-latn formatter; Playwright clock, minutes 09
+        to 00 on Home's strip and the hub card in Arabic and French, light and dark: every state reads 0N,
+        no U+0660-U+0669 on the page; the tests fail on the old components (6 of 13)
+      - >
+        leagues: the owner gets "Inviter des amis" (api.reset_prediction_league_invite_code, the shared
+        league), a confirmation, then the code grouped in fours in a card with its shown-once warning and the
+        Fantasy share buttons; members get one quiet line and "Quitter la ligue" behind a confirmation naming
+        the league; the owner is never offered to leave (the server refuses it). Focus returns to each
+        confirmation's opener and goes to the new code; leaving goes to /fantasy/leagues. Owner view shown
+        with a browser-only shim (no sample league has an owner)
+      - >
+        rules: table built by src/lib/fantasy-rules-table.ts from api.fantasy_rules positions and scoring,
+        every row of FANTASY_RULES_V1.md (GB goal 10, DEF 6, MIL 5, ATT 4; MIL/ATT goals conceded "—",
+        as the ruleset has no row), fits 390px in FR and AR; the 60-minute condition on clean sheets and
+        goals conceded is stated; transfers from the ruleset's numbers; chips one use each, the Joker
+        "Deux fois dans la saison" without round numbers (see note); placeholder while loading, a plain
+        line on failure; the mock serves the v1 rows
+      - >
+        fixtures: every cell shows its difficulty number in the cell's on-fill colour, the accessible name
+        adds "difficulté {n} sur 5", the key reads "Difficulté" with the D/E line; data-fdr markers unchanged
+      - >
+        checks at 05eb171: typecheck 0; lint 0 errors, 31 warnings (as main); i18n gate pass; bun test src
+        4638 pass, 1 fail (the known src/backend/news/editorial-session.test.ts Ramadan case, failing on
+        main too). Seven reviewers raised 45 findings (3 P1, 9 P2, 33 P3); every P1 and P2 and 11 of the
+        P3 were fixed, and three re-checkers confirmed all 23 on the running app, with no regression on the
+        same screens. The P3 left open are listed under remaining
+    note: >
+      First numbered BG-0155; renumbered BG-0157 on 2026-10-07 because main had meanwhile given BG-0155
+      to the Home match carousel and BG-0156 to the Pépites visuals. Its commits up to 13e8522 say
+      "BG-0155".
+
+      The Joker's rounds are not printed. api.activate_fantasy_chip plays it in the season's own halves
+      (coalesce(season.wildcard_split_gameweek, ruleset)), which api.fantasy_rules does not report, and a
+      production mirror in scripts/backend/rehearsals/production-gw1-mirror-2026-09-24.sql records
+      wildcard_split_gameweek = 1 for 2026/27: if that is still the value, the first Joker can only be
+      played in J1. Only the owner can check it (read-only: select wildcard_split_gameweek from
+      app.fantasy_seasons); the fix would be api.fantasy_rules reporting the effective windows.
+
+      A Fantasy owner can issue a new invite code only while Pronostics is open to their account: the
+      reset is the Pronostics call and refuses with predictions_unavailable otherwise (the page then says
+      so in words).
+    remaining:
+      - "the owner's review of the draft pull request; nothing is merged or published before it"
+      - "owner read-only check: app.fantasy_seasons.wildcard_split_gameweek for the 2026/27 season"
+      - "polish left open (P3): the mock's round 13 sample scores at flat rates rather than by position; focus stays on the page root while a confirmed invite runs or after a leave fails; Home's Fantasy card still shows the summary's figure without its round"
+
   BG-0154:
     title: Phone app polish after BG-0151 (Arabic link arrows, status bar follows the theme, Fantasy player bar sideways, status-bar strip on sign-in and Jouer)
     area: design
@@ -4803,3 +4880,23 @@ tasks:
       available for reuse in future QA passes; not cleaned up since no delete_fantasy_team RPC
       exists and deletion was not requested.
     commits_produced: 'None. This was a verification-only pass: independent re-audit found the existing implementation already matches the supplied Figma reference on every screen compared, and the one real functional finding (bounded load latency) is a working-as-designed safeguard already tracked, not a new defect requiring a fix. No discrepancy required changing the implementation.'
+  BG-0158:
+    title: Manager Card backend (OVR, tier, four stats, permanent number, founder)
+    area: fantasy
+    severity: P2
+    owner: Chief
+    state: RUNNING # built (PR #381, draft, CI green); installed on production 2026-10-08 switched off; waiting on calibration and rules v1
+    depends_on: []
+    plan: docs/backend/MANAGER_CARD_DOMAIN_PLAN.md
+    brief: docs/engineering/tasks/BG-0158/engineering-brief.yaml
+    evidence:
+      - "design: repository facts checked against origin/main 3f9c57fc on 2026-10-08; owner answered yes to D1-D20 the same day"
+      - "five migrations 20261008123000-123400, built by Sonnet lanes and reviewed; CI backend-quality green on 10b3bd7 (run 37782701338): full pgTAP suite incl. manager_card.test.sql (149 checks), db lint, generated types"
+      - "calculation matches an independent Python reference row for row; a second run changes nothing; ~5.5 s per evaluation at 4,003 teams / gameweek 4 locally"
+      - "production 2026-10-08: owner ran apply-20261008123000-manager-card.sql in the SQL Editor; rehearsal passed, commit applied, Fantasy tick paused and restored; ships off with no rules (docs/production/APPLIED_2026_10_08_MANAGER_CARD.md); session read-back pending (connector signed out)"
+    remaining:
+      - "session: read-only check of production once the Supabase connector is reconnected"
+      - "owner: recalibrate after at least 5 finished gameweeks (2026-10-08 dry run: 2 gameweeks, 7 teams, nothing installable), then rules v1 by scripts/backend/apply-manager-card-rules-v1.sql"
+      - "owner: founder grant on or after 2026-11-01 (cut-off 31 October end of day, Moroccan time) by scripts/backend/manager-card-founder-grant.sql"
+      - "owner: switches on once the card screens exist (onboarding planned in another session)"
+      - "owner: review and merge PR #381"

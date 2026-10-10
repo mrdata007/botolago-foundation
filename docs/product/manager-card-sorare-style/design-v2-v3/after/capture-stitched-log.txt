@@ -1,0 +1,4 @@
+light 1440: 5 viewport screenshots, 2880x7926 px, console errors none
+light 390: 11 viewport screenshots, 780x18362 px, console errors none
+dark 1440: 5 viewport screenshots, 2880x7926 px, console errors none
+dark 390: 11 viewport screenshots, 780x18362 px, console errors none

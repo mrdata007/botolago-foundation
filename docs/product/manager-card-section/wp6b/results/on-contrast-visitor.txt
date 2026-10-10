@@ -1,0 +1,6 @@
+fr 390 /gradins: 30 texts in view over 2 screen(s), 10 hidden under something, 30 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+fr 1440 /gradins: 30 texts in view over 2 screen(s), 10 hidden under something, 30 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins: 30 texts in view over 2 screen(s), 10 hidden under something, 30 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+ar 1440 /gradins: 30 texts in view over 2 screen(s), 10 hidden under something, 30 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+
+light theme: 120 pixel measurements, 0 below AA

@@ -1,0 +1,61 @@
+[
+  {
+    "antipattern": "design-system-font",
+    "name": "Font outside DESIGN.md",
+    "description": "A font is used that is not declared in DESIGN.md typography. Use the documented type system or update DESIGN.md if this is an intentional brand addition.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "/home/user/mc-wp6b/src/components/manager-card/echarpe/echarpe.css",
+    "line": 63,
+    "snippet": "font-family: Noto Sans Arabic is not declared in DESIGN.md typography",
+    "ignoreValue": "Noto Sans Arabic"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "category": "quality",
+    "file": "/home/user/mc-wp6b/src/components/manager-card/echarpe/echarpe.css",
+    "line": 226,
+    "snippet": "Undocumented color rgba(214, 222, 234, 0.42) is outside DESIGN.md colors",
+    "advisory": true,
+    "ignoreValue": "rgba(214, 222, 234, 0.42)"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "category": "quality",
+    "file": "/home/user/mc-wp6b/src/components/manager-card/echarpe/echarpe.css",
+    "line": 231,
+    "snippet": "Undocumented color #8796ab is outside DESIGN.md colors",
+    "advisory": true,
+    "ignoreValue": "#8796ab"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "category": "quality",
+    "file": "/home/user/mc-wp6b/src/components/manager-card/echarpe/echarpe.css",
+    "line": 243,
+    "snippet": "Undocumented color #8a8170 is outside DESIGN.md colors",
+    "advisory": true,
+    "ignoreValue": "#8a8170"
+  },
+  {
+    "antipattern": "design-system-color",
+    "name": "Color outside DESIGN.md",
+    "description": "A literal color is outside the DESIGN.md palette and sidecar tonal ramps. This may be legitimate, but it should be an intentional design-system addition rather than drift.",
+    "severity": "advisory",
+    "category": "quality",
+    "file": "/home/user/mc-wp6b/src/components/manager-card/echarpe/echarpe.css",
+    "line": 248,
+    "snippet": "Undocumented color #8a8170 is outside DESIGN.md colors",
+    "advisory": true,
+    "ignoreValue": "#8a8170"
+  }
+]

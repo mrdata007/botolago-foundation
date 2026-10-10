@@ -1,0 +1,257 @@
+{
+  "base": "http://127.0.0.1:4490",
+  "rows": [
+    {
+      "lang": "fr",
+      "width": 390,
+      "height": 932,
+      "card": 296,
+      "margin": 95.55,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "fr",
+      "width": 412,
+      "height": 915,
+      "card": 296,
+      "margin": 78.55,
+      "scrollW": 412,
+      "innerW": 412
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "height": 844,
+      "card": 288.38,
+      "margin": 19.89,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "fr",
+      "width": 393,
+      "height": 852,
+      "card": 293.31,
+      "margin": 19.89,
+      "scrollW": 393,
+      "innerW": 393
+    },
+    {
+      "lang": "fr",
+      "width": 375,
+      "height": 812,
+      "card": 268.59,
+      "margin": 19.89,
+      "scrollW": 375,
+      "innerW": 375
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "height": 780,
+      "card": 248.81,
+      "margin": 19.89,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "height": 760,
+      "card": 236.45,
+      "margin": 19.89,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "height": 750,
+      "card": 232,
+      "margin": 17.09,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "fr",
+      "width": 390,
+      "height": 740,
+      "card": 232,
+      "margin": 7.09,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "fr",
+      "width": 375,
+      "height": 667,
+      "card": 232,
+      "margin": -65.91,
+      "scrollW": 375,
+      "innerW": 375
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "height": 780,
+      "card": 248.81,
+      "margin": 19.89,
+      "scrollW": 360,
+      "innerW": 360
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "height": 740,
+      "card": 232,
+      "margin": 7.09,
+      "scrollW": 360,
+      "innerW": 360
+    },
+    {
+      "lang": "fr",
+      "width": 360,
+      "height": 640,
+      "card": 232,
+      "margin": -92.91,
+      "scrollW": 360,
+      "innerW": 360
+    },
+    {
+      "lang": "fr",
+      "width": 320,
+      "height": 568,
+      "card": 232,
+      "margin": -164.91,
+      "scrollW": 320,
+      "innerW": 320
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "height": 932,
+      "card": 296,
+      "margin": 96.61,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "ar",
+      "width": 412,
+      "height": 915,
+      "card": 296,
+      "margin": 79.61,
+      "scrollW": 412,
+      "innerW": 412
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "height": 844,
+      "card": 284.64,
+      "margin": 26.98,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "ar",
+      "width": 393,
+      "height": 852,
+      "card": 289.58,
+      "margin": 27,
+      "scrollW": 393,
+      "innerW": 393
+    },
+    {
+      "lang": "ar",
+      "width": 375,
+      "height": 812,
+      "card": 264.86,
+      "margin": 27,
+      "scrollW": 375,
+      "innerW": 375
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "height": 780,
+      "card": 245.08,
+      "margin": 27,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "height": 760,
+      "card": 232.72,
+      "margin": 27,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "height": 750,
+      "card": 232,
+      "margin": 18.16,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "ar",
+      "width": 390,
+      "height": 740,
+      "card": 232,
+      "margin": 8.16,
+      "scrollW": 390,
+      "innerW": 390
+    },
+    {
+      "lang": "ar",
+      "width": 375,
+      "height": 667,
+      "card": 232,
+      "margin": -64.84,
+      "scrollW": 375,
+      "innerW": 375
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "height": 780,
+      "card": 245.08,
+      "margin": 27,
+      "scrollW": 360,
+      "innerW": 360
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "height": 740,
+      "card": 232,
+      "margin": 8.16,
+      "scrollW": 360,
+      "innerW": 360
+    },
+    {
+      "lang": "ar",
+      "width": 360,
+      "height": 640,
+      "card": 232,
+      "margin": -91.84,
+      "scrollW": 360,
+      "innerW": 360
+    },
+    {
+      "lang": "ar",
+      "width": 320,
+      "height": 568,
+      "card": 232,
+      "margin": -173.03,
+      "scrollW": 320,
+      "innerW": 320
+    }
+  ]
+}

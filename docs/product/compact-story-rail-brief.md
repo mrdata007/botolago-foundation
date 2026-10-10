@@ -1,0 +1,7 @@
+# Compact story rail
+
+Owner requests tighter story spacing and short labels like RCA V WAC. Current rail items are 96/112px wide around 70/79px circles; captions reserve three lines and the section adds 32px below. Preserve circular artwork, brand rings, complete bilingual headlines inside the immersive viewer, accessibility/focus, manual uploads and generation budgets.
+
+Use compact fixed-width items, smaller horizontal gaps, single-line code labels and less bottom padding. Generated stories receive a deterministic compact label from their verified match context (home code V away code), separate from the full article headline. Use a short club label for non-match news, with neutral localized news fallback when no subject is known. Existing stories acquire the same label without rewriting their articles or regenerating images. Add the short-title rule to the image prompt; do not let AI prose determine rail dimensions. Preserve manual titles with a single-line visual limit.
+
+Acceptance: existing three stories show MAS V RCA, FAR V WST and RCAZ V HUSA; RCA/WAC example returns RCA V WAC. Captions never reserve multiple lines, each item closely follows its circle, with tighter vertical and horizontal spacing. Before/after FR/AR phone and desktop evidence; full headline and immersive navigation retained; SQL labels, source visibility, worker prompt, frontend schema and relevant checks pass. Draft PR, final CI and live verification before publication. No paid image generation or story/media row updates.

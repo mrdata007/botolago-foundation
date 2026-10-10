@@ -24,6 +24,30 @@ colors:
   mown-grass-light: "oklch(0.536 0.129 153)"
   mown-grass-dark: "oklch(0.502 0.122 152)"
   logo-blue: "#0151fc"
+  card-contact-black: "#000000"
+  card-graphite-lacquer: "#12151B"
+  card-graphite-metal: "#4A515C"
+  card-graphite-light: "#AAB3C0"
+  card-lastreet-lacquer: "#111418"
+  card-lastreet-metal: "#D9DFE6"
+  card-lastreet-light: "#E8EEF5"
+  card-stade-lacquer: "#0E0B05"
+  card-stade-metal: "#C99634"
+  card-stade-light: "#FFE2A6"
+  card-pro-lacquer: "#1A0407"
+  card-pro-metal: "#9E1C24"
+  card-pro-light: "#FFC2C2"
+  card-champion-lacquer: "#03111C"
+  card-champion-metal: "#3FAFC9"
+  card-champion-light: "#D8F6FF"
+  card-legend-lacquer: "#0D0314"
+  card-legend-metal: "#8E44B8"
+  card-legend-light: "#F0D8FF"
+  card-prism-pink: "#FF8AD8"
+  card-prism-violet: "#C59BFF"
+  card-prism-blue: "#8FB4FF"
+  card-prism-mint: "#7FF0E0"
+  card-prism-gold: "#FFE3A8"
 typography:
   display:
     fontFamily: "Changa, Manrope, ui-sans-serif, system-ui, sans-serif"
@@ -140,6 +164,10 @@ typography:
     lineHeight: 1.4
     letterSpacing: "-0.01em"
     fontFeature: '"tnum"'
+  card-name-serif:
+    fontFamily: "Instrument Serif, Times New Roman, serif"
+    fontWeight: 400
+    lineHeight: 1
 rounded:
   tight: "4px"
   control: "6px"
@@ -149,6 +177,7 @@ rounded:
   sheet: "16px"
   column: "28px"
   full: "9999px"
+  card-tab: "6cqw"
 spacing:
   "1": "4px"
   "2": "8px"
@@ -528,7 +557,7 @@ The kit's sizes are fixed pixel steps at every width. Two places scale with the 
 **Frames.** Every route sits in one of two frames.
 
 - **Main frame order.** Flat page, then the top bar (or a screen's own header), the hub title band, the matchday strip (from 1024px), the live strip, the content and the bottom nav.
-- **Fantasy inner screens.** On phones they hide the global top bar and show only their own header, which does not stick; a strip exactly as tall as the status bar, in the bar surface, stays at the top so scrolled content never passes under the clock (0px in a browser). From 768px the Fantasy column becomes a raised column with 28px corners. A sticky bar at the foot of the column (the player page's actions) still sticks there: the column clips its corners without becoming a scroll box.
+- **Fantasy inner screens.** On phones they hide the global top bar and show only their own header, which does not stick; a strip exactly as tall as the status bar, in the bar surface, stays at the top so scrolled content never passes under the clock (0px in a browser). From 768px the Fantasy column becomes a raised column with 28px corners. A sticky bar at the foot of the column (the player page's actions, Pick Team's confirmation bar) still sticks there: the column clips its corners without becoming a scroll box.
 - **Sign-in screens and the Landing page.** Their top is a dark band in both themes and nothing at the top sticks, so the same strip stays at the top in the band's ink-deep (0px in a browser). On the sign-in screens it is clear at rest, so the stadium photo runs on under the clock, and fades in over the first 24px of scroll. From 768px, where the sign-in column is a raised card, a strip in the page colour covers the card as it scrolls.
 
 **Bars.**
@@ -738,6 +767,16 @@ A 44px circle. **Soft** (Dugout Grey with a navy icon) is the default in bars: s
 
 - **Controls:** each team gets a minus / number / plus stepper with 44px round grey buttons.
 - **Number box:** Changa 30px. It is empty with a dashed Chalk Line border and a "–", and solid with a navy 2px border once set. The number rolls up or down only after a tap.
+
+### Manager Card (collectible, signature)
+
+The Manager Card is a collectible object, drawn by the `eclat-v1` renderer (`src/components/manager-card/eclat/`) and shown only while the Curva section is on. It is not an interface surface: it keeps its own materials, and the interface palette, the kit radii and the kit shadows do not reach it. The plan is `docs/product/MANAGER_CARD_SORARE_STYLE_PLAN.md` and the owner's design preview is `docs/product/manager-card-sorare-style/mock.html`.
+
+- **Face.** The card's name hangs in two lines: the first word in Changa 800 caps (the app's own display face), the rest in **Instrument Serif** 400 caps. Instrument Serif is the card's own face (token `card-name-serif`): its `@font-face` is in `eclat.css`, the files are self-hosted under `public/fonts/`, and it is never declared in `src/fonts.css`, so it is requested only when a card is drawn. Everything else on the card is the app's: Changa 300 and 800, Manrope for figures and Latin labels, Noto Sans Arabic for Arabic. Type on the card is sized in the card's own units (a 1000 by 1618 viewBox), so the type scale above does not apply to it.
+- **Materials.** Six, fixed in `src/components/manager-card/eclat/foil.ts`: graphite (a card with no tier yet), LASTREET steel, STADE amber, PRO red, CHAMPION ice blue and LEGEND violet with a prism foil (`card-prism-*`). Each tier is declared here by its dark lacquer plate, its metal (the frame's mid-tone) and its rim light (`card-graphite-*`, `card-lastreet-*`, `card-stade-*`, `card-pro-*`, `card-champion-*`, `card-legend-*`). The seven-stop metal gradients, the foil stops and the edge colours for the light and the dark page stay in `foil.ts` and in plan section 5.4, where tests measure every pair of colours the card prints. Only the outer edge and the drop shadow follow the page theme (the renderer puts `mc-eclat--light` or `mc-eclat--dark` on the card). The shirt and the club disc take the club's colours from the card's profile (`CardClub`), never from a hex written in the renderer.
+- **Shadow.** The contact shadow under the card, the cast shadow of the shirt and the masks that thin the foil are black by definition (`card-contact-black`, `#000`; on a dark page the contact shadow is `rgb(0 0 0 / 0.7)`). They are the card's own as an object, and not one of the kit's shadow steps.
+- **Shape.** The card's outline is drawn in its viewBox, 1000 by 1618, with a cut corner at the foot and a tab for the club disc. The one radius in CSS is `card-tab` (`6cqw`), the corner of the contact shadow's rounded rectangle: it follows the card's own width (a container query unit) from 24 to 336 px, so no step of the rounded scale fits it.
+- **Motion.** The card tilts toward the pointer and floats on a phone; under reduced motion it is flat. Layers move on the compositor, never repainted (`eclat/README.md`, "Tilt performance").
 
 ## Do's and Don'ts
 

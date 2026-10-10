@@ -39,6 +39,26 @@ describe("parseGenerated", () => {
     const short = { ...article(), fr: { ...lang("Titre de test valide"), paragraphs: ["court"] } };
     expect(parseGenerated(JSON.stringify(short))).toBeNull();
   });
+  it("rejects AI notices in titles, summaries and paragraphs in either language", () => {
+    for (const notice of [
+      "Cet article a été écrit avec l'intelligence artificielle.",
+      "Contenu rédigé avec l'aide de l'IA.",
+      "AI-generated article by OpenAI.",
+      "كُتب هذا المقال بمساعدة الذكاء الاصطناعي.",
+    ]) {
+      for (const language of ["fr", "ar"] as const) {
+        for (const field of ["title", "summary", "paragraphs"] as const) {
+          const reply = article();
+          reply[language] = {
+            ...reply[language],
+            [field]:
+              field === "paragraphs" ? [para(notice), para("Le match"), para("Le match")] : notice,
+          };
+          expect(parseGenerated(JSON.stringify(reply))).toBeNull();
+        }
+      }
+    }
+  });
 });
 
 describe("inventedScores", () => {
@@ -110,7 +130,10 @@ describe("renderBodyHtml", () => {
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain('href="https://example.test/a"');
     expect(html).not.toContain("javascript:");
-    expect(html).toContain("intelligence artificielle");
+    expect(html).not.toContain("intelligence artificielle");
+    expect(renderBodyHtml("ar", lang("عنوان اختبار صالح"), undefined)).not.toContain(
+      "الذكاء الاصطناعي",
+    );
   });
 });
 
@@ -183,7 +206,7 @@ function fakeClient(plan: unknown, calls: { name: string; args: unknown }[]): Em
 }
 
 const env = {
-  ANTHROPIC_API_KEY: "sk-ant-test-0123456789abcdef",
+  OPENAI_KEY: "sk-test-0123456789abcdefghij",
   RESEND_API_KEY: "re_test_0123456789abcdef",
 };
 const request = () =>
@@ -195,9 +218,9 @@ const request = () =>
 function fetchStub(reply: unknown, sent: { url: string }[]): typeof fetch {
   return (async (url: string) => {
     sent.push({ url });
-    if (String(url).includes("anthropic")) {
+    if (String(url).includes("openai")) {
       return new Response(
-        JSON.stringify({ content: [{ type: "text", text: JSON.stringify(reply) }] }),
+        JSON.stringify({ choices: [{ message: { content: JSON.stringify(reply) } }] }),
       );
     }
     return new Response(JSON.stringify({ id: "mail" }));
@@ -244,7 +267,7 @@ describe("handleAiContentRequest", () => {
       fetchImpl: fetchStub(article(), sent),
     });
     expect(await response.json()).toMatchObject({ idle: true });
-    expect(sent.some((s) => s.url.includes("anthropic"))).toBe(false);
+    expect(sent.some((s) => s.url.includes("openai"))).toBe(false);
   });
 
   it("rejects a wrong scheduler token", async () => {

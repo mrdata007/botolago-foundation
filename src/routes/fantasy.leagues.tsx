@@ -1,18 +1,20 @@
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, Plus, Settings } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { LeagueInviteCode } from "@/components/fantasy/LeagueInviteCode";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { LeagueList } from "@/components/fantasy-lists/LeagueList";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
+import { InviteLinkShare } from "@/components/predictions/leagues/InviteLinkShare";
 import {
   ui,
   UiButton,
@@ -49,78 +51,21 @@ function LeaguesRoute() {
 
 /**
  * "Leagues & Cups", in the Option A language: underline tabs (Ligues |
- * Coupes) under the header, the Join and Manage actions as round pills, the
+ * Coupes) under the header, the Join and Create actions as round pills, the
  * create form on a card, display section headings in place of the ink pills,
  * and the leagues as card rows with their rank ("3e sur 24") — the rows the
  * A-Fantasy hub draws for "Mes ligues". Behaviour is unchanged: the same
  * queries, the same create flow and the same links.
+ *
+ * BG-0157: creating a league is said as such ("Créer une ligue", with a plus,
+ * where a cog read "Gérer les ligues"), the form's button says "Créer", and
+ * once the league exists its invite link can be shared from under its code.
  */
 function LeaguesPage() {
   return (
     <FantasyFrame bottomNav>
       <LeaguesBody />
     </FantasyFrame>
-  );
-}
-
-/**
- * The invite code, made shareable.
- *
- * The backend mints a 32-character hex string (`0035D6D8995B37EA0F05E2331C21FC0F`).
- * Nobody can read that down a phone line, and as one unbroken run it also wraps
- * mid-token on a 390px screen. This does the three things presentation can do
- * about it: group it into fours so the eye can chunk it, set it in a monospaced
- * face at tabular width so `0`/`O` and `1`/`I` are distinguishable, and put a
- * copy control next to it — because copying is what anyone sharing this will
- * actually do.
- *
- * `dir="ltr"` is deliberate even in Arabic: the code is a hex literal, not
- * prose, and must be read and transcribed left to right in both languages.
- * The grouping is visual only — `aria-label` and the clipboard both carry the
- * original unbroken string, so a screen reader and a paste get the real code.
- */
-function InviteCode({ code }: { code: string }) {
-  const { t } = useI18n();
-  const groups = code.match(/.{1,4}/g) ?? [code];
-  return (
-    <div className={cn("mt-3 p-3", ui.radius.card, ui.surface.page)}>
-      <p className={cn(ui.text.label, ui.tone.muted)}>{t("fpl.invite_code")}</p>
-      <div className="mt-1 flex items-start gap-2">
-        <code
-          dir="ltr"
-          aria-label={code}
-          className={cn(
-            "min-w-0 flex-1 select-all break-words font-mono",
-            ui.text.meta,
-            // An invite code is a figure a reader copies character by
-            // character, so it is on the tabular rail like every other figure.
-            "[font-weight:var(--ui-weight-heavy)]",
-            ui.text.tabular,
-            ui.tone.default,
-          )}
-        >
-          {groups.map((group, index) => (
-            <span key={`${group}-${index}`} className="me-1.5 inline-block" aria-hidden>
-              {group}
-            </span>
-          ))}
-        </code>
-        <UiButton
-          size="sm"
-          variant="soft"
-          aria-label={t("fantasy.leagues.copy_code")}
-          className="shrink-0"
-          onClick={() => {
-            void navigator.clipboard?.writeText(code);
-            toast.success(t("fpl.copied"));
-          }}
-        >
-          <Copy className="h-4 w-4" aria-hidden />
-          {t("fpl.copy")}
-        </UiButton>
-      </div>
-      <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>{t("fantasy.leagues.invite_help")}</p>
-    </div>
   );
 }
 
@@ -202,9 +147,9 @@ function LeaguesBody() {
                   aria-expanded={createOpen}
                   onClick={() => setCreateOpen((v) => !v)}
                 >
-                  <Settings className="h-4 w-4 shrink-0" aria-hidden />
+                  <Plus className="h-4 w-4 shrink-0" aria-hidden />
                   <span className="line-clamp-2 whitespace-normal text-balance">
-                    {t("fpl.configure_leagues")}
+                    {t("fpl.create_league")}
                   </span>
                 </UiButton>
               </div>
@@ -232,7 +177,7 @@ function LeaguesBody() {
                       className="mt-3"
                       disabled={createName.trim().length < 3 || busy}
                     >
-                      {busy ? t("fpl.saving") : t("fpl.create_league")}
+                      {busy ? t("fpl.saving") : t("fantasy.leagues.create_submit")}
                     </UiButton>
                     {created ? (
                       <>
@@ -243,7 +188,7 @@ function LeaguesBody() {
                           {created.name}
                         </p>
                         {created.code ? (
-                          <InviteCode code={created.code} />
+                          <LeagueInviteCode code={created.code} />
                         ) : (
                           <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
                             {t("fpl.invite_code")}: {t("fantasy.stat.none")}
@@ -253,6 +198,13 @@ function LeaguesBody() {
                     ) : null}
                   </form>
                 </UiCard>
+              ) : null}
+              {/* The share buttons under the code: their own card beside the
+                  form's, never a card inside it. The code is shown once, above. */}
+              {createOpen && created?.code ? (
+                <div className="mt-3">
+                  <InviteLinkShare game="fantasy" league={created.name} code={created.code} />
+                </div>
               ) : null}
 
               <section className="mt-6">

@@ -21,6 +21,20 @@ describe("pageviewPath: what a page view may say about the address", () => {
     expect(pageviewPath(`${ORIGIN}/matches`)).toBe("/matches");
   });
 
+  test("Curva: a league id and the development fixture never leave the phone", () => {
+    expect(
+      pageviewPath(
+        `${ORIGIN}/curva/les-votres?ligue=3c000005-0000-4000-8000-000000000001&mc=rated`,
+      ),
+    ).toBe("/curva/les-votres");
+    expect(
+      pageviewPath(`${ORIGIN}/curva/saisons?saison=3c000001-0000-4000-8000-000000000001`),
+    ).toBe("/curva/saisons");
+    expect(pageviewPath(`${ORIGIN}/curva?mc=founder&utm_source=whatsapp`)).toBe(
+      "/curva?utm_source=whatsapp",
+    );
+  });
+
   test("never sends what follows '#': an invite code, a sign-in's tokens", () => {
     const path = pageviewPath(
       `${ORIGIN}/pronostics/ligues/rejoindre#code=A1B2C3D4E5F60718293A4B5C6D7E8F90`,

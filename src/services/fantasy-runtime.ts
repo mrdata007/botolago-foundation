@@ -379,6 +379,9 @@ export const fantasyService = {
       teamName: current.team.name,
       totalPoints: history.items.reduce((sum, item) => sum + item.score, 0),
       gameweekPoints: currentResult?.score ?? 0,
+      // BG-0157 (2): the round that figure is for, from the same row, so the
+      // hub can name it and never print last round's score under this one's.
+      pointsGameweek: currentResult?.sequence ?? null,
       overallRank: latest?.overallRank ?? null,
       gameweekRank: currentResult?.rank ?? null,
       transfersLeft: current.team.freeTransfers,
@@ -608,7 +611,14 @@ export const fantasyService = {
   },
   async getRules() {
     if (mode() === "mock") {
-      return {
+      // BG-0157 (5): the v1 ruleset's positions, scoring and chips rows
+      // (`supabase/migrations/20260720163222_fantasy_ruleset_v1.sql`), in the
+      // shape and order `api.fantasy_rules` returns them — positions by
+      // display order, scoring by category, position code then threshold,
+      // chips by first round then allocation code — so a local run shows
+      // the table production shows. `fantasy-runtime.rules.test.ts` holds
+      // these rows to the migration.
+      const rules: Awaited<ReturnType<typeof cloud.getRules>> = {
         seasonId: "00000000-0000-4000-8000-000000000001",
         rulesetId: "00000000-0000-4000-8000-000000000002",
         rulesetCode: "botolago-fantasy-preview",
@@ -623,11 +633,94 @@ export const fantasyService = {
         captainMultiplier: 2,
         tripleCaptainMultiplier: 3,
         deadline: { minutesBeforeFirstFixture: 90, gracePeriodSeconds: 0 },
-        positions: [],
-        scoring: [],
-        chips: [],
+        positions: [
+          {
+            code: "GK",
+            squadQuota: 2,
+            startingMinimum: 1,
+            startingMaximum: 1,
+            goalPoints: 10,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "DEF",
+            squadQuota: 5,
+            startingMinimum: 3,
+            startingMaximum: 5,
+            goalPoints: 6,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "MID",
+            squadQuota: 5,
+            startingMinimum: 2,
+            startingMaximum: 5,
+            goalPoints: 5,
+            cleanSheetPoints: 1,
+          },
+          {
+            code: "FWD",
+            squadQuota: 3,
+            startingMinimum: 1,
+            startingMaximum: 3,
+            goalPoints: 4,
+            cleanSheetPoints: 0,
+          },
+        ],
+        scoring: [
+          { category: "appearance_full", points: 2, threshold: 60, position: null },
+          { category: "appearance_short", points: 1, threshold: 1, position: null },
+          { category: "direct_red_card", points: -3, threshold: null, position: null },
+          { category: "goals_conceded", points: -1, threshold: 2, position: "DEF" },
+          { category: "goals_conceded", points: -1, threshold: 2, position: "GK" },
+          { category: "official_assist", points: 3, threshold: null, position: null },
+          { category: "own_goal", points: -2, threshold: null, position: null },
+          { category: "penalty_miss", points: -2, threshold: null, position: null },
+          { category: "penalty_save", points: 5, threshold: null, position: "GK" },
+          { category: "saves", points: 1, threshold: 3, position: "GK" },
+          { category: "second_yellow_dismissal", points: -3, threshold: null, position: null },
+          { category: "yellow_card", points: -1, threshold: null, position: null },
+        ],
+        chips: [
+          {
+            allocationCode: "bench_boost",
+            chipType: "bench_boost",
+            startsAtGameweek: 1,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+          {
+            allocationCode: "free_hit",
+            chipType: "free_hit",
+            startsAtGameweek: 1,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+          {
+            allocationCode: "triple_captain",
+            chipType: "triple_captain",
+            startsAtGameweek: 1,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+          {
+            allocationCode: "wildcard_1",
+            chipType: "wildcard",
+            startsAtGameweek: 1,
+            endsAtGameweek: 15,
+            cancellable: false,
+          },
+          {
+            allocationCode: "wildcard_2",
+            chipType: "wildcard",
+            startsAtGameweek: 16,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+        ],
         features: null,
       };
+      return rules;
     }
     const current = await hub();
     return cloud.getRules(current.season.id, context());

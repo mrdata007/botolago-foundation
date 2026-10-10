@@ -1,0 +1,77 @@
+forming1 ar light 390: 18 readings, 0 below floor
+forming1 fr light 390: 18 readings, 0 below floor
+forming1 fr dark 390: 18 readings, 4 below floor
+forming1 ar dark 390: 18 readings, 4 below floor
+homa fr light 390: 18 readings, 4 below floor
+homa fr dark 390: 18 readings, 0 below floor
+homa ar light 390: 18 readings, 3 below floor
+tierDown fr light 390: 18 readings, 4 below floor
+homa ar dark 390: 18 readings, 0 below floor
+tierDown fr dark 390: 18 readings, 0 below floor
+tierDown ar dark 390: 18 readings, 0 below floor
+tierDown ar light 390: 18 readings, 3 below floor
+rated fr light 390: 18 readings, 0 below floor
+rated fr dark 390: 18 readings, 1 below floor
+rated ar light 390: 18 readings, 0 below floor
+rated ar dark 390: 18 readings, 1 below floor
+tierUp fr light 390: 18 readings, 5 below floor
+tierUp fr dark 390: 18 readings, 0 below floor
+tierUp ar light 390: 18 readings, 5 below floor
+legend fr light 390: 18 readings, 5 below floor
+tierUp ar dark 390: 18 readings, 0 below floor
+legend ar light 390: 18 readings, 5 below floor
+legend fr dark 390: 18 readings, 0 below floor
+legend ar dark 390: 18 readings, 0 below floor
+
+rest     edge       n=  24  lowest   3.49 (floor 3)  at legend ar light 390 "outermost line of the frame vs page (walls hidden)"  under floor: 0
+rest     edgeBand   n=  24  lowest   1.44 (floor 3)  at tierUp ar light 390 "first 2 CSS px of the frame vs page (walls hidden)"  under floor: 12
+rest     edgeWithWalls n=  24  lowest   3.49 (floor 3)  at legend ar light 390 "outermost line of the silhouette with the thickness walls vs page"  under floor: 0
+pointer  edge       n= 120  lowest   1.55 (floor 3)  at legend ar light 390 "outermost line of the frame vs page (walls hidden) [pointer top-right]"  under floor: 44
+pointer  edgeBand   n= 120  lowest   1.49 (floor 3)  at tierUp fr light 390 "first 2 CSS px of the frame vs page (walls hidden) [pointer centre]"  under floor: 57
+pointer  edgeWithWalls n= 120  lowest   1.56 (floor 3)  at legend ar light 390 "outermost line of the silhouette with the thickness walls vs page [pointer top-right]"  under floor: 44
+
+432 readings, 44 below their floor, 0 errors
+BELOW {"fx":"forming1","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":2.22,"pass":false,"sides":{"left":2.78,"right":2.22,"top":3.67},"spot":"top-left"}
+BELOW {"fx":"forming1","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":2.47,"pass":false,"sides":{"left":2.47,"right":2.58,"top":3.41},"spot":"top-right"}
+BELOW {"fx":"forming1","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":2.31,"pass":false,"sides":{"left":2.96,"right":2.31,"top":3.45},"spot":"bottom-left"}
+BELOW {"fx":"forming1","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":2.4,"pass":false,"sides":{"left":2.4,"right":2.62,"top":3.39},"spot":"bottom-right"}
+BELOW {"fx":"forming1","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":2.31,"pass":false,"sides":{"left":2.31,"right":2.72,"top":3.84},"spot":"top-left"}
+BELOW {"fx":"forming1","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":2.24,"pass":false,"sides":{"left":2.44,"right":2.24,"top":3.41},"spot":"top-right"}
+BELOW {"fx":"forming1","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":2.18,"pass":false,"sides":{"left":2.18,"right":2.67,"top":3.4},"spot":"bottom-left"}
+BELOW {"fx":"forming1","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":2.38,"pass":false,"sides":{"left":2.47,"right":2.38,"top":3.39},"spot":"bottom-right"}
+BELOW {"fx":"homa","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":1.94,"pass":false,"sides":{"left":2.16,"right":16.03,"top":1.94},"spot":"top-left"}
+BELOW {"fx":"homa","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":2.05,"pass":false,"sides":{"left":16.03,"right":2.59,"top":2.05},"spot":"top-right"}
+BELOW {"fx":"homa","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":2.21,"pass":false,"sides":{"left":2.21,"right":16.03,"top":15.6},"spot":"bottom-left"}
+BELOW {"fx":"homa","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":2.75,"pass":false,"sides":{"left":16.03,"right":2.75,"top":15.72},"spot":"bottom-right"}
+BELOW {"fx":"homa","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":1.95,"pass":false,"sides":{"left":3.07,"right":16.03,"top":1.95},"spot":"top-left"}
+BELOW {"fx":"homa","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":2.04,"pass":false,"sides":{"left":16.03,"right":2.41,"top":2.04},"spot":"top-right"}
+BELOW {"fx":"homa","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":2.41,"pass":false,"sides":{"left":16.03,"right":2.41,"top":15.72},"spot":"bottom-right"}
+BELOW {"fx":"tierDown","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":1.92,"pass":false,"sides":{"left":1.92,"right":17.06,"top":2.17},"spot":"top-left"}
+BELOW {"fx":"tierDown","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":2.32,"pass":false,"sides":{"left":17.06,"right":2.37,"top":2.32},"spot":"top-right"}
+BELOW {"fx":"tierDown","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":1.92,"pass":false,"sides":{"left":1.92,"right":17.06,"top":16.82},"spot":"bottom-left"}
+BELOW {"fx":"tierDown","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":2.91,"pass":false,"sides":{"left":17.06,"right":2.91,"top":16.8},"spot":"bottom-right"}
+BELOW {"fx":"tierDown","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":2.17,"pass":false,"sides":{"left":2.94,"right":17.06,"top":2.17},"spot":"top-left"}
+BELOW {"fx":"tierDown","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":2.11,"pass":false,"sides":{"left":17.06,"right":2.11,"top":2.44},"spot":"top-right"}
+BELOW {"fx":"tierDown","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":2.03,"pass":false,"sides":{"left":17.06,"right":2.03,"top":16.8},"spot":"bottom-right"}
+BELOW {"fx":"rated","lang":"fr","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":2.88,"pass":false,"sides":{"left":4.34,"right":2.88,"top":4.29},"spot":"top-left"}
+BELOW {"fx":"rated","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":2.93,"pass":false,"sides":{"left":2.93,"right":4.68,"top":3.75},"spot":"bottom-left"}
+BELOW {"fx":"tierUp","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer centre]","floor":3,"value":2.5,"pass":false,"sides":{"left":2.5,"right":3.11,"top":7.11},"spot":"centre"}
+BELOW {"fx":"tierUp","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":1.66,"pass":false,"sides":{"left":1.66,"right":16.56,"top":1.96},"spot":"top-left"}
+BELOW {"fx":"tierUp","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":2.03,"pass":false,"sides":{"left":16.56,"right":2.03,"top":2.18},"spot":"top-right"}
+BELOW {"fx":"tierUp","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":1.66,"pass":false,"sides":{"left":1.66,"right":16.56,"top":16.52},"spot":"bottom-left"}
+BELOW {"fx":"tierUp","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":1.92,"pass":false,"sides":{"left":16.56,"right":1.92,"top":16.65},"spot":"bottom-right"}
+BELOW {"fx":"tierUp","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer centre]","floor":3,"value":2.5,"pass":false,"sides":{"left":3.11,"right":2.5,"top":7.11},"spot":"centre"}
+BELOW {"fx":"tierUp","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":2.04,"pass":false,"sides":{"left":2.44,"right":16.56,"top":2.04},"spot":"top-left"}
+BELOW {"fx":"tierUp","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":1.85,"pass":false,"sides":{"left":16.56,"right":1.85,"top":2.06},"spot":"top-right"}
+BELOW {"fx":"tierUp","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":2.15,"pass":false,"sides":{"left":2.15,"right":16.56,"top":16.52},"spot":"bottom-left"}
+BELOW {"fx":"tierUp","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":1.9,"pass":false,"sides":{"left":16.56,"right":1.9,"top":16.65},"spot":"bottom-right"}
+BELOW {"fx":"legend","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer centre]","floor":3,"value":2.14,"pass":false,"sides":{"left":2.14,"right":2.31,"top":8.61},"spot":"centre"}
+BELOW {"fx":"legend","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":2.09,"pass":false,"sides":{"left":2.1,"right":17.52,"top":2.09},"spot":"top-left"}
+BELOW {"fx":"legend","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":1.83,"pass":false,"sides":{"left":17.52,"right":1.83,"top":2.13},"spot":"top-right"}
+BELOW {"fx":"legend","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":1.81,"pass":false,"sides":{"left":1.81,"right":17.52,"top":17.94},"spot":"bottom-left"}
+BELOW {"fx":"legend","lang":"fr","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":1.85,"pass":false,"sides":{"left":17.52,"right":1.85,"top":17.94},"spot":"bottom-right"}
+BELOW {"fx":"legend","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer centre]","floor":3,"value":2.18,"pass":false,"sides":{"left":2.3,"right":2.18,"top":8.61},"spot":"centre"}
+BELOW {"fx":"legend","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-left]","floor":3,"value":2.03,"pass":false,"sides":{"left":2.05,"right":17.52,"top":2.03},"spot":"top-left"}
+BELOW {"fx":"legend","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer top-right]","floor":3,"value":1.55,"pass":false,"sides":{"left":17.52,"right":1.55,"top":2.32},"spot":"top-right"}
+BELOW {"fx":"legend","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-left]","floor":3,"value":2.22,"pass":false,"sides":{"left":2.22,"right":17.52,"top":17.94},"spot":"bottom-left"}
+BELOW {"fx":"legend","lang":"ar","theme":"light","width":390,"cardWidth":296,"pose":"pointer","kind":"edge","label":"outermost line of the frame vs page (walls hidden) [pointer bottom-right]","floor":3,"value":2.16,"pass":false,"sides":{"left":17.52,"right":2.16,"top":17.94},"spot":"bottom-right"}

@@ -8,10 +8,10 @@ import type { EmailRpcClient } from "../_shared/notification-email-dispatch.ts";
 // supabase/config.toml).
 //
 // Secrets (Supabase → Edge Functions → Secrets):
-//   ANTHROPIC_API_KEY  required
-//   AI_CONTENT_MODEL   optional, default claude-sonnet-5-5
-//   RESEND_API_KEY     required for the owner email (shared with the other
-//                      email functions; EMAIL_FROM / EMAIL_REPLY_TO optional)
+//   OPENAI_KEY       required
+//   AI_CONTENT_MODEL optional, default gpt-4o (must support JSON mode)
+//   RESEND_API_KEY   required for the owner email (shared with the other
+//                    email functions; EMAIL_FROM / EMAIL_REPLY_TO optional)
 
 const environment = Deno.env.toObject();
 const supabaseUrl = environment.SUPABASE_URL?.trim();

@@ -1,0 +1,76 @@
+60 checks over 15 routes × 2 widths × 2 languages
+32 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 32 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 32 pairs
+  fr 390 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=seasonClosed
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=seasonStarted
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=ratedTrfNull
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=seasonClosed
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=seasonStarted
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=ratedTrfNull
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px

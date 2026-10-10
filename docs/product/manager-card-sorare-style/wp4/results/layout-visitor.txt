@@ -1,0 +1,28 @@
+# layout probe, flags: --visitor, widths 320,390,1440, 1 routes, retried runs: 0, routes with no result: 0
+
+=== /gradins (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+

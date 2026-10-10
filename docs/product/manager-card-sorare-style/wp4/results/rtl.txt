@@ -1,0 +1,17 @@
+16 card pairs (French then Arabic, 8 fixtures x 390 and 1440): mirrored and typographic checks all hold on 16, fail on 0
+  htmlDir                16 of 16
+  cardDir                16 of 16
+  tab                    16 of 16
+  sample                 16 of 16
+  founder                16 of 16
+  statsOrder             16 of 16
+  statsMirrorOfFr        16 of 16
+  arabicRunsNoSpacing    16 of 16
+  latinTrackedInArabic   16 of 16
+  digitsWestern          16 of 16
+  digitsLtr              16 of 16
+  lastreetLatinLtr       16 of 16
+rated at 390: initials x fr 0.1 / ar 0.9; stats x fr 0.25 0.42 0.58 0.75 / ar 0.75 0.58 0.42 0.25; Arabic labels القائد التشكيلة الانتقالات الثبات
+founder at 390: capsule x fr 0.88 / ar 0.14
+homa at 390 (Arabic): tier word "LASTREET", direction ltr, face Changa, letter-spacing 9.68px; <bdi dir=ltr>LASTREET</bdi> in the chrome 2, bare LASTREET text nodes 0
+arabicName at 390 (Arabic runs): sample:مثال:Noto Sans Arabic/800/ls0 | tier:محترف:Changa/800/ls0 | name:فاطمة:Changa/800/ls0 | name:الزهراء:Changa/300/ls0 | label:القائد:Noto Sans Arabic/700/ls0 | label:التشكيلة:Noto Sans Arabic/700/ls0 | label:الانتقالات:Noto Sans Arabic/700/ls0 | label:الثبات:Noto Sans Arabic/700/ls0
