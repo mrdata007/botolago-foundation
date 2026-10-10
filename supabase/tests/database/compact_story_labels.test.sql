@@ -10,7 +10,7 @@ select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"Raj
 select extensions.ok(not has_function_privilege('anon','app_private.ai_home_story_rail_label(jsonb)','execute') and not has_function_privilege('authenticated','app_private.ai_story_club_code(text)','execute'), 'private helpers remain inaccessible');
 select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"RSB Berkane","away":"UTS Rabat"}}'), 'RSB V UTS', 'canonical club-name matchup');
 select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"Amal Tiznit","away":"CODM Meknès"}}'), 'AMT V CODM', 'other current-season canonical names');
-select extensions.ok((select bool_and(app_private.ai_story_club_code(name)=code) from (values
+select extensions.ok((select bool_and(app_private.ai_story_club_code(name) is not distinct from code) from (values
  ('Amal Tiznit','AMT'),('Chabab Mohammédia','SCCM'),('CODM Meknès','CODM'),('CR Khemis Zemamra','RCAZ'),
  ('Difaâ El Jadida','DHJ'),('FAR Rabat','FAR'),('FUS Rabat','FUS'),('Hassania Agadir','HUSA'),
  ('Ittihad Tanger','IRT'),('JS Soualem','JSS'),('Kawkab Marrakech','KACM'),('Maghreb Fès','MAS'),
