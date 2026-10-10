@@ -9,7 +9,7 @@ one of the newest news stories published in both French and Arabic within 72 hou
 It copies the two exact headlines, generates a portrait conceptual illustration,
 stores the PNG in `news-media`, and publishes the Home story in one SQL transaction.
 The viewer overlays the localized headline as accessible text; the model is told
-not to draw text or fabricate a documentary image of the event. It shows an AI disclosure. Source publisher metadata stays private, consistent
+not to draw text or fabricate a documentary image of the event. It shows no AI/provider wording. Source publisher metadata stays private, consistent
 with the news pages. Neither the circles nor the viewer navigate to sections.
 Empty public feeds render no rail. Admin keeps manual uploads and unpublishing.
 
@@ -69,7 +69,7 @@ Sources checked during implementation:
 ## Presentation repair and replacement (10 October 2026, Dubai)
 
 The viewer contains the full image, displays the headline once, supports buttons,
-arrows and swipes, and handles loading failures. AI images show a compact disclosure;
+arrows and swipes, and handles loading failures. AI/provider wording is absent;
 provider credits are hidden, while manual photo credits remain visible.
 
 Migration `20261009211234` snapshots a private visual brief: article body (bounded
@@ -90,3 +90,9 @@ paid attempt against both existing caps. Pending refresh sources are claimed bef
 newer ordinary news so unrelated articles cannot take their reserved daily budget. Editorial unpublishing before a claim or
 while its replacement is generating cancels the replacement. Failed replacements
 leave the old image available rather than deleting it. No automatic unlimited retry.
+
+## Compact rail labels
+
+Generated stories use a separate deterministic `railLabel` from the verified match context: home club code + ` V ` + away club code, e.g. `RCA V WAC`. Existing article titles remain complete in French and Arabic inside the player. The database computes the same compact label for existing and future generated stories, and supplies it in future image briefs. The image prompt forbids expanding this label into a sentence or full club names. Non-match stories use a recognized club code, otherwise the neutral localized Actu/أخبار fallback. Unknown clubs never produce invented matchup codes. The frontend uses one line and fixed compact item widths; AI text cannot change rail dimensions.
+
+Migration `20261010055425_compact_story_labels.sql` changes only private helper/DTO/visual-context functions. `scripts/backend/apply-compact-story-labels.sql` verifies the ledger, reviewed function hashes, idle workers and unchanged story/media/job/audit rows, rehearses with rollback, and restores the original enabled/six-attempt settings in the same transaction. It changes no stored headlines and spends no image-generation credits. Deploy the updated worker after the reviewed migration.
