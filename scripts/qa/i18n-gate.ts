@@ -439,7 +439,13 @@ export const BASELINES: Baselines = {
   // Curva (2026-10-08): the moment hero's close button reads `common.close`,
   // which had no call site, so W3 falls 252 -> 251 (measured). Every new
   // Curva key is read through the literal accessors in copy.ts.
-  W3: 251,
+  //
+  // Captain choice (#376, merged with main's rules page 2026-10-10): the
+  // squad builder's save button gets its first call site in
+  // `fantasy.create.cta_primary`, and `fpl.enter_squad`, which it replaces,
+  // is deleted. Main's rules page is kept, so #376's own rules keys are not
+  // added. 251 -> 250 (measured).
+  W3: 250,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

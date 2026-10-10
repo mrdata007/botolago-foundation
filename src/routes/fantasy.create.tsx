@@ -7,6 +7,7 @@ import { track } from "@/lib/analytics";
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
+import { CaptainChoice } from "@/components/fpl/CaptainChoice";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -15,15 +16,7 @@ import { FplStatBar } from "@/components/fpl/FplStatBar";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
-import {
-  ui,
-  UiAlert,
-  UiButton,
-  UiCard,
-  UiHeader,
-  UiInput,
-  UiKeyValueRow,
-} from "@/components/ui-kit";
+import { ui, UiAlert, UiButton, UiCard, UiHeader, UiInput } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
@@ -31,6 +24,7 @@ import { reportOperationalError } from "@/lib/operational-errors";
 import { pendingInvite } from "@/components/predictions/leagues/invite-link";
 import { cn } from "@/lib/utils";
 import {
+  captaincyOf,
   computeSummary,
   createTeamErrorKey,
   draftPurchasePrices,
@@ -47,6 +41,7 @@ import {
   type CreateTeamDraft,
   type DraftValidationCode,
 } from "@/services/fantasy-create-service";
+import { GUEST_DRAFT_KEY, isCreateDraft } from "@/services/fantasy-create-draft";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { importDecisionService } from "@/services/fantasy-import-decision";
 import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
@@ -89,21 +84,17 @@ const VALIDATION_KEYS: Record<DraftValidationCode, TranslationKey> = {
   vice_not_in_xi: "fantasy.create.error.vice_not_in_xi",
 };
 
-function isCreateDraft(v: unknown): v is CreateTeamDraft {
-  if (!v || typeof v !== "object") return false;
-  const d = v as Partial<CreateTeamDraft>;
-  return typeof d.teamName === "string" && Array.isArray(d.slots) && d.slots.length === 15;
-}
-
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-/** The visitor's draft: the builder's own key for someone with no account yet. */
-const GUEST_DRAFT_KEY: FantasyDraftKey = {
-  uid: "__guest__",
-  teamId: "new",
-  baseVersion: 0,
-  kind: "create-team",
-};
+/**
+ * Validation codes the captain section answers itself ("À choisir" on its
+ * rows), so the alert under it does not repeat them in red before the
+ * manager has had a chance to choose.
+ */
+const ANSWERED_BY_CAPTAIN_CHOICE: ReadonlySet<DraftValidationCode> = new Set([
+  "captain_missing",
+  "vice_missing",
+]);
 
 /**
  * First-time squad selection, reconstructed on the FPL "Transfers" composition
@@ -339,7 +330,12 @@ function CreateTeamBody() {
     // A visitor: the draft is already kept on this device; the account is asked
     // for now, and the draft comes back with them.
     if (owned.source === "guest") {
-      requireAuth(() => undefined, { reason: t("fantasy.create.sign_in_reason") });
+      // Someone saving a first squad most likely has no account: creating one
+      // (free) is the prompt's main action here, signing in the second.
+      requireAuth(() => undefined, {
+        reason: t("fantasy.create.sign_in_reason"),
+        primary: "register",
+      });
       return;
     }
     setSaving(true);
@@ -420,7 +416,15 @@ function CreateTeamBody() {
 
   if (step === "name") {
     const nameCheck = validateTeamName(draft.teamName);
-    const blocking = validation.errors.filter((e) => e !== "team_name");
+    const blocking = validation.errors.filter(
+      (e) => e !== "team_name" && !ANSWERED_BY_CAPTAIN_CHOICE.has(e),
+    );
+    const { captainId, viceId } = captaincyOf(draft);
+    const starters = draft.slots
+      .filter((s) => s.slot < 12)
+      .sort((a, b) => a.slot - b.slot)
+      .map((s) => playerOf(s.playerId))
+      .filter((p): p is FantasyPlayer => p !== null);
     const nameInvalid = !nameCheck.ok && nameCheck.error !== "empty";
     return (
       <>
@@ -472,22 +476,15 @@ function CreateTeamBody() {
                 {t("fantasy.create.error.team_name")}
               </UiAlert>
             ) : null}
-            <div className="mt-4">
-              <UiKeyValueRow
-                label={t("fpl.captain")}
-                value={
-                  playerOf(draft.slots.find((s) => s.isCaptain)?.playerId ?? null)?.name[lang] ??
-                  t("fantasy.stat.none")
+            <div className={cn("mt-4 pt-4", ui.rule.blockStart)}>
+              <CaptainChoice
+                starters={starters}
+                clubs={clubs}
+                captainId={captainId}
+                viceId={viceId}
+                onChoose={(role, playerId) =>
+                  setDraft(setCaptainOp(draft, playerId, role === "vice"))
                 }
-              />
-              <UiKeyValueRow
-                label={t("fpl.vice_captain")}
-                value={
-                  playerOf(draft.slots.find((s) => s.isViceCaptain)?.playerId ?? null)?.name[
-                    lang
-                  ] ?? t("fantasy.stat.none")
-                }
-                className="border-b-0"
               />
             </div>
             {live ? (
@@ -532,7 +529,7 @@ function CreateTeamBody() {
               disabled={!nameCheck.ok || !validation.ok || saving}
               aria-describedby={live && accountReturn ? BUILDER_RETURN_LINE_ID : undefined}
             >
-              {saving ? t("fpl.saving") : t("fpl.enter_squad")}
+              {saving ? t("fpl.saving") : t("fantasy.create.cta_primary")}
             </UiButton>
           </UiCard>
         </form>
@@ -550,12 +547,17 @@ function CreateTeamBody() {
         deadlineIso={enrolment.deadline}
         banner={enrolmentNotice}
         stats={[
-          // No Wildcard column here: during the first selection it can only
-          // ever read "Indisponible", and transfers are unlimited anyway.
-          { label: t("fpl.free_transfers"), value: t("fpl.unlimited"), text: true },
-          { label: t("fpl.cost"), value: "0" },
-          { label: t("fpl.bank"), value: nf.format(summary.bankRemaining) },
+          // What a first selection is about: how many of the fifteen are in,
+          // and the money left — the same two figures as the name step. The
+          // transfer columns ("Illimité", "Coût 0") belong to real transfers.
+          {
+            label: t("fpl.squad"),
+            value: t("fpl.players_selected").replace("{n}", String(summary.filled)),
+            text: true,
+          },
+          { label: t("fpl.left_in_bank"), value: nf.format(summary.bankRemaining) },
         ]}
+        showBench
         slots={slots}
         clubs={clubs}
         players={players}
@@ -613,6 +615,7 @@ function CreateTeamBody() {
           }
           onClose={() => setPickerSlot(null)}
           budget={builderBudget}
+          initialSort="points"
           clubCounts={clubCountsFor(activeSlot.playerId)}
         />
       ) : pickerAny ? (
@@ -629,6 +632,7 @@ function CreateTeamBody() {
           onPick={onPickAny}
           onClose={() => setPickerAny(false)}
           budget={builderBudget}
+          initialSort="points"
           clubCounts={clubCountsFor(null)}
         />
       ) : null}

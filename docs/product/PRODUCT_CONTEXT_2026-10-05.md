@@ -163,7 +163,8 @@ These are recorded for future refinement work. Nothing was changed.
   - The Fantasy onboarding copy mentions "bonus" points, which ruleset v1 disables; the component is
     not mounted.
 - **Wrong numbers:** `fantasy.rules.scoring_desc` gives a goalkeeper goal 6 points, while ruleset v1
-  gives 10.
+  gives 10. (Fixed 2026-10-07: `/fantasy/rules` now draws its scoring table from the server's
+  ruleset.)
 - **Inconsistent naming:**
   - French uses "Matches" in the nav, the Matches title, the standings column "Matches joués" and the
     Fantasy player tab, but "Matchs" elsewhere.
