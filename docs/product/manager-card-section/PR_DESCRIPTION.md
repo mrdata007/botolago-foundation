@@ -1,5 +1,7 @@
 # Gradins: a new section for what comes after the Manager Card, shipped switched off
 
+> **Renamed Curva on 2026-10-10.** The owner renamed the section from « Gradins » (Arabic «المدرجات») to « Curva » (Arabic «كورفا»): addresses `/curva`, `/curva/carte`, `/curva/les-votres`, `/curva/saisons`, the component folder `src/components/curva`, the chunk `curva-*`, the specs `tests/e2e/curva*.e2e.ts`. The text below is the record of what was done under the old name and is not rewritten: read « Gradins » as « Curva » (and `/gradins` as `/curva`) in it.
+
 **Draft. Do not merge, publish or apply anything without the owner** (AGENTS.md "Screen work", rule 7).
 
 ## What this is

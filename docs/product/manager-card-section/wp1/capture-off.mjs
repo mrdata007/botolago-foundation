@@ -140,7 +140,7 @@ for (const entry of HTML_ONLY) {
 // The section's own addresses: with the switch off they all go to Fantasy.
 const redirects = {};
 const probe = await browser.newContext();
-for (const path of ["/gradins", "/gradins/carte", "/gradins/les-votres", "/gradins/saisons"]) {
+for (const path of ["/curva", "/curva/carte", "/curva/les-votres", "/curva/saisons"]) {
   const response = await probe.request.get(baseUrl + path, { maxRedirects: 0 });
   redirects[path] = { status: response.status(), location: response.headers()["location"] ?? null };
 }

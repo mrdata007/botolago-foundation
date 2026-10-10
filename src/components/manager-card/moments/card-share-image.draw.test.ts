@@ -7,7 +7,7 @@ import { contrastRatio, parseHex } from "@/lib/colour";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
 
-import { echarpeRenderer } from "../echarpe";
+import { eclatRenderer } from "../eclat";
 import { plainRenderer } from "../plain-renderer";
 import { fromMyCard } from "../to-profile";
 import type { CardProfile } from "../types";
@@ -90,7 +90,7 @@ async function draw(
     throughGameweekSeq: card.throughGameweekSeq,
     lang,
     t: dict(lang),
-    renderer: echarpeRenderer,
+    renderer: eclatRenderer,
   })!;
   await renderCardShareImage(model);
   return { ops: recordings.at(-1)!.ops, model };
@@ -138,7 +138,7 @@ describe("the picture", () => {
       throughGameweekSeq: card.throughGameweekSeq,
       lang: "fr",
       t: dict("fr"),
-      renderer: echarpeRenderer,
+      renderer: eclatRenderer,
     })!;
     model.art = { ...model.art, svg: "<svg broken/>" };
     // The fake Image fails on a URL containing "broken"; a Blob URL does not, so simulate the failure.
@@ -161,7 +161,7 @@ describe("the picture", () => {
         throughGameweekSeq: card.throughGameweekSeq,
         lang: "fr",
         t: dict("fr"),
-        renderer: echarpeRenderer,
+        renderer: eclatRenderer,
       });
       expect(blob).toBeNull();
     }
@@ -252,10 +252,10 @@ describe("what it says", () => {
 
   it("the caption and the address", async () => {
     const fr = await draw("rated", "fr");
-    expect(find(fr.ops, "Ma saison, rang par rang")).toBeDefined();
+    expect(find(fr.ops, "Ma carte BotolaGO")).toBeDefined();
     expect(find(fr.ops, "botolago.com")).toBeDefined();
     const ar = await draw("rated", "ar");
-    expect(find(ar.ops, "موسمي، جولةً بعد جولة")).toBeDefined();
+    expect(find(ar.ops, "بطاقتي في \u2066BotolaGO\u2069")).toBeDefined();
   });
 
   it("the art's own text runs are drawn over the card at its drawn size", async () => {
@@ -307,7 +307,7 @@ describe("the layout", () => {
       throughGameweekSeq: card.throughGameweekSeq,
       lang: "fr",
       t: dict("fr"),
-      renderer: echarpeRenderer,
+      renderer: eclatRenderer,
     })!;
     model.art = { ...model.art, width: 760, height: 2000 };
     recordings = [];
@@ -384,9 +384,12 @@ describe("Arabic is the French picture mirrored", () => {
 
   it("the rating line reads from the right in Arabic: the figure first, then the unit and the tier", async () => {
     const ar = await draw("rated", "ar");
-    const figure = find(ar.ops, "84")!;
-    const unit = find(ar.ops, " OVR")!;
-    const tier = find(ar.ops, ar.model.rating.tier!)!;
+    // the rating line's own runs (the card's art also prints the number and the tier on the card)
+    const onLine = (text: string) =>
+      texts(ar.ops).find((op) => op.text === text && op.baseline === L.rating.baseline)!;
+    const figure = onLine("84");
+    const unit = onLine(" OVR");
+    const tier = onLine(ar.model.rating.tier!);
     expect(figure.right).toBe(W - L.pad);
     expect(unit.right).toBeLessThanOrEqual(figure.left + 0.5);
     expect(tier.right).toBeLessThan(unit.left);
@@ -427,3 +430,131 @@ describe("Arabic is the French picture mirrored", () => {
 function fontOf(op: Op): number {
   return Number(/([\d.]+)px/.exec(op.font ?? "")?.[1]);
 }
+
+describe("LASTREET, the lowest tier's word", () => {
+  for (const lang of ["fr", "ar"] as const) {
+    it(`${lang}: the rating line and the card's plaque draw it left to right in Changa, tracked on the card`, async () => {
+      const { ops, model } = await draw("homa", lang);
+      expect(model.rating.tier).toBe("LASTREET");
+      const line = texts(ops).find(
+        (op) => op.text === "LASTREET" && op.baseline === L.rating.baseline,
+      )!;
+      expect(line.direction).toBe("ltr");
+      expect(line.font).toContain('"Changa"');
+      // the word on the card's plaque is a run of the art, in the display face, spaced
+      const plaque = model.art.texts.find((run) => run.text === "LASTREET")!;
+      expect(plaque.dir).toBe("ltr");
+      expect(plaque.face).toBe("display");
+      expect(plaque.tracking).toBeGreaterThan(0);
+      const drawn = texts(ops).find(
+        (op) => op.text === "LASTREET" && op.baseline !== L.rating.baseline,
+      )!;
+      expect(drawn.direction).toBe("ltr");
+      expect(drawn.letterSpacing).toBeGreaterThan(0);
+      expect(texts(ops).some((op) => /HOMA|حومة/.test(op.text!))).toBe(false);
+    });
+  }
+
+  it("in Arabic the other tiers stay Arabic words, set right to left", async () => {
+    const { ops, model } = await draw("rated", "ar");
+    expect(model.rating.tier).not.toBe("PRO");
+    expect(/\p{Script=Arabic}/u.test(model.rating.tier!)).toBe(true);
+    const line = texts(ops).find(
+      (op) => op.text === model.rating.tier && op.baseline === L.rating.baseline,
+    )!;
+    expect(line.direction).toBe("rtl");
+  });
+});
+
+describe("the card's art in the new style", () => {
+  it("turns the founder's « 26 » along the cut corner and keeps it on the canvas", async () => {
+    const { ops, model } = await draw("founder", "fr");
+    const run = model.art.texts.find((r) => r.rotate)!;
+    expect(run).toBeDefined();
+    const drawn = texts(ops).find((op) => op.rotate !== undefined)!;
+    expect(Math.abs(drawn.rotate!)).toBeCloseTo(Math.abs(run.rotate!), 3);
+    expect(drawn.left).toBeGreaterThanOrEqual(0);
+    expect(drawn.right).toBeLessThanOrEqual(W);
+  });
+
+  it("names the card's second name line in its serif and the Arabic one in Changa Light", async () => {
+    const fr = await draw("longNameLatin", "fr");
+    const serif = fr.model.art.texts.find((run) => run.face === "serif")!;
+    expect(serif).toBeDefined();
+    expect(texts(fr.ops).find((op) => op.text === serif.text)!.font).toContain("Instrument Serif");
+    const ar = await draw("arabicName", "ar");
+    const light = ar.model.art.texts.find((run) => run.face === "displayLight")!;
+    expect(light).toBeDefined();
+    const drawn = texts(ar.ops).find(
+      (op) => op.text === light.text && op.baseline !== L.name.baseline,
+    )!;
+    expect(drawn.font).toContain("300");
+    expect(drawn.font).toContain('"Changa"');
+  });
+});
+
+describe("a long name stays inside the card's art", () => {
+  const LONG = {
+    fr: "Zinedine Abdelhakimbenmohammedelalaoui Ali",
+    ar: "عبدالرحمنمحمدالعلويالادريسيالحسني",
+  } as const;
+  for (const lang of ["fr", "ar"] as const) {
+    it(`${lang}: a line the card closes up by spacing (textLength) is drawn no wider than 790 units of the art`, async () => {
+      const { ops, model } = await draw("rated", lang, { name: LONG[lang] });
+      const fitted = model.art.texts.filter((run) => run.fitWidth);
+      expect(fitted.length, "the card fits at least one line by spacing").toBeGreaterThan(0);
+      const art = ops.find((op) => op.kind === "image" && op.shadowBlur)!;
+      const unit = (art.right - art.left) / 1000;
+      for (const run of fitted) {
+        // the budget travels with the run, in the art's units: 790 less what the line's first and last
+        // letters overhang (the name is fitted by its ink, so the ink keeps the 105 to 895 margin)
+        const budget = 790 * (model.art.width / 1000);
+        expect(run.fitWidth!).toBeLessThanOrEqual(budget + 0.05);
+        expect(run.fitWidth!).toBeGreaterThan(budget - 10 * (model.art.width / 1000));
+        const drawn = texts(ops).find(
+          (op) => op.text === run.text && op.baseline !== L.name.baseline,
+        );
+        expect(drawn, run.text).toBeDefined();
+        expect(drawn!.right - drawn!.left, run.text).toBeLessThanOrEqual(790 * unit + 0.5);
+        // and inside the card's art, on both sides
+        expect(drawn!.left).toBeGreaterThanOrEqual(art.left);
+        expect(drawn!.right).toBeLessThanOrEqual(art.right);
+        if (lang === "fr") {
+          // a Latin run is closed up by spacing, never squeezed
+          expect(drawn!.letterSpacing!).toBeLessThan(0);
+          expect(drawn!.maxWidth).toBeUndefined();
+        } else {
+          // the canvas never spaces the letters of an Arabic run (the width does not move), so it is
+          // closed up by the maximum width of `fillText`: narrowed glyphs, not a line past the art
+          expect(drawn!.letterSpacing).toBeUndefined();
+          expect(drawn!.maxWidth).toBeCloseTo(790 * unit, 1);
+        }
+      }
+    });
+  }
+
+  it("a name that fits keeps its natural spacing", async () => {
+    const { ops, model } = await draw("rated", "fr");
+    expect(model.art.texts.some((run) => run.fitWidth)).toBe(false);
+    // nothing is closed up: no run is drawn with a negative letter spacing
+    expect(texts(ops).filter((op) => (op.letterSpacing ?? 0) < 0)).toEqual([]);
+  });
+});
+
+describe("the faces the art is drawn in", () => {
+  it("are asked for before the picture is drawn: the serif, Changa Light, and the figures' face in Arabic too", async () => {
+    const asked: string[] = [];
+    const doc = (globalThis as unknown as { document: Record<string, unknown> }).document;
+    doc.fonts = {
+      load: (spec: string) => {
+        asked.push(spec);
+        return Promise.resolve([]);
+      },
+    };
+    await draw("rated", "ar");
+    expect(asked.some((spec) => spec.includes('"Instrument Serif"'))).toBe(true);
+    expect(asked.some((spec) => spec.startsWith("300 ") && spec.includes('"Changa"'))).toBe(true);
+    expect(asked.some((spec) => spec.startsWith("800 ") && spec.includes('"Manrope"'))).toBe(true);
+    expect(asked.some((spec) => spec.includes('"Noto Sans Arabic"'))).toBe(true);
+  });
+});

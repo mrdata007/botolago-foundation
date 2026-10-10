@@ -211,8 +211,8 @@ function ErrorBody({ reset }: { reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  // Gradins (the Manager Card section): read the database's status once per server render, before
-  // any child route's guard needs it. Registered only when the build lets Gradins exist, so with
+  // Curva (the Manager Card section): read the database's status once per server render, before
+  // any child route's guard needs it. Registered only when the build lets Curva exist, so with
   // the switch off the route object is exactly what it was (`src/lib/feature-flags.ts`).
   ...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {}),
   head: () => ({
@@ -369,7 +369,7 @@ function RootComponent() {
 }
 
 /**
- * Marks `<html data-gradins="live">` while the Manager Card section is live, for CSS and for the
+ * Marks `<html data-curva="live">` while the Manager Card section is live, for CSS and for the
  * browser tests; nothing at all while it is off (no attribute, no write, no request). The root
  * is also what keeps the small status module in the entry chunk, so the pages that use it ask
  * for no file of their own (`src/services/manager-card-status.ts`).
@@ -379,9 +379,9 @@ function ManagerCardLiveMarker() {
   useEffect(() => {
     if (!live) return;
     const root = document.documentElement;
-    root.dataset.gradins = "live";
+    root.dataset.curva = "live";
     return () => {
-      delete root.dataset.gradins;
+      delete root.dataset.curva;
     };
   }, [live]);
   return null;

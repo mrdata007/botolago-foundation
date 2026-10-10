@@ -27,7 +27,7 @@ export const ALLOWED_CARD_TAGS = [
   "text",
   "tspan",
   "use",
-  // Inert: the knit grain and the shadows (filters) and the clipped stitches (mask).
+  // Inert: the fabric grain and the shadows (filters) and the clipped detail (mask).
   "filter",
   "feTurbulence",
   "feColorMatrix",

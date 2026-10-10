@@ -61,7 +61,7 @@ describe("the device keys", () => {
       tick: "botolago.card.tick.v1",
       compareHint: "botolago.card.compare_hint.v1",
       moments: "botolago.card.moments.v1",
-      league: "botolago.gradins.league.v1",
+      league: "botolago.curva.league.v1",
       hintCap: "botolago.card.hint.cap.v1",
       hintSel: "botolago.card.hint.sel.v1",
       hintTrf: "botolago.card.hint.trf.v1",

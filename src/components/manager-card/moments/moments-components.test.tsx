@@ -32,7 +32,7 @@ import { ShareCardSheet } from "./ShareCardSheet";
 async function render(node: ReactElement): Promise<string> {
   const router = createRouter({
     routeTree: createRootRoute({ component: () => <AuthProvider>{node}</AuthProvider> }),
-    history: createMemoryHistory({ initialEntries: ["/gradins"] }),
+    history: createMemoryHistory({ initialEntries: ["/curva"] }),
   });
   await router.load();
   return renderToString(
@@ -52,7 +52,7 @@ describe("on the server", () => {
   it("the hero draws nothing without a stage", async () => {
     const html = await render(
       <MomentHero
-        surface="gradins"
+        surface="curva"
         card={rated}
         profile={fromMyCard(rated)}
         onDetail={noop}
@@ -67,7 +67,7 @@ describe("on the server", () => {
   it("the hero keeps the page's stage in place, with no hero text and no hero marker", async () => {
     const html = await render(
       <MomentHero
-        surface="gradins"
+        surface="curva"
         card={rated}
         profile={fromMyCard(rated)}
         onDetail={noop}
@@ -82,7 +82,7 @@ describe("on the server", () => {
   });
 
   it("the born panel draws nothing, on either surface", async () => {
-    for (const surface of ["team", "gradins"] as const) {
+    for (const surface of ["team", "curva"] as const) {
       const html = await render(
         <CardBornPanel
           card={born}
@@ -130,9 +130,9 @@ describe("the module boundary (the section stays out of ordinary pages)", () => 
     expect(loaded.default).toBe(loaded.CardBornPanel);
   });
 
-  it("nothing outside Gradins and the moments themselves imports them statically", () => {
+  it("nothing outside Curva and the moments themselves imports them statically", () => {
     const root = join(import.meta.dir, "..", "..", "..");
-    const allowed = [join("components", "manager-card"), join("components", "gradins")];
+    const allowed = [join("components", "manager-card"), join("components", "curva")];
     const offenders: string[] = [];
     const walk = (dir: string) => {
       for (const entry of readdirSync(dir)) {

@@ -20,15 +20,15 @@ import { TIER_CODES, type HeroSpec, type LineSpec, type ReplayItem, type TierCod
  *  5. Deadline first. Within 60 minutes before a Fantasy deadline the heroes stay collapsed (the
  *     number still shows on every surface); the born panel is exempt, it is the save's own
  *     continuation.
- *  6. The team page shows only the born panel: every other hero plays in Gradins (plan 5.2).
+ *  6. The team page shows only the born panel: every other hero plays in Curva (plan 5.2).
  */
 
 /** Within this many minutes before a deadline, a hero (not the born panel) stays collapsed. */
 export const DEADLINE_WINDOW_MINUTES = 60;
 
 export interface PickHeroContext {
-  /** The screen asking: the team page shows only the born panel, Gradins shows the rest. */
-  surface: "gradins" | "team";
+  /** The screen asking: the team page shows only the born panel, Curva shows the rest. */
+  surface: "curva" | "team";
   card: MyCardDto;
   /** Minutes to the next Fantasy deadline, or null when it is not known. Negative once passed. */
   minutesToDeadline: number | null;
@@ -111,7 +111,7 @@ function heroFor(moments: readonly MomentDto[], ctx: PickHeroContext): HeroSpec 
     };
   }
 
-  // Past this point only Gradins shows a hero.
+  // Past this point only Curva shows a hero.
   if (ctx.surface === "team") return null;
 
   // 2. The first rating. Fresh when it is the latest evaluated journée; coalesced (a returning

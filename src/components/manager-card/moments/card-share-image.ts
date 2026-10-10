@@ -94,7 +94,7 @@ export function cardShareImageModel(
   return {
     lang,
     art,
-    caption: t("gradins.share.caption"),
+    caption: t("curva.share.caption"),
     name: profile.name.trim(),
     rating: {
       number: String(profile.ovr),
@@ -192,6 +192,39 @@ function drawRuns(
   ctx.restore();
 }
 
+/**
+ * The card's own faces on the canvas: the three of the share palette, plus the card's serif (the
+ * second name line) and Changa Light (the Arabic one). Instrument Serif is the card's own face,
+ * declared by the card's stylesheet, which comes with the renderer's chunk, so it is asked for
+ * here (`loadArtFonts`) as the other faces are.
+ */
+const ART_SERIF = `"Instrument Serif", "Times New Roman", serif`;
+function artFont(run: TextRun, size: number): string {
+  if (run.face === "serif") return `400 ${size}px ${ART_SERIF}`;
+  if (run.face === "displayLight") return shareFont("display", 300, size);
+  return shareFont(run.face, run.weight, size);
+}
+
+/**
+ * Loads what the art's runs are drawn in beyond the share palette's own list (`loadShareFonts`):
+ * the serif, Changa Light, and Manrope and Noto Sans Arabic at the weights the card's figures and
+ * labels use, in either language (the figures are Manrope even in the Arabic picture). A canvas
+ * does not wait for a face by itself.
+ */
+async function loadArtFonts(sample: string) {
+  if (typeof document === "undefined" || !document.fonts?.load) return;
+  await Promise.all(
+    [
+      `400 40px ${ART_SERIF}`,
+      shareFont("display", 300, 40),
+      shareFont("body", 800, 40),
+      shareFont("body", 600, 30),
+      shareFont("arabic", 700, 30),
+      shareFont("arabic", 800, 30),
+    ].map((spec) => document.fonts.load(spec, sample).catch(() => [])),
+  );
+}
+
 /** The card's own text runs, drawn on the art at its drawn size. */
 function drawArtText(
   ctx: CanvasRenderingContext2D,
@@ -203,11 +236,49 @@ function drawArtText(
   ctx.save();
   ctx.textBaseline = "alphabetic";
   for (const run of texts) {
-    ctx.font = shareFont(run.face, run.weight, run.size * scale);
+    ctx.font = artFont(run, run.size * scale);
     ctx.fillStyle = run.colour;
     ctx.direction = run.dir;
     ctx.textAlign = run.anchor === "middle" ? "center" : run.anchor === "end" ? "end" : "start";
-    ctx.fillText(run.text, left + run.x * scale, top + run.y * scale);
+    // a tracked Latin run (the tier word, the labels) where the canvas can space letters
+    const spaced = "letterSpacing" in ctx;
+    const tracking = run.tracking ? run.tracking * scale : 0;
+    if (spaced) {
+      (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = `${tracking}px`;
+    }
+    // a name line that is still wider than its budget at its smallest size is closed up by spacing,
+    // as the card's SVG does (`textLength`), so it never runs past the art. Where the canvas cannot
+    // space the letters (no `letterSpacing`, or a cursive script such as Arabic, whose letters the
+    // canvas never spaces: the measured width does not move), it is closed up by `fillText`'s own
+    // maximum width instead, which narrows the glyphs: legible, and still inside the art.
+    let squeeze: number | undefined;
+    if (run.fitWidth) {
+      const target = run.fitWidth * scale;
+      const natural = ctx.measureText(run.text).width;
+      if (natural > target) {
+        if (spaced) {
+          const count = Math.max(1, [...run.text].length);
+          (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing =
+            `${tracking + (target - natural) / count}px`;
+          if (ctx.measureText(run.text).width > target + 1) {
+            (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing =
+              `${tracking}px`;
+            squeeze = target;
+          }
+        } else squeeze = target;
+      }
+    }
+    const x = left + run.x * scale;
+    const y = top + run.y * scale;
+    if (run.rotate) {
+      // a run set along the cut corner: turned about its own point
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate((run.rotate * Math.PI) / 180);
+      ctx.fillText(run.text, 0, 0);
+      ctx.restore();
+    } else if (squeeze !== undefined) ctx.fillText(run.text, x, y, squeeze);
+    else ctx.fillText(run.text, x, y);
   }
   ctx.restore();
 }
@@ -431,6 +502,7 @@ async function loadArt(svg: string): Promise<HTMLImageElement | null> {
  */
 export async function renderCardShareImage(model: CardShareImageModel): Promise<Blob> {
   await loadShareFonts(model.lang, sampleOf(model));
+  await loadArtFonts(sampleOf(model));
   const [logo, art] = await Promise.all([loadImage(wordmark), loadArt(model.art.svg)]);
   if (!art) throw new Error("card_share_art");
   return await draw(model, logo, art);

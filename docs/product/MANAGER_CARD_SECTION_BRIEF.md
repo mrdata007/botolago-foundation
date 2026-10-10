@@ -1,5 +1,7 @@
 # Gradins (Manager Card section): screen-work brief
 
+> **Renamed Curva on 2026-10-10.** The owner renamed the section from « Gradins » (Arabic «المدرجات») to « Curva » (Arabic «كورفا»): addresses `/curva`, `/curva/carte`, `/curva/les-votres`, `/curva/saisons`, the component folder `src/components/curva`, the chunk `curva-*`, the specs `tests/e2e/curva*.e2e.ts`. The text below is the record of what was done under the old name and is not rewritten: read « Gradins » as « Curva » (and `/gradins` as `/curva`) in it.
+
 AGENTS.md "Screen work" rule 3. Written 2026-10-08 before any interface change on
 `claude/manager-card-section`, after inspecting the shell (`primary-nav.ts`, `BottomNav`, `TopBar`),
 the Fantasy hub, team, create, rankings, league and transfer screens, the Pépites pages, the auth path

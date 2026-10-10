@@ -194,7 +194,23 @@ export function withTier(profile: CardProfile, tier: TierCode): CardProfile {
 }
 
 /**
- * The unnamed base scarf a guest sees: no name, no number, no marks, no founder part. `club` is
+ * The card as it would hang at `tier`, for the tier ladder's token (Curva G2): the same name, club
+ * colours and serial, no number, no marks and no pill, and `ladder` so the token is drawn in the
+ * tier's own material (a card with no rating is otherwise drawn as the base card whatever its tier).
+ */
+export function ladderProfile(profile: CardProfile, tier: TierCode): CardProfile {
+  return {
+    ...profile,
+    tier,
+    ovr: null,
+    provisional: false,
+    counted: null,
+    ladder: true,
+  };
+}
+
+/**
+ * The unnamed base card a guest sees: no name, no number, no marks, no founder part. `club` is
  * the try-on's choice, which is kept nowhere.
  */
 export function guestProfile(
@@ -216,7 +232,7 @@ export function guestProfile(
 }
 
 /**
- * A signed-in account with no team yet: its display name and favourite club on the base scarf.
+ * A signed-in account with no team yet: its display name and favourite club on the base card.
  * `club` is the app's own club record (`findClub(user.favoriteClubId)`) or an already-made one.
  */
 export function localProfile(options: {

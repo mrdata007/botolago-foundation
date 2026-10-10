@@ -7,6 +7,8 @@ import { I18nProvider } from "@/i18n/provider";
 import { activeRenderer } from "./active-renderer";
 import { CardToken } from "./CardToken";
 import { ManagerCard } from "./ManagerCard";
+import { mountPointerBehaviour } from "./mount-pointer";
+import type { CardRenderer } from "./renderer";
 import { clearRenderCache, cachedRender, renderCacheSize, widthBucket } from "./render-cache";
 import { fromMyCard, guestProfile } from "./to-profile";
 
@@ -41,6 +43,45 @@ describe("ManagerCard on the server", () => {
     );
     expect(html).not.toContain("<img");
     expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+  });
+});
+
+describe("the tilt prop", () => {
+  const host = {} as HTMLElement;
+  const rendererWith = (mount?: CardRenderer["mount"]) => ({ mount }) as unknown as CardRenderer;
+
+  it("mounts the renderer's pointer behaviour on a card that asked for it, and hands back its cleanup", () => {
+    const calls: HTMLElement[] = [];
+    const cleanup = () => undefined;
+    const renderer = rendererWith((el) => {
+      calls.push(el);
+      return cleanup;
+    });
+    const got = mountPointerBehaviour({
+      tilt: true,
+      renderer,
+      host,
+      html: "<div/>",
+      reducedMotion: false,
+    });
+    expect(calls).toEqual([host]);
+    expect(got).toBe(cleanup);
+  });
+
+  it("mounts nothing on a card that did not ask, under reduced motion, before the card is in the page, or for a renderer without the behaviour", () => {
+    let mounted = 0;
+    const renderer = rendererWith(() => {
+      mounted += 1;
+      return () => undefined;
+    });
+    const base = { tilt: true, renderer, host, html: "<div/>", reducedMotion: false };
+    expect(mountPointerBehaviour({ ...base, tilt: false })).toBeUndefined();
+    expect(mountPointerBehaviour({ ...base, reducedMotion: true })).toBeUndefined();
+    expect(mountPointerBehaviour({ ...base, host: null })).toBeUndefined();
+    expect(mountPointerBehaviour({ ...base, html: null })).toBeUndefined();
+    expect(mountPointerBehaviour({ ...base, renderer: null })).toBeUndefined();
+    expect(mountPointerBehaviour({ ...base, renderer: rendererWith() })).toBeUndefined();
+    expect(mounted).toBe(0);
   });
 });
 

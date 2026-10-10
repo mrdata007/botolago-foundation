@@ -6,7 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
-import { useGradinsCopy } from "../copy";
+import { useCurvaCopy } from "../copy";
 
 /**
  * Pépites, inside Fantasy (plan section 3.4): a wide tile under the four shortcuts, to
@@ -21,7 +21,7 @@ import { useGradinsCopy } from "../copy";
  */
 export function PepitesHubTile({ className }: { className?: string }) {
   const { t } = useI18n();
-  const copy = useGradinsCopy();
+  const copy = useCurvaCopy();
   return (
     <Link
       to="/pepites"

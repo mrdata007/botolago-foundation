@@ -8,16 +8,16 @@
  * reads as already seen, so a phone that cannot remember never gets nagged.
  */
 export const DEVICE_KEYS = {
-  /** The guest's scarf was made (the `make` beat) once on this phone. */
+  /** The guest's card was made (the `make` beat) once on this phone. */
   guestMake: "botolago.card.guest_make.v1",
-  /** The highest counted-journée total whose stripe has been knitted in view (`tick`). */
+  /** The highest counted-journée total whose mark has been lit in view (`tick`). */
   tick: "botolago.card.tick.v1",
   /** The face-à-face hint on « Les vôtres » was shown. */
   compareHint: "botolago.card.compare_hint.v1",
   /** Moment keys acknowledged here, so nothing flashes back while the call is in flight. */
   moments: "botolago.card.moments.v1",
   /** The league « Les vôtres » last showed. */
-  league: "botolago.gradins.league.v1",
+  league: "botolago.curva.league.v1",
   /** The three stat hints (plan M3e). */
   hintCap: "botolago.card.hint.cap.v1",
   hintSel: "botolago.card.hint.sel.v1",
@@ -95,7 +95,7 @@ export function markSeen(key: DeviceKey): void {
   writeDevice(key, "1");
 }
 
-/** The counted-journée total the phone last saw knitted; 0 when it has seen none. */
+/** The counted-journée total the phone last saw lit; 0 when it has seen none. */
 export function readTick(): number {
   const raw = Number(readDevice(DEVICE_KEYS.tick));
   return Number.isInteger(raw) && raw > 0 ? raw : 0;

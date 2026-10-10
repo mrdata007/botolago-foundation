@@ -12,9 +12,9 @@ import { HERO_EVENTS, heroText, momentWords } from "./moment-text";
 import { useMomentGate, useSeenFor } from "./use-moment-gate";
 
 /**
- * The hero on Gradins' home (plan section 5.3): the one moment this session may expand, as an
+ * The hero on Curva' home (plan section 5.3): the one moment this session may expand, as an
  * inline block of the page and never as a dialog. It decides for itself whether there is one: it
- * asks the moment gate (`useMomentGate("gradins", card)`, the same decision every other component
+ * asks the moment gate (`useMomentGate("curva", card)`, the same decision every other component
  * of the page reads) and draws nothing when no hero is due, when the launch gate is still closed,
  * when a hero was already shown in this session, or within the last hour before a deadline. The
  * born panel (`card_created` with no number yet) is `CardBornPanel`'s, not this one's.
@@ -26,7 +26,7 @@ import { useMomentGate, useSeenFor } from "./use-moment-gate";
  *
  * The hero carries the card: between the label row and the lines it draws the full card at the
  * stage's size and plays the beat on it, over a number that is already legible, once. The page
- * leaves its own copy of the card out while the slot holds a hero (Gradins' home hides it by CSS
+ * leaves its own copy of the card out while the slot holds a hero (Curva' home hides it by CSS
  * on `[data-hero-slot]:not(:empty)`), and keeps the rating and identity lines under it. After
  * acknowledgement the label row, the lines and the buttons collapse and the card stays. A page
  * that would rather keep its own stage in the tree passes it as `children` (a node, or a
@@ -39,7 +39,7 @@ export function MomentHero({
   onShare,
   children,
 }: {
-  surface: "gradins";
+  surface: "curva";
   card: MyCardDto;
   profile: CardProfile;
   onDetail: () => void;
@@ -48,12 +48,12 @@ export function MomentHero({
 }): JSX.Element | null {
   const { t, lang } = useI18n();
   const words = useMemo(() => momentWords(t, lang), [t, lang]);
-  const gate = useMomentGate("gradins", card);
+  const gate = useMomentGate("curva", card);
   const hero = gate.hero;
   const headingId = useId();
   const ref = useRef<HTMLElement | null>(null);
 
-  // A hero that was already acknowledged when this page mounted (the manager came back to Gradins
+  // A hero that was already acknowledged when this page mounted (the manager came back to Curva
   // in the same visit) is not shown again, collapsed or otherwise.
   const startedAcked = useRef(gate.acked);
   const shown =

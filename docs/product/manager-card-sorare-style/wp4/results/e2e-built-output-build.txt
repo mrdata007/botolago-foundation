@@ -1,0 +1,8 @@
+$ bun tests/e2e/built-output-build.ts   (round 2 review fixes 18f921ee)
+i Generated .output/public/_headers
+i Generated .output/nitro.json
+
+[nitro] √ You can preview this build using npx vite preview
+[nitro] √ You can deploy this build using npx nitro deploy --prebuilt
+Built the production bundle against the local stub backend.
+--- exit 0

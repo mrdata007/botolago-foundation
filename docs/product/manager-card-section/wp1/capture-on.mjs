@@ -5,9 +5,9 @@
  *   node docs/product/manager-card-section/wp1/capture-on.mjs <baseUrl> <outDir>
  *
  * For French and Arabic, at 390 and 1440: the navigation reads Accueil, Actualites, Fantasy,
- * Matches, Gradins (the bar on a phone, the top bar's text links on a desktop); Fantasy is the
- * current item on every /pepites page and Gradins on every /gradins page; `html` carries
- * `data-gradins="live"`; `?mc=featureOff` gives today's bar and sends /gradins to /fantasy, with
+ * Matches, Curva (the bar on a phone, the top bar's text links on a desktop); Fantasy is the
+ * current item on every /pepites page and Curva on every /curva page; `html` carries
+ * `data-curva="live"`; `?mc=featureOff` gives today's bar and sends /curva to /fantasy, with
  * no console error. Writes `on.json` and a screenshot of each page's navigation.
  */
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -58,7 +58,7 @@ async function look(path, lang, width, height, scale, shot) {
       ),
     })),
   );
-  const live = await page.evaluate(() => document.documentElement.dataset.gradins ?? null);
+  const live = await page.evaluate(() => document.documentElement.dataset.curva ?? null);
   if (shot) await nav.screenshot({ path: join(outDir, `${shot}.png`) });
   if (shot && shot.startsWith("page-"))
     await page.screenshot({ path: join(outDir, `${shot}.png`) });
@@ -86,8 +86,8 @@ for (const lang of ["fr", "ar"]) {
       "/fantasy",
       "/pepites",
       "/pepites/classement",
-      "/gradins",
-      "/gradins/carte",
+      "/curva",
+      "/curva/carte",
     ]) {
       results.push(
         await look(
@@ -103,13 +103,13 @@ for (const lang of ["fr", "ar"]) {
     results.push(
       await look("/?mc=featureOff", lang, width, height, scale, `nav-${lang}-${width}-featureOff`),
     );
-    results.push(await look("/gradins?mc=featureOff", lang, width, height, scale, null));
+    results.push(await look("/curva?mc=featureOff", lang, width, height, scale, null));
   }
 }
 await browser.close();
 writeFileSync(join(outDir, "on.json"), JSON.stringify(results, null, 2));
 
-const ORDER = ["/", "/news", "/fantasy", "/matches", "/gradins"];
+const ORDER = ["/", "/news", "/fantasy", "/matches", "/curva"];
 const TODAY = ["/", "/news", "/fantasy", "/matches", "/pepites"];
 const failures = [];
 for (const r of results) {
@@ -117,7 +117,7 @@ for (const r of results) {
   const off = r.path.includes("featureOff");
   const label = `${r.lang} ${r.width} ${r.path}`;
   if (off) {
-    if (r.path.startsWith("/gradins")) {
+    if (r.path.startsWith("/curva")) {
       // The redirect drops `?mc=`, so the page it lands on is live again: only where it went is checked.
       if (r.finalPath !== "/fantasy") failures.push(`${label}: stayed on ${r.finalPath}`);
     } else {
@@ -133,8 +133,8 @@ for (const r of results) {
   const current = r.items.filter((i) => i.current).map((i) => i.href);
   const want = r.path.startsWith("/pepites")
     ? ["/fantasy"]
-    : r.path.startsWith("/gradins")
-      ? ["/gradins"]
+    : r.path.startsWith("/curva")
+      ? ["/curva"]
       : r.path === "/"
         ? ["/"]
         : [r.path];

@@ -1,0 +1,17 @@
+=== check-build: bun run build   (round 2 review fixes 18f921ee; exit 0)
+$ bun scripts/qa/legal-placeholder-gate.ts && vite build
+$ bun scripts/qa/legal-placeholder-gate.ts && vite build
+legal-placeholder-gate: no unfilled placeholders. OK.
+.output/public/assets/gradins-renderer-DbadDYK3.css                          9.98 kB │ gzip:   2.51 kB
+.output/public/assets/errors-nLTeAu9L.js                                     0.23 kB │ gzip:   0.16 kB
+.output/public/assets/errors-CoGW96Cm.js                                     1.95 kB │ gzip:   0.75 kB
+.output/public/assets/gradins-renderer-CbiUf2qz.js                          77.30 kB │ gzip:  26.00 kB
+✓ built in 7.82s
+node_modules/.nitro/vite/services/ssr/assets/gradins-renderer-DbadDYK3.css                          9.98 kB │ gzip:   2.51 kB
+node_modules/.nitro/vite/services/ssr/assets/errors-Cx0sI5aU.js                                     0.50 kB │ gzip:   0.29 kB
+node_modules/.nitro/vite/services/ssr/assets/gradins-renderer-DnH3lbje.js                         140.82 kB │ gzip:  44.70 kB
+✓ built in 5.96s
+.output/server/_ssr/errors-Cx0sI5aU.mjs                                     0.56 kB │ gzip:   0.33 kB
+.output/server/_ssr/gradins-renderer-DnH3lbje.mjs                         139.60 kB │ gzip:  44.60 kB
+✓ built in 1.58s
+--- exit 0
