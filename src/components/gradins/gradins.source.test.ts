@@ -73,6 +73,35 @@ describe("the stage's room", () => {
   });
 });
 
+describe("the stage on a phone", () => {
+  const read = (name: string) => code(readFileSync(join(HERE, name), "utf8"));
+
+  it("is sized from the window's height on G1 alone: the card page and the guest's hero keep the plan's 296 px", () => {
+    expect(read("GradinsHome.tsx")).toMatch(/<CardStage[^>]*\bfitHeight\b/);
+    for (const name of ["GradinsCardPage.tsx", "GuestHero.tsx"]) {
+      expect(read(name), name).not.toContain("fitHeight");
+    }
+    const stage = read("CardStage.tsx");
+    expect(stage).toContain('"w-[min(296px,calc(100vw-32px))]"');
+    // 1 : 1.618 is the card's one shape, 232 px the least it is drawn at, 296 px the most
+    expect(stage).toContain("clamp(232px,");
+    expect(stage).toContain("_/_1.618),296px)");
+    // the bars are read from their tokens (they grow with a home indicator and with Arabic)
+    expect(stage).toContain("var(--topbar-h)");
+    expect(stage).toContain("var(--bottomnav-h)");
+  });
+});
+
+describe("the people block's heading", () => {
+  it("is not cut: it is not a SectionHeader (which truncates its title beside a link); the link wraps under it", () => {
+    const text = code(readFileSync(join(HERE, "PeopleBlock.tsx"), "utf8"));
+    expect(text).not.toMatch(/<SectionHeader\b/);
+    expect(text).toContain("flex-wrap");
+    const heading = text.match(/<h2 className=\{cn\(([^)]*)\)\}/)![1]!;
+    expect(heading).not.toContain("truncate");
+  });
+});
+
 describe("the Gradins screens' styling", () => {
   it("draws no coloured bar down the side of a card (a craft-floor ban): the club disc carries the colour", () => {
     for (const { name, text } of sources) {

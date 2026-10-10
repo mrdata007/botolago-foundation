@@ -143,6 +143,57 @@ async function expectNothingPastTheEdge(page: Page) {
   expect(found, "content past the edge of the window").toEqual([]);
 }
 
+/** A session in which the hero has already been shown: only the stage is on the first screen. */
+async function withoutHero(page: Page) {
+  await page.addInitScript(() => sessionStorage.setItem("botolago.card.hero_session.v1", "1"));
+}
+
+/** Two frames, so that a layout the window's new size asks for is the one measured. */
+async function settle(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+}
+
+/**
+ * The headings under `main` whose text is wider than the box it is in, as « text: the box, what the
+ * text needs ». Not `scrollWidth > clientWidth` (the text of `truncate` and of `overflow: clip` is
+ * laid out whole and only painted short, and a page that clips its overflow hides the difference):
+ * a `Range` over the heading's contents has the width its text needs, and that is compared with the
+ * width of the box (less its padding and border). A heading that wraps onto a second line is whole.
+ */
+async function cutHeadings(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const found: string[] = [];
+    for (const heading of document.querySelectorAll(
+      "main h1, main h2, main h3, main [role='heading']",
+    )) {
+      const box = heading.getBoundingClientRect();
+      if (box.width === 0 || box.height === 0) continue;
+      const style = getComputedStyle(heading);
+      const room =
+        box.width -
+        parseFloat(style.paddingLeft) -
+        parseFloat(style.paddingRight) -
+        parseFloat(style.borderLeftWidth) -
+        parseFloat(style.borderRightWidth);
+      const range = document.createRange();
+      range.selectNodeContents(heading);
+      const need = range.getBoundingClientRect().width;
+      if (need > room + 0.5) {
+        const label = (heading.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 28);
+        found.push(
+          `« ${label} »: a box of ${room.toFixed(1)} px, the text needs ${need.toFixed(1)}`,
+        );
+      }
+    }
+    return found;
+  });
+}
+
 /**
  * Asks the page for less motion, and checks that it took. The project's `reducedMotion: "reduce"`
  * (playwright.config.ts) did not reach the page's media query in the sandbox's Chromium (the page
@@ -752,32 +803,109 @@ test.describe("the tier ladder", () => {
   }
 });
 
+/**
+ * G1's first screen on a phone (plan section 10: the card is 296 px wide and the line for the next
+ * round has to clear the bottom bar). The card's width follows the window's height, between 232 and
+ * 296 px, so the line ends 16 px or more above the bar at 390 x 844 and, at 360 x 740 where the
+ * card is at its smallest, above the bar. The states are the ones whose lines differ: no number yet,
+ * a number with the provisional pill, a founder, a tier change, the top and the lowest tier, no club,
+ * a long Latin name and an Arabic name.
+ */
+const FIRST_SCREEN_STATES = [
+  "forming1",
+  "rated",
+  "founder",
+  "tierUp",
+  "legend",
+  "homa",
+  "clubNull",
+  "longNameLatin",
+  "arabicName",
+];
+const FIRST_SCREEN_PHONES = [
+  { width: 390, height: 844, clearance: 16 },
+  { width: 360, height: 740, clearance: 0 },
+];
+
 test.describe("G1 says what happens next", () => {
   for (const lang of LANGS) {
-    test(`${lang}: one line under the identity line names the next round and leads to the team`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 390, height: 844 });
-      await start(page, lang);
-      await gotoHydrated(page, "/gradins?mc=forming1", lang);
-      const glance = page.getByTestId("gradins-glance");
-      await expect(glance).toBeVisible();
-      await expect(glance).toHaveAttribute("href", "/fantasy/team");
-      // on the first screen, above the bottom bar, and one 44 px line, in both languages. The
-      // collectible is 296 px wide and 479 px tall (plan section 10). Arabic's taller line boxes (the
-      // title, the rating and the identity lines, leading 1.95) would push the line 31 px under the
-      // bar, so on a phone the stage's own padding is given back in Arabic (CardStage, GradinsHome).
-      const box = (await glance.boundingBox())!;
-      const nav = (await bar(page, lang).boundingBox())!;
-      expect(box.y + box.height).toBeLessThanOrEqual(nav.y);
-      expect(Math.round(box.height)).toBe(44);
-      // the identity line is above it, the people block below it
-      const identity = (await page.getByTestId("gradins-identity-line").boundingBox())!;
-      const people = (await page.getByTestId("gradins-people").boundingBox())!;
-      expect(identity.y + identity.height).toBeLessThanOrEqual(box.y + 1);
-      expect(box.y + box.height).toBeLessThanOrEqual(people.y + 1);
-    });
+    for (const phone of FIRST_SCREEN_PHONES) {
+      test(`${lang} at ${phone.width} x ${phone.height}: the rating, the identity and the next-round line clear the bottom bar by ${phone.clearance} px, in every state`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: phone.width, height: phone.height });
+        await start(page, lang);
+        await withoutHero(page);
+        for (const mc of FIRST_SCREEN_STATES) {
+          const where = `${lang} ${phone.width} x ${phone.height} ${mc}`;
+          await gotoHydrated(page, `/gradins?mc=${mc}`, lang);
+          const glance = page.getByTestId("gradins-glance");
+          await expect(glance, where).toBeVisible();
+          await expect(glance, where).toHaveAttribute("href", "/fantasy/team");
+          const box = (await glance.boundingBox())!;
+          const nav = (await bar(page, lang).boundingBox())!;
+          const rating = (await page.getByTestId("gradins-rating-line").boundingBox())!;
+          const identity = (await page.getByTestId("gradins-identity-line").boundingBox())!;
+          const people = (await page.getByTestId("gradins-people").boundingBox())!;
+          const card = (await page.getByTestId("gradins-stage").boundingBox())!;
+          // the line is one 44 px line, and clear of the bar: the card gave way for it
+          expect(Math.round(box.height), where).toBe(44);
+          expect(box.y + box.height, `${where}: the next-round line`).toBeLessThanOrEqual(
+            nav.y - phone.clearance,
+          );
+          // the number, its tier and the pill are above it, and above the bar by as much
+          expect(rating.y + rating.height, `${where}: the rating line`).toBeLessThanOrEqual(
+            nav.y - phone.clearance,
+          );
+          expect(identity.y + identity.height, where).toBeLessThanOrEqual(box.y + 1);
+          expect(box.y + box.height, where).toBeLessThanOrEqual(people.y + 1);
+          // the card keeps its shape and stays between 232 and 296 px
+          expect(card.width, `${where}: the card`).toBeGreaterThanOrEqual(231.5);
+          expect(card.width, `${where}: the card`).toBeLessThanOrEqual(296.5);
+          expect(card.height / card.width, `${where}: the card's shape`).toBeCloseTo(1.618, 1);
+          if (mc === "rated") {
+            // the state with a number and the provisional pill on its line
+            await expect(page.getByTestId("gradins-rating-line"), where).toContainText(
+              copy(lang, "card.provisional"),
+            );
+          }
+        }
+      });
+    }
   }
+
+  test("the card's width follows the window's height on a phone, between 232 and 296 px, and is 336 px from 768", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await start(page, "fr");
+    await withoutHero(page);
+    await gotoHydrated(page, "/gradins?mc=forming1", "fr");
+    const stage = page.getByTestId("gradins-stage");
+    const widthAt = async (width: number, height: number) => {
+      await page.setViewportSize({ width, height });
+      await settle(page);
+      return (await stage.boundingBox())!.width;
+    };
+    // the plan's 296 px where the window has room for it, never wider
+    expect(await widthAt(390, 1000)).toBeCloseTo(296, 0);
+    expect(await widthAt(412, 915)).toBeCloseTo(296, 0);
+    // less as the window gets shorter, down to 232 px, and no further
+    const heights = [880, 844, 800, 760, 740, 700, 640, 568];
+    const widths: number[] = [];
+    for (const height of heights) widths.push(await widthAt(390, height));
+    for (let i = 1; i < widths.length; i++) {
+      expect(widths[i]!, `at ${heights[i]} px`).toBeLessThanOrEqual(widths[i - 1]! + 0.01);
+    }
+    expect(widths[0]!).toBeGreaterThan(widths[widths.length - 1]!);
+    expect(widths[widths.length - 1]!).toBeCloseTo(232, 0);
+    expect(await widthAt(390, 740)).toBeCloseTo(232, 0);
+    // a narrow phone keeps 16 px each side, and a window as wide as a tablet's does not change it
+    expect(await widthAt(320, 1000)).toBeCloseTo(288, 0);
+    // from 768 px the card is 336 px whatever the height
+    expect(await widthAt(768, 700)).toBeCloseTo(336, 0);
+    expect(await widthAt(1440, 900)).toBeCloseTo(336, 0);
+  });
 
   test("a season that is over has no such line", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
@@ -786,6 +914,68 @@ test.describe("G1 says what happens next", () => {
     await expect(page.getByTestId("gradins-owner")).toBeVisible();
     await expect(page.getByTestId("gradins-glance")).toHaveCount(0);
   });
+});
+
+test.describe("no heading is cut", () => {
+  for (const lang of LANGS) {
+    test(`${lang}: « ${copy(lang, "gradins.people.title")} » and the other headings of G1 are whole at 768, 1024, 1280 and 1440 px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await start(page, lang);
+      await withoutHero(page);
+      await gotoHydrated(page, "/gradins?mc=rated", lang);
+      for (const width of [768, 1024, 1280, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        await settle(page);
+        const title = page
+          .getByTestId("gradins-people")
+          .getByRole("heading", { name: copy(lang, "gradins.people.title") });
+        await expect(title, `${lang} ${width}`).toBeVisible();
+        const measured = await title.evaluate((heading) => {
+          const range = document.createRange();
+          range.selectNodeContents(heading);
+          return {
+            box: heading.getBoundingClientRect().width,
+            need: range.getBoundingClientRect().width,
+          };
+        });
+        expect(measured.need, `${lang} ${width}: the heading's text`).toBeLessThanOrEqual(
+          measured.box + 0.5,
+        );
+        // and the way to the whole table is still there, whole, and a 44 px target
+        const link = page.getByTestId("gradins-people").getByRole("link", {
+          name: copy(lang, "gradins.people.view_league"),
+        });
+        const linkBox = (await link.boundingBox())!;
+        const peopleBox = (await page.getByTestId("gradins-people").boundingBox())!;
+        expect(linkBox.height, `${lang} ${width}`).toBeGreaterThanOrEqual(44);
+        expect(linkBox.x, `${lang} ${width}: the link inside the block`).toBeGreaterThanOrEqual(
+          peopleBox.x - 8.5,
+        );
+        expect(linkBox.x + linkBox.width, `${lang} ${width}`).toBeLessThanOrEqual(
+          peopleBox.x + peopleBox.width + 0.5,
+        );
+        expect(await cutHeadings(page), `${lang} ${width}`).toEqual([]);
+      }
+    });
+
+    for (const screen of SCREENS) {
+      test(`${lang} ${screen.id}: no heading is cut at 320, 390, 768 and 1440 px`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: 390, height: 900 });
+        await start(page, lang, { signedIn: !screen.visitor });
+        await gotoHydrated(page, screen.path, lang);
+        await expect(page.locator("main").first()).toBeVisible();
+        for (const width of [320, 390, 768, 1440]) {
+          await page.setViewportSize({ width, height: 900 });
+          await settle(page);
+          expect(await cutHeadings(page), `${lang} ${width} ${screen.id}`).toEqual([]);
+        }
+      });
+    }
+  }
 });
 
 test.describe("the team page's born panel", () => {
