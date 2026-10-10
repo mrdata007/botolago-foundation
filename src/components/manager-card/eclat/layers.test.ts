@@ -6,6 +6,20 @@ import { join } from "node:path";
 import { TIER_KEYS } from "./foil";
 import { RING, TAB, WINDOW, WINDOW_IN } from "./geometry";
 import { eclatRenderer } from "./index";
+import {
+  PERSPECTIVE,
+  RIM_PLANE,
+  Z,
+  depth,
+  follow,
+  num,
+  parallax,
+  restLight,
+  rim,
+  rimRest,
+  shadow,
+  tilt,
+} from "./pose";
 import { FR, AR, MOCK_ARABIC, MOCK_CARDS, PROFILES } from "./test-data";
 import { elementsByClass, layer, tokenise, texts } from "./test-markup";
 import type { CardProfile } from "../types";
@@ -183,7 +197,7 @@ describe("the frame's furniture", () => {
   });
 });
 
-describe("the depth, in the stylesheet (plan 8.2)", () => {
+describe("the depth, in the stylesheet and in the pose (plan 8.2)", () => {
   const css = readFileSync(join(import.meta.dir, "eclat.css"), "utf8");
   const bare = css.replace(/\/\*[\s\S]*?\*\//g, "");
   /** The declarations of every rule whose selector is exactly `sel`, joined. */
@@ -196,61 +210,98 @@ describe("the depth, in the stylesheet (plan 8.2)", () => {
     if (!all.length) throw new Error(`no rule for ${sel}`);
     return all.join(" ");
   };
+  /** Every rule of the stylesheet that has `prop`, as [selector, declarations]. */
+  const rulesWith = (prop: string): [string, string][] =>
+    [...bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+      .filter((m) => new RegExp(`(^|[;\\s])${prop}\\s*:`).test(m[2]!))
+      .map((m) => [m[1]!.replace(/\s+/g, " ").trim(), m[2]!.replace(/\s+/g, " ").trim()]);
 
-  it("sets each layer at its depth: base 0, shirt 3, number 5, frame 8, holo 9, foil overlay 9.5, rims 1 to 7", () => {
-    expect(rule(".mc-l--base")).toBe("--z: 0;");
-    expect(rule(".mc-l--shirt")).toBe("--z: 3;");
-    expect(rule(".mc-l--num")).toBe("--z: 5;");
-    expect(rule(".mc-l--frame")).toBe("--z: 8;");
-    expect(rule(".mc-l--holo")).toBe("--z: 9;");
-    expect(rule(".mc-rim")).toContain("--z: var(--k);");
-    expect(rule(".mc-eclat__foil")).toContain("--z: 9.5;");
+  it("sets each layer at its depth: base 0, shirt 3, number 5, frame 8, holo 9, foil overlay 9.5, the rims' group 2", () => {
+    expect(Z).toEqual({ base: 0, shirt: 3, num: 5, frame: 8, holo: 9, foil: 9.5 });
+    // the rims' group stands between the base and the shirt: the cast shadow rides in it and must
+    // stay behind the shirt
+    expect(RIM_PLANE).toBeGreaterThan(Z.base);
+    expect(RIM_PLANE).toBeLessThan(Z.shirt);
+    expect(depth(Z.num)).toBe("translateZ(5cqw) scale(0.983333)");
+    expect(depth(Z.frame)).toBe("translateZ(8cqw) scale(0.973333)");
+    expect(depth(Z.foil)).toBe("translateZ(9.5cqw) scale(0.968333)");
+    // nothing in the stylesheet sets a depth: the tilt writes it
+    expect(bare).not.toMatch(/translateZ|--z\s*:/);
   });
 
   it("turns the card by 7 and 9 degrees toward the pointer, in a perspective of three card widths", () => {
     expect(rule(".mc-eclat__persp")).toContain("perspective: 300cqw;");
-    const tilt = rule(":is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-eclat__tilt");
-    expect(tilt).toContain("transform-style: preserve-3d;");
-    expect(tilt).toContain("rotateX(calc(var(--mc-ay) * 7deg * var(--mc-t)))");
-    expect(tilt).toContain("rotateY(calc(var(--mc-ax) * 9deg * var(--mc-t)))");
+    expect(PERSPECTIVE).toBe(300);
+    const tiltRule = rule(
+      ":is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-eclat__tilt",
+    );
+    expect(tiltRule).toContain("transform-style: preserve-3d;");
+    expect(tilt([1, 1])).toBe("rotateX(7deg) rotateY(9deg)");
+    expect(tilt([-0.5, 0.25], 1)).toBe("rotateX(1.75deg) rotateY(-4.5deg)");
+    // flat: depth 0 gives no turn at all
+    expect(tilt([1, 1], 0)).toBe("rotateX(0deg) rotateY(0deg)");
     // and only then: at rest there is no transform at all
     expect(rule(".mc-eclat__tilt")).toContain("transform: none;");
   });
 
   it("lifts each layer by its depth and shrinks it so the layers still line up face-on", () => {
-    const lift = rule(
-      ":is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) :is(.mc-l, .mc-eclat__foil)",
-    );
-    expect(lift).toContain("translateZ(calc(var(--z) * 1cqw * var(--mc-t)))");
-    expect(lift).toContain("scale(calc(1 - var(--z) * var(--mc-t) / 300))");
     // at rest the layers carry no transform of their own, so every one is rasterised once, unresampled
     expect(rule(".mc-l")).toContain("transform: none;");
+    // a layer of height z, shrunk by z / 300 of itself, fills the same perspective box as the base
+    for (const z of Object.values(Z)) {
+      const scale = Number(/scale\(([\d.]+)\)/.exec(depth(z))![1]);
+      // exact to a millionth, so that the perspective's enlargement is cancelled to a hundredth of a pixel
+      expect(Math.abs(scale * (PERSPECTIVE / (PERSPECTIVE - z)) - 1)).toBeLessThan(1e-6);
+    }
+    expect(depth(8, 0)).toBe("translateZ(0cqw) scale(1)");
   });
 
-  it("hands the rims' two-dimensional step over to real depth through --mc-t", () => {
+  it("gives the rims' group the card's thickness: a 2D step at rest, the parallax of each wall's height in depth", () => {
     expect(rule(".mc-rim")).toContain(
       "transform: translate(calc(var(--o) * 0.12cqw * var(--mc-dx)), calc(var(--o) * 0.12cqw));",
     );
-    const moving = rule(":is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle) .mc-rim");
-    expect(moving).toContain("calc(var(--o) * 0.12cqw * var(--mc-dx) * (1 - var(--mc-t)))");
-    expect(moving).toContain("calc(var(--z) * 1cqw * var(--mc-t))");
+    expect(rimRest(1, false)).toBe("translate(0.84cqw, 0.84cqw)");
+    expect(rimRest(1, true)).toBe("translate(-0.84cqw, 0.84cqw)");
+    expect(rimRest(7, false)).toBe("translate(0.12cqw, 0.12cqw)");
+    // a wall at the group's own height does not move against it; one behind it and one in front go
+    // opposite ways, by the card's own turn
+    expect(parallax(0, [1, 1])).toEqual([0, -0]);
+    const [bx, by] = parallax(-2, [1, 1]);
+    const [fx, fy] = parallax(2, [1, 1]);
+    expect(bx).toBeCloseTo(-fx, 9);
+    expect(by).toBeCloseTo(-fy, 9);
+    expect(fx).toBeCloseTo(2 * Math.sin((9 * Math.PI) / 180), 9);
+    expect(fy).toBeCloseTo(-2 * Math.cos((9 * Math.PI) / 180) * Math.sin((7 * Math.PI) / 180), 9);
+    // wall 7 stands 5 above the group, wall 1 one below it
+    expect(rim(1, [0, 0])).toBe("translate(0cqw, 0cqw)");
+    expect(rim(7, [1, 0])).toBe(`translate(${num(5 * Math.sin((9 * Math.PI) / 180))}cqw, 0cqw)`);
   });
 
-  it("registers the light and the depth as numbers, so they ease and animate", () => {
-    for (const name of ["--mc-ax", "--mc-ay", "--mc-t"]) {
+  it("registers the light as numbers that are not inherited, and keeps a rest light that is", () => {
+    for (const name of ["--mc-ax", "--mc-ay"]) {
       expect(bare).toMatch(
-        new RegExp(`@property ${name}\\s*\\{\\s*syntax:\\s*"<number>";\\s*inherits:\\s*true;`),
+        new RegExp(`@property ${name}\\s*\\{\\s*syntax:\\s*"<number>";\\s*inherits:\\s*false;`),
       );
     }
+    // the depth is not a property any more: the tilt writes each layer's height
+    expect(bare).not.toContain("--mc-t");
+    expect(rule(".mc-eclat")).toContain("--mc-rx: 0.24;");
+    expect(rule(".mc-eclat")).toContain("--mc-ry: 0.64;");
+    expect(rule('.mc-eclat[dir="rtl"]')).toContain("--mc-rx: -0.24;");
+    expect(restLight(false)).toEqual([0.24, 0.64]);
+    expect(restLight(true)).toEqual([-0.24, 0.64]);
   });
 
   it("has the contact shadow lie opposite the light, in light and dark, outside the 3D tree", () => {
     const sh = rule(".mc-eclat__shadow");
     expect(sh).toContain("inset: 5% 7% -2.5% 7%;");
     expect(sh).toContain("filter: blur(4.5cqw);");
+    // at the rest light, the pose's own formula
     expect(sh).toContain(
-      "transform: translate(calc(var(--mc-ax) * -5cqw), calc(3cqw + var(--mc-ay) * 3cqw));",
+      "transform: translate(calc(var(--mc-rx) * -5cqw), calc(3cqw + var(--mc-ry) * 3cqw));",
     );
+    expect(shadow([0.24, 0.64])).toBe("translate(-1.2cqw, 4.92cqw)");
+    expect(shadow([-1, 1])).toBe("translate(5cqw, 6cqw)");
     expect(sh).toContain("background: rgb(8 12 24 / 0.42);");
     expect(rule(".mc-eclat--dark .mc-eclat__shadow")).toContain("rgb(0 0 0 / 0.7)");
     const html = draw(MOCK_CARDS[3]!.profile);
@@ -261,11 +312,15 @@ describe("the depth, in the stylesheet (plan 8.2)", () => {
 
   it("raises the number: a shade and a highlight that follow the light, in the number layer only", () => {
     expect(rule(".mc-num-hi")).toBe(
-      "transform: translate(calc(var(--mc-ax) * 4px), calc(var(--mc-ay) * -4px - 2px));",
+      "transform: translate(calc(var(--mc-rx) * 4px), calc(var(--mc-ry) * -4px - 2px));",
     );
     expect(rule(".mc-num-sh")).toBe(
-      "transform: translate(calc(var(--mc-ax) * -6px), calc(var(--mc-ay) * 6px + 5px));",
+      "transform: translate(calc(var(--mc-rx) * -6px), calc(var(--mc-ry) * 6px + 5px));",
     );
+    // the pose gives the same at any light as the rule gives at the rest light
+    expect(follow("hi", [0.24, 0.64], false)).toBe("translate(0.96px, -4.56px)");
+    expect(follow("sh", [0.24, 0.64], false)).toBe("translate(-1.44px, 8.84px)");
+    expect(follow("hi", [-0.24, 0.64], true)).toBe("translate(-0.96px, -4.56px)");
     const html = draw(MOCK_CARDS[3]!.profile);
     for (const name of ["base", "shirt", "frame"]) {
       expect(layer(html, name)!.includes("mc-num-"), name).toBe(false);
@@ -274,17 +329,43 @@ describe("the depth, in the stylesheet (plan 8.2)", () => {
     expect(layer(html, "num")!.includes("mc-num-sh")).toBe(true);
   });
 
-  it("asks the browser for a layer of its own only while a pointer moves", () => {
-    const hints = [...bare.matchAll(/([^{}]+)\{[^{}]*will-change[^{}]*\}/g)].map((m) =>
-      m[1]!.trim(),
-    );
-    expect(hints).toEqual([".mc-eclat--active .mc-eclat__tilt"]);
+  it("asks the browser for a layer of its own only while the card moves", () => {
+    const hints = rulesWith("will-change").map(([sel]) => sel);
+    expect(hints.length).toBeGreaterThan(0);
+    // every hint is scoped to a state the tilt puts the card in: none at rest, none under reduced motion
+    for (const sel of hints) expect(sel, sel).toMatch(/\.mc-eclat--(active|idle|settle)/);
     expect(bare.includes("backface-visibility: hidden")).toBe(true);
+  });
+
+  it("eases only what the compositor moves: nothing under a mask or a clip gets a transition", () => {
+    const moving = rulesWith("transition")
+      .map(([sel]) => sel)
+      .join(" ");
+    for (const cls of ["mc-eclat__tilt", "mc-eclat__shadow", "mc-rim", "mc-cast"])
+      expect(moving, cls).toContain(cls);
+    // a running transform transition promotes its element to a layer of its own, and a composited
+    // element under a mask costs a mask layer rasterised on every frame: the tilt eases these itself
+    for (const cls of [
+      "mc-spec-shift",
+      "mc-foil-shift",
+      "mc-light-follow",
+      "mc-shirt-cast",
+      "mc-num-hi",
+      "mc-num-sh",
+      "mc-glint",
+    ])
+      expect(moving, cls).not.toContain(cls);
+    for (const [, body] of rulesWith("transition")) expect(body).not.toMatch(/--mc-ax|--mc-ay/);
   });
 
   it("is the sheen's angle that turns round for Arabic, and the sheen that follows the light", () => {
     expect(rule(".mc-eclat__foil")).toContain("--mc-sheen-angle: 115deg;");
     expect(rule('.mc-eclat[dir="rtl"] .mc-eclat__foil')).toContain("--mc-sheen-angle: 245deg;");
+    // the foil reads the live light itself, which the tilt writes on it; at rest it is the rest light
+    expect(rule(".mc-eclat__foil")).toContain("--mc-ax: var(--mc-rx);");
+    const pseudo = rulesWith("--mc-ax").find(([, body]) => body.includes("inherit"));
+    expect(pseudo?.[0]).toContain(".mc-eclat__foil::before");
+    expect(pseudo?.[0]).toContain(".mc-eclat__foil::after");
     const before = rule(".mc-eclat__foil::before");
     expect(before).toContain("mix-blend-mode: soft-light;");
     expect(before).toContain("calc(50% + var(--mc-ax) * 40%)");
@@ -301,6 +382,23 @@ describe("the depth, in the stylesheet (plan 8.2)", () => {
       expect(style, key).toMatch(/^--mc-sheen:[\d.]+;--mc-holo:[\d.]+$/);
       const holo = Number(/--mc-holo:([\d.]+)/.exec(style)![1]);
       expect(holo > 0, key).toBe(key === "champion" || key === "legend");
+    }
+  });
+});
+
+describe("the rims' group", () => {
+  it("holds the seven walls in one flat group, between the base and the shirt", () => {
+    for (const p of [MOCK_CARDS[3]!.profile, MOCK_CARDS[5]!.profile, MOCK_ARABIC[0]!.profile]) {
+      const html = draw(p);
+      expect(html.match(/<div class="mc-rims" aria-hidden="true">/g)).toHaveLength(1);
+      const group = /<div class="mc-rims"[^>]*>(.*?)<\/div>/s.exec(html)![1]!;
+      expect(group.match(/<svg class="mc-l mc-rim"/g)).toHaveLength(7);
+      expect(html.indexOf('class="mc-rims"')).toBeGreaterThan(
+        html.indexOf('<svg class="mc-l mc-l--base"'),
+      );
+      expect(html.indexOf('class="mc-rims"')).toBeLessThan(
+        html.indexOf('<svg class="mc-l mc-l--shirt"'),
+      );
     }
   });
 });

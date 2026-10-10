@@ -22,27 +22,28 @@ nothing here carries a third party's name, mark or artwork.
 
 ## Files
 
-| File                                                      | What                                                                                                                                                    |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `index.ts`                                                | `eclatRenderer`, `ready()`, `mountTilt`, `estimateAspect`. Imports `eclat.css`.                                                                         |
-| `gradins-renderer.ts`                                     | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`gradins-*`).                                  |
-| `estimate.ts`                                             | `estimateAspect()` = 1.618, `ASPECT`. The only module meant for the main bundle: it imports nothing but a type.                                         |
-| `geometry.ts`                                             | Every coordinate: outline, shield window, tab, shirt, chest box, tokens, honeycomb helpers, mirror helpers. Pure numbers and strings.                   |
-| `foil.ts`                                                 | The six-step ladder (plan 5.4), the tier word (LASTREET), colour helpers over `src/lib/colour.ts`, the shirt's colours and the number's fill and twill. |
-| `view.ts`                                                 | The cleaned profile, the escape, the label, `serialLine`, a token's label.                                                                              |
-| `metrics.ts`, `measure.ts`                                | The committed face metrics (generated), and the measure: canvas in a browser, the table elsewhere. `ready()` loads the faces.                           |
-| `name.ts`                                                 | Name cleaning, the split, the fit to 790 units, the placement by ink, the Arabic stat label's fit. Pure.                                                |
-| `field.ts`                                                | The backboard: honeycomb (phase from the serial), fence, brushing, grain, pitch lines, backlight, floodlights, pool, vignette, aura, cast shadow.       |
-| `shirt.ts`, `number.ts`                                   | The shirt in 3D, and the number: its fit on the ink, the print, « OVR », and the runs the share picture draws.                                          |
-| `ornament.ts`, `plaque.ts`, `plate.ts`                    | The frame's materials and shapes, the tier plaque or forming marks, and the plate's text and furniture.                                                 |
-| `text.ts`, `ctx.ts`                                       | A text described once (`<text>` or a share-picture run), and what one card's parts share.                                                               |
-| `full.ts`                                                 | `fullCard`, `cardImage` (share art), `founderDetail`, `appliedBeat`, `buildParts`.                                                                      |
-| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts` | The layer stack and rims, the holographic layer, tokens and minis, the beats' timeline, the tilt (WP2's).                                               |
-| `ids.ts`                                                  | Unique SVG ids (`mc-<n>-…`); `../scope-ids.ts` makes the cached markup unique per mounted card.                                                         |
-| `eclat.css`                                               | Fonts (Instrument Serif), text faces, the layer stack; then the 3D, foil and beats sections.                                                            |
-| `scripts/measure-faces.ts`                                | Regenerates `metrics.ts` (Playwright, Chromium).                                                                                                        |
-| `../../../../scripts/qa/manager-card-gallery.ts`          | Writes a static gallery of every fixture, tier and size, and the mock's own cards for a side-by-side.                                                   |
-| `test-data.ts`, `test-markup.ts`                          | Test support: the card words of both languages, a profile per case, the mock's cards; a strict reader for the markup. Not imported by the app.          |
+| File                                                      | What                                                                                                                                                          |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`                                                | `eclatRenderer`, `ready()`, `mountTilt`, `estimateAspect`. Imports `eclat.css`.                                                                               |
+| `gradins-renderer.ts`                                     | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`gradins-*`).                                        |
+| `estimate.ts`                                             | `estimateAspect()` = 1.618, `ASPECT`. The only module meant for the main bundle: it imports nothing but a type.                                               |
+| `geometry.ts`                                             | Every coordinate: outline, shield window, tab, shirt, chest box, tokens, honeycomb helpers, mirror helpers. Pure numbers and strings.                         |
+| `foil.ts`                                                 | The six-step ladder (plan 5.4), the tier word (LASTREET), colour helpers over `src/lib/colour.ts`, the shirt's colours and the number's fill and twill.       |
+| `view.ts`                                                 | The cleaned profile, the escape, the label, `serialLine`, a token's label.                                                                                    |
+| `metrics.ts`, `measure.ts`                                | The committed face metrics (generated), and the measure: canvas in a browser, the table elsewhere. `ready()` loads the faces.                                 |
+| `name.ts`                                                 | Name cleaning, the split, the fit to 790 units, the placement by ink, the Arabic stat label's fit. Pure.                                                      |
+| `field.ts`                                                | The backboard: honeycomb (phase from the serial), fence, brushing, grain, pitch lines, backlight, floodlights, pool, vignette, aura, cast shadow.             |
+| `shirt.ts`, `number.ts`                                   | The shirt in 3D, and the number: its fit on the ink, the print, « OVR », and the runs the share picture draws.                                                |
+| `ornament.ts`, `plaque.ts`, `plate.ts`                    | The frame's materials and shapes, the tier plaque or forming marks, and the plate's text and furniture.                                                       |
+| `text.ts`, `ctx.ts`                                       | A text described once (`<text>` or a share-picture run), and what one card's parts share.                                                                     |
+| `full.ts`                                                 | `fullCard`, `cardImage` (share art), `founderDetail`, `appliedBeat`, `buildParts`.                                                                            |
+| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts` | The layer stack and rims, the holographic layer, tokens and minis, the beats' timeline, the tilt (WP2's).                                                     |
+| `pose.ts`, `lift.ts`                                      | The tilt's numbers and transform strings (pure), and the one-time rebuild of a tilting card's DOM so the parts that follow the light are layers of their own. |
+| `ids.ts`                                                  | Unique SVG ids (`mc-<n>-…`); `../scope-ids.ts` makes the cached markup unique per mounted card.                                                               |
+| `eclat.css`                                               | Fonts (Instrument Serif), text faces, the layer stack; then the 3D, foil and beats sections.                                                                  |
+| `scripts/measure-faces.ts`                                | Regenerates `metrics.ts` (Playwright, Chromium).                                                                                                              |
+| `../../../../scripts/qa/manager-card-gallery.ts`          | Writes a static gallery of every fixture, tier and size, and the mock's own cards for a side-by-side.                                                         |
+| `test-data.ts`, `test-markup.ts`                          | Test support: the card words of both languages, a profile per case, the mock's cards; a strict reader for the markup. Not imported by the app.                |
 
 ## How a card is built
 
@@ -185,27 +186,58 @@ committed.
 Budgets (plan 12.5): `full()` 25 ms, `token()` 3 ms, chunk 60 kB gzip, stage markup 46 kB, and G1's
 card box in the page to `data-mc-ready` 400 ms at CPU x4.
 
-### G1, card box to `data-mc-ready` (budget 400 ms at CPU x4)
+### G1, data to `data-mc-ready` (budget 400 ms at CPU x4)
 
-Chromium 1194 with `Emulation.setCPUThrottlingRate` 4, a 390 x 844 phone, five runs per row, the
-mock data modes. The interval runs from the stage's `.mc-card` box appearing (client-only, so it marks
-the data arriving) to the first `data-mc-ready`. **Development-server figures only**: the preview
-that serves the section exists only on a development server (`MANAGER_CARD_PREVIEW` needs
-`import.meta.env.DEV`), where modules are unbundled and React is the development build, so a
-production figure could not be taken and the budget is **not shown met**.
+Chromium 1194 with `Emulation.setCPUThrottlingRate` 4, a 390 x 844 phone at DPR 2, seven runs per row
+(cold: a fresh context, so the chunk and the faces are fetched; warm: a second visit), the mock data
+modes, the machine shared with other work (load average 0.2 to 4). The interval runs from the
+rating line first existing (the data is on screen) to the first `data-mc-ready`; the guest page has
+no rating line, so there it runs from the card's box first existing. Medians in ms; the runs of a
+row spread over 150 to 600 ms, so read the medians as a shape, not to the millisecond.
 
-| Page                                    | Before: the chunk starts with the first card | With `preloadCardRenderer()` in the `/gradins` layout |
-| --------------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
-| `/gradins?mc=rated`, first visit (cold) | 1070 to 1188 ms                              | 599 to 744 ms                                         |
-| `/gradins?mc=rated`, reloaded (warm)    | 501 to 621 ms                                | 408 to 740 ms                                         |
-| `/gradins`, guest, first visit          | 600 to 809 ms                                | 632 to 890 ms                                         |
-| `/gradins`, guest, reloaded             | 497 to 672 ms                                | 584 to 681 ms                                         |
+**On the development server** (every module its own request, React in its development build), the
+incumbent card (Écharpe, `main`) against this branch:
 
-The head start helps where the renderer's modules and faces have to be fetched (the first visit of
-a signed-in manager: about 40 % less) and changes nothing once they are cached or when the data
-arrives at once, as the mock's does: the warm rows are within the spread of the runs. What is left
-is main-thread work at x4 once the data is in, not the load. Script: a MutationObserver on
-`.mc-card` and `[data-mc-ready]`, run before and after the change on the same server.
+| Page                                     | Incumbent, cold / warm | This branch, cold / warm |
+| ---------------------------------------- | ---------------------- | ------------------------ |
+| `/gradins?mc=rated`, French              | 832 / 509              | 596 / 498                |
+| `/gradins?mc=rated`, Arabic              | 846 / 537              | 625 / 560                |
+| `/gradins?mc=forming1`, French           | 836 / 483              | 508 / 469                |
+| `/gradins?mc=legend`, French             | 850 / 502              | 524 / 503                |
+| `/gradins`, guest, French (box to ready) | 661 / 484              | 772 / 628                |
+
+The signed-in pages are 26 to 39 % faster cold than the incumbent's and level warm (the likely reason is
+the head start of `preloadCardRenderer()` in the `/gradins` layout: the chunk and the faces load
+while the data is on its way, which the incumbent's card does not do). None is under 400 ms here, and the renderer is not why. A sampling profile of the
+interval on this branch (250 us samples, cold, 444 to 548 ms) puts 0 ms of self time in this
+folder and 14 to 24 ms in `manager-card/`; the time is React's development build rendering the page
+(`jsxDEV` 98 ms, the engine's own `(program)` 97 ms, garbage collection 36 ms, the reconciler's
+checks and the date formatter after them). `full()` takes 0.1 ms. The guest page is slower than the
+incumbent's on the development server because nothing there waits for data: the renderer's modules
+load level by level (five deep, about a second at x4) on the path to the card, which one chunk does
+not do in a build.
+
+**On a production build**, for the guest page only. The preview that serves the section is
+development-only (`MANAGER_CARD_PREVIEW` needs `import.meta.env.DEV`), so no committed build holds
+the card. The figures below come from a scratch copy of each tree (never committed) with the
+development gates of the card's four service files forced on and the mock data mode, built with
+`vite build` in the smoke test's mode (`tests/e2e/built-output-build.ts`, a stub backend, its two ports
+changed) and served by `tests/e2e/built-output-serve.ts`, the Worker module the site deploys. A
+signed-in page needs the mock sign-in, which a production bundle refuses, so **G1 as defined (data to
+ready on a signed-in page) has no production figure**; the guest page is the one the build can show.
+
+| Guest `/gradins`, production build, CPU x4, 7 runs | Incumbent                         | This branch                       |
+| -------------------------------------------------- | --------------------------------- | --------------------------------- |
+| Cold, card's box to `data-mc-ready`                | 313 (217 to 361)                  | 308 (275 to 403)                  |
+| Warm                                               | 135 (118 to 163)                  | 137 (98 to 146)                   |
+| Renderer chunk, minified / gzip                    | 81.0 / 26.8 kB (CSS 3.2 / 1.1 kB) | 76.3 / 25.1 kB (CSS 9.8 / 2.5 kB) |
+| Font files fetched                                 | 3                                 | 6                                 |
+
+Both are under 400 ms on this page. `ready()` fetches six files on a French page, among them the
+166 kB Arabic subset of Noto Sans Arabic, because its sample text holds Arabic letters; this
+harness does not throttle the network and a build whose sample had none came out at 291 ms
+against 308 ms, which is inside the spread, so no change was made. On a slow connection that is
+where to look first.
 
 ## Looking at it
 
@@ -242,12 +274,15 @@ down and away from the light, on the trailing side in both languages. `token()` 
 
 Everything that moves is CSS, `prefers-reduced-motion: no-preference` only.
 
-- **Tilt** (`tilt.ts`, the renderer's `mount`): flat 2D at rest; with a mouse or pen over the card,
-  `.mc-eclat--active` turns the tree 7 and 9 degrees in a 300cqw perspective, the layers lift to
-  their depths (base 0, rims 1 to 7, shirt 3, number 5, frame 8, holo 9, foil overlay 9.5) and the
-  light (`--mc-ax`, `--mc-ay`) follows the pointer with a 120 ms lag; leaving eases back over 450 ms
-  (`--settle`) to the flat stack. A touch-only screen floats the card (`--idle`) while it is on screen
-  and the page is visible. A finger never tilts it, and under reduced motion nothing mounts.
+- **Tilt** (`tilt.ts`, the renderer's `mount`; the numbers are `pose.ts`'s): flat 2D at rest; with a
+  mouse or pen over the card, `.mc-eclat--active` turns the tree 7 and 9 degrees in a 300cqw
+  perspective, the layers lift to their depths (base 0, rims 1 to 7, shirt 3, number 5, frame 8,
+  holo 9, foil overlay 9.5) and the light (`--mc-ax`, `--mc-ay`) follows the pointer with a 120 ms
+  lag; leaving eases back over 450 ms (`--settle`) to the flat stack, and the layers, inline
+  transforms and `will-change` are gone 520 ms after the pointer left at the latest. A touch-only
+  screen floats the card (`--idle`) while it is on screen and the page is visible: a compositor
+  animation of transforms (Web Animations), nothing on the main thread. A finger never tilts it, and
+  under reduced motion nothing mounts. How it is built, and what it costs, is the next section.
 - **Beats** (`beats.ts`, `TIMELINE`): what moves in each beat, with its start and length. `BEAT_MS`
   and `ANIMATED` are derived from it, `beats.test.ts` reads `eclat.css` and checks that the
   stylesheet declares exactly that, and nothing a beat names holds the rating, the serial, a text
@@ -269,6 +304,107 @@ Everything that moves is CSS, `prefers-reduced-motion: no-preference` only.
   ends in the state the card rests in, so dropping the beat's class never jumps (compared to the
   card with no beat: identical but for anti-aliasing at edges, largest box-filtered difference 21 of
   255).
+
+### Tilt performance (what is written, what it costs)
+
+**The rule: a frame of tilt is compositing only.** The compositor moves layers that were rasterised
+once; the page does no style recalculation, no layout, no paint and no raster for the card. In a
+software-rendered Chromium (this sandbox: headless, no GPU, DPR 2) the first version held 20 to 30
+frames a second on PRO and LEGEND while the same page with no card held 60. The cause was one line:
+the tilt wrote `--mc-ax` and `--mc-ay`, registered as inherited numbers, on the card's root, so every
+one of its thousand SVG elements was restyled and every layer repainted on every frame.
+
+What the tilt writes now:
+
+- `pose.ts` (pure, tested): every number and transform string. The card's turn, each layer's height
+  (`translateZ` with a `scale` of exactly `1 - z / 300`, six decimals, which keeps the layers lined up
+  with the flat card: a rounded scale softened every text at the centre pose), each of the seven rim
+  walls, the contact shadow, and the 2D parallax of the parts that live inside a flat group.
+- `lift.ts` (once, when a card mounts to tilt; a card that plays a beat is left alone): rebuilds that
+  card's DOM so the parts that follow the light are layers of their own. The jersey's cast shadow, the
+  frame's specular streak, LEGEND's plaque foil and the honeycomb's foil are taken out of the SVG layer
+  they were drawn in (pieces in a flat `.mc-leaf` group, in the same order, with copies of the masks
+  and clips they sat under); the shirt's crease blur is split into runs that lie together (one blur over
+  sparse creases is seven browser layers); the number layer is cropped to the box that holds it, only
+  while the card moves (`NUM_BOX`, 14 % of a card, whole CSS pixels so the glyphs keep their
+  anti-aliasing). Nothing is added to the drawing and nothing is removed, the markup `full()` builds
+  is not changed (the share art and the founder's detail read the original), and at rest the pieces
+  are one browser layer again. `svg.mc-l.mc-l--*` are still there; `.mc-leaf`, `.mc-rims`, `.mc-s`,
+  `.mc-cast` and `.mc-crop` are what is new in a tilting card's tree.
+- `eclat.css`, "3D": `--mc-ax` and `--mc-ay` are `inherits: false` and are written only on the elements
+  that read them (the root and the foil overlay); the parts' rest poses come from static `--mc-rx`
+  and `--mc-ry`; `will-change: transform` and the transitions exist only inside `--active`, `--idle`
+  and `--settle`. What sits under a mask or a clip gets no transition (a composited element under a
+  mask costs a mask layer rasterised per frame): `tilt.ts` eases it, one small SVG root repainted at a
+  time.
+- `tilt.ts` also follows a card whose root was replaced after it mounted (the host sets the card's
+  markup again a moment after the first mount): the previous tilt kept the detached first root and the
+  card never tilted, on 5 loads of 30 in a first count and on 6 of the 16 before-runs below. It
+  watches the host's children and mounts on the new root.
+
+Measured (Chromium 1194, headless, software compositing, DPR 2, a 3 s pointer sweep over the card,
+4 cores shared with other work: load average 1.2 to 2.1 during the runs, before and after
+interleaved on two dev servers). Before is `3488fdc9` (the commit this lane started from), after is
+this branch. A run in which the card never tilted (the lost-tilt race above) is left out of the
+before column. Script: a Playwright harness with `requestAnimationFrame` intervals, the Long Tasks
+observer and a CDP trace (`devtools.timeline`, `cc`, `viz`); not committed.
+
+| Tier, card width                             | Frames a second (mean, per run) | Median frame / p95 | Frames over 20 ms (of ~175) | Long tasks in 3 s (longest) | Viz draw (ms) | Raster in 3 s (ms) | Style + layout (ms a frame) |
+| -------------------------------------------- | ------------------------------- | ------------------ | --------------------------- | --------------------------- | ------------- | ------------------ | --------------------------- |
+| PRO, 296 px, before                          | 31.3, 31.3                      | 33.3 / 50.0        | 76, 70 (of 94)              | 0 to 1 (53 ms)              | 27.7          | 3712               | 3.9                         |
+| PRO, 296 px, **after**                       | 59, 59, 59                      | 16.7 / 16.8        | 0, 0, 1                     | 0                           | 10.5          | 932                | 1.3                         |
+| LEGEND, 296 px, before                       | 27.3                            | 33.3 / 50.0        | 75 (of 82)                  | 1 (73 ms)                   | 30.1          | 4088               | 4.3                         |
+| LEGEND, 296 px, **after**                    | 57.3, 58.3, 58.7                | 16.7 / 16.8        | 3, 1, 4                     | 0 to 1 (50 ms)              | 12.0          | 2518               | 1.4                         |
+| PRO, 336 px, before                          | 23, 25                          | 33.4 / 58.4        | 72, 67 (of 75, 69)          | 1 (62 ms)                   | 37.3          | 3912               | 3.6                         |
+| PRO, 336 px, **after**                       | 54.3, 55.3, 58                  | 16.7 / 33.3        | 4, 13, 9                    | 1 (66 ms)                   | 14.1          | 1412               | 1.3                         |
+| LEGEND, 336 px, before                       | 22.3, 23.3, 24.7                | 33.4 / 50.1        | 70, 70, 67 (of ~70)         | 2 to 4 (79 ms)              | 38.0          | 4435               | 4.1                         |
+| LEGEND, 336 px, **after**                    | 47, 51.7, 55.3                  | 16.7 / 33.3        | 9, 32, 16                   | 1 to 2 (100 ms)             | 16.6          | 3217               | 1.5                         |
+| Touch float, PRO / LEGEND, 296 px, before    | 29 / 26.7                       | 33.3 / 50.0        | 76 / 76                     | 0                           |               |                    |                             |
+| Touch float, PRO / LEGEND, 296 px, **after** | 56.7, 58.3 / 58.3, 58.3         | 16.7 / 16.8        | 4, 0 / 0, 0                 | 0                           |               |                    |                             |
+| The page with no card, 296 and 336 px        | 58.3 to 59                      | 16.7 / 16.8        | 0 to 1                      | 0                           |               |                    |                             |
+
+The median frame is 16.7 ms (60 a second) in every run after the change, at both widths. The mean
+falls under 55 only at 336 px, in the runs where the compositor's draw (software, proportional to
+the layers' area: 21 layers on PRO and 26 on LEGEND draw content, 16 and 21 of them the size of the card, at DPR 2) takes more than a frame: PRO 336 px
+averages 14.1 ms a draw and LEGEND 336 px 16.6 ms, the LEGEND target of 55 a second is **not
+reliably met at 336 px here**. A GPU compositor draws the same layers in a fraction of that; this
+sandbox cannot show it. At 296 px, the width of a phone, every tier holds 57 to 59.
+
+A second set of four runs of the same code, interleaved with a variant of it, at a load average
+of 2.3, gave 58.0 to 58.7 frames a second on PRO and 56.3 to 57.3 on LEGEND at 336 px (and 58.7 to
+59.3 at 296 px): the spread from one set to another is wider than the difference between two
+versions of the code, so read the first table as the busy-machine case.
+
+Why 336 px costs more than its area says: from a card 316 px wide on, the layers are taller than
+512 CSS px and the browser tiles them (PRO, measured by forcing the card's width: 36 quads a draw
+up to 312 px, 102 from 320 px; 738 raster tasks a sweep against 3141), which adds about 5 % to the
+draw. The area is the larger part of it (draw time on PRO: 10.0 ms at 296 px, 10.9 at 312, 12.3 at
+320, 14.0 at 336).
+
+The one long task over 50 ms that remains at 336 px comes at the pointer's first entry: the main
+thread is blocked in the commit while the compositor rasterises the 3D layers of a card that was
+flat (`will-change` is deliberately absent at rest, so that a page of cards holds no layers). It is
+once per entry, 59 to 100 ms in software raster, 0 to 1 task of 50 ms at 296 px. Holding every other
+write for the first 100 ms after the entry did not remove it (the second frame's commit, which
+carries the compositor's start of the transitions, waits for the first frame's raster whatever it
+carries), so the tilt does not do it.
+
+The touch float is transform-only: the card carries ten running animations, all of them `transform`,
+which the compositor runs; a page with a floating card has no main-thread work for it (measured with
+`hasTouch` and `isMobile` contexts, and by listing `document.getAnimations()` keyframes).
+
+The card is the same card. Pointer-position captures of the card at rest and at five places
+(top left, centre, bottom right, top right, bottom left, then rest again), eight fixtures (forming,
+PRO, tier-up, LEGEND, founder, Homa, an Arabic name, a long Latin name) in French and Arabic at 390 and
+1280 px (224 pairs, before against after, same server settings): 0.009 % of pixels differ by more than
+24 of 255 (median; worst pair 0.076 %), 0.005 % at rest, and the differences are the anti-aliased
+edges of thin outlines and the blur of the cast shadow (the second figure, more than 2 of 255 in a
+channel, is 1.8 % of pixels at the median).
+
+To add a moving part: write it as a `transform` through `pose.ts`, never as a custom property on the
+root, never on something under a mask or clip unless `lift.ts` first makes it a root of its own;
+put its `will-change` and its transition inside the three tilt states; and add its case to
+`tilt.test.ts` (which reads `eclat.css`) so the next change cannot put the repaint back.
 
 ## To add a beat
 

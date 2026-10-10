@@ -353,33 +353,41 @@ describe("a beat has something to light and never touches the number, the serial
 });
 
 describe("the floating card on a touch screen and the tilt's own motion (plan 8.3)", () => {
-  it("floats only on a touch-only screen, only without reduced motion, and pauses during a beat", () => {
-    const float = mediaBlocks(bare).find(
-      (b) => b.cond === "(prefers-reduced-motion: no-preference) and (hover: none)",
-    )!;
-    expect(float).toBeDefined();
-    expect(float.body).toMatch(
-      /\.mc-eclat--idle\s*\{\s*animation:\s*mc-float 7s ease-in-out infinite alternate/,
+  const tiltSource = readFileSync(join(import.meta.dir, "tilt.ts"), "utf8");
+
+  it("floats only on a touch-only screen and only without reduced motion: a compositor animation the tilt starts", () => {
+    // the float is not CSS any more: an animation of the light's custom properties repainted the
+    // whole card on every frame; the tilt animates transforms on the compositor instead
+    expect(bare).not.toContain("@keyframes mc-float");
+    expect(bare).not.toMatch(/\.mc-eclat--idle[^{}]*\{[^{}]*animation:/);
+    expect(tiltSource).toContain('window.matchMedia?.("(hover: none)")');
+    expect(tiltSource).toContain('window.matchMedia?.("(prefers-reduced-motion: reduce)")');
+    // reduced motion returns before anything is mounted
+    expect(tiltSource.indexOf("prefers-reduced-motion: reduce")).toBeLessThan(
+      tiltSource.indexOf('root.addEventListener("pointermove"'),
     );
-    expect(float.body).toMatch(
-      /\[class\*="mc-eclat--beat-"\]\.mc-eclat--idle\s*\{\s*animation-play-state:\s*paused/,
-    );
-    // it moves the light (two registered numbers), never an opacity or a transform of the card
-    const frames = /@keyframes mc-float\s*\{/.exec(float.body)!;
-    const { body } = block(float.body, frames.index + frames[0].length - 1);
-    for (const r of rules(body)) {
-      for (const d of r.decls.split(";").filter(Boolean)) {
-        expect(["--mc-ax", "--mc-ay"]).toContain(d.split(":")[0]!.trim());
-      }
+    // it moves transforms only: the keyframes it builds carry a transform, its easing and its offset
+    const keyframes = /part\.animate\(\s*\[([\s\S]*?)\],/.exec(tiltSource)![1]!;
+    for (const prop of keyframes.matchAll(/(\w+):/g)) {
+      expect(["transform", "easing", "offset"]).toContain(prop[1]!);
     }
-    expect(body).toContain("--mc-ax: 0.24");
-    expect(body).toContain("--mc-ay: 0.64");
+    // a card that plays a beat does not float over it: the beat's class is on the root, and the
+    // lift leaves such a card alone
+    expect(readFileSync(join(import.meta.dir, "lift.ts"), "utf8")).toContain('"data-mc-beat"');
   });
 
-  it("eases nothing under reduced motion", () => {
-    const reduce = mediaBlocks(bare).find((b) => b.cond === "(prefers-reduced-motion: reduce)");
-    expect(reduce).toBeDefined();
-    expect(reduce!.body).toMatch(/transition:\s*none/);
-    expect(reduce!.body).toContain(".mc-eclat");
+  it("eases nothing at rest or under reduced motion: every transition is scoped to a state of the tilt", () => {
+    const transitions = rules(bare).filter((r) => /(^|;)\s*transition\s*:/.test(r.decls));
+    expect(transitions.length).toBeGreaterThan(0);
+    for (const r of transitions) {
+      expect(r.selector.replace(/\s+/g, " "), r.selector).toMatch(
+        /\.mc-eclat--(active|idle|settle)/,
+      );
+    }
+    // no transition on the card itself or its root: nothing eases until the tilt asks
+    expect(bare).not.toMatch(/\.mc-eclat\s*\{[^}]*transition/);
+    expect(
+      mediaBlocks(bare).find((b) => b.cond === "(prefers-reduced-motion: reduce)"),
+    ).toBeUndefined();
   });
 });

@@ -7,6 +7,7 @@ import { FOIL, TIER_KEYS } from "./foil";
 import { REST } from "./field";
 import { CHEST, FOIL_CLIP, OUTLINE, TAB, WINDOW, WINDOW_IN } from "./geometry";
 import { eclatRenderer } from "./index";
+import { follow, restLight } from "./pose";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS } from "./test-data";
 import { layer, pathBox } from "./test-markup";
 import type { CardProfile } from "../types";
@@ -157,10 +158,10 @@ describe("holographic items (plan 5.5, revision 3)", () => {
   });
 });
 
-/** The rule `.<cls> { transform: translate(calc(var(--mc-ax) * Xpx ...), calc(var(--mc-ay) * Ypx ...)) }`. */
+/** The rule `.<cls> { transform: translate(calc(var(--mc-rx) * Xpx ...), calc(var(--mc-ry) * Ypx ...)) }`. */
 function followed(cls: string): { x: number; y: number } {
   const m = new RegExp(
-    `\\.${cls}\\s*\\{\\s*transform:\\s*translate\\(\\s*calc\\(var\\(--mc-ax\\) \\* (-?[\\d.]+)px[^)]*\\)\\),\\s*calc\\(var\\(--mc-ay\\) \\* (-?[\\d.]+)px`,
+    `\\.${cls}\\s*\\{\\s*transform:\\s*translate\\(\\s*calc\\(var\\(--mc-rx\\) \\* (-?[\\d.]+)px[^)]*\\)\\),\\s*calc\\(var\\(--mc-ry\\) \\* (-?[\\d.]+)px`,
   ).exec(CSS);
   if (!m) throw new Error(`no light-following rule for .${cls}`);
   return { x: Number(m[1]), y: Number(m[2]) };
@@ -179,8 +180,17 @@ describe("the foil moves with the light and is still all there at rest (plan 5.5
     expect(at("mc-light-follow")).toBe(REST.light);
     expect(at("mc-shirt-cast")).toBe(REST.cast);
     // the root's own rest light is that same pair, mirrored in Arabic
-    expect(CSS).toMatch(/--mc-ax:\s*0\.24;\s*--mc-ay:\s*0\.64;/);
-    expect(CSS).toMatch(/\.mc-eclat\[dir="rtl"\]\s*\{\s*--mc-ax:\s*-0\.24;\s*--mc-dx:\s*-1/);
+    expect(CSS).toMatch(/--mc-rx:\s*0\.24;\s*--mc-ry:\s*0\.64;/);
+    expect(CSS).toMatch(/\.mc-eclat\[dir="rtl"\]\s*\{\s*--mc-rx:\s*-0\.24;\s*--mc-dx:\s*-1/);
+    // and the tilt's pose, at the rest light, is what the stylesheet draws there
+    const pose = (part: "foil" | "spec" | "light" | "cast") => {
+      const [x, y] = [...follow(part, restLight(false), false).matchAll(/-?[\d.]+(?=px)/g)];
+      return `translate(${x![0]} ${y![0]})`;
+    };
+    expect(pose("foil")).toBe(REST.foil);
+    expect(pose("spec")).toBe(REST.spec);
+    expect(pose("light")).toBe(REST.light);
+    expect(pose("cast")).toBe(REST.cast);
   });
 
   it("keeps each foil rectangle over what its mask shows at the largest shift of the light", () => {

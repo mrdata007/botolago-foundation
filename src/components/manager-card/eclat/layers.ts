@@ -1,9 +1,10 @@
 /**
  * The layer stack (plan 3.2 and 8.1): five SVG layers of one box, plus seven rim walls, in the
  * order the card is built from the back: the base (plate, field), the rims (the card's thickness in
- * the tier's metal, darkest at the back), the shirt, the number, the frame, the holo layer
- * (CHAMPION and LEGEND), and an HTML foil overlay for the sheen. At rest the stack is flat 2D; the
- * stylesheet turns it into real depth while a pointer moves (`eclat.css`, "3D").
+ * the tier's metal, darkest at the back, in one flat group), the shirt, the number, the frame, the
+ * holo layer (CHAMPION and LEGEND), and an HTML foil overlay for the sheen. At rest the stack is
+ * flat 2D; the tilt (`tilt.ts`, `pose.ts`) turns it into real depth while a pointer moves, and
+ * `lift.ts` first takes the parts that follow the light out of their layers.
  */
 import type { CardTheme } from "../types";
 import { mix } from "./foil";
@@ -26,14 +27,18 @@ export interface Parts {
 const svg = (layer: string, body: string): string =>
   `<svg class="mc-l mc-l--${layer}" viewBox="${VIEW_BOX}" aria-hidden="true" focusable="false" style="direction:ltr">${body}</svg>`;
 
-/** The seven walls of the card's thickness (k 1 at the back, the darkest; k 7 next to the face). */
+/**
+ * The seven walls of the card's thickness (k 1 at the back, the darkest; k 7 next to the face), in
+ * one flat group: the group is the one leaf of the 3D stack and each wall is moved inside it, so
+ * the compositor draws one pass for the rims, not seven (`pose.ts`, `RIM_PLANE`).
+ */
 export function rims(v: View): string {
   let out = "";
   for (let k = 1; k <= 7; k++) {
     const fill = mix(v.F.metal[3], "#000000", 0.35 + (7 - k) * 0.06);
     out += `<svg class="mc-l mc-rim" style="--k:${k};--o:${8 - k}" viewBox="${VIEW_BOX}" aria-hidden="true" focusable="false">${mirror(`<path d="${RING}" fill-rule="evenodd" fill="${fill}"/>`, v.ar)}</svg>`;
   }
-  return out;
+  return `<div class="mc-rims" aria-hidden="true">${out}</div>`;
 }
 
 export interface RootOptions {
