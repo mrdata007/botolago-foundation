@@ -187,6 +187,28 @@ Applied: the 28 migrations already on `main` up to `20261010120300` plus
 `20261010140000_sofascore_repoint_fixture_mapping`. The pg_cron jobs they add
 arrive with their switches off.
 
+### ID bridge on production data, read only, 2026-10-10
+
+Staging holds no real Botola season (only the load-test and scoring-proof
+seasons), so the owner allowed the bridge's two read-only modes to read
+Production V2 (`sofascore-id-bridge-production-read.yml`, pinned to main
+`a0b89e6`). Nothing was written.
+
+- `propose-teams` (run 38080540391): 15 of 16 clubs paired from 3–4 agreeing
+  fixtures each, no conflicts; AS FAR Rabat had 1 (its round-1 match is still
+  postponed) and pointed at the only unpaired internal team. The owner
+  approved all 16 pairings.
+- `dry-run` with the approved pairing (run 38080678843) would create:
+  competition 1, season 1, teams 16, rounds 4, fixtures 31 of 32 (1 matched by
+  round, 1 postponed-only); 0 conflicts, 0 ambiguous, 0 re-points. One
+  fixture (`1296b2e5-bb59-4f18-8ef7-dc0b2990bc3a`) has no SofaScore event and
+  stays unmapped until reviewed.
+- Writing these rows on production is owner-run through the release runbook.
+- The production environment's `RAPIDAPI_KEY` (`production-admin-activation`)
+  still reports the free 500-request limit; it needs the paid key.
+- Known workflow bug: a run whose report lists review items shows as failed
+  (the step shell's `-e` stops on the pipeline before the exit-2 handling).
+
 ## 7. Owner prerequisites
 
 - ~~Subscribe to a paid SofaScore tier~~ — done 2026-10-10 (10,000 a month).
