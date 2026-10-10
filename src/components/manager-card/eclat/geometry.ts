@@ -43,6 +43,16 @@ export const WINDOW_IN =
   "M78 62Q78 38 102 38H898Q922 38 922 62V830C922 925 595 970 500 1036C405 970 78 925 78 830Z";
 /** The shield's point. */
 export const POINT_Y = 1056;
+/**
+ * The theme edge's stroke (the outer line of the frame, in the tier's edge colour against the page),
+ * in card units. It is centred on `OUTLINE`, which touches the layer's box, so the half outside is
+ * clipped and what shows is half of it: 5 units, 1.5 px on a 296 px card and 1.7 px on 336. The
+ * first version was 3 units (0.4 px): at rest it held 3:1, but the tilt resamples the layer and a
+ * line under one device pixel wide lost its contrast (round 2 review: 1.5 to 2.9 against the page
+ * with the pointer on the card). The holo layer leaves the same band clear of foil (`holo.ts`), which
+ * had washed the line out on CHAMPION and LEGEND.
+ */
+export const EDGE_W = 10;
 /** The frame: the outline with the shield cut out (`fill-rule="evenodd"`). */
 export const RING = OUTLINE + WINDOW;
 /** The raised tab that carries the club disc and the season. */

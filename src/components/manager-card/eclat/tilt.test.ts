@@ -55,7 +55,7 @@ function part(attrs: Record<string, string> = {}) {
 type Part = ReturnType<typeof part>;
 
 /** A card as far as the tilt looks at it: a root with classes, variables and listeners, and its parts. */
-function fakeCard(dir: "ltr" | "rtl" = "ltr") {
+function fakeCard(dir: "ltr" | "rtl" = "ltr", rootAttrs: Record<string, string> = {}) {
   const classes = new Set<string>();
   const vars = new Map<string, string>();
   const listeners = new Map<string, Handler>();
@@ -100,7 +100,8 @@ function fakeCard(dir: "ltr" | "rtl" = "ltr") {
     ".mc-glint-b": parts.glintB,
   };
   const root = {
-    getAttribute: (name: string) => (name === "dir" ? dir : null),
+    getAttribute: (name: string) => (name === "dir" ? dir : (rootAttrs[name] ?? null)),
+    hasAttribute: (name: string) => name === "dir" || name in rootAttrs,
     getBoundingClientRect: () => ({ left: 100, top: 200, width: 300, height: 485 }),
     querySelector: (sel: string) => registry[sel]?.[0] ?? null,
     querySelectorAll: (sel: string) => registry[sel] ?? [],
@@ -418,6 +419,81 @@ describe("the tilt (plan 8.3)", () => {
     expect(classes.has("mc-eclat--active")).toBe(true);
     // the float's pose is kept (committed) before it is cancelled, so the card does not jump
     expect(parts.tilt.animations.every((a) => a.committed && a.cancelled)).toBe(true);
+  });
+
+  it("keeps the float's depth when its opening turn ends and when a finger taps the card or starts a pan on it", async () => {
+    touch = true;
+    const { el, parts, listeners, classes } = fakeCard();
+    mountTilt(el);
+    observed!.cb([{ isIntersecting: true }]);
+    // the opening turn to the float's first pose ends: that is not the end of a settle, and the
+    // layers keep their heights (a card turning as one flat sheet is not what plan D8 describes)
+    listeners.get("transitionend")!({ target: parts.tilt, propertyName: "transform" });
+    for (const layer of [parts.base, parts.shirt, parts.num, parts.frame])
+      expect(transform(layer)).not.toBeUndefined();
+    expect(transform(parts.num)).toBe(depth(Z.num));
+    expect(transform(parts.frame)).toBe(depth(Z.frame));
+    expect(transform(parts.rimsGroup)).toBe(depth(RIM_PLANE));
+    await later();
+    // a finger lifting after a tap (pointerleave), or a pan taking the touch over (pointercancel)
+    for (const type of ["pointerleave", "pointercancel"]) {
+      listeners.get(type)!({ pointerType: "touch" });
+      expect(classes.has("mc-eclat--settle"), type).toBe(false);
+      expect(classes.has("mc-eclat--idle"), type).toBe(true);
+      listeners.get("transitionend")!({ target: parts.tilt, propertyName: "transform" });
+      await later();
+      expect(transform(parts.num), type).toBe(depth(Z.num));
+      expect(transform(parts.shirt), type).toBe(depth(Z.shirt));
+      expect(transform(parts.rimsGroup), type).toBe(depth(RIM_PLANE));
+    }
+    // the float itself ran on, and was never cancelled
+    expect(parts.tilt.calls.length).toBe(1);
+    expect(parts.tilt.animations.every((a) => !a.cancelled)).toBe(true);
+  });
+
+  it("puts the float back once a pen that took it over has left", async () => {
+    touch = true;
+    const { el, parts, listeners, classes } = fakeCard();
+    mountTilt(el);
+    observed!.cb([{ isIntersecting: true }]);
+    await later();
+    move(listeners, 300, 300, "pen");
+    flush();
+    listeners.get("pointerleave")!({ pointerType: "pen" });
+    // the settle: flat for a moment
+    expect(classes.has("mc-eclat--settle")).toBe(true);
+    expect(transform(parts.num)).toBe(depth(Z.num, 0));
+    listeners.get("transitionend")!({ target: parts.tilt, propertyName: "transform" });
+    // not the flat stack: the card floats again, from the float's first pose
+    expect(classes.has("mc-eclat--settle")).toBe(false);
+    expect(classes.has("mc-eclat--idle")).toBe(true);
+    expect(transform(parts.num)).toBe(depth(Z.num));
+    expect(transform(parts.tilt)).toBe(tilt([0.24, 0.64]));
+    await later();
+    expect(parts.tilt.calls.length, "the float restarted").toBe(2);
+  });
+
+  it("does not float over a beat; the card, drawn again without it, floats", async () => {
+    touch = true;
+    const beat = fakeCard("ltr", { "data-mc-beat": "make" });
+    mountTilt(beat.el);
+    observed!.cb([{ isIntersecting: true }]);
+    await later();
+    expect(beat.classes.has("mc-eclat--idle")).toBe(false);
+    expect(beat.parts.tilt.calls.length).toBe(0);
+    expect(transform(beat.parts.tilt)).toBeUndefined();
+    expect(transform(beat.parts.num)).toBeUndefined();
+    // the page coming back to the front does not start it either
+    page.listeners.get("visibilitychange")?.();
+    expect(beat.classes.has("mc-eclat--idle")).toBe(false);
+    expect(transform(beat.parts.tilt)).toBeUndefined();
+    // the same card without the beat floats
+    const plain = fakeCard();
+    mountTilt(plain.el);
+    observed!.cb([{ isIntersecting: true }]);
+    await later();
+    expect(plain.classes.has("mc-eclat--idle")).toBe(true);
+    expect(plain.parts.tilt.calls.length).toBe(1);
   });
 
   it("does nothing under reduced motion, or on a card it cannot find", () => {

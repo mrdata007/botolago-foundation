@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { FOIL, TIER_KEYS } from "./foil";
 import { REST } from "./field";
-import { CHEST, FOIL_CLIP, OUTLINE, TAB, VB_H, WINDOW, WINDOW_IN } from "./geometry";
+import { CHEST, EDGE_W, FOIL_CLIP, OUTLINE, TAB, VB_H, WINDOW, WINDOW_IN } from "./geometry";
 import { eclatRenderer } from "./index";
 import { follow, restLight } from "./pose";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS } from "./test-data";
@@ -45,6 +45,25 @@ describe("holographic items (plan 5.5, revision 3)", () => {
         `<path d="${TAB}" fill="none" stroke="#fff" stroke-opacity="${FOIL[key].holo!.edge}"`,
       );
     }
+  });
+
+  it("keeps the theme edge's band clear of foil, so the foil cannot wash the line out against a light page", () => {
+    const clear = `<path d="${OUTLINE}" fill="none" stroke="#000" stroke-width="${EDGE_W}"/>`;
+    for (const key of ["champion", "legend"] as const)
+      for (const lang of ["fr", "ar"] as const) {
+        const holo = layer(draw(profileOf(key), lang), "holo")!;
+        const mask = /<mask id="[^"]*-hm"[^>]*>(.*?)<\/mask>/s.exec(holo)![1]!;
+        expect(mask, `${key} ${lang}`).toContain(clear);
+        // painted after the foil's edge band and after the tab's rim (which shares the outline's left and top)
+        expect(mask.indexOf(clear), `${key} ${lang} after the edge band`).toBeGreaterThan(
+          mask.indexOf('stroke-width="22"'),
+        );
+        expect(mask.indexOf(clear), `${key} ${lang} after the tab's rim`).toBeGreaterThan(
+          mask.indexOf(`stroke-opacity="${FOIL[key].holo!.edge}" stroke-width="16"`),
+        );
+        // and it is the line the frame draws, the same width
+        expect(layer(draw(profileOf(key), lang), "frame")!).toContain(`stroke-width="${EDGE_W}"/>`);
+      }
   });
 
   it("gives LEGEND more than CHAMPION: four glints against two, a stronger edge and band, the inner hairline", () => {
@@ -291,5 +310,31 @@ describe("the foil moves with the light and is still all there at rest (plan 5.5
     const m = /\.mc-foil-shift\s*\{([^}]*)\}/.exec(CSS)![1]!;
     expect(m.includes("animation")).toBe(false);
     expect(m.includes("transition")).toBe(false);
+  });
+});
+
+describe("the theme edge's width (round 2 review)", () => {
+  it("is drawn at EDGE_W in every tier, theme and language, in the tier's edge colour", () => {
+    for (const key of TIER_KEYS)
+      for (const theme of ["light", "dark"] as const)
+        for (const lang of ["fr", "ar"] as const) {
+          const html = eclatRenderer.full(profileOf(key), {
+            strings: lang === "ar" ? AR : FR,
+            theme,
+          });
+          const colour = theme === "dark" ? FOIL[key].edgeD : FOIL[key].edgeL;
+          expect(layer(html, "frame")!, `${key} ${theme} ${lang}`).toContain(
+            `<path d="${OUTLINE}" fill="none" stroke="${colour}" stroke-width="${EDGE_W}"/>`,
+          );
+        }
+  });
+
+  it("shows at least 1.4 px on a 296 px card and stays inside the metal band under it", () => {
+    // the line is centred on the outline, which touches the layer's box: the outer half is clipped
+    expect(((EDGE_W / 2) * 296) / 1000).toBeGreaterThanOrEqual(1.4);
+    // the metal band is a 24-unit stroke of the same outline, clipped to it: 12 units show
+    expect(EDGE_W / 2).toBeLessThanOrEqual(12);
+    // the round 1 line (3 units, 0.44 px shown) lost its contrast under the tilt's resampling
+    expect(EDGE_W).toBeGreaterThan(3);
   });
 });

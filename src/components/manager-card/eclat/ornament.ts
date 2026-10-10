@@ -12,7 +12,19 @@ import type { Ctx } from "./ctx";
 import type { Foil } from "./foil";
 import { mix, stops } from "./foil";
 import { MASK_BOX, moving } from "./field";
-import { OUTLINE, POINT_Y, RING, SHIRT, TAB, WINDOW, DISC, hexPath, JT, n2 } from "./geometry";
+import {
+  EDGE_W,
+  OUTLINE,
+  POINT_Y,
+  RING,
+  SHIRT,
+  TAB,
+  WINDOW,
+  DISC,
+  hexPath,
+  JT,
+  n2,
+} from "./geometry";
 import type { Plaque } from "./plaque";
 
 export { POINT_Y, SHIRT, JT };
@@ -91,7 +103,8 @@ function capsuleShapes(c: Ctx): string {
 /**
  * The frame layer's shapes, bottom to top (plan 3.2): the plate, its gradient, grain, brushing,
  * faded emboss and gold band; the shield band (inner shadow, metal, bevel, lips); the outer edge;
- * the travelling specular streak; the tab with its disc; the plaque; the capsule; the theme edge.
+ * the travelling specular streak; the tab with its disc; the plaque; the capsule; the theme edge
+ * (`EDGE_W`, the line that separates the card from the page, which the holo layer keeps clear).
  */
 export function frameShapes(c: Ctx, plaque: Plaque): string {
   const { F } = c.v;
@@ -127,7 +140,7 @@ export function frameShapes(c: Ctx, plaque: Plaque): string {
     ${tabDisc(c)}
     ${plaqueShapes(c, plaque)}
     ${capsuleShapes(c)}
-    <path d="${OUTLINE}" fill="none" stroke="${edge}" stroke-width="3"/>
+    <path d="${OUTLINE}" fill="none" stroke="${edge}" stroke-width="${EDGE_W}"/>
     ${c.beat === "castoff" ? `<path class="mc-seal" d="${WINDOW}" fill="none" stroke="${F.light}" stroke-width="2" pathLength="1000"/>` : ""}
     ${theme === "dark" ? `<path d="${OUTLINE}" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.5" transform="translate(-1.5 -1.5) scale(1.003)"/>` : ""}`;
 }

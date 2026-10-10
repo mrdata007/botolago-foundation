@@ -632,9 +632,15 @@ test.describe("the card's tilt and depth", () => {
         classes: root.className,
         tilt: style(root.querySelector(".mc-eclat__tilt"))?.transform,
         tiltStyle: style(root.querySelector(".mc-eclat__tilt"))?.transformStyle,
-        layers: [...root.querySelectorAll(".mc-l:not(.mc-rim)")].map(
-          (layer) => getComputedStyle(layer).transform,
-        ),
+        // every piece the tilt moves: the layers, the frame's and the rims' leaves (where the depth of
+        // the frame and of the walls is written), the cast shadow and the pieces lifted out of a layer
+        layers: [
+          ...root.querySelectorAll(".mc-l:not(.mc-rim), .mc-leaf, .mc-rims, .mc-cast, .mc-live"),
+        ].map((layer) => getComputedStyle(layer).transform),
+        // a `will-change` left on anything: it keeps a layer allocated, so none is allowed at rest
+        willChange: [root, ...root.querySelectorAll("*")]
+          .map((node) => getComputedStyle(node).willChange)
+          .filter((value) => value !== "auto"),
         rim: rims[0] ? getComputedStyle(rims[0]).transform : null,
         number: style(root.querySelector(".mc-l--num"))?.transform,
       };
@@ -659,8 +665,9 @@ test.describe("the card's tilt and depth", () => {
       const rest = await depth(page);
       expect(rest.tilt).toBe("none");
       expect(rest.tiltStyle).not.toBe("preserve-3d");
-      expect(rest.layers.length).toBeGreaterThanOrEqual(4);
+      expect(rest.layers.length).toBeGreaterThanOrEqual(8);
       expect(rest.layers.filter((transform) => transform !== "none")).toEqual([]);
+      expect(rest.willChange).toEqual([]);
       expect(rest.rim).toMatch(/^matrix\(/);
       expect(rest.classes).not.toMatch(/mc-eclat--(active|idle|settle)/);
 
@@ -693,7 +700,9 @@ test.describe("the card's tilt and depth", () => {
       await page.mouse.move(2, 2, { steps: 3 });
       await expect.poll(async () => (await depth(page)).tilt, { timeout: 4_000 }).toBe("none");
       const after = await depth(page);
+      expect(after.layers.length).toBe(rest.layers.length);
       expect(after.layers.filter((transform) => transform !== "none")).toEqual([]);
+      expect(after.willChange).toEqual([]);
       expect(after.classes).not.toMatch(/mc-eclat--(active|settle)/);
       await expectNoAnimations(page, "the card after the pointer has left");
     });
@@ -713,8 +722,63 @@ test.describe("the card's tilt and depth", () => {
     expect(after.light).toBe(before.light);
     expect(after.tilt).toBe("none");
     expect(after.classes).not.toMatch(/mc-eclat--(active|idle|settle)/);
+    // the card is not lifted under reduced motion (the tilt never mounts): the layers and the rims' group
+    expect(after.layers.length).toBeGreaterThanOrEqual(5);
     expect(after.layers.filter((transform) => transform !== "none")).toEqual([]);
+    expect(after.willChange).toEqual([]);
     await expectNoAnimations(page, "the card with a pointer over it, reduced motion");
+  });
+
+  /**
+   * A touch-only phone: the card floats while it is on screen (plan 8.3), and a float keeps its
+   * depth (the layers' heights, the number's crop) until it stops. Its own opening turn ending, and a
+   * finger tapping the card or starting a pan on it, are not the end of the float: the card used to
+   * turn as one flat sheet from half a second on.
+   */
+  test.describe("on a touch-only phone", () => {
+    test.use({ isMobile: true, hasTouch: true, reducedMotion: "no-preference" });
+
+    const floatDepth = (page: Page) =>
+      stageCard(page).evaluate((root) => ({
+        hoverNone: matchMedia("(hover: none)").matches,
+        classes: root.className,
+        frame: getComputedStyle(root.querySelector(".mc-leaf--frame")!).transform,
+        number: getComputedStyle(root.querySelector(".mc-l--num")!).transform,
+        crop: !!root.querySelector("svg.mc-l--num.mc-crop"),
+        floats: document
+          .getAnimations()
+          .filter((a) => a.effect instanceof KeyframeEffect && a.playState === "running").length,
+      }));
+
+    test("the float keeps its depth after its opening turn and after a tap on the card", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await start(page, "fr");
+      await gotoHydrated(page, "/gradins/carte?mc=rated", "fr");
+      const root = stageCard(page);
+      await expect(root).toBeVisible();
+      // past the float's opening turn (450 ms) and its end
+      await page.waitForTimeout(1500);
+      const floating = await floatDepth(page);
+      expect(floating.hoverNone, "the page reads a touch-only screen").toBe(true);
+      expect(floating.classes).toContain("mc-eclat--idle");
+      expect(floating.frame).toMatch(/^matrix3d\(/);
+      expect(floating.number).toMatch(/^matrix3d\(/);
+      expect(floating.crop, "the number keeps its crop").toBe(true);
+      expect(floating.floats, "the float's compositor animations run").toBeGreaterThan(0);
+
+      // a tap on the card (a finger lifting is a pointerleave, a pan a pointercancel)
+      await root.tap();
+      await page.waitForTimeout(1000);
+      const tapped = await floatDepth(page);
+      expect(tapped.classes).toContain("mc-eclat--idle");
+      expect(tapped.classes).not.toContain("mc-eclat--settle");
+      expect(tapped.frame).toMatch(/^matrix3d\(/);
+      expect(tapped.number).toMatch(/^matrix3d\(/);
+      expect(tapped.crop).toBe(true);
+      expect(tapped.floats).toBeGreaterThan(0);
+    });
   });
 });
 

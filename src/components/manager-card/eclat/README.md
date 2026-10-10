@@ -283,7 +283,12 @@ Everything that moves is CSS, `prefers-reduced-motion: no-preference` only.
   transforms and `will-change` are gone 520 ms after the pointer left at the latest. A touch-only
   screen floats the card (`--idle`) while it is on screen and the page is visible: a compositor
   animation of transforms (Web Animations), nothing on the main thread. A finger never tilts it, and
-  under reduced motion nothing mounts. How it is built, and what it costs, is the next section.
+  under reduced motion nothing mounts. The float keeps its depth (the layers' heights and the number's
+  crop) until it stops: the end of its own opening turn, a finger's tap or pan on the card (a touch
+  `pointerleave` or `pointercancel`) and a pen that has left do not end it (a pen's leaving puts the
+  float back); it does not start while the card plays a beat (`data-mc-beat` on the root: the card is
+  drawn again without it when the beat ends, and the tilt mounts on that drawing). How it is built,
+  and what it costs, is the next section.
 - **Beats** (`beats.ts`, `TIMELINE`): what moves in each beat, with its start and length. `BEAT_MS`
   and `ANIMATED` are derived from it, `beats.test.ts` reads `eclat.css` and checks that the
   stylesheet declares exactly that, and nothing a beat names holds the rating, the serial, a text

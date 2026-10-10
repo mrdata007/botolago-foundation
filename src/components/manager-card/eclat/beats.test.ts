@@ -371,9 +371,8 @@ describe("the floating card on a touch screen and the tilt's own motion (plan 8.
     for (const prop of keyframes.matchAll(/(\w+):/g)) {
       expect(["transform", "easing", "offset"]).toContain(prop[1]!);
     }
-    // a card that plays a beat does not float over it: the beat's class is on the root, and the
-    // lift leaves such a card alone
-    expect(readFileSync(join(import.meta.dir, "lift.ts"), "utf8")).toContain('"data-mc-beat"');
+    // a card that plays a beat does not float over it: that is a behaviour, tested where it runs
+    // (`tilt.test.ts`, "does not float over a beat": a root that carries `data-mc-beat`)
   });
 
   it("eases nothing at rest or under reduced motion: every transition is scoped to a state of the tilt", () => {

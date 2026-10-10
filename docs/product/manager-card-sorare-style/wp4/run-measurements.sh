@@ -31,7 +31,7 @@ want contrast && {
 }
 want edge && {
   run contrast-edge-390 node "$here/contrast-card.mjs" --widths=390 --kinds=edge --jobs=2 --out="$r/contrast-edge-390.json"
-  run contrast-edge-1440 node "$here/contrast-card.mjs" --widths=1440 --kinds=edge --fx=rated,legend,homa,tierUp,forming1 --jobs=2 --out="$r/contrast-edge-1440.json"
+  run contrast-edge-1440 node "$here/contrast-card.mjs" --widths=1440 --kinds=edge --fx=forming1,homa,tierDown,rated,tierUp,legend --jobs=2 --out="$r/contrast-edge-1440.json"
 }
 want marks && run contrast-marks node "$here/contrast-card.mjs" --widths=390 --kinds=mark --fx=forming1,eve2,notFinal2 --jobs=2 --out="$r/contrast-marks.json"
 want ink && run number-ink node "$here/number-ink.mjs" --out="$r/number-ink.json"

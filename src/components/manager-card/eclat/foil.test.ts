@@ -96,9 +96,10 @@ describe("the foil ladder (plan 5.4)", () => {
     }
   });
 
-  it("keeps CHAMPION's and LEGEND's light edge dark: the foil passes over that line and lifts it", () => {
-    // the foil (`holo.edge`) is painted over the 3-unit edge stroke; measured from pixels at 296 and
-    // 336 px the line reads 3.35 or more on the light page only while the stroke itself is this dark
+  it("keeps CHAMPION's and LEGEND's light edge dark: the foil's first pixels beside that line lift it", () => {
+    // the foil (`holo.edge`) used to be painted over the edge stroke (round 2 review: `holo.ts` now keeps
+    // that band clear), and it still lies right beside it; measured from pixels at 296 and 336 px the line
+    // reads 3.35 or more on the light page only while the stroke itself is this dark
     for (const key of ["champion", "legend"] as const) {
       expect(contrast(FOIL[key].edgeL, LIGHT_PAGE), key).toBeGreaterThanOrEqual(7);
     }

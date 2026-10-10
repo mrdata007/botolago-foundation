@@ -14,7 +14,9 @@
  *   ovrLabel   « OVR » against its halo                        4.5
  *   statValue, name, tier, statLabel, serial, season, wordmark, sample, initials, founder   4.5
  *   mark       forming marks, filled and empty, against what is behind them   3.0
- *   edge       the card's outermost line against the page, the thickness walls hidden  3.0
+ *   edge       the card's outermost line against the page, the thickness walls hidden  3.0, at rest
+ *              AND with the pointer on the card at five spots (centre and the four 15% / 85% corners),
+ *              where the card is turned and its light sits on the edge (round 2 finish: it was read at rest only)
  *   edgeBand, edgeWithWalls   the first 2 CSS px of it, and the silhouette with the seven walls: informative
  *
  * Method: a text element's box is screenshotted and read with the contrast-probe's histogram
@@ -92,6 +94,23 @@ async function pointerTo(page, b) {
   await page.waitForTimeout(900);
 }
 
+/** The five places the pointer is put to read the outer edge: the centre and the 15% / 85% corners. */
+const EDGE_SPOTS = [
+  ["centre", 0.5, 0.5],
+  ["top-left", 0.15, 0.15],
+  ["top-right", 0.85, 0.15],
+  ["bottom-left", 0.15, 0.85],
+  ["bottom-right", 0.85, 0.85],
+];
+
+/** Back to rest first (the settle is 450 ms), then onto (x, y): every spot starts from the flat card. */
+async function pointerAt(page, x, y) {
+  await page.mouse.move(1, 1);
+  await page.waitForTimeout(700);
+  await page.mouse.move(x, y, { steps: 6 });
+  await page.waitForTimeout(900);
+}
+
 /** Median fill luminance against the median bare-shirt luminance under the glyph interior. */
 async function numberContrast(page, stage, b) {
   const clip = { x: b.x - 4, y: b.y - 4, width: b.width + 8, height: b.height + 8 };
@@ -164,11 +183,14 @@ async function numberContrast(page, stage, b) {
  *   band  the median of the first 2 CSS px, which mixes that line with the metal under it
  * With `rims: false` the seven walls of the card's thickness are hidden, which reads the frame's own
  * edge; with `rims: true` it reads the silhouette including the walls (darkest at the back).
+ * The picture is cut around the card's layout box, `out` CSS px beyond it and `inn` inside (12 and 8 at
+ * rest; 12 and 14 with the pointer on the card): a turned card's edge moves several CSS px from its
+ * layout box (perspective takes the far side inwards), and with 8 inside the far side's edge fell at the
+ * end of the profile, where only the first pixel of its ramp was read. Outside stays 12: the page's own
+ * content lies a little above the card, and a wider window reads it as the card.
  */
-async function edgeContrast(page, rootBox, { rims }) {
+async function edgeContrast(page, rootBox, { rims, out = 12, inn = 8 }) {
   const tag = rims ? null : await page.addStyleTag({ content: ".mc-rim{display:none !important}" });
-  const out = 12;
-  const inn = 8;
   const clip = {
     x: rootBox.x - out,
     y: rootBox.y - out,
@@ -240,28 +262,49 @@ async function one({ browser, fx, lang, theme, width }) {
       });
     for (const pose of POSES) {
       if (pose === "rest") await page.mouse.move(1, 1);
-      if (pose === "rest" && WANT_EDGE) {
-        const e = await edgeContrast(page, rootBox, { rims: false });
-        push(pose, "edge", "outermost line of the frame vs page (walls hidden)", 3.0, e.value, {
-          sides: e.hair,
-        });
-        push(
-          pose,
-          "edgeBand",
-          "first 2 CSS px of the frame vs page (walls hidden)",
-          3.0,
-          e.bandValue,
-          { sides: e.band, informative: true },
-        );
-        const w = await edgeContrast(page, rootBox, { rims: true });
-        push(
-          pose,
-          "edgeWithWalls",
-          "outermost line of the silhouette with the thickness walls vs page",
-          3.0,
-          w.value,
-          { sides: w.hair, informative: true },
-        );
+      if (WANT_EDGE) {
+        // at rest once; with the pointer at five spots (the tilt turns the card and moves the light onto its edge)
+        const spots = pose === "rest" ? [["rest", 0, 0]] : EDGE_SPOTS;
+        for (const [spot, fxp, fyp] of spots) {
+          const win = pose === "pointer" ? { out: 12, inn: 14 } : {};
+          if (pose === "pointer") {
+            await pointerAt(
+              page,
+              rootBox.x + fxp * rootBox.width,
+              rootBox.y + fyp * rootBox.height,
+            );
+          }
+          const at = pose === "rest" ? "" : ` [pointer ${spot}]`;
+          const e = await edgeContrast(page, rootBox, { rims: false, ...win });
+          push(
+            pose,
+            "edge",
+            `outermost line of the frame vs page (walls hidden)${at}`,
+            3.0,
+            e.value,
+            {
+              sides: e.hair,
+              spot,
+            },
+          );
+          push(
+            pose,
+            "edgeBand",
+            `first 2 CSS px of the frame vs page (walls hidden)${at}`,
+            3.0,
+            e.bandValue,
+            { sides: e.band, informative: true, spot },
+          );
+          const w = await edgeContrast(page, rootBox, { rims: true, ...win });
+          push(
+            pose,
+            "edgeWithWalls",
+            `outermost line of the silhouette with the thickness walls vs page${at}`,
+            3.0,
+            w.value,
+            { sides: w.hair, informative: true, spot },
+          );
+        }
       }
       if (WANT_NUMBER) {
         const num = stage.locator('[data-mc="ovr"]').first();

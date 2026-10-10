@@ -18,8 +18,10 @@
  * Nothing here runs under reduced motion, nor on a card that was not asked to tilt. It writes
  * `--mc-ax` and `--mc-ay` on the root (and the foil overlay), a few inline transforms, and four
  * classes on the card's root, and removes them again on cleanup. The float stops while the page is
- * hidden and while the card is off screen, and is a compositor animation: the main thread does
- * nothing while a card floats.
+ * hidden and while the card is off screen, does not start while the card plays a beat, and is a
+ * compositor animation: the main thread does nothing while a card floats. A float keeps its depth
+ * (the layers' heights and the number's crop) until it stops: the end of its own opening turn, a
+ * finger's tap or pan on the card and a pen that leaves do not end it.
  */
 import { cropNum, liftCard } from "./lift";
 import {
@@ -255,10 +257,15 @@ function mountOn(root: HTMLElement): () => void {
     parts.foil?.style.removeProperty("--mc-ay");
   };
 
-  // back to the flat 2D stack once the settle has run, unless the pointer is back
+  // back to the flat 2D stack once the settle has run, unless the pointer is back; a card that
+  // floats (a pen has just left it) goes back to its float, not to the flat stack
   const flat = (): void => {
     if (root.classList.contains("mc-eclat--active")) return;
     root.classList.remove("mc-eclat--settle", "mc-eclat--enter");
+    if (root.classList.contains("mc-eclat--idle")) {
+      if (!floating.length) startFloat();
+      return;
+    }
     clear();
   };
 
@@ -313,7 +320,10 @@ function mountOn(root: HTMLElement): () => void {
       travel(light);
     });
   };
-  const onLeave = (): void => {
+  const onLeave = (e?: PointerEvent): void => {
+    // a finger lifting after a tap, or a pan taking the touch over, is not a pointer leaving a tilt
+    // that never started: the float goes on
+    if (e?.pointerType === "touch") return;
     cancelAnimationFrame(raf);
     clearTimeout(enterTimer);
     root.classList.remove("mc-eclat--enter");
@@ -329,7 +339,11 @@ function mountOn(root: HTMLElement): () => void {
     timer = window.setTimeout(flat, 520);
   };
   const onEnd = (e: TransitionEvent): void => {
-    if (e.target === parts.tilt && e.propertyName === "transform") flat();
+    if (e.target !== parts.tilt || e.propertyName !== "transform") return;
+    // the float's own opening turn (450 ms) ends with this event too; only a settle ends in the flat stack
+    if (root.classList.contains("mc-eclat--idle") && !root.classList.contains("mc-eclat--settle"))
+      return;
+    flat();
   };
   root.addEventListener("pointermove", onMove);
   root.addEventListener("pointerleave", onLeave);
@@ -373,7 +387,9 @@ function mountOn(root: HTMLElement): () => void {
   let onScreen = false;
   const doc = typeof document !== "undefined" ? document : null;
   const syncIdle = (): void => {
-    const want = onScreen && !doc?.hidden;
+    // a card that plays a beat does not float (plan 8.3, 9): it is drawn again without the beat when
+    // it ends, and the tilt mounts on that drawing
+    const want = onScreen && !doc?.hidden && !root.hasAttribute("data-mc-beat");
     const has = root.classList.contains("mc-eclat--idle");
     root.classList.toggle("mc-eclat--idle", want);
     if (want && !has) startFloat();

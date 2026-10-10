@@ -1,6 +1,7 @@
 /**
  * The holographic layer (plan 5.5, revision 3: restrained), CHAMPION and LEGEND only: foil through a
- * mask of the outer edge, the shield band, the tab's rim and the plaque's rim (the tab itself is cut
+ * mask of the outer edge (from the theme edge's line inwards: that band stays clear), the shield
+ * band, the tab's rim and the plaque's rim (the tab itself is cut
  * out, so no foil crosses the club disc or the season), LEGEND's second hairline, and two or four
  * glints. The foil is the tier's own narrow palette and it moves with the light. The foil in the
  * honeycomb cells is `field.ts`'s; the foil plaque is `ornament.ts`'s; the sheen and the diffraction
@@ -12,7 +13,7 @@
  */
 import type { Ctx } from "./ctx";
 import { moving } from "./field";
-import { OUTLINE, POINT_Y, TAB, WINDOW, WINDOW_IN, mirror, star } from "./geometry";
+import { EDGE_W, OUTLINE, POINT_Y, TAB, WINDOW, WINDOW_IN, mirror, star } from "./geometry";
 import type { Plaque } from "./plaque";
 
 /** Where the four glints sit: the shield's trailing shoulder, its point, its leading shoulder, the corner. */
@@ -38,6 +39,9 @@ export function holoLayer(c: Ctx, plaque: Plaque): string {
       : "") +
     `<path d="${TAB}" fill="#000"/>` +
     `<g clip-path="url(#${id}-tab)"><path d="${TAB}" fill="none" stroke="#fff" stroke-opacity="${H.edge}" stroke-width="16"/></g>` +
+    // the theme edge's own band stays clear of foil: the foil painted over that line washed it out, and with
+    // the pointer on the card it read 1.6 to 2.4 against a white page (`geometry.ts`, `EDGE_W`)
+    `<path d="${OUTLINE}" fill="none" stroke="#000" stroke-width="${EDGE_W}"/>` +
     (plaque.path ? `<path d="${plaque.path}" fill="none" stroke="#fff" stroke-width="4"/>` : "") +
     `</mask>`;
   // the glints' opacity follows the light: the first and third brighten as it moves toward them
