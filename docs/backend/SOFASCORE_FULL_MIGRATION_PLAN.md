@@ -146,6 +146,33 @@ Open from review:
   reviewed RPC (P4): `api.resolve_football_mapping` cannot re-point a mapping.
 - The in-play status codes are unconfirmed until a probe during a live match.
 
+### Live status codes, confirmed 2026-10-10 (lane 3, ≈ 28 probe requests)
+
+Watched 17256979 (Kawkab Marrakech 2–1 Ittihad Tanger) from kickoff to full
+time and the first half of 17256971 (US Amal Tiznit v Difaâ El Jadida):
+
+| SofaScore `status` | code | App status |
+|---|---|---|
+| `notstarted` "Not started" | 0 | `not_started` |
+| `inprogress` "1st half" | 6 | `live_first_half` |
+| `inprogress` "Halftime" | 31 | `half_time` |
+| `inprogress` "2nd half" | 7 | `live_second_half` |
+| `finished` "Ended" | 100 | `finished` |
+
+- `changes.changeTimestamp` moved on every status change and every goal seen
+  and stayed fixed when nothing changed, so the freshness guard holds. A
+  not-started match can already carry a timestamp and a 0–0 score a few
+  minutes before kickoff.
+- The live list carried the Botola match (`uniqueTournament.id` 937) with the
+  same fields as `matches/detail`.
+- Not yet observed: 110/120 (extra time, penalties; Botola league matches do
+  not use them).
+- **Gap:** 149 of 447 live matches worldwide used code **20 "Started"**, an
+  in-play code with no half. The app has no "live, half unknown" status, so the
+  parsers leave such a match out and list it for review rather than guess a
+  half. Both Botola matches used the detailed codes; if a Botola match ever
+  reports 20, it is caught by the unknown-status report.
+
 ### Staging write, 2026-10-10 (owner-approved)
 
 Database: Staging V2 (`srdrflfrfpwixsllveid`). Writer: the orchestrator session,
