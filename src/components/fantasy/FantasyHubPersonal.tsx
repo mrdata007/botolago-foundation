@@ -22,6 +22,7 @@ import { FantasyPhaseBody } from "@/components/fpl/FantasyScreenGate";
 import type { FantasyScreenPhase } from "@/components/fpl/useFantasyScreen";
 import { ui, UiCard, UiLinkButton, UiLivePill, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useManagerCardLive } from "@/services/manager-card-status";
@@ -214,9 +215,13 @@ export function FantasyHubLeagues({
 /**
  * The Fantasy reminder and e-mail switches. Signed out, both used to be
  * drawn disabled with no reason given; without a team there is no deadline
- * of theirs to be reminded of.
+ * of theirs to be reminded of. While notification e-mail is not sent
+ * (`NOTIFICATION_EMAIL_LIVE` off) the block promises e-mails nobody gets, so
+ * neither it nor its placeholder is drawn; the stored choices stay as they are.
  */
 export function FantasyHubReminders({ layout }: { layout: FantasyHubLayout }) {
+  const emailLive = useNotificationEmailLive();
+  if (!emailLive) return null;
   if (layout.dashboard === "reserve") return <DashboardPlaceholder section="reminders" />;
   if (layout.dashboard !== "show") return null;
   return <NotificationsSection />;

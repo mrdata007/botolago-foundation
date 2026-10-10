@@ -7,6 +7,7 @@ import { FlipScore } from "@/components/matches/FlipScore";
 import { LiveProgress } from "@/components/matches/LiveProgress";
 import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
 import { MatchReminderBell } from "./MatchReminderBell";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
 import { clubMatchPalettes, clubStyle, type ClubPalette } from "@/lib/club-palette";
@@ -139,6 +140,7 @@ export function MatchCard({
   const liveMinute = useTickingMinute(match.minute, status === "live");
   // A match that ends while the list is open: its "FT" pops once.
   const justFinished = useJustTurnedOn(status === "finished");
+  const remindersLive = useNotificationEmailLive();
 
   const timeFmt = moroccoDateTimeFormat(locale, {
     hour: "2-digit",
@@ -318,9 +320,16 @@ export function MatchCard({
 
   const hasScore = isLive || isFinished;
   // "Remind me": only for a match still to come whose kick-off is real (the
-  // reminder is sent an hour before it), never on the hero or a history row.
+  // reminder is sent an hour before it), never on the hero or a history row,
+  // and only while reminders are really sent (`NOTIFICATION_EMAIL_LIVE`).
+  // Without the bell the row takes its end padding back.
   const showReminder =
-    !isHero && variant !== "compact" && isScheduled && !unconfirmedDate && !unconfirmedTime;
+    remindersLive &&
+    !isHero &&
+    variant !== "compact" &&
+    isScheduled &&
+    !unconfirmedDate &&
+    !unconfirmedTime;
   const scoreClass = (lost: boolean) =>
     cn(
       ui.score.row,

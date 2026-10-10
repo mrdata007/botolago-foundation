@@ -52,6 +52,7 @@ export const ar = {
   "notifications.unread": "غير مقروء",
   "notifications.signin_title": "سجّل الدخول لعرض إشعاراتك",
   "notifications.signin_body": "تصلك هنا تذكيرات المباريات وتنبيهات فانتازي.",
+  "notifications.not_sent_yet": "لم يبدأ بعد إرسال تذكيرات المباريات وتنبيهات فانتازي.",
   "reminders.bell.off": "ذكّرني بهذه المباراة",
   "reminders.bell.on": "التذكير مفعّل لهذه المباراة",
   "reminders.sign_in_reason": "سجّل الدخول ليتم تذكيرك قبل المباراة.",
@@ -1552,6 +1553,7 @@ export const ar = {
   "profile.clubs.favorite": "المفضّل",
   "profile.saved_articles": "المقالات المحفوظة",
   "profile.notifications": "الإشعارات",
+  "profile.notifications_not_active": "غير مفعّلة بعد",
   "profile.edit": "تعديل الملف",
   "profile.sign_out": "تسجيل الخروج",
   "profile.sign_out_title": "تسجيل الخروج؟",
@@ -2306,6 +2308,8 @@ export const ar = {
   "pepites.follow.sheet_title": "تابع {name}",
   "pepites.follow.sheet_body":
     "أنشئ حسابًا مجانيًا لتتابع مبارياته وتتلقى أفضل 10 يوم الاثنين وتضيفه إلى فريقك في فانتازي.",
+  "pepites.follow.sheet_body_no_email":
+    "أنشئ حسابًا مجانيًا لتتابع مبارياته وتضيفه إلى فريقك في فانتازي.",
   "pepites.follow.create_account": "إنشاء حساب",
   "pepites.follow.have_account": "لديّ حساب بالفعل",
   "pepites.follow.followed": "أصبحت تتابع {name}.",

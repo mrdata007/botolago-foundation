@@ -56,6 +56,8 @@ export const fr = {
   "notifications.unread": "Non lue",
   "notifications.signin_title": "Connectez-vous pour voir vos notifications",
   "notifications.signin_body": "Vos rappels de match et alertes Fantasy arrivent ici.",
+  "notifications.not_sent_yet":
+    "Les rappels de match et les alertes Fantasy ne sont pas encore envoyés.",
   "reminders.bell.off": "Me rappeler ce match",
   "reminders.bell.on": "Rappel activé pour ce match",
   "reminders.sign_in_reason": "Connectez-vous pour être rappelé avant le match.",
@@ -1651,6 +1653,7 @@ export const fr = {
   "profile.clubs.favorite": "Favori",
   "profile.saved_articles": "Articles enregistrés",
   "profile.notifications": "Notifications",
+  "profile.notifications_not_active": "Pas encore actives",
   "profile.edit": "Modifier le profil",
   "profile.sign_out": "Se déconnecter",
   "profile.sign_out_title": "Se déconnecter ?",
@@ -2447,6 +2450,8 @@ export const fr = {
   "pepites.follow.sheet_title": "Suivez {name}",
   "pepites.follow.sheet_body":
     "Créez un compte gratuit pour suivre ses matchs, recevoir le Top 10 du lundi et l'ajouter à votre équipe Fantasy.",
+  "pepites.follow.sheet_body_no_email":
+    "Créez un compte gratuit pour suivre ses matchs et l'ajouter à votre équipe Fantasy.",
   "pepites.follow.create_account": "Créer un compte",
   "pepites.follow.have_account": "J'ai déjà un compte",
   "pepites.follow.followed": "Vous suivez {name}.",

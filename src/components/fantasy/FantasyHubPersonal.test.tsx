@@ -15,6 +15,7 @@ import { AuthProvider } from "@/auth/AuthProvider";
 import type { FantasyScreenPhase } from "@/components/fpl/useFantasyScreen";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
+import { NotificationEmailLiveContext } from "@/lib/notification-email-live";
 import type { AuthStatus } from "@/services/auth-types";
 import type { FantasyDataSource } from "@/services/fantasy-data-source";
 import type { FantasySummary, Gameweek } from "@/types/domain";
@@ -28,6 +29,11 @@ import { fantasyHubLayout } from "./fantasy-hub-layout";
  * each visitor, from the session and screen state through the real
  * `fantasyHubLayout` to rendered markup: the team card's place, "Mes
  * ligues" with the cup, and the reminder switches, in the hub's order.
+ *
+ * Every case runs twice, with notification e-mail live and not
+ * (`NOTIFICATION_EMAIL_LIVE`, passed through its context): the reminder
+ * block and its placeholder appear only while e-mail is really sent, and
+ * everything else is the same either way.
  *
  * Rendered with `react-dom/server` inside the app's providers (a memory
  * router for the links, React Query, the French dictionary, the auth
@@ -47,9 +53,15 @@ const code = (path: string) =>
     .replace(/\{\/\*[\s\S]*?\*\/\}/g, "")
     .replace(/(^|[^:])\/\/.*$/gm, "$1");
 
-async function render(node: ReactElement): Promise<string> {
+async function render(node: ReactElement, live: boolean): Promise<string> {
   const router = createRouter({
-    routeTree: createRootRoute({ component: () => <AuthProvider>{node}</AuthProvider> }),
+    routeTree: createRootRoute({
+      component: () => (
+        <NotificationEmailLiveContext.Provider value={live}>
+          <AuthProvider>{node}</AuthProvider>
+        </NotificationEmailLiveContext.Provider>
+      ),
+    }),
     history: createMemoryHistory({ initialEntries: ["/fantasy"] }),
   });
   await router.load();
@@ -112,11 +124,13 @@ function hub({
   source,
   phase,
   team,
+  live,
 }: {
   authStatus: AuthStatus;
   source: FantasyDataSource;
   phase: FantasyScreenPhase;
   team: FantasyTeam | null;
+  live: boolean;
 }) {
   const layout = fantasyHubLayout({ authStatus, source, phase, hasTeam: !!team });
   const owner = layout.audience === "owner";
@@ -142,6 +156,7 @@ function hub({
       />
       <FantasyHubReminders layout={layout} />
     </>,
+    live,
   );
 }
 
@@ -160,13 +175,24 @@ function expectNoDashboard(html: string) {
 const placeholders = (html: string) =>
   [...html.matchAll(/data-testid="(fantasy-hub-[a-z]+-placeholder)"/g)].map((m) => m[1]);
 
-describe("the hub's personal parts, for each visitor", () => {
-  it("an owner gets the dashboard as before: team card, pick team, transfers, leagues, cup, switches", async () => {
+describe.each([
+  ["live", true],
+  ["not live", false],
+] as const)("the hub's personal parts, for each visitor (notification e-mail %s)", (_, live) => {
+  // The reminder block, and the place held for it, exist only while e-mail is
+  // really sent.
+  const heldPlaces = [
+    "fantasy-hub-leagues-placeholder",
+    ...(live ? ["fantasy-hub-reminders-placeholder"] : []),
+  ];
+
+  it("an owner gets the dashboard: team card, pick team, transfers, leagues, cup, and the switches while e-mail is live", async () => {
     const html = await hub({
       authStatus: "authenticated",
       source: "cloud",
       phase: "ready",
       team: TEAM,
+      live,
     });
     const links = anchors(html).map(hrefOf);
     expect(text(html)).toContain(TEAM.teamName);
@@ -181,11 +207,14 @@ describe("the hub's personal parts, for each visitor", () => {
       escapeHtml(fr["fpl.private_leagues"]),
       escapeHtml(fr["fpl.cups"]),
       escapeHtml(fr["fpl.cup_how_title"]),
-      escapeHtml(fr["fpl.notifications"]),
+      ...(live ? [escapeHtml(fr["fpl.notifications"])] : []),
     ]);
     expect(links).toContain("/fantasy/leagues/l1");
     expect(text(html)).toContain(escapeHtml(fr["fpl.cup_not_qualified"]));
-    expect(html.match(/role="switch"/g)).toHaveLength(2);
+    // Today's reminder block exactly while e-mail is live; nothing of it otherwise.
+    expect(html.match(/role="switch"/g) ?? []).toHaveLength(live ? 2 : 0);
+    if (live) expect(text(html)).toContain(escapeHtml(fr["fpl.notifications_body"]));
+    else expect(text(html)).not.toContain(escapeHtml(fr["fpl.notifications_body"]));
     // And nothing of the visitor's.
     expect(html).not.toContain('data-testid="fantasy-guest-intro"');
     expect(html).not.toContain('data-testid="fantasy-intro-create"');
@@ -198,6 +227,7 @@ describe("the hub's personal parts, for each visitor", () => {
       source: "cloud",
       phase: "ready",
       team: null,
+      live,
     });
     expect(html).toContain('data-testid="fantasy-guest-intro"');
     const create = anchors(html).find((tag) => tag.includes('data-testid="fantasy-intro-create"'));
@@ -213,7 +243,7 @@ describe("the hub's personal parts, for each visitor", () => {
   ] as const)(
     "signed out (%s): the proposition, straight to the builder, nothing personal",
     async (authStatus, source) => {
-      const html = await hub({ authStatus, source, phase: "ready", team: null });
+      const html = await hub({ authStatus, source, phase: "ready", team: null, live });
       expect(html).toContain('data-testid="fantasy-guest-intro"');
       const create = anchors(html).find((tag) =>
         tag.includes('data-testid="fantasy-intro-create"'),
@@ -234,28 +264,23 @@ describe("the hub's personal parts, for each visitor", () => {
         source: "cloud",
         phase: "loading",
         team,
+        live,
       });
       expect(html).toContain(`aria-label="${escapeHtml(fr["state.loading"])}"`);
       expect(html).not.toContain('data-testid="fantasy-guest-intro"');
       expectNoDashboard(html);
       expect(headings(html)).toEqual([]);
-      expect(placeholders(html)).toEqual([
-        "fantasy-hub-leagues-placeholder",
-        "fantasy-hub-reminders-placeholder",
-      ]);
+      expect(placeholders(html)).toEqual(heldPlaces);
     }
   });
 
   it("while the session resolves (the server render): the same held place, for owner and visitor alike", async () => {
     for (const phase of ["loading", "ready"] as const) {
       for (const team of [null, TEAM]) {
-        const html = await hub({ authStatus: "loading", source: "guest", phase, team });
+        const html = await hub({ authStatus: "loading", source: "guest", phase, team, live });
         expect(html).not.toContain('data-testid="fantasy-guest-intro"');
         expectNoDashboard(html);
-        expect(placeholders(html)).toEqual([
-          "fantasy-hub-leagues-placeholder",
-          "fantasy-hub-reminders-placeholder",
-        ]);
+        expect(placeholders(html)).toEqual(heldPlaces);
       }
     }
   });
@@ -268,14 +293,12 @@ describe("the hub's personal parts, for each visitor", () => {
       source: "guest",
       phase: "loading",
       team: null,
+      live,
     });
     expect(html).not.toContain('data-testid="fantasy-guest-intro"');
     expectNoDashboard(html);
     expect(headings(html)).toEqual([]);
-    expect(placeholders(html)).toEqual([
-      "fantasy-hub-leagues-placeholder",
-      "fantasy-hub-reminders-placeholder",
-    ]);
+    expect(placeholders(html)).toEqual(heldPlaces);
   });
 
   it.each([
@@ -286,7 +309,7 @@ describe("the hub's personal parts, for each visitor", () => {
     "signed in, %s: that panel alone — no leagues, no cup, no switches, no create button",
     async (phase, title) => {
       for (const team of [null, TEAM]) {
-        const html = await hub({ authStatus: "authenticated", source: "cloud", phase, team });
+        const html = await hub({ authStatus: "authenticated", source: "cloud", phase, team, live });
         expect(text(html)).toContain(escapeHtml(fr[title]));
         expect(html).not.toContain('data-testid="fantasy-guest-intro"');
         expect(html).not.toContain('data-testid="fantasy-intro-create"');

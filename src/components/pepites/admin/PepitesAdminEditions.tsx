@@ -35,6 +35,7 @@ import {
   UiLinkButton,
   UiTextarea,
 } from "@/components/ui-kit";
+import { useNotificationEmailLive } from "@/lib/notification-email-live";
 import { cn } from "@/lib/utils";
 
 import {
@@ -361,6 +362,9 @@ function EditionEditor({
     IDLE_DESTRUCTIVE_ACTION,
   );
   const [showEmail, setShowEmail] = useState(false);
+  // Publishing sends the weekly e-mail only while notification e-mail is
+  // really sent (`NOTIFICATION_EMAIL_LIVE`); the prompt says which.
+  const emailLive = useNotificationEmailLive();
 
   const data = query.data;
   useEffect(() => {
@@ -782,9 +786,13 @@ function EditionEditor({
             rtl={rtl}
             label={rtl ? "النشر الآن" : "Publier maintenant"}
             prompt={
-              rtl
-                ? "سيراه كل القراء فورًا، وتنطلق الرسالة الأسبوعية للمشتركين."
-                : "Tous les lecteurs le verront tout de suite, et l'e-mail part aux abonnés."
+              emailLive
+                ? rtl
+                  ? "سيراه كل القراء فورًا، وتنطلق الرسالة الأسبوعية للمشتركين."
+                  : "Tous les lecteurs le verront tout de suite, et l'e-mail part aux abonnés."
+                : rtl
+                  ? "سيراه كل القراء فورًا. لن تُرسَل أي رسالة بريدية: إرسال الرسائل غير مفعّل."
+                  : "Tous les lecteurs le verront tout de suite. Aucun e-mail ne part : l'envoi des e-mails n'est pas activé."
             }
             testId="admin-pepites-publish"
           />

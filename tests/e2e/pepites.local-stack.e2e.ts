@@ -5,6 +5,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { dictionaries } from "../../src/i18n/dictionaries";
 import { gotoHydrated, initializeLanguage, observePage } from "./support";
 import { moroccoParts } from "../../src/lib/morocco-time";
+import { NOTIFICATION_EMAIL_LIVE } from "../../src/lib/feature-flags";
 
 /**
  * Pépites against a LOCAL Supabase stack with real data: the ranking engine's
@@ -192,10 +193,16 @@ test("a fan turns the weekly email on and reports an error the data desk then li
   await initializeLanguage(page, "fr");
   await signIn(page, FAN, "/pepites");
   await page.waitForURL((url) => url.pathname === "/pepites");
-  const toggle = page.getByTestId("pepites-email-switch");
-  await expect(toggle).toHaveAttribute("aria-checked", "false");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  // The switch is drawn only while notification e-mail is live (owner,
+  // 2026-10-07); without it there is nothing to turn on.
+  if (NOTIFICATION_EMAIL_LIVE) {
+    const toggle = page.getByTestId("pepites-email-switch");
+    await expect(toggle).toHaveAttribute("aria-checked", "false");
+    await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-checked", "true");
+  } else {
+    await expect(page.getByTestId("pepites-email-card")).toHaveCount(0);
+  }
 
   const playerPath = await page.getByTestId("pepites-top-entry").first().getAttribute("href");
   expect(playerPath).toMatch(/^\/pepites\/joueur\//);
