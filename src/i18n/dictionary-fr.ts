@@ -1015,7 +1015,7 @@ export const fr = {
   "fpl.help.section.account": "Votre compte BotolaGO",
   "fpl.help.q.signin": "Je n’arrive pas à me connecter. Que faire ?",
   "fpl.help.a.signin":
-    "Vérifiez que vous utilisez l’adresse e-mail et le mot de passe de votre inscription. Le mot de passe est sensible à la casse.\n\nSi vous venez de créer votre compte, activez-le via le lien reçu par e-mail avant d’entrer une équipe BotolaGO Fantasy. Pensez à vérifier votre dossier spam.\n\nVous pouvez réinitialiser votre mot de passe depuis l’écran de connexion : un lien vous sera envoyé à l’adresse enregistrée.",
+    "Vérifiez que vous utilisez l’adresse e-mail et le mot de passe de votre inscription. Le mot de passe est sensible à la casse.\n\nSi vous venez de créer votre compte, confirmez-le avec le code à 6 chiffres reçu par e-mail, sur l’écran « Vérification », avant d’enregistrer une équipe BotolaGO Fantasy. Pensez à vérifier votre dossier spam ; l’écran permet aussi de renvoyer le code.\n\nVous pouvez réinitialiser votre mot de passe depuis l’écran de connexion : un lien vous sera envoyé à l’adresse enregistrée.",
   "fpl.help.q.history":
     "J’ai créé une équipe mais je ne vois pas mon historique. Pouvez-vous lier mon compte ?",
   "fpl.help.a.history":
@@ -1197,7 +1197,6 @@ export const fr = {
   "fpl.team_name": "Nom de l’équipe",
   "fpl.team_name_help":
     "3 à 30 caractères : lettres, chiffres, espaces, - ’ . _ — le nom qui apparaîtra dans les classements.",
-  "fpl.enter_squad": "Entrer l’effectif",
   "fpl.save_team": "Enregistrer l’équipe",
   "fpl.squad_selection": "Sélection de l’effectif",
   "fpl.players_selected": "{n}/15 joueurs",
@@ -1269,7 +1268,7 @@ export const fr = {
   "fantasy.points.event.goal": "But",
   "fantasy.points.event.assist": "Passe décisive",
   "fantasy.points.event.official_assist": "Passe décisive officielle",
-  "fantasy.points.event.clean_sheet": "Clean sheet",
+  "fantasy.points.event.clean_sheet": "Cage inviolée",
   "fantasy.points.event.goals_conceded": "Buts encaissés",
   "fantasy.points.event.saves": "Arrêts",
   "fantasy.points.event.penalty_save": "Penalty arrêté",
@@ -1391,7 +1390,7 @@ export const fr = {
   "fantasy.top.points": "Points",
   "fantasy.top.goals": "Buts",
   "fantasy.top.assists": "Passes décisives",
-  "fantasy.top.clean_sheets": "Clean sheets",
+  "fantasy.top.clean_sheets": "Cages inviolées",
   "fantasy.top.minutes": "Minutes",
   "fantasy.top.form": "Forme",
   "fantasy.top.ownership": "Sélectionné par",
@@ -1606,6 +1605,7 @@ export const fr = {
     "Créez un compte gratuit ou connectez-vous pour accéder à cette fonctionnalité.",
   "auth.prompt.login": "Se connecter",
   "auth.prompt.register": "Créer un compte",
+  "auth.prompt.register_free": "Créer un compte gratuit",
   "auth.prompt.cancel": "Continuer à explorer",
 
   "auth.error.email_required": "Adresse e-mail requise.",
@@ -1858,6 +1858,17 @@ export const fr = {
   "fantasy.create.discarded": "Brouillon réinitialisé.",
   "fantasy.create.success": "Équipe créée avec succès.",
   "fantasy.create.cta_primary": "Enregistrer mon équipe",
+  "fantasy.create.captain_title": "Choisissez votre capitaine — ses points comptent double",
+  "fantasy.create.captain_hint":
+    "Parmi vos 11 titulaires. Le vice-capitaine prend le relais si le capitaine ne joue pas.",
+  "fantasy.create.captain_pick": "À choisir",
+  "fantasy.create.captain_sheet": "Choisir le capitaine",
+  "fantasy.create.vice_sheet": "Choisir le vice-capitaine",
+  "fantasy.create.starters_hint": "Vos 11 titulaires",
+  "fantasy.create.starters_only": "Titulaires uniquement",
+  "fantasy.hub.resume_title": "Votre équipe en cours",
+  "fantasy.hub.resume_cta": "Reprendre mon équipe ({n}/{total})",
+  "fantasy.hub.resume_progress": "Joueurs choisis : {n} sur {total}",
   "fantasy.create.error.pool_unavailable": "Impossible de charger la liste des joueurs.",
   "fantasy.create.error.no_gameweek": "Aucune journée active pour le moment.",
   "fantasy.create.error.team_name":
@@ -2462,7 +2473,7 @@ export const fr = {
   "pepites.stats.goals": "Buts",
   "pepites.stats.assists": "Passes décisives",
   "pepites.stats.saves": "Arrêts",
-  "pepites.stats.clean_sheets": "Clean sheets",
+  "pepites.stats.clean_sheets": "Cages inviolées",
   "pepites.stats.goals_conceded": "Buts encaissés",
   "pepites.stats.penalties_saved": "Pénaltys arrêtés",
   "pepites.stats.penalties_missed": "Pénaltys manqués",

@@ -179,7 +179,16 @@ export function setTeamName(draft: CreateTeamDraft, name: string): CreateTeamDra
   return { ...draft, teamName: name.slice(0, TEAM_NAME_MAX_LENGTH) };
 }
 
-/** Place a player in a slot. Removes the player from any other slot first. */
+/**
+ * Place a player in a slot. Removes the player from any other slot first.
+ *
+ * The armband is the manager's choice, never this function's: it used to
+ * hand the captaincy to the first two starters on every pick (the goalkeeper
+ * ended up captain without anyone choosing him), and a player brought into
+ * the captain's slot inherited the "C". Now a new player arrives without an
+ * armband, a player moved to another slot leaves his behind, and the save
+ * gate (`validateDraft`) waits for an explicit captain and vice-captain.
+ */
 export function placePlayer(
   draft: CreateTeamDraft,
   slot: number,
@@ -191,26 +200,51 @@ export function placePlayer(
       ? { ...s, playerId: null, isCaptain: false, isViceCaptain: false }
       : s,
   );
-  const next = clearedSlots.map((s) =>
-    s.slot === slot
-      ? { ...s, playerId, isCaptain: s.isCaptain ?? false, isViceCaptain: s.isViceCaptain ?? false }
-      : s,
-  );
-  return withDefaultCaptaincy({ ...draft, slots: next });
+  const next = clearedSlots.map((s) => {
+    if (s.slot !== slot) return s;
+    // The same player again keeps his armband; anyone else starts without one.
+    const same = s.playerId === playerId;
+    return {
+      ...s,
+      playerId,
+      isCaptain: same ? (s.isCaptain ?? false) : false,
+      isViceCaptain: same ? (s.isViceCaptain ?? false) : false,
+    };
+  });
+  return { ...draft, slots: next };
 }
 
+/** Clear a slot; a captain or vice-captain removed takes the armband with him. */
 export function removePlayer(draft: CreateTeamDraft, slot: number): CreateTeamDraft {
   const next = draft.slots.map((s) =>
     s.slot === slot ? { ...s, playerId: null, isCaptain: false, isViceCaptain: false } : s,
   );
-  return withDefaultCaptaincy({ ...draft, slots: next });
+  return { ...draft, slots: next };
 }
 
+/** The squad's captain and vice-captain, if chosen. */
+export function captaincyOf(draft: CreateTeamDraft): {
+  captainId: string | null;
+  viceId: string | null;
+} {
+  return {
+    captainId: draft.slots.find((s) => s.isCaptain && s.playerId)?.playerId ?? null,
+    viceId: draft.slots.find((s) => s.isViceCaptain && s.playerId)?.playerId ?? null,
+  };
+}
+
+/**
+ * Give the armband (or the vice-captain's) to a starter. A substitute cannot
+ * hold either — the server refuses it (`captain_not_in_xi`) — so a bench slot
+ * leaves the draft unchanged.
+ */
 export function setCaptain(
   draft: CreateTeamDraft,
   playerId: string,
   vice = false,
 ): CreateTeamDraft {
+  const holder = draft.slots.find((s) => s.playerId === playerId);
+  if (!holder || holder.slot >= 12) return draft;
   const next = draft.slots.map((s) => {
     if (vice) {
       return {
@@ -229,10 +263,11 @@ export function setCaptain(
 }
 
 /**
- * Ensure the XI always has exactly one captain and one distinct vice-captain
- * when at least two XI slots are filled. This mirrors the FPL/BotolaGO contract
- * and keeps the Save gate reachable even before the user opens the captain
- * sheet. Never overrides an already-consistent selection.
+ * Give a complete PROPOSAL a captain and a distinct vice-captain among its
+ * starters when it carries none. Only the two autocomplete builders below use
+ * it: a proposal is offered whole, armband included, and shown before it is
+ * saved. Building a squad by hand never calls it (see `placePlayer`). Never
+ * overrides an already-consistent selection.
  */
 function withDefaultCaptaincy(draft: CreateTeamDraft): CreateTeamDraft {
   const xi = draft.slots.filter((s) => s.slot < 12 && s.playerId);

@@ -134,4 +134,6 @@ its own chunk.
   were not enabled in production Supabase; the landing page does not mention
   them, but the sign-in pages still show the buttons. Verify before promoting.
 - `fantasy.rules.scoring_desc` says a goalkeeper's goal is 6 points; the v1
-  ruleset says 10. The prize terms' tie-break differs from `/fantasy/rules`.
+  ruleset says 10 (fixed 2026-10-07: `/fantasy/rules` now draws its scoring
+  table from the server's ruleset). The prize terms' tie-break differs from
+  `/fantasy/rules`.

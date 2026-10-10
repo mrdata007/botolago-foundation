@@ -962,7 +962,7 @@ export const ar = {
   "fpl.help.section.account": "حسابك في BotolaGO",
   "fpl.help.q.signin": "لا أستطيع تسجيل الدخول. ماذا أفعل؟",
   "fpl.help.a.signin":
-    "تأكد من استخدام البريد الإلكتروني وكلمة المرور المسجلين. كلمة المرور حساسة لحالة الأحرف.\n\nإذا أنشأت حسابك للتو، فعّله عبر الرابط المرسل بالبريد قبل إدخال فريق BotolaGO Fantasy. تحقق من مجلد الرسائل غير المرغوب فيها.\n\nيمكنك إعادة تعيين كلمة المرور من شاشة تسجيل الدخول: سيصلك رابط على البريد المسجل.",
+    "تأكد من استخدام البريد الإلكتروني وكلمة المرور المسجلين. كلمة المرور حساسة لحالة الأحرف.\n\nإذا أنشأت حسابك للتو، فأكّده بالرمز المكوَّن من 6 أرقام الذي وصلك بالبريد، في شاشة «التحقق»، قبل حفظ فريق BotolaGO Fantasy. تحقق من مجلد الرسائل غير المرغوب فيها، ويمكنك أيضًا إعادة إرسال الرمز من الشاشة نفسها.\n\nيمكنك إعادة تعيين كلمة المرور من شاشة تسجيل الدخول: سيصلك رابط على البريد المسجل.",
   "fpl.help.q.history": "أنشأت فريقًا لكن لا أرى سجلي. هل يمكن ربط حسابي؟",
   "fpl.help.a.history":
     "سجل BotolaGO Fantasy مرتبط بحساب BotolaGO الخاص بك. سجّل الدخول بنفس الحساب الذي أنشأت به الفريق. يُسمح بفريق واحد فقط لكل حساب في الموسم.",
@@ -1131,7 +1131,6 @@ export const ar = {
   "fpl.team_name": "اسم الفريق",
   "fpl.team_name_help":
     "من 3 إلى 30 حرفًا: حروف وأرقام ومسافات و - ' . _ — الاسم الذي سيظهر في الترتيب.",
-  "fpl.enter_squad": "إدخال التشكيلة",
   "fpl.save_team": "حفظ الفريق",
   "fpl.squad_selection": "اختيار التشكيلة",
   "fpl.players_selected": "{n}/15 لاعبًا",
@@ -1508,6 +1507,7 @@ export const ar = {
   "auth.prompt.body": "أنشئ حسابًا مجانيًا أو سجّل الدخول للوصول إلى هذه الميزة.",
   "auth.prompt.login": "تسجيل الدخول",
   "auth.prompt.register": "إنشاء حساب",
+  "auth.prompt.register_free": "إنشاء حساب مجاني",
   "auth.prompt.cancel": "المتابعة في التصفح",
 
   "auth.error.email_required": "البريد الإلكتروني مطلوب.",
@@ -1747,6 +1747,17 @@ export const ar = {
   "fantasy.create.discarded": "تمت إعادة تعيين المسودة.",
   "fantasy.create.success": "تم إنشاء الفريق بنجاح.",
   "fantasy.create.cta_primary": "حفظ فريقي",
+  "fantasy.create.captain_title": "اختر قائد فريقك — تُحتسب نقاطه مضاعفة",
+  "fantasy.create.captain_hint":
+    "من بين لاعبيك الأساسيين الأحد عشر. يحل نائب القائد محله إذا لم يلعب القائد.",
+  "fantasy.create.captain_pick": "لم يُختر بعد",
+  "fantasy.create.captain_sheet": "اختيار القائد",
+  "fantasy.create.vice_sheet": "اختيار نائب القائد",
+  "fantasy.create.starters_hint": "لاعبوك الأساسيون الأحد عشر",
+  "fantasy.create.starters_only": "للأساسيين فقط",
+  "fantasy.hub.resume_title": "فريقك قيد الإعداد",
+  "fantasy.hub.resume_cta": "متابعة فريقي ({n}/{total})",
+  "fantasy.hub.resume_progress": "اللاعبون المختارون: {n} من {total}",
   "fantasy.create.error.pool_unavailable": "تعذّر تحميل قائمة اللاعبين.",
   "fantasy.create.error.no_gameweek": "لا توجد جولة نشطة حاليًا.",
   "fantasy.create.error.team_name":
