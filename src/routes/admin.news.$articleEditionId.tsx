@@ -61,6 +61,8 @@ export const Route = createFileRoute("/admin/news/$articleEditionId")({
   // each re-check has_editorial_role at the correct tier); gating the page
   // itself on editorial.write silently locked every pure-publisher account
   // out of the review/publish step entirely.
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminNewsReadRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminNewsEditRoute,

@@ -1,8 +1,14 @@
 import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 import { Share2 } from "lucide-react";
-import { getArticleWithLanguageFallback, getNewsRepository, newsService } from "@/services/news";
+import type { NewsLanguage } from "@/backend/news/contracts";
+import {
+  getArticleWithLanguageFallback,
+  getNewsDataMode,
+  getNewsRepository,
+  newsService,
+} from "@/services/news";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -19,8 +25,10 @@ import {
   UiLinkButton,
   UiPill,
 } from "@/components/ui-kit";
+import { activeLanguage } from "@/i18n/active-language";
 import { useI18n } from "@/i18n/provider";
 import { useBackTo } from "@/lib/back-navigation";
+import { prefetchInBrowser } from "@/lib/browser-prefetch";
 import { formatFullDate, formatRelativeTime } from "@/lib/format-time";
 import { cn } from "@/lib/utils";
 import { clubStyle } from "@/lib/club-palette";
@@ -55,6 +63,44 @@ import {
   unavailableHeaders,
 } from "@/lib/page-availability";
 
+/** An edition's id. Every link the app makes to an article uses one. */
+const EDITION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether the article at this address is the same edition in every language
+ * it is read in: an edition id, against the production repository, where
+ * `api.news_article_detail` filters by language and the service then asks in
+ * the other one (`getArticleWithLanguageFallback`), so a French and an Arabic
+ * read return the same edition, byte for byte. Not a slug, which is one per
+ * language and can name a different edition in each; nor the mock repository,
+ * which serves each language's own text under one id.
+ */
+function sameEditionInEveryLanguage(articleId: string): boolean {
+  return EDITION_ID.test(articleId) && getNewsDataMode() === "supabase";
+}
+
+/** The article as the loader reads it and the page reads it, under one key. */
+function articleQuery(articleId: string, lang: NewsLanguage) {
+  return queryOptions({
+    queryKey: ["news", "article-detail-v2", lang, articleId],
+    queryFn: () =>
+      getArticleWithLanguageFallback(getNewsRepository(), articleId, lang, publicNewsContext()),
+  });
+}
+
+/**
+ * The related rail, keyed by the edition alone: `api.news_related_articles`
+ * takes the edition and a limit and answers in the source edition's language
+ * for every reader. The language that used to be in this key was never read,
+ * and an Arabic reader's visit read the same six stories twice.
+ */
+function relatedArticlesQuery(articleId: string) {
+  return queryOptions({
+    queryKey: ["news", "related", articleId],
+    queryFn: () => newsService.getRelated(articleId),
+  });
+}
+
 export const Route = createFileRoute("/news/$articleId")({
   // While News is hidden (owner decision — see `@/lib/feature-flags`) article
   // permalinks redirect to Home rather than 404; the full rationale is on the
@@ -69,18 +115,27 @@ export const Route = createFileRoute("/news/$articleId")({
   // A missing, unpublished or withdrawn article is a 404; a failed read is a
   // 503 that keeps the page indexed (see `@/lib/page-availability`). It used
   // to be `null` for both, served as 200 + noindex.
-  loader: async ({ params, context }) => {
+  //
+  // French on the server, which always renders French. In the browser, for
+  // an edition that is the same in every language, the reader's language
+  // (`activeLanguage`): the loader used to read the French copy there too,
+  // which an Arabic reader's page then read again in Arabic behind a
+  // skeleton. A slug keeps the French read, and with it the server's answer
+  // for that address. The loader data says which language it holds.
+  //
+  // On the navigation itself (not when a link is only touched or pointed at:
+  // `preload`), the related rail starts with the article instead of after it,
+  // and nothing waits for it (`prefetchInBrowser`).
+  loader: async ({ params, context, preload }) => {
+    const { queryClient } = context;
+    const sameEdition = sameEditionInEveryLanguage(params.articleId);
+    const lang: NewsLanguage = sameEdition ? activeLanguage() : "fr";
+    if (sameEdition && !preload) {
+      prefetchInBrowser(() => queryClient.ensureQueryData(relatedArticlesQuery(params.articleId)));
+    }
     try {
-      return await context.queryClient.ensureQueryData({
-        queryKey: ["news", "article-detail-v2", "fr", params.articleId],
-        queryFn: () =>
-          getArticleWithLanguageFallback(
-            getNewsRepository(),
-            params.articleId,
-            "fr",
-            publicNewsContext(),
-          ),
-      });
+      const article = await queryClient.ensureQueryData(articleQuery(params.articleId, lang));
+      return { article, lang };
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
@@ -90,7 +145,7 @@ export const Route = createFileRoute("/news/$articleId")({
   head: ({ loaderData, params }) =>
     isUnavailable(loaderData)
       ? buildArticleHead(null, params.articleId, { unavailable: true })
-      : buildArticleHead(loaderData, params.articleId),
+      : buildArticleHead(loaderData?.article, params.articleId),
   component: ArticlePage,
 });
 
@@ -154,17 +209,23 @@ function ArticlePage() {
   const goBack = useBackTo("/news");
   const [copied, setCopied] = useState(false);
   const loaded = Route.useLoaderData();
-  const initialArticle = isUnavailable(loaded) ? undefined : loaded;
+  const loaderData = isUnavailable(loaded) ? undefined : loaded;
+  // The loader's copy seeds the page, identical on the server and in the
+  // browser's first render (both French): in the language it was read in, and,
+  // for an edition that is the same in every language, in either. An Arabic
+  // reader's page then shows the article it already has, on a shared link as
+  // on a tap, instead of a skeleton and a second read of the same edition.
+  const initialArticle =
+    loaderData && ((loaderData.lang ?? "fr") === lang || sameEditionInEveryLanguage(articleId))
+      ? loaderData.article
+      : undefined;
 
   const articleQ = useQuery({
-    queryKey: ["news", "article-detail-v2", lang, articleId],
-    queryFn: () =>
-      getArticleWithLanguageFallback(getNewsRepository(), articleId, lang, publicNewsContext()),
-    initialData: lang === "fr" ? (initialArticle ?? undefined) : undefined,
+    ...articleQuery(articleId, lang),
+    initialData: initialArticle,
   });
   const relatedQ = useQuery({
-    queryKey: ["news", "related", lang, articleId],
-    queryFn: () => newsService.getRelated(articleId, lang),
+    ...relatedArticlesQuery(articleId),
     enabled: !!articleQ.data,
   });
   // The club directory for the related cards and the Clubs chips. Presented

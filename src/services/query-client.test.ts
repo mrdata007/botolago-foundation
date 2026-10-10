@@ -4,7 +4,10 @@ import { BackendError } from "@/backend/errors";
 import { FootballError } from "@/backend/football/errors";
 import { NewsError } from "@/backend/news/errors";
 import {
+  BROWSER_CACHE_TIME_MS,
+  CLUB_PROFILE_STALE_MS,
   createAppQueryClient,
+  FANTASY_POOL_STALE_MS,
   MAX_QUERY_RETRIES,
   queryRetryDelay,
   SEASON_CATALOG_STALE_MS,
@@ -104,6 +107,82 @@ describe("the season list", () => {
     expect(calls.seasons).toBe(2);
     expect(SEASON_CATALOG_STALE_MS).toBe(600_000);
     client.clear();
+  });
+});
+
+describe("how long each kind of data stays fresh", () => {
+  afterEach(() => setSystemTime());
+
+  async function readsAfter(
+    queryKey: readonly unknown[],
+    minutes: number,
+  ): Promise<{ first: number; later: number }> {
+    const client = createAppQueryClient();
+    let calls = 0;
+    const query = { queryKey, queryFn: async () => ++calls };
+    setSystemTime(new Date("2026-10-06T18:00:00Z"));
+    await client.fetchQuery(query);
+    setSystemTime(new Date(Date.parse("2026-10-06T18:00:00Z") + minutes * 60_000));
+    await client.fetchQuery(query);
+    client.clear();
+    return { first: 1, later: calls };
+  }
+
+  test("what a club is: kept ten minutes", async () => {
+    expect(CLUB_PROFILE_STALE_MS).toBe(600_000);
+    for (const prefix of ["clubs", "club-directory", "club", "club-squad", "club-seasons-played"]) {
+      expect((await readsAfter(["football", prefix, "id", "fr"], 9)).later).toBe(1);
+      expect((await readsAfter(["football", prefix, "id", "fr"], 11)).later).toBe(2);
+    }
+  });
+
+  test("what a club is doing keeps the fifteen-second default", async () => {
+    for (const key of [
+      ["football", "club-matches", "id", "season", "fr"],
+      ["football", "standings", "season", "fr"],
+      ["football", "match-detail", "id", "fr"],
+      ["football", "home-matches", "fr"],
+      ["football", "matches", "2026-10-06", "season", "fr"],
+    ]) {
+      expect((await readsAfter(key, 0.5)).later).toBe(2);
+    }
+  });
+
+  test("the Fantasy player pool and a player read from it: five minutes", async () => {
+    expect(FANTASY_POOL_STALE_MS).toBe(300_000);
+    expect((await readsAfter(["fantasy-players"], 4)).later).toBe(1);
+    expect((await readsAfter(["fantasy-players"], 6)).later).toBe(2);
+    expect((await readsAfter(["fantasy-player", "p1"], 4)).later).toBe(1);
+    // Other Fantasy reads, live points among them, are not covered.
+    expect((await readsAfter(["fantasy-player-history", "p1"], 0.5)).later).toBe(2);
+  });
+
+  test("a screen's own setting still wins over its key's", async () => {
+    const client = createAppQueryClient();
+    let calls = 0;
+    const pool = { queryKey: ["fantasy-players"], queryFn: async () => ++calls, staleTime: 60_000 };
+    setSystemTime(new Date("2026-10-06T18:00:00Z"));
+    await client.fetchQuery(pool);
+    setSystemTime(new Date("2026-10-06T18:02:00Z"));
+    await client.fetchQuery(pool);
+    expect(calls).toBe(2);
+    client.clear();
+  });
+
+  test("screens' data is kept half an hour in the browser, and not on a timer on the server", () => {
+    expect(BROWSER_CACHE_TIME_MS).toBe(1_800_000);
+    const global = globalThis as { window?: unknown };
+    const saved = global.window;
+    try {
+      // No window: a server render.
+      delete global.window;
+      expect(createAppQueryClient().getDefaultOptions().queries?.gcTime).toBeUndefined();
+      global.window = {};
+      expect(createAppQueryClient().getDefaultOptions().queries?.gcTime).toBe(1_800_000);
+    } finally {
+      if (saved === undefined) delete global.window;
+      else global.window = saved;
+    }
   });
 });
 

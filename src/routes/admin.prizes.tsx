@@ -71,6 +71,8 @@ import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/prizes")({
   ssr: false,
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminPrizesRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminPrizesRoute,

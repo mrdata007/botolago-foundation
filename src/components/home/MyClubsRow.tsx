@@ -14,7 +14,8 @@ import { rowClubName } from "@/lib/club-identity";
 import { clubStyle } from "@/lib/club-palette";
 import { sharedPositions } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
-import { footballService, type FootballSeason } from "@/services/football";
+import type { FootballSeason } from "@/services/football";
+import { clubMatchesQuery } from "@/services/football-queries";
 import type { Club, Match, TableRow } from "@/types/domain";
 import { clubSpotlight, type HomeClubTile } from "./my-clubs";
 
@@ -115,8 +116,7 @@ function MyClubCard({
 
   // The club page's own query, key for key (`clubs.$clubId.tsx`).
   const matchesQ = useQuery({
-    queryKey: ["football", "club-matches", club.id, season?.id ?? "none", lang],
-    queryFn: () => footballService.getClubSeasonMatches(club.id, season ?? null, lang),
+    ...clubMatchesQuery(club.id, season, lang),
     enabled: seasonReady,
   });
 

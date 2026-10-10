@@ -108,7 +108,10 @@ describe("match page — design-system rules in source", () => {
 
   it("seeds the detail query with the loader's payload, so the server and the first render agree", () => {
     const route = code("src/routes/matches.$matchId.tsx");
-    expect(route).toMatch(/return \{ detail, fetchedAt \};/);
+    // The loader data says which language it holds (French on the server),
+    // and only seeds a page in that language.
+    expect(route).toMatch(/return \{ detail, fetchedAt, lang \};/);
+    expect(route).toMatch(/\(loaderData\?\.lang \?\? "fr"\) === lang/);
     expect(route).toMatch(/initialData: serverDetail/);
     // With its age, so a copy the router kept from an earlier visit is
     // refetched rather than trusted as fresh.
@@ -141,7 +144,10 @@ describe("match page — the Face-à-face table", () => {
       /useEffect\(\s*\(\) => rereadTableOnFinish\(queryClient, \["football", "match-detail", matchId\]\),\s*\[queryClient, matchId\],?\s*\);/,
     );
     expect(start).toBeGreaterThan(-1);
-    expect(route).toContain('queryKey: ["football", "match-detail", matchId, lang]');
+    expect(route).toContain("...matchDetailQuery(matchId, lang)");
+    expect(code("src/services/football-queries.ts")).toContain(
+      'queryKey: ["football", "match-detail", matchId, language]',
+    );
     // In the page, not in the tab: a whistle heard on the Résumé tab counts.
     expect(start).toBeLessThan(route.indexOf("function HeadToHeadTab("));
   });

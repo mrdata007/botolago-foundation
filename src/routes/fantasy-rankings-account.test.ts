@@ -39,4 +39,15 @@ describe("/fantasy/rankings", () => {
   it("asks for the board only once the session is settled", () => {
     expect(options).toContain("enabled: isSessionSettled(status),");
   });
+
+  // 2026-10-06: page, sort, search and the reader's total were part of the
+  // key, and every new combination -- each letter typed -- read the whole
+  // board again. One board per owner now, cut into pages in the browser.
+  it("reads the whole board once per owner, not once per page, sort or search", () => {
+    expect(options).toContain('queryKey: key("rankings"),');
+    expect(options).toContain("queryFn: () => fantasyService.getGlobalBoard(),");
+    expect(options).not.toMatch(/\b(page|search|sort|totalScore)\b/);
+    expect(options).toContain("refetchInterval: 60_000,");
+    expect(code).toContain("selectGlobalRankingsPage(board, {");
+  });
 });

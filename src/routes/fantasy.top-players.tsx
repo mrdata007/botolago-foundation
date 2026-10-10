@@ -26,9 +26,12 @@ import { useI18n } from "@/i18n/provider";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
 import { fantasyHead } from "@/lib/fantasy-meta";
+import { useIntentPreload } from "@/lib/intent-preload";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { cn } from "@/lib/utils";
 import { plateName } from "@/components/fpl/plate-name";
+import { fantasyPlayersQuery, topPlayersOfWeekQuery } from "@/services/fantasy-player-query";
+import { availableGameweeksQuery } from "@/services/fantasy-queries";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { footballService } from "@/services/football";
 import type { Club } from "@/types/domain";
@@ -81,10 +84,8 @@ function TopPlayersPage() {
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
   });
-  const availableGwsQ = useQuery({
-    queryKey: ["top-gws"],
-    queryFn: () => fantasyService.getAvailableTopGameweeks(),
-  });
+  // The same list the Points stepper reads, under its key.
+  const availableGwsQ = useQuery(availableGameweeksQuery());
   const [gw, setGw] = useState<number | null>(null);
 
   const availableGws = availableGwsQ.data ?? [];
@@ -94,15 +95,18 @@ function TopPlayersPage() {
   // the first gameweek the backend actually knows about.
   const currentGw = gw ?? gwQ.data?.number ?? gwMin;
 
+  // The gameweek's top five, joined with the pool this page already holds
+  // (`topPlayersOfWeekQuery`): the pool is read once, not again inside each
+  // gameweek's read. Asked for once the current gameweek is known (or the
+  // reader picked one, or reading it failed and the first gameweek stands in):
+  // a placeholder gameweek's read, now quick, could otherwise land first and
+  // draw that gameweek's cards before the right one. When the gameweek read
+  // fails, the stand-in starts with its retry, as before.
   const topQ = useQuery({
-    queryKey: ["top-players", currentGw],
-    queryFn: () => fantasyService.getTopPlayersOfWeek(currentGw),
-    enabled: currentGw > 0,
+    ...topPlayersOfWeekQuery(currentGw),
+    enabled: currentGw > 0 && (gw !== null || !gwQ.isPending || gwQ.failureCount > 0),
   });
-  const playersQ = useQuery({
-    queryKey: ["fantasy-players"],
-    queryFn: () => fantasyService.getPlayers(),
-  });
+  const playersQ = useQuery(fantasyPlayersQuery());
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
@@ -207,6 +211,15 @@ type CardProps = {
 };
 
 /** A club's colours as `data-club` + inline vars, memoised per club. */
+/**
+ * A player's page, for the hero's button and each row: both load it ahead,
+ * as a link would (`useIntentPreload`), so the page is on its way when the
+ * click lands.
+ */
+function playerPage(playerId: string) {
+  return { to: "/fantasy/players/$playerId" as const, params: { playerId } };
+}
+
 function coloursOf(club?: Club) {
   return club ? crestStyle(club) : clubStyle(null);
 }
@@ -237,6 +250,7 @@ function percent(nf: Intl.NumberFormat, value: number) {
 
 function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
   const navigate = useNavigate();
+  const intent = useIntentPreload();
   const watchlist = useWatchlist();
   const { player, club, top } = entry;
   const watched = watchlist.isWatched(player.id);
@@ -325,9 +339,8 @@ function TopPlayerHeroCard({ entry, tr, t, nf }: CardProps) {
           <UiButton
             size="sm"
             className="flex-auto"
-            onClick={() =>
-              void navigate({ to: "/fantasy/players/$playerId", params: { playerId: player.id } })
-            }
+            {...intent.handlers(playerPage(player.id))}
+            onClick={() => void navigate(playerPage(player.id))}
           >
             {t("fantasy.top.view_player")}
           </UiButton>
@@ -404,6 +417,7 @@ function MetaChip({ label, value }: { label: string; value: string }) {
 
 function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boolean }) {
   const navigate = useNavigate();
+  const intent = useIntentPreload();
   const { player, club, top } = entry;
   const colours = coloursOf(club);
 
@@ -423,9 +437,8 @@ function RankedPlayerRow({ entry, first, tr, t, nf }: CardProps & { first: boole
       {/* The whole row is the control; the edge bar is the club's. */}
       <button
         type="button"
-        onClick={() =>
-          void navigate({ to: "/fantasy/players/$playerId", params: { playerId: player.id } })
-        }
+        {...intent.handlers(playerPage(player.id))}
+        onClick={() => void navigate(playerPage(player.id))}
         className={cn(
           "flex w-full items-center gap-3 py-3 pe-3 ps-3 text-start",
           ui.edge.start,

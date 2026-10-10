@@ -29,6 +29,7 @@ import {
 import { useI18n } from "@/i18n/provider";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { availableGameweeksQuery } from "@/services/fantasy-queries";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { buildGameweekRecap } from "@/services/gameweek-recap";
@@ -150,8 +151,7 @@ function PointsBody() {
   const [view, setView] = useState<"squad" | "list">("squad");
 
   const gameweeksQ = useQuery({
-    queryKey: ["fantasy-gameweeks-available"],
-    queryFn: () => fantasyService.getAvailableTopGameweeks(),
+    ...availableGameweeksQuery(),
     enabled: screen.phase === "ready",
     staleTime: 60_000,
   });

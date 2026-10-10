@@ -8,12 +8,7 @@ import {
   readFantasyAvailability,
   type FantasyAvailability,
 } from "./fantasy-availability";
-import {
-  buildGlobalRankings,
-  selectRankingsPage,
-  type RankingsPage,
-  type RankingsQuery,
-} from "./fantasy-rankings";
+import { buildGlobalRankings, type GlobalRankingsBoard } from "./fantasy-rankings";
 import type { RepositoryContext } from "@/backend/contracts/repository";
 import type {
   FantasyGameweekSummaryDto,
@@ -281,16 +276,14 @@ async function allPlayers(): Promise<FantasyPlayer[]> {
 
 /**
  * BG-0073 — the season-wide board as `LeagueStanding[]`, so the existing pure
- * `selectRankingsPage` keeps owning sort, search and paging and the rankings
- * route needs no change.
+ * `selectRankingsPage` keeps owning sort, search and paging: in the browser,
+ * over the board read once per owner (`selectGlobalRankingsPage`).
  *
  * The board is read through the RPC's keyset cursor and bounded the same way
  * the player pool is: 20 pages of 100. A season larger than that is a product
  * decision (server-side paging on the route) rather than an unbounded read.
  */
-async function overallBoard(
-  seasonId: string,
-): Promise<{ rows: LeagueStanding[]; myRank?: LeagueStanding }> {
+async function overallBoard(seasonId: string): Promise<Omit<GlobalRankingsBoard, "authoritative">> {
   const rows: LeagueStanding[] = [];
   let cursor: { rank: number; teamId: string } | null = null;
   let myRank: LeagueStanding | undefined;
@@ -304,8 +297,18 @@ async function overallBoard(
   return { rows, myRank };
 }
 
-async function gameweekIdOf(seasonId: string, sequence: number): Promise<string | null> {
-  const gameweeks = await cloud.getGameweeks(seasonId, null, context());
+/**
+ * A gameweek's id from its number. The hub already names its current
+ * gameweek, and that is the one these reads ask about most -- the top players
+ * and the points open on it, and the points read it again every thirty
+ * seconds until it is final -- so only another gameweek reads the season's
+ * list (`api.fantasy_gameweeks`). The answer is the same either way: a
+ * season's gameweeks are unique by number, the hub's is one of them, and the
+ * list has no status filter and fits in one page (a season has 30).
+ */
+async function gameweekIdOf(current: FantasyHubDto, sequence: number): Promise<string | null> {
+  if (current.gameweek?.sequence === sequence) return current.gameweek.id;
+  const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
   return gameweeks.items.find((item) => item.sequence === sequence)?.id ?? null;
 }
 
@@ -400,7 +403,18 @@ export const fantasyService = {
     return [];
   },
 
-  async getTrendingPlayers(): Promise<Player[]> {
+  /**
+   * The gameweek's top five, as players. `loadPool` is where the season's pool
+   * comes from: read here by default, or the copy a caller already holds
+   * (`trendingPlayersQuery` in `@/services/fantasy-player-query` hands in the
+   * cached `["fantasy-players"]`, so the pool is not read a second time). Only
+   * the cloud path reads it; the mock path keeps its own data. Call it from an
+   * arrow function, never as a bare `queryFn`: React Query would pass its
+   * context object as `loadPool`.
+   */
+  async getTrendingPlayers(
+    loadPool: () => Promise<FantasyPlayer[]> = allPlayers,
+  ): Promise<Player[]> {
     if (mode() === "mock") {
       const [{ trendingPlayers }, players] = await Promise.all([
         import("@/mocks/data"),
@@ -414,7 +428,7 @@ export const fantasyService = {
     if (!current.gameweek) return [];
     const [top, players] = await Promise.all([
       cloud.getTopPlayers(current.gameweek.id, context()),
-      allPlayers(),
+      loadPool(),
     ]);
     const byId = new Map(players.map((player) => [player.id, player]));
     return top
@@ -499,35 +513,25 @@ export const fantasyService = {
    * would otherwise inject a synthetic rank-1 row for the signed-in manager
    * before any gameweek is scored, which would hide the "rankings available
    * after the first gameweek" empty state that BG-0073 exists to restore.
+   *
+   * The whole board, read once per owner: the route cuts its pages, sorts and
+   * searches it in the browser (`selectGlobalRankingsPage`). Page, sort and
+   * search used to be part of the read, and every new combination -- each
+   * letter typed in the search -- read the whole board again.
    */
-  async getGlobalRankings(query: RankingsQuery): Promise<RankingsPage> {
-    if (mode() === "mock") {
-      return selectRankingsPage(buildGlobalRankings(), query);
-    }
+  async getGlobalBoard(): Promise<GlobalRankingsBoard> {
+    if (mode() === "mock") return { rows: buildGlobalRankings(), authoritative: false };
     const current = await hub();
-    const { rows, myRank } = await overallBoard(current.season.id);
-    // `me` is deliberately dropped: the authoritative board already contains
-    // the signed-in manager's row once they are ranked.
-    const page = selectRankingsPage(rows, {
-      ...query,
-      me: undefined,
-      meId: myRank?.managerId ?? query.meId,
-    });
-    // Prefer the board's own copy of the row: under the "gameweek" sort
-    // selectRankingsPage re-ranks, and `jumpToMe` pages by myRank.rank, so the
-    // two must agree. Fall back to the server answer when the row is not on the
-    // fetched board at all.
-    return { ...page, myRank: page.myRank ?? myRank };
+    return { ...(await overallBoard(current.season.id)), authoritative: true };
   },
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
     const current = await cloudTeam();
-    const gameweeks = await cloud.getGameweeks(current.hub.season.id, null, context());
-    const gameweek = gameweeks.items.find((item) => item.sequence === sequence);
-    if (!gameweek) return undefined;
+    const gameweekId = await gameweekIdOf(current.hub, sequence);
+    if (!gameweekId) return undefined;
     const [points, summary] = await Promise.all([
-      cloud.getPoints(current.team.id, gameweek.id, context()),
-      gameweekSummary(gameweek.id),
+      cloud.getPoints(current.team.id, gameweekId, context()),
+      gameweekSummary(gameweekId),
     ]);
     return pointsDto(sequence, points, summary);
   },
@@ -538,13 +542,13 @@ export const fantasyService = {
   async getMyRecapPublication(sequence: number): Promise<FantasyMyRecapPublicationDto> {
     if (mode() === "mock") return { publishEnabled: false, publication: null };
     const current = await cloudTeam();
-    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    const gameweekId = await gameweekIdOf(current.hub, sequence);
     if (!gameweekId) return { publishEnabled: false, publication: null };
     return cloud.getMyGameweekRecapPublication(current.team.id, gameweekId, context());
   },
   async publishRecap(sequence: number, alias: string): Promise<FantasyRecapPublicationDto> {
     const current = await cloudTeam();
-    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    const gameweekId = await gameweekIdOf(current.hub, sequence);
     if (!gameweekId) throw new Error("fantasy_gameweek_not_found");
     return cloud.publishGameweekRecap(current.team.id, gameweekId, alias.trim(), context());
   },
@@ -725,19 +729,27 @@ export const fantasyService = {
     const current = await hub();
     return cloud.getRules(current.season.id, context());
   },
-  async getTopPlayersOfWeek(gameweek: number): Promise<TopPlayerOfWeek[]> {
+  /**
+   * One gameweek's top five with their price, ownership and form. `loadPool`
+   * as for `getTrendingPlayers`: by default the pool is read here;
+   * `topPlayersOfWeekQuery` hands in the cached one. The points and minutes
+   * always come from this read.
+   */
+  async getTopPlayersOfWeek(
+    gameweek: number,
+    loadPool: () => Promise<FantasyPlayer[]> = allPlayers,
+  ): Promise<TopPlayerOfWeek[]> {
     if (mode() === "mock") return mockFantasyService.getTopPlayersOfWeek(gameweek);
     const current = await hub();
-    const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
-    const target = gameweeks.items.find((item) => item.sequence === gameweek);
-    if (!target) return [];
+    const targetId = await gameweekIdOf(current, gameweek);
+    if (!targetId) return [];
     // BG-0071: price, ownership and form used to be literal zeros here. They
     // come from the same season aggregate and pool that every other screen
     // reads, merged by fantasy player id. A player missing from the pool keeps
     // price/ownership 0 and form `null` ("unknown"), never a fabricated 0.0.
     const [top, players] = await Promise.all([
-      cloud.getTopPlayers(target.id, context()),
-      allPlayers(),
+      cloud.getTopPlayers(targetId, context()),
+      loadPool(),
     ]);
     const byId = new Map(players.map((player) => [player.id, player]));
     return top.map((player, index) => {

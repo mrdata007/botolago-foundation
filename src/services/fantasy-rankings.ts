@@ -26,6 +26,23 @@ export interface RankingsPage {
   myRank?: LeagueStanding;
 }
 
+/**
+ * The whole season board as one read returns it, before sort, search or
+ * paging. The rankings route holds it in React Query once per owner and cuts
+ * its pages in the browser (`selectGlobalRankingsPage`): turning a page,
+ * typing in the search or changing tab reads nothing.
+ */
+export interface GlobalRankingsBoard {
+  rows: LeagueStanding[];
+  /** The reader's row as the server ranked it (cloud); the mock board has none. */
+  myRank?: LeagueStanding;
+  /**
+   * The server's board, which already holds the signed-in manager's row once
+   * they are ranked; the mock board takes the reader's row in by score.
+   */
+  authoritative: boolean;
+}
+
 const FIRST_NAMES = [
   "Youssef",
   "Salma",
@@ -165,6 +182,30 @@ export function selectRankingsPage(
     podium: sorted.slice(0, 3),
     myRank: id ? sorted.find((row) => row.managerId === id) : undefined,
   };
+}
+
+/**
+ * One page of a season board (`GlobalRankingsBoard`): sort, search and paging,
+ * no read. Pure. The two branches are the ones the board's read used to apply
+ * to every page it fetched, unchanged.
+ */
+export function selectGlobalRankingsPage(
+  board: GlobalRankingsBoard,
+  query: RankingsQuery,
+): RankingsPage {
+  if (!board.authoritative) return selectRankingsPage(board.rows, query);
+  // `me` is deliberately dropped: the authoritative board already contains
+  // the signed-in manager's row once they are ranked.
+  const page = selectRankingsPage(board.rows, {
+    ...query,
+    me: undefined,
+    meId: board.myRank?.managerId ?? query.meId,
+  });
+  // Prefer the board's own copy of the row: under the "gameweek" sort
+  // selectRankingsPage re-ranks, and `jumpToMe` pages by myRank.rank, so the
+  // two must agree. Fall back to the server answer when the row is not on the
+  // fetched board at all.
+  return { ...page, myRank: page.myRank ?? board.myRank };
 }
 
 /** Page number (1-based) that contains a given rank. */

@@ -445,7 +445,11 @@ export const newsService = {
     );
   },
 
-  async getRelated(articleId: string, _language: NewsLanguage): Promise<Article[]> {
+  /**
+   * The related rail of one edition. It takes no language: the stories come in
+   * the source edition's language whoever reads it.
+   */
+  async getRelated(articleId: string): Promise<Article[]> {
     return (await getNewsRepository().getRelated(articleId, 6, context())).map((article) =>
       presentArticle(article),
     );

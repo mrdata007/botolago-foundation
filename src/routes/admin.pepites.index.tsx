@@ -13,6 +13,8 @@ export const Route = createFileRoute("/admin/pepites/")({
     typeof search.edition === "string" && UUID.test(search.edition)
       ? { edition: search.edition }
       : {},
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminPepitesRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminPepitesRoute,

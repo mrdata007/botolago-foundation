@@ -846,6 +846,10 @@ export function UiSegmented<T extends string>({
  * `${idBase}-tab-${value}` so a panel can say
  * `aria-labelledby={`${idBase}-tab-${value}`}`; pass `panelId` per option to
  * set `aria-controls` the other way.
+ *
+ * Tabs that change page can load the next page ahead: `tabIntent` gives each
+ * tab not yet chosen its pointer and touch handlers (`useIntentPreload`,
+ * `@/lib/intent-preload`). The chosen tab and a disabled one get none.
  */
 export function UiTabs<T extends string>({
   value,
@@ -854,6 +858,7 @@ export function UiTabs<T extends string>({
   label,
   accent,
   idBase,
+  tabIntent,
   className,
 }: {
   value: T;
@@ -865,6 +870,15 @@ export function UiTabs<T extends string>({
   accent?: string;
   /** Prefix for the tab ids; a generated one when omitted. */
   idBase?: string;
+  /** Pointer and touch handlers for a tab that is not chosen (see above). */
+  tabIntent?: (
+    value: T,
+  ) =>
+    | Pick<
+        ButtonHTMLAttributes<HTMLButtonElement>,
+        "onMouseEnter" | "onMouseLeave" | "onTouchStart"
+      >
+    | undefined;
   className?: string;
 }) {
   const generated = useId();
@@ -915,6 +929,7 @@ export function UiTabs<T extends string>({
             aria-controls={option.panelId}
             tabIndex={option.value === tabStop ? 0 : -1}
             disabled={option.disabled}
+            {...(active || option.disabled ? undefined : tabIntent?.(option.value))}
             onClick={() => onChange(option.value)}
             className={cn(
               "flex min-h-[var(--ui-row-min)] min-w-0 items-center justify-center px-1",

@@ -12,6 +12,8 @@ import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/football/player-mappings")({
   ssr: false,
+  // Not on intent: a staff access check (see `admin.tsx`).
+  preload: false,
   loader: () => loadAdminPlayerMappingsRouteAccess(),
   pendingComponent: AdminFunctionalLoading,
   component: AdminPlayerMappingsRoute,

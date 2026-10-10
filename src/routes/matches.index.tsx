@@ -9,6 +9,7 @@ import {
   HOME_LIST_SIZE,
   type FootballSeason,
 } from "@/services/football";
+import { seasonsQuery } from "@/services/football-queries";
 import { AppShell } from "@/components/shell/AppShell";
 import { MatchCard } from "@/components/common/MatchCard";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -31,6 +32,7 @@ import { useLiveMatches, useOnLiveMatchEnd } from "@/components/matches/use-live
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { MatchCardSkeleton } from "@/components/common/Skeletons";
 import { ui, UiCard, UiChip, UiPageTitle } from "@/components/ui-kit";
+import { activeLanguage } from "@/i18n/active-language";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { isSameMatchDay, matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
@@ -38,6 +40,7 @@ import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { latestResultDayBefore, matchRounds, nextMatchDayAfter } from "@/lib/match-days";
 import { unavailableHeaders } from "@/lib/page-availability";
+import { prefetchInBrowser } from "@/lib/browser-prefetch";
 import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Match } from "@/types/domain";
@@ -80,6 +83,18 @@ export const Route = createFileRoute("/matches/")({
       // the day the server rendered even when midnight falls between the two.
       const today = matchDayKey(new Date());
       const { queryClient } = context;
+      // In the browser, the same two reads in the reader's language, started
+      // and not waited for (`prefetchInBrowser`), so the navigation is still
+      // not held up: the day's fixtures are on their way while the page's
+      // code loads, or before the tap when the tab was only touched (the
+      // router preloads on intent). The page asks for the same keys.
+      prefetchInBrowser(async () => {
+        const lang = activeLanguage();
+        const seasons = await queryClient.ensureQueryData(seasonsQuery(lang));
+        const season = openingSeason(seasons, deps.season);
+        const day = deps.date ? clampMatchDay(deps.date, season) : openingMatchDay(season, today);
+        await queryClient.ensureQueryData(matchDayQuery(day, lang, season?.id));
+      });
       await prefetchForSsr(queryClient, [
         {
           queryKey: ["football", "seasons", "fr"],

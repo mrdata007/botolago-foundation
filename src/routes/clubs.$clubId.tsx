@@ -33,10 +33,12 @@ import {
 } from "@/components/matches/StandingsTable";
 import { AppShell } from "@/components/shell/AppShell";
 import { ui, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
+import { activeLanguage } from "@/i18n/active-language";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { breadcrumbJsonLd, sportsTeamJsonLd } from "@/lib/structured-data";
 import { useBackTo } from "@/lib/back-navigation";
+import { prefetchInBrowser } from "@/lib/browser-prefetch";
 import {
   clubSeasonAbsent,
   clubSeasonStats,
@@ -47,6 +49,12 @@ import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { sharedPositions } from "@/lib/league-table";
 import { cn } from "@/lib/utils";
 import { defaultSeason, footballService, type FootballSeason } from "@/services/football";
+import {
+  clubMatchesQuery,
+  clubQuery,
+  seasonsQuery,
+  standingsQuery,
+} from "@/services/football-queries";
 import { newsArticlesForCategory, newsService } from "@/services/news";
 import type { Club } from "@/types/domain";
 
@@ -80,22 +88,41 @@ export const Route = createFileRoute("/clubs/$clubId")({
    * The club itself, in French, for the page title and so the server renders
    * the hero rather than a spinner. As on the match page, loader data is
    * serialized to the browser and the query cache is not, so the page seeds
-   * its query with it (`initialData`) and both first renders agree.
+   * its query with it (`initialData`) and both first renders agree. In the
+   * browser, in the reader's own language, as on the match page: an Arabic
+   * reader's page finds its copy in the cache instead of waiting on a French
+   * one and then showing a skeleton.
+   *
+   * In the browser it also starts what the page reads next, without waiting
+   * for it (`prefetchInBrowser`): the seasons, then the season's matches and
+   * table. The page used to ask for those only once it had rendered the club,
+   * a second round trip after the first; now they travel with the club, and
+   * when the link was only touched or pointed at (the router preloads on
+   * intent) the whole overview is often in before the tap lands.
    *
    * An unknown or malformed club id is a 404 and a failed read a 503 (see
    * `@/lib/page-availability`); both used to answer 200, the first with an
    * indexable "Club introuvable".
    */
-  loader: async ({ params, context }) => {
+  loader: async ({ params, context, location }) => {
     if (!UUID.test(params.clubId)) throw notFound();
+    const { queryClient } = context;
+    const lang = activeLanguage();
+    prefetchInBrowser(async () => {
+      const seasons = await queryClient.ensureQueryData(seasonsQuery(lang));
+      // The season the page will show: the one in the address, else the default.
+      const wanted = (location.search as { season?: unknown }).season;
+      const season = seasons.find((candidate) => candidate.id === wanted) ?? defaultSeason(seasons);
+      await Promise.all([
+        queryClient.ensureQueryData(clubMatchesQuery(params.clubId, season, lang)),
+        season ? queryClient.ensureQueryData(standingsQuery(season, lang)) : undefined,
+      ]);
+    });
     try {
-      const queryKey = ["football", "club", params.clubId, "fr"];
-      const club = await context.queryClient.ensureQueryData({
-        queryKey,
-        queryFn: () => footballService.getClub(params.clubId, "fr"),
-      });
-      const fetchedAt = context.queryClient.getQueryState(queryKey)?.dataUpdatedAt || Date.now();
-      return { club, fetchedAt };
+      const query = clubQuery(params.clubId, lang);
+      const club = await queryClient.ensureQueryData(query);
+      const fetchedAt = queryClient.getQueryState(query.queryKey)?.dataUpdatedAt || Date.now();
+      return { club, fetchedAt, lang };
     } catch (error) {
       if (isMissingContent(error)) throw notFound();
       return UNAVAILABLE;
@@ -189,10 +216,12 @@ function ClubPage() {
   const headingId = useId();
   const validId = UUID.test(clubId);
 
-  const serverClub = lang === "fr" && loaderData?.club.id === clubId ? loaderData.club : undefined;
+  const serverClub =
+    (loaderData?.lang ?? "fr") === lang && loaderData?.club.id === clubId
+      ? loaderData.club
+      : undefined;
   const clubQ = useQuery({
-    queryKey: ["football", "club", clubId, lang],
-    queryFn: () => footballService.getClub(clubId, lang),
+    ...clubQuery(clubId, lang),
     // Identical on the server and in the browser's first render — see the
     // loader — with its real age, so an old seed is refetched.
     initialData: serverClub,
@@ -205,24 +234,19 @@ function ClubPage() {
     retry: (count, error) => !isNotFound(error) && count < 2,
   });
 
-  const seasonsQ = useQuery({
-    queryKey: ["football", "seasons", lang],
-    queryFn: () => footballService.getSeasons(lang),
-  });
+  const seasonsQ = useQuery(seasonsQuery(lang));
   const seasons = seasonsQ.data ?? EMPTY_SEASONS;
   const season =
     seasons.find((candidate) => candidate.id === search.season) ?? defaultSeason(seasons);
 
   const matchesQ = useQuery({
-    queryKey: ["football", "club-matches", clubId, season?.id ?? "none", lang],
-    queryFn: () => footballService.getClubSeasonMatches(clubId, season ?? null, lang),
+    ...clubMatchesQuery(clubId, season, lang),
     enabled: validId && seasonsQ.isSuccess,
   });
   // The season's table, worked out from its results: the Classement tab's
   // query, so the two pages share one cache entry.
   const standingsQ = useQuery({
-    queryKey: ["football", "standings", season?.id, lang],
-    queryFn: () => footballService.getStandings(season!, lang),
+    ...standingsQuery(season, lang),
     enabled: season !== undefined,
   });
   // The current squad is the club's active memberships; a past season's is

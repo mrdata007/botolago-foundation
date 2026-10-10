@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { PredictionsPage, type PredictionsTab } from "@/components/predictions/PredictionsPage";
 import { roundQueryOptions } from "@/components/predictions/use-predictions-round";
 import { fr } from "@/i18n/dictionary-fr";
+import { activeLanguage } from "@/i18n/active-language";
 import { useI18n } from "@/i18n/provider";
 import { PUBLIC_SITE_ORIGIN } from "@/lib/article-meta";
 import { PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
@@ -38,9 +39,17 @@ export const Route = createFileRoute("/pronostics/")({
   // No SSR bridge carries the query cache to the browser (see
   // matches.$matchId.tsx), so the journée travels as loader data and seeds the
   // page's query: the server's render and the browser's first are one tree.
+  //
+  // French on the server; in the browser, the reader's language
+  // (`activeLanguage`). Team names come translated from the database, so an
+  // Arabic reader's page never shows the French journée, and the navigation
+  // used to wait for it before the page loaded the Arabic one behind its
+  // loading panel. The loader data says which language it holds, and only
+  // seeds a page in that language (`RoundSeed.lang`).
   loader: async ({ context, deps }) => {
     try {
-      const options = roundQueryOptions(deps.journee, "fr");
+      const lang = activeLanguage();
+      const options = roundQueryOptions(deps.journee, lang);
       const round = await context.queryClient.ensureQueryData(options);
       const fetchedAt =
         context.queryClient.getQueryState(options.queryKey)?.dataUpdatedAt || Date.now();
@@ -48,6 +57,7 @@ export const Route = createFileRoute("/pronostics/")({
         round,
         fetchedAt,
         journee: deps.journee,
+        lang,
         indexable: round.allowed && round.mode === "public",
       };
     } catch {
@@ -94,7 +104,7 @@ function PronosticsRoute() {
       tab={tab}
       seed={
         loaderData && loaderData.journee === (search.journee ?? null)
-          ? { data: loaderData.round, updatedAt: loaderData.fetchedAt }
+          ? { data: loaderData.round, updatedAt: loaderData.fetchedAt, lang: loaderData.lang }
           : undefined
       }
       onRoundChange={(journee) => void navigate({ search: (prev) => ({ ...prev, journee }) })}

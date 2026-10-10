@@ -2,7 +2,9 @@
 //
 // The two lists load the first time the field is focused (the same queries
 // the Clubs and Players pages use, so they are usually already cached), and
-// the matching is done in the browser.
+// the matching is done in the browser. A result loads its page ahead, as a
+// link would: the pointer resting on it or a finger touching it
+// (`useIntentPreload`).
 
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
@@ -11,6 +13,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import { highlightParts, searchEntries, type SearchEntry } from "@/lib/global-search";
+import { useIntentPreload } from "@/lib/intent-preload";
 import { staggerStyle } from "@/lib/motion";
 import { recallSearchQuery, rememberSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
@@ -34,6 +37,7 @@ export function GlobalSearch({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const intent = useIntentPreload();
 
   // Back from a result this field was left through: the same query, with its
   // results showing. After mount rather than in the initial state, so a page
@@ -92,14 +96,24 @@ export function GlobalSearch({
   const loading = armed && text.trim() !== "" && (clubsQ.isPending || playersQ.isPending);
   const showPanel = open && text.trim() !== "";
 
+  // The list closing (a choice, Escape, the field left, a press elsewhere)
+  // calls off a preload still waiting on its delay.
+  useEffect(() => {
+    if (!showPanel) intent.cancel();
+  }, [showPanel, intent]);
+
+  const destination = (entry: SearchEntry) =>
+    entry.kind === "club"
+      ? { to: "/clubs/$clubId" as const, params: { clubId: entry.id } }
+      : { to: "/fantasy/players/$playerId" as const, params: { playerId: entry.id } };
+
   const go = (entry: SearchEntry) => {
+    intent.cancel();
     // Written to the entry being left, so Retour brings the query back.
     rememberSearchQuery(text);
     setOpen(false);
     setText("");
-    if (entry.kind === "club")
-      void navigate({ to: "/clubs/$clubId", params: { clubId: entry.id } });
-    else void navigate({ to: "/fantasy/players/$playerId", params: { playerId: entry.id } });
+    void navigate(destination(entry));
   };
 
   return (
@@ -178,7 +192,12 @@ export function GlobalSearch({
                   event.preventDefault();
                   go(entry);
                 }}
-                onMouseEnter={() => setActive(index)}
+                onMouseEnter={() => {
+                  setActive(index);
+                  intent.handlers(destination(entry))?.onMouseEnter();
+                }}
+                onMouseLeave={intent.cancel}
+                onTouchStart={() => intent.handlers(destination(entry))?.onTouchStart()}
                 style={staggerStyle(index)}
                 className={cn(
                   // The name first, on its own lines, and what it is under it:

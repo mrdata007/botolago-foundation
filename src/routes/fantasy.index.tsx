@@ -35,6 +35,7 @@ import { fantasyHead } from "@/lib/fantasy-meta";
 import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
+import { fixtureDifficultyQuery } from "@/services/fantasy-queries";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import { newsService } from "@/services/news";
@@ -166,10 +167,12 @@ function FantasyHub() {
     queryFn: () => fantasyService.getLeagues("private"),
     enabled: hasTeam,
   });
-  // The fixtures the other Fantasy screens read, for "starters with no match".
+  // The fixtures the other Fantasy screens read, under their key, for
+  // "starters with no match". Not an owned key: they are the same for every
+  // manager and no save changes them, so the team screen opened next reuses
+  // this read, and a save or a sign-in no longer throws it away.
   const fixtures = useQuery({
-    queryKey: key("fixture-difficulty"),
-    queryFn: () => fantasyService.getFixtureDifficulty(),
+    ...fixtureDifficultyQuery(),
     enabled: hasTeam && !!gameweek,
     staleTime: 60_000,
   });

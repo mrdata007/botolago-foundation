@@ -250,6 +250,8 @@ export interface RoundSeed {
   /** What the server rendered with (loader data), so both first renders agree. */
   readonly data: PredictionsRoundDto;
   readonly updatedAt: number;
+  /** The language it was read in: French (the server's) when absent. */
+  readonly lang?: "fr" | "ar";
 }
 
 /**
@@ -405,7 +407,8 @@ export function usePredictionsRound(
   const uid = signedIn ? (user?.id ?? null) : null;
   const now = useServerClock();
 
-  const serverSeed = lang === "fr" ? seed : undefined;
+  // Only a page in the seed's own language: team names differ by language.
+  const serverSeed = (seed?.lang ?? "fr") === lang ? seed : undefined;
   // Set below once the player's picks are known (see awaitingScoring).
   const awaitingScoringRef = useRef(false);
   const query = useQuery<PredictionsRoundDto, PredictionsError>({
