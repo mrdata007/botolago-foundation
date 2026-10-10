@@ -2,7 +2,8 @@
  * SofaScore ID bridge, Production V2 rehearsal and apply (pure logic, no I/O).
  *
  * The owner-run package: a committed manifest holds the approved pairing and the
- * counts the owner saw in the read-only dry-run (run 38080678843). The runner
+ * counts the owner saw in the read-only dry-run (run 38080678843), plus the exact
+ * plan hash verified from read-only run 38083113415. The runner
  * (sofascore-id-bridge-production-run.ts) recomputes the plan from fresh reads
  * and refuses on any difference. SQL is built from validated literals only
  * (`quote` from the bridge: a uuid or `[A-Za-z0-9:_.-]{1,64}`), never from free
@@ -38,7 +39,10 @@ export interface Manifest {
   readonly projectRef: string;
   readonly provider: string;
   readonly sourceVersion: string;
-  readonly competition: { readonly externalId: string; readonly internalId: string };
+  readonly competition: {
+    readonly externalId: string;
+    readonly internalId: string;
+  };
   readonly season: { readonly externalId: string; readonly internalId: string };
   readonly teams: Readonly<Record<string, string>>;
   readonly expected: {
@@ -57,8 +61,8 @@ export interface Manifest {
     readonly eventsSkippedMissingTeam: readonly number[];
     readonly fixturesNoMatch: readonly string[];
   };
-  /** Optional pin of the canonical plan hash; the workflow input pins it too. */
-  readonly planSha256: string | null;
+  /** Required pin of the exact reviewed rows; workflow input independently confirms it. */
+  readonly planSha256: string;
 }
 
 function fail(code: string, detail: string): never {
@@ -90,8 +94,8 @@ export function parseManifest(value: unknown): Manifest {
   if (counts.reduce((a, b) => (a as number) + (b as number), 0) !== e.totalRows)
     fail("manifest_invalid", "totalRows is not the sum of toCreate");
   for (const id of e.fixturesNoMatch) if (!UUID.test(id)) fail("manifest_invalid", "noMatch id");
-  if (m.planSha256 !== null && !SHA256.test(m.planSha256))
-    fail("manifest_invalid", "planSha256 must be null or 64 hex");
+  if (typeof m.planSha256 !== "string" || !SHA256.test(m.planSha256))
+    fail("manifest_invalid", "planSha256 must pin the reviewed plan with 64 hex");
   return m;
 }
 
@@ -188,7 +192,7 @@ export function comparePlanToManifest(plan: BridgePlan, manifest: Manifest): str
       problems.push(`team row ${row.externalId} is not the approved pairing`);
   }
   const hash = planSha256(plan, manifest);
-  if (manifest.planSha256 !== null && manifest.planSha256 !== hash)
+  if (manifest.planSha256 !== hash)
     problems.push(`planSha256: manifest pins ${manifest.planSha256}, computed ${hash}`);
   return problems;
 }
@@ -320,12 +324,13 @@ $sofascore_bridge$`;
 }
 
 /** Read-only state read before and after: the rollback or commit is proven from this. */
+/** Scope bridge counts to its five types; preserve every other mapping's full row. */
 export const STATE_SQL = `select jsonb_build_object(
-  'sofascore_rows', (select count(*) from app_private.football_provider_mappings where provider_name = 'sofascore'),
-  'sofascore_active_rows', (select count(*) from app_private.football_provider_mappings where provider_name = 'sofascore' and active),
-  'other_mapping_rows', (select count(*) from app_private.football_provider_mappings where provider_name <> 'sofascore'),
-  'other_mapping_digest', (select md5(coalesce(string_agg(concat_ws(':', m.id, m.provider_name, m.entity_type, m.external_id, m.internal_entity_id, m.active), '|' order by m.id), '')) from app_private.football_provider_mappings m where m.provider_name <> 'sofascore'),
-  'sofascore_rows_detail', (select coalesce(jsonb_agg(jsonb_build_object('entityType', entity_type, 'externalId', external_id, 'internalId', internal_entity_id) order by entity_type, external_id), '[]'::jsonb) from app_private.football_provider_mappings where provider_name = 'sofascore' and active),
+  'sofascore_rows', (select count(*) from app_private.football_provider_mappings where provider_name = 'sofascore' and entity_type in ('competition','season','round','team','fixture')),
+  'sofascore_active_rows', (select count(*) from app_private.football_provider_mappings where provider_name = 'sofascore' and entity_type in ('competition','season','round','team','fixture') and active),
+  'other_mapping_rows', (select count(*) from app_private.football_provider_mappings where (provider_name <> 'sofascore' or entity_type not in ('competition','season','round','team','fixture'))),
+  'other_mapping_digest', (select md5(coalesce(string_agg(m::text, '|' order by m.id), '')) from app_private.football_provider_mappings m where (m.provider_name <> 'sofascore' or m.entity_type not in ('competition','season','round','team','fixture'))),
+  'sofascore_rows_detail', (select coalesce(jsonb_agg(jsonb_build_object('entityType', entity_type, 'externalId', external_id, 'internalId', internal_entity_id) order by entity_type, external_id), '[]'::jsonb) from app_private.football_provider_mappings where provider_name = 'sofascore' and entity_type in ('competition','season','round','team','fixture') and active),
   'email_mode', (select mode from app_private.notification_email_settings where id),
   'live_refresh_enabled', (select football_live_refresh_enabled from app_private.notification_email_settings where id),
   'lifecycle_tick_enabled', (select lifecycle_tick_enabled from app_private.fantasy_automation_settings where id),
@@ -338,7 +343,11 @@ export interface DbState {
   sofascore_active_rows: number;
   other_mapping_rows: number;
   other_mapping_digest: string;
-  sofascore_rows_detail: { entityType: string; externalId: string; internalId: string }[];
+  sofascore_rows_detail: {
+    entityType: string;
+    externalId: string;
+    internalId: string;
+  }[];
   email_mode: string | null;
   live_refresh_enabled: boolean | null;
   lifecycle_tick_enabled: boolean | null;

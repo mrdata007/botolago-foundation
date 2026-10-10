@@ -5,7 +5,7 @@
   "projectRef": "tkewgajrljbwgwedqsxn",
   "provider": "sofascore",
   "sourceVersion": "sofascore-id-bridge",
-  "approvedBy": "owner, 2026-10-10, from production-read run 38080678843 (dry-run)",
+  "approvedBy": "owner-authorized bridge; counts and team pairing from read-only run 38080678843; exact rows verified from read-only run 38083113415",
   "competition": {
     "externalId": "937",
     "internalId": "3e579087-e5ad-4cb1-babf-6490cf2a8ebe"
@@ -54,5 +54,6 @@
     "eventsSkippedMissingTeam": [],
     "fixturesNoMatch": ["1296b2e5-bb59-4f18-8ef7-dc0b2990bc3a"]
   },
-  "planSha256": null
+  "planSha256": "8828c27fa6ce66c0e92b528e2cac7abe08a86799e5ec638af934c4fda88a0b74",
+  "reviewedPlanRunId": 38083113415
 }

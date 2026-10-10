@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "bun:test";
 import {
@@ -26,7 +27,7 @@ import {
   type Manifest,
 } from "./sofascore-id-bridge-production";
 
-const manifest = parseManifest(JSON.parse(readFileSync(MANIFEST_PATH, "utf8")));
+const reviewedManifest = parseManifest(JSON.parse(readFileSync(MANIFEST_PATH, "utf8")));
 const NO_MATCH_FIXTURE = "1296b2e5-bb59-4f18-8ef7-dc0b2990bc3a";
 
 const uuid = (prefix: string, n: number) =>
@@ -34,9 +35,12 @@ const uuid = (prefix: string, n: number) =>
 
 /** A synthetic season shaped like the reviewed dry-run: 32 fixtures, 31 matched. */
 function syntheticInput(): BridgeInput {
-  const sofaIds = Object.keys(manifest.teams).map(Number);
-  const internal = sofaIds.map((id) => manifest.teams[String(id)]);
-  const rounds = [1, 2, 3, 4].map((n) => ({ id: uuid("a", n), roundNumber: n }));
+  const sofaIds = Object.keys(reviewedManifest.teams).map(Number);
+  const internal = sofaIds.map((id) => reviewedManifest.teams[String(id)]);
+  const rounds = [1, 2, 3, 4].map((n) => ({
+    id: uuid("a", n),
+    roundNumber: n,
+  }));
   const day = Date.UTC(2026, 9, 17, 18, 0, 0);
   const fixtures = [];
   const events: SofascoreEvent[] = [];
@@ -70,9 +74,15 @@ function syntheticInput(): BridgeInput {
   }
   return {
     events,
-    competition: { externalId: "937", internalId: manifest.competition.internalId },
-    season: { externalId: "102220", internalId: manifest.season.internalId },
-    teams: manifestTeams(manifest),
+    competition: {
+      externalId: "937",
+      internalId: reviewedManifest.competition.internalId,
+    },
+    season: {
+      externalId: "102220",
+      internalId: reviewedManifest.season.internalId,
+    },
+    teams: manifestTeams(reviewedManifest),
     rounds,
     fixtures,
     existing: [],
@@ -81,8 +91,31 @@ function syntheticInput(): BridgeInput {
 
 const plan = planSofascoreIdBridge(syntheticInput());
 
+const manifest = {
+  ...reviewedManifest,
+  planSha256: planSha256(plan, reviewedManifest),
+};
+
 describe("manifest", () => {
+  it("pins the complete committed read-only production plan", () => {
+    const approved = JSON.parse(
+      readFileSync("docs/production/manifests/sofascore-id-bridge-2026-10-10.plan.json", "utf8"),
+    );
+    expect(approved.rows).toHaveLength(53);
+    expect(approved.fixturesNoMatch).toEqual([NO_MATCH_FIXTURE]);
+    expect(createHash("sha256").update(JSON.stringify(approved)).digest("hex")).toBe(
+      reviewedManifest.planSha256,
+    );
+  });
+
+  it("refuses an unpinned or malformed plan hash", () => {
+    for (const planSha256 of [null, undefined, "", "abc"]) {
+      expect(() => parseManifest({ ...reviewedManifest, planSha256 })).toThrow("manifest_invalid");
+    }
+  });
+
   it("is valid and its totals are the reviewed dry-run's", () => {
+    expect(reviewedManifest.planSha256).toMatch(/^[0-9a-f]{64}$/);
     expect(manifest.expected.totalRows).toBe(53);
     expect(Object.keys(manifest.teams)).toHaveLength(16);
     expect(manifest.competition.internalId).toBe("3e579087-e5ad-4cb1-babf-6490cf2a8ebe");
@@ -128,8 +161,8 @@ describe("plan against manifest (drift is refused)", () => {
     moved.fixtures[5] = { ...moved.fixtures[5], id: uuid("e", 5) };
     const other = planSofascoreIdBridge(moved);
     expect(other.rows).toHaveLength(53);
-    expect(comparePlanToManifest(other, manifest)).toEqual([]); // counts and pairing agree
-    // ...so the hash is what catches a swapped row, and a pinned hash refuses it.
+    expect(comparePlanToManifest(other, manifest).join("\n")).toContain("planSha256");
+    // The required pin catches changed fixture pairings even when counts agree.
     expect(planSha256(other, manifest)).not.toBe(planSha256(plan, manifest));
     const pinned = { ...manifest, planSha256: planSha256(plan, manifest) };
     expect(comparePlanToManifest(other, pinned).join("\n")).toContain("planSha256");
@@ -141,14 +174,23 @@ describe("plan against manifest (drift is refused)", () => {
       competition: { ...manifest.competition, internalId: uuid("c", 1) },
     };
     expect(comparePlanToManifest(plan, swapped).join("\n")).toContain("competition row");
-    const team = { ...manifest, teams: { ...manifest.teams, "24394": uuid("d", 1) } };
+    const team = {
+      ...manifest,
+      teams: { ...manifest.teams, "24394": uuid("d", 1) },
+    };
     expect(comparePlanToManifest(plan, team).join("\n")).toContain("approved pairing");
   });
 
   it("refuses an existing mapping, a conflict or a re-point", () => {
     const withExisting = planSofascoreIdBridge({
       ...syntheticInput(),
-      existing: [{ entityType: "round", externalId: "102220:1", internalId: uuid("a", 1) }],
+      existing: [
+        {
+          entityType: "round",
+          externalId: "102220:1",
+          internalId: uuid("a", 1),
+        },
+      ],
     });
     expect(comparePlanToManifest(withExisting, manifest).join("\n")).toContain("alreadyMapped");
   });
@@ -309,7 +351,11 @@ describe("results", () => {
     expect(writerProblems(quiet)).toEqual([]);
     expect(writerProblems({ ...quiet, live_refresh_enabled: true })).toHaveLength(1);
     expect(
-      writerProblems({ ...quiet, email_mode: "live", lifecycle_tick_enabled: true }),
+      writerProblems({
+        ...quiet,
+        email_mode: "live",
+        lifecycle_tick_enabled: true,
+      }),
     ).toHaveLength(2);
     expect(writerProblems({ ...quiet, busy_sessions: 2 })).toHaveLength(1);
   });

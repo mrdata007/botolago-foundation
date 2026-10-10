@@ -55,7 +55,10 @@ const arg = (name: string) => {
 async function post(token: string, sql: string, readOnly: boolean) {
   const response = await fetch(`${API}/v1/projects/${PRODUCTION_PROJECT_REF}/database/query`, {
     method: "POST",
-    headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
     body: JSON.stringify({ query: sql, read_only: readOnly }),
   });
   return { status: response.status, body: await response.text() };
@@ -75,7 +78,10 @@ function planFrom(manifest: Manifest, dir: string, snapshotValue: unknown) {
       externalId: SOFASCORE_COMPETITION_ID,
       internalId: manifest.competition.internalId,
     },
-    season: { externalId: SOFASCORE_SEASON_ID, internalId: manifest.season.internalId },
+    season: {
+      externalId: SOFASCORE_SEASON_ID,
+      internalId: manifest.season.internalId,
+    },
     teams: manifestTeams(manifest),
     rounds: parseSnapshot(snapshotValue).rounds,
     fixtures: parseSnapshot(snapshotValue).fixtures,
@@ -146,7 +152,7 @@ async function main(): Promise<number> {
   evidence.before = { ...before, sofascore_rows_detail: undefined };
   if (before.sofascore_rows !== 0)
     throw new Refused(
-      `baseline: ${before.sofascore_rows} sofascore mapping row(s) already exist; ` +
+      `baseline: ${before.sofascore_rows} SofaScore bridge mapping row(s) already exist; ` +
         (mode === "apply"
           ? "this one-shot apply has already run or a partial state exists"
           : "nothing to rehearse"),
@@ -156,7 +162,7 @@ async function main(): Promise<number> {
     throw new Refused(
       `one-writer checks failed (pause the crons first):\n - ${writer.join("\n - ")}`,
     );
-  console.log("Pre-state verified: 0 sofascore rows, crons paused, no busy session.");
+  console.log("Pre-state verified: 0 SofaScore bridge rows, crons paused, no busy session.");
 
   // 4. The one DO block, sent once and never retried.
   const sql = buildDoBlock(mode, plan, manifest);
@@ -191,9 +197,9 @@ async function main(): Promise<number> {
         : []),
       ...rehearsalResultProblems(result, manifest),
       ...(after.sofascore_rows !== 0
-        ? [`rollback did not hold: ${after.sofascore_rows} sofascore rows remain`]
+        ? [`rollback did not hold: ${after.sofascore_rows} SofaScore bridge rows remain`]
         : []),
-      ...(untouched ? [] : ["other providers' mappings changed"]),
+      ...(untouched ? [] : ["non-target mappings (including SofaScore players) changed"]),
     ];
     evidence.problems = problems;
     if (problems.length > 0) {
@@ -202,7 +208,9 @@ async function main(): Promise<number> {
       return 5;
     }
     console.log(`Rehearsal computed state: ${JSON.stringify(result)}`);
-    console.log("Re-read after rollback: 0 sofascore mappings; other providers unchanged.");
+    console.log(
+      "Re-read after rollback: 0 SofaScore bridge mappings; non-target mappings (including SofaScore players) unchanged.",
+    );
     console.log(`Approve this exact hash for the apply: ${hash}`);
     save("SOFASCORE_BRIDGE_REHEARSAL_ROLLED_BACK_AND_VERIFIED");
     return 0;
@@ -216,9 +224,9 @@ async function main(): Promise<number> {
   const problems = [
     ...appliedRowsProblems(after.sofascore_rows_detail, plan, manifest),
     ...(after.sofascore_rows !== manifest.expected.totalRows
-      ? [`sofascore rows (any state): ${after.sofascore_rows}`]
+      ? [`SofaScore bridge rows (any state): ${after.sofascore_rows}`]
       : []),
-    ...(untouched ? [] : ["other providers' mappings changed"]),
+    ...(untouched ? [] : ["non-target mappings (including SofaScore players) changed"]),
   ];
   evidence.problems = problems;
   if (problems.length > 0) {
@@ -227,7 +235,7 @@ async function main(): Promise<number> {
     return 5;
   }
   console.log(
-    `Verified: ${after.sofascore_active_rows} active sofascore mappings, exactly the plan.`,
+    `Verified: ${after.sofascore_active_rows} active SofaScore bridge mappings, exactly the plan.`,
   );
   save("SOFASCORE_BRIDGE_PRODUCTION_APPLIED_AND_VERIFIED");
   return 0;

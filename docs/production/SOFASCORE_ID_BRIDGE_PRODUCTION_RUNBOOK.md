@@ -12,12 +12,12 @@ apply is one-shot.
 
 ## What is pinned
 
-| Item                                                                   | Where                                                                                                        |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Approved team pairing, competition and season ids, the expected counts | `docs/production/manifests/sofascore-id-bridge-2026-10-10.manifest.json`                                     |
-| Rehearsal (rolled back, never commits)                                 | `.github/workflows/sofascore-id-bridge-production-rehearsal.yml`                                             |
-| Apply (commits once)                                                   | `.github/workflows/sofascore-id-bridge-production-apply.yml`                                                 |
-| Runner and pure logic                                                  | `scripts/backend/sofascore-id-bridge-production-run.ts`, `scripts/backend/sofascore-id-bridge-production.ts` |
+| Item                                                                                | Where                                                                                                        |
+| ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Approved exact plan hash, team pairing, competition and season ids, expected counts | `docs/production/manifests/sofascore-id-bridge-2026-10-10.manifest.json`                                     |
+| Rehearsal (rolled back, never commits)                                              | `.github/workflows/sofascore-id-bridge-production-rehearsal.yml`                                             |
+| Apply (commits once)                                                                | `.github/workflows/sofascore-id-bridge-production-apply.yml`                                                 |
+| Runner and pure logic                                                               | `scripts/backend/sofascore-id-bridge-production-run.ts`, `scripts/backend/sofascore-id-bridge-production.ts` |
 
 Expected plan (from read-only run 38080678843): competition 1, season 1, round 4,
 team 16, fixture 31, total **53**. Fixtures 32, matched 31 (1 `matched_by_round`,
@@ -31,6 +31,18 @@ concurrency group `botolago-production-v2-mutation`, a confirmation phrase, and
 masked secrets. Before anything else they refuse to start while any other
 dispatched or scheduled workflow run is active, queued or waiting.
 
+The `sofascore_rows` fields count only competition, season, round, team and fixture
+links. Existing SofaScore player links are outside the bridge and are protected by
+`other_mapping_rows` and the digest of every non-target row, together with all other
+providers' mappings.
+
+The complete canonical plan is committed at
+`docs/production/manifests/sofascore-id-bridge-2026-10-10.plan.json`, verified from
+read-only run **38083113415**. Its SHA-256 is pinned in the manifest:
+`8828c27fa6ce66c0e92b528e2cac7abe08a86799e5ec638af934c4fda88a0b74`.
+Both rehearsal and apply must reproduce this exact plan. That read-only run
+reported a 10,000-request API quota.
+
 ## Refusals (no drift)
 
 The runner rebuilds the plan from fresh reads (SofaScore events and a read-only
@@ -38,7 +50,7 @@ production snapshot) and stops, writing nothing, if:
 
 - any count in the plan differs from the manifest, or a competition, season or team
   row is not the manifest's;
-- the manifest pins `planSha256` and the computed hash differs;
+- the manifest has no valid `planSha256` pin, or the computed hash differs from the required pin;
 - the apply's `plan_sha256` input is not exactly the computed hash;
 - a second read just before the write gives a different hash than the first;
 - any `sofascore` mapping row of these entity types exists, active or not (the
@@ -55,7 +67,9 @@ production snapshot) and stops, writing nothing, if:
 2. **Note the commit.** Copy the full 40-character SHA of the merged `main` commit.
    Use the same SHA for both dispatches; if `main` moves, review the new commit and
    start again from step 4.
-3. **Pause the crons** (next section). One pause covers the rehearsal and the
+3. **Check the production API key, then pause the crons** (next section). If the
+   fetch reports a free 500-request quota, stop and update the production
+   `RAPIDAPI_KEY` in GitHub before continuing. One pause covers the rehearsal and the
    apply; both refuse to run while the crons are on.
 4. **Rehearse.** Actions, "Production V2 SofaScore ID bridge rehearsal":
    `expected_commit` = the SHA, `confirmation` = `REHEARSE_SOFASCORE_ID_BRIDGE_PRODUCTION`,
@@ -65,7 +79,7 @@ production snapshot) and stops, writing nothing, if:
    - `Plan sha256: <hash>` and `Approve this exact hash for the apply: <hash>`.
    - Rehearsal computed state: `baselineRows 0`, `planned 53`, `activeAfter 53`,
      `matchingPlan 53`, `byType` 1 / 1 / 4 / 16 / 31.
-   - "Re-read after rollback: 0 sofascore mappings; other providers unchanged."
+   - "Re-read after rollback: 0 SofaScore bridge mappings; non-target mappings (including SofaScore players) unchanged."
    - Any other outcome (`..._NEEDS_REVIEW`, a refusal) means stop and investigate; do not apply.
 6. **Approve the hash.** Compare the printed hash with the one you approve. It
    covers every row (entity type, external id, internal id, flags), the no-match
@@ -76,10 +90,10 @@ production snapshot) and stops, writing nothing, if:
    GitHub and by the baseline check.
 8. **Verify 53.** Success ends with
    `SOFASCORE_BRIDGE_PRODUCTION_APPLIED_AND_VERIFIED` and
-   "Verified: 53 active sofascore mappings, exactly the plan." The runner reads
+   "Verified: 53 active SofaScore bridge mappings, exactly the plan." The runner reads
    production afterwards (not the call's reply) and checks the 53 rows equal the
-   plan, the total sofascore rows are 53, and every other provider's mappings are
-   unchanged (count and digest). Other outcomes:
+   plan, the five bridge entity types total 53, and all non-target mappings,
+   including existing SofaScore players, are unchanged (count and full-row digest). Other outcomes:
    `..._APPLY_FAILED_ROLLED_BACK` (nothing written; find out why before anything
    else), `..._COMMITTED_NEEDS_REVIEW` or `..._OUTCOME_UNVERIFIED` (read production
    by hand; do not rerun).
@@ -148,9 +162,9 @@ write that this package does not automate. Shape of it:
 3. In a guarded `DO` block, set `active = false` on exactly those rows, check the
    updated count is 53 and that no other row changed, and rehearse it first with a
    deliberate trailing `raise` as the rehearsal workflow does.
-4. Re-read: 0 active sofascore mappings, other providers unchanged.
+4. Re-read: 0 active SofaScore bridge mappings, all non-target mappings unchanged.
 
 Notes: deactivating keeps the rows, so the bridge's baseline check (any sofascore
-row, active or not) will refuse a later apply; a re-apply after a rollback needs a
+row of the five bridge entity types, active or not) will refuse a later apply; a re-apply after a rollback needs a
 new reviewed package that deals with the inactive rows. Nothing in SportsMonks
 data is touched by the apply, so nothing there needs restoring.

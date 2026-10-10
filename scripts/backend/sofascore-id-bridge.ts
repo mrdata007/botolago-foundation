@@ -239,7 +239,13 @@ async function main() {
     existing: snapshot.existing,
   };
   const plan = planSofascoreIdBridge(input);
-  console.log(JSON.stringify({ mode, summary: summarise(plan) }, null, 2));
+  console.log(
+    JSON.stringify(
+      { mode, summary: summarise(plan), ...(mode === "dry-run" ? { rows: plan.rows } : {}) },
+      null,
+      2,
+    ),
+  );
 
   let exit: 0 | 2 | 4 = needsReview(plan) ? 2 : 0;
   if (mode === "apply" && (db || management)) {

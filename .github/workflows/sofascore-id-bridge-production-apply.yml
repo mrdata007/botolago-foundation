@@ -122,7 +122,12 @@ jobs:
           bun scripts/backend/sofascore-id-bridge-fetch.ts --read-production \
             --competition-id "$(jq -r .competition.internalId "$manifest")" \
             --season-id "$(jq -r .season.internalId "$manifest")" \
-            --out-dir "$RUNNER_TEMP/bridge"
+            --out-dir "$RUNNER_TEMP/bridge" | tee "$RUNNER_TEMP/fetch.json"
+          quota_limit=$(jq -r '.rapidApiQuota.limit' "$RUNNER_TEMP/fetch.json")
+          if [[ "$quota_limit" == "500" ]]; then
+            echo "Free 500-request quota: update the production RAPIDAPI_KEY before continuing."
+            exit 2
+          fi
 
       - name: Apply once (never retried) and verify production
         shell: bash
@@ -132,15 +137,19 @@ jobs:
           SOFASCORE_ID_BRIDGE_PRODUCTION_CONFIRMATION: ${{ inputs.confirmation }}
           EVIDENCE_DIR: ${{ runner.temp }}/sofascore-id-bridge-apply-evidence
         run: |
-          set -uo pipefail
+          set -euo pipefail
           if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
             printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
           fi
           install -d -m 0700 "$EVIDENCE_DIR"
           args=(--mode apply --dir "$RUNNER_TEMP/bridge")
           args+=(--plan-sha256 "$PLAN_SHA256")
+          set +e
           bun scripts/backend/sofascore-id-bridge-production-run.ts "${args[@]}" | tee "$RUNNER_TEMP/run.log"
-          status=${PIPESTATUS[0]}
+          pipeline_status=("${PIPESTATUS[@]}")
+          set -e
+          status=${pipeline_status[0]}
+          if [[ "${pipeline_status[1]}" != "0" ]]; then exit "${pipeline_status[1]}"; fi
           {
             echo "## SofaScore ID bridge on Production V2: apply"
             echo
