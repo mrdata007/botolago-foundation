@@ -1,0 +1,169 @@
+name: Production V2 SofaScore ID bridge APPLY (one-shot, commits once)
+
+# ONE-SHOT application of the SofaScore ID bridge to Production V2: the same
+# plan, manifest comparison and DO block as the rehearsal, but the block ends
+# normally and commits exactly once. Needs the plan hash the owner approved from
+# the rehearsal (plan_sha256). Refuses if the plan differs from the manifest in
+# any count or row, if any sofascore mapping already exists (so it cannot run
+# twice), if another run is active, or if the live refresh, email and Fantasy
+# lifecycle crons are not paused. It never retries and deletes nothing; the
+# outcome is classified from a fresh read. Steps:
+# docs/production/SOFASCORE_ID_BRIDGE_PRODUCTION_RUNBOOK.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for this one production apply
+        required: true
+        type: string
+      confirmation:
+        description: Type APPLY_SOFASCORE_ID_BRIDGE_PRODUCTION
+        required: true
+        type: string
+      plan_sha256:
+        description: The plan sha256 the rehearsal printed and the owner approved
+        required: true
+        type: string
+
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  apply:
+    name: Apply the SofaScore ID bridge to Production V2 and verify
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.triggering_actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production-admin-activation
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      PLAN_SHA256: ${{ inputs.plan_sha256 }}
+
+    steps:
+      - name: Enforce dispatch guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" && "${GITHUB_REPOSITORY:-}" == "mrdata007/botolago-foundation" ]] || { echo "Owner workflow dispatch required."; exit 2; }
+          [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] || { echo "Production runs may start only from main."; exit 2; }
+          [[ "${GITHUB_ACTOR:-}" == "mrdata007" && "${GITHUB_TRIGGERING_ACTOR:-}" == "mrdata007" ]] || { echo "Only the owner may dispatch this workflow."; exit 2; }
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"; exit 2; }
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ && "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the reviewed main commit."; exit 2; }
+          [[ "$CONFIRMATION" == "APPLY_SOFASCORE_ID_BRIDGE_PRODUCTION" ]] || { echo "Invalid confirmation."; exit 2; }
+          [[ "${PLAN_SHA256:-}" =~ ^[0-9a-f]{64}$ ]] || { echo "plan_sha256 must be the 64-hex hash printed by the rehearsal."; exit 2; }
+          echo "Dispatch guards: PASS"
+
+      - name: Refuse if another workflow run is active (one writer at a time)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          THIS_RUN: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # Scheduled and manually dispatched runs are the ones that can write to
+          # the database (AGENTS.md, "Check the scheduled jobs too"). Any other
+          # such run that is active, queued or waiting stops this one; dispatch
+          # again when the list is empty.
+          found=""
+          for status in in_progress queued waiting pending; do
+            for event in workflow_dispatch schedule; do
+              rows=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?status=$status&event=$event&per_page=100" \
+                --jq ".workflow_runs[] | select(.id != ($THIS_RUN|tonumber)) | \"\(.id) \(.name) [\(.status)]\"")
+              if [[ -n "$rows" ]]; then found+="$rows"$'\n'; fi
+            done
+          done
+          if [[ -n "$found" ]]; then
+            echo "Another run is active; refusing to start:"
+            printf '%s' "$found"
+            exit 2
+          fi
+          echo "No other dispatched or scheduled run is active."
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.expected_commit }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies (no secrets in this step)
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Collect SofaScore events and the production snapshot (read only)
+        shell: bash
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          for secret_value in "${RAPIDAPI_KEY:-}" "${SUPABASE_ACCESS_TOKEN:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+          [[ "${SUPABASE_PRODUCTION_PROJECT_REF:-}" == "tkewgajrljbwgwedqsxn" ]] || { echo "Production project-ref guard failed."; exit 2; }
+          manifest=docs/production/manifests/sofascore-id-bridge-2026-10-10.manifest.json
+          bun scripts/backend/sofascore-id-bridge-fetch.ts --read-production \
+            --competition-id "$(jq -r .competition.internalId "$manifest")" \
+            --season-id "$(jq -r .season.internalId "$manifest")" \
+            --out-dir "$RUNNER_TEMP/bridge" | tee "$RUNNER_TEMP/fetch.json"
+          quota_limit=$(jq -r '.rapidApiQuota.limit' "$RUNNER_TEMP/fetch.json")
+          if [[ "$quota_limit" == "500" ]]; then
+            echo "Free 500-request quota: update the production RAPIDAPI_KEY before continuing."
+            exit 2
+          fi
+
+      - name: Apply once (never retried) and verify production
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+          SOFASCORE_ID_BRIDGE_PRODUCTION_CONFIRMATION: ${{ inputs.confirmation }}
+          EVIDENCE_DIR: ${{ runner.temp }}/sofascore-id-bridge-apply-evidence
+        run: |
+          set -euo pipefail
+          if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+            printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          fi
+          install -d -m 0700 "$EVIDENCE_DIR"
+          args=(--mode apply --dir "$RUNNER_TEMP/bridge")
+          args+=(--plan-sha256 "$PLAN_SHA256")
+          set +e
+          bun scripts/backend/sofascore-id-bridge-production-run.ts "${args[@]}" | tee "$RUNNER_TEMP/run.log"
+          pipeline_status=("${PIPESTATUS[@]}")
+          set -e
+          status=${pipeline_status[0]}
+          if [[ "${pipeline_status[1]}" != "0" ]]; then exit "${pipeline_status[1]}"; fi
+          {
+            echo "## SofaScore ID bridge on Production V2: apply"
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/run.log"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sofascore-id-bridge-apply-${{ github.run_id }}
+          path: ${{ runner.temp }}/sofascore-id-bridge-apply-evidence
+          if-no-files-found: warn
+          retention-days: 30

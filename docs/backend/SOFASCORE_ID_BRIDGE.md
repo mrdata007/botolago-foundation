@@ -176,3 +176,8 @@ reviewed main commit approved for the run. The workflow rejects other branches,
 other actors, reruns and a SHA that differs from the dispatched commit before
 checking out code or exposing production credentials. Checkout is pinned to
 that reviewed SHA; credentials are supplied only to the read-only fetch step.
+
+## Applying on production
+
+The owner-run rehearsal and one-shot apply for Production V2 are described in
+[SOFASCORE_ID_BRIDGE_PRODUCTION_RUNBOOK.md](../production/SOFASCORE_ID_BRIDGE_PRODUCTION_RUNBOOK.md).
