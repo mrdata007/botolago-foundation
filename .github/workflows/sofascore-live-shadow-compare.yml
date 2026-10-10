@@ -1,0 +1,117 @@
+name: SofaScore live shadow compare (production, read only)
+
+# Compares what SofaScore says live about Botola matches with what Production V2
+# currently shows (fed by SportsMonks). It WRITES NOTHING: the script sends
+# single SELECT statements only (assertReadOnly in sofascore-id-bridge-fetch.ts),
+# calls RapidAPI with GET requests, and has no write path to any database.
+# Steps: docs/backend/SOFASCORE_LIVE_SHADOW.md.
+#
+# Concurrency: this is a read that runs every few minutes during matches, so it
+# deliberately does NOT join the botolago-production-v2-mutation group. Because
+# it never writes it does not need the production mutation lock, and taking it
+# would block (or be blocked by) real production writes for hours. A snapshot
+# taken while someone else writes is simply a snapshot; the next poll is fresh.
+# Its own group keeps two compare runs from polling RapidAPI at once.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for this read-only run
+        required: true
+        type: string
+      repeat:
+        description: "Number of polls in this run (1 to 12)"
+        required: false
+        type: string
+        default: "1"
+      interval_minutes:
+        description: "Minutes between polls (2 to 10)"
+        required: false
+        type: string
+        default: "5"
+
+concurrency:
+  group: sofascore-live-shadow-compare
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    name: SofaScore live shadow compare (read only)
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.triggering_actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    # 12 polls at 10 minutes is under 2 hours of sleeping plus the requests.
+    timeout-minutes: 150
+    environment: production-admin-activation
+
+    steps:
+      - name: Validate manual dispatch
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          REPEAT: ${{ inputs.repeat }}
+          INTERVAL: ${{ inputs.interval_minutes }}
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" && "${GITHUB_REPOSITORY:-}" == "mrdata007/botolago-foundation" ]] || { echo "Owner workflow dispatch required."; exit 2; }
+          [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] || { echo "Production reads may run only from main."; exit 2; }
+          [[ "${GITHUB_ACTOR:-}" == "mrdata007" && "${GITHUB_TRIGGERING_ACTOR:-}" == "mrdata007" ]] || { echo "Only the owner may dispatch this workflow."; exit 2; }
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "Workflow reruns are forbidden; dispatch a reviewed commit again."; exit 2; }
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ && "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the reviewed main commit."; exit 2; }
+          [[ "$REPEAT" =~ ^[0-9]{1,2}$ ]] && (( REPEAT >= 1 && REPEAT <= 12 )) || { echo "repeat must be 1 to 12."; exit 2; }
+          [[ "$INTERVAL" =~ ^[0-9]{1,2}$ ]] && (( INTERVAL >= 2 && INTERVAL <= 10 )) || { echo "interval_minutes must be 2 to 10."; exit 2; }
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.expected_commit }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies (no secrets in this step)
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Poll SofaScore and compare with production (read only)
+        shell: bash
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+          REPEAT: ${{ inputs.repeat }}
+          INTERVAL: ${{ inputs.interval_minutes }}
+        run: |
+          set -euo pipefail
+          for secret_value in "${RAPIDAPI_KEY:-}" "${SUPABASE_ACCESS_TOKEN:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+          {
+            echo "## SofaScore live shadow compare (production, read only)"
+            echo
+            echo "Polls: $REPEAT, every $INTERVAL minutes. At most 2 RapidAPI requests per poll."
+          } >> "$GITHUB_STEP_SUMMARY"
+          failures=0
+          for (( poll = 1; poll <= REPEAT; poll++ )); do
+            md="$RUNNER_TEMP/compare-$poll.md"
+            if bun scripts/backend/sofascore-live-shadow-compare.ts --read-production --markdown "$md"; then
+              { echo; echo "#### Poll $poll of $REPEAT"; cat "$md"; } >> "$GITHUB_STEP_SUMMARY"
+            else
+              failures=$((failures + 1))
+              { echo; echo "#### Poll $poll of $REPEAT: failed (see the job log)"; } >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if (( poll < REPEAT )); then sleep $(( INTERVAL * 60 )); fi
+          done
+          # A failed poll does not stop the next one, but the run is red.
+          if (( failures > 0 )); then echo "$failures of $REPEAT polls failed."; exit 1; fi
