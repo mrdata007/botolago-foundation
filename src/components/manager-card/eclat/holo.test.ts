@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 import { FOIL, TIER_KEYS } from "./foil";
 import { REST } from "./field";
-import { CHEST, FOIL_CLIP, OUTLINE, TAB, WINDOW, WINDOW_IN } from "./geometry";
+import { CHEST, FOIL_CLIP, OUTLINE, TAB, VB_H, WINDOW, WINDOW_IN } from "./geometry";
 import { eclatRenderer } from "./index";
 import { follow, restLight } from "./pose";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS } from "./test-data";
@@ -251,6 +251,40 @@ describe("the foil moves with the light and is still all there at rest (plan 5.5
         expect(y, `${key} ${x},${y}`).toBeLessThan(1070);
       }
     }
+  });
+
+  it("thins the sheen over the chest with a mask on the foil's own ::before, where the diffraction's hole is (plan 8.2, round 2)", () => {
+    const block = /\.mc-eclat__foil::before\s*\{([^}]*mix-blend-mode[^}]*)\}/s.exec(CSS)?.[1];
+    if (!block) throw new Error("no .mc-eclat__foil::before rule with the sheen");
+    const mask =
+      /(?<![-\w])mask-image:\s*radial-gradient\(\s*ellipse (\d+)% (\d+)% at 50% ([\d.]+)%,\s*rgb\(0 0 0 \/ ([\d.]+)\) 0,\s*rgb\(0 0 0 \/ \4\) (\d+)%,\s*#000 100%/s.exec(
+        block,
+      );
+    expect(
+      mask,
+      "a standard mask-image that thins the sheen and returns to full strength",
+    ).not.toBeNull();
+    expect(block, "the prefixed property for the browsers that still need it").toContain(
+      "-webkit-mask-image:",
+    );
+    const [, rx, ry, cy, alpha, core] = mask!;
+    // a fifth of the sheen at the middle, full strength at the ellipse's edge
+    expect(+alpha!).toBe(0.2);
+    expect(+core!).toBeGreaterThanOrEqual(50);
+    // centred on the number (within a hair of the chest's middle) and reaching the whole chest box
+    const centre = (+cy! / 100) * VB_H;
+    expect(Math.abs(centre - CHEST.cy)).toBeLessThan(15);
+    expect(centre - (+ry! / 100) * VB_H).toBeLessThanOrEqual(CHEST.y0);
+    expect(centre + (+ry! / 100) * VB_H).toBeGreaterThanOrEqual(CHEST.y1);
+    expect(500 - (+rx! / 100) * 1000).toBeLessThanOrEqual(CHEST.x0);
+    expect(500 + (+rx! / 100) * 1000).toBeGreaterThanOrEqual(CHEST.x1);
+    // the diffraction's hole is the same place: 59.5% of a box that is 65% of the card tall
+    const hole =
+      /\.mc-holo \.mc-eclat__foil::after\s*\{[^}]*?ellipse \d+% \d+% at 50% ([\d.]+)%, transparent 70%/s.exec(
+        CSS,
+      );
+    expect(hole, "the diffraction's hole over the chest").not.toBeNull();
+    expect(+hole![1]! * 0.65).toBeCloseTo(+cy!, 1);
   });
 
   it("is the same card with the foil frozen: no animation property outside a no-preference block touches it", () => {

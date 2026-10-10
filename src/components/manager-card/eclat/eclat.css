@@ -310,6 +310,21 @@
     rgb(255 255 255 / var(--mc-sheen)) calc(50% + var(--mc-ax) * 40%),
     transparent calc(50% + var(--mc-ax) * 40% + 20%)
   );
+  /* the sheen thins to a fifth over the chest (centred on the number, 38.7% down): soft-light lifts a
+     mid-tone shirt by .03 to .04 of luminance and leaves a white print as it is, which took the number's
+     contrast with its shirt to 3.0 to 3.1:1 with the pointer on it; with this it reads 3.4:1 or more */
+  -webkit-mask-image: radial-gradient(
+    ellipse 24% 14% at 50% 38.7%,
+    rgb(0 0 0 / 0.2) 0,
+    rgb(0 0 0 / 0.2) 60%,
+    #000 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 24% 14% at 50% 38.7%,
+    rgb(0 0 0 / 0.2) 0,
+    rgb(0 0 0 / 0.2) 60%,
+    #000 100%
+  );
 }
 .mc-holo .mc-eclat__foil::after {
   content: "";
