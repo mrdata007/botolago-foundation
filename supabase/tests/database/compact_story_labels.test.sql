@@ -1,0 +1,12 @@
+begin;
+select extensions.plan(8);
+select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"Raja Casablanca","away":"Wydad Casablanca"}}'), 'RCA V WAC', 'exact short matchup format');
+select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"Maghreb Fès","away":"Raja Casablanca"}}'), 'MAS V RCA', 'existing draw');
+select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"FAR Rabat","away":"Widad Témara"}}'), 'FAR V WST', 'Temara never becomes Casablanca');
+select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"CR Khemis Zemamra","away":"Hassania Agadir"}}'), 'RCAZ V HUSA', 'verified home-away order');
+select extensions.is(app_private.ai_home_story_rail_label('{"clubs":["Raja Casablanca","Wydad Casablanca"]}'), 'RCA', 'two mentions without a verified match do not invent a fixture');
+select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"Unknown club","away":"Another unknown"}}'), 'ACTU', 'unknown subjects stay short without invented codes');
+select extensions.is(app_private.ai_home_story_rail_label('{"match":{"home":"Raja Casablanca","away":"Raja Casablanca"}}'), 'RCA', 'no self-versus-self matchup');
+select extensions.ok(not has_function_privilege('anon','app_private.ai_home_story_rail_label(jsonb)','execute') and not has_function_privilege('authenticated','app_private.ai_story_club_code(text)','execute'), 'private helpers remain inaccessible');
+select * from extensions.finish();
+rollback;

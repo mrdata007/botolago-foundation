@@ -21,6 +21,7 @@ const stories = Array.from({ length: 3 }, (_, i) => ({
   altAr: "صورة توضيحية بالذكاء الاصطناعي",
   storagePath: `news/ai-stories/${i}.png`,
   generated: true,
+  railLabel: ["RCAZ V HUSA", "FAR V WST", "MAS V RCA"][i],
   destination: null,
   credit: "BotolaGO · OpenAI",
   position: i,
