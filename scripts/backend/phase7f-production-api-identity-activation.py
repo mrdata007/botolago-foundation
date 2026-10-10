@@ -575,6 +575,8 @@ def assert_management_target(client: ManagementClient) -> dict[str, Any]:
     ):
         raise ActivationError("MANAGEMENT_OWNERSHIP_GUARD_FAILED")
     backups = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/database/backups")
+    if not isinstance(backups, dict) or not isinstance(backups.get("backups", []), list):
+        raise ActivationError("BACKUP_INVENTORY_INVALID")
     completed = [
         row
         for row in backups.get("backups", [])
@@ -584,6 +586,12 @@ def assert_management_target(client: ManagementClient) -> dict[str, Any]:
         raise ActivationError("BACKUP_READINESS_INSUFFICIENT")
     if backups.get("walg_enabled") is not True:
         raise ActivationError("WALG_STATE_UNVERIFIED")
+    # Disabled or unverifiable point-in-time recovery never passes: only an
+    # explicit `true` counts, as for WAL-G above.
+    if backups.get("pitr_enabled") is False:
+        raise ActivationError("PITR_DISABLED")
+    if backups.get("pitr_enabled") is not True:
+        raise ActivationError("PITR_STATE_UNVERIFIED")
     functions = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/functions")
     if functions:
         raise ActivationError("EDGE_FUNCTION_STATE_ACTIVE")
@@ -597,9 +605,7 @@ def assert_management_target(client: ManagementClient) -> dict[str, Any]:
             row.get("inserted_at", "") for row in completed
         ),
         "walGEnabled": True,
-        "pitrState": "ENABLED"
-        if backups.get("pitr_enabled")
-        else "DISABLED_ACCEPTED",
+        "pitrState": "ENABLED",
         "edgeFunctionCount": 0,
     }
 

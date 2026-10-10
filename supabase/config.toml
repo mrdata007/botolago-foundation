@@ -387,8 +387,9 @@ verify_jwt = true
 entrypoint = "./functions/news-ingest-elbotola/index.ts"
 
 # Woken by pg_cron through pg_net. The caller proves itself with the
-# database-generated scheduler token (api.service_verify_scheduler_token),
-# not with a JWT, so the platform JWT check is off for these two.
+# database-generated scheduler token, not with a JWT, so the platform JWT check
+# is off for these two. Each function compares it in-process with its secret
+# BOTOLAGO_SCHEDULER_TOKEN before any database call (_shared/scheduler-token.ts).
 [functions.notification-email-dispatch]
 enabled = true
 verify_jwt = false

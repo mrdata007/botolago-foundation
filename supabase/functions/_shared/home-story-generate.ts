@@ -1,6 +1,7 @@
 import { sniffImageMimeType, type StorageClient } from "./news-media-upload.ts";
 import type { EmailRpcClient } from "./notification-email-dispatch.ts";
 import { PUBLIC_EDITORIAL_RULE } from "./public-editorial-policy.ts";
+import { schedulerTokenRefusal } from "./scheduler-token.ts";
 
 export const STORY_IMAGE_MODEL = "gpt-image-2.5-flare";
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -201,11 +202,10 @@ export async function handleImageStoryRequest(
   deps: ImageStoryDependencies,
 ): Promise<Response> {
   if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
-  const token = request.headers.get("x-botolago-scheduler-token") ?? "";
-  if (!/^[0-9a-f]{64}$/.test(token)) return json(401, { error: "unauthorized" });
+  // Checked in-process, before any database call (scheduler-token.ts).
+  const refusal = schedulerTokenRefusal(request, deps.environment);
+  if (refusal) return refusal;
   try {
-    if ((await rpc(deps, "service_verify_scheduler_token", { p_token: token })) !== true)
-      return json(401, { error: "unauthorized" });
     if ((deps.environment.OpenAI_Image_Gen?.trim().length ?? 0) < 20)
       return json(503, { error: "image_provider_not_configured" });
     const job = (await rpc(deps, "service_claim_ai_home_story")) as ImageStoryJob | null;

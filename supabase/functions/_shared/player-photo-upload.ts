@@ -8,12 +8,15 @@
 // from api.admin_player_photo_upload_paths and the release is recorded by
 // api.admin_player_photo_submit, both called AS THE CALLER (their own JWT),
 // so the database's permission (`football.correct`) and step-up checks are the
-// only gate. The paths are asked for before any byte is stored, so a caller
-// who could never submit a release cannot spend storage.
+// only gate. A staff pre-flight (staff-preflight.ts) refuses a caller who could
+// never pass it before the multipart body is read, and the paths are asked for
+// before any byte is stored, so such a caller cannot spend storage either.
 //
 // Nothing is published by this: a release starts `pending`, staff approve it
 // (the database checks the rights again), and the photo job makes the public
 // derivative.
+
+import { callerMayAct, PLAYER_PHOTO_PERMISSIONS } from "./staff-preflight.ts";
 
 export const MAX_PHOTO_BYTES = 20 * 1024 * 1024;
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
@@ -131,6 +134,15 @@ export async function handlePlayerPhotoUploadRequest(
   const user = userData?.user ?? null;
   if (userError || !user || user.role === "anon")
     return jsonResponse({ error: "unauthorized" }, 401);
+
+  // Authorize before the body is read: up to 30 MB of multipart is buffered
+  // below, which a caller without the permission must not be able to cause.
+  if (!(await callerMayAct(userClient, PLAYER_PHOTO_PERMISSIONS))) {
+    return jsonResponse(
+      { error: "not_allowed", code: "PT403", message: "permission_missing" },
+      403,
+    );
+  }
 
   let form: FormData;
   try {

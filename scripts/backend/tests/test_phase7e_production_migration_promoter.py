@@ -424,7 +424,7 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
                     return self.functions
                 if path.endswith("/database/backups"):
                     return {
-                        "pitr_enabled": False,
+                        "pitr_enabled": True,
                         "backups": [{"status": "COMPLETED", "inserted_at": "2026-08-04T01:15:34Z"}],
                     }
                 if path == "/v1/organizations":
@@ -456,6 +456,65 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
                 "release_activation",
             )
 
+    def test_recovery_readiness_refuses_disabled_or_unverifiable_pitr(self) -> None:
+        functions = [
+            {"slug": "football-ingest", "status": "ACTIVE", "verify_jwt": True},
+            {"slug": "news-ingest", "status": "ACTIVE", "verify_jwt": True},
+        ]
+        backup_row = {"status": "COMPLETED", "inserted_at": "2026-10-08T01:15:34Z"}
+
+        class Client:
+            def __init__(self, backups: object) -> None:
+                self.backups = backups
+
+            def get(self, path: str):
+                if path.endswith("/functions"):
+                    return functions
+                if path.endswith("/database/backups"):
+                    return self.backups
+                if path == "/v1/organizations":
+                    return [{"id": "organization"}]
+                return {
+                    "ref": PROMOTER.EXPECTED_PROJECT_REF,
+                    "name": PROMOTER.EXPECTED_PROJECT_NAME,
+                    "region": PROMOTER.EXPECTED_REGION,
+                    "status": "ACTIVE_HEALTHY",
+                    "organization_id": "organization",
+                    "database": {"version": "17.6"},
+                }
+
+        refused = {
+            "disabled": ({"pitr_enabled": False, "backups": [backup_row]}, "disabled"),
+            "missing": ({"backups": [backup_row]}, "unverified"),
+            "null": ({"pitr_enabled": None, "backups": [backup_row]}, "unverified"),
+            "string": ({"pitr_enabled": "true", "backups": [backup_row]}, "unverified"),
+            "number": ({"pitr_enabled": 1, "backups": [backup_row]}, "unverified"),
+            "not an object": ([backup_row], "backup inventory is invalid"),
+            "backups not a list": ({"pitr_enabled": True, "backups": None}, "invalid"),
+            "no completed backup": ({"pitr_enabled": True, "backups": []}, "insufficient"),
+        }
+        for label, (backups, message) in refused.items():
+            with self.subTest(label):
+                with self.assertRaisesRegex(PROMOTER.PromotionError, message):
+                    PROMOTER.assert_management_target(Client(backups), "release_activation")
+
+        target = PROMOTER.assert_management_target(
+            Client(
+                {
+                    "pitr_enabled": True,
+                    "backups": [backup_row],
+                    "physical_backup_data": {
+                        "earliest_physical_backup_date_unix": 1759276800,
+                        "latest_physical_backup_date_unix": 1759881600,
+                    },
+                }
+            ),
+            "release_activation",
+        )
+        self.assertIs(True, target["pitrEnabled"])
+        self.assertEqual(1759276800, target["pitrEarliestRestorePointUnix"])
+        self.assertEqual(1759881600, target["pitrLatestRestorePointUnix"])
+
     ORGANIZATION_ID = "org_9f3c2b1a7d5e4c6b"
 
     @classmethod
@@ -477,7 +536,7 @@ class Phase7EProductionMigrationPromoterTests(unittest.TestCase):
                     ]
                 if path.endswith("/database/backups"):
                     return {
-                        "pitr_enabled": False,
+                        "pitr_enabled": True,
                         "backups": [{"status": "COMPLETED", "inserted_at": "2026-09-18T01:15:34Z"}],
                     }
                 project = {

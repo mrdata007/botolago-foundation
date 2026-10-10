@@ -29,18 +29,25 @@ const TEST_SECRET = new Uint8Array(32).fill(7);
 const TEST_SECRET_HEX =
   "\\x" + Array.from(TEST_SECRET, (b) => b.toString(16).padStart(2, "0")).join("");
 
-function serviceClient(secretHex: string = TEST_SECRET_HEX): ServiceRoleClient {
+function serviceClient(secretHex: string = TEST_SECRET_HEX, calls?: string[]): ServiceRoleClient {
   return {
     schema: () => ({
-      rpc: async () => ({ data: secretHex, error: null }),
+      rpc: async (name) => {
+        calls?.push(name);
+        return { data: secretHex, error: null };
+      },
     }),
   };
 }
+
+// What api.get_my_staff_context answers for an editor with an aal2 session.
+const EDITOR_CONTEXT = { accessAllowed: true, permissions: ["editorial.write"] };
 
 function userClient(options: {
   userId?: string | null;
   rpcResult?: RpcResult;
   calls?: Array<{ name: string; args: Record<string, unknown> }>;
+  staffContext?: RpcResult;
 }): UserScopedClient {
   return {
     auth: {
@@ -51,6 +58,10 @@ function userClient(options: {
     },
     schema: () => ({
       rpc: async (name, args) => {
+        // The staff pre-flight; kept out of `calls`, which records the writes.
+        if (name === "get_my_staff_context") {
+          return options.staffContext ?? { data: EDITOR_CONTEXT, error: null };
+        }
         options.calls?.push({ name, args });
         return (
           options.rpcResult ?? {
@@ -126,6 +137,62 @@ describe("handleNewsEditorialWriteRequest -- transport basics", () => {
       deps(),
     );
     expect(response.status).toBe(400);
+  });
+});
+
+describe("handleNewsEditorialWriteRequest -- authorize before reading the body", () => {
+  const refusals: Array<[string, RpcResult]> = [
+    [
+      "a signed-in account that is not staff",
+      { data: null, error: { message: "staff_access_denied", code: "PT403" } },
+    ],
+    [
+      "staff without an editorial permission",
+      { data: { accessAllowed: true, permissions: ["football.correct"] }, error: null },
+    ],
+    [
+      "an editor whose session is not cleared for access (no aal2)",
+      { data: { accessAllowed: false, permissions: ["editorial.write"] }, error: null },
+    ],
+    ["an unreadable staff context", { data: "editor", error: null }],
+  ];
+
+  for (const [label, staffContext] of refusals) {
+    it(`refuses ${label} with 403, before parsing, sanitizing or reading the secret`, async () => {
+      const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+      const serviceCalls: string[] = [];
+      let sanitized = false;
+      const request = jsonRequest(cleanDraft);
+      const response = await handleNewsEditorialWriteRequest(
+        request,
+        deps({
+          serviceClient: serviceClient(TEST_SECRET_HEX, serviceCalls),
+          createUserClient: () => userClient({ userId: "user-1", calls, staffContext }),
+          sanitize: (html) => {
+            sanitized = true;
+            return trustedSanitize(html);
+          },
+        }),
+      );
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({
+        error: { message: "news_editorial_forbidden", code: "42501" },
+      });
+      expect(request.bodyUsed).toBe(false);
+      expect(sanitized).toBe(false);
+      expect(serviceCalls).toEqual([]);
+      expect(calls).toEqual([]);
+    });
+  }
+
+  it("lets an editor through to the write", async () => {
+    const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+    const response = await handleNewsEditorialWriteRequest(
+      jsonRequest(cleanDraft),
+      deps({ createUserClient: () => userClient({ userId: "user-1", calls }) }),
+    );
+    expect(response.status).toBe(201);
+    expect(calls.map((call) => call.name)).toEqual(["editorial_create_draft"]);
   });
 });
 

@@ -1716,5 +1716,51 @@ def base64_url(value: dict[str, object]) -> str:
     return base64.urlsafe_b64encode(json.dumps(value).encode()).decode().rstrip("=")
 
 
+class RecoveryReadinessTests(unittest.TestCase):
+    BACKUP_ROW = {"status": "COMPLETED", "inserted_at": "2026-10-08T01:15:34Z"}
+
+    @staticmethod
+    def client(backups: object):
+        class Client:
+            def get(self, path: str):
+                if path.endswith("/database/backups"):
+                    return backups
+                if path.endswith("/functions"):
+                    return []
+                if path == "/v1/organizations":
+                    return [{"id": "organization"}]
+                return {
+                    "ref": ACTIVATION.EXPECTED_PROJECT_REF,
+                    "name": ACTIVATION.EXPECTED_PROJECT_NAME,
+                    "region": ACTIVATION.EXPECTED_REGION,
+                    "status": "ACTIVE_HEALTHY",
+                    "organization_id": "organization",
+                    "database": {"version": "17.6"},
+                }
+
+        return Client()
+
+    def test_disabled_or_unverifiable_pitr_never_passes(self) -> None:
+        row = self.BACKUP_ROW
+        refused = {
+            "disabled": ({"walg_enabled": True, "pitr_enabled": False, "backups": [row]}, "PITR_DISABLED"),
+            "missing": ({"walg_enabled": True, "backups": [row]}, "PITR_STATE_UNVERIFIED"),
+            "null": ({"walg_enabled": True, "pitr_enabled": None, "backups": [row]}, "PITR_STATE_UNVERIFIED"),
+            "string": ({"walg_enabled": True, "pitr_enabled": "true", "backups": [row]}, "PITR_STATE_UNVERIFIED"),
+            "not an object": ([row], "BACKUP_INVENTORY_INVALID"),
+            "no WAL-G": ({"walg_enabled": False, "pitr_enabled": True, "backups": [row]}, "WALG_STATE_UNVERIFIED"),
+        }
+        for label, (backups, code) in refused.items():
+            with self.subTest(label):
+                with self.assertRaisesRegex(ACTIVATION.ActivationError, code):
+                    ACTIVATION.assert_management_target(self.client(backups))
+
+    def test_enabled_pitr_passes_and_is_reported(self) -> None:
+        target = ACTIVATION.assert_management_target(
+            self.client({"walg_enabled": True, "pitr_enabled": True, "backups": [self.BACKUP_ROW]})
+        )
+        self.assertEqual("ENABLED", target["pitrState"])
+
+
 if __name__ == "__main__":
     unittest.main()
