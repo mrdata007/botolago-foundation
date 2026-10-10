@@ -27,7 +27,7 @@ out.mkdir(parents=True, exist_ok=True)
 FONT = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 BEFORE_LABEL = "BEFORE  main 8fae526c  (Écharpe)"
-AFTER_LABEL = "AFTER  claude/manager-card-sorare-style 5e903f60  (Éclat)"
+AFTER_LABEL = "AFTER  claude/manager-card-sorare-style 98a02df1  (Éclat, round 2)"
 
 # (screen, fixtures) pairs; every sheet of a group is made for each theme and width that both sets hold
 SURFACES = [
@@ -143,7 +143,7 @@ lines = [
     "# Before / after comparison sheets (the app)",
     "",
     "The incumbent card (the Écharpe, `main` at `8fae526c`, [`../before/`](../before/INDEX.md)) beside the collectible",
-    "(Éclat, this branch at `5e903f60`, [`../after/`](../after/INDEX.md)): the same surface, state, data, clock and theme, French and Arabic.",
+    "(Éclat, this branch at `98a02df1`, round 2, [`../after/`](../after/INDEX.md)): the same surface, state, data, clock and theme, French and Arabic.",
     "Each sheet is made from the two sets' pictures of one name (`<screen>-<fixture>-<lang>-<theme>-<width>`); only the sheet is scaled",
     "(390 px pictures at 1x of their 2x files, 1440 px pictures at 0.55, the 1080 px share picture at 0.36). The sets themselves are not resized.",
     "Made by [`../wp4/compare.py`](../wp4/compare.py).",
