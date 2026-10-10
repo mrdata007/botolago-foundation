@@ -103,6 +103,56 @@ The runner calls only `api.resolve_football_mapping`, which is idempotent for a
 mapping that already points at the same target. Production is not in scope; it
 goes through the release runbook, owner-run.
 
+## Running it from GitHub Actions (staging)
+
+Workflow: `.github/workflows/sofascore-id-bridge-staging.yml`
+(`workflow_dispatch` only, environment `staging-load-test`, concurrency group
+`phase6-staging-load-test`). GitHub lists a dispatch workflow only once it is on
+`main`, so it can be run only after it is merged, which needs owner approval.
+
+It reads staging with the secrets and variables the other staging workflows
+already use: `SUPABASE_ACCESS_TOKEN` and `vars.SUPABASE_STAGING_PROJECT_REF`
+(Supabase Management API, one `select`), plus `RAPIDAPI_KEY` for SofaScore. No
+new secret. `scripts/backend/sofascore-id-bridge-fetch.ts` writes `events.json`
+(every page of `get-last-matches` and `get-next-matches` for 937/102220),
+`snapshot.json` and `ids.json`. The Botola 2026/27 season is the single
+`botola-pro*` season labelled 2026/27; any other count stops the run. Logs hold
+counts and ids only, no player names.
+
+Three modes (input `mode`):
+
+| Mode            | Writes       | What it does                                                   |
+| --------------- | ------------ | -------------------------------------------------------------- |
+| `propose-teams` | no           | Suggests `{sofascoreTeamId: internalUuid}` for the 16 clubs    |
+| `dry-run`       | no           | Plans the mapping rows for the `teams` JSON, prints the report |
+| `apply`         | staging only | The same plan, written through `api.resolve_football_mapping`  |
+
+### Dispatch steps
+
+1. **Propose.** Run with `mode=propose-teams`. The step summary shows the
+   proposal and, per SofaScore team, the vote counts and a status
+   (`proposed`, `too_little_evidence`, `conflict`, `duplicate_internal_team`,
+   `no_evidence`). A fixture is evidence only when it pairs with exactly one
+   event (same round, same Casablanca date, same kickoff instant when several
+   events share the date). A team is proposed only with at least 3 such fixtures
+   all pointing at one internal team. Anything else is listed, never guessed.
+2. **Owner approval.** The owner reads the proposal and approves, edits or
+   rejects each pairing. Nothing applies it automatically.
+3. **Dry run.** Run with `mode=dry-run` and the approved JSON in `teams`. Read
+   the report: no-match, multi-match, conflicts and re-points must be understood.
+4. **Apply.** Only with the owner's go-ahead, and after the one-writer checks and
+   pauses listed under "Apply (staging only)". Run with `mode=apply`,
+   `confirmation=ATTACH_SOFASCORE_IDS_ON_STAGING` and the same `teams`. The
+   workflow first runs `scripts/backend/staging-writer-guard.py`, and the Management
+   API path refuses the production ref. Apply refuses to run while re-points
+   are pending.
+5. Compare the sofascore mapping count before and after, then restore every
+   paused setting.
+
+Locally, `--mode propose-teams|dry-run|apply` take the same files; apply also
+accepts `SUPABASE_URL` + `SUPABASE_SECRET_KEY` instead of the Management API
+variables.
+
 ## Players are not bridged here
 
 Player mappings stay on the reviewed mapping process (the RPC itself refuses
