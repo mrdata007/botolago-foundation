@@ -11,7 +11,7 @@ import {
   TrendingUp,
   Trophy,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { MediaImage } from "@/components/common/FailureAwareImage";
@@ -21,7 +21,7 @@ import { FantasyHubRound } from "@/components/fantasy/FantasyHubRound";
 import { DeadlineCard } from "@/components/fantasy/DeadlineCard";
 import { FantasyGuestExplainer } from "@/components/fantasy/FantasyGuestIntro";
 import { deadlineChecklist } from "@/lib/deadline-checklist";
-import { PrizeWelcome } from "@/components/prizes/PrizeWelcome";
+import { PrizeWelcome as ArrivalDialog } from "@/components/prizes/PrizeWelcome";
 import {
   FantasyHubLeagues,
   FantasyHubReminders,
@@ -36,8 +36,41 @@ import { NEWS_ENABLED, PRIZES_ENABLED } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { newsService } from "@/services/news";
 import { prizesService } from "@/services/prizes";
+
+// Pépites' tile is its own chunk, requested only while the section is live: with the switch off
+// the hub imports nothing of the Manager Card.
+const PepitesHubTile = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.PepitesHubTile,
+  })),
+);
+
+/**
+ * Whether a hero or the born panel was already shown in this session (plan 5.3), asked of the
+ * card's own storage only while the section is live and only after mount: `null` until known,
+ * and always `null` with the section off, which never loads it.
+ */
+function useHeroShownThisSession(live: boolean): boolean | null {
+  const [shown, setShown] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!live) return;
+    let cancelled = false;
+    void import("@/components/manager-card/inline/curva-inline")
+      .then((module) => {
+        if (!cancelled) setShown(module.heroShownThisSession());
+      })
+      .catch(() => {
+        if (!cancelled) setShown(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [live]);
+  return shown;
+}
 
 export const Route = createFileRoute("/fantasy/")({
   head: () => fantasyHead("hub"),
@@ -79,6 +112,18 @@ export const Route = createFileRoute("/fantasy/")({
  * reminders — are `FantasyHubPersonal`'s; the band, the shortcuts, the News
  * rail and the "more about" links are public and stay here.
  */
+/**
+ * The hub's arrival dialog (the prize welcome). While the section is live the card's moment comes
+ * first: it waits until it is known that no hero or born panel was shown in this session, and for
+ * the next session if one was (plan 5.3). With the section off it is the dialog, exactly.
+ */
+function PrizeWelcome() {
+  const live = useManagerCardLive();
+  const heroShown = useHeroShownThisSession(live);
+  if (live && heroShown !== false) return null;
+  return <ArrivalDialog />;
+}
+
 function FantasyHub() {
   const { t, lang } = useI18n();
   const { user, status: authStatus } = useAuth();
@@ -280,6 +325,7 @@ function FantasyHub() {
 
 function ShortcutTiles() {
   const { t } = useI18n();
+  const live = useManagerCardLive();
   const tiles: Array<{ to: string; label: string; icon: ReactNode }> = [
     { to: "/matches", label: t("fpl.fixtures"), icon: <CalendarDays aria-hidden /> },
     { to: "/fantasy/fixtures", label: t("fpl.fdr"), icon: <SlidersHorizontal aria-hidden /> },
@@ -321,6 +367,13 @@ function ShortcutTiles() {
           </li>
         ))}
       </ul>
+      {live ? (
+        // Pépites lives inside Fantasy while the section is live (plan 3.4): its own row, under
+        // the four shortcuts, for every audience.
+        <Suspense fallback={null}>
+          <PepitesHubTile className="mt-2" />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

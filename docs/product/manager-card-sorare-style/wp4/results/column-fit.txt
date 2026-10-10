@@ -1,0 +1,6 @@
+170 screens (17 routes x 5 widths x 2 languages), 740 cards and tokens measured: outside the window 0 screens, cut by a clipping ancestor 0, errors 0
+  viewport  320: card widths drawn 256, 288
+  viewport  360: card widths drawn 296
+  viewport  390: card widths drawn 296, 326
+  viewport  768: card widths drawn 216, 336
+  viewport 1440: card widths drawn 216, 336

@@ -1,0 +1,5 @@
+ar 390 /gradins?mc=forming1: 104 texts in view over 4 screen(s), 10 hidden under something, 104 nominated (0 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins?mc=homa: 93 texts in view over 4 screen(s), 11 hidden under something, 93 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins/carte?mc=rated: 49 texts in view over 3 screen(s), 10 hidden under something, 49 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
+
+light theme: 246 pixel measurements, 0 below AA

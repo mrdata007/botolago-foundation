@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
+import { useManagerCardLive } from "@/services/manager-card-status";
+import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
 
 export function TopBar({
   trailing,
@@ -40,6 +41,8 @@ export function TopBar({
   wide?: boolean;
 }) {
   const { t } = useI18n();
+  // Curva takes the fifth slot while it is live, and Profil is in this bar either way.
+  const curvaLive = useManagerCardLive();
   const [searchOpen, setSearchOpen] = useState(false);
   // Back from a search result: the field is open again, holding the query
   // (`GlobalSearch` restores it), and not focused, so no keyboard rises.
@@ -95,7 +98,7 @@ export function TopBar({
           <LanguageSwitcher />
           {/* Pépites takes Profil's slot in the bar once promoted, so the
               profile moves here. */}
-          {PEPITES_PROMOTED ? (
+          {PEPITES_PROMOTED || curvaLive ? (
             <UiIconLinkButton to="/profile" aria-label={t("nav.profile")}>
               <UserRound aria-hidden />
             </UiIconLinkButton>
@@ -126,13 +129,15 @@ export function TopBar({
 export function PrimaryNavLinks() {
   const { t } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const primaryNavItems = usePrimaryNavItems();
+  const curvaLive = useManagerCardLive();
   return (
     <nav
       aria-label={t("nav.primary")}
       className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex"
     >
       {primaryNavItems.map((item) => {
-        const active = isPrimaryRouteActive(pathname, item.to);
+        const active = isPrimaryRouteActive(pathname, item.to, curvaLive);
         return (
           <Link
             key={item.to}

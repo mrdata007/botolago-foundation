@@ -29,7 +29,8 @@ import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
 import { FantasyOwnedProvider } from "@/services/fantasy-owned-provider";
 import { ThemeProvider } from "@/theme/provider";
 import { THEME_INIT_SCRIPT } from "@/theme/theme";
-import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
+import { DARK_MODE_ENABLED, MANAGER_CARD_BUILD } from "@/lib/feature-flags";
+import { rootBeforeLoad, useManagerCardLive } from "@/services/manager-card-status";
 import {
   ANALYTICS_ACTIVE,
   SELINE_MASK_PATTERNS,
@@ -210,6 +211,10 @@ function ErrorBody({ reset }: { reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  // Curva (the Manager Card section): read the database's status once per server render, before
+  // any child route's guard needs it. Registered only when the build lets Curva exist, so with
+  // the switch off the route object is exactly what it was (`src/lib/feature-flags.ts`).
+  ...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {}),
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -354,12 +359,32 @@ function RootComponent() {
               <Toaster />
               <NativePushBridge />
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
+              <ManagerCardLiveMarker />
             </FantasyOwnedProvider>
           </AuthProvider>
         </ThemeProvider>
       </I18nProvider>
     </QueryClientProvider>
   );
+}
+
+/**
+ * Marks `<html data-curva="live">` while the Manager Card section is live, for CSS and for the
+ * browser tests; nothing at all while it is off (no attribute, no write, no request). The root
+ * is also what keeps the small status module in the entry chunk, so the pages that use it ask
+ * for no file of their own (`src/services/manager-card-status.ts`).
+ */
+function ManagerCardLiveMarker() {
+  const live = useManagerCardLive();
+  useEffect(() => {
+    if (!live) return;
+    const root = document.documentElement;
+    root.dataset.curva = "live";
+    return () => {
+      delete root.dataset.curva;
+    };
+  }, [live]);
+  return null;
 }
 
 /**

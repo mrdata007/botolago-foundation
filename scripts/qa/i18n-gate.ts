@@ -149,8 +149,28 @@ export const BASELINES: Baselines = {
   // names the feature "جواهر" in Arabic, so the title and the navigation
   // label are translated after all and both findings are gone. W1 9 -> 7,
   // W2 9 -> 7.
-  W1: 7,
-  W2: 7,
+  //
+  // Curva (the Manager Card section, 2026-10-08): two keys read the same in
+  // both languages on purpose. `card.ovr` is the unit printed after a rating
+  // (« 84 OVR »), the same three letters in French and Arabic; `card.serial`
+  // is the format of an identifier (« BOT #482913 »), which is not
+  // translated. Two new W1 findings and the same two new W2 findings, both
+  // annotated in `src/i18n/i18n-allowlist.ts`, which never removes a count.
+  // The other 181 keys of the section all differ between the languages.
+  // W1 7 -> 9, W2 7 -> 9.
+  //
+  // Manager Card, LASTREET (owner decision, 2026-10-09): the lowest tier is
+  // shown as "LASTREET", one Latin word in both languages, where the French
+  // UI said "HOMA" and the Arabic UI "حومة". The key keeps its name,
+  // `card.tier.homa` (the tier code `homa` is stored, in the DTO and in the
+  // analytics event names, and none of that moves), so only its value
+  // changes: now identical in fr and ar, and with no Arabic script. One new
+  // W1 finding and one new W2 finding, both annotated in
+  // `src/i18n/i18n-allowlist.ts`, which never removes a count. The Arabic UI
+  // keeps the word in Latin script inside a left-to-right isolate
+  // (`TierWord`). W1 9 -> 10, W2 9 -> 10.
+  W1: 10,
+  W2: 10,
   // BG-0012: the /news redesign replaced the hardcoded tab UI
   // (news.tab.*, and its category-name-keyed news.section.transfers/
   // analysis/interviews) with real taxonomy-driven category chips, and
@@ -416,7 +436,16 @@ export const BASELINES: Baselines = {
   // this pass. On top of BG-0152's 253: 253 + 7 - 8 = 252 (measured). W4 is
   // unchanged: the navs' dynamic `t(item.labelKey)` calls were already counted
   // out with BG-0145.
-  W3: 252,
+  // Curva (2026-10-08): the moment hero's close button reads `common.close`,
+  // which had no call site, so W3 falls 252 -> 251 (measured). Every new
+  // Curva key is read through the literal accessors in copy.ts.
+  //
+  // Captain choice (#376, merged with main's rules page 2026-10-10): the
+  // squad builder's save button gets its first call site in
+  // `fantasy.create.cta_primary`, and `fpl.enter_squad`, which it replaces,
+  // is deleted. Main's rules page is kept, so #376's own rules keys are not
+  // added. 251 -> 250 (measured).
+  W3: 250,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone

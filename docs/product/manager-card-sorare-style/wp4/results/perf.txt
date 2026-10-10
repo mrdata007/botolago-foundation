@@ -1,0 +1,9 @@
+RENDERER (per call, from batches of 10: median / p95 ms)
+  CPU x1: full() worst median 0.3 ms (homa fr), worst p95 0.5 ms; full()+insert worst median 2.2 ms; token() worst median 0 ms (rated 80 px fr), worst p95 0.1 ms
+  CPU x4: full() worst median 1.1 ms (forming1 fr), worst p95 2.3 ms; full()+insert worst median 11.4 ms; token() worst median 0.1 ms (rated 80 px fr), worst p95 0.4 ms
+G1, CPU x4, development server (ms): cold = fresh context, warm = second visit; data = rating line present
+  /gradins?mc=rated fr: cold data->ready [486,538,481,475,487] (median 486), warm [453,394,424,456,466] (median 453); mount->ready cold median 486, warm median 453; rating line seen true
+  /gradins?mc=rated ar: cold data->ready [536,526,649,592,575] (median 575), warm [596,588,573,576,533] (median 576); mount->ready cold median 575, warm median 576; rating line seen true
+  /gradins?mc=forming1 fr: cold data->ready [513,545,456,506,514] (median 513), warm [526,498,525,540,453] (median 525); mount->ready cold median 513, warm median 525; rating line seen true
+  /gradins?mc=legend fr: cold data->ready [490,526,498,507,531] (median 507), warm [465,460,578,493,465] (median 465); mount->ready cold median 507, warm median 465; rating line seen true
+  /gradins fr (guest): cold data->ready [725,759,779,686,705] (median 725), warm [502,510,616,535,565] (median 535); mount->ready cold median 725, warm median 535; rating line seen false

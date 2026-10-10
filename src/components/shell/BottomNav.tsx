@@ -35,7 +35,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
-import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
+import { useManagerCardLive } from "@/services/manager-card-status";
+import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
 
 /**
  * Where the pill was and which tab was active when the last bar went away.
@@ -53,8 +54,13 @@ const POP_MS = 320;
 export function BottomNav() {
   const { t, lang } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  // Today's five items, or Curva' while it is live (src/lib/feature-flags.ts).
+  const primaryNavItems = usePrimaryNavItems();
+  const curvaLive = useManagerCardLive();
 
-  const activeTo = primaryNavItems.find((item) => isPrimaryRouteActive(pathname, item.to))?.to;
+  const activeTo = primaryNavItems.find((item) =>
+    isPrimaryRouteActive(pathname, item.to, curvaLive),
+  )?.to;
   const rowRef = useRef<HTMLDivElement>(null);
   const iconRefs = useRef(new Map<string, HTMLSpanElement>());
   // Where the sliding pill sits, from the active icon. Null until measured.
@@ -155,7 +161,7 @@ export function BottomNav() {
           />
         ) : null}
         {primaryNavItems.map((item) => {
-          const active = isPrimaryRouteActive(pathname, item.to);
+          const active = isPrimaryRouteActive(pathname, item.to, curvaLive);
           const Icon = item.icon;
           return (
             <Link

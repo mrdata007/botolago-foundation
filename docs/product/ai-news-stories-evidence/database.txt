@@ -1,0 +1,327 @@
+CREATE ROLE
+CREATE ROLE
+CREATE ROLE
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE EXTENSION
+GRANT
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+CREATE TABLE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TYPE
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+CREATE TRIGGER
+INSERT 0 10
+INSERT 0 34
+INSERT 0 70
+CREATE FUNCTION
+CREATE TRIGGER
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+COMMENT
+REVOKE
+REVOKE
+REVOKE
+GRANT
+REVOKE
+GRANT
+GRANT
+CREATE FUNCTION
+CREATE TABLE
+ALTER TABLE
+REVOKE
+CREATE INDEX
+CREATE FUNCTION
+REVOKE
+CREATE FUNCTION
+REVOKE
+GRANT
+CREATE FUNCTION
+REVOKE
+GRANT
+CREATE FUNCTION
+REVOKE
+GRANT
+CREATE FUNCTION
+REVOKE
+GRANT
+BEGIN
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 2
+INSERT 0 1
+CREATE FUNCTION
+SET
+ expect_error 
+--------------
+ 
+(1 row)
+
+ expect_error 
+--------------
+ 
+(1 row)
+
+ home_stories 
+--------------
+ []
+(1 row)
+
+RESET
+SET
+ expect_error 
+--------------
+ 
+(1 row)
+
+                                                   set_config                                                    
+-----------------------------------------------------------------------------------------------------------------
+ {"sub":"91000000-0000-4000-8000-000000000001","session_id":"92000000-0000-4000-8000-000000000001","aal":"aal1"}
+(1 row)
+
+ expect_error 
+--------------
+ 
+(1 row)
+
+                                                   set_config                                                    
+-----------------------------------------------------------------------------------------------------------------
+ {"sub":"91000000-0000-4000-8000-000000000001","session_id":"92000000-0000-4000-8000-000000000001","aal":"aal2"}
+(1 row)
+
+                                                                                                                                                          set_config                                                                                                                                                          
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "579b2ca6-0b4b-452a-9450-235d4a81a455", "altAr": "ملعب", "altFr": "Un stade", "credit": "Test", "titleAr": "مباريات", "titleFr": "Matchs", "version": 1, "position": 2, "published": false, "destination": "/matches", "storagePath": "news/test/story.webp", "mediaAssetId": "94000000-0000-4000-8000-000000000001"}
+(1 row)
+
+DO
+ expect_error 
+--------------
+ 
+(1 row)
+
+ expect_error 
+--------------
+ 
+(1 row)
+
+ expect_error 
+--------------
+ 
+(1 row)
+
+ expect_error 
+--------------
+ 
+(1 row)
+
+                                                   set_config                                                    
+-----------------------------------------------------------------------------------------------------------------
+ {"sub":"91000000-0000-4000-8000-000000000002","session_id":"92000000-0000-4000-8000-000000000002","aal":"aal2"}
+(1 row)
+
+                                                                                                                                                  admin_publish_home_story                                                                                                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "579b2ca6-0b4b-452a-9450-235d4a81a455", "altAr": "ملعب", "altFr": "Un stade", "credit": "Test", "titleAr": "مباريات", "titleFr": "Matchs", "version": 2, "position": 2, "published": true, "destination": "/matches", "storagePath": "news/test/story.webp", "mediaAssetId": "94000000-0000-4000-8000-000000000001"}
+(1 row)
+
+ expect_error 
+--------------
+ 
+(1 row)
+
+SET
+DO
+SET
+                                                   set_config                                                    
+-----------------------------------------------------------------------------------------------------------------
+ {"sub":"91000000-0000-4000-8000-000000000001","session_id":"92000000-0000-4000-8000-000000000001","aal":"aal2"}
+(1 row)
+
+ expect_error 
+--------------
+ 
+(1 row)
+
+RESET
+UPDATE 1
+SET
+DO
+RESET
+UPDATE 1
+SET
+                                                   set_config                                                    
+-----------------------------------------------------------------------------------------------------------------
+ {"sub":"91000000-0000-4000-8000-000000000002","session_id":"92000000-0000-4000-8000-000000000002","aal":"aal2"}
+(1 row)
+
+                                                                                                                                                   admin_publish_home_story                                                                                                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ {"id": "579b2ca6-0b4b-452a-9450-235d4a81a455", "altAr": "ملعب", "altFr": "Un stade", "credit": "Test", "titleAr": "مباريات", "titleFr": "Matchs", "version": 3, "position": 2, "published": false, "destination": "/matches", "storagePath": "news/test/story.webp", "mediaAssetId": "94000000-0000-4000-8000-000000000001"}
+(1 row)
+
+DO
+RESET
+DO
+ROLLBACK
+               result                
+-------------------------------------
+ Stories migration assertions passed
+(1 row)
+
+CREATE SCHEMA
+CREATE SCHEMA
+CREATE TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE FUNCTION
+CREATE TABLE
+CREATE FUNCTION
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+CREATE TABLE
+INSERT 0 1
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+CREATE INDEX
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+REVOKE
+CREATE FUNCTION
+REVOKE
+CREATE FUNCTION
+REVOKE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+GRANT
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+REVOKE
+GRANT
+ schedule 
+----------
+        1
+(1 row)
+
+DO

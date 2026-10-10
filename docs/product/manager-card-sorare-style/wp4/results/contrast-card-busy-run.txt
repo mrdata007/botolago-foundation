@@ -1,0 +1,11 @@
+The first full contrast run of round 2 (contrast-card-390 and contrast-card-1440, same script, same server on 4440), taken while the machine was also running the typecheck, lint, the whole bun test, two production builds, a Playwright suite and a second dev server.
+It had 3 readings under their floor, all the club initials with the pointer on, Arabic, dark page (3.57 against 4.5; round 1 and every other cell: 5.05):
+
+BELOW {"fx":"longNameLatin","lang":"ar","theme":"dark","width":390,"cardWidth":296,"pose":"pointer","kind":"initials","label":"RCA","floor":4.5,"value":3.57,"pass":false}
+BELOW {"fx":"tierUp","lang":"ar","theme":"dark","width":1440,"cardWidth":336,"pose":"pointer","kind":"initials","label":"RCA","floor":4.5,"value":3.57,"pass":false}
+BELOW {"fx":"legend","lang":"ar","theme":"dark","width":1440,"cardWidth":336,"pose":"pointer","kind":"initials","label":"RCA","floor":4.5,"value":3.57,"pass":false}
+
+1504 readings, 1 below their floor, 0 errors
+904 readings, 2 below their floor, 0 errors
+
+Not reproduced: 7 isolated re-runs of those cells (5.05 each), 4 under six busy loops (5.05), 3 full re-runs of longNameLatin ar dark 390 (39 readings, 0 below), a 24-sample series of the initials from the pointer's entry (5.05 throughout), and the clean full re-run kept as contrast-card-390.txt and contrast-card-1440.txt (1,504 and 904 readings, 0 below). Cause not established; a transient while the machine was busy. The first run's two files are not kept.

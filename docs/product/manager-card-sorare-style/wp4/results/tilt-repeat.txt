@@ -1,0 +1,53 @@
+TILT repeated, one session, port 4490, machine load average 1.6 to 2.9 (other sessions' work on it): wp4/motion.mjs --only=tilt, a pointer circling the card for 3 s
+A = this tree (18f921ee). B = the same tree with geometry.ts, ornament.ts and holo.ts of 777bf6db put back (the edge as it was before the review fixes). C = A without the foil mask's clearance line only.
+
+-- A run 1 (the results/tilt.txt run)
+CPU x1 rated: 169 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 7, > 33 ms: 7, long tasks (> 50 ms): 1 [56]
+CPU x1 legend: 172 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 5, > 33 ms: 5, long tasks (> 50 ms): 1 [62]
+CPU x4 rated: 133 frames, median 16.7 ms, p95 50 ms, > 20 ms: 30, > 33 ms: 30, long tasks (> 50 ms): 4 [65,65,52,50]
+CPU x4 legend: 93 frames, median 33.3 ms, p95 50.1 ms, > 20 ms: 59, > 33 ms: 59, long tasks (> 50 ms): 4 [73,69,54,57]
+-- A run 2
+CPU x1 rated: 177 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 0, > 33 ms: 0, long tasks (> 50 ms): 0 []
+CPU x1 legend: 159 frames, median 16.7 ms, p95 33.3 ms, > 20 ms: 15, > 33 ms: 15, long tasks (> 50 ms): 1 [79]
+CPU x4 rated: 149 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 27, > 33 ms: 27, long tasks (> 50 ms): 1 [59]
+CPU x4 legend: 109 frames, median 33.3 ms, p95 49.9 ms, > 20 ms: 58, > 33 ms: 58, long tasks (> 50 ms): 2 [63,64]
+-- A run 3
+CPU x1 rated: 159 frames, median 16.7 ms, p95 33.3 ms, > 20 ms: 15, > 33 ms: 15, long tasks (> 50 ms): 1 [58]
+CPU x1 legend: 169 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 6, > 33 ms: 6, long tasks (> 50 ms): 1 [64]
+CPU x4 rated: 142 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 27, > 33 ms: 27, long tasks (> 50 ms): 2 [60,58]
+CPU x4 legend: 120 frames, median 16.7 ms, p95 49.9 ms, > 20 ms: 49, > 33 ms: 49, long tasks (> 50 ms): 2 [66,52]
+-- A run 4
+CPU x1 rated: 174 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 3, > 33 ms: 3, long tasks (> 50 ms): 1 [61]
+CPU x1 legend: 170 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 5, > 33 ms: 5, long tasks (> 50 ms): 1 [70]
+CPU x4 rated: 133 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 34, > 33 ms: 34, long tasks (> 50 ms): 2 [66,51]
+CPU x4 legend: 111 frames, median 16.7 ms, p95 50 ms, > 20 ms: 54, > 33 ms: 54, long tasks (> 50 ms): 2 [60,70]
+-- B run 1
+CPU x1 rated: 176 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 1, > 33 ms: 1, long tasks (> 50 ms): 0 []
+CPU x1 legend: 171 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 4, > 33 ms: 4, long tasks (> 50 ms): 1 [61]
+CPU x4 rated: 130 frames, median 16.7 ms, p95 50 ms, > 20 ms: 34, > 33 ms: 34, long tasks (> 50 ms): 4 [66,52,54,62]
+CPU x4 legend: 106 frames, median 33.3 ms, p95 50 ms, > 20 ms: 59, > 33 ms: 59, long tasks (> 50 ms): 2 [77,74]
+-- B run 2
+CPU x1 rated: 175 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 2, > 33 ms: 2, long tasks (> 50 ms): 1 [55]
+CPU x1 legend: 152 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 19, > 33 ms: 19, long tasks (> 50 ms): 2 [62,70]
+CPU x4 rated: 133 frames, median 16.7 ms, p95 49.9 ms, > 20 ms: 32, > 33 ms: 32, long tasks (> 50 ms): 2 [67,53]
+CPU x4 legend: 91 frames, median 33.3 ms, p95 50 ms, > 20 ms: 62, > 33 ms: 62, long tasks (> 50 ms): 3 [116,73,50]
+-- B run 3
+CPU x1 rated: 173 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 0, > 33 ms: 0, long tasks (> 50 ms): 1 [90]
+CPU x1 legend: 163 frames, median 16.7 ms, p95 33.3 ms, > 20 ms: 14, > 33 ms: 14, long tasks (> 50 ms): 1 [67]
+CPU x4 rated: 138 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 34, > 33 ms: 34, long tasks (> 50 ms): 2 [71,66]
+CPU x4 legend: 94 frames, median 33.3 ms, p95 50.1 ms, > 20 ms: 60, > 33 ms: 60, long tasks (> 50 ms): 4 [82,79,53,51]
+-- C run 1
+CPU x1 rated: 175 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 2, > 33 ms: 2, long tasks (> 50 ms): 1 [63]
+CPU x1 legend: 171 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 3, > 33 ms: 3, long tasks (> 50 ms): 1 [59]
+CPU x4 rated: 147 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 24, > 33 ms: 24, long tasks (> 50 ms): 2 [64,62]
+CPU x4 legend: 99 frames, median 33.3 ms, p95 50 ms, > 20 ms: 58, > 33 ms: 58, long tasks (> 50 ms): 3 [95,77,56]
+-- C run 2
+CPU x1 rated: 171 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 3, > 33 ms: 3, long tasks (> 50 ms): 1 [51]
+CPU x1 legend: 169 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 6, > 33 ms: 6, long tasks (> 50 ms): 1 [67]
+CPU x4 rated: 136 frames, median 16.7 ms, p95 49.9 ms, > 20 ms: 29, > 33 ms: 29, long tasks (> 50 ms): 4 [68,54,72,51]
+CPU x4 legend: 108 frames, median 16.8 ms, p95 50 ms, > 20 ms: 51, > 33 ms: 51, long tasks (> 50 ms): 2 [69,60]
+-- C run 3
+CPU x1 rated: 177 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 0, > 33 ms: 0, long tasks (> 50 ms): 1 [50]
+CPU x1 legend: 165 frames, median 16.7 ms, p95 33.3 ms, > 20 ms: 9, > 33 ms: 9, long tasks (> 50 ms): 1 [62]
+CPU x4 rated: 148 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 23, > 33 ms: 23, long tasks (> 50 ms): 1 [65]
+CPU x4 legend: 94 frames, median 33.3 ms, p95 50.1 ms, > 20 ms: 59, > 33 ms: 59, long tasks (> 50 ms): 2 [81,77]

@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { UserPlus } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -56,9 +56,29 @@ import { cn } from "@/lib/utils";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { predictionsService } from "@/services/predictions";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import type { League } from "@/types/fantasy";
+
+// The card's band, minis and compare link are their own chunks, requested only while the section is
+// live and the league is a private one: with the switch off this page imports nothing of the
+// Manager Card.
+const LeagueCardBand = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.LeagueCardBand,
+  })),
+);
+const LeagueCompareLink = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.LeagueCompareLink,
+  })),
+);
+const LeagueRowMini = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.LeagueRowMini,
+  })),
+);
 
 export const Route = createFileRoute("/fantasy/leagues/$leagueId")({
   head: () => fantasyHead("league"),
@@ -94,6 +114,7 @@ function LeagueDetailBody() {
   const qc = useQueryClient();
   const screen = useFantasyScreen();
   const { key } = useFantasyDataSource();
+  const cardLive = useManagerCardLive();
   const [tab, setTab] = useState<"league" | "predictions" | "cup">("league");
   // The journée the Pronostics tab ranks by default (BG-0146).
   const predictionsRound = useQuery({
@@ -177,6 +198,10 @@ function LeagueDetailBody() {
     same: t("fantasy.rank.same"),
   };
   const rows = standingsQ.data ?? [];
+  // The card's surfaces (plan M5): a private league's members, while the section is live. The
+  // batch read behind them is for signed-in managers and leaves the rows as they are if it fails.
+  const cardsOn = cardLive && leagueQ.data?.type === "private" && rows.length > 0;
+  const teamIds = rows.map((row) => row.managerId);
   // A public league can be thousands strong: a five-digit rank takes the
   // small stat step, and a move of a thousand places or more is compact.
   const rankStep = rankFigure(Math.max(1, ...rows.map((row) => row.rank)));
@@ -244,6 +269,13 @@ function LeagueDetailBody() {
                   {updated}
                 </strong>
               </p>
+              {cardsOn ? (
+                // The newly rated friends, hung on a rail, and the way to « Les vôtres ».
+                <Suspense fallback={null}>
+                  <LeagueCardBand order={teamIds} ownTeamId={ownTeamId} />
+                  <LeagueCompareLink leagueId={leagueId} />
+                </Suspense>
+              ) : null}
 
               <div className="mt-4">
                 {standingsQ.isPending ? (
@@ -303,6 +335,15 @@ function LeagueDetailBody() {
                             </UiTD>
                             <UiTD className={cn("py-2.5", STANDINGS_NAME_CELL)}>
                               <div className="flex items-center gap-1">
+                                {cardsOn ? (
+                                  <Suspense
+                                    fallback={
+                                      <span aria-hidden className="me-1 h-7 w-7 shrink-0" />
+                                    }
+                                  >
+                                    <LeagueRowMini teamId={row.managerId} teamIds={teamIds} />
+                                  </Suspense>
+                                ) : null}
                                 <div className="min-w-0 flex-1">
                                   <span
                                     dir="auto"

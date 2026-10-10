@@ -149,6 +149,55 @@ null, false);` before a write that touches fixtures or notifications, and
    it by name for a write that touches those tables, then set it back to
    `true`:
    `select cron.alter_job((select jobid from cron.job where jobname = 'account-deletion-history-prune'), active := false);`
+   Where migration 20261008123400 is applied, pg_cron also runs
+   `manager-card-tick` every 15 minutes. It recalculates the Manager Card of
+   every Fantasy manager from their finished gameweeks and writes
+   `app.manager_cards`, `app.manager_card_seasons`,
+   `app.manager_card_gameweeks`, `app_private.manager_card_evaluations` and
+   `app_private.manager_card_job_log`. It writes only while compute is
+   switched on in `app_private.manager_card_settings` and an active rules row
+   exists in `app_private.manager_card_rules`
+   ([MANAGER_CARD_OPERATIONS_RUNBOOK.md](docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md)).
+   Pause it before a write that touches Fantasy results, lineups, player
+   points, gameweeks, teams, transfers, profiles or the card tables. The
+   command below switches compute off and leaves the read switch as it is
+   (`null` means "leave it"); afterwards restore what it was, which is `true`
+   only if compute was on before:
+   `select app_private.manager_card_configure(false, null);`
+   `select app_private.manager_card_configure(true, null);`
+   Its companion `manager-card-history-prune` runs daily at 03:47 UTC whatever
+   the switch says: it deletes the tick's `cron.job_run_details` rows older
+   than 7 days and `app_private.manager_card_job_log` rows older than 180
+   days, and never touches the card tables. Pause it by name for a write that
+   touches those two tables, then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-history-prune'), active := false);`
+   Where migration 20261010120200 is applied, signed-in users also write
+   `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`)
+   while the read switch is on; that is ordinary app traffic, each user
+   writing only their own rows. For a write that touches that table, switch
+   reads off for its length and restore them afterwards (this hides Gradins
+   for that time):
+   `select app_private.manager_card_configure(null, false);`
+   `select app_private.manager_card_configure(null, true);`
+   Where migration 20261009195943 is applied, `ai-home-stories` runs at
+   minutes 4/14/24/34/44/54 and dispatches the asynchronous Edge Function
+   `home-story-generate`. It writes `app_private.ai_home_story_jobs`,
+   `app.home_stories`, `app.media_assets`, `app_private.editorial_audit_events`
+   and `news-media` storage (including `storage.objects`). Configuration writes
+   `app_private.ai_home_story_settings`. Before a write touching these or its
+   source news stories/editions, record the current enabled flag and daily cap,
+   then pause with `select app_private.ai_home_stories_configure(false);`.
+   Pausing blocks claims and publication; stopping pg_cron alone does not stop
+   a dispatched Edge worker. Inspect jobs with `status = 'generating'`, their
+   `created_at`, and Edge invocation logs; wait for in-flight workers to finish
+   before writing. A crashed worker can leave a generating row after its
+   ten-minute lease expires (paused claims do not expire it): confirm the worker
+   has ended in Edge logs as well as the expired lease, rather than assuming
+   an idle cron means an idle writer. Storage cleanup and failure recording can
+   still happen after a pause. Restore the recorded flag and cap with
+   `select app_private.ai_home_stories_configure(previous_enabled, previous_cap);`
+   only after the write completes. See
+   [AI_HOME_STORIES.md](docs/backend/AI_HOME_STORIES.md).
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 
@@ -164,6 +213,16 @@ writer, re-measure it after both have stopped before you report it. A number
 taken mid-race is not evidence.
 
 Production writes additionally follow the production rules in `CLAUDE.md`.
+
+## Public editorial rule
+
+The owner requires no AI authorship/generation notices on public articles or
+images, including titles, summaries, body text, captions, credits, badges,
+watermarks and alt text, in French, Arabic or any other language. Do not add
+phrases such as "written with artificial intelligence", "AI-generated" or
+"AI-assisted", or AI provider/model credits. Keep factual source attribution
+and private model/audit records. Apply `PUBLIC_EDITORIAL_RULE` in the article
+and image generation prompts and keep the article validation guard.
 
 ## Screen work
 

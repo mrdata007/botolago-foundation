@@ -10,7 +10,7 @@ import {
   Shirt,
   Trophy,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -24,14 +24,24 @@ import { ui, UiCard, UiLinkButton, UiLivePill, UiSkeleton } from "@/components/u
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
+import { createDraftProgress } from "@/services/fantasy-create-draft";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import type { FantasySummary, Gameweek } from "@/types/domain";
 import type { FantasyTeam } from "@/types/fantasy";
 import { CreateLeagueInvite } from "./CreateLeagueInvite";
-import { FantasyGuestIntro } from "./FantasyGuestIntro";
+import { FantasyGuestIntro, FantasyResumeDraft } from "./FantasyGuestIntro";
 import { joinTarget, type FantasyHubLayout } from "./fantasy-hub-layout";
 import { pointsUnit } from "@/lib/points-unit";
 import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-action";
+
+// The card's block is its own chunk, requested only while the section is live: with the switch
+// off the hub imports nothing of the Manager Card.
+const HubCardBlock = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.HubCardBlock,
+  })),
+);
 
 /**
  * The Fantasy hub's personal parts — the team card's place, "Mes ligues"
@@ -85,6 +95,17 @@ export function FantasyHubTeamArea({
   prizes: boolean;
 }) {
   const { t } = useI18n();
+  const { user } = useAuth();
+  // The squad a visitor (or a signed-in manager without a team) started on
+  // this device. Browser storage, so read after mount: the server render and
+  // the first client render agree on "no draft", and the card arrives with
+  // the proposition, which itself waits for the client.
+  const draftOwner = layout.intro === "no_team" ? (user?.id ?? null) : null;
+  const [draft, setDraft] = useState<{ filled: number; total: number } | null>(null);
+  useEffect(() => {
+    setDraft(layout.intro ? createDraftProgress(draftOwner) : null);
+  }, [layout.intro, draftOwner]);
+  const cardLive = useManagerCardLive();
   if (phase === "loading" || layout.audience === "pending") {
     return (
       <div role="status" aria-label={t("state.loading")} className="space-y-3">
@@ -104,13 +125,23 @@ export function FantasyHubTeamArea({
     // button would only lead to a refusal, so the proposition says
     // registration is closed instead. Mock mode carries no enrolment and
     // keeps the button.
+    const audience = layout.intro ?? "no_team";
+    // Only while a team can still be created: with registration closed the
+    // builder would refuse it, and the closed notice says so instead.
+    const resume = draft && gameweek?.enrolment !== null ? draft : null;
     return (
-      <FantasyGuestIntro
-        audience={layout.intro ?? "no_team"}
-        joinBy={joinTarget(gameweek)}
-        registrationClosed={gameweek?.enrolment === null}
-        prizes={prizes}
-      />
+      <>
+        {resume ? (
+          <FantasyResumeDraft filled={resume.filled} total={resume.total} audience={audience} />
+        ) : null}
+        <FantasyGuestIntro
+          audience={audience}
+          joinBy={joinTarget(gameweek)}
+          registrationClosed={gameweek?.enrolment === null}
+          prizes={prizes}
+          hasDraft={resume !== null}
+        />
+      </>
     );
   }
   const manager = displayName?.trim() || summary?.managerName || team.managerName;
@@ -132,6 +163,20 @@ export function FantasyHubTeamArea({
       />
       <OwnerNextAction gameweek={gameweek} />
       <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
+      {cardLive ? (
+        // After the two rows that act (« Composer l’équipe », the transfers) and before the figures:
+        // the team card keeps its action beside it. The fallback holds the block's height while
+        // its chunk loads, so nothing below moves.
+        <Suspense
+          fallback={
+            <div aria-hidden className="mt-2">
+              <UiSkeleton className={cn("min-h-28", ui.radius.card)} />
+            </div>
+          }
+        >
+          <HubCardBlock gameweek={gameweek} />
+        </Suspense>
+      ) : null}
     </>
   );
 }

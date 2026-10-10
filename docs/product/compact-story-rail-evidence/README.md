@@ -1,0 +1,5 @@
+Before screenshots show the production rail at release 2f5f05c4. After screenshots use explicitly artificial local pitch SVG fixtures; live artwork is verified after publication.
+
+All 12 French/Arabic × 320×568, 390×844, 1440×900 × light/dark cases passed. The item is 80px on phones and 88px on desktop; captions occupy a single 16px line. Every code label, including RCAZ V HUSA, fits without clipping in both languages. Circle-to-caption gap is 4px; horizontal item gap is 4px/8px. Rail height is approximately 118px/135px instead of reserving three caption lines and 32px bottom padding.
+
+The full bilingual headline remains inside the immersive viewer, with focus restoration on dismissal. The SQL suite tests actual matchup codes, home-away order, unknown names, non-match mentions and private access. Worker/repository tests, changed-file lint, typecheck, theme-source checks and migration validation passed. Final CI and production migration/live verification remain release gates. Physical devices were not tested.
