@@ -210,7 +210,7 @@ describe("what route guards and components read", () => {
     expect(shouldRedirectFromCurva(on, false)).toBe(true);
     expect(shouldRedirectFromCurva(off, true)).toBe(true);
     expect(shouldRedirectFromCurva(empty, true)).toBe(true);
-    // The default is the build constant, which is off.
-    expect(shouldRedirectFromCurva(on)).toBe(true);
+    // The default is the build constant, which is on since the owner's launch (2026-10-10).
+    expect(shouldRedirectFromCurva(on)).toBe(false);
   });
 });
