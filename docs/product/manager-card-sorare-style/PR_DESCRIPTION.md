@@ -1,5 +1,7 @@
 # Manager Card: a collectible football card, in the BotolaGO look
 
+> **Renamed Curva on 2026-10-10.** The owner renamed the section from « Gradins » (Arabic «المدرجات») to « Curva » (Arabic «كورفا»): addresses `/curva`, `/curva/carte`, `/curva/les-votres`, `/curva/saisons`, the component folder `src/components/curva`, the chunk `curva-*`, the specs `tests/e2e/curva*.e2e.ts`. The text below is the record of what was done under the old name and is not rewritten: read « Gradins » as « Curva » (and `/gradins` as `/curva`) in it.
+
 **Draft — do not merge or publish without the owner.** Nothing here is merged, published, deployed or applied: no migration,
 no function, no database. The section stays switched off exactly as it ships today.
 
@@ -65,9 +67,9 @@ The first review's findings were fixed in round 2, and a second review of the re
 2. **The smaller G1 card:** it was a fixed 296 px in the plan and is 232 to 296 px by the phone's height now (plan D16 and section 10 say so). On phones shorter than about 730 px (an iPhone SE, 375 × 667) the next-round line still falls under the bar, with the card at its 232 px floor; a smaller card would not stay legible. Please confirm.
 3. **The dark page's walls:** to give the dark page's edge 3:1, the metal walls of the base card, STADE and CHAMPION are about a fifth darker, so their first walls are dimmer in the dark theme than in your design preview (plan section 18 says how to undo it). With a pointer on a turned card the silhouette with those walls drawn reads as low as 1.81 at 336 px on the dark page (no floor in the brief; the lit edge line itself is above 3).
 4. **The tilt on a graphics card is not shown.** In the only browser available (no graphics card) a few pauses of 50 to 79 ms remain per 3 s (0 to 1 at normal speed, 1 to 4 at 4× slower CPU), and LEGEND at 4× slower has a median frame of 16.7 or 33.3 ms depending on the run. It needs a look on a real phone and laptop; the touch float was only checked in Chromium's touch emulation.
-5. **Speed to the first card (400 ms at 4× slower CPU):** 453 to 576 ms medians in the development server, 1 of 40 runs under 400 (394). A production figure exists only for the guest page (308 ms, from the performance lane's scratch build).
+5. **Speed to the first card (400 ms at 4× slower CPU): fixed in round 3 on the development server.** The card's chunk and faces now start when the section's layout loads, not after hydration: the data-to-ready time went from 503 to 757 ms medians to 0 (the card is drawn with the rating line), and navigation to ready is 130 to 620 ms shorter; nothing at rest changes (0 pixels differ). A production figure exists only for the guest page (308 ms, from the performance lane's scratch build); none was retaken.
 6. **One decorative dot:** the repository's contrast probe reads the « · » between the rating and the tier at 2.28:1 on 5 Arabic light-theme screens; read from the pixels it is 8.27:1 (the probe's threshold on an almost empty box). Not changed.
-7. **« Ma saison, rang par rang »** (the share picture's heading) still speaks of knitting.
+7. **The share picture's heading is about the card now (round 3):** « Ma carte BotolaGO » in French and «بطاقتي في BotolaGO» in Arabic (it was « Ma saison, rang par rang »). Please read both on `after/picture-rated-*-light-1080.webp`.
 8. **A new font:** « Instrument Serif » for the second line of the name (your earlier yes). DESIGN.md now declares it, with the card's materials, shadow and corner; the design detector still lists its « overused font » notice on three lines of `eclat.css`, which I left as a notice (no ignore was added).
 
 ## What was not checked

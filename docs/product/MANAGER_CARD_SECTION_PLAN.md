@@ -1,5 +1,7 @@
 # Gradins: the Manager Card section, build plan
 
+> **Renamed Curva on 2026-10-10.** The owner renamed the section from « Gradins » (Arabic «المدرجات») to « Curva » (Arabic «كورفا»): addresses `/curva`, `/curva/carte`, `/curva/les-votres`, `/curva/saisons`, the component folder `src/components/curva`, the chunk `curva-*`, the specs `tests/e2e/curva*.e2e.ts`. The text below is the record of what was done under the old name and is not rewritten: read « Gradins » as « Curva » (and `/gradins` as `/curva`) in it.
+
 Written 2026-10-08 by the planner (Claude Opus) for the parallel build that follows. Branch
 `claude/manager-card-section` (worktree `/home/user/botolago-app`, based on `origin/main`
 `3f9c57fc`). The screen-work brief is [`MANAGER_CARD_SECTION_BRIEF.md`](MANAGER_CARD_SECTION_BRIEF.md);
