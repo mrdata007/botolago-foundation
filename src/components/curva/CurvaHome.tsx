@@ -31,6 +31,7 @@ import {
   roundGlance,
   sinceRound,
   type HomeState,
+  waitingBox,
 } from "./curva-state";
 import { IdentityLine } from "./IdentityLine";
 import { NoTeamHero } from "./NoTeamHero";
@@ -192,8 +193,10 @@ export function OwnerHome({
       provisional={card.provisional && !view.newSeason}
       counted={card.gameweeksCounted}
       min={card.minRated}
+      statsFilled={view.statsFilled}
       season={view.newSeason ? view.numberSeason : null}
       formingLabel={moments.m3.label}
+      closedSeason={card.seasonClosed ? card.season.label : null}
       change={badge}
     />
   );
@@ -244,7 +247,14 @@ export function OwnerHome({
           "[[data-hero-slot]:not(:empty)~&_[data-stage-card]]:hidden",
         )}
       >
-        <CardStage profile={profile} beat={beat} fitHeight flippable entrance={{ heroDue }}>
+        <CardStage
+          profile={profile}
+          beat={beat}
+          fitHeight
+          flippable
+          entrance={{ heroDue }}
+          waiting={over ? null : waitingBox(view.ovr, card.gameweeksCounted, card.minRated)}
+        >
           {rating}
         </CardStage>
         <div className="mt-1 px-4 max-md:rtl:mt-0">{identity}</div>

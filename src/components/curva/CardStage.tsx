@@ -2,7 +2,13 @@ import { FlipHorizontal2 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
-import { useCardCopy } from "@/components/manager-card/copy";
+import {
+  CARD_STAT_TOTAL,
+  OVR_MIN_STATS,
+  useCardCopy,
+  useMomentCopy,
+} from "@/components/manager-card/copy";
+import { fill } from "@/components/manager-card/interpolate";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
@@ -11,6 +17,7 @@ import { prefersReducedMotion, tokenMs } from "@/lib/motion";
 import { useMotionAllowed } from "./use-replay-beat";
 import { cn } from "@/lib/utils";
 
+import { nextSeasonLabel, waitingBox, type WaitingBox } from "./curva-state";
 import { CardBack } from "./CardBack";
 import { tiltAllowed } from "./flip-state";
 import { Figure, ProvisionalBadge } from "./figures";
@@ -35,11 +42,30 @@ const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
  * is 22 px taller and whose lines are taller, and whose stage gives back 40 px of padding for it).
  * 236 px keeps the next-round line 16 px or more above the bottom bar in both languages (19.9 px in
  * French, 27 px in Arabic) for every height from 750 px up to where the card reaches its 296 px
- * (a window of about 860 px); below 750 px the card is at its 232 px floor and the line ends 7 px (French)
- * and 8 px (Arabic) above the bar at 740 px, and under it from about 730 px down.
+ * (a window of about 860 px) for a rated card. Below 750 px the card is at its 232 px floor and
+ * the line ends 7 px (French) and 8 px (Arabic) above the bar at 740 px, and under it from about
+ * 730 px down.
+ *
+ * A card with no number puts the rating line in a text box (`RatingLine`), taller than the bare
+ * line, so G1 reserves more for it and the card is that much shorter (owner's choice, 2026-10-10:
+ * the next-round line keeps its 16 px over the bar). Measured at 390 x 844 with 236 px, the
+ * next-round line cleared the bar by 6 px (French) and 13 px (Arabic) under the forming box, and
+ * ended 39 px (French) and 15 px (Arabic) under the bar's top under the two-line box of a card
+ * waiting for a statistic. The worse language sets each reserve, plus 1 px for rounding: 247 px
+ * for the forming box, 292 px for the statistics box. The « Retourner » button hangs 12 px under
+ * the card (`-bottom-3`), so on a phone the box starts 16 px under it (4 px clear of
+ * the button) instead of 12 px (French) and 6 px (Arabic); both reserves take 4 px more for it,
+ * 251 px and 296 px, and Arabic's extra 6 px comes out of its wider margin. The rated line and
+ * 768 px up are unchanged.
  */
 const FIT_HEIGHT_WIDTH =
   "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_236px)_/_1.618),296px))]";
+/** `FIT_HEIGHT_WIDTH` under the forming box (« Carte en formation · 1/3 »). */
+const FIT_HEIGHT_WIDTH_ROUNDS_BOX =
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_251px)_/_1.618),296px))]";
+/** `FIT_HEIGHT_WIDTH` under the two-line box of a card waiting for a statistic. */
+const FIT_HEIGHT_WIDTH_STATS_BOX =
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_296px)_/_1.618),296px))]";
 
 /**
  * Where the card stands (plan section 10). The collectible is the one expressive object on the
@@ -70,6 +96,7 @@ export function CardStage({
   className,
   testId = "curva-stage",
   fitHeight = false,
+  waiting = null,
   flippable = false,
   entrance,
 }: {
@@ -84,6 +111,8 @@ export function CardStage({
    * 232 px and never above the 296 px of `FULL_PHONE_WIDTH`.
    */
   fitHeight?: boolean;
+  /** The rating line is a text box (`waitingBox`): G1 reserves its height under the card. */
+  waiting?: WaitingBox | null;
   /** Draw « Retourner » and the card's back. */
   flippable?: boolean;
   /** Play the card's arrival once per visit; `heroDue` says whether a hero will carry the card. */
@@ -141,7 +170,13 @@ export function CardStage({
         data-stage-card=""
         className={cn(
           "group/stage relative mx-auto max-w-full md:w-[336px]",
-          fitHeight ? FIT_HEIGHT_WIDTH : FULL_PHONE_WIDTH,
+          !fitHeight
+            ? FULL_PHONE_WIDTH
+            : waiting === "stats"
+              ? FIT_HEIGHT_WIDTH_STATS_BOX
+              : waiting === "rounds"
+                ? FIT_HEIGHT_WIDTH_ROUNDS_BOX
+                : FIT_HEIGHT_WIDTH,
         )}
       >
         <span
@@ -256,7 +291,9 @@ export function CardStage({
         <div
           className={cn(
             "mt-3 flex flex-col items-center gap-1 px-4",
-            fitHeight ? "max-md:rtl:mt-1.5" : "max-md:rtl:mt-2",
+            // A text box under a card that can be turned: clear of the « Retourner » button,
+            // which hangs 12 px under the card, by 4 px in both languages, phone and desktop.
+            flippable && waiting ? "mt-4" : fitHeight ? "max-md:rtl:mt-1.5" : "max-md:rtl:mt-2",
           )}
         >
           {children}
@@ -271,10 +308,20 @@ export function CardStage({
 /* ------------------------------------------------------------------------------------------ */
 
 /**
- * Under the card, in text, always: « 84 OVR · PRO » and the « Provisoire » pill, or, while the card
- * is forming, « Carte en formation · 1/3 ». Ordinary DOM, so the number is on screen the moment
- * the data is, before the renderer's chunk has loaded. A new season that has no number of its own
- * yet shows last season's, with that season's label beside it.
+ * Under the card, in text, always: « 84 OVR · PRO » and the « Provisoire » pill. A new season that
+ * has no number of its own yet shows last season's, with that season's label beside it.
+ *
+ * With no number the line is a text box (a bordered, filled, rounded callout), so the waiting is
+ * read as a state and not as a missing figure:
+ *
+ *   - while the journées are still being counted: « Carte en formation · 1/3 »;
+ *   - once they are all counted but fewer than `OVR_MIN_STATS` of the four statistics are filled
+ *     (the server's `insufficient`): « Statistiques remplies · 2/4 » and the sentence that says
+ *     the note comes with 3 of 4. A full journée counter (« 2/2 ») with no number reads as broken,
+ *     so it is never shown in that state.
+ *
+ * Ordinary DOM, so the words are on screen the moment the data is, before the renderer's chunk
+ * has loaded.
  */
 export function RatingLine({
   ovr,
@@ -282,8 +329,10 @@ export function RatingLine({
   provisional,
   counted,
   min,
+  statsFilled,
   season,
   formingLabel,
+  closedSeason = null,
   change,
 }: {
   ovr: number | null;
@@ -291,9 +340,17 @@ export function RatingLine({
   provisional: boolean;
   counted: number;
   min: number;
+  /** How many of the four statistics are filled (`filledStats`). */
+  statsFilled: number;
   /** The season the number belongs to, shown when it is not the current one. */
   season?: string | null;
   formingLabel: string;
+  /**
+   * The card's season label when that season is over: nothing will fill another statistic, so
+   * the box says the season ended before a first note (`m3.late`, naming the next season when
+   * the label has that shape), never that the note « s'affiche dès que » 3 are filled.
+   */
+  closedSeason?: string | null;
   /**
    * How the number moved at the latest round (« +3 ▲ »): drawn beside the number, popping once
    * when `pop` is set. Absent with no earlier number or no change.
@@ -301,25 +358,58 @@ export function RatingLine({
   change?: RatingBadge | null;
 }) {
   const copy = useCardCopy();
+  const moments = useMomentCopy();
   if (ovr === null) {
+    // Every journée the rules ask for is counted and there is still no number: what is missing
+    // is a statistic (`ratingState: "insufficient"`), not a journée.
+    const waitsForStats = waitingBox(ovr, counted, min) === "stats";
+    const closedNext = closedSeason ? nextSeasonLabel(closedSeason) : null;
     return (
-      <p
-        className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1"
+      <div
+        className={cn(
+          "w-full max-w-[296px] px-4 py-1.5 text-center md:max-w-[336px]",
+          ui.surface.card,
+          ui.rule.all,
+        )}
         data-testid="curva-rating-line"
+        data-waiting={waitsForStats ? "stats" : "rounds"}
       >
-        <span className={cn(ui.display.team, ui.tone.default)}>{formingLabel}</span>
-        <span aria-hidden className={cn(ui.display.team, ui.tone.muted)}>
-          ·
-        </span>
-        <span className={cn(ui.score.md, ui.tone.default)}>
-          <span aria-hidden>
-            <Figure>
-              {counted}/{min}
-            </Figure>
+        <p className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5">
+          <span className={cn(ui.display.team, ui.tone.default)}>
+            {waitsForStats ? copy.statsFilled : formingLabel}
           </span>
-          <span className="sr-only">{copy.countedA11y(counted, min)}</span>
-        </span>
-      </p>
+          <span aria-hidden className={cn(ui.display.team, ui.tone.muted)}>
+            ·
+          </span>
+          <span className={cn(ui.score.md, ui.tone.default)}>
+            <span aria-hidden>
+              {waitsForStats ? (
+                <Figure>
+                  {statsFilled}/{CARD_STAT_TOTAL}
+                </Figure>
+              ) : (
+                <Figure>
+                  {counted}/{min}
+                </Figure>
+              )}
+            </span>
+            <span className="sr-only">
+              {waitsForStats
+                ? copy.statsFilledA11y(statsFilled, CARD_STAT_TOTAL)
+                : copy.countedA11y(counted, min)}
+            </span>
+          </span>
+        </p>
+        {waitsForStats && !closedSeason ? (
+          <p className={cn("mt-0.5 text-pretty", ui.text.secondary, ui.tone.muted)}>
+            {fill(moments.m3.insufficient, { need: OVR_MIN_STATS, total: CARD_STAT_TOTAL })}
+          </p>
+        ) : waitsForStats && closedNext ? (
+          <p className={cn("mt-0.5 text-pretty", ui.text.secondary, ui.tone.muted)}>
+            {fill(moments.m3.late, { season: <Figure>{closedNext}</Figure> })}
+          </p>
+        ) : null}
+      </div>
     );
   }
   return (

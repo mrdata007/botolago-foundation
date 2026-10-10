@@ -63,9 +63,15 @@ describe("hubCardModel: the head", () => {
     });
   });
   it("is never a number the server did not send: an unrated card has no 0", () => {
-    for (const id of ["born0", "forming1", "eve2", "insufficient3", "seasonStarted"] as const) {
+    for (const id of ["born0", "forming1", "eve2", "seasonStarted"] as const) {
       expect(hubCardModel(card(id), round(), NOW).head.kind).toBe("counter");
     }
+    // Every journée counted, too few statistics: the statistics filled, never « 3/3 ».
+    expect(hubCardModel(card("insufficient3"), round(), NOW).head).toEqual({
+      kind: "stats",
+      filled: 2,
+      total: 4,
+    });
   });
   it("marks a card with a moment waiting, and only then", () => {
     expect(hubCardModel(card("born0"), round(), NOW).fresh).toBe(true);

@@ -14,8 +14,9 @@ import { rankTokenFigure } from "./inline-model";
 
 /**
  * The card at the end of « Mon classement » (plan M3c): the 44 px token and, under it, « 1/3 »
- * while the card forms or « 84 OVR » once it has a number (stacked, so the line beside it keeps
- * the room its three figures need). One link to `/curva`, a target of at least 48 px like the
+ * while the card forms, « 2/4 » (the statistics filled) once every journée is counted and the
+ * number waits for a statistic, or « 84 OVR » once it has a number (stacked, so the line beside
+ * it keeps the room its three figures need). One link to `/curva`, a target of at least 48 px like the
  * « Aller à ma position » control beside it.
  *
  * Display only: this line never changes the rank above it, and no ranking reads the number. The
@@ -56,6 +57,10 @@ export function RankCardTokenView({ card }: { card: MyCardDto }) {
         {figure.kind === "counter" ? (
           <bdi dir="ltr" className={ui.stat.sm}>
             {figure.k}/{figure.n}
+          </bdi>
+        ) : figure.kind === "stats" ? (
+          <bdi dir="ltr" className={ui.stat.sm}>
+            {figure.filled}/{figure.total}
           </bdi>
         ) : (
           <>

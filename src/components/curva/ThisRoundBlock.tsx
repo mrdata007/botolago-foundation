@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { formatDeadline } from "@/components/fpl/deadline";
 import {
+  CARD_STAT_TOTAL,
+  OVR_MIN_STATS,
   useCardCopy,
   useCurvaCopy,
   useMomentCopy,
@@ -25,6 +27,9 @@ import type { FormingLine, RoundBlock } from "./curva-state";
  * sub-states of the approved onboarding plan).
  *
  *   - forming: the counter « 1/3 » in the 30px figure step, « Carte en formation », and one line;
+ *   - every journée counted and too few statistics for a number (`insufficient`): the statistics
+ *     counter « 2/4 », « Statistiques remplies », and the line that says 3 of 4 are needed (never
+ *     a full journée counter « 2/2 » with no number);
  *   - rated: « J8 · date limite sam. 16:30 » and when the note is recalculated;
  *   - a season over: « Saison 2026/27 terminée : 86, CHAMPION. Elle reste sur votre carte. »;
  *   - a new season with no number of its own yet: the new counter, and the line that says the
@@ -35,8 +40,8 @@ import type { FormingLine, RoundBlock } from "./curva-state";
  */
 interface RoundText {
   title: string;
-  /** The counter, when the card is counting. */
-  counter: { counted: number; min: number } | null;
+  /** The counter, when the card is counting: the figure « k/n » and what a screen reader says. */
+  counter: { k: number; n: number; a11y: string } | null;
   label: string | null;
   line: ReactNode;
   secondary: ReactNode;
@@ -66,7 +71,7 @@ function formingText(
     case "over":
       return fill(moments.m3.over, { gw: line.gw });
     case "insufficient":
-      return moments.m3.insufficient;
+      return fill(moments.m3.insufficient, { need: OVR_MIN_STATS, total: CARD_STAT_TOTAL });
     case "late":
       return line.nextSeason ? fill(moments.m3.late, { season: line.nextSeason }) : null;
     case "listed": {
@@ -102,7 +107,11 @@ function roundText(
     case "started":
       return {
         title: curva.roundTitle,
-        counter: { counted: block.counted, min: block.min },
+        counter: {
+          k: block.counted,
+          n: block.min,
+          a11y: card.countedA11y(block.counted, block.min),
+        },
         label: moments.m3.label,
         // The sentence about last season's note is WP4's persistent state line (`MomentLines`,
         // under this block): this block states the counter, the page does not word it twice.
@@ -118,21 +127,46 @@ function roundText(
           counter: null,
           label: null,
           line: formingText(block.line, block.min, lang, moments, card),
-          secondary: (
-            <>
-              <Figure>
-                {block.counted}/{block.min}
-              </Figure>
-              <span aria-hidden> · </span>
+          // A full counter with no number would read as broken: then only the season.
+          secondary:
+            block.counted < block.min ? (
+              <>
+                <Figure>
+                  {block.counted}/{block.min}
+                </Figure>
+                <span aria-hidden> · </span>
+                <Figure>{block.season}</Figure>
+              </>
+            ) : (
               <Figure>{block.season}</Figure>
-            </>
-          ),
+            ),
           compose: false,
+        };
+      }
+      if (block.line.kind === "insufficient") {
+        // Every journée is counted: what the number waits for is a statistic, so the counter
+        // counts the statistics.
+        const filled = block.line.statsFilled;
+        return {
+          title: curva.roundTitle,
+          counter: {
+            k: filled,
+            n: CARD_STAT_TOTAL,
+            a11y: card.statsFilledA11y(filled, CARD_STAT_TOTAL),
+          },
+          label: card.statsFilled,
+          line: formingText(block.line, block.min, lang, moments, card),
+          secondary: null,
+          compose: true,
         };
       }
       return {
         title: curva.roundTitle,
-        counter: { counted: block.counted, min: block.min },
+        counter: {
+          k: block.counted,
+          n: block.min,
+          a11y: card.countedA11y(block.counted, block.min),
+        },
         label: moments.m3.label,
         line: formingText(block.line, block.min, lang, moments, card),
         secondary: null,
@@ -189,12 +223,10 @@ export function ThisRoundBlock({
             >
               <span aria-hidden>
                 <Figure>
-                  {text.counter.counted}/{text.counter.min}
+                  {text.counter.k}/{text.counter.n}
                 </Figure>
               </span>
-              <span className="sr-only">
-                {card.countedA11y(text.counter.counted, text.counter.min)}
-              </span>
+              <span className="sr-only">{text.counter.a11y}</span>
             </p>
             <div className="min-w-0 flex-1">
               <p className={cn(ui.text.bodyStrong, ui.tone.default)}>{text.label}</p>

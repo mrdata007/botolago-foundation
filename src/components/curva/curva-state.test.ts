@@ -2,6 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import type { FixtureId } from "@/backend/manager-card/fixtures";
 import { FIXTURES } from "@/backend/manager-card/fixtures";
+import { cardLabel, cardStrings } from "@/components/manager-card/copy";
+import { fromMyCard } from "@/components/manager-card/to-profile";
+import { dictionaries } from "@/i18n/dictionaries";
 import type { Gameweek } from "@/types/domain";
 
 import {
@@ -12,12 +15,14 @@ import {
   nextSeasonLabel,
   registrationIsClosed,
   roundBlock,
+  waitingBox,
   roundGlance,
   sinceRound,
   tierFell,
   type CardRead,
   type HomeStateInput,
 } from "./curva-state";
+import { seasonProfile } from "./season-profile";
 
 const card = (id: FixtureId) => FIXTURES[id].card!;
 const NOW = Date.parse("2026-10-14T12:00:00Z");
@@ -198,7 +203,11 @@ describe("« Cette journée » (M3b sub-states and the rated line)", () => {
 
   it("says the note waits for a statistic at 3 of 3", () => {
     const block = roundBlock(card("insufficient3"), ctx());
-    expect(block.kind === "forming" && block.line.kind).toBe("insufficient");
+    // CAP and SEL are filled: 2 of the 4 statistics, what the block counts instead of « 3/3 ».
+    expect(block.kind === "forming" && block.line).toEqual({
+      kind: "insufficient",
+      statsFilled: 2,
+    });
   });
 
   it("names the journées the server listed when no round is known", () => {
@@ -293,5 +302,38 @@ describe("the one-line round summary under the identity line (plan 5.2 item 6)",
       enrolment: { id: "n", number: 15, deadline: new Date(NOW + 100 * HOUR).toISOString() },
     });
     expect(glance("rated", ctx(past))?.number).toBe(15);
+  });
+});
+
+describe("the waiting box under the card (G1 reserves its height)", () => {
+  it("is the forming box below the minimum, the statistics box at it, none with a number", () => {
+    expect(waitingBox(null, 1, 2)).toBe("rounds");
+    expect(waitingBox(null, 2, 2)).toBe("stats");
+    expect(waitingBox(84, 2, 2)).toBeNull();
+  });
+});
+
+describe("an earlier season's token", () => {
+  it("says nothing about statistics on an earlier season's token, whose stats were never sent", () => {
+    const card = FIXTURES.forming1.card!;
+    const past = {
+      seasonId: "00000000-0000-4000-8000-0000000000aa",
+      label: "2025/26",
+      ovr: null,
+      tier: null,
+      bestTier: null,
+      gameweeksCounted: 5,
+      closedAt: "2026-06-01T00:00:00Z",
+    };
+    const token = seasonProfile(card, past);
+    expect(token.statsKnown).toBe(false);
+    const label = cardLabel(
+      token,
+      cardStrings((key) => dictionaries.fr[key], "fr"),
+    );
+    expect(label).not.toContain("Statistiques remplies");
+    expect(label).toContain("5 journées comptées sur 3");
+    // The manager's own card and a league member's carry the server's stats.
+    expect(fromMyCard(FIXTURES.insufficient3.card!).statsKnown).toBe(true);
   });
 });
