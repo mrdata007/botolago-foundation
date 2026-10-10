@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { readFileSync } from "node:fs";
 
 import { QUIET, whenQuiet, type QuietEnv } from "./quiet";
 
@@ -99,7 +100,21 @@ describe("waiting for the page to be quiet", () => {
     expect(resolved).toBe(false);
   });
 
-  it("waits at most 700 ms and asks for 3 frames within 34 ms", () => {
-    expect(QUIET).toEqual({ frames: 3, budgetMs: 34, maxWaitMs: 700 });
+  it("waits at most 500 ms and asks for 3 frames within 34 ms", () => {
+    expect(QUIET).toEqual({ frames: 3, budgetMs: 34, maxWaitMs: 500 });
+  });
+});
+
+describe("the stage's entrance", () => {
+  const source = readFileSync(`${import.meta.dir}/use-stage-entrance.ts`, "utf8");
+
+  it("is held at its first frame until the page is quiet, then played", () => {
+    expect(source).toContain("animation.pause()");
+    expect(source).toContain("whenQuiet()");
+    expect(source).toContain("animation.play()");
+  });
+
+  it("is cancelled, not played, when the stage has gone", () => {
+    expect(source).toContain("animation.cancel()");
   });
 });

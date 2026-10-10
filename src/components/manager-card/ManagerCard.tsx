@@ -11,6 +11,7 @@ import { mountPointerBehaviour } from "./mount-pointer";
 import { cachedRender, widthBucket } from "./render-cache";
 import { newIdScope, scopeSvgIds } from "./scope-ids";
 import { useCardRenderer, useCardTheme } from "./use-card-renderer";
+import type { BeatRoot } from "./renderer";
 import type { BeatName, CardProfile } from "./types";
 import { useCardCrest, withCrest } from "./use-card-crest";
 
@@ -97,10 +98,17 @@ export function ManagerCard({
     return () => window.clearTimeout(timer);
   }, [renderer, playing]);
 
-  // What the playing beat adds to the root, when it can be played on the card as it stands.
+  // What the playing beat adds to the root, when it can be played on the card as it stands. Kept by
+  // value: a parent that builds its profile again on every render must not take the beat's classes
+  // off and put them back, which would start the beat over each time.
+  const inPlaceKey = useMemo(() => {
+    const root =
+      renderer?.beatRoot && playing ? renderer.beatRoot(profile, { strings }, playing) : null;
+    return root ? JSON.stringify(root) : "";
+  }, [renderer, playing, profile, strings]);
   const inPlace = useMemo(
-    () => (renderer?.beatRoot && playing ? renderer.beatRoot(profile, { strings }, playing) : null),
-    [renderer, playing, profile, strings],
+    () => (inPlaceKey ? (JSON.parse(inPlaceKey) as BeatRoot) : null),
+    [inPlaceKey],
   );
   const drawn = inPlace ? undefined : playing;
   const html = useMemo(() => {

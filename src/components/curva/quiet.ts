@@ -14,7 +14,7 @@ export const QUIET = {
   /** The longest gap between two frames that counts as on time: two frames at 60 Hz, a frame at 30 Hz. */
   budgetMs: 34,
   /** Never wait longer than this for it. */
-  maxWaitMs: 700,
+  maxWaitMs: 500,
 } as const;
 
 /** What `whenQuiet` needs from the browser, so a test can drive it. */

@@ -702,6 +702,52 @@ test.describe("the card's tilt and depth", () => {
       expect(after.classes).not.toMatch(/mc-eclat--(active|settle)/);
       await expectNoAnimations(page, "the card after the pointer has left");
     });
+
+    test("a flip, a replay and a re-render do not draw the card again: its markup is set once", async ({
+      page,
+    }) => {
+      // every write of a card's markup (`innerHTML` with a Éclat root): React sets it again, with the
+      // same string, whenever the prop is a new object (docs/engineering/CURVA_CARD_SPEED.md)
+      await page.addInitScript(() => {
+        const writes: number[] = [];
+        (window as unknown as { __cardWrites: number[] }).__cardWrites = writes;
+        const descriptor = Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML")!;
+        Object.defineProperty(Element.prototype, "innerHTML", {
+          ...descriptor,
+          set(value: string) {
+            if (String(value).includes("mc-eclat")) writes.push(performance.now());
+            descriptor.set!.call(this, value);
+          },
+        });
+      });
+      await openCard(page);
+      const writes = () =>
+        page.evaluate(() => (window as unknown as { __cardWrites: number[] }).__cardWrites.length);
+      await page.waitForTimeout(1_500);
+      const drawn = await writes();
+      expect(
+        drawn,
+        "the card is drawn, then once more when its club's crest has loaded",
+      ).toBeLessThanOrEqual(2);
+
+      const flip = page.getByTestId("curva-flip");
+      await flip.click();
+      await expect(flip).toHaveAttribute("aria-pressed", "true");
+      await page.waitForTimeout(600);
+      await flip.click();
+      await expect(flip).toHaveAttribute("aria-pressed", "false");
+      await page.waitForTimeout(600);
+      expect(await writes(), "turning the card over and back").toBe(drawn);
+
+      // « Revoir »: the beat is played on the card that is there (its classes), not on a new drawing
+      await page
+        .getByRole("button", { name: dictionaries.fr["card.onboarding.m4.sheet.replay"] })
+        .first()
+        .click();
+      await expect(stageCard(page)).toHaveAttribute("data-mc-beat", /.+/);
+      await expect(stageCard(page)).not.toHaveAttribute("data-mc-beat", /.+/, { timeout: 4_000 });
+      expect(await writes(), "playing a beat and its end").toBe(drawn);
+    });
   });
 
   test("under reduced motion the card stays where it is: no light written, no 3D, no animation", async ({
