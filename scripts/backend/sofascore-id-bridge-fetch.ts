@@ -10,8 +10,8 @@
  *   event id and reduced to the fields the bridge reads.
  * - Snapshot: one SELECT on staging through the Supabase Management API
  *   (fixtures, rounds, existing sofascore mappings of the season). With no
- *   ids given, the season is the one labelled 2026/27 of a `botola-pro*`
- *   competition; anything but exactly one match stops the run.
+ *   ids given, the season is the one SportsMonks maps as season 28647
+ *   (Botola Pro 2026/27); anything but exactly one match stops the run.
  *
  * Writes `events.json`, `snapshot.json` and `ids.json` into --out-dir. Prints
  * counts and ids only. Refuses the production project.
@@ -97,9 +97,22 @@ export async function fetchAllEvents(client: Pick<RapidApiClient, "getJson">) {
   return { events: [...byId.values()], pages };
 }
 
-const RESOLVE_SQL = `select s.id as season_id, c.id as competition_id
+// Botola Pro 2026/27 is found through the season SportsMonks already maps
+// (season 28647, the current season the SportsMonks jobs are pinned to), not
+// through names or labels, which differ between environments.
+const RESOLVE_SQL = `select s.id as season_id, s.competition_id
+from app_private.football_provider_mappings m
+join app.seasons s on s.id = m.internal_entity_id
+where m.provider_name = 'sportsmonks' and m.entity_type = 'season'
+  and m.external_id = '28647' and m.active`;
+
+const SEASONS_SQL = `select c.slug as competition, s.id as season_id, s.label, s.status,
+  (select count(*) from app.fixtures f where f.season_id = s.id) as fixtures,
+  (select string_agg(m.provider_name || ':' || m.external_id, ',')
+     from app_private.football_provider_mappings m
+     where m.entity_type = 'season' and m.internal_entity_id = s.id) as provider_ids
 from app.seasons s join app.competitions c on c.id = s.competition_id
-where c.slug like 'botola-pro%' and s.label in ('2026/27', '2026-27', '2026/2027')`;
+order by s.starts_on desc nulls last limit 30`;
 
 export const snapshotSql = (seasonId: string) => {
   if (!UUID.test(seasonId)) throw new Error("sofascore_fetch_invalid: season id is not a uuid");
@@ -121,8 +134,16 @@ export const snapshotSql = (seasonId: string) => {
 ) as snapshot`;
 };
 
+/** This script only reads: anything but a single SELECT is refused before it is sent. */
+export function assertReadOnly(sql: string): void {
+  const body = sql.trim();
+  if (!/^select\b/i.test(body) || body.includes(";"))
+    throw new Error("sofascore_fetch_not_read_only: only a single SELECT may be sent");
+}
+
 export function managementQuery(ref: string, token: string): Query {
   return async (sql) => {
+    assertReadOnly(sql);
     const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
@@ -143,10 +164,14 @@ export async function resolveIds(
     return { competitionId: given.competitionId, seasonId: given.seasonId };
   }
   const rows = await query(RESOLVE_SQL);
-  if (rows.length !== 1)
+  if (rows.length !== 1) {
+    // Read-only listing so the run page shows which seasons this database holds.
+    const seasons = await query(SEASONS_SQL);
+    console.log(JSON.stringify({ seasons }, null, 2));
     throw new Error(
       `sofascore_fetch_season_not_unique: ${rows.length} Botola 2026/27 seasons found; pass --competition-id and --season-id`,
     );
+  }
   return { competitionId: String(rows[0].competition_id), seasonId: String(rows[0].season_id) };
 }
 
@@ -159,13 +184,22 @@ async function main() {
   const outDir = arg("--out-dir");
   const key = process.env.RAPIDAPI_KEY?.trim();
   const token = process.env.SUPABASE_ACCESS_TOKEN?.trim();
-  const ref = process.env.SUPABASE_STAGING_PROJECT_REF?.trim();
+  // Staging by default. `--read-production` reads production (the owner allowed
+  // read-only runs on 2026-10-10 because staging holds no real Botola season);
+  // every query is a single SELECT either way, and the bridge's apply mode
+  // still refuses production.
+  const readProduction = process.argv.includes("--read-production");
+  const ref = (
+    readProduction
+      ? process.env.SUPABASE_PRODUCTION_PROJECT_REF
+      : process.env.SUPABASE_STAGING_PROJECT_REF
+  )?.trim();
   if (!outDir || !key || !token || !ref)
     throw new Error(
-      "sofascore_fetch_missing_input: --out-dir, RAPIDAPI_KEY, SUPABASE_ACCESS_TOKEN and SUPABASE_STAGING_PROJECT_REF are required",
+      "sofascore_fetch_missing_input: --out-dir, RAPIDAPI_KEY, SUPABASE_ACCESS_TOKEN and the project ref are required",
     );
-  if (ref === PRODUCTION_PROJECT_REF || !/^[a-z0-9]{20}$/.test(ref))
-    throw new Error("sofascore_fetch_project_refused: staging only");
+  if (!/^[a-z0-9]{20}$/.test(ref) || (ref === PRODUCTION_PROJECT_REF) !== readProduction)
+    throw new Error("sofascore_fetch_project_refused: the ref does not match the chosen target");
 
   const query = managementQuery(ref, token);
   const ids = await resolveIds(query, {

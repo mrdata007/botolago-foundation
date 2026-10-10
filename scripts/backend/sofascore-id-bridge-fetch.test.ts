@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  assertReadOnly,
   eventListPath,
   fetchAllEvents,
   reduceEvents,
@@ -78,5 +79,20 @@ describe("sofascore bridge fetch", () => {
   test("the snapshot query takes a uuid only and is a single select", () => {
     expect(() => snapshotSql("x'; drop table y; --")).toThrow("not a uuid");
     expect(snapshotSql("00000000-0000-4000-8000-000000000002")).toMatch(/^select /);
+  });
+});
+
+describe("assertReadOnly", () => {
+  test("a single SELECT passes", () => {
+    expect(() => assertReadOnly("  select 1 as one")).not.toThrow();
+  });
+  test("anything that is not a single SELECT is refused", () => {
+    for (const sql of [
+      "insert into app.teams default values",
+      "select 1; delete from app.teams",
+      "with x as (delete from app.teams returning id) select * from x",
+      "update app.fixtures set status = 'finished'",
+    ])
+      expect(() => assertReadOnly(sql)).toThrow("sofascore_fetch_not_read_only");
   });
 });
