@@ -32,8 +32,10 @@
 --     3. AI home stories 20261009195943
 --        (scripts/backend/apply-ai-home-stories.sql, PR #389);
 --     4. the story presentation repair 20261009211234
---        (scripts/backend/apply-story-presentation-repair.sql, PR #390).
---   The newest migration recorded must be exactly 20261009211234: the script
+--        (scripts/backend/apply-story-presentation-repair.sql, PR #390);
+--     5. the compact story labels 20261010055425
+--        (scripts/backend/apply-compact-story-labels.sql, PR #393).
+--   The newest migration recorded must be exactly 20261010055425: the script
 --   refuses otherwise, so the migrations go in repository order. Any quiet
 --   moment; not at minute 12 of an hour (the Fantasy season orchestrator). It
 --   takes short locks on app.profiles (one foreign key) and replaces
@@ -64,7 +66,7 @@
 --
 -- WHAT IT DOES
 --   * refuses to run twice, or where any of the four migrations is recorded,
---     or where the newest recorded migration is not exactly 20261009211234
+--     or where the newest recorded migration is not exactly 20261010055425
 --     (the last repository migration before these four), or where any of the
 --     five 2026-10-08 migrations is missing or differs from the reviewed
 --     repository file (sha256 of the recorded text), or where
@@ -110,7 +112,7 @@ begin
     raise exception 'stop: a Gradins read API migration (20261010120000 to 20261010120300) is already recorded as applied';
   end if;
   -- Repository order: these four sort after every other repository migration,
-  -- and the last of those is 20261009211234 (the story presentation repair).
+  -- and the last of those is 20261010055425 (the compact story labels).
   -- The newest recorded migration must be exactly that one. It matters beyond
   -- tidiness: 20261009091728 (PR #384) wraps app_private.ops_health_checks()
   -- before 20261010120300 does, and applied the other way round its rename
@@ -118,10 +120,11 @@ begin
   -- longer be last. Each earlier script requires the one before it to be the
   -- newest recorded migration (Fantasy durable progression wants 20261008123400,
   -- Home stories wants 20261009091728, AI home stories wants 20261009113132,
-  -- the story presentation repair wants 20261009195943), so this one
-  -- comparison stands for the whole chain.
-  if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261009211234' then
-    raise exception 'stop: the newest applied migration is %, expected 20261009211234 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234), so the migrations go in repository order', (select max(version) from supabase_migrations.schema_migrations);
+  -- the story presentation repair wants 20261009195943, the compact story
+  -- labels want 20261009211234), so this one comparison stands for the whole
+  -- chain.
+  if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261010055425' then
+    raise exception 'stop: the newest applied migration is %, expected 20261010055425 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234, compact story labels 20261010055425), so the migrations go in repository order', (select max(version) from supabase_migrations.schema_migrations);
   end if;
   -- The installed objects are the reviewed ones: the recorded text of each of
   -- the five is the repository file the 2026-10-08 script checked.

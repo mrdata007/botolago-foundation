@@ -481,7 +481,7 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    on afterwards. Run it as a rehearsal ("Rehearsal passed"), then with
    `commit;` ("Applied"). It checks both switches are off, there is no rules
    row, the grants, the erase lock, both jobs, and that the tick answers `off`.
-   **Then the four pull requests merged to main after #381 (five
+   **Then the five pull requests merged to main after #381 (six
    migrations) go first, in this order,** each by its own guarded script, before the read API script below:
    (a) the Fantasy durable progression migration (PR #384),
    `scripts/backend/apply-fantasy-durable-progression.sql` (migration
@@ -492,8 +492,11 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    (migration `20261009195943`, see `AI_HOME_STORIES.md`); then
    (d) the story presentation repair (PR #390),
    `scripts/backend/apply-story-presentation-repair.sql` (migration
-   `20261009211234`, see `AI_HOME_STORIES.md`). PR #387 (AI content) and
-   PR #391 (story viewer) add no migration.
+   `20261009211234`, see `AI_HOME_STORIES.md`); then
+   (e) the compact story labels (PR #393),
+   `scripts/backend/apply-compact-story-labels.sql` (migration
+   `20261010055425`, see `AI_HOME_STORIES.md`). PR #387 (AI content), PR #391
+   (story viewer) and PR #392 (story player) add no migration.
    The migrations go in repository order, and the four below are last:
    `20261009091728` replaces `app_private.ops_health_checks()` with a wrapper
    that adds `fantasy_progression`, and `20261010120300` wraps that wrapper to
@@ -503,13 +506,16 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    predecessor to be the newest recorded migration: #384's refuses unless that
    is `20261008123400`, Home stories' unless it is `20261009091728`, AI home
    stories' unless it is `20261009113132`, the repair's unless it is
-   `20261009195943`, and the read API script unless it is exactly
-   `20261009211234`. The AI home stories and repair scripts also pin the
-   number of recorded migrations and call `app_private.hold_scheduled_jobs()`
-   (they refuse while a scheduled job is mid-run); read their own headers
-   before running them. As written on `main` the counts do not chain: Home
-   stories' script expects 166 rows before and leaves 168, while AI home
-   stories' wants exactly 169. Before running AI home stories, read
+   `20261009195943`, the compact story labels' unless it is `20261009211234`,
+   and the read API script unless it is exactly `20261010055425`. The AI home
+   stories, repair and compact story labels scripts also pin the number of
+   recorded migrations and call `app_private.hold_scheduled_jobs()` (they
+   refuse while a scheduled job is mid-run); read their own headers before
+   running them. As written on `main` the counts do not chain at one point:
+   Home stories' script expects 166 rows before and leaves 168, while AI home
+   stories' wants exactly 169. From there they do: AI home stories wants 169
+   and leaves 170, the repair wants 170 and leaves 171, the compact story
+   labels want 171 and leave 172. Before running AI home stories, read
    `select count(*), max(version) from supabase_migrations.schema_migrations;`
    and, if it refuses with « migration baseline changed », find out why with
    that script's owner. Never edit a guard to make it pass. The read API
@@ -518,7 +524,7 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    `scripts/backend/apply-20261010120000-manager-card-api-v2.sql` (migrations
    `20261010120000` to `20261010120300`). It changes nothing anyone sees: it
    refuses to run if the read switch is on, or if the newest recorded
-   migration is not `20261009211234` (its message names the one it found and
+   migration is not `20261010055425` (its message names the one it found and
    what to apply first). Rehearse, then `commit;`. It
    replaces the first read functions with the ones the Gradins screens call, and
    adds the status call, the acknowledgements and the health check. Do it before

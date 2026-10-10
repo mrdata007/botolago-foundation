@@ -135,8 +135,11 @@ include the new functions, but that is optional tidying in a front-end lane, not
 ### 3.0 Slots
 
 Checked on 2026-10-10 after `git fetch origin`, across all 367 remote branches (every open PR
-head included): the highest migration anywhere else is `20261009211234` (story presentation
-repair, PR #390). Slots chosen (unique, sort after it, 100 seconds apart):
+head included): the highest migration anywhere else was `20261009211234` (story presentation
+repair, PR #390). Re-checked later the same day, after main gained the compact story labels (PR
+#393) and was merged into this branch, across all 371 remote refs: the highest migration anywhere
+else is now `20261010055425` (compact story labels, PR #393, on `main`). The slots below still sort
+after it. Slots chosen (unique, 100 seconds apart):
 
 | Slot             | File                                                               | Package |
 | ---------------- | ------------------------------------------------------------------ | ------- |
@@ -158,8 +161,10 @@ goes first). Nothing had been applied anywhere but a local stack, so the four mo
 too, so on 2026-10-10 the four moved a second time, in place, keeping their names, their order
 and the 100-second gaps, to the slots in the table above (`20261010120000` to `20261010120300`).
 Both times nothing was applied anywhere but a local stack (checked: neither main nor any remote
-branch but this one holds a version of the four), and the newest migration anywhere else was the
-one the script now requires first (`20261009211234`).
+branch but this one holds a version of the four), and the newest migration anywhere else was then
+`20261009211234`. Main later gained the compact story labels (`20261010055425`, PR #393), which
+sorts before `20261010120000` as well, so the four did **not** move a third time: only the script's
+newest-migration guard moved, to `20261010055425`, the one it now requires first.
 
 Common rules for every function below: `set search_path = ''`; every name schema-qualified;
 `revoke all on function … from public, anon, authenticated, service_role;` then only the grants
@@ -720,14 +725,15 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
 - **Preflight**, refusing (`raise exception 'stop: …'`) unless:
   - `supabase_migrations.schema_migrations` has all five `20261008123000…123400` and none of the
     four new versions;
-  - the newest recorded migration is **exactly `20261009211234`** (the story presentation repair,
-    PR #390: the last repository migration before these four), checked after the "none of the four
+  - the newest recorded migration is **exactly `20261010055425`** (the compact story labels,
+    PR #393: the last repository migration before these four), checked after the "none of the four
     is recorded" test so a re-run says so. `20261009091728` (PR #384) wraps
     `app_private.ops_health_checks()` first and `20261010120300` wraps it again, so the migrations
     must go in repository order. The chain is #381's five, then `apply-fantasy-durable-progression.sql`
     (wants `20261008123400` newest), then `apply-home-stories.sql` (wants `20261009091728` newest),
     then `apply-ai-home-stories.sql` (PR #389, `20261009195943`; wants `20261009113132` newest),
     then `apply-story-presentation-repair.sql` (PR #390, `20261009211234`; wants `20261009195943`
+    newest), then `apply-compact-story-labels.sql` (PR #393, `20261010055425`; wants `20261009211234`
     newest), then this one; each script wants its predecessor newest, so this one comparison
     stands for all of it. The refusal names the version it found and the migrations to apply
     first;
@@ -788,9 +794,10 @@ Run: `bun test scripts/backend/apply-manager-card-api-v2-script.test.ts`.
     before it, in this order, #384's `20261009091728`
     (`scripts/backend/apply-fantasy-durable-progression.sql`), Home stories'
     `20261009094920` and `20261009113132` (`scripts/backend/apply-home-stories.sql`, PR #386), AI
-    home stories' `20261009195943` (`scripts/backend/apply-ai-home-stories.sql`, PR #389) and the
+    home stories' `20261009195943` (`scripts/backend/apply-ai-home-stories.sql`, PR #389), the
     story presentation repair's `20261009211234`
-    (`scripts/backend/apply-story-presentation-repair.sql`, PR #390).
+    (`scripts/backend/apply-story-presentation-repair.sql`, PR #390) and the compact story labels'
+    `20261010055425` (`scripts/backend/apply-compact-story-labels.sql`, PR #393).
 - `AGENTS.md` (after the `manager-card-history-prune` paragraph, lines 168-173), add:
   > Where migration 20261010120200 is applied, signed-in users also write
   > `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`) while the read switch

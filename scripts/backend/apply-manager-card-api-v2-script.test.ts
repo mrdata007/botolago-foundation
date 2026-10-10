@@ -130,7 +130,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       "set local lock_timeout = '5s';",
       "the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet",
       "a Gradins read API migration (20261010120000 to 20261010120300) is already recorded as applied",
-      "the newest applied migration is %, expected 20261009211234",
+      "the newest applied migration is %, expected 20261010055425",
       "is not the reviewed repository file",
       "the tables this builds on are missing",
       "the functions this builds on are missing",
@@ -170,12 +170,12 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
 
   test("requires the newest recorded migration to be the last repository migration before ours", () => {
     const firstWrite = script.indexOf("insert into supabase_migrations.schema_migrations");
-    const expected = "20261009211234";
+    const expected = "20261010055425";
     const message =
-      "stop: the newest applied migration is %, expected 20261009211234 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234), so the migrations go in repository order";
+      "stop: the newest applied migration is %, expected 20261010055425 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234, compact story labels 20261010055425), so the migrations go in repository order";
     expect(occurrences(script, message)).toBe(1);
     const condition =
-      "if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261009211234' then";
+      "if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261010055425' then";
     expect(occurrences(script, condition)).toBe(1);
     const guard = script.indexOf(condition);
     expect(guard).toBeGreaterThan(0);
@@ -214,6 +214,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       "20261009113132",
       "20261009195943",
       "20261009211234",
+      "20261010055425",
     ]) {
       expect(repository.some((file) => file.startsWith(version))).toBe(true);
       expect(script.slice(0, script.indexOf("begin;"))).toContain(version);
@@ -226,8 +227,10 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
     expect(read("scripts/backend/apply-story-presentation-repair.sql")).toContain(
       "'20261009211234'",
     );
+    expect(read("scripts/backend/apply-compact-story-labels.sql")).toContain("'20261010055425'");
     // Each earlier script wants its predecessor newest, so the chain is enforced end to end:
-    // #381's five, Fantasy durable progression, Home stories, AI home stories, the repair, then this one.
+    // #381's five, Fantasy durable progression, Home stories, AI home stories, the repair, the
+    // compact story labels (PR #393), then this one.
     expect(read("scripts/backend/apply-fantasy-durable-progression.sql")).toContain(
       "(select max(version) from supabase_migrations.schema_migrations) <> '20261008123400'",
     );
@@ -240,6 +243,9 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
     expect(read("scripts/backend/apply-story-presentation-repair.sql")).toContain(
       "(select max(version) from supabase_migrations.schema_migrations)<>'20261009195943'",
     );
+    expect(read("scripts/backend/apply-compact-story-labels.sql")).toContain(
+      "(select max(version) from supabase_migrations.schema_migrations)<>'20261009211234'",
+    );
     // Repository order: the migration #384 adds comes before our health wrapper's.
     expect("20261009091728" < MIGRATIONS[3].version).toBe(true);
     // The header says so too.
@@ -249,6 +255,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
     expect(header).toContain("apply-home-stories.sql");
     expect(header).toContain("apply-ai-home-stories.sql");
     expect(header).toContain("apply-story-presentation-repair.sql");
+    expect(header).toContain("apply-compact-story-labels.sql");
   });
 
   test("afterwards: grants, dropped functions, acks table, status, health, unchanged rows", () => {
