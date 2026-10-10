@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 /**
  * The guarded script that puts the Gradins read API of the Manager Card
- * (BG-0158, four migrations 20261009120000 to 20261009120300) on production,
+ * (BG-0158, four migrations 20261010120000 to 20261010120300) on production,
  * after the five migrations of the 2026-10-08 script. Like the other apply
  * scripts, it records each migration file whole in the history and runs that
  * record only after its sha256 matches the repository file, so each file must
@@ -24,10 +24,10 @@ const sha256 = (text: string) => createHash("sha256").update(text, "utf8").diges
 const occurrences = (haystack: string, needle: string) => haystack.split(needle).length - 1;
 
 const MIGRATIONS = [
-  { version: "20261009120000", name: "manager_card_moment_acks" },
-  { version: "20261009120100", name: "manager_card_read_helpers" },
-  { version: "20261009120200", name: "manager_card_api_v2" },
-  { version: "20261009120300", name: "manager_card_health" },
+  { version: "20261010120000", name: "manager_card_moment_acks" },
+  { version: "20261010120100", name: "manager_card_read_helpers" },
+  { version: "20261010120200", name: "manager_card_api_v2" },
+  { version: "20261010120300", name: "manager_card_health" },
 ].map((m) => ({ ...m, text: read(`supabase/migrations/${m.version}_${m.name}.sql`) }));
 
 const EARLIER = [
@@ -38,7 +38,7 @@ const EARLIER = [
   "20261008123400",
 ];
 
-const script = read("scripts/backend/apply-20261009120000-manager-card-api-v2.sql");
+const script = read("scripts/backend/apply-20261010120000-manager-card-api-v2.sql");
 const previous = read("scripts/backend/apply-20261008123000-manager-card.sql");
 const code = (text: string) =>
   text
@@ -46,7 +46,7 @@ const code = (text: string) =>
     .filter((line) => !line.trim().startsWith("--"))
     .join("\n");
 
-describe("apply-20261009120000-manager-card-api-v2.sql", () => {
+describe("apply-20261010120000-manager-card-api-v2.sql", () => {
   for (const { version, name, text } of MIGRATIONS) {
     test(`carries ${version} byte for byte and checks it before running it`, () => {
       const tag = `$bg_${version}_file$`;
@@ -129,7 +129,7 @@ describe("apply-20261009120000-manager-card-api-v2.sql", () => {
     for (const guard of [
       "set local lock_timeout = '5s';",
       "the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet",
-      "a Gradins read API migration (20261009120000 to 20261009120300) is already recorded as applied",
+      "a Gradins read API migration (20261010120000 to 20261010120300) is already recorded as applied",
       "the newest applied migration is %, expected 20261009113132",
       "is not the reviewed repository file",
       "the tables this builds on are missing",
@@ -191,7 +191,7 @@ describe("apply-20261009120000-manager-card-api-v2.sql", () => {
     );
     // It sits in the preflight, after the five 2026-10-08 migrations are known to be there
     // and after the check that none of the four is recorded (a re-run then says so, not
-    // "the newest is 20261009120300").
+    // "the newest is 20261010120300").
     expect(
       script.indexOf("the five Manager Card migrations 20261008123000 to 20261008123400"),
     ).toBeLessThan(guard);

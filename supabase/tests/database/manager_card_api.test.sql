@@ -1,5 +1,5 @@
 -- Manager Card (BG-0158): the Gradins read API and the moment acknowledgements.
--- Migrations 20261009120000 .. 20261009120300.
+-- Migrations 20261010120000 .. 20261010120300.
 --
 -- What this file proves that manager_card.test.sql does not: the five api
 -- functions' shape and grants, "off is an answer", the sign-in order (argument
@@ -687,7 +687,7 @@ select extensions.is(
   'deleting M''s account removes M''s acknowledgements (cascade through the profile)');
 
 -- ---------------------------------------------------------------------------
--- Health (20261009120300): the manager_card check in ops_health_checks
+-- Health (20261010120300): the manager_card check in ops_health_checks
 -- ---------------------------------------------------------------------------
 -- The check's status and detail with p_setup applied first; the setup is undone.
 create function pg_temp.health(p_setup text default 'select 1') returns text language plpgsql as $$

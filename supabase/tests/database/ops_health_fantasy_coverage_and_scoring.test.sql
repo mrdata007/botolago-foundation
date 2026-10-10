@@ -36,7 +36,7 @@ select extensions.is(
   array['fantasy_lifecycle_tick', 'fantasy_gameweek_lock', 'fantasy_gameweek_clubs', 'fantasy_fixture_coverage',
     'fantasy_scoring', 'cron_jobs', 'news_publication', 'news_sitemap', 'news_import', 'live_scores',
     'provider_refresh', 'email_delivery', 'browser_errors', 'account_deletion', 'fantasy_progression', 'manager_card'],
-  'health lists the three new checks after the Fantasy ones, and every earlier check (no season yet, so no deadline watch; account_deletion, 20261006143700, then fantasy_progression, 20261009091728, then manager_card, 20261009120300, last)');
+  'health lists the three new checks after the Fantasy ones, and every earlier check (no season yet, so no deadline watch; account_deletion, 20261006143700, then fantasy_progression, 20261009091728, then manager_card, 20261010120300, last)');
 select extensions.ok(
   'fantasy_gameweek_clubs' ~ '^[a-z][a-z0-9_]{1,60}$' and 'fantasy_fixture_coverage' ~ '^[a-z][a-z0-9_]{1,60}$'
     and 'fantasy_scoring' ~ '^[a-z][a-z0-9_]{1,60}$',

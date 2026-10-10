@@ -7,7 +7,7 @@
 -- tick is untouched.
 --
 -- The helpers live in app_private, are not security definer (they run inside the
--- security definer api functions of 20261009120200), carry no grant at all and
+-- security definer api functions of 20261010120200), carry no grant at all and
 -- do not read the caller: the api functions own the caller, the step-up and the
 -- switch. Display only.
 --

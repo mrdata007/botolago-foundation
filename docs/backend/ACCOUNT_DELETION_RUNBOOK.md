@@ -67,7 +67,7 @@ The worker, per request:
      and its permanent number is **retired**: an AFTER DELETE trigger copies
      the serial, and nothing else, to `app_private.manager_card_retired_serials`
      (no user id), so it is never issued again (20261008123000). The
-     acknowledged moments (20261009120000) are removed and nothing is kept;
+     acknowledged moments (20261010120000) are removed and nothing is kept;
    - one row in `app_private.account_deletion_log`: request id, dates,
      attempts, counts. No user id, address or name;
 4. sends the confirmation e-mail (Resend, FR or AR, idempotency key per

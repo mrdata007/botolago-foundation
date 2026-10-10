@@ -41,10 +41,10 @@ authenticated, service_role` (never `anon`).
 | `20261008123200` | `manager_card_compute.sql`      | 2                               |
 | `20261008123300` | `manager_card_api.sql`          | 3                               |
 | `20261008123400` | `manager_card_jobs.sql`         | 2                               |
-| `20261009120000` | `manager_card_moment_acks.sql`  | P1 (`MANAGER_CARD_GAP_PLAN.md`) |
-| `20261009120100` | `manager_card_read_helpers.sql` | P1                              |
-| `20261009120200` | `manager_card_api_v2.sql`       | P1                              |
-| `20261009120300` | `manager_card_health.sql`       | P3                              |
+| `20261010120000` | `manager_card_moment_acks.sql`  | P1 (`MANAGER_CARD_GAP_PLAN.md`) |
+| `20261010120100` | `manager_card_read_helpers.sql` | P1                              |
+| `20261010120200` | `manager_card_api_v2.sql`       | P1                              |
+| `20261010120300` | `manager_card_health.sql`       | P3                              |
 
 Objects (Lane 1 creates the tables; others use these exact names):
 
