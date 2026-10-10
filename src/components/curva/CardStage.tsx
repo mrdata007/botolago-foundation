@@ -13,13 +13,13 @@ import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
 import { ui, UiBadge, UiIconButton } from "@/components/ui-kit";
-import { prefersReducedMotion, tokenMs } from "@/lib/motion";
+import { prefersReducedMotion } from "@/lib/motion";
 import { useMotionAllowed } from "./use-replay-beat";
 import { cn } from "@/lib/utils";
 
 import { nextSeasonLabel, waitingBox, type WaitingBox } from "./curva-state";
 import { CardBack } from "./CardBack";
-import { tiltAllowed } from "./flip-state";
+import { backMounted, FLIP_MS, tiltAllowed } from "./flip-state";
 import { Figure, ProvisionalBadge } from "./figures";
 import { deltaArrow, signedDelta } from "./rating-change";
 import type { RatingBadge } from "./use-rating-change";
@@ -121,6 +121,8 @@ export function CardStage({
   const motion = useMotionCopy();
   const [back, setBack] = useState(false);
   const [turning, setTurning] = useState(false);
+  // The reader is reaching for the button: the back's content is drawn now, before the turn needs it.
+  const [armed, setArmed] = useState(false);
   // Counts the turns, so a second tap in the middle of one restarts the safety timer below.
   const [turnKey, setTurnKey] = useState(0);
   const [announce, setAnnounce] = useState("");
@@ -133,7 +135,7 @@ export function CardStage({
   // that was cut short (a hidden tab, a removed node), so the 3D context never outlives it.
   useEffect(() => {
     if (!turning) return;
-    const timer = window.setTimeout(() => setTurning(false), tokenMs("--duration-hero", 420) + 120);
+    const timer = window.setTimeout(() => setTurning(false), FLIP_MS + 120);
     return () => window.clearTimeout(timer);
   }, [turning, turnKey]);
 
@@ -211,10 +213,11 @@ export function CardStage({
               <div
                 data-flip-inner=""
                 className={cn(
-                  "relative transition-transform duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]",
+                  "relative transition-transform ease-[var(--ease-emphasized)]",
                   in3d && "[transform-style:preserve-3d]",
                 )}
                 style={{
+                  transitionDuration: `${FLIP_MS}ms`,
                   transform:
                     motionOk && back ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined,
                 }}
@@ -249,7 +252,7 @@ export function CardStage({
                   inert={!back}
                   aria-hidden={!back || undefined}
                 >
-                  <CardBack profile={profile} />
+                  {backMounted({ armed, back, turning }) ? <CardBack profile={profile} /> : null}
                 </div>
               </div>
             </div>
@@ -273,6 +276,11 @@ export function CardStage({
               aria-pressed={back}
               data-testid="curva-flip"
               onClick={flip}
+              onPointerEnter={() => setArmed(true)}
+              onPointerDown={() => setArmed(true)}
+              onFocus={() => setArmed(true)}
+              onPointerLeave={() => setArmed(false)}
+              onBlur={() => setArmed(false)}
               className={cn(
                 "absolute -bottom-3 -start-2 z-20 ring-1 ring-white/25",
                 // a ring that shows on every tier and both themes: white, with a black offset

@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n/provider";
 import { prefersReducedMotion, tokenMs } from "@/lib/motion";
 
 import { entranceDecision, entranceFrames, entranceMs, groundFrames } from "./entrance";
+import { whenQuiet } from "./quiet";
 import { useLaunchGate } from "./use-launch-gate";
 
 const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -74,6 +75,17 @@ export function useStageEntrance(input: {
     const animations = [lift.animate(entranceFrames(dir), { duration, easing })];
     const ground = groundRef.current;
     if (ground) animations.push(ground.animate(groundFrames(), { duration, easing }));
+    // Held at its first frame (opacity 0, so nothing flashes) until the page is quiet: started at
+    // the stage's mount it competes with the rest of the screen's first render and played as three
+    // frames after an empty wait (`quiet.ts`). `finished` still ends it the same way.
+    for (const animation of animations) animation.pause();
+    const quiet = whenQuiet();
+    void quiet.done.then(() => {
+      for (const animation of animations) {
+        if (mounted.current) animation.play();
+        else animation.cancel();
+      }
+    });
     setEntering(true);
     const done = () => {
       if (mounted.current) setEntering(false);
