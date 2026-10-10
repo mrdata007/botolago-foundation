@@ -292,12 +292,8 @@ export function CardStage({
           className={cn(
             "mt-3 flex flex-col items-center gap-1 px-4",
             // A text box under a card that can be turned: clear of the « Retourner » button,
-            // which hangs 12 px under the card, by 4 px in both languages.
-            flippable && waiting
-              ? "max-md:mt-4"
-              : fitHeight
-                ? "max-md:rtl:mt-1.5"
-                : "max-md:rtl:mt-2",
+            // which hangs 12 px under the card, by 4 px in both languages, phone and desktop.
+            flippable && waiting ? "mt-4" : fitHeight ? "max-md:rtl:mt-1.5" : "max-md:rtl:mt-2",
           )}
         >
           {children}
