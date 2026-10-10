@@ -127,6 +127,23 @@ export async function handleFootballLiveRefreshRequest(
   const job = await requestedJob(request);
   if (job === null) return json(400, { error: "invalid_request" });
 
+  // Which provider is live (app_private.football_data_source_settings). Only
+  // `sportsmonks` has an ingestion path here; the others answer without
+  // calling a provider or writing anything until the SofaScore path lands.
+  const source = await liveDataSource(dependencies.client);
+  if (source === "invalid") return json(503, { error: "football_data_source_invalid" });
+  if (source !== "sportsmonks") {
+    console.log(
+      JSON.stringify({
+        event: "football_live_refresh",
+        result: "source_not_implemented",
+        source,
+        job,
+      }),
+    );
+    return json(200, { status: "skipped", reason: "source_not_implemented", source, job });
+  }
+
   // The fixture handler insists on a one-off trigger secret of its own; it
   // never leaves this process.
   const trigger = (dependencies.randomHex ?? defaultRandomHex)(32);
@@ -184,6 +201,27 @@ export async function handleFootballLiveRefreshRequest(
   }
   const outcome = await details("live");
   return json(scores.status, { ...body, matchDetails: outcome });
+}
+
+type LiveDataSource = "sportsmonks" | "sofascore" | "shadow" | "invalid";
+
+/**
+ * Reads api.football_data_source(). A missing answer (the migration not
+ * applied yet, or a database error) is the default, `sportsmonks`, so deploying
+ * this before the migration, or a failed read, leaves today's behaviour. A
+ * value that is not one of the three is `invalid` and refused.
+ */
+async function liveDataSource(client: LiveRefreshRpcClient): Promise<LiveDataSource> {
+  try {
+    const result = await client.schema("api").rpc("football_data_source", {});
+    if (result.error || result.data === null || result.data === undefined) return "sportsmonks";
+    const value = result.data;
+    return value === "sportsmonks" || value === "sofascore" || value === "shadow"
+      ? value
+      : "invalid";
+  } catch {
+    return "sportsmonks";
+  }
 }
 
 /** Fixture-job failures that leave the provider and the database usable. */

@@ -195,6 +195,26 @@ daily_email_limit, monthly_email_limit, daily_email_reserve)` (postgres role; a
 The first switch away from `off` records `activated_at`; notification events
 older than that are never emailed, so the existing backlog stays unmailed.
 
+### Live football data source (20261011090000)
+
+Which provider the football refresh reads is a separate single-row setting,
+`app_private.football_data_source_settings` (not in the table above, because it
+is not about email). Values: `sportsmonks` (default, today's behaviour),
+`sofascore`, `shadow` (SportsMonks writes; SofaScore is computed and logged
+only). The `football-live-refresh` Edge Function reads it on every call through
+`api.football_data_source()`; the cron ticks are unchanged. Until the SofaScore
+path is merged, `sofascore` and `shadow` make the function answer
+`source_not_implemented` without calling a provider or writing.
+
+```sql
+select app_private.football_data_source();                      -- read
+select app_private.football_data_source_configure('shadow');    -- flip (postgres role; audited)
+select app_private.football_data_source_configure('sportsmonks'); -- back
+```
+
+Flipping is a production write: follow `AGENTS.md` (pause the football jobs
+first) and the production rules in `CLAUDE.md`.
+
 ## Switching it on (production)
 
 Owner steps are marked **(you)**. Every database step is a production write:

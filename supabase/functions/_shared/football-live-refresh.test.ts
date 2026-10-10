@@ -399,3 +399,125 @@ describe("football live refresh, match details", () => {
     expect(order).not.toContain("ingest_football_fixture");
   });
 });
+
+describe("football live refresh, data-source switch", () => {
+  const environment = { ...SCHEDULER, SPORTSMONKS_API_TOKEN: "sportsmonks-test-token-0123456789" };
+  const now = () => new Date("2026-09-24T21:50:00Z");
+  const between = {
+    data: [
+      {
+        id: 7001,
+        league_id: 860,
+        season_id: 28647,
+        round_id: null,
+        starting_at: "2026-09-24 20:00:00",
+        last_processed_at: "2026-09-24 21:49:00",
+        state: { developer_name: "INPLAY_2ND_HALF" },
+        participants: [
+          { id: 1001, meta: { location: "home" } },
+          { id: 1002, meta: { location: "away" } },
+        ],
+        scores: [
+          { description: "CURRENT", score: { participant: "home", goals: 1 } },
+          { description: "CURRENT", score: { participant: "away", goals: 2 } },
+        ],
+      },
+    ],
+    pagination: { has_more: false },
+  };
+
+  /** A database that answers the source read with `source` and records every call. */
+  function withSource(
+    source: unknown,
+    calls: string[],
+    error: { message: string } | null = null,
+  ): LiveRefreshRpcClient {
+    return {
+      schema() {
+        return {
+          rpc(name: string) {
+            calls.push(name);
+            if (name === "football_data_source") {
+              return Promise.resolve({ data: error ? null : source, error });
+            }
+            const data: Record<string, unknown> = {
+              begin_football_ingestion: "50000000-0000-4000-8000-000000000001",
+              resolve_football_mapping: "60000000-0000-4000-8000-000000000001",
+              ingest_football_fixture: "60000000-0000-4000-8000-000000000001",
+              service_football_match_details_due: [],
+            };
+            return Promise.resolve({ data: data[name] ?? null, error: null });
+          },
+        };
+      },
+    } as unknown as LiveRefreshRpcClient;
+  }
+
+  async function run(client: LiveRefreshRpcClient, body = '{"job":"fixtures"}') {
+    const paths: string[] = [];
+    const response = await handleFootballLiveRefreshRequest(request(TOKEN, "POST", body), {
+      environment,
+      now,
+      client,
+      fetch: async (input) => {
+        paths.push(new URL(String(input)).pathname);
+        return Response.json(between);
+      },
+    });
+    return { response, paths };
+  }
+
+  it("sportsmonks reads and writes as before", async () => {
+    const calls: string[] = [];
+    const { response, paths } = await run(withSource("sportsmonks", calls));
+    expect(response.status).toBe(200);
+    expect(paths).toEqual(["/v3/football/fixtures/between/2026-09-23/2026-09-25"]);
+    expect(calls).toContain("ingest_football_fixture");
+  });
+
+  it("keeps today's behaviour when the source cannot be read or is not set yet", async () => {
+    const unreadable: string[] = [];
+    const unset: string[] = [];
+    for (const [client, calls] of [
+      [
+        withSource(null, unreadable, {
+          message: "function api.football_data_source() does not exist",
+        }),
+        unreadable,
+      ],
+      [withSource(null, unset), unset],
+    ] as const) {
+      const { response, paths } = await run(client);
+      expect(response.status).toBe(200);
+      expect(paths).toHaveLength(1);
+      expect(calls).toContain("ingest_football_fixture");
+    }
+  });
+
+  for (const source of ["sofascore", "shadow"]) {
+    for (const job of ["fixtures", "season_fixtures", "match_details_backfill"]) {
+      it(`${source} writes nothing and calls no provider for ${job}`, async () => {
+        const calls: string[] = [];
+        const { response, paths } = await run(withSource(source, calls), `{"job":"${job}"}`);
+        expect(response.status).toBe(200);
+        expect(await response.json()).toEqual({
+          status: "skipped",
+          reason: "source_not_implemented",
+          source,
+          job,
+        });
+        expect(paths).toEqual([]);
+        expect(calls).toEqual(["football_data_source"]);
+      });
+    }
+  }
+
+  it("refuses a source it does not know, without writing", async () => {
+    const calls: string[] = [];
+    const { response, paths } = await run(withSource("flashscore", calls));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "football_data_source_invalid" });
+    expect(paths).toEqual([]);
+    expect(calls).toEqual(["football_data_source"]);
+  });
+});
