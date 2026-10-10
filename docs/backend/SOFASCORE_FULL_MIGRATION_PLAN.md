@@ -124,9 +124,22 @@ Kept as is: club crests are already curated in storage
 (`20261001170000`) and are not re-fetched. Pressure and preseason-rating tables
 stay in place and simply stop being fed until P7.
 
-## 6. Work items in flight
+## 6. Work in review (draft pull requests)
 
-1. Pressure chart removal — branch `claude/drop-pressure-chart`.
+| PR | Phase | What |
+|---|---|---|
+| #408 | P0 | This plan |
+| #407 | P0 | Pressure chart removed from the match page |
+| #410 | P2 | Fixture-list and league-table parsers (unknown statuses left out, never guessed) |
+| #411 | P3 | ID bridge: dry-run tool linking SofaScore IDs to existing rows |
+| #409 | P5 | RapidAPI client for Edge Functions (not wired) |
+
+Open from review:
+- The 16 club → `app.teams.id` pairings for the ID bridge need owner review
+  (staging and production UUIDs may differ, so read each from its own database).
+- Moving a fixture mapping to a replayed match's new SofaScore ID needs a new,
+  reviewed RPC (P4): `api.resolve_football_mapping` cannot re-point a mapping.
+- The in-play status codes are unconfirmed until a probe during a live match.
 
 ## 7. Owner prerequisites
 
