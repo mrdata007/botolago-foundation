@@ -1,0 +1,71 @@
+import { describe, expect, it } from "bun:test";
+import { containsPublicAiNotice } from "./public-editorial-policy.ts";
+
+const flagged: Array<[string, string]> = [
+  // French
+  ["fr", "Article rédigé par GPT-4"],
+  ["fr", "Illustration créée avec DALL-E"],
+  ["fr", "Texte généré par Mistral"],
+  ["fr", "Image produite par Midjourney"],
+  ["fr", "Cet article a été écrit avec l'intelligence artificielle."],
+  ["fr", "Contenu rédigé avec l'aide de l'IA."],
+  ["fr", "Illustration IA : un stade au coucher du soleil"],
+  ["fr", "Résumé généré par l'IA"],
+  ["fr", "Photo illustrée avec Stable Diffusion"],
+  ["fr", "Crédit : Gemini"],
+  ["fr", "BotolaGO · OpenAI"],
+  ["fr", "Claude a rédigé cet article"],
+  ["fr", "Texte assisté par Copilot"],
+  ["fr", "Une IA générative a produit ce texte"],
+  ["fr", "Merci à ChatGPT"],
+  // English
+  ["en", "AI-generated article by OpenAI."],
+  ["en", "Written by AI"],
+  ["en", "Image generated with Midjourney"],
+  ["en", "Illustration created using Grok"],
+  ["en", "Drafted with the help of artificial intelligence"],
+  ["en", "Text written by Claude"],
+  ["en", "Photo: Gemini"],
+  ["en", "Powered by AI"],
+  ["en", "ChatGPT wrote this summary"],
+  // Arabic
+  ["ar", "كُتب هذا المقال بمساعدة الذكاء الاصطناعي."],
+  ["ar", "تم إنشاؤه بواسطة جيميني"],
+  ["ar", "صورة توضيحية بالذكاء الاصطناعي"],
+  ["ar", "مقال مكتوب بالذكاء الاصطناعي"],
+  ["ar", "تم إنتاج الصورة باستخدام ميدجورني"],
+  ["ar", "المصدر: شات جي بي تي"],
+  ["ar", "كُتب بواسطة الـذكاء الاصطناعي"],
+];
+
+const allowed: Array<[string, string]> = [
+  ["fr", "Claude Le Roy a dirigé le Ghana puis le Congo."],
+  ["fr", "Claude Puel a été écrit sur la liste des candidats."],
+  ["fr", "Le Gemini de la fiche technique n'a rien à voir avec le match."],
+  ["fr", "Le mistral souffle sur Marseille et le Llama FC joue à domicile."],
+  ["fr", "Le copilot du bus d'équipe est arrivé en retard."],
+  ["fr", "Mistral, le défenseur, a signé hier."],
+  ["fr", "J'ai vu le match, la maia et l'initiative de l'ailier."],
+  ["fr", "Le Raja a créé la surprise grâce à un but de Rahimi."],
+  ["fr", "L'intelligence de jeu du milieu a été décisive."],
+  ["fr", "Le but a été généré par le pressing haut des Verts."],
+  ["fr", "Photo : Reuters"],
+  ["fr", "Source : Agence officielle, image fournie par le club"],
+  ["en", "Claude Le Roy managed Ghana and Congo."],
+  ["en", "The Gemini Cup final was played in Rabat."],
+  ["en", "A cold mistral wind blew over the pitch."],
+  ["en", "The goal was created by a quick counter-attack."],
+  ["ar", "المدرب كلود لوروا قاد منتخب الغانا."],
+  ["ar", "كتب اللاعب رسالة وداع لجماهير الفريق."],
+  ["ar", "الذكاء التكتيكي للمدرب كان حاسماً."],
+  ["ar", "المصدر: وكالة الأنباء المغربية"],
+];
+
+describe("containsPublicAiNotice", () => {
+  it.each(flagged)("flags %s: %s", (_lang, text) => {
+    expect(containsPublicAiNotice(text)).toBe(true);
+  });
+  it.each(allowed)("allows %s: %s", (_lang, text) => {
+    expect(containsPublicAiNotice(text)).toBe(false);
+  });
+});
