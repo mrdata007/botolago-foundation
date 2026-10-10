@@ -120,7 +120,8 @@ SEO plan (26 Sept) says Search Console was not connected to its project.
 - **Phone first.** Browser tests cover phone to desktop widths in French and Arabic. The main sections
   are Accueil, Actualités, Fantasy, Matches and Pépites, plus Profile. Pronostics lives inside Matches.
 - **Language.**
-  - A first visit asks the reader to choose French or Arabic.
+  - A first visit asks the reader to choose French or Arabic. The choice starts on Arabic when the
+    browser's preferred languages put Arabic before French, and on French otherwise.
   - The interface language is stored on that device only (browser storage). An account also records
     the language in use at sign-up or profile setup, and notifications use that one.
   - The server renders French first, and Arabic switches in after the page loads.
@@ -186,7 +187,7 @@ the snapshot) was not checked against the live site.
   - On 2026-10-05 it shows the 2025/26 final ranking.
   - The weekly Top 10, chosen by the editors, is built. The first 2026/27 edition comes only after
     round 3, and none had been published at the last record.
-- **Other:** the landing page (`/jouer`, also shown at `/` to first-time signed-out visitors); optional
+- **Other:** the landing page, at `/jouer` only (`/` is Home for everyone, owner decision 2026-10-07); optional
   two-step sign-in; account-deletion requests; cookieless analytics (Seline).
 - **Dark mode** (merged after the site check): on (owner decision 2026-10-05, BG-0149, PR #356). It follows the phone's
   setting by default, and Profil > Apparence offers Clair, Sombre and Système. Fantasy has its dark
