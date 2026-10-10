@@ -12,17 +12,19 @@ returns text language sql immutable security invoker set search_path='' as $$
    when 'hassania agadir' then 'HUSA' when 'hassania union sport agadir' then 'HUSA'
    when 'cr khemis zemamra' then 'RCAZ' when 'renaissance zemamra' then 'RCAZ' when 'renaissance club athletic zemamra' then 'RCAZ'
    when 'fus rabat' then 'FUS' when 'fath union sport' then 'FUS'
-   when 'rs berkane' then 'RSB' when 'renaissance berkane' then 'RSB' when 'renaissance sportive de berkane' then 'RSB'
+   when 'rsb berkane' then 'RSB' when 'rs berkane' then 'RSB' when 'renaissance berkane' then 'RSB' when 'renaissance sportive de berkane' then 'RSB'
    when 'ittihad tanger' then 'IRT' when 'ittihad riadi de tanger' then 'IRT'
    when 'maghreb tétouan' then 'MAT' when 'moghreb tétouan' then 'MAT'
-   when 'olympique safi' then 'OCS' when 'olympique club de safi' then 'OCS'
+   when 'olympic safi' then 'OCS' when 'olympique safi' then 'OCS' when 'olympique club de safi' then 'OCS'
    when 'difaâ el jadida' then 'DHJ' when 'difaa el jadida' then 'DHJ'
-   when 'union touarga' then 'UTS' when 'union touarga sport' then 'UTS'
+   when 'uts rabat' then 'UTS' when 'union touarga' then 'UTS' when 'union touarga sport' then 'UTS'
    when 'js soualem' then 'JSS' when 'jeunesse sportive soualem' then 'JSS'
    when 'mouloudia oujda' then 'MCO' when 'mouloudia club oujda' then 'MCO'
    when 'kawkab marrakech' then 'KACM' when 'kawkab athletic club marrakech' then 'KACM'
    when 'olympique dcheira' then 'OD' when 'olympique dcheïra' then 'OD'
-   when 'youssoufia berrechid' then 'CAYB' when 'chabab mohammedia' then 'SCCM'
+   when 'youssoufia berrechid' then 'CAYB' when 'chabab mohammedia' then 'SCCM' when 'chabab mohammédia' then 'SCCM'
+   when 'amal tiznit' then 'AMT' when 'codm meknès' then 'CODM' when 'codm meknes' then 'CODM'
+   when 'yacoub el mansour' then 'YEM'
    else case when btrim(p_name) ~ '^[A-Z0-9]{2,4}$' then btrim(p_name) else null end
  end
 $$;
