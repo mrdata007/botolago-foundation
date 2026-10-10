@@ -120,7 +120,7 @@ describe("the picture", () => {
     });
   });
 
-  it("draws the wordmark and the card's art, and nothing else as an image: no crest, no photo", async () => {
+  it("draws the wordmark and the card's art, and nothing else as an image without a crest: no photo", async () => {
     const { ops } = await draw("rated", "fr");
     const images = ops.filter((op) => op.kind === "image");
     expect(images).toHaveLength(2);
@@ -229,7 +229,7 @@ describe("what it says", () => {
     expect(find(ops, "PRO")).toBeDefined();
   });
 
-  it("the club is a colour disc with its initials, in Changa, and nothing like a crest", async () => {
+  it("the club is a colour disc with its initials, in Changa, when the club has no crest", async () => {
     const { ops, model } = await draw("rated", "fr");
     expect(model.club?.initials).toBe("RCA");
     const initials = find(ops, "RCA")!;
@@ -556,5 +556,67 @@ describe("the faces the art is drawn in", () => {
     expect(asked.some((spec) => spec.startsWith("300 ") && spec.includes('"Changa"'))).toBe(true);
     expect(asked.some((spec) => spec.startsWith("800 ") && spec.includes('"Manrope"'))).toBe(true);
     expect(asked.some((spec) => spec.includes('"Noto Sans Arabic"'))).toBe(true);
+  });
+});
+
+describe("the club's crest (owner request 2026-10-10)", () => {
+  const CREST = "https://media.example.test/storage/v1/object/public/football-media/rca.png";
+  const crested = (crest: string) => ({
+    club: { ...profileOf("rated").profile.club!, crest },
+  });
+  const images = (ops: Op[]) => ops.filter((op) => op.kind === "image");
+
+  for (const lang of ["fr", "ar"] as const) {
+    it(`${lang}: is drawn on the card's tab and on the disc beside the name, instead of the initials`, async () => {
+      const { ops, model } = await draw("rated", lang, crested(CREST));
+      expect(model.art.crest?.href).toBe(CREST);
+      const [logo, art, tab, side, ...more] = images(ops) as Op[];
+      expect(logo && art && tab && side).toBeTruthy();
+      expect(more).toEqual([]);
+      // the tab's crest sits on the art's disc: inside the art, at its inline-start top corner
+      const artMid = (art!.left + art!.right) / 2;
+      expect(tab!.top).toBeGreaterThan(art!.top);
+      expect(tab!.bottom).toBeLessThan(art!.top + (art!.bottom - art!.top) * 0.2);
+      expect(lang === "ar" ? tab!.left > artMid : tab!.right < artMid).toBe(true);
+      // the side crest is centred in the disc, two thirds of it across at most
+      expect((side!.top + side!.bottom) / 2).toBeCloseTo(L.disc.centreY, 0);
+      expect(side!.right - side!.left).toBeLessThanOrEqual(L.disc.diameter * (2 / 3) + 0.01);
+      // no initials anywhere: neither the art's run nor the side disc's
+      expect(find(ops, "RCA")).toBeUndefined();
+    });
+  }
+
+  it("keeps the initials when the crest does not load (or not with CORS)", async () => {
+    const { ops, model } = await draw("rated", "fr", crested("https://x.test/broken.png"));
+    expect(model.art.crest).toBeDefined();
+    expect(images(ops)).toHaveLength(2);
+    expect(texts(ops).filter((op) => op.text === "RCA")).toHaveLength(2);
+  });
+
+  it("is redrawn with the initials when the crest taints the canvas after all", async () => {
+    const doc = (globalThis as unknown as { document: { createElement: () => unknown } }).document;
+    const make = doc.createElement;
+    doc.createElement = () => {
+      const canvas = make() as { toBlob: (done: (blob: Blob) => void) => void };
+      const recording = recordings.at(-1)!;
+      canvas.toBlob = (done) => {
+        if (recording.ops.filter((op) => op.kind === "image").length > 2) {
+          throw new DOMException("tainted", "SecurityError");
+        }
+        done(new Blob(["png"], { type: "image/png" }));
+      };
+      return canvas;
+    };
+    const { ops } = await draw("rated", "fr", crested(CREST));
+    expect(recordings.length).toBe(2);
+    expect(images(ops)).toHaveLength(2);
+    expect(texts(ops).filter((op) => op.text === "RCA")).toHaveLength(2);
+  });
+
+  it("a card whose club has no crest draws exactly as before", async () => {
+    const plain = await draw("rated", "fr");
+    const again = await draw("rated", "fr", { club: profileOf("rated").profile.club });
+    expect(again.ops).toEqual(plain.ops);
+    expect(plain.model.art.crest).toBeUndefined();
   });
 });

@@ -21,6 +21,8 @@ import {
   TAB,
   WINDOW,
   DISC,
+  CREST,
+  CREST_PLATE,
   hexPath,
   JT,
   n2,
@@ -58,12 +60,23 @@ export function frameDefs(F: Foil, id: string): string {
     <filter id="${id}-b18" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB"><feGaussianBlur stdDeviation="18"/></filter>`;
 }
 
-/** The tab's disc: the club's colours, or a neutral embossed hexagon (never a logo, never text). */
+/**
+ * The tab's disc: the club's crest on a light plate ringed in the club's colour (the picture itself
+ * is `plate.ts`'s, outside this mirrored layer, so it is never flipped), else the club's colours
+ * (the initials are `plate.ts`'s too), else a neutral embossed hexagon. The share picture's art
+ * never carries the crest (`cardImage`): its canvas draws it over this disc when it can.
+ */
 function tabDisc(c: Ctx): string {
   const { F, p } = c.v;
   const { id } = c;
   const { cx, cy } = DISC;
   const shadow = `<circle cx="${cx}" cy="${cy}" r="56" fill="#000" fill-opacity=".4" transform="translate(0 4)" filter="url(#${id}-b5)"/>`;
+  if (p.club?.crest) {
+    return (
+      shadow +
+      `<circle cx="${cx}" cy="${cy}" r="${CREST.r}" fill="${CREST_PLATE[c.theme]}" data-meta="crest-plate"/><circle cx="${cx}" cy="${cy}" r="${CREST.ringR}" fill="none" stroke="${p.club.primary}" stroke-width="${CREST.ringW}"/>`
+    );
+  }
   if (p.club) {
     return (
       shadow +

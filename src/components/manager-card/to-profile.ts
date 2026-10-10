@@ -85,6 +85,7 @@ export function toCardClub(dto: CardClubDto | null | undefined): CardClub | null
   if (!palette.base) return null;
   return {
     id: dto.id,
+    slug: dto.slug,
     initials: clubInitials(dto.code, dto.shortName.fr, dto.name.fr),
     name: { fr: dto.name.fr, ar: dto.name.ar },
     primary: palette.base,
@@ -99,6 +100,7 @@ export function cardClubFromClub(club: Club | null | undefined): CardClub | null
   if (!palette.base) return null;
   return {
     id: club.id,
+    slug: club.slug ?? null,
     initials: clubInitials(club.crestPlaceholder, club.shortName.fr, club.name.fr),
     name: { fr: club.name.fr, ar: club.name.ar },
     primary: palette.base,
