@@ -1,8 +1,10 @@
 # Reconciled scoring ingestion
 
-Status: **built and tested.** Migration `20261003180000` goes on production with the guarded
+Status: **on production since 2026-10-04 (10:10 UTC).** Migration `20261003180000` was applied with the guarded
 script [`apply-20261003180000-reconciled-provider-observations.sql`](../../scripts/backend/apply-20261003180000-reconciled-provider-observations.sql)
-(owner decision 2026-10-04). Nothing here scores, finalizes or publishes points.
+(owner decision 2026-10-04); record in
+[`APPLIED_2026_10_04_RECONCILED_PROVIDER_OBSERVATIONS.md`](../production/APPLIED_2026_10_04_RECONCILED_PROVIDER_OBSERVATIONS.md).
+No reconciled match has been recorded yet. Nothing here scores, finalizes or publishes points.
 
 ## What it does
 
