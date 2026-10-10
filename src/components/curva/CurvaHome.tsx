@@ -171,6 +171,7 @@ export function OwnerHome({
       statsFilled={view.statsFilled}
       season={view.newSeason ? view.numberSeason : null}
       formingLabel={moments.m3.label}
+      closedSeason={card.seasonClosed ? card.season.label : null}
     />
   );
   const identity = (

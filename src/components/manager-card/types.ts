@@ -55,6 +55,12 @@ export interface CardProfile {
   founder: number | null;
   club: CardClub | null;
   stats: Record<StatCode, number | null>;
+  /**
+   * true: `stats` are the server's values for this card and season, so an empty one is really
+   * empty. Absent or false: the stats are placeholders (an earlier season's token, which the
+   * server sends no stats for), and nothing may be said about how many are filled.
+   */
+  statsKnown?: boolean;
   /** Development fixtures only: prints the sample label on the object. */
   sample?: true;
   /**

@@ -2,6 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import type { FixtureId } from "@/backend/manager-card/fixtures";
 import { FIXTURES } from "@/backend/manager-card/fixtures";
+import { cardLabel, cardStrings } from "@/components/manager-card/copy";
+import { fromMyCard } from "@/components/manager-card/to-profile";
+import { dictionaries } from "@/i18n/dictionaries";
 import type { Gameweek } from "@/types/domain";
 
 import {
@@ -19,6 +22,7 @@ import {
   type CardRead,
   type HomeStateInput,
 } from "./curva-state";
+import { seasonProfile } from "./season-profile";
 
 const card = (id: FixtureId) => FIXTURES[id].card!;
 const NOW = Date.parse("2026-10-14T12:00:00Z");
@@ -306,5 +310,30 @@ describe("the waiting box under the card (G1 reserves its height)", () => {
     expect(waitingBox(null, 1, 2)).toBe("rounds");
     expect(waitingBox(null, 2, 2)).toBe("stats");
     expect(waitingBox(84, 2, 2)).toBeNull();
+  });
+});
+
+describe("an earlier season's token", () => {
+  it("says nothing about statistics on an earlier season's token, whose stats were never sent", () => {
+    const card = FIXTURES.forming1.card!;
+    const past = {
+      seasonId: "00000000-0000-4000-8000-0000000000aa",
+      label: "2025/26",
+      ovr: null,
+      tier: null,
+      bestTier: null,
+      gameweeksCounted: 5,
+      closedAt: "2026-06-01T00:00:00Z",
+    };
+    const token = seasonProfile(card, past);
+    expect(token.statsKnown).toBe(false);
+    const label = cardLabel(
+      token,
+      cardStrings((key) => dictionaries.fr[key], "fr"),
+    );
+    expect(label).not.toContain("Statistiques remplies");
+    expect(label).toContain("5 journées comptées sur 3");
+    // The manager's own card and a league member's carry the server's stats.
+    expect(fromMyCard(FIXTURES.insufficient3.card!).statsKnown).toBe(true);
   });
 });

@@ -524,10 +524,12 @@ export function cardLabel(profile: CardProfile, strings: CardStrings): string {
     parts.push(strings.a11y.noRating);
     if (profile.counted !== null && profile.minRated !== null) {
       // Every journée counted and still no number: what it waits for is a statistic, so the
-      // label says how many are filled, not « 3 journées comptées sur 3 ».
+      // label says how many are filled, not « 3 journées comptées sur 3 ». Only when the stats
+      // are the server's (`statsKnown`): an earlier season's token has placeholders, and would
+      // say « 0 sur 4 » of a season whose stats were never sent.
       const statsFilled = strings.a11y.statsFilled;
       parts.push(
-        profile.counted >= profile.minRated && statsFilled
+        profile.counted >= profile.minRated && profile.statsKnown === true && statsFilled
           ? statsFilled(filledStats(STAT_CODES.map((code) => profile.stats[code])), CARD_STAT_TOTAL)
           : strings.a11y.counted(profile.counted, profile.minRated),
       );

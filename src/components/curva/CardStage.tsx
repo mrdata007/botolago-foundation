@@ -13,7 +13,7 @@ import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
-import { waitingBox, type WaitingBox } from "./curva-state";
+import { nextSeasonLabel, waitingBox, type WaitingBox } from "./curva-state";
 import { Figure, ProvisionalBadge } from "./figures";
 
 /** The card on a phone: 296 px, and never closer than 16 px to either edge. */
@@ -182,6 +182,7 @@ export function RatingLine({
   statsFilled,
   season,
   formingLabel,
+  closedSeason = null,
 }: {
   ovr: number | null;
   tier: TierCode | null;
@@ -193,6 +194,12 @@ export function RatingLine({
   /** The season the number belongs to, shown when it is not the current one. */
   season?: string | null;
   formingLabel: string;
+  /**
+   * The card's season label when that season is over: nothing will fill another statistic, so
+   * the box says the season ended before a first note (`m3.late`, naming the next season when
+   * the label has that shape), never that the note « s'affiche dès que » 3 are filled.
+   */
+  closedSeason?: string | null;
 }) {
   const copy = useCardCopy();
   const moments = useMomentCopy();
@@ -200,6 +207,7 @@ export function RatingLine({
     // Every journée the rules ask for is counted and there is still no number: what is missing
     // is a statistic (`ratingState: "insufficient"`), not a journée.
     const waitsForStats = waitingBox(ovr, counted, min) === "stats";
+    const closedNext = closedSeason ? nextSeasonLabel(closedSeason) : null;
     return (
       <div
         className={cn(
@@ -236,9 +244,13 @@ export function RatingLine({
             </span>
           </span>
         </p>
-        {waitsForStats ? (
+        {waitsForStats && !closedSeason ? (
           <p className={cn("mt-0.5 text-pretty", ui.text.secondary, ui.tone.muted)}>
             {fill(moments.m3.insufficient, { need: OVR_MIN_STATS, total: CARD_STAT_TOTAL })}
+          </p>
+        ) : waitsForStats && closedNext ? (
+          <p className={cn("mt-0.5 text-pretty", ui.text.secondary, ui.tone.muted)}>
+            {fill(moments.m3.late, { season: <Figure>{closedNext}</Figure> })}
           </p>
         ) : null}
       </div>

@@ -16,6 +16,7 @@ import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import type { Club, Gameweek } from "@/types/domain";
 
+import { RatingLine } from "./CardStage";
 import { CurvaHomeView } from "./CurvaHome";
 import { LeagueRows } from "./LeagueRows";
 import { buildRows } from "./people";
@@ -294,6 +295,33 @@ describe("G1 for a manager", () => {
     expect(text(round)).toContain(
       "Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.",
     );
+  });
+
+  it("makes no promise for a season that is over: the late line, not « s'affiche dès que »", async () => {
+    const line = (closedSeason: string | null) =>
+      render(
+        <RatingLine
+          ovr={null}
+          tier={null}
+          provisional={false}
+          counted={2}
+          min={2}
+          statsFilled={2}
+          formingLabel={fr["card.onboarding.m3.label"]}
+          closedSeason={closedSeason}
+        />,
+      );
+    const closed = text(await line("2026/27"));
+    expect(tight(closed)).toContain("2/4");
+    expect(closed).not.toContain("Votre note s’affiche");
+    expect(closed).toContain("Saison terminée avant votre première note : elle viendra en");
+    expect(closed).toContain("2027/28");
+    // A label of another shape names no next season: then no sentence at all.
+    const odd = text(await line("Saison A"));
+    expect(odd).not.toContain("Votre note s’affiche");
+    expect(odd).not.toContain("Saison terminée");
+    // The season still running keeps the promise.
+    expect(text(await line(null))).toContain("Votre note s’affiche dès que 3 statistiques");
   });
 
   it("keeps the rated line as it was: no box", async () => {

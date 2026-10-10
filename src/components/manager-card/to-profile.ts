@@ -131,6 +131,7 @@ export function fromMyCard(card: MyCardDto, options?: ProfileOptions): CardProfi
       trf: card.stats.trf.value,
       con: card.stats.con.value,
     },
+    statsKnown: true,
     ...sampleFlag(options),
   };
   if (card.ratingState === "forming" && card.previousSeason) {
@@ -142,6 +143,7 @@ export function fromMyCard(card: MyCardDto, options?: ProfileOptions): CardProfi
       counted: null,
       season: card.previousSeason.label,
       stats: { ...EMPTY_STATS },
+      statsKnown: false,
     };
   }
   return base;
@@ -161,6 +163,7 @@ export function fromMember(card: MemberCardDto, options?: ProfileOptions): CardP
     founder: card.founderCohort,
     club: toCardClub(card.club),
     stats: { ...card.stats },
+    statsKnown: true,
     ...sampleFlag(options),
   };
 }
@@ -186,6 +189,7 @@ export function fromHistoryRow(
     founder: card.founder?.cohort ?? null,
     club: toCardClub(card.club),
     stats: { ...row.stats },
+    statsKnown: true,
     ...sampleFlag(options),
   };
 }
