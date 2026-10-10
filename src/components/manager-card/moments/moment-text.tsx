@@ -4,6 +4,8 @@ import type { MyCardDto } from "@/backend/manager-card/contracts";
 import type { Language } from "@/types/domain";
 
 import {
+  CARD_STAT_TOTAL,
+  OVR_MIN_STATS,
   cardCopy,
   curvaCopy,
   momentCopy,
@@ -273,6 +275,21 @@ export function bornText(
 ): BornText {
   const { moment, card: copy } = words;
   const final = copy.finalRounds(card.minRated);
+
+  // Every journée counted and no number yet (too few statistics): say what it waits for, never
+  // the full counter « (2/2) ».
+  if (card.ratingState === "insufficient") {
+    return {
+      lines: [
+        {
+          text: fill(moment.m3.insufficient, { need: OVR_MIN_STATS, total: CARD_STAT_TOTAL }),
+          strong: true,
+          kind: "timing",
+        },
+      ],
+      invite: null,
+    };
+  }
 
   // The card has counted journées already (an existing manager at launch, below the minimum).
   if (card.gameweeksCounted >= 1) {

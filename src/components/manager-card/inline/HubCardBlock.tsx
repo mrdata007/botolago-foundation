@@ -13,6 +13,8 @@ import type { Gameweek } from "@/types/domain";
 
 import { CardToken } from "../CardToken";
 import {
+  CARD_STAT_TOTAL,
+  OVR_MIN_STATS,
   useCardCopy,
   useCurvaCopy,
   useMomentCopy,
@@ -127,6 +129,10 @@ export function HubCardBlockView({
               <bdi dir="ltr" className={cn(ui.text.meta, ui.tone.muted)}>
                 {model.head.k}/{model.head.n} · {card.season.label}
               </bdi>
+            ) : model.head.kind === "stats" ? (
+              <bdi dir="ltr" className={cn(ui.text.meta, ui.tone.muted)}>
+                {card.season.label}
+              </bdi>
             ) : null}
           </>
         ) : (
@@ -159,6 +165,17 @@ function Head({
   cardCopy: CardCopy;
   formingLabel: string;
 }) {
+  if (head.kind === "stats") {
+    // Every journée is counted; what the number waits for is a statistic.
+    return (
+      <>
+        <bdi dir="ltr" className={cn(ui.stat.hero, ui.tone.default)}>
+          {head.filled}/{head.total}
+        </bdi>
+        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{cardCopy.statsFilled}</span>
+      </>
+    );
+  }
   if (head.kind === "counter") {
     return (
       <>
@@ -243,7 +260,7 @@ function renderLine(
     case "over":
       return fill(bind(ctx.moment.m3.over), { gw: line.gameweek });
     case "insufficient":
-      return ctx.moment.m3.insufficient;
+      return fill(ctx.moment.m3.insufficient, { need: OVR_MIN_STATS, total: CARD_STAT_TOTAL });
     case "late":
       return fill(ctx.moment.m3.late, { season: line.season });
     case "closed":

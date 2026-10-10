@@ -10,7 +10,7 @@ if (!environment.SUPABASE_URL || !environment.SUPABASE_SERVICE_ROLE_KEY)
 const client = createClient(environment.SUPABASE_URL, environment.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
 });
-// Custom scheduler-token authentication is verified against the database BEFORE
+// The scheduler token is checked in-process (BOTOLAGO_SCHEDULER_TOKEN) BEFORE
 // claiming a job or spending provider credits. The response acknowledges quickly;
 // waitUntil owns the bounded generation work beyond pg_net's request timeout.
 Deno.serve((request) =>

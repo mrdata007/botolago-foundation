@@ -1,13 +1,29 @@
-import type { ReactNode } from "react";
+import { FlipHorizontal2 } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
-import { useCardCopy } from "@/components/manager-card/copy";
+import {
+  CARD_STAT_TOTAL,
+  OVR_MIN_STATS,
+  useCardCopy,
+  useMomentCopy,
+} from "@/components/manager-card/copy";
+import { fill } from "@/components/manager-card/interpolate";
+import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
-import { ui } from "@/components/ui-kit";
+import { ui, UiBadge, UiIconButton } from "@/components/ui-kit";
+import { prefersReducedMotion, tokenMs } from "@/lib/motion";
+import { useMotionAllowed } from "./use-replay-beat";
 import { cn } from "@/lib/utils";
 
+import { nextSeasonLabel, waitingBox, type WaitingBox } from "./curva-state";
+import { CardBack } from "./CardBack";
+import { tiltAllowed } from "./flip-state";
 import { Figure, ProvisionalBadge } from "./figures";
+import { deltaArrow, signedDelta } from "./rating-change";
+import type { RatingBadge } from "./use-rating-change";
+import { useStageEntrance } from "./use-stage-entrance";
 
 /** The card on a phone: 296 px, and never closer than 16 px to either edge. */
 const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
@@ -26,11 +42,30 @@ const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
  * is 22 px taller and whose lines are taller, and whose stage gives back 40 px of padding for it).
  * 236 px keeps the next-round line 16 px or more above the bottom bar in both languages (19.9 px in
  * French, 27 px in Arabic) for every height from 750 px up to where the card reaches its 296 px
- * (a window of about 860 px); below 750 px the card is at its 232 px floor and the line ends 7 px (French)
- * and 8 px (Arabic) above the bar at 740 px, and under it from about 730 px down.
+ * (a window of about 860 px) for a rated card. Below 750 px the card is at its 232 px floor and
+ * the line ends 7 px (French) and 8 px (Arabic) above the bar at 740 px, and under it from about
+ * 730 px down.
+ *
+ * A card with no number puts the rating line in a text box (`RatingLine`), taller than the bare
+ * line, so G1 reserves more for it and the card is that much shorter (owner's choice, 2026-10-10:
+ * the next-round line keeps its 16 px over the bar). Measured at 390 x 844 with 236 px, the
+ * next-round line cleared the bar by 6 px (French) and 13 px (Arabic) under the forming box, and
+ * ended 39 px (French) and 15 px (Arabic) under the bar's top under the two-line box of a card
+ * waiting for a statistic. The worse language sets each reserve, plus 1 px for rounding: 247 px
+ * for the forming box, 292 px for the statistics box. The « Retourner » button hangs 12 px under
+ * the card (`-bottom-3`), so on a phone the box starts 16 px under it (4 px clear of
+ * the button) instead of 12 px (French) and 6 px (Arabic); both reserves take 4 px more for it,
+ * 251 px and 296 px, and Arabic's extra 6 px comes out of its wider margin. The rated line and
+ * 768 px up are unchanged.
  */
 const FIT_HEIGHT_WIDTH =
   "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_236px)_/_1.618),296px))]";
+/** `FIT_HEIGHT_WIDTH` under the forming box (« Carte en formation · 1/3 »). */
+const FIT_HEIGHT_WIDTH_ROUNDS_BOX =
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_251px)_/_1.618),296px))]";
+/** `FIT_HEIGHT_WIDTH` under the two-line box of a card waiting for a statistic. */
+const FIT_HEIGHT_WIDTH_STATS_BOX =
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_296px)_/_1.618),296px))]";
 
 /**
  * Where the card stands (plan section 10). The collectible is the one expressive object on the
@@ -47,6 +82,12 @@ const FIT_HEIGHT_WIDTH =
  * G1 asks for more of a phone's height (`fitHeight`): the card, the rating line, the identity line
  * and the next-round line are one first screen, and the line has to clear the bottom bar. See
  * `FIT_HEIGHT_WIDTH`.
+ *
+ * Two things move around the card, on wrappers outside its 3D tree (`tilt.ts` owns that and is
+ * left alone): `flippable` adds « Retourner », a round button on the card's lower corner that turns
+ * the card over to its back (`CardBack`, plain DOM); `entrance` plays the card's arrival once per
+ * visit (`use-stage-entrance.ts`). Neither changes the card's box. The card's tilt and touch float
+ * stay off while the back shows and while the entrance plays.
  */
 export function CardStage({
   profile,
@@ -55,6 +96,9 @@ export function CardStage({
   className,
   testId = "curva-stage",
   fitHeight = false,
+  waiting = null,
+  flippable = false,
+  entrance,
 }: {
   profile: CardProfile;
   beat?: BeatName;
@@ -67,7 +111,47 @@ export function CardStage({
    * 232 px and never above the 296 px of `FULL_PHONE_WIDTH`.
    */
   fitHeight?: boolean;
+  /** The rating line is a text box (`waitingBox`): G1 reserves its height under the card. */
+  waiting?: WaitingBox | null;
+  /** Draw « Retourner » and the card's back. */
+  flippable?: boolean;
+  /** Play the card's arrival once per visit; `heroDue` says whether a hero will carry the card. */
+  entrance?: { heroDue: () => boolean };
 }) {
+  const motion = useMotionCopy();
+  const [back, setBack] = useState(false);
+  const [turning, setTurning] = useState(false);
+  // Counts the turns, so a second tap in the middle of one restarts the safety timer below.
+  const [turnKey, setTurnKey] = useState(0);
+  const [announce, setAnnounce] = useState("");
+  const stage = useStageEntrance({
+    enabled: !!entrance,
+    heroDue: entrance?.heroDue ?? (() => false),
+  });
+
+  // The turn is a CSS transition; it ends with `transitionend`, with a timer behind it for a turn
+  // that was cut short (a hidden tab, a removed node), so the 3D context never outlives it.
+  useEffect(() => {
+    if (!turning) return;
+    const timer = window.setTimeout(() => setTurning(false), tokenMs("--duration-hero", 420) + 120);
+    return () => window.clearTimeout(timer);
+  }, [turning, turnKey]);
+
+  const flip = () => {
+    const next = !back;
+    setBack(next);
+    setAnnounce(next ? motion.flip.shownBack : motion.flip.shownFront);
+    // Under reduced motion the faces swap at once: no turn, no 3D context at all.
+    if (motionOk && !prefersReducedMotion()) {
+      setTurning(true);
+      setTurnKey((n) => n + 1);
+    }
+  };
+  // False on the server, in the first client render and under reduced motion: the faces then swap
+  // by being shown and hidden, with no 3D context and no transform at all.
+  const motionOk = useMotionAllowed();
+  const in3d = motionOk && (back || turning);
+
   return (
     <section
       className={cn(
@@ -86,7 +170,13 @@ export function CardStage({
         data-stage-card=""
         className={cn(
           "group/stage relative mx-auto max-w-full md:w-[336px]",
-          fitHeight ? FIT_HEIGHT_WIDTH : FULL_PHONE_WIDTH,
+          !fitHeight
+            ? FULL_PHONE_WIDTH
+            : waiting === "stats"
+              ? FIT_HEIGHT_WIDTH_STATS_BOX
+              : waiting === "rounds"
+                ? FIT_HEIGHT_WIDTH_ROUNDS_BOX
+                : FIT_HEIGHT_WIDTH,
         )}
       >
         <span
@@ -99,20 +189,111 @@ export function CardStage({
             "group-has-[[data-mc-ready]]/stage:hidden",
           )}
         />
-        <ManagerCard
-          profile={profile}
-          width={336}
-          beat={beat}
-          tilt
-          testId={testId}
-          className="relative z-10"
-        />
+        {entrance ? (
+          <span
+            ref={stage.groundRef}
+            aria-hidden
+            data-stage-ground=""
+            className={cn(
+              "pointer-events-none absolute -bottom-[15px] start-[7%] z-0 h-[18px] w-[86%] opacity-0",
+              "bg-[radial-gradient(closest-side,color-mix(in_oklab,black_34%,transparent),transparent)]",
+              "dark:bg-[radial-gradient(closest-side,color-mix(in_oklab,black_60%,transparent),transparent)]",
+            )}
+          />
+        ) : null}
+        <div ref={stage.liftRef} data-stage-lift="" className="relative z-10">
+          {flippable ? (
+            <div
+              data-stage-flip=""
+              data-side={back ? "back" : "front"}
+              className={cn(in3d && "[perspective:1400px]")}
+            >
+              <div
+                data-flip-inner=""
+                className={cn(
+                  "relative transition-transform duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]",
+                  in3d && "[transform-style:preserve-3d]",
+                )}
+                style={{
+                  transform:
+                    motionOk && back ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined,
+                }}
+                onTransitionEnd={(event) => {
+                  if (event.target === event.currentTarget) setTurning(false);
+                }}
+              >
+                <div
+                  data-flip-face="front"
+                  className={cn("[backface-visibility:hidden]", !motionOk && back && "invisible")}
+                  inert={back}
+                  aria-hidden={back || undefined}
+                >
+                  <ManagerCard
+                    profile={profile}
+                    width={336}
+                    beat={beat}
+                    tilt={tiltAllowed({ back, turning, entering: stage.entering })}
+                    testId={testId}
+                    className="relative"
+                  />
+                </div>
+                <div
+                  data-flip-face="back"
+                  className={cn(
+                    "absolute inset-0 [backface-visibility:hidden]",
+                    !motionOk && !back && "invisible",
+                  )}
+                  style={{
+                    transform: motionOk ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined,
+                  }}
+                  inert={!back}
+                  aria-hidden={!back || undefined}
+                >
+                  <CardBack profile={profile} />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <ManagerCard
+              profile={profile}
+              width={336}
+              beat={beat}
+              tilt={!stage.entering}
+              testId={testId}
+              className="relative"
+            />
+          )}
+        </div>
+        {flippable ? (
+          <>
+            <UiIconButton
+              variant="ink"
+              aria-label={motion.flip.label}
+              title={motion.flip.label}
+              aria-pressed={back}
+              data-testid="curva-flip"
+              onClick={flip}
+              className={cn(
+                "absolute -bottom-3 -start-2 z-20 ring-1 ring-white/25",
+                // a ring that shows on every tier and both themes: white, with a black offset
+                "focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+              )}
+            >
+              <FlipHorizontal2 aria-hidden />
+            </UiIconButton>
+            <p role="status" className="sr-only" data-testid="curva-flip-status">
+              {announce}
+            </p>
+          </>
+        ) : null}
       </div>
       {children ? (
         <div
           className={cn(
             "mt-3 flex flex-col items-center gap-1 px-4",
-            fitHeight ? "max-md:rtl:mt-1.5" : "max-md:rtl:mt-2",
+            // A text box under a card that can be turned: clear of the « Retourner » button,
+            // which hangs 12 px under the card, by 4 px in both languages, phone and desktop.
+            flippable && waiting ? "mt-4" : fitHeight ? "max-md:rtl:mt-1.5" : "max-md:rtl:mt-2",
           )}
         >
           {children}
@@ -127,10 +308,20 @@ export function CardStage({
 /* ------------------------------------------------------------------------------------------ */
 
 /**
- * Under the card, in text, always: « 84 OVR · PRO » and the « Provisoire » pill, or, while the card
- * is forming, « Carte en formation · 1/3 ». Ordinary DOM, so the number is on screen the moment
- * the data is, before the renderer's chunk has loaded. A new season that has no number of its own
- * yet shows last season's, with that season's label beside it.
+ * Under the card, in text, always: « 84 OVR · PRO » and the « Provisoire » pill. A new season that
+ * has no number of its own yet shows last season's, with that season's label beside it.
+ *
+ * With no number the line is a text box (a bordered, filled, rounded callout), so the waiting is
+ * read as a state and not as a missing figure:
+ *
+ *   - while the journées are still being counted: « Carte en formation · 1/3 »;
+ *   - once they are all counted but fewer than `OVR_MIN_STATS` of the four statistics are filled
+ *     (the server's `insufficient`): « Statistiques remplies · 2/4 » and the sentence that says
+ *     the note comes with 3 of 4. A full journée counter (« 2/2 ») with no number reads as broken,
+ *     so it is never shown in that state.
+ *
+ * Ordinary DOM, so the words are on screen the moment the data is, before the renderer's chunk
+ * has loaded.
  */
 export function RatingLine({
   ovr,
@@ -138,38 +329,87 @@ export function RatingLine({
   provisional,
   counted,
   min,
+  statsFilled,
   season,
   formingLabel,
+  closedSeason = null,
+  change,
 }: {
   ovr: number | null;
   tier: TierCode | null;
   provisional: boolean;
   counted: number;
   min: number;
+  /** How many of the four statistics are filled (`filledStats`). */
+  statsFilled: number;
   /** The season the number belongs to, shown when it is not the current one. */
   season?: string | null;
   formingLabel: string;
+  /**
+   * The card's season label when that season is over: nothing will fill another statistic, so
+   * the box says the season ended before a first note (`m3.late`, naming the next season when
+   * the label has that shape), never that the note « s'affiche dès que » 3 are filled.
+   */
+  closedSeason?: string | null;
+  /**
+   * How the number moved at the latest round (« +3 ▲ »): drawn beside the number, popping once
+   * when `pop` is set. Absent with no earlier number or no change.
+   */
+  change?: RatingBadge | null;
 }) {
   const copy = useCardCopy();
+  const moments = useMomentCopy();
   if (ovr === null) {
+    // Every journée the rules ask for is counted and there is still no number: what is missing
+    // is a statistic (`ratingState: "insufficient"`), not a journée.
+    const waitsForStats = waitingBox(ovr, counted, min) === "stats";
+    const closedNext = closedSeason ? nextSeasonLabel(closedSeason) : null;
     return (
-      <p
-        className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1"
+      <div
+        className={cn(
+          "w-full max-w-[296px] px-4 py-1.5 text-center md:max-w-[336px]",
+          ui.surface.card,
+          ui.rule.all,
+        )}
         data-testid="curva-rating-line"
+        data-waiting={waitsForStats ? "stats" : "rounds"}
       >
-        <span className={cn(ui.display.team, ui.tone.default)}>{formingLabel}</span>
-        <span aria-hidden className={cn(ui.display.team, ui.tone.muted)}>
-          ·
-        </span>
-        <span className={cn(ui.score.md, ui.tone.default)}>
-          <span aria-hidden>
-            <Figure>
-              {counted}/{min}
-            </Figure>
+        <p className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5">
+          <span className={cn(ui.display.team, ui.tone.default)}>
+            {waitsForStats ? copy.statsFilled : formingLabel}
           </span>
-          <span className="sr-only">{copy.countedA11y(counted, min)}</span>
-        </span>
-      </p>
+          <span aria-hidden className={cn(ui.display.team, ui.tone.muted)}>
+            ·
+          </span>
+          <span className={cn(ui.score.md, ui.tone.default)}>
+            <span aria-hidden>
+              {waitsForStats ? (
+                <Figure>
+                  {statsFilled}/{CARD_STAT_TOTAL}
+                </Figure>
+              ) : (
+                <Figure>
+                  {counted}/{min}
+                </Figure>
+              )}
+            </span>
+            <span className="sr-only">
+              {waitsForStats
+                ? copy.statsFilledA11y(statsFilled, CARD_STAT_TOTAL)
+                : copy.countedA11y(counted, min)}
+            </span>
+          </span>
+        </p>
+        {waitsForStats && !closedSeason ? (
+          <p className={cn("mt-0.5 text-pretty", ui.text.secondary, ui.tone.muted)}>
+            {fill(moments.m3.insufficient, { need: OVR_MIN_STATS, total: CARD_STAT_TOTAL })}
+          </p>
+        ) : waitsForStats && closedNext ? (
+          <p className={cn("mt-0.5 text-pretty", ui.text.secondary, ui.tone.muted)}>
+            {fill(moments.m3.late, { season: <Figure>{closedNext}</Figure> })}
+          </p>
+        ) : null}
+      </div>
     );
   }
   return (
@@ -198,7 +438,37 @@ export function RatingLine({
           <Figure>{season}</Figure>
         </span>
       ) : null}
+      {change ? <RatingChangeChip change={change} /> : null}
       {provisional ? <ProvisionalBadge className="self-center" /> : null}
     </p>
+  );
+}
+
+/**
+ * « +3 ▲ » / « −2 ▼ » in the positive or negative colour, with the arrow as the second cue after
+ * the colour and the sentence for a screen reader (« note en hausse de 3 »). The figure and the
+ * arrow are one left-to-right run (`<bdi dir="ltr">`), so Arabic keeps « +3 ▲ ». It pops once
+ * (`pop`, the app's overshoot) when `change.pop` says this round is new on this phone.
+ */
+function RatingChangeChip({ change }: { change: RatingBadge }) {
+  const motion = useMotionCopy();
+  const up = change.delta > 0;
+  return (
+    <UiBadge
+      tone={up ? "positive" : "negative"}
+      className={cn("self-center gap-1 px-2 py-0.5", change.pop && "pop")}
+    >
+      <span
+        data-testid="curva-rating-change"
+        data-change={up ? "up" : "down"}
+        data-pop={change.pop ? "1" : undefined}
+        className="inline-flex items-center"
+      >
+        <bdi dir="ltr" aria-hidden>
+          {signedDelta(change.delta)} {deltaArrow(change.delta)}
+        </bdi>
+        <span className="sr-only">{motion.deltaA11y(up, Math.abs(change.delta))}</span>
+      </span>
+    </UiBadge>
   );
 }

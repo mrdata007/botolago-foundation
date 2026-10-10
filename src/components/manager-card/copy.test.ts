@@ -6,6 +6,8 @@ import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
 
 import {
+  CARD_STAT_TOTAL,
+  OVR_MIN_STATS,
   cardCopy,
   cardLabel,
   cardStrings,
@@ -13,6 +15,7 @@ import {
   countedRounds,
   finalRounds,
   curvaCopy,
+  filledStats,
   gwList,
   isolateLatin,
   leagues,
@@ -247,6 +250,45 @@ describe("cardStrings and cardLabel", () => {
     expect(cardLabel(unnamed, strings)).toBe("Carte de manager, pas encore de note");
     expect(cardLabel(forming, strings)).not.toMatch(/\b0\b/);
   });
+
+  it("says how many statistics are filled once every journée is counted, never « 3 sur 3 »", () => {
+    const waiting = fromMyCard(FIXTURES.insufficient3.card!, { sample: false });
+    expect(cardLabel(waiting, cardStrings(fr, "fr"))).toBe(
+      "Carte de manager, Ali, pas encore de note, Statistiques remplies : 2 sur 4, Raja CA, BOT #482913",
+    );
+    const arLabel = cardLabel(waiting, cardStrings(ar, "ar"));
+    expect(arLabel).toContain("الإحصاءات المكتملة: 2 من 4");
+    expect(arLabel).not.toContain("⁨");
+    // A renderer's own strings without the sentence keep the journée count.
+    const { statsFilled: _omit, ...bare } = cardStrings(fr, "fr").a11y;
+    void _omit;
+    expect(cardLabel(waiting, { ...cardStrings(fr, "fr"), a11y: bare })).toContain(
+      "3 journées comptées sur 3",
+    );
+  });
+
+  it("puts the statistics rule in one place: 3 of the 4 (the SQL's « null under three »)", () => {
+    expect(OVR_MIN_STATS).toBe(3);
+    expect(CARD_STAT_TOTAL).toBe(4);
+    expect(filledStats([91, 82, null, null])).toBe(2);
+    expect(filledStats([null, null, null, null])).toBe(0);
+    const sql = readFileSync(
+      join(ROOT, "supabase/migrations/20261008123200_manager_card_compute.sql"),
+      "utf8",
+    );
+    expect(sql).toContain("(s.con is not null)::integer >= 3");
+  });
+
+  it("words the wait for a statistic from the rule, in both languages", () => {
+    const fill = (template: string) =>
+      template.replace("{need}", String(OVR_MIN_STATS)).replace("{total}", String(CARD_STAT_TOTAL));
+    expect(fill(momentCopy(fr).m3.insufficient)).toBe(
+      "Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.",
+    );
+    expect(fill(momentCopy(ar).m3.insufficient)).toBe("يظهر تقييمك فور اكتمال 3 إحصاءات من 4.");
+    expect(cardCopy(fr, "fr").statsFilled).toBe("Statistiques remplies");
+    expect(cardCopy(ar, "ar").statsFilled).toBe("الإحصاءات المكتملة");
+  });
 });
 
 describe("isolateLatin (LASTREET in text that leaves the interface)", () => {
@@ -294,8 +336,11 @@ describe("the dictionary of the section", () => {
       key === "fantasy.hub.card_view",
   );
 
-  it("has the 184 keys of Appendix A (183, and « Vos moments » added at the finish review), in both languages", () => {
-    expect(sectionKeys).toHaveLength(184);
+  // 184: Appendix A's 183 and « Vos moments » (finish review). 187: the waiting box's
+  // « Statistiques remplies » title and its accessible sentence, and the league row's
+  // « statistiques remplies 2/4 » (the card that waits for a statistic, 2026-10-10).
+  it("has the 187 keys of Appendix A (183, « Vos moments », and the three of the statistics wait), in both languages", () => {
+    expect(sectionKeys).toHaveLength(187);
     for (const key of sectionKeys) {
       expect(dictionaries.ar[key as keyof typeof dictionaries.ar]).toBeDefined();
     }
@@ -326,6 +371,15 @@ describe("the dictionary of the section", () => {
     expect(m.m9.heading).toBe("Fondateur 2026");
     expect(m.state.offlineText).toBe("Impossible de charger votre carte.");
     expect(m.m6.msgPlainProvisional).toContain("(provisoire)");
+  });
+
+  it("keeps the motion words out of the Appendix A pin, and reads them in motion-copy.ts by literal calls", () => {
+    expect(sectionKeys.some((key) => key.startsWith("card_motion."))).toBe(false);
+    const source = read("src/components/manager-card/motion-copy.ts");
+    const used = new Set([...source.matchAll(/\bt\("([^"]+)"\)/g)].map((match) => match[1]));
+    const motionKeys = Object.keys(dictionaries.fr).filter((key) => key.startsWith("card_motion."));
+    expect(motionKeys.length).toBeGreaterThan(0);
+    expect(motionKeys.filter((key) => !used.has(key))).toEqual([]);
   });
 
   it("keeps the same placeholders in both languages", () => {
@@ -369,7 +423,13 @@ describe("the banned words", () => {
     /تحصيل/,
   ];
   const keys = (Object.keys(dictionaries.fr) as TranslationKey[]).filter(
-    (key) => key === "nav.curva" || key.startsWith("curva.") || key.startsWith("card."),
+    (key) =>
+      key === "nav.curva" ||
+      key.startsWith("curva.") ||
+      key.startsWith("card.") ||
+      // the motion words (`motion-copy.ts`) are held to the same voice, though they are not in the
+      // pinned Appendix A set above
+      key.startsWith("card_motion."),
   );
 
   it.each(["fr", "ar"] as const)("none in a %s string", (lang) => {

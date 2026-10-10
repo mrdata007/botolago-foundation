@@ -23,6 +23,7 @@
  * in net._http_response.
  */
 import { emailDispatchConfiguration, type EmailRpcClient } from "./notification-email-dispatch.ts";
+import { schedulerTokenRefusal } from "./scheduler-token.ts";
 
 const RESEND_URL = "https://api.resend.com/emails";
 const MAX_REQUEST_BYTES = 4096;
@@ -281,16 +282,9 @@ export async function handleAccountDeletionRequest(
   if (Number.isFinite(declared) && declared > MAX_REQUEST_BYTES) {
     return json(413, { error: "request_too_large" });
   }
-  const token = request.headers.get("x-botolago-scheduler-token") ?? "";
-  if (!/^[0-9a-f]{64}$/.test(token)) return json(401, { error: "unauthorized" });
-  try {
-    const verified = await rpc(dependencies.client, "service_verify_scheduler_token", {
-      p_token: token,
-    });
-    if (verified !== true) return json(401, { error: "unauthorized" });
-  } catch {
-    return json(503, { error: "database_unavailable" });
-  }
+  // Checked in-process, before any database call (scheduler-token.ts).
+  const refusal = schedulerTokenRefusal(request, dependencies.environment);
+  if (refusal) return refusal;
 
   try {
     return json(200, { ...(await runAccountDeletions(dependencies)) });

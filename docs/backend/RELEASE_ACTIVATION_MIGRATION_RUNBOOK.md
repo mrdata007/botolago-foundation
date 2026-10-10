@@ -30,8 +30,10 @@ The `release_activation` batch contains only:
 The promoter verifies the complete 47-file repository chain and every recorded
 remote statement checksum before writing. Any additional repository migration,
 missing or unexpected remote history row, checksum change, target mismatch,
-unhealthy project, absent backup, active database schedule, unexpected Edge
-Function, or disabled JWT verification stops before the first migration.
+unhealthy project, absent backup, disabled or unverifiable point-in-time
+recovery (PITR must be reported as an explicit `true`; added 2026-10-08, audit
+P1-03), active database schedule, unexpected Edge Function, or disabled JWT
+verification stops before the first migration.
 
 Each migration is applied and history-recorded in its own transaction with
 bounded lock and statement timeouts. After every transaction the full remote

@@ -2842,6 +2842,8 @@ export const fr = {
   "card.tier.pro": "PRO",
   "card.tier.champion": "CHAMPION",
   "card.tier.legend": "LEGEND",
+  "card.stats_filled.title": "Statistiques remplies",
+  "card.stats_filled.a11y": "Statistiques remplies : {k} sur {n}",
   "card.a11y.card_of": "Carte de manager",
   "card.a11y.no_rating": "pas encore de note",
   "card.a11y.separator": ", ",
@@ -2898,7 +2900,7 @@ export const fr = {
   "card.onboarding.m3.over":
     "J{gw} terminée, pas encore définitive. La note arrive dès qu’elle l’est.",
   "card.onboarding.m3.insufficient":
-    "Les journées nécessaires sont comptées. La note attend encore une statistique.",
+    "Votre note s’affiche dès que {need} statistiques sur {total} sont remplies.",
   "card.onboarding.m3.late":
     "Saison terminée avant votre première note : elle viendra en {season}.",
   "card.onboarding.m3.recap": "Journée comptée pour votre carte : {k}/{n}",
@@ -2921,6 +2923,7 @@ export const fr = {
   "card.onboarding.m4.sheet.replay": "Revoir",
   "card.onboarding.m5.band": "Nouvelles notes après la J{gw} : {names}",
   "card.onboarding.m5.row.forming": "en formation {k}/{n}",
+  "card.onboarding.m5.row.insufficient": "statistiques remplies {k}/{n}",
   "card.onboarding.m5.hint.compare": "Touchez un manager pour comparer vos cartes.",
   "card.onboarding.m5.h2h.score": "Vous {a} · {name} {b}",
   "card.onboarding.m6.image.provisional": "Note provisoire · J{gw}",
@@ -2953,4 +2956,10 @@ export const fr = {
     "Votre carte de manager et son numéro {serial} seront supprimés. Ce numéro ne sera jamais réattribué.",
   "card.onboarding.state.deletion_noserial": "Votre carte de manager sera supprimée.",
   "card.onboarding.state.offline.text": "Impossible de charger votre carte.",
+  "card_motion.flip.label": "Retourner la carte",
+  "card_motion.flip.shown_front": "Face avant de la carte",
+  "card_motion.flip.shown_back": "Dos de la carte",
+  "card_motion.flip.back_label": "Dos de la carte",
+  "card_motion.delta.up": "note en hausse de {n}",
+  "card_motion.delta.down": "note en baisse de {n}",
 } as const satisfies Record<string, string>;

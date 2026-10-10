@@ -191,6 +191,16 @@ function CardLineText({ row, youLabel }: { row: PeopleRow; youLabel: ReactNode }
           </span>
           {line.provisional ? <ProvisionalBadge className="px-2 py-0.5" /> : null}
         </>
+      ) : line.kind === "insufficient" ? (
+        <span>
+          {fill(moments.m5.rowInsufficient.replace("{k}/{n}", "{kn}"), {
+            kn: (
+              <Figure>
+                {line.filled}/{line.total}
+              </Figure>
+            ),
+          })}
+        </span>
       ) : line.kind === "forming" ? (
         <span>
           {fill(moments.m5.rowForming.replace("{k}/{n}", "{kn}"), {

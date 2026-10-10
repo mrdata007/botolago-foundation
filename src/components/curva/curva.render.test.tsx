@@ -16,6 +16,7 @@ import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
 import type { Club, Gameweek } from "@/types/domain";
 
+import { RatingLine } from "./CardStage";
 import { CurvaHomeView } from "./CurvaHome";
 import { LeagueRows } from "./LeagueRows";
 import { buildRows } from "./people";
@@ -257,6 +258,81 @@ describe("G1 for a manager", () => {
     // Nothing to share before a number: the way on is to invite.
     expect(html).not.toContain('data-testid="curva-share"');
     expect(html).toContain(fr["fantasy.hub.invite_share"]);
+  });
+
+  it("puts the forming line in a text box: « Carte en formation · 1/3 »", async () => {
+    const html = await owner("forming1");
+    const box = html.match(/<div[^>]*data-testid="curva-rating-line"[\s\S]*?<\/div>/)![0];
+    expect(box).toContain('data-waiting="rounds"');
+    // A bordered, filled, rounded callout from the kit's tokens, not a bare line.
+    expect(box).toContain("border-[color:var(--ui-rule)]");
+    expect(box).toContain("bg-[color:var(--ui-surface)]");
+    expect(box).toContain("rounded-[var(--ui-radius-card)]");
+    expect(text(box)).toContain(fr["card.onboarding.m3.label"]);
+    expect(tight(box)).toContain("1/3");
+    expect(text(box)).toContain("1 journée comptée sur 3");
+    expect(text(box)).not.toContain(fr["card.stats_filled.title"]);
+  });
+
+  it("says what a card with every journée counted waits for: the statistics, never « 3/3 »", async () => {
+    const html = await owner("insufficient3");
+    const box = html.match(/<div[^>]*data-testid="curva-rating-line"[\s\S]*?<\/div>/)![0];
+    expect(box).toContain('data-waiting="stats"');
+    expect(box).toContain("border-[color:var(--ui-rule)]");
+    expect(text(box)).toContain("Statistiques remplies");
+    // CAP and SEL are filled, TRF and CON are not: 2 of the 4.
+    expect(tight(box)).toContain("2/4");
+    expect(text(box)).toContain("Statistiques remplies : 2 sur 4");
+    expect(text(box)).toContain("Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.");
+    expect(text(box)).not.toContain(fr["card.onboarding.m3.label"]);
+    expect(text(box)).not.toContain("OVR");
+    // No journée counter that is full (k ≥ n) anywhere a reader sees, the box or « Cette journée ».
+    expect(tight(html)).not.toContain("3/3");
+    expect(text(html)).not.toContain("3 journées comptées sur 3");
+    const round = html.match(/data-testid="curva-round"[\s\S]*?<\/section>/)![0];
+    expect(tight(round)).toContain("2/4");
+    expect(text(round)).toContain("Statistiques remplies");
+    expect(text(round)).toContain(
+      "Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.",
+    );
+  });
+
+  it("makes no promise for a season that is over: the late line, not « s'affiche dès que »", async () => {
+    const line = (closedSeason: string | null) =>
+      render(
+        <RatingLine
+          ovr={null}
+          tier={null}
+          provisional={false}
+          counted={2}
+          min={2}
+          statsFilled={2}
+          formingLabel={fr["card.onboarding.m3.label"]}
+          closedSeason={closedSeason}
+        />,
+      );
+    const closed = text(await line("2026/27"));
+    expect(tight(closed)).toContain("2/4");
+    expect(closed).not.toContain("Votre note s’affiche");
+    expect(closed).toContain("Saison terminée avant votre première note : elle viendra en");
+    expect(closed).toContain("2027/28");
+    // A label of another shape names no next season: then no sentence at all.
+    const odd = text(await line("Saison A"));
+    expect(odd).not.toContain("Votre note s’affiche");
+    expect(odd).not.toContain("Saison terminée");
+    // The season still running keeps the promise.
+    expect(text(await line(null))).toContain("Votre note s’affiche dès que 3 statistiques");
+  });
+
+  it("keeps the rated line as it was: no box", async () => {
+    const html = await owner("rated");
+    const line = html.match(/<p[^>]*data-testid="curva-rating-line"[\s\S]*?<\/p>/)![0];
+    expect(line).not.toContain("data-waiting");
+    // The line itself is a bare row (the « Provisoire » pill keeps its own outline).
+    const open = line.match(/^<p[^>]*>/)![0];
+    expect(open).not.toContain("border");
+    expect(open).not.toContain("rounded-[var(--ui-radius-card)]");
+    expect(text(line)).toContain("84");
   });
 
   it("says the founder is a founder only in the identity line, and only for the founder", async () => {

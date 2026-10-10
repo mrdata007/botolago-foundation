@@ -9,6 +9,9 @@ import {
 } from "./football-live-refresh.ts";
 
 const TOKEN = "b".repeat(64);
+const SCHEDULER = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN };
+// Well formed, but not the configured token.
+const WRONG_TOKEN = "9".repeat(64);
 
 function request(token = TOKEN, method = "POST", body = '{"job":"fixtures"}'): Request {
   return new Request("https://functions.example/football-live-refresh", {
@@ -18,7 +21,7 @@ function request(token = TOKEN, method = "POST", body = '{"job":"fixtures"}'): R
   });
 }
 
-function client(tokenValid: boolean): { client: LiveRefreshRpcClient; calls: string[] } {
+function client(): { client: LiveRefreshRpcClient; calls: string[] } {
   const calls: string[] = [];
   return {
     calls,
@@ -27,9 +30,6 @@ function client(tokenValid: boolean): { client: LiveRefreshRpcClient; calls: str
         return {
           rpc(name: string) {
             calls.push(name);
-            if (name === "service_verify_scheduler_token") {
-              return Promise.resolve({ data: tokenValid, error: null });
-            }
             return Promise.resolve({ data: null, error: { message: "unexpected" } });
           },
         };
@@ -65,15 +65,15 @@ describe("football live refresh", () => {
     ).toBe(DEFAULT_SEASON_ID);
   });
 
-  it("refuses anything but a POST carrying the scheduler token the database accepts", async () => {
-    const rejected = client(false);
+  it("refuses anything but a POST carrying the configured scheduler token", async () => {
+    const rejected = client();
     const neverFetch = async () => {
       throw new Error("provider must not be called");
     };
     expect(
       (
         await handleFootballLiveRefreshRequest(request(TOKEN, "GET"), {
-          environment: {},
+          environment: SCHEDULER,
           client: rejected.client,
           fetch: neverFetch,
         })
@@ -82,7 +82,7 @@ describe("football live refresh", () => {
     expect(
       (
         await handleFootballLiveRefreshRequest(request("short"), {
-          environment: {},
+          environment: SCHEDULER,
           client: rejected.client,
           fetch: neverFetch,
         })
@@ -90,22 +90,22 @@ describe("football live refresh", () => {
     ).toBe(401);
     expect(
       (
-        await handleFootballLiveRefreshRequest(request(), {
-          environment: {},
+        await handleFootballLiveRefreshRequest(request(WRONG_TOKEN), {
+          environment: SCHEDULER,
           client: rejected.client,
           fetch: neverFetch,
         })
       ).status,
     ).toBe(401);
-    expect(rejected.calls).toEqual(["service_verify_scheduler_token"]);
+    expect(rejected.calls).toEqual([]);
   });
 
   it("hands an authorised call to the shared fixture handler", async () => {
-    const accepted = client(true);
+    const accepted = client();
     // No SportsMonks token configured: the shared handler refuses before any
     // provider call, which proves the request reached it with our window.
     const response = await handleFootballLiveRefreshRequest(request(), {
-      environment: {},
+      environment: SCHEDULER,
       client: accepted.client,
       fetch: async () => {
         throw new Error("provider must not be called");
@@ -117,13 +117,13 @@ describe("football live refresh", () => {
   });
 
   it("refuses a job it does not know", async () => {
-    const accepted = client(true);
+    const accepted = client();
     const response = await handleFootballLiveRefreshRequest(
       request(TOKEN, "POST", '{"job":"everything"}'),
-      { environment: {}, client: accepted.client },
+      { environment: SCHEDULER, client: accepted.client },
     );
     expect(response.status).toBe(400);
-    expect(accepted.calls).toEqual(["service_verify_scheduler_token"]);
+    expect(accepted.calls).toEqual([]);
   });
 });
 
@@ -134,7 +134,7 @@ interface LiveBody {
 }
 
 describe("football live refresh, match details", () => {
-  const environment = { SPORTSMONKS_API_TOKEN: "sportsmonks-test-token-0123456789" };
+  const environment = { ...SCHEDULER, SPORTSMONKS_API_TOKEN: "sportsmonks-test-token-0123456789" };
   const now = () => new Date("2026-09-24T21:50:00Z");
 
   /** Scores for one live fixture that the database already knows. */
@@ -184,7 +184,6 @@ describe("football live refresh, match details", () => {
           rpc(name: string) {
             order.push(name);
             const data: Record<string, unknown> = {
-              service_verify_scheduler_token: true,
               begin_football_ingestion: "50000000-0000-4000-8000-000000000001",
               resolve_football_mapping: "60000000-0000-4000-8000-000000000001",
               ingest_football_fixture: "60000000-0000-4000-8000-000000000001",
@@ -331,7 +330,6 @@ describe("football live refresh, match details", () => {
                 });
               }
               const data: Record<string, unknown> = {
-                service_verify_scheduler_token: true,
                 begin_football_ingestion: "50000000-0000-4000-8000-000000000001",
                 resolve_football_mapping: "60000000-0000-4000-8000-000000000001",
                 ingest_football_fixture: "60000000-0000-4000-8000-000000000001",

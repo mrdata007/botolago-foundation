@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+import { includeIgnoreFile } from "@eslint/compat";
 import js from "@eslint/js";
 import eslintPluginPrettier from "eslint-plugin-prettier/recommended";
 import globals from "globals";
@@ -6,6 +8,12 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
+  // What git ignores is never owned source: build output, test reports
+  // (playwright-report, test-results), the generated native projects
+  // (/android, /ios, which embed the built web bundle), virtualenvs and tool
+  // caches. ESLint does not read .gitignore by itself, so without this any of
+  // them present in a working copy is linted as if it were ours.
+  includeIgnoreFile(fileURLToPath(new URL(".gitignore", import.meta.url)), "Files ignored by git"),
   {
     ignores: [
       "dist",

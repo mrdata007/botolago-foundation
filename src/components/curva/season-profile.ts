@@ -37,7 +37,9 @@ export function seasonProfile(card: MyCardDto, season: SeasonSummaryDto): CardPr
     provisional: false,
     counted: season.ovr === null ? season.gameweeksCounted : null,
     season: season.label,
+    // The server sends no stats for an earlier season: these are placeholders, not empties.
     stats: { ...EMPTY_STATS },
+    statsKnown: false,
   };
 }
 

@@ -9,7 +9,7 @@ import type { TokenSize } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
-import { Figure } from "./figures";
+import { DASH, Figure } from "./figures";
 import { seasonProfile } from "./season-profile";
 
 /**
@@ -57,6 +57,10 @@ export function SeasonRack({
                   </>
                 ) : null}
               </>
+            ) : season.gameweeksCounted >= card.minRated ? (
+              // Every journée counted and still no number (too few statistics): a full counter
+              // would read as broken, so the season shows the dash of a number not given.
+              DASH
             ) : (
               <>
                 <Figure>
