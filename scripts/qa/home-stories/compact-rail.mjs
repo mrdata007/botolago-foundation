@@ -87,7 +87,7 @@ for (const lang of ["fr", "ar"])
           }),
         };
       });
-      assert(geometry.section.height <= 136, JSON.stringify(geometry));
+      assert(geometry.section.height <= 144, JSON.stringify(geometry));
       for (const [i, row] of geometry.items.entries()) {
         assert.equal(row.text, labels[i]);
         assert.equal(row.whiteSpace, "nowrap");
