@@ -1,6 +1,6 @@
 # Manager Card motion: tier-up ceremony, flip, rating badge, entrance
 
-Status: **in progress on `claude/manager-card-motion`; draft pull request, not merged.**
+Status: **built on `claude/manager-card-motion`; draft pull request, not merged.**
 Scope approved by the owner on 2026-10-10. Curva is switched off in
 production (`MANAGER_CARD_ENABLED = false`), so none of this is visible to the
 public until it is switched on. Check it locally with `VITE_MANAGER_CARD_PREVIEW=1`
@@ -82,3 +82,34 @@ No new library. CSS keyframes and the Web Animations API, `transform` and
   reader announces the face shown.
 - Typecheck, lint, Prettier and the full `bun test` pass (known unrelated
   failure: `src/backend/news/editorial-session.test.ts`, GMT vs GMT+0).
+
+## As built (deviations and decisions)
+
+- **Rim-light run: not built.** The optional new `TIMELINE` move was left out; `beats.ts`,
+  `eclat.css` and the beat tests are untouched. The burst alone carries the ceremony.
+- **Tier-up burst** (`moments/TierBurst.tsx`, `burst.ts`, `tier-burst.css`): beams and a glow behind
+  the hero's card, opacity and scale only, 1.2 s, starting with the `tier`/`legend` beat once the card
+  is drawn. STADE 8 beams, PRO 10, CHAMPION 12, LEGEND 16 with its prism; peak opacity 0.45, 0.6,
+  0.78, 1. The beam pattern mirrors left to right, so Arabic needs no flip.
+- **Flip** (`curva/CardStage.tsx`, `CardBack.tsx`): `flippable` on the stage of `/curva` and
+  `/curva/carte` only (not the guest stage, the hero or the replay sheet). The button is a 44 px round
+  icon button on the card's lower start corner, not a text label: a text button under the card
+  would have cost G1's first-screen budget (`FIT_HEIGHT_WIDTH`), and one beside the number would
+  have covered the stats. Its accessible name is « Retourner la carte » / «اقلب البطاقة». The
+  tilt and the touch float are switched off while the back shows (`tilt={false}` unmounts them,
+  they mount again when the card is turned back). The back takes its colours from the foil ladder
+  through `manager-card/tier-palette.ts` (the Curva sources may not import a card direction).
+- **Rating change chip** (`curva/rating-change.ts`, `use-rating-change.ts`, `RatingLine`): the previous
+  rating is the newest earlier row of the season's history that has a number; no earlier number, no
+  chip. Shown on Curva' home and on the card page. The once-per-round memory is its own key,
+  `botolago.card.rating_badge.v1` in `rating-change.ts`, not a `DEVICE_KEYS` entry, because
+  `storage.test.ts` pins that list.
+- **Entrance** (`curva/entrance.ts`, `use-stage-entrance.ts`): decided once when the stage mounts. The
+  card is client-drawn (the server renders its box with a skeleton), so « present at first paint »
+  is read as « the stage mounted before hydration finished ». It also waits for the launch gate
+  (splash, language chooser): a stage that arrives under it keeps the visit's entrance for a later
+  arrival. A hero that is due (`pickHero` with no deadline known) or already decided skips it and
+  spends it. The ground shadow is a small extra element outside the card, since the card's own
+  shadow lives inside the tilt tree. The tilt and float stay off until the entrance has landed.
+- **Words** live in a `card_motion.` group (`manager-card/motion-copy.ts`), not in Appendix A, whose
+  184-key count is pinned by `copy.test.ts`.

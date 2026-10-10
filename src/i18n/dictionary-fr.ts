@@ -2845,6 +2845,13 @@ export const fr = {
   "card.a11y.card_of": "Carte de manager",
   "card.a11y.no_rating": "pas encore de note",
   "card.a11y.separator": ", ",
+  "card_motion.flip.label": "Retourner la carte",
+  "card_motion.flip.shown_front": "Face avant de la carte",
+  "card_motion.flip.shown_back":
+    "Dos de la carte : vos quatre statistiques, la saison et le numéro",
+  "card_motion.flip.back_label": "Dos de la carte",
+  "card_motion.delta.up": "note en hausse de {n}",
+  "card_motion.delta.down": "note en baisse de {n}",
   "card.a11y.counted_zero": "aucune journée comptée sur {n}",
   "card.a11y.counted_one": "1 journée comptée sur {n}",
   "card.a11y.counted_two": "2 journées comptées sur {n}",
