@@ -121,7 +121,9 @@ jobs:
           SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
           SOFASCORE_ID_BRIDGE_CONFIRMATION: ${{ inputs.confirmation }}
         run: |
-          set -uo pipefail
+          # The step shell runs with -e; turn it off so the bridge's exit code
+          # (2 = items to review) reaches the handling below instead of failing the step.
+          set +e -uo pipefail
           if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
             printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
           fi

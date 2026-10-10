@@ -105,7 +105,9 @@ jobs:
           MODE: ${{ inputs.mode }}
           TEAMS: ${{ inputs.teams }}
         run: |
-          set -uo pipefail
+          # The step shell runs with -e; turn it off so the bridge's exit code
+          # (2 = items to review) reaches the handling below instead of failing the step.
+          set +e -uo pipefail
           dir="$RUNNER_TEMP/bridge"
           report="$RUNNER_TEMP/sofascore-id-bridge.json"
           args=(--mode "$MODE" --events "$dir/events.json" --snapshot "$dir/snapshot.json"
