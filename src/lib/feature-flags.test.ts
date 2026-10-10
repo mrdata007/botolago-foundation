@@ -453,10 +453,10 @@ describe("ANALYTICS_ENABLED", () => {
  * reviewer of any other change that the switch is still off.
  */
 describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () => {
-  test("the build constant is false", () => {
-    expect(MANAGER_CARD_ENABLED).toBe(false);
+  test("the build constant is on (owner launch, 2026-10-10); the database read switch still gates Curva", () => {
+    expect(MANAGER_CARD_ENABLED).toBe(true);
     expect(read("src/lib/feature-flags.ts")).toContain(
-      "export const MANAGER_CARD_ENABLED: boolean = false;",
+      "export const MANAGER_CARD_ENABLED: boolean = true;",
     );
   });
 
@@ -472,11 +472,11 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
     expect(MANAGER_CARD_PREVIEW).toBe(false);
   });
 
-  test("the build lets Curva exist when either layer says so, and is off under test", () => {
+  test("the build lets Curva exist when either layer says so", () => {
     expect(stripComments(read("src/lib/feature-flags.ts"))).toContain(
       "export const MANAGER_CARD_BUILD: boolean = MANAGER_CARD_ENABLED || MANAGER_CARD_PREVIEW;",
     );
-    expect(MANAGER_CARD_BUILD).toBe(false);
+    expect(MANAGER_CARD_BUILD).toBe(true);
   });
 
   test("each constant is declared once, with the decision recorded", () => {

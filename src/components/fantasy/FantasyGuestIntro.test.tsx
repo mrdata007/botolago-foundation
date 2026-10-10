@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { ReactElement } from "react";
 import { renderToString } from "react-dom/server";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -42,10 +43,13 @@ async function render(node: ReactElement): Promise<string> {
     history: createMemoryHistory({ initialEntries: ["/fantasy"] }),
   });
   await router.load();
+  // Curva's status hook reads React Query; the app's root provides the client.
   return renderToString(
-    <I18nProvider>
-      <RouterProvider router={router} />
-    </I18nProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <I18nProvider>
+        <RouterProvider router={router} />
+      </I18nProvider>
+    </QueryClientProvider>,
   ).replace(/<!-- -->/g, "");
 }
 

@@ -274,8 +274,10 @@ export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
  *   - `src/routes/fantasy.index.tsx` — the Pépites tile, the card block
  *   - `src/components/pepites/PepitesHome.tsx` — the back pill to Fantasy
  *   - every inline card surface listed in the plan, section 5.1
+ *
+ * Owner launch, 2026-10-10: on. Curva shows only once the database read switch is on too.
  */
-export const MANAGER_CARD_ENABLED: boolean = false;
+export const MANAGER_CARD_ENABLED: boolean = true;
 
 /**
  * Development preview of Curva: `VITE_MANAGER_CARD_PREVIEW=1` on a development
