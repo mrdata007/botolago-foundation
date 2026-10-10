@@ -1,3 +1,5 @@
+import { createContext, useContext } from "react";
+
 import { prefersReducedMotion } from "@/lib/motion";
 
 export type MotionLib = typeof import("./motion-lib");
@@ -44,4 +46,29 @@ if (typeof window !== "undefined" && !prefersReducedMotion()) {
   } else {
     setTimeout(prefetch, 2000);
   }
+}
+
+/**
+ * Whether any of these animations is still playing. A finished CSS animation
+ * with `animation-fill-mode: both` (`enter-rise`, `swap-in`) stays in
+ * `getAnimations()` while its fill holds, and is not in the way of anything.
+ * A paused one is not playing either.
+ */
+export function hasRunningAnimation(
+  animations: ReadonlyArray<{ readonly playState: string }>,
+): boolean {
+  return animations.some(
+    (animation) => animation.playState === "running" || animation.playState === "pending",
+  );
+}
+
+/** True for content that mounted as the replacement of earlier content in an `ExitSwap`. */
+export const SwapContext = createContext(false);
+
+/**
+ * Whether this component mounted as a replacement in an `ExitSwap` (never on
+ * the first render of the slot). It plays the arrival that goes with it.
+ */
+export function useSwapEntering(): boolean {
+  return useContext(SwapContext);
 }

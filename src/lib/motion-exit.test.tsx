@@ -3,6 +3,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { hasRunningAnimation } from "./motion-loader";
+
 import {
   EASE_EMPHASIZED,
   EASE_STANDARD,
@@ -67,6 +69,23 @@ describe("motion-exit server render", () => {
     expect(html).not.toContain("opacity");
     expect(html).not.toContain("aria-hidden");
     expect(html).not.toContain("inert");
+  });
+});
+
+describe("hasRunningAnimation", () => {
+  it("counts running and pending animations", () => {
+    expect(hasRunningAnimation([{ playState: "running" }])).toBe(true);
+    expect(hasRunningAnimation([{ playState: "finished" }, { playState: "pending" }])).toBe(true);
+  });
+  it("ignores finished (a fill holds them in the list), idle and paused ones", () => {
+    expect(
+      hasRunningAnimation([
+        { playState: "finished" },
+        { playState: "idle" },
+        { playState: "paused" },
+      ]),
+    ).toBe(false);
+    expect(hasRunningAnimation([])).toBe(false);
   });
 });
 

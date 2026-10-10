@@ -156,7 +156,7 @@ export function SquadBuilderScreen({
   const card = (s: BuilderSlot, onBench = false) => {
     const dimmed = replaceMode && s.position !== incoming!.position;
     return (
-      <ExitSwap key={s.slot} swapKey={s.player?.id ?? "empty"}>
+      <ExitSwap key={s.slot} swapKey={s.player?.id ?? "empty"} fadeIn={!s.player}>
         {s.player ? (
           <FplPlayerCard
             player={s.player}

@@ -11,7 +11,14 @@ import {
 
 import { prefersReducedMotion } from "@/lib/motion";
 import type { Bezier, DurationName, ExitMode, ExitTag } from "./motion-lib";
-import { loadMotion, loadedMotion, motionFailed, type MotionLib } from "./motion-loader";
+import {
+  SwapContext,
+  hasRunningAnimation,
+  loadMotion,
+  loadedMotion,
+  motionFailed,
+  type MotionLib,
+} from "./motion-loader";
 
 /**
  * Things that leave (docs/engineering/MOTION_PLAN_4.md).
@@ -65,7 +72,7 @@ function swapIsSafe(nodes: ReadonlySet<HTMLElement>, idleOnly: boolean): boolean
     if (active && node.contains(active)) return false;
     if (
       typeof node.getAnimations === "function" &&
-      node.getAnimations({ subtree: true }).length > 0
+      hasRunningAnimation(node.getAnimations({ subtree: true }))
     )
       return false;
   }
@@ -231,23 +238,34 @@ export function ExitFade({
 
 /**
  * One slot whose content is replaced (a player card for an empty slot and
- * back). The old content fades out where it stood, out of the flow, while the
- * new fades in, so the slot never changes size. Change `swapKey` to swap.
+ * back). The old content fades out where it stood, out of the flow, so the
+ * slot never changes size. Change `swapKey` to swap.
+ *
+ * The new content mounts as a replacement and says so through
+ * `useSwapEntering()`, so it can play its own arrival (a player card drops in
+ * with `swap-in`). Content with no arrival of its own can ask for the fade in
+ * with `fadeIn`. One or the other, never both.
  */
 export function ExitSwap({
   swapKey,
   children,
   className,
+  fadeIn = false,
 }: {
   swapKey: string;
   children?: ReactNode;
   className?: string;
+  fadeIn?: boolean;
 }) {
+  // Not a replacement on the first render; one from the first change on.
+  const [seen, setSeen] = useState({ key: swapKey, replaced: false });
+  if (seen.key !== swapKey) setSeen({ key: swapKey, replaced: true });
   return (
     <div className={className ? `relative ${className}` : "relative"}>
       <ExitPresence mode="popLayout">
-        <ExitFade key={swapKey} enter duration="sheet">
-          {children}
+        <ExitFade key={swapKey} enter={fadeIn} duration="sheet">
+          {/* Inside the keyed child, so the old one keeps the value it had. */}
+          <SwapContext.Provider value={seen.replaced}>{children}</SwapContext.Provider>
         </ExitFade>
       </ExitPresence>
     </div>
