@@ -1,6 +1,7 @@
-$ bun run format:check   (branch, exit 2) and the same in /home/user/mc-sorare-base (main 8fae526c, exit 2)
-files prettier would change: branch 78, main 78
+$ bun run format:check   (branch, exit 2) and the same in a detached worktree of origin/main c8fc3a48 (exit 2)
+files prettier lists: branch 84, main 84; syntax errors reported: 11 on each side
 the two sorted lists are identical: this branch adds no unformatted file
+$ prettier --check <the 179 .ts .tsx .css .md .json .mjs .js .html .yaml files this branch adds or changes against origin/main>: All matched files use Prettier code style!
 
 the list:
 [warn] .github/workflows/gate2c-production-historical-catalog-canary.yml
@@ -42,6 +43,12 @@ the list:
 [warn] docs/engineering/tasks/BG-0034/evidence/sportsmonks-historical-performance.json
 [warn] docs/engineering/tasks/BG-0039/implementation-report.yaml
 [warn] docs/operations/DEPLOYMENT.md
+[warn] docs/product/ai-news-stories-evidence/home-spacing.json
+[warn] docs/product/ai-news-stories-evidence/results.json
+[warn] docs/product/home-stories-evidence/verification.json
+[warn] docs/product/stories-centered-evidence/measurements.json
+[warn] docs/product/stories-presentation-evidence/after-measurements.json
+[warn] docs/product/stories-presentation-evidence/before-measurements.json
 [warn] docs/production/APPLIED_2026_10_02_PLAYER_MAPPING_BACKEND.md
 [warn] docs/production/APPLIED_2026_10_02_PLAYER_MAPPING_CANDIDATES.md
 [warn] docs/production/APPLIED_2026_10_03_FLASHSCORE_SUPPORTING_DEPENDENCY_GUARD.md

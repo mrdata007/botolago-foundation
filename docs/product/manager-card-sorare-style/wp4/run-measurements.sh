@@ -10,7 +10,7 @@
 #   BASE=http://127.0.0.1:4194 bash docs/product/manager-card-sorare-style/wp4/run-measurements.sh [step ...]
 #
 # Steps (all of them when none is named): contrast edge marks ink structure shape rtl names words columns
-# firstscreen motion probes   -- and, run alone on a quiet machine because they measure time: perf tilt
+# firstscreen sizes headings motion probes   -- and, run alone on a quiet machine because they measure time: perf tilt
 # The one-off captures (the AFTER set, the gallery, the detail crops, the comparison sheets, the switch-off
 # comparison) have their own commands in ../INDEX.md.
 set -o pipefail
@@ -21,7 +21,7 @@ r="$here/results"
 mkdir -p "$r"
 cd "$repo"
 steps=("$@")
-[[ ${#steps[@]} -eq 0 ]] && steps=(contrast edge marks ink structure shape rtl names words columns firstscreen motion probes)
+[[ ${#steps[@]} -eq 0 ]] && steps=(contrast edge marks ink structure shape rtl names words columns firstscreen sizes headings motion probes)
 want() { for s in "${steps[@]}"; do [[ "$s" == "$1" ]] && return 0; done; return 1; }
 run() { local name="$1"; shift; echo "== $name"; "$@" 2>&1 | tee "$r/$name.txt"; echo "$name exit ${PIPESTATUS[0]}"; }
 
@@ -42,6 +42,8 @@ want names && run names node "$here/names.mjs" --out="$r/names.json"
 want words && run words node "$here/words.mjs" --out="$r/words.json"
 want columns && run column-fit node "$here/column-fit.mjs" --out="$r/column-fit.json"
 want firstscreen && run first-screen node "$here/first-screen.mjs" --out="$r/first-screen.json"
+want sizes && run first-screen-sizes node "$here/first-screen-sizes.mjs" --out="$r/first-screen-sizes.json"
+want headings && run heading-truncation node "$here/heading-truncation.mjs"
 want motion && run motion node "$here/motion.mjs" --only=reduced,beats,depth --out="$r/motion.json"
 want probes && bash "$here/run-probes.sh" all
 want perf && run perf node "$here/perf.mjs" --out="$r/perf.json"

@@ -1,10 +1,11 @@
 /**
- * What the larger collectible (296 x 479 px on a phone) leaves on G1's first screen: for each state, the
+ * What the collectible leaves on G1's first screen (the card is 232 to 296 px wide on a phone by its height, 336 from
+ * 768 px, since round 2; it was a fixed 296 x 479 px before): for each state, the
  * bottom of the card, of the rating line (`gradins-identity-line`) and of the next-round line
  * (`gradins-glance`, the 44 px line the e2e spec asserts on the forming card) against the top of the
  * bottom bar, at 390 x 844 and 360 x 740, French and Arabic. A negative margin is under the bar.
  *
- *   BASE=http://127.0.0.1:4194 node docs/product/manager-card-sorare-style/wp4/first-screen.mjs [--out=<file>]
+ *   BASE=http://127.0.0.1:4440 node docs/product/manager-card-sorare-style/wp4/first-screen.mjs [--out=<file>]
  */
 import { writeFileSync } from "node:fs";
 

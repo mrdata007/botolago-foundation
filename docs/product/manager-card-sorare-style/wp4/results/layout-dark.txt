@@ -262,8 +262,8 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 
 === /gradins/carte?mc=founder (exit 0)
 6 checks over 1 routes × 3 widths × 2 languages
-6 route/viewport pairs with findings
-scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+5 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 5 (neither a defect) · spill 0 · starved 0
 
 ### scroll: none
 ### past: none
@@ -272,14 +272,12 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 ### spill: none
 ### starved: none
 ### decorative: none
-### clipHFontBox — 6 pairs
+### clipHFontBox — 5 pairs
   fr 320 /gradins/carte?mc=founder
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
   fr 390 /gradins/carte?mc=founder
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
   fr 1440 /gradins/carte?mc=founder
-     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
-  ar 320 /gradins/carte?mc=founder
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
   ar 390 /gradins/carte?mc=founder
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
@@ -288,8 +286,8 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 
 === /gradins/carte?mc=homa (exit 0)
 6 checks over 1 routes × 3 widths × 2 languages
-6 route/viewport pairs with findings
-scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+5 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 5 (neither a defect) · spill 0 · starved 0
 
 ### scroll: none
 ### past: none
@@ -298,14 +296,12 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 ### spill: none
 ### starved: none
 ### decorative: none
-### clipHFontBox — 6 pairs
+### clipHFontBox — 5 pairs
   fr 320 /gradins/carte?mc=homa
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
   fr 390 /gradins/carte?mc=homa
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
   fr 1440 /gradins/carte?mc=homa
-     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
-  ar 320 /gradins/carte?mc=homa
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
   ar 390 /gradins/carte?mc=homa
      <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
@@ -392,8 +388,8 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 
 === /gradins/saisons?mc=rated (exit 0)
 6 checks over 1 routes × 3 widths × 2 languages
-6 route/viewport pairs with findings
-scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+5 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 5 (neither a defect) · spill 0 · starved 0
 
 ### scroll: none
 ### past: none
@@ -402,7 +398,7 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 ### spill: none
 ### starved: none
 ### decorative: none
-### clipHFontBox — 6 pairs
+### clipHFontBox — 5 pairs
   fr 320 /gradins/saisons?mc=rated
      <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
   fr 390 /gradins/saisons?mc=rated
@@ -410,8 +406,6 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
   fr 1440 /gradins/saisons?mc=rated
      <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
   ar 320 /gradins/saisons?mc=rated
-     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
-  ar 390 /gradins/saisons?mc=rated
      <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
   ar 1440 /gradins/saisons?mc=rated
      <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
@@ -548,8 +542,8 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 
 === /fantasy?mc=legend (exit 0)
 6 checks over 1 routes × 3 widths × 2 languages
-6 route/viewport pairs with findings
-scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+5 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 5 (neither a defect) · spill 0 · starved 0
 
 ### scroll: none
 ### past: none
@@ -558,14 +552,12 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 ### spill: none
 ### starved: none
 ### decorative: none
-### clipHFontBox — 6 pairs
+### clipHFontBox — 5 pairs
   fr 320 /fantasy?mc=legend
      <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
   fr 390 /fantasy?mc=legend
      <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
   fr 1440 /fantasy?mc=legend
-     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
-  ar 320 /fantasy?mc=legend
      <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
   ar 390 /fantasy?mc=legend
      <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
@@ -574,8 +566,8 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 
 === /fantasy/rankings?mc=rated (exit 0)
 6 checks over 1 routes × 3 widths × 2 languages
-6 route/viewport pairs with findings
-scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+5 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 26 (neither a defect) · spill 0 · starved 0
 
 ### scroll: none
 ### past: none
@@ -584,7 +576,7 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
 ### spill: none
 ### starved: none
 ### decorative: none
-### clipHFontBox — 6 pairs
+### clipHFontBox — 5 pairs
   fr 320 /fantasy/rankings?mc=rated
      <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
   fr 390 /fantasy/rankings?mc=rated
@@ -593,9 +585,28 @@ scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (nei
      <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
   ar 320 /fantasy/rankings?mc=rated
      <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
+     <span> "Aigles de Rabat" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Lions de Casa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères du Rif" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Étoiles de Marrakech" 87>43 (+44px) fs=14px lh=21.7px
+     <span> "Faucons de Tanger" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères de l'Atlas" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères d'Oujda" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Faucons de Marrakech" 87>43 (+44px) fs=14px lh=21.7px
+     <span> "Panthères du Souss" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères de Fès" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Étoiles de l'Atlas" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Cavaliers de Marrakech" 87>43 (+44px) fs=14px lh=21.7px
+     <span> "Faucons de Rabat" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Faucons de Casa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires du Souss" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires de Fès" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Dragons de Casa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Dragons du Draa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires d'Oujda" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires du Rif" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Faucons de l'Atlas" 65>43 (+22px) fs=14px lh=21.7px
   ar 390 /fantasy/rankings?mc=rated
-     <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
-  ar 1440 /fantasy/rankings?mc=rated
      <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
 
 === /fantasy/leagues/lg1?mc=rated (exit 0)

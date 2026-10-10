@@ -1,14 +1,15 @@
+$ E2E_BUILT_OUTPUT=1 E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome bunx playwright test tests/e2e/gradins-off.e2e.ts   (after bun tests/e2e/built-output-build.ts, exit 0)
 
 Running 9 tests using 1 worker
 
-  ✓  1 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins answers with the Fantasy hub (1.2s)
-  ✓  2 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/carte answers with the Fantasy hub (745ms)
-  ✓  3 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/les-votres answers with the Fantasy hub (825ms)
-  ✓  4 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/saisons answers with the Fantasy hub (739ms)
-  ✓  5 tests/e2e/gradins-off.e2e.ts:51:3 › fr: the bar is today's and Pépites is lit on its own pages (1.5s)
-  ✓  6 tests/e2e/gradins-off.e2e.ts:79:3 › fr: the desktop top bar is today's too (1.1s)
-  ✓  7 tests/e2e/gradins-off.e2e.ts:51:3 › ar: the bar is today's and Pépites is lit on its own pages (1.9s)
-  ✓  8 tests/e2e/gradins-off.e2e.ts:79:3 › ar: the desktop top bar is today's too (1.5s)
-  ✓  9 tests/e2e/gradins-off.e2e.ts:87:1 › no page makes a request, writes a storage key or draws an element that belongs to the section (4.1s)
+  ✓  1 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins answers with the Fantasy hub (2.9s)
+  ✓  2 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/carte answers with the Fantasy hub (1.2s)
+  ✓  3 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/les-votres answers with the Fantasy hub (1.5s)
+  ✓  4 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/saisons answers with the Fantasy hub (974ms)
+  ✓  5 tests/e2e/gradins-off.e2e.ts:51:3 › fr: the bar is today's and Pépites is lit on its own pages (1.7s)
+  ✓  6 tests/e2e/gradins-off.e2e.ts:79:3 › fr: the desktop top bar is today's too (1.7s)
+  ✓  7 tests/e2e/gradins-off.e2e.ts:51:3 › ar: the bar is today's and Pépites is lit on its own pages (2.4s)
+  ✓  8 tests/e2e/gradins-off.e2e.ts:79:3 › ar: the desktop top bar is today's too (1.8s)
+  ✓  9 tests/e2e/gradins-off.e2e.ts:87:1 › no page makes a request, writes a storage key or draws an element that belongs to the section (4.3s)
 
-  9 passed (15.2s)
+  9 passed (20.5s)

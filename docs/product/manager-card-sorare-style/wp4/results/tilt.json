@@ -1,71 +1,76 @@
 {
-  "base": "http://127.0.0.1:4194",
-  "reduced": [],
-  "beats": [],
-  "depth": [],
-  "tilt": [
-    {
-      "cpu": 1,
-      "fixture": "control",
-      "frames": 175,
-      "medianMs": 16.7,
-      "p95Ms": 16.7,
-      "over20": 1,
-      "over33": 1,
-      "longTasks": []
-    },
-    {
-      "cpu": 1,
-      "fixture": "rated",
-      "frames": 67,
-      "medianMs": 33.4,
-      "p95Ms": 66.7,
-      "over20": 65,
-      "over33": 65,
-      "longTasks": [52, 74, 52, 62, 63, 52, 88]
-    },
-    {
-      "cpu": 1,
-      "fixture": "legend",
-      "frames": 67,
-      "medianMs": 49.9,
-      "p95Ms": 50.1,
-      "over20": 66,
-      "over33": 66,
-      "longTasks": [56, 86]
-    },
-    {
-      "cpu": 4,
-      "fixture": "control",
-      "frames": 176,
-      "medianMs": 16.7,
-      "p95Ms": 16.7,
-      "over20": 0,
-      "over33": 0,
-      "longTasks": []
-    },
-    {
-      "cpu": 4,
-      "fixture": "rated",
-      "frames": 43,
-      "medianMs": 66.7,
-      "p95Ms": 133.3,
-      "over20": 42,
-      "over33": 42,
-      "longTasks": [58, 69, 74, 59, 55, 64, 97, 77, 61, 53, 68, 63, 51, 61, 55, 123, 135, 80]
-    },
-    {
-      "cpu": 4,
-      "fixture": "legend",
-      "frames": 40,
-      "medianMs": 83.2,
-      "p95Ms": 100,
-      "over20": 40,
-      "over33": 40,
-      "longTasks": [
-        51, 76, 70, 51, 54, 55, 50, 61, 52, 70, 65, 51, 79, 62, 51, 50, 54, 55, 61, 53, 56, 74, 64,
-        81, 59, 108, 83, 62, 76, 50, 61
-      ]
-    }
-  ]
+ "base": "http://127.0.0.1:4440",
+ "reduced": [],
+ "beats": [],
+ "depth": [],
+ "tilt": [
+  {
+   "cpu": 1,
+   "fixture": "control",
+   "frames": 177,
+   "medianMs": 16.7,
+   "p95Ms": 16.7,
+   "over20": 0,
+   "over33": 0,
+   "longTasks": []
+  },
+  {
+   "cpu": 1,
+   "fixture": "rated",
+   "frames": 175,
+   "medianMs": 16.7,
+   "p95Ms": 16.8,
+   "over20": 1,
+   "over33": 1,
+   "longTasks": []
+  },
+  {
+   "cpu": 1,
+   "fixture": "legend",
+   "frames": 171,
+   "medianMs": 16.7,
+   "p95Ms": 16.8,
+   "over20": 5,
+   "over33": 5,
+   "longTasks": [
+    75
+   ]
+  },
+  {
+   "cpu": 4,
+   "fixture": "control",
+   "frames": 176,
+   "medianMs": 16.7,
+   "p95Ms": 16.7,
+   "over20": 0,
+   "over33": 0,
+   "longTasks": []
+  },
+  {
+   "cpu": 4,
+   "fixture": "rated",
+   "frames": 132,
+   "medianMs": 16.7,
+   "p95Ms": 33.4,
+   "over20": 38,
+   "over33": 38,
+   "longTasks": [
+    56,
+    57
+   ]
+  },
+  {
+   "cpu": 4,
+   "fixture": "legend",
+   "frames": 126,
+   "medianMs": 16.7,
+   "p95Ms": 33.4,
+   "over20": 46,
+   "over33": 46,
+   "longTasks": [
+    59,
+    68
+   ]
+  }
+ ]
 }

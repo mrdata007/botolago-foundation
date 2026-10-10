@@ -2,10 +2,9 @@
 
 === /gradins?mc=forming1 (exit 0)
 fr 390 /gradins?mc=forming1: 122 texts in view over 4 screen(s), 14 hidden under something, 122 nominated (0 on a gradient), 0 confirmed below AA, 0 too sparse to judge
-ar 390 /gradins?mc=forming1: 120 texts in view over 4 screen(s), 17 hidden under something, 120 nominated (0 on a gradient), 1 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins?mc=forming1: 118 texts in view over 4 screen(s), 19 hidden under something, 118 nominated (0 on a gradient), 0 confirmed below AA, 0 too sparse to judge
 
-light theme: 242 pixel measurements, 1 below AA
-  2.2:1 (floor 3) ar 390 /gradins?mc=forming1 "·" — PROBE_ALL @ div > p[data-testid=gradins-rating-line] > span
+light theme: 240 pixel measurements, 0 below AA
 
 === /gradins?mc=rated (exit 0)
 fr 390 /gradins?mc=rated: 119 texts in view over 4 screen(s), 15 hidden under something, 119 nominated (2 on a gradient), 0 confirmed below AA, 0 too sparse to judge
@@ -27,31 +26,27 @@ light theme: 208 pixel measurements, 0 below AA
 
 === /gradins?mc=homa (exit 0)
 fr 390 /gradins?mc=homa: 115 texts in view over 3 screen(s), 15 hidden under something, 115 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
-ar 390 /gradins?mc=homa: 115 texts in view over 4 screen(s), 16 hidden under something, 115 nominated (1 on a gradient), 1 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins?mc=homa: 112 texts in view over 4 screen(s), 19 hidden under something, 112 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
 
-light theme: 230 pixel measurements, 1 below AA
-  2.2:1 (floor 3) ar 390 /gradins?mc=homa "·" — PROBE_ALL @ div > p[data-testid=gradins-rating-line] > span
+light theme: 227 pixel measurements, 0 below AA
 
 === /gradins?mc=clubNull (exit 0)
 fr 390 /gradins?mc=clubNull: 98 texts in view over 3 screen(s), 15 hidden under something, 98 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
-ar 390 /gradins?mc=clubNull: 98 texts in view over 3 screen(s), 16 hidden under something, 98 nominated (1 on a gradient), 1 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins?mc=clubNull: 95 texts in view over 3 screen(s), 19 hidden under something, 95 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
 
-light theme: 196 pixel measurements, 1 below AA
-  2.2:1 (floor 3) ar 390 /gradins?mc=clubNull "·" — PROBE_ALL @ div > p[data-testid=gradins-rating-line] > span
+light theme: 193 pixel measurements, 0 below AA
 
 === /gradins?mc=arabicName (exit 0)
 fr 390 /gradins?mc=arabicName: 116 texts in view over 3 screen(s), 15 hidden under something, 116 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
-ar 390 /gradins?mc=arabicName: 116 texts in view over 4 screen(s), 16 hidden under something, 116 nominated (1 on a gradient), 1 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins?mc=arabicName: 113 texts in view over 4 screen(s), 19 hidden under something, 113 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
 
-light theme: 232 pixel measurements, 1 below AA
-  2.2:1 (floor 3) ar 390 /gradins?mc=arabicName "·" — PROBE_ALL @ div > p[data-testid=gradins-rating-line] > span
+light theme: 229 pixel measurements, 0 below AA
 
 === /gradins?mc=longNameLatin (exit 0)
 fr 390 /gradins?mc=longNameLatin: 116 texts in view over 3 screen(s), 15 hidden under something, 116 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
-ar 390 /gradins?mc=longNameLatin: 116 texts in view over 4 screen(s), 16 hidden under something, 116 nominated (1 on a gradient), 1 confirmed below AA, 0 too sparse to judge
+ar 390 /gradins?mc=longNameLatin: 113 texts in view over 4 screen(s), 19 hidden under something, 113 nominated (1 on a gradient), 0 confirmed below AA, 0 too sparse to judge
 
-light theme: 232 pixel measurements, 1 below AA
-  2.2:1 (floor 3) ar 390 /gradins?mc=longNameLatin "·" — PROBE_ALL @ div > p[data-testid=gradins-rating-line] > span
+light theme: 229 pixel measurements, 0 below AA
 
 === /gradins?mc=tierUp (exit 0)
 fr 390 /gradins?mc=tierUp: 102 texts in view over 4 screen(s), 30 hidden under something, 102 nominated (2 on a gradient), 0 confirmed below AA, 0 too sparse to judge

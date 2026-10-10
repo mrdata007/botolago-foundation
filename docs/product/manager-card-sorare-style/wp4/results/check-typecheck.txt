@@ -1,3 +1,4 @@
 === check-typecheck: bun run typecheck
 $ tsc --noEmit
 --- exit 0
+

@@ -1,1 +1,3 @@
-Manager Card off-bundle gate: 329 chunks; the section's code is in ManagerCard-DUJRynob.js, to-profile-BsVTdYY0.js, use-manager-card-B6ijahLq.js, manager-card-BzEdvlHq.js and no ordinary page imports it.
+$ bun tests/e2e/built-output-build.ts, then bun scripts/qa/manager-card-off-bundle-gate.ts
+Manager Card off-bundle gate: 331 chunks; the section's code is in to-profile-B8j1UlkA.js, use-manager-card-DvHQTQQb.js, manager-card-BzEdvlHq.js, ManagerCard-BuFlp9HU.js and no ordinary page imports it.
+

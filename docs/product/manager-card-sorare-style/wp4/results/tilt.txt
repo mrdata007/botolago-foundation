@@ -1,7 +1,7 @@
 TILT while a pointer circles the card for 3 s
-  CPU x1 control: 175 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 1, > 33 ms: 1, long tasks (> 50 ms): 0 []
-  CPU x1 rated: 67 frames, median 33.4 ms, p95 66.7 ms, > 20 ms: 65, > 33 ms: 65, long tasks (> 50 ms): 7 [52,74,52,62,63,52,88]
-  CPU x1 legend: 67 frames, median 49.9 ms, p95 50.1 ms, > 20 ms: 66, > 33 ms: 66, long tasks (> 50 ms): 2 [56,86]
+  CPU x1 control: 177 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 0, > 33 ms: 0, long tasks (> 50 ms): 0 []
+  CPU x1 rated: 175 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 1, > 33 ms: 1, long tasks (> 50 ms): 0 []
+  CPU x1 legend: 171 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 5, > 33 ms: 5, long tasks (> 50 ms): 1 [75]
   CPU x4 control: 176 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 0, > 33 ms: 0, long tasks (> 50 ms): 0 []
-  CPU x4 rated: 43 frames, median 66.7 ms, p95 133.3 ms, > 20 ms: 42, > 33 ms: 42, long tasks (> 50 ms): 18 [58,69,74,59,55,64,97,77,61,53,68,63,51,61,55,123,135,80]
-  CPU x4 legend: 40 frames, median 83.2 ms, p95 100 ms, > 20 ms: 40, > 33 ms: 40, long tasks (> 50 ms): 31 [51,76,70,51,54,55,50,61,52,70,65,51,79,62,51,50,54,55,61,53,56,74,64,81,59,108,83,62,76,50,61]
+  CPU x4 rated: 132 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 38, > 33 ms: 38, long tasks (> 50 ms): 2 [56,57]
+  CPU x4 legend: 126 frames, median 16.7 ms, p95 33.4 ms, > 20 ms: 46, > 33 ms: 46, long tasks (> 50 ms): 2 [59,68]

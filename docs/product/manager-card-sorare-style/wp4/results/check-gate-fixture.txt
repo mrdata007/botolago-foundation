@@ -1,3 +1,4 @@
 === check-gate-fixture: bun scripts/qa/manager-card-fixture-gate.ts
-Manager Card fixture gate: 727 files in .output, no fixture found.
+Manager Card fixture gate: 732 files in .output, no fixture found.
 --- exit 0
+

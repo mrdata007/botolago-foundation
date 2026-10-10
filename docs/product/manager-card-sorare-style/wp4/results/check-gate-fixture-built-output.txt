@@ -1,1 +1,3 @@
-Manager Card fixture gate: 727 files in .output, no fixture found.
+$ bun tests/e2e/built-output-build.ts, then bun scripts/qa/manager-card-fixture-gate.ts
+Manager Card fixture gate: 732 files in .output, no fixture found.
+
