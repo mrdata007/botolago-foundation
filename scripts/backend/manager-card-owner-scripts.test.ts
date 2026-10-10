@@ -269,6 +269,8 @@ describe("rules v1 with fixed scales (owner decision 2026-10-08)", () => {
         ],
       },
       tiers: { stade: 50, pro: 65, champion: 80, legend: 90 },
+      // PR #376 first seen live on botolago.com after the Lovable publish.
+      cap_ignore_deadlines_before: "2026-10-10T12:38:05Z",
     });
   });
 });

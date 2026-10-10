@@ -8,8 +8,10 @@
 --   TRF  points gained per transfer over 3 gameweeks: -10 -> 1, 0 -> 50, +10 -> 99
 --   CON  share of weeks in the top half: 0 -> 1, all -> 99
 --   Tiers: STADE 50+, PRO 65+, CHAMPION 80+, LEGEND 90+, HOMA below 50.
--- Minimum 3 finished weeks, provisional under 5. No CAP start date until PR #376
--- ships. Generated from apply-manager-card-rules-v1.sql by replacing the marker
+-- Minimum 3 finished weeks, provisional under 5. CAP counts only weeks whose
+-- deadline is at or after 2026-10-10T12:38:05Z, when PR #376 (no automatic
+-- captain) was first seen live on botolago.com after the Lovable publish.
+-- Generated from apply-manager-card-rules-v1.sql by replacing the marker
 -- only; everything else (guards, checks) is identical.
 -- ============================================================================
 -- ============================================================================
@@ -81,7 +83,7 @@ declare
   -- PUT THE CONFIG HERE: replace the marker below, and only the marker, with
   -- the JSON object. Keep the two $rules_v1_config$ tags around it.
   -- ==========================================================================
-  config_text text := $rules_v1_config${"minimum_gameweeks": 3, "provisional_below": 5, "trf_window_gameweeks": 3, "batch_size": 2000, "scales": {"cap": [[0, 1], [1, 99]], "sel": [[0.5, 1], [1, 99]], "trf": [[-10, 1], [0, 50], [10, 99]], "con": [[0, 1], [1, 99]]}, "tiers": {"stade": 50, "pro": 65, "champion": 80, "legend": 90}}$rules_v1_config$;
+  config_text text := $rules_v1_config${"minimum_gameweeks": 3, "provisional_below": 5, "trf_window_gameweeks": 3, "batch_size": 2000, "scales": {"cap": [[0, 1], [1, 99]], "sel": [[0.5, 1], [1, 99]], "trf": [[-10, 1], [0, 50], [10, 99]], "con": [[0, 1], [1, 99]]}, "tiers": {"stade": 50, "pro": 65, "champion": 80, "legend": 90}, "cap_ignore_deadlines_before": "2026-10-10T12:38:05Z"}$rules_v1_config$;
   -- ==========================================================================
   cfg jsonb;
 begin
