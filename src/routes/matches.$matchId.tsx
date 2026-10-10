@@ -438,7 +438,7 @@ function MatchDetailPage() {
             id={MATCH_PANEL_ID}
             role="tabpanel"
             aria-labelledby={`${MATCH_TAB_ID_BASE}-tab-${tab}`}
-            className="mt-4 animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-quick)] ease-[var(--ease-standard)]"
+            className="mt-4 tab-panel-in"
           >
             {tab === "summary" && (
               <>

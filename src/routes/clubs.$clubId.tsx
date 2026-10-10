@@ -380,7 +380,7 @@ function ClubPage() {
         id={CLUB_PANEL_ID}
         role="tabpanel"
         aria-labelledby={`${CLUB_TAB_ID_BASE}-tab-${tab}`}
-        className="animate-in fade-in-0 slide-in-from-bottom-1 duration-[var(--duration-quick)] ease-[var(--ease-standard)]"
+        className="tab-panel-in"
       >
         {tab === "overview" && (
           <ClubOverview

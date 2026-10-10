@@ -638,12 +638,21 @@ function PrimaryAction({
         role="status"
         aria-label={t("landing.cta_pending")}
         className={cn(
-          "block animate-pulse opacity-70",
+          "relative block overflow-hidden opacity-70",
           ui.radius.full,
           size === "sm" ? "h-11 w-40" : "h-12 w-full",
         )}
         style={{ backgroundImage: "var(--ui-grad-action)" }}
-      />
+      >
+        {/* The product's loading sweep, over the button's own colours (the
+            grey `shimmer` block would hide them). It travels with the reading
+            direction; under reduced motion it is not drawn at all. */}
+        <span
+          aria-hidden
+          className="shine absolute inset-0 motion-reduce:hidden"
+          style={{ animationDuration: "1.6s", animationIterationCount: "infinite" }}
+        />
+      </span>
     );
   }
   const label =

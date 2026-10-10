@@ -192,4 +192,18 @@ describe("UiTabs markup", () => {
     expect(tags[2]).toContain('aria-selected="true"');
     expect(tags[2]).toContain("disabled");
   });
+
+  it("draws one sliding accent bar, placed under the selected tab by the server", () => {
+    const html = render("lineups");
+    expect(html.match(/class="tab-indicator"/g)).toHaveLength(1);
+    expect(html).toContain("--tab-count:4");
+    expect(html).toContain("--tab-index:2");
+    // The bar is the only accent: no tab draws its own any more.
+    for (const tag of buttons(html)) expect(tag).not.toContain("inset_0_-4px");
+  });
+
+  it("draws no bar when nothing is selected", () => {
+    const html = render("other" as Tab);
+    expect(html).not.toContain("tab-indicator");
+  });
 });

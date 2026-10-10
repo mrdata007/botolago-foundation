@@ -19,7 +19,7 @@ import {
   AdminNotice,
   AdminSectionHeading,
 } from "@/components/admin/AdminSurfaces";
-import { ui, UiBadge, UiButton, UiInput } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiInput, UiSkeleton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 
 export const Route = createFileRoute("/admin/security")({
@@ -130,7 +130,7 @@ function AdminSecurityRoute() {
             ) : (
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-hidden>
                 {Array.from({ length: 4 }, (_, index) => (
-                  <div key={index} className={`${ADMIN_PANEL_CLASS} h-[72px] animate-pulse`} />
+                  <UiSkeleton key={index} className="h-[72px]" />
                 ))}
               </div>
             )}
