@@ -179,6 +179,25 @@ null, false);` before a write that touches fixtures or notifications, and
    for that time):
    `select app_private.manager_card_configure(null, false);`
    `select app_private.manager_card_configure(null, true);`
+   Where migration 20261009195943 is applied, `ai-home-stories` runs at
+   minutes 4/14/24/34/44/54 and dispatches the asynchronous Edge Function
+   `home-story-generate`. It writes `app_private.ai_home_story_jobs`,
+   `app.home_stories`, `app.media_assets`, `app_private.editorial_audit_events`
+   and `news-media` storage (including `storage.objects`). Configuration writes
+   `app_private.ai_home_story_settings`. Before a write touching these or its
+   source news stories/editions, record the current enabled flag and daily cap,
+   then pause with `select app_private.ai_home_stories_configure(false);`.
+   Pausing blocks claims and publication; stopping pg_cron alone does not stop
+   a dispatched Edge worker. Inspect jobs with `status = 'generating'`, their
+   `created_at`, and Edge invocation logs; wait for in-flight workers to finish
+   before writing. A crashed worker can leave a generating row after its
+   ten-minute lease expires (paused claims do not expire it): confirm the worker
+   has ended in Edge logs as well as the expired lease, rather than assuming
+   an idle cron means an idle writer. Storage cleanup and failure recording can
+   still happen after a pause. Restore the recorded flag and cap with
+   `select app_private.ai_home_stories_configure(previous_enabled, previous_cap);`
+   only after the write completes. See
+   [AI_HOME_STORIES.md](docs/backend/AI_HOME_STORIES.md).
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 
