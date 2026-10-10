@@ -3,6 +3,8 @@ import {
   APPLY_CONFIRMATION,
   PRODUCTION_PROJECT_REF,
   bridgeGuard,
+  managementGuard,
+  mappingSql,
   orderedRows,
   parseEvents,
   parseTeams,
@@ -56,5 +58,40 @@ describe("input parsing", () => {
       { entityType: "competition", externalId: "937", internalId: "b", flags: [] },
     ]);
     expect(rows.map((r) => r.entityType)).toEqual(["competition", "fixture"]);
+  });
+});
+
+describe("management apply path", () => {
+  const env = {
+    SUPABASE_ACCESS_TOKEN: "t",
+    SUPABASE_STAGING_PROJECT_REF: "abcdefghijklmnopqrst",
+    SOFASCORE_ID_BRIDGE_CONFIRMATION: APPLY_CONFIRMATION,
+  };
+  test("uses the staging ref and needs the confirmation", () => {
+    expect(managementGuard(env)).toEqual({ ref: "abcdefghijklmnopqrst", token: "t" });
+    expect(managementGuard({})).toBeNull();
+    expect(() => managementGuard({ ...env, SOFASCORE_ID_BRIDGE_CONFIRMATION: undefined })).toThrow(
+      "confirmation_missing",
+    );
+  });
+  test("refuses production and malformed refs", () => {
+    expect(() =>
+      managementGuard({ ...env, SUPABASE_STAGING_PROJECT_REF: PRODUCTION_PROJECT_REF }),
+    ).toThrow("production_refused");
+    expect(() => managementGuard({ ...env, SUPABASE_STAGING_PROJECT_REF: "x" })).toThrow(
+      "url_invalid",
+    );
+  });
+  test("builds the call from validated values only", () => {
+    const row = {
+      entityType: "fixture" as const,
+      externalId: "16958239",
+      internalId: "00000000-0000-4000-8000-000000000001",
+      flags: [],
+    };
+    expect(mappingSql(row)).toContain("api.resolve_football_mapping('sofascore', 'fixture'");
+    expect(() => mappingSql({ ...row, externalId: "1'); drop table x; --" })).toThrow(
+      "literal_invalid",
+    );
   });
 });

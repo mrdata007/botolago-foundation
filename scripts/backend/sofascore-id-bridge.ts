@@ -12,10 +12,15 @@
  * - `--teams`: JSON `{ "<sofascoreTeamId>": "<internal team uuid>" }`, the
  *   owner-reviewed pairing. Falls back to the committed table (empty until
  *   reviewed, see src/backend/football/sofascore-team-table.ts).
+ * - `--mode propose-teams`: read only. Suggests `{sofascoreTeamId: internalUuid}`
+ *   from fixtures both sides agree on (src/.../sofascore-team-proposal.ts). Never
+ *   writes and never accepts its own proposal; the owner approves the JSON.
  * - `--mode apply`: writes, only through `api.resolve_football_mapping`. Needs
- *   `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and
- *   `SOFASCORE_ID_BRIDGE_CONFIRMATION=ATTACH_SOFASCORE_IDS_ON_STAGING`. Refuses
- *   the production project. Run the one-writer checks in AGENTS.md first.
+ *   `SOFASCORE_ID_BRIDGE_CONFIRMATION=ATTACH_SOFASCORE_IDS_ON_STAGING` and either
+ *   `SUPABASE_URL` + `SUPABASE_SECRET_KEY`, or (GitHub Actions)
+ *   `SUPABASE_ACCESS_TOKEN` + `SUPABASE_STAGING_PROJECT_REF` through the
+ *   Management API. Refuses the production project. Run the one-writer checks in
+ *   AGENTS.md first.
  *
  * Exit codes: 0 clean, 2 the report has items needing review (nothing is
  * mapped for them), 4 the database refused or a re-point is pending.
@@ -33,6 +38,7 @@ import {
   type PlannedMapping,
   type SofascoreEvent,
 } from "../../src/backend/football/sofascore-id-bridge";
+import { proposeTeams } from "../../src/backend/football/sofascore-team-proposal";
 import { reviewedTeamTable } from "../../src/backend/football/sofascore-team-table";
 
 export const PRODUCTION_PROJECT_REF = "tkewgajrljbwgwedqsxn";
@@ -41,14 +47,54 @@ export const SOFASCORE_COMPETITION_ID = "937";
 export const SOFASCORE_SEASON_ID = "102220";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export type BridgeMode = "dry-run" | "apply";
+export type BridgeMode = "propose-teams" | "dry-run" | "apply";
+const MODES: readonly BridgeMode[] = ["propose-teams", "dry-run", "apply"];
+const PROJECT_REF = /^[a-z0-9]{20}$/;
+
+/**
+ * Apply through the Supabase Management API (the secret the staging workflows
+ * already use) instead of a service-role key. Same refusals as `bridgeGuard`.
+ */
+export function managementGuard(
+  env: Record<string, string | undefined>,
+): { ref: string; token: string } | null {
+  const token = env.SUPABASE_ACCESS_TOKEN?.trim() ?? "";
+  if (!token) return null;
+  const ref = env.SUPABASE_STAGING_PROJECT_REF?.trim() ?? "";
+  if (!PROJECT_REF.test(ref))
+    throw new Error(
+      "sofascore_bridge_url_invalid: SUPABASE_STAGING_PROJECT_REF is not a project ref",
+    );
+  if (ref === PRODUCTION_PROJECT_REF)
+    throw new Error("sofascore_bridge_production_refused: this tool runs on staging only");
+  if (env.SOFASCORE_ID_BRIDGE_CONFIRMATION !== APPLY_CONFIRMATION)
+    throw new Error(
+      `sofascore_bridge_confirmation_missing: set SOFASCORE_ID_BRIDGE_CONFIRMATION=${APPLY_CONFIRMATION}`,
+    );
+  return { ref, token };
+}
+
+const LITERAL = /^[A-Za-z0-9:_.-]{1,64}$/;
+const quote = (value: string) => {
+  if (!LITERAL.test(value) && !UUID.test(value))
+    throw new Error("sofascore_bridge_literal_invalid: refusing to build SQL from this value");
+  return `'${value}'`;
+};
+
+/** The one statement apply sends per row. Every value is validated, none is free text. */
+export function mappingSql(row: PlannedMapping): string {
+  return (
+    `select api.resolve_football_mapping(${quote(SOFASCORE_PROVIDER)}, ${quote(row.entityType)}, ` +
+    `${quote(row.externalId)}, ${quote(row.internalId)}::uuid, 'sofascore-id-bridge')`
+  );
+}
 
 /** Refuses anything but a staging write that was asked for in so many words. */
 export function bridgeGuard(
   mode: BridgeMode,
   env: Record<string, string | undefined>,
 ): { url: string; secret: string } | null {
-  if (mode === "dry-run") return null;
+  if (mode !== "apply") return null;
   const url = (env.SUPABASE_URL ?? "").replace(/\/$/, "");
   const secret = env.SUPABASE_SECRET_KEY ?? "";
   if (
@@ -160,8 +206,9 @@ const readJson = (path: string | undefined, name: string) => {
 
 async function main() {
   const mode = (arg("--mode") ?? "dry-run") as BridgeMode;
-  if (!["dry-run", "apply"].includes(mode)) throw new Error("--mode must be dry-run or apply");
-  const db = bridgeGuard(mode, process.env);
+  if (!MODES.includes(mode)) throw new Error("--mode must be propose-teams, dry-run or apply");
+  const management = mode === "apply" ? managementGuard(process.env) : null;
+  const db = management ? null : bridgeGuard(mode, process.env);
 
   const competitionId = arg("--competition-id");
   const seasonId = arg("--season-id");
@@ -169,6 +216,16 @@ async function main() {
     throw new Error("--competition-id and --season-id must be uuids");
 
   const snapshot = parseSnapshot(readJson(arg("--snapshot"), "--snapshot"));
+  if (mode === "propose-teams") {
+    // Read-only: a proposal for the owner to approve, never applied by this tool.
+    const result = proposeTeams(
+      parseEvents(readJson(arg("--events"), "--events")),
+      snapshot.fixtures,
+    );
+    console.log(JSON.stringify({ mode, ...result }, null, 2));
+    process.exitCode = Object.keys(result.proposal).length === result.evidence.length ? 0 : 2;
+    return;
+  }
   const teams = arg("--teams")
     ? parseTeams(readJson(arg("--teams"), "--teams"))
     : reviewedTeamTable();
@@ -185,7 +242,7 @@ async function main() {
   console.log(JSON.stringify({ mode, summary: summarise(plan) }, null, 2));
 
   let exit: 0 | 2 | 4 = needsReview(plan) ? 2 : 0;
-  if (mode === "apply" && db) {
+  if (mode === "apply" && (db || management)) {
     if (plan.repoints.length > 0) {
       console.error(
         `sofascore_bridge_repoint_unsupported: ${plan.repoints.length} fixture(s) need re-pointing; ` +
@@ -194,21 +251,40 @@ async function main() {
       process.exitCode = 4;
       return;
     }
-    const client = createClient(db.url, db.secret, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const client = db
+      ? createClient(db.url, db.secret, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        })
+      : null;
     let written = 0;
     for (const row of orderedRows(plan.rows)) {
-      const { error } = await client.schema("api").rpc("resolve_football_mapping", {
-        p_provider_name: SOFASCORE_PROVIDER,
-        p_entity_type: row.entityType,
-        p_external_id: row.externalId,
-        p_internal_entity_id: row.internalId,
-        p_source_version: "sofascore-id-bridge",
-      });
-      if (error) {
+      let failure: string | null = null;
+      if (client) {
+        const { error } = await client.schema("api").rpc("resolve_football_mapping", {
+          p_provider_name: SOFASCORE_PROVIDER,
+          p_entity_type: row.entityType,
+          p_external_id: row.externalId,
+          p_internal_entity_id: row.internalId,
+          p_source_version: "sofascore-id-bridge",
+        });
+        failure = error ? error.message : null;
+      } else if (management) {
+        const response = await fetch(
+          `https://api.supabase.com/v1/projects/${management.ref}/database/query`,
+          {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${management.token}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ query: mappingSql(row) }),
+          },
+        );
+        failure = response.ok ? null : `management_query_${response.status}`;
+      }
+      if (failure) {
         console.error(
-          `sofascore_bridge_rpc_refused: ${row.entityType} ${row.externalId}: ${error.message}. ` +
+          `sofascore_bridge_rpc_refused: ${row.entityType} ${row.externalId}: ${failure}. ` +
             `Stopped after ${written} row(s).`,
         );
         exit = 4;
