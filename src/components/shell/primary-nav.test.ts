@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
+import { MANAGER_CARD_BUILD } from "@/lib/feature-flags";
 import {
   isPrimaryRouteActive,
   liveNavItems,
@@ -103,9 +104,10 @@ describe("the fifth slot (Curva, plan 3.3)", () => {
     expect(liveNavItems.find((entry) => entry.to === "/curva")?.labelKey).toBe("nav.curva");
   });
 
-  it("with the build switch off the bar's hook hands back the very same array", () => {
-    // Called outside React on purpose: with the build off it is a plain function, no hook.
-    expect(usePrimaryNavItems()).toBe(primaryNavItems);
+  it("with the build switch on the bar's hook is the live-aware one", () => {
+    // Not called: with the build on it reads the status through React Query, so it needs React.
+    expect(MANAGER_CARD_BUILD).toBe(true);
+    expect(usePrimaryNavItems.name).toBe("useLiveAwareNavItems");
   });
 });
 
