@@ -168,7 +168,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
     expect(code(script.slice(0, firstWrite))).not.toContain("lifecycle_tick_enabled");
   });
 
-  test("requires the newest recorded migration to be the last repository migration before ours", () => {
+  test("requires the newest recorded migration to be the removal of public AI notices (20261010073509), the last repository migration before ours", () => {
     const firstWrite = script.indexOf("insert into supabase_migrations.schema_migrations");
     const expected = "20261010073509";
     const message =
@@ -202,11 +202,9 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       .sort();
     const first = repository.findIndex((file) => file.startsWith(MIGRATIONS[0].version));
     expect(first).toBeGreaterThan(0);
-    // PR #396 (20261010073509_no_public_ai_notices.sql) is already applied on production but
-    // may not be on this branch's base yet. Until that file is in the repository the last
-    // file before ours is the compact story labels; once it lands it must be the one before ours.
-    const noticesFile = repository.find((file) => file.startsWith(expected));
-    expect(repository[first - 1].slice(0, 14)).toBe(noticesFile ? expected : "20261010055425");
+    // The last repository file before ours is PR #396's removal of public AI notices
+    // (20261010073509_no_public_ai_notices.sql); it has no apply script of its own.
+    expect(repository[first - 1].slice(0, 14)).toBe(expected);
     // Ours are consecutive in the repository, so nothing else sits between them.
     expect(
       repository.slice(first, first + MIGRATIONS.length).map((file) => file.slice(0, 14)),
@@ -219,7 +217,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       "20261009195943",
       "20261009211234",
       "20261010055425",
-      ...(noticesFile ? [expected] : []),
+      expected,
     ]) {
       expect(repository.some((file) => file.startsWith(version))).toBe(true);
       expect(script.slice(0, script.indexOf("begin;"))).toContain(version);

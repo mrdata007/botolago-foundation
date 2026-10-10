@@ -546,7 +546,7 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    every earlier migration already applied (173 rows, newest
    `20261010073509`), so on production only this PR's apply script remains and
    (a) to (f) above are history there. The guard requires `20261010073509`;
-   the file is in the repository only once PR #396 is merged to `main`.
+   the file (`supabase/migrations/20261010073509_no_public_ai_notices.sql`) is on `main`, PR #396 having merged.
    **Then the read API apply script,**
    `scripts/backend/apply-20261010120000-manager-card-api-v2.sql` (migrations
    `20261010120000` to `20261010120300`). It changes nothing anyone sees: it

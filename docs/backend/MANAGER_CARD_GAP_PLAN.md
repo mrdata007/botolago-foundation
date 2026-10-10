@@ -729,8 +729,8 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
   - `supabase_migrations.schema_migrations` has all five `20261008123000…123400` and none of the
     four new versions;
   - the newest recorded migration is **exactly `20261010073509`** (the removal of public AI notices,
-    PR #396, applied on production, no apply script: the last repository migration before these four
-    once #396 is on `main`), checked after the "none of the four
+    PR #396, on `main`, applied on production, no apply script: the last repository migration before
+    these four), checked after the "none of the four
     is recorded" test so a re-run says so. `20261009091728` (PR #384) wraps
     `app_private.ops_health_checks()` first and `20261010120300` wraps it again, so the migrations
     must go in repository order. The chain is #381's five, then `apply-fantasy-durable-progression.sql`
