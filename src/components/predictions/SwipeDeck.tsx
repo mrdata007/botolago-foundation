@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, type ReactNode } from "react";
 
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 export interface SwipeSlide {
@@ -46,7 +47,7 @@ export function SwipeDeck({
 
   const goTo = (index: number) => {
     const slide = scroller.current?.children[index] as HTMLElement | undefined;
-    slide?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+    slide?.scrollIntoView({ behavior: scrollBehavior(), block: "nearest", inline: "start" });
   };
 
   const slideLabel = (index: number) =>

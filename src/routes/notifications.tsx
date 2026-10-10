@@ -17,7 +17,15 @@ import { useAuth } from "@/auth/AuthProvider";
 import { authOutlineClass } from "@/components/auth/auth-classes";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { AppShell } from "@/components/shell/AppShell";
-import { ui, UiButton, UiCard, UiChip, UiLinkButton, UiPageTitle } from "@/components/ui-kit";
+import {
+  ui,
+  UiButton,
+  UiCard,
+  UiChip,
+  UiLinkButton,
+  UiPageTitle,
+  UiSkeleton,
+} from "@/components/ui-kit";
 import type { NotificationCardDto, NotificationCategory } from "@/backend/notifications/contracts";
 import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
@@ -144,9 +152,9 @@ function Inbox() {
       {inboxQ.isError ? (
         <ErrorState onRetry={() => void inboxQ.refetch()} />
       ) : inboxQ.isPending ? (
-        <UiCard padding="lg" className="animate-pulse motion-reduce:animate-none">
-          <div className="h-4 w-1/2 rounded bg-[color:var(--ui-surface-sunken)]" />
-          <div className="mt-3 h-3 w-5/6 rounded bg-[color:var(--ui-surface-sunken)]" />
+        <UiCard padding="lg">
+          <UiSkeleton className="h-4 w-1/2" />
+          <UiSkeleton className="mt-3 h-3 w-5/6" />
         </UiCard>
       ) : cards.length === 0 ? (
         <EmptyState>

@@ -587,7 +587,7 @@ The kit's sizes are fixed pixel steps at every width. Two places scale with the 
 - **[Inconsistent]** The 672px column is often written as a literal width (`max-w-2xl`) instead of the reading-column token.
 - **[Inconsistent]** Two different ways of centring an absolutely placed element are in use.
 - **[Inconsistent]** Carousel dot buttons in News and Pronostics are 24×32px, under the 44px floor.
-- **[Inconsistent]** Most JavaScript smooth scrolls do not check reduced motion. Only the admin editor checks it, inline; the shared reduced-motion helper in `src/lib/motion.ts` is not used for scrolling.
+- JavaScript smooth scrolls take their `behavior` from `scrollBehavior()` in `src/lib/motion.ts`, so they jump instead of gliding under reduced motion (the admin editor still checks it inline).
 - **[Inconsistent]** Two text links end in a literal "→" typed after the label: the Home link to the latest results or the calendar (`src/routes/index.tsx:614`) and the matches day link (`src/routes/matches.index.tsx:550`). A typed arrow is text, not an icon, so the mirroring rule does not reach it, and in Arabic it points backwards.
 - **[Unverified]** An Arabic article opened from the French interface is an Arabic subtree in a French page. The Arabic font switch is keyed to the page, so the body may fall back to a system Arabic face.
 

@@ -24,6 +24,15 @@ export function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/**
+ * The `behavior` for a scroll started from script: a glide, or a jump when the
+ * reader asked for less motion. The stylesheet's reduced-motion rule cannot do
+ * this, because an explicit `behavior: "smooth"` in script wins over it.
+ */
+export function scrollBehavior(): ScrollBehavior {
+  return prefersReducedMotion() ? "auto" : "smooth";
+}
+
 /** A motion token's value in milliseconds, read from the page, or `fallback`. */
 export function tokenMs(name: string, fallback: number): number {
   if (typeof document === "undefined") return fallback;
