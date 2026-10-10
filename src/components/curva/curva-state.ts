@@ -19,7 +19,8 @@ import type { MyCardDto } from "@/backend/manager-card/contracts";
 import type { FantasyHubAudience } from "@/components/fantasy/fantasy-hub-layout";
 import { nextDeadlineAfter } from "@/components/fantasy/gameweek-presentation";
 import type { FantasyScreenPhase } from "@/components/fpl/useFantasyScreen";
-import { TIER_CODES, type TierCode } from "@/components/manager-card/types";
+import { filledStats } from "@/components/manager-card/copy";
+import { STAT_CODES, TIER_CODES, type TierCode } from "@/components/manager-card/types";
 import type { Gameweek } from "@/types/domain";
 
 /* ------------------------------------------------------------------------------------------ */
@@ -113,6 +114,13 @@ export interface CardView {
   tier: TierCode | null;
   /** The season label the shown number belongs to. */
   numberSeason: string;
+  /** How many of the four statistics this season's card has filled (the server's values). */
+  statsFilled: number;
+}
+
+/** How many of the card's four statistics are filled: what an `insufficient` card is short of. */
+export function cardStatsFilled(card: Pick<MyCardDto, "stats">): number {
+  return filledStats(STAT_CODES.map((code) => card.stats[code].value));
 }
 
 export function cardView(card: MyCardDto): CardView {
@@ -125,6 +133,7 @@ export function cardView(card: MyCardDto): CardView {
     ovr: newSeason ? (card.previousSeason?.ovr ?? null) : card.ovr,
     tier: newSeason ? (card.previousSeason?.tier ?? null) : card.tier,
     numberSeason: newSeason ? (card.previousSeason?.label ?? card.season.label) : card.season.label,
+    statsFilled: cardStatsFilled(card),
   };
 }
 
@@ -180,8 +189,11 @@ export type FormingLine =
   | { kind: "eve"; gw: number }
   /** That journée's matches are done and it is not final: « J7 terminée, pas encore définitive. » */
   | { kind: "over"; gw: number }
-  /** The minimum is reached and a statistic is still missing. */
-  | { kind: "insufficient" }
+  /**
+   * The minimum is reached and too few statistics are filled for a number: the block counts the
+   * statistics (« 2/4 »), never the full journée counter.
+   */
+  | { kind: "insufficient"; statsFilled: number }
   /** The season ended before the first note: it comes next season. */
   | { kind: "late"; nextSeason: string | null }
   /** No round is known: the journées the server listed (`gws`), or the first of them. */
@@ -215,7 +227,9 @@ function formingLine(card: MyCardDto, ctx: RoundContext): FormingLine {
   const min = card.minRated;
   // A season that is over keeps no forming display: it says so (« elle viendra en 2027/28 »).
   if (card.seasonClosed) return { kind: "late", nextSeason: nextSeasonLabel(card.season.label) };
-  if (card.ratingState === "insufficient") return { kind: "insufficient" };
+  if (card.ratingState === "insufficient") {
+    return { kind: "insufficient", statsFilled: cardStatsFilled(card) };
+  }
 
   const listed = listedRounds(card);
   if (counted === 0 && listed.length > 0) return { kind: "first_counted", gw: listed[0]! };

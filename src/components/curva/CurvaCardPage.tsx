@@ -90,6 +90,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
             provisional={card.provisional && !view.newSeason}
             counted={card.gameweeksCounted}
             min={card.minRated}
+            statsFilled={view.statsFilled}
             season={view.newSeason ? view.numberSeason : null}
             formingLabel={moments.m3.label}
           />

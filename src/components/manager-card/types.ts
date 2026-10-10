@@ -69,6 +69,12 @@ export interface CardStrings {
     cardOf: string;
     noRating: string;
     counted: (k: number, n: number) => string;
+    /**
+     * « Statistiques remplies : 2 sur 4 », bare digits: said instead of the journée count when
+     * every journée is counted and the number waits for a statistic. Optional, so a renderer's
+     * own strings need not carry it; without it the label says the journée count.
+     */
+    statsFilled?: (k: number, n: number) => string;
     separator: string; // ", " / "، "
   };
 }

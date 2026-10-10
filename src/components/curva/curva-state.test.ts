@@ -198,7 +198,11 @@ describe("« Cette journée » (M3b sub-states and the rated line)", () => {
 
   it("says the note waits for a statistic at 3 of 3", () => {
     const block = roundBlock(card("insufficient3"), ctx());
-    expect(block.kind === "forming" && block.line.kind).toBe("insufficient");
+    // CAP and SEL are filled: 2 of the 4 statistics, what the block counts instead of « 3/3 ».
+    expect(block.kind === "forming" && block.line).toEqual({
+      kind: "insufficient",
+      statsFilled: 2,
+    });
   });
 
   it("names the journées the server listed when no round is known", () => {

@@ -1,7 +1,13 @@
 import type { ReactNode } from "react";
 
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
-import { useCardCopy } from "@/components/manager-card/copy";
+import {
+  CARD_STAT_TOTAL,
+  OVR_MIN_STATS,
+  useCardCopy,
+  useMomentCopy,
+} from "@/components/manager-card/copy";
+import { fill } from "@/components/manager-card/interpolate";
 import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
 import { ui } from "@/components/ui-kit";
@@ -26,7 +32,11 @@ const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
  * is 22 px taller and whose lines are taller, and whose stage gives back 40 px of padding for it).
  * 236 px keeps the next-round line 16 px or more above the bottom bar in both languages (19.9 px in
  * French, 27 px in Arabic) for every height from 750 px up to where the card reaches its 296 px
- * (a window of about 860 px); below 750 px the card is at its 232 px floor and the line ends 7 px (French)
+ * (a window of about 860 px) for a rated card. A card with no number puts the rating line in a text
+ * box (`RatingLine`), measured at 390 x 844 on 2026-10-10: the forming box is 14 px taller than the
+ * bare line (the next-round line clears the bar by 6 px in French, 13 px in Arabic), and the box of
+ * a card waiting for a statistic, two lines, ends that line 39 px (French) and 15 px (Arabic) under
+ * the bar's top, one short scroll away; the card keeps its size in both. Below 750 px the card is at its 232 px floor and the line ends 7 px (French)
  * and 8 px (Arabic) above the bar at 740 px, and under it from about 730 px down.
  */
 const FIT_HEIGHT_WIDTH =
@@ -127,10 +137,20 @@ export function CardStage({
 /* ------------------------------------------------------------------------------------------ */
 
 /**
- * Under the card, in text, always: « 84 OVR · PRO » and the « Provisoire » pill, or, while the card
- * is forming, « Carte en formation · 1/3 ». Ordinary DOM, so the number is on screen the moment
- * the data is, before the renderer's chunk has loaded. A new season that has no number of its own
- * yet shows last season's, with that season's label beside it.
+ * Under the card, in text, always: « 84 OVR · PRO » and the « Provisoire » pill. A new season that
+ * has no number of its own yet shows last season's, with that season's label beside it.
+ *
+ * With no number the line is a text box (a bordered, filled, rounded callout), so the waiting is
+ * read as a state and not as a missing figure:
+ *
+ *   - while the journées are still being counted: « Carte en formation · 1/3 »;
+ *   - once they are all counted but fewer than `OVR_MIN_STATS` of the four statistics are filled
+ *     (the server's `insufficient`): « Statistiques remplies · 2/4 » and the sentence that says
+ *     the note comes with 3 of 4. A full journée counter (« 2/2 ») with no number reads as broken,
+ *     so it is never shown in that state.
+ *
+ * Ordinary DOM, so the words are on screen the moment the data is, before the renderer's chunk
+ * has loaded.
  */
 export function RatingLine({
   ovr,
@@ -138,6 +158,7 @@ export function RatingLine({
   provisional,
   counted,
   min,
+  statsFilled,
   season,
   formingLabel,
 }: {
@@ -146,30 +167,60 @@ export function RatingLine({
   provisional: boolean;
   counted: number;
   min: number;
+  /** How many of the four statistics are filled (`filledStats`). */
+  statsFilled: number;
   /** The season the number belongs to, shown when it is not the current one. */
   season?: string | null;
   formingLabel: string;
 }) {
   const copy = useCardCopy();
+  const moments = useMomentCopy();
   if (ovr === null) {
+    // Every journée the rules ask for is counted and there is still no number: what is missing
+    // is a statistic (`ratingState: "insufficient"`), not a journée.
+    const waitsForStats = counted >= min;
     return (
-      <p
-        className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1"
+      <div
+        className={cn(
+          "w-full max-w-[296px] px-4 py-1.5 text-center md:max-w-[336px]",
+          ui.surface.card,
+          ui.rule.all,
+        )}
         data-testid="curva-rating-line"
+        data-waiting={waitsForStats ? "stats" : "rounds"}
       >
-        <span className={cn(ui.display.team, ui.tone.default)}>{formingLabel}</span>
-        <span aria-hidden className={cn(ui.display.team, ui.tone.muted)}>
-          ·
-        </span>
-        <span className={cn(ui.score.md, ui.tone.default)}>
-          <span aria-hidden>
-            <Figure>
-              {counted}/{min}
-            </Figure>
+        <p className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-0.5">
+          <span className={cn(ui.display.team, ui.tone.default)}>
+            {waitsForStats ? copy.statsFilled : formingLabel}
           </span>
-          <span className="sr-only">{copy.countedA11y(counted, min)}</span>
-        </span>
-      </p>
+          <span aria-hidden className={cn(ui.display.team, ui.tone.muted)}>
+            ·
+          </span>
+          <span className={cn(ui.score.md, ui.tone.default)}>
+            <span aria-hidden>
+              {waitsForStats ? (
+                <Figure>
+                  {statsFilled}/{CARD_STAT_TOTAL}
+                </Figure>
+              ) : (
+                <Figure>
+                  {counted}/{min}
+                </Figure>
+              )}
+            </span>
+            <span className="sr-only">
+              {waitsForStats
+                ? copy.statsFilledA11y(statsFilled, CARD_STAT_TOTAL)
+                : copy.countedA11y(counted, min)}
+            </span>
+          </span>
+        </p>
+        {waitsForStats ? (
+          <p className={cn("mt-0.5 text-pretty", ui.text.secondary, ui.tone.muted)}>
+            {fill(moments.m3.insufficient, { need: OVR_MIN_STATS, total: CARD_STAT_TOTAL })}
+          </p>
+        ) : null}
+      </div>
     );
   }
   return (

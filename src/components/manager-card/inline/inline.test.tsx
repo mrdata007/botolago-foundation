@@ -322,9 +322,15 @@ describe("HubCardBlockView", () => {
     ).not.toContain("Provisoire");
   });
   it("says the minimum is reached and the number waits for a statistic", async () => {
-    expect(
-      text(await render(<HubCardBlockView card={card("insufficient3")} gameweek={GAMEWEEK} />)),
-    ).toContain("Les journées nécessaires sont comptées. La note attend encore une statistique.");
+    const plain = text(
+      await render(<HubCardBlockView card={card("insufficient3")} gameweek={GAMEWEEK} />),
+    );
+    expect(plain).toContain("2/4");
+    expect(plain).toContain("Statistiques remplies");
+    expect(plain).toContain("Votre note s’affiche dès que 3 statistiques sur 4 sont remplies.");
+    // Every journée is counted: the full journée counter with no number reads as broken.
+    expect(plain).not.toContain("3/3");
+    expect(plain).not.toContain("Carte en formation");
   });
   it("leads a late signer with the late line and « 1/3 · 2026/27 » beneath, with no title and no big counter", async () => {
     const late = card("forming1", { seasonClosed: true });
