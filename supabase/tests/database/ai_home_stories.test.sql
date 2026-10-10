@@ -23,6 +23,10 @@ begin
   result:=api.service_complete_ai_home_story((job->>'id')::uuid,'test',1024,1536);
   story_id:=(result->>'id')::uuid;
   if result->>'status'<>'published' or story_id is null then raise exception 'publication failed'; end if;
+  if not exists(select 1 from app.home_stories h join app.media_assets m on m.id=h.media_asset_id
+    where h.id=story_id and h.alt_fr='Illustration : '||h.title_fr
+      and h.alt_ar='صورة توضيحية: '||h.title_ar and m.alt_text=h.alt_fr
+      and h.credit is null and m.credit is null) then raise exception 'public AI notice returned'; end if;
   if api.service_complete_ai_home_story((job->>'id')::uuid,'test',1024,1536)<>result then raise exception 'completion not idempotent'; end if;
   if not exists(select 1 from jsonb_array_elements(api.home_stories()) s where s->>'id'=story_id::text and s->>'generated'='true' and s->>'destination' is null) then raise exception 'public generated dto missing'; end if;
   if exists(select 1 from jsonb_array_elements(api.home_stories()) s where s ? 'sourceName') then raise exception 'private source attribution exposed'; end if;
