@@ -115,8 +115,8 @@ already use: `SUPABASE_ACCESS_TOKEN` and `vars.SUPABASE_STAGING_PROJECT_REF`
 (Supabase Management API, one `select`), plus `RAPIDAPI_KEY` for SofaScore. No
 new secret. `scripts/backend/sofascore-id-bridge-fetch.ts` writes `events.json`
 (every page of `get-last-matches` and `get-next-matches` for 937/102220),
-`snapshot.json` and `ids.json`. The Botola 2026/27 season is the single
-`botola-pro*` season labelled 2026/27; any other count stops the run. Logs hold
+`snapshot.json` and `ids.json`. The Botola 2026/27 season is the one
+SportsMonks maps as season `28647`; any other count stops the run. Logs hold
 counts and ids only, no player names.
 
 Three modes (input `mode`):

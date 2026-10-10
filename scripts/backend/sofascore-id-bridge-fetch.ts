@@ -10,8 +10,8 @@
  *   event id and reduced to the fields the bridge reads.
  * - Snapshot: one SELECT on staging through the Supabase Management API
  *   (fixtures, rounds, existing sofascore mappings of the season). With no
- *   ids given, the season is the one labelled 2026/27 of a `botola-pro*`
- *   competition; anything but exactly one match stops the run.
+ *   ids given, the season is the one SportsMonks maps as season 28647
+ *   (Botola Pro 2026/27); anything but exactly one match stops the run.
  *
  * Writes `events.json`, `snapshot.json` and `ids.json` into --out-dir. Prints
  * counts and ids only. Refuses the production project.
@@ -97,9 +97,14 @@ export async function fetchAllEvents(client: Pick<RapidApiClient, "getJson">) {
   return { events: [...byId.values()], pages };
 }
 
-const RESOLVE_SQL = `select s.id as season_id, c.id as competition_id
-from app.seasons s join app.competitions c on c.id = s.competition_id
-where c.slug like 'botola-pro%' and s.label in ('2026/27', '2026-27', '2026/2027')`;
+// Botola Pro 2026/27 is found through the season SportsMonks already maps
+// (season 28647, the current season the SportsMonks jobs are pinned to), not
+// through names or labels, which differ between environments.
+const RESOLVE_SQL = `select s.id as season_id, s.competition_id
+from app_private.football_provider_mappings m
+join app.seasons s on s.id = m.internal_entity_id
+where m.provider_name = 'sportsmonks' and m.entity_type = 'season'
+  and m.external_id = '28647' and m.active`;
 
 export const snapshotSql = (seasonId: string) => {
   if (!UUID.test(seasonId)) throw new Error("sofascore_fetch_invalid: season id is not a uuid");
