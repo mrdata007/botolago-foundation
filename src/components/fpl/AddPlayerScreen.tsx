@@ -24,7 +24,7 @@ import { findClub } from "./club-lookup";
 import { pointsUnit } from "@/lib/points-unit";
 import { positionWord, transferCostLabel } from "./picker-copy";
 
-type SortKey = "form" | "price" | "selected" | "points";
+export type SortKey = "form" | "price" | "selected" | "points";
 
 /**
  * Why a row cannot be picked. The screen never decides any of these: the
@@ -99,6 +99,7 @@ export function AddPlayerScreen({
   gameweek,
   clubCounts,
   maxPerClub = SQUAD_RULES.maxPerClub,
+  initialSort = "price",
 }: {
   players: FantasyPlayer[];
   clubs: Club[];
@@ -136,6 +137,12 @@ export function AddPlayerScreen({
   /** Players per club in the squad after this pick, for "Club 3/3". */
   clubCounts?: ReadonlyMap<string, number>;
   maxPerClub?: number;
+  /**
+   * The order the list opens in. A first selection opens on the season's
+   * points (the price order put the dearest players first, which says nothing
+   * about who scores); transfers keep the price order.
+   */
+  initialSort?: SortKey;
 }) {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -147,7 +154,7 @@ export function AddPlayerScreen({
   const [pos, setPos] = useState<Position | "">("");
   const [maxPrice, setMaxPrice] = useState<number | "">("");
   const [clubId, setClubId] = useState<string>("");
-  const [sort, setSort] = useState<SortKey>("price");
+  const [sort, setSort] = useState<SortKey>(initialSort);
   const [query, setQuery] = useState("");
   const [hideBlocked, setHideBlocked] = useState(false);
   const [playsOnly, setPlaysOnly] = useState(false);

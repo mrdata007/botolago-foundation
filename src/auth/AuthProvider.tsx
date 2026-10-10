@@ -27,13 +27,25 @@ interface AuthPromptState {
   open: boolean;
   reason?: string;
   onCancel?: () => void;
+  /**
+   * Which way in the prompt leads with. "login" (the default) puts "Se
+   * connecter" first; "register" puts "Créer un compte gratuit" first, for
+   * a moment that is about someone new, such as saving a first Fantasy squad.
+   */
+  primary?: "login" | "register";
+}
+
+export interface RequireAuthOptions {
+  reason?: string;
+  onCancel?: () => void;
+  primary?: AuthPromptState["primary"];
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
   profileComplete: boolean;
-  requireAuth: (action: () => void, opts?: { reason?: string; onCancel?: () => void }) => void;
+  requireAuth: (action: () => void, opts?: RequireAuthOptions) => void;
   prompt: AuthPromptState;
   closePrompt: () => void;
   signOut: (opts?: { resetLocalData?: boolean }) => Promise<void>;
@@ -159,7 +171,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         default:
-          setPrompt({ open: true, reason: opts?.reason, onCancel: opts?.onCancel });
+          setPrompt({
+            open: true,
+            reason: opts?.reason,
+            onCancel: opts?.onCancel,
+            primary: opts?.primary,
+          });
       }
     },
     [router],
