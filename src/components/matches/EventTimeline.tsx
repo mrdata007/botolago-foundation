@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { ArrowDownUp, CircleAlert, HeartPulse } from "lucide-react";
 import type { MatchLineupDto } from "@/backend/football/contracts";
-import { EmptyState } from "@/components/common/States";
+import { MatchDataState } from "./MatchDataState";
 import { ui, UiChip } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
@@ -102,7 +102,7 @@ export function EventTimeline({
   const shown = pool.filter((event) => !PERIOD_TYPES.has(event.type) || event.id === halfTimeEnd);
 
   if (events.length === 0 || (shown.length === 0 && substitutionCount === 0)) {
-    return <EmptyState>{noEventsMessage(phase, t)}</EmptyState>;
+    return <MatchDataState phase={phase} message={noEventsMessage(phase, t)} />;
   }
 
   const names = new Map(

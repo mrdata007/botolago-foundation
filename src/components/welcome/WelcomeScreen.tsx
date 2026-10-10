@@ -13,6 +13,9 @@ interface Props {
 }
 
 /**
+ * Used by the pitch demo only (`demo/src/screens/Other.tsx`): the app itself
+ * now opens a first visit on the landing page (`src/components/landing`).
+ *
  * The onboarding splash: a full-bleed dark hero, deliberately a different
  * visual register from the app surface behind it.
  *

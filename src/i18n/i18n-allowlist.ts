@@ -26,6 +26,12 @@ export const IDENTICAL_ALLOWED = {
     "Sentence-final full stop of the consent notice, split out so the two document names can be links; a full stop is '.' in both languages.",
   "fantasy.stat.none":
     "BG-0071 — an en dash standing for 'no value yet' in a numeric stat cell. Punctuation, not copy; an Arabic-script substitute would read as a character rather than as an absent number.",
+  "card.ovr":
+    "A unit of the Manager Card's rating (« 84 OVR »): a unit / an identifier format, the same in both languages.",
+  "card.serial":
+    "The Manager Card's serial format (« BOT #482913 »): a unit / an identifier format, the same in both languages.",
+  "card.tier.homa":
+    "LASTREET is the tier's name, a Latin word in both languages, owner 2026-10-09. The tier code stays `homa`; the Arabic UI isolates the word left to right (`TierWord`).",
 } as const satisfies Partial<Record<TranslationKey, string>>;
 
 /** W2 — ar values that legitimately contain no Arabic script. */
@@ -38,4 +44,9 @@ export const NO_ARABIC_SCRIPT_ALLOWED = {
   "auth.register.accept_terms.tail": "A full stop carries no script.",
   "auth.terms_notice.tail": "A full stop carries no script.",
   "fantasy.stat.none": "An en dash carries no script.",
+  "card.ovr": "A unit written in Latin letters in both languages (a unit / an identifier format).",
+  "card.serial":
+    "An identifier format, Latin letters and digits in both languages (a unit / an identifier format).",
+  "card.tier.homa":
+    "LASTREET is the tier's name, a Latin word in both languages, owner 2026-10-09; the Arabic UI keeps it in Latin script inside a left-to-right isolate.",
 } as const satisfies Partial<Record<TranslationKey, string>>;

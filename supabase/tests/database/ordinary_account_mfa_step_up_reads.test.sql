@@ -160,7 +160,11 @@ begin
     'Reads Eleven ' || p_n, current_setting('test.selection')::jsonb, pg_temp.id(500 + p_n));
   perform api.follow_team(pg_temp.id(101));
   perform api.follow_competition(pg_temp.id(2));
-  perform api.request_account_deletion();
+  -- The request row only, as a fixture: since 20261006143700 asking through
+  -- api.request_account_deletion() also closes the account at once, and the
+  -- reads below need a live one. Its step-up is covered in
+  -- ordinary_account_mfa_step_up.test.sql.
+  insert into app.account_deletion_requests (user_id) values (p_user);
   perform api.save_article(pg_temp.id(9));
   perform api.save_predictions(jsonb_build_array(jsonb_build_object(
     'fixtureId', pg_temp.id(401), 'home', 1, 'away', 0)));
@@ -352,6 +356,7 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          'admin_get_analytics_overview', 'admin_get_approval', 'admin_get_fantasy_prize_settings',
          'admin_get_revocation_worker_health', 'admin_get_session_revocation_status',
          'admin_get_staff_principal', 'admin_get_user', 'admin_list_active_assignments',
+         'admin_home_stories', 'admin_save_home_story', 'admin_publish_home_story',
          'admin_list_approval_queue', 'admin_list_assignment_history', 'admin_list_audit_events',
          'admin_list_audit_events_v2', 'admin_list_fantasy_prize_flags',
          'admin_list_fantasy_prize_winners', 'admin_list_fantasy_prizes',
@@ -405,8 +410,8 @@ select extensions.is(
    where n.nspname = 'api'
      and p.prosrc ~ 'perform app_private\.assert_mfa_step_up\(\);'
      and has_function_privilege('authenticated', p.oid, 'execute')),
-  76,
-  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000), following a player (20260926150000) and the match-reminders read (20261002110000) run it'
+  81,
+  'the 50 functions of point 5, the two account-deletion functions, the two Pépites weekly email functions (20260926110100), the Pépites error report and 16 staff functions (20260926120000), the photo upload paths (20260926130000), the two admin lists (20260926140000), following a player (20260926150000), the match-reminders read (20261002110000) and revoking a public gameweek recap (20261005130000), the three Manager Card reads and the acknowledgement (20261010120200) run it'
 );
 select extensions.is(pg_temp.unguarded_api_relations(), '{}'::text[],
   'every api view a signed-in session can read refuses without the step-up, and no other api relation but live scores is readable');

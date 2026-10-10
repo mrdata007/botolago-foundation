@@ -394,6 +394,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/notification-email-dispatch/index.ts"
 
+# Sends queued push notifications (Android through FCM, iPhone through APNs).
+# Same scheduler-token check as the email dispatcher; it claims nothing while
+# app_private.notification_push_settings is off, which is how it ships.
+[functions.notification-push-dispatch]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/notification-push-dispatch/index.ts"
+
 [functions.football-live-refresh]
 enabled = true
 verify_jwt = false
@@ -407,6 +415,13 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/ops-alert-email/index.ts"
 
+# AI-written Botola Pro 1 content (app_private.ai_content_tick). Same
+# scheduler-token check as ops-alert-email; the feature ships switched off.
+[functions.ai-content-generate]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ai-content-generate/index.ts"
+
 # The List-Unsubscribe target mail providers POST to (RFC 8058 one-click). It
 # carries no credentials by design; the per-email token is the authority and
 # it can only turn email off.
@@ -414,6 +429,14 @@ entrypoint = "./functions/ops-alert-email/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/notification-email-unsubscribe/index.ts"
+
+# Erases the accounts whose deletion has fallen due (app_private.account_deletion_tick).
+# Same scheduler-token check as the dispatchers above; it claims nothing while
+# app_private.account_deletion_settings is off, which is how it ships.
+[functions.account-deletion-worker]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/account-deletion-worker/index.ts"
 
 # Pépites: a staff member's player photo and signed release, into the two
 # private buckets (the caller's JWT decides, through the database).
@@ -463,3 +486,8 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+[functions.home-story-generate]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/home-story-generate/index.ts"

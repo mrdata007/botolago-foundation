@@ -21,6 +21,20 @@ describe("pageviewPath: what a page view may say about the address", () => {
     expect(pageviewPath(`${ORIGIN}/matches`)).toBe("/matches");
   });
 
+  test("Curva: a league id and the development fixture never leave the phone", () => {
+    expect(
+      pageviewPath(
+        `${ORIGIN}/curva/les-votres?ligue=3c000005-0000-4000-8000-000000000001&mc=rated`,
+      ),
+    ).toBe("/curva/les-votres");
+    expect(
+      pageviewPath(`${ORIGIN}/curva/saisons?saison=3c000001-0000-4000-8000-000000000001`),
+    ).toBe("/curva/saisons");
+    expect(pageviewPath(`${ORIGIN}/curva?mc=founder&utm_source=whatsapp`)).toBe(
+      "/curva?utm_source=whatsapp",
+    );
+  });
+
   test("never sends what follows '#': an invite code, a sign-in's tokens", () => {
     const path = pageviewPath(
       `${ORIGIN}/pronostics/ligues/rejoindre#code=A1B2C3D4E5F60718293A4B5C6D7E8F90`,
@@ -70,6 +84,13 @@ function masked(path: string): string {
   const hit = patterns.find((p) => new RegExp(`^${p.replace(/\*/g, "[^/]+")}$`).test(path));
   return hit ?? path;
 }
+
+describe("public gameweek recaps", () => {
+  test("a recap page is counted without its public id, in page views and in events", () => {
+    expect(pageviewPath(`${ORIGIN}/journee/Q6ca7Y2qOKt683etPF0qdQ?lang=ar`)).toBe("/journee/*");
+    expect(masked("/journee/Q6ca7Y2qOKt683etPF0qdQ")).toBe("/journee/*");
+  });
+});
 
 describe("the script's masks: what an event may say about the address", () => {
   test("a league page is reported without its id", () => {

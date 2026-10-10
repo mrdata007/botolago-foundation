@@ -1,0 +1,89 @@
+name: Staging V2 supporting-dependency guard rehearsal (rolled back, never commits)
+
+# Rehearses the guard migration 20261003120000 on BotolaGO Staging V2, exactly: the one
+# prerequisite staging lacks (20261002100000), then the migration with its plain DROP FUNCTION,
+# then the repository's own pgTAP file for the guard on synthetic accounts and data, all in ONE
+# transaction that a deliberate error rolls back. Staging is read before and after and must be
+# identical. There is no commit mode, and no other migration is applied.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact main commit approved for this rehearsal
+        required: true
+        type: string
+      confirmation:
+        description: Type REHEARSE_SUPPORTING_DEPENDENCY_STAGING
+        required: true
+        type: string
+
+# Shared with the other Staging V2 writers: one writer at a time (AGENTS.md).
+concurrency:
+  group: phase6-staging-load-test
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  rehearse:
+    name: Rehearse the supporting-dependency guard on Staging V2 and verify rollback
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging-load-test
+    env:
+      CONFIRMATION: ${{ inputs.confirmation }}
+      EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+
+    steps:
+      - name: Enforce dispatch guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+            printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          fi
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "GITHUB_WORKFLOW_RERUN_FORBIDDEN"; exit 2; }
+          [[ "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the current main commit."; exit 2; }
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] || { echo "Rehearsal may run only from main."; exit 2; }
+          [[ "$CONFIRMATION" == "REHEARSE_SUPPORTING_DEPENDENCY_STAGING" ]] || { echo "Invalid confirmation."; exit 2; }
+          [[ "${SUPABASE_STAGING_PROJECT_REF:-}" == "srdrflfrfpwixsllveid" ]] || { echo "Staging project-ref guard failed."; exit 2; }
+          [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]] || { echo "Protected credential injection failed."; exit 2; }
+          echo "Dispatch guards: PASS"
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: No other staging writer is running
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 scripts/backend/staging-writer-guard.py
+
+      - name: Rehearse (rolled back) and verify staging is unchanged
+        shell: bash
+        run: |
+          set -euo pipefail
+          export EVIDENCE_DIR="$RUNNER_TEMP/staging-supporting-dependency-rehearsal-evidence"
+          install -d -m 0700 "$EVIDENCE_DIR"
+          python3 scripts/backend/staging-mapping-supporting-dependency-rehearsal.py
+
+      - name: Upload sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: staging-supporting-dependency-rehearsal-${{ github.run_id }}
+          path: ${{ runner.temp }}/staging-supporting-dependency-rehearsal-evidence
+          if-no-files-found: warn
+          retention-days: 14

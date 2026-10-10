@@ -134,6 +134,70 @@ null, false);` before a write that touches fixtures or notifications, and
    schedule; it runs only when someone runs it, and it writes to the
    database (published photos, deletions) and to storage. Treat a run as a
    write.
+   Where migration 20261006143700 is applied, pg_cron also runs
+   `account-deletion-tick` every hour at minute 23. It wakes the Edge
+   Function `account-deletion-worker`, which erases accounts whose deletion
+   is due: avatars in storage, then their Fantasy, Pronostics, notification
+   and identity rows and the Auth user. It writes only while switched on in
+   `app_private.account_deletion_settings`
+   ([ACCOUNT_DELETION_RUNBOOK.md](docs/backend/ACCOUNT_DELETION_RUNBOOK.md));
+   pause it with `select app_private.account_deletion_configure(false);`
+   before a write that touches those tables, and switch it back on
+   afterwards. Its companion `account-deletion-history-prune` runs daily
+   whatever the switch says: it deletes the tick's `cron.job_run_details`
+   rows older than 7 days and security-audit rows older than 365 days. Pause
+   it by name for a write that touches those tables, then set it back to
+   `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'account-deletion-history-prune'), active := false);`
+   Where migration 20261008123400 is applied, pg_cron also runs
+   `manager-card-tick` every 15 minutes. It recalculates the Manager Card of
+   every Fantasy manager from their finished gameweeks and writes
+   `app.manager_cards`, `app.manager_card_seasons`,
+   `app.manager_card_gameweeks`, `app_private.manager_card_evaluations` and
+   `app_private.manager_card_job_log`. It writes only while compute is
+   switched on in `app_private.manager_card_settings` and an active rules row
+   exists in `app_private.manager_card_rules`
+   ([MANAGER_CARD_OPERATIONS_RUNBOOK.md](docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md)).
+   Pause it before a write that touches Fantasy results, lineups, player
+   points, gameweeks, teams, transfers, profiles or the card tables. The
+   command below switches compute off and leaves the read switch as it is
+   (`null` means "leave it"); afterwards restore what it was, which is `true`
+   only if compute was on before:
+   `select app_private.manager_card_configure(false, null);`
+   `select app_private.manager_card_configure(true, null);`
+   Its companion `manager-card-history-prune` runs daily at 03:47 UTC whatever
+   the switch says: it deletes the tick's `cron.job_run_details` rows older
+   than 7 days and `app_private.manager_card_job_log` rows older than 180
+   days, and never touches the card tables. Pause it by name for a write that
+   touches those two tables, then set it back to `true`:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-history-prune'), active := false);`
+   Where migration 20261010120200 is applied, signed-in users also write
+   `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`)
+   while the read switch is on; that is ordinary app traffic, each user
+   writing only their own rows. For a write that touches that table, switch
+   reads off for its length and restore them afterwards (this hides Gradins
+   for that time):
+   `select app_private.manager_card_configure(null, false);`
+   `select app_private.manager_card_configure(null, true);`
+   Where migration 20261009195943 is applied, `ai-home-stories` runs at
+   minutes 4/14/24/34/44/54 and dispatches the asynchronous Edge Function
+   `home-story-generate`. It writes `app_private.ai_home_story_jobs`,
+   `app.home_stories`, `app.media_assets`, `app_private.editorial_audit_events`
+   and `news-media` storage (including `storage.objects`). Configuration writes
+   `app_private.ai_home_story_settings`. Before a write touching these or its
+   source news stories/editions, record the current enabled flag and daily cap,
+   then pause with `select app_private.ai_home_stories_configure(false);`.
+   Pausing blocks claims and publication; stopping pg_cron alone does not stop
+   a dispatched Edge worker. Inspect jobs with `status = 'generating'`, their
+   `created_at`, and Edge invocation logs; wait for in-flight workers to finish
+   before writing. A crashed worker can leave a generating row after its
+   ten-minute lease expires (paused claims do not expire it): confirm the worker
+   has ended in Edge logs as well as the expired lease, rather than assuming
+   an idle cron means an idle writer. Storage cleanup and failure recording can
+   still happen after a pause. Restore the recorded flag and cap with
+   `select app_private.ai_home_stories_configure(previous_enabled, previous_cap);`
+   only after the write completes. See
+   [AI_HOME_STORIES.md](docs/backend/AI_HOME_STORIES.md).
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 
@@ -149,3 +213,52 @@ writer, re-measure it after both have stopped before you report it. A number
 taken mid-race is not evidence.
 
 Production writes additionally follow the production rules in `CLAUDE.md`.
+
+## Public editorial rule
+
+The owner requires no AI authorship/generation notices on public articles or
+images, including titles, summaries, body text, captions, credits, badges,
+watermarks and alt text, in French, Arabic or any other language. Do not add
+phrases such as "written with artificial intelligence", "AI-generated" or
+"AI-assisted", or AI provider/model credits. Keep factual source attribution
+and private model/audit records. Apply `PUBLIC_EDITORIAL_RULE` in the article
+and image generation prompts and keep the article validation guard.
+
+## Screen work
+
+The owner set these rules on 2026-10-05 for all future approved screen work,
+including any change that refines an existing screen. Product context is in
+[`PRODUCT.md`](PRODUCT.md). The visual system is in
+[`docs/engineering/DESIGN_SYSTEM_V2.md`](docs/engineering/DESIGN_SYSTEM_V2.md)
+and the code.
+
+1. **Approved scope only.** These rules apply once the owner has approved the
+   screen work. They do not authorise any interface change during setup or a
+   read-only audit.
+2. **Straight in code.** Build directly in code, not from a generated picture.
+   `.impeccable/config.json` records this as `"buildPath": "code"`.
+3. **Inspect first, then write it down.** Before the first edit, inspect the
+   existing screen and write down three things in a brief committed on the
+   branch before any interface change (copy it into the draft pull request
+   description later):
+   - what must be preserved;
+   - the specific improvements being made;
+   - the visual and functional acceptance criteria.
+4. **Separate feature branch.** Implement the approved scope on its own
+   feature branch.
+5. **Validate before asking for review:**
+   - before/after screenshots;
+   - mobile and desktop checks;
+   - French and Arabic checks, including right-to-left layout;
+   - the relevant existing tests.
+
+   Measure the way `CLAUDE.md` (Evidence) describes.
+
+6. **Preserve BotolaGO's identity and business logic.** Fantasy rules, scoring,
+   the gameweek lifecycle and every other business rule stay as they are, and
+   so does the brand identity.
+7. **Draft pull request, then wait.** Open a draft pull request for review. Do
+   not merge it or deploy it without the owner's approval. Deploying covers
+   every path in [`docs/operations/DEPLOYMENT.md`](docs/operations/DEPLOYMENT.md):
+   Publish in Lovable for the website, applying migrations, deploying Edge
+   Functions, and merging to `main`, which sets GitHub Actions running.

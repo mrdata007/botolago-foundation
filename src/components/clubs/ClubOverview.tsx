@@ -230,7 +230,7 @@ function MatchRow({
   const home = clubById(match.homeClubId);
   const away = clubById(match.awayClubId);
   if (!home || !away) return null;
-  return <MatchCard match={match} home={home} away={away} variant={variant} />;
+  return <MatchCard match={match} home={home} away={away} variant={variant} showDate />;
 }
 
 /**
@@ -265,7 +265,7 @@ function MiniTableRow({
         "relative flex min-h-[var(--ui-row-min)] items-center gap-2.5 px-3.5 py-2",
         current
           ? cn(ui.club.tint, ui.edge.start)
-          : "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+          : "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
       )}
     >
       <span

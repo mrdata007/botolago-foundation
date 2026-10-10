@@ -153,7 +153,44 @@ twelve-argument one) was run as a rename of that function instead. Everything el
 execute with real reviewed Sofascore mappings) was run only on the local disposable database and in CI. Production's
 own rows were never touched.
 
+## Deployment preparation (owner-run, nothing commits)
+
+Merging the migration file to `main` applies nothing: no workflow, no integration and no
+build step applies a migration, and the Flashscore screen fails closed on a database that does not
+have it (the read function is missing, so every row stops before anything is sent; the ordinary
+queue's execute button also stops, because its early-warning read cannot be made).
+
+- **The exact script.** `scripts/backend/apply-20261003120000-mapping-supporting-dependency.sql`
+  wraps the migration's exact bytes (embedded, with its sha256 pinned and re-checked inside the
+  transaction before it runs): `begin`, preflight, the migration, postflight, `rollback`. The one real
+  apply is the same file with that single `rollback;` turned into `commit;`; nothing else changes.
+  Preflight refuses an already or partly applied state, any change to the six replaced functions, the
+  reviewed history, constraints, triggers, indexes, grants and row level security, an open proposal,
+  a Flashscore mapping, a busy session, and single-operator mode being off. The migration's `DROP
+FUNCTION` is plain: no CASCADE, no rename, no switched-off trigger.
+- **What it proves inside the transaction** (all read-only on production data): the nine functions are the
+  reviewed text with the reviewed grants; the old nine-argument compute function is gone, the
+  twelve-argument one is the only one and no legacy copy remains; existing grants, constraints, triggers,
+  indexes and row level security are unchanged; every existing proposal (explicit legacy columns), mapping,
+  candidate and observation is unchanged, and nothing was created; staff permissions, the mapping
+  settings, players, memberships, Fantasy state, automation and schedules are unchanged; every active
+  Sofascore mapping reads as reviewed through the new state function; and all 42 manifest rows (v2, hash
+  `f2eef95d...a286`): the supporting mapping is in the expected state, the server computes the same
+  fingerprint the manifest holds (the proposal row is built in memory exactly as propose builds it, and
+  never inserted), and none of the 11 held rows is among them.
+- **Rehearsal workflows** (manual dispatch only, owner actor, `main` only, exact commit, exact project,
+  pinned hashes, shared concurrency group, no retry, sanitized evidence, no commit mode):
+  `staging-mapping-supporting-dependency-rehearsal.yml` and
+  `production-mapping-supporting-dependency-rehearsal.yml`. A request that times out is classified from
+  its evidence (transport, database timeout, refused) and is never taken as proof of rollback: the
+  independent after-read decides.
+- **Staging rehearsal** applies only the one prerequisite staging lacks (`20261002100000`), then the
+  exact migration including its `DROP FUNCTION`, then runs this repository's pgTAP file for the guard on
+  synthetic accounts and data created inside the transaction, and ends in a deliberate error that rolls
+  everything back. Staging is read before and after and must be identical.
+
 ## Production
 
-Authorised to read and prepare only. Applying this migration to production is a separate owner
-decision (see `RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md`). Nothing here maps anyone.
+Applied on 2026-10-03 (run `37129695639`, commit `72704156`) and verified separately. See
+`docs/production/APPLIED_2026_10_03_FLASHSCORE_SUPPORTING_DEPENDENCY_GUARD.md`.
+Nothing here maps anyone; the 42 mappings are a separate owner decision.

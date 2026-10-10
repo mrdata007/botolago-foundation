@@ -399,6 +399,52 @@ export function buildStandings(
   };
 }
 
+/**
+ * How many fixtures Home's payload carries (live first, then by kick-off): the
+ * gameweek band's carousel shows the whole round, which is 8 matches, and 10
+ * is the most `api.football_home_matches` returns (BG-0155).
+ */
+export const HOME_MATCHES_LIMIT = 10;
+
+/**
+ * How many of those fixtures the lists that read the same payload show: Home's
+ * "À venir" and the landing page's "En ce moment". It is the 3 the payload
+ * itself carried before the carousel needed the round, so both lists keep
+ * exactly the rows they had.
+ */
+export const HOME_LIST_SIZE = 3;
+
+/**
+ * How many upcoming fixtures complete Home's payload when live fixtures fill
+ * it: enough for the rest of a round and the next (`api.football_upcoming_matches`
+ * takes 1 to 50).
+ */
+export const HOME_UPCOMING_LIMIT = 20;
+
+/**
+ * Home's payload: live first, then by kick-off. `football_home_matches` puts
+ * the live fixtures in the same ten rows, so with several live while the next
+ * round is already scheduled the round loses its last cards (three live and a
+ * round of eight return seven of the eight). When the payload is full and
+ * holds a live fixture, its upcoming part is read again from the upcoming list,
+ * which leaves the live ones out; postponed fixtures stay out, as in the home
+ * read. The first rows, which the lists show, are the same either way.
+ */
+export function completeHomeMatches<T extends Pick<MatchCardDto, "id" | "status">>(
+  home: readonly T[],
+  upcoming: readonly T[] | null,
+): T[] {
+  if (!upcoming) return [...home];
+  const live = inPlayFixtures(home);
+  const seen = new Set(live.map((fixture) => fixture.id));
+  return [
+    ...live,
+    ...upcoming.filter(
+      (fixture) => !seen.has(fixture.id) && presentationStatus(fixture.status) !== "postponed",
+    ),
+  ];
+}
+
 export const footballService = {
   async getSeasons(language: FootballLanguage, signal?: AbortSignal): Promise<FootballSeason[]> {
     return (await getFootballRepository().getSeasons(language, 12, requestContext(signal))).map(
@@ -417,7 +463,16 @@ export const footballService = {
     signal?: AbortSignal,
   ): Promise<FootballMatchCollection> {
     const repository = getFootballRepository();
-    const matches = await repository.getHomeMatches(language, 3, requestContext(signal));
+    const home = await repository.getHomeMatches(
+      language,
+      HOME_MATCHES_LIMIT,
+      requestContext(signal),
+    );
+    const full = home.length === HOME_MATCHES_LIMIT && inPlayFixtures(home).length > 0;
+    const upcoming = full
+      ? await repository.getUpcomingMatches(language, HOME_UPCOMING_LIMIT, requestContext(signal))
+      : null;
+    const matches = completeHomeMatches(home, upcoming);
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
   },
 
@@ -450,6 +505,34 @@ export const footballService = {
       : page.items;
     // The table is `getStandings`' job now: it has a tab of its own.
     return { matches: matches.map(toMatch), clubs: uniqueClubs(matches), standings: [] };
+  },
+
+  /**
+   * The days of a season on which a match has been played to the end, as
+   * competition-day keys, oldest first. For the empty states that point a
+   * reader at the latest results ("Derniers résultats : sam. 3 oct."): the
+   * same fixture list the table is worked out from, kept to the day of each
+   * finished match, so nothing but the days is held.
+   */
+  async getSeasonResultDays(
+    season: Pick<FootballSeason, "id" | "competitionId">,
+    language: FootballLanguage,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    const fixtures = await getFootballRepository().getSeasonFixtures(
+      season.competitionId,
+      season.id,
+      language,
+      requestContext(signal),
+    );
+    const days = new Set<string>();
+    for (const fixture of fixtures) {
+      const match = toMatch(fixture);
+      if (match.status === "finished" && !Number.isNaN(Date.parse(match.kickoff))) {
+        days.add(matchDayKey(new Date(match.kickoff)));
+      }
+    }
+    return [...days].sort();
   },
 
   /**

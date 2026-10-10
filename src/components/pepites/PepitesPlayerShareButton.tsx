@@ -57,7 +57,6 @@ export function PepitesPlayerShareButton({
       fileName={`pepites-${slug || "joueur"}.png`}
       message={t("pepites.share.player_message").replace("{name}", `⁨${player.name}⁩`)}
       path={`/pepites/joueur/${player.id}`}
-      onNight
       testId={testId}
     />
   );

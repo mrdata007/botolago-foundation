@@ -160,11 +160,22 @@ export async function expectNoClippedMatchCards(page: Page) {
   const clipped = await page.evaluate(() => {
     const viewport = document.documentElement.clientWidth;
     const offscreen: string[] = [];
-    for (const card of document.querySelectorAll('main a[href^="/matches/"]')) {
+    // Standings is section navigation (including Home's scrollable highlights),
+    // not a match card. Match-card bounds still apply to every match detail link.
+    for (const card of document.querySelectorAll(
+      'main a[href^="/matches/"]:not([href^="/matches/standings"])',
+    )) {
+      // A card in a row the reader swipes (`data-swipe-row`: Home's band, the
+      // match page's deck) waits beside the viewport by design, reachable by
+      // a swipe. It is measured against its own slide instead, so what it
+      // holds still may not spill out of it.
+      const slide = card.closest("[data-swipe-row] > *")?.getBoundingClientRect();
+      const left = slide ? slide.left : 0;
+      const right = slide ? slide.right : viewport;
       for (const node of [card, ...card.querySelectorAll("*")]) {
         const box = node.getBoundingClientRect();
         if (box.width === 0 || box.height === 0) continue;
-        if (box.left >= -1 && box.right <= viewport + 1) continue;
+        if (box.left >= left - 1 && box.right <= right + 1) continue;
         const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
         offscreen.push(
           `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px viewport`,

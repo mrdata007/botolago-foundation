@@ -1,12 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { useMemo } from "react";
 
-import { ui } from "@/components/ui-kit";
+import { ui, UiCard, UiEmptyState, UiLinkButton, UiStatBlock } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubStyle } from "@/lib/club-palette";
+import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 
-import { pp } from "./pepites-design";
 import {
   editionItems,
   formatCount,
@@ -14,9 +15,11 @@ import {
   playerPhotoUrl,
   positionLabel,
   scoreText,
+  teamAsClub,
 } from "./pepites-format";
 import { PepitesErrorState, PepitesLoadingState } from "./PepitesParts";
-import { GoMark, PepitesShirt } from "./PepitesVisuals";
+import { PepitesBack, PepitesShell } from "./PepitesShell";
+import { PepitesShirt } from "./PepitesVisuals";
 import {
   homeQueryOptions,
   pointerVersion,
@@ -25,7 +28,6 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
-import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 
 /** "LUN. 20:00": the reveal's day and hour, in Morocco time. */
 function revealStamp(iso: string | null, lang: "fr" | "ar"): string {
@@ -46,8 +48,11 @@ function revealStamp(iso: string | null, lang: "fr" | "ar"): string {
 /**
  * `/pepites/revelation` (Figma 06): the week's Top 10 as a story, from N°10
  * to N°1, one player a screen: the photo or the club shirt, the name, three
- * figures and the editor's line. Full-screen, like a story; the mark goes
- * back to Pépites. Only a published edition has one.
+ * figures and the editor's line. Full-screen, like a story, on the main
+ * design (BG-0152): the light page, a card that turns over (its back is the
+ * rank on the player's club colour, its front the photo or the shirt), kit
+ * figures and buttons. The back pill returns to Pépites. Only a published
+ * edition has one.
  */
 export function PepitesReveal({ rank }: { rank: number }) {
   const { t, tr, lang } = useI18n();
@@ -74,20 +79,17 @@ export function PepitesReveal({ rank }: { rank: number }) {
 
   if (!pointer?.available || !edition || !item) {
     return (
-      <div
-        className={cn("flex min-h-dvh flex-col items-center justify-center gap-4 p-6", pp.night)}
-      >
-        <GoMark />
-        <p className="text-center text-[15px] text-white/80" data-testid="pepites-reveal-none">
-          {t("pepites.reveal.none")}
-        </p>
-        <Link
-          to="/pepites"
-          className={cn("rounded-full px-6 py-3 text-[13px]", pp.heavy, primaryButton)}
-        >
-          {t("pepites.tab.top")}
-        </Link>
-      </div>
+      <PepitesShell>
+        <UiEmptyState
+          testId="pepites-reveal-none"
+          title={t("pepites.reveal.none")}
+          action={
+            <UiLinkButton to="/pepites" variant="ink" size="sm" className="mt-4">
+              {t("pepites.tab.top")}
+            </UiLinkButton>
+          }
+        />
+      </PepitesShell>
     );
   }
 
@@ -97,6 +99,7 @@ export function PepitesReveal({ rank }: { rank: number }) {
   const reason = lang === "ar" ? item.reasonAr : item.reasonFr;
   const current = index === -1 ? 0 : index;
   const next = items[current + 1] ?? null;
+  const colours = clubStyle(teamAsClub(player.team));
   const meta = [
     player.team ? tr(player.team.name) : null,
     player.positionGroup ? positionLabel(player.positionGroup, t) : null,
@@ -119,28 +122,19 @@ export function PepitesReveal({ rank }: { rank: number }) {
   ];
 
   return (
-    <main
-      className="relative flex min-h-dvh flex-col overflow-hidden text-white"
-      style={{
-        background:
-          "radial-gradient(195px 527.5px at 50% 56.25%, #1e4fa0 0%, #0d1738 55%, #070d24 100%)",
-      }}
-      data-testid="pepites-reveal"
-    >
-      <span
-        aria-hidden
+    <main className={cn("flex min-h-dvh flex-col", ui.surface.page)} data-testid="pepites-reveal">
+      {/* No top bar here, so the page keeps clear of the notch and the home
+          indicator itself. */}
+      <div
         className={cn(
-          pp.display,
-          "pointer-events-none absolute start-1/2 top-[70px] -translate-x-[60%] select-none text-[330px] leading-none text-transparent rtl:translate-x-[60%]",
-          "origin-top-left [transform:skewX(-7.97deg)_scaleY(0.99)]",
+          "flex flex-1 flex-col pb-[max(env(safe-area-inset-bottom),1.5rem)]",
+          ui.space.column,
+          ui.space.gutter,
+          ui.safe.top,
         )}
-        style={{ WebkitTextStroke: "1.5px rgb(255 255 255 / 0.12)" }}
       >
-        {formatNumber(item.rank, lang)}
-      </span>
-      <div className="relative z-10 mx-auto flex w-full max-w-[430px] flex-1 flex-col px-4 pb-6 pt-[max(env(safe-area-inset-top),16px)]">
         <ol
-          className="mt-8 flex gap-1"
+          className="mt-2 flex gap-1"
           aria-label={t("pepites.reveal.progress")
             .replace("{n}", formatNumber(current + 1, lang))
             .replace("{total}", formatNumber(items.length, lang))}
@@ -150,116 +144,99 @@ export function PepitesReveal({ rank }: { rank: number }) {
               key={entry.player.id}
               aria-hidden
               className={cn(
-                "h-[3px] flex-1 rounded-[2px]",
-                position <= current ? "bg-white" : "bg-white/30",
+                "h-1 flex-1",
+                ui.radius.full,
+                position <= current
+                  ? "bg-[color:var(--ui-ink-fg)]"
+                  : "bg-[color:var(--ui-surface-sunken)]",
               )}
             />
           ))}
         </ol>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <GoMark />
-          <p
-            className={cn(
-              pp.mono,
-              "text-[9px] text-[color:var(--pepites-on-night-sub)] ltr:tracking-[0.08em]",
-            )}
-          >
+          <PepitesBack to="/pepites" testId="pepites-reveal-back" />
+          <p className={cn("text-end", ui.text.label, ui.tone.muted)}>
             {t("pepites.reveal.stamp").replace("{time}", revealStamp(edition.publishedAt, lang))}
           </p>
         </div>
 
         {/* Keyed by the player, so each player in the story is a new card that
-            turns over: the back (the rank on the night blue), then the front. */}
-        <div key={player.id} className="relative mt-auto flex flex-col items-center">
-          <div className="relative z-10 h-[230px] w-[230px] [perspective:900px]">
+            turns over: the back (the rank on the club colour), then the front. */}
+        <div key={player.id} className="mt-auto flex flex-col items-center pt-6">
+          <div className="relative size-56 perspective-midrange">
             <div className="card-flip relative size-full">
-              <div className="flex size-full items-end justify-center [backface-visibility:hidden]">
+              <UiCard
+                padding="none"
+                className={cn(
+                  "absolute inset-0 grid place-items-center overflow-hidden backface-hidden",
+                  ui.radius.sheet,
+                  ui.shadow.lifted,
+                )}
+              >
                 {photoUrl ? (
                   <img
                     src={photoUrl}
                     alt=""
-                    className="size-[230px] rounded-[28px] object-cover drop-shadow-[0_10px_16px_rgba(0,0,0,0.5)]"
+                    className="size-full object-cover"
                     data-testid="pepites-reveal-photo"
                   />
                 ) : (
-                  <PepitesShirt
-                    player={player}
-                    number={item.rank}
-                    className="h-[200px] w-[214px]"
-                  />
+                  <PepitesShirt player={player} number={item.rank} className="h-44 w-48" />
                 )}
-              </div>
+              </UiCard>
               <div
                 aria-hidden
-                className="absolute inset-0 grid place-items-center rounded-[28px] border border-white/20 bg-[linear-gradient(160deg,#1e4fa0,#0d1738)] [backface-visibility:hidden] [transform:rotateY(180deg)]"
+                data-club={colours["data-club"]}
+                style={colours.style}
+                className={cn(
+                  "absolute inset-0 grid place-items-center backface-hidden rotate-y-180",
+                  ui.radius.sheet,
+                  ui.shadow.lifted,
+                  ui.club.fill,
+                )}
               >
-                <span className={cn(pp.display, pp.energyText, "text-[96px] leading-none")}>
-                  <bdi>{formatNumber(item.rank, lang)}</bdi>
-                </span>
+                <bdi className={ui.score.hero}>{formatNumber(item.rank, lang)}</bdi>
               </div>
             </div>
           </div>
-          <span
-            aria-hidden
-            className={cn(
-              "relative z-10 -mt-1 block h-1 w-[170px] origin-top-left [transform:skewX(-7.97deg)]",
-              pp.energyFill,
-            )}
-          />
           <h1
             className={cn(
-              pp.display,
-              "enter-rise relative z-10 mt-3 text-center text-[32px] leading-[1.1]",
+              "enter-rise mt-5 text-center text-balance [overflow-wrap:anywhere]",
+              ui.display.title,
+              ui.tone.default,
             )}
             style={{ animationDelay: "320ms" }}
             data-testid="pepites-reveal-name"
           >
             <bdi>{player.name}</bdi>
           </h1>
-          <p
-            className={cn(
-              pp.mono,
-              "relative z-10 mt-1 text-center text-[10px] text-[color:var(--pepites-on-night-sub)] ltr:tracking-[0.06em]",
-            )}
-          >
-            {meta}
-          </p>
+          <p className={cn("mt-1 text-center", ui.text.meta, ui.tone.muted)}>{meta}</p>
           <span className="sr-only">
             {t("pepites.hero.rank_line").replace("{n}", formatNumber(item.rank, lang))}
           </span>
         </div>
 
-        <dl
+        <div
           key={`tiles-${player.id}`}
-          className="enter-rise relative z-10 mt-4 grid grid-cols-3 gap-2"
+          className="enter-rise mt-4"
           style={{ animationDelay: "400ms" }}
         >
-          {tiles.map((tile) => (
-            <div
-              key={tile.label}
-              className="flex flex-col items-center gap-[3px] rounded-[12px] border border-white/15 bg-white/[0.08] py-2.5"
-            >
-              <dd className={cn(pp.display, "order-1 text-[22px]")}>
-                <bdi>{tile.value}</bdi>
-              </dd>
-              <dt
-                className={cn(
-                  pp.monoStrong,
-                  "order-2 text-[8px] text-[color:var(--pepites-on-night-sub)] ltr:tracking-[0.1em]",
-                )}
-              >
-                {tile.label}
-              </dt>
-            </div>
-          ))}
-        </dl>
+          <UiCard className="grid grid-cols-3 gap-2">
+            {tiles.map((tile, position) => (
+              <UiStatBlock
+                key={tile.label}
+                align="center"
+                tone={position === 0 ? "ink" : "default"}
+                label={tile.label}
+                value={<bdi>{tile.value}</bdi>}
+              />
+            ))}
+          </UiCard>
+        </div>
         {reason ? (
           <p
             key={`reason-${player.id}`}
-            className={cn(
-              pp.bold,
-              "enter-rise mt-4 text-center text-[12px] leading-[1.45] text-[#e4e9f7]",
-            )}
+            className={cn("enter-rise mt-4 text-center", ui.text.body, ui.tone.default)}
             style={{ animationDelay: "480ms" }}
             data-testid="pepites-reveal-reason"
           >
@@ -268,50 +245,34 @@ export function PepitesReveal({ rank }: { rank: number }) {
         ) : null}
 
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <Link
+          <UiLinkButton
             to="/pepites/joueur/$playerId"
             params={{ playerId: player.id }}
-            className={cn(
-              "inline-flex h-[42px] items-center justify-center rounded-full px-4 text-[13px]",
-              pp.heavy,
-              primaryButton,
-            )}
+            variant="gradient"
           >
             {t("pepites.reveal.open_player")}
-          </Link>
+          </UiLinkButton>
           {next ? (
-            <Link
+            // The next step replaces this one in the history (`replace`), so
+            // Back leaves the story rather than walking it. The arrow is the
+            // lucide icon, which styles.css mirrors in Arabic.
+            <UiLinkButton
               to="/pepites/revelation"
               search={{ n: next.rank }}
               replace
+              variant="soft"
               data-testid="pepites-reveal-next"
-              className={cn(
-                "inline-flex h-[42px] items-center justify-center rounded-full border border-white/20 bg-white/[0.08] px-4 text-[13px] text-white",
-                pp.heavy,
-                ui.focusOnMesh,
-              )}
             >
-              {t("pepites.reveal.next").replace("{n}", formatNumber(next.rank, lang))}
-            </Link>
+              <span>{t("pepites.reveal.next").replace("{n}", formatNumber(next.rank, lang))}</span>
+              <ArrowRight aria-hidden className="h-4 w-4" />
+            </UiLinkButton>
           ) : (
-            <Link
-              to="/pepites"
-              data-testid="pepites-reveal-done"
-              className={cn(
-                "inline-flex h-[42px] items-center justify-center rounded-full border border-white/20 bg-white/[0.08] px-4 text-[13px] text-white",
-                pp.heavy,
-                ui.focusOnMesh,
-              )}
-            >
+            <UiLinkButton to="/pepites" variant="soft" data-testid="pepites-reveal-done">
               {t("pepites.reveal.done")}
-            </Link>
+            </UiLinkButton>
           )}
         </div>
       </div>
     </main>
   );
 }
-
-/** Figma "Button / primary": the vertical spring-to-sky fill, dark ink. */
-const primaryButton =
-  "bg-[linear-gradient(to_bottom,#7df0ac,#8fe3f2)] text-[#0d1f4a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white";

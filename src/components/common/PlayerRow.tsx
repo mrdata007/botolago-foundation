@@ -37,7 +37,7 @@ export function PlayerRow({
         ui.surface.card,
         ui.space.row,
         "press-tile",
-        "hover:bg-[color:var(--ui-surface-sunken)]",
+        "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
       )}
     >
       {typeof rank === "number" && (

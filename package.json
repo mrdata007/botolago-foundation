@@ -28,6 +28,8 @@
     "config:integrity:check": "bun scripts/backend/check-config-integrity.mjs",
     "backend:types:generate": "bun scripts/backend/generate-database-types.mjs",
     "backend:types:check": "bun scripts/backend/check-generated-types.mjs",
+    "mobile:prepare": "bun scripts/mobile/prepare-native.mjs",
+    "mobile:check": "bun scripts/mobile/prepare-native.mjs --check",
     "admin:owner-readiness": "bun scripts/backend/admin-owner-readiness.ts",
     "admin:bootstrap": "bun scripts/backend/admin-bootstrap.ts",
     "admin:revocation-worker": "bun scripts/backend/admin-revocation-worker.ts",
@@ -44,6 +46,15 @@
     "demo:typecheck": "tsc --noEmit -p demo/tsconfig.json"
   },
   "dependencies": {
+    "@capacitor-community/media": "9.1.0",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/ios": "^8.5.2",
+    "@capacitor/preferences": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.3",
+    "@capacitor/share": "8.0.3",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/mcp-js": "^0.23.0",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -101,6 +112,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.23.1",
     "@playwright/test": "^1.61.1",

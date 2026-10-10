@@ -32,6 +32,7 @@ STAGING_WRITERS: dict[str, dict[str, str] | None] = {
     "staging-database-update.yml": None,
     "phase6-staging-cleanup.yml": None,
     "phase6-session-diagnostic-reproduction.yml": None,
+    "staging-mapping-supporting-dependency-rehearsal.yml": None,
     # Its only job runs for this branch; other pull requests skip it.
     "phase65-functional-acceptance.yml": {"head_branch": "qa/phase6-functional-acceptance"},
     # Staging unless an owner dispatch picks production; the run list does not

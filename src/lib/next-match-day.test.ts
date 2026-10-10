@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { nextMatchDayAfter } from "./match-days";
+import { latestResultDayBefore, nextMatchDayAfter } from "./match-days";
 
 const m = (status: "scheduled" | "live" | "finished" | "postponed", kickoff: string) => ({
   status,
@@ -23,5 +23,30 @@ describe("nextMatchDayAfter", () => {
       m("scheduled", "2026-10-01T17:00:00Z"),
     ];
     expect(nextMatchDayAfter(matches, "2026-10-01")).toBeNull();
+  });
+});
+
+describe("latestResultDayBefore", () => {
+  const days = ["2026-09-12", "2026-09-27", "2026-10-01", "2026-09-30"];
+
+  test("is the latest result before the day, whatever order the days come in", () => {
+    expect(latestResultDayBefore(days, "2026-10-03")).toBe("2026-10-01");
+    expect(latestResultDayBefore(days, "2026-10-01")).toBe("2026-09-30");
+    expect(latestResultDayBefore(days, "2026-09-28")).toBe("2026-09-27");
+  });
+
+  test("is not the day itself: from a day with results the way on is an earlier one", () => {
+    expect(latestResultDayBefore(days, "2026-09-12")).toBeNull();
+  });
+
+  test("inclusive counts the day itself, for Home when today's last match has just finished", () => {
+    expect(latestResultDayBefore(days, "2026-10-01", { inclusive: true })).toBe("2026-10-01");
+    expect(latestResultDayBefore(days, "2026-10-03", { inclusive: true })).toBe("2026-10-01");
+    expect(latestResultDayBefore(days, "2026-09-01", { inclusive: true })).toBeNull();
+  });
+
+  test("is null when no result is behind the day, or there are none", () => {
+    expect(latestResultDayBefore(days, "2026-09-01")).toBeNull();
+    expect(latestResultDayBefore([], "2026-10-03")).toBeNull();
   });
 });

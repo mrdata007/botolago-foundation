@@ -66,7 +66,7 @@ export function ClubMatchList({
       if (!home || !away) return null;
       return (
         <div key={match.id} className="enter-rise stagger min-w-0" style={staggerStyle(index)}>
-          <MatchCard match={match} home={home} away={away} variant="list" />
+          <MatchCard match={match} home={home} away={away} variant="list" showDate />
         </div>
       );
     });

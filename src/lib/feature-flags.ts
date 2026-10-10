@@ -75,35 +75,39 @@
 export const NEWS_ENABLED = true;
 
 /**
- * Dark mode — OFF at launch.
+ * Dark mode — ON, following the phone's setting.
  *
- * Owner decision, 2026-09-21 (BG-0081): the theme machinery ships, the control
- * does not. Two contrast defects have to close first, both pre-existing and
- * both bigger than this feature:
+ * Owner decision, 2026-10-05 (BG-0149): dark mode is switched on. The default
+ * choice stays "system" (`DEFAULT_THEME_CHOICE`), so anyone whose phone is set
+ * to dark sees BotolaGO dark from the first paint, and Profil > Apparence lets
+ * them pick Clair, Sombre or Système. In dark the logo renders the existing
+ * all-white files (`Logo` / `BrandedText` `tone="auto"`).
  *
- *   - BG-0083: `--ui-ink` is used as a text colour across the product. It is a
- *     dark navy in BOTH themes, so on a dark surface Profile's h1 measures
- *     1.42:1 and the BottomNav active label and UiButton outline/ghost 1.25:1.
- *   - BG-0084: Fantasy has no `.dark` counterpart at all. It is built on
- *     `--fpl-*`, which styles.css documents as a light-only reconstruction,
- *     plus literal `bg-white`. Themed foregrounds land on un-themed light
- *     surfaces and three labels measure 1.01:1 — invisible.
+ * History. It shipped OFF on 2026-09-21 (BG-0081) because two pre-existing
+ * contrast defects would have greeted every dark-phone visitor:
  *
- * Gating the control alone would NOT have been enough, and this is the part
- * worth remembering: DEFAULT_THEME_CHOICE is "system", so with the inline head
- * script live every visitor whose OS prefers dark would have been served dark
- * mode immediately, toggle or no toggle, straight into those two defects. The
- * flag therefore gates the head script and the provider's effects as well as
- * the control.
+ *   - BG-0083: `--ui-ink`, a dark navy in BOTH themes, used as a text colour
+ *     (Profile's h1 at 1.42:1 on dark). DONE: foregrounds use `--ui-ink-fg`,
+ *     and BG-0149 cleared the last ring, dot and accent uses outside the kit
+ *     (a source test now fails on any that come back).
+ *   - BG-0084: Fantasy built on a light-only `--fpl-*` palette and literal
+ *     `bg-white`. CLOSED on measurement: every `--fpl-*` token is now an alias
+ *     of one `--ui-*` token (styles.css, pinned by `ui-kit.contract.test.ts`),
+ *     no live code reads `--fpl-*` or `bg-white`, and BG-0149 measured the
+ *     Fantasy routes in dark from rasterised pixels.
+ *
+ * The flag still gates the head script and the provider as well as the
+ * control, and that is the part worth remembering: because the default is
+ * "system", gating the control alone would still serve dark mode to every
+ * dark-phone visitor. So this constant stays the one-line rollback switch —
+ * set it to `false` and republish, and every visitor is back on light.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/__root.tsx` — the inline pre-paint theme script
  *   - `src/theme/provider.tsx` — storage adoption, class application, OS listener
  *   - `src/routes/profile.tsx` — the whole "Apparence" row, label included
- *
- * Flip to `true` only when BG-0083 and BG-0084 are both closed.
  */
-export const DARK_MODE_ENABLED = false;
+export const DARK_MODE_ENABLED = true;
 
 /**
  * Third-party OAuth sign-in — OFF at launch.
@@ -132,6 +136,10 @@ export const DARK_MODE_ENABLED = false;
  * Gated surfaces (keep this list current):
  *   - `src/routes/auth.login.tsx` — divider + provider buttons
  *   - `src/routes/auth.register.tsx` — divider + provider buttons
+ *
+ * Inside the phone app both are hidden whatever this says (`WebOnly`):
+ * Google refuses sign-in in an embedded web view, and the provider's page
+ * would open in the browser, which cannot hand the session back to the app.
  */
 export const OAUTH_PROVIDERS_ENABLED = true;
 
@@ -145,7 +153,7 @@ export const OAUTH_PROVIDERS_ENABLED = true;
  *      final text -- every `[TODO …]` span is replaced. The production build
  *      refuses to run while this flag is on and a span survives
  *      (`scripts/qa/legal-placeholder-gate.ts`);
- *   2. no sponsor is involved -- Go Sports Technologies provides the prizes --
+ *   2. no sponsor is involved -- the organiser named in the T&Cs provides the prizes --
  *      so there is no sponsor sign-off to wait for (the owner dropped that
  *      condition). A sponsor added to a prize later needs naming in the T&Cs;
  *   3. `supabase/migrations/20260924120000_fantasy_prizes.sql` is on
@@ -242,6 +250,53 @@ export const PEPITES_ENABLED: boolean = true;
 
 /** Public navigation and indexing follow the application release switch. */
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
+
+/**
+ * Curva (the Manager Card section) — OFF.
+ *
+ * Owner decision, 2026-10-08: a new section, Curva, takes Pépites' place in
+ * the main navigation and Pépites moves inside Fantasy, at the same moment.
+ * It is built in the app behind this switch so that merging and publishing
+ * change nothing anyone sees. Plan: docs/product/MANAGER_CARD_SECTION_PLAN.md.
+ *
+ * Two layers decide whether it shows:
+ *   1. this build constant, which the owner flips in a one-line commit once
+ *      the backend is applied (it can be flipped before the database switch);
+ *   2. the database's own answer, `api.manager_card_status()`, read during the
+ *      server render only. Off, missing, failing or slow all read as off.
+ * Live = both. Set this false and republish for an application-level rollback;
+ * turning the database read switch off hides the section without a republish.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/components/shell/primary-nav.ts` — the fifth slot, the Fantasy tab on /pepites
+ *   - `src/routes/__root.tsx` — the server-side status read (beforeLoad)
+ *   - `src/routes/curva.tsx` — the /curva routes (redirect to /fantasy when not live)
+ *   - `src/routes/fantasy.index.tsx` — the Pépites tile, the card block
+ *   - `src/components/pepites/PepitesHome.tsx` — the back pill to Fantasy
+ *   - every inline card surface listed in the plan, section 5.1
+ *
+ * Owner launch, 2026-10-10: on. Curva shows only once the database read switch is on too.
+ */
+export const MANAGER_CARD_ENABLED: boolean = true;
+
+/**
+ * Development preview of Curva: `VITE_MANAGER_CARD_PREVIEW=1` on a development
+ * server only. `import.meta.env.DEV` is replaced by `false` in a production
+ * build, so this is `false` there and every branch it guards is removed.
+ *
+ * The `typeof` guard is for code that imports this module outside Vite: the
+ * Playwright runner (Node) loads it from `tests/e2e/pronostics.e2e.ts`, where
+ * `import.meta.env` is undefined and reading `.DEV` would throw. In a build Vite
+ * replaces `import.meta.env` with an object, so the guard folds to `true` and
+ * the whole expression to `false`.
+ */
+export const MANAGER_CARD_PREVIEW: boolean =
+  typeof import.meta.env !== "undefined" &&
+  import.meta.env.DEV === true &&
+  import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1";
+
+/** The build lets Curva exist; the database status decides whether it shows. */
+export const MANAGER_CARD_BUILD: boolean = MANAGER_CARD_ENABLED || MANAGER_CARD_PREVIEW;
 
 /**
  * Home puts the Fantasy card first in the 24 hours before a Fantasy deadline

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { clubInitials, clubShortCode, rowClubName } from "@/lib/club-identity";
+import { clubInitials, clubShortCode, compactClubName, rowClubName } from "@/lib/club-identity";
 
 /**
  * BG-0111 — the pitch fixture plate rendered "(D)" with no opponent because
@@ -72,5 +72,44 @@ describe("rowClubName", () => {
     expect(rowClubName("RCA Zemamra", "Renaissance Club Athletic Zemamra")).toBe("RCA Zemamra");
     expect(rowClubName("FUS Rabat", "FUS Rabat")).toBe("FUS Rabat");
     expect(rowClubName("الوداد", "الوداد الرياضي")).toBe("الوداد");
+  });
+});
+
+describe("compactClubName", () => {
+  // The real full names the league publishes (see the cases above).
+  test("keeps the distinctive words of a full French name", () => {
+    expect(compactClubName("Raja Club Athletic", "fr")).toBe("Raja");
+    expect(compactClubName("Wydad Athletic Club", "fr")).toBe("Wydad");
+    expect(compactClubName("Renaissance Sportive de Berkane", "fr")).toBe("Renaissance Berkane");
+    expect(compactClubName("Maghreb Association Sportive de Fès", "fr")).toBe("Maghreb Fès");
+    expect(compactClubName("Ittihad Riadi de Tanger", "fr")).toBe("Ittihad Tanger");
+    expect(compactClubName("Difaâ Hassani d'El Jadida", "fr")).toBe("Difaâ El Jadida");
+    expect(compactClubName("Hassania Union Sport d'Agadir", "fr")).toBe("Hassania Agadir");
+  });
+
+  test("leaves a name that fits, and initialisms, alone", () => {
+    expect(compactClubName("RS Berkane", "fr")).toBe("RS Berkane");
+    expect(compactClubName("AS FAR", "fr")).toBe("AS FAR");
+    expect(compactClubName("Wydad AC", "fr")).toBe("Wydad AC");
+  });
+
+  test("leaves a long name with nothing generic in it for the layout to wrap", () => {
+    expect(compactClubName("Renaissance Zemamra", "fr")).toBe("Renaissance Zemamra");
+  });
+
+  test("drops the generic words of an Arabic name", () => {
+    expect(compactClubName("نادي الرجاء الرياضي لكرة القدم", "ar")).toBe("الرجاء");
+    expect(compactClubName("الوداد الرياضي", "ar", 8)).toBe("الوداد");
+    expect(compactClubName("نهضة بركان", "ar")).toBe("نهضة بركان");
+    expect(compactClubName("الدفاع الحسني الجديدي", "ar")).toBe("الدفاع الجديدي");
+  });
+
+  test("never returns an empty name", () => {
+    expect(compactClubName("Club Sportif", "fr", 4)).toBe("Club Sportif");
+    expect(compactClubName("", "fr")).toBe("");
+  });
+
+  test("tidies stray spaces", () => {
+    expect(compactClubName("  Raja   Club  Athletic ", "fr")).toBe("Raja");
   });
 });

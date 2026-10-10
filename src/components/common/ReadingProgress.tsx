@@ -39,7 +39,11 @@ export function ReadingProgress() {
   }, []);
 
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-[60] h-[3px]">
+    // Under the status bar on an iPhone (`viewport-fit=cover`), not behind it.
+    <div
+      aria-hidden
+      className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top,0px)] z-[60] h-[3px]"
+    >
       <div
         ref={bar}
         className="h-full w-full ltr:origin-left rtl:origin-right"

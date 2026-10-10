@@ -1,0 +1,15 @@
+=== check-bun-test: bun test   (round 2 review fixes 18f921ee; exit 1: the one failure fails the same on origin/main c8fc3a48)
+(fail) the scheduled time as the editor reads it > Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027) [0.78ms]
+ 7133 pass
+ 17 skip
+ 1 fail
+ 96662 expect() calls
+Ran 7151 tests across 547 files. [42.91s]
+exit 1
+
+--- the same test on origin/main c8fc3a48 (bun test src/backend/news/editorial-session.test.ts in an extract of it):
+
+ 27 pass
+ 1 fail
+ 72 expect() calls
+Ran 28 tests across 1 file. [86.00ms]

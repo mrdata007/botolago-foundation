@@ -26,7 +26,7 @@ const buttonVariants = cva(
     "inline-flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer select-none",
     "rounded-[var(--ui-radius-control)] text-[length:var(--ui-text-body)] [font-weight:var(--ui-weight-body)]",
     "transition-[background-color,color,box-shadow,transform,opacity] duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--ui-ink-fg)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--ui-page)]",
     "active:scale-[0.97] active:duration-[var(--duration-tap)]",
     "disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed",
     "aria-busy:opacity-80 aria-busy:pointer-events-none",
@@ -48,7 +48,7 @@ const buttonVariants = cva(
           "bg-[color:var(--ui-surface-sunken)] text-[color:var(--ui-on-surface)] shadow-[var(--ui-shadow-card)] hover:opacity-90",
         ghost:
           "bg-transparent text-[color:var(--ui-on-surface)] hover:bg-[color:var(--ui-surface-sunken)]",
-        link: "text-[color:var(--ui-ink)] underline-offset-4 hover:underline",
+        link: "text-[color:var(--ui-ink-fg)] underline-offset-4 hover:underline",
       },
       size: {
         // Every size keeps a ≥44px tap target except the two dense shadcn

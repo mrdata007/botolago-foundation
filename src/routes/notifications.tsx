@@ -176,7 +176,7 @@ function Inbox() {
                       onClick={() => open(card)}
                       className={cn(
                         "flex min-w-0 flex-1 items-start gap-3 py-3 ps-4 pe-2 text-start",
-                        "hover:bg-[color:var(--ui-surface-sunken)]",
+                        "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
                       )}
                     >
@@ -222,7 +222,7 @@ function Inbox() {
                       {isUnread ? (
                         <span
                           aria-hidden
-                          className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[color:var(--ui-ink)]"
+                          className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[color:var(--ui-ink-fg)]"
                         />
                       ) : null}
                     </button>
@@ -233,7 +233,7 @@ function Inbox() {
                       className={cn(
                         "grid w-11 shrink-0 place-items-center",
                         ui.tone.muted,
-                        "hover:bg-[color:var(--ui-surface-sunken)]",
+                        "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
                       )}
                     >

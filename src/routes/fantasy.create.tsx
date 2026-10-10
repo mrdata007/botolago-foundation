@@ -1,11 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import { track } from "@/lib/analytics";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
 import { AddPlayerScreen } from "@/components/fpl/AddPlayerScreen";
+import { CaptainChoice } from "@/components/fpl/CaptainChoice";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -14,21 +16,15 @@ import { FplStatBar } from "@/components/fpl/FplStatBar";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
-import {
-  ui,
-  UiAlert,
-  UiButton,
-  UiCard,
-  UiHeader,
-  UiInput,
-  UiKeyValueRow,
-} from "@/components/ui-kit";
+import { ui, UiAlert, UiButton, UiCard, UiHeader, UiInput } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { reportOperationalError } from "@/lib/operational-errors";
+import { pendingInvite } from "@/components/predictions/leagues/invite-link";
 import { cn } from "@/lib/utils";
 import {
+  captaincyOf,
   computeSummary,
   createTeamErrorKey,
   draftPurchasePrices,
@@ -45,12 +41,28 @@ import {
   type CreateTeamDraft,
   type DraftValidationCode,
 } from "@/services/fantasy-create-service";
+import { GUEST_DRAFT_KEY, isCreateDraft } from "@/services/fantasy-create-draft";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { importDecisionService } from "@/services/fantasy-import-decision";
 import { classifyRepoError, runOwnedMutation } from "@/services/fantasy-mutation-controller";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { SQUAD_RULES, type FantasyPlayer, type SquadPlayer } from "@/types/fantasy";
+
+// The card's save-step line and the builder's return line are their own chunk, requested only
+// while the section is live: with the switch off this page imports nothing of the Manager Card.
+const CardSaveLine = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.CardSaveLine,
+  })),
+);
+const BuilderReturnLine = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.BuilderReturnLine,
+  })),
+);
+const BUILDER_RETURN_LINE_ID = "card-builder-return-line";
 
 export const Route = createFileRoute("/fantasy/create")({
   head: () => fantasyHead("create"),
@@ -72,21 +84,17 @@ const VALIDATION_KEYS: Record<DraftValidationCode, TranslationKey> = {
   vice_not_in_xi: "fantasy.create.error.vice_not_in_xi",
 };
 
-function isCreateDraft(v: unknown): v is CreateTeamDraft {
-  if (!v || typeof v !== "object") return false;
-  const d = v as Partial<CreateTeamDraft>;
-  return typeof d.teamName === "string" && Array.isArray(d.slots) && d.slots.length === 15;
-}
-
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
-/** The visitor's draft: the builder's own key for someone with no account yet. */
-const GUEST_DRAFT_KEY: FantasyDraftKey = {
-  uid: "__guest__",
-  teamId: "new",
-  baseVersion: 0,
-  kind: "create-team",
-};
+/**
+ * Validation codes the captain section answers itself ("À choisir" on its
+ * rows), so the alert under it does not repeat them in red before the
+ * manager has had a chance to choose.
+ */
+const ANSWERED_BY_CAPTAIN_CHOICE: ReadonlySet<DraftValidationCode> = new Set([
+  "captain_missing",
+  "vice_missing",
+]);
 
 /**
  * First-time squad selection, reconstructed on the FPL "Transfers" composition
@@ -110,6 +118,7 @@ function CreateTeamBody() {
   const nav = useNavigate();
   const qc = useQueryClient();
   const { user, requireAuth } = useAuth();
+  const live = useManagerCardLive();
   // No `needsAuth`: a visitor builds a team first, and an account is asked for
   // only when they press "Enregistrer".
   const screen = useFantasyScreen({ needsTeam: false, needsAuth: false });
@@ -141,6 +150,8 @@ function CreateTeamBody() {
   }, [isCloud, owned.source, owned.userId, owned.snapshot?.teamId, owned.snapshot?.version]);
 
   const [draft, setDraft] = useState<CreateTeamDraft>(() => initCreateDraft());
+  // Live only: the draft a visitor built was taken over by the account just made (plan M1c).
+  const [accountReturn, setAccountReturn] = useState(false);
   const inited = useRef(false);
   useEffect(() => {
     inited.current = false;
@@ -158,6 +169,7 @@ function CreateTeamBody() {
     else if (visitorEntry && isCreateDraft(visitorEntry.payload)) {
       setDraft(visitorEntry.payload);
       fantasyDraftsStore.remove(GUEST_DRAFT_KEY);
+      if (live) setAccountReturn(true);
     } else
       setDraft(
         initCreateDraft(
@@ -165,7 +177,7 @@ function CreateTeamBody() {
         ),
       );
     inited.current = true;
-  }, [draftKey, user?.displayName]);
+  }, [draftKey, user?.displayName, live]);
   useEffect(() => {
     if (!inited.current || !draftKey) return;
     fantasyDraftsStore.save<CreateTeamDraft>(draftKey, draft);
@@ -184,6 +196,26 @@ function CreateTeamBody() {
   const gameweek = screen.gameweek;
   const summary = useMemo(() => computeSummary(draft, players), [draft, players]);
   const validation = useMemo(() => validateDraft(draft, players), [draft, players]);
+  const formRef = useRef<HTMLFormElement>(null);
+  const resumedOnName = useRef(false);
+  const focusedOnReturn = useRef(false);
+  // Back in the builder after sign-up (live only): a squad that is complete and valid opens on the
+  // name step, where the one thing left is saving it. Once, so Back to the squad stays possible.
+  useEffect(() => {
+    if (!live || !accountReturn || resumedOnName.current || screen.phase !== "ready") return;
+    resumedOnName.current = true;
+    if (validation.errors.every((code) => code === "team_name")) setStep("name");
+  }, [live, accountReturn, screen.phase, validation]);
+  // …with focus on the save button, or on the name while it is still missing, once the name step
+  // is on screen. The field is not autofocused any more while live, so nothing else takes it.
+  useEffect(() => {
+    if (!live || !accountReturn || step !== "name" || focusedOnReturn.current) return;
+    focusedOnReturn.current = true;
+    const form = formRef.current;
+    const save = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (save && !save.disabled) save.focus();
+    else form?.querySelector<HTMLInputElement>("input")?.focus();
+  }, [live, accountReturn, step]);
   const playerOf = (id: string | null) => (id ? (players.find((p) => p.id === id) ?? null) : null);
 
   if (screen.phase !== "ready" || !gameweek) {
@@ -298,7 +330,12 @@ function CreateTeamBody() {
     // A visitor: the draft is already kept on this device; the account is asked
     // for now, and the draft comes back with them.
     if (owned.source === "guest") {
-      requireAuth(() => undefined, { reason: t("fantasy.create.sign_in_reason") });
+      // Someone saving a first squad most likely has no account: creating one
+      // (free) is the prompt's main action here, signing in the second.
+      requireAuth(() => undefined, {
+        reason: t("fantasy.create.sign_in_reason"),
+        primary: "register",
+      });
       return;
     }
     setSaving(true);
@@ -338,10 +375,22 @@ function CreateTeamBody() {
         },
       );
       if (res.ok) {
+        // Counted on the server's confirmation only, never on a draft.
+        track("fantasy_team_created");
+        // Live: the next screen reads the card fresh. Never awaited, never on the way to it.
+        if (live) {
+          void import("@/components/manager-card/inline/curva-inline")
+            .then((module) => module.invalidateMyManagerCard(qc))
+            .catch(() => {});
+        }
         if (owned.userId) importDecisionService.markImported(owned.userId);
         toast.success(t("fantasy.create.success"));
         await owned.reload();
-        void nav({ to: "/fantasy/team" });
+        // Came from a Fantasy league invite: back to the join form, where the
+        // code waits and the manager taps "Rejoindre" themselves.
+        void nav({
+          to: pendingInvite()?.game === "fantasy" ? "/fantasy/leagues/join" : "/fantasy/team",
+        });
         return;
       }
       // The real refusal goes to the operational log (code only, no squad or
@@ -367,7 +416,15 @@ function CreateTeamBody() {
 
   if (step === "name") {
     const nameCheck = validateTeamName(draft.teamName);
-    const blocking = validation.errors.filter((e) => e !== "team_name");
+    const blocking = validation.errors.filter(
+      (e) => e !== "team_name" && !ANSWERED_BY_CAPTAIN_CHOICE.has(e),
+    );
+    const { captainId, viceId } = captaincyOf(draft);
+    const starters = draft.slots
+      .filter((s) => s.slot < 12)
+      .sort((a, b) => a.slot - b.slot)
+      .map((s) => playerOf(s.playerId))
+      .filter((p): p is FantasyPlayer => p !== null);
     const nameInvalid = !nameCheck.ok && nameCheck.error !== "empty";
     return (
       <>
@@ -394,6 +451,7 @@ function CreateTeamBody() {
           </div>
         ) : null}
         <form
+          ref={formRef}
           className={cn("mt-4", ui.space.gutter)}
           onSubmit={(e) => {
             e.preventDefault();
@@ -409,31 +467,37 @@ function CreateTeamBody() {
               onChange={(e) => setDraft(setTeamNameOp(draft, e.target.value))}
               placeholder={t("fpl.team_name")}
               fieldClassName={cn(ui.radius.card, "min-h-[var(--ui-row-min)]", ui.rule.strong)}
-              autoFocus
+              // Live: the keyboard stays closed, so the card's line and « Entrer l’effectif » are
+              // seen before it opens.
+              autoFocus={!live}
             />
             {nameInvalid ? (
               <UiAlert tone="negative" className="mt-3">
                 {t("fantasy.create.error.team_name")}
               </UiAlert>
             ) : null}
-            <div className="mt-4">
-              <UiKeyValueRow
-                label={t("fpl.captain")}
-                value={
-                  playerOf(draft.slots.find((s) => s.isCaptain)?.playerId ?? null)?.name[lang] ??
-                  t("fantasy.stat.none")
+            <div className={cn("mt-4 pt-4", ui.rule.blockStart)}>
+              <CaptainChoice
+                starters={starters}
+                clubs={clubs}
+                captainId={captainId}
+                viceId={viceId}
+                onChoose={(role, playerId) =>
+                  setDraft(setCaptainOp(draft, playerId, role === "vice"))
                 }
-              />
-              <UiKeyValueRow
-                label={t("fpl.vice_captain")}
-                value={
-                  playerOf(draft.slots.find((s) => s.isViceCaptain)?.playerId ?? null)?.name[
-                    lang
-                  ] ?? t("fantasy.stat.none")
-                }
-                className="border-b-0"
               />
             </div>
+            {live ? (
+              <Suspense fallback={null}>
+                <CardSaveLine
+                  signedIn={!!user}
+                  displayName={user?.displayName}
+                  teamName={draft.teamName}
+                  clubs={clubs}
+                  favoriteClubId={user?.favoriteClubId}
+                />
+              </Suspense>
+            ) : null}
             {blocking.length > 0 ? (
               <UiAlert tone="negative" className="mt-3">
                 <ul>
@@ -453,13 +517,19 @@ function CreateTeamBody() {
                 {t("fantasy.create.guest_note")}
               </p>
             ) : null}
+            {live && accountReturn ? (
+              <Suspense fallback={null}>
+                <BuilderReturnLine id={BUILDER_RETURN_LINE_ID} />
+              </Suspense>
+            ) : null}
             <UiButton
               type="submit"
               variant="gradient"
               className="mt-4"
               disabled={!nameCheck.ok || !validation.ok || saving}
+              aria-describedby={live && accountReturn ? BUILDER_RETURN_LINE_ID : undefined}
             >
-              {saving ? t("fpl.saving") : t("fpl.enter_squad")}
+              {saving ? t("fpl.saving") : t("fantasy.create.cta_primary")}
             </UiButton>
           </UiCard>
         </form>
@@ -477,12 +547,17 @@ function CreateTeamBody() {
         deadlineIso={enrolment.deadline}
         banner={enrolmentNotice}
         stats={[
-          // No Wildcard column here: during the first selection it can only
-          // ever read "Indisponible", and transfers are unlimited anyway.
-          { label: t("fpl.free_transfers"), value: t("fpl.unlimited"), text: true },
-          { label: t("fpl.cost"), value: "0" },
-          { label: t("fpl.bank"), value: nf.format(summary.bankRemaining) },
+          // What a first selection is about: how many of the fifteen are in,
+          // and the money left — the same two figures as the name step. The
+          // transfer columns ("Illimité", "Coût 0") belong to real transfers.
+          {
+            label: t("fpl.squad"),
+            value: t("fpl.players_selected").replace("{n}", String(summary.filled)),
+            text: true,
+          },
+          { label: t("fpl.left_in_bank"), value: nf.format(summary.bankRemaining) },
         ]}
+        showBench
         slots={slots}
         clubs={clubs}
         players={players}
@@ -540,6 +615,7 @@ function CreateTeamBody() {
           }
           onClose={() => setPickerSlot(null)}
           budget={builderBudget}
+          initialSort="points"
           clubCounts={clubCountsFor(activeSlot.playerId)}
         />
       ) : pickerAny ? (
@@ -556,6 +632,7 @@ function CreateTeamBody() {
           onPick={onPickAny}
           onClose={() => setPickerAny(false)}
           budget={builderBudget}
+          initialSort="points"
           clubCounts={clubCountsFor(null)}
         />
       ) : null}

@@ -13,6 +13,8 @@ import { useRouter } from "@tanstack/react-router";
 import { authService, type AuthSession, type AuthStatus, type AuthUser } from "@/services/auth";
 import { useI18n } from "@/i18n/provider";
 import { fetchAccountStanding, rememberSuspension } from "@/services/account-standing";
+import { ACCOUNT_DELETION_DONE_PATH } from "@/lib/account-deletion";
+import { releaseThisPhone } from "@/services/native-push-runtime";
 import {
   claimGuestPredictionsOnSignIn,
   sendGuestVotesOnSignIn,
@@ -25,13 +27,25 @@ interface AuthPromptState {
   open: boolean;
   reason?: string;
   onCancel?: () => void;
+  /**
+   * Which way in the prompt leads with. "login" (the default) puts "Se
+   * connecter" first; "register" puts "Créer un compte gratuit" first, for
+   * a moment that is about someone new, such as saving a first Fantasy squad.
+   */
+  primary?: "login" | "register";
+}
+
+export interface RequireAuthOptions {
+  reason?: string;
+  onCancel?: () => void;
+  primary?: AuthPromptState["primary"];
 }
 
 interface AuthContextValue {
   user: AuthUser | null;
   status: AuthStatus;
   profileComplete: boolean;
-  requireAuth: (action: () => void, opts?: { reason?: string; onCancel?: () => void }) => void;
+  requireAuth: (action: () => void, opts?: RequireAuthOptions) => void;
   prompt: AuthPromptState;
   closePrompt: () => void;
   signOut: (opts?: { resetLocalData?: boolean }) => Promise<void>;
@@ -100,7 +114,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (throttled && now - lastVisibilityCheck.current < 60_000) return;
       lastVisibilityCheck.current = now;
       const standing = await fetchAccountStanding();
-      if (cancelled || !standing?.banned) return;
+      if (cancelled || !standing) return;
+      if (standing.deletionPending) {
+        // Deleted from another device: this one is signed out too, and shown
+        // what happens to the account next.
+        await authService.signOut({ resetLocalData: true });
+        window.location.assign(ACCOUNT_DELETION_DONE_PATH);
+        return;
+      }
+      if (!standing.banned) return;
       rememberSuspension(standing.bannedUntil);
       await authService.signOut();
       // A full navigation rather than a router push: it also drops every
@@ -149,7 +171,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         default:
-          setPrompt({ open: true, reason: opts?.reason, onCancel: opts?.onCancel });
+          setPrompt({
+            open: true,
+            reason: opts?.reason,
+            onCancel: opts?.onCancel,
+            primary: opts?.primary,
+          });
       }
     },
     [router],
@@ -158,6 +185,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const closePrompt = useCallback(() => setPrompt({ open: false }), []);
 
   const signOut = useCallback(async (opts?: { resetLocalData?: boolean }) => {
+    // In the phone app, this phone lets go of the account's push alerts first
+    // (it needs the session) so the next account on it can register. Bounded
+    // and best effort: nothing here can hold a sign-out back.
+    await releaseThisPhone(langRef.current);
     await authService.signOut(opts);
   }, []);
 

@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { ConfettiBurst } from "@/components/fantasy/ConfettiBurst";
 import { toast } from "sonner";
 
@@ -31,8 +31,22 @@ import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { applyConfirmedTransfers, previewTransfers } from "@/services/transfers-service";
 import { SQUAD_RULES, type FantasyPlayer } from "@/types/fantasy";
+
+// The card's hint and first-transfer line are their own chunks, requested only while the section is
+// live: with the switch off this screen imports nothing of the Manager Card.
+const CardHint = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.CardHint,
+  })),
+);
+const FirstTransferLine = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.FirstTransferLine,
+  })),
+);
 
 export const Route = createFileRoute("/fantasy/transfers")({
   head: () => fantasyHead("transfers"),
@@ -82,6 +96,7 @@ function TransfersBody() {
   const navigate = useNavigate({ from: "/fantasy/transfers" });
   const screen = useFantasyScreen();
   const owned = useFantasyOwned();
+  const cardLive = useManagerCardLive();
   // Counts confirmed transfers, so each one gets its own confetti burst.
   const [burst, setBurst] = useState(0);
   const isCloud = owned.source === "cloud";
@@ -616,6 +631,14 @@ function TransfersBody() {
         onEdit={() => setConfirming(false)}
         onConfirm={() => void confirm()}
         busy={busy}
+        notice={
+          cardLive ? (
+            // While TRF has no transfer to measure (plan M3f).
+            <Suspense fallback={null}>
+              <FirstTransferLine />
+            </Suspense>
+          ) : undefined
+        }
       />
     );
   }
@@ -709,6 +732,14 @@ function TransfersBody() {
         }
         gameweek={gameweek.number}
         deadlineIso={gameweek.deadline}
+        aboveToggle={
+          cardLive ? (
+            // The first visit teaches what the transfers count for (plan M3e).
+            <Suspense fallback={null}>
+              <CardHint kind="trf" className="mx-[var(--ui-gutter)] mt-3" />
+            </Suspense>
+          ) : undefined
+        }
         stats={[
           {
             label: t("fpl.free_transfers"),

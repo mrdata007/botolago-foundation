@@ -28,6 +28,7 @@ import {
 
 import { DARK_MODE_ENABLED } from "@/lib/feature-flags";
 import { withViewTransition } from "@/lib/motion";
+import { systemBars } from "@/lib/system-bars";
 
 import {
   DARK_MEDIA_QUERY,
@@ -102,6 +103,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     query.addEventListener("change", onChange);
     return () => query.removeEventListener("change", onChange);
   }, [choice, isHydrated]);
+
+  // The phone app's status bar follows the theme on screen, not the phone's
+  // own setting (BG-0154, `src/lib/system-bars.ts`). Every path above ends in
+  // `resolved` (start-up, a choice, the phone changing under "system"), so
+  // this one effect follows all three. Nothing happens in a browser. While
+  // dark mode is off, `resolved` stays "light", which is what the app shows.
+  useEffect(() => {
+    if (DARK_MODE_ENABLED && !isHydrated) return;
+    systemBars.setTheme(resolved);
+  }, [resolved, isHydrated]);
 
   const setChoice = useCallback((next: ThemeChoice) => {
     // The page cross-fades into the new theme rather than flashing. (While dark

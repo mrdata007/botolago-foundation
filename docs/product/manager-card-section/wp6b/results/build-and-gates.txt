@@ -1,0 +1,22 @@
+bun run typecheck: tsc --noEmit, exit 0
+bun run lint: 0 errors, 31 warnings (none in the section's files)
+
+✖ 31 problems (0 errors, 31 warnings)
+
+
+bun run format:check: exit 2 on the merged head AND on origin/main 3f9c57fc, the same 78 files (docs, workflows, generated types); none is a file of the section.
+  comm -13 base branch -> no file is new on the branch.
+
+bun scripts/qa/i18n-gate.ts:
+W1 keys whose fr and ar values are identical: 9 (baseline 9) at baseline
+W2 ar values containing no Arabic script: 9 (baseline 9) at baseline
+W3 dictionary keys not referenced anywhere in src/: 251 (baseline 251) at baseline
+W4 t() call sites whose argument is not a literal key: 64 (baseline 64) at baseline
+RESULT: pass
+
+bun run build (LEGAL_GATE_ALLOW_PLACEHOLDERS unset): exit 0, legal-placeholder-gate OK
+Manager Card fixture gate: 720 files in .output, no fixture found.
+Manager Card off-bundle gate: 326 chunks; the section's code is in ManagerCard-DbFjiYkU.js, manager-card-DhMI2tBf.js, use-manager-card-BhibgwI8.js, to-profile-CleWz_hT.js and no ordinary page imports it.
+
+Validated 163 migration(s).
+No high-confidence secrets found in tracked files.

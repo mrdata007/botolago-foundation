@@ -31,6 +31,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { clubStyle } from "@/lib/club-palette";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { fantasyPlayerHead } from "@/lib/fantasy-meta";
+import { useBackTo } from "@/lib/back-navigation";
 import { useWatchlist } from "@/lib/fantasy-watchlist";
 import { upcomingFixtures } from "@/lib/upcoming-fixtures";
 import { cn } from "@/lib/utils";
@@ -76,8 +77,9 @@ export const Route = createFileRoute("/fantasy/players/$playerId")({
 
 function PlayerDetailFramed() {
   return (
-    // A detail page: no tab bar, and one sticky action bar in its place.
-    <FantasyFrame>
+    // A detail page: no tab bar, and one sticky action bar in its place,
+    // which has to stick from `md` too (a phone turned sideways is `md`).
+    <FantasyFrame stickyBottomBar>
       <PlayerDetailPage />
     </FantasyFrame>
   );
@@ -109,6 +111,10 @@ function PlayerDetailPage() {
   const { playerId } = Route.useParams();
   const loaderData = Route.useLoaderData();
   const { t, tr, lang } = useI18n();
+  // A player is reached from the header search, a club's squad, the players
+  // list, a Fantasy screen or a shared link: Retour goes back to whichever of
+  // them it was, and a reader with no in-app history lands on the list.
+  const goBack = useBackTo("/fantasy/players");
   const nameId = useId();
   const watchlist = useWatchlist();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
@@ -147,7 +153,7 @@ function PlayerDetailPage() {
     <UiHeader
       kicker={t("nav.fantasy")}
       title={t("fpl.player")}
-      backTo="/fantasy/players"
+      onBack={goBack}
       trailing={
         p ? (
           <>
@@ -280,7 +286,7 @@ function PlayerDetailPage() {
       {/* No fill of its own: the card's negative margin collapses through this
           wrapper, and a page-coloured wrapper would then paint over the
           hero's foot instead of letting the card overlap it. */}
-      <div className="pb-6">
+      <div>
         {/* The key numbers: a row of different figures laid out as a grid,
             so the tabular stat ramp, not the display face. */}
         <UiCard
@@ -407,38 +413,47 @@ function PlayerDetailPage() {
             </ul>
           )}
         </section>
+      </div>
 
-        {/* The actions sit above the bottom navigation while the page scrolls,
-            on a fade of the page colour (`to bottom`, so it reads the same in
-            Arabic). "Comparer" opens the players list with this player already
-            picked for comparison; "Recruter" opens the transfer flow, as it
-            does on the top players screen — bringing a player in always means
-            choosing who goes out first. */}
-        <div
-          className="sticky bottom-0 z-20 mt-2 flex gap-2.5 px-4 pb-3 pt-6"
-          style={
-            {
-              backgroundImage:
-                "linear-gradient(to bottom, color-mix(in srgb, var(--ui-page) 0%, transparent), var(--ui-page) 38%)",
-            } as CSSProperties
-          }
+      {/* The actions sit above the bottom navigation while the page scrolls,
+          on a fade of the page colour (`to bottom`, so it reads the same in
+          Arabic). "Comparer" opens the players list with this player already
+          picked for comparison; "Recruter" opens the transfer flow, as it
+          does on the top players screen — bringing a player in always means
+          choosing who goes out first.
+
+          A child of the column itself, not of the wrapper above (BG-0154): a
+          sticky box only travels inside its parent, and the wrapper starts
+          below the hero, so in a short window (a phone turned sideways) the
+          bar could not reach the window's bottom edge at the top of the page
+          and its buttons hung below it. `mb-6` is the wrapper's old `pb-6`,
+          so the spacing is the same. */}
+      <div
+        // The page has no bottom navigation, so the bar is the bottom edge:
+        // clear of the iPhone's home indicator, 12px where there is none.
+        className="sticky bottom-0 z-20 mb-6 mt-2 flex gap-2.5 px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-6"
+        style={
+          {
+            backgroundImage:
+              "linear-gradient(to bottom, color-mix(in srgb, var(--ui-page) 0%, transparent), var(--ui-page) 38%)",
+          } as CSSProperties
+        }
+      >
+        <UiLinkButton
+          to="/fantasy/players"
+          search={{ compare: p.id }}
+          variant="outline"
+          className={cn(
+            "flex-1 border-[color:var(--ui-rule-strong)] bg-[color:var(--ui-surface)]",
+            ui.tone.default,
+          )}
         >
-          <UiLinkButton
-            to="/fantasy/players"
-            search={{ compare: p.id }}
-            variant="outline"
-            className={cn(
-              "flex-1 border-[color:var(--ui-rule-strong)] bg-[color:var(--ui-surface)]",
-              ui.tone.default,
-            )}
-          >
-            {t("fantasy.players.compare")}
-          </UiLinkButton>
-          <UiLinkButton to="/fantasy/transfers" className="flex-[1.7]">
-            <Plus className="h-5 w-5" aria-hidden />
-            {t("fantasy.players.recruit_price").replace("{price}", priceNf.format(p.price))}
-          </UiLinkButton>
-        </div>
+          {t("fantasy.players.compare")}
+        </UiLinkButton>
+        <UiLinkButton to="/fantasy/transfers" className="flex-[1.7]">
+          <Plus className="h-5 w-5" aria-hidden />
+          {t("fantasy.players.recruit_price").replace("{price}", priceNf.format(p.price))}
+        </UiLinkButton>
       </div>
     </>
   );

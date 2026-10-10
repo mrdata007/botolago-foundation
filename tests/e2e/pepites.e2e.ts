@@ -134,7 +134,8 @@ for (const lang of ["fr", "ar"] as const) {
     await expect(entries).toHaveCount(10);
     await expect(page.getByTestId("pepites-reveal-countdown")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
-    // The chips under the band scroll sideways, as the Figma draws them.
+    // The filter chips under the title scroll sideways on a phone: the kit's
+    // chip rail, as on News (BG-0152). Only the rail may run past the edge.
     await expectNothingOffScreen(page, "main", { scrollRails: true });
 
     // The full ranking: twenty, then more, then filtered by position.
@@ -345,7 +346,8 @@ for (const lang of ["fr", "ar"] as const) {
     await page.setViewportSize({ width: 1440, height: 900 });
     await initializeLanguage(page, lang);
     await gotoHydrated(page, "/pepites/classement", lang);
-    await expect(page.getByTestId("pepites-desktop-podium")).toBeVisible();
+    // The featured N°1 above the table (BG-0156; it replaced the podium of three).
+    await expect(page.getByTestId("pepites-feature")).toBeVisible();
     await expect(page.getByTestId("pepites-desktop-table")).toBeVisible();
     await expect(page.getByTestId("pepites-desktop-filters")).toBeVisible();
     await page.getByTestId("pepites-desktop-table").getByRole("link").first().click();
@@ -448,9 +450,10 @@ for (const lang of ["fr", "ar"] as const) {
     await page.setViewportSize({ width: 768, height: 900 });
     await initializeLanguage(page, lang);
     await gotoHydrated(page, "/pepites/classement", lang);
-    const podium = page.getByTestId("pepites-desktop-podium");
-    await expect(podium).toBeVisible();
-    for (const link of await podium.getByRole("link").all()) {
+    // The featured N°1 (BG-0156; it replaced the podium of three) fits the tablet.
+    const feature = page.getByTestId("pepites-feature");
+    await expect(feature).toBeVisible();
+    for (const link of await feature.getByRole("link").all()) {
       const box = await link.boundingBox();
       expect(box).not.toBeNull();
       expect(box!.x).toBeGreaterThanOrEqual(0);

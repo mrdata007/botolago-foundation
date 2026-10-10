@@ -20,14 +20,21 @@ describe("the day's fixtures in the server's HTML (A10)", () => {
   const page = code("matches.index.tsx");
 
   it("has a loader that warms the seasons, then the opening day, for the server render", () => {
-    expect(page).toContain("loaderDeps: ({ search }) => ({ season: search.season })");
+    // The season and the day in the URL, validated like the page does: a
+    // `/matches?date=…` opened directly is rendered, and its availability
+    // decided, for that day, not for the one the season opens on.
+    expect(page).toContain("const { season, date } = validateCalendarSearch(search);");
+    expect(page).toContain("return { season, date };");
     expect(page).toMatch(/loader: \{[\s\S]*?handler: async \(\{ context, deps \}\) =>/);
     expect(page).toMatch(
       /prefetchForSsr\(queryClient, \[\s*\{\s*queryKey: \["football", "seasons", "fr"\]/,
     );
     expect(page).toContain("const season = openingSeason(seasons, deps.season);");
     expect(page).toMatch(
-      /prefetchForSsr\(queryClient, \[\s*matchDayQuery\(openingMatchDay\(season, today\), "fr", season\?\.id\),?\s*\]\)/,
+      /deps\.date\s*\? clampMatchDay\(deps\.date, season\)\s*: openingMatchDay\(season, today\)/,
+    );
+    expect(page).toMatch(
+      /prefetchForSsr\(queryClient, \[matchDayQuery\(day, "fr", season\?\.id\)\]\)/,
     );
   });
 
@@ -77,6 +84,22 @@ describe("the day's rows keep up with the live strip (A05)", () => {
   it("keeps the same day's rows through a language switch", () => {
     expect(page).toMatch(
       /placeholderData: \(previous, previousQuery\) =>\s*previousQuery && isSameMatchDayQuery\(previousQuery\.queryKey, dayQuery\.queryKey\)/,
+    );
+  });
+});
+
+/**
+ * BG-0155: Home's payload, which this page reads too, grew from 3 fixtures to
+ * a whole round. An empty day's "next match day" link is still worked out
+ * from the first three, so it shows on exactly the days it did before (review
+ * of 2026-10-06: with ten, an empty Tuesday between two rounds offered the
+ * next round's Friday where it had offered nothing).
+ */
+describe("an empty day's next match day (BG-0155)", () => {
+  const page = code("matches.index.tsx");
+  it("reads only the first fixtures of Home's payload, as many as it held before", () => {
+    expect(page).toMatch(
+      /nextMatchDayAfter\(\s*\(upcomingQ\.data\?\.matches \?\? \[\]\)\.slice\(0, HOME_LIST_SIZE\),\s*matchDay,?\s*\)/,
     );
   });
 });

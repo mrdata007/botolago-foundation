@@ -161,6 +161,7 @@ export type Database = {
       }
     }
     Functions: {
+      ack_manager_card_moments: { Args: { p_keys: string[] }; Returns: Json }
       activate_fantasy_chip: {
         Args: {
           p_chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
@@ -396,6 +397,7 @@ export type Database = {
         Returns: Json
       }
       admin_get_user: { Args: { p_user_id: string }; Returns: Json }
+      admin_home_stories: { Args: never; Returns: Json }
       admin_list_active_assignments: {
         Args: { p_staff_principal_id: string }
         Returns: Json
@@ -561,6 +563,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_publish_home_story: {
+        Args: { p_id: string; p_published: boolean; p_version: number }
+        Returns: Json
+      }
       admin_reject_request: {
         Args: {
           p_approval_id: string
@@ -642,6 +648,21 @@ export type Database = {
           p_mini_league_min_members: number
           p_reason: string
           p_season_id: string
+        }
+        Returns: Json
+      }
+      admin_save_home_story: {
+        Args: {
+          p_alt_ar: string
+          p_alt_fr: string
+          p_credit: string
+          p_destination: string
+          p_id: string
+          p_media_asset_id: string
+          p_position: number
+          p_title_ar: string
+          p_title_fr: string
+          p_version: number
         }
         Returns: Json
       }
@@ -1167,6 +1188,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
       get_my_fantasy_history: {
         Args: {
@@ -1189,8 +1211,14 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
+      get_my_manager_card: { Args: never; Returns: Json }
+      get_my_manager_card_history: {
+        Args: { p_before_seq?: number; p_limit?: number; p_season_id?: string }
+        Returns: Json
+      }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
+      home_stories: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
         Args: {
           p_coverage: Json
@@ -1203,6 +1231,17 @@ export type Database = {
         Returns: Json
       }
       ingest_current_player_fixture_performance_v1: {
+        Args: {
+          p_coverage: Json
+          p_fixture_external_id: string
+          p_observed_at: string
+          p_provider_name: string
+          p_rows: Json
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
+      ingest_current_player_fixture_performance_v2: {
         Args: {
           p_coverage: Json
           p_fixture_external_id: string
@@ -1316,6 +1355,7 @@ export type Database = {
         }
         Returns: Json
       }
+      manager_card_status: { Args: never; Returns: Json }
       mark_all_my_notifications_read: {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
@@ -1325,6 +1365,10 @@ export type Database = {
         Returns: boolean
       }
       match_votes: { Args: { p_fixture_id: string }; Returns: Json }
+      my_fantasy_gameweek_recap_publication: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       my_notification_unread_count: {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
@@ -1564,6 +1608,14 @@ export type Database = {
         }
         Returns: Json
       }
+      public_fantasy_gameweek_recap: {
+        Args: { p_public_id: string }
+        Returns: Json
+      }
+      publish_fantasy_gameweek_recap: {
+        Args: { p_alias: string; p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
       quarantine_historical_player_fixture_performance: {
         Args: {
           p_coverage: Json
@@ -1625,6 +1677,10 @@ export type Database = {
         }
         Returns: string
       }
+      revoke_fantasy_gameweek_recap: {
+        Args: { p_public_id: string }
+        Returns: undefined
+      }
       save_article: { Args: { p_article_edition_id: string }; Returns: Json }
       save_fantasy_lineup: {
         Args: {
@@ -1666,6 +1722,23 @@ export type Database = {
           p_gameweek_id: string
         }
         Returns: Json
+      }
+      service_ai_content_pending_notices: { Args: never; Returns: Json }
+      service_ai_content_plan: { Args: never; Returns: Json }
+      service_ai_content_publish: {
+        Args: {
+          p_editions: Json
+          p_fixture_id: string
+          p_kind: string
+          p_model: string
+          p_sanitizer_version: string
+          p_source_edition_ids: string[]
+        }
+        Returns: Json
+      }
+      service_ai_content_record_notice: {
+        Args: { p_ids: string[]; p_sent: boolean }
+        Returns: undefined
       }
       service_apply_current_player_list: {
         Args: { p_expected_plan_digest: string; p_observation_id: string }
@@ -1730,6 +1803,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      service_claim_account_deletions: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_claim_ai_home_story: { Args: never; Returns: Json }
       service_claim_email_deliveries: {
         Args: { p_lease_seconds?: number; p_limit?: number }
         Returns: Json
@@ -1744,6 +1822,19 @@ export type Database = {
       }
       service_claim_notification_schedules: {
         Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_claim_push_deliveries: {
+        Args: { p_lease_seconds?: number; p_limit?: number }
+        Returns: Json
+      }
+      service_complete_ai_home_story: {
+        Args: {
+          p_height: number
+          p_job_id: string
+          p_model: string
+          p_width: number
+        }
         Returns: Json
       }
       service_complete_fantasy_gameweek: {
@@ -1794,9 +1885,17 @@ export type Database = {
         }
         Returns: Json
       }
+      service_erase_account: {
+        Args: { p_avatar_objects_removed?: number; p_request_id: string }
+        Returns: Json
+      }
       service_evaluate_fantasy_prizes: {
         Args: { p_limit?: number }
         Returns: Json
+      }
+      service_fail_ai_home_story: {
+        Args: { p_error_code: string; p_job_id: string }
+        Returns: undefined
       }
       service_fantasy_deadline_watch: {
         Args: {
@@ -1955,6 +2054,10 @@ export type Database = {
         }
         Returns: number
       }
+      service_record_account_deletion_email: {
+        Args: { p_outcome: string; p_request_id: string }
+        Returns: boolean
+      }
       service_record_adaptive_gap: {
         Args: { p_fixture_external_id: string; p_reason: string }
         Returns: Json
@@ -1983,7 +2086,19 @@ export type Database = {
         }
         Returns: Database["app"]["Enums"]["notification_delivery_status"]
       }
+      service_record_reconciled_fantasy_observation: {
+        Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
+        Returns: Json
+      }
+      service_release_account_deletion: {
+        Args: { p_error: string; p_request_id: string }
+        Returns: boolean
+      }
       service_release_email_deliveries: {
+        Args: { p_delivery_ids: string[]; p_retry_at: string }
+        Returns: number
+      }
+      service_release_push_deliveries: {
         Args: { p_delivery_ids: string[]; p_retry_at: string }
         Returns: number
       }
@@ -2154,7 +2269,11 @@ export type Database = {
     Tables: {
       account_deletion_requests: {
         Row: {
+          attempts: number
+          claimed_at: string | null
+          erase_after: string | null
           id: string
+          last_error: string | null
           processed_at: string | null
           requested_at: string
           status: Database["app"]["Enums"]["account_deletion_status"]
@@ -2162,7 +2281,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          erase_after?: string | null
           id?: string
+          last_error?: string | null
           processed_at?: string | null
           requested_at?: string
           status?: Database["app"]["Enums"]["account_deletion_status"]
@@ -2170,7 +2293,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempts?: number
+          claimed_at?: string | null
+          erase_after?: string | null
           id?: string
+          last_error?: string | null
           processed_at?: string | null
           requested_at?: string
           status?: Database["app"]["Enums"]["account_deletion_status"]
@@ -3387,7 +3514,7 @@ export type Database = {
           invite_code_hint: string | null
           member_count: number
           name: string
-          owner_user_id: string
+          owner_user_id: string | null
           updated_at: string
           visibility: Database["app"]["Enums"]["fantasy_league_visibility"]
         }
@@ -3400,7 +3527,7 @@ export type Database = {
           invite_code_hint?: string | null
           member_count?: number
           name: string
-          owner_user_id: string
+          owner_user_id?: string | null
           updated_at?: string
           visibility: Database["app"]["Enums"]["fantasy_league_visibility"]
         }
@@ -3413,7 +3540,7 @@ export type Database = {
           invite_code_hint?: string | null
           member_count?: number
           name?: string
-          owner_user_id?: string
+          owner_user_id?: string | null
           updated_at?: string
           visibility?: Database["app"]["Enums"]["fantasy_league_visibility"]
         }
@@ -4061,10 +4188,11 @@ export type Database = {
       }
       fantasy_prize_winners: {
         Row: {
+          account_erased_at: string | null
           block_number: number | null
           created_at: string
           fantasy_season_id: string
-          fantasy_team_id: string
+          fantasy_team_id: string | null
           first_gameweek_number: number
           forfeited_at: string | null
           forfeited_by_principal_id: string | null
@@ -4093,16 +4221,17 @@ export type Database = {
           tier: Database["app"]["Enums"]["fantasy_prize_tier"]
           transfers_in_period: number
           updated_at: string
-          user_id: string
+          user_id: string | null
           verification_notes: string | null
           verified_at: string | null
           verified_by_principal_id: string | null
         }
         Insert: {
+          account_erased_at?: string | null
           block_number?: number | null
           created_at?: string
           fantasy_season_id: string
-          fantasy_team_id: string
+          fantasy_team_id?: string | null
           first_gameweek_number: number
           forfeited_at?: string | null
           forfeited_by_principal_id?: string | null
@@ -4131,16 +4260,17 @@ export type Database = {
           tier: Database["app"]["Enums"]["fantasy_prize_tier"]
           transfers_in_period: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           verification_notes?: string | null
           verified_at?: string | null
           verified_by_principal_id?: string | null
         }
         Update: {
+          account_erased_at?: string | null
           block_number?: number | null
           created_at?: string
           fantasy_season_id?: string
-          fantasy_team_id?: string
+          fantasy_team_id?: string | null
           first_gameweek_number?: number
           forfeited_at?: string | null
           forfeited_by_principal_id?: string | null
@@ -4169,7 +4299,7 @@ export type Database = {
           tier?: Database["app"]["Enums"]["fantasy_prize_tier"]
           transfers_in_period?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           verification_notes?: string | null
           verified_at?: string | null
           verified_by_principal_id?: string | null
@@ -4287,6 +4417,67 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      fantasy_public_recaps: {
+        Row: {
+          alias: string | null
+          fantasy_team_id: string
+          gameweek_id: string
+          id: string
+          public_id: string
+          published_at: string
+          revoked_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          alias?: string | null
+          fantasy_team_id: string
+          gameweek_id: string
+          id?: string
+          public_id: string
+          published_at?: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          alias?: string | null
+          fantasy_team_id?: string
+          gameweek_id?: string
+          id?: string
+          public_id?: string
+          published_at?: string
+          revoked_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fantasy_public_recaps_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_public_recaps_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fantasy_public_recaps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fantasy_ranking_tiebreak_rules: {
         Row: {
@@ -5376,6 +5567,62 @@ export type Database = {
           },
         ]
       }
+      home_stories: {
+        Row: {
+          alt_ar: string
+          alt_fr: string
+          created_at: string
+          credit: string | null
+          destination: string | null
+          id: string
+          media_asset_id: string
+          position: number
+          published: boolean
+          title_ar: string
+          title_fr: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          alt_ar: string
+          alt_fr: string
+          created_at?: string
+          credit?: string | null
+          destination?: string | null
+          id?: string
+          media_asset_id: string
+          position?: number
+          published?: boolean
+          title_ar: string
+          title_fr: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          alt_ar?: string
+          alt_fr?: string
+          created_at?: string
+          credit?: string | null
+          destination?: string | null
+          id?: string
+          media_asset_id?: string
+          position?: number
+          published?: boolean
+          title_ar?: string
+          title_fr?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "home_stories_media_asset_id_fkey"
+            columns: ["media_asset_id"]
+            isOneToOne: false
+            referencedRelation: "media_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lineup_players: {
         Row: {
           captain: boolean
@@ -5483,6 +5730,241 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_card_gameweeks: {
+        Row: {
+          calculated_at: string
+          cap: number | null
+          cap_raw: number | null
+          con: number | null
+          con_raw: number | null
+          fantasy_season_id: string
+          gameweek_id: string
+          gameweeks_counted: number
+          ovr: number | null
+          provisional: boolean
+          rules_version: number
+          sel: number | null
+          sel_raw: number | null
+          tier: string | null
+          trf: number | null
+          trf_raw: number | null
+          user_id: string
+        }
+        Insert: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id: string
+          gameweek_id: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version: number
+          sel?: number | null
+          sel_raw?: number | null
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id: string
+        }
+        Update: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id?: string
+          gameweek_id?: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version?: number
+          sel?: number | null
+          sel_raw?: number | null
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_gameweeks_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_gameweeks_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_gameweeks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "manager_cards"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      manager_card_moment_acks: {
+        Row: {
+          acknowledged_at: string
+          moment_key: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          moment_key: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          moment_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_moment_acks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_card_seasons: {
+        Row: {
+          calculated_at: string
+          cap: number | null
+          cap_raw: number | null
+          con: number | null
+          con_raw: number | null
+          fantasy_season_id: string
+          fantasy_team_id: string
+          gameweeks_counted: number
+          ovr: number | null
+          provisional: boolean
+          rules_version: number
+          sel: number | null
+          sel_raw: number | null
+          through_gameweek_id: string
+          tier: string | null
+          trf: number | null
+          trf_raw: number | null
+          user_id: string
+        }
+        Insert: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id: string
+          fantasy_team_id: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version: number
+          sel?: number | null
+          sel_raw?: number | null
+          through_gameweek_id: string
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id: string
+        }
+        Update: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id?: string
+          fantasy_team_id?: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version?: number
+          sel?: number | null
+          sel_raw?: number | null
+          through_gameweek_id?: string
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_seasons_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_seasons_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_seasons_through_gameweek_id_fkey"
+            columns: ["through_gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_seasons_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "manager_cards"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      manager_cards: {
+        Row: {
+          created_at: string
+          founder_cohort: number | null
+          founder_granted_at: string | null
+          serial: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          founder_cohort?: number | null
+          founder_granted_at?: string | null
+          serial?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          founder_cohort?: number | null
+          founder_granted_at?: string | null
+          serial?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_cards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -8178,6 +8660,7 @@ export type Database = {
         | "matchday_results"
         | "round_preview"
         | "pepites_weekly"
+        | "goal_cancelled"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -8601,6 +9084,7 @@ export const Constants = {
         "matchday_results",
         "round_preview",
         "pepites_weekly",
+        "goal_cancelled",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [

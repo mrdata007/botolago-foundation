@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ArrowDown, ChevronRight } from "lucide-react";
+import type { MouseEvent, ReactNode } from "react";
 
 import {
   type PositionGroup,
@@ -8,19 +9,38 @@ import {
   type RankingRow,
   type RankingSort,
 } from "@/backend/pepites/contracts";
+import { SectionHeaderLink } from "@/components/common/SectionHeader";
+import {
+  ui,
+  UiBadge,
+  UiButton,
+  UiCard,
+  UiChip,
+  UiEmptyState,
+  UiLinkButton,
+  UiSelect,
+  UiStatePanel,
+  UiTable,
+  UiTBody,
+  UiTD,
+  UiTH,
+  UiTHead,
+  UiTR,
+} from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
-import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubStyle } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 
-import { pp, teamKit } from "./pepites-design";
 import {
   formatCount,
   formatNumber,
+  META_SEPARATOR,
   POSITION_GROUPS,
   positionLabel,
   positionShort,
   scoreText,
+  teamAsClub,
 } from "./pepites-format";
 import {
   PepitesComingSoon,
@@ -29,27 +49,28 @@ import {
   PepitesPreviewBanner,
   PepitesRevealBanner,
 } from "./PepitesParts";
-import { PepitesShell } from "./PepitesShell";
+import { PepitesChipRow, PepitesPageTitle, PepitesShell } from "./PepitesShell";
 import {
   pointerVersion,
   rankingPagesOptions,
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
+import { PepitesFeature } from "./PepitesFeature";
 import {
-  FilterChip,
-  GoMark,
-  Headshot,
-  MonoLine,
-  NightBand,
-  PepitesShirt,
+  PepitesIdentityDisc,
+  PepitesName,
+  RankPlate,
   RatingChip,
   Seg10Bar,
 } from "./PepitesVisuals";
+import { useClubCatalogue } from "./use-club-catalogue";
 
 export const RANKING_PAGE_SIZE = 20;
 /** The age chip: 20 and under (Figma 01, "≤ 20 ans"). */
 export const RANKING_YOUNG_AGE = 20;
+/** The minutes floors the desktop filter offers; the first is the one the band names. */
+const MINUTES_FLOORS = [600, 900, 1200] as const;
 
 export interface RankingFilters {
   readonly position: PositionGroup | null;
@@ -80,13 +101,30 @@ function sortLabel(sort: RankingSort, t: (key: TranslationKey) => string): strin
   }
 }
 
-/** Figma 02's columns: # · player · MIN · B/PD · NOTE · SCORE. */
-const COLUMNS = "grid grid-cols-[18px_minmax(0,1fr)_44px_36px_36px_34px] items-center gap-1";
+/** Keeps a figure's digits in order inside an Arabic line (plan §9). */
+const isolate = (text: string) => `⁨${text}⁩`;
+
+/** The heavy weight on a ramp step that does not carry it (a name in a dense row). */
+const HEAVY = "[font-weight:var(--ui-weight-heavy)]";
 
 /**
- * `/pepites/classement` (Figma 02): every ranked player of the current
- * version on one table card, by position and age, sorted by score or by a
- * column. Twenty at a time.
+ * A row's link sits inside a row that is itself tappable (`UiTR onClick`),
+ * so a click on the link must not reach the row and navigate a second time.
+ */
+const keepToLink = (event: MouseEvent) => event.stopPropagation();
+
+/**
+ * `/pepites/classement` (Figma 02), on the main kit (BG-0152): the kit's
+ * title band with the back pill, the count and the position chips; the
+ * featured N°1 on the stadium band while the list is in ranking order
+ * (`PepitesFeature`, BG-0156; it replaced a podium of three); then every
+ * ranked player of the current version in a table, by position and age,
+ * sorted by score or by a column. Twenty at a time.
+ *
+ * One `<h1>` serves both widths (its words change from 768px), so each
+ * breakpoint shows exactly one. The phone table and the desktop table are
+ * separate: the phone keeps the six Figma columns, the desktop shows all
+ * fourteen. Only the phone rows carry `pepites-ranking-row`.
  */
 export function PepitesRanking({
   filters,
@@ -136,53 +174,57 @@ export function PepitesRanking({
   const first = pages.data?.pages[0];
   const total = first?.available ? (first.total ?? 0) : 0;
   const counted = first?.available && first.found;
+  const teams = first?.available ? (first.teams ?? []) : [];
 
-  const hero = (
-    <NightBand cut={26} ghost={counted ? String(total) : null} testId="pepites-ranking-hero" wide>
-      <div className="flex flex-col gap-2 pb-12 pt-3 md:hidden">
-        <Link
-          to="/pepites"
-          data-testid="pepites-ranking-back"
-          className={cn(
-            "-ms-1 inline-flex min-h-[var(--ui-tap-min)] items-center gap-0.5 self-start text-[13px] text-white",
-            pp.heavy,
-            ui.focusOnMesh,
-          )}
+  const countText = counted
+    ? t("pepites.ranking.count_short").replace("{n}", isolate(formatNumber(total, lang)))
+    : null;
+  const sortedBy = `${t("pepites.ranking.sorted_by")} ${sortLabel(filters.sort, t)}`;
+  const setSort = (sort: RankingSort) => onFiltersChange({ ...filters, sort });
+
+  const header = (
+    <PepitesPageTitle
+      desktop
+      backTo="/pepites"
+      backTestId="pepites-ranking-back"
+      title={
+        <>
+          <span className="md:hidden">{t("pepites.ranking.title")}</span>
+          <span className="hidden md:inline">{t("pepites.ranking.desktop_title")}</span>
+        </>
+      }
+    >
+      <div className="flex flex-col gap-3">
+        <p
+          data-testid="pepites-ranking-count"
+          className={cn("md:hidden", ui.text.meta, ui.tone.muted)}
         >
-          <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />
-          {t("pepites.title")}
-        </Link>
-        <h1 className={cn(pp.display, pp.lean, "text-[30px] leading-[1.1] text-white")}>
-          {t("pepites.ranking.title")}
-        </h1>
-        <MonoLine testId="pepites-ranking-count">
-          {[
-            counted
-              ? t("pepites.ranking.count_short").replace("{n}", `⁨${formatNumber(total, lang)}⁩`)
-              : null,
-            t("pepites.ranking.scope"),
-            `${t("pepites.ranking.sorted_by")} ${sortLabel(filters.sort, t)} ▼`,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </MonoLine>
-        <div
-          className="-mx-4 mt-2 flex gap-1.5 overflow-x-auto px-4 pb-1"
-          role="group"
-          aria-label={t("pepites.filter.position")}
-          data-testid="pepites-filters"
-        >
-          <FilterChip
-            tone="dark"
+          {[countText, t("pepites.ranking.scope"), sortedBy].filter(Boolean).join(" · ")}
+        </p>
+        <div className="hidden flex-col gap-1 md:flex">
+          <p className={cn(ui.text.meta, ui.tone.muted)}>
+            {[
+              t("pepites.hero.kicker_short"),
+              countText,
+              `${isolate(`${formatCount(MINUTES_FLOORS[0], lang)}+`)} ${t("pepites.stats.minutes")}`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          <p className={cn("max-w-prose", ui.text.body, ui.tone.muted)}>
+            {t("pepites.ranking.desktop_lede")}
+          </p>
+        </div>
+        <PepitesChipRow label={t("pepites.filter.position")} testId="pepites-filters">
+          <UiChip
             selected={filters.position === null}
             onClick={() => onFiltersChange({ ...filters, position: null })}
           >
             {t("pepites.filter.all_positions")}
-          </FilterChip>
+          </UiChip>
           {[...POSITION_GROUPS].reverse().map((group) => (
-            <FilterChip
+            <UiChip
               key={group}
-              tone="dark"
               selected={filters.position === group}
               onClick={() =>
                 onFiltersChange({
@@ -190,13 +232,12 @@ export function PepitesRanking({
                   position: filters.position === group ? null : group,
                 })
               }
-              testId={`pepites-filter-${group}`}
+              data-testid={`pepites-filter-${group}`}
             >
               {positionShort(group, t)}
-            </FilterChip>
+            </UiChip>
           ))}
-          <FilterChip
-            tone="dark"
+          <UiChip
             selected={filters.maxAge === RANKING_YOUNG_AGE}
             onClick={() =>
               onFiltersChange({
@@ -204,124 +245,54 @@ export function PepitesRanking({
                 maxAge: filters.maxAge === RANKING_YOUNG_AGE ? null : RANKING_YOUNG_AGE,
               })
             }
-            testId="pepites-filter-age"
+            data-testid="pepites-filter-age"
           >
             {t("pepites.chip.max_age_20")}
-          </FilterChip>
-        </div>
+          </UiChip>
+        </PepitesChipRow>
       </div>
-      <div className="hidden min-h-[360px] flex-col items-start justify-between gap-8 py-9 md:flex xl:flex-row">
-        <div className="min-w-0 max-w-[540px] pt-1">
-          <Link
-            to="/pepites"
-            data-testid="pepites-ranking-back"
-            className={cn(
-              "-ms-1 mb-3 inline-flex min-h-[var(--ui-tap-min)] items-center gap-0.5 text-[13px] text-white",
-              pp.heavy,
-              ui.focusOnMesh,
-            )}
-          >
-            <ChevronLeft className="size-4 rtl:-scale-x-100" aria-hidden />
-            {t("pepites.title")}
-          </Link>
-          <div>
-            <GoMark />
-          </div>
-          <h1 className={cn(pp.display, pp.lean, "mt-8 text-[clamp(42px,4vw,56px)] text-white")}>
-            {t("pepites.ranking.desktop_title")}
-          </h1>
-          <MonoLine className="mt-4">
-            {t("pepites.hero.kicker_short")} ·{" "}
-            {t("pepites.ranking.count_short").replace("{n}", formatNumber(total, lang))} · 600+{" "}
-            {t("pepites.stats.minutes")}
-          </MonoLine>
-          <p
-            className={cn(pp.bold, pp.onNightSub, "mt-5 max-w-[500px] text-[15px] leading-relaxed")}
-          >
-            {t("pepites.ranking.desktop_lede")}
-          </p>
-          <Link
-            to="/pepites/methode"
-            className={cn(pp.heavy, pp.spring, "mt-4 inline-block text-[14px]", ui.focusOnMesh)}
-          >
-            {t("pepites.home.method_link")} →
-          </Link>
-        </div>
-        <div
-          className="flex w-full justify-center gap-4 xl:w-auto"
-          data-testid="pepites-desktop-podium"
-        >
-          {rows.slice(0, 3).map((row) => (
-            <Link
-              key={row.id}
-              to="/pepites/joueur/$playerId"
-              params={{ playerId: row.id }}
-              className={cn(
-                "relative flex h-[250px] w-[190px] flex-col overflow-hidden rounded-2xl border border-white/15 p-3 text-white",
-                ui.focusOnMesh,
-              )}
-              style={{
-                background: `linear-gradient(180deg, ${teamKit(row.team).primary}99, #0d1738)`,
-              }}
-            >
-              <span className={cn(pp.display, "absolute top-3 text-[64px] text-white/15")}>
-                {row.rank ?? "–"}
-              </span>
-              <PepitesShirt
-                player={row}
-                number={row.rank}
-                className="relative mx-auto h-[130px] w-[132px]"
-              />
-              <span className={cn(pp.display, "mt-2 truncate text-[17px]")}>{row.name}</span>
-              <span className={cn(pp.mono, pp.onNightSub, "truncate text-[11px] leading-[1.4]")}>
-                {row.team ? tr(row.team.shortName) : ""} ·{" "}
-                {row.positionGroup ? positionShort(row.positionGroup, t) : ""}
-              </span>
-              <span className={cn(pp.display, pp.energyText, "mt-auto text-[36px]")}>
-                {scoreText(row.score, lang, "–")}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </div>
-    </NightBand>
+    </PepitesPageTitle>
   );
 
   const body = (() => {
     if (filters.followed && viewer === "anon") {
       return (
-        <div className="flex flex-col gap-3">
-          <RankingMessage
-            testId="pepites-ranking-sign-in"
-            title={t("pepites.ranking.followed")}
-            body={t("pepites.follow.account_required")}
-          />
-          <Link
-            to="/auth/login"
-            search={{ next: "/pepites/classement?suivis=1" }}
-            className={cn(pp.heavy, pp.ink, "self-center underline underline-offset-2")}
-          >
-            {t("pepites.follow.have_account")}
-          </Link>
-        </div>
+        <UiEmptyState
+          testId="pepites-ranking-sign-in"
+          title={t("pepites.ranking.followed")}
+          body={t("pepites.follow.account_required")}
+          action={
+            <UiLinkButton
+              to="/auth/login"
+              search={{ next: "/pepites/classement?suivis=1" }}
+              variant="ink"
+              size="sm"
+              className="mt-4"
+            >
+              {t("pepites.follow.have_account")}
+            </UiLinkButton>
+          }
+        />
       );
     }
     if (version === null || (first?.available && !first.found)) {
       return (
-        <RankingMessage
+        <UiEmptyState
           testId="pepites-ranking-none"
           title={t("pepites.state.no_ranking")}
           body={t("pepites.state.no_ranking_body")}
         />
       );
     }
-    if (pages.isPending) return <TableSkeleton />;
+    if (pages.isPending) {
+      return <UiStatePanel kind="loading" testId="pepites-ranking-loading" className="py-0" />;
+    }
     if (pages.isError && rows.length === 0) {
       return <PepitesErrorState inline onRetry={() => void pages.refetch()} />;
     }
     if (rows.length === 0) {
       return (
-        <RankingMessage
+        <UiEmptyState
           testId="pepites-ranking-empty"
           title={
             filters.followed ? t("pepites.ranking.followed_empty") : t("pepites.ranking.no_match")
@@ -331,209 +302,218 @@ export function PepitesRanking({
     }
     return (
       <>
-        <RankingTable
-          rows={rows}
-          sort={filters.sort}
-          onSort={(sort) => onFiltersChange({ ...filters, sort })}
-        />
-        <DesktopRankingTable
-          rows={rows}
-          sort={filters.sort}
-          onSort={(sort) => onFiltersChange({ ...filters, sort })}
-        />
+        {/* The featured N°1 (BG-0156) while the list is in ranking order:
+            sorted by another column, the first row is not the leader. */}
+        {filters.sort === "score" && rows[0] ? (
+          <PepitesFeature
+            testId="pepites-feature"
+            player={rows[0]}
+            rank={rows[0].rank}
+            score={rows[0].score}
+            movement={rows[0].movement}
+            version={version}
+            width="desktop"
+          />
+        ) : null}
+        <RankingTable rows={rows} sort={filters.sort} onSort={setSort} />
+        <DesktopRankingTable rows={rows} sort={filters.sort} onSort={setSort} />
         {pages.hasNextPage ? (
-          <button
-            type="button"
+          <UiButton
+            variant="soft"
             disabled={pages.isFetchingNextPage}
             onClick={() => void pages.fetchNextPage()}
             data-testid="pepites-load-more"
-            className={cn(
-              "min-h-[var(--ui-tap-min)] rounded-full border px-5 text-[13px] disabled:opacity-50",
-              pp.line,
-              pp.ink,
-              pp.heavy,
-              "bg-[color:var(--pepites-card)]",
-              ui.focus,
-            )}
+            className="md:w-auto md:self-center md:px-8"
           >
             {t("pepites.ranking.load_more")}
-          </button>
+          </UiButton>
         ) : null}
-        <Link
-          to="/pepites/methode"
-          className={cn(
-            "self-center text-[12px] underline underline-offset-2",
-            pp.ink,
-            pp.bold,
-            ui.focus,
-          )}
-        >
+        <SectionHeaderLink to="/pepites/methode" className="gap-1 self-center">
           {t("pepites.home.method_link")}
-        </Link>
+          <ChevronRight className="size-4" aria-hidden />
+        </SectionHeaderLink>
       </>
     );
   })();
 
   return (
-    <PepitesShell hero={hero} className="gap-3" wide>
+    <PepitesShell pageHeader={header} width="desktop" className="gap-3 md:gap-4">
       {pointer.preview ? <PepitesPreviewBanner /> : null}
       <PepitesRevealBanner pointer={pointer} />
-      <div
-        className="flex gap-2"
-        role="group"
-        aria-label={t("pepites.ranking.scope_filter")}
-        data-testid="pepites-ranking-scope"
-      >
-        <FilterChip
-          selected={!filters.followed}
-          onClick={() => onFiltersChange({ ...filters, followed: false })}
-          testId="pepites-ranking-all"
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <div
+          className="flex gap-2"
+          role="group"
+          aria-label={t("pepites.ranking.scope_filter")}
+          data-testid="pepites-ranking-scope"
         >
-          {t("pepites.ranking.all")}
-        </FilterChip>
-        <FilterChip
-          selected={filters.followed}
-          onClick={() => onFiltersChange({ ...filters, followed: true })}
-          testId="pepites-ranking-followed"
-        >
-          {t("pepites.ranking.followed")}
-        </FilterChip>
-      </div>
-      <div
-        className="hidden flex-wrap items-center gap-2 md:flex"
-        data-testid="pepites-desktop-filters"
-      >
-        <FilterChip
-          selected={filters.position === null}
-          onClick={() => onFiltersChange({ ...filters, position: null })}
-        >
-          {t("pepites.filter.all_positions")}
-        </FilterChip>
-        {[...POSITION_GROUPS].reverse().map((group) => (
-          <FilterChip
-            key={group}
-            selected={filters.position === group}
-            onClick={() => onFiltersChange({ ...filters, position: group })}
+          <UiChip
+            selected={!filters.followed}
+            onClick={() => onFiltersChange({ ...filters, followed: false })}
+            data-testid="pepites-ranking-all"
           >
-            {positionShort(group, t)}
-          </FilterChip>
-        ))}
-        <FilterChip
-          selected={filters.maxAge === RANKING_YOUNG_AGE}
-          onClick={() =>
-            onFiltersChange({
-              ...filters,
-              maxAge: filters.maxAge === RANKING_YOUNG_AGE ? null : RANKING_YOUNG_AGE,
-            })
-          }
+            {t("pepites.ranking.all")}
+          </UiChip>
+          <UiChip
+            selected={filters.followed}
+            onClick={() => onFiltersChange({ ...filters, followed: true })}
+            data-testid="pepites-ranking-followed"
+          >
+            {t("pepites.ranking.followed")}
+          </UiChip>
+        </div>
+        <div
+          className="hidden min-w-0 flex-1 flex-wrap items-center gap-2 md:flex"
+          data-testid="pepites-desktop-filters"
         >
-          {t("pepites.chip.max_age_20")}
-        </FilterChip>
-        <label className="sr-only" htmlFor="pepites-club-filter">
-          {t("pepites.ranking.club")}
-        </label>
-        <select
-          id="pepites-club-filter"
-          value={filters.teamId ?? ""}
-          onChange={(event) => onFiltersChange({ ...filters, teamId: event.target.value || null })}
-          className="min-h-9 rounded-full border bg-white px-3 text-[12px]"
-        >
-          <option value="">{t("pepites.ranking.club")}</option>
-          {(first?.available ? (first.teams ?? []) : []).map((team) => (
-            <option key={team.id} value={team.id}>
-              {tr(team.shortName)}
-            </option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor="pepites-min-filter">
-          {t("pepites.ranking.min_minutes")}
-        </label>
-        <select
-          id="pepites-min-filter"
-          value={filters.minMinutes ?? ""}
-          onChange={(event) =>
-            onFiltersChange({
-              ...filters,
-              minMinutes: event.target.value ? Number(event.target.value) : null,
-            })
-          }
-          className="min-h-9 rounded-full border bg-white px-3 text-[12px]"
-        >
-          <option value="">{t("pepites.ranking.min_minutes")}</option>
-          {[600, 900, 1200].map((minutes) => (
-            <option key={minutes} value={minutes}>
-              {formatCount(minutes, lang)}+ {t("pepites.stats.minutes")}
-            </option>
-          ))}
-        </select>
-        <span className={cn("ms-auto text-[13px]", pp.ink, pp.bold)}>
-          {t("pepites.ranking.sorted_by")} {sortLabel(filters.sort, t)}
-        </span>
+          <UiSelect
+            id="pepites-club-filter"
+            aria-label={t("pepites.ranking.club")}
+            value={filters.teamId ?? ""}
+            onChange={(event) =>
+              onFiltersChange({ ...filters, teamId: event.target.value || null })
+            }
+            className="w-44"
+          >
+            <option value="">{t("pepites.ranking.club")}</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>
+                {tr(team.shortName)}
+              </option>
+            ))}
+          </UiSelect>
+          <UiSelect
+            id="pepites-min-filter"
+            aria-label={t("pepites.ranking.min_minutes")}
+            value={filters.minMinutes ?? ""}
+            onChange={(event) =>
+              onFiltersChange({
+                ...filters,
+                minMinutes: event.target.value ? Number(event.target.value) : null,
+              })
+            }
+            className="w-52"
+          >
+            <option value="">{t("pepites.ranking.min_minutes")}</option>
+            {MINUTES_FLOORS.map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {formatCount(minutes, lang)}+ {t("pepites.stats.minutes")}
+              </option>
+            ))}
+          </UiSelect>
+          <span className={cn("ms-auto", ui.text.meta, ui.tone.muted)}>{sortedBy}</span>
+        </div>
       </div>
-      <div className="flex flex-col gap-3">{body}</div>
+      <div className="flex flex-col gap-3 md:gap-4">{body}</div>
     </PepitesShell>
   );
 }
 
-function RankingMessage({ title, body, testId }: { title: string; body?: string; testId: string }) {
-  return (
-    <div data-testid={testId} className={cn("flex flex-col gap-1 rounded-[14px] p-4", pp.table)}>
-      <p className={cn(pp.heavy, pp.text, "text-[15px]")}>{title}</p>
-      {body ? <p className={cn(pp.muted, "text-[13px]")}>{body}</p> : null}
-    </div>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <div
-      className={cn("flex flex-col gap-3 rounded-[14px] px-2.5 py-3", pp.table)}
-      aria-busy="true"
-      data-testid="pepites-ranking-loading"
-    >
-      {Array.from({ length: 8 }, (_, index) => (
-        <div key={index} className="flex items-center gap-2">
-          <span className="size-5 rounded-full bg-[color:var(--pepites-seg-empty)]" />
-          <span className="h-2.5 flex-1 rounded-full bg-[color:var(--pepites-seg-empty)]" />
-          <span className="h-2.5 w-10 rounded-full bg-[color:var(--pepites-seg-empty)]" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** A column heading that sorts: the active one is ink, with ▼. */
-function SortHeading({
+/**
+ * A column heading that sorts: a button on the 44px tap floor, the active
+ * one in the brand foreground and underlined (with a down arrow from 768px,
+ * where the columns have the room), `aria-pressed` on the button and
+ * `aria-sort` on the heading. Every sort is descending.
+ */
+function SortHeader({
   sort,
   active,
   onSort,
   children,
+  className,
 }: {
   sort: RankingSort;
   active: RankingSort;
   onSort: (sort: RankingSort) => void;
-  children: string;
+  children: ReactNode;
+  className?: string;
 }) {
   const on = sort === active;
   return (
-    <button
-      type="button"
-      onClick={() => onSort(sort)}
-      aria-pressed={on}
-      data-testid={`pepites-sort-${sort}`}
-      className={cn(
-        "min-h-[28px] text-end text-[10px] leading-[1.4] ltr:tracking-[0.04em]",
-        pp.monoStrong,
-        on ? pp.ink : pp.muted,
-        ui.focus,
-      )}
-    >
-      {children}
-      {on ? <span aria-hidden> ▼</span> : null}
-    </button>
+    <UiTH numeric aria-sort={on ? "descending" : undefined} className={cn("px-0 py-0", className)}>
+      <button
+        type="button"
+        onClick={() => onSort(sort)}
+        aria-pressed={on}
+        data-testid={`pepites-sort-${sort}`}
+        className={cn(
+          "inline-flex items-center justify-end gap-0.5 px-1 text-end",
+          ui.space.tap,
+          ui.radius.control,
+          ui.text.label,
+          on ? cn(ui.tone.ink, "underline decoration-2 underline-offset-4") : ui.tone.muted,
+          ui.focus,
+        )}
+      >
+        <span>{children}</span>
+        {on ? <ArrowDown className="hidden size-3 md:block" aria-hidden /> : null}
+      </button>
+    </UiTH>
   );
 }
 
+/**
+ * The score in a table column: a figure on the stat ramp in the brand
+ * foreground, or the "unranked" word in the micro step (the ramp is for
+ * digits).
+ */
+function ScoreFigure({ score, unranked }: { score: number | null; unranked: string }) {
+  const { lang } = useI18n();
+  const ranked = typeof score === "number" && Number.isFinite(score);
+  return (
+    <bdi className={ranked ? cn(ui.stat.md, ui.tone.ink) : cn(ui.text.micro, ui.tone.muted)}>
+      {scoreText(score, lang, unranked)}
+    </bdi>
+  );
+}
+
+/**
+ * A row's club colour, as the standings draw a zone: a 4px bar on the start
+ * edge of the row's first cell (which is `relative`), in the club's edge
+ * colour (`clubStyle`, ≥ 3:1 against the card). Decorative: the club is
+ * printed in the row.
+ */
+function ClubEdge({ row }: { row: RankingRow }) {
+  if (!row.team) return null;
+  const colours = clubStyle(teamAsClub(row.team));
+  return (
+    <span
+      aria-hidden
+      data-club={colours["data-club"]}
+      style={colours.style}
+      className={cn("absolute inset-y-0 start-0 w-1", ui.club.edgeFill)}
+    />
+  );
+}
+
+/** A tappable table row's hover, on top of `UiTR`'s rule. */
+const ROW = cn(
+  "h-[var(--ui-row-min)] last:border-b-0",
+  "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)]",
+);
+
+/**
+ * The phone table (Figma 02's columns: # · player · MIN · B/PD · NOTE ·
+ * SCORE), `table-fixed` so a long name cannot push the score off a 390px
+ * screen. The four figure columns are the 44px their sort buttons need and
+ * the score column only what "SCORE" needs, so the name keeps the rest.
+ *
+ * Each row carries (BG-0156) the club's colour on its start edge, the rank
+ * (1 to 3 on the white plate), the player's photo or the club's crest, the
+ * name over "position · club", and the ten-segment bar under the score. The
+ * rank column is only the plate's 28px past the edge's gap, so the disc
+ * fits from a 352px table (a 390px phone); under it (the 360 and 375px
+ * phones) the disc gives its width to the name, because there the club line
+ * no longer fit in two lines (measured, BG-0156), and the club's edge and
+ * name still say whose row it is. A name that does not fit wraps, balanced,
+ * onto a second line (the row grows past its 48px floor), and only a fourth
+ * line would be cut. The
+ * name takes its own direction (`PepitesName`), so a Latin name in an Arabic
+ * table keeps its first name and loses its end, never its start. The whole
+ * row opens the player; the link around the disc and name is the row's
+ * keyboard and screen-reader target, and carries `pepites-ranking-row` (the
+ * position is read inside it).
+ */
 function RankingTable({
   rows,
   sort,
@@ -543,80 +523,135 @@ function RankingTable({
   sort: RankingSort;
   onSort: (sort: RankingSort) => void;
 }) {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
+  const navigate = useNavigate();
+  const catalogue = useClubCatalogue();
   return (
-    <div className={cn("rounded-[14px] px-2.5 py-1 md:hidden", pp.table)}>
-      <div className={cn(COLUMNS, "border-b py-1", pp.divider)}>
-        <span className={cn(pp.monoStrong, pp.muted, "text-[10px]")} aria-hidden>
-          #
-        </span>
-        <span
-          className={cn(pp.monoStrong, pp.muted, "text-[10px] leading-[1.4] ltr:tracking-[0.04em]")}
-        >
-          {t("pepites.table.player")}
-        </span>
-        <SortHeading sort="minutes" active={sort} onSort={onSort}>
-          {t("pepites.table.minutes")}
-        </SortHeading>
-        <SortHeading sort="goals" active={sort} onSort={onSort}>
-          {t("pepites.table.goals_assists")}
-        </SortHeading>
-        <SortHeading sort="rating" active={sort} onSort={onSort}>
-          {t("pepites.table.rating")}
-        </SortHeading>
-        <SortHeading sort="score" active={sort} onSort={onSort}>
-          {t("pepites.table.score")}
-        </SortHeading>
-      </div>
-      <ol data-testid="pepites-ranking">
-        {rows.map((row) => (
-          <li
-            key={row.id}
-            data-testid="pepites-ranking-row"
-            className={cn("border-b last:border-b-0", pp.divider)}
-          >
-            <Link
-              to="/pepites/joueur/$playerId"
-              params={{ playerId: row.id }}
-              className={cn(COLUMNS, "py-1.5", ui.focus)}
+    <UiCard
+      padding="none"
+      testId="pepites-ranking"
+      className="@container overflow-hidden md:hidden"
+    >
+      <UiTable caption={t("pepites.ranking.title")} tableClassName="table-fixed">
+        <UiTHead>
+          <UiTR>
+            {/* The edge's 4px, a 4px gap, the 28px plate: nothing more. */}
+            <UiTH numeric className="w-9 pe-0 ps-2">
+              #
+            </UiTH>
+            <UiTH className="pe-1 ps-1.5">{t("pepites.table.player")}</UiTH>
+            <SortHeader sort="minutes" active={sort} onSort={onSort} className="w-11">
+              {t("pepites.table.minutes")}
+            </SortHeader>
+            <SortHeader sort="goals" active={sort} onSort={onSort} className="w-11">
+              {t("pepites.table.goals_assists")}
+            </SortHeader>
+            <SortHeader sort="rating" active={sort} onSort={onSort} className="w-11">
+              {t("pepites.table.rating")}
+            </SortHeader>
+            <SortHeader sort="score" active={sort} onSort={onSort} className="w-14 pe-2">
+              {t("pepites.table.score")}
+            </SortHeader>
+          </UiTR>
+        </UiTHead>
+        <UiTBody>
+          {rows.map((row) => (
+            <UiTR
+              key={row.id}
+              className={ROW}
+              onClick={() =>
+                void navigate({ to: "/pepites/joueur/$playerId", params: { playerId: row.id } })
+              }
             >
-              <bdi className={cn(pp.mono, pp.muted, "text-[10px]")}>
-                {row.rank === null ? "–" : formatNumber(row.rank, lang)}
-              </bdi>
-              <span className="flex min-w-0 items-center gap-1.5">
-                <Headshot player={row} size={20} />
-                <span className={cn(pp.bold, pp.text, "truncate text-[11px]")}>
-                  <bdi>{row.name}</bdi>
-                </span>
-                {row.positionGroup ? (
-                  <span className="sr-only">{positionLabel(row.positionGroup, t)}</span>
-                ) : null}
-              </span>
-              <bdi className={cn(pp.bold, pp.text, "text-end text-[12px]")}>
+              <UiTD numeric className="relative pe-0 ps-2">
+                <ClubEdge row={row} />
+                <RankPlate rank={row.rank} size="sm" />
+              </UiTD>
+              <UiTD className="pe-1 ps-1.5">
+                <Link
+                  to="/pepites/joueur/$playerId"
+                  params={{ playerId: row.id }}
+                  onClick={keepToLink}
+                  data-testid="pepites-ranking-row"
+                  className={cn("flex min-w-0 items-center gap-1.5", ui.radius.control, ui.focus)}
+                >
+                  {/* Under a 352px table (the 360 and 375px phones) the disc gives its width to the name. */}
+                  <PepitesIdentityDisc
+                    player={row}
+                    listed={row.team ? catalogue.get(row.team.id) : undefined}
+                    size="xs"
+                    className="@max-[22rem]:hidden"
+                  />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <PepitesName
+                      name={row.name}
+                      className={cn(
+                        "line-clamp-3 min-w-0 text-balance break-words",
+                        ui.text.meta,
+                        HEAVY,
+                        ui.tone.default,
+                      )}
+                    />
+                    {/* Wraps (two lines at most) rather than cutting the club's name. */}
+                    <span
+                      className={cn(
+                        "line-clamp-2 text-balance break-words",
+                        ui.text.micro,
+                        ui.tone.muted,
+                      )}
+                    >
+                      {/* The short position is seen; the full one is heard, below. */}
+                      {row.positionGroup ? (
+                        <span aria-hidden>
+                          {positionShort(row.positionGroup, t)}
+                          {META_SEPARATOR}
+                        </span>
+                      ) : null}
+                      {row.team ? tr(row.team.shortName) : null}
+                    </span>
+                  </span>
+                  {row.positionGroup ? (
+                    <span className="sr-only">{positionLabel(row.positionGroup, t)}</span>
+                  ) : null}
+                </Link>
+              </UiTD>
+              <UiTD numeric className="px-1">
                 <span className="sr-only">{t("pepites.sort.minutes")} </span>
-                {formatCount(row.minutes, lang)}
-              </bdi>
-              <bdi dir="ltr" className={cn(pp.bold, pp.text, "text-end text-[12px]")}>
+                <bdi>{formatCount(row.minutes, lang)}</bdi>
+              </UiTD>
+              <UiTD numeric className="px-1">
                 <span className="sr-only">{t("pepites.table.goals_assists_long")} </span>
-                {`${formatNumber(row.goals, lang)}/${formatNumber(row.assists, lang)}`}
-              </bdi>
-              <span className="flex justify-end">
+                {/* Three children in the page's direction, never one "3/2" string. */}
+                <span className="inline-flex items-center gap-0.5">
+                  <bdi>{formatNumber(row.goals, lang)}</bdi>
+                  <span aria-hidden className={ui.tone.faint}>
+                    /
+                  </span>
+                  <bdi>{formatNumber(row.assists, lang)}</bdi>
+                </span>
+              </UiTD>
+              <UiTD numeric className="px-1">
                 <RatingChip rating={row.ratingAvg} />
-              </span>
-              <bdi className={cn(pp.display, pp.ink, "text-end text-[14px]")}>
-                {scoreText(row.score, lang, t("pepites.unranked"))}
-              </bdi>
-            </Link>
-          </li>
-        ))}
-      </ol>
-    </div>
+              </UiTD>
+              <UiTD numeric className="pe-3 ps-1">
+                <span className="inline-flex flex-col items-end gap-1">
+                  <ScoreFigure score={row.score} unranked={t("pepites.unranked")} />
+                  <Seg10Bar value={row.score} className="w-10 gap-px" />
+                </span>
+              </UiTD>
+            </UiTR>
+          ))}
+        </UiTBody>
+      </UiTable>
+    </UiCard>
   );
 }
 
-const DESKTOP_COLUMNS =
-  "grid grid-cols-[30px_minmax(170px,2fr)_60px_42px_42px_42px_62px_45px_40px_65px_62px_62px_72px_minmax(125px,1fr)] items-center gap-2";
-
+/**
+ * The desktop table, from 768px: every column the data has. It scrolls
+ * sideways inside its card where the screen is narrower than the columns
+ * (the kit table's own wrapper), never the page.
+ */
 function DesktopRankingTable({
   rows,
   sort,
@@ -627,107 +662,145 @@ function DesktopRankingTable({
   onSort: (sort: RankingSort) => void;
 }) {
   const { t, tr, lang } = useI18n();
+  const navigate = useNavigate();
+  const catalogue = useClubCatalogue();
+  const dash = <span className={ui.tone.faint}>–</span>;
   return (
-    <div
-      className={cn("hidden overflow-x-auto rounded-2xl px-5 py-2 md:block", pp.table)}
-      data-testid="pepites-desktop-table"
+    <UiCard
+      padding="none"
+      testId="pepites-desktop-table"
+      className="hidden overflow-hidden md:block"
     >
-      <div className="min-w-[1120px]">
-        <div
-          className={cn(
-            DESKTOP_COLUMNS,
-            "border-b py-3",
-            pp.divider,
-            pp.monoStrong,
-            pp.muted,
-            "text-[11px]",
-          )}
-        >
-          <span>#</span>
-          <span>{t("pepites.table.player")}</span>
-          <span>{t("pepites.player.position")}</span>
-          <span>{t("pepites.player.age")}</span>
-          <span>{t("pepites.fact.apps")}</span>
-          <span>{t("pepites.fact.starts")}</span>
-          <SortHeading sort="minutes" active={sort} onSort={onSort}>
-            {t("pepites.table.minutes")}
-          </SortHeading>
-          <SortHeading sort="goals" active={sort} onSort={onSort}>
-            {t("pepites.stats.goals")}
-          </SortHeading>
-          <SortHeading sort="assists" active={sort} onSort={onSort}>
-            {t("pepites.stats.assists")}
-          </SortHeading>
-          <SortHeading sort="ga90" active={sort} onSort={onSort}>
-            {t("pepites.fact.ga90")}
-          </SortHeading>
-          <SortHeading sort="rating" active={sort} onSort={onSort}>
-            {t("pepites.table.rating")}
-          </SortHeading>
-          <SortHeading sort="form" active={sort} onSort={onSort}>
-            {t("pepites.sort.form")}
-          </SortHeading>
-          <span>{t("pepites.ranking.second_half")}</span>
-          <SortHeading sort="score" active={sort} onSort={onSort}>
-            {t("pepites.table.score")}
-          </SortHeading>
-        </div>
-        <ol>
+      <UiTable caption={t("pepites.ranking.desktop_title")}>
+        <UiTHead>
+          <UiTR>
+            <UiTH numeric className="w-12 ps-4">
+              #
+            </UiTH>
+            <UiTH>{t("pepites.table.player")}</UiTH>
+            <UiTH>{t("pepites.player.position")}</UiTH>
+            <UiTH numeric>{t("pepites.player.age")}</UiTH>
+            <UiTH numeric>{t("pepites.fact.apps")}</UiTH>
+            <UiTH numeric>{t("pepites.fact.starts")}</UiTH>
+            <SortHeader sort="minutes" active={sort} onSort={onSort}>
+              {t("pepites.table.minutes")}
+            </SortHeader>
+            <SortHeader sort="goals" active={sort} onSort={onSort}>
+              {t("pepites.stats.goals")}
+            </SortHeader>
+            <SortHeader sort="assists" active={sort} onSort={onSort}>
+              {t("pepites.stats.assists")}
+            </SortHeader>
+            <SortHeader sort="ga90" active={sort} onSort={onSort}>
+              {t("pepites.fact.ga90")}
+            </SortHeader>
+            <SortHeader sort="rating" active={sort} onSort={onSort}>
+              {t("pepites.table.rating")}
+            </SortHeader>
+            <SortHeader sort="form" active={sort} onSort={onSort}>
+              {t("pepites.sort.form")}
+            </SortHeader>
+            <UiTH numeric>{t("pepites.ranking.second_half")}</UiTH>
+            <SortHeader sort="score" active={sort} onSort={onSort} className="pe-3">
+              {t("pepites.table.score")}
+            </SortHeader>
+          </UiTR>
+        </UiTHead>
+        <UiTBody>
           {rows.map((row) => (
-            <li key={row.id} className={cn("border-b last:border-0", pp.divider)}>
-              <Link
-                to="/pepites/joueur/$playerId"
-                params={{ playerId: row.id }}
-                className={cn(DESKTOP_COLUMNS, "min-h-[55px] py-2 text-[12px]", ui.focus)}
-              >
-                <bdi className={cn(pp.display, pp.ink, "text-[18px]")}>{row.rank ?? "–"}</bdi>
-                <span className="flex min-w-0 items-center gap-2">
-                  <Headshot player={row} size={36} />
-                  <span className="min-w-0">
-                    <span className={cn(pp.heavy, pp.text, "block truncate text-[13px]")}>
-                      {row.name}
-                    </span>
-                    <span className={cn(pp.muted, "block truncate text-[11px]")}>
-                      {row.team ? tr(row.team.name) : ""}
-                    </span>
+            <UiTR
+              key={row.id}
+              className={ROW}
+              onClick={() =>
+                void navigate({ to: "/pepites/joueur/$playerId", params: { playerId: row.id } })
+              }
+            >
+              <UiTD numeric className="relative ps-4">
+                <ClubEdge row={row} />
+                <RankPlate rank={row.rank} size="sm" />
+              </UiTD>
+              <UiTD>
+                <Link
+                  to="/pepites/joueur/$playerId"
+                  params={{ playerId: row.id }}
+                  onClick={keepToLink}
+                  className={cn("flex min-w-0 items-center gap-2", ui.radius.control, ui.focus)}
+                >
+                  <PepitesIdentityDisc
+                    player={row}
+                    listed={row.team ? catalogue.get(row.team.id) : undefined}
+                    size="xs"
+                  />
+                  <span className="min-w-0 max-w-56">
+                    <PepitesName
+                      name={row.name}
+                      className={cn("block truncate", ui.text.meta, HEAVY, ui.tone.default)}
+                    />
+                    {row.team ? (
+                      <span className={cn("block truncate", ui.text.micro, ui.tone.muted)}>
+                        {tr(row.team.name)}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </UiTD>
+              <UiTD>
+                {row.positionGroup ? (
+                  <UiBadge>{positionShort(row.positionGroup, t)}</UiBadge>
+                ) : (
+                  dash
+                )}
+              </UiTD>
+              <UiTD numeric>
+                {typeof row.age === "number" ? <bdi>{formatNumber(row.age, lang)}</bdi> : dash}
+              </UiTD>
+              <UiTD numeric>
+                <bdi>{formatNumber(row.apps, lang)}</bdi>
+              </UiTD>
+              <UiTD numeric>
+                <bdi>{formatNumber(row.starts, lang)}</bdi>
+              </UiTD>
+              <UiTD numeric>
+                <bdi>{formatCount(row.minutes, lang)}</bdi>
+              </UiTD>
+              <UiTD numeric>
+                <bdi>{formatNumber(row.goals, lang)}</bdi>
+              </UiTD>
+              <UiTD numeric>
+                <bdi>{formatNumber(row.assists, lang)}</bdi>
+              </UiTD>
+              <UiTD numeric>
+                {row.ga90 === null ? dash : <bdi>{formatNumber(row.ga90, lang, 2)}</bdi>}
+              </UiTD>
+              <UiTD numeric>
+                <RatingChip rating={row.ratingAvg} />
+              </UiTD>
+              <UiTD numeric>
+                {row.formAvg === null ? dash : <bdi>{formatNumber(row.formAvg, lang, 2)}</bdi>}
+              </UiTD>
+              <UiTD numeric>
+                {row.secondHalfMinutes === null ||
+                row.secondHalfMinutes === undefined ||
+                row.minutes <= 0 ? (
+                  dash
+                ) : (
+                  <bdi>
+                    {`${formatNumber(Math.round((row.secondHalfMinutes / row.minutes) * 100), lang)}%`}
+                  </bdi>
+                )}
+              </UiTD>
+              <UiTD numeric className="pe-4">
+                <span className="flex items-center justify-end gap-2">
+                  <Seg10Bar value={row.score} className="w-20" />
+                  <span className="min-w-7 text-end">
+                    <ScoreFigure score={row.score} unranked="–" />
                   </span>
                 </span>
-                <span
-                  className={cn(
-                    "w-fit rounded bg-[#e8ecfb] px-2 py-1 text-[10px]",
-                    pp.monoStrong,
-                    pp.ink,
-                  )}
-                >
-                  {row.positionGroup ? positionShort(row.positionGroup, t) : "–"}
-                </span>
-                <bdi>{row.age ?? "–"}</bdi>
-                <bdi>{formatNumber(row.apps, lang)}</bdi>
-                <bdi>{formatNumber(row.starts, lang)}</bdi>
-                <bdi>{formatCount(row.minutes, lang)}</bdi>
-                <bdi>{formatNumber(row.goals, lang)}</bdi>
-                <bdi>{formatNumber(row.assists, lang)}</bdi>
-                <bdi>{row.ga90 === null ? "–" : formatNumber(row.ga90, lang, 2)}</bdi>
-                <RatingChip rating={row.ratingAvg} />
-                <bdi>{row.formAvg === null ? "–" : formatNumber(row.formAvg, lang, 2)}</bdi>
-                <bdi>
-                  {row.secondHalfMinutes === null ||
-                  row.secondHalfMinutes === undefined ||
-                  row.minutes <= 0
-                    ? "–"
-                    : `${formatNumber(Math.round((row.secondHalfMinutes / row.minutes) * 100), lang)}%`}
-                </bdi>
-                <span className="flex items-center gap-2">
-                  <Seg10Bar value={row.score} className="w-[96px]" />
-                  <bdi className={cn(pp.display, pp.ink, "text-[21px]")}>
-                    {scoreText(row.score, lang, "–")}
-                  </bdi>
-                </span>
-              </Link>
-            </li>
+              </UiTD>
+            </UiTR>
           ))}
-        </ol>
-      </div>
-    </div>
+        </UiTBody>
+      </UiTable>
+    </UiCard>
   );
 }

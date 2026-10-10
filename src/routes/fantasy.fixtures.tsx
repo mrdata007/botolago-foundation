@@ -18,6 +18,7 @@ import {
   UiSkeleton,
   type UiDifficulty,
 } from "@/components/ui-kit";
+import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { MATCH_TIME_ZONE } from "@/lib/match-kickoff";
@@ -34,8 +35,8 @@ export const Route = createFileRoute("/fantasy/fixtures")({
 
 /**
  * "Fixture Difficulty Rating": a Team column plus one sortable column per
- * gameweek, colour-coded opponent cells with (H)/(A), horizontal scrolling for
- * later gameweeks, and the FDR key.
+ * gameweek, colour-coded opponent cells with (H)/(A) and the difficulty as a
+ * figure, horizontal scrolling for later gameweeks, and the difficulty key.
  *
  * Option A: the clubs are round crest discs, the sort controls are round, the
  * gameweek columns say "J.14" in both languages rather than an English "GW14",
@@ -177,7 +178,15 @@ function FdrBody() {
     sort.key === key && sort.dir === "desc" ? (
       <ArrowDownWideNarrow className="h-4 w-4" aria-hidden />
     ) : (
-      <ArrowUpNarrowWide className={cn("h-4 w-4", sort.key !== key && "opacity-50")} aria-hidden />
+      // An unsorted column's glyph is dimmed. At half opacity it measured
+      // 2.89:1 on the dark sunken button (BG-0149), under the 3:1 a control's
+      // only graphic needs, so dark drops the dimming: the selected fill on
+      // the sorted column already marks the difference. (Light, unchanged
+      // here, measures 2.2:1: a pre-existing light defect, reported.)
+      <ArrowUpNarrowWide
+        className={cn("h-4 w-4", sort.key !== key && "opacity-50 dark:opacity-100")}
+        aria-hidden
+      />
     );
 
   const sortButtonClass = (key: SortKey) =>
@@ -186,7 +195,7 @@ function FdrBody() {
       "min-h-[var(--ui-tap-min)]",
       ui.radius.full,
       ui.focus,
-      sort.key === key ? ui.surface.inkPlain : cn(ui.surface.sunken, ui.tone.muted),
+      sort.key === key ? ui.surface.selected : cn(ui.surface.sunken, ui.tone.muted),
     );
 
   return (
@@ -308,9 +317,6 @@ function FdrBody() {
                           ) : (
                             fixtures.map((f) => {
                               const opponent = clubByKey.get(f.opponentClubId);
-                              const venue = f.isHome ? t("fpl.home_short") : t("fpl.away_short");
-                              const venueName = f.isHome ? t("common.home") : t("common.away");
-                              const fullName = opponent ? tr(opponent.name) : "";
                               return (
                                 // One marker per SERVICE ROW. Nothing else in
                                 // this file emits one, so counting
@@ -323,23 +329,13 @@ function FdrBody() {
                                   data-fdr-fixture=""
                                   data-fdr-gameweek={f.gameweek}
                                 >
-                                  <UiDifficultyCell
+                                  <FdrFixtureCell
+                                    t={t}
                                     difficulty={f.difficulty as UiDifficulty}
-                                    title={fullName ? `${fullName} (${venueName})` : undefined}
-                                  >
-                                    {/* The three-letter token is a
-                                        convenience; the club's real name is
-                                        always available to a screen reader and
-                                        on hover, because `code` is null for 13
-                                        of the 21 clubs and cannot carry
-                                        identity on its own. */}
-                                    <span aria-hidden dir="ltr">
-                                      {opponent ? clubToken(opponent, tr) : ""} ({venue})
-                                    </span>
-                                    <span className="sr-only">
-                                      {fullName} ({venueName})
-                                    </span>
-                                  </UiDifficultyCell>
+                                    isHome={f.isHome}
+                                    token={opponent ? clubToken(opponent, tr) : ""}
+                                    club={opponent ? tr(opponent.name) : ""}
+                                  />
                                 </div>
                               );
                             })
@@ -360,7 +356,7 @@ function FdrBody() {
       <div
         className={cn(
           "pointer-events-none fixed inset-x-0 z-30 mx-auto flex max-w-[var(--ui-column-max)] justify-center px-4",
-          "bottom-[calc(var(--bottomnav-h)+0.75rem)] md:bottom-6",
+          "bottom-[calc(var(--bottomnav-h)+0.75rem)] md:bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]",
         )}
       >
         <div
@@ -386,7 +382,7 @@ function FdrBody() {
             variant="ink"
             onClick={() => setKeyOpen((v) => !v)}
             aria-expanded={keyOpen}
-            aria-label={t("fpl.fdr_key")}
+            aria-label={t("fantasy.fixtures.key_explain")}
           >
             <Info aria-hidden />
           </UiIconButton>
@@ -396,7 +392,7 @@ function FdrBody() {
         <div
           className={cn(
             "fixed inset-x-0 z-30 mx-auto max-w-[var(--ui-column-max)] px-6",
-            "bottom-[calc(var(--bottomnav-h)+4.75rem)] md:bottom-24",
+            "bottom-[calc(var(--bottomnav-h)+4.75rem)] md:bottom-[calc(env(safe-area-inset-bottom,0px)+6rem)]",
           )}
         >
           <UiCard padding="sm" className={ui.shadow.overlay}>
@@ -407,9 +403,72 @@ function FdrBody() {
             <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
               {t("fantasy.fixtures.subtitle")}
             </p>
+            {/* What the letter beside each token means, from the same two
+                keys the cells print, so the key cannot drift from the grid. */}
+            <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
+              {t("fantasy.fixtures.venue_key")
+                .replace("{home}", t("fpl.home_short"))
+                .replace("{away}", t("fpl.away_short"))}
+            </p>
           </UiCard>
         </div>
       ) : null}
     </>
+  );
+}
+
+/**
+ * One fixture in the grid: the opponent's token and the venue letter, then
+ * the difficulty as a figure, so the rating reads without its colour.
+ *
+ * The figure takes the cell's own on-fill colour (`--ui-on-fdr-N`, set by
+ * `UiDifficultyCell`) and never a colour of its own, which is what keeps it
+ * legible on all five fills in both themes. It is quieter than the token —
+ * tabular, at the strong weight rather than the token's 900 — because the
+ * token says who, and the fill already says how hard to anyone who sees it.
+ *
+ * Everything visible is hidden from screen readers and said once, in words:
+ * "FUS Rabat (Domicile), difficulté 2 sur 5". Before BG-0157 the difficulty
+ * lived only in the fill, so a screen reader heard none of it. The same words
+ * are the hover title. The three-letter token is a convenience; the club's
+ * real name is always in those words, because `code` is null for 13 of the
+ * 21 clubs and cannot carry identity on its own.
+ *
+ * `t` is passed in rather than read from the provider so the cell can be
+ * rendered in either language on its own (the provider's first render is
+ * always French).
+ */
+export function FdrFixtureCell({
+  t,
+  difficulty,
+  isHome,
+  token,
+  club,
+}: {
+  t: (key: TranslationKey) => string;
+  difficulty: UiDifficulty;
+  isHome: boolean;
+  /** The opponent's short token ("FUS"); empty when the opponent is unknown. */
+  token: string;
+  /** The opponent's full name; empty when the opponent is unknown. */
+  club: string;
+}) {
+  const name = t("fantasy.fixtures.cell_name")
+    .replace("{club}", club)
+    .replace("{venue}", isHome ? t("common.home") : t("common.away"))
+    .replace("{n}", String(difficulty))
+    .trim();
+  return (
+    <UiDifficultyCell difficulty={difficulty} title={name}>
+      <span aria-hidden className="flex items-baseline gap-1.5 whitespace-nowrap">
+        <span dir="ltr">
+          {token} ({isHome ? t("fpl.home_short") : t("fpl.away_short")})
+        </span>
+        <span className={cn(ui.text.tabular, "[font-weight:var(--ui-weight-strong)]")}>
+          {difficulty}
+        </span>
+      </span>
+      <span className="sr-only">{name}</span>
+    </UiDifficultyCell>
   );
 }

@@ -3,7 +3,9 @@ import type {
   Movement,
   PepitesPlayerCard,
   PepitesTeam,
+  PlayerResponse,
   PositionGroup,
+  RankingRow,
 } from "@/backend/pepites/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
@@ -35,8 +37,20 @@ export function formatCount(value: number, lang: Language): string {
   return new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value);
 }
 
-/** A team as `PlayerPhoto` and `ClubCrest` want it: the palette keys on the slug. */
-export function teamAsClub(team: PepitesTeam | null | undefined): Club | undefined {
+/** What the app's club catalogue knows about a club that a Pépites team does not carry. */
+export type ListedClub = Pick<Club, "crestUrl" | "crestPlaceholder">;
+
+/**
+ * A team as `PlayerPhoto` and `ClubCrest` want it: the palette keys on the
+ * slug. `listed` is the same club in the app's club catalogue (the same ids
+ * as `app.teams`), which carries the crest and the short code the rest of
+ * the app prints on a crest disc; without it the disc shows the first three
+ * letters of the club's name.
+ */
+export function teamAsClub(
+  team: PepitesTeam | null | undefined,
+  listed?: ListedClub | null,
+): Club | undefined {
   if (!team) return undefined;
   return {
     id: team.id,
@@ -45,7 +59,9 @@ export function teamAsClub(team: PepitesTeam | null | undefined): Club | undefin
     shortName: team.shortName,
     city: { fr: "", ar: "" },
     primaryColor: "",
-    crestPlaceholder: team.shortName.fr.slice(0, 3).toUpperCase(),
+    crestPlaceholder:
+      listed?.crestPlaceholder?.trim() || team.shortName.fr.slice(0, 3).toUpperCase(),
+    ...(listed?.crestUrl ? { crestUrl: listed.crestUrl } : {}),
   };
 }
 
@@ -91,6 +107,13 @@ export function positionShort(group: PositionGroup, t: (key: TranslationKey) => 
 }
 
 /**
+ * The dot between the parts of a meta or figures line, with a no-break
+ * space before it: a line that wraps breaks after a dot, so a dot never
+ * starts a line ("Olympique Dcheïra · MIL ·" then "23A", not "· 23A").
+ */
+export const META_SEPARATOR = "\u00a0· ";
+
+/**
  * The mono meta line under a name. Short (a row): "IRT · ATT · 20A · 1 275’ ·
  * 0B 8PD". Long (the hero): "HASSANIA AGADIR · ATT · 21 ANS". Figures are
  * isolated so an Arabic line keeps their order.
@@ -130,7 +153,57 @@ export function playerMetaLine(
         .replace("{a}", iso(formatNumber(stats.assists, lang))),
     );
   }
-  return parts.join(" · ");
+  return parts.join(META_SEPARATOR);
+}
+
+/** The four figures the featured N°1 prints, as the ranking carries them. */
+export type BandFigures = Pick<RankingRow, "minutes" | "goals" | "assists" | "ratingAvg" | "ga90">;
+
+/** The score part of a `pepites_player` read. */
+type PlayerScore = NonNullable<Extract<PlayerResponse, { available: true }>["score"]>;
+
+/**
+ * The featured N°1's figures: the ranking's row for the player (the page's
+ * fifty-row read), else, once that read has settled without the player (an
+ * editor's N°1 ranked below fiftieth, or a failed read), the same figures
+ * from the player's own read, which the band makes for its wheel (`score`;
+ * B+PD/90 is the per-90 `goalsAssists` the ranking rounds). While the ranking
+ * is still loading, nothing (the band holds the place with dashes), so a
+ * figure never changes under the reader when the second read lands.
+ * `undefined` when neither read has the player.
+ */
+export function bandFigures(
+  stats: BandFigures | undefined,
+  score: Pick<PlayerScore, "minutes" | "goals" | "assists" | "ratingAvg" | "per90"> | null,
+  statsPending: boolean,
+): BandFigures | undefined {
+  if (stats) return stats;
+  if (statsPending || !score) return undefined;
+  return {
+    minutes: score.minutes,
+    goals: score.goals,
+    assists: score.assists,
+    ratingAvg: score.ratingAvg,
+    ga90: score.per90.goalsAssists ?? null,
+  };
+}
+
+/**
+ * A row's figures line, under its meta line: "2 087’ · 16B 1PD" (minutes,
+ * then goals and assists), the figures isolated so an Arabic line keeps
+ * their order. The same parts `playerMetaLine` appends to a short line.
+ */
+export function playerFiguresLine(
+  stats: { minutes: number; goals: number; assists: number },
+  { t, lang }: { t: (key: TranslationKey) => string; lang: Language },
+): string {
+  const iso = (text: string) => `\u2068${text}\u2069`;
+  return [
+    iso(`${formatCount(stats.minutes, lang)}’`),
+    t("pepites.meta.goals_assists")
+      .replace("{g}", iso(formatNumber(stats.goals, lang)))
+      .replace("{a}", iso(formatNumber(stats.assists, lang))),
+  ].join(META_SEPARATOR);
 }
 
 /** "↑ 2", "↓ 1", "=", "Nouveau": the arrow a reader saw last week (§4.5). */

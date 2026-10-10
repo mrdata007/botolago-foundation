@@ -16,9 +16,9 @@ import { plateName } from "./plate-name";
  * A-Team board draws it (not on the plate's far corner, 20px away from the
  * shirt it belongs to).
  *
- * The two read apart by more than their letter — which matters, because the
- * armband is auto-assigned to the first two squad entries and a manager has
- * to notice that before the deadline: the captain is a navy disc with a light
+ * The two read apart by more than their letter — which matters, because a
+ * manager has to see at a glance who holds which armband before the deadline
+ * (a first squad no longer gets one automatically): the captain is a navy disc with a light
  * letter in a light ring, the vice its inverse — a surface disc with the brand
  * letter in a navy ring. Every colour is a token that flips with the theme.
  */
@@ -39,7 +39,13 @@ function RoleMarker({
       aria-hidden
       title={title}
       className={cn(
-        "absolute -end-3 -top-1.5 z-10 grid h-5 w-5 place-items-center",
+        // 12px past the shoulder while the plate has room. On a narrow plate
+        // (a row of five on a small phone) it slides in, so its edge never
+        // passes the plate's: `50%` is half the shirt, `50cqw` half the plate
+        // (`UiPlayerPlate` is the container). Plates sit inside the
+        // touchlines, so the marker does too; its ring hangs 2px, like the
+        // warning disc's.
+        "absolute end-[max(-0.75rem,calc(50%-50cqw))] -top-1.5 z-10 grid h-5 w-5 place-items-center",
         ui.radius.full,
         ui.text.micro,
         "[font-weight:var(--ui-weight-heavy)]",
@@ -47,7 +53,7 @@ function RoleMarker({
         fresh && "pop",
         tone === "c"
           ? cn(ui.surface.inkPlain, "ring-[color:var(--ui-on-ink-plain)]")
-          : cn("bg-[color:var(--ui-surface)]", ui.tone.ink, "ring-[color:var(--ui-ink)]"),
+          : cn("bg-[color:var(--ui-surface)]", ui.tone.ink, "ring-[color:var(--ui-ink-fg)]"),
       )}
     >
       {letter}
@@ -131,7 +137,8 @@ export function FplPlayerCard({
   return (
     <UiPlayerPlate
       name={
-        // A 76px plate at 390px fits about eleven characters; Moroccan
+        // A 76px plate fits about eleven characters, and a row of five on a
+        // 390px phone narrows to 61px to stay inside the touchlines; Moroccan
         // surnames routinely run longer ("Attiat-Allah", "Salah-Eddine").
         // `ltr:tracking-tight` buys those the few pixels they need and is
         // Latin-only, because letter-spacing — in either direction — pulls
@@ -264,13 +271,20 @@ export function FplPlayerCard({
 export function FplEmptySlot({
   position,
   onClick,
+  onBench = false,
   className,
 }: {
   position: Position;
   onClick?: () => void;
+  /**
+   * On the white bench strip the turf's white line would vanish, so the
+   * ghost shirt takes the control edge (`--ui-rule-strong`) instead.
+   */
+  onBench?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
+  const ghostLine = onBench ? "var(--ui-rule-strong)" : "var(--ui-pitch-line)";
   return (
     <UiPlayerPlate
       name={t(`player.pos.${position}` as never)}
@@ -283,8 +297,8 @@ export function FplEmptySlot({
           <svg viewBox="0 0 24 24" className="absolute inset-0 h-full w-full" aria-hidden>
             <path
               d="M8 3 4 5.5 2.5 10l3 1.2V21h13v-9.8l3-1.2L20 5.5 16 3c-.8 1.4-2.3 2.3-4 2.3S8.8 4.4 8 3z"
-              fill="color-mix(in oklab, var(--ui-pitch-line) 45%, transparent)"
-              stroke="var(--ui-pitch-line)"
+              fill={`color-mix(in oklab, ${ghostLine} ${onBench ? 18 : 45}%, transparent)`}
+              stroke={ghostLine}
               strokeWidth="1.1"
               strokeLinejoin="round"
             />

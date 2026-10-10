@@ -1,16 +1,37 @@
 import { unavailableHeaders } from "@/lib/page-availability";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BrandedText } from "@/components/brand/BrandedText";
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { CircleDot, Bell, Gem, Newspaper, Shield, Target, Trophy, UserRound } from "lucide-react";
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useMemo,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  ArrowRight,
+  CircleDot,
+  Bell,
+  Gem,
+  Newspaper,
+  Shield,
+  Target,
+  Trophy,
+  UserRound,
+} from "lucide-react";
 
 import { newsService } from "@/services/news";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { HOME_DEADLINE_FIRST, PEPITES_PROMOTED, PRONOSTICS_PROMOTED } from "@/lib/feature-flags";
 import { PredictionsHomeCard } from "@/components/predictions/PredictionsHomeCard";
-import { footballService, type FootballSeason } from "@/services/football";
+import { MyClubsRow } from "@/components/home/MyClubsRow";
+import { HomeStories } from "@/components/home/HomeStories";
+import { homeClubs } from "@/components/home/my-clubs";
+import { findClub } from "@/components/fantasy/club-identity";
+import { footballService, HOME_LIST_SIZE, type FootballSeason } from "@/services/football";
 import { ssrAvailability, prefetchForSsr } from "@/lib/ssr-prefetch";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
@@ -24,6 +45,7 @@ import { Trans } from "@/components/common/Trans";
 import { Section } from "@/components/common/Section";
 import { FantasyCreateCard, FantasySummaryCard } from "@/components/common/FantasySummaryCard";
 import { FantasyUnavailableState } from "@/components/fantasy/FantasyUnavailableState";
+import { fantasyNextAction } from "@/services/fantasy-next-action";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import { FantasyAlertList } from "@/components/common/FantasyAlertList";
 import { ArticleCard } from "@/components/common/ArticleCard";
@@ -50,7 +72,6 @@ import {
   StandingsRowSkeleton,
   SkeletonList,
 } from "@/components/common/Skeletons";
-import { WelcomeScreen } from "@/components/welcome/WelcomeScreen";
 import { ui, UiCard, UiChip } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { bandGameweek } from "@/lib/band-gameweek";
@@ -58,19 +79,25 @@ import { followedTeamIdsQuery } from "@/services/follows";
 import { deadlineStripTime, deadlineWithinHours } from "@/lib/deadline-strip";
 import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
+import { HomeMatchCarousel, type BandCard } from "@/components/home/HomeMatchCarousel";
+import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
-import { authService } from "@/services/auth";
 import { hasWelcomed, markWelcomeDone } from "@/lib/welcome";
 import { useSplashDone } from "@/lib/launch-sequence";
 import { cn } from "@/lib/utils";
 import { matchesRefetchInterval } from "@/lib/match-refresh";
 import { PUBLIC_SITE_ORIGIN, serializeJsonLd } from "@/lib/article-meta";
 import { siteJsonLd } from "@/lib/structured-data";
-import { matchDayFromKey } from "@/lib/match-kickoff";
+import { matchDayFromKey, matchDayKey } from "@/lib/match-kickoff";
 import { advanceGreetingClock, greetingPart } from "@/lib/greeting";
-import { capitalizeFirst, groupByMatchDay, onlyFollowedClubs } from "@/lib/match-days";
+import {
+  capitalizeFirst,
+  groupByMatchDay,
+  latestResultDayBefore,
+  onlyFollowedClubs,
+} from "@/lib/match-days";
 import type { Match } from "@/types/domain";
 import stadiumBand from "@/assets/brand/home-band-stadium.webp";
 import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
@@ -78,6 +105,7 @@ import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { staggerStyle } from "@/lib/motion";
+import { useDarkStatusBand } from "@/lib/system-bars";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
 const HOME_DESCRIPTION =
@@ -172,50 +200,82 @@ function useGreeting(now: Date) {
   return t("home.greeting_evening");
 }
 
+/**
+ * The landing page, as its own chunk: most readers of `/` are signed in or
+ * returning and never see it, so they no longer download it (about 33 KB of
+ * script before compression: the page, the demonstration pitch's shirts, the
+ * prize catalog's client). One loader, so the preload below and `lazy` share
+ * the same request.
+ */
+const loadLanding = () => import("@/components/landing/LandingPage");
+const LandingPage = lazy(() =>
+  loadLanding().then(
+    (module) => ({ default: module.LandingPage }),
+    // A chunk that fails to load (a deploy mid-visit, a dropped connection)
+    // leaves the newcomer on Home rather than on an error page.
+    () => ({ default: (_: { onLeave?: () => void }) => <HomeContent /> }),
+  ),
+);
+
+/**
+ * While the chunk arrives: the landing hero's own ground, nothing else. Home
+ * in its place went on loading and moving under the splash (CLS 0.10 measured
+ * with it as the fallback, against 0.006 without); an empty dark screen has
+ * nothing to move, and the hero paints over it in the same colour. Being
+ * dark in both themes, it holds light status-bar icons too, so a slow chunk
+ * does not leave dark icons over it until the landing page mounts (the hand
+ * over between the two holds is settled in one go, so nothing flicks).
+ */
+function LandingFallback() {
+  useDarkStatusBand();
+  return <div aria-busy className="min-h-[100dvh] bg-[color:var(--ui-ink-deep)]" />;
+}
+
 function HomePage() {
-  const navigate = useNavigate();
   const { status } = useAuth();
-  const { t, isHydrated, hasChosen } = useI18n();
+  const { isHydrated } = useI18n();
+  const splashDone = useSplashDone();
 
   // Read localStorage only after mount so SSR and first client render match.
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // Leaving the landing page by any of its links is the welcome: from then on
+  // `/` opens on Home, also when that link was the logo, back to `/`.
+  const [left, setLeft] = useState(false);
+  const leave = () => {
+    markWelcomeDone();
+    setLeft(true);
+  };
 
-  // An arrival dialog, so it waits for the launch sequence like the prize
-  // welcome (src/lib/launch-sequence.ts): never under the splash, never
-  // beside the language chooser.
-  const launchDone = useSplashDone() && isHydrated && hasChosen;
-  const showWelcome = mounted && launchDone && status === "anonymous" && !hasWelcomed();
+  // A first visit without an account gets the landing page in Home's place:
+  // what the game is, why play, and one way in. It used to be a welcome
+  // dialog of three buttons, two of which did the same thing, over a Home
+  // that a newcomer could not yet read.
+  //
+  // It waits for the splash (src/lib/launch-sequence.ts), under which nothing
+  // is seen, and not for the language chooser: the chooser opens over the
+  // landing page rather than over a Home that is about to be replaced.
+  // The server always renders Home — it knows no session — so a crawler, and
+  // every returning reader, gets Home's content and links (audit 2026-09-24,
+  // P1-2). A signed-in reader, a guest and anyone who has been welcomed
+  // before never see the landing page here; `/jouer` is its own address.
+  const showLanding =
+    mounted && splashDone && isHydrated && status === "anonymous" && !left && !hasWelcomed();
 
-  // The welcome screen covers the home page instead of replacing it. It used
-  // to replace it, so a first visit -- and every crawler, which always visits
-  // for the first time -- found a page with no content and no links (audit
-  // 2026-09-24, P1-2). Behind the dialog the page is inert.
-  return (
-    <>
-      <div inert={showWelcome}>
-        <HomeContent />
-      </div>
-      {showWelcome && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("welcome.title")}
-          // Above the page's bars (z-30, z-40), below the first-launch
-          // language chooser and other dialogs (z-50), as when it was the page.
-          className="fixed inset-0 z-[45] overflow-y-auto"
-        >
-          <WelcomeScreen
-            onSignIn={() => navigate({ to: "/auth/login" })}
-            onGuest={async () => {
-              await authService.continueAsGuest();
-              markWelcomeDone();
-              toast.success(t("auth.success.guest"));
-            }}
-          />
-        </div>
-      )}
-    </>
+  // Fetched as soon as the session says this is a first visit without an
+  // account — while the splash still plays — so the page is ready when the
+  // splash leaves.
+  const firstVisit = mounted && status === "anonymous" && !left && !hasWelcomed();
+  useEffect(() => {
+    if (firstVisit) void loadLanding();
+  }, [firstVisit]);
+
+  return showLanding ? (
+    <Suspense fallback={<LandingFallback />}>
+      <LandingPage onLeave={leave} />
+    </Suspense>
+  ) : (
+    <HomeContent />
   );
 }
 
@@ -229,11 +289,14 @@ const isInPlay = (match: Match) => match.status === "live";
  * structure is fixed (the order is pinned by `index.home-structure.test.ts`):
  *
  *   1. Gameweek band      — a photo band flush under the bar: the date,
- *                           "JOURNÉE 14" in the display face and the Fantasy
- *                           deadline as a gradient pill
- *   2. Live & upcoming    — each live match as the split club-colour card,
- *                           the first one rising out of the band; then "À
- *                           venir", day by day, as club-colour rows
+ *                           "JOURNÉE 14" in the display face, the Fantasy
+ *                           deadline as a gradient pill, and the round's
+ *                           matches at its foot: one card, or a carousel of
+ *                           the live ones (split club-colour cards) and those
+ *                           to come (pick cards) — BG-0155
+ *   2. Live & upcoming    — a live match alone rising out of the band as the
+ *                           split card; then "À venir", day by day, as
+ *                           club-colour rows
  *   3. Fantasy            — the manager's gradient card, or the way into
  *                           creating a team
  *   4. News preview       — a few curated cards linking into /news (flagged)
@@ -275,6 +338,11 @@ function HomeContent() {
     // one about to kick off is watched so it becomes the live card on time.
     refetchInterval: (query) => matchesRefetchInterval(query.state.data?.matches, Date.now()),
     refetchIntervalInBackground: false,
+    // The matches in the language the page was just showing, while the new
+    // one loads: an Arabic reader's page switches language right after
+    // hydration, and without them the band's cards (a whole round since
+    // BG-0155) would vanish and come back, moving everything under them.
+    placeholderData: keepPreviousData,
   });
   const alertsQ = useQuery({
     queryKey: ["alerts"],
@@ -341,19 +409,33 @@ function HomeContent() {
 
   const homeMatches = useMemo(() => matchesQ.data?.matches ?? [], [matchesQ.data]);
   const liveMatches = useMemo(() => homeMatches.filter(isInPlay), [homeMatches]);
+  // "À venir" lists the first fixtures of the payload, as many as it carried
+  // before the band's carousel needed the whole round (BG-0155).
+  const listMatches = useMemo(() => homeMatches.slice(0, HOME_LIST_SIZE), [homeMatches]);
   // "Aujourd'hui" and "Demain" rather than the date the band already shows.
   const upcomingDays = useMemo(
     () =>
       groupByMatchDay(
-        homeMatches.filter((match) => !isInPlay(match)),
+        listMatches.filter((match) => !isInPlay(match)),
         {
           locale: lang === "ar" ? "ar-MA" : "fr-FR",
           today: t("matches.date.today"),
           tomorrow: t("matches.date.tomorrow"),
         },
       ),
-    [homeMatches, lang, t],
+    [listMatches, lang, t],
   );
+  // With no match to come, "À venir" points at the latest results instead of
+  // saying nothing: the season's fixture list, read only in that case.
+  const resultDaysQ = useQuery({
+    queryKey: ["football", "season-result-days", currentSeason?.id ?? "none", lang],
+    queryFn: ({ signal }) => footballService.getSeasonResultDays(currentSeason!, lang, signal),
+    enabled: matchesQ.isSuccess && upcomingDays.length === 0 && currentSeason != null,
+    staleTime: 5 * 60_000,
+  });
+  const lastResultDay = latestResultDayBefore(resultDaysQ.data ?? [], matchDayKey(now), {
+    inclusive: true,
+  });
   // The band names the Fantasy gameweek; before Fantasy has one (or for a
   // visitor it is not open to), the league round of the next fixture.
   const bandGameweekNumber = bandGameweek(
@@ -368,6 +450,13 @@ function HomeContent() {
   // there only for a signed-in reader who follows at least one club.
   const followedQ = useQuery(followedTeamIdsQuery(user?.id ?? null));
   const followedIds = followedQ.data ?? [];
+  // "Mes clubs" cards: the favourite, then the followed clubs. Nothing for a
+  // reader signed out or with neither.
+  const myClubs = useMemo(() => {
+    const byId = new Map((clubsQ.data ?? []).map((club) => [club.id, club] as const));
+    const followed = (followedQ.data ?? []).flatMap((id) => byId.get(id) ?? []);
+    return homeClubs(findClub(clubsQ.data, user?.favoriteClubId), followed);
+  }, [clubsQ.data, followedQ.data, user?.favoriteClubId]);
   const [mineOnly, setMineOnly] = useState(false);
   const listDays = mineOnly ? onlyFollowedClubs(upcomingDays, followedIds) : upcomingDays;
   const activeDay = listDays.some((day) => day.key === dayFilter) ? dayFilter : "all";
@@ -381,17 +470,20 @@ function HomeContent() {
       }).format(matchDayFromKey(key)),
     );
 
-  // The next match to be played, for the band. While one is live, that live
-  // card is the hero and the band does not carry another.
-  const nextMatch = useMemo(
-    () =>
-      liveMatches.length > 0
-        ? undefined
-        : homeMatches
-            .filter((match) => match.status === "scheduled")
-            .sort((a, b) => a.kickoff.localeCompare(b.kickoff))[0],
-    [homeMatches, liveMatches],
-  );
+  // What the band shows (BG-0155): every live match, then the next match to
+  // be played and the rest of its round, by kick-off. From the payload alone,
+  // which the server has too, so the cards do not change shape when Fantasy's
+  // gameweek loads in the browser. A match whose clubs are not known yet is
+  // left out.
+  const bandCards: BandCard[] = bandMatches(homeMatches).flatMap((match) => {
+    const home = clubById(match.homeClubId);
+    const away = clubById(match.awayClubId);
+    return home && away ? [{ match, home, away }] : [];
+  });
+  // A live match with nothing else to show still rises out of the band's
+  // lower edge; anything else sits at the band's foot: one pick card as
+  // before, or the carousel when there are more.
+  const liveAlone = bandCards.length === 1 && isInPlay(bandCards[0]!.match);
   // The strip under the header in the 72 hours before a Fantasy deadline.
   const deadlineLeft = useDeadlineCountdown(gwQ.data?.deadline);
   // Flag off by default: the Fantasy card leads the phone layout only inside
@@ -418,7 +510,17 @@ function HomeContent() {
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
-    <AppShell liveStrip matchdayStrip contentWidth="desktop">
+    <AppShell
+      liveStrip
+      matchdayStrip
+      contentWidth="desktop"
+      className={cn(
+        // A populated rail owns its spacing. Keep the screen's original
+        // padding when the deadline strip needs it, or when the feed is empty.
+        !(stripTime && gwQ.data) && "[&>main:has([data-testid=home-stories])]:pt-0",
+        "[&>main:has([data-testid=home-stories])_[data-testid=home-gameweek-band]]:mt-0",
+      )}
+    >
       {/* -------------------------------------------------------- */}
       {/* 1. Gameweek band — the page's anchor                     */}
       {/* -------------------------------------------------------- */}
@@ -430,6 +532,7 @@ function HomeContent() {
       {stripTime && gwQ.data ? (
         <DeadlineStrip gameweek={gwQ.data.number} deadline={gwQ.data.deadline} time={stripTime} />
       ) : null}
+      <HomeStories />
       {/* Phone: one column, in the order the order-N classes give. From 768px
           the three columns below are real columns (`contents` on a phone lets
           their children join the one list): tablet is the hero across the
@@ -446,34 +549,38 @@ function HomeContent() {
               // pill would repeat it.
               deadline={stripTime ? undefined : gwQ.data?.deadline}
               live={liveMatches.length > 0}
-              overlap={liveMatches.length > 0}
+              overlap={liveAlone}
             >
-              {nextMatch && clubById(nextMatch.homeClubId) && clubById(nextMatch.awayClubId) ? (
+              {liveAlone || bandCards.length === 0 ? null : bandCards.length === 1 ? (
                 <NextMatchPick
-                  match={nextMatch}
-                  home={clubById(nextMatch.homeClubId)!}
-                  away={clubById(nextMatch.awayClubId)!}
+                  match={bandCards[0]!.match}
+                  home={bandCards[0]!.home}
+                  away={bandCards[0]!.away}
                   withVote={PRONOSTICS_PROMOTED}
+                  holdVote={voteMayOpen(bandCards[0]!.match, renderedAt)}
                 />
-              ) : null}
+              ) : (
+                <HomeMatchCarousel
+                  cards={bandCards}
+                  withVote={PRONOSTICS_PROMOTED}
+                  renderedAt={renderedAt}
+                />
+              )}
             </GameweekBand>
           </div>
           {/* -------------------------------------------------------- */}
           {/* 2. Live & upcoming                                        */}
           {/* -------------------------------------------------------- */}
           <h2 className="sr-only">{plain(t("home.live_upcoming"))}</h2>
-          {/* Each live match as the split club-colour card; the first rises out
-          of the band, so the gameweek and its live match read as one moment. */}
-          {liveMatches.length > 0 && (
+          {/* A live match on its own: the split club-colour card rising out of
+          the band, so the gameweek and its live match read as one moment.
+          With other matches to show, live matches are cards of the band's
+          carousel (BG-0155). */}
+          {liveAlone && (
             <div className="relative order-2 -mt-16 grid gap-3">
-              {liveMatches.map((match) => {
-                const home = clubById(match.homeClubId);
-                const away = clubById(match.awayClubId);
-                if (!home || !away) return null;
-                return (
-                  <MatchCard key={match.id} match={match} home={home} away={away} variant="hero" />
-                );
-              })}
+              {bandCards.map(({ match, home, away }) => (
+                <MatchCard key={match.id} match={match} home={home} away={away} variant="hero" />
+              ))}
             </div>
           )}
           {/* -------------------------------------------------------- */}
@@ -508,12 +615,22 @@ function HomeContent() {
           )}
         </div>
         <div className="contents md:flex md:flex-col lg:min-w-0 md:order-2 lg:order-1">
-          {(matchesQ.isError || upcomingDays.length > 0 || homeMatches.length === 0) && (
+          {(matchesQ.isError ||
+            upcomingDays.length > 0 ||
+            homeMatches.length === 0 ||
+            myClubs.length > 0) && (
             <Section className="order-3 lg:mt-0">
               <SectionHeader
                 as="h3"
                 title={t("matches.section.upcoming")}
                 action={<ViewAllLink to="/matches" />}
+              />
+              <MyClubsRow
+                tiles={myClubs}
+                season={currentSeason}
+                seasonReady={seasonsQ.isSuccess}
+                standings={standingsQ.data?.overall ?? []}
+                clubById={clubById}
               />
               {matchesQ.isPending ? (
                 <UiCard
@@ -526,7 +643,31 @@ function HomeContent() {
               ) : matchesQ.isError ? (
                 <ErrorState onRetry={() => void matchesQ.refetch()} />
               ) : upcomingDays.length === 0 ? (
-                <EmptyState compact>{t("state.empty")}</EmptyState>
+                // Nothing scheduled, which is not a failure: say so in the
+                // competition's words, and lead on to the results.
+                <EmptyState
+                  compact
+                  action={
+                    <Link
+                      to="/matches"
+                      search={lastResultDay ? { date: lastResultDay } : {}}
+                      className={cn(
+                        ui.text.bodyStrong,
+                        ui.tone.ink,
+                        ui.focus,
+                        "inline-flex min-h-[var(--ui-tap-min)] items-center gap-1.5",
+                      )}
+                    >
+                      {lastResultDay ? t("home.results_link") : t("home.calendar_link")}
+                      {/* A drawn arrow, not a typed "→": the glyph does not turn
+                          round in Arabic, where it pointed back at the label.
+                          `lucide-arrow-right` is mirrored in styles.css. */}
+                      <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+                    </Link>
+                  }
+                >
+                  {t("home.upcoming_empty")}
+                </EmptyState>
               ) : (
                 <div className="grid gap-4">
                   {upcomingDays.length > 1 || followedIds.length > 0 ? (
@@ -555,7 +696,7 @@ function HomeContent() {
                     </div>
                   ) : null}
                   {shownDays.length === 0 ? (
-                    <EmptyState compact>{t("state.empty")}</EmptyState>
+                    <EmptyState compact>{t("home.mine_empty")}</EmptyState>
                   ) : null}
                   {shownDays.map((day) => (
                     <div key={day.key} className="min-w-0">
@@ -643,7 +784,15 @@ function HomeContent() {
                 }}
               />
             ) : summaryQ.data && gwQ.data ? (
-              <FantasySummaryCard summary={summaryQ.data} />
+              <FantasySummaryCard
+                summary={summaryQ.data}
+                action={fantasyNextAction({
+                  availability: availability.view,
+                  hasTeam: true,
+                  gameweek: gwQ.data,
+                  now: Date.now(),
+                })}
+              />
             ) : summaryQ.isSuccess && summaryQ.data === null ? (
               <FantasyCreateCard canCreate={canCreate} />
             ) : (
@@ -652,30 +801,36 @@ function HomeContent() {
 
             {fantasyReady ? <FantasyRuleChips deadline={gwQ.data?.deadline} /> : null}
 
-            {fantasyReady && source !== "guest" && (
-              <div className="mt-3">
-                {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
-                  alertsQ.data.length > 0 && (
-                    <>
-                      <div className="mb-1.5 inline-flex items-center gap-1.5">
-                        <Bell className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
-                        {/* `home.fantasy_alerts` carries `{accent}` markers, so
+            {/* Only when there is something to show: an empty wrapper still
+            carried its margin, a stray gap above the Pronostics card. */}
+            {fantasyReady &&
+              source !== "guest" &&
+              !alertsQ.isError &&
+              !playersQ.isError &&
+              !(alertsQ.data && playersQ.data && alertsQ.data.length === 0) && (
+                <div className="mt-3">
+                  {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
+                    alertsQ.data.length > 0 && (
+                      <>
+                        <div className="mb-1.5 inline-flex items-center gap-1.5">
+                          <Bell className={cn("h-3.5 w-3.5 shrink-0", ui.tone.ink)} aria-hidden />
+                          {/* `home.fantasy_alerts` carries `{accent}` markers, so
                         it must go through <Trans> — rendered raw it prints
                         the literal markers on screen. */}
-                        <Trans
-                          text={t("home.fantasy_alerts")}
-                          className={cn(ui.text.label, ui.tone.muted)}
-                          accentClassName={ui.tone.ink}
-                        />
-                      </div>
-                      <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
-                    </>
-                  )
-                ) : (
-                  <SkeletonList count={1}>{() => <AlertRowSkeleton />}</SkeletonList>
-                )}
-              </div>
-            )}
+                          <Trans
+                            text={t("home.fantasy_alerts")}
+                            className={cn(ui.text.label, ui.tone.muted)}
+                            accentClassName={ui.tone.ink}
+                          />
+                        </div>
+                        <FantasyAlertList alerts={alertsQ.data} players={playersQ.data} />
+                      </>
+                    )
+                  ) : (
+                    <SkeletonList count={1}>{() => <AlertRowSkeleton />}</SkeletonList>
+                  )}
+                </div>
+              )}
           </Section>
           {/* Pronostics (BG-0146), right after the matches: shown once promoted,
           and it hides itself while the game is off in the database. */}
@@ -718,7 +873,7 @@ function HomeContent() {
                     return (
                       <div
                         key={row.clubId}
-                        className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)]"
+                        className="relative flex items-center gap-2.5 px-3.5 py-2 transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]"
                       >
                         {zone ? (
                           <span
@@ -854,7 +1009,7 @@ function GameweekBand({
   afterStrip = false,
   children,
 }: {
-  /** What sits at the foot of the band: the next match. */
+  /** What sits at the foot of the band: the next match, or the round's carousel. */
   children?: ReactNode;
   /** The deadline strip sits above: it has already cancelled the screen's top padding. */
   afterStrip?: boolean;
@@ -865,7 +1020,7 @@ function GameweekBand({
   deadline?: string;
   /** A match is being played: the band shows the crowd celebrating. */
   live: boolean;
-  /** A live card rises out of the band's lower edge. */
+  /** A live card (a live match on its own) rises out of the band's lower edge. */
   overlap: boolean;
 }) {
   const { t } = useI18n();
@@ -884,6 +1039,7 @@ function GameweekBand({
   const deadlineAhead = deadline !== undefined && deadlineMs !== null && deadlineMs > now;
   return (
     <section
+      data-testid="home-gameweek-band"
       className={cn(
         "relative isolate overflow-hidden",
         // Flush under the bar (and the live strip): UiScreen's `pt-4` is

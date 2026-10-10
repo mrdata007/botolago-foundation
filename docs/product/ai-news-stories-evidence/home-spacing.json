@@ -1,0 +1,34 @@
+[
+  {
+    "lang": "fr",
+    "width": 390,
+    "gap": 44,
+    "railTop": 161,
+    "bandTop": 342.765625,
+    "errors": []
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "gap": 36,
+    "railTop": 246,
+    "bandTop": 432.5625,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "gap": 44,
+    "railTop": 161,
+    "bandTop": 352.578125,
+    "errors": []
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "gap": 36,
+    "railTop": 246,
+    "bandTop": 442.375,
+    "errors": []
+  }
+]

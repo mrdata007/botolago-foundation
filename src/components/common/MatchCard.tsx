@@ -76,7 +76,7 @@ export type MatchCardVariant = "row" | "list" | "compact" | "hero";
  *  into its corners), so the focus ring is drawn inside the row. */
 const LIST_FRAME = cn(
   "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-  "hover:bg-[color:var(--ui-surface-sunken)]",
+  "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
   ui.focus,
   "focus-visible:ring-inset focus-visible:ring-offset-0",
 );
@@ -84,9 +84,11 @@ const LIST_FRAME = cn(
 /** The same row as a card of its own: the card surface, clipping its edges. */
 const CARD_FRAME = cn(ui.surface.card, "overflow-hidden", "press-tile", ui.focus);
 
-/** The split live card: a feature surface, lifted off the page. */
+/** The split live card: a feature surface, lifted off the page. It takes its
+ *  container's height (a slide of Home's band carousel, as tall as the
+ *  tallest card beside it), the club colours running to its foot. */
 const HERO_FRAME = cn(
-  "relative overflow-hidden",
+  "relative h-full overflow-hidden",
   ui.radius.sheet,
   ui.shadow.lifted,
   "press-tile",
@@ -99,6 +101,7 @@ export function MatchCard({
   away,
   variant = "row",
   listGameweek,
+  showDate = false,
   extras,
 }: {
   match: Match;
@@ -109,6 +112,13 @@ export function MatchCard({
    *  round keeps its "J. n" tag, so a list that spans two rounds never files
    *  a match under the wrong one. */
   listGameweek?: number;
+  /**
+   * Print the match's day above the time or the state. For a list that mixes
+   * days (a club's season), where each row has to say when it was or will be
+   * played; a list already grouped under a day (the calendar, Home) leaves it
+   * off rather than repeating the heading on every row.
+   */
+  showDate?: boolean;
   extras?: MatchCardExtras;
 }) {
   const { t, tr, lang } = useI18n();
@@ -162,6 +172,8 @@ export function MatchCard({
   const showRoundTag =
     variant === "compact" || (!isHero && match.gameweek > 0 && match.gameweek !== listGameweek);
 
+  // A row whose day is not printed is not dated: nothing to name or to say.
+  const dated = showDate && !isHero && !unconfirmedDate;
   const a11yLabel = (() => {
     const score = t("matches.a11y.score")
       .replace("{home}", tr(home.name))
@@ -175,7 +187,10 @@ export function MatchCard({
           : t("matches.a11y.live_minute").replace("{minute}", String(match.minute));
       return `${score} — ${state}`;
     }
-    if (isFinished) return `${score} — ${t("matches.a11y.status_finished")}`;
+    if (isFinished) {
+      const finished = `${score} — ${t("matches.a11y.status_finished")}`;
+      return dated ? `${finished} — ${weekdayFmt}` : finished;
+    }
     if (isScheduled) {
       return `${homeName} ${t("matches.vs")} ${awayName} — ${weekdayFmt} · ${unconfirmedTime ? t("matches.kickoff_unconfirmed") : t("matches.a11y.kickoff_at").replace("{time}", timeFmt)}`;
     }
@@ -319,7 +334,7 @@ export function MatchCard({
   const content: ReactNode = isHero ? (
     <>
       {/* The two halves, home first: flex order mirrors in Arabic. */}
-      <div className="flex">
+      <div className="flex h-full">
         <Half club={home} palette={pair.home} name={homeName} side="home" />
         <Half club={away} palette={pair.away} name={awayName} side="away" />
       </div>
@@ -338,6 +353,13 @@ export function MatchCard({
     <div className="grid grid-cols-[4px_6.25rem_minmax(0,1fr)_4px] items-stretch gap-x-3">
       <span {...clubStyle(pair.home)} className={ui.club.edgeFill} />
       <div className="flex min-w-0 flex-col items-center justify-center gap-1 py-3 text-center">
+        {dated ? (
+          <span
+            className={cn(ui.text.micro, "[font-weight:var(--ui-weight-strong)]", ui.tone.muted)}
+          >
+            {weekdayFmt}
+          </span>
+        ) : null}
         {isLive || isFinished ? null : figure}
         {caption}
         {roundTag}
@@ -382,7 +404,7 @@ export function MatchCard({
       )}
     >
       {/* The label above states all of this. */}
-      <div aria-hidden className={isLive ? "relative" : undefined}>
+      <div aria-hidden className={cn(isLive && "relative", isHero && "h-full") || undefined}>
         {content}
         {isLive ? (
           <LiveProgress
