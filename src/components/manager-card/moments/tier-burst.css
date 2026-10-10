@@ -1,0 +1,102 @@
+/* The tier-up burst (TierBurst.tsx): stadium-light beams behind the hero's card. DOM, outside the
+   card's SVG and tilt tree. Opacity and scale only; the layer is at rest (opacity 0) before and
+   after, and the component removes it after 1.2 s. The beams are mirror-symmetric (a beam is
+   centred on the vertical axis), so Arabic needs no flip. Keyframes live only in the
+   no-preference block, like the card's own beats. */
+
+.mc-burst {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 210%;
+  height: 130%;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.mc-burst__glow,
+.mc-burst__rays {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform-origin: 50% 50%;
+}
+
+.mc-burst__glow {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--burst-glow) 55%, transparent),
+    transparent 100%
+  );
+}
+
+/* the beams: the fill (the tier's light, or LEGEND's prism) through a mask of beams centred on the
+   vertical axis, faded to nothing towards the edge of the layer */
+.mc-burst__rays {
+  background: var(--burst-fill);
+  -webkit-mask-image:
+    repeating-conic-gradient(
+      from calc(var(--burst-period) / -2),
+      transparent 0,
+      transparent calc(var(--burst-period) * 0.32),
+      #000 calc(var(--burst-period) * 0.5),
+      transparent calc(var(--burst-period) * 0.68),
+      transparent var(--burst-period)
+    ),
+    radial-gradient(closest-side, #000 18%, rgb(0 0 0 / 0.4) 60%, transparent 100%);
+  mask-image:
+    repeating-conic-gradient(
+      from calc(var(--burst-period) / -2),
+      transparent 0,
+      transparent calc(var(--burst-period) * 0.32),
+      #000 calc(var(--burst-period) * 0.5),
+      transparent calc(var(--burst-period) * 0.68),
+      transparent var(--burst-period)
+    ),
+    radial-gradient(closest-side, #000 18%, rgb(0 0 0 / 0.4) 60%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mc-burst {
+    opacity: 1;
+  }
+  .mc-burst__glow {
+    animation: mc-burst-glow var(--burst-ms) var(--ease-decelerate) both;
+  }
+  .mc-burst__rays {
+    animation: mc-burst-rays var(--burst-ms) var(--ease-decelerate) both;
+  }
+
+  @keyframes mc-burst-glow {
+    0% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    30% {
+      opacity: calc(var(--burst-peak) * 0.9);
+      transform: scale(0.95);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(var(--burst-reach));
+    }
+  }
+
+  @keyframes mc-burst-rays {
+    0% {
+      opacity: 0;
+      transform: scale(0.5);
+    }
+    32% {
+      opacity: var(--burst-peak);
+      transform: scale(calc(var(--burst-reach) * 0.78));
+    }
+    100% {
+      opacity: 0;
+      transform: scale(var(--burst-reach));
+    }
+  }
+}

@@ -2,7 +2,8 @@ import { X } from "lucide-react";
 import type { ReactNode, Ref } from "react";
 
 import { ManagerCard } from "../ManagerCard";
-import type { BeatName, CardProfile } from "../types";
+import type { BeatName, CardProfile, TierCode } from "../types";
+import { TierBurst } from "./TierBurst";
 
 import { ui, UiIconButton } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -117,19 +118,31 @@ export function HeroFrame({
 /**
  * The card a hero carries: the full card at the stage's size (296 px, 336 px from 768 px), centred
  * with 16 px each side, with the beat of its moment, and the tilt on a mouse or pen like the
- * ordinary stage.
+ * ordinary stage. A `tier_up` hero passes the new tier as `burst`: the stadium-light burst opens
+ * behind the card with the beat (`TierBurst`; a layer of its own, outside the card).
  */
-export function HeroCard({ profile, beat }: { profile: CardProfile; beat: BeatName | undefined }) {
+export function HeroCard({
+  profile,
+  beat,
+  burst = null,
+}: {
+  profile: CardProfile;
+  beat: BeatName | undefined;
+  burst?: TierCode | null;
+}) {
   return (
     <div className="flex justify-center px-4 pb-[18px] pt-2" data-hero-card="">
-      <ManagerCard
-        profile={profile}
-        width={296}
-        beat={beat}
-        tilt
-        className="md:w-[336px]!"
-        testId="hero-card"
-      />
+      <div className="relative isolate max-w-full">
+        {burst ? <TierBurst tier={burst} beat={beat} /> : null}
+        <ManagerCard
+          profile={profile}
+          width={296}
+          beat={beat}
+          tilt
+          className="md:w-[336px]!"
+          testId="hero-card"
+        />
+      </div>
     </div>
   );
 }
