@@ -39,6 +39,7 @@ import {
 } from "@/services/points-service";
 import { FORMATIONS, type FormationKey, type SquadPlayer } from "@/types/fantasy";
 import { fantasyHead } from "@/lib/fantasy-meta";
+import { scrollBehavior } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { pointsUnit } from "@/lib/points-unit";
 
@@ -384,7 +385,9 @@ function PointsBody() {
           currentGameweek={screen.gameweek}
           onShowDetail={() => {
             setView("list");
-            document.getElementById("points-detail")?.scrollIntoView({ behavior: "smooth" });
+            document
+              .getElementById("points-detail")
+              ?.scrollIntoView({ behavior: scrollBehavior() });
           }}
         />
       ) : null}

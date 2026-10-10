@@ -11,19 +11,30 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { authOutlineClass } from "@/components/auth/auth-classes";
 import { EmptyState, ErrorState } from "@/components/common/States";
 import { AppShell } from "@/components/shell/AppShell";
-import { ui, UiButton, UiCard, UiChip, UiLinkButton, UiPageTitle } from "@/components/ui-kit";
+import {
+  ui,
+  UiButton,
+  UiCard,
+  UiChip,
+  UiLinkButton,
+  UiPageTitle,
+  UiSkeleton,
+} from "@/components/ui-kit";
 import type { NotificationCardDto, NotificationCategory } from "@/backend/notifications/contracts";
 import { useI18n } from "@/i18n/provider";
 import { NEWS_ENABLED } from "@/lib/feature-flags";
 import { formatRelativeTime } from "@/lib/format-time";
 import { notificationDestination } from "@/lib/notification-link";
-import { staggerStyle, useArrivals } from "@/lib/motion";
+import { prefersReducedMotion, staggerStyle, tokenMs, useArrivals } from "@/lib/motion";
+import { ExitCollapse, ExitPresence } from "@/lib/motion-exit";
+import { motionLoaded } from "@/lib/motion-loader";
+import { moveFocusAfterDismiss } from "@/lib/notification-focus";
 import { cn } from "@/lib/utils";
 import {
   useMyNotifications,
@@ -97,6 +108,22 @@ function Inbox() {
     [inboxQ.data, hidden],
   );
 
+  // The empty state waits for the last card to finish leaving, so it appears
+  // where the list was instead of showing under the fading card and jumping up.
+  const [emptyShown, setEmptyShown] = useState(cards.length === 0);
+  useEffect(() => {
+    if (cards.length > 0) {
+      setEmptyShown(false);
+      return;
+    }
+    if (emptyShown) return;
+    const wait =
+      prefersReducedMotion() || !motionLoaded() ? 0 : tokenMs("--duration-sheet", 320) + 40;
+    const timer = setTimeout(() => setEmptyShown(true), wait);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cards.length]);
+
   // Cards that arrive at the top while the page is open fade in one by one.
   const arrived = useArrivals(cards.map((card) => card.id));
 
@@ -106,6 +133,13 @@ function Inbox() {
     if (destination) void navigate(destination as Parameters<typeof navigate>[0]);
   };
   const remove = (card: NotificationCardDto) => {
+    if (typeof document !== "undefined") {
+      moveFocusAfterDismiss(
+        document,
+        cards.map((c) => c.id),
+        card.id,
+      );
+    }
     setHidden((current) => new Set(current).add(card.id));
     dismiss.mutate(card.id);
   };
@@ -144,107 +178,114 @@ function Inbox() {
       {inboxQ.isError ? (
         <ErrorState onRetry={() => void inboxQ.refetch()} />
       ) : inboxQ.isPending ? (
-        <UiCard padding="lg" className="animate-pulse motion-reduce:animate-none">
-          <div className="h-4 w-1/2 rounded bg-[color:var(--ui-surface-sunken)]" />
-          <div className="mt-3 h-3 w-5/6 rounded bg-[color:var(--ui-surface-sunken)]" />
+        <UiCard padding="lg">
+          <UiSkeleton className="h-4 w-1/2" />
+          <UiSkeleton className="mt-3 h-3 w-5/6" />
         </UiCard>
-      ) : cards.length === 0 ? (
-        <EmptyState>
-          <p className={cn(ui.display.section, ui.tone.default)}>
-            {t("notifications.empty_title")}
-          </p>
-          <p>{t("notifications.empty_body")}</p>
-        </EmptyState>
       ) : (
         <>
-          <UiCard padding="none" className="overflow-hidden">
+          {/* The list stays mounted while the last card fades, so that exit
+              plays too; the card has no box of its own once it is empty. */}
+          <UiCard padding="none" className="hidden overflow-hidden has-[li]:block">
             <ul className="divide-y divide-[color:var(--ui-rule)]">
-              {cards.map((card, index) => {
-                const Icon = CATEGORY_ICON[card.category];
-                const isUnread = !card.readAt;
-                return (
-                  <li
-                    key={card.id}
-                    className={cn(
-                      "flex items-stretch",
-                      arrived.has(card.id) && "enter-rise stagger",
-                    )}
-                    style={arrived.has(card.id) ? staggerStyle(index) : undefined}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => open(card)}
-                      className={cn(
-                        "flex min-w-0 flex-1 items-start gap-3 py-3 ps-4 pe-2 text-start",
-                        "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
-                      )}
-                    >
-                      <span
-                        aria-hidden
+              <ExitPresence>
+                {cards.map((card, index) => {
+                  const Icon = CATEGORY_ICON[card.category];
+                  const isUnread = !card.readAt;
+                  return (
+                    <ExitCollapse as="li" key={card.id}>
+                      <div
                         className={cn(
-                          "mt-0.5 grid h-9 w-9 shrink-0 place-items-center",
-                          ui.radius.full,
-                          ui.surface.sunken,
-                          ui.tone.ink,
+                          "flex items-stretch",
+                          arrived.has(card.id) && "enter-rise stagger",
                         )}
+                        style={arrived.has(card.id) ? staggerStyle(index) : undefined}
                       >
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0 flex-1" dir={card.direction}>
-                        <span
+                        <button
+                          type="button"
+                          onClick={() => open(card)}
                           className={cn(
-                            "block",
-                            ui.text.body,
-                            isUnread
-                              ? "[font-weight:var(--ui-weight-heavy)]"
-                              : "[font-weight:var(--ui-weight-medium,500)]",
+                            "flex min-w-0 flex-1 items-start gap-3 py-3 ps-4 pe-2 text-start",
+                            "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
                           )}
                         >
+                          <span
+                            aria-hidden
+                            className={cn(
+                              "mt-0.5 grid h-9 w-9 shrink-0 place-items-center",
+                              ui.radius.full,
+                              ui.surface.sunken,
+                              ui.tone.ink,
+                            )}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </span>
+                          <span className="min-w-0 flex-1" dir={card.direction}>
+                            <span
+                              className={cn(
+                                "block",
+                                ui.text.body,
+                                isUnread
+                                  ? "[font-weight:var(--ui-weight-heavy)]"
+                                  : "[font-weight:var(--ui-weight-medium,500)]",
+                              )}
+                            >
+                              {isUnread ? (
+                                <span className="sr-only">{t("notifications.unread")}. </span>
+                              ) : null}
+                              {card.title}
+                            </span>
+                            <span
+                              className={cn(
+                                "mt-0.5 line-clamp-3 block",
+                                ui.text.secondary,
+                                ui.tone.muted,
+                              )}
+                            >
+                              {card.body}
+                            </span>
+                            <span className={cn("mt-1 block", ui.text.meta, ui.tone.muted)}>
+                              {formatRelativeTime(card.createdAt, lang)}
+                            </span>
+                          </span>
                           {isUnread ? (
-                            <span className="sr-only">{t("notifications.unread")}. </span>
+                            <span
+                              aria-hidden
+                              className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[color:var(--ui-ink-fg)]"
+                            />
                           ) : null}
-                          {card.title}
-                        </span>
-                        <span
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={t("notifications.dismiss")}
+                          data-dismiss-id={card.id}
+                          onClick={() => remove(card)}
                           className={cn(
-                            "mt-0.5 line-clamp-3 block",
-                            ui.text.secondary,
+                            "grid w-11 shrink-0 place-items-center",
                             ui.tone.muted,
+                            "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
                           )}
                         >
-                          {card.body}
-                        </span>
-                        <span className={cn("mt-1 block", ui.text.meta, ui.tone.muted)}>
-                          {formatRelativeTime(card.createdAt, lang)}
-                        </span>
-                      </span>
-                      {isUnread ? (
-                        <span
-                          aria-hidden
-                          className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[color:var(--ui-ink-fg)]"
-                        />
-                      ) : null}
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={t("notifications.dismiss")}
-                      onClick={() => remove(card)}
-                      className={cn(
-                        "grid w-11 shrink-0 place-items-center",
-                        ui.tone.muted,
-                        "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-ink-fg)]",
-                      )}
-                    >
-                      <X className="h-4 w-4" aria-hidden />
-                    </button>
-                  </li>
-                );
-              })}
+                          <X className="h-4 w-4" aria-hidden />
+                        </button>
+                      </div>
+                    </ExitCollapse>
+                  );
+                })}
+              </ExitPresence>
             </ul>
           </UiCard>
-          {inboxQ.hasNextPage ? (
+          {cards.length === 0 && emptyShown ? (
+            <EmptyState>
+              <p className={cn(ui.display.section, ui.tone.default)}>
+                {t("notifications.empty_title")}
+              </p>
+              <p>{t("notifications.empty_body")}</p>
+            </EmptyState>
+          ) : null}
+          {cards.length > 0 && inboxQ.hasNextPage ? (
             <UiButton
               variant="soft"
               disabled={inboxQ.isFetchingNextPage}

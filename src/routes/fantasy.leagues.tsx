@@ -127,10 +127,11 @@ function LeaguesBody() {
           ]}
         />
         <section
+          key={tab}
           role="tabpanel"
           id={`leagues-panel-${tab}`}
           aria-labelledby={`leagues-tab-${tab}`}
-          className={cn("px-4 pb-8 pt-5", ui.surface.page)}
+          className={cn("tab-panel-in px-4 pb-8 pt-5", ui.surface.page)}
         >
           {tab === "leagues" ? (
             <>

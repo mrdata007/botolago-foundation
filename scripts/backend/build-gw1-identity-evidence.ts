@@ -47,7 +47,13 @@ export const ORIGINAL_MANIFEST_PATH =
 export const MANIFEST_PATH =
   "docs/production/manifests/gw1-identity-evidence-2026-10-03.corrected.manifest.json";
 
-export async function buildEvidence(options: { corroborationPath?: string } = {}) {
+export async function buildEvidence(
+  options: {
+    corroborationPath?: string;
+    /** HYPOTHETICAL mapping rows added to the reviewed snapshot, for a what-if only. */
+    extraMappings?: readonly MappingRowInput[];
+  } = {},
+) {
   const mappings = read<{ capturedAt: string; rows: MappingRowInput[] }>(
     `${DIR}reviewed-player-mappings-2026-10-03.json`,
   );
@@ -69,7 +75,10 @@ export async function buildEvidence(options: { corroborationPath?: string } = {}
     ? read<{ observedAt: string; results: CorroborationResult[] }>(options.corroborationPath)
     : null;
   const locked = new Set(Object.keys(squads.squads));
-  const snapshot = await buildReviewedIdentitySnapshot(mappings.rows, mappings.capturedAt);
+  const snapshot = await buildReviewedIdentitySnapshot(
+    [...mappings.rows, ...(options.extraMappings ?? [])],
+    options.extraMappings?.length ? `HYPOTHETICAL(${mappings.capturedAt})` : mappings.capturedAt,
+  );
   const loaded = COMMITTED_GW1_MATCHES.map((m) => ({ m, data: loadCommittedMatch(m) }));
   const fixtures = loaded.map(({ m, data }) => ({
     link: { sofascoreFixtureId: m.sofascoreId, flashscoreFixtureId: m.flashscoreId },

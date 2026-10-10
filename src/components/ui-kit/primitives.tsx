@@ -41,7 +41,7 @@ import type {
   ThHTMLAttributes,
 } from "react";
 import { isValidElement, useId, useRef } from "react";
-import { staggerStyle } from "@/lib/motion";
+import { staggerStyle, useJustChanged } from "@/lib/motion";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -873,6 +873,8 @@ export function UiTabs<T extends string>({
   // The one tab in the tab order: the selected one, or the first enabled tab
   // when the selection is disabled or absent — never none.
   const tabStop = rovingTabStop(options, value);
+  // Where the sliding accent bar sits; no bar when nothing is selected.
+  const activeIndex = options.findIndex((option) => option.value === value);
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     const rtl = getComputedStyle(event.currentTarget).direction === "rtl";
@@ -891,11 +893,13 @@ export function UiTabs<T extends string>({
       role="tablist"
       aria-label={label}
       onKeyDown={onKeyDown}
-      className={cn("grid", ui.surface.bar, ui.rule.block, className)}
+      className={cn("relative grid", ui.surface.bar, ui.rule.block, className)}
       style={
         {
           gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))`,
           "--tab-accent": accent ?? "var(--ui-ink-fg)",
+          "--tab-count": options.length,
+          "--tab-index": Math.max(0, activeIndex),
         } as CSSProperties
       }
     >
@@ -921,12 +925,7 @@ export function UiTabs<T extends string>({
               "transition-colors disabled:opacity-50",
               ui.display.tab,
               ui.focus,
-              active
-                ? cn(
-                    "[font-weight:var(--ui-weight-heavy)] shadow-[inset_0_-4px_0_var(--tab-accent)]",
-                    ui.tone.default,
-                  )
-                : ui.tone.muted,
+              active ? cn("[font-weight:var(--ui-weight-heavy)]", ui.tone.default) : ui.tone.muted,
             )}
           >
             {/* Wraps rather than ending in an ellipsis ("Mes pronostics" at 375px). */}
@@ -934,6 +933,9 @@ export function UiTabs<T extends string>({
           </button>
         );
       })}
+      {activeIndex >= 0 ? (
+        <span aria-hidden data-testid="ui-tabs-indicator" className="tab-indicator" />
+      ) : null}
     </div>
   );
 }
@@ -2021,6 +2023,10 @@ export function UiTD({
  * of places moved, in the positive/negative text colour, on the tabular stat
  * ramp so the column lines up; "=" when unchanged. The name is sr-only text
  * beside the glyph, so it is read with the number ("up 4").
+ *
+ * When the rank changes while the page is open (a live refresh), the arrow
+ * rolls in from the way it points and the disc pops once. Never on first
+ * show, and never under reduced motion (`useJustChanged`).
  */
 export function UiRankMovement({
   rank,
@@ -2039,6 +2045,8 @@ export function UiRankMovement({
   formatDelta?: (places: number) => string;
   className?: string;
 }) {
+  const moved = useJustChanged(rank);
+  const roll = (up: boolean) => (moved ? (up ? "roll-up" : "roll-down") : undefined);
   if (variant === "quiet") {
     const delta = previousRank === null ? 0 : previousRank - rank;
     if (delta === 0) {
@@ -2059,7 +2067,7 @@ export function UiRankMovement({
           className,
         )}
       >
-        <span aria-hidden className="text-[length:0.75em]">
+        <span aria-hidden className={cn("text-[length:0.75em]", roll(up))}>
           {up ? "▲" : "▼"}
         </span>
         <span className="sr-only">{up ? labels.up : labels.down}</span>
@@ -2082,15 +2090,18 @@ export function UiRankMovement({
     <span
       aria-label={up ? labels.up : labels.down}
       className={cn(
-        "inline-grid h-5 w-5 place-items-center",
+        "inline-grid h-5 w-5 place-items-center overflow-hidden",
         ui.radius.full,
         ui.text.micro,
         "[font-weight:var(--ui-weight-hero)] text-[color:var(--ui-on-ink-plain)]",
+        moved && "pop",
         className,
       )}
       style={{ backgroundColor: up ? "var(--ui-positive)" : "var(--ui-negative)" }}
     >
-      {up ? "▲" : "▼"}
+      <span aria-hidden className={roll(up)}>
+        {up ? "▲" : "▼"}
+      </span>
     </span>
   );
 }

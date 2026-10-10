@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Copy, Download, ImageDown, MessageCircle, Share2 } from "lucide-react";
-import { useEffect, useMemo, useState, type JSX } from "react";
+import { useEffect, useMemo, useRef, useState, type JSX } from "react";
 import { toast } from "sonner";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
@@ -18,6 +18,7 @@ import { useAuth } from "@/auth/AuthProvider";
 
 import { cardLabel, cardStrings } from "../copy";
 import { fromMyCard } from "../to-profile";
+import { useCardCrest, withCrest } from "../use-card-crest";
 import { drawCardShareImage } from "./card-share-image";
 import { previewEvent } from "./moment-text";
 import {
@@ -60,7 +61,11 @@ export function ShareCardSheet({
   const shareable = card.ovr !== null;
   const shown = open && shareable;
 
-  const profile = useMemo(() => fromMyCard(card), [card]);
+  const plainProfile = useMemo(() => fromMyCard(card), [card]);
+  // The club's crest, once it has loaded in this browser; the picture draws it only if it can also
+  // read it with CORS (`renderCardShareImage`), and keeps the initials disc otherwise.
+  const crest = useCardCrest(plainProfile.club, lang);
+  const profile = useMemo(() => withCrest(plainProfile, crest), [plainProfile, crest]);
   const strings = useMemo(() => cardStrings(t, lang), [t, lang]);
 
   const [image, setImage] = useState<{ blob: Blob; url: string } | null>(null);
@@ -69,9 +74,16 @@ export function ShareCardSheet({
 
   // The picture is drawn when the sheet opens, once per card state; the fonts and the art are the
   // browser's, so this never runs on the server.
-  const drawKey = `${lang}|${card.teamId}|${card.ovr}|${card.tier}|${card.provisional}|${card.serial}|${card.name}|${card.throughGameweekSeq}|${card.season.label}`;
+  const cardKey = `${lang}|${card.teamId}|${card.ovr}|${card.tier}|${card.provisional}|${card.serial}|${card.name}|${card.throughGameweekSeq}|${card.season.label}`;
+  const drawKey = `${cardKey}|${crest ?? ""}`;
+  // The preview is counted once per opening and card state: a redraw because the crest arrived
+  // while the sheet was open is the same preview.
+  const counted = useRef<string | null>(null);
   useEffect(() => {
-    if (!shown) return;
+    if (!shown) {
+      counted.current = null;
+      return;
+    }
     let cancelled = false;
     let url: string | null = null;
     setFailed(false);
@@ -89,7 +101,10 @@ export function ShareCardSheet({
         }
         url = URL.createObjectURL(blob);
         setImage({ blob, url });
-        track(previewEvent(profile.tier));
+        if (counted.current !== cardKey) {
+          counted.current = cardKey;
+          track(previewEvent(profile.tier));
+        }
       },
       () => {
         if (!cancelled) setFailed(true);

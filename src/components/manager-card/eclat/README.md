@@ -25,7 +25,7 @@ nothing here carries a third party's name, mark or artwork.
 | File                                                      | What                                                                                                                                                          |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index.ts`                                                | `eclatRenderer`, `ready()`, `mountTilt`, `estimateAspect`. Imports `eclat.css`.                                                                               |
-| `curva-renderer.ts`                                     | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`curva-*`).                                        |
+| `curva-renderer.ts`                                       | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`curva-*`).                                          |
 | `estimate.ts`                                             | `estimateAspect()` = 1.618, `ASPECT`. The only module meant for the main bundle: it imports nothing but a type.                                               |
 | `geometry.ts`                                             | Every coordinate: outline, shield window, tab, shirt, chest box, tokens, honeycomb helpers, mirror helpers. Pure numbers and strings.                         |
 | `foil.ts`                                                 | The six-step ladder (plan 5.4), the tier word (LASTREET), colour helpers over `src/lib/colour.ts`, the shirt's colours and the number's fill and twill.       |
@@ -69,7 +69,16 @@ root.
 - Every manager-supplied string (the name, the initials, the season, the serial, the label) goes
   through the one `esc` (`view.ts`). Tags are the allow-list's (`../markup-safety.ts`): no new tag;
   `pattern` and `mask` are required (honeycomb, the shirt's piqué, brushing, grain, the foil's cells).
-- No `<image>`, no raster texture, no `feTurbulence`; filters are Gaussian blurs only.
+- One `<image>` at most: the club's real crest on the tab's disc (owner request 2026-10-10), when
+  the profile's club carries `crest`. The app sets it only once the picture has loaded in the
+  browser (`../use-card-crest.ts`, which finds the club in the app's club catalogue), and
+  `../crest-href.ts` admits only an `https:`, local `http:` or raster `data:image` address, so the
+  card never shows a broken picture: without it the disc is the club's colours and initials, as
+  before. The crest sits on a light plate (`CREST_PLATE`, the app's `--ui-scorebox`) ringed in the
+  club colour (`CREST`, `geometry.ts`), in `plate.ts` outside the mirrored group so it is never
+  flipped. The share picture's art never carries it: `image()` hands it back as `crest` and the
+  canvas draws it over the initials disc when it loads with CORS. Tokens have no disc.
+- No raster texture, no `feTurbulence`; filters are Gaussian blurs only.
 - At rest the card is flat 2D and crisp; in 3D only while a pointer moves (`.mc-eclat--active`), a
   touch-only screen floats it (`--idle`), and it eases back (`--settle`). Verified in Chromium: at
   rest `.mc-eclat__tilt` computes `transform: none`, with a pointer over it `matrix3d(…)` and
@@ -199,8 +208,8 @@ row spread over 150 to 600 ms, so read the medians as a shape, not to the millis
 **On the development server** (every module its own request, React in its development build), the
 incumbent card (Écharpe, `main`) against this branch:
 
-| Page                                     | Incumbent, cold / warm | This branch, cold / warm |
-| ---------------------------------------- | ---------------------- | ------------------------ |
+| Page                                   | Incumbent, cold / warm | This branch, cold / warm |
+| -------------------------------------- | ---------------------- | ------------------------ |
 | `/curva?mc=rated`, French              | 832 / 509              | 596 / 498                |
 | `/curva?mc=rated`, Arabic              | 846 / 537              | 625 / 560                |
 | `/curva?mc=forming1`, French           | 836 / 483              | 508 / 469                |
@@ -228,11 +237,11 @@ signed-in page needs the mock sign-in, which a production bundle refuses, so **G
 ready on a signed-in page) has no production figure**; the guest page is the one the build can show.
 
 | Guest `/curva`, production build, CPU x4, 7 runs | Incumbent                         | This branch                       |
-| -------------------------------------------------- | --------------------------------- | --------------------------------- |
-| Cold, card's box to `data-mc-ready`                | 313 (217 to 361)                  | 308 (275 to 403)                  |
-| Warm                                               | 135 (118 to 163)                  | 137 (98 to 146)                   |
-| Renderer chunk, minified / gzip                    | 81.0 / 26.8 kB (CSS 3.2 / 1.1 kB) | 76.3 / 25.1 kB (CSS 9.8 / 2.5 kB) |
-| Font files fetched                                 | 3                                 | 6                                 |
+| ------------------------------------------------ | --------------------------------- | --------------------------------- |
+| Cold, card's box to `data-mc-ready`              | 313 (217 to 361)                  | 308 (275 to 403)                  |
+| Warm                                             | 135 (118 to 163)                  | 137 (98 to 146)                   |
+| Renderer chunk, minified / gzip                  | 81.0 / 26.8 kB (CSS 3.2 / 1.1 kB) | 76.3 / 25.1 kB (CSS 9.8 / 2.5 kB) |
+| Font files fetched                               | 3                                 | 6                                 |
 
 Both are under 400 ms on this page. `ready()` fetches six files on a French page, among them the
 166 kB Arabic subset of Noto Sans Arabic, because its sample text holds Arabic letters; this
