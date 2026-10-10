@@ -146,6 +146,20 @@ Open from review:
   reviewed RPC (P4): `api.resolve_football_mapping` cannot re-point a mapping.
 - The in-play status codes are unconfirmed until a probe during a live match.
 
+### Staging write, 2026-10-10 (owner-approved)
+
+Database: Staging V2 (`srdrflfrfpwixsllveid`). Writer: the orchestrator session,
+through **Staging database update** on branch `claude/sofascore-repoint-mapping`.
+Before writing: no other staging writer was running (in-progress and queued
+runs listed; the workflow's writer guard also passed); `plan` (run 38073132035)
+listed 29 pending migrations, the owner chose to bring staging fully level;
+`rehearse` (38073866860) passed for the first 8 and stopped as designed at the
+enum migration `20261005120000`; `apply` (38073992875) applied all 29 one at a
+time, `pending: []`; `check` (38074209633) passed, load-test seed intact.
+Applied: the 28 migrations already on `main` up to `20261010120300` plus
+`20261010140000_sofascore_repoint_fixture_mapping`. The pg_cron jobs they add
+arrive with their switches off.
+
 ## 7. Owner prerequisites
 
 - ~~Subscribe to a paid SofaScore tier~~ — done 2026-10-10 (10,000 a month).
