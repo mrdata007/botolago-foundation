@@ -52,16 +52,20 @@ const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
  * next-round line cleared the bar by 6 px (French) and 13 px (Arabic) under the forming box, and
  * ended 39 px (French) and 15 px (Arabic) under the bar's top under the two-line box of a card
  * waiting for a statistic. The worse language sets each reserve, plus 1 px for rounding: 247 px
- * for the forming box, 292 px for the statistics box. The rated line and 768 px up are unchanged.
+ * for the forming box, 292 px for the statistics box. The « Retourner » button hangs 12 px under
+ * the card (`-bottom-3`), so on a phone the box starts 16 px under it (4 px clear of
+ * the button) instead of 12 px (French) and 6 px (Arabic); both reserves take 4 px more for it,
+ * 251 px and 296 px, and Arabic's extra 6 px comes out of its wider margin. The rated line and
+ * 768 px up are unchanged.
  */
 const FIT_HEIGHT_WIDTH =
   "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_236px)_/_1.618),296px))]";
 /** `FIT_HEIGHT_WIDTH` under the forming box (« Carte en formation · 1/3 »). */
 const FIT_HEIGHT_WIDTH_ROUNDS_BOX =
-  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_247px)_/_1.618),296px))]";
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_251px)_/_1.618),296px))]";
 /** `FIT_HEIGHT_WIDTH` under the two-line box of a card waiting for a statistic. */
 const FIT_HEIGHT_WIDTH_STATS_BOX =
-  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_292px)_/_1.618),296px))]";
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_296px)_/_1.618),296px))]";
 
 /**
  * Where the card stands (plan section 10). The collectible is the one expressive object on the
@@ -287,7 +291,13 @@ export function CardStage({
         <div
           className={cn(
             "mt-3 flex flex-col items-center gap-1 px-4",
-            fitHeight ? "max-md:rtl:mt-1.5" : "max-md:rtl:mt-2",
+            // A text box under a card that can be turned: clear of the « Retourner » button,
+            // which hangs 12 px under the card, by 4 px in both languages.
+            flippable && waiting
+              ? "max-md:mt-4"
+              : fitHeight
+                ? "max-md:rtl:mt-1.5"
+                : "max-md:rtl:mt-2",
           )}
         >
           {children}
