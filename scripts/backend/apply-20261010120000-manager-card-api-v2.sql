@@ -40,8 +40,12 @@
 --        step 6 requires, and it refuses once step 6 has run;
 --     6. the compact story labels 20261010055425
 --        (scripts/backend/apply-compact-story-labels.sql, PR #393): wait until
---        no story is still generating.
---   The newest migration recorded must be exactly 20261010055425: the script
+--        no story is still generating;
+--     7. the removal of public AI notices 20261010073509
+--        (supabase/migrations/20261010073509_no_public_ai_notices.sql, PR #396;
+--        it has no apply script of its own). On production it was already
+--        applied when the owner read it on 2026-10-10.
+--   The newest migration recorded must be exactly 20261010073509: the script
 --   refuses otherwise, so the migrations go in repository order. That check
 --   covers versions only; it cannot show that step 5 ran, because step 5
 --   leaves no ledger row. Any quiet moment; not at minute 12 of an hour (the
@@ -73,7 +77,7 @@
 --
 -- WHAT IT DOES
 --   * refuses to run twice, or where any of the four migrations is recorded,
---     or where the newest recorded migration is not exactly 20261010055425
+--     or where the newest recorded migration is not exactly 20261010073509
 --     (the last repository migration before these four), or where any of the
 --     five 2026-10-08 migrations is missing or differs from the reviewed
 --     repository file (sha256 of the recorded text), or where
@@ -119,7 +123,7 @@ begin
     raise exception 'stop: a Gradins read API migration (20261010120000 to 20261010120300) is already recorded as applied';
   end if;
   -- Repository order: these four sort after every other repository migration,
-  -- and the last of those is 20261010055425 (the compact story labels).
+  -- and the last of those is 20261010073509 (the removal of public AI notices).
   -- The newest recorded migration must be exactly that one. It matters beyond
   -- tidiness: 20261009091728 (PR #384) wraps app_private.ops_health_checks()
   -- before 20261010120300 does, and applied the other way round its rename
@@ -132,8 +136,8 @@ begin
   -- of the whole chain. It covers nothing else: each earlier script's own
   -- preconditions (row counts, switches, drained workers) still apply when it
   -- runs, and the initial home stories refresh records no migration.
-  if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261010055425' then
-    raise exception 'stop: the newest applied migration is %, expected 20261010055425 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234, compact story labels 20261010055425), so the migrations go in repository order', (select max(version) from supabase_migrations.schema_migrations);
+  if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261010073509' then
+    raise exception 'stop: the newest applied migration is %, expected 20261010073509 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234, compact story labels 20261010055425, removal of public AI notices 20261010073509), so the migrations go in repository order', (select max(version) from supabase_migrations.schema_migrations);
   end if;
   -- The installed objects are the reviewed ones: the recorded text of each of
   -- the five is the repository file the 2026-10-08 script checked.

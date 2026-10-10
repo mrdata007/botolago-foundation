@@ -523,7 +523,8 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    is `20261008123400`, Home stories' unless it is `20261009091728`, AI home
    stories' unless it is `20261009113132`, the repair's unless it is
    `20261009195943`, the compact story labels' unless it is `20261009211234`,
-   and the read API script unless it is exactly `20261010055425`. That
+   and the read API script unless it is exactly `20261010073509` (the removal
+   of public AI notices, PR #396, which has no apply script of its own). That
    comparison covers versions only: each earlier script's own preconditions
    (counts, switches, drained workers) still apply when you run it, and the
    refresh (e) records no migration, so the ledger cannot show whether it ran.
@@ -541,11 +542,16 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    and, if it refuses with « migration baseline changed », find out why with
    that script's owner. Never edit a guard to make it pass. The read API
    script below pins only the newest version, so it is not affected.
+   **Production, as read on 2026-10-10:** the owner's read of production showed
+   every earlier migration already applied (173 rows, newest
+   `20261010073509`), so on production only this PR's apply script remains and
+   (a) to (f) above are history there. The guard requires `20261010073509`;
+   the file is in the repository only once PR #396 is merged to `main`.
    **Then the read API apply script,**
    `scripts/backend/apply-20261010120000-manager-card-api-v2.sql` (migrations
    `20261010120000` to `20261010120300`). It changes nothing anyone sees: it
    refuses to run if the read switch is on, or if the newest recorded
-   migration is not `20261010055425` (its message names the one it found and
+   migration is not `20261010073509` (its message names the one it found and
    what to apply first). Rehearse, then `commit;`. It
    replaces the first read functions with the ones the Gradins screens call, and
    adds the status call, the acknowledgements and the health check. Do it before

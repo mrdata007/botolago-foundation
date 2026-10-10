@@ -164,7 +164,10 @@ Both times nothing was applied anywhere but a local stack (checked: neither main
 branch but this one holds a version of the four), and the newest migration anywhere else was then
 `20261009211234`. Main later gained the compact story labels (`20261010055425`, PR #393), which
 sorts before `20261010120000` as well, so the four did **not** move a third time: only the script's
-newest-migration guard moved, to `20261010055425`, the one it now requires first.
+newest-migration guard moved, to `20261010055425`. On 2026-10-10 the owner read production (173
+rows, newest `20261010073509`, the removal of public AI notices, PR #396, which has no apply
+script): that migration also sorts before `20261010120000`, so the four still did not move, and the
+guard moved again, to `20261010073509`, the one it now requires first.
 
 Common rules for every function below: `set search_path = ''`; every name schema-qualified;
 `revoke all on function … from public, anon, authenticated, service_role;` then only the grants
@@ -725,8 +728,9 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
 - **Preflight**, refusing (`raise exception 'stop: …'`) unless:
   - `supabase_migrations.schema_migrations` has all five `20261008123000…123400` and none of the
     four new versions;
-  - the newest recorded migration is **exactly `20261010055425`** (the compact story labels,
-    PR #393: the last repository migration before these four), checked after the "none of the four
+  - the newest recorded migration is **exactly `20261010073509`** (the removal of public AI notices,
+    PR #396, applied on production, no apply script: the last repository migration before these four
+    once #396 is on `main`), checked after the "none of the four
     is recorded" test so a re-run says so. `20261009091728` (PR #384) wraps
     `app_private.ops_health_checks()` first and `20261010120300` wraps it again, so the migrations
     must go in repository order. The chain is #381's five, then `apply-fantasy-durable-progression.sql`
@@ -736,7 +740,7 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
     newest), then `refresh-initial-home-stories.sql` (PR #390; records no migration; wants 171 rows
     and `20261009211234` newest, and the AI stories switch off at six attempts, which it switches
     back on), then `apply-compact-story-labels.sql` (PR #393, `20261010055425`; wants
-    `20261009211234` newest, the switch on at six attempts and no story generating), then this one.
+    `20261009211234` newest, the switch on at six attempts and no story generating), then `20261010073509` (PR #396, which has no apply script), then this one.
     Each migration script wants its predecessor newest, so this one comparison covers the
     **versions** of the whole chain and nothing more: each earlier script's own preconditions (row
     counts, switches, drained workers) still apply when it runs, and the refresh leaves no ledger

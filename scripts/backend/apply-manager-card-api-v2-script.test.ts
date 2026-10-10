@@ -130,7 +130,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       "set local lock_timeout = '5s';",
       "the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet",
       "a Gradins read API migration (20261010120000 to 20261010120300) is already recorded as applied",
-      "the newest applied migration is %, expected 20261010055425",
+      "the newest applied migration is %, expected 20261010073509",
       "is not the reviewed repository file",
       "the tables this builds on are missing",
       "the functions this builds on are missing",
@@ -170,12 +170,12 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
 
   test("requires the newest recorded migration to be the last repository migration before ours", () => {
     const firstWrite = script.indexOf("insert into supabase_migrations.schema_migrations");
-    const expected = "20261010055425";
+    const expected = "20261010073509";
     const message =
-      "stop: the newest applied migration is %, expected 20261010055425 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234, compact story labels 20261010055425), so the migrations go in repository order";
+      "stop: the newest applied migration is %, expected 20261010073509 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234, compact story labels 20261010055425, removal of public AI notices 20261010073509), so the migrations go in repository order";
     expect(occurrences(script, message)).toBe(1);
     const condition =
-      "if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261010055425' then";
+      "if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261010073509' then";
     expect(occurrences(script, condition)).toBe(1);
     const guard = script.indexOf(condition);
     expect(guard).toBeGreaterThan(0);
@@ -202,7 +202,11 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       .sort();
     const first = repository.findIndex((file) => file.startsWith(MIGRATIONS[0].version));
     expect(first).toBeGreaterThan(0);
-    expect(repository[first - 1].slice(0, 14)).toBe(expected);
+    // PR #396 (20261010073509_no_public_ai_notices.sql) is already applied on production but
+    // may not be on this branch's base yet. Until that file is in the repository the last
+    // file before ours is the compact story labels; once it lands it must be the one before ours.
+    const noticesFile = repository.find((file) => file.startsWith(expected));
+    expect(repository[first - 1].slice(0, 14)).toBe(noticesFile ? expected : "20261010055425");
     // Ours are consecutive in the repository, so nothing else sits between them.
     expect(
       repository.slice(first, first + MIGRATIONS.length).map((file) => file.slice(0, 14)),
@@ -215,6 +219,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       "20261009195943",
       "20261009211234",
       "20261010055425",
+      ...(noticesFile ? [expected] : []),
     ]) {
       expect(repository.some((file) => file.startsWith(version))).toBe(true);
       expect(script.slice(0, script.indexOf("begin;"))).toContain(version);
