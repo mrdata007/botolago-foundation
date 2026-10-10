@@ -12,6 +12,7 @@ import {
 } from "./ai-content.ts";
 
 const TOKEN = "c".repeat(64);
+const SCHEDULER = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN };
 const para = (text: string) => `${text} ${"x".repeat(120)}`;
 const lang = (title: string, body = "Le match") => ({
   title,
@@ -182,7 +183,6 @@ function fakeClient(plan: unknown, calls: { name: string; args: unknown }[]): Em
         rpc(name: string, args: Record<string, unknown>) {
           calls.push({ name, args });
           const data: Record<string, unknown> = {
-            service_verify_scheduler_token: true,
             service_ai_content_plan: plan,
             service_ai_content_publish: { storyId: "story-1", articleId: "a" },
             service_ai_content_pending_notices: [
@@ -206,6 +206,7 @@ function fakeClient(plan: unknown, calls: { name: string; args: unknown }[]): Em
 }
 
 const env = {
+  ...SCHEDULER,
   OPENAI_KEY: "sk-test-0123456789abcdefghij",
   RESEND_API_KEY: "re_test_0123456789abcdef",
 };
@@ -270,14 +271,18 @@ describe("handleAiContentRequest", () => {
     expect(sent.some((s) => s.url.includes("openai"))).toBe(false);
   });
 
-  it("rejects a wrong scheduler token", async () => {
-    const response = await handleAiContentRequest(
-      new Request("https://x.test/", {
-        method: "POST",
-        headers: { "x-botolago-scheduler-token": "nope" },
-      }),
-      { environment: env, client: fakeClient(null, []) },
-    );
-    expect(response.status).toBe(401);
+  it("rejects a wrong scheduler token without a database call", async () => {
+    for (const token of ["nope", "9".repeat(64)]) {
+      const calls: { name: string; args: unknown }[] = [];
+      const response = await handleAiContentRequest(
+        new Request("https://x.test/", {
+          method: "POST",
+          headers: { "x-botolago-scheduler-token": token },
+        }),
+        { environment: env, client: fakeClient(null, calls) },
+      );
+      expect(response.status).toBe(401);
+      expect(calls).toEqual([]);
+    }
   });
 });

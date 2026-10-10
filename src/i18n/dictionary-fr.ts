@@ -2956,4 +2956,10 @@ export const fr = {
     "Votre carte de manager et son numéro {serial} seront supprimés. Ce numéro ne sera jamais réattribué.",
   "card.onboarding.state.deletion_noserial": "Votre carte de manager sera supprimée.",
   "card.onboarding.state.offline.text": "Impossible de charger votre carte.",
+  "card_motion.flip.label": "Retourner la carte",
+  "card_motion.flip.shown_front": "Face avant de la carte",
+  "card_motion.flip.shown_back": "Dos de la carte",
+  "card_motion.flip.back_label": "Dos de la carte",
+  "card_motion.delta.up": "note en hausse de {n}",
+  "card_motion.delta.down": "note en baisse de {n}",
 } as const satisfies Record<string, string>;

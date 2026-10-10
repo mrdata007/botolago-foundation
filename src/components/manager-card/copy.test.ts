@@ -373,6 +373,15 @@ describe("the dictionary of the section", () => {
     expect(m.m6.msgPlainProvisional).toContain("(provisoire)");
   });
 
+  it("keeps the motion words out of the Appendix A pin, and reads them in motion-copy.ts by literal calls", () => {
+    expect(sectionKeys.some((key) => key.startsWith("card_motion."))).toBe(false);
+    const source = read("src/components/manager-card/motion-copy.ts");
+    const used = new Set([...source.matchAll(/\bt\("([^"]+)"\)/g)].map((match) => match[1]));
+    const motionKeys = Object.keys(dictionaries.fr).filter((key) => key.startsWith("card_motion."));
+    expect(motionKeys.length).toBeGreaterThan(0);
+    expect(motionKeys.filter((key) => !used.has(key))).toEqual([]);
+  });
+
   it("keeps the same placeholders in both languages", () => {
     const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
     for (const key of sectionKeys) {
@@ -414,7 +423,13 @@ describe("the banned words", () => {
     /تحصيل/,
   ];
   const keys = (Object.keys(dictionaries.fr) as TranslationKey[]).filter(
-    (key) => key === "nav.curva" || key.startsWith("curva.") || key.startsWith("card."),
+    (key) =>
+      key === "nav.curva" ||
+      key.startsWith("curva.") ||
+      key.startsWith("card.") ||
+      // the motion words (`motion-copy.ts`) are held to the same voice, though they are not in the
+      // pinned Appendix A set above
+      key.startsWith("card_motion."),
   );
 
   it.each(["fr", "ar"] as const)("none in a %s string", (lang) => {

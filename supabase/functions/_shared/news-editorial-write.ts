@@ -6,7 +6,9 @@
 // only -- a browser client can never present a service_role JWT). This
 // function:
 //   1. authenticates the caller from their own bearer token (never trusting
-//      a client-claimed identity),
+//      a client-claimed identity), then refuses a caller whose own staff
+//      context has no editorial permission before the body is read
+//      (staff-preflight.ts),
 //   2. runs the real sanitize-html allowlist server-side over the raw
 //      body_html the client sent (ignoring/discarding whatever the client
 //      claims is already "clean"),
@@ -20,6 +22,8 @@
 // `npm:` module resolution; the real sanitize-html allowlist is wired in by
 // news-editorial-sanitizer.ts (used by the deployed Edge Function) and by
 // this file's own test suite (which imports the same npm package directly).
+
+import { callerMayAct, EDITORIAL_WRITE_PERMISSIONS } from "./staff-preflight.ts";
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
@@ -185,6 +189,12 @@ export async function handleNewsEditorialWriteRequest(
   const user = userData?.user ?? null;
   if (userError || !user || user.role === "anon") {
     return errorResponse(401, "unauthorized");
+  }
+
+  // Authorize before the body is parsed and sanitized, and before the
+  // service-role secret is read. The same answer the database gives.
+  if (!(await callerMayAct(userClient, EDITORIAL_WRITE_PERMISSIONS))) {
+    return errorResponse(403, "news_editorial_forbidden", "42501");
   }
 
   let body: RequestBody;

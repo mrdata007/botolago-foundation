@@ -244,7 +244,8 @@ jobs:
               backup: {
                 region: ($backup.region // null),
                 walgEnabled: ($backup.walg_enabled // false),
-                pitrEnabled: ($backup.pitr_enabled // false),
+                # `// false` would turn "not reported" into "off"; keep unknown as null.
+                pitrEnabled: (if ($backup.pitr_enabled | type) == "boolean" then $backup.pitr_enabled else null end),
                 completedCount: ([$backup.backups[]? | select((.status // "") == "COMPLETED")] | length),
                 latestCompletedAt: (
                   [$backup.backups[]? | select((.status // "") == "COMPLETED") | .inserted_at]
@@ -301,8 +302,20 @@ jobs:
             }
           ' > "$PHASE7E_EVIDENCE_DIR/management-summary.json"
 
-          echo "Management API preflight: PASS"
           jq . "$PHASE7E_EVIDENCE_DIR/management-summary.json"
+          # Recovery readiness: disabled or unverifiable point-in-time recovery
+          # never passes the production preflight.
+          pitr_state="$(jq -r '
+            if type != "object" then "UNVERIFIED"
+            elif .pitr_enabled == true then "ENABLED"
+            elif .pitr_enabled == false then "DISABLED"
+            else "UNVERIFIED" end
+          ' "$PHASE7E_RUNTIME_DIR/backups.json")"
+          if [[ "$pitr_state" != "ENABLED" ]]; then
+            echo "Management API preflight: FAIL (point-in-time recovery $pitr_state)"
+            exit 3
+          fi
+          echo "Management API preflight: PASS"
 
       - name: Collect sanitized read-only database inventory
         shell: bash
