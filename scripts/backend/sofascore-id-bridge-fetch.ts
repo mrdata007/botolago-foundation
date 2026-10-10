@@ -134,8 +134,16 @@ export const snapshotSql = (seasonId: string) => {
 ) as snapshot`;
 };
 
+/** This script only reads: anything but a single SELECT is refused before it is sent. */
+export function assertReadOnly(sql: string): void {
+  const body = sql.trim();
+  if (!/^select\b/i.test(body) || body.includes(";"))
+    throw new Error("sofascore_fetch_not_read_only: only a single SELECT may be sent");
+}
+
 export function managementQuery(ref: string, token: string): Query {
   return async (sql) => {
+    assertReadOnly(sql);
     const response = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
       method: "POST",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
@@ -176,13 +184,22 @@ async function main() {
   const outDir = arg("--out-dir");
   const key = process.env.RAPIDAPI_KEY?.trim();
   const token = process.env.SUPABASE_ACCESS_TOKEN?.trim();
-  const ref = process.env.SUPABASE_STAGING_PROJECT_REF?.trim();
+  // Staging by default. `--read-production` reads production (the owner allowed
+  // read-only runs on 2026-10-10 because staging holds no real Botola season);
+  // every query is a single SELECT either way, and the bridge's apply mode
+  // still refuses production.
+  const readProduction = process.argv.includes("--read-production");
+  const ref = (
+    readProduction
+      ? process.env.SUPABASE_PRODUCTION_PROJECT_REF
+      : process.env.SUPABASE_STAGING_PROJECT_REF
+  )?.trim();
   if (!outDir || !key || !token || !ref)
     throw new Error(
-      "sofascore_fetch_missing_input: --out-dir, RAPIDAPI_KEY, SUPABASE_ACCESS_TOKEN and SUPABASE_STAGING_PROJECT_REF are required",
+      "sofascore_fetch_missing_input: --out-dir, RAPIDAPI_KEY, SUPABASE_ACCESS_TOKEN and the project ref are required",
     );
-  if (ref === PRODUCTION_PROJECT_REF || !/^[a-z0-9]{20}$/.test(ref))
-    throw new Error("sofascore_fetch_project_refused: staging only");
+  if (!/^[a-z0-9]{20}$/.test(ref) || (ref === PRODUCTION_PROJECT_REF) !== readProduction)
+    throw new Error("sofascore_fetch_project_refused: the ref does not match the chosen target");
 
   const query = managementQuery(ref, token);
   const ids = await resolveIds(query, {

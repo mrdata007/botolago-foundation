@@ -157,3 +157,15 @@ variables.
 
 Player mappings stay on the reviewed mapping process (the RPC itself refuses
 SofaScore player mappings with `MAPPING_REVIEW_REQUIRED`).
+
+## Reading production (read only)
+
+Staging holds no real Botola season (2026-10-10: only the load-test and
+scoring-proof seasons), so the owner allowed the two read-only modes to run
+against Production V2 through **SofaScore ID bridge (production, read only)**
+(`.github/workflows/sofascore-id-bridge-production-read.yml`). It has no apply
+mode; the fetch script sends only single SELECT statements (`assertReadOnly`)
+and the bridge script gets no database credentials. Run `propose-teams`, review
+the proposed `{sofascoreTeamId: internalUuid}` pairing, then `dry-run` with the
+approved JSON. Writing the mapping on production remains an owner-run step
+through the release runbook.
