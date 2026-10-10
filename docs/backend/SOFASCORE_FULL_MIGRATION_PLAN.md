@@ -86,6 +86,23 @@ per tournament, live polling can reach ≈ 1,900 and the total ≈ 2,500, which
 still fits. The client's quota guard (`minRemaining`, default 100, in
 `rapidapi-client.ts`) is raised with the new tier and fails closed.
 
+### Probe results, 2026-10-10 (provider-probe run 38067728045, 5 requests)
+
+- Confirmed: `tournaments/get-last-matches` (24 events per page, paged with
+  `hasNextPage`), `tournaments/get-next-matches` (12 per page),
+  `tournaments/get-standings?type=total` (all 16 clubs with SofaScore team IDs),
+  `tournaments/get-seasons`. Status types seen: `finished`, `postponed`,
+  `notstarted`.
+- **A postponed match gets a new SofaScore event ID when it is replayed**; the
+  old event stays listed as `postponed` in the same round. The ID bridge maps
+  the replacement and re-points a mapping when a replacement appears.
+- `matches/get-live?sport=football` does not exist (404). The live-list endpoint
+  name is still unknown. Fallback that is known to work: `matches/detail` per
+  in-play match every 2 min, ≈ 1,900 requests a month, which still fits a
+  2,500–3,000 tier. The owner can read the exact live endpoint name from the
+  RapidAPI listing.
+- Quota after the run: 265 of 500 left this month.
+
 ## 5. Phases
 
 Each phase is its own pull request, reviewed before the next starts.
