@@ -20,14 +20,3 @@ export function tiltAllowed(state: {
  * recalculation of the whole page).
  */
 export const FLIP_MS = 340;
-
-/**
- * Whether the back face's content is in the page. At rest, on the front, it is not: it was a layer
- * of the card's size, rotated and hidden, drawn for every visit to turn it for few of them (the
- * pointer tilt ran about a fifth slower with it there). It is mounted as soon as the reader reaches
- * for the button (pointer over or down, focus: `armed`) so it is drawn before the turn starts, and
- * stays while the card shows it or turns.
- */
-export function backMounted(state: { armed: boolean; back: boolean; turning: boolean }): boolean {
-  return state.armed || state.back || state.turning;
-}

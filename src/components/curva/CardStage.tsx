@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 
 import { nextSeasonLabel, waitingBox, type WaitingBox } from "./curva-state";
 import { CardBack } from "./CardBack";
-import { backMounted, FLIP_MS, tiltAllowed } from "./flip-state";
+import { FLIP_MS, tiltAllowed } from "./flip-state";
 import { Figure, ProvisionalBadge } from "./figures";
 import { deltaArrow, signedDelta } from "./rating-change";
 import type { RatingBadge } from "./use-rating-change";
@@ -121,8 +121,6 @@ export function CardStage({
   const motion = useMotionCopy();
   const [back, setBack] = useState(false);
   const [turning, setTurning] = useState(false);
-  // The reader is reaching for the button: the back's content is drawn now, before the turn needs it.
-  const [armed, setArmed] = useState(false);
   // Counts the turns, so a second tap in the middle of one restarts the safety timer below.
   const [turnKey, setTurnKey] = useState(0);
   const [announce, setAnnounce] = useState("");
@@ -252,7 +250,7 @@ export function CardStage({
                   inert={!back}
                   aria-hidden={!back || undefined}
                 >
-                  {backMounted({ armed, back, turning }) ? <CardBack profile={profile} /> : null}
+                  <CardBack profile={profile} />
                 </div>
               </div>
             </div>
@@ -276,11 +274,6 @@ export function CardStage({
               aria-pressed={back}
               data-testid="curva-flip"
               onClick={flip}
-              onPointerEnter={() => setArmed(true)}
-              onPointerDown={() => setArmed(true)}
-              onFocus={() => setArmed(true)}
-              onPointerLeave={() => setArmed(false)}
-              onBlur={() => setArmed(false)}
               className={cn(
                 "absolute -bottom-3 -start-2 z-20 ring-1 ring-white/25",
                 // a ring that shows on every tier and both themes: white, with a black offset
