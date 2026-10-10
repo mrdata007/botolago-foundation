@@ -1,0 +1,132 @@
+/* The toolbar of the single built page (dist/onboarding.html): direction, language, theme, motion
+   and a screen filter. The page below it is the same grid as onboarding.html. */
+.onbt {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 20px;
+  padding: 10px 16px 12px;
+  direction: ltr;
+  font:
+    13px/1.4 "Manrope",
+    sans-serif;
+  border-block-end: 1px solid transparent;
+}
+body.app-light .onbt {
+  background: #ffffff;
+  color: #0b1220;
+  border-color: #cfd6e2;
+  --onbt-muted: #46526a;
+  --onbt-sunken: #e8ecf3;
+  --onbt-on: #0151fc;
+  --onbt-on-text: #ffffff;
+  --onbt-line: #aab4c6;
+}
+body.app-dark .onbt {
+  background: #0b1220;
+  color: #e8ecf5;
+  border-color: #26324a;
+  --onbt-muted: #aab6cc;
+  --onbt-sunken: #1a2438;
+  --onbt-on: #7fa4ff;
+  --onbt-on-text: #06101f;
+  --onbt-line: #4b5a78;
+}
+.onbt__title {
+  flex: 1 1 100%;
+  margin: 0;
+  font:
+    800 15px/1.3 "Manrope",
+    sans-serif;
+}
+.onbt__title span {
+  color: var(--onbt-muted);
+  font-weight: 600;
+}
+.onbt__group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.onbt__label {
+  color: var(--onbt-muted);
+  font:
+    800 11px/1.2 "Manrope",
+    sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.onbt__seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--onbt-sunken);
+}
+.onbt__seg button {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font:
+    800 13px/1 "Manrope",
+    sans-serif;
+  cursor: pointer;
+}
+.onbt__seg button[aria-pressed="true"] {
+  background: var(--onbt-on);
+  color: var(--onbt-on-text);
+}
+.onbt select {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0 12px;
+  border: 1px solid var(--onbt-line);
+  border-radius: 12px;
+  background: var(--onbt-sunken);
+  color: inherit;
+  font:
+    700 13px/1.2 "Manrope",
+    sans-serif;
+}
+.onbt button:focus-visible,
+.onbt select:focus-visible {
+  outline: 2px solid var(--onbt-on);
+  outline-offset: 2px;
+}
+.onbt__status {
+  flex: 1 1 100%;
+  margin: 0;
+  color: var(--onbt-muted);
+  font-size: 12px;
+}
+.onbt__select-wide {
+  flex: 1 1 220px;
+}
+.onbt__select-wide select {
+  width: 100%;
+}
+@media (max-width: 700px) {
+  .onbt {
+    position: static;
+  }
+}
+/* A phone frame is 390px wide: at 390 it takes the whole width. */
+@media (max-width: 440px) {
+  .onbp-grid {
+    padding-inline: 0;
+  }
+  .onbp-head {
+    padding-inline: 16px;
+  }
+  .onbp-label {
+    box-sizing: border-box;
+    padding-inline: 16px;
+  }
+}

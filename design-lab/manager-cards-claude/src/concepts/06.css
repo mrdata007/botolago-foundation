@@ -1,0 +1,397 @@
+/* 06 BRASSARD. Dark ground is the default; the light ground drops the lit rim and
+   deepens the floor shadow. Every selector is scoped under .c06. */
+.c06 {
+  --c06-rim: 1;
+  --c06-gs: 0.45;
+}
+.app-light .c06,
+:root[data-ground="day"] .c06 {
+  --c06-rim: 0;
+  --c06-gs: 0.34;
+}
+:root .app-dark .c06 {
+  --c06-rim: 1;
+  --c06-gs: 0.45;
+}
+:root .c06.c06-share .c06,
+:root .c06.c06-share {
+  --c06-rim: 1;
+}
+
+.c06 .c06-rim {
+  opacity: var(--c06-rim);
+}
+.c06 .c06-gshadow {
+  opacity: var(--c06-gs);
+}
+
+/* ---------- full card ---------- */
+.c06.c06-full {
+  display: block;
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.c06.c06-full > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.c06.c06-full:focus-visible {
+  outline: 2px solid #9bdbfd;
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+/* fine print (stat labels, the care label's full line) only at legible sizes; below 250px the
+   strap keeps its figures at 16u and the care label keeps the ID at 12u */
+.c06 .c06-big {
+  display: none;
+}
+@container (max-width: 250px) {
+  .c06 .c06-fine {
+    display: none;
+  }
+  .c06 .c06-big {
+    display: inline;
+  }
+}
+
+/* the founder strap folds open on its sewn end (live card only) */
+.c06 .c06-tab-face {
+  transform-box: fill-box;
+  transform-origin: 0% 50%;
+  transition: transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.c06 .c06-tab-in {
+  opacity: 0;
+  transition: opacity 0.18s linear;
+}
+.c06.is-open .c06-tab-face {
+  transform: scaleX(0.08);
+}
+.c06.is-open .c06-tab-in {
+  opacity: 1;
+}
+
+/* signature motion: the sheen drifts as if the band breathes on the arm */
+.c06.is-motion .c06-spec {
+  animation: c06-sheen 7s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+}
+@keyframes c06-sheen {
+  from {
+    transform: translateX(-34px);
+  }
+  to {
+    transform: translateX(72px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c06.is-motion .c06-spec {
+    animation: none;
+  }
+  .c06 .c06-tab-face,
+  .c06 .c06-tab-in {
+    transition: none;
+  }
+}
+
+/* the live card's control: four faces, the founder strap, the LEGEND replay */
+.c06.c06-ctl {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  font:
+    700 12px/1 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+}
+.c06.c06-ctl .c06-seg {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(127, 140, 160, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(127, 140, 160, 0.28);
+}
+.c06.c06-ctl button {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.c06.c06-ctl[dir="rtl"] button {
+  letter-spacing: 0;
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+}
+.c06.c06-ctl .c06-seg button[aria-pressed="true"] {
+  background: #0151fc;
+  color: #ffffff;
+}
+.c06.c06-ctl .c06-open,
+.c06.c06-ctl .c06-replay {
+  box-shadow: inset 0 0 0 1px rgba(127, 140, 160, 0.4);
+}
+.c06.c06-ctl .c06-open[aria-pressed="true"] {
+  background: #eef2f7;
+  color: #1d2735;
+}
+.c06.c06-ctl .c06-replay {
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  padding: 0;
+}
+.c06.c06-ctl button:focus-visible {
+  outline: 2px solid #9bdbfd;
+  outline-offset: 2px;
+}
+
+/* ---------- token ---------- */
+.c06.c06-tok {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+  flex: none;
+}
+.c06.c06-tok > svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- row: the "My position" compact card ---------- */
+.c06.c06-row {
+  --r-bg: #121b29;
+  --r-fg: #f0f6fc;
+  --r-mu: #a9b2be;
+  --r-edge: rgba(240, 246, 252, 0.09);
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px 72px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  min-height: 64px;
+  padding: 0 14px 0 8px;
+  border-radius: 10px;
+  background: var(--r-bg);
+  box-shadow: inset 0 0 0 1px var(--r-edge);
+  color: var(--r-fg);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+  overflow: hidden;
+}
+.app-light .c06.c06-row,
+:root[data-ground="day"] .c06.c06-row {
+  --r-bg: #ffffff;
+  --r-fg: #060d1a;
+  --r-mu: #4e5661;
+  --r-edge: #e5e8ec;
+}
+:root .app-dark .c06.c06-row {
+  --r-bg: #121b29;
+  --r-fg: #f0f6fc;
+  --r-mu: #a9b2be;
+  --r-edge: rgba(240, 246, 252, 0.09);
+}
+.c06.c06-row[dir="rtl"] {
+  padding: 0 8px 0 14px;
+}
+.c06 .c06-r-rank {
+  font:
+    800 19px/1 "Changa",
+    sans-serif;
+  text-align: center;
+  color: var(--r-mu);
+}
+.c06 .c06-r-tok {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+.c06 .c06-r-id {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.c06 .c06-r-name {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  min-width: 0;
+  font:
+    800 17px/1.25 "Changa",
+    sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c06 .c06-r-name bdi {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c06 .c06-r-fy {
+  flex: none;
+  font:
+    800 11px/1 "Changa",
+    sans-serif;
+  color: var(--r-mu);
+}
+.c06 .c06-r-tier {
+  font:
+    800 10.5px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--r-mu);
+}
+.c06 .c06-r-pts {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.c06 .c06-r-pts b {
+  font:
+    800 18px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c06 .c06-r-pts small {
+  font:
+    700 10px/1 "Manrope",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--r-mu);
+}
+.c06.c06-row[dir="rtl"] .c06-r-name {
+  font-size: 17px;
+  line-height: 1.6;
+}
+.c06.c06-row[dir="rtl"] .c06-r-tier,
+.c06.c06-row[dir="rtl"] .c06-r-pts small {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+.c06.c06-row[dir="rtl"] .c06-r-tier {
+  font-size: 11.5px;
+}
+
+/* your row is a woven label sewn into the table */
+.c06.c06-row.is-me {
+  --r-fg: #1d2735;
+  --r-mu: #4c5767;
+  background:
+    repeating-linear-gradient(-58deg, rgba(255, 255, 255, 0.5) 0 1px, transparent 1px 3.2px),
+    repeating-linear-gradient(0deg, rgba(29, 39, 53, 0.06) 0 0.6px, transparent 0.6px 1.6px),
+    #e9edf2;
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.12),
+    0 6px 14px -10px rgba(0, 0, 0, 0.6);
+}
+:root .app-dark .c06.c06-row.is-me,
+.c06.c06-row.is-me {
+  --r-fg: #1d2735;
+  --r-mu: #4c5767;
+}
+:root .app-dark .c06.c06-row.is-me {
+  background:
+    repeating-linear-gradient(-58deg, rgba(255, 255, 255, 0.45) 0 1px, transparent 1px 3.2px),
+    repeating-linear-gradient(0deg, rgba(29, 39, 53, 0.06) 0 0.6px, transparent 0.6px 1.6px),
+    #dfe5ec;
+}
+.c06.c06-row.is-me::after {
+  content: "";
+  position: absolute;
+  inset: 7px 5px 4px;
+  border: 1px dashed rgba(29, 39, 53, 0.42);
+  border-radius: 6px;
+  pointer-events: none;
+}
+.c06 .c06-r-sel {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 3px;
+  background: #0151fc;
+}
+.c06.c06-row.is-me .c06-r-rank {
+  color: #1d2735;
+}
+
+/* ---------- share (360x640) ---------- */
+.c06.c06-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #050a14;
+  color: #eef2f7;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c06 .c06-sh-scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.c06 .c06-sh-logo {
+  position: absolute;
+  inset-inline-start: 22px;
+  top: 30px;
+  width: 118px;
+  display: block;
+}
+.c06 .c06-sh-credit {
+  position: absolute;
+  inset-inline: 22px;
+  top: 58px;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 5px;
+  row-gap: 2px;
+  font:
+    700 10.5px/1.35 "Manrope",
+    sans-serif;
+  letter-spacing: 0.02em;
+  color: #c9d3e0;
+  font-variant-numeric: tabular-nums;
+}
+.c06 .c06-sh-credit b {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font:
+    800 17px/1 "Changa",
+    sans-serif;
+  color: #ffffff;
+  letter-spacing: 0;
+}
+.c06 .c06-sh-credit b span {
+  font-size: 11px;
+  color: #e9e4d6;
+}
+.c06 .c06-sh-credit i {
+  font-style: normal;
+  opacity: 0.55;
+}
+.c06.c06-share[dir="rtl"] .c06-sh-credit {
+  letter-spacing: 0;
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+  line-height: 1.7;
+}
+.c06.c06-share[dir="rtl"] .c06-sh-credit b {
+  line-height: 1.5;
+}

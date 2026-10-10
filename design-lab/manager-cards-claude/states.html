@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Card states · Manager Card lab</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="src/fonts.css" />
+    <link rel="stylesheet" href="src/app-context.css" />
+    <script src="src/brand.js"></script>
+    <script src="src/kit.js"></script>
+    <script src="src/contexts.js"></script>
+    <script src="src/onboarding/states.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font:
+          13px/1.4 "Manrope",
+          sans-serif;
+      }
+      .st-head {
+        padding: 16px;
+      }
+      .st-grid {
+        display: grid;
+        gap: 1px;
+      }
+      .st-fix {
+        display: grid;
+        grid-template-columns: 170px repeat(2, 200px) 1fr;
+        gap: 16px;
+        align-items: start;
+        padding: 16px;
+      }
+      .st-fix > b {
+        font-size: 12px;
+      }
+      .st-fix small {
+        display: block;
+        opacity: 0.7;
+        font-weight: 400;
+      }
+      .st-slot {
+        container-type: inline-size;
+        width: 200px;
+      }
+      .st-small {
+        display: grid;
+        gap: 10px;
+        justify-items: start;
+      }
+      .st-tokens {
+        display: flex;
+        gap: 12px;
+        align-items: end;
+      }
+      .st-row {
+        container-type: inline-size;
+        width: 358px;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="out">
+      <p>
+        Open with <code>?c=07&amp;v=v2</code> (or <code>?c=t1-touchline</code>). Add
+        <code>&amp;scheme=dark</code>, <code>&amp;fix=rated</code>.
+      </p>
+    </main>
+    <script>
+      /* Every onboarding fixture for one direction: full card (FR, AR), tokens 64/44/28, row.
+         The direction designers' test bench (CONTRACT.md "Onboarding states"). */
+      (function () {
+        const q = new URLSearchParams(location.search);
+        const slug = q.get("c");
+        const v = q.get("v") ? "-" + q.get("v") : "";
+        if (!slug) return;
+        const scheme = q.get("scheme") === "dark" ? "dark" : "light";
+        const only = q.get("fix");
+        const css = document.createElement("link");
+        css.rel = "stylesheet";
+        css.href = `src/concepts/${slug}${v}.css`;
+        document.head.appendChild(css);
+        const js = document.createElement("script");
+        js.src = `src/concepts/${slug}${v}.js`;
+        js.onload = () =>
+          document.fonts.ready.then(() => render(MC.concepts[MC.concepts.length - 1]));
+        js.onerror = () =>
+          (document.getElementById("out").textContent = "Concept file not found: " + js.src);
+        document.head.appendChild(js);
+        function render(c) {
+          const keys = MC.ONB.CARD_FIXTURES.filter((k) => !only || k === only);
+          const block = (k) => {
+            const f = MC.ONB.FIX[k];
+            const p = f.profile;
+            const lat = { lang: "lat", motion: false };
+            const ar = { lang: "ar", motion: false };
+            const tokens = (o) =>
+              `<div class="st-tokens"${o.lang === "ar" ? ' dir="rtl"' : ""}>${[64, 44, 28].map((h) => c.token(p, { ...o, size: h, mini: h <= 32 })).join("")}</div>`;
+            return (
+              `<section class="st-fix" data-shot="${k}"><b>${k}<small>${MC.esc(f.label)} (sample)</small></b>` +
+              `<div class="st-slot">${c.full(p, lat)}</div>` +
+              `<div class="st-slot" dir="rtl">${c.full(p, ar)}</div>` +
+              `<div class="st-small">${tokens(lat)}${tokens(ar)}` +
+              `<div class="st-row">${c.row(p, { ...lat, rank: 3, pts: 1196, me: true })}</div>` +
+              `<div class="st-row" dir="rtl">${c.row(p, { ...ar, rank: 3, pts: 1196, me: true })}</div></div>` +
+              `</section>`
+            );
+          };
+          document.body.className = "app-" + scheme;
+          document.getElementById("out").innerHTML =
+            `<header class="st-head"><b>${MC.esc(c.name)}</b> · onboarding states · ${scheme}</header>` +
+            `<div class="st-grid">${keys.map(block).join("")}</div>`;
+          if (c.mount) document.querySelectorAll(".st-slot > *").forEach((el) => c.mount(el, {}));
+          document.documentElement.dataset.ready = "1";
+        }
+      })();
+    </script>
+  </body>
+</html>

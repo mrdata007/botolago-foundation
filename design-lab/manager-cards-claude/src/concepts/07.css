@@ -1,0 +1,413 @@
+/* 07 ÉCHARPE — a supporter's scarf knotted over the barrier rail. Every selector is under .c07.
+   Dark ground is the default; the light ground drops the lit rim and softens the drop shadow. */
+
+.c07 {
+  --c07-rim: rgba(214, 222, 234, 0.32);
+  --c07-drop: drop-shadow(0 1.2cqi 2cqi rgba(0, 0, 0, 0.55));
+  position: relative;
+  width: 100%;
+  line-height: 0;
+}
+.app-light .c07,
+:root[data-ground="day"] .c07 {
+  --c07-rim: rgba(0, 0, 0, 0);
+  --c07-drop: drop-shadow(0 1.4cqi 2.2cqi rgba(30, 40, 60, 0.24));
+}
+.app-dark .c07,
+:root[data-ground] .app-dark .c07 {
+  --c07-rim: rgba(214, 222, 234, 0.32);
+  --c07-drop: drop-shadow(0 1.2cqi 2cqi rgba(0, 0, 0, 0.55));
+}
+/* undyed wool on the light ground: a 1px darker selvedge edge holds the outline (3.58:1) */
+.app-light .c07--wool,
+:root[data-ground="day"] .c07--wool {
+  --c07-rim: #8a8170;
+}
+.c07-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  filter: var(--c07-drop);
+}
+.c07--thumb .c07-svg {
+  filter: none;
+}
+.c07 .c07-rim {
+  stroke: var(--c07-rim);
+}
+
+/* the woven label (sizes are SVG units set on each line; the label scales with the card) */
+.c07 .c07-lb {
+  font-family: "Manrope", sans-serif;
+  fill: #2b2b2b;
+}
+.c07 .c07-lb-k {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  fill: #5c564c;
+}
+.c07 .c07-lb-v {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  fill: #2b2b2b;
+}
+.c07 .c07-lb-meta {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  fill: #2b2b2b;
+}
+.c07 .c07-lb-note {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  fill: #5c564c;
+}
+.c07 .c07-lb-tier {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  fill: #2b2b2b;
+}
+.c07 .c07-lb-ar {
+  font-family: "Noto Sans Arabic", "Changa", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c07 .c07-lb-tier.c07-lb-ar {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  font-weight: 800;
+}
+
+/* Arabic tier name: satin-stitch embroidery over the knit */
+.c07 .c07-emb {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* motion: only on request, never under reduced motion.
+   The founder's first stitch ('la première maille'): the five cast-on rows knit across in turn.
+   LEGEND: the scarf comes up taut between the fists and the fringe swings once.
+   The 84 is visible throughout; nothing waits on the motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .c07--motion .c07-cast--founder .c07-co-row {
+    animation: c07-knit 120ms steps(8, end) both;
+    animation-delay: calc(300ms + (4 - var(--i)) * 120ms);
+  }
+  .c07--motion .c07-cast--founder .c07-co-after {
+    animation: c07-fade 240ms ease-out 900ms both;
+  }
+  .c07--motion.c07--legend .c07-raise {
+    animation: c07-raise 420ms cubic-bezier(0.16, 1, 0.3, 1) 180ms both;
+  }
+  .c07--motion.c07--legend .c07-fists {
+    animation: c07-fists 420ms cubic-bezier(0.2, 0.9, 0.25, 1) both;
+  }
+  .c07--motion.c07--legend .c07-fringe {
+    animation: c07-swing 900ms cubic-bezier(0.3, 0.7, 0.3, 1) 520ms both;
+    transform-box: fill-box;
+    transform-origin: 50% 0;
+  }
+}
+@keyframes c07-knit {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes c07-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes c07-raise {
+  from {
+    transform: translateY(12px) scaleY(0.96);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes c07-fists {
+  from {
+    transform: translateY(18px);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes c07-swing {
+  0% {
+    transform: skewX(0deg);
+  }
+  35% {
+    transform: skewX(6deg);
+  }
+  70% {
+    transform: skewX(-2.5deg);
+  }
+  100% {
+    transform: skewX(0deg);
+  }
+}
+
+/* ---------- token ---------- */
+.c07-tk {
+  display: inline-block;
+  line-height: 0;
+  flex: none;
+}
+.c07-tk svg {
+  display: block;
+  overflow: visible;
+}
+.c07-tk .c07-tk-ovr {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+}
+/* the club-colour swatch keeps a thin lit edge on the dark ground; tassels gain a lighter ply there */
+.app-dark .c07-tk .c07-tk-sw,
+:root[data-ground] .app-dark .c07-tk .c07-tk-sw {
+  stroke: rgba(214, 222, 234, 0.45);
+  stroke-width: 0.6px;
+  paint-order: stroke;
+}
+.app-dark .c07-tk .c07-tk-tassel,
+:root[data-ground] .app-dark .c07-tk .c07-tk-tassel {
+  fill: #8796ab;
+}
+.app-dark .c07-tk .c07-tk-tassel-s,
+:root[data-ground] .app-dark .c07-tk .c07-tk-tassel-s {
+  stroke: #8796ab;
+}
+.app-dark .c07-tk .c07-tk-arm,
+:root[data-ground] .app-dark .c07-tk .c07-tk-arm {
+  fill: #5d6570;
+}
+
+/* the cream cast-on band keeps an edge on the light ground, so it reads as knit, not as a gap */
+.app-light .c07-tk .c07-tk-cast,
+:root[data-ground="day"] .c07-tk .c07-tk-cast {
+  stroke: #8a8170;
+  stroke-width: 0.5px;
+}
+
+/* ---------- row: the "My position" card, the scarf on a stretch of barrier ---------- */
+.c07-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  max-width: 358px;
+  height: 68px;
+  padding-inline: 8px 14px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--ui-surface, #fff);
+  box-shadow: var(--ui-card-shadow, 0 1px 2px rgba(0, 0, 0, 0.1));
+  color: var(--ui-on-surface, #0d1626);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+  line-height: 1;
+  overflow: hidden;
+}
+.c07-row.is-me {
+  background: var(--ui-me, #e6f7fb);
+}
+/* the barrier rail runs the length of the row; the scarf hangs from it */
+.c07-row-rail {
+  position: absolute;
+  inset-inline: 0;
+  top: 8px;
+  height: 4px;
+  background: linear-gradient(180deg, #e6ebf0, #a9b2be 55%, #6e7886);
+  box-shadow: 0 1px 0 #4e5661;
+  pointer-events: none;
+}
+.c07-row-rank {
+  position: relative;
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--ui-on-surface-muted, #4e5661);
+  padding-top: 8px;
+}
+.c07-row.is-me .c07-row-rank {
+  color: var(--ui-on-surface, #0d1626);
+}
+.c07-row-token {
+  position: relative;
+  display: block;
+  align-self: start;
+  margin-top: 5px;
+}
+.c07-row-name {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+}
+.c07-row-name b {
+  font:
+    800 17px/1.1 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c07-row-name small {
+  font:
+    700 11px/1.2 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: var(--ui-on-surface-muted, #4e5661);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c07-row-founder {
+  color: var(--ui-on-surface, #0d1626);
+}
+.c07-row-pts {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  padding-top: 10px;
+  font:
+    800 18px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c07-row-pts small {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ui-on-surface-muted, #4e5661);
+}
+/* Arabic names need the room under the baseline: the dots of ي must never be clipped (علي, not على) */
+.c07-row[dir="rtl"] .c07-row-name b {
+  font:
+    800 18px/1.7 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c07-row[dir="rtl"] .c07-row-name small,
+.c07-row[dir="rtl"] .c07-row-pts small {
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+  letter-spacing: 0;
+}
+.c07-row[dir="rtl"] .c07-row-name {
+  gap: 1px;
+}
+
+/* ---------- share: "Sur la barrière" ---------- */
+.c07-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #05080f;
+  color: #f2eee4;
+  font-family: "Manrope", sans-serif;
+}
+.c07-sh-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.c07-sh-logo {
+  position: absolute;
+  top: 14px;
+  inset-inline-start: 18px;
+  width: 100px;
+}
+.c07-sh-cap {
+  position: absolute;
+  top: 22px;
+  inset-inline-end: 20px;
+  margin: 0;
+  display: grid;
+  justify-items: end;
+  font:
+    700 14px/1.2 "Changa",
+    sans-serif;
+  text-align: end;
+  color: rgba(242, 238, 228, 0.88);
+}
+.c07-share[dir="rtl"] .c07-sh-cap {
+  font:
+    700 16px/1.45 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
+}
+/* identity: at the foot of the story's safe band, beside the scarf's lower end */
+.c07-sh-id {
+  position: absolute;
+  bottom: 112px;
+  inset-inline-end: 16px;
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+  text-align: end;
+}
+.c07-sh-name {
+  font:
+    800 34px/1 "Changa",
+    sans-serif;
+  color: #fff;
+  white-space: nowrap;
+}
+.c07-sh-name span {
+  color: #f2eee4;
+}
+.c07-share[dir="rtl"] .c07-sh-name {
+  line-height: 1.3;
+}
+.c07-sh-tier {
+  font:
+    800 16px/1 "Changa",
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: #f2eee4;
+}
+.c07-share[dir="rtl"] .c07-sh-tier {
+  letter-spacing: 0;
+  line-height: 1.4;
+}
+.c07-sh-sub {
+  font:
+    700 11px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.03em;
+  color: rgba(242, 238, 228, 0.8);
+}
+.c07-share[dir="rtl"] .c07-sh-sub {
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+  letter-spacing: 0;
+}
+
+.c07-sh-scarf {
+  position: absolute;
+  container-type: inline-size;
+}
+.c07-sh-scarf .c07 {
+  --c07-rim: rgba(214, 222, 234, 0.3);
+  --c07-drop: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.7));
+}

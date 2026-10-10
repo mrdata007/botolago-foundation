@@ -1,0 +1,622 @@
+/* 03 PORTE-CLÉS, second pass (v2). Everything is scoped under .c03v2 so it can sit on one page
+   with the first pass. The object's material lives in the SVG; this sheet carries the
+   ground-dependent edges (a lit rim on the dark ground, none on the light one), the row and the
+   share layout. Dark ground is the default; the light ground overrides it. The viewBox
+   (0 2 272 484) keeps headroom above the ring on every tier for LEGEND's carabiner. */
+.c03v2 {
+  --c03v2-rim: #9ba3ae;
+  --c03v2-ring: #9fb3cc;
+  --c03v2-rimr: #b8c2ce;
+  --c03v2-drop: drop-shadow(0 1.2cqi 1.4cqi rgb(0 0 0 / 0.65));
+  --c03v2-row-bg: #121b29;
+  --c03v2-row-fg: #f0f6fc;
+  --c03v2-row-mute: #a9b2be;
+  --c03v2-row-sh: 0 0 0 1px rgb(240 246 252 / 0.09);
+  --c03v2-me-bg: color-mix(in oklab, oklch(0.86 0.08 232) 14%, #121b29);
+  --c03v2-me-ring: rgb(115 237 250 / 0.55);
+  --c03v2-cut: #8cc8ff;
+  --c03v2-cutb: #d8eeff;
+}
+.app-light .c03v2,
+:root[data-ground="day"] .c03v2 {
+  --c03v2-rim: rgb(18 16 14 / 0);
+  --c03v2-ring: #3a4e6b;
+  --c03v2-rimr: rgb(30 36 44 / 0.35);
+  --c03v2-drop: drop-shadow(0 1.4cqi 1.6cqi rgb(12 49 100 / 0.24));
+  --c03v2-row-bg: #ffffff;
+  --c03v2-row-fg: #060d1a;
+  --c03v2-row-mute: #4e5661;
+  --c03v2-row-sh: 0 1px 2px 0 rgb(12 49 100 / 0.1), 0 4px 14px -8px rgb(12 49 100 / 0.14);
+  --c03v2-me-bg: color-mix(in oklab, oklch(0.88 0.11 205) 22%, #ffffff);
+  --c03v2-me-ring: rgb(0 140 200 / 0.45);
+  --c03v2-cut: #0151fc;
+  --c03v2-cutb: #6b9bff;
+}
+:root[data-ground] .app-dark .c03v2,
+.app-dark .c03v2 {
+  --c03v2-rim: #9ba3ae;
+  --c03v2-ring: #9fb3cc;
+  --c03v2-rimr: #b8c2ce;
+  --c03v2-drop: drop-shadow(0 1.2cqi 1.4cqi rgb(0 0 0 / 0.65));
+  --c03v2-row-bg: #121b29;
+  --c03v2-row-fg: #f0f6fc;
+  --c03v2-row-mute: #a9b2be;
+  --c03v2-row-sh: 0 0 0 1px rgb(240 246 252 / 0.09);
+  --c03v2-me-bg: color-mix(in oklab, oklch(0.86 0.08 232) 14%, #121b29);
+  --c03v2-me-ring: rgb(115 237 250 / 0.55);
+  --c03v2-cut: #8cc8ff;
+  --c03v2-cutb: #d8eeff;
+}
+
+/* ---------- edges that depend on the ground ---------- */
+.c03v2 .c03v2-rim {
+  stroke: var(--c03v2-rim);
+}
+.c03v2 .c03v2-rimr {
+  stroke: var(--c03v2-rimr);
+}
+.c03v2 .c03v2-mr {
+  stroke: var(--c03v2-ring);
+}
+.c03v2 .c03v2-mc {
+  stroke: var(--c03v2-ring);
+}
+
+/* ---------- full card ---------- */
+.c03v2.c03v2-full {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 272 / 484;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.c03v2.c03v2-full .c03v2-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: var(--c03v2-drop);
+  touch-action: pan-y;
+}
+.c03v2.c03v2-full.is-thumb .c03v2-art {
+  filter: none;
+}
+
+/* the fob swings on the eyelet; each charm on its own jump ring */
+.c03v2 .c03v2-fob {
+  transform-box: view-box;
+  transform-origin: 104px 139px;
+}
+.c03v2 .c03v2-sw {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+/* fill backwards only: once the settle ends the inline transform that the drag writes wins */
+.c03v2[data-motion] .c03v2-fob {
+  animation: c03v2-settle 900ms cubic-bezier(0.22, 1.1, 0.36, 1) backwards;
+}
+.c03v2[data-motion] .c03v2-sw {
+  animation: c03v2-charm 900ms cubic-bezier(0.22, 1.1, 0.36, 1) backwards;
+}
+.c03v2[data-motion].is-held .c03v2-fob,
+.c03v2[data-motion].is-held .c03v2-sw {
+  animation: none;
+}
+.c03v2[data-motion][data-tier="LEGEND"] .c03v2-fob,
+.c03v2[data-motion][data-tier="LEGEND"] .c03v2-sw {
+  animation-duration: 1300ms;
+}
+@keyframes c03v2-settle {
+  0% {
+    transform: rotate(8deg);
+  }
+  24% {
+    transform: rotate(-5deg);
+  }
+  48% {
+    transform: rotate(2.6deg);
+  }
+  72% {
+    transform: rotate(-1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes c03v2-charm {
+  0% {
+    transform: rotate(-10deg);
+  }
+  28% {
+    transform: rotate(7deg);
+  }
+  54% {
+    transform: rotate(-3deg);
+  }
+  78% {
+    transform: rotate(1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c03v2 .c03v2-fob,
+  .c03v2 .c03v2-sw {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---------- token ---------- */
+.c03v2.c03v2-tok {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.c03v2.c03v2-tok svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- row: the "My position" compact card ---------- */
+.c03v2.c03v2-row {
+  display: grid;
+  grid-template-columns: 24px 50px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 358px;
+  height: 66px;
+  padding-inline: 8px 16px;
+  border-radius: 14px;
+  background: var(--c03v2-row-bg);
+  color: var(--c03v2-row-fg);
+  box-shadow: var(--c03v2-row-sh);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c03v2.c03v2-row.is-me {
+  background: var(--c03v2-me-bg);
+  box-shadow:
+    inset 0 0 0 1.5px var(--c03v2-me-ring),
+    var(--c03v2-row-sh);
+}
+.c03v2 .c03v2-rk {
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--c03v2-row-mute);
+}
+.c03v2 .c03v2-rt {
+  display: grid;
+  place-items: center;
+  height: 56px;
+}
+.c03v2 .c03v2-rn {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.c03v2 .c03v2-rn b {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  font:
+    800 19px/1.2 "Changa",
+    sans-serif;
+}
+.c03v2 .c03v2-rnm {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c03v2 .c03v2-rn i {
+  flex: none;
+  font:
+    600 13px/1 "Changa",
+    sans-serif;
+  font-style: normal;
+  color: var(--c03v2-row-mute);
+}
+.c03v2 .c03v2-rn small {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font:
+    800 11px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.1em;
+  color: var(--c03v2-row-mute);
+}
+.c03v2 .c03v2-pg {
+  flex: none;
+  display: block;
+}
+.c03v2 .c03v2-rp {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+.c03v2 .c03v2-rp b {
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c03v2 .c03v2-rp small {
+  font:
+    700 10px/1 "Manrope",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--c03v2-row-mute);
+}
+.c03v2.c03v2-row[dir="rtl"] .c03v2-rn b {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  line-height: 1.5;
+}
+.c03v2.c03v2-row[dir="rtl"] .c03v2-rn small {
+  font:
+    700 12px/1.6 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c03v2.c03v2-row[dir="rtl"] .c03v2-rp small {
+  font:
+    700 11px/1.5 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c03v2.c03v2-row[dir="rtl"] .c03v2-rn {
+  gap: 0;
+}
+
+/* ---------- share: "Sur mon sac" ---------- */
+.c03v2.c03v2-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #26282c;
+  color: #f0f2f5;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c03v2.c03v2-share .c03v2-rim {
+  stroke: #9ba3ae;
+}
+.c03v2 .c03v2-sh-bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.c03v2 .c03v2-sh-logo {
+  position: absolute;
+  top: 30px;
+  inset-inline-start: 24px;
+  width: 124px;
+}
+/* a woven label sewn onto the bag in the corner the keyring leaves free (bottom-left in both
+   languages: the object never mirrors, so neither does the free corner), inside the 24px safe
+   margin and clear of the tag and its rim engraving */
+.c03v2 .c03v2-sh-tag {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  box-sizing: border-box;
+  padding: 6px 15px 7px;
+  border-radius: 2px;
+  color: #22252b;
+  background:
+    repeating-linear-gradient(0deg, rgb(60 50 30 / 0.07) 0 1px, transparent 1px 2.4px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.16) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #f1ebdb, #e2d9c3);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 2px 0 -0.5px rgb(0 0 0 / 0.45),
+    0 12px 18px -10px rgb(0 0 0 / 0.75);
+}
+.c03v2 .c03v2-sh-tag::before,
+.c03v2 .c03v2-sh-tag::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background: linear-gradient(90deg, #cfc6ae, #ddd4bd);
+  border-right: 1px dashed rgb(70 60 40 / 0.55);
+}
+.c03v2 .c03v2-sh-tag::before {
+  left: 0;
+}
+.c03v2 .c03v2-sh-tag::after {
+  right: 0;
+  border-right: 0;
+  border-left: 1px dashed rgb(70 60 40 / 0.55);
+  background: linear-gradient(270deg, #cfc6ae, #ddd4bd);
+}
+.c03v2 .c03v2-sh-name {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font:
+    800 25px/1.1 "Changa",
+    sans-serif;
+}
+.c03v2 .c03v2-sh-name i {
+  font:
+    600 15px/1 "Changa",
+    sans-serif;
+  font-style: normal;
+  color: #5b5d63;
+}
+.c03v2 .c03v2-sh-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 0;
+  font:
+    800 11.5px/1.4 "Manrope",
+    sans-serif;
+  letter-spacing: 0.02em;
+}
+.c03v2 .c03v2-sh-meta em {
+  font:
+    600 8.5px/1 "Manrope",
+    sans-serif;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  /* 5.8:1 on the label's darker end (#e2d9c3); the 4.1:1 it had read as a stamp at 8.5px */
+  color: #554f40;
+}
+.c03v2.c03v2-share[dir="rtl"] .c03v2-sh-name {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  line-height: 1.3;
+}
+.c03v2.c03v2-share[dir="rtl"] .c03v2-sh-name b {
+  font-size: 22px;
+}
+.c03v2.c03v2-share[dir="rtl"] .c03v2-sh-name i {
+  font-size: 14px;
+}
+.c03v2.c03v2-share[dir="rtl"] .c03v2-sh-meta em {
+  font:
+    600 9.5px/1.4 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+
+/* ---------- onboarding states ---------- */
+/* an empty name carrier in the row and on the share label: a short engraved rule */
+.c03v2 .c03v2-rnm.c03v2-blank {
+  display: block;
+  align-self: center;
+  width: 72px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.5;
+}
+.c03v2 .c03v2-sh-name .c03v2-blank {
+  display: block;
+  align-self: center;
+  width: 84px;
+  height: 2px;
+  margin: 12px 0;
+  border-radius: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+/* a provisional number is stated on the share image: a woven label in the free bottom-end corner */
+.c03v2 .c03v2-sh-prov {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  box-sizing: border-box;
+  padding: 7px 17px 8px;
+  border-radius: 2px;
+  color: #22252b;
+  background:
+    repeating-linear-gradient(0deg, rgb(60 50 30 / 0.07) 0 1px, transparent 1px 2.4px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.16) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #f1ebdb, #e2d9c3);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 2px 0 -0.5px rgb(0 0 0 / 0.45),
+    0 12px 18px -10px rgb(0 0 0 / 0.75);
+}
+.c03v2 .c03v2-sh-prov b {
+  display: block;
+  font:
+    800 13px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.04em;
+}
+.c03v2.c03v2-share[dir="rtl"] .c03v2-sh-prov b {
+  font:
+    700 14px/1.5 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---------- beats (onboarding): parts only, never the number, name or serial ---------- */
+/* Every beat part rests invisible, or in the finished state, so with motion off the card is the
+   finished card. The animations exist only where motion is allowed. */
+.c03v2 .c03v2-nz,
+.c03v2 .c03v2-cut,
+.c03v2 .c03v2-mktrace,
+.c03v2 .c03v2-nline {
+  opacity: 0;
+}
+/* the enamel is drawn only while the beat runs: the finished number is the 84 beneath it */
+.c03v2 .c03v2-flow {
+  visibility: hidden;
+}
+.c03v2 .c03v2-mkfill {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* make (about 680ms): the name is engraved letter by letter, then the tag is cut round its
+     outline: a bright head with a cooling comet tail runs once round it. */
+  .c03v2[data-beat="make"] .c03v2-nz {
+    opacity: 1;
+  }
+  .c03v2[data-beat="make"] .c03v2-nz tspan {
+    stroke-dasharray: 160;
+    animation: c03v2-trace 300ms cubic-bezier(0.4, 0, 0.3, 1) both;
+  }
+  .c03v2[data-beat="make"] .c03v2-cut {
+    opacity: 1;
+  }
+  .c03v2[data-beat="make"] .c03v2-cut path {
+    animation: c03v2-comet 500ms cubic-bezier(0.55, 0, 0.35, 1) 180ms both;
+  }
+
+  /* first (about 560ms): the 84 is an engraved outline, then enamel flows into it */
+  .c03v2[data-beat="first"] .c03v2-n84 {
+    animation: c03v2-ntint 560ms both;
+  }
+  .c03v2[data-beat="first"] .c03v2-nline {
+    animation: c03v2-oline 560ms linear both;
+  }
+  .c03v2[data-beat="first"] .c03v2-flow {
+    animation: c03v2-rise 520ms cubic-bezier(0.4, 0.05, 0.35, 1) 40ms backwards;
+  }
+  .c03v2[data-beat="first"] .c03v2-lap1 {
+    animation: c03v2-lapa 520ms linear 40ms backwards;
+  }
+  .c03v2[data-beat="first"] .c03v2-lap2 {
+    animation: c03v2-lapb 520ms linear 40ms backwards;
+  }
+
+  /* tick (about 440ms): the notch just counted is engraved: a tool traces its outline, then the
+     paint runs in from the rim */
+  .c03v2[data-beat="tick"] .c03v2-mktrace {
+    opacity: 1;
+    stroke-dasharray: 1 2;
+    animation: c03v2-mktrace 240ms cubic-bezier(0.4, 0, 0.3, 1) both;
+  }
+  .c03v2[data-beat="tick"] .c03v2-mkfill {
+    animation: c03v2-mkfill 240ms cubic-bezier(0.3, 0.6, 0.3, 1) 190ms backwards;
+  }
+}
+@keyframes c03v2-trace {
+  from {
+    stroke-dashoffset: 160;
+    stroke-opacity: 1;
+  }
+  60% {
+    stroke-dashoffset: 0;
+    stroke-opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+    stroke-opacity: 0;
+  }
+}
+/* the cutter's colours follow the ground: bright on dark, brand blue on light */
+.c03v2 .c03v2-cut1 {
+  stroke: var(--c03v2-cut);
+}
+.c03v2 .c03v2-cut1.is-b {
+  stroke: var(--c03v2-cutb);
+}
+.c03v2 .c03v2-cut2 {
+  stroke: var(--c03v2-cut);
+}
+@keyframes c03v2-comet {
+  from {
+    stroke-dashoffset: var(--o);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  96% {
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: var(--e);
+    opacity: 0;
+  }
+}
+@keyframes c03v2-ntint {
+  from {
+    fill-opacity: 0.16;
+  }
+  74% {
+    fill-opacity: 0.16;
+  }
+  to {
+    fill-opacity: 1;
+  }
+}
+@keyframes c03v2-oline {
+  from {
+    opacity: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes c03v2-rise {
+  from {
+    transform: translateY(104px);
+    visibility: visible;
+  }
+  to {
+    transform: translateY(0);
+    visibility: visible;
+  }
+}
+@keyframes c03v2-lapa {
+  from {
+    transform: translateX(-40px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+@keyframes c03v2-lapb {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-40px);
+  }
+}
+@keyframes c03v2-mktrace {
+  from {
+    stroke-dashoffset: 1;
+  }
+  70% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes c03v2-mkfill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* « en formation 1/3 » in the row: a sentence, not a tier word, so no capital-style spacing */
+.c03v2 .c03v2-rn small .c03v2-fm {
+  letter-spacing: 0.02em;
+}

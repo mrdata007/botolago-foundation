@@ -1,0 +1,609 @@
+/* 05 SEMELLE v2: the soleplate, toe up. Everything is scoped under .c05v2. */
+
+/* ---------- full card ---------- */
+.c05v2.c05v2-full {
+  position: relative;
+  width: 100%;
+  line-height: 0;
+  --c05v2-rx: 0deg;
+  --c05v2-ry: 0deg;
+  transform: perspective(1100px) rotateX(var(--c05v2-rx)) rotateY(var(--c05v2-ry));
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.c05v2 .c05v2-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  /* the lift on the page: a soft offset drop, deeper on the dark ground */
+  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28))
+    drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
+}
+.app-dark .c05v2 .c05v2-svg,
+:root[data-ground="night"] .c05v2 .c05v2-svg {
+  filter: drop-shadow(0 1.8cqi 3cqi rgba(0, 0, 0, 0.6));
+}
+.app-light .c05v2 .c05v2-svg,
+:root[data-ground="day"] .c05v2 .c05v2-svg {
+  filter: drop-shadow(0 1.6cqi 2.4cqi rgba(12, 22, 40, 0.28))
+    drop-shadow(0 0.4cqi 0.5cqi rgba(12, 22, 40, 0.22));
+}
+.app-dark .c05v2 .c05v2-svg {
+  filter: drop-shadow(0 1.8cqi 3cqi rgba(0, 0, 0, 0.6));
+}
+.c05v2.is-thumb .c05v2-svg {
+  filter: none;
+}
+
+/* moulded type */
+.c05v2 text {
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c05v2 .c05v2-ov {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+}
+.c05v2 .c05v2-nm {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+}
+/* the mould's years round the founder clock */
+.c05v2 .c05v2-yr {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.c05v2 .c05v2-tr {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+.c05v2 .c05v2-tr.is-ar {
+  font-family: "Changa", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c05v2 .c05v2-fy {
+  font-weight: 800;
+}
+.c05v2 .c05v2-fl {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+.c05v2 .c05v2-fl.is-ar {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.c05v2 .c05v2-id {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+.c05v2 .c05v2-ct {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+/* the country is fine print: below about 220px it would be under 7px, so it goes */
+@container (max-width: 220px) {
+  .c05v2 .c05v2-ct {
+    display: none;
+  }
+}
+.c05v2 .c05v2-ct.is-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+/* the four decisions: labels Manrope 600 caps (shown at 70%), values Manrope 700 tabular */
+.c05v2 .c05v2-sl {
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.c05v2 .c05v2-sl.is-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.c05v2 .c05v2-sv {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.c05v2 .c05v2-se {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+/* signature interaction (detail view, set up by mount) */
+.c05v2.is-live {
+  cursor: grab;
+}
+@media (prefers-reduced-motion: reduce) {
+  .c05v2.c05v2-full {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---------- token ---------- */
+.c05v2.c05v2-tok {
+  display: inline-block;
+  line-height: 0;
+  flex: none;
+  vertical-align: middle;
+}
+.c05v2.c05v2-tok svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- row: the "My position" compact card ---------- */
+.c05v2.c05v2-row {
+  --c05v2-row-bg: #121b29;
+  --c05v2-row-fg: #f0f6fc;
+  --c05v2-row-mute: #a9b2be;
+  --c05v2-row-edge: rgba(240, 246, 252, 0.1);
+  display: grid;
+  grid-template-columns: 26px auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  max-width: 358px;
+  height: 64px;
+  padding-inline: 10px 14px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--c05v2-row-bg);
+  color: var(--c05v2-row-fg);
+  box-shadow: 0 0 0 1px var(--c05v2-row-edge);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.app-light .c05v2.c05v2-row,
+:root[data-ground="day"] .c05v2.c05v2-row {
+  --c05v2-row-bg: #ffffff;
+  --c05v2-row-fg: #060d1a;
+  --c05v2-row-mute: #4e5661;
+  --c05v2-row-edge: rgba(12, 49, 100, 0.08);
+  box-shadow:
+    0 1px 2px rgba(12, 49, 100, 0.1),
+    0 4px 14px -8px rgba(12, 49, 100, 0.14),
+    0 0 0 1px var(--c05v2-row-edge);
+}
+.app-dark .c05v2.c05v2-row {
+  --c05v2-row-bg: #121b29;
+  --c05v2-row-fg: #f0f6fc;
+  --c05v2-row-mute: #a9b2be;
+  --c05v2-row-edge: rgba(240, 246, 252, 0.1);
+  box-shadow: 0 0 0 1px var(--c05v2-row-edge);
+}
+/* "you are here": the app's earned spring-to-sky edge, as a full 1.5px ring */
+.c05v2.c05v2-row.is-me {
+  background:
+    linear-gradient(var(--c05v2-row-bg), var(--c05v2-row-bg)) padding-box,
+    linear-gradient(100deg, #53e488, #5ed9e6) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: none;
+}
+.app-light .c05v2.c05v2-row.is-me,
+:root[data-ground="day"] .c05v2.c05v2-row.is-me {
+  background:
+    linear-gradient(color-mix(in oklab, #73edfa 12%, #fff), color-mix(in oklab, #73edfa 12%, #fff))
+      padding-box,
+    linear-gradient(100deg, #2fc66a, #22b5c9) border-box;
+}
+.c05v2 .c05v2-rk {
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--c05v2-row-mute);
+}
+.c05v2.is-me .c05v2-rk {
+  color: var(--c05v2-row-fg);
+}
+.c05v2 .c05v2-rt {
+  display: grid;
+  place-items: center;
+}
+.c05v2 .c05v2-rw {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.c05v2 .c05v2-rw b {
+  font:
+    800 17px/1.15 "Changa",
+    sans-serif;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c05v2 .c05v2-rw b.is-ar {
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+/* the founder year after the name: never gold. The year takes the name's own ink and weight;
+   the dot is a steel bead in a dark socket (the clock's insert ring in miniature) */
+.c05v2 .c05v2-rw b i,
+.c05v2 .c05v2-sh-cap b i {
+  font-style: normal;
+  font-weight: 800;
+  color: inherit;
+  margin-inline-start: 0.26em;
+}
+.c05v2 .c05v2-bead {
+  display: inline-block;
+  width: 0.28em;
+  height: 0.28em;
+  margin-inline-end: 0.14em;
+  vertical-align: 0.17em;
+  border-radius: 50%;
+  overflow: hidden;
+  color: transparent;
+  line-height: 0;
+  background: radial-gradient(
+    circle at 32% 28%,
+    #ffffff 0 9%,
+    #c3cad2 21%,
+    #7a8591 48%,
+    #2f3741 100%
+  );
+  box-shadow:
+    0 0 0 0.06em #0e1620,
+    0 0.05em 0.08em 0.06em rgba(0, 0, 0, 0.3);
+}
+.c05v2 .c05v2-rw small {
+  font:
+    600 12px/1.35 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+  color: var(--c05v2-row-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c05v2 .c05v2-rw small em {
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--c05v2-row-fg);
+}
+.c05v2[dir="rtl"] .c05v2-rw small em {
+  letter-spacing: 0;
+}
+.c05v2 .c05v2-rp {
+  display: grid;
+  justify-items: end;
+  font:
+    800 18px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c05v2 .c05v2-rp small {
+  font:
+    700 10px/1.4 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--c05v2-row-mute);
+}
+.c05v2[dir="rtl"] .c05v2-rp small {
+  letter-spacing: 0;
+}
+
+/* ---------- share: the sole on a night pitch, beside its own print ---------- */
+.c05v2.c05v2-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #0a2416;
+  color: #f4f1e9;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c05v2 .c05v2-sh-bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.c05v2 .c05v2-sh-logo {
+  position: absolute;
+  top: 26px;
+  inset-inline-start: 24px;
+  width: 132px;
+}
+.c05v2 .c05v2-sh-card {
+  position: absolute;
+  top: 104px;
+  inset-inline-start: 29px;
+  width: 184px;
+  container-type: inline-size;
+  transform: rotate(-7deg);
+  transform-origin: 50% 50%;
+}
+.c05v2[dir="rtl"] .c05v2-sh-card {
+  transform: rotate(7deg);
+}
+.c05v2 .c05v2-sh-card .c05v2-svg {
+  filter: drop-shadow(0.9cqi 3cqi 3.4cqi rgba(0, 0, 0, 0.72))
+    drop-shadow(0 0.6cqi 0.6cqi rgba(0, 0, 0, 0.5));
+}
+.c05v2 .c05v2-sh-cap {
+  position: absolute;
+  inset-inline-end: 24px;
+  bottom: 30px;
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  text-align: end;
+}
+.c05v2 .c05v2-sh-cap b {
+  font:
+    800 44px/1 "Changa",
+    sans-serif;
+  letter-spacing: 0.01em;
+}
+.c05v2 .c05v2-sh-cap b.is-ar {
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+.c05v2 .c05v2-sh-cap b i {
+  font-size: 0.62em;
+}
+.c05v2 .c05v2-sh-cap .c05v2-bead {
+  width: 0.34em;
+  height: 0.34em;
+  vertical-align: 0.15em;
+}
+.c05v2 .c05v2-sh-cap > span {
+  font:
+    700 12px/1.4 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0.16em;
+  color: #cfe2d4;
+}
+.c05v2[dir="rtl"] .c05v2-sh-cap > span {
+  letter-spacing: 0;
+}
+.c05v2 .c05v2-sh-cap > span em {
+  font-style: normal;
+  font-weight: 800;
+  color: #fff;
+  margin-inline-end: 0.5em;
+}
+
+/* ---------- onboarding states ---------- */
+/* a name carrier with no name: a blank engraved bar, never a placeholder word */
+.c05v2 .c05v2-rw b.is-void {
+  display: block;
+  width: 76px;
+  height: 12px;
+  margin-block: 3px;
+  border-radius: 4px;
+  background: currentColor;
+  opacity: 0.16;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+}
+.c05v2 .c05v2-sh-cap b.is-void {
+  display: block;
+  width: 150px;
+  height: 30px;
+  margin-block: 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+/* « en formation 1/3 »: the count is the bold part */
+.c05v2 .c05v2-rw small em {
+  font-variant-numeric: tabular-nums;
+}
+/* the share image says a provisional number is provisional, in text */
+.c05v2 .c05v2-sh-cap > span.c05v2-sh-prov {
+  margin-top: 6px;
+  padding: 5px 11px 4px;
+  border: 1.5px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  font:
+    800 12px/1.2 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+}
+.c05v2[dir="rtl"] .c05v2-sh-cap > span.c05v2-sh-prov {
+  font-family: "Noto Sans Arabic", "Changa", sans-serif;
+  letter-spacing: 0;
+  line-height: 1.5;
+  padding-block: 2px;
+}
+
+/* ---------- onboarding beats: one at a time, CSS only, parts of the object ---------- */
+/* Nothing here runs under prefers-reduced-motion. The number, the name and the serial are
+   never faded, masked, scaled or counted: they are fully drawn in the first frame, and the
+   make beat only swings the whole hung plate a few degrees. */
+.c05v2 .c05v2-seat-ring,
+.c05v2 .c05v2-glint {
+  opacity: 0;
+}
+/* the beats' travel is in drawing units: 1 on the card, set larger inline on a token */
+.c05v2 {
+  --c05v2-k: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* make (about 680ms): the plate swings in from its hanging point at the toe and settles, a
+     small pendulum, each half-swing shorter than the last. It is the French boot's swing; the
+     mirrored Arabic boot swings the other way. */
+  .c05v2.is-beat-make {
+    --c05v2-s: 1;
+  }
+  .c05v2[dir="rtl"].is-beat-make {
+    --c05v2-s: -1;
+  }
+  .c05v2.is-beat-make .c05v2-svg {
+    transform-origin: 63% 2%;
+    animation: c05v2-hang 680ms both;
+  }
+  .c05v2[dir="rtl"].is-beat-make .c05v2-svg {
+    transform-origin: 37% 2%;
+  }
+  @keyframes c05v2-hang {
+    0% {
+      transform: rotate(calc(var(--c05v2-s) * -4deg));
+      animation-timing-function: cubic-bezier(0.3, 0, 0.55, 1);
+    }
+    21% {
+      transform: rotate(calc(var(--c05v2-s) * 2.8deg));
+      animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+    40% {
+      transform: rotate(calc(var(--c05v2-s) * -1.8deg));
+      animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+    57% {
+      transform: rotate(calc(var(--c05v2-s) * 1.05deg));
+      animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+    72% {
+      transform: rotate(calc(var(--c05v2-s) * -0.55deg));
+      animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+    86% {
+      transform: rotate(calc(var(--c05v2-s) * 0.2deg));
+      animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+    }
+    100% {
+      transform: none;
+    }
+  }
+
+  /* first (about 540ms): the tier's studs seat into the plate one by one, toe to heel. Each
+     hovers over its mount, drops, bottoms out squashed and settles; the press leaves a ring in
+     the plate and its shadow closes up as the stud comes down. The 84 is not touched. */
+  .c05v2.is-beat-first .c05v2-seat {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: c05v2-seat 160ms both;
+    animation-delay: var(--d, 0ms);
+  }
+  .c05v2.is-beat-first .c05v2-seat.is-sh {
+    animation-name: c05v2-seat-sh;
+  }
+  .c05v2.is-beat-first .c05v2-seat-ring {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: c05v2-ring 120ms both;
+    animation-delay: calc(var(--d, 0ms) + 90ms);
+  }
+  @keyframes c05v2-seat {
+    0% {
+      transform: translate(calc(var(--c05v2-k) * -3px), calc(var(--c05v2-k) * -6px)) scale(1.42);
+      animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+    }
+    62% {
+      transform: translate(calc(var(--c05v2-k) * 0.2px), calc(var(--c05v2-k) * 0.5px))
+        scale(0.92, 0.86);
+      animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+    }
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes c05v2-seat-sh {
+    0% {
+      transform: translate(calc(var(--c05v2-k) * 3px), calc(var(--c05v2-k) * 5px)) scale(1.36);
+      opacity: 0.15;
+      animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+    }
+    62% {
+      transform: none;
+      opacity: 1;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes c05v2-ring {
+    0% {
+      transform: scale(0.9);
+      opacity: 0;
+    }
+    22% {
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(1.9);
+      opacity: 0;
+    }
+  }
+
+  /* tick (about 460ms): a gameweek is counted, and its mark presses into the flex groove. It
+     hangs lifted from the groove, drops, squashes against it and settles, with a glint where it
+     met the groove. Only the newest counted mark moves. */
+  .c05v2.is-beat-tick .c05v2-press {
+    transform-box: fill-box;
+    transform-origin: 50% 0%;
+    animation: c05v2-press 460ms both;
+  }
+  .c05v2.is-beat-tick .c05v2-press.is-sh {
+    animation-name: c05v2-press-sh;
+  }
+  .c05v2.is-beat-tick .c05v2-glint {
+    animation: c05v2-glint 460ms both;
+  }
+  @keyframes c05v2-press {
+    0% {
+      transform: translate(calc(var(--c05v2-k) * -2.5px), calc(var(--c05v2-k) * -8px))
+        scale(1.28, 1.2);
+      animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+    }
+    46% {
+      transform: translate(calc(var(--c05v2-k) * 0.2px), calc(var(--c05v2-k) * 0.4px))
+        scale(1.05, 0.84);
+      animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+    }
+    68% {
+      transform: translate(0, calc(var(--c05v2-k) * -0.5px)) scale(0.98, 1.05);
+      animation-timing-function: ease-in-out;
+    }
+    100% {
+      transform: none;
+    }
+  }
+  @keyframes c05v2-press-sh {
+    0% {
+      transform: translate(calc(var(--c05v2-k) * 3px), calc(var(--c05v2-k) * 5px)) scale(1.3);
+      opacity: 0.15;
+      animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.6);
+    }
+    46% {
+      transform: none;
+      opacity: 1;
+    }
+    100% {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  @keyframes c05v2-glint {
+    0%,
+    38% {
+      opacity: 0;
+    }
+    48% {
+      opacity: 0.9;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}

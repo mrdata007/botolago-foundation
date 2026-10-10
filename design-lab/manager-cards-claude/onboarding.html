@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Onboarding screens · Manager Card lab</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="src/fonts.css" />
+    <link rel="stylesheet" href="src/app-context.css" />
+    <link rel="stylesheet" href="src/onboarding/onboarding.css" />
+    <link rel="stylesheet" href="src/onboarding/page.css" />
+    <script src="src/brand.js"></script>
+    <script src="src/kit.js"></script>
+    <script src="src/contexts.js"></script>
+    <script src="src/onboarding/states.js"></script>
+    <script src="src/onboarding/strings.js"></script>
+    <script src="src/onboarding/frame.js"></script>
+    <script src="src/onboarding/page.js"></script>
+  </head>
+  <body>
+    <main id="out"><p class="onbp-note">Loading the onboarding screens…</p></main>
+    <script>
+      /* The onboarding screens for one card direction. Query: c, v (the direction, as preview.html),
+         lang=fr|ar, scheme=light|dark, screen=S05 (one screen, page width = frame width),
+         variant=<key>, motion=1 (allow the card beats). Without screen: every registered screen
+         and variant in 390px phone frames, labelled above. The rendering is MC.ONB.page.render
+         (src/onboarding/page.js); dist/onboarding.html has the same page with a toolbar. */
+      (async function () {
+        const q = new URLSearchParams(location.search);
+        const slug = q.get("c") || "";
+        const vq = q.get("v") ? "-" + q.get("v") : "";
+        const MC = window.MC;
+
+        /* Screen files: in this order, each optional. A directory listing tells which exist, so a
+           missing file costs no network error; without a listing every file is tried. */
+        const SCREEN_FILES = [
+          "screens-demo.js",
+          "screens-m1.js",
+          "screens-m2m3.js",
+          "screens-m4m9.js",
+          "screens-m5m6.js",
+          "screens-m10m12.js",
+        ];
+        const listing = await fetch("src/onboarding/", { cache: "no-store" })
+          .then((r) => (r.ok ? r.text() : ""))
+          .then((html) => {
+            const names = new Set(
+              [...html.matchAll(/href="([^"?#]+)"/g)].map((m) =>
+                decodeURIComponent(m[1]).replace(/^.*\//, ""),
+              ),
+            );
+            return names.has("frame.js") ? names : null;
+          })
+          .catch(() => null);
+        const load = (src) =>
+          new Promise((resolve) => {
+            const s = document.createElement("script");
+            s.src = src;
+            s.onload = () => resolve(true);
+            s.onerror = () => resolve(false);
+            document.head.appendChild(s);
+          });
+        for (const f of SCREEN_FILES) {
+          if (listing && !listing.has(f)) continue;
+          await load("src/onboarding/" + f);
+        }
+
+        /* The direction module. A missing or broken one leaves the cards as dashed placeholders. */
+        let c;
+        if (slug) {
+          const before = MC.concepts.slice();
+          const css = document.createElement("link");
+          css.rel = "stylesheet";
+          css.href = `src/concepts/${slug}${vq}.css`;
+          document.head.appendChild(css);
+          await load(`src/concepts/${slug}${vq}.js`);
+          c = MC.concepts.find((x) => !before.includes(x));
+        }
+
+        await MC.ONB.page.render(document.getElementById("out"), {
+          c,
+          slug,
+          lang: q.get("lang"),
+          scheme: q.get("scheme"),
+          motion: q.get("motion") === "1",
+          screen: q.get("screen") || "",
+          variant: q.get("variant") || "",
+        });
+        document.documentElement.dataset.ready = "1";
+      })();
+    </script>
+  </body>
+</html>
