@@ -40,8 +40,9 @@ Library decision (owner, 2026-10-10):
    Tab panels that did not yet do so fade and rise in on a switch, as the
    match and club pages already do, through one shared `tab-panel-in`
    utility.
-2. **Smooth scrolls respect reduced motion.** The four JavaScript smooth
-   scrolls (date strip, prediction swipe deck, Fantasy points, rankings) ask
+2. **Smooth scrolls respect reduced motion.** The five JavaScript smooth
+   scrolls (date strip, prediction swipe deck, Fantasy points, rankings, the
+   news carousel) ask
    `scrollBehavior()` and jump instead of gliding when the reader wants less
    motion. CSS cannot do this for them: an explicit `behavior: "smooth"` in
    script wins over the stylesheet.
