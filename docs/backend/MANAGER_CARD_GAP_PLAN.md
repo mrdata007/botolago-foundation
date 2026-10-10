@@ -720,14 +720,17 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
 - **Preflight**, refusing (`raise exception 'stop: …'`) unless:
   - `supabase_migrations.schema_migrations` has all five `20261008123000…123400` and none of the
     four new versions;
-  - the newest recorded migration is **exactly `20261009113132`** (Home stories, PR #386: the last
-    repository migration before these four), checked after the "none of the four is recorded" test
-    so a re-run says so. `20261009091728` (PR #384) wraps `app_private.ops_health_checks()` first and
-    `20261010120300` wraps it again, so the migrations must go in repository order. The chain is
-    #381's five, then `apply-fantasy-durable-progression.sql` (wants `20261008123400` newest), then
-    `apply-home-stories.sql` (wants `20261009091728` newest), then this one; each script wants its
-    predecessor newest, so this one comparison stands for all of it. The refusal names the version
-    it found and the migrations to apply first;
+  - the newest recorded migration is **exactly `20261009211234`** (the story presentation repair,
+    PR #390: the last repository migration before these four), checked after the "none of the four
+    is recorded" test so a re-run says so. `20261009091728` (PR #384) wraps
+    `app_private.ops_health_checks()` first and `20261010120300` wraps it again, so the migrations
+    must go in repository order. The chain is #381's five, then `apply-fantasy-durable-progression.sql`
+    (wants `20261008123400` newest), then `apply-home-stories.sql` (wants `20261009091728` newest),
+    then `apply-ai-home-stories.sql` (PR #389, `20261009195943`; wants `20261009113132` newest),
+    then `apply-story-presentation-repair.sql` (PR #390, `20261009211234`; wants `20261009195943`
+    newest), then this one; each script wants its predecessor newest, so this one comparison
+    stands for all of it. The refusal names the version it found and the migrations to apply
+    first;
   - each of the five #381 rows' `statements[1]` sha256 equals the repository file's (the same
     hashes as the 2026-10-08 script, `apply-20261008123000-manager-card.sql:1989-2007`), so the
     installed objects are the reviewed ones;
@@ -783,8 +786,11 @@ Run: `bun test scripts/backend/apply-manager-card-api-v2-script.test.ts`.
   - "Account deletion": the acknowledgements cascade.
   - "Production order": insert the new apply script after step 2 and before switching reads on, and
     before it, in this order, #384's `20261009091728`
-    (`scripts/backend/apply-fantasy-durable-progression.sql`) and Home stories'
-    `20261009094920` and `20261009113132` (`scripts/backend/apply-home-stories.sql`, PR #386).
+    (`scripts/backend/apply-fantasy-durable-progression.sql`), Home stories'
+    `20261009094920` and `20261009113132` (`scripts/backend/apply-home-stories.sql`, PR #386), AI
+    home stories' `20261009195943` (`scripts/backend/apply-ai-home-stories.sql`, PR #389) and the
+    story presentation repair's `20261009211234`
+    (`scripts/backend/apply-story-presentation-repair.sql`, PR #390).
 - `AGENTS.md` (after the `manager-card-history-prune` paragraph, lines 168-173), add:
   > Where migration 20261010120200 is applied, signed-in users also write
   > `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`) while the read switch

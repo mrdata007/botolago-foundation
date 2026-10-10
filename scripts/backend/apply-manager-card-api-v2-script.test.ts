@@ -130,7 +130,7 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       "set local lock_timeout = '5s';",
       "the five Manager Card migrations 20261008123000 to 20261008123400 are not all applied yet",
       "a Gradins read API migration (20261010120000 to 20261010120300) is already recorded as applied",
-      "the newest applied migration is %, expected 20261009113132",
+      "the newest applied migration is %, expected 20261009211234",
       "is not the reviewed repository file",
       "the tables this builds on are missing",
       "the functions this builds on are missing",
@@ -170,18 +170,18 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
 
   test("requires the newest recorded migration to be the last repository migration before ours", () => {
     const firstWrite = script.indexOf("insert into supabase_migrations.schema_migrations");
-    const expected = "20261009113132";
+    const expected = "20261009211234";
     const message =
-      "stop: the newest applied migration is %, expected 20261009113132 -- apply every earlier repository migration first (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132), so the migrations go in repository order";
+      "stop: the newest applied migration is %, expected 20261009211234 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234), so the migrations go in repository order";
     expect(occurrences(script, message)).toBe(1);
     const condition =
-      "if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261009113132' then";
+      "if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261009211234' then";
     expect(occurrences(script, condition)).toBe(1);
     const guard = script.indexOf(condition);
     expect(guard).toBeGreaterThan(0);
     expect(guard).toBeLessThan(firstWrite);
     // The guard raises the message right after it opens, naming the version it found.
-    expect(script.slice(guard, guard + 700)).toContain(
+    expect(script.slice(guard, guard + 900)).toContain(
       `raise exception '${message}', (select max(version) from supabase_migrations.schema_migrations);`,
     );
     // The old single-migration guard is gone: nothing asks only for 20261009091728.
@@ -208,19 +208,37 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
       repository.slice(first, first + MIGRATIONS.length).map((file) => file.slice(0, 14)),
     ).toEqual(MIGRATIONS.map((m) => m.version));
     // The migrations the message names are repository files, and the scripts that apply them exist.
-    for (const version of ["20261009091728", "20261009094920", "20261009113132"]) {
+    for (const version of [
+      "20261009091728",
+      "20261009094920",
+      "20261009113132",
+      "20261009195943",
+      "20261009211234",
+    ]) {
       expect(repository.some((file) => file.startsWith(version))).toBe(true);
+      expect(script.slice(0, script.indexOf("begin;"))).toContain(version);
     }
     expect(read("scripts/backend/apply-fantasy-durable-progression.sql")).toContain(
       "version='20261009091728'",
     );
     expect(read("scripts/backend/apply-home-stories.sql")).toContain("'20261009113132'");
-    // Each earlier script wants its predecessor newest, so the chain is enforced end to end.
+    expect(read("scripts/backend/apply-ai-home-stories.sql")).toContain("'20261009195943'");
+    expect(read("scripts/backend/apply-story-presentation-repair.sql")).toContain(
+      "'20261009211234'",
+    );
+    // Each earlier script wants its predecessor newest, so the chain is enforced end to end:
+    // #381's five, Fantasy durable progression, Home stories, AI home stories, the repair, then this one.
     expect(read("scripts/backend/apply-fantasy-durable-progression.sql")).toContain(
       "(select max(version) from supabase_migrations.schema_migrations) <> '20261008123400'",
     );
     expect(read("scripts/backend/apply-home-stories.sql")).toContain(
       "(select max(version) from supabase_migrations.schema_migrations) <> '20261009091728'",
+    );
+    expect(read("scripts/backend/apply-ai-home-stories.sql")).toContain(
+      "(select max(version) from supabase_migrations.schema_migrations)<>'20261009113132'",
+    );
+    expect(read("scripts/backend/apply-story-presentation-repair.sql")).toContain(
+      "(select max(version) from supabase_migrations.schema_migrations)<>'20261009195943'",
     );
     // Repository order: the migration #384 adds comes before our health wrapper's.
     expect("20261009091728" < MIGRATIONS[3].version).toBe(true);
@@ -229,6 +247,8 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
     expect(header).toContain(expected);
     expect(header).toContain("apply-fantasy-durable-progression.sql");
     expect(header).toContain("apply-home-stories.sql");
+    expect(header).toContain("apply-ai-home-stories.sql");
+    expect(header).toContain("apply-story-presentation-repair.sql");
   });
 
   test("afterwards: grants, dropped functions, acks table, status, health, unchanged rows", () => {

@@ -481,13 +481,19 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    on afterwards. Run it as a rehearsal ("Rehearsal passed"), then with
    `commit;` ("Applied"). It checks both switches are off, there is no rules
    row, the grants, the erase lock, both jobs, and that the tick answers `off`.
-   **Then the two pull requests merged to main after #381 (three
+   **Then the four pull requests merged to main after #381 (five
    migrations) go first, in this order,** each by its own guarded script, before the read API script below:
    (a) the Fantasy durable progression migration (PR #384),
    `scripts/backend/apply-fantasy-durable-progression.sql` (migration
    `20261009091728`, see `FANTASY_DURABLE_PROGRESSION_RUNBOOK.md`); then
    (b) Home stories (PR #386), `scripts/backend/apply-home-stories.sql`
-   (migrations `20261009094920` and `20261009113132`, see `HOME_STORIES.md`).
+   (migrations `20261009094920` and `20261009113132`, see `HOME_STORIES.md`); then
+   (c) AI home stories (PR #389), `scripts/backend/apply-ai-home-stories.sql`
+   (migration `20261009195943`, see `AI_HOME_STORIES.md`); then
+   (d) the story presentation repair (PR #390),
+   `scripts/backend/apply-story-presentation-repair.sql` (migration
+   `20261009211234`, see `AI_HOME_STORIES.md`). PR #387 (AI content) and
+   PR #391 (story viewer) add no migration.
    The migrations go in repository order, and the four below are last:
    `20261009091728` replaces `app_private.ops_health_checks()` with a wrapper
    that adds `fantasy_progression`, and `20261010120300` wraps that wrapper to
@@ -495,13 +501,18 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    take the Manager Card wrapper and put `fantasy_progression` after
    `manager_card`. Every script in the chain enforces the order by wanting its
    predecessor to be the newest recorded migration: #384's refuses unless that
-   is `20261008123400`, Home stories' unless it is `20261009091728`, and the
-   read API script unless it is exactly `20261009113132`.
+   is `20261008123400`, Home stories' unless it is `20261009091728`, AI home
+   stories' unless it is `20261009113132`, the repair's unless it is
+   `20261009195943`, and the read API script unless it is exactly
+   `20261009211234`. The AI home stories and repair scripts also pin the
+   number of recorded migrations and call `app_private.hold_scheduled_jobs()`
+   (they refuse while a scheduled job is mid-run); read their own headers
+   before running them.
    **Then the read API apply script,**
    `scripts/backend/apply-20261010120000-manager-card-api-v2.sql` (migrations
    `20261010120000` to `20261010120300`). It changes nothing anyone sees: it
    refuses to run if the read switch is on, or if the newest recorded
-   migration is not `20261009113132` (its message names the one it found and
+   migration is not `20261009211234` (its message names the one it found and
    what to apply first). Rehearse, then `commit;`. It
    replaces the first read functions with the ones the Gradins screens call, and
    adds the status call, the acknowledgements and the health check. Do it before
