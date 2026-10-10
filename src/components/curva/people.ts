@@ -5,7 +5,8 @@
  */
 import type { MemberCardDto } from "@/backend/manager-card/contracts";
 import { isOwnStanding } from "@/components/report/report-targets";
-import type { TierCode } from "@/components/manager-card/types";
+import { CARD_STAT_TOTAL, filledStats } from "@/components/manager-card/copy";
+import { STAT_CODES, type TierCode } from "@/components/manager-card/types";
 import type { ReportTarget } from "@/lib/report-content";
 import type { League, LeagueStanding } from "@/types/fantasy";
 
@@ -82,12 +83,21 @@ export function neighbours(rows: readonly PeopleRow[]): PeopleRow[] {
 export type CardLine =
   | { kind: "rated"; ovr: number; tier: TierCode | null; provisional: boolean }
   | { kind: "forming"; counted: number; min: number }
+  /** Every journée counted, too few statistics for a number: the statistics filled, « 2/4 ». */
+  | { kind: "insufficient"; filled: number; total: number }
   | { kind: "none" };
 
 export function cardLine(card: MemberCardDto | null): CardLine {
   if (!card) return { kind: "none" };
   if (card.ovr !== null) {
     return { kind: "rated", ovr: card.ovr, tier: card.tier, provisional: card.provisional };
+  }
+  if (card.ratingState === "insufficient") {
+    return {
+      kind: "insufficient",
+      filled: filledStats(STAT_CODES.map((code) => card.stats[code])),
+      total: CARD_STAT_TOTAL,
+    };
   }
   return { kind: "forming", counted: card.gameweeksCounted, min: card.minRated };
 }

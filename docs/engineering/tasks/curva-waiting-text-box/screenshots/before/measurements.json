@@ -1,0 +1,490 @@
+[
+  {
+    "name": "forming1-fr-mobile-light",
+    "text": "Carte en formation · 1/3 1 journée comptée sur 3",
+    "sr": [
+      "1 journée comptée sur 3"
+    ],
+    "box": {
+      "left": 81.46875,
+      "right": 308.53125,
+      "width": 227.0625,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#aeb0b6",
+    "textContrast": 9.03,
+    "glanceBottom": 747.71875,
+    "navTop": 767.609375,
+    "roundText": "Cette journée 1/3 1 journée comptée sur 3 Carte en formation Note après 3 journées terminées · prochaine : J14 · date limite lun. 12 oct., 04:31 Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "forming1-fr-mobile-dark",
+    "text": "Carte en formation · 1/3 1 journée comptée sur 3",
+    "sr": [
+      "1 journée comptée sur 3"
+    ],
+    "box": {
+      "left": 81.46875,
+      "right": 308.53125,
+      "width": 227.0625,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#02050c",
+    "textContrast": 15.51,
+    "glanceBottom": 747.71875,
+    "navTop": 767.609375,
+    "roundText": "Cette journée 1/3 1 journée comptée sur 3 Carte en formation Note après 3 journées terminées · prochaine : J14 · date limite lun. 12 oct., 04:31 Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "forming1-fr-desktop-light",
+    "text": "Carte en formation · 1/3 1 journée comptée sur 3",
+    "sr": [
+      "1 journée comptée sur 3"
+    ],
+    "box": {
+      "left": 470.46875,
+      "right": 697.53125,
+      "width": 227.0625,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#9ea0a6",
+    "textContrast": 7.49,
+    "glanceBottom": 844.78125,
+    "navTop": null,
+    "roundText": "Cette journée 1/3 1 journée comptée sur 3 Carte en formation Note après 3 journées terminées · prochaine : J14 · date limite lun. 12 oct., 04:31 Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "forming1-fr-desktop-dark",
+    "text": "Carte en formation · 1/3 1 journée comptée sur 3",
+    "sr": [
+      "1 journée comptée sur 3"
+    ],
+    "box": {
+      "left": 470.46875,
+      "right": 697.53125,
+      "width": 227.0625,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#010409",
+    "textContrast": 11.84,
+    "glanceBottom": 844.78125,
+    "navTop": null,
+    "roundText": "Cette journée 1/3 1 journée comptée sur 3 Carte en formation Note après 3 journées terminées · prochaine : J14 · date limite lun. 12 oct., 04:31 Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "forming1-ar-mobile-light",
+    "text": "البطاقة قيد التكوين · 1/3 جولة واحدة محتسبة من ⁨3⁩",
+    "sr": [
+      "جولة واحدة محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 78.640625,
+      "right": 311.375,
+      "width": 232.734375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#c3c5c9",
+    "textContrast": 11.38,
+    "glanceBottom": 734.578125,
+    "navTop": 761.5625,
+    "roundText": "هذه الجولة 1/3 جولة واحدة محتسبة من ⁨3⁩ البطاقة قيد التكوين التقييم بعد ⁨3⁩ جولات منتهية · التالية: الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:31 اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "forming1-ar-mobile-dark",
+    "text": "البطاقة قيد التكوين · 1/3 جولة واحدة محتسبة من ⁨3⁩",
+    "sr": [
+      "جولة واحدة محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 78.640625,
+      "right": 311.375,
+      "width": 232.734375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#03070f",
+    "textContrast": 14.17,
+    "glanceBottom": 734.578125,
+    "navTop": 761.5625,
+    "roundText": "هذه الجولة 1/3 جولة واحدة محتسبة من ⁨3⁩ البطاقة قيد التكوين التقييم بعد ⁨3⁩ جولات منتهية · التالية: الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:31 اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "forming1-ar-desktop-light",
+    "text": "البطاقة قيد التكوين · 1/3 جولة واحدة محتسبة من ⁨3⁩",
+    "sr": [
+      "جولة واحدة محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 739.640625,
+      "right": 972.375,
+      "width": 232.734375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#a1a4a9",
+    "textContrast": 7.83,
+    "glanceBottom": 877.671875,
+    "navTop": null,
+    "roundText": "هذه الجولة 1/3 جولة واحدة محتسبة من ⁨3⁩ البطاقة قيد التكوين التقييم بعد ⁨3⁩ جولات منتهية · التالية: الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:31 اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "forming1-ar-desktop-dark",
+    "text": "البطاقة قيد التكوين · 1/3 جولة واحدة محتسبة من ⁨3⁩",
+    "sr": [
+      "جولة واحدة محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 739.640625,
+      "right": 972.375,
+      "width": 232.734375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#020409",
+    "textContrast": 13.34,
+    "glanceBottom": 877.671875,
+    "navTop": null,
+    "roundText": "هذه الجولة 1/3 جولة واحدة محتسبة من ⁨3⁩ البطاقة قيد التكوين التقييم بعد ⁨3⁩ جولات منتهية · التالية: الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:31 اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "insufficient3-fr-mobile-light",
+    "text": "Carte en formation · 3/3 3 journées comptées sur 3",
+    "sr": [
+      "3 journées comptées sur 3"
+    ],
+    "box": {
+      "left": 81.15625,
+      "right": 308.84375,
+      "width": 227.6875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#aeb0b6",
+    "textContrast": 9.03,
+    "glanceBottom": 747.71875,
+    "navTop": 767.609375,
+    "roundText": "Cette journée 3/3 3 journées comptées sur 3 Carte en formation Les journées nécessaires sont comptées. La note attend encore une statistique. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "insufficient3-fr-mobile-dark",
+    "text": "Carte en formation · 3/3 3 journées comptées sur 3",
+    "sr": [
+      "3 journées comptées sur 3"
+    ],
+    "box": {
+      "left": 81.15625,
+      "right": 308.84375,
+      "width": 227.6875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#02050c",
+    "textContrast": 15.65,
+    "glanceBottom": 747.71875,
+    "navTop": 767.609375,
+    "roundText": "Cette journée 3/3 3 journées comptées sur 3 Carte en formation Les journées nécessaires sont comptées. La note attend encore une statistique. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "insufficient3-fr-desktop-light",
+    "text": "Carte en formation · 3/3 3 journées comptées sur 3",
+    "sr": [
+      "3 journées comptées sur 3"
+    ],
+    "box": {
+      "left": 470.15625,
+      "right": 697.84375,
+      "width": 227.6875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#9ea0a6",
+    "textContrast": 7.49,
+    "glanceBottom": 844.78125,
+    "navTop": null,
+    "roundText": "Cette journée 3/3 3 journées comptées sur 3 Carte en formation Les journées nécessaires sont comptées. La note attend encore une statistique. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "insufficient3-fr-desktop-dark",
+    "text": "Carte en formation · 3/3 3 journées comptées sur 3",
+    "sr": [
+      "3 journées comptées sur 3"
+    ],
+    "box": {
+      "left": 470.15625,
+      "right": 697.84375,
+      "width": 227.6875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#010409",
+    "textContrast": 11.84,
+    "glanceBottom": 844.78125,
+    "navTop": null,
+    "roundText": "Cette journée 3/3 3 journées comptées sur 3 Carte en formation Les journées nécessaires sont comptées. La note attend encore une statistique. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "insufficient3-ar-mobile-light",
+    "text": "البطاقة قيد التكوين · 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩",
+    "sr": [
+      "⁨3⁩ جولات محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 78.328125,
+      "right": 311.6875,
+      "width": 233.359375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#c3c5c9",
+    "textContrast": 11.38,
+    "glanceBottom": 734.578125,
+    "navTop": 761.5625,
+    "roundText": "هذه الجولة 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩ البطاقة قيد التكوين اكتمل احتساب الجولات اللازمة. ينتظر التقييم إحصاءً آخر. اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "insufficient3-ar-mobile-dark",
+    "text": "البطاقة قيد التكوين · 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩",
+    "sr": [
+      "⁨3⁩ جولات محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 78.328125,
+      "right": 311.6875,
+      "width": 233.359375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#03070f",
+    "textContrast": 14.17,
+    "glanceBottom": 734.578125,
+    "navTop": 761.5625,
+    "roundText": "هذه الجولة 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩ البطاقة قيد التكوين اكتمل احتساب الجولات اللازمة. ينتظر التقييم إحصاءً آخر. اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "insufficient3-ar-desktop-light",
+    "text": "البطاقة قيد التكوين · 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩",
+    "sr": [
+      "⁨3⁩ جولات محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 739.328125,
+      "right": 972.6875,
+      "width": 233.359375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#a1a4a9",
+    "textContrast": 7.83,
+    "glanceBottom": 877.671875,
+    "navTop": null,
+    "roundText": "هذه الجولة 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩ البطاقة قيد التكوين اكتمل احتساب الجولات اللازمة. ينتظر التقييم إحصاءً آخر. اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "insufficient3-ar-desktop-dark",
+    "text": "البطاقة قيد التكوين · 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩",
+    "sr": [
+      "⁨3⁩ جولات محتسبة من ⁨3⁩"
+    ],
+    "box": {
+      "left": 739.328125,
+      "right": 972.6875,
+      "width": 233.359375,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#020409",
+    "textContrast": 13.34,
+    "glanceBottom": 877.671875,
+    "navTop": null,
+    "roundText": "هذه الجولة 3/3 ⁨3⁩ جولات محتسبة من ⁨3⁩ البطاقة قيد التكوين اكتمل احتساب الجولات اللازمة. ينتظر التقييم إحصاءً آخر. اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "rated-fr-mobile-light",
+    "text": "84 OVR · PRO PROVISOIRE",
+    "sr": [],
+    "box": {
+      "left": 76.5625,
+      "right": 313.4375,
+      "width": 236.875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#ffffff",
+    "textContrast": 7.43,
+    "glanceBottom": 925.3125,
+    "navTop": 767.609375,
+    "roundText": "Cette journée J14 · date limite lun. 12 oct., 04:32 Votre note est recalculée après chaque journée terminée. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "rated-fr-mobile-dark",
+    "text": "84 OVR · PRO PROVISOIRE",
+    "sr": [],
+    "box": {
+      "left": 76.5625,
+      "right": 313.4375,
+      "width": 236.875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#121b29",
+    "textContrast": 8.07,
+    "glanceBottom": 925.3125,
+    "navTop": 767.609375,
+    "roundText": "Cette journée J14 · date limite lun. 12 oct., 04:32 Votre note est recalculée après chaque journée terminée. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "rated-fr-desktop-light",
+    "text": "84 OVR · PRO PROVISOIRE",
+    "sr": [],
+    "box": {
+      "left": 465.5625,
+      "right": 702.4375,
+      "width": 236.875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#f5f7f9",
+    "textContrast": 18.1,
+    "glanceBottom": 986.03125,
+    "navTop": null,
+    "roundText": "Cette journée J14 · date limite lun. 12 oct., 04:32 Votre note est recalculée après chaque journée terminée. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "rated-fr-desktop-dark",
+    "text": "84 OVR · PRO PROVISOIRE",
+    "sr": [],
+    "box": {
+      "left": 465.5625,
+      "right": 702.4375,
+      "width": 236.875,
+      "height": 33
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#050b18",
+    "textContrast": 18.07,
+    "glanceBottom": 986.03125,
+    "navTop": null,
+    "roundText": "Cette journée J14 · date limite lun. 12 oct., 04:32 Votre note est recalculée après chaque journée terminée. Composer l’équipe",
+    "dir": "ltr"
+  },
+  {
+    "name": "rated-ar-mobile-light",
+    "text": "84 OVR · محترف مبدئي",
+    "sr": [],
+    "box": {
+      "left": 86.234375,
+      "right": 303.765625,
+      "width": 217.53125,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#ffffff",
+    "textContrast": 7.54,
+    "glanceBottom": 912.453125,
+    "navTop": 761.5625,
+    "roundText": "هذه الجولة الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:32 يُعاد حساب تقييمك بعد كل جولة منتهية. اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "rated-ar-mobile-dark",
+    "text": "84 OVR · محترف مبدئي",
+    "sr": [],
+    "box": {
+      "left": 86.234375,
+      "right": 303.765625,
+      "width": 217.53125,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#121b29",
+    "textContrast": 8.07,
+    "glanceBottom": 912.453125,
+    "navTop": 761.5625,
+    "roundText": "هذه الجولة الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:32 يُعاد حساب تقييمك بعد كل جولة منتهية. اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "rated-ar-desktop-light",
+    "text": "84 OVR · محترف مبدئي",
+    "sr": [],
+    "box": {
+      "left": 747.234375,
+      "right": 964.765625,
+      "width": 217.53125,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#f5f7f9",
+    "textContrast": 18.22,
+    "glanceBottom": 560.171875,
+    "navTop": null,
+    "roundText": "هذه الجولة الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:32 يُعاد حساب تقييمك بعد كل جولة منتهية. اختيار الفريق",
+    "dir": "rtl"
+  },
+  {
+    "name": "rated-ar-desktop-dark",
+    "text": "84 OVR · محترف مبدئي",
+    "sr": [],
+    "box": {
+      "left": 747.234375,
+      "right": 964.765625,
+      "width": 217.53125,
+      "height": 39.046875
+    },
+    "outside": [],
+    "pageOutside": 0,
+    "bg": "#050b18",
+    "textContrast": 18.07,
+    "glanceBottom": 560.171875,
+    "navTop": null,
+    "roundText": "هذه الجولة الجولة 14 · الموعد النهائي الاثنين، 12 أكتوبر، 04:33 يُعاد حساب تقييمك بعد كل جولة منتهية. اختيار الفريق",
+    "dir": "rtl"
+  }
+]

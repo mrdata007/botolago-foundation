@@ -517,6 +517,8 @@ def assert_management_target(client: ManagementClient, batch: str) -> dict[str, 
         )
 
     backups = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/database/backups")
+    if not isinstance(backups, dict) or not isinstance(backups.get("backups", []), list):
+        raise PromotionError("backup inventory is invalid")
     completed = [
         row
         for row in backups.get("backups", [])
@@ -524,6 +526,16 @@ def assert_management_target(client: ManagementClient, batch: str) -> dict[str, 
     ]
     if not completed:
         raise PromotionError("backup readiness insufficient")
+    # Recovery readiness: production is never promoted without point-in-time
+    # recovery, and only an explicit `true` counts. A missing, null or
+    # non-boolean value is not "probably on"; it is unverified, and refused.
+    pitr_enabled = backups.get("pitr_enabled")
+    if pitr_enabled is False:
+        raise PromotionError("point-in-time recovery is disabled")
+    if pitr_enabled is not True:
+        raise PromotionError("point-in-time recovery state unverified")
+    physical = backups.get("physical_backup_data")
+    physical = physical if isinstance(physical, dict) else {}
     functions = client.get(f"/v1/projects/{EXPECTED_PROJECT_REF}/functions")
     if not isinstance(functions, list):
         raise PromotionError("management Edge Function inventory is invalid")
@@ -546,7 +558,9 @@ def assert_management_target(client: ManagementClient, batch: str) -> dict[str, 
         "databaseVersion": (project.get("database") or {}).get("version"),
         "completedBackupCount": len(completed),
         "latestCompletedBackup": max(row.get("inserted_at", "") for row in completed),
-        "pitrEnabled": bool(backups.get("pitr_enabled")),
+        "pitrEnabled": True,
+        "pitrEarliestRestorePointUnix": physical.get("earliest_physical_backup_date_unix"),
+        "pitrLatestRestorePointUnix": physical.get("latest_physical_backup_date_unix"),
         "edgeFunctionCount": len(actual_functions),
         "edgeFunctionSlugs": sorted(actual_functions),
     }

@@ -3,6 +3,7 @@ import type { EmailRpcClient } from "./notification-email-dispatch.ts";
 import { handleOpsAlertEmailRequest, readOpsAlertMessage } from "./ops-alert-email.ts";
 
 const TOKEN = "b".repeat(64);
+const SCHEDULER = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN };
 const API_KEY = "re_test_0123456789abcdef";
 const OWNER = "owner@example.test";
 const MESSAGE = {
@@ -10,7 +11,7 @@ const MESSAGE = {
   text: "[BotolaGO production] FAIL at 2026-09-25 17:00 UTC\n- cron_jobs [fail]: failed",
 };
 
-function fakeClient(options: { tokenValid?: boolean; recipient?: unknown; broken?: string } = {}) {
+function fakeClient(options: { recipient?: unknown; broken?: string } = {}) {
   const calls: string[] = [];
   const client: EmailRpcClient = {
     schema() {
@@ -18,9 +19,6 @@ function fakeClient(options: { tokenValid?: boolean; recipient?: unknown; broken
         rpc(name: string) {
           calls.push(name);
           if (name === options.broken) return Promise.resolve({ data: null, error: { code: "x" } });
-          if (name === "service_verify_scheduler_token") {
-            return Promise.resolve({ data: options.tokenValid ?? true, error: null });
-          }
           if (name === "service_ops_alert_email_target") {
             return Promise.resolve({
               data: "recipient" in options ? options.recipient : OWNER,
@@ -52,7 +50,7 @@ function provider(status = 200, body: unknown = { id: "email-1" }) {
   return { fetchImpl, sent };
 }
 
-const environment = { RESEND_API_KEY: API_KEY };
+const environment = { ...SCHEDULER, RESEND_API_KEY: API_KEY };
 
 describe("ops alert email", () => {
   it("mails the configured owner the subject and text it was given", async () => {
@@ -90,12 +88,8 @@ describe("ops alert email", () => {
   });
 
   it("refuses callers without the scheduler token, before reading anything else", async () => {
-    for (const [token, valid] of [
-      ["", true],
-      ["not-a-token", true],
-      [TOKEN, false],
-    ] as const) {
-      const { client, calls } = fakeClient({ tokenValid: valid });
+    for (const token of ["", "not-a-token", "9".repeat(64)]) {
+      const { client, calls } = fakeClient();
       const { fetchImpl, sent } = provider();
       const response = await handleOpsAlertEmailRequest(request(MESSAGE, token), {
         environment,
@@ -104,7 +98,8 @@ describe("ops alert email", () => {
       });
       expect(response.status).toBe(401);
       expect(sent).toHaveLength(0);
-      expect(calls).not.toContain("service_ops_alert_email_target");
+      // Refused in-process: not even the token is checked through the database.
+      expect(calls).toEqual([]);
     }
     const { client } = fakeClient();
     const get = await handleOpsAlertEmailRequest(request(MESSAGE, TOKEN, "GET"), {
@@ -129,7 +124,7 @@ describe("ops alert email", () => {
     const { client } = fakeClient();
     const { fetchImpl, sent } = provider();
     const response = await handleOpsAlertEmailRequest(request(), {
-      environment: {},
+      environment: SCHEDULER,
       client,
       fetchImpl,
     });

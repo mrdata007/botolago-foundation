@@ -41,6 +41,8 @@ import {
 
 /** The database this file writes to: named explicitly, or none (see above). */
 const DB_URL = process.env.LIVE_REFRESH_E2E_DB_URL || undefined;
+// Set from Vault inside the test, as BOTOLAGO_SCHEDULER_TOKEN is in production.
+let configuredSchedulerToken = "";
 const CONNECT_TIMEOUT_MS = 3_000;
 
 const IDS = {
@@ -277,7 +279,11 @@ async function refresh(
       body: '{"job":"fixtures"}',
     }),
     {
-      environment: { SPORTSMONKS_API_TOKEN: "sportsmonks-test-token-0123456789" },
+      environment: {
+        // The function's own copy of the Vault token (scheduler-token.ts).
+        BOTOLAGO_SCHEDULER_TOKEN: configuredSchedulerToken,
+        SPORTSMONKS_API_TOKEN: "sportsmonks-test-token-0123456789",
+      },
       client: rpcClient(tx),
       now: () => now,
       fetch: async (input) => {
@@ -348,6 +354,7 @@ describe.skipIf(!DB_URL)("live scores, provider to screen", () => {
         const [{ token }] = (await tx.unsafe(
           "select app_private.scheduler_token() as token",
         )) as Array<{ token: string }>;
+        configuredSchedulerToken = token;
         await tx.unsafe("set local role service_role");
         await tx.unsafe(`select set_config('request.jwt.claims', '{"role":"service_role"}', true)`);
 

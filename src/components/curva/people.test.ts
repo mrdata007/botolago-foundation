@@ -112,6 +112,16 @@ describe("what a row's card says", () => {
     expect(cardLine(members[1]!)).toEqual({ kind: "forming", counted: 2, min: 3 });
     expect(cardLine(null)).toEqual({ kind: "none" });
   });
+  it("counts the statistics of a member whose journées are all counted and who has no number", () => {
+    const waiting = {
+      ...members[1]!,
+      ratingState: "insufficient" as const,
+      gameweeksCounted: 3,
+      minRated: 3,
+      stats: { cap: 99, sel: null, trf: null, con: 99 },
+    };
+    expect(cardLine(waiting)).toEqual({ kind: "insufficient", filled: 2, total: 4 });
+  });
 });
 
 describe("M5a's band and the club filter", () => {

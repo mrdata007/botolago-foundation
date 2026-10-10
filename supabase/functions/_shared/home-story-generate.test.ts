@@ -7,6 +7,8 @@ import {
   imageStoryPrompt,
   type ImageStoryDependencies,
 } from "./home-story-generate";
+
+const SCHEDULER_TOKEN = "a".repeat(64);
 const job = {
   id: "10000000-0000-4000-8000-000000000001",
   titleFr: "Derby de Casablanca",
@@ -43,7 +45,6 @@ function rasterPng(raster: Uint8Array) {
 }
 function fixture(
   options: {
-    verified?: boolean;
     idle?: boolean;
     providerStatus?: number;
     image?: unknown;
@@ -60,13 +61,14 @@ function fixture(
   const tasks: Promise<unknown>[] = [];
   const requests: RequestInit[] = [];
   const deps: ImageStoryDependencies = {
-    environment: { OpenAI_Image_Gen: options.key ?? "test-image-key-not-a-real-credential" },
+    environment: {
+      BOTOLAGO_SCHEDULER_TOKEN: SCHEDULER_TOKEN,
+      OpenAI_Image_Gen: options.key ?? "test-image-key-not-a-real-credential",
+    },
     client: {
       schema: () => ({
         rpc: async (name, args) => {
           calls.push({ name, args });
-          if (name === "service_verify_scheduler_token")
-            return { data: options.verified !== false, error: null };
           if (name === "service_claim_ai_home_story")
             return { data: options.idle ? null : job, error: null };
           if (name === "service_complete_ai_home_story")
@@ -104,7 +106,7 @@ function fixture(
         }
       : {}),
   };
-  const run = (token = "a".repeat(64), method = "POST") =>
+  const run = (token = SCHEDULER_TOKEN, method = "POST") =>
     handleImageStoryRequest(
       new Request("https://local.invalid", {
         method,
@@ -121,15 +123,23 @@ describe("automatic news illustrations", () => {
     expect(prompt).toContain("captions, credits, badges, watermarks and alt text");
     expect(prompt).toContain("French, Arabic or any other language");
   });
-  test("rejects missing or invalid scheduler authentication before spending or claiming", async () => {
-    for (const options of [{}, { verified: false }]) {
-      const f = fixture(options);
-      const r = await f.run(options.verified === false ? "a".repeat(64) : "invalid");
+  test("rejects missing or invalid scheduler authentication without any database call", async () => {
+    for (const token of ["", "invalid", "b".repeat(64), SCHEDULER_TOKEN.toUpperCase()]) {
+      const f = fixture();
+      const r = await f.run(token);
       expect(r.status).toBe(401);
       expect(f.requests).toHaveLength(0);
       expect(f.uploads).toHaveLength(0);
-      expect(f.calls.some((c) => c.name === "service_claim_ai_home_story")).toBe(false);
+      expect(f.calls).toHaveLength(0);
     }
+  });
+  test("fails closed without any database call when the secret is not configured", async () => {
+    const f = fixture();
+    delete (f.deps.environment as Record<string, string | undefined>).BOTOLAGO_SCHEDULER_TOKEN;
+    const r = await f.run();
+    expect(r.status).toBe(503);
+    expect(await r.json()).toEqual({ error: "scheduler_token_not_configured" });
+    expect(f.calls).toHaveLength(0);
   });
   test("non-POST requests do nothing", async () => {
     const f = fixture();
@@ -139,7 +149,7 @@ describe("automatic news illustrations", () => {
   test("missing provider key does not reserve a paid attempt", async () => {
     const f = fixture({ key: "" });
     expect((await f.run()).status).toBe(503);
-    expect(f.calls.map((c) => c.name)).toEqual(["service_verify_scheduler_token"]);
+    expect(f.calls).toHaveLength(0);
   });
   test("paused, capped, duplicate and empty claim outcomes spend nothing", async () => {
     const f = fixture({ idle: true });

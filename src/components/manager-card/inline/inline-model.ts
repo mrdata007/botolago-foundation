@@ -1,8 +1,9 @@
 import type { MemberCardDto, MyCardDto } from "@/backend/manager-card/contracts";
 import type { FantasyGameweekStatus } from "@/types/domain";
 
+import { CARD_STAT_TOTAL, filledStats } from "../copy";
 import { guestProfile, localProfile } from "../to-profile";
-import type { CardClub, CardProfile, TierCode } from "../types";
+import { STAT_CODES, type CardClub, type CardProfile, type TierCode } from "../types";
 
 /**
  * What the Fantasy screens say about the card, as pure decisions (plan sections 4.1, 5.1 and the
@@ -54,6 +55,11 @@ export function saveLineProfile(input: {
 export type HubCardHead =
   /** No number yet: « 1/3 ». */
   | { kind: "counter"; k: number; n: number }
+  /**
+   * Every journée counted and too few statistics for a number (`insufficient`): the statistics
+   * filled, « 2/4 », never the full journée counter.
+   */
+  | { kind: "stats"; filled: number; total: number }
   /** A number: « 84 OVR », its tier and whether it is still provisional. */
   | { kind: "number"; ovr: number; tier: TierCode | null; provisional: boolean };
 
@@ -124,9 +130,7 @@ export function hubCardModel(
 ): HubCardModel {
   const fresh = card.moments.length > 0;
   const rated = card.ovr !== null;
-  const head: HubCardHead = rated
-    ? { kind: "number", ovr: card.ovr!, tier: card.tier, provisional: card.provisional }
-    : { kind: "counter", k: card.gameweeksCounted, n: card.minRated };
+  const head = rankTokenFigure(card);
 
   if (card.seasonClosed) {
     if (rated && card.tier) {
@@ -174,11 +178,22 @@ export function hubCardModel(
 /* The rankings token (M3c)                                                                    */
 /* ------------------------------------------------------------------------------------------ */
 
-/** « 1/3 » while forming, « 84 » (with OVR beside it) once there is a number. */
+/**
+ * « 1/3 » while forming, « 84 » (with OVR beside it) once there is a number, and the statistics
+ * filled (« 2/4 ») when every journée is counted and the number waits for a statistic.
+ */
 export function rankTokenFigure(card: MyCardDto): HubCardHead {
-  return card.ovr !== null
-    ? { kind: "number", ovr: card.ovr, tier: card.tier, provisional: card.provisional }
-    : { kind: "counter", k: card.gameweeksCounted, n: card.minRated };
+  if (card.ovr !== null) {
+    return { kind: "number", ovr: card.ovr, tier: card.tier, provisional: card.provisional };
+  }
+  if (card.ratingState === "insufficient") {
+    return {
+      kind: "stats",
+      filled: filledStats(STAT_CODES.map((code) => card.stats[code].value)),
+      total: CARD_STAT_TOTAL,
+    };
+  }
+  return { kind: "counter", k: card.gameweeksCounted, n: card.minRated };
 }
 
 /* ------------------------------------------------------------------------------------------ */

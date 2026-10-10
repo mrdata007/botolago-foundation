@@ -21,6 +21,7 @@ import {
   type EmailRpcClient,
 } from "./notification-email-dispatch.ts";
 import { containsPublicAiNotice, PUBLIC_EDITORIAL_RULE } from "./public-editorial-policy.ts";
+import { schedulerTokenRefusal } from "./scheduler-token.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const RESEND_URL = "https://api.resend.com/emails";
@@ -454,14 +455,9 @@ export async function handleAiContentRequest(
   deps: AiContentDependencies,
 ): Promise<Response> {
   if (request.method !== "POST") return json(405, { error: "method_not_allowed" });
-  const token = request.headers.get("x-botolago-scheduler-token") ?? "";
-  if (!/^[0-9a-f]{64}$/.test(token)) return json(401, { error: "unauthorized" });
-  try {
-    const verified = await rpc(deps.client, "service_verify_scheduler_token", { p_token: token });
-    if (verified !== true) return json(401, { error: "unauthorized" });
-  } catch {
-    return json(503, { error: "database_unavailable" });
-  }
+  // Checked in-process, before any database call (scheduler-token.ts).
+  const refusal = schedulerTokenRefusal(request, deps.environment);
+  if (refusal) return refusal;
 
   const fetchImpl = deps.fetchImpl ?? fetch;
   const now = deps.now ?? (() => new Date());

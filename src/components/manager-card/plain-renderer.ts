@@ -1,7 +1,14 @@
 import { contrastRatio, parseHex } from "@/lib/colour";
 
 import { cardLabel } from "./copy";
-import type { CardImageArt, CardRenderer, RenderOptions, TextRun, TokenOptions } from "./renderer";
+import type {
+  CardImageArt,
+  CardPalette,
+  CardRenderer,
+  RenderOptions,
+  TextRun,
+  TokenOptions,
+} from "./renderer";
 import type { BeatName, CardProfile, CardStrings, TokenSize } from "./types";
 
 /**
@@ -191,9 +198,22 @@ function tokenSvg(profile: CardProfile, options: TokenOptions): string {
 
 const BEATS: readonly BeatName[] = [];
 
+const PLAIN_PALETTE: CardPalette = {
+  plate: "#12151B",
+  deep: "#262B35",
+  glow: "#6B7484",
+  light: "#AAB3C0",
+  label: "#A3ACB9",
+  word: "#E6ECF3",
+  metal: ["#22262D", "#4A515C", "#2B3038", "#575D67", "#30353D", "#555C67", "#1E2228"],
+  beam: "#AAB3C0",
+  prism: null,
+};
+
 export const plainRenderer: CardRenderer = {
   id: "plain-v1",
   beats: BEATS,
+  palette: () => PLAIN_PALETTE,
   full(profile: CardProfile, options: RenderOptions): string {
     return root(
       cardLabel(profile, options.strings),

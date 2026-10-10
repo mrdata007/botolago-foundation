@@ -1,0 +1,134 @@
+name: SofaScore ID bridge (production, read only)
+
+# Read-only twin of sofascore-id-bridge-staging.yml. Staging holds no real
+# Botola season, so the owner allowed (2026-10-10) running the two read-only
+# modes against Production V2 to get the real club pairing and a dry-run
+# report. This workflow cannot write: it has no apply mode, the fetch script
+# sends only single SELECT statements (scripts/backend/sofascore-id-bridge-fetch.ts,
+# assertReadOnly), and the bridge script is never given database credentials.
+# Applying the mapping on production stays an owner-run step through the
+# release runbook. Steps: docs/backend/SOFASCORE_ID_BRIDGE.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for this read-only run
+        required: true
+        type: string
+      mode:
+        description: "propose-teams or dry-run (both read only)"
+        required: true
+        type: choice
+        default: propose-teams
+        options:
+          - propose-teams
+          - dry-run
+      teams:
+        description: 'For dry-run: the owner-approved JSON {"<sofascoreTeamId>":"<internal team uuid>", ...}'
+        required: false
+        type: string
+
+# Shares the production lock group so a snapshot is never taken in the middle
+# of a production write.
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  bridge:
+    name: SofaScore ID bridge production ${{ inputs.mode }} (read only)
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.triggering_actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production-admin-activation
+
+    steps:
+      - name: Validate manual dispatch
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          MODE: ${{ inputs.mode }}
+          TEAMS: ${{ inputs.teams }}
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" && "${GITHUB_REPOSITORY:-}" == "mrdata007/botolago-foundation" ]] || { echo "Owner workflow dispatch required."; exit 2; }
+          [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] || { echo "Production reads may run only from main."; exit 2; }
+          [[ "${GITHUB_ACTOR:-}" == "mrdata007" && "${GITHUB_TRIGGERING_ACTOR:-}" == "mrdata007" ]] || { echo "Only the owner may dispatch this workflow."; exit 2; }
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "Workflow reruns are forbidden; dispatch a reviewed commit again."; exit 2; }
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ && "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the reviewed main commit."; exit 2; }
+          case "$MODE" in
+            propose-teams) ;;
+            dry-run) test -n "$TEAMS" ;;
+            *) exit 2 ;;
+          esac
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.expected_commit }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies (no secrets in this step)
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Collect SofaScore events and the production snapshot (read only)
+        shell: bash
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          for secret_value in "${RAPIDAPI_KEY:-}" "${SUPABASE_ACCESS_TOKEN:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+          bun scripts/backend/sofascore-id-bridge-fetch.ts --read-production --out-dir "$RUNNER_TEMP/bridge"
+
+      - name: Run ${{ inputs.mode }} (no database credentials)
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+          TEAMS: ${{ inputs.teams }}
+        run: |
+          set -euo pipefail
+          dir="$RUNNER_TEMP/bridge"
+          report="$RUNNER_TEMP/sofascore-id-bridge.json"
+          args=(--mode "$MODE" --events "$dir/events.json" --snapshot "$dir/snapshot.json"
+                --competition-id "$(jq -r .competitionId "$dir/ids.json")"
+                --season-id "$(jq -r .seasonId "$dir/ids.json")")
+          if [[ "$MODE" == "dry-run" ]]; then
+            printf '%s' "$TEAMS" > "$dir/teams.json"
+            args+=(--teams "$dir/teams.json")
+          fi
+          # Capture the bridge review result without hiding report-writing failures.
+          set +e
+          bun scripts/backend/sofascore-id-bridge.ts "${args[@]}" | tee "$report"
+          pipeline_status=("${PIPESTATUS[@]}")
+          set -e
+          status=${pipeline_status[0]}
+          if [[ "${pipeline_status[1]}" != "0" ]]; then exit "${pipeline_status[1]}"; fi
+          {
+            echo "## SofaScore ID bridge (production, read only): $MODE"
+            echo
+            echo '```json'
+            cat "$report"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Exit 2 means the report lists items to review; that is the result.
+          if [[ "$status" == "2" ]]; then exit 0; fi
+          exit "$status"

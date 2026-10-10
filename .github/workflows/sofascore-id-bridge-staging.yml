@@ -1,0 +1,154 @@
+name: SofaScore ID bridge (staging)
+
+# Attaches SofaScore ids (competition 937, season 102220) to the internal rows
+# SportsMonks already maps on BotolaGO Staging V2. Staging only: the scripts
+# refuse the production project. Steps and the review of the output:
+# docs/backend/SOFASCORE_ID_BRIDGE.md.
+#
+#   propose-teams  read only: suggests the SofaScore-to-internal club pairing
+#                  from fixtures both sides agree on. Never applied by itself.
+#   dry-run        read only: plans the mapping rows for the owner-approved
+#                  `teams` JSON and prints the report (counts and ids).
+#   apply          the same plan, then writes it through
+#                  api.resolve_football_mapping, one writer at a time.
+#
+# GitHub only lists a workflow_dispatch workflow that is on the default branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "propose-teams (read only), dry-run (read only) or apply"
+        required: true
+        type: choice
+        default: propose-teams
+        options:
+          - propose-teams
+          - dry-run
+          - apply
+      confirmation:
+        description: "For apply: type ATTACH_SOFASCORE_IDS_ON_STAGING"
+        required: false
+        type: string
+      teams:
+        description: 'For dry-run and apply: the owner-approved JSON {"<sofascoreTeamId>":"<internal team uuid>", ...}'
+        required: false
+        type: string
+
+# Shared with the other Staging V2 workflows in the staging-load-test
+# environment: one writer at a time (AGENTS.md). Staging writers outside the
+# group are checked by scripts/backend/staging-writer-guard.py.
+concurrency:
+  group: phase6-staging-load-test
+  cancel-in-progress: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  bridge:
+    name: SofaScore ID bridge ${{ inputs.mode }}
+    if: github.repository == 'mrdata007/botolago-foundation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging-load-test
+
+    steps:
+      - name: Validate manual dispatch
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          TEAMS: ${{ inputs.teams }}
+        run: |
+          set -euo pipefail
+          case "$MODE" in
+            propose-teams) ;;
+            dry-run) test -n "$TEAMS" ;;
+            apply)
+              test "$CONFIRMATION" = "ATTACH_SOFASCORE_IDS_ON_STAGING"
+              test -n "$TEAMS"
+              ;;
+            *) exit 2 ;;
+          esac
+
+      - name: Check out the repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies (no secrets in this step)
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: No other staging writer is running
+        if: inputs.mode == 'apply'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python scripts/backend/staging-writer-guard.py
+
+      - name: Collect SofaScore events and the staging snapshot (read only)
+        shell: bash
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          for secret_value in "${RAPIDAPI_KEY:-}" "${SUPABASE_ACCESS_TOKEN:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+          bun scripts/backend/sofascore-id-bridge-fetch.ts --out-dir "$RUNNER_TEMP/bridge"
+
+      - name: Run ${{ inputs.mode }}
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+          TEAMS: ${{ inputs.teams }}
+          SUPABASE_ACCESS_TOKEN: ${{ inputs.mode == 'apply' && secrets.SUPABASE_ACCESS_TOKEN || '' }}
+          SUPABASE_STAGING_PROJECT_REF: ${{ vars.SUPABASE_STAGING_PROJECT_REF }}
+          SOFASCORE_ID_BRIDGE_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          if [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
+            printf '::add-mask::%s\n' "$SUPABASE_ACCESS_TOKEN"
+          fi
+          dir="$RUNNER_TEMP/bridge"
+          report="$RUNNER_TEMP/sofascore-id-bridge.json"
+          args=(--mode "$MODE" --events "$dir/events.json" --snapshot "$dir/snapshot.json"
+                --competition-id "$(jq -r .competitionId "$dir/ids.json")"
+                --season-id "$(jq -r .seasonId "$dir/ids.json")")
+          if [[ "$MODE" != "propose-teams" ]]; then
+            printf '%s' "$TEAMS" > "$dir/teams.json"
+            args+=(--teams "$dir/teams.json")
+          fi
+          # Capture the bridge review result without hiding report-writing failures.
+          set +e
+          bun scripts/backend/sofascore-id-bridge.ts "${args[@]}" | tee "$report"
+          pipeline_status=("${PIPESTATUS[@]}")
+          set -e
+          status=${pipeline_status[0]}
+          if [[ "${pipeline_status[1]}" != "0" ]]; then exit "${pipeline_status[1]}"; fi
+          {
+            echo "## SofaScore ID bridge: $MODE"
+            echo
+            echo '```json'
+            cat "$report"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Exit 2 on a read-only mode means the report lists items to review
+          # (nothing is mapped for them); the report is the result, not a crash.
+          if [[ "$status" == "2" && "$MODE" != "apply" ]]; then exit 0; fi
+          exit "$status"

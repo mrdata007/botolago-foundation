@@ -6,7 +6,7 @@ import { useI18n } from "@/i18n/provider";
 import type { Language } from "@/types/domain";
 
 import { fillText, isArabicTemplate } from "./interpolate";
-import type { CardProfile, CardStrings, StatCode } from "./types";
+import { STAT_CODES, type CardProfile, type CardStrings, type StatCode } from "./types";
 
 /**
  * The Manager Card's words (plan section 7.8). Every key of Appendix A is read here, by a literal
@@ -26,6 +26,29 @@ import type { CardProfile, CardStrings, StatCode } from "./types";
  * numbers already isolated for Arabic with U+2068 … U+2069.
  */
 export type Translate = (key: TranslationKey) => string;
+
+/* ------------------------------------------------------------------------------------------ */
+/* How many statistics a number needs                                                           */
+/* ------------------------------------------------------------------------------------------ */
+
+/** The statistics a card has: CAP, SEL, TRF, CON. */
+export const CARD_STAT_TOTAL = STAT_CODES.length;
+
+/**
+ * How many of the four statistics must be filled (non-null) for the card to have a number. The
+ * server decides it: `supabase/migrations/20261008123200_manager_card_compute.sql`, the `rated`
+ * step of the calculation, « OVR is the rounded mean of the non-null stats (null under three) ».
+ * A card whose journées are all counted and that has fewer than this is `insufficient`. This is
+ * the one place the screens read the figure from; change it only with that rule.
+ */
+export const OVR_MIN_STATS = 3;
+
+/** How many of a card's statistics are filled (the four values, in any order). */
+export function filledStats(values: Iterable<number | null>): number {
+  let filled = 0;
+  for (const value of values) if (value !== null) filled += 1;
+  return filled;
+}
 
 /* ------------------------------------------------------------------------------------------ */
 /* Plural families                                                                              */
@@ -291,6 +314,10 @@ export function cardCopy(t: Translate, lang: Language) {
     finalRounds: (n: number) => finalRounds(n, lang, t),
     rounds: (n: number) => rounds(n, lang, t),
     countedA11y: (k: number, n: number) => countedA11y(k, n, lang, t),
+    /** « Statistiques remplies » (the waiting box's title, before « · 2/4 »). */
+    statsFilled: t("card.stats_filled.title"),
+    /** « Statistiques remplies : 2 sur 4 »: the accessible sentence, numbers isolated. */
+    statsFilledA11y: (k: number, n: number) => fillText(t("card.stats_filled.a11y"), { k, n }),
     gwList: (seqs: readonly number[]) => gwList(seqs, lang, t),
     reasonText: (reason: StatNullReason, minRated: number | null) =>
       statReasonText(reason, lang, t, minRated),
@@ -350,6 +377,7 @@ export function momentCopy(t: Translate) {
     m5: {
       band: t("card.onboarding.m5.band"),
       rowForming: t("card.onboarding.m5.row.forming"),
+      rowInsufficient: t("card.onboarding.m5.row.insufficient"),
       hintCompare: t("card.onboarding.m5.hint.compare"),
       h2hScore: t("card.onboarding.m5.h2h.score"),
     },
@@ -467,6 +495,8 @@ export function cardStrings(t: Translate, lang: Language): CardStrings {
       cardOf: t("card.a11y.card_of"),
       noRating: t("card.a11y.no_rating"),
       counted: (k, n) => countedA11y(k, n, lang, t, false),
+      statsFilled: (k, n) =>
+        t("card.stats_filled.a11y").replace("{k}", String(k)).replace("{n}", String(n)),
       separator: t("card.a11y.separator"),
     },
   };
@@ -493,7 +523,16 @@ export function cardLabel(profile: CardProfile, strings: CardStrings): string {
   } else {
     parts.push(strings.a11y.noRating);
     if (profile.counted !== null && profile.minRated !== null) {
-      parts.push(strings.a11y.counted(profile.counted, profile.minRated));
+      // Every journée counted and still no number: what it waits for is a statistic, so the
+      // label says how many are filled, not « 3 journées comptées sur 3 ». Only when the stats
+      // are the server's (`statsKnown`): an earlier season's token has placeholders, and would
+      // say « 0 sur 4 » of a season whose stats were never sent.
+      const statsFilled = strings.a11y.statsFilled;
+      parts.push(
+        profile.counted >= profile.minRated && profile.statsKnown === true && statsFilled
+          ? statsFilled(filledStats(STAT_CODES.map((code) => profile.stats[code])), CARD_STAT_TOTAL)
+          : strings.a11y.counted(profile.counted, profile.minRated),
+      );
     }
   }
   if (profile.club) parts.push(profile.club.name[strings.lang]);
