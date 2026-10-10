@@ -161,6 +161,7 @@ export type Database = {
       }
     }
     Functions: {
+      ack_manager_card_moments: { Args: { p_keys: string[] }; Returns: Json }
       activate_fantasy_chip: {
         Args: {
           p_chip_type: Database["app"]["Enums"]["fantasy_chip_type"]
@@ -1187,6 +1188,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
       get_my_fantasy_history: {
         Args: {
@@ -1209,6 +1211,11 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_team: { Args: { p_season_id: string }; Returns: Json }
+      get_my_manager_card: { Args: never; Returns: Json }
+      get_my_manager_card_history: {
+        Args: { p_before_seq?: number; p_limit?: number; p_season_id?: string }
+        Returns: Json
+      }
       get_my_notification_preferences: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       home_stories: { Args: never; Returns: Json }
@@ -1348,6 +1355,7 @@ export type Database = {
         }
         Returns: Json
       }
+      manager_card_status: { Args: never; Returns: Json }
       mark_all_my_notifications_read: {
         Args: { p_category?: Database["app"]["Enums"]["notification_category"] }
         Returns: number
@@ -5722,6 +5730,241 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_card_gameweeks: {
+        Row: {
+          calculated_at: string
+          cap: number | null
+          cap_raw: number | null
+          con: number | null
+          con_raw: number | null
+          fantasy_season_id: string
+          gameweek_id: string
+          gameweeks_counted: number
+          ovr: number | null
+          provisional: boolean
+          rules_version: number
+          sel: number | null
+          sel_raw: number | null
+          tier: string | null
+          trf: number | null
+          trf_raw: number | null
+          user_id: string
+        }
+        Insert: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id: string
+          gameweek_id: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version: number
+          sel?: number | null
+          sel_raw?: number | null
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id: string
+        }
+        Update: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id?: string
+          gameweek_id?: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version?: number
+          sel?: number | null
+          sel_raw?: number | null
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_gameweeks_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_gameweeks_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_gameweeks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "manager_cards"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      manager_card_moment_acks: {
+        Row: {
+          acknowledged_at: string
+          moment_key: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          moment_key: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          moment_key?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_moment_acks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manager_card_seasons: {
+        Row: {
+          calculated_at: string
+          cap: number | null
+          cap_raw: number | null
+          con: number | null
+          con_raw: number | null
+          fantasy_season_id: string
+          fantasy_team_id: string
+          gameweeks_counted: number
+          ovr: number | null
+          provisional: boolean
+          rules_version: number
+          sel: number | null
+          sel_raw: number | null
+          through_gameweek_id: string
+          tier: string | null
+          trf: number | null
+          trf_raw: number | null
+          user_id: string
+        }
+        Insert: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id: string
+          fantasy_team_id: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version: number
+          sel?: number | null
+          sel_raw?: number | null
+          through_gameweek_id: string
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id: string
+        }
+        Update: {
+          calculated_at?: string
+          cap?: number | null
+          cap_raw?: number | null
+          con?: number | null
+          con_raw?: number | null
+          fantasy_season_id?: string
+          fantasy_team_id?: string
+          gameweeks_counted?: number
+          ovr?: number | null
+          provisional?: boolean
+          rules_version?: number
+          sel?: number | null
+          sel_raw?: number | null
+          through_gameweek_id?: string
+          tier?: string | null
+          trf?: number | null
+          trf_raw?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_seasons_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_seasons_fantasy_team_id_fkey"
+            columns: ["fantasy_team_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_seasons_through_gameweek_id_fkey"
+            columns: ["through_gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_seasons_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "manager_cards"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      manager_cards: {
+        Row: {
+          created_at: string
+          founder_cohort: number | null
+          founder_granted_at: string | null
+          serial: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          founder_cohort?: number | null
+          founder_granted_at?: string | null
+          serial?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          founder_cohort?: number | null
+          founder_granted_at?: string | null
+          serial?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_cards_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
