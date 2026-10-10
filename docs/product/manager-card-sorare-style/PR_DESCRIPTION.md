@@ -16,7 +16,7 @@ no function, no database. The section stays switched off exactly as it ships tod
 ## What did not change
 
 - The data, the stats (CAP, SEL, TRF, CON), the tiers and their thresholds, the number the server gives, every state of the card, the moments, the founder rule, the season rules.
-- The off switch: with the section off, Home, Fantasy, Pépites and the bar are **0.0000 % different** from `main` on 30 pictures, the page HTML is identical on 5 of 5 pages, no new request, no new storage key, and `/gradins` still sends visitors to `/fantasy`.
+- The off switch: with the section off, Home, Fantasy, Pépites and the bar are **0.0000 % different** from the current `main` (`c8fc3a48`) on 30 pictures, the page HTML is identical on 5 of 5 pages, no new request, no new storage key, and `/gradins` still sends visitors to `/fantasy`.
 - The tier key `homa` is not renamed anywhere; only the displayed word is LASTREET.
 
 ## Before and after
@@ -32,10 +32,9 @@ All pictures are taken with the development preview and mock data (no real accou
 
 ## What was checked, in plain words
 
-- **Tests and checks:** the whole test suite passes (7,054 tests) except one that already fails on `main` (this machine prints « GMT+0 » where an old news test expects « GMT »); type check, lint, the build and the three build gates pass; the two browser suites pass (65 tests on the new screens, 9 on the switched-off app).
+- **Tests and checks:** the whole test suite passes (7,127 tests) except one that already fails on `main` (this machine prints « GMT+0 » where an old news test expects « GMT »); type check, lint, the build and the three build gates pass; the two browser suites pass (98 tests on the new screens, 9 on the switched-off app).
 - **Switch off:** identical to `main` (above).
-- **Text you can read:** every word and mark on the card was measured from the picture itself on 64 cards, at rest and with the pointer sitting on the text: all of them clear their floor (the shirt number aside, see below).
-  The page's own text on the same screens is clean in the dark theme and signed out.
+- **Text you can read:** every word and mark on the card was measured from the picture itself on 64 cards, at rest and with the pointer sitting on the text: all of them clear their floor, including the shirt number against its shirt with the pointer on it (3.41 or more) and the card's outer edge on a white page and on a dark one (3.46 or more); 2,408 readings, none below. The page's own text on the same screens is clean in the dark theme and signed out (and in the light theme but for one decorative dot, below).
 - **The number sits inside the shirt:** OVR 1 to 99 and the dash, on every fixture, in both languages and themes: 147 of 147 inside the chest and the shirt.
 - **No clutter:** 118 to 132 drawn elements per card, down from 205 to 284.
 - **Small sizes:** the two-digit number is 16, 13.6, 11.6 and 8.6 px tall at 80, 64, 48 and 32 px.
@@ -45,13 +44,16 @@ All pictures are taken with the development preview and mock data (no real accou
 
 ## Things to look at before this goes anywhere
 
-1. **French, tablets and desktops: « Les vôtres » on the Gradins home is cut to « Les … ».** The card's column grew, the people column shrank. (Arabic is fine.)
-2. **The first screen on a phone.** The bigger card leaves the next-round line 7.55 px above the bottom bar at 390 × 844 (it had 38 to 152 px); at 360 × 740 it falls under the bar on every state.
-3. **The tilt is not shown to hold 60 frames a second.** In the only browser available here (no graphics card) it runs at 20 to 30 fps, where the old card and the same card without the tilt run at 60. It needs a look on a real phone and laptop.
-4. **A hair under the contrast line:** the number against its shirt with the pointer on it (2.94 to 2.98 on 8 of 24 cards, floor 3), and CHAMPION and LEGEND's outer edge on a white page (2.83 to 2.98).
-5. **Speed to the first card (400 ms at 4× slower CPU):** 523 to 678 ms in the development server (none of 40 runs under 440). A production figure cannot be measured because the preview exists only in development.
+Items 1 to 5 and 7 were open in the first version of this description; round 2 acted on them (the evidence index says how, with the numbers).
+
+1. **French, tablets and desktops: « Les vôtres » was cut to « Les … ». Fixed.** The link now goes under the heading instead of cutting it; no heading is cut on any Gradins screen at any width tried.
+2. **The first screen on a phone. Fixed down to a 740 px screen; this changes the plan.** On G1 the card is now 232 to 296 px wide by the phone's height (the plan said a fixed 296 px, D16 and section 10 now say what the code does), so the next-round line sits 19.9 px (French) and 27 px (Arabic) above the bottom bar at 390 × 844 and 7 to 8 px at 360 × 740, for every state. On phones shorter than about 730 px (an iPhone SE, 375 × 667) it still falls under the bar, with the card at its 232 px floor; a smaller card would not stay legible. Please confirm the smaller G1 card.
+3. **The tilt: much better, still not shown at 60 on a graphics card.** In the only browser available here (no graphics card) the median frame is 16.7 ms, 60 fps, at normal and at 4× slower CPU (it was 33 to 83 ms a frame); a few pauses of 56 to 75 ms per 3 s remain, and the 336 px card on a busy machine averages 47 to 58 fps. It needs a look on a real phone and laptop.
+4. **Contrast: fixed.** The number against its shirt with the pointer on it reads 3.41 or more (it was 2.94 to 2.98 on 8 of 24 cards), and CHAMPION's and LEGEND's outer edge on a white page 3.46 or more (it was 2.83 to 2.98). One decision to review: to give the dark page's edge the same, the metal walls of the base card, STADE and CHAMPION are about a fifth darker, so their first walls are dimmer in the dark theme than in your design preview (plan section 18 says how to undo it).
+5. **Speed to the first card (400 ms at 4× slower CPU):** 446 to 558 ms medians in the development server (it was 523 to 678), none of 40 runs under 400. A production figure exists only for the guest page (308 ms, measured by the performance lane in a scratch build with the preview gates forced on); the signed-in page cannot be built that way.
 6. **« Ma saison, rang par rang »** (the share picture's heading) still speaks of knitting.
-7. **A new font:** « Instrument Serif » for the second line of the name (your earlier yes); DESIGN.md does not list it yet.
+7. **A new font:** « Instrument Serif » for the second line of the name (your earlier yes). DESIGN.md now declares it, with the card's materials, shadow and corner; the design detector still lists its « overused font » notice for it on three lines of `eclat.css`, which I left as a notice (no ignore was added).
+8. **The design preview's full-page grids** showed half-drawn cards in their lower rows; that was the capture (one full-page screenshot of 3D layers), not the preview. They were retaken by stitching viewport screenshots.
 
 ## What was not checked
 
