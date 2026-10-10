@@ -32,15 +32,35 @@ const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
  * is 22 px taller and whose lines are taller, and whose stage gives back 40 px of padding for it).
  * 236 px keeps the next-round line 16 px or more above the bottom bar in both languages (19.9 px in
  * French, 27 px in Arabic) for every height from 750 px up to where the card reaches its 296 px
- * (a window of about 860 px) for a rated card. A card with no number puts the rating line in a text
- * box (`RatingLine`), measured at 390 x 844 on 2026-10-10: the forming box is 14 px taller than the
- * bare line (the next-round line clears the bar by 6 px in French, 13 px in Arabic), and the box of
- * a card waiting for a statistic, two lines, ends that line 39 px (French) and 15 px (Arabic) under
- * the bar's top, one short scroll away; the card keeps its size in both. Below 750 px the card is at its 232 px floor and the line ends 7 px (French)
- * and 8 px (Arabic) above the bar at 740 px, and under it from about 730 px down.
+ * (a window of about 860 px) for a rated card. Below 750 px the card is at its 232 px floor and
+ * the line ends 7 px (French) and 8 px (Arabic) above the bar at 740 px, and under it from about
+ * 730 px down.
+ *
+ * A card with no number puts the rating line in a text box (`RatingLine`), taller than the bare
+ * line, so G1 reserves more for it and the card is that much shorter (owner's choice, 2026-10-10:
+ * the next-round line keeps its 16 px over the bar). Measured at 390 x 844 with 236 px, the
+ * next-round line cleared the bar by 6 px (French) and 13 px (Arabic) under the forming box, and
+ * ended 39 px (French) and 15 px (Arabic) under the bar's top under the two-line box of a card
+ * waiting for a statistic. The worse language sets each reserve, plus 1 px for rounding: 247 px
+ * for the forming box, 292 px for the statistics box. The rated line and 768 px up are unchanged.
  */
 const FIT_HEIGHT_WIDTH =
   "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_236px)_/_1.618),296px))]";
+/** `FIT_HEIGHT_WIDTH` under the forming box (« Carte en formation · 1/3 »). */
+const FIT_HEIGHT_WIDTH_ROUNDS_BOX =
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_247px)_/_1.618),296px))]";
+/** `FIT_HEIGHT_WIDTH` under the two-line box of a card waiting for a statistic. */
+const FIT_HEIGHT_WIDTH_STATS_BOX =
+  "w-[min(calc(100vw_-_32px),clamp(232px,calc((100svh_-_var(--topbar-h)_-_var(--bottomnav-h)_-_292px)_/_1.618),296px))]";
+
+/** Which text box the rating line under the card is, when the card has no number. */
+export type WaitingBox = "rounds" | "stats";
+
+/** The box `RatingLine` draws for these figures, or null for the bare rated line. */
+export function waitingBox(ovr: number | null, counted: number, min: number): WaitingBox | null {
+  if (ovr !== null) return null;
+  return counted >= min ? "stats" : "rounds";
+}
 
 /**
  * Where the card stands (plan section 10). The collectible is the one expressive object on the
@@ -65,6 +85,7 @@ export function CardStage({
   className,
   testId = "curva-stage",
   fitHeight = false,
+  waiting = null,
 }: {
   profile: CardProfile;
   beat?: BeatName;
@@ -77,6 +98,8 @@ export function CardStage({
    * 232 px and never above the 296 px of `FULL_PHONE_WIDTH`.
    */
   fitHeight?: boolean;
+  /** The rating line is a text box (`waitingBox`): G1 reserves its height under the card. */
+  waiting?: WaitingBox | null;
 }) {
   return (
     <section
@@ -96,7 +119,13 @@ export function CardStage({
         data-stage-card=""
         className={cn(
           "group/stage relative mx-auto max-w-full md:w-[336px]",
-          fitHeight ? FIT_HEIGHT_WIDTH : FULL_PHONE_WIDTH,
+          !fitHeight
+            ? FULL_PHONE_WIDTH
+            : waiting === "stats"
+              ? FIT_HEIGHT_WIDTH_STATS_BOX
+              : waiting === "rounds"
+                ? FIT_HEIGHT_WIDTH_ROUNDS_BOX
+                : FIT_HEIGHT_WIDTH,
         )}
       >
         <span
@@ -178,7 +207,7 @@ export function RatingLine({
   if (ovr === null) {
     // Every journée the rules ask for is counted and there is still no number: what is missing
     // is a statistic (`ratingState: "insufficient"`), not a journée.
-    const waitsForStats = counted >= min;
+    const waitsForStats = waitingBox(ovr, counted, min) === "stats";
     return (
       <div
         className={cn(

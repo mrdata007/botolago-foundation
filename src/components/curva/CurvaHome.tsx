@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import { useManagerCardStatus } from "@/services/manager-card-status";
 import type { Club, Gameweek } from "@/types/domain";
 
-import { CardStage, RatingLine } from "./CardStage";
+import { CardStage, RatingLine, waitingBox } from "./CardStage";
 import { useStageBeat } from "./use-stage-beat";
 import { ClubBlock } from "./ClubBlock";
 import { GuestHero } from "./GuestHero";
@@ -219,7 +219,12 @@ export function OwnerHome({
           "[[data-hero-slot]:not(:empty)~&_[data-stage-card]]:hidden",
         )}
       >
-        <CardStage profile={profile} beat={beat} fitHeight>
+        <CardStage
+          profile={profile}
+          beat={beat}
+          fitHeight
+          waiting={over ? null : waitingBox(view.ovr, card.gameweeksCounted, card.minRated)}
+        >
           {rating}
         </CardStage>
         <div className="mt-1 px-4 max-md:rtl:mt-0">{identity}</div>
