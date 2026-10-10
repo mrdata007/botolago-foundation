@@ -78,14 +78,14 @@ describe("motion-exit conventions", () => {
     expect(css).toContain(`--ease-emphasized: ${bezier(EASE_EMPHASIZED)};`);
   });
 
-  it("is the only module that imports motion/react", () => {
+  it("is, with `motion-lib.tsx`, the only module that imports motion/react", () => {
     const root = join(import.meta.dir, "..");
     const offenders: string[] = [];
     const walk = (dir: string) => {
       for (const name of readdirSync(dir)) {
         const path = join(dir, name);
         if (statSync(path).isDirectory()) walk(path);
-        else if (/\.(ts|tsx)$/.test(name) && !path.endsWith("motion-exit.tsx")) {
+        else if (/\.(ts|tsx)$/.test(name) && !/motion-(exit|lib)\.tsx?$/.test(path)) {
           if (
             /from\s+["']motion(\/react)?["']|from\s+["']framer-motion["']/.test(
               readFileSync(path, "utf8"),

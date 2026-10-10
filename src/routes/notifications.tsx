@@ -25,6 +25,7 @@ import { formatRelativeTime } from "@/lib/format-time";
 import { notificationDestination } from "@/lib/notification-link";
 import { staggerStyle, useArrivals } from "@/lib/motion";
 import { ExitCollapse, ExitPresence } from "@/lib/motion-exit";
+import { moveFocusAfterDismiss } from "@/lib/notification-focus";
 import { cn } from "@/lib/utils";
 import {
   useMyNotifications,
@@ -83,28 +84,6 @@ function SignInPrompt() {
   );
 }
 
-/**
- * A dismissed card stays on screen, fading, for a moment. If focus was on it
- * (or nowhere), hand it to the next card's dismiss button, or the one before
- * it, or the page heading when none is left, so it never rests on a card that
- * is leaving.
- */
-function moveFocusAfterDismiss(id: string, cards: readonly NotificationCardDto[]) {
-  if (typeof document === "undefined") return;
-  const index = cards.findIndex((card) => card.id === id);
-  const leaving = document.querySelector(`[data-dismiss-id="${CSS.escape(id)}"]`)?.closest("li");
-  const active = document.activeElement;
-  const hadFocus = !active || active === document.body || !!leaving?.contains(active);
-  if (!hadFocus) return;
-  const neighbour = cards[index + 1] ?? cards[index - 1];
-  const target = neighbour
-    ? document.querySelector<HTMLElement>(`[data-dismiss-id="${CSS.escape(neighbour.id)}"]`)
-    : document.querySelector<HTMLElement>("h1");
-  if (!target) return;
-  if (!neighbour) target.tabIndex = -1;
-  target.focus({ preventScroll: true });
-}
-
 function Inbox() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
@@ -129,7 +108,13 @@ function Inbox() {
     if (destination) void navigate(destination as Parameters<typeof navigate>[0]);
   };
   const remove = (card: NotificationCardDto) => {
-    moveFocusAfterDismiss(card.id, cards);
+    if (typeof document !== "undefined") {
+      moveFocusAfterDismiss(
+        document,
+        cards.map((c) => c.id),
+        card.id,
+      );
+    }
     setHidden((current) => new Set(current).add(card.id));
     dismiss.mutate(card.id);
   };

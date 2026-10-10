@@ -16,6 +16,11 @@ animate an element that arrives, not one React has already removed). Follows
   Never the full `motion.*` components, which bundle every feature. Budget:
   no more than about 20 KB gzip added to the client, measured from
   `vite build` output before and after.
+- Motion loads on demand: `motion-exit.tsx` (what screens import) holds no
+  Motion code and fetches `motion-lib.tsx` after the first paint of the first
+  `ExitPresence`. Until it arrives, and under reduced motion, the wrappers draw
+  plain elements, so an element removed in that time is simply gone. The
+  shared first-load chunk stays at its old size.
 - One shared wrapper in `src/lib/motion-exit.tsx`, so screens never import
   `motion/react` directly. It provides the `LazyMotion` boundary and the
   `MotionConfig reducedMotion="user"` setting, and reads its durations and

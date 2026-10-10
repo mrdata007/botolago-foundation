@@ -1,15 +1,15 @@
 import {
-  AnimatePresence,
-  LazyMotion,
-  MotionConfig,
-  domMin,
-  m,
-  useIsPresent,
-  type HTMLMotionProps,
-} from "motion/react";
-import type { ReactNode } from "react";
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+  type Ref,
+} from "react";
 
-import { prefersReducedMotion, tokenMs } from "@/lib/motion";
+import { prefersReducedMotion } from "@/lib/motion";
+import type { Bezier, DurationName, ExitMode, ExitTag } from "./motion-lib";
 
 /**
  * Things that leave (docs/engineering/MOTION_PLAN_4.md).
@@ -17,7 +17,7 @@ import { prefersReducedMotion, tokenMs } from "@/lib/motion";
  * The CSS toolkit in `styles.css` can animate an element that arrives; it
  * cannot animate one React has already removed. This module is the only place
  * that imports `motion/react`, so screens never pull the library in directly
- * and the bundle only ever carries `LazyMotion` + `domMin` + `m.*` (the
+ * and the bundle only ever carries `LazyMotion` (features loaded on demand, `domMin`) + `m.*` (the
  * full `motion.*` components bundle every feature, and `strict` makes one
  * throw).
  *
@@ -38,7 +38,26 @@ export const EASE_STANDARD = [0.2, 0.7, 0.2, 1] as const;
 /** `--ease-emphasized` in styles.css. */
 export const EASE_EMPHASIZED = [0.2, 0.9, 0.1, 1] as const;
 
-export type ExitMode = "sync" | "popLayout" | "wait";
+export type { ExitMode };
+
+type Lib = typeof import("./motion-lib");
+
+let loaded: Lib | null = null;
+let pending: Promise<Lib> | null = null;
+let failed = false;
+
+/**
+ * Fetches Motion (its own chunk) once, after the first paint of the first
+ * `ExitPresence`. Until it has arrived, and always under reduced motion, the
+ * wrappers draw plain elements: a child that is removed in that time is
+ * simply gone, so nothing is ever left stuck on screen.
+ */
+function loadMotion(): Promise<Lib> {
+  pending ??= import("./motion-lib").then((module) => (loaded = module));
+  return pending;
+}
+
+const LibContext = createContext<Lib | null>(null);
 
 /**
  * Wraps the children that may leave. Keep it mounted and put the conditional
@@ -51,51 +70,47 @@ export function ExitPresence({
   children?: ReactNode;
   mode?: ExitMode;
 }) {
+  const reduced = prefersReducedMotion();
+  const [lib, setLib] = useState<Lib | null>(loaded);
+  useEffect(() => {
+    if (reduced || lib || failed) return;
+    let live = true;
+    loadMotion().then(
+      (module) => {
+        if (live) setLib(module);
+      },
+      // Offline, or the chunk is gone: stay with plain elements, which still
+      // leave at once. Not retried, so a bad network does not loop.
+      () => {
+        failed = true;
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [reduced, lib]);
+
+  // Reduced motion: no presence at all, so a removed child is gone in the
+  // same commit instead of a frame later.
+  if (reduced || !lib) {
+    return <LibContext.Provider value={null}>{children}</LibContext.Provider>;
+  }
   return (
-    <LazyMotion features={domMin} strict>
-      <MotionConfig reducedMotion="user">
-        {/* Reduced motion: no presence at all, so a removed child is gone in
-            the same commit instead of a frame later. */}
-        {prefersReducedMotion() ? (
-          children
-        ) : (
-          <AnimatePresence initial={false} mode={mode}>
-            {children}
-          </AnimatePresence>
-        )}
-      </MotionConfig>
-    </LazyMotion>
+    <LibContext.Provider value={lib}>
+      <lib.Presence mode={mode}>{children}</lib.Presence>
+    </LibContext.Provider>
   );
 }
 
-type ExitTag = "div" | "li" | "ul";
-
-const TAGS = { div: m.div, li: m.li, ul: m.ul } as const;
-
-type ExitElementProps = Omit<
-  HTMLMotionProps<"div">,
-  "initial" | "animate" | "exit" | "transition" | "variants" | "layout"
-> & {
+type ExitElementProps = ComponentPropsWithoutRef<"div"> & {
+  /** Handed on to the element: `AnimatePresence` needs it to pop a child out. */
+  ref?: Ref<HTMLElement>;
   /** The element drawn; the same props pass through. */
   as?: ExitTag;
 };
 
-type DurationName = "quick" | "sheet";
-
-const DURATION_TOKEN: Record<DurationName, { token: string; fallback: number }> = {
-  quick: { token: "--duration-quick", fallback: 180 },
-  sheet: { token: "--duration-sheet", fallback: 320 },
-};
-
-function seconds(name: DurationName): number {
-  const { token, fallback } = DURATION_TOKEN[name];
-  return tokenMs(token, fallback) / 1000;
-}
-
-/** The exit of a node: opacity, and (for a collapse) its height, gone. */
 function ExitItem({
-  as = "div",
-  style,
+  as: Tag = "div",
   exitTo,
   enterFrom,
   duration,
@@ -105,26 +120,21 @@ function ExitItem({
   exitTo: Record<string, number>;
   enterFrom?: Record<string, number>;
   duration: DurationName;
-  ease: readonly [number, number, number, number];
+  ease: Bezier;
 }) {
-  const present = useIsPresent();
-  const reduced = prefersReducedMotion();
-  const Tag = TAGS[as] as typeof m.div;
-  const transition = {
-    duration: reduced ? 0 : seconds(duration),
-    ease: [ease[0], ease[1], ease[2], ease[3]] as [number, number, number, number],
-  };
+  const lib = useContext(LibContext);
+  if (!lib) {
+    const Plain = Tag as "div";
+    return <Plain {...(rest as ComponentPropsWithoutRef<"div">)} />;
+  }
   return (
-    <Tag
-      {...rest}
-      aria-hidden={present ? rest["aria-hidden"] : true}
-      inert={present ? undefined : true}
-      data-exiting={present ? undefined : ""}
-      initial={enterFrom && !reduced ? enterFrom : undefined}
-      animate={enterFrom ? { opacity: 1, scale: 1 } : undefined}
-      exit={reduced ? undefined : { ...exitTo, transition }}
-      transition={transition}
-      style={present ? style : { ...style, overflow: "hidden", pointerEvents: "none" }}
+    <lib.Item
+      {...(rest as object)}
+      as={Tag}
+      exitTo={exitTo}
+      enterFrom={enterFrom}
+      duration={duration}
+      ease={ease}
     />
   );
 }
