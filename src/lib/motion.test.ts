@@ -14,12 +14,19 @@ import {
   turnedOnNow,
   flipOffsets,
   prefersReducedMotion,
+  scrollBehavior,
   tokenMs,
 } from "./motion";
 
 describe("prefersReducedMotion", () => {
   it("answers true where there is no browser, so the server renders the finished state", () => {
     expect(prefersReducedMotion()).toBe(true);
+  });
+});
+
+describe("scrollBehavior", () => {
+  it("jumps where reduced motion is asked for (and on the server, which answers yes)", () => {
+    expect(scrollBehavior()).toBe("auto");
   });
 });
 

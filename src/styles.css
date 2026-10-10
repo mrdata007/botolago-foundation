@@ -1168,6 +1168,46 @@ html[dir="rtl"]
   animation: roll-down var(--duration-quick) var(--ease-emphasized) both;
 }
 
+/* UiTabs' accent bar: one bar for the whole tab list, under the active tab,
+   which slides to the next tab chosen instead of jumping. The tabs are equal
+   grid columns, so the bar is one column wide and moves by whole columns;
+   --vt-dir turns the slide round in Arabic, where the first tab is on the
+   right. The server draws it in place, so it only moves on a switch. Placed
+   on the grid's one row across every column, it measures from the columns
+   themselves, so a tab list with side padding (`px-2`) still lines up. */
+@utility tab-indicator {
+  position: absolute;
+  grid-column: 1 / -1;
+  grid-row: 1;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  height: 4px;
+  width: calc(100% / var(--tab-count, 1));
+  background-color: var(--tab-accent);
+  pointer-events: none;
+  transform: translateX(calc(var(--tab-index, 0) * 100% * var(--vt-dir, 1)));
+  transition: transform var(--duration-route) var(--ease-emphasized);
+}
+
+/* A tab panel's content arriving after a switch: a quick fade and a 4px
+   rise. Give the panel `key={tab}` so each switch mounts it afresh. The fill
+   is `backwards`, not `both`: once it ends the panel keeps no transform, so a
+   sticky or fixed element inside it is placed against the page as before. */
+@keyframes tab-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility tab-panel-in {
+  animation: tab-panel-in var(--duration-quick) var(--ease-standard) backwards;
+}
+
 /* A step of a flow arriving: it slides in from the reading side. */
 @keyframes step-in {
   from {
