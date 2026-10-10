@@ -1,0 +1,494 @@
+[
+  {
+    "lang": "fr",
+    "width": 320,
+    "height": 568,
+    "theme": "light",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "caption": {
+      "top": 397.5,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 170.5
+    },
+    "headline": {
+      "top": 461.5,
+      "left": 20,
+      "right": 300,
+      "bottom": 544,
+      "width": 280,
+      "height": 82.5
+    },
+    "fit": "contain",
+    "alt": "Hassania Agadir triomphe face à Renaissance Zemamra",
+    "scroll": 0
+  },
+  {
+    "lang": "fr",
+    "width": 320,
+    "height": 568,
+    "theme": "dark",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "caption": {
+      "top": 397.5,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 170.5
+    },
+    "headline": {
+      "top": 461.5,
+      "left": 20,
+      "right": 300,
+      "bottom": 544,
+      "width": 280,
+      "height": 82.5
+    },
+    "fit": "contain",
+    "alt": "Hassania Agadir triomphe face à Renaissance Zemamra",
+    "scroll": 0
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "height": 844,
+    "theme": "light",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "caption": {
+      "top": 701,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 143
+    },
+    "headline": {
+      "top": 765,
+      "left": 20,
+      "right": 370,
+      "bottom": 820,
+      "width": 350,
+      "height": 55
+    },
+    "fit": "contain",
+    "alt": "Hassania Agadir triomphe face à Renaissance Zemamra",
+    "scroll": 0
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "height": 844,
+    "theme": "dark",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "caption": {
+      "top": 701,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 143
+    },
+    "headline": {
+      "top": 765,
+      "left": 20,
+      "right": 370,
+      "bottom": 820,
+      "width": 350,
+      "height": 55
+    },
+    "fit": "contain",
+    "alt": "Hassania Agadir triomphe face à Renaissance Zemamra",
+    "scroll": 0
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "viewer": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "image": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "caption": {
+      "top": 730,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 154
+    },
+    "headline": {
+      "top": 794,
+      "left": 520,
+      "right": 920,
+      "bottom": 860,
+      "width": 400,
+      "height": 66
+    },
+    "fit": "contain",
+    "alt": "Hassania Agadir triomphe face à Renaissance Zemamra",
+    "scroll": 0
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "viewer": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "image": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "caption": {
+      "top": 730,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 154
+    },
+    "headline": {
+      "top": 794,
+      "left": 520,
+      "right": 920,
+      "bottom": 860,
+      "width": 400,
+      "height": 66
+    },
+    "fit": "contain",
+    "alt": "Hassania Agadir triomphe face à Renaissance Zemamra",
+    "scroll": 0
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "height": 568,
+    "theme": "light",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "caption": {
+      "top": 425,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 143
+    },
+    "headline": {
+      "top": 489,
+      "left": 20,
+      "right": 300,
+      "bottom": 544,
+      "width": 280,
+      "height": 55
+    },
+    "fit": "contain",
+    "alt": "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة",
+    "scroll": 0
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "height": 568,
+    "theme": "dark",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 568
+    },
+    "caption": {
+      "top": 425,
+      "left": 0,
+      "right": 320,
+      "bottom": 568,
+      "width": 320,
+      "height": 143
+    },
+    "headline": {
+      "top": 489,
+      "left": 20,
+      "right": 300,
+      "bottom": 544,
+      "width": 280,
+      "height": 55
+    },
+    "fit": "contain",
+    "alt": "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة",
+    "scroll": 0
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "height": 844,
+    "theme": "light",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "caption": {
+      "top": 701,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 143
+    },
+    "headline": {
+      "top": 765,
+      "left": 20,
+      "right": 370,
+      "bottom": 820,
+      "width": 350,
+      "height": 55
+    },
+    "fit": "contain",
+    "alt": "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة",
+    "scroll": 0
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "height": 844,
+    "theme": "dark",
+    "viewer": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "image": {
+      "top": 0,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 844
+    },
+    "caption": {
+      "top": 701,
+      "left": 0,
+      "right": 390,
+      "bottom": 844,
+      "width": 390,
+      "height": 143
+    },
+    "headline": {
+      "top": 765,
+      "left": 20,
+      "right": 370,
+      "bottom": 820,
+      "width": 350,
+      "height": 55
+    },
+    "fit": "contain",
+    "alt": "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة",
+    "scroll": 0
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "height": 900,
+    "theme": "light",
+    "viewer": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "image": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "caption": {
+      "top": 730,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 154
+    },
+    "headline": {
+      "top": 794,
+      "left": 520,
+      "right": 920,
+      "bottom": 860,
+      "width": 400,
+      "height": 66
+    },
+    "fit": "contain",
+    "alt": "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة",
+    "scroll": 0
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "height": 900,
+    "theme": "dark",
+    "viewer": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "image": {
+      "top": 16,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 868
+    },
+    "caption": {
+      "top": 730,
+      "left": 496,
+      "right": 944,
+      "bottom": 884,
+      "width": 448,
+      "height": 154
+    },
+    "headline": {
+      "top": 794,
+      "left": 520,
+      "right": 920,
+      "bottom": 860,
+      "width": 400,
+      "height": 66
+    },
+    "fit": "contain",
+    "alt": "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة",
+    "scroll": 0
+  }
+]
