@@ -68,33 +68,61 @@ RPCs; see the inventory in §6 work item 2).
 
 ## 4. Request budget (to pick the paid tier)
 
-Filled in from the ingestion design (work item 1). Rough order of magnitude
-before the design: live polling for ~32 matches a month plus an hourly
-fixture refresh and post-match detail pulls lands in the low thousands of
-requests a month; the free tier (500) cannot carry it.
+One Botola month is about 4 rounds × 8 matches = 32 matches on about 16 match
+days. SofaScore only (Flashscore has its own quota on its own host). Endpoint
+names marked "to probe" are not yet confirmed.
+
+| Item | Assumption | Requests / month |
+|---|---|---|
+| Live scores | one call returns every live match, filtered to Botola (937); a poll every 2 min over a ~2 h window, ~16 match days (to probe) | ≈ 960 (≈ 400 at 5 min) |
+| Fixture list refresh (kickoff moves, postponements) | `tournaments/get-next-matches` pages 0–2 every 3 h (to probe) | ≈ 240 |
+| After-match details | detail, lineups, incidents, statistics × 32, plus one re-pull | ≈ 260 |
+| Standings, squads, ID bridge | daily standings, squads on demand | ≈ 60 |
+| **Total** | | **≈ 1,500–1,600** |
+
+**Size the paid tier at about 2,500–3,000 requests a month** (20 % margin plus
+re-runs; failed calls also count). If the live endpoint turns out to be paged
+per tournament, live polling can reach ≈ 1,900 and the total ≈ 2,500, which
+still fits. The client's quota guard (`minRemaining`, default 100, in
+`rapidapi-client.ts`) is raised with the new tier and fails closed.
 
 ## 5. Phases
 
 Each phase is its own pull request, reviewed before the next starts.
-SportsMonks stays live until phase 6.
+SportsMonks keeps running until P6, and every staging write respects the
+one-writer rule.
 
-| # | Phase | Kind |
-|---|---|---|
-| 0 | This plan; pressure chart removed from the match page (M4) | docs, frontend |
-| 1 | Probe: capture trimmed SofaScore fixtures for the season list, live list, detail, teams, squads, standings (≈20 requests) | read-only, quota |
-| 2 | Parsers and adapters for those endpoints, unit-tested on the fixtures | code only |
-| 3 | Forward-only migration letting the ingest RPCs accept provider `sofascore`; ID bridge that attaches SofaScore IDs to the existing fixture, team and season rows (no duplicates) | staging DB write |
-| 4 | SofaScore live refresh and season refresh Edge Function, dry-run then staging, SportsMonks paused on staging while it runs | staging DB write |
-| 5 | Fantasy performances from SofaScore + Flashscore (Fantasy plan phases 4–5), staging comparison against SportsMonks results | staging DB write |
-| 6 | Production cut-over through the release runbook (owner-run), then retire SportsMonks jobs, secrets, workflows and code | production, owner-run |
+| # | Phase | Kind | Owns |
+|---|---|---|---|
+| P0 | This plan; pressure chart removed from the match page (M4) | docs, frontend | `docs/backend`, `src/components/matches` |
+| P1 | Probe (≈ 18 requests, list in §8) and trimmed fixtures | read-only, quota | `tests/fixtures/providers/sofascore` |
+| P2 | Fixture-list, live-list, standings and squad parsers; status mapping; quota guard raised | code only | `src/backend/football/provider/` |
+| P3 | ID bridge: attach SofaScore IDs to the existing competition, season, round, team and fixture rows through `api.resolve_football_mapping` (dry-run default, never creates a fixture, reports 0 or 2+ matches). Teams via a reviewed 16-row name table. Players stay on the reviewed mapping process | staging DB write | `scripts/backend/sofascore-id-bridge.ts` |
+| P4 | Forward-only migration lifting the `'sportsmonks'`-only checks on the RPCs the new path calls, with a `pg_get_functiondef` preflight. The fixture, match-details and catalog RPCs already accept any registered provider | migration | `supabase/migrations` |
+| P5 | SofaScore fixtures and match-details Edge code (Deno port of the RapidAPI client), shadow mode first; a source switch (`football_live_source`, default `sportsmonks`) read by the live and season refresh ticks and by the orchestrator scripts | code + staging write | `supabase/functions/_shared/sofascore-*.ts`, tick migrations |
+| P6 | Fantasy performances from SofaScore + Flashscore (Fantasy plan phases 4–5) and staging comparison against SportsMonks; flip the switch on staging for 1–2 match days, then production through the release runbook (owner-run) | staging, then production | settings |
+| P7 | Retire SportsMonks: jobs, secrets, workflows, `sportsmonks-*` code, dead RPC guards, pressure plumbing | production, owner-run | many |
+
+Kept as is: club crests are already curated in storage
+(`20261001170000`) and are not re-fetched. Pressure and preseason-rating tables
+stay in place and simply stop being fed until P7.
 
 ## 6. Work items in flight
 
-1. Ingestion design (endpoint map, RPC mapping, ID bridge, budget, probe list).
-2. Pressure chart removal — branch `claude/drop-pressure-chart`.
+1. Pressure chart removal — branch `claude/drop-pressure-chart`.
 
 ## 7. Owner prerequisites
 
 - Subscribe the RapidAPI app to the chosen paid SofaScore tier (§4).
 - `RAPIDAPI_KEY` in staging Supabase secrets (never in the repo or chat).
-- Approve the phase 1 probe run (it spends ≈20 requests of quota).
+- Approve the P1 probe run (≈ 18 requests of quota).
+
+## 8. P1 probe list
+
+Re-capture: `tournaments/get-last-matches?tournamentId=937&seasonId=102220&pageIndex=0` and `pageIndex=1`.
+To confirm: `tournaments/get-next-matches` (pages 0, 1), `tournaments/get-standings?tournamentId=937&seasonId=102220&type=total`,
+`tournaments/get-seasons?tournamentId=937`, the live list (`matches/get-live?sport=football` or the name the
+listing shows), `matches/detail` for a finished and an upcoming match, `matches/get-lineups` for a full
+(17132481) and a limited (16958239) match, `matches/get-incidents` and `matches/get-statistics` (17132481),
+`teams/get-squad`, `teams/get-next-matches` (fallback), and one `matches/detail` during a live match if one is on.
+Trimmed files only; raw payloads never enter the repository.
