@@ -23,11 +23,12 @@ values (pg_temp.id('c0', 7), pg_temp.id('c0', 3), 1, 'Round 1', 'planned');
 insert into app.teams (id, slug, name, short_name, code, country_id)
 select pg_temp.id('c1', i), 'repoint-club-' || i, 'Repoint Club ' || i, 'RP' || i, 'RP' || i,
   (select id from app.countries where iso_alpha2 = 'MA') from generate_series(1, 3) i;
-insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id, kickoff_at, status)
+insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id, away_team_id, kickoff_at, status,
+  provider_updated_at, source_sequence)
 values (pg_temp.id('f0', 1), pg_temp.id('c0', 2), pg_temp.id('c0', 3), pg_temp.id('c0', 7), pg_temp.id('c1', 1),
-    pg_temp.id('c1', 2), '2026-10-20 12:00Z', 'scheduled'),
+    pg_temp.id('c1', 2), '2026-10-20 12:00Z', 'scheduled', '2026-10-01 00:00Z', 1),
   (pg_temp.id('f0', 2), pg_temp.id('c0', 2), pg_temp.id('c0', 3), pg_temp.id('c0', 7), pg_temp.id('c1', 3),
-    pg_temp.id('c1', 2), '2026-10-21 12:00Z', 'scheduled');
+    pg_temp.id('c1', 2), '2026-10-21 12:00Z', 'scheduled', '2026-10-01 00:00Z', 1);
 
 insert into app_private.football_provider_mappings (provider_name, entity_type, external_id, internal_entity_id,
   source_version, last_seen_at)
