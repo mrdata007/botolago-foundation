@@ -96,12 +96,14 @@ still fits. The client's quota guard (`minRemaining`, default 100, in
 - **A postponed match gets a new SofaScore event ID when it is replayed**; the
   old event stays listed as `postponed` in the same round. The ID bridge maps
   the replacement and re-points a mapping when a replacement appears.
-- `matches/get-live?sport=football` does not exist (404). The live-list endpoint
-  name is still unknown. Fallback that is known to work: `matches/detail` per
-  in-play match every 2 min, ≈ 1,900 requests a month, which still fits a
-  2,500–3,000 tier. The owner can read the exact live endpoint name from the
-  RapidAPI listing.
-- Quota after the run: 265 of 500 left this month.
+- Live list: **`tournaments/get-live-events?sport=football`** (confirmed by run
+  38069075854). One request returns every in-play football match worldwide
+  (438 at the time, ≈ 1.8 MB) with status code, `statusTime`, scores and
+  half-time scores; filter on `tournament.uniqueTournament.id == 937`. Live
+  polling therefore costs one request per poll, as budgeted (≈ 960 a month at
+  2 min). `matches/get-live` and `matches/list-live` do not exist (404).
+- Quota on 2026-10-10 after both runs: 268 of 500 left; the key still reports
+  the free 500 limit.
 
 ## 5. Phases
 
