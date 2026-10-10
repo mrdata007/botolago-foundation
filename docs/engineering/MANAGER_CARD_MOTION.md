@@ -93,12 +93,18 @@ No new library. CSS keyframes and the Web Animations API, `transform` and
   0.78, 1. The beam pattern mirrors left to right, so Arabic needs no flip.
 - **Flip** (`curva/CardStage.tsx`, `CardBack.tsx`): `flippable` on the stage of `/curva` and
   `/curva/carte` only (not the guest stage, the hero or the replay sheet). The button is a 44 px round
-  icon button on the card's lower start corner, not a text label: a text button under the card
+  icon button hanging off the card's lower start corner (8 px past the card's edge, 12 px below it, so it covers no text on either face), not a text label: a text button under the card
   would have cost G1's first-screen budget (`FIT_HEIGHT_WIDTH`), and one beside the number would
   have covered the stats. Its accessible name is « Retourner la carte » / «اقلب البطاقة». The
   tilt and the touch float are switched off while the back shows (`tilt={false}` unmounts them,
-  they mount again when the card is turned back). The back takes its colours from the foil ladder
-  through `manager-card/tier-palette.ts` (the Curva sources may not import a card direction).
+  they mount again when the card is turned back). The back takes its colours from the renderer
+  interface: `CardRenderer.palette(tier)`, implemented by Éclat (`eclat/palette.ts`, reading the foil
+  ladder; one added line in `eclat/index.ts`) and the plain renderer, and read through
+  `use-card-palette.ts` (a neutral graphite until the renderer chunk has loaded). The back is
+  built from the front's parts (cut-cornered outline and rim, honeycomb, club disc, serif name,
+  tier chip, bars, wordmark). Under reduced motion the faces swap by visibility, with no 3D context.
+  The status region announces only the face (« Dos de la carte »); `aria-pressed` carries the
+  button's state, and the long sentence that repeated it was dropped.
 - **Rating change chip** (`curva/rating-change.ts`, `use-rating-change.ts`, `RatingLine`): the previous
   rating is the newest earlier row of the season's history that has a number; no earlier number, no
   chip. Shown on Curva' home and on the card page. The once-per-round memory is its own key,
@@ -113,3 +119,9 @@ No new library. CSS keyframes and the Web Animations API, `transform` and
   shadow lives inside the tilt tree. The tilt and float stay off until the entrance has landed.
 - **Words** live in a `card_motion.` group (`manager-card/motion-copy.ts`), not in Appendix A, whose
   184-key count is pinned by `copy.test.ts`.
+- **Test changes made on the orchestrator's decision** (additive, nothing loosened): `copy.test.ts`'s
+  banned-word, no-counts and voice lints now also cover `card_motion.` keys, and a new test checks
+  they stay out of the 184-key pin and are read by literal calls in `motion-copy.ts`.
+- **Burst geometry.** The layer is centred with `left/top 50%` and `translate`, at most the window
+  wide, and clips its own beams; measured centre offset 0 px at 320, 390 and 1440, LTR and RTL.
+- **Rating chip memory** is one key per account: `botolago.card.rating_badge.v1.<user id or local>`.

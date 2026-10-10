@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 
 import { prefersReducedMotion } from "@/lib/motion";
 
-import { FOIL } from "../tier-palette";
+import { useCardPalette } from "../use-card-palette";
 import { useCardRenderer } from "../use-card-renderer";
 import type { BeatName, TierCode } from "../types";
 import { BURST_MS, burstShouldStart, burstSpec } from "./burst";
@@ -19,6 +19,7 @@ import "./tier-burst.css";
 export function TierBurst({ tier, beat }: { tier: TierCode | null; beat: BeatName | undefined }) {
   const spec = useMemo(() => burstSpec(tier), [tier]);
   const renderer = useCardRenderer();
+  const palette = useCardPalette(tier);
   const [running, setRunning] = useState(false);
   const played = useRef(false);
 
@@ -40,18 +41,18 @@ export function TierBurst({ tier, beat }: { tier: TierCode | null; beat: BeatNam
     window.setTimeout(() => setRunning(false), BURST_MS + 60);
   }, [spec, beat, ready]);
   if (!spec || !running) return null;
-  const foil = FOIL[spec.tier];
   const period = 360 / spec.rays;
-  const fill = spec.prism
-    ? `conic-gradient(from 0deg, ${[...(foil.foil ?? []), foil.foil?.[0] ?? foil.light].join(", ")})`
-    : (foil.beamCol ?? foil.light);
+  const fill =
+    spec.prism && palette.prism
+      ? `conic-gradient(from 0deg, ${[...palette.prism, palette.prism[0]].join(", ")})`
+      : palette.beam;
   const style = {
     "--burst-ms": `${BURST_MS}ms`,
     "--burst-peak": spec.peak,
     "--burst-reach": spec.reach,
     "--burst-period": `${period}deg`,
     "--burst-fill": fill,
-    "--burst-glow": foil.glow,
+    "--burst-glow": palette.glow,
   } as CSSProperties;
   return (
     <div

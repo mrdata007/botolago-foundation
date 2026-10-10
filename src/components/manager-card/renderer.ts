@@ -2,7 +2,15 @@
  * The card renderer interface (plan section 6.3). A card direction (today Éclat) implements it, so
  * the card's design can change without touching the screens.
  */
-import type { BeatName, CardLang, CardProfile, CardStrings, CardTheme, TokenSize } from "./types";
+import type {
+  BeatName,
+  CardLang,
+  CardProfile,
+  CardStrings,
+  CardTheme,
+  TierCode,
+  TokenSize,
+} from "./types";
 
 export interface RenderOptions {
   strings: CardStrings;
@@ -55,6 +63,28 @@ export interface CardImageArt {
   height: number;
   texts: TextRun[];
 }
+/**
+ * The material a tier is drawn in, for the screens that draw a face of the card in DOM (the stage's
+ * back, the tier-up burst): the colours of the direction's own ladder, so no screen holds a palette.
+ */
+export interface CardPalette {
+  /** The dark lacquer and the field above it. */
+  plate: string;
+  deep: string;
+  /** The backlight, and the light of the rim. */
+  glow: string;
+  light: string;
+  /** The small labels, and the tier word. */
+  label: string;
+  word: string;
+  /** The frame's seven stops, light and dark. */
+  metal: readonly string[];
+  /** The floodlight colour. */
+  beam: string;
+  /** The holographic stops (CHAMPION, LEGEND), or null. */
+  prism: readonly string[] | null;
+}
+
 export interface CardRenderer {
   readonly id: string; // "eclat-v1"
   readonly beats: readonly BeatName[];
@@ -71,6 +101,8 @@ export interface CardRenderer {
   image(profile: CardProfile, strings: CardStrings): CardImageArt;
   /** The one-sentence accessible name (also used as the root's aria-label). */
   label(profile: CardProfile, strings: CardStrings): string;
+  /** The material of a tier (`null`: the base card, which has no tier yet). */
+  palette(tier: TierCode | null): CardPalette;
   /** Total length of a beat in ms (0 when unsupported). */
   beatMs(beat: BeatName): number;
   /**

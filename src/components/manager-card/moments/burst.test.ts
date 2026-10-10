@@ -89,6 +89,13 @@ describe("the burst's stylesheet", () => {
     expect(css).not.toMatch(/rotate|translate\(|skew/);
   });
 
+  it("is centred on the card, no wider than the window, and clips its own beams", () => {
+    expect(css).toMatch(/left: 50%;\s*top: 50%;\s*translate: -50% -50%;/);
+    expect(css).toContain("min(210%, 100vw)");
+    expect(css).toMatch(/\.mc-burst \{[^}]*overflow: clip;/);
+    expect(css).not.toMatch(/margin: auto/);
+  });
+
   it("is at rest (invisible) outside the animation", () => {
     expect(css).toMatch(/\.mc-burst__rays,?[\s\S]*?opacity: 0;/);
   });

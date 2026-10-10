@@ -5,6 +5,7 @@ import type { HistoryRowDto } from "@/backend/manager-card/contracts";
 import {
   MINUS,
   deltaArrow,
+  deviceRoundMemory,
   ratingChange,
   shouldPop,
   signedDelta,
@@ -117,5 +118,31 @@ describe("the pop, once per new round on a phone", () => {
 
   it("shows the chip without the pop where storage cannot remember (never replayed on every visit)", () => {
     expect(shouldPop("s:9", memory(null, false))).toBe(false);
+  });
+});
+
+describe("the memory is one key per account", () => {
+  it("keys the round by the account, so a second account on the same phone has its own pop", () => {
+    const store = new Map<string, string>();
+    const real = globalThis.window;
+    (globalThis as { window?: unknown }).window = {
+      localStorage: {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => void store.set(k, v),
+      },
+    };
+    try {
+      const a = deviceRoundMemory("user-a");
+      const b = deviceRoundMemory("user-b");
+      expect(shouldPop("s:9", a)).toBe(true);
+      expect(shouldPop("s:9", a)).toBe(false);
+      expect(shouldPop("s:9", b)).toBe(true);
+      expect([...store.keys()].sort()).toEqual([
+        "botolago.card.rating_badge.v1.user-a",
+        "botolago.card.rating_badge.v1.user-b",
+      ]);
+    } finally {
+      (globalThis as { window?: unknown }).window = real;
+    }
   });
 });

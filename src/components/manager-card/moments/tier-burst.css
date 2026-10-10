@@ -5,11 +5,16 @@
    no-preference block, like the card's own beats. */
 
 .mc-burst {
+  /* centred on the card (a box wider than the card cannot be centred with inset and auto margins:
+     it pins to the start edge), never wider than the window, and clipped to its own box so the
+     beams scaling up cannot reach past it */
   position: absolute;
-  inset: 0;
-  margin: auto;
-  width: 210%;
+  left: 50%;
+  top: 50%;
+  translate: -50% -50%;
+  width: min(210%, 100vw);
   height: 130%;
+  overflow: clip;
   z-index: -1;
   pointer-events: none;
   opacity: 0;

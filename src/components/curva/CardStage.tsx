@@ -8,6 +8,7 @@ import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
 import { ui, UiBadge, UiIconButton } from "@/components/ui-kit";
 import { prefersReducedMotion, tokenMs } from "@/lib/motion";
+import { useMotionAllowed } from "./use-replay-beat";
 import { cn } from "@/lib/utils";
 
 import { CardBack } from "./CardBack";
@@ -109,9 +110,12 @@ export function CardStage({
     setBack(next);
     setAnnounce(next ? motion.flip.shownBack : motion.flip.shownFront);
     // Under reduced motion the faces swap at once: no turn, no 3D context at all.
-    if (!prefersReducedMotion()) setTurning(true);
+    if (motionOk && !prefersReducedMotion()) setTurning(true);
   };
-  const in3d = back || turning;
+  // False on the server, in the first client render and under reduced motion: the faces then swap
+  // by being shown and hidden, with no 3D context and no transform at all.
+  const motionOk = useMotionAllowed();
+  const in3d = motionOk && (back || turning);
 
   return (
     <section
@@ -169,14 +173,17 @@ export function CardStage({
                   "relative transition-transform duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]",
                   in3d && "[transform-style:preserve-3d]",
                 )}
-                style={{ transform: back ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined }}
+                style={{
+                  transform:
+                    motionOk && back ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined,
+                }}
                 onTransitionEnd={(event) => {
                   if (event.target === event.currentTarget) setTurning(false);
                 }}
               >
                 <div
                   data-flip-face="front"
-                  className="[backface-visibility:hidden]"
+                  className={cn("[backface-visibility:hidden]", !motionOk && back && "invisible")}
                   inert={back}
                   aria-hidden={back || undefined}
                 >
@@ -191,8 +198,13 @@ export function CardStage({
                 </div>
                 <div
                   data-flip-face="back"
-                  className="absolute inset-0 [backface-visibility:hidden]"
-                  style={{ transform: "rotateY(calc(var(--vt-dir, 1) * 180deg))" }}
+                  className={cn(
+                    "absolute inset-0 [backface-visibility:hidden]",
+                    !motionOk && !back && "invisible",
+                  )}
+                  style={{
+                    transform: motionOk ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined,
+                  }}
                   inert={!back}
                   aria-hidden={!back || undefined}
                 >
@@ -220,7 +232,11 @@ export function CardStage({
               aria-pressed={back}
               data-testid="curva-flip"
               onClick={flip}
-              className="absolute bottom-1 start-1 z-20 ring-1 ring-white/25"
+              className={cn(
+                "absolute -bottom-3 -start-2 z-20 ring-1 ring-white/25",
+                // a ring that shows on every tier and both themes: white, with a black offset
+                "focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+              )}
             >
               <FlipHorizontal2 aria-hidden />
             </UiIconButton>

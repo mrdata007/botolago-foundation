@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { useAuth } from "@/auth/AuthProvider";
 import type { HistoryRowDto } from "@/backend/manager-card/contracts";
 import { prefersReducedMotion } from "@/lib/motion";
 import { useMyManagerCardHistory } from "@/services/use-manager-card";
 
-import { ratingChange, shouldPop } from "./rating-change";
+import { deviceRoundMemory, ratingChange, shouldPop } from "./rating-change";
 import { useLaunchGate } from "./use-launch-gate";
 
 const NO_ROWS: readonly HistoryRowDto[] = [];
@@ -35,15 +36,17 @@ export function useRatingBadge(input: {
     () => ratingChange({ rows, ovr, newSeason, seasonId }),
     [rows, ovr, newSeason, seasonId],
   );
+  const { user } = useAuth();
+  const scope = user?.id ?? "local";
   const open = useLaunchGate();
   const [decided, setDecided] = useState<{ round: string; pop: boolean } | null>(null);
   const decidedRound = useRef<string | null>(null);
   useEffect(() => {
     if (!open || !change || decidedRound.current === change.round) return;
     decidedRound.current = change.round;
-    const popped = shouldPop(change.round);
+    const popped = shouldPop(change.round, deviceRoundMemory(scope));
     setDecided({ round: change.round, pop: popped && !prefersReducedMotion() });
-  }, [open, change]);
+  }, [open, change, scope]);
   if (!change || !decided || decided.round !== change.round) return null;
   return { delta: change.delta, pop: decided.pop };
 }

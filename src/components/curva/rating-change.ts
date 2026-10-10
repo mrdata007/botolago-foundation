@@ -58,35 +58,39 @@ export interface RoundMemory {
 }
 
 /**
- * The round whose chip popped on this phone (`season:journée`). Read and written inside try/catch
+ * The round whose chip popped on this phone, one key per account (`season:journée`), so a second
+ * account on the same phone still gets its own pop. Read and written inside try/catch
  * like every key of `storage.ts` (which pins its own list of keys, so this one lives here).
  */
 export const RATING_BADGE_KEY = "botolago.card.rating_badge.v1";
 
-export const deviceRoundMemory: RoundMemory = {
-  read: () => {
-    try {
-      return window.localStorage.getItem(RATING_BADGE_KEY);
-    } catch {
-      return null;
-    }
-  },
-  write: (value) => {
-    try {
-      window.localStorage.setItem(RATING_BADGE_KEY, value);
-      return true;
-    } catch {
-      return false;
-    }
-  },
-};
+export function deviceRoundMemory(scope: string): RoundMemory {
+  const key = `${RATING_BADGE_KEY}.${scope}`;
+  return {
+    read: () => {
+      try {
+        return window.localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    },
+    write: (value) => {
+      try {
+        window.localStorage.setItem(key, value);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  };
+}
 
 /**
  * Whether the chip pops now: once per new round on this phone. The round is written down before
  * the pop starts, and a phone that cannot remember (blocked storage) shows the chip without the
  * pop, so it is never replayed on every visit.
  */
-export function shouldPop(round: string, memory: RoundMemory = deviceRoundMemory): boolean {
+export function shouldPop(round: string, memory: RoundMemory): boolean {
   if (memory.read() === round) return false;
   return memory.write(round);
 }

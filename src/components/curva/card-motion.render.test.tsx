@@ -9,6 +9,9 @@ import { I18nProvider } from "@/i18n/provider";
 import { fromMyCard } from "@/components/manager-card/to-profile";
 import { motionCopy } from "@/components/manager-card/motion-copy";
 
+import { eclatRenderer } from "@/components/manager-card/eclat/index";
+import { plainRenderer } from "@/components/manager-card/plain-renderer";
+
 import { CardBack } from "./CardBack";
 import { CardStage, RatingLine } from "./CardStage";
 
@@ -46,6 +49,13 @@ describe("the stage's flip", () => {
     expect(front).not.toContain("aria-hidden");
     expect(back).toContain('inert=""');
     expect(back).toContain('aria-hidden="true"');
+  });
+
+  it("draws the hidden face with no 3D transform before the client knows motion is allowed (and under reduced motion)", () => {
+    const back = html.match(/<div[^>]*data-flip-face="back"[^>]*>/)![0];
+    expect(back).toContain("invisible");
+    expect(back).not.toContain("rotateY");
+    expect(html).not.toContain("rotateY");
   });
 
   it("announces nothing until the card is turned (a live region that starts empty)", () => {
@@ -87,9 +97,28 @@ describe("the back of the card", () => {
     expect(html).toContain(`aria-label="${fr["card_motion.flip.back_label"]}"`);
   });
 
-  it("is in the tier's own colours: the PRO row of the foil ladder, no palette of its own", () => {
-    expect(html).toContain("#1A0407");
-    expect(html).toContain("#6E0F18");
+  it("takes the tier's colours from the renderer's palette: the PRO row of Éclat's ladder, whole", () => {
+    const pro = eclatRenderer.palette("pro");
+    expect(pro.plate).toBe("#1A0407");
+    expect(pro.deep).toBe("#6E0F18");
+    expect(pro.metal).toHaveLength(7);
+    expect(eclatRenderer.palette(null).plate).toBe("#12151B");
+    expect(eclatRenderer.palette("legend").prism).toHaveLength(6);
+    expect(eclatRenderer.palette("pro").prism).toBeNull();
+    expect(plainRenderer.palette("pro").plate).toBeTruthy();
+  });
+
+  it("takes the neutral graphite until the renderer has loaded, never a palette of its own per tier", () => {
+    expect(html).toContain("#12151B");
+    expect(html).not.toContain("#1A0407");
+  });
+
+  it("is built of the front's parts: the cut-cornered outline, the honeycomb, the club disc, the tier chip and the wordmark", () => {
+    expect(html).toContain("clip-path:polygon(");
+    expect(html).toContain("<pattern");
+    expect(html).toContain(">RCA<");
+    expect(html).toContain("BOTOLAGO");
+    expect(html).toContain("ALI");
   });
 
   it("shows a dash, never 0, for a statistic that is not there", () => {
