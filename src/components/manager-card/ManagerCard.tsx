@@ -11,6 +11,7 @@ import { cachedRender, widthBucket } from "./render-cache";
 import { newIdScope, scopeSvgIds } from "./scope-ids";
 import { useCardRenderer, useCardTheme } from "./use-card-renderer";
 import type { BeatName, CardProfile } from "./types";
+import { useCardCrest, withCrest } from "./use-card-crest";
 
 /**
  * The full card, client-only (plan section 6.5). The server and the first client render draw a
@@ -36,7 +37,7 @@ import type { BeatName, CardProfile } from "./types";
  * ms, so a later re-render does not replay it. Drop the prop and pass it again to replay.
  */
 export function ManagerCard({
-  profile,
+  profile: given,
   width,
   beat,
   className,
@@ -57,6 +58,9 @@ export function ManagerCard({
   compact?: boolean;
 }) {
   const strings = useCardStrings();
+  // The club's real crest on the tab's disc, once it has loaded; the initials disc until then.
+  const crest = useCardCrest(given.club, strings.lang);
+  const profile = useMemo(() => withCrest(given, crest), [given, crest]);
   const renderer = useCardRenderer();
   const theme = useCardTheme();
   const [scope] = useState(newIdScope);
