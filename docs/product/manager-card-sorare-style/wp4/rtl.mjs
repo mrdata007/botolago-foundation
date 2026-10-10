@@ -44,10 +44,10 @@ for (const width of [390, 1440])
         reduced: true,
       });
       const page = await ctx.newPage();
-      await go(page, `/gradins/carte?mc=${fixture}`, lang);
+      await go(page, `/curva/carte?mc=${fixture}`, lang);
       await page.waitForTimeout(900);
       read[lang] = await page.evaluate(() => {
-        const stage = document.querySelector('[data-testid="gradins-stage"]');
+        const stage = document.querySelector('[data-testid="curva-stage"]');
         const card = stage.querySelector(".mc-eclat");
         const base = card.querySelector("svg.mc-l--base").getBoundingClientRect();
         const fx = (n) => {

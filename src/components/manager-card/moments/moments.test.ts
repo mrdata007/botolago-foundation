@@ -21,7 +21,7 @@ const fixture = (id: FixtureId): MyCardDto => FIXTURES[id].card!;
 
 function context(card: MyCardDto, over: Partial<PickHeroContext> = {}): PickHeroContext {
   return {
-    surface: "gradins",
+    surface: "curva",
     card,
     minutesToDeadline: 24 * 60,
     heroShownThisSession: false,
@@ -36,7 +36,7 @@ const pick = (id: FixtureId, over: Partial<PickHeroContext> = {}) => {
   return pickHero(card.moments, context(card, over));
 };
 
-describe("each fixture's pending moments, on Gradins", () => {
+describe("each fixture's pending moments, on Curva", () => {
   it("born0: the born panel, new, acknowledging card_created, with the make beat", () => {
     const { hero, lines } = pick("born0");
     expect(hero).toEqual({

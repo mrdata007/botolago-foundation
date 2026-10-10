@@ -12,7 +12,7 @@ import {
   countedA11y,
   countedRounds,
   finalRounds,
-  gradinsCopy,
+  curvaCopy,
   gwList,
   isolateLatin,
   leagues,
@@ -287,8 +287,8 @@ describe("the dictionary of the section", () => {
   const read = (relative: string) => readFileSync(join(ROOT, relative), "utf8");
   const sectionKeys = (Object.keys(dictionaries.fr) as TranslationKey[]).filter(
     (key) =>
-      key === "nav.gradins" ||
-      key.startsWith("gradins.") ||
+      key === "nav.curva" ||
+      key.startsWith("curva.") ||
       key.startsWith("card.") ||
       key === "fantasy.hub.pepites_body" ||
       key === "fantasy.hub.card_view",
@@ -309,9 +309,9 @@ describe("the dictionary of the section", () => {
   });
 
   it("every accessor reads the key its property is named for", () => {
-    const g = gradinsCopy(fr, "fr");
-    expect(g.nav).toBe("Gradins");
-    expect(g.guestHeadline).toBe("Votre place dans les gradins");
+    const g = curvaCopy(fr, "fr");
+    expect(g.nav).toBe("Curva");
+    expect(g.guestHeadline).toBe("Votre place dans la Curva");
     expect(g.guestPointRatingBody).toContain("{final}");
     expect(g.shareCaption).toBe("Ma carte BotolaGO");
     expect(g.hubPepitesBody).toContain("moins de 23 ans");
@@ -369,7 +369,7 @@ describe("the banned words", () => {
     /تحصيل/,
   ];
   const keys = (Object.keys(dictionaries.fr) as TranslationKey[]).filter(
-    (key) => key === "nav.gradins" || key.startsWith("gradins.") || key.startsWith("card."),
+    (key) => key === "nav.curva" || key.startsWith("curva.") || key.startsWith("card."),
   );
 
   it.each(["fr", "ar"] as const)("none in a %s string", (lang) => {

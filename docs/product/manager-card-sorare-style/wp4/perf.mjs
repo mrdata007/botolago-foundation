@@ -9,7 +9,7 @@
  * render  the app's own renderer in a page: `full()` for nine cards and `token()` at eight sizes (two
  *         tiers each), batches of 10 calls (the timer's resolution is 0.1 ms) after 10 warm-up calls,
  *         median and 95th percentile of the batches' per-call time, at CPU x 1 and x 4
- * g1      /gradins on the page, at CPU x 4: `cold` is a fresh context (empty cache: the renderer
+ * g1      /curva on the page, at CPU x 4: `cold` is a fresh context (empty cache: the renderer
  *         chunk and the card's fonts are fetched), `warm` is a second visit in the same context.
  *         Two stopwatches: `dataToReady` starts when the rating line first exists (the data is on
  *         screen) and ends at `data-mc-ready="1"` on a card, as WP6b measured it; `mountToReady`
@@ -123,7 +123,7 @@ if (ONLY.includes("render")) {
       reduced: true,
     });
     const page = await ctx.newPage();
-    await go(page, "/gradins?mc=forming1", "fr");
+    await go(page, "/curva?mc=forming1", "fr");
     await page.waitForTimeout(1500);
     const cdp = await ctx.newCDPSession(page);
     await cdp.send("Emulation.setCPUThrottlingRate", { rate });
@@ -150,7 +150,7 @@ if (ONLY.includes("g1")) {
     const m = (window.__mc = {});
     const look = () => {
       const now = performance.now();
-      const line = document.querySelector('[data-testid="gradins-rating-line"]');
+      const line = document.querySelector('[data-testid="curva-rating-line"]');
       const card = document.querySelector(".mc-card, .mc-eclat");
       if (line && !m.data) m.data = now;
       if (card && !m.mount) m.mount = now;
@@ -168,11 +168,11 @@ if (ONLY.includes("g1")) {
     });
   };
   for (const [path, signedIn, lang] of [
-    ["/gradins?mc=rated", true, "fr"],
-    ["/gradins?mc=rated", true, "ar"],
-    ["/gradins?mc=forming1", true, "fr"],
-    ["/gradins?mc=legend", true, "fr"],
-    ["/gradins", false, "fr"],
+    ["/curva?mc=rated", true, "fr"],
+    ["/curva?mc=rated", true, "ar"],
+    ["/curva?mc=forming1", true, "fr"],
+    ["/curva?mc=legend", true, "fr"],
+    ["/curva", false, "fr"],
   ]) {
     const rows = [];
     for (let i = 0; i < RUNS; i++) {

@@ -38,7 +38,7 @@ import { track } from "@/lib/analytics";
 // Live: while this prompt is on screen the card's heroes and born panel stay shut. A chunk of its
 // own, requested only while the section is live.
 const MomentBlock = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.MomentBlock,
   })),
 );
@@ -145,7 +145,7 @@ export function FantasyImportPrompt() {
     if (res.ok) {
       // Live: a team now exists, so the card is read fresh. Never awaited, never on the way on.
       if (cardLive) {
-        void import("@/components/manager-card/inline/gradins-inline")
+        void import("@/components/manager-card/inline/curva-inline")
           .then((module) => module.invalidateMyManagerCard(qc))
           .catch(() => {});
       }

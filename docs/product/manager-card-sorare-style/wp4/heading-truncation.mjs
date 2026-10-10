@@ -1,5 +1,5 @@
 /**
- * Finding 1 of the index: which headings on G1 (`/gradins?mc=rated`) are cut by an ellipsis at 768, 1024, 1280 and
+ * Finding 1 of the index: which headings on G1 (`/curva?mc=rated`) are cut by an ellipsis at 768, 1024, 1280 and
  * 1440 px, in French and Arabic (`heading.scrollWidth > heading.clientWidth`). The result of the run that was made is
  * `results/heading-truncation.txt`.
  *
@@ -11,7 +11,7 @@ for (const lang of ["fr", "ar"])
   for (const width of [768, 1024, 1280, 1440]) {
     const ctx = await ctxFor(b, { lang, width, height: 900, dpr: 1, reduced: true });
     const page = await ctx.newPage();
-    await go(page, "/gradins?mc=rated", lang, { ready: false });
+    await go(page, "/curva?mc=rated", lang, { ready: false });
     await page.waitForTimeout(1500);
     const r = await page.evaluate(() => {
       const out = [];

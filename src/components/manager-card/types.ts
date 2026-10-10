@@ -1,5 +1,5 @@
 /**
- * Render-facing types for the Manager Card (Gradins). Verbatim from
+ * Render-facing types for the Manager Card (Curva). Verbatim from
  * docs/product/MANAGER_CARD_SECTION_PLAN.md section 6.2. Every field may be empty;
  * empty draws as the object's own empty part (never 0, never a lock).
  */

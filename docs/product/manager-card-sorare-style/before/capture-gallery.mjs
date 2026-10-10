@@ -3,7 +3,7 @@
  * the before counterpart of the after set's gallery (brief: "a gallery of every fixture x tier x
  * theme x language at full, 80, 64, 56, 44, 32, 28 and 24 px").
  *
- * There is no gallery route in the app. This script opens a real Gradins page of the dev server (so
+ * There is no gallery route in the app. This script opens a real Curva page of the dev server (so
  * the fonts, the stylesheet and the renderer chunk are the app's own), imports the app's own modules
  * in the page (`active-renderer`, `copy.cardStrings`, `scope-ids`, the fixtures and `to-profile`) and
  * lays out what `ManagerCard` and `CardToken` would insert for each profile, with the same wrappers
@@ -207,7 +207,7 @@ for (const lang of ["fr", "ar"]) {
         problems.push(`pageerror: ${String(error.message).slice(0, 200)}`),
       );
       await page.clock.setFixedTime(FIXED_TIME);
-      await page.goto(`${BASE}/gradins?mc=forming1`, { waitUntil: "load" });
+      await page.goto(`${BASE}/curva?mc=forming1`, { waitUntil: "load" });
       await page.waitForSelector(`html[data-lang="${lang}"]`, { timeout: 20000 });
       await page.waitForSelector('[data-mc-ready="1"]', { timeout: 25000 });
       await page.waitForTimeout(1200);

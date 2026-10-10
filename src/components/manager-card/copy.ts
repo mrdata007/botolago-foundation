@@ -13,10 +13,10 @@ import type { CardProfile, CardStrings, StatCode } from "./types";
  * call of the translate function, and nowhere else builds a key name: that is what keeps the i18n gate's counts
  * exact (no unreferenced key, no computed call). A screen asks for a group and reads a property:
  *
- *   const copy = useGradinsCopy();
+ *   const copy = useCurvaCopy();
  *   <h2>{copy.statsTitle}</h2>
  *
- * Property names are the key without its prefix, camel-cased (`gradins.guest.point.name.title`
+ * Property names are the key without its prefix, camel-cased (`curva.guest.point.name.title`
  * is `guestPointNameTitle`). A value that still holds `{placeholders}` is a template: fill it
  * with `fill` / `fillText` (`./interpolate`), never with `String.replace`, so numbers in Arabic
  * stay isolated.
@@ -106,14 +106,14 @@ export function countedRounds(n: number, lang: Language, t: Translate): string {
   const category = pluralCategory(n, lang, true);
   const template =
     category === "zero"
-      ? t("gradins.seasons.counted_zero")
+      ? t("curva.seasons.counted_zero")
       : category === "one"
-        ? t("gradins.seasons.counted_one")
+        ? t("curva.seasons.counted_one")
         : category === "two"
-          ? t("gradins.seasons.counted_two")
+          ? t("curva.seasons.counted_two")
           : category === "few"
-            ? t("gradins.seasons.counted_few")
-            : t("gradins.seasons.counted_other");
+            ? t("curva.seasons.counted_few")
+            : t("curva.seasons.counted_other");
   return fillText(template, { n });
 }
 
@@ -122,12 +122,12 @@ export function leagues(n: number, lang: Language, t: Translate): string {
   const category = pluralCategory(n, lang);
   const template =
     category === "one"
-      ? t("gradins.leagues_one")
+      ? t("curva.leagues_one")
       : category === "two"
-        ? t("gradins.leagues_two")
+        ? t("curva.leagues_two")
         : category === "few"
-          ? t("gradins.leagues_few")
-          : t("gradins.leagues_other");
+          ? t("curva.leagues_few")
+          : t("curva.leagues_other");
   return fillText(template, { n });
 }
 
@@ -171,82 +171,82 @@ export function statReasonText(
 /* The groups                                                                                   */
 /* ------------------------------------------------------------------------------------------ */
 
-/** The section's own words: heads, Gradins screens G1 to G6, the share sheet, two hub lines. */
-export function gradinsCopy(t: Translate, lang: Language) {
+/** The section's own words: heads, Curva screens G1 to G6, the share sheet, two hub lines. */
+export function curvaCopy(t: Translate, lang: Language) {
   return {
-    nav: t("nav.gradins"),
-    metaHome: t("gradins.meta.home"),
-    metaCard: t("gradins.meta.card"),
-    metaPeople: t("gradins.meta.people"),
-    metaSeasons: t("gradins.meta.seasons"),
-    metaDescription: t("gradins.meta.description"),
-    unavailable: t("gradins.unavailable"),
-    badgeNew: t("gradins.badge_new"),
-    guestHeadline: t("gradins.guest.headline"),
-    guestBody: t("gradins.guest.body"),
-    guestSignIn: t("gradins.guest.sign_in"),
-    guestTryTitle: t("gradins.guest.try_title"),
-    guestTryHint: t("gradins.guest.try_hint"),
-    guestPointNameTitle: t("gradins.guest.point.name.title"),
-    guestPointNameBody: t("gradins.guest.point.name.body"),
-    guestPointClubTitle: t("gradins.guest.point.club.title"),
-    guestPointClubBody: t("gradins.guest.point.club.body"),
-    guestPointRatingTitle: t("gradins.guest.point.rating.title"),
-    guestPointRatingBody: t("gradins.guest.point.rating.body"),
-    guestPointPeopleTitle: t("gradins.guest.point.people.title"),
-    guestPointPeopleBody: t("gradins.guest.point.people.body"),
-    guestFree: t("gradins.guest.free"),
-    noteamHeadline: t("gradins.noteam.headline"),
-    identitySince: t("gradins.identity.since"),
-    roundTitle: t("gradins.round.title"),
-    roundLine: t("gradins.round.line"),
-    roundRecalc: t("gradins.round.recalc"),
-    statsTitle: t("gradins.stats.title"),
-    peopleTitle: t("gradins.people.title"),
-    peopleViewLeague: t("gradins.people.view_league"),
-    peopleYou: t("gradins.people.you"),
-    peopleEmpty: t("gradins.people.empty"),
-    peopleAlone: t("gradins.people.alone"),
-    peopleCardsFailed: t("gradins.people.cards_failed"),
-    peopleSameClub: t("gradins.people.same_club"),
-    peopleCompare: t("gradins.people.compare"),
-    clubTitle: t("gradins.club.title"),
-    clubMatesOne: t("gradins.club.mates_one"),
-    clubMatesOther: t("gradins.club.mates_other"),
-    clubNextMatch: t("gradins.club.next_match"),
-    clubNone: t("gradins.club.none"),
-    clubChoose: t("gradins.club.choose"),
-    seasonsTitle: t("gradins.seasons.title"),
-    revoirTitle: t("gradins.revoir.title"),
-    seasonsSeason: t("gradins.seasons.season"),
-    seasonClosedLabel: t("gradins.season.closed_label"),
-    cardTitle: t("gradins.card.title"),
-    cardWhere: t("gradins.card.where"),
-    cardIntro: t("gradins.card.intro"),
-    cardIntroForming: t("gradins.card.intro_forming"),
-    cardTier: t("gradins.card.tier"),
-    cardTierNow: t("gradins.card.tier_now"),
-    cardTierBest: t("gradins.card.tier_best"),
-    cardTierNone: t("gradins.card.tier_none"),
-    cardTierExplain: t("gradins.card.tier_explain"),
-    cardSerial: t("gradins.card.serial"),
-    h2hTitle: t("gradins.h2h.title"),
-    seasonsFirstRating: t("gradins.seasons.first_rating"),
-    seasonsColRound: t("gradins.seasons.col_round"),
-    seasonsColRating: t("gradins.seasons.col_rating"),
-    seasonsColTier: t("gradins.seasons.col_tier"),
-    seasonsMore: t("gradins.seasons.more"),
-    seasonsEmpty: t("gradins.seasons.empty"),
-    seasonsError: t("gradins.seasons.error"),
-    shareLabel: t("gradins.share.label"),
-    shareCaption: t("gradins.share.caption"),
+    nav: t("nav.curva"),
+    metaHome: t("curva.meta.home"),
+    metaCard: t("curva.meta.card"),
+    metaPeople: t("curva.meta.people"),
+    metaSeasons: t("curva.meta.seasons"),
+    metaDescription: t("curva.meta.description"),
+    unavailable: t("curva.unavailable"),
+    badgeNew: t("curva.badge_new"),
+    guestHeadline: t("curva.guest.headline"),
+    guestBody: t("curva.guest.body"),
+    guestSignIn: t("curva.guest.sign_in"),
+    guestTryTitle: t("curva.guest.try_title"),
+    guestTryHint: t("curva.guest.try_hint"),
+    guestPointNameTitle: t("curva.guest.point.name.title"),
+    guestPointNameBody: t("curva.guest.point.name.body"),
+    guestPointClubTitle: t("curva.guest.point.club.title"),
+    guestPointClubBody: t("curva.guest.point.club.body"),
+    guestPointRatingTitle: t("curva.guest.point.rating.title"),
+    guestPointRatingBody: t("curva.guest.point.rating.body"),
+    guestPointPeopleTitle: t("curva.guest.point.people.title"),
+    guestPointPeopleBody: t("curva.guest.point.people.body"),
+    guestFree: t("curva.guest.free"),
+    noteamHeadline: t("curva.noteam.headline"),
+    identitySince: t("curva.identity.since"),
+    roundTitle: t("curva.round.title"),
+    roundLine: t("curva.round.line"),
+    roundRecalc: t("curva.round.recalc"),
+    statsTitle: t("curva.stats.title"),
+    peopleTitle: t("curva.people.title"),
+    peopleViewLeague: t("curva.people.view_league"),
+    peopleYou: t("curva.people.you"),
+    peopleEmpty: t("curva.people.empty"),
+    peopleAlone: t("curva.people.alone"),
+    peopleCardsFailed: t("curva.people.cards_failed"),
+    peopleSameClub: t("curva.people.same_club"),
+    peopleCompare: t("curva.people.compare"),
+    clubTitle: t("curva.club.title"),
+    clubMatesOne: t("curva.club.mates_one"),
+    clubMatesOther: t("curva.club.mates_other"),
+    clubNextMatch: t("curva.club.next_match"),
+    clubNone: t("curva.club.none"),
+    clubChoose: t("curva.club.choose"),
+    seasonsTitle: t("curva.seasons.title"),
+    revoirTitle: t("curva.revoir.title"),
+    seasonsSeason: t("curva.seasons.season"),
+    seasonClosedLabel: t("curva.season.closed_label"),
+    cardTitle: t("curva.card.title"),
+    cardWhere: t("curva.card.where"),
+    cardIntro: t("curva.card.intro"),
+    cardIntroForming: t("curva.card.intro_forming"),
+    cardTier: t("curva.card.tier"),
+    cardTierNow: t("curva.card.tier_now"),
+    cardTierBest: t("curva.card.tier_best"),
+    cardTierNone: t("curva.card.tier_none"),
+    cardTierExplain: t("curva.card.tier_explain"),
+    cardSerial: t("curva.card.serial"),
+    h2hTitle: t("curva.h2h.title"),
+    seasonsFirstRating: t("curva.seasons.first_rating"),
+    seasonsColRound: t("curva.seasons.col_round"),
+    seasonsColRating: t("curva.seasons.col_rating"),
+    seasonsColTier: t("curva.seasons.col_tier"),
+    seasonsMore: t("curva.seasons.more"),
+    seasonsEmpty: t("curva.seasons.empty"),
+    seasonsError: t("curva.seasons.error"),
+    shareLabel: t("curva.share.label"),
+    shareCaption: t("curva.share.caption"),
     hubPepitesBody: t("fantasy.hub.pepites_body"),
     hubCardView: t("fantasy.hub.card_view"),
     leagues: (n: number) => leagues(n, lang, t),
     countedRounds: (n: number) => countedRounds(n, lang, t),
   };
 }
-export type GradinsCopy = ReturnType<typeof gradinsCopy>;
+export type CurvaCopy = ReturnType<typeof curvaCopy>;
 
 /** The card's words: unit, serial format, provisional pill, stat and tier names, reasons, plurals. */
 export function cardCopy(t: Translate, lang: Language) {
@@ -393,9 +393,9 @@ export function momentCopy(t: Translate) {
 }
 export type MomentCopy = ReturnType<typeof momentCopy>;
 
-export function useGradinsCopy(): GradinsCopy {
+export function useCurvaCopy(): CurvaCopy {
   const { t, lang } = useI18n();
-  return useMemo(() => gradinsCopy(t, lang), [t, lang]);
+  return useMemo(() => curvaCopy(t, lang), [t, lang]);
 }
 export function useCardCopy(): CardCopy {
   const { t, lang } = useI18n();

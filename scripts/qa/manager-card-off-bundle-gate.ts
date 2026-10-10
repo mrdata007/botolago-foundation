@@ -5,11 +5,11 @@
  * files the ordinary pages load.
  *
  * A bundler puts code shared by several pages in a shared chunk, and a page imports every chunk it
- * shares code with. So one stray static import of a Gradins module from the shell, or from a
+ * shares code with. So one stray static import of a Curva module from the shell, or from a
  * Fantasy or Pépites screen, makes every visit to that page fetch the Manager Card's code, switch
  * or no switch. This reads the built client chunks, follows the STATIC imports of each (dynamic
  * `import()` is a deliberate lazy edge and is not followed), and fails when a chunk that is not
- * part of Gradins reaches a chunk holding the Manager Card's RPC names.
+ * part of Curva reaches a chunk holding the Manager Card's RPC names.
  *
  *   bun run build && bun scripts/qa/manager-card-off-bundle-gate.ts [assetsDir]
  *
@@ -39,10 +39,10 @@ export const DATA_LAYER_MARKERS = [
 ] as const;
 
 /**
- * Chunks allowed to hold or reach the section's code: Gradins' own pages (`gradins.*`), and the
+ * Chunks allowed to hold or reach the section's code: Curva' own pages (`curva.*`), and the
  * server's status read, which the status module loads by a dynamic import on the server only.
  */
-export const ALLOWED_CHUNK = /^(gradins[.-]|manager-card-status-server-)/;
+export const ALLOWED_CHUNK = /^(curva[.-]|manager-card-status-server-)/;
 
 const STATIC_IMPORT =
   /(?<![\w.$])(?:import|export)(?:\s*(?:\{[^}]*\}|\*\s*as\s+[\w$]+|[\w$]+(?:\s*,\s*\{[^}]*\})?))?\s*(?:from\s*)?["']\.\/([^"']+\.js)["']/g;
@@ -76,7 +76,7 @@ export function findViolations(
     }
     return null;
   };
-  // Code shared only between the section's own chunks (a Gradins page and a lazily loaded card
+  // Code shared only between the section's own chunks (a Curva page and a lazily loaded card
   // component) is cut into a chunk the bundler names after one of its modules, not after the
   // section. Such a chunk is the section's too: every chunk that imports it statically is.
   const importers = new Map<string, Set<string>>();

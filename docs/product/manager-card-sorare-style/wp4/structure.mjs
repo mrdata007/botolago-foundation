@@ -241,7 +241,7 @@ const ctx = await ctxFor(browser, {
   reduced: true,
 });
 const page = await ctx.newPage();
-await go(page, "/gradins?mc=forming1", "fr");
+await go(page, "/curva?mc=forming1", "fr");
 await page.waitForTimeout(800);
 
 for (const lang of ["fr", "ar"])

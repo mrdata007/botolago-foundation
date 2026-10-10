@@ -12,7 +12,7 @@ import type { CardLang, CardProfile } from "./types";
  * inside `load`. `estimateAspect` is the cheap height ÷ width the box reserves before the
  * renderer has loaded.
  *
- * Today this is Éclat (`./eclat`, entered through `gradins-renderer.ts`, whose name is the chunk's).
+ * Today this is Éclat (`./eclat`, entered through `curva-renderer.ts`, whose name is the chunk's).
  * `load` waits for the faces the card measures and prints (within a second and a half) before it
  * hands the renderer over, so the first card is drawn with the right faces. `estimateAspect` is
  * Éclat's own `estimate.ts`, the one module of the folder that is in the main bundle: it imports
@@ -30,7 +30,7 @@ export interface ActiveRenderer {
 export const activeRenderer: ActiveRenderer = {
   id: "eclat-v1",
   load: async () => {
-    const module = await import("./eclat/gradins-renderer");
+    const module = await import("./eclat/curva-renderer");
     await module.ready();
     return module.eclatRenderer;
   },

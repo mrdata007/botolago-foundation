@@ -25,7 +25,7 @@ nothing here carries a third party's name, mark or artwork.
 | File                                                      | What                                                                                                                                                          |
 | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `index.ts`                                                | `eclatRenderer`, `ready()`, `mountTilt`, `estimateAspect`. Imports `eclat.css`.                                                                               |
-| `gradins-renderer.ts`                                     | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`gradins-*`).                                        |
+| `curva-renderer.ts`                                     | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`curva-*`).                                        |
 | `estimate.ts`                                             | `estimateAspect()` = 1.618, `ASPECT`. The only module meant for the main bundle: it imports nothing but a type.                                               |
 | `geometry.ts`                                             | Every coordinate: outline, shield window, tab, shirt, chest box, tokens, honeycomb helpers, mirror helpers. Pure numbers and strings.                         |
 | `foil.ts`                                                 | The six-step ladder (plan 5.4), the tier word (LASTREET), colour helpers over `src/lib/colour.ts`, the shirt's colours and the number's fill and twill.       |
@@ -117,7 +117,7 @@ The lowest tier (key `homa`) is displayed LASTREET in French and in Arabic (a La
 right and tracked in both: the tracking is an inline `style` on the `<text>` (`text.ts`,
 `trackingStyle`), because the app's `html[dir="rtl"] * { letter-spacing: normal }` outranks a
 presentation attribute and would strip LASTREET, « OVR », the serial and the wordmark of their
-tracking in the Arabic interface; `tests/e2e/gradins.e2e.ts` reads the computed value under the
+tracking in the Arabic interface; `tests/e2e/curva.e2e.ts` reads the computed value under the
 app's stylesheet). The renderer owns the word (`foil.ts`, `tierWord`, and `withTierNames` for
 the label), so a card and its label say LASTREET whatever a dictionary holds. The dictionaries say
 LASTREET too now (the key is still `homa`), and the screens set the word in an isolated left-to-right
@@ -146,7 +146,7 @@ run in Arabic (`../tier-word.tsx`).
 
 ## In the app
 
-- **The stage** (`gradins/CardStage.tsx`, plan 10): the card is 296 px wide on a phone (never closer
+- **The stage** (`curva/CardStage.tsx`, plan 10): the card is 296 px wide on a phone (never closer
   than 16 px to an edge) and 336 px from 768 px, centred, in a stage with 8 px each side and 18 px
   under the card for the tilt and the shadow it casts. Every card is 1 : 1.618, so the box reserved
   before the chunk loads (`estimate.ts`) is the box the card fills. An ellipse under the reserved box
@@ -155,7 +155,7 @@ run in Arabic (`../tier-word.tsx`).
   the card at 296 px.
 - **The share picture** (`moments/card-share-image.ts`): `image()`'s art and runs, drawn with the
   card's faces; LASTREET is left to right and tracked in both languages.
-- **Tests**: `tests/e2e/gradins.e2e.ts` has the depth spec (flat at rest, `preserve-3d` and a number
+- **Tests**: `tests/e2e/curva.e2e.ts` has the depth spec (flat at rest, `preserve-3d` and a number
   layer with height under a mouse, the number still what a click at its centre lands on, flat again
   after the pointer leaves) and the reduced-motion spec (no light written, no 3D, no animation).
 
@@ -201,14 +201,14 @@ incumbent card (Écharpe, `main`) against this branch:
 
 | Page                                     | Incumbent, cold / warm | This branch, cold / warm |
 | ---------------------------------------- | ---------------------- | ------------------------ |
-| `/gradins?mc=rated`, French              | 832 / 509              | 596 / 498                |
-| `/gradins?mc=rated`, Arabic              | 846 / 537              | 625 / 560                |
-| `/gradins?mc=forming1`, French           | 836 / 483              | 508 / 469                |
-| `/gradins?mc=legend`, French             | 850 / 502              | 524 / 503                |
-| `/gradins`, guest, French (box to ready) | 661 / 484              | 772 / 628                |
+| `/curva?mc=rated`, French              | 832 / 509              | 596 / 498                |
+| `/curva?mc=rated`, Arabic              | 846 / 537              | 625 / 560                |
+| `/curva?mc=forming1`, French           | 836 / 483              | 508 / 469                |
+| `/curva?mc=legend`, French             | 850 / 502              | 524 / 503                |
+| `/curva`, guest, French (box to ready) | 661 / 484              | 772 / 628                |
 
 The signed-in pages are 26 to 39 % faster cold than the incumbent's and level warm (the likely reason is
-the head start of `preloadCardRenderer()` in the `/gradins` layout: the chunk and the faces load
+the head start of `preloadCardRenderer()` in the `/curva` layout: the chunk and the faces load
 while the data is on its way, which the incumbent's card does not do). None is under 400 ms here, and the renderer is not why. A sampling profile of the
 interval on this branch (250 us samples, cold, 444 to 548 ms) puts 0 ms of self time in this
 folder and 14 to 24 ms in `manager-card/`; the time is React's development build rendering the page
@@ -227,7 +227,7 @@ changed) and served by `tests/e2e/built-output-serve.ts`, the Worker module the 
 signed-in page needs the mock sign-in, which a production bundle refuses, so **G1 as defined (data to
 ready on a signed-in page) has no production figure**; the guest page is the one the build can show.
 
-| Guest `/gradins`, production build, CPU x4, 7 runs | Incumbent                         | This branch                       |
+| Guest `/curva`, production build, CPU x4, 7 runs | Incumbent                         | This branch                       |
 | -------------------------------------------------- | --------------------------------- | --------------------------------- |
 | Cold, card's box to `data-mc-ready`                | 313 (217 to 361)                  | 308 (275 to 403)                  |
 | Warm                                               | 135 (118 to 163)                  | 137 (98 to 146)                   |

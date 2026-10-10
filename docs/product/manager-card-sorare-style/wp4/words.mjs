@@ -1,7 +1,7 @@
 /**
  * Brief, "No user-visible « HOMA » or «حومة» anywhere": the rendered text (every text node, SVG
  * `<text>` included) and the words a screen reader gets (`aria-label`, `title`, `alt`) of every
- * Gradins and Fantasy screen that shows the card, in French and Arabic, searched for HOMA (any case,
+ * Curva and Fantasy screen that shows the card, in French and Arabic, searched for HOMA (any case,
  * as a word) and حومة; and the LASTREET found where the lowest tier is shown, set as a Latin run
  * isolated in Arabic. The internal key `homa` (a data attribute or a class) is not user-visible and is
  * not searched. The share picture's text runs are covered by `card-share-image.draw.test.ts`.
@@ -17,23 +17,23 @@ const OUT = process.argv
   .find((a) => a.startsWith("--out="))
   ?.slice(6);
 const ROUTES = [
-  "/gradins?mc=homa",
-  "/gradins?mc=rated",
-  "/gradins?mc=forming1",
-  "/gradins?mc=tierUp",
-  "/gradins?mc=tierDown",
-  "/gradins?mc=legend",
-  "/gradins?mc=founder",
-  "/gradins?mc=seasonClosed",
-  "/gradins?mc=returning",
-  "/gradins/carte?mc=homa",
-  "/gradins/carte?mc=rated",
-  "/gradins/carte?mc=tierDown",
-  "/gradins/carte?mc=founder",
-  "/gradins/les-votres?mc=homa",
-  "/gradins/les-votres?mc=rated",
-  "/gradins/saisons?mc=homa",
-  "/gradins/saisons?mc=rated",
+  "/curva?mc=homa",
+  "/curva?mc=rated",
+  "/curva?mc=forming1",
+  "/curva?mc=tierUp",
+  "/curva?mc=tierDown",
+  "/curva?mc=legend",
+  "/curva?mc=founder",
+  "/curva?mc=seasonClosed",
+  "/curva?mc=returning",
+  "/curva/carte?mc=homa",
+  "/curva/carte?mc=rated",
+  "/curva/carte?mc=tierDown",
+  "/curva/carte?mc=founder",
+  "/curva/les-votres?mc=homa",
+  "/curva/les-votres?mc=rated",
+  "/curva/saisons?mc=homa",
+  "/curva/saisons?mc=rated",
   "/fantasy?mc=homa",
   "/fantasy?mc=rated",
   "/fantasy/team?mc=homa",

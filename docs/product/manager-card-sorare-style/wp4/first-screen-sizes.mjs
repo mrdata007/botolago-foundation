@@ -1,6 +1,6 @@
 /**
  * G1's first screen across phone sizes (round 2): the card's width and how far the next-round line
- * (`gradins-glance`) ends above the top of the bottom bar (negative = under it), the owner stage in French
+ * (`curva-glance`) ends above the top of the bottom bar (negative = under it), the owner stage in French
  * and Arabic, and the page's `scrollWidth` (which must equal the viewport). The card on G1 follows the
  * phone's height, 232 to 296 px (plan D16 round 2); below about 730 px of height the line cannot clear the
  * bar with a card that is still legible.
@@ -37,17 +37,15 @@ for (const lang of ["fr", "ar"]) {
   for (const [width, height] of SIZES) {
     const ctx = await ctxFor(b, { lang, width, height, dpr: 1, reduced: true });
     const page = await ctx.newPage();
-    await go(page, "/gradins?mc=rated", lang, { ready: false });
+    await go(page, "/curva?mc=rated", lang, { ready: false });
     await page.waitForTimeout(900);
     const r = await page.evaluate(() => {
       const bar = [...document.querySelectorAll("nav")]
         .map((n) => n.getBoundingClientRect())
         .filter((box) => box.width > 200 && box.bottom >= innerHeight - 2)
         .sort((a, c) => c.top - a.top)[0];
-      const glance = document
-        .querySelector('[data-testid="gradins-glance"]')
-        .getBoundingClientRect();
-      const stage = document.querySelector('[data-testid="gradins-stage"]').getBoundingClientRect();
+      const glance = document.querySelector('[data-testid="curva-glance"]').getBoundingClientRect();
+      const stage = document.querySelector('[data-testid="curva-stage"]').getBoundingClientRect();
       return {
         card: stage.width,
         margin: bar.top - glance.bottom,

@@ -1,6 +1,6 @@
 /**
  * The gallery of the brief ("every fixture x tier x theme x language at full, 80, 64, 56, 44, 32,
- * 28 and 24 px, captured once"), drawn by the app's own renderer in a real Gradins page of the
+ * 28 and 24 px, captured once"), drawn by the app's own renderer in a real Curva page of the
  * development server (its fonts, its stylesheet, its renderer chunk), laid out the way
  * `ManagerCard` and `CardToken` insert them (`.mc-card`, `.mc-token`, the same id scoping). No app
  * source is changed and nothing is mounted: the cards are at rest, flat and crisp.
@@ -243,7 +243,7 @@ for (const lang of ["fr", "ar"])
       });
       const page = await ctx.newPage();
       const problems = watch(page);
-      await go(page, "/gradins?mc=forming1", lang);
+      await go(page, "/curva?mc=forming1", lang);
       await page.waitForTimeout(1200);
       for (const kind of kinds) {
         const probe = await page.evaluate(build, { lang, theme, kind });

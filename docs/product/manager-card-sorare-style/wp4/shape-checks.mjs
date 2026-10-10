@@ -45,7 +45,7 @@ const ctx = await ctxFor(browser, {
   reduced: true,
 });
 const page = await ctx.newPage();
-await go(page, "/gradins?mc=forming1", "fr");
+await go(page, "/curva?mc=forming1", "fr");
 const geo = await page.evaluate(async () => {
   const g = await import("/src/components/manager-card/eclat/geometry.ts");
   const ns = "http://www.w3.org/2000/svg";

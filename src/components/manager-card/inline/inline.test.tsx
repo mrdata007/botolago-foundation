@@ -291,7 +291,7 @@ describe("HubCardBlockView", () => {
   it("shows the counter, the forming label and the next round while the card forms", async () => {
     const html = await render(<HubCardBlockView card={card("forming1")} gameweek={GAMEWEEK} />);
     const plain = text(html);
-    expect(html).toContain('href="/gradins"');
+    expect(html).toContain('href="/curva"');
     expect(html).toContain('data-testid="hub-card-block"');
     expect(plain).toContain("1/3");
     expect(plain).toContain("Carte en formation");
@@ -374,7 +374,7 @@ describe("RankCardTokenView", () => {
   it("shows « k/n » while forming and the number with OVR once rated, and is named for what it is", async () => {
     const forming = await render(<RankCardTokenView card={card("forming1")} />);
     expect(text(forming)).toContain("1/3");
-    expect(forming).toContain('href="/gradins"');
+    expect(forming).toContain('href="/curva"');
     expect(forming).toMatch(/aria-label="Carte de manager, [^"]*pas encore de note/);
     expect(forming).toContain("Voir votre carte");
     const rated = text(await render(<RankCardTokenView card={card("rated")} />));
@@ -505,7 +505,7 @@ describe("the league band, minis and compare link", () => {
     const html = await render(
       <LeagueCompareLink leagueId="3c000000-0000-4000-8000-000000000001" />,
     );
-    expect(html).toContain('href="/gradins/les-votres?ligue=3c000000-0000-4000-8000-000000000001"');
+    expect(html).toContain('href="/curva/les-votres?ligue=3c000000-0000-4000-8000-000000000001"');
     expect(text(html)).toContain("Comparer les cartes de la ligue");
     expect(html).toContain("min-h-11");
     expect(html).not.toContain("bg-[color:var(--ui-surface-sunken)]");
@@ -672,7 +672,7 @@ describe("what the inline surfaces say and how they are written", () => {
       const staticImports = [...source.matchAll(/^import[^;]*?from\s+["']([^"']+)["'];?$/gms)].map(
         (m) => m[1]!,
       );
-      const cardImports = staticImports.filter((from) => /manager-card|gradins/.test(from));
+      const cardImports = staticImports.filter((from) => /manager-card|curva/.test(from));
       for (const from of cardImports) expect(from, path).toBe("@/services/manager-card-status");
       // And the one name taken from it is the live hook.
       const statusImport = /import\s*\{([^}]*)\}\s*from\s*"@\/services\/manager-card-status"/.exec(

@@ -52,10 +52,10 @@ for (const [name, base] of [
     );
   });
   const page = await ctx.newPage();
-  await page.goto(base + "/gradins?mc=forming1");
+  await page.goto(base + "/curva?mc=forming1");
   await page.waitForTimeout(3500);
   const info = await page.evaluate(() => {
-    const p = document.querySelector('[data-testid="gradins-rating-line"]');
+    const p = document.querySelector('[data-testid="curva-rating-line"]');
     const dot = [...p.querySelectorAll(":scope > span")].find((s) => s.textContent.trim() === "·");
     const r = dot.getBoundingClientRect();
     const cs = getComputedStyle(dot);

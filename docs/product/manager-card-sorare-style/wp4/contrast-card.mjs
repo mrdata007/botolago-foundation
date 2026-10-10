@@ -8,7 +8,7 @@
  *     [--fx=rated,legend,...] [--langs=fr,ar] [--themes=light,dark] [--widths=390,1440]
  *     [--kinds=number,name,...] [--poses=rest,pointer] [--jobs=2] [--out=<file.json>]
  *
- * The card is the one on the card page (`/gradins/carte?mc=<fixture>`): 296 CSS px wide at a 390
+ * The card is the one on the card page (`/curva/carte?mc=<fixture>`): 296 CSS px wide at a 390
  * viewport, 336 from 768. Pictures are taken at 3 device pixels per CSS pixel. Floors (brief):
  *   number     fill against the bare shirt under it            3.0
  *   ovrLabel   « OVR » against its halo                        4.5
@@ -237,9 +237,9 @@ async function one({ browser, fx, lang, theme, width }) {
   const rows = [];
   try {
     // no fixed clock: the tilt eases with `Date.now()`, and a frozen clock would leave it flat under the pointer
-    await go(page, `/gradins/carte?mc=${fx}`, lang, { clock: false });
+    await go(page, `/curva/carte?mc=${fx}`, lang, { clock: false });
     await page.waitForTimeout(1800);
-    const stage = page.locator('[data-testid="gradins-stage"]');
+    const stage = page.locator('[data-testid="curva-stage"]');
     await stage.scrollIntoViewIfNeeded();
     await page.mouse.move(1, 1);
     const root = stage.locator(".mc-eclat").first();

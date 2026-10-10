@@ -5,7 +5,7 @@ import { pickHero, stateLines } from "./moments";
 /**
  * What the moment gate remembers for as long as the page lives (plan 5.3): the one hero a surface
  * decided to show and the one-line states it showed. It is a small external store, outside React,
- * so that every component that asks the gate for the same surface (Gradins' page, its hero, its
+ * so that every component that asks the gate for the same surface (Curva' page, its hero, its
  * lines, the born panel) reads one answer.
  *
  * Why it remembers. A hero is decided once. Acknowledging it removes its moments from the card,
@@ -18,7 +18,7 @@ import { pickHero, stateLines } from "./moments";
  *
  * Nothing here touches the DOM, React or the network. The session flag is injected.
  */
-export type GateSurface = "gradins" | "team";
+export type GateSurface = "curva" | "team";
 
 export interface GateSession {
   heroShown(): boolean;

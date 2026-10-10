@@ -20,7 +20,7 @@
  * final URL, console errors, failed requests, and whether a card was drawn and by which renderer.
  *
  * What this reuses: the seeding and the Fantasy scenes of `manager-card-section/wp5/capture.mjs`,
- * the Gradins scenes of `manager-card-section/wp6b/capture.mjs`, and the share-picture extraction
+ * the Curva scenes of `manager-card-section/wp6b/capture.mjs`, and the share-picture extraction
  * of `manager-card-section/wp4/capture/capture.mjs`. Differences from them: one script for every
  * surface, a fixed clock (so a countdown reads the same in the before and the after), a worker pool,
  * the card's "ready" attribute awaited rather than a fixed sleep, and a retry for a shot that fails.
@@ -128,16 +128,16 @@ async function scrollTo(page, testId, block = "center") {
 
 /** G4: the first row that is not mine opens « Face à face ». */
 async function openHeadToHead(page) {
-  const row = page.locator('tr:not([data-own]) [data-testid="gradins-people-open"]').first();
+  const row = page.locator('tr:not([data-own]) [data-testid="curva-people-open"]').first();
   await row.waitFor({ state: "visible", timeout: 15000 });
   await row.click();
-  await page.getByTestId("gradins-h2h").waitFor({ timeout: 10000 });
+  await page.getByTestId("curva-h2h").waitFor({ timeout: 10000 });
   await page.waitForTimeout(1800);
 }
 
 /** G2's « Revoir » list: the replay sheet of one item. */
 async function openReplay(page, index = 0) {
-  const button = page.getByTestId("gradins-revoir").locator("button").nth(index);
+  const button = page.getByTestId("curva-revoir").locator("button").nth(index);
   await button.scrollIntoViewIfNeeded();
   await button.click();
   await page.getByTestId("replay-sheet").waitFor({ timeout: 10000 });
@@ -147,7 +147,7 @@ async function openReplay(page, index = 0) {
 /** The share sheet from G1, with the picture drawn. */
 async function openShare(page) {
   await closeHero(page);
-  const button = page.locator('[data-testid="gradins-share"]:visible').first();
+  const button = page.locator('[data-testid="curva-share"]:visible').first();
   await button.scrollIntoViewIfNeeded();
   await button.click();
   await page.waitForFunction(
@@ -163,14 +163,12 @@ async function openShare(page) {
 
 /** The visitor tries a club's colours on (nothing is stored): the third crest, with the stage above it. */
 async function tryOnClub(page) {
-  const crests = page.locator('[data-testid="gradins-try-on"] button');
+  const crests = page.locator('[data-testid="curva-try-on"] button');
   await crests.nth(2).scrollIntoViewIfNeeded();
   await crests.nth(2).click();
   await page.waitForTimeout(900);
   // Put the stage and the row of crests in one frame: the row's bottom edge at the viewport's bottom.
-  await page
-    .getByTestId("gradins-try-on")
-    .evaluate((node) => node.scrollIntoView({ block: "end" }));
+  await page.getByTestId("curva-try-on").evaluate((node) => node.scrollIntoView({ block: "end" }));
   await page.waitForTimeout(500);
 }
 
@@ -291,20 +289,20 @@ for (const fixture of ["rated", "forming1", "founder", "legend", "homa", "clubNu
   scene({
     screen: "g1",
     fixture,
-    path: `/gradins?mc=${fixture}`,
+    path: `/curva?mc=${fixture}`,
     act: closeHero,
     ...ALL,
   });
 }
 for (const fixture of ["longNameLatin", "arabicName"]) {
-  scene({ screen: "g1", fixture, path: `/gradins?mc=${fixture}`, act: closeHero, ...PHONE });
+  scene({ screen: "g1", fixture, path: `/curva?mc=${fixture}`, act: closeHero, ...PHONE });
 }
 // The signed-out view, and with a club's colours tried on.
-scene({ screen: "g1", fixture: "guest", path: "/gradins", auth: "guest", ...ALL });
+scene({ screen: "g1", fixture: "guest", path: "/curva", auth: "guest", ...ALL });
 scene({
   screen: "g1",
   fixture: "guestTryOn",
-  path: "/gradins",
+  path: "/curva",
   auth: "guest",
   act: tryOnClub,
   ...ALL,
@@ -312,13 +310,13 @@ scene({
 
 // The hero of a moment (M4): the card in the slot, as it arrives.
 for (const fixture of ["rated", "founder", "legend"]) {
-  scene({ screen: "hero", fixture, path: `/gradins?mc=${fixture}`, ready: "hero", ...ALL });
+  scene({ screen: "hero", fixture, path: `/curva?mc=${fixture}`, ready: "hero", ...ALL });
 }
 for (const fixture of ["tierUp", "seasonClosed", "returning", "launchArrival"]) {
   scene({
     screen: "hero",
     fixture,
-    path: `/gradins?mc=${fixture}`,
+    path: `/curva?mc=${fixture}`,
     ready: "hero",
     ...PHONE_LIGHT,
   });
@@ -327,7 +325,7 @@ for (const fixture of ["tierUp", "seasonClosed", "returning", "launchArrival"]) 
 scene({
   screen: "born",
   fixture: "born0Serial",
-  path: "/gradins?mc=born0Serial",
+  path: "/curva?mc=born0Serial",
   ready: "born",
   ...PHONE_LIGHT,
 });
@@ -341,55 +339,55 @@ scene({
 
 // G2, « Votre carte »: the page, then the tier ladder and the founder block in frame.
 for (const fixture of ["rated", "founder"]) {
-  scene({ screen: "g2", fixture, path: `/gradins/carte?mc=${fixture}`, ...ALL });
+  scene({ screen: "g2", fixture, path: `/curva/carte?mc=${fixture}`, ...ALL });
 }
 scene({
   screen: "g2Ladder",
   fixture: "rated",
-  path: "/gradins/carte?mc=rated",
-  act: (page) => scrollTo(page, "gradins-tier-ladder"),
+  path: "/curva/carte?mc=rated",
+  act: (page) => scrollTo(page, "curva-tier-ladder"),
   ...ALL,
 });
 scene({
   screen: "g2Founder",
   fixture: "founder",
-  path: "/gradins/carte?mc=founder",
-  act: (page) => scrollTo(page, "gradins-founder"),
+  path: "/curva/carte?mc=founder",
+  act: (page) => scrollTo(page, "curva-founder"),
   ...ALL,
 });
 // G3, « Les vôtres » (the league band and its minis, the rows and their tokens) and G4, « Face à face ».
-scene({ screen: "g3", fixture: "rated", path: "/gradins/les-votres?mc=rated", ...ALL });
+scene({ screen: "g3", fixture: "rated", path: "/curva/les-votres?mc=rated", ...ALL });
 scene({
   screen: "g4",
   fixture: "rated",
-  path: "/gradins/les-votres?mc=rated",
+  path: "/curva/les-votres?mc=rated",
   act: openHeadToHead,
   ...ALL,
 });
 // G6, the seasons (the rack).
-scene({ screen: "g6", fixture: "rated", path: "/gradins/saisons?mc=rated", ...ALL });
+scene({ screen: "g6", fixture: "rated", path: "/curva/saisons?mc=rated", ...ALL });
 scene({
   screen: "g6",
   fixture: "seasonClosed",
-  path: "/gradins/saisons?mc=seasonClosed",
+  path: "/curva/saisons?mc=seasonClosed",
   ...PHONE_LIGHT,
 });
 scene({
   screen: "g6",
   fixture: "returning",
-  path: "/gradins/saisons?mc=returning",
+  path: "/curva/saisons?mc=returning",
   ...PHONE_LIGHT,
 });
 // G1 lower down: the people, the club's mates and the seasons, where tokens and minis hang.
 for (const [screen, testId] of [
-  ["g1People", "gradins-people"],
-  ["g1Club", "gradins-club"],
-  ["g1Seasons", "gradins-seasons"],
+  ["g1People", "curva-people"],
+  ["g1Club", "curva-club"],
+  ["g1Seasons", "curva-seasons"],
 ]) {
   scene({
     screen,
     fixture: "rated",
-    path: "/gradins?mc=rated",
+    path: "/curva?mc=rated",
     act: async (page) => {
       await closeHero(page);
       await scrollTo(page, testId, "start");
@@ -401,9 +399,9 @@ for (const [screen, testId] of [
 scene({
   screen: "g1GuestPoints",
   fixture: "guest",
-  path: "/gradins",
+  path: "/curva",
   auth: "guest",
-  act: (page) => scrollTo(page, "gradins-guest-points", "start"),
+  act: (page) => scrollTo(page, "curva-guest-points", "start"),
   ...PHONE,
 });
 // The account path (wp6): profile setup beside the card's token, and the deletion dialog's line.
@@ -437,23 +435,23 @@ scene({
 scene({
   screen: "replay",
   fixture: "returning",
-  path: "/gradins/carte?mc=returning",
+  path: "/curva/carte?mc=returning",
   act: (page) => openReplay(page, 0),
   ...ALL,
 });
 scene({
   screen: "replay",
   fixture: "founder",
-  path: "/gradins/carte?mc=founder",
+  path: "/curva/carte?mc=founder",
   act: (page) => openReplay(page, 0),
   ...PHONE_LIGHT,
 });
-scene({ screen: "share", fixture: "rated", path: "/gradins?mc=rated", act: openShare, ...ALL });
+scene({ screen: "share", fixture: "rated", path: "/curva?mc=rated", act: openShare, ...ALL });
 for (const fixture of ["founder", "legend"]) {
   scene({
     screen: "share",
     fixture,
-    path: `/gradins?mc=${fixture}`,
+    path: `/curva?mc=${fixture}`,
     act: openShare,
     ...PHONE_LIGHT,
   });
@@ -472,7 +470,7 @@ for (const fixture of [
   scene({
     screen: "picture",
     fixture,
-    path: `/gradins?mc=${fixture}`,
+    path: `/curva?mc=${fixture}`,
     act: openShare,
     picture: true,
     langs: LANGS,
@@ -485,7 +483,7 @@ for (const fixture of [
 scene({
   screen: "picture",
   fixture: "rated",
-  path: "/gradins?mc=rated",
+  path: "/curva?mc=rated",
   act: openShare,
   picture: true,
   langs: ["fr"],

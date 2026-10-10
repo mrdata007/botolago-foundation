@@ -148,7 +148,7 @@ for (const [lang, theme] of [
     reduced: true,
   });
   const page = await ctx.newPage();
-  await go(page, "/gradins?mc=forming1", lang);
+  await go(page, "/curva?mc=forming1", lang);
   await page.waitForTimeout(800);
   const jobs = FIXTURES.map((fixture) => ({ fixture, label: `fixture ${fixture}` }));
   if (lang === "fr" && theme === "light") {

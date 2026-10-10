@@ -94,7 +94,7 @@ export function cardShareImageModel(
   return {
     lang,
     art,
-    caption: t("gradins.share.caption"),
+    caption: t("curva.share.caption"),
     name: profile.name.trim(),
     rating: {
       number: String(profile.ovr),

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The repository's own probes (scripts/qa/layout-probe.mjs and scripts/qa/contrast-probe.mjs), run on the
-# Gradins screens and the Fantasy surfaces that draw the card, through the wrapper the Manager Card section
+# Curva screens and the Fantasy surfaces that draw the card, through the wrapper the Manager Card section
 # used (it seeds the mock demo account and finds this sandbox's Chromium without editing the probes).
 #
 #   BASE=http://127.0.0.1:4194 bash docs/product/manager-card-sorare-style/wp4/run-probes.sh [layout|contrast|all]
@@ -22,14 +22,14 @@ what="${1:-all}"
 
 # every state of the card on G1, G2, G3, G6, the team page's born panel, the Fantasy hub, rankings and league band
 routes_signed=(
-  "/gradins?mc=forming1" "/gradins?mc=rated" "/gradins?mc=founder" "/gradins?mc=legend" "/gradins?mc=homa"
-  "/gradins?mc=clubNull" "/gradins?mc=arabicName" "/gradins?mc=longNameLatin" "/gradins?mc=tierUp"
-  "/gradins/carte?mc=rated" "/gradins/carte?mc=founder" "/gradins/carte?mc=homa" "/gradins/carte?mc=insufficient3"
-  "/gradins/carte?mc=tierDown" "/gradins/les-votres?mc=rated" "/gradins/saisons?mc=rated" "/gradins/saisons?mc=born0"
+  "/curva?mc=forming1" "/curva?mc=rated" "/curva?mc=founder" "/curva?mc=legend" "/curva?mc=homa"
+  "/curva?mc=clubNull" "/curva?mc=arabicName" "/curva?mc=longNameLatin" "/curva?mc=tierUp"
+  "/curva/carte?mc=rated" "/curva/carte?mc=founder" "/curva/carte?mc=homa" "/curva/carte?mc=insufficient3"
+  "/curva/carte?mc=tierDown" "/curva/les-votres?mc=rated" "/curva/saisons?mc=rated" "/curva/saisons?mc=born0"
   "/fantasy/team?mc=born0" "/fantasy/team?mc=born0Serial" "/fantasy?mc=rated" "/fantasy?mc=homa" "/fantasy?mc=legend"
   "/fantasy/rankings?mc=rated" "/fantasy/leagues/lg1?mc=rated"
 )
-routes_visitor=("/gradins")
+routes_visitor=("/curva")
 
 # run <kind> <outfile> <widths> <extra flags...> -- <routes...>
 run() {

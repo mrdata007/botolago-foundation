@@ -17,7 +17,7 @@ export const DEVICE_KEYS = {
   /** Moment keys acknowledged here, so nothing flashes back while the call is in flight. */
   moments: "botolago.card.moments.v1",
   /** The league « Les vôtres » last showed. */
-  league: "botolago.gradins.league.v1",
+  league: "botolago.curva.league.v1",
   /** The three stat hints (plan M3e). */
   hintCap: "botolago.card.hint.cap.v1",
   hintSel: "botolago.card.hint.sel.v1",

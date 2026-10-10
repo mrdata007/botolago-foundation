@@ -194,7 +194,7 @@ export function withTier(profile: CardProfile, tier: TierCode): CardProfile {
 }
 
 /**
- * The card as it would hang at `tier`, for the tier ladder's token (Gradins G2): the same name, club
+ * The card as it would hang at `tier`, for the tier ladder's token (Curva G2): the same name, club
  * colours and serial, no number, no marks and no pill, and `ladder` so the token is drawn in the
  * tier's own material (a card with no rating is otherwise drawn as the base card whatever its tier).
  */

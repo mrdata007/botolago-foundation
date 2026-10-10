@@ -4,7 +4,7 @@
  *   reduced   with `prefers-reduced-motion: reduce` (asked for through the context AND
  *             `page.emulateMedia`, then read back through `matchMedia`, because the context option
  *             alone has been seen not to reach pages in this sandbox): after load,
- *             `document.getAnimations()` is empty on every Gradins screen; a mouse over the card
+ *             `document.getAnimations()` is empty on every Curva screen; a mouse over the card
  *             writes no light, gives no 3D transform and starts no animation.
  *   beats     every beat of the renderer, applied to the cards it applies to: the longest animation
  *             end (<= 600 ms), the animated parts holding no number / serial / text, and, with every
@@ -41,22 +41,22 @@ const browser = await launch();
 /* ------------------------------------------------------------------ reduced motion */
 if (ONLY.includes("reduced")) {
   const ROUTES = [
-    ["/gradins", { signedIn: false, label: "g1 guest" }],
-    ["/gradins?mc=forming1", {}],
-    ["/gradins?mc=rated", {}],
-    ["/gradins?mc=founder", {}],
-    ["/gradins?mc=legend", {}],
-    ["/gradins?mc=homa", {}],
-    ["/gradins?mc=seasonClosed", {}],
-    ["/gradins?mc=seasonStarted", {}],
-    ["/gradins?mc=born0Serial", {}],
-    ["/gradins?mc=tierUp", {}],
-    ["/gradins?mc=returning", {}],
-    ["/gradins?mc=launchArrival", {}],
-    ["/gradins/carte?mc=rated", {}],
-    ["/gradins/carte?mc=founder", {}],
-    ["/gradins/les-votres?mc=rated", {}],
-    ["/gradins/saisons?mc=rated", {}],
+    ["/curva", { signedIn: false, label: "g1 guest" }],
+    ["/curva?mc=forming1", {}],
+    ["/curva?mc=rated", {}],
+    ["/curva?mc=founder", {}],
+    ["/curva?mc=legend", {}],
+    ["/curva?mc=homa", {}],
+    ["/curva?mc=seasonClosed", {}],
+    ["/curva?mc=seasonStarted", {}],
+    ["/curva?mc=born0Serial", {}],
+    ["/curva?mc=tierUp", {}],
+    ["/curva?mc=returning", {}],
+    ["/curva?mc=launchArrival", {}],
+    ["/curva/carte?mc=rated", {}],
+    ["/curva/carte?mc=founder", {}],
+    ["/curva/les-votres?mc=rated", {}],
+    ["/curva/saisons?mc=rated", {}],
     ["/fantasy?mc=rated", {}],
     ["/fantasy/team?mc=born0", {}],
   ];
@@ -134,7 +134,7 @@ if (ONLY.includes("beats")) {
     reduced: false,
   });
   const page = await ctx.newPage();
-  await go(page, "/gradins/carte?mc=rated", "fr", { clock: false });
+  await go(page, "/curva/carte?mc=rated", "fr", { clock: false });
   await page.waitForTimeout(1500);
   const cases = [];
   const BEATS = ["make", "tick", "first", "tier", "legend", "founder", "castoff"];
@@ -244,9 +244,9 @@ if (ONLY.includes("depth")) {
       reduced: false,
     });
     const page = await ctx.newPage();
-    await go(page, `/gradins/carte?mc=${fixture}`, lang, { clock: false });
+    await go(page, `/curva/carte?mc=${fixture}`, lang, { clock: false });
     await page.waitForTimeout(1800);
-    const root = page.getByTestId("gradins-stage").locator(".mc-eclat");
+    const root = page.getByTestId("curva-stage").locator(".mc-eclat");
     const read = () =>
       root.evaluate((card) => {
         const cs = (n) => (n ? getComputedStyle(n) : null);
@@ -332,7 +332,7 @@ if (ONLY.includes("tilt")) {
       reduced: REDUCED_TILT,
     });
     const page = await ctx.newPage();
-    await go(page, fixture === "control" ? "/matches" : `/gradins/carte?mc=${fixture}`, "fr", {
+    await go(page, fixture === "control" ? "/matches" : `/curva/carte?mc=${fixture}`, "fr", {
       clock: false,
       ready: fixture !== "control",
     });

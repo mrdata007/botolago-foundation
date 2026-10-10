@@ -37,7 +37,7 @@ const card = (id: FixtureId): MyCardDto => FIXTURES[id].card!;
 function heroOf(id: FixtureId, minutes: number | null = 1000) {
   const c = card(id);
   const picked = pickHero(c.moments, {
-    surface: "gradins",
+    surface: "curva",
     card: c,
     minutesToDeadline: minutes,
     heroShownThisSession: false,

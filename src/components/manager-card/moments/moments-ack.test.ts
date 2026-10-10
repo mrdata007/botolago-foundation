@@ -34,7 +34,7 @@ afterEach(() => {
 const heroOf = (id: FixtureId) => {
   const card = FIXTURES[id].card as MyCardDto;
   const { hero } = pickHero(card.moments, {
-    surface: "gradins",
+    surface: "curva",
     card,
     minutesToDeadline: 1000,
     heroShownThisSession: false,

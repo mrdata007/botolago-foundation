@@ -706,7 +706,7 @@ function HelpGroup() {
  * no switch.
  */
 const CardDeletionLine = lazy(() =>
-  import("@/components/auth/gradins-card-deletion-line").then((module) => ({
+  import("@/components/auth/curva-card-deletion-line").then((module) => ({
     default: module.CardDeletionLine,
   })),
 );

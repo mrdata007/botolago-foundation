@@ -45,7 +45,7 @@ SURFACES = [
     ("picture", ["rated", "legend", "founder", "homa", "longNameLatin", "arabicName", "clubNull"]),
 ]
 TITLES = {
-    "g1": "G1 Gradins home (the stage)",
+    "g1": "G1 Curva home (the stage)",
     "g2": "G2 Votre carte",
     "g2Ladder": "G2 the tier ladder",
     "g2Founder": "G2 the founder block",

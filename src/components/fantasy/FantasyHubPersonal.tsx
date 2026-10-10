@@ -37,7 +37,7 @@ import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-acti
 // The card's block is its own chunk, requested only while the section is live: with the switch
 // off the hub imports nothing of the Manager Card.
 const HubCardBlock = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.HubCardBlock,
   })),
 );

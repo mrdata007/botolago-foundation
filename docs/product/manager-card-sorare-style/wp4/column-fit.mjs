@@ -1,7 +1,7 @@
 /**
  * Brief, "No element escapes 390 px (rectangles, not `scrollWidth`); the card never overflows its
  * column at 320 px either." For every card (`.mc-eclat`) and token (`.mc-tok`, `.mc-token`) on the
- * Gradins and Fantasy screens that draw one, at 320, 360, 390, 768 and 1440 px, in French and Arabic:
+ * Curva and Fantasy screens that draw one, at 320, 360, 390, 768 and 1440 px, in French and Arabic:
  * its rectangle against the window and against the rectangle of its nearest ancestor that clips or
  * scrolls (a card in a column that cuts it would be cut), and the width it is drawn at. The page's
  * own overflow is the repository probe's job (`run-probes.sh`, layout).
@@ -17,18 +17,18 @@ const OUT = process.argv
   .find((a) => a.startsWith("--out="))
   ?.slice(6);
 const ROUTES = [
-  "/gradins?mc=rated",
-  "/gradins?mc=forming1",
-  "/gradins?mc=founder",
-  "/gradins?mc=longNameLatin",
-  "/gradins?mc=arabicName",
-  "/gradins?mc=homa",
-  "/gradins",
-  "/gradins/carte?mc=rated",
-  "/gradins/carte?mc=founder",
-  "/gradins/les-votres?mc=rated",
-  "/gradins/saisons?mc=rated",
-  "/gradins?mc=born0Serial",
+  "/curva?mc=rated",
+  "/curva?mc=forming1",
+  "/curva?mc=founder",
+  "/curva?mc=longNameLatin",
+  "/curva?mc=arabicName",
+  "/curva?mc=homa",
+  "/curva",
+  "/curva/carte?mc=rated",
+  "/curva/carte?mc=founder",
+  "/curva/les-votres?mc=rated",
+  "/curva/saisons?mc=rated",
+  "/curva?mc=born0Serial",
   "/fantasy?mc=rated",
   "/fantasy?mc=legend",
   "/fantasy/team?mc=born0",
@@ -52,7 +52,7 @@ for (const lang of ["fr", "ar"])
     });
     const page = await ctx.newPage();
     for (const route of ROUTES) {
-      const visitor = route === "/gradins";
+      const visitor = route === "/curva";
       const row = { lang, width, route };
       try {
         if (visitor) {

@@ -1,8 +1,8 @@
 /**
  * What the collectible leaves on G1's first screen (the card is 232 to 296 px wide on a phone by its height, 336 from
  * 768 px, since round 2; it was a fixed 296 x 479 px before): for each state, the
- * bottom of the card, of the rating line (`gradins-identity-line`) and of the next-round line
- * (`gradins-glance`, the 44 px line the e2e spec asserts on the forming card) against the top of the
+ * bottom of the card, of the rating line (`curva-identity-line`) and of the next-round line
+ * (`curva-glance`, the 44 px line the e2e spec asserts on the forming card) against the top of the
  * bottom bar, at 390 x 844 and 360 x 740, French and Arabic. A negative margin is under the bar.
  *
  *   BASE=http://127.0.0.1:4440 node docs/product/manager-card-sorare-style/wp4/first-screen.mjs [--out=<file>]
@@ -44,7 +44,7 @@ for (const [width, height] of [
     });
     const page = await ctx.newPage();
     for (const fx of STATES) {
-      await go(page, `/gradins?mc=${fx}`, lang, { ready: false });
+      await go(page, `/curva?mc=${fx}`, lang, { ready: false });
       await page.waitForTimeout(1600);
       // a hero, if one arrives, is dismissed first (as the capture does): not needed, the session flag keeps heroes away
       const r = await page.evaluate(() => {
@@ -53,9 +53,9 @@ for (const [width, height] of [
           .map((n) => n.getBoundingClientRect())
           .filter((b) => b.width > 200 && b.bottom >= innerHeight - 2)
           .sort((a, b) => b.top - a.top)[0];
-        const card = rect('[data-testid="gradins-stage"] .mc-eclat');
-        const ident = rect('[data-testid="gradins-identity-line"]');
-        const glance = rect('[data-testid="gradins-glance"]');
+        const card = rect('[data-testid="curva-stage"] .mc-eclat');
+        const ident = rect('[data-testid="curva-identity-line"]');
+        const glance = rect('[data-testid="curva-glance"]');
         return {
           navTop: nav?.top ?? null,
           cardBottom: card?.bottom ?? null,

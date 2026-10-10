@@ -42,9 +42,9 @@ async function open(lang, theme, fixture, dpr) {
   const ctx = await ctxFor(browser, { lang, theme, width: 390, height: 1100, dpr, reduced: false });
   const page = await ctx.newPage();
   const problems = watch(page);
-  await go(page, `/gradins/carte?mc=${fixture}`, lang, { clock: false });
+  await go(page, `/curva/carte?mc=${fixture}`, lang, { clock: false });
   await page.waitForTimeout(1800);
-  const root = page.getByTestId("gradins-stage").locator(".mc-eclat");
+  const root = page.getByTestId("curva-stage").locator(".mc-eclat");
   await root.scrollIntoViewIfNeeded();
   await page.waitForTimeout(300);
   await page.mouse.move(1, 1);

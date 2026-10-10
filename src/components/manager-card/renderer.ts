@@ -10,7 +10,7 @@ export interface RenderOptions {
   /** One beat, or none. Ignored by tokens. Never animates the number or the serial. */
   beat?: BeatName;
   /**
-   * The face-à-face sheet's card (Gradins G4, 136 to 200 px wide): a renderer that has a variant
+   * The face-à-face sheet's card (Curva G4, 136 to 200 px wide): a renderer that has a variant
    * for it draws only what stays legible at that width (Éclat drops the micro text and the stat
    * labels and sets every remaining run at 8 CSS px or more). Others ignore it.
    */
@@ -77,7 +77,7 @@ export interface CardRenderer {
    * Optional pointer behaviour for a full card the app has put in the page: the tilt (Éclat turns
    * toward a mouse or pen and floats slowly on a touch-only screen). `el` is the element the markup
    * was inserted into (the card's root is its first element child). Returns the cleanup.
-   * `ManagerCard` calls it after inserting the card when the screen asks for it (`tilt`, Gradins'
+   * `ManagerCard` calls it after inserting the card when the screen asks for it (`tilt`, Curva'
    * G1 and G2) and the reader has not asked for less motion, and runs the cleanup when the markup
    * changes or the card unmounts.
    */

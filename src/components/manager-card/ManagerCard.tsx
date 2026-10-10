@@ -25,7 +25,7 @@ import type { BeatName, CardProfile } from "./types";
  *
  * Ids inside the markup are made unique per mounted card (`scope-ids.ts`), since the cached markup
  * is shared. `tilt` lets the renderer's pointer behaviour (`mount`) run on this card: it turns
- * toward a mouse or pen and floats slowly on a touch-only screen. Gradins' home and card page and
+ * toward a mouse or pen and floats slowly on a touch-only screen. Curva' home and card page and
  * the heroes ask for it, the sheets and panels do not. `compact` asks the renderer for its small
  * variant, the face-à-face sheet's card (136 to 200 px), which draws only what stays legible
  * there. Every card of the active renderer has one shape (`estimateAspect` is exact), so the box

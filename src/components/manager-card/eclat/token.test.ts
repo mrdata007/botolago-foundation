@@ -359,7 +359,7 @@ describe("the label and the escape", () => {
   });
 });
 
-describe("the tier ladder's tokens (Gradins G2)", () => {
+describe("the tier ladder's tokens (Curva G2)", () => {
   const TIERS = ["homa", "stade", "pro", "champion", "legend"] as const;
   /** The markup without what is unique per draw: the id scope. */
   const plain = (html: string) => html.replace(/mc-t-\d+/g, "mc-t-N");
