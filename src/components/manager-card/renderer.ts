@@ -47,6 +47,29 @@ export interface TextRun {
    * closes the run's letter spacing to this width, and never opens it.
    */
   fitWidth?: number;
+  /** `clubInitials`: the initials on the club disc, which a drawer leaves out when it draws the crest. */
+  part?: "clubInitials";
+}
+/**
+ * The club's crest for the share picture to draw over the art's initials disc, in the image's
+ * coordinate space. The art itself never carries it: an SVG drawn as an image loads no picture, and
+ * one that did could taint the canvas. The drawer draws it only once the picture has loaded with
+ * CORS; otherwise the art's initials disc stays, with its `clubInitials` run.
+ */
+export interface CardImageCrest {
+  href: string;
+  cx: number;
+  cy: number;
+  /** The plate's radius. */
+  r: number;
+  /** The plate's colour, the club ring's colour, the ring's radius and width. */
+  plate: string;
+  ring: string;
+  ringR: number;
+  ringW: number;
+  /** The picture's square, and the circle it is clipped to. */
+  box: number;
+  clipR: number;
 }
 export interface CardImageArt {
   /** Text-free SVG (a renderer's own glyphs may be geometry; every <text> is moved to `texts`). */
@@ -54,6 +77,8 @@ export interface CardImageArt {
   width: number;
   height: number;
   texts: TextRun[];
+  /** Present when the profile's club has a crest. */
+  crest?: CardImageCrest;
 }
 export interface CardRenderer {
   readonly id: string; // "eclat-v1"

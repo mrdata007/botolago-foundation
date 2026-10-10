@@ -23,6 +23,15 @@ export interface CardClub {
   primary: string;
   /** `#rrggbb` from `clubPalette(club).secondary`, or null. */
   secondary: string | null;
+  /** The club's slug, for finding it in the app's club catalogue when the ids differ (development). */
+  slug?: string | null;
+  /**
+   * The club's crest picture, set by the app only once it has loaded in this browser
+   * (`useCardCrest`): the renderer draws it on a light plate in the tab's disc instead of the
+   * initials. Absent: the initials disc. A renderer draws only an `https:` URL, a local `http:` one
+   * or a raster `data:image` (`crestHref`); anything else reads as absent.
+   */
+  crest?: string;
 }
 
 /** What a renderer draws. Every field may be empty; empty draws as the object's own empty part. */

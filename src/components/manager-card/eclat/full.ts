@@ -7,12 +7,12 @@
  * cut corner, and `cardImage` flattens them into one text-free SVG at the rest pose and hands every
  * text back as a run the share picture draws on a canvas.
  */
-import type { CardImageArt, RenderOptions, TextRun } from "../renderer";
+import type { CardImageArt, CardImageCrest, RenderOptions, TextRun } from "../renderer";
 import type { BeatName, CardProfile, CardStrings } from "../types";
 import { BEAT_MS } from "./beats";
 import { makeCtx, type Ctx } from "./ctx";
 import { baseLayer, fieldDefs, plateBase } from "./field";
-import { ASPECT, VIEW_BOX, mirror } from "./geometry";
+import { ASPECT, CREST, CREST_PLATE, DISC, VIEW_BOX, mirror, mx } from "./geometry";
 import { holoLayer } from "./holo";
 import { uid } from "./ids";
 import { flatten, stack, type Parts } from "./layers";
@@ -136,7 +136,10 @@ export function cardImage(
   strings: CardStrings,
   measure: Measure = measureText,
 ): CardImageArt {
-  const v = makeView(profile, strings);
+  // the art is drawn with the initials disc; a crest is handed to the canvas to draw over it
+  const withCrest = makeView(profile, strings);
+  const crestOf = withCrest.p.club?.crest;
+  const v = crestOf ? makeView(withoutCrest(profile), strings) : withCrest;
   // the share ground is Tunnel Navy: the card takes its lit edge
   const c = makeCtx(v, { id: uid(), theme: "dark", flat: true, runs: true, measure });
   const { parts, plate: pl } = buildParts(c);
@@ -157,8 +160,34 @@ export function cardImage(
       label: v.p.ovr != null ? v.s.ovr : null,
     }),
   ];
-  const texts: TextRun[] = specs.map((t) => toRun(t, scale));
-  return { svg, width: IMAGE_WIDTH, height, texts };
+  const texts: TextRun[] = specs.map((t) => ({
+    ...toRun(t, scale),
+    ...(t.data?.meta === "initials" ? { part: "clubInitials" as const } : {}),
+  }));
+  const club = withCrest.p.club;
+  const crest: CardImageCrest | undefined =
+    crestOf && club
+      ? {
+          href: crestOf,
+          cx: mx(DISC.cx, v.ar) * scale,
+          cy: DISC.cy * scale,
+          r: CREST.r * scale,
+          plate: CREST_PLATE.dark,
+          ring: club.primary,
+          ringR: CREST.ringR * scale,
+          ringW: CREST.ringW * scale,
+          box: CREST.box * scale,
+          clipR: CREST.clipR * scale,
+        }
+      : undefined;
+  return { svg, width: IMAGE_WIDTH, height, texts, ...(crest ? { crest } : {}) };
+}
+
+/** The profile without its club's crest (the share picture's art: the initials disc). */
+function withoutCrest(profile: CardProfile): CardProfile {
+  if (!profile.club?.crest) return profile;
+  const { crest: _crest, ...club } = profile.club;
+  return { ...profile, club };
 }
 
 /**

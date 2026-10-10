@@ -114,6 +114,17 @@ export const LABEL_BUDGET = 165;
 
 /** The tab's disc and the placeholder's hexagon. */
 export const DISC = { cx: 103, cy: 134 } as const;
+/**
+ * The club's crest in that disc: a light plate of the disc's radius (54) ringed in the club's colour
+ * (r 51, 6 wide), the picture in a 72-unit square on its centre (two thirds of the disc, the
+ * padding `ClubCrest` gives a badge), clipped to the ring's inside (r 48).
+ */
+export const CREST = { r: 54, ringR: 51, ringW: 6, clipR: 48, box: 72 } as const;
+/**
+ * The plate under a crest: club badges are drawn for a light ground. The app's `--ui-scorebox`, the
+ * one surface that stays light in the dark theme too (white, and oklch(0.93 0.01 250) in dark).
+ */
+export const CREST_PLATE = { light: "#FFFFFF", dark: "#E3E8EE" } as const;
 
 /* ---------------------------------------------------------------------------------------------
    Tokens and minis (plan 7)

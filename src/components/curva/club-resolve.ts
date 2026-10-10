@@ -2,19 +2,12 @@
  * The card's club and the app's own club record are two views of one club. The card carries what
  * the server resolved (`CardClubDto`); the crest, the fixtures and the palette are the football
  * data's (`Club`). In production they share one id, so the match is by id; the slug and the name
- * only matter for development fixtures and for a club the football list has not got yet.
+ * only matter for development fixtures and for a club the football list has not got yet. The match
+ * itself is `findCardClub` (`manager-card/catalogue-club.ts`), which the card's crest uses too.
  */
-import { findClub } from "@/components/fantasy/club-identity";
 import type { CardClubDto } from "@/backend/manager-card/contracts";
+import { findCardClub, squashName } from "@/components/manager-card/catalogue-club";
 import type { Club } from "@/types/domain";
-
-function squash(text: string): string {
-  return text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9؀-ۿ]+/g, "");
-}
 
 /** A `Club` drawn from the card's own club data, for when the football list has no such club. */
 export function clubFromCard(dto: CardClubDto): Club {
@@ -28,7 +21,7 @@ export function clubFromCard(dto: CardClubDto): Club {
     primaryColor: dto.primaryColor ?? "",
     ...(dto.secondaryColor ? { secondaryColor: dto.secondaryColor } : {}),
     crestPlaceholder:
-      code.length >= 2 ? code.slice(0, 4) : squash(dto.shortName.fr).slice(0, 3).toUpperCase(),
+      code.length >= 2 ? code.slice(0, 4) : squashName(dto.shortName.fr).slice(0, 3).toUpperCase(),
   };
 }
 
@@ -38,13 +31,5 @@ export function resolveClub(
   dto: CardClubDto | null,
 ): Club | null {
   if (!dto) return null;
-  const byKey = findClub(clubs, dto.id) ?? findClub(clubs, dto.slug);
-  if (byKey) return byKey;
-  const wanted = squash(dto.name.fr);
-  const byName = wanted
-    ? (clubs ?? []).find(
-        (club) => squash(club.name.fr) === wanted || squash(club.name.ar) === squash(dto.name.ar),
-      )
-    : undefined;
-  return byName ?? clubFromCard(dto);
+  return findCardClub(clubs, dto) ?? clubFromCard(dto);
 }
