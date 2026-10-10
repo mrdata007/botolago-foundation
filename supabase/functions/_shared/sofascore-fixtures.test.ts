@@ -100,6 +100,39 @@ describe("parseSofascoreEvents", () => {
     expect(parsed.events).toHaveLength(0);
     expect(parsed.malformedCount).toBe(1);
   });
+
+  test("malformed change timestamps never acquire the observation time", () => {
+    for (const changeTimestamp of ["1790000000", 1.5, -1, null, 1e20]) {
+      const parsed = parseSofascoreEvents({
+        events: [
+          event(
+            1,
+            101,
+            102,
+            { code: 6, type: "inprogress" },
+            {
+              changes: { changeTimestamp },
+            },
+          ),
+        ],
+      });
+      expect(parsed.malformedCount).toBe(1);
+      expect(parsed.events).toHaveLength(0);
+      expect(buildFixtureIngestPlan(parsed.events, lookup, OBSERVED).calls).toHaveLength(0);
+    }
+  });
+
+  test("only an absent change timestamp falls back to observation time", () => {
+    for (const changes of [undefined, {}]) {
+      const parsed = parseSofascoreEvents({
+        events: [event(1, 101, 102, { code: 6, type: "inprogress" }, { changes })],
+      });
+      expect(parsed.malformedCount).toBe(0);
+      expect(
+        buildFixtureIngestPlan(parsed.events, lookup, OBSERVED).calls[0]?.p_fixture.sourceSequence,
+      ).toBe(OBSERVED.getTime());
+    }
+  });
 });
 
 describe("collapseReplacedEvents", () => {

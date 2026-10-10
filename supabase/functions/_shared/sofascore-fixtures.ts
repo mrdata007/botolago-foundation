@@ -234,6 +234,17 @@ export function parseSofascoreEvents(
       malformedCount += 1;
       continue;
     }
+    const rawChanges = candidate.changes;
+    const rawChangeTimestamp = isRecord(rawChanges) ? rawChanges.changeTimestamp : undefined;
+    const changes = rawChangeTimestamp === undefined ? null : nonNegativeInt(rawChangeTimestamp);
+    if (
+      (rawChanges !== undefined && !isRecord(rawChanges)) ||
+      (rawChangeTimestamp !== undefined &&
+        (changes === null || !Number.isFinite(new Date(changes * 1000).getTime())))
+    ) {
+      malformedCount += 1;
+      continue;
+    }
     const mapped = mapSofascoreStatus(statusType, statusCode);
     if (mapped.unknown) {
       unknownStatus.push({
@@ -244,9 +255,6 @@ export function parseSofascoreEvents(
       continue;
     }
     const round = isRecord(candidate.roundInfo) ? positiveInt(candidate.roundInfo.round) : null;
-    const changes = isRecord(candidate.changes)
-      ? nonNegativeInt(candidate.changes.changeTimestamp)
-      : null;
     events.push({
       sofascoreEventId: String(id),
       startsAt: new Date(start * 1000).toISOString(),

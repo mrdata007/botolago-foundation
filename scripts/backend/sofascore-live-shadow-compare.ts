@@ -19,7 +19,10 @@
  * and whether the real ingest would change the fixture. Never writes.
  */
 import { writeFileSync } from "node:fs";
-import { RapidApiClient } from "../../src/backend/football/provider/rapidapi-client";
+import {
+  RapidApiClient,
+  type RapidApiClientConfig,
+} from "../../src/backend/football/provider/rapidapi-client";
 import {
   BOTOLA_UNIQUE_TOURNAMENT_ID,
   buildFixtureIngestPlan,
@@ -45,6 +48,13 @@ import {
 import { PRODUCTION_PROJECT_REF } from "./sofascore-id-bridge";
 
 const HOST = "sofascore.p.rapidapi.com";
+/** A failed poll waits for the next poll; retries must not exceed its two-request cap. */
+export function createCompareClient(
+  key: string,
+  overrides: Pick<RapidApiClientConfig, "fetch" | "runtime"> = {},
+): RapidApiClient {
+  return new RapidApiClient({ host: HOST, key, ...overrides, policy: { maxRetries: 0 } });
+}
 /** A mapped fixture this recent and unfinished is expected in the live list. */
 const RECENT_KICKOFF_MS = 3 * 60 * 60 * 1000;
 const LIVE_STATUSES: ReadonlySet<string> = new Set([
@@ -140,7 +150,7 @@ export interface ComparisonRow {
     readonly score: string;
     readonly providerUpdatedAt: string;
   } | null;
-  readonly wouldChange: WouldChange | "not_mapped";
+  readonly wouldChange: WouldChange | "not_mapped" | "rejected";
   /** Which fields would change: status, period, score. */
   readonly differences: readonly string[];
 }
@@ -169,6 +179,7 @@ export interface ComparisonInput {
 /** Pure: one row per Botola event, SofaScore against production. */
 export function compareEvents(input: ComparisonInput): ComparisonRow[] {
   const callById = new Map(input.plan.calls.map((call) => [call.p_external_id, call]));
+  const rejectedIds = new Set(input.plan.rejected.map((event) => event.sofascoreEventId));
   const productionByEvent = new Map(input.production.map((f) => [f.externalId, f]));
   return input.events.map(({ event, source }) => {
     const call = callById.get(event.sofascoreEventId);
@@ -195,7 +206,9 @@ export function compareEvents(input: ComparisonInput): ComparisonRow[] {
         source,
         sofascore,
         production: productionView ?? null,
-        wouldChange: "not_mapped" as const,
+        wouldChange: rejectedIds.has(event.sofascoreEventId)
+          ? ("rejected" as const)
+          : ("not_mapped" as const),
         differences: [],
       };
     }
@@ -380,7 +393,7 @@ async function main() {
   if (ref !== PRODUCTION_PROJECT_REF)
     throw new Error("sofascore_compare_project_refused: the ref is not the production project");
 
-  const client = new RapidApiClient({ host: HOST, key });
+  const client = createCompareClient(key);
   const report = await runCompare({
     client,
     query: managementQuery(ref, token),

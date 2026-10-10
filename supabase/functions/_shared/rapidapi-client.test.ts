@@ -76,6 +76,17 @@ describe("Edge RapidAPI client", () => {
     await expect(api.getJson("z")).rejects.toMatchObject({ code: "provider_rate_limited" });
   });
 
+  test("a retryable response below the quota floor sends no further attempts", async () => {
+    for (const status of [429, 503]) {
+      const seen: Seen[] = [];
+      const api = client([reply(status, {}, "99"), reply(200, {})], seen);
+      await expect(api.getJson("x")).rejects.toMatchObject({ code: "provider_rate_limited" });
+      expect(seen).toHaveLength(1);
+      expect(api.requestsSent()).toBe(1);
+      expect(api.quota().remaining).toBe(99);
+    }
+  });
+
   test("404, 422 and 401 are not retried", async () => {
     const seen: Seen[] = [];
     await expect(client([reply(404, {})], seen).getJson("x")).rejects.toMatchObject({

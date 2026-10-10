@@ -15,7 +15,8 @@ Per poll:
    production shows as live, or that kicked off in the last 3 hours and is
    unfinished, is missing from the live list (a match that just ended drops off
    the live list). `--no-fallback` disables it. So at most **2 requests per
-   poll**.
+   poll**, including failed attempts: retries are disabled for this comparison.
+   A failed request ends that poll; the workflow proceeds to the next scheduled poll.
 3. **Production, one SELECT** through the Supabase Management API
    (`--read-production`, ref must be `tkewgajrljbwgwedqsxn`, single `SELECT`
    enforced by `assertReadOnly`): active `sofascore` rows of
@@ -36,6 +37,8 @@ production status, period and score, and **would change**:
   freshness guard would refuse the write (a SportsMonks update can be newer
   than the SofaScore change that is being compared);
 - `not_mapped`: no complete mapping, listed under _Unmapped_.
+- `rejected`: mappings exist but the payload cannot be ingested (for example,
+  a finished match without scores), listed under _Rejected_.
 
 Below the table: mapped production fixtures that neither response returned,
 unmapped events, unknown statuses (for example code 20 "Started", left out by
@@ -60,8 +63,9 @@ whole match: for kickoff 19:00 UTC, dispatch about 18:55 with `repeat` 12 and
 `interval_minutes` 5 for the first hour. Each poll appends its table to the job
 summary. A failed poll does not stop the next one, but the run ends red.
 
-Quota: the plan is 500 requests a month. The client refuses to send once fewer
-than 100 remain, and the quota left is shown in every poll.
+Quota: the response's monthly limit and remaining requests are shown in every
+poll. The client refuses to send once fewer than 100 remain. No retries are
+sent within a poll, so the two-request cap includes failed requests.
 
 ## Concurrency
 

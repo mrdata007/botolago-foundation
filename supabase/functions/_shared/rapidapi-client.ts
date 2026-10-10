@@ -158,6 +158,13 @@ export class RapidApiClient {
   private async sendWithRetries(url: string, path: string): Promise<Response> {
     let lastError: RapidApiError | undefined;
     for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
+      const remaining = this.lastQuota.remaining;
+      if (remaining !== null && remaining < this.minRemaining) {
+        throw new RapidApiError(
+          "provider_rate_limited",
+          `Provider quota is low (${remaining} left): not sending the request.`,
+        );
+      }
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
       try {

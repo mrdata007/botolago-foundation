@@ -100,7 +100,7 @@ jobs:
           {
             echo "## SofaScore live shadow compare (production, read only)"
             echo
-            echo "Polls: $REPEAT, every $INTERVAL minutes. At most 2 RapidAPI requests per poll."
+            echo "Polls: $REPEAT, every $INTERVAL minutes. At most 2 RapidAPI requests per poll; no retries within a poll."
           } >> "$GITHUB_STEP_SUMMARY"
           failures=0
           for (( poll = 1; poll <= REPEAT; poll++ )); do

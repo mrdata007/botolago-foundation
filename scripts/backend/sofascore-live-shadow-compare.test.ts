@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import {
   assertReadOnly,
+  createCompareClient,
   fixturesNeedingFallback,
   PRODUCTION_SNAPSHOT_SQL,
   renderMarkdown,
@@ -104,6 +105,54 @@ describe("sofascore live shadow compare", () => {
   test("identical state is no change", async () => {
     const { deps: d } = deps([event(111, "inprogress", 6, 0, 0)], [prod()]);
     expect((await runCompare(d)).rows[0].wouldChange).toBe("no");
+  });
+
+  test("a mapped finished event without scores is rejected, not unmapped", async () => {
+    const finished = {
+      ...event(111, "finished", 100, 0, 0),
+      homeScore: undefined,
+      awayScore: undefined,
+    };
+    const { deps: d } = deps([finished], [prod()]);
+    const report = await runCompare(d);
+    expect(report.rows[0].wouldChange).toBe("rejected");
+    expect(report.unmapped).toEqual([]);
+    expect(report.rejected).toEqual([
+      { sofascoreEventId: "111", reason: "finished_without_score" },
+    ]);
+    expect(renderMarkdown(report)).toContain("| rejected |");
+  });
+
+  test("a transient live-list failure consumes one request without retrying", async () => {
+    let sent = 0;
+    const api = createCompareClient("fake-key", {
+      fetch: async () => {
+        sent += 1;
+        return new Response("{}", { status: 503 });
+      },
+      runtime: { sleep: async () => undefined, random: () => 0 },
+    });
+    const { deps: d } = deps([], [prod()]);
+    await expect(runCompare({ ...d, client: api })).rejects.toThrow("Provider error 503");
+    expect(sent).toBe(1);
+    expect(api.requestsSent()).toBe(1);
+  });
+
+  test("a transient fallback failure stays within the two-request poll cap", async () => {
+    let sent = 0;
+    const api = createCompareClient("fake-key", {
+      fetch: async () => {
+        sent += 1;
+        return new Response(sent === 1 ? '{"events":[]}' : "{}", {
+          status: sent === 1 ? 200 : 503,
+        });
+      },
+      runtime: { sleep: async () => undefined, random: () => 0 },
+    });
+    const { deps: d } = deps([], [prod()]);
+    await expect(runCompare({ ...d, client: api })).rejects.toThrow("Provider error 503");
+    expect(sent).toBe(2);
+    expect(api.requestsSent()).toBe(2);
   });
 
   test("an older SofaScore change than production is blocked by the freshness guard", async () => {
