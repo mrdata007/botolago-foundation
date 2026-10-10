@@ -1,0 +1,16 @@
+$ BASE=http://127.0.0.1:4490 node docs/product/manager-card-sorare-style/wp4/first-screen-sizes.mjs   (G1 "rated", hero closed; card width and next-round line above the bottom bar, px, negative = under it)
+size       fr card  fr line     ar card  ar line   scrollWidth = viewport
+390x932       296    95.55       296    96.61   yes
+412x915       296    78.55       296    79.61   yes
+390x844    288.38    19.89    284.64    26.98   yes
+393x852    293.31    19.89    289.58       27   yes
+375x812    268.59    19.89    264.86       27   yes
+390x780    248.81    19.89    245.08       27   yes
+390x760    236.45    19.89    232.72       27   yes
+390x750       232    17.09       232    18.16   yes
+390x740       232     7.09       232     8.16   yes
+375x667       232   -65.91       232   -64.84   yes
+360x780    248.81    19.89    245.08       27   yes
+360x740       232     7.09       232     8.16   yes
+360x640       232   -92.91       232   -91.84   yes
+320x568       232  -164.91       232  -173.03   yes

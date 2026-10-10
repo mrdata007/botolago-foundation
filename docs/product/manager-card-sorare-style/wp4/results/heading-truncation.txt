@@ -1,0 +1,9 @@
+$ BASE=http://127.0.0.1:4490 node docs/product/manager-card-sorare-style/wp4/heading-truncation.mjs   (round 2 review fixes, 18f921ee; 4490)
+fr 768 [] of 5 headings
+fr 1024 [] of 5 headings
+fr 1280 [] of 5 headings
+fr 1440 [] of 5 headings
+ar 768 [] of 5 headings
+ar 1024 [] of 5 headings
+ar 1280 [] of 5 headings
+ar 1440 [] of 5 headings

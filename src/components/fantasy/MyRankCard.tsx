@@ -17,7 +17,7 @@ import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 // The card's token is its own chunk, requested only while the section is live: with the switch
 // off this line imports nothing of the Manager Card.
 const RankCardToken = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.RankCardToken,
   })),
 );

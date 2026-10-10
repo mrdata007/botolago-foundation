@@ -77,7 +77,7 @@ const RESERVED_ERROR_LINE = cn(
 function RegisterPage() {
   const { t, lang } = useI18n();
   const navigate = useNavigate();
-  // The manager card (plan M1c): while Gradins is live, « Nom complet » says what the name is for.
+  // The manager card (plan M1c): while Curva is live, « Nom complet » says what the name is for.
   const live = useManagerCardLive();
   const { next = "/" } = Route.useSearch();
   const ids = {

@@ -28,7 +28,7 @@ export interface RoundRef {
 
 /**
  * What the object on the save step draws (plan M1b):
- *   - a visitor: the base scarf with no name, no club, no serial and no number. The name the
+ *   - a visitor: the base card with no name, no club, no serial and no number. The name the
  *     card will carry is chosen at sign-up, so the team name here would be wrong after saving;
  *   - a signed-in account without a team: the card name (the display name when it is not
  *     blank, else the team name, as the board reads it) and the club the profile names, if one
@@ -58,7 +58,7 @@ export type HubCardHead =
   | { kind: "number"; ovr: number; tier: TierCode | null; provisional: boolean };
 
 export type HubCardLine =
-  /** The next round and its deadline (forming: `m3.line`; rated: `gradins.round.line`). */
+  /** The next round and its deadline (forming: `m3.line`; rated: `curva.round.line`). */
   | { kind: "next"; gameweek: number; deadline: string }
   /** `m3.first_counted`. */
   | { kind: "first_counted"; gameweek: number }
@@ -77,7 +77,7 @@ export type HubCardLine =
 export interface HubCardModel {
   head: HubCardHead;
   line: HubCardLine;
-  /** A moment is waiting to be seen on Gradins: the block carries « Nouveau ». */
+  /** A moment is waiting to be seen on Curva: the block carries « Nouveau ». */
   fresh: boolean;
 }
 

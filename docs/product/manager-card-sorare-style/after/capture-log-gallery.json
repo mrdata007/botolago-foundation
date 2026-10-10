@@ -1,0 +1,113 @@
+{
+  "base": "http://127.0.0.1:4490",
+  "pictures": [
+    {
+      "name": "gallery-full-tiers-fr-light-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-full-states-fr-light-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-tokens-fr-light-1000",
+      "cards": 0,
+      "tokens": 56,
+      "renderer": "eclat-v1",
+      "width": 1000,
+      "height": 1051,
+      "problems": []
+    },
+    {
+      "name": "gallery-full-tiers-fr-dark-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-full-states-fr-dark-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-tokens-fr-dark-1000",
+      "cards": 0,
+      "tokens": 56,
+      "renderer": "eclat-v1",
+      "width": 1000,
+      "height": 1051,
+      "problems": []
+    },
+    {
+      "name": "gallery-full-tiers-ar-light-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-full-states-ar-light-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-tokens-ar-light-1000",
+      "cards": 0,
+      "tokens": 56,
+      "renderer": "eclat-v1",
+      "width": 1000,
+      "height": 1051,
+      "problems": []
+    },
+    {
+      "name": "gallery-full-tiers-ar-dark-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-full-states-ar-dark-1700",
+      "cards": 6,
+      "tokens": 0,
+      "renderer": "eclat-v1",
+      "width": 1700,
+      "height": 517,
+      "problems": []
+    },
+    {
+      "name": "gallery-tokens-ar-dark-1000",
+      "cards": 0,
+      "tokens": 56,
+      "renderer": "eclat-v1",
+      "width": 1000,
+      "height": 1051,
+      "problems": []
+    }
+  ]
+}

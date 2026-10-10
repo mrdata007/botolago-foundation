@@ -148,7 +148,7 @@ for (const key of Object.keys(reportB.pages)) {
   const regrouped = requests.onlyBranch.filter((r) => /^GET \/assets\/[^/]+\.(m?js|css)$/.test(r));
   const dataOrDocument = requests.onlyBranch.filter((r) => !regrouped.includes(r));
   const sectionCode = regrouped.filter((r) =>
-    /gradins|manager-card|plain-renderer|\/copy-|ManagerCard|CardToken/i.test(r),
+    /curva|manager-card|plain-renderer|\/copy-|ManagerCard|CardToken/i.test(r),
   );
   requests.regroupedChunks = regrouped.filter((r) => !sectionCode.includes(r));
   const storage = {

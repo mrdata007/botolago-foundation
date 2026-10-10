@@ -18,7 +18,7 @@ import { PepitesPageTitle } from "./PepitesShell";
 import { pepitesKeys, rankingStatsQueryOptions } from "./use-pepites";
 
 /**
- * While Gradins is live Pépites lives inside Fantasy (plan 3.4), so the home's title band opens
+ * While Curva is live Pépites lives inside Fantasy (plan 3.4), so the home's title band opens
  * with a « Fantasy » back pill. Off, the band is what it was. The live state is the section's own
  * status hook, replaced here for the length of this file.
  */

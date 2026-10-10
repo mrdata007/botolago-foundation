@@ -7,8 +7,8 @@ import type { BeatName, CardProfile, CardStrings, TokenSize } from "./types";
 /**
  * The plain renderer (plan section 6.1): a small, fast stand-in for a card direction. A rounded
  * rectangle in the club colour, the number or a dash, the name, the tier word. It is what the
- * unit tests render and what `active-renderer.ts` serves until the Écharpe port (WP2) replaces
- * it. It follows the full contract: one root element with `role="img"`, an escaped label, no
+ * unit tests render, a stand-in that stays beside the card direction `active-renderer.ts` serves
+ * (Éclat). It follows the full contract: one root element with `role="img"`, an escaped label, no
  * animation (`beats` is empty), a text-free `image()`.
  *
  * Every attribute and text node goes through `esc`; nothing else reaches the output.

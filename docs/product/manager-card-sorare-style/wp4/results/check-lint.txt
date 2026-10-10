@@ -1,0 +1,6 @@
+=== check-lint: bun run lint   (round 2 review fixes 18f921ee; exit 0: 0 errors, 31 warnings, none in a file of the card or the section)
+exit 0
+  133:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+✖ 31 problems (0 errors, 31 warnings)
+

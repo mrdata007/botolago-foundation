@@ -141,6 +141,33 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
       }
     });
 
+    it("keeps a hostile club colour out of every attribute: full, token, detail and the share art", () => {
+      const profile: CardProfile = {
+        ...rated,
+        founder: 2026,
+        serial: "482913",
+        club: {
+          ...rated.club!,
+          primary: "red;}</style><script>",
+          secondary: '"><svg onload=alert(1)>',
+        },
+      };
+      for (const lang of ["fr", "ar"] as const) {
+        const strings = STRINGS[lang];
+        const outputs = [
+          renderer.full(profile, { strings, theme: "light" }),
+          ...SIZES.map((size) => renderer.token(profile, { strings, theme: "dark", size })),
+          renderer.detail(profile, "founder", { strings, theme: "light" }) ?? "",
+          renderer.image(profile, strings).svg,
+        ];
+        for (const html of outputs) {
+          expect(findUnsafeMarkup(html)).toEqual([]);
+          expect(html).not.toContain("<script");
+          expect(html).not.toContain("onload");
+        }
+      }
+    });
+
     it("computes its aspect without the DOM, and a token box for every size", () => {
       expect(renderer.aspect(rated, STRINGS.fr)).toBeGreaterThan(1);
       expect(renderer.aspect(rated, STRINGS.ar)).toBeGreaterThan(1);
@@ -164,9 +191,9 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
       expect(art.svg).not.toContain("<tspan");
       expect(art.width).toBeGreaterThan(0);
       expect(art.height).toBeGreaterThan(art.width);
-      // The card's own text is a run: the patch's ratings (91 on this fixture) and its serial. A
-      // direction that knits the number (Écharpe) has no run for it; one that prints it (the plain
-      // renderer) has.
+      // The card's own text is a run: the rating (84 on this fixture; 91 on the patch's) and its
+      // serial. A direction that drew the number as geometry would have no run for it; one that
+      // prints it (Éclat, the plain renderer) has.
       const spoken = art.texts.map((run) => run.text);
       expect(spoken.some((text) => text === "84" || text === "91")).toBe(true);
       expect(spoken).toContain("BOT #482913");
@@ -211,15 +238,15 @@ describe("the active renderer (active-renderer.ts)", () => {
     expect(active.id).toBe(activeRenderer.id);
   });
 
-  it("reserves a box close to the shape the card really has, in either language", () => {
+  it("reserves the box the card really has, in either language: one shape, so the page never jumps", () => {
     for (const lang of ["fr", "ar"] as const) {
       for (const id of ["rated", "forming1", "founder", "longNameLatin", "arabicName"] as const) {
         const profile = fromMyCard(FIXTURES[id].card!, { sample: true });
         const estimate = activeRenderer.estimateAspect(profile, lang);
         const real = active.aspect(profile, STRINGS[lang]);
-        expect(estimate).toBeGreaterThan(1);
-        // A box that is far off makes the page jump when the card arrives.
-        expect(Math.abs(estimate - real) / real).toBeLessThan(0.15);
+        // Every Éclat card is 1 : 1.618 (plan D6), so the estimate is exact.
+        expect(estimate).toBe(1.618);
+        expect(real).toBe(1.618);
       }
     }
   });

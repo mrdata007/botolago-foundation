@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useManagerCards, useMyManagerCard } from "@/services/use-manager-card";
 
 import { CardToken } from "../CardToken";
-import { useCardStrings, useGradinsCopy, useMomentCopy } from "../copy";
+import { useCardStrings, useCurvaCopy, useMomentCopy } from "../copy";
 import { fill } from "../interpolate";
 import { fromMember } from "../to-profile";
 import { newlyRated } from "./inline-model";
@@ -103,10 +103,10 @@ function BandView({
  * were. The comparison has its own page.
  */
 export function LeagueCompareLink({ leagueId }: { leagueId: string }) {
-  const copy = useGradinsCopy();
+  const copy = useCurvaCopy();
   return (
     <Link
-      to="/gradins/les-votres"
+      to="/curva/les-votres"
       search={{ ligue: leagueId }}
       data-testid="league-compare-link"
       className={cn(

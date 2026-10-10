@@ -54,12 +54,12 @@ const POP_MS = 320;
 export function BottomNav() {
   const { t, lang } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  // Today's five items, or Gradins' while it is live (src/lib/feature-flags.ts).
+  // Today's five items, or Curva' while it is live (src/lib/feature-flags.ts).
   const primaryNavItems = usePrimaryNavItems();
-  const gradinsLive = useManagerCardLive();
+  const curvaLive = useManagerCardLive();
 
   const activeTo = primaryNavItems.find((item) =>
-    isPrimaryRouteActive(pathname, item.to, gradinsLive),
+    isPrimaryRouteActive(pathname, item.to, curvaLive),
   )?.to;
   const rowRef = useRef<HTMLDivElement>(null);
   const iconRefs = useRef(new Map<string, HTMLSpanElement>());
@@ -161,7 +161,7 @@ export function BottomNav() {
           />
         ) : null}
         {primaryNavItems.map((item) => {
-          const active = isPrimaryRouteActive(pathname, item.to, gradinsLive);
+          const active = isPrimaryRouteActive(pathname, item.to, curvaLive);
           const Icon = item.icon;
           return (
             <Link

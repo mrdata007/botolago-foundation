@@ -13,7 +13,7 @@ export type { ManagerCardStatus };
 const isServerRender = (): boolean => typeof window === "undefined";
 
 /**
- * Whether Gradins is live (plan section 3.2). Two layers decide: the build constant
+ * Whether Curva is live (plan section 3.2). Two layers decide: the build constant
  * (`MANAGER_CARD_BUILD`) and the database's own answer, `api.manager_card_status()`, read here on
  * the server only, during the server render, and handed to the browser with the page. The browser
  * never calls the function: a call to one that does not exist yet answers HTTP 404, which every
@@ -84,7 +84,7 @@ export function managerCardStatusQuery(fixture?: string) {
 
 /**
  * Root beforeLoad, server only: fill the status query for this render. beforeLoad (not a loader)
- * because the `/gradins` guard in a child's beforeLoad must see the answer. `search` is the
+ * because the `/curva` guard in a child's beforeLoad must see the answer. `search` is the
  * request's raw search string, for the development fixture. Never throws.
  */
 export async function ensureManagerCardStatus(
@@ -100,7 +100,7 @@ export async function ensureManagerCardStatus(
   }
 }
 
-/** The root route's `beforeLoad`, registered only when the build switch lets Gradins exist. */
+/** The root route's `beforeLoad`, registered only when the build switch lets Curva exist. */
 export async function rootBeforeLoad({
   context,
   location,
@@ -113,10 +113,10 @@ export async function rootBeforeLoad({
 }
 
 /**
- * Whether `/gradins` and everything under it sends the visitor to Fantasy: the build switch is
+ * Whether `/curva` and everything under it sends the visitor to Fantasy: the build switch is
  * off, or the status the server read says off, missing or failed. Two layers, both must say yes.
  */
-export function shouldRedirectFromGradins(
+export function shouldRedirectFromCurva(
   queryClient: QueryClient,
   build: boolean = MANAGER_CARD_BUILD,
 ): boolean {

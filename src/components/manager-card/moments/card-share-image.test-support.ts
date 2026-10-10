@@ -21,6 +21,9 @@ export interface Op {
   font?: string;
   maxWidth?: number;
   shadowBlur?: number;
+  /** For text: the turn in degrees (a run set along the cut corner) and the tracking in px. */
+  rotate?: number;
+  letterSpacing?: number;
 }
 
 interface State {
@@ -34,11 +37,19 @@ interface State {
   shadowBlur: number;
   shadowColor: string;
   shadowOffsetY: number;
+  letterSpacing: string;
+  /** The translation and the turn (radians) the next text is drawn under. */
+  originX: number;
+  originY: number;
+  turn: number;
 }
 
 export const fontSize = (font: string) => Number(/([\d.]+)px/.exec(font)?.[1] ?? 10);
 /** A deterministic width: the same text in the same font measures the same in both languages. */
 export const measure = (value: string, font: string) => [...value].length * fontSize(font) * 0.55;
+/** Chromium's canvas spaces the letters of a Latin run and never those of a cursive one (Arabic). */
+const spacedBy = (value: string, spacing: number) =>
+  /[؀-ۿ]/.test(value) ? 0 : [...value].length * spacing;
 
 /** Deterministic ink above and below the baseline, in em, after what Chromium measures. */
 export function ink(value: string, font: string) {
@@ -68,6 +79,10 @@ export function recordingContext() {
     shadowBlur: 0,
     shadowColor: "transparent",
     shadowOffsetY: 0,
+    letterSpacing: "0px",
+    originX: 0,
+    originY: 0,
+    turn: 0,
   };
   const stack: State[] = [];
   let xs: number[] = [];
@@ -97,6 +112,13 @@ export function recordingContext() {
     },
     closePath() {},
     clip() {},
+    translate(tx: number, ty: number) {
+      state.originX += tx;
+      state.originY += ty;
+    },
+    rotate(radians: number) {
+      state.turn += radians;
+    },
     fill() {
       ops.push({
         kind: "fill",
@@ -127,8 +149,14 @@ export function recordingContext() {
         paint: state.fillStyle,
       });
     },
-    fillText(value: string, px: number, py: number, maxWidth?: number) {
-      const w = Math.min(measure(value, state.font), maxWidth ?? Infinity);
+    fillText(value: string, rawX: number, rawY: number, maxWidth?: number) {
+      const px = rawX + state.originX;
+      const py = rawY + state.originY;
+      const spacing = Number.parseFloat(state.letterSpacing) || 0;
+      const w = Math.min(
+        measure(value, state.font) + spacedBy(value, spacing),
+        maxWidth ?? Infinity,
+      );
       const rtl = state.direction === "rtl";
       const align =
         state.textAlign === "start"
@@ -140,15 +168,36 @@ export function recordingContext() {
               ? "left"
               : "right"
             : state.textAlign;
-      const left = align === "right" ? px - w : align === "center" ? px - w / 2 : px;
+      let left = align === "right" ? px - w : align === "center" ? px - w / 2 : px;
       const metrics = ink(value, state.font);
+      let right = left + w;
+      let top = py - metrics.ascent;
+      let bottom = py + metrics.descent;
+      if (state.turn !== 0) {
+        // the box of a turned run: its four corners turned about the anchor
+        const cos = Math.cos(state.turn);
+        const sin = Math.sin(state.turn);
+        const corners = [
+          [left, top],
+          [right, top],
+          [left, bottom],
+          [right, bottom],
+        ].map(([cx, cy]) => [
+          px + (cx! - px) * cos - (cy! - py) * sin,
+          py + (cx! - px) * sin + (cy! - py) * cos,
+        ]);
+        left = Math.min(...corners.map((c) => c[0]!));
+        right = Math.max(...corners.map((c) => c[0]!));
+        top = Math.min(...corners.map((c) => c[1]!));
+        bottom = Math.max(...corners.map((c) => c[1]!));
+      }
       ops.push({
         kind: "text",
         text: value,
         left,
-        right: left + w,
-        top: py - metrics.ascent,
-        bottom: py + metrics.descent,
+        right,
+        top,
+        bottom,
         baseline: py,
         anchor: px,
         align,
@@ -156,12 +205,15 @@ export function recordingContext() {
         paint: state.fillStyle,
         font: state.font,
         maxWidth,
+        ...(state.turn !== 0 ? { rotate: (state.turn * 180) / Math.PI } : {}),
+        ...(spacing !== 0 ? { letterSpacing: spacing } : {}),
       });
     },
     measureText(value: string) {
       const metrics = ink(value, state.font);
       return {
-        width: measure(value, state.font),
+        width:
+          measure(value, state.font) + spacedBy(value, Number.parseFloat(state.letterSpacing) || 0),
         actualBoundingBoxAscent: metrics.ascent,
         actualBoundingBoxDescent: metrics.descent,
       };

@@ -1,0 +1,4 @@
+light 1440: console errors none
+light 390: console errors none
+dark 1440: console errors none
+dark 390: console errors none

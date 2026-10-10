@@ -12,8 +12,9 @@ import {
   countedA11y,
   countedRounds,
   finalRounds,
-  gradinsCopy,
+  curvaCopy,
   gwList,
+  isolateLatin,
   leagues,
   momentCopy,
   pluralCategory,
@@ -206,7 +207,7 @@ describe("cardStrings and cardLabel", () => {
     expect(strings.ovr).toBe("OVR");
     expect(strings.stats).toEqual({ cap: "CAP", sel: "SEL", trf: "TRF", con: "CON" });
     expect(strings.tiers).toEqual({
-      homa: "HOMA",
+      homa: "LASTREET",
       stade: "STADE",
       pro: "PRO",
       champion: "CHAMPION",
@@ -218,6 +219,8 @@ describe("cardStrings and cardLabel", () => {
     expect(strings.a11y.separator).toBe(", ");
     const arabic = cardStrings(ar, "ar");
     expect(arabic.tiers.pro).toBe("محترف");
+    // The lowest tier reads LASTREET in both languages: a Latin word in the Arabic UI too.
+    expect(arabic.tiers.homa).toBe("LASTREET");
     expect(arabic.a11y.separator).toBe("، ");
     expect(arabic.serial("482913")).toBe("BOT #482913");
     expect(arabic.sample).toBe("مثال");
@@ -246,12 +249,46 @@ describe("cardStrings and cardLabel", () => {
   });
 });
 
+describe("isolateLatin (LASTREET in text that leaves the interface)", () => {
+  const LRI = String.fromCodePoint(0x2066);
+  const PDI = String.fromCodePoint(0x2069);
+
+  it("wraps a Latin word in a left-to-right isolate in Arabic, and only there", () => {
+    expect(isolateLatin("LASTREET", "ar")).toBe(`${LRI}LASTREET${PDI}`);
+    expect(isolateLatin("LASTREET", "fr")).toBe("LASTREET");
+  });
+
+  it("leaves an Arabic word, an empty string and the other tiers' Arabic words alone", () => {
+    expect(isolateLatin("محترف", "ar")).toBe("محترف");
+    expect(isolateLatin("", "ar")).toBe("");
+    for (const tier of ["stade", "pro", "champion", "legend"] as const) {
+      const word = cardStrings(ar, "ar").tiers[tier];
+      expect(isolateLatin(word, "ar")).toBe(word);
+    }
+  });
+
+  it("is what the tier word becomes in a plain sentence: the isolates sit round it, not round the sentence", () => {
+    const strings = cardStrings(ar, "ar");
+    const sentence = `63 OVR · ${isolateLatin(strings.tiers.homa, "ar")}`;
+    expect(sentence).toContain(`${LRI}LASTREET${PDI}`);
+    expect(sentence.startsWith("63")).toBe(true);
+  });
+
+  it("is not in a card's accessible label, which is spoken and keeps the bare word", () => {
+    const homa = fromMyCard(FIXTURES.homa.card!, { sample: false });
+    const label = cardLabel(homa, cardStrings(ar, "ar"));
+    expect(label).toContain("LASTREET");
+    expect(label).not.toContain(LRI);
+    expect(label).not.toContain(PDI);
+  });
+});
+
 describe("the dictionary of the section", () => {
   const read = (relative: string) => readFileSync(join(ROOT, relative), "utf8");
   const sectionKeys = (Object.keys(dictionaries.fr) as TranslationKey[]).filter(
     (key) =>
-      key === "nav.gradins" ||
-      key.startsWith("gradins.") ||
+      key === "nav.curva" ||
+      key.startsWith("curva.") ||
       key.startsWith("card.") ||
       key === "fantasy.hub.pepites_body" ||
       key === "fantasy.hub.card_view",
@@ -272,11 +309,11 @@ describe("the dictionary of the section", () => {
   });
 
   it("every accessor reads the key its property is named for", () => {
-    const g = gradinsCopy(fr, "fr");
-    expect(g.nav).toBe("Gradins");
-    expect(g.guestHeadline).toBe("Votre place dans les gradins");
+    const g = curvaCopy(fr, "fr");
+    expect(g.nav).toBe("Curva");
+    expect(g.guestHeadline).toBe("Votre place dans la Curva");
     expect(g.guestPointRatingBody).toContain("{final}");
-    expect(g.shareCaption).toBe("Ma saison, rang par rang");
+    expect(g.shareCaption).toBe("Ma carte BotolaGO");
     expect(g.hubPepitesBody).toContain("moins de 23 ans");
     expect(g.leagues(2)).toBe("2 ligues");
     const c = cardCopy(ar, "ar");
@@ -332,7 +369,7 @@ describe("the banned words", () => {
     /تحصيل/,
   ];
   const keys = (Object.keys(dictionaries.fr) as TranslationKey[]).filter(
-    (key) => key === "nav.gradins" || key.startsWith("gradins.") || key.startsWith("card."),
+    (key) => key === "nav.curva" || key.startsWith("curva.") || key.startsWith("card."),
   );
 
   it.each(["fr", "ar"] as const)("none in a %s string", (lang) => {

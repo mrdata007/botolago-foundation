@@ -49,12 +49,13 @@ describe("the plain renderer", () => {
     ).toContain(">78</text>");
   });
 
-  it("is not the active renderer any more: Écharpe is, and its estimate is close to its own aspect", async () => {
+  it("is not the active renderer any more: Éclat is, and its estimate is its own aspect", async () => {
     const active = await activeRenderer.load();
     expect(active).not.toBe(plainRenderer);
     expect(active.id).toBe(activeRenderer.id);
+    expect(active.id).toBe("eclat-v1");
     const real = active.aspect(rated, STRINGS.fr);
-    expect(Math.abs(activeRenderer.estimateAspect(rated, "fr") - real) / real).toBeLessThan(0.03);
+    expect(activeRenderer.estimateAspect(rated, "fr")).toBe(real);
   });
 });
 

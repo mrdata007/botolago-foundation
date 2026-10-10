@@ -1,0 +1,7 @@
+TILT while a pointer circles the card for 3 s
+  CPU x1 control: 176 frames, median 16.7 ms, p95 16.7 ms, > 20 ms: 0, > 33 ms: 0, long tasks (> 50 ms): 0 []
+  CPU x1 rated: 169 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 7, > 33 ms: 7, long tasks (> 50 ms): 1 [56]
+  CPU x1 legend: 172 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 5, > 33 ms: 5, long tasks (> 50 ms): 1 [62]
+  CPU x4 control: 176 frames, median 16.7 ms, p95 16.8 ms, > 20 ms: 0, > 33 ms: 0, long tasks (> 50 ms): 0 []
+  CPU x4 rated: 133 frames, median 16.7 ms, p95 50 ms, > 20 ms: 30, > 33 ms: 30, long tasks (> 50 ms): 4 [65,65,52,50]
+  CPU x4 legend: 93 frames, median 33.3 ms, p95 50.1 ms, > 20 ms: 59, > 33 ms: 59, long tasks (> 50 ms): 4 [73,69,54,57]

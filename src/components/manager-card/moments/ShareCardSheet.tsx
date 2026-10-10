@@ -150,7 +150,7 @@ export function ShareCardSheet({
       ? (navigator as Navigator & { canShare?: (data: ShareData) => boolean })
       : null;
   const canShareFile = Boolean(file && nav?.canShare?.({ files: [file] }));
-  const label = t("gradins.share.label");
+  const label = t("curva.share.label");
   const alt = `${cardLabel(profile, strings)}${card.provisional ? `, ${t("card.provisional")}` : ""}`;
 
   const pill = cn(

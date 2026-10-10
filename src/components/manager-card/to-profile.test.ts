@@ -13,6 +13,7 @@ import {
   localProfile,
   toCardClub,
   withTier,
+  ladderProfile,
 } from "./to-profile";
 
 const own = (id: keyof typeof FIXTURES) => FIXTURES[id].card!;
@@ -133,7 +134,21 @@ describe("withTier, guestProfile and localProfile", () => {
     expect(profile.tier).toBe("pro");
   });
 
-  it("is the unnamed base scarf for a guest: nothing is filled in", () => {
+  it("draws the ladder's token at a tier with no number, no marks and no pill, and marks it as a ladder step", () => {
+    const profile = { ...fromMyCard(own("rated")), provisional: true, counted: 4 };
+    const step = ladderProfile(profile, "champion");
+    expect(step).toEqual({
+      ...profile,
+      tier: "champion",
+      ovr: null,
+      provisional: false,
+      counted: null,
+      ladder: true,
+    });
+    expect(profile.ovr).not.toBeNull();
+  });
+
+  it("is the unnamed base card for a guest: nothing is filled in", () => {
     expect(guestProfile()).toEqual({
       name: "",
       ovr: null,
@@ -151,7 +166,7 @@ describe("withTier, guestProfile and localProfile", () => {
     expect(guestProfile({ season: "2026/27", club })).toMatchObject({ season: "2026/27", club });
   });
 
-  it("carries a signed-in account's name and favourite club on the base scarf", () => {
+  it("carries a signed-in account's name and favourite club on the base card", () => {
     const raja: Club = {
       id: "rca",
       name: { fr: "Raja CA", ar: "الرجاء الرياضي" },

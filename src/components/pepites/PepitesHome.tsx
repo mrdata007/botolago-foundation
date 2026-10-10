@@ -99,7 +99,7 @@ function HomeChips({
  */
 export function PepitesHome() {
   const { t, lang } = useI18n();
-  // While Gradins is live, Pépites lives inside Fantasy (plan 3.4): the title band names the way
+  // While Curva is live, Pépites lives inside Fantasy (plan 3.4): the title band names the way
   // back. Off, the band has no back pill, as before.
   const live = useManagerCardLive();
   const back = live ? { backTo: "/fantasy", backLabel: t("nav.fantasy") } : {};
