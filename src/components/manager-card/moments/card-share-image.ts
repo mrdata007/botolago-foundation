@@ -15,7 +15,7 @@ import {
 import { activeRenderer } from "../active-renderer";
 import { cardStrings, type Translate } from "../copy";
 import { fillText } from "../interpolate";
-import type { CardImageArt, CardRenderer, TextRun } from "../renderer";
+import type { CardImageArt, CardImageCrest, CardRenderer, TextRun } from "../renderer";
 import type { CardLang, CardProfile, CardStrings } from "../types";
 
 /**
@@ -28,7 +28,10 @@ import type { CardLang, CardProfile, CardStrings } from "../types";
  * (an SVG drawn as an image cannot use the page's web fonts). Around it: the wordmark, the
  * provisional note when the number is provisional, the caption, the name in Changa 800, the
  * number with its tier, the serial when there is one, the season, the club as a colour disc with
- * its initials (no crest, plan 2.6) and the address.
+ * its initials and the address. When the club has a crest (owner request 2026-10-10, which
+ * supersedes plan 2.6's "no crest") and it loads with CORS, the crest is drawn on a light plate on
+ * the card's tab and on the disc beside the name instead of the initials; a crest that cannot be
+ * read that way would taint the canvas, so the picture keeps the initials then.
  *
  * Only the sharer's own card, and only with a number: an unrated card has nothing to share.
  */
@@ -283,7 +286,42 @@ function drawArtText(
   ctx.restore();
 }
 
-/** The club as a colour disc with its initials, ringed in its edge colour measured on the navy. */
+/**
+ * A crest on its light plate, ringed in `ring`, the picture contained in a `box` square on the
+ * centre and clipped to the ring's inside: the card's tab disc as the card draws it with a crest.
+ */
+function drawCrestDisc(
+  ctx: CanvasRenderingContext2D,
+  crest: HTMLImageElement,
+  cx: number,
+  cy: number,
+  d: Pick<CardImageCrest, "r" | "plate" | "ring" | "ringR" | "ringW" | "box" | "clipR">,
+) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx, cy, d.r, 0, Math.PI * 2);
+  ctx.fillStyle = d.plate;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, d.ringR, 0, Math.PI * 2);
+  ctx.lineWidth = d.ringW;
+  ctx.strokeStyle = d.ring;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, d.clipR, 0, Math.PI * 2);
+  ctx.clip();
+  // contained: the crest's whole shape inside the square, as `preserveAspectRatio="xMidYMid meet"`
+  const w = crest.naturalWidth || 1;
+  const h = crest.naturalHeight || 1;
+  const k = d.box / Math.max(w, h);
+  ctx.drawImage(crest, cx - (w * k) / 2, cy - (h * k) / 2, w * k, h * k);
+  ctx.restore();
+}
+
+/**
+ * The club as a colour disc with its initials, ringed in its edge colour measured on the navy; or,
+ * with a crest that has loaded with CORS, the crest on its light plate in the same ring.
+ */
 function drawClubDisc(
   ctx: CanvasRenderingContext2D,
   club: { initials: string; primary: string },
@@ -291,9 +329,22 @@ function drawClubDisc(
   centreY: number,
   diameter: number,
   ring: number,
+  crest: { image: HTMLImageElement; plate: string } | null,
 ) {
   const colours = shareClubColours(club.primary, SHARE_PALETTE.ground);
   const r = diameter / 2;
+  if (crest) {
+    drawCrestDisc(ctx, crest.image, centreX, centreY, {
+      r,
+      plate: crest.plate,
+      ring: colours.edge,
+      ringR: r - ring / 2,
+      ringW: ring,
+      box: diameter * (2 / 3),
+      clipR: r - ring,
+    });
+    return;
+  }
   ctx.save();
   ctx.beginPath();
   ctx.arc(centreX, centreY, r, 0, Math.PI * 2);
@@ -322,6 +373,7 @@ function draw(
   model: CardShareImageModel,
   logo: HTMLImageElement | null,
   art: HTMLImageElement,
+  crest: HTMLImageElement | null,
 ): Promise<Blob> {
   const { width, height } = CARD_IMAGE_SIZE;
   const L = CARD_IMAGE_LAYOUT;
@@ -391,13 +443,35 @@ function draw(
   ctx.shadowOffsetY = 26;
   ctx.drawImage(art, left, top, drawnW, drawnH);
   ctx.restore();
-  drawArtText(ctx, model.art.texts, left, top, scale);
+  // the club's crest over the art's initials disc, whose initials are then left out
+  const tab = crest ? model.art.crest : undefined;
+  if (crest && tab) {
+    drawCrestDisc(ctx, crest, left + tab.cx * scale, top + tab.cy * scale, {
+      r: tab.r * scale,
+      plate: tab.plate,
+      ring: tab.ring,
+      ringR: tab.ringR * scale,
+      ringW: tab.ringW * scale,
+      box: tab.box * scale,
+      clipR: tab.clipR * scale,
+    });
+  }
+  const runs = tab ? model.art.texts.filter((run) => run.part !== "clubInitials") : model.art.texts;
+  drawArtText(ctx, runs, left, top, scale);
 
   // The club disc at the inline end of the text block, centred on the name and the rating.
   const discRoom = model.club ? L.disc.diameter + 36 : 0;
   if (model.club) {
     const centreX = rtl ? L.pad + L.disc.diameter / 2 : width - L.pad - L.disc.diameter / 2;
-    drawClubDisc(ctx, model.club, centreX, L.disc.centreY, L.disc.diameter, L.disc.ring);
+    drawClubDisc(
+      ctx,
+      model.club,
+      centreX,
+      L.disc.centreY,
+      L.disc.diameter,
+      L.disc.ring,
+      tab && crest ? { image: crest, plate: tab.plate } : null,
+    );
   }
 
   // The name, in Changa 800 at the inline start; shrunk to fit beside the disc, never cut.
@@ -503,9 +577,20 @@ async function loadArt(svg: string): Promise<HTMLImageElement | null> {
 export async function renderCardShareImage(model: CardShareImageModel): Promise<Blob> {
   await loadShareFonts(model.lang, sampleOf(model));
   await loadArtFonts(sampleOf(model));
-  const [logo, art] = await Promise.all([loadImage(wordmark), loadArt(model.art.svg)]);
+  const [logo, art, crest] = await Promise.all([
+    loadImage(wordmark),
+    loadArt(model.art.svg),
+    // with CORS (`loadImage` asks for it): a crest read any other way would taint the canvas
+    model.art.crest ? loadImage(model.art.crest.href) : Promise.resolve(null),
+  ]);
   if (!art) throw new Error("card_share_art");
-  return await draw(model, logo, art);
+  if (!crest) return await draw(model, logo, art, null);
+  try {
+    return await draw(model, logo, art, crest);
+  } catch {
+    // a canvas the crest tainted after all cannot be exported: the picture with the initials
+    return await draw(model, logo, art, null);
+  }
 }
 
 /**

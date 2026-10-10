@@ -10,11 +10,11 @@
 import { STAT_CODES } from "../types";
 import type { Ctx } from "./ctx";
 import { inkOn, mix } from "./foil";
-import { RULE_Y, STAT_DIV, STAT_X, mx, n2, star } from "./geometry";
+import { CREST, DISC, RULE_Y, STAT_DIV, STAT_X, mx, n2, star } from "./geometry";
 import { fitLabel, layoutName } from "./name";
 import type { Plaque } from "./plaque";
 import type { TextSpec } from "./text";
-import { serialLine } from "./view";
+import { esc, serialLine } from "./view";
 
 export interface Plate {
   /** Shapes, in card coordinates (not mirrored again). */
@@ -31,7 +31,20 @@ export function plate(c: Ctx, plaque: Plaque): Plate {
   let shapes = "";
   const texts: TextSpec[] = [];
 
-  // the tab: the season, the club's initials (not on the face-à-face card: the disc's colours stay)
+  // the tab's crest, on the plate `tabDisc` draws: never mirrored (its x is), on both cards. The
+  // share picture's art is built without it (`cardImage`): an SVG drawn as an image loads no
+  // picture, so the canvas draws the crest over the initials disc itself when it can.
+  const crest = p.club?.crest;
+  if (crest) {
+    const cx = X(DISC.cx);
+    const half = CREST.box / 2;
+    shapes +=
+      `<defs><clipPath id="${c.id}-crest"><circle cx="${cx}" cy="${DISC.cy}" r="${CREST.clipR}"/></clipPath></defs>` +
+      `<image href="${esc(crest)}" x="${cx - half}" y="${DISC.cy - half}" width="${CREST.box}" height="${CREST.box}" preserveAspectRatio="xMidYMid meet" clip-path="url(#${c.id}-crest)" data-meta="crest"/>`;
+  }
+
+  // the tab: the season, the club's initials (not on the face-à-face card: the disc's colours stay;
+  // not over a crest)
   if (!compact) {
     texts.push({
       text: p.season,
@@ -46,7 +59,7 @@ export function plate(c: Ctx, plaque: Plaque): Plate {
       dir: "ltr",
       data: { meta: "season" },
     });
-    if (p.club) {
+    if (p.club && !crest) {
       texts.push({
         text: p.club.initials,
         x: X(103),

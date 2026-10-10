@@ -5,6 +5,7 @@
  * and the one sentence a screen reader hears.
  */
 import { cardLabel } from "../copy";
+import { crestHref } from "../crest-href";
 import { STAT_CODES, TIER_CODES } from "../types";
 import type { CardProfile, CardStrings, StatCode, TierCode } from "../types";
 import { FOIL, tierKeyOf, withTierNames, type Foil, type TierKey } from "./foil";
@@ -34,14 +35,17 @@ const hexOrNull = (v: unknown): string | null => (typeof v === "string" && HEX.t
 
 /**
  * The club as the object can show it: a primary colour that is a real hex, else no club (the
- * neutral shirt and disc); a secondary that is not one reads as none. The colours are written
+ * neutral shirt and disc); a secondary that is not one reads as none; a crest whose address
+ * `crestHref` refuses reads as no crest (the initials disc). The colours and the crest are written
  * into attributes by the shirt, the disc and the token, so this is where a hostile string stops.
  */
 function cleanClub(club: CardProfile["club"] | undefined): CardProfile["club"] {
   if (!club || typeof club !== "object") return null;
   const primary = hexOrNull(club.primary);
   if (!primary) return null;
-  return { ...club, primary, secondary: hexOrNull(club.secondary) };
+  const { crest: rawCrest, ...rest } = club;
+  const crest = crestHref(rawCrest);
+  return { ...rest, primary, secondary: hexOrNull(club.secondary), ...(crest ? { crest } : {}) };
 }
 
 const intIn = (v: unknown, min: number, max: number): number | null =>
