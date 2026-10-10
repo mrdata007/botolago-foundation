@@ -223,7 +223,7 @@ function StoryFrame({
         <div className="mt-2 flex items-center gap-2">
           <span
             aria-hidden
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[image:var(--ui-grad-action)] text-sm font-black text-[color:var(--ui-ink)]"
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[image:var(--ui-grad-action)] text-sm font-black text-[color:var(--ui-ink-deep)]"
           >
             B
           </span>
