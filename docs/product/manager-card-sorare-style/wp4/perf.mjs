@@ -154,7 +154,11 @@ if (ONLY.includes("g1")) {
       const card = document.querySelector(".mc-card, .mc-eclat");
       if (line && !m.data) m.data = now;
       if (card && !m.mount) m.mount = now;
-      if (document.querySelector('[data-mc-ready="1"]') && !m.ready) m.ready = now;
+      if (document.querySelector('[data-mc-ready="1"]') && !m.ready) {
+        m.ready = now;
+        // two frames later: the card is on screen (round 3: the first paint after `ready`)
+        requestAnimationFrame(() => requestAnimationFrame(() => (m.painted = performance.now())));
+      }
     };
     new MutationObserver(look).observe(document, {
       subtree: true,
@@ -191,7 +195,7 @@ if (ONLY.includes("g1")) {
           timeout: 60000,
         });
         await page.waitForSelector('[data-mc-ready="1"]', { timeout: 60000, state: "attached" });
-        await page.waitForTimeout(200);
+        await page.waitForTimeout(400);
         return page.evaluate(() => ({ ...window.__mc }));
       };
       const cold = await visit();
@@ -201,6 +205,10 @@ if (ONLY.includes("g1")) {
         coldMountToReady: Math.round(cold.ready - cold.mount),
         warmDataToReady: Math.round((warm.ready ?? NaN) - (warm.data ?? warm.mount)),
         warmMountToReady: Math.round(warm.ready - warm.mount),
+        coldReadyAbs: Math.round(cold.ready),
+        warmReadyAbs: Math.round(warm.ready),
+        coldPaintedAbs: Math.round(cold.painted),
+        warmPaintedAbs: Math.round(warm.painted),
         dataSeen: cold.data != null,
       });
       await ctx.close();
@@ -233,7 +241,7 @@ if (out.g1.length) {
   for (const g of out.g1) {
     const col = (k) => g.rows.map((r) => r[k]);
     console.log(
-      `  ${g.path} ${g.lang}${g.signedIn ? "" : " (guest)"}: cold data->ready ${JSON.stringify(col("coldDataToReady"))} (median ${median(col("coldDataToReady"))}), warm ${JSON.stringify(col("warmDataToReady"))} (median ${median(col("warmDataToReady"))}); mount->ready cold median ${median(col("coldMountToReady"))}, warm median ${median(col("warmMountToReady"))}; rating line seen ${g.rows.every((r) => r.dataSeen)}`,
+      `  ${g.path} ${g.lang}${g.signedIn ? "" : " (guest)"}: cold data->ready ${JSON.stringify(col("coldDataToReady"))} (median ${median(col("coldDataToReady"))}), warm ${JSON.stringify(col("warmDataToReady"))} (median ${median(col("warmDataToReady"))}); mount->ready cold median ${median(col("coldMountToReady"))}, warm median ${median(col("warmMountToReady"))}; navigation to ready: cold median ${median(col("coldReadyAbs"))}, warm ${median(col("warmReadyAbs"))}; to painted: cold ${median(col("coldPaintedAbs"))}, warm ${median(col("warmPaintedAbs"))}; rating line seen ${g.rows.every((r) => r.dataSeen)}`,
     );
   }
 }
