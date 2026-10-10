@@ -1,0 +1,5 @@
+Before: live c8fc3a48 from this chat’s prior release verification. After real portrait: the current local player with the existing published Hassania artwork (read-only image request). The Arabic/desktop matrix uses a clearly artificial local pitch SVG fixture; it is not generated news artwork.
+
+All 12 FR/AR × 320×568, 390×844, 1440×900 × light/dark cases passed. Whole portrait containment, viewer bounds, headline bounds, no AI wording, edge taps, keyboard arrows, swipes, swipe-down dismissal, Escape and focus return checked.
+
+Playback checks use the browser clock: seven-second advancement after load, Space, explicit pause/resume, press-and-hold without accidental advancement, headline reading pause, hidden-tab pause, progress reset and close after the final story. Additional cases check slow/broken images and maximum 200-character titles/300-character manual credits in both languages. Typecheck, lint on every changed JS/TS file and 68 existing native status-bar/safe-area tests passed. Physical phone hardware was not tested.
