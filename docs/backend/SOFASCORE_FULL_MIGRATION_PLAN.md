@@ -209,6 +209,17 @@ Production V2 (`sofascore-id-bridge-production-read.yml`, pinned to main
 - Known workflow bug: a run whose report lists review items shows as failed
   (the step shell's `-e` stops on the pipeline before the exit-2 handling).
 
+### Production write, 2026-10-10 (owner-run)
+
+Owner-run through the reviewed package (PRs #415, #416; main
+`632ab97cebefb369f6add662b86180bcc62b3457`), following
+`docs/production/SOFASCORE_ID_BRIDGE_PRODUCTION_RUNBOOK.md`: rehearsal rolled
+back, then apply. **Exactly 53 SofaScore links applied and verified** on
+Production V2 (competition 1, season 1, teams 16, rounds 4, fixtures 31).
+Existing player mappings were preserved; the paused pg_cron jobs were restored
+to their original settings. Owner report, 2026-10-10. Fixture
+`1296b2e5-bb59-4f18-8ef7-dc0b2990bc3a` stays unlinked pending review.
+
 ## 7. Owner prerequisites
 
 - ~~Subscribe to a paid SofaScore tier~~ — done 2026-10-10 (10,000 a month).
