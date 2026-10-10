@@ -246,7 +246,7 @@ describe("rules v1 with fixed scales (owner decision 2026-10-08)", () => {
     const config = JSON.parse(filled.match(/\$rules_v1_config\$(\{.*\})\$rules_v1_config\$/)![1]);
     expect(config).toEqual({
       minimum_gameweeks: 2,
-      provisional_below: 5,
+      provisional_below: 2,
       trf_window_gameweeks: 3,
       batch_size: 2000,
       scales: {
