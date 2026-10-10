@@ -733,10 +733,16 @@ records whole files as `statements[1]`, sha256 check, `execute`, postflight, reh
     (wants `20261008123400` newest), then `apply-home-stories.sql` (wants `20261009091728` newest),
     then `apply-ai-home-stories.sql` (PR #389, `20261009195943`; wants `20261009113132` newest),
     then `apply-story-presentation-repair.sql` (PR #390, `20261009211234`; wants `20261009195943`
-    newest), then `apply-compact-story-labels.sql` (PR #393, `20261010055425`; wants `20261009211234`
-    newest), then this one; each script wants its predecessor newest, so this one comparison
-    stands for all of it. The refusal names the version it found and the migrations to apply
-    first;
+    newest), then `refresh-initial-home-stories.sql` (PR #390; records no migration; wants 171 rows
+    and `20261009211234` newest, and the AI stories switch off at six attempts, which it switches
+    back on), then `apply-compact-story-labels.sql` (PR #393, `20261010055425`; wants
+    `20261009211234` newest, the switch on at six attempts and no story generating), then this one.
+    Each migration script wants its predecessor newest, so this one comparison covers the
+    **versions** of the whole chain and nothing more: each earlier script's own preconditions (row
+    counts, switches, drained workers) still apply when it runs, and the refresh leaves no ledger
+    row, so the comparison cannot show whether it ran. The refresh must come before the compact
+    story labels: after them its pins (171 rows, newest `20261009211234`) refuse for good. The
+    refusal names the version it found and the migrations to apply first;
   - each of the five #381 rows' `statements[1]` sha256 equals the repository file's (the same
     hashes as the 2026-10-08 script, `apply-20261008123000-manager-card.sql:1989-2007`), so the
     installed objects are the reviewed ones;
@@ -796,8 +802,13 @@ Run: `bun test scripts/backend/apply-manager-card-api-v2-script.test.ts`.
     `20261009094920` and `20261009113132` (`scripts/backend/apply-home-stories.sql`, PR #386), AI
     home stories' `20261009195943` (`scripts/backend/apply-ai-home-stories.sql`, PR #389), the
     story presentation repair's `20261009211234`
-    (`scripts/backend/apply-story-presentation-repair.sql`, PR #390) and the compact story labels'
-    `20261010055425` (`scripts/backend/apply-compact-story-labels.sql`, PR #393).
+    (`scripts/backend/apply-story-presentation-repair.sql`, PR #390), then, after deploying the
+    repaired worker and publishing the website, the initial home stories refresh
+    (`scripts/backend/refresh-initial-home-stories.sql`, PR #390; rehearse, then commit; it records
+    no migration, and it switches the AI stories back on at six attempts), and last the compact
+    story labels' `20261010055425` (`scripts/backend/apply-compact-story-labels.sql`, PR #393),
+    which needs that switch on and no story still generating, so the refresh must come first and
+    its three replacement images must have finished.
 - `AGENTS.md` (after the `manager-card-history-prune` paragraph, lines 168-173), add:
   > Where migration 20261010120200 is applied, signed-in users also write
   > `app.manager_card_moment_acks` (through `api.ack_manager_card_moments`) while the read switch

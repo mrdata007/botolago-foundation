@@ -493,29 +493,50 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    (d) the story presentation repair (PR #390),
    `scripts/backend/apply-story-presentation-repair.sql` (migration
    `20261009211234`, see `AI_HOME_STORIES.md`); then
-   (e) the compact story labels (PR #393),
+   (e) the initial home stories refresh (also PR #390),
+   `scripts/backend/refresh-initial-home-stories.sql`. It records no
+   migration. Deploy the repaired worker and publish the website first, as
+   `AI_HOME_STORIES.md` says, then rehearse it and commit it. The repair
+   leaves the AI stories switch off (it verifies "install must leave
+   paused"); the refresh queues the three original images, switches the
+   stories back on with the six-attempt cap and runs one tick. It refuses
+   unless there are exactly 171 recorded migrations, the newest is
+   `20261009211234`, the switch is off at six attempts and there are exactly
+   three story jobs and three stories in the feed. It has to run before (f).
+   (f) needs the switch on at six attempts (« settings changed » otherwise),
+   which only the refresh switches back on, and once (f) is recorded the
+   refresh's 171-row and `20261009211234` pins refuse for good; then
+   (f) the compact story labels (PR #393),
    `scripts/backend/apply-compact-story-labels.sql` (migration
-   `20261010055425`, see `AI_HOME_STORIES.md`). PR #387 (AI content), PR #391
-   (story viewer) and PR #392 (story player) add no migration.
+   `20261010055425`, see `AI_HOME_STORIES.md`). Before it, wait until the
+   three replacement images have finished generating: it also refuses while a
+   story is still generating (« Edge worker not drained »). PR #387 (AI
+   content), PR #391 (story viewer) and PR #392 (story player) add no
+   migration.
    The migrations go in repository order, and the four below are last:
    `20261009091728` replaces `app_private.ops_health_checks()` with a wrapper
    that adds `fantasy_progression`, and `20261010120300` wraps that wrapper to
    add `manager_card` last. Applied the other way round, #384's rename would
    take the Manager Card wrapper and put `fantasy_progression` after
-   `manager_card`. Every script in the chain enforces the order by wanting its
-   predecessor to be the newest recorded migration: #384's refuses unless that
+   `manager_card`. Every migration script in the chain enforces the order by
+   wanting its predecessor to be the newest recorded migration: #384's refuses unless that
    is `20261008123400`, Home stories' unless it is `20261009091728`, AI home
    stories' unless it is `20261009113132`, the repair's unless it is
    `20261009195943`, the compact story labels' unless it is `20261009211234`,
-   and the read API script unless it is exactly `20261010055425`. The AI home
-   stories, repair and compact story labels scripts also pin the number of
-   recorded migrations and call `app_private.hold_scheduled_jobs()` (they
-   refuse while a scheduled job is mid-run); read their own headers before
-   running them. As written on `main` the counts do not chain at one point:
+   and the read API script unless it is exactly `20261010055425`. That
+   comparison covers versions only: each earlier script's own preconditions
+   (counts, switches, drained workers) still apply when you run it, and the
+   refresh (e) records no migration, so the ledger cannot show whether it ran.
+   Follow the order above and read each script's own header and guards. The AI home
+   stories, repair, refresh and compact story labels scripts also pin the
+   number of recorded migrations and call `app_private.hold_scheduled_jobs()`
+   (they refuse while a scheduled job is mid-run). As written on `main` the
+   counts do not chain at one point:
    Home stories' script expects 166 rows before and leaves 168, while AI home
    stories' wants exactly 169. From there they do: AI home stories wants 169
-   and leaves 170, the repair wants 170 and leaves 171, the compact story
-   labels want 171 and leave 172. Before running AI home stories, read
+   and leaves 170, the repair wants 170 and leaves 171, the refresh wants 171
+   and leaves 171, the compact story labels want 171 and leave 172. Before
+   running AI home stories, read
    `select count(*), max(version) from supabase_migrations.schema_migrations;`
    and, if it refuses with « migration baseline changed », find out why with
    that script's owner. Never edit a guard to make it pass. The read API

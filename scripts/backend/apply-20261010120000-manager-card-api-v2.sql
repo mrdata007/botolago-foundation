@@ -33,13 +33,20 @@
 --        (scripts/backend/apply-ai-home-stories.sql, PR #389);
 --     4. the story presentation repair 20261009211234
 --        (scripts/backend/apply-story-presentation-repair.sql, PR #390);
---     5. the compact story labels 20261010055425
---        (scripts/backend/apply-compact-story-labels.sql, PR #393).
+--     5. the initial home stories refresh, which records no migration
+--        (scripts/backend/refresh-initial-home-stories.sql, PR #390): deploy
+--        the repaired worker and publish the website first, then rehearse and
+--        commit it. It switches the AI stories back on at six attempts, which
+--        step 6 requires, and it refuses once step 6 has run;
+--     6. the compact story labels 20261010055425
+--        (scripts/backend/apply-compact-story-labels.sql, PR #393): wait until
+--        no story is still generating.
 --   The newest migration recorded must be exactly 20261010055425: the script
---   refuses otherwise, so the migrations go in repository order. Any quiet
---   moment; not at minute 12 of an hour (the Fantasy season orchestrator). It
---   takes short locks on app.profiles (one foreign key) and replaces
---   app_private.ops_health_checks().
+--   refuses otherwise, so the migrations go in repository order. That check
+--   covers versions only; it cannot show that step 5 ran, because step 5
+--   leaves no ledger row. Any quiet moment; not at minute 12 of an hour (the
+--   Fantasy season orchestrator). It takes short locks on app.profiles (one
+--   foreign key) and replaces app_private.ops_health_checks().
 --
 -- BEFORE YOU RUN IT (AGENTS.md, "Before writing")
 --   * Make sure nothing else is writing to this database: no GitHub Actions
@@ -121,8 +128,10 @@ begin
   -- newest recorded migration (Fantasy durable progression wants 20261008123400,
   -- Home stories wants 20261009091728, AI home stories wants 20261009113132,
   -- the story presentation repair wants 20261009195943, the compact story
-  -- labels want 20261009211234), so this one comparison stands for the whole
-  -- chain.
+  -- labels want 20261009211234), so this one comparison covers the versions
+  -- of the whole chain. It covers nothing else: each earlier script's own
+  -- preconditions (row counts, switches, drained workers) still apply when it
+  -- runs, and the initial home stories refresh records no migration.
   if (select max(version) from supabase_migrations.schema_migrations) is distinct from '20261010055425' then
     raise exception 'stop: the newest applied migration is %, expected 20261010055425 -- apply every earlier repository migration first, in order (Fantasy durable progression 20261009091728, Home stories 20261009094920 and 20261009113132, AI home stories 20261009195943, story presentation repair 20261009211234, compact story labels 20261010055425), so the migrations go in repository order', (select max(version) from supabase_migrations.schema_migrations);
   end if;

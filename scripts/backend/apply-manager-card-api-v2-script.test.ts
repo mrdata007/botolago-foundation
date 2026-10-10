@@ -255,7 +255,42 @@ describe("apply-20261010120000-manager-card-api-v2.sql", () => {
     expect(header).toContain("apply-home-stories.sql");
     expect(header).toContain("apply-ai-home-stories.sql");
     expect(header).toContain("apply-story-presentation-repair.sql");
+    expect(header).toContain("refresh-initial-home-stories.sql");
     expect(header).toContain("apply-compact-story-labels.sql");
+  });
+
+  test("the initial home stories refresh sits between the repair and the compact story labels", () => {
+    // The version comparison covers versions only. The refresh records no migration, wants the
+    // repair's version newest with the AI stories paused at six attempts, and switches them back
+    // on; the compact story labels want them on at six attempts, so the refresh has to come
+    // first, and cannot run after them (171 rows, newest 20261009211234).
+    const refresh = read("scripts/backend/refresh-initial-home-stories.sql");
+    const compact = read("scripts/backend/apply-compact-story-labels.sql");
+    const baseline =
+      "(select count(*) from supabase_migrations.schema_migrations)<>171 or (select max(version) from supabase_migrations.schema_migrations)<>'20261009211234'";
+    expect(refresh).toContain(baseline);
+    expect(refresh).toContain("not enabled and max_attempts_per_day=6");
+    expect(refresh).toContain("select app_private.ai_home_stories_configure(true,6);");
+    expect(refresh).not.toContain("insert into supabase_migrations.schema_migrations");
+    expect(compact).toContain(baseline);
+    expect(compact).toContain("where id and enabled and max_attempts_per_day=6");
+    // The header and both docs list the three in that order.
+    const order = [
+      "apply-story-presentation-repair.sql",
+      "refresh-initial-home-stories.sql",
+      "apply-compact-story-labels.sql",
+    ];
+    for (const [name, text] of [
+      ["script header", script.slice(0, script.indexOf("begin;"))],
+      ["runbook", read("docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md")],
+      ["gap plan", read("docs/backend/MANAGER_CARD_GAP_PLAN.md")],
+    ] as const) {
+      const at = order.map((file) => text.indexOf(file));
+      expect({ name, found: at.every((i) => i >= 0) }).toEqual({ name, found: true });
+      expect({ name, ordered: at[0] < at[1] && at[1] < at[2] }).toEqual({ name, ordered: true });
+    }
+    // The script's own comment no longer claims one comparison stands for everything.
+    expect(script).not.toContain("stands for the whole");
   });
 
   test("afterwards: grants, dropped functions, acks table, status, health, unchanged rows", () => {
