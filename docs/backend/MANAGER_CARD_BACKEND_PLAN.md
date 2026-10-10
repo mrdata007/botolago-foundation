@@ -1,5 +1,7 @@
 # Manager Card backend plan (Gradins)
 
+Requirements source only; the schema built is #381 plus `MANAGER_CARD_GAP_PLAN.md`.
+
 Written 2026-10-08 by the backend planner (Claude Opus) for the backend session that builds it.
 This is a plan only: nothing in it has been applied, run against any database or committed by its
 author.

@@ -1,0 +1,72 @@
+task_id: BG-0158
+objective: >
+  Build the server side of the BotolaGO Manager Card: tables, a deterministic
+  calculation of OVR, tier and four stats (CAP, SEL, TRF, CON) from stored
+  Fantasy data, signed-in read functions, an on/off switch and a scheduled job,
+  with tests, generated types and docs. Everything ships switched off, with no
+  rules row. No card screens.
+findings:
+  - classification: VERIFIED
+    statement: No Manager Card table, function or calculation exists on main or on any open pull request.
+    evidence: origin/main 3f9c57fc supabase/migrations; open PR list 2026-10-08 (36 open)
+  - classification: VERIFIED
+    statement: Nothing sets a gameweek's status to corrected; the next gameweek opens only after postwork for the current version completes with status finalized.
+    evidence: grep of supabase/migrations and scripts/backend; 20260914200740 lines 137-139
+  - classification: VERIFIED
+    statement: Gameweek boards are rewritten on provisional scores during each publish, so CON reads final team results directly.
+    evidence: 20260720163222 api.service_recalculate_fantasy_rankings; scripts/backend/fantasy-lifecycle-runner.ts publishRankings
+  - classification: VERIFIED
+    statement: starting_points already includes automatic substitutions; player points are one row per player per gameweek, so double gameweeks are pre-summed.
+    evidence: 20260927140000 lines 300-311; 20260720141850 fantasy_player_gameweek_points
+  - classification: UNKNOWN
+    statement: Whether unpushed Codex work on the card exists, and whether 20261005130000 and 20261006143700 are applied on production.
+    evidence: ""
+root_cause:
+  classification: VERIFIED
+  description: New feature requested by the owner; no prior implementation.
+required_changes:
+  - component: supabase/migrations
+    change: card tables, rules, settings, ledger, job log, retired numbers; erase lock; read functions; tick and prune jobs
+    reason: the card's data model, calculation and reads
+  - component: supabase/tests/database
+    change: manager_card.test.sql; step-up count +4; erase lock key array
+    reason: database evidence (CI database-quality)
+  - component: docs/backend, AGENTS.md
+    change: domain plan, operations runbook, deletion runbook lines, scheduled job entry
+    reason: operations and one-writer rule
+  - component: scripts/backend
+    change: guarded apply script and its bun test
+    reason: production goes through an owner-run script
+constraints:
+  - No formula coded until the owner answers D1-D12 in MANAGER_CARD_DOMAIN_PLAN.md section 2
+  - Reads Fantasy data only; writes no Fantasy table; OVR, tier, founder and number are display-only
+  - No staging or production read or write; no merge, apply or deploy without the owner
+  - Forward-only migrations with unique timestamps later than every open PR's
+risks:
+  - Calibration needs an owner-granted aggregate read of production data
+  - Tiers that fall may read as a loss to users
+  - Default captains before PR 376 make early CAP noisy
+contradictions: []
+unknowns:
+  - Unpushed Codex card work
+  - Production state of 20261005130000 and 20261006143700
+  - Whether profiles.created_at matches auth.users.created_at on production
+acceptance_tests:
+  - backend:migrations:check passes
+  - CI database-quality green with manager_card.test.sql covering grants, refusal, switch off, fixtures, idempotency, corrections, deletion cascade, number retirement and the erase lock
+  - With both switches off, the tick writes nothing
+implementation_scope:
+  builder_type: Builder-Backend
+  allowed_paths:
+    - supabase/migrations/
+    - supabase/tests/database/
+    - scripts/backend/
+    - src/backend/manager-card/
+    - src/integrations/supabase/
+    - docs/backend/
+    - docs/engineering/
+    - AGENTS.md
+  forbidden_paths:
+    - src/routes/
+    - src/components/
+status: HALTED_FOR_INPUT

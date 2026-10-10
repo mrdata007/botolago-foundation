@@ -33,14 +33,14 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
       <section
         aria-label={t("home.highlights")}
         data-testid="home-stories"
-        className="min-w-0 pb-8 pt-3 sm:pb-8 sm:pt-4"
+        className="min-w-0 py-4"
       >
         <ul
           data-swipe-row
-          className="flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain scroll-p-1 p-1 sm:gap-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory gap-1 overflow-x-auto overscroll-x-contain scroll-p-1 p-1 sm:gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {stories.map((story, index) => (
-            <li key={story.id} className="w-24 shrink-0 snap-start sm:w-28">
+            <li key={story.id} className="w-20 shrink-0 snap-start sm:w-[5.5rem]">
               <button
                 type="button"
                 aria-haspopup="dialog"
@@ -53,7 +53,7 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
                   setView({ items: stories, index });
                 }}
                 className={cn(
-                  "group flex min-h-[var(--ui-tap-min)] w-full flex-col items-center gap-2 rounded-[var(--ui-radius-card)]",
+                  "group flex min-h-[var(--ui-tap-min)] w-full flex-col items-center gap-1 rounded-[var(--ui-radius-card)]",
                   ui.focus,
                   ui.tone.default,
                 )}
@@ -76,11 +76,21 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
                 </span>
                 <span
                   className={cn(
-                    "line-clamp-3 min-h-[3lh] w-full break-words text-center [font-weight:var(--ui-weight-heavy)] group-hover:underline",
-                    ui.text.secondary,
+                    ui.text.micro,
+                    "block w-full truncate text-center leading-4 [font-weight:var(--ui-weight-heavy)] group-hover:underline",
                   )}
                 >
-                  {lang === "ar" ? story.titleAr : story.titleFr}
+                  <bdi dir={story.generated ? "ltr" : undefined}>
+                    {story.generated
+                      ? story.railLabel === "ACTU" || !story.railLabel
+                        ? lang === "ar"
+                          ? "أخبار"
+                          : "Actu"
+                        : story.railLabel
+                      : lang === "ar"
+                        ? story.titleAr
+                        : story.titleFr}
+                  </bdi>
                 </span>
               </button>
             </li>

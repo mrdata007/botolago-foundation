@@ -132,6 +132,10 @@ jobs:
         run: bun test scripts/backend/historical-performance-e2e-wire-format.test.ts
         env:
           BG0011_E2E_DB_URL: postgres://postgres:postgres@127.0.0.1:55322/postgres
+      - name: Manager Card contract (real RPC JSON parsed by contracts.ts)
+        run: bun test scripts/backend/manager-card-contract-e2e.test.ts
+        env:
+          MANAGER_CARD_E2E_DB_URL: postgres://postgres:postgres@127.0.0.1:55322/postgres
       # The other one, scripts/backend/football-live-refresh-e2e.test.ts
       # (LIVE_REFRESH_E2E_DB_URL), is not run here: no run of it against a
       # freshly reset local stack is on record (its recorded runs used plain

@@ -20,6 +20,7 @@ import {
   emailDispatchConfiguration,
   type EmailRpcClient,
 } from "./notification-email-dispatch.ts";
+import { containsPublicAiNotice, PUBLIC_EDITORIAL_RULE } from "./public-editorial-policy.ts";
 
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
 const RESEND_URL = "https://api.resend.com/emails";
@@ -89,6 +90,7 @@ const SYSTEM_PROMPT = [
   "Write any score as digits with a hyphen, like 2-1, never in words.",
   "Write in clear, neutral, engaging journalistic prose. Plain text only: no",
   "markdown, no HTML, no lists, no emoji.",
+  PUBLIC_EDITORIAL_RULE,
   "Reply with a single JSON object and nothing else, in this exact shape:",
   '{"fr":{"title":"","summary":"","paragraphs":[""]},"ar":{"title":"","summary":"","paragraphs":[""]}}',
   "fr is French and ar is Modern Standard Arabic; they report the same facts.",
@@ -136,6 +138,7 @@ function readLanguageText(value: unknown): LanguageText | null {
   if (cleanSummary.length < 30 || cleanSummary.length > 400) return null;
   if (cleanParagraphs.length < 3 || cleanParagraphs.length > 8) return null;
   if (cleanParagraphs.some((p) => p.length < 80 || p.length > 1500)) return null;
+  if ([cleanTitle, cleanSummary, ...cleanParagraphs].some(containsPublicAiNotice)) return null;
   return { title: cleanTitle, summary: cleanSummary, paragraphs: cleanParagraphs };
 }
 
@@ -284,10 +287,6 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#39;");
 }
 
-const DISCLOSURE: Record<ContentLanguage, string> = {
-  fr: "Cet article a été rédigé avec l'aide de l'intelligence artificielle à partir de données et d'articles publics.",
-  ar: "كُتب هذا المقال بمساعدة الذكاء الاصطناعي اعتماداً على بيانات ومقالات منشورة.",
-};
 const SOURCES_LABEL: Record<ContentLanguage, string> = { fr: "Sources", ar: "المصادر" };
 
 export function renderBodyHtml(
@@ -307,7 +306,6 @@ export function renderBodyHtml(
       );
     parts.push(`<p><strong>${SOURCES_LABEL[language]}</strong></p><ul>${items.join("")}</ul>`);
   }
-  parts.push(`<p><em>${escapeHtml(DISCLOSURE[language])}</em></p>`);
   return parts.join("");
 }
 
