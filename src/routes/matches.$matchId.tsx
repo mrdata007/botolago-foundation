@@ -238,7 +238,6 @@ function MatchDetailPage() {
   const h2h = detailQ.data?.headToHead ?? [];
   const live = detailQ.data?.live;
   const lineups = detailQ.data?.lineups ?? [];
-  const pressure = detailQ.data?.pressure ?? [];
   const absences = detailQ.data?.absences ?? [];
 
   // Above the early returns (Rules of Hooks), and fed the events whether or
@@ -489,7 +488,6 @@ function MatchDetailPage() {
                 palettes={palettes}
                 isLive={isLive}
                 phase={phase}
-                pressure={pressure}
               />
             )}
 

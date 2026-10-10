@@ -46,7 +46,6 @@ const FILES = [
   "src/components/matches/MatchTabs.tsx",
   "src/components/matches/EventTimeline.tsx",
   "src/components/matches/StatComparison.tsx",
-  "src/components/matches/PressureChart.tsx",
   "src/components/matches/Absences.tsx",
   "src/components/matches/LineupsView.tsx",
   "src/components/matches/HeadToHead.tsx",
@@ -416,7 +415,7 @@ describe("match page — the Stats tab", () => {
   });
 });
 
-describe("match page — expected goals and the pressure chart", () => {
+describe("match page — expected goals", () => {
   const xg = (homeValue: number, awayValue: number): MatchStatisticComparisonDto => ({
     code: "expected_goals",
     label: "Expected goals (xG)",
@@ -427,26 +426,16 @@ describe("match page — expected goals and the pressure chart", () => {
     awayValue,
     awayDisplayValue: null,
   });
-  // Home pushes 30 + 20, away 10 + 15: two thirds of the pressure is home's.
-  const pressure = [
-    { minute: 1, homeValue: 30, awayValue: null },
-    { minute: 2, homeValue: null, awayValue: 10 },
-    { minute: 46, homeValue: 20, awayValue: null },
-    { minute: 90, homeValue: null, awayValue: 15 },
-  ];
-  const render = (points: typeof pressure) =>
-    inFrench(
-      <StatComparison
-        stats={[xg(1.8421, 0.731)]}
-        home={wydad}
-        away={far}
-        palettes={palettes}
-        isLive={false}
-        phase="finished"
-        pressure={points}
-      />,
-    );
-  const html = render(pressure);
+  const html = inFrench(
+    <StatComparison
+      stats={[xg(1.8421, 0.731)]}
+      home={wydad}
+      away={far}
+      palettes={palettes}
+      isLive={false}
+      phase="finished"
+    />,
+  );
 
   it("names expected goals in French and prints them to two decimals", () => {
     expect(html).toContain("Buts attendus (xG)");
@@ -454,46 +443,8 @@ describe("match page — expected goals and the pressure chart", () => {
     expect(html).toContain("0,73");
   });
 
-  it("leads with the pressure chart, whose legend names both clubs and their share", () => {
-    expect(html.indexOf("Pression")).toBeLessThan(html.indexOf("Buts attendus"));
-    expect(html).toMatch(
-      /WAC<\/span><bdi class="[^"]*fpl-tabular[^"]*">67<span[^>]*>%<\/span><\/bdi>/,
-    );
-    expect(html).toMatch(
-      /FAR<\/span><bdi class="[^"]*fpl-tabular[^"]*">33<span[^>]*>%<\/span><\/bdi>/,
-    );
-  });
-
-  it("marks the quarter hours, and the half-time boundary with a hairline", () => {
-    for (const tick of ["15′", "45′", "90′"]) expect(html).toContain(`>${tick}</bdi>`);
-    expect(html).not.toContain(">5′</bdi>");
-    const columns = [...html.matchAll(/<div class="(flex min-w-0 flex-1 flex-col[^"]*)"/g)];
-    expect(columns).toHaveLength(18);
-    expect(columns.filter((column) => column[1]!.includes("border-s"))).toHaveLength(1);
-    expect(columns[9]![1]).toContain("border-s");
-  });
-
-  it("paints each side's bars in its own club colour, home above the line", () => {
-    const bars = [
-      ...html.matchAll(/<span data-club="" style="([^"]*)" class="w-3\/5 max-w-3 (rounded-[tb])/g),
-    ];
-    expect(bars).toHaveLength(36);
-    expect(bars[0]![1]).toContain(palettes.home.light.edge);
-    expect(bars[0]![2]).toBe("rounded-t");
-    expect(bars[1]![1]).toContain(palettes.away.light.edge);
-    expect(bars[1]![2]).toBe("rounded-b");
-  });
-
-  it("keeps every value reachable without a pointer: a keyboard group and a table", () => {
-    expect(html).toContain(
-      'role="group" tabindex="0" aria-label="Pression par tranche de 5 minutes"',
-    );
-    expect(html).toContain('<table class="sr-only">');
-    expect(html).toContain('<th scope="row">46–50</th>');
-  });
-
-  it("draws no chart without a pressure index", () => {
-    expect(render([])).not.toContain("Pression");
+  it("draws no pressure chart (a SportsMonks-only feature, retired)", () => {
+    expect(html).not.toContain("Pression");
   });
 });
 
