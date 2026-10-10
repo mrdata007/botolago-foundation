@@ -33,7 +33,7 @@ export function PublishedStories({ stories }: { stories: readonly HomeStory[] })
       <section
         aria-label={t("home.highlights")}
         data-testid="home-stories"
-        className="min-w-0 pb-3 pt-2 sm:pb-4 sm:pt-3"
+        className="min-w-0 py-4"
       >
         <ul
           data-swipe-row
