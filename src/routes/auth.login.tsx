@@ -14,6 +14,7 @@ import {
 } from "@/components/auth/AuthShell";
 import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/auth/auth-classes";
 import { ConsentLine } from "@/components/legal/ConsentLine";
+import { WebOnly } from "@/components/native/WebOnly";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
 import { ui, UiAlert, UiButton, UiInput } from "@/components/ui-kit";
@@ -187,7 +188,9 @@ function LoginPage() {
               ? "auth.error.network"
               : res.errorCode === "email_unconfirmed"
                 ? "auth.error.email_unconfirmed"
-                : "auth.error.credentials",
+                : res.errorCode === "account_closed"
+                  ? "auth.error.account_closed"
+                  : "auth.error.credentials",
       });
       return;
     }
@@ -306,7 +309,7 @@ function LoginPage() {
                   ui.text.meta,
                   "[font-weight:var(--ui-weight-heavy)]",
                   ui.tone.ink,
-                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+                  "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                   ui.focus,
                 )}
               >
@@ -330,9 +333,12 @@ function LoginPage() {
             divider goes with the buttons: an "ou continuer avec" rule with
             nothing under it reads as a broken screen. See
             `OAUTH_PROVIDERS_ENABLED`. Google is the white outline pill, Apple
-            its own navy one (`ink`), as the board draws them. */}
+            its own navy one (`ink`), as the board draws them. Never inside
+            the phone app (`WebOnly`): Google refuses sign-in in an embedded
+            web view, and the provider's page would open in the browser, which
+            cannot hand the session back to the app. */}
           {OAUTH_PROVIDERS_ENABLED && (
-            <>
+            <WebOnly>
               <AuthDivider label={t("auth.or_continue_with")} />
 
               <div className="grid gap-2.5">
@@ -352,7 +358,7 @@ function LoginPage() {
                   <AppleGlyph /> {t("auth.apple")}
                 </UiButton>
               </div>
-            </>
+            </WebOnly>
           )}
         </form>
       )}

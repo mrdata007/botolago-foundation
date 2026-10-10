@@ -1,0 +1,242 @@
+[
+  {
+    "lang": "fr",
+    "width": 320,
+    "height": 568,
+    "labels": [
+      "Match nul entre Maghreb Fès et Raja Casablanca",
+      "FAR Rabat s'impose face à Widad Témara",
+      "Hassania Agadir triomphe face à Renaissance Zemamra"
+    ],
+    "figure": {
+      "x": 0,
+      "y": 68,
+      "width": 320,
+      "height": 435,
+      "bottom": 503
+    },
+    "image": {
+      "x": 0,
+      "y": 68,
+      "width": 320,
+      "height": 435,
+      "bottom": 503
+    },
+    "natural": [
+      1024,
+      1536
+    ],
+    "caption": {
+      "x": 0,
+      "y": 343.71875,
+      "width": 320,
+      "height": 159.28125,
+      "bottom": 503
+    },
+    "scrollHeight": 435,
+    "clientHeight": 435,
+    "objectFit": "cover",
+    "text": "Illustration générée par IA\n\nMatch nul entre Maghreb Fès et Raja Casablanca\n\nBotolaGO · OpenAI",
+    "arrowChanged": false
+  },
+  {
+    "lang": "fr",
+    "width": 390,
+    "height": 844,
+    "labels": [
+      "Match nul entre Maghreb Fès et Raja Casablanca",
+      "FAR Rabat s'impose face à Widad Témara",
+      "Hassania Agadir triomphe face à Renaissance Zemamra"
+    ],
+    "figure": {
+      "x": 0,
+      "y": 68,
+      "width": 390,
+      "height": 711,
+      "bottom": 779
+    },
+    "image": {
+      "x": 0,
+      "y": 68,
+      "width": 390,
+      "height": 711,
+      "bottom": 779
+    },
+    "natural": [
+      1024,
+      1536
+    ],
+    "caption": {
+      "x": 0,
+      "y": 619.71875,
+      "width": 390,
+      "height": 159.28125,
+      "bottom": 779
+    },
+    "scrollHeight": 711,
+    "clientHeight": 711,
+    "objectFit": "cover",
+    "text": "Illustration générée par IA\n\nMatch nul entre Maghreb Fès et Raja Casablanca\n\nBotolaGO · OpenAI",
+    "arrowChanged": false
+  },
+  {
+    "lang": "fr",
+    "width": 1440,
+    "height": 900,
+    "labels": [
+      "Match nul entre Maghreb Fès et Raja Casablanca",
+      "FAR Rabat s'impose face à Widad Témara",
+      "Hassania Agadir triomphe face à Renaissance Zemamra"
+    ],
+    "figure": {
+      "x": 496,
+      "y": 68,
+      "width": 448,
+      "height": 767,
+      "bottom": 835
+    },
+    "image": {
+      "x": 496,
+      "y": 68,
+      "width": 448,
+      "height": 767,
+      "bottom": 835
+    },
+    "natural": [
+      1024,
+      1536
+    ],
+    "caption": {
+      "x": 496,
+      "y": 667.71875,
+      "width": 448,
+      "height": 167.28125,
+      "bottom": 835
+    },
+    "scrollHeight": 767,
+    "clientHeight": 767,
+    "objectFit": "cover",
+    "text": "Illustration générée par IA\n\nMatch nul entre Maghreb Fès et Raja Casablanca\n\nBotolaGO · OpenAI",
+    "arrowChanged": false
+  },
+  {
+    "lang": "ar",
+    "width": 320,
+    "height": 568,
+    "labels": [
+      "التعادل السلبي بين المغرب الفاسي والرجاء الرياضي",
+      "الجيش الملكي يفوز على الوداد الرياضي لتمارة",
+      "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة"
+    ],
+    "figure": {
+      "x": 0,
+      "y": 79.875,
+      "width": 320,
+      "height": 455.15625,
+      "bottom": 535.03125
+    },
+    "image": {
+      "x": 0,
+      "y": 79.875,
+      "width": 320,
+      "height": 455.15625,
+      "bottom": 535.03125
+    },
+    "natural": [
+      1024,
+      1536
+    ],
+    "caption": {
+      "x": 0,
+      "y": 335.875,
+      "width": 320,
+      "height": 199.15625,
+      "bottom": 535.03125
+    },
+    "scrollHeight": 455,
+    "clientHeight": 423,
+    "objectFit": "cover",
+    "text": "صورة توضيحية بالذكاء الاصطناعي\n\nالتعادل السلبي بين المغرب الفاسي والرجاء الرياضي\n\nBotolaGO · OpenAI",
+    "arrowChanged": false
+  },
+  {
+    "lang": "ar",
+    "width": 390,
+    "height": 844,
+    "labels": [
+      "التعادل السلبي بين المغرب الفاسي والرجاء الرياضي",
+      "الجيش الملكي يفوز على الوداد الرياضي لتمارة",
+      "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة"
+    ],
+    "figure": {
+      "x": 0,
+      "y": 79.875,
+      "width": 390,
+      "height": 699.125,
+      "bottom": 779
+    },
+    "image": {
+      "x": 0,
+      "y": 79.875,
+      "width": 390,
+      "height": 699.125,
+      "bottom": 779
+    },
+    "natural": [
+      1024,
+      1536
+    ],
+    "caption": {
+      "x": 0,
+      "y": 579.84375,
+      "width": 390,
+      "height": 199.15625,
+      "bottom": 779
+    },
+    "scrollHeight": 699,
+    "clientHeight": 699,
+    "objectFit": "cover",
+    "text": "صورة توضيحية بالذكاء الاصطناعي\n\nالتعادل السلبي بين المغرب الفاسي والرجاء الرياضي\n\nBotolaGO · OpenAI",
+    "arrowChanged": false
+  },
+  {
+    "lang": "ar",
+    "width": 1440,
+    "height": 900,
+    "labels": [
+      "التعادل السلبي بين المغرب الفاسي والرجاء الرياضي",
+      "الجيش الملكي يفوز على الوداد الرياضي لتمارة",
+      "حسنية أكادير يتفوق على نادي النهضة أتلتيك الزمامرة"
+    ],
+    "figure": {
+      "x": 496,
+      "y": 79.875,
+      "width": 448,
+      "height": 755.125,
+      "bottom": 835
+    },
+    "image": {
+      "x": 496,
+      "y": 79.875,
+      "width": 448,
+      "height": 755.125,
+      "bottom": 835
+    },
+    "natural": [
+      1024,
+      1536
+    ],
+    "caption": {
+      "x": 496,
+      "y": 627.84375,
+      "width": 448,
+      "height": 207.15625,
+      "bottom": 835
+    },
+    "scrollHeight": 755,
+    "clientHeight": 755,
+    "objectFit": "cover",
+    "text": "صورة توضيحية بالذكاء الاصطناعي\n\nالتعادل السلبي بين المغرب الفاسي والرجاء الرياضي\n\nBotolaGO · OpenAI",
+    "arrowChanged": false
+  }
+]

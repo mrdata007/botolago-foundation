@@ -9,6 +9,11 @@ coding agent, not just this one. Read it first. In particular:
 - **Never rewrite published git history**, because this repository syncs to
   Lovable and a force-push destroys the owner's project history.
 
+The import line below loads `AGENTS.md` into Claude Code's context at the start
+of every session, so its rules apply without anyone having to open the file:
+
+@AGENTS.md
+
 What follows here is the Claude-specific remainder.
 
 ## One writer at a time, per database

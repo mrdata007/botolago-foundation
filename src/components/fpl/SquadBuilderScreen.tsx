@@ -50,9 +50,11 @@ function DeadlineLine({ gameweek, deadlineIso }: { gameweek: number; deadlineIso
 
 /**
  * FPL-002/004/005/006 "Transfers" composition, shared by first-time squad
- * selection and later transfers. As in the reference, the whole 15-man squad
- * is laid out on the pitch in four rows (2 GK / 5 DEF / 5 MID / 3 FWD) with
- * no bench strip, cards carry the price on the sub plate, tapping a card opens
+ * selection and later transfers. In transfers, as in the reference, the whole
+ * 15-man squad is laid out on the pitch in four rows (2 GK / 5 DEF / 5 MID /
+ * 3 FWD) with no bench strip; the first selection (`showBench`) puts the XI on
+ * the pitch and the four substitutes on the bench strip, so a manager sees who
+ * starts before choosing a captain. Cards carry the price on the sub plate, tapping a card opens
  * the player's actions, and once an incoming player has been chosen from
  * "Add Player" every card that cannot be replaced is dimmed while the
  * "Incoming Player" strip sits above the bottom bar (FPL-004).
@@ -84,9 +86,11 @@ export function SquadBuilderScreen({
   onReset,
   resetDisabled,
   banner,
+  aboveToggle,
   listColumns,
   incoming,
   onCancelIncoming,
+  showBench = false,
   children,
 }: {
   title: ReactNode;
@@ -111,10 +115,22 @@ export function SquadBuilderScreen({
   /** Hidden (not just disabled) when true: the reference shows Reset only once changes exist. */
   resetDisabled?: boolean;
   banner?: ReactNode;
+  /**
+   * A block between the strip and the « Terrain | Liste » toggle (the Manager Card's hint on the
+   * transfers screen). It brings its own spacing; absent, the screen is what it was.
+   */
+  aboveToggle?: ReactNode;
   listColumns: SquadListColumn[];
   /** Player chosen from "Add Player" who still needs a slot (replace mode). */
   incoming?: FantasyPlayer | null;
   onCancelIncoming?: () => void;
+  /**
+   * First selection: the pitch holds the eleven starters (slots 1–11) and the
+   * four substitutes (12–15) sit on the white bench strip under it, labelled
+   * as on "Mon équipe". Off (transfers), all fifteen stand on the pitch in
+   * their position rows, as in the reference.
+   */
+  showBench?: boolean;
   children?: ReactNode;
 }) {
   const { t, tr, lang } = useI18n();
@@ -133,7 +149,7 @@ export function SquadBuilderScreen({
           ? t("player.pos.MID")
           : t("player.pos.FWD");
 
-  const card = (s: BuilderSlot) => {
+  const card = (s: BuilderSlot, onBench = false) => {
     const dimmed = replaceMode && s.position !== incoming!.position;
     return s.player ? (
       <FplPlayerCard
@@ -146,11 +162,13 @@ export function SquadBuilderScreen({
         highlighted={s.highlighted}
         dimmed={dimmed}
         onClick={dimmed ? undefined : () => onSlotTap(s)}
+        size={onBench ? "sm" : "md"}
       />
     ) : (
       <FplEmptySlot
         key={s.slot}
         position={s.position}
+        onBench={onBench}
         className={dimmed ? "opacity-45" : undefined}
         onClick={dimmed ? undefined : () => onSlotTap(s)}
       />
@@ -158,7 +176,14 @@ export function SquadBuilderScreen({
   };
 
   const sorted = slots.slice().sort((a, b) => a.slot - b.slot);
-  const row = (pos: Position) => sorted.filter((s) => s.position === pos).map(card);
+  const onPitch = showBench ? sorted.filter((s) => s.slot < 12) : sorted;
+  const row = (pos: Position) => onPitch.filter((s) => s.position === pos).map((s) => card(s));
+  const benchSlots = showBench ? sorted.filter((s) => s.slot >= 12) : [];
+  // "GB", then the substitution order with the position: "1. DEF", "2. MIL"…
+  // the labels "Mon équipe" gives the same strip.
+  const benchLabels = benchSlots.map((s, index) =>
+    index === 0 ? t("fpl.gkp") : `${index}. ${positionLabel(s.position)}`,
+  );
 
   const squadForList: SquadPlayer[] = sorted
     .filter((s) => s.player)
@@ -195,6 +220,7 @@ export function SquadBuilderScreen({
         footer={<DeadlineLine gameweek={gameweek} deadlineIso={deadlineIso} />}
       />
       {banner ? <UiBanner>{banner}</UiBanner> : null}
+      {aboveToggle}
 
       <div className={cn("pt-3", ui.space.gutter)}>
         <UiSegmented
@@ -210,7 +236,12 @@ export function SquadBuilderScreen({
       </div>
 
       {view === "squad" ? (
-        <FplPitch className="mx-[var(--ui-gutter)] mt-3" rows={ROWS.map(row)} />
+        <FplPitch
+          className="mx-[var(--ui-gutter)] mt-3"
+          rows={ROWS.map(row)}
+          bench={showBench ? benchSlots.map((s) => card(s, true)) : undefined}
+          benchLabels={showBench ? benchLabels : undefined}
+        />
       ) : (
         <SquadListTable
           className="mx-[var(--ui-gutter)] mt-3"
@@ -233,7 +264,7 @@ export function SquadBuilderScreen({
           ui.surface.bar,
           ui.rule.blockStart,
           ui.shadow.raised,
-          "pb-2.5 pt-2.5 md:pb-3",
+          "pb-2.5 pt-2.5 md:pb-[max(env(safe-area-inset-bottom),0.75rem)]",
         )}
       >
         {incoming ? (

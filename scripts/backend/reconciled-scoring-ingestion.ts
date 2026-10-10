@@ -136,13 +136,31 @@ export async function loadPlannedMatch(
   entry: Pick<PlanEntry, "sofascoreId" | "flashscoreId">,
   env: Record<string, string | undefined> = process.env,
 ): Promise<{ sofascore: ProviderMatchData; flashscore: ProviderMatchData }> {
-  if (source === "committed") return loadCommittedMatch(entry);
+  return createPlannedMatchLoader(source, env).load(entry);
+}
+
+/** One pair of clients per batch: quota state survives across match boundaries. */
+export function createPlannedMatchLoader(
+  source: MatchSource,
+  env: Record<string, string | undefined> = process.env,
+) {
+  if (source === "committed")
+    return {
+      load: async (entry: Pick<PlanEntry, "sofascoreId" | "flashscoreId">) =>
+        loadCommittedMatch(entry),
+      usage: () => null,
+    };
   // Build both providers first, so a missing setting fails before any quota is spent.
   const sofascoreProvider = createSofascorePerformanceProvider(env);
   const flashscoreProvider = createFlashscorePerformanceProvider(env);
-  const sofascore = await sofascoreProvider.getMatch(entry.sofascoreId);
-  const flashscore = await flashscoreProvider.getMatch(entry.flashscoreId);
-  return { sofascore, flashscore };
+  return {
+    load: async (entry: Pick<PlanEntry, "sofascoreId" | "flashscoreId">) => {
+      const sofascore = await sofascoreProvider.getMatch(entry.sofascoreId);
+      const flashscore = await flashscoreProvider.getMatch(entry.flashscoreId);
+      return { sofascore, flashscore };
+    },
+    usage: () => ({ sofascore: sofascoreProvider.usage(), flashscore: flashscoreProvider.usage() }),
+  };
 }
 
 const arg = (name: string) => {
@@ -171,6 +189,7 @@ async function main() {
     arg("--observed-at") ??
     (source === "live" ? new Date().toISOString() : "2026-10-01T12:00:00.000Z");
 
+  const loader = createPlannedMatchLoader(source);
   const prepared: PreparedObservation[] = [];
   for (const entry of plan) {
     prepared.push(
@@ -178,9 +197,15 @@ async function main() {
         observedAt,
         snapshot,
         binding: entry,
-        ...(await loadPlannedMatch(source, entry)),
+        ...(await loader.load(entry)),
       }),
     );
+    for (const [provider, usage] of Object.entries(loader.usage() ?? {})) {
+      if (usage.remaining !== null && usage.limit !== null && usage.remaining <= usage.limit * 0.2)
+        console.warn(
+          `PROVIDER_QUOTA_LOW ${provider}: ${usage.remaining}/${usage.limit} requests remaining`,
+        );
+    }
   }
   const report = db
     ? await ingestReconciledFixtures(prepared, {
@@ -194,6 +219,7 @@ async function main() {
     : null;
   const evidence = {
     mode,
+    providerUsage: loader.usage(),
     providerData:
       source === "live"
         ? "live download through the approved adapters"

@@ -1,0 +1,8 @@
+guest     fr light dash #3d3b37 rib #8d8a84/#c8c4b8 contrast 3.25 / 6.41 min 3.25  width 79px
+guest     fr dark  dash #3d3b37 rib #8d8a84/#c8c4b7 contrast 3.25 / 6.40 min 3.25  width 79px
+guest     ar light dash #3d3b38 rib #8d8a85/#c8c3b9 contrast 3.25 / 6.36 min 3.25  width 79px
+guest     ar dark  dash #3d3b38 rib #8d8a85/#c8c3b9 contrast 3.25 / 6.36 min 3.25  width 79px
+forming1  fr light dash #cdcbc6 rib #0c5e2e/#288a4d contrast 4.88 / 2.68 min 2.68  width 79px
+forming1  fr dark  dash #cdcbc6 rib #165d38/#3a8856 contrast 4.88 / 2.68 min 2.68  width 79px
+forming1  ar light dash #cccec3 rib #0f5e2c/#268a4b contrast 4.96 / 2.74 min 2.74  width 79px
+forming1  ar dark  dash #cccec3 rib #0f5e2c/#268a4b contrast 4.96 / 2.74 min 2.74  width 79px

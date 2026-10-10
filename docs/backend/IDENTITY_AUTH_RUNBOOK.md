@@ -176,15 +176,18 @@ settings before launch; repeated 429s map to the stable `rate_limited` error.
 
 ## Account deletion and audit retention
 
-Deletion creates an idempotent request; it does not immediately remove the
-Auth user or product data. The planned operations policy is a 30-day hold,
-followed by a privileged, separately reviewed deletion worker. Users can cancel
-while the request is still `requested`.
+Since `20261006143700` deletion is automatic: asking closes the account at
+once (signed out everywhere, banned in Supabase Auth, hidden from public
+boards) and the `account-deletion-worker` Edge Function erases it 7 days later.
+There is no cancelling. The earlier plan here (a 30-day hold the user could
+cancel, then a separately reviewed worker) is superseded; see
+[ACCOUNT_DELETION_RUNBOOK.md](ACCOUNT_DELETION_RUNBOOK.md) for what is erased,
+what is kept, and how to switch the worker on, check it and pause it.
 
 `app_private.security_audit_log` is append-only to application roles and stores
 only event type, actor, timestamp, request metadata, and non-secret context.
-Retain security events for 365 days unless legal policy requires longer. A
-future service-role retention job may delete expired rows; browser roles never
+Security events are kept 365 days: the daily pg_cron job
+`account-deletion-history-prune` deletes older rows. Browser roles never
 receive access.
 
 ## Avatar storage

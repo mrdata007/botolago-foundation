@@ -1,8 +1,7 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  AlertTriangle,
   Bell,
   Bookmark,
   Check,
@@ -15,6 +14,7 @@ import {
   LockKeyhole,
   LogIn,
   LogOut,
+  Mail,
   Palette,
   Pencil,
   ShieldCheck,
@@ -55,14 +55,17 @@ import { showStepUpNotice } from "@/auth/step-up-notice";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
 import { findClub } from "@/components/fantasy/club-identity";
+import { ACCOUNT_DELETION_DONE_PATH, ACCOUNT_DELETION_PATH } from "@/lib/account-deletion";
 import { DARK_MODE_ENABLED, NEWS_ENABLED } from "@/lib/feature-flags";
 import { useSavedArticles } from "@/lib/saved-articles";
+import { SUPPORT_EMAIL, SUPPORT_MAILTO } from "@/lib/report-content";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
 import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { followedTeamIdsQuery } from "@/services/follows";
 import { footballService } from "@/services/football";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { useFantasyAvailability } from "@/services/use-fantasy-availability";
 import type { Club, FantasySummary } from "@/types/domain";
 import { pointsUnit } from "@/lib/points-unit";
@@ -101,7 +104,7 @@ const ROW = cn("flex w-full items-center gap-3 px-4 py-2 text-start", ui.space.r
 const ROW_RULE = ui.rule.blockStart;
 
 const ROW_INTERACTIVE = cn(
-  "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)]",
+  "transition-colors duration-[var(--duration-quick)] hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
   // The card clips its children (`overflow-hidden`), which would cut an outer
   // ring in half, so the focus ring is drawn inside the row — in the brand
   // foreground, which is what `ui.focus` draws everywhere else.
@@ -448,6 +451,8 @@ function AuthenticatedProfile({
         <RowLink to="/privacy" ruled icon={<LockKeyhole />} label={t("profile.legal.privacy")} />
       </Group>
 
+      <HelpGroup />
+
       <DeleteAccountSection />
     </>
   );
@@ -671,26 +676,50 @@ function DevicePreferences() {
   );
 }
 
+/**
+ * How to reach a person: support's address, for every visitor, signed in or
+ * not. A `mailto:` link, which the phone app hands to the mail app (see
+ * `src/lib/report-content.ts`); the address is shown too, left-to-right in
+ * Arabic, for a reader with no mail app set up.
+ */
+function HelpGroup() {
+  const { t } = useI18n();
+  return (
+    <Group title={t("profile.section.help")}>
+      <a href={SUPPORT_MAILTO} className={cn(ROW, ROW_INTERACTIVE)}>
+        <RowInner
+          icon={<Mail />}
+          label={t("profile.contact")}
+          chevron={false}
+          value={<bdi dir="ltr">{SUPPORT_EMAIL}</bdi>}
+        />
+      </a>
+    </Group>
+  );
+}
+
 /* ---------------------------- danger zone / delete ------------------------ */
+
+/**
+ * The deletion request's line about the manager card. Loaded on demand, from the live branch
+ * only: a static import would make every visit to Profile download the section's code, switch or
+ * no switch.
+ */
+const CardDeletionLine = lazy(() =>
+  import("@/components/auth/curva-card-deletion-line").then((module) => ({
+    default: module.CardDeletionLine,
+  })),
+);
 
 function DeleteAccountSection() {
   const { t } = useI18n();
+  const live = useManagerCardLive();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [pending, setPending] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void authService.getAccountDeletionStatus().then((res) => {
-      if (!cancelled && res.ok && res.data) setPending(res.data.pending);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const closeDialog = () => {
+    if (submitting) return;
     setDialogOpen(false);
     setAcknowledged(false);
   };
@@ -699,8 +728,8 @@ function DeleteAccountSection() {
     if (!acknowledged || submitting) return;
     setSubmitting(true);
     const res = await authService.requestAccountDeletion();
-    setSubmitting(false);
     if (!res.ok) {
+      setSubmitting(false);
       // A deletion request is a sensitive account action: refused until the
       // one-time code is in. Say that, once (the auth layer says it too,
       // under the same toast id), not "Une erreur est survenue".
@@ -708,24 +737,10 @@ function DeleteAccountSection() {
       else toast.error(t("profile.delete_error_toast"));
       return;
     }
-    setPending(true);
-    closeDialog();
-    toast.success(t("profile.delete_success_toast"));
-  };
-
-  const cancelDeletion = async () => {
-    if (submitting) return;
-    setSubmitting(true);
-    const res = await authService.cancelAccountDeletion();
-    setSubmitting(false);
-    if (!res.ok) {
-      // The same for withdrawing the request.
-      if (res.errorCode === "mfa_required") showStepUpNotice(t);
-      else toast.error(t("profile.delete_error_toast"));
-      return;
-    }
-    setPending(false);
-    toast.success(t("profile.delete_cancelled_toast"));
+    // The account is closed and this device already signed out (the service
+    // did it). A full navigation, as for a ban: it also drops every cached
+    // query the session had loaded. The page says what happens next.
+    window.location.assign(ACCOUNT_DELETION_DONE_PATH);
   };
 
   return (
@@ -744,57 +759,39 @@ function DeleteAccountSection() {
             ui.shadow.card,
           )}
         >
-          {pending ? (
-            <div className="flex items-start gap-3 px-4 py-4">
-              <RowDisc tone="negative">
-                <AlertTriangle />
-              </RowDisc>
-              <div className="min-w-0 flex-1">
-                <div className={cn(ui.text.bodyStrong, ui.tone.default)}>
-                  {t("profile.delete_pending_title")}
-                </div>
-                <p className={cn("mt-0.5", ui.text.meta, ui.tone.muted)}>
-                  {t("profile.delete_pending_body")}
-                </p>
-                <UiButton
-                  size="sm"
-                  variant="outline"
-                  onClick={cancelDeletion}
-                  disabled={submitting}
-                  className={cn("mt-3", authOutlineClass)}
-                >
-                  {submitting && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />}
-                  {t("profile.delete_cancel_request_cta")}
-                </UiButton>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setDialogOpen(true)}
-              className={cn(
-                ROW,
-                "py-3 transition-colors",
-                "hover:bg-[color:color-mix(in_oklab,var(--ui-negative)_10%,transparent)]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-negative)]",
-              )}
-            >
-              <RowDisc tone="negative">
-                <Trash2 />
-              </RowDisc>
-              <span className="min-w-0 flex-1 text-start">
-                <span className={cn("block", ui.text.bodyStrong, ui.tone.negative)}>
-                  {t("profile.delete_account")}
-                </span>
-                <span className={cn("block", ui.text.meta, ui.tone.muted)}>
-                  {t("profile.delete_account_desc")}
-                </span>
+          <button
+            type="button"
+            onClick={() => setDialogOpen(true)}
+            className={cn(
+              ROW,
+              "py-3 transition-colors",
+              "hover:bg-[color:color-mix(in_oklab,var(--ui-negative)_10%,transparent)]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--ui-negative)]",
+            )}
+          >
+            <RowDisc tone="negative">
+              <Trash2 />
+            </RowDisc>
+            <span className="min-w-0 flex-1 text-start">
+              <span className={cn("block", ui.text.bodyStrong, ui.tone.negative)}>
+                {t("profile.delete_account")}
               </span>
-              <ChevronRight className={cn("h-4.5 w-4.5 shrink-0", ui.tone.negative)} aria-hidden />
-            </button>
-          )}
+              <span className={cn("block", ui.text.meta, ui.tone.muted)}>
+                {t("profile.delete_account_desc")}
+              </span>
+            </span>
+            <ChevronRight className={cn("h-4.5 w-4.5 shrink-0", ui.tone.negative)} aria-hidden />
+          </button>
         </div>
       </Section>
+
+      {/* Starts the card read and loads the line's code now, so the line is in the dialog the
+          moment it opens. Renders nothing. */}
+      {live ? (
+        <Suspense fallback={null}>
+          <CardDeletionLine warm />
+        </Suspense>
+      ) : null}
 
       <UiModal
         open={dialogOpen}
@@ -811,12 +808,30 @@ function DeleteAccountSection() {
               {submitting && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
               {t("profile.delete_confirm_cta")}
             </UiButton>
-            <UiButton variant="ghost" onClick={closeDialog}>
+            <UiButton variant="ghost" onClick={closeDialog} disabled={submitting}>
               {t("profile.delete_cancel_cta")}
             </UiButton>
           </>
         }
       >
+        {/* The manager card goes with the account, and its number is never reissued (a card
+            only; none, no line). */}
+        {live ? (
+          <Suspense fallback={null}>
+            <CardDeletionLine />
+          </Suspense>
+        ) : null}
+        {/* What is kept, and where the whole story is: the reader decides on
+            facts, not on "irréversible" alone. */}
+        <p className={cn("mb-3", ui.text.meta, ui.tone.muted)}>
+          {t("profile.delete_confirm_kept")}{" "}
+          <Link
+            to={ACCOUNT_DELETION_PATH}
+            className={cn("underline underline-offset-2", ui.tone.default)}
+          >
+            {t("profile.delete_learn_more")}
+          </Link>
+        </p>
         {/* The acknowledgement keeps its warning plate — it is the thing the
             reader has to read, not a field. What it gains is a focus ring and
             a real tap target: it had neither, on the control that unlocks
@@ -861,6 +876,7 @@ function GuestProfile() {
         <SignInLinks />
       </UiCard>
       <DevicePreferences />
+      <HelpGroup />
     </>
   );
 }
@@ -878,6 +894,7 @@ function AnonymousProfile() {
         <SignInLinks />
       </UiCard>
       <DevicePreferences />
+      <HelpGroup />
     </>
   );
 }

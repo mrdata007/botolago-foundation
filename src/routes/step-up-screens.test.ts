@@ -182,12 +182,18 @@ describe("Profile (/profile): the account-deletion request", () => {
     expect(source).toContain(IMPORT);
   });
 
-  it("requesting and withdrawing it: a code owed is not 'Une erreur est survenue'", () => {
+  it("requesting it: a code owed is not 'Une erreur est survenue'", () => {
     const fallback = 'toast.error(t("profile.delete_error_toast"));';
-    const request = handler(source, "const confirmDelete = async", "const cancelDeletion = async");
+    const request = handler(source, "const confirmDelete = async", "return (");
     expect(request).toContain(stepUpThen('res.errorCode === "mfa_required"', fallback));
-    const withdraw = handler(source, "const cancelDeletion = async", "return (");
-    expect(withdraw).toContain(stepUpThen('res.errorCode === "mfa_required"', fallback));
+  });
+
+  it("is final: nothing withdraws it, and a success leaves for the page that says what happens", () => {
+    // 20261006143700: the account is closed the moment it asks.
+    expect(source).not.toContain("cancelAccountDeletion");
+    expect(source).not.toContain("getAccountDeletionStatus");
+    const request = handler(source, "const confirmDelete = async", "return (");
+    expect(request).toContain("window.location.assign(ACCOUNT_DELETION_DONE_PATH);");
   });
 });
 

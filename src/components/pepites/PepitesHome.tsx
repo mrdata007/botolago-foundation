@@ -1,15 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { ChevronRight, Play } from "lucide-react";
 
 import type { MethodologyResponse, PositionGroup } from "@/backend/pepites/contracts";
 import { useMemo, useState } from "react";
 
-import { ui, UiIconLinkButton } from "@/components/ui-kit";
+import { ui, UiChip, UiEmptyState, UiIconLinkButton, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { useManagerCardLive } from "@/services/manager-card-status";
 
-import { pp } from "./pepites-design";
 import { editionItems, formatNumber, POSITION_GROUPS, positionShort } from "./pepites-format";
 import {
   PepitesBeforeFirstEdition,
@@ -21,8 +20,9 @@ import {
   UpdatedLine,
 } from "./PepitesParts";
 import { PepitesShareButton } from "./PepitesShareButton";
-import { PepitesShell } from "./PepitesShell";
-import { TopTenHero, TopTenList } from "./TopTenList";
+import { PepitesChipRow, PepitesPageTitle, PepitesShell } from "./PepitesShell";
+import { PepitesFeature } from "./PepitesFeature";
+import { TopTenList } from "./TopTenList";
 import {
   homeQueryOptions,
   methodologyQueryOptions,
@@ -32,7 +32,6 @@ import {
   usePepitesViewer,
   useVersionPointer,
 } from "./use-pepites";
-import { FilterChip, MonoLine, NightBand } from "./PepitesVisuals";
 import { WeeklyEmailCard } from "./WeeklyEmailCard";
 
 type HomeFilter = PositionGroup | "young" | null;
@@ -43,7 +42,10 @@ function firstEditionRound(data: MethodologyResponse | undefined): number {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : 3;
 }
 
-/** Filter the published Top 10 in place by position or age (Figma 01, "Filters"). */
+/**
+ * Filter the published Top 10 in place by position or age: `UiChip` toggles
+ * (`aria-pressed`) in the shared chip row under the title.
+ */
 function HomeChips({
   filter,
   onFilterChange,
@@ -53,49 +55,54 @@ function HomeChips({
 }) {
   const { t } = useI18n();
   return (
-    <div
-      role="group"
-      aria-label={t("pepites.filter.position")}
-      className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1"
-      data-testid="pepites-home-chips"
+    <PepitesChipRow
+      label={t("pepites.filter.position")}
+      testId="pepites-home-chips"
+      className="mt-2"
     >
-      <FilterChip
+      <UiChip
         selected={filter === null}
         onClick={() => onFilterChange(null)}
-        testId="pepites-home-filter-all"
+        data-testid="pepites-home-filter-all"
       >
         {t("pepites.tab.top")}
-      </FilterChip>
+      </UiChip>
       {[...POSITION_GROUPS].reverse().map((group) => (
-        <FilterChip
+        <UiChip
           key={group}
           selected={filter === group}
           onClick={() => onFilterChange(group)}
-          testId={`pepites-home-filter-${group}`}
+          data-testid={`pepites-home-filter-${group}`}
         >
           {positionShort(group, t)}
-        </FilterChip>
+        </UiChip>
       ))}
-      <FilterChip
+      <UiChip
         selected={filter === "young"}
         onClick={() => onFilterChange("young")}
-        testId="pepites-home-filter-age"
+        data-testid="pepites-home-filter-age"
       >
         {t("pepites.chip.max_age_20")}
-      </FilterChip>
-    </div>
+      </UiChip>
+    </PepitesChipRow>
   );
 }
 
 /**
- * `/pepites` (Figma 01): the current weekly Top 10 — the leader on the night
- * band, the nine others as rows — or last season's final ranking before the
- * first edition. The page reads the version pointer and keeps it fresh during
+ * `/pepites`: the current weekly Top 10 — the week's title band with the
+ * reveal and share buttons and the filter chips, the leader on the featured
+ * photo band with its percentile wheel (`PepitesFeature`), the nine others
+ * as rows — or last season's final ranking before the first edition, laid
+ * out the same way. The page reads the version pointer and keeps it fresh during
  * a reveal; when a new edition is published, the list changes without a
  * reload (architecture §7).
  */
 export function PepitesHome() {
   const { t, lang } = useI18n();
+  // While Curva is live, Pépites lives inside Fantasy (plan 3.4): the title band names the way
+  // back. Off, the band has no back pill, as before.
+  const live = useManagerCardLive();
+  const back = live ? { backTo: "/fantasy", backLabel: t("nav.fantasy") } : {};
   const [filter, setFilter] = useState<HomeFilter>(null);
   const viewer = usePepitesViewer();
   const pointerQuery = useVersionPointer(viewer);
@@ -144,35 +151,25 @@ export function PepitesHome() {
 
   const footer = (
     <>
-      <Link
-        to="/pepites/classement"
-        data-testid="pepites-full-ranking"
-        className={cn(
-          "flex min-h-[var(--ui-tap-min)] items-center justify-center gap-1 rounded-full px-5 text-[13px] text-white",
-          "bg-[color:var(--pepites-ink)] dark:bg-[color:var(--ui-ink)]",
-          pp.heavy,
-          ui.focus,
-        )}
-      >
+      <UiLinkButton to="/pepites/classement" variant="ink" data-testid="pepites-full-ranking">
         {t("pepites.home.full_ranking")}
-        <ChevronRight className="size-4 rtl:-scale-x-100" aria-hidden />
-      </Link>
+        <ChevronRight className="h-4 w-4" aria-hidden />
+      </UiLinkButton>
       <WeeklyEmailCard />
       <div className="flex flex-col gap-1">
         {edition ? <UpdatedLine iso={edition.publishedAt} /> : null}
-        <p className={cn("text-[13px] leading-[1.5]", pp.muted)}>{t("pepites.home.about")}</p>
-        <Link
+        <p className={cn(ui.text.secondary, ui.tone.muted)}>{t("pepites.home.about")}</p>
+        {/* `-ms-3` lines the label up with the paragraph above; the 44px
+            target keeps its own padding. */}
+        <UiLinkButton
           to="/pepites/methode"
-          className={cn(
-            "self-start text-[12px] underline underline-offset-2",
-            pp.ink,
-            pp.bold,
-            ui.focus,
-          )}
+          size="sm"
+          variant="ghost"
+          className="-ms-3 self-start"
           data-testid="pepites-method-link"
         >
           {t("pepites.home.method_link")}
-        </Link>
+        </UiLinkButton>
       </div>
     </>
   );
@@ -191,57 +188,55 @@ export function PepitesHome() {
     const title = t("pepites.home.week_title").replace("{n}", formatNumber(edition.week, lang));
     return (
       <PepitesShell
-        hero={
-          leader ? (
-            <TopTenHero
-              item={leader}
-              stats={stats.get(leader.player.id)}
-              kicker={kicker}
-              titleId="pepites-edition-title"
-              title={title}
-              action={
-                <div className="flex items-center gap-2">
-                  <UiIconLinkButton
-                    to="/pepites/revelation"
-                    variant="glass"
-                    aria-label={t("pepites.reveal.play")}
-                    data-testid="pepites-reveal-play"
-                  >
-                    <Play aria-hidden />
-                  </UiIconLinkButton>
-                  <PepitesShareButton edition={edition} onNight />
-                </div>
-              }
-            />
-          ) : (
-            <NightBand cut={32}>
-              <div className="flex min-h-[120px] flex-col justify-end gap-2 pb-12 pt-3">
-                <MonoLine>{kicker}</MonoLine>
-                <h2
-                  id="pepites-edition-title"
-                  className={cn(pp.monoStrong, "text-[11px] text-white")}
-                  data-testid="pepites-edition-title"
+        pageHeader={
+          <PepitesPageTitle
+            {...back}
+            title={
+              // The Top 10 below is labelled by this heading.
+              <span id="pepites-edition-title" data-testid="pepites-edition-title">
+                {title}
+              </span>
+            }
+            trailing={
+              <div className="flex items-center gap-2">
+                <UiIconLinkButton
+                  to="/pepites/revelation"
+                  aria-label={t("pepites.reveal.play")}
+                  data-testid="pepites-reveal-play"
                 >
-                  {title}
-                </h2>
+                  <Play aria-hidden />
+                </UiIconLinkButton>
+                <PepitesShareButton edition={edition} />
               </div>
-            </NightBand>
-          )
+            }
+          >
+            <p className={cn(ui.text.meta, ui.tone.muted)}>{kicker}</p>
+            <HomeChips filter={filter} onFilterChange={setFilter} />
+          </PepitesPageTitle>
         }
       >
         {pointer.preview ? <PepitesPreviewBanner /> : null}
         <PepitesRevealBanner pointer={pointer} />
-        <HomeChips filter={filter} onFilterChange={setFilter} />
-        <section aria-labelledby="pepites-edition-title">
+        <section aria-labelledby="pepites-edition-title" className="flex flex-col gap-2.5">
           {leader ? (
-            <TopTenList items={rest} stats={stats} testId="pepites-top10" />
+            <>
+              <PepitesFeature
+                testId="pepites-hero"
+                scoreTestId="pepites-hero-score"
+                player={leader.player}
+                rank={leader.rank}
+                score={leader.score}
+                movement={leader.movement ?? null}
+                reason={lang === "ar" ? leader.reasonAr : leader.reasonFr}
+                facts
+                stats={stats.get(leader.player.id)}
+                statsPending={ranking.isPending}
+                version={version}
+              />
+              <TopTenList items={rest} stats={stats} testId="pepites-top10" />
+            </>
           ) : (
-            <div
-              data-testid="pepites-home-empty"
-              className={cn("rounded-[14px] p-4 text-[13px]", pp.card, pp.text)}
-            >
-              {t("pepites.home.no_match")}
-            </div>
+            <UiEmptyState testId="pepites-home-empty" title={t("pepites.home.no_match")} />
           )}
         </section>
         {footer}
@@ -255,7 +250,10 @@ export function PepitesHome() {
         previous={previous}
         firstRound={firstRound}
         pointer={pointer}
+        stats={stats}
+        statsPending={ranking.isPending}
         footer={footer}
+        {...back}
       />
     );
   }
@@ -264,21 +262,12 @@ export function PepitesHome() {
     <PepitesShell>
       {pointer.preview ? <PepitesPreviewBanner /> : null}
       <PepitesRevealBanner pointer={pointer} />
-      <PepitesEmptyState />
+      <UiEmptyState
+        testId="pepites-empty"
+        title={t("pepites.state.no_ranking")}
+        body={t("pepites.state.no_ranking_body")}
+      />
       {footer}
     </PepitesShell>
-  );
-}
-
-function PepitesEmptyState() {
-  const { t } = useI18n();
-  return (
-    <div
-      data-testid="pepites-empty"
-      className={cn("flex flex-col gap-1 rounded-[14px] p-4", pp.card)}
-    >
-      <p className={cn(pp.heavy, pp.text, "text-[15px]")}>{t("pepites.state.no_ranking")}</p>
-      <p className={cn(pp.muted, "text-[13px]")}>{t("pepites.state.no_ranking_body")}</p>
-    </div>
   );
 }

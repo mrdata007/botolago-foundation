@@ -141,7 +141,7 @@ test("the week 7 draft: edited, late, published; an open page shows it without a
   await expect(editor).toContainText("Programmée");
   await expect(staff.getByTestId("admin-pepites-reader-state")).toContainText("en retard");
 
-  // A visitor arrives while it is late: last week's list, and the band.
+  // A visitor arrives while it is late: last week's list, and the banner.
   await withoutLocalResizing(page);
   await initializeLanguage(page, "fr");
   await page.addInitScript(() => {

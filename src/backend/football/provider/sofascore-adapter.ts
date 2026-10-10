@@ -249,6 +249,10 @@ export interface SofascoreMatch {
 export class SofascorePerformanceProvider {
   constructor(private readonly client: RapidApiClient) {}
 
+  usage() {
+    return { requests: this.client.requestsSent(), ...this.client.quota() };
+  }
+
   private path(endpoint: string, matchId: string): string {
     if (!/^\d{1,12}$/.test(matchId)) {
       throw new FootballError("invalid_provider_payload", "A Sofascore match id is a number.");

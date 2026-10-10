@@ -81,7 +81,8 @@ Each match gets one outcome:
 
 ```
 bun scripts/backend/reconciled-scoring-ingestion.ts --plan plan.json \
-  --mappings rows.json --captured-at <ISO> [--mode local|dry-run|record] [--out report.json]
+  --mappings rows.json --captured-at <ISO> [--mode local|dry-run|record] \
+  [--source committed|live] [--out report.json]
 ```
 
 - **`plan.json`:** the provider match pair and its app fixture and teams, reviewed by a
@@ -95,8 +96,15 @@ bun scripts/backend/reconciled-scoring-ingestion.ts --plan plan.json \
     `FLASHSCORE_RAPIDAPI_HOST`. `--observed-at` defaults to now. The staging-only rule for
     the database modes is unchanged. A match that is not finished or whose providers
     disagree is blocked by the same checks as before.
-  - Not yet run against the real providers: the live path is tested only for refusing to start
-    without settings.
+  - One client per provider is reused across the whole plan, preserving quota state between
+    matches. `providerUsage` reports actual calls (including retries) and the latest quota
+    headers; unknown headers remain null. The CLI warns at 20% remaining. The client refuses
+    further requests below its 100-request reserve, including retries after a failed response.
+  - On 2026-10-10 a read-only probe downloaded three finished matches (24 provider requests),
+    and those fresh responses passed through this live loader and the reconciler offline.
+    All three remain blocked on reviewed identities. This verifies fresh response parsing,
+    not a database write or a directly credentialed CLI invocation. Details:
+    [provider migration evidence](../production/provider-migration-2026-10-10/README.md).
 - **Database modes:** need `SUPABASE_URL` and `SUPABASE_SECRET_KEY`, and **refuse the
   production project**.
 - **`record`:** also needs `RECONCILED_INGESTION_CONFIRMATION=RECORD_RECONCILED_OBSERVATIONS_ON_STAGING`.

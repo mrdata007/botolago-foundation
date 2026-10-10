@@ -4,43 +4,11 @@ import { getKitForClub, type KitConfig } from "@/lib/kits";
 import { teamAsClub } from "./pepites-format";
 
 /**
- * The Pépites register from the Figma file "BotolaGO — Pépites (UI)": class
- * strings over the `--pepites-*` tokens in styles.css, and the pure helpers
- * the visual parts share. Tracking is `ltr:` only: Arabic is never
- * letter-spaced (BG-0069).
+ * The pure helpers the Pépites data glyphs share: initials, the name on the
+ * shirt, the club's kit, the ten-segment rounding and the rating bands. No
+ * styling lives here: since BG-0152 every Pépites screen takes its look from
+ * the main kit (`src/components/ui-kit`).
  */
-export const pp = {
-  page: "bg-[color:var(--pepites-page)]",
-  night: "bg-[color:var(--pepites-night)] text-[color:var(--pepites-on-night)]",
-  card: "bg-[color:var(--pepites-card)] shadow-[var(--pepites-card-shadow)]",
-  row: "bg-[color:var(--pepites-card)] shadow-[var(--pepites-row-shadow)]",
-  table: "bg-[color:var(--pepites-card)] shadow-[var(--pepites-table-shadow)]",
-  /** Changa ExtraBold: figures, names, titles. */
-  display: "font-[family-name:var(--ui-font-display)] [font-weight:800] leading-none",
-  /** Manrope ExtraBold / Bold. */
-  heavy: "[font-weight:800]",
-  bold: "[font-weight:700]",
-  /** IBM Plex Mono capitals: the meta lines. Arabic falls back to the body face. */
-  mono: "font-[family-name:var(--pepites-font-mono)] [font-weight:500] ltr:uppercase",
-  monoStrong: "font-[family-name:var(--pepites-font-mono)] [font-weight:600] ltr:uppercase",
-  /**
-   * The Figma slant (skewX −7.97°, scaleY .99, from the top-left corner). A
-   * transform, so the box keeps its place in the flow. The Arabic frames set
-   * names upright, so the slant is Latin-only.
-   */
-  lean: "inline-block origin-top-left [transform:skewX(-7.97deg)_scaleY(0.99)] rtl:[transform:none]",
-  energyText:
-    "bg-[image:var(--pepites-energy-text)] bg-clip-text text-transparent [-webkit-background-clip:text]",
-  energyFill: "bg-[image:var(--pepites-energy)]",
-  ink: "text-[color:var(--pepites-ink)]",
-  text: "text-[color:var(--pepites-text)]",
-  muted: "text-[color:var(--pepites-muted)]",
-  onNightMeta: "text-[color:var(--pepites-on-night-meta)]",
-  onNightSub: "text-[color:var(--pepites-on-night-sub)]",
-  spring: "text-[color:var(--pepites-spring)]",
-  divider: "border-[color:var(--pepites-divider)]",
-  line: "border-[color:var(--pepites-line)]",
-} as const;
 
 /** "AM" from "Abdelhamid Maali"; a note in brackets ("(fictif)") does not count. */
 export function initials(name: string): string {
@@ -82,19 +50,57 @@ export function segments(value: number | null | undefined): number {
   return Math.max(0, Math.min(10, Math.round(value / 10)));
 }
 
-/** The lit segments' colours, spring to violet, in reading order. */
-export const SEGMENT_COLOURS = [
-  "#5de39b",
-  "#65e0ae",
-  "#6cddc1",
-  "#74dad4",
-  "#7bd7e7",
-  "#7fcaf0",
-  "#7eb3f0",
-  "#7d9bf0",
-  "#7d84f0",
-  "#7c6cf0",
-] as const;
+/**
+ * A wheel slice's arc: five 72° slices from twelve o'clock, clockwise, less a
+ * small gap at each end. Arabic reads them counter-clockwise: each slice is
+ * the French one mirrored across the vertical axis. Angles in radians, with
+ * y pointing down (canvas and SVG alike), so a growing angle turns clockwise.
+ */
+export function sliceAngles(index: number, rtl: boolean, gap = 0.05): [number, number] {
+  const from = -Math.PI / 2 + (index * 2 * Math.PI) / 5 + gap;
+  const to = -Math.PI / 2 + ((index + 1) * 2 * Math.PI) / 5 - gap;
+  return rtl ? [Math.PI - to, Math.PI - from] : [from, to];
+}
+
+/** A coordinate rounded to a hundredth, so an SVG path stays short and stable. */
+const at = (value: number) => Number(value.toFixed(2));
+
+/**
+ * An annular sector as an SVG path: from `inner` to `outer` radius around
+ * (`cx`, `cy`), between two angles from `sliceAngles` (`from` < `to`). The
+ * outer arc runs clockwise, the inner one back. Empty when the ring has no
+ * thickness, so a 0 percentile draws nothing rather than a hairline.
+ */
+export function sectorPath(
+  cx: number,
+  cy: number,
+  inner: number,
+  outer: number,
+  from: number,
+  to: number,
+): string {
+  if (!(outer > inner) || !(to > from)) return "";
+  const large = to - from > Math.PI ? 1 : 0;
+  const point = (radius: number, angle: number) =>
+    `${at(cx + Math.cos(angle) * radius)} ${at(cy + Math.sin(angle) * radius)}`;
+  return [
+    `M${point(outer, from)}`,
+    `A${at(outer)} ${at(outer)} 0 ${large} 1 ${point(outer, to)}`,
+    `L${point(inner, to)}`,
+    `A${at(inner)} ${at(inner)} 0 ${large} 0 ${point(inner, from)}`,
+    "Z",
+  ].join(" ");
+}
+
+/**
+ * How far a slice's value reaches: from the inner radius, `percentile` per
+ * cent of the way to the outer one. Null (no figure) and anything outside
+ * 0–100 are held to the ring.
+ */
+export function sliceReach(percentile: number | null | undefined, inner: number, outer: number) {
+  if (typeof percentile !== "number" || !Number.isFinite(percentile)) return inner;
+  return inner + ((outer - inner) * Math.max(0, Math.min(100, percentile))) / 100;
+}
 
 export type RatingBand = 1 | 2 | 3 | 4 | 5;
 
@@ -105,6 +111,15 @@ export function ratingBand(rating: number): RatingBand {
   if (rating < 7) return 3;
   if (rating < 7.5) return 4;
   return 5;
+}
+
+/**
+ * The band of a rating as the screens print it: to one decimal, so a 6.49
+ * that prints "6,5" takes 6.5's band. Banding the raw value painted two
+ * chips reading "6,5" in two colours side by side.
+ */
+export function printedRatingBand(rating: number): RatingBand {
+  return ratingBand(Number(rating.toFixed(1)));
 }
 
 /** A card's club, position and age in the order the meta lines print them. */

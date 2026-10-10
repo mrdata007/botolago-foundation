@@ -1,5 +1,5 @@
-import { Hourglass, Target, UserPlus } from "lucide-react";
-import type { ReactNode } from "react";
+import { Hourglass, Search, Target, UserPlus } from "lucide-react";
+import { lazy, Suspense, type ReactNode } from "react";
 
 import { AnimatedNumber, FlashOnChange } from "@/components/common/AnimatedNumber";
 import { RankOrdinal } from "@/components/fantasy-lists/RankOrdinal";
@@ -10,6 +10,17 @@ import { cn } from "@/lib/utils";
 import type { LeagueStanding } from "@/types/fantasy";
 import { selectMyRankState, type TeamPresence } from "./my-rank-state";
 import { pointsUnit } from "@/lib/points-unit";
+import { fantasyNextAction } from "@/services/fantasy-next-action";
+import { useManagerCardLive } from "@/services/manager-card-status";
+import { useFantasyAvailability } from "@/services/use-fantasy-availability";
+
+// The card's token is its own chunk, requested only while the section is live: with the switch
+// off this line imports nothing of the Manager Card.
+const RankCardToken = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.RankCardToken,
+  })),
+);
 
 /**
  * "Your position" — the line above the rankings table (A-Rankings).
@@ -36,8 +47,15 @@ export function MyRankCard({
   onJump?: () => void;
 }) {
   const { t, lang } = useI18n();
+  const cardLive = useManagerCardLive();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const state = selectMyRankState({ standing, presence });
+  // The card's token, at the end of the line, while live (plan M3c). Display only.
+  const cardToken = cardLive ? (
+    <Suspense fallback={null}>
+      <RankCardToken />
+    </Suspense>
+  ) : null;
 
   const kicker = (
     <p className={cn(ui.text.label, ui.tone.muted)}>{t("fantasy.rankings.my_rank")}</p>
@@ -71,10 +89,7 @@ export function MyRankCard({
           <p className={cn(ui.text.secondary, ui.tone.muted)}>
             {t("fantasy.rankings.no_team_desc")}
           </p>
-          <UiLinkButton to="/fantasy/create" size="sm" className="mt-3 self-start">
-            <UserPlus className="h-4 w-4" aria-hidden />
-            {t("fantasy.rankings.create_team")}
-          </UiLinkButton>
+          <NoTeamAction />
         </PositionLine>
       </div>
     );
@@ -83,7 +98,7 @@ export function MyRankCard({
   if (state.kind === "unranked") {
     return (
       <div data-testid="my-rank-card-unranked">
-        <PositionLine>
+        <PositionLine trailing={cardToken}>
           {kicker}
           {state.teamName ? (
             <p dir="auto" className={cn("mt-1.5 truncate", ui.text.bodyStrong, ui.tone.default)}>
@@ -107,7 +122,16 @@ export function MyRankCard({
     <div data-testid="my-rank-card">
       <PositionLine
         trailing={
-          onJump ? (
+          cardToken ? (
+            <div className="flex items-center gap-1">
+              {cardToken}
+              {onJump ? (
+                <UiIconButton aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
+                  <Target aria-hidden />
+                </UiIconButton>
+              ) : null}
+            </div>
+          ) : onJump ? (
             <UiIconButton aria-label={t("fantasy.rankings.jump_to_me")} onClick={onJump}>
               <Target aria-hidden />
             </UiIconButton>
@@ -159,6 +183,38 @@ export function MyRankCard({
         </p>
       </PositionLine>
     </div>
+  );
+}
+
+/**
+ * The no-team line's action, from the shared next-action model: "Créer mon
+ * équipe" only while a team can really be created, otherwise the player list,
+ * so the button never leads into a closed builder. Nothing while the
+ * availability probe is still answering; a failed probe keeps the create
+ * link, as the builder runs its own checks.
+ */
+function NoTeamAction() {
+  const { t } = useI18n();
+  const availability = useFantasyAvailability();
+  const action = fantasyNextAction({
+    availability: availability.view,
+    hasTeam: false,
+    now: Date.now(),
+  });
+  if (action.kind === "pending") return null;
+  if (action.kind === "explore") {
+    return (
+      <UiLinkButton to={action.to} size="sm" variant="soft" className="mt-3 self-start">
+        <Search className="h-4 w-4" aria-hidden />
+        {t("fantasy.next.explore")}
+      </UiLinkButton>
+    );
+  }
+  return (
+    <UiLinkButton to="/fantasy/create" size="sm" className="mt-3 self-start">
+      <UserPlus className="h-4 w-4" aria-hidden />
+      {t("fantasy.rankings.create_team")}
+    </UiLinkButton>
   );
 }
 

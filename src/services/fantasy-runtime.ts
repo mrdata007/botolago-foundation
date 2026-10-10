@@ -23,6 +23,9 @@ import type {
   FantasyPlayerGameweekHistoryEntryDto,
   FantasyPlayerSeasonStatDto,
   FantasyPointsDto,
+  FantasyMyRecapPublicationDto,
+  FantasyPublicRecapDto,
+  FantasyRecapPublicationDto,
   FantasyTeamDto,
 } from "@/backend/fantasy/contracts";
 import type {
@@ -35,6 +38,7 @@ import type {
   TopPlayerOfWeek,
 } from "@/types/fantasy";
 import type { FantasyAlert, FantasySummary, Gameweek, Player } from "@/types/domain";
+import { resolveMediaUrl } from "@/lib/media";
 
 const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
@@ -73,6 +77,9 @@ export function playerDto(dto: FantasyPlayerDto, stat?: FantasyPlayerSeasonStatD
     form: stat ? stat.form : null,
     ownership: stat?.ownershipPercent ?? 0,
     status,
+    // The release's public path starts with the `football/` namespace, which
+    // the resolver maps to the `football-media` bucket.
+    photoUrl: dto.photo ? (resolveMediaUrl({ storagePath: dto.photo.storagePath }) ?? null) : null,
   };
 }
 
@@ -142,6 +149,11 @@ function pointsDto(
       chipType: dto.result.chipType,
       incremental: dto.incrementalScoring === true,
       finalized: dto.pointsState === "final",
+      startingPoints: dto.result.startingPoints,
+      finalScore: dto.result.finalScore,
+      gameweekStatus: dto.gameweekStatus,
+      calculationVersion: dto.result.calculationVersion,
+      finalizedAt: dto.result.finalizedAt,
     },
     gameweek: sequence,
     totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
@@ -292,6 +304,11 @@ async function overallBoard(
   return { rows, myRank };
 }
 
+async function gameweekIdOf(seasonId: string, sequence: number): Promise<string | null> {
+  const gameweeks = await cloud.getGameweeks(seasonId, null, context());
+  return gameweeks.items.find((item) => item.sequence === sequence)?.id ?? null;
+}
+
 async function cloudTeam() {
   const current = await hub();
   if (!current.team) throw new Error("fantasy_team_not_found");
@@ -362,6 +379,9 @@ export const fantasyService = {
       teamName: current.team.name,
       totalPoints: history.items.reduce((sum, item) => sum + item.score, 0),
       gameweekPoints: currentResult?.score ?? 0,
+      // BG-0157 (2): the round that figure is for, from the same row, so the
+      // hub can name it and never print last round's score under this one's.
+      pointsGameweek: currentResult?.sequence ?? null,
       overallRank: latest?.overallRank ?? null,
       gameweekRank: currentResult?.rank ?? null,
       transfersLeft: current.team.freeTransfers,
@@ -512,6 +532,31 @@ export const fantasyService = {
     return pointsDto(sequence, points, summary);
   },
   /**
+   * Fantasy R4 — the owner's public link for one gameweek's recap, and
+   * whether publishing is switched on. Mock mode has no server: off.
+   */
+  async getMyRecapPublication(sequence: number): Promise<FantasyMyRecapPublicationDto> {
+    if (mode() === "mock") return { publishEnabled: false, publication: null };
+    const current = await cloudTeam();
+    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    if (!gameweekId) return { publishEnabled: false, publication: null };
+    return cloud.getMyGameweekRecapPublication(current.team.id, gameweekId, context());
+  },
+  async publishRecap(sequence: number, alias: string): Promise<FantasyRecapPublicationDto> {
+    const current = await cloudTeam();
+    const gameweekId = await gameweekIdOf(current.hub.season.id, sequence);
+    if (!gameweekId) throw new Error("fantasy_gameweek_not_found");
+    return cloud.publishGameweekRecap(current.team.id, gameweekId, alias.trim(), context());
+  },
+  async revokeRecap(publicId: string): Promise<void> {
+    return cloud.revokeGameweekRecap(publicId, context());
+  },
+  /** Anyone, signed in or not: the public projection, or null. */
+  async getPublicRecap(publicId: string): Promise<FantasyPublicRecapDto | null> {
+    if (mode() === "mock") return null;
+    return cloud.getPublicGameweekRecap(publicId, context());
+  },
+  /**
    * The season-to-date list of finished gameweeks.
    *
    * BG-0075: `benchPoints` stays 0 here, and that is not a placeholder —
@@ -566,7 +611,14 @@ export const fantasyService = {
   },
   async getRules() {
     if (mode() === "mock") {
-      return {
+      // BG-0157 (5): the v1 ruleset's positions, scoring and chips rows
+      // (`supabase/migrations/20260720163222_fantasy_ruleset_v1.sql`), in the
+      // shape and order `api.fantasy_rules` returns them — positions by
+      // display order, scoring by category, position code then threshold,
+      // chips by first round then allocation code — so a local run shows
+      // the table production shows. `fantasy-runtime.rules.test.ts` holds
+      // these rows to the migration.
+      const rules: Awaited<ReturnType<typeof cloud.getRules>> = {
         seasonId: "00000000-0000-4000-8000-000000000001",
         rulesetId: "00000000-0000-4000-8000-000000000002",
         rulesetCode: "botolago-fantasy-preview",
@@ -581,11 +633,94 @@ export const fantasyService = {
         captainMultiplier: 2,
         tripleCaptainMultiplier: 3,
         deadline: { minutesBeforeFirstFixture: 90, gracePeriodSeconds: 0 },
-        positions: [],
-        scoring: [],
-        chips: [],
+        positions: [
+          {
+            code: "GK",
+            squadQuota: 2,
+            startingMinimum: 1,
+            startingMaximum: 1,
+            goalPoints: 10,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "DEF",
+            squadQuota: 5,
+            startingMinimum: 3,
+            startingMaximum: 5,
+            goalPoints: 6,
+            cleanSheetPoints: 4,
+          },
+          {
+            code: "MID",
+            squadQuota: 5,
+            startingMinimum: 2,
+            startingMaximum: 5,
+            goalPoints: 5,
+            cleanSheetPoints: 1,
+          },
+          {
+            code: "FWD",
+            squadQuota: 3,
+            startingMinimum: 1,
+            startingMaximum: 3,
+            goalPoints: 4,
+            cleanSheetPoints: 0,
+          },
+        ],
+        scoring: [
+          { category: "appearance_full", points: 2, threshold: 60, position: null },
+          { category: "appearance_short", points: 1, threshold: 1, position: null },
+          { category: "direct_red_card", points: -3, threshold: null, position: null },
+          { category: "goals_conceded", points: -1, threshold: 2, position: "DEF" },
+          { category: "goals_conceded", points: -1, threshold: 2, position: "GK" },
+          { category: "official_assist", points: 3, threshold: null, position: null },
+          { category: "own_goal", points: -2, threshold: null, position: null },
+          { category: "penalty_miss", points: -2, threshold: null, position: null },
+          { category: "penalty_save", points: 5, threshold: null, position: "GK" },
+          { category: "saves", points: 1, threshold: 3, position: "GK" },
+          { category: "second_yellow_dismissal", points: -3, threshold: null, position: null },
+          { category: "yellow_card", points: -1, threshold: null, position: null },
+        ],
+        chips: [
+          {
+            allocationCode: "bench_boost",
+            chipType: "bench_boost",
+            startsAtGameweek: 1,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+          {
+            allocationCode: "free_hit",
+            chipType: "free_hit",
+            startsAtGameweek: 1,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+          {
+            allocationCode: "triple_captain",
+            chipType: "triple_captain",
+            startsAtGameweek: 1,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+          {
+            allocationCode: "wildcard_1",
+            chipType: "wildcard",
+            startsAtGameweek: 1,
+            endsAtGameweek: 15,
+            cancellable: false,
+          },
+          {
+            allocationCode: "wildcard_2",
+            chipType: "wildcard",
+            startsAtGameweek: 16,
+            endsAtGameweek: null,
+            cancellable: false,
+          },
+        ],
         features: null,
       };
+      return rules;
     }
     const current = await hub();
     return cloud.getRules(current.season.id, context());
@@ -612,9 +747,11 @@ export const fantasyService = {
         rank: (index + 1) as 1 | 2 | 3 | 4 | 5,
         gameweek,
         weeklyPoints: player.points,
-        goals: 0,
-        assists: 0,
-        cleanSheets: 0,
+        // `fantasy_top_players` reports points and minutes only. Goals,
+        // assists and clean sheets are unknown here, not zero.
+        goals: null,
+        assists: null,
+        cleanSheets: null,
         minutes: player.minutesPlayed,
         price: pooled?.price ?? 0,
         ownershipPercent: pooled?.ownership ?? 0,
@@ -658,15 +795,30 @@ export const fantasyService = {
     forgetSharedFantasyHub();
     return { id: result.leagueId, code: result.inviteCode };
   },
-  async joinLeague(code: string): Promise<void> {
+  /**
+   * Joins by invite code. The server answers which league it was and whether
+   * this team was already in it (`joined: false`), so callers never have to
+   * guess the league from the list. `leagueId` is null only when an older
+   * server answers nothing usable.
+   */
+  async joinLeague(code: string): Promise<{ leagueId: string | null; joined: boolean }> {
     if (mode() === "mock") {
       const { leaguesStore } = await import("./leagues-store");
-      leaguesStore.join(code);
-      return;
+      const league = leaguesStore.join(code);
+      return { leagueId: league.id, joined: true };
     }
     const current = await cloudTeam();
-    await cloud.joinLeague(current.team.id, code, crypto.randomUUID(), context());
+    const result = (await cloud.joinLeague(
+      current.team.id,
+      code,
+      crypto.randomUUID(),
+      context(),
+    )) as { leagueId?: unknown; joined?: unknown } | null;
     forgetSharedFantasyHub();
+    return {
+      leagueId: typeof result?.leagueId === "string" ? result.leagueId : null,
+      joined: result?.joined !== false,
+    };
   },
   async leaveLeague(leagueId: string): Promise<void> {
     if (mode() === "mock") {

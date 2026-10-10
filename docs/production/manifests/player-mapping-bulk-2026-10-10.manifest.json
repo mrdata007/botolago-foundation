@@ -1,0 +1,2396 @@
+{
+  "schemaVersion": 1,
+  "contractVersion": "player-mapping-bulk-v1",
+  "environment": "production-v2",
+  "population": {
+    "total": 41,
+    "tierA": 2,
+    "tierB": 39
+  },
+  "reasons": {
+    "A": "Batch-reviewed structured identity: exact DOB and current club agreement, matching position and shirt number, unique app-player target, and an existing active SportsMonks identity resolving to the same canonical player.",
+    "B": "Batch-reviewed structured identity: exact DOB and current club agreement, matching position, unique app-player target, and an existing active SportsMonks identity resolving to the same canonical player. Shirt number provides no signal and no shirt conflict is present.",
+    "approval": "Reviewed the frozen batch evidence and confirmed the proposal still matches the approved structured identity manifest."
+  },
+  "rows": [
+    {
+      "candidateId": "0325f232-c6f4-42af-a0a5-8492dbb223e4",
+      "provider": "sofascore",
+      "externalId": "2762930",
+      "appPlayerId": "b3671568-00d7-4d54-8f83-64fa7ad36a3b",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "0325f232-c6f4-42af-a0a5-8492dbb223e4",
+        "sofascoreExternalId": "2762930",
+        "appPlayerId": "b3671568-00d7-4d54-8f83-64fa7ad36a3b",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762930",
+              "candidateId": "0325f232-c6f4-42af-a0a5-8492dbb223e4",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "b3671568-00d7-4d54-8f83-64fa7ad36a3b"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "34803614e7d2c3cdf271fe8ddb47e85047ae1f4d5a12b9569ab65f7ed46058a4"
+    },
+    {
+      "candidateId": "0415cbd2-056a-4e18-bd3d-226b9b3b49a4",
+      "provider": "sofascore",
+      "externalId": "2265472",
+      "appPlayerId": "1c628ee1-d496-4173-af7a-b94e2ef035f0",
+      "appTeamId": "b78eaee8-93af-4630-8335-b208151cbf37",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "0415cbd2-056a-4e18-bd3d-226b9b3b49a4",
+        "sofascoreExternalId": "2265472",
+        "appPlayerId": "1c628ee1-d496-4173-af7a-b94e2ef035f0",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2265472",
+              "candidateId": "0415cbd2-056a-4e18-bd3d-226b9b3b49a4",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "1c628ee1-d496-4173-af7a-b94e2ef035f0"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "523f70e42df51e4935f54b53904f52fa9baef5605070b2288b0f9ad7291c40fd"
+    },
+    {
+      "candidateId": "045d4687-92dd-44c7-b724-dede91fa591a",
+      "provider": "sofascore",
+      "externalId": "1402176",
+      "appPlayerId": "52b4637e-68a4-4f26-9f2d-66cb94b0f988",
+      "appTeamId": "d5d8c59b-f7ab-4b30-9dfb-1d17a36bd0fc",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "045d4687-92dd-44c7-b724-dede91fa591a",
+        "sofascoreExternalId": "1402176",
+        "appPlayerId": "52b4637e-68a4-4f26-9f2d-66cb94b0f988",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1402176",
+              "candidateId": "045d4687-92dd-44c7-b724-dede91fa591a",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "52b4637e-68a4-4f26-9f2d-66cb94b0f988"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "0c6cdee59e0e0012d2643723e410d916cd263de31d753b0e4fe91a2b4d0fb43a"
+    },
+    {
+      "candidateId": "090a9732-014a-4f70-a81b-1307d7a07414",
+      "provider": "sofascore",
+      "externalId": "2762931",
+      "appPlayerId": "fedb1296-4739-4785-9137-9a7b38df9863",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "090a9732-014a-4f70-a81b-1307d7a07414",
+        "sofascoreExternalId": "2762931",
+        "appPlayerId": "fedb1296-4739-4785-9137-9a7b38df9863",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762931",
+              "candidateId": "090a9732-014a-4f70-a81b-1307d7a07414",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "fedb1296-4739-4785-9137-9a7b38df9863"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "G",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "c6196b5949798b53a5c5392246ecbd354b62264c8e03cf919bb622c1bcd260ab"
+    },
+    {
+      "candidateId": "11c10dba-70a5-4985-a260-a8813d6af78e",
+      "provider": "sofascore",
+      "externalId": "2790122",
+      "appPlayerId": "700e0ae9-cf8b-4eab-a5b1-e779dc1ad9a2",
+      "appTeamId": "d60d9d72-cb7a-4c94-944f-67081ef0a009",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "11c10dba-70a5-4985-a260-a8813d6af78e",
+        "sofascoreExternalId": "2790122",
+        "appPlayerId": "700e0ae9-cf8b-4eab-a5b1-e779dc1ad9a2",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2790122",
+              "candidateId": "11c10dba-70a5-4985-a260-a8813d6af78e",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "700e0ae9-cf8b-4eab-a5b1-e779dc1ad9a2"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "0cd5b0fa2a5d25cc1e9c45748f4203d6fda34016d982cb94fb5f522461184dbe"
+    },
+    {
+      "candidateId": "18f0dbc4-423e-4df7-bda7-badfe9aad00f",
+      "provider": "sofascore",
+      "externalId": "2762929",
+      "appPlayerId": "21aae74c-116c-40d5-880a-e6f460327aec",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "18f0dbc4-423e-4df7-bda7-badfe9aad00f",
+        "sofascoreExternalId": "2762929",
+        "appPlayerId": "21aae74c-116c-40d5-880a-e6f460327aec",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762929",
+              "candidateId": "18f0dbc4-423e-4df7-bda7-badfe9aad00f",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "21aae74c-116c-40d5-880a-e6f460327aec"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "0e5844102c518fe206c76218ab378e17cb1b586976b702c76c061620e912a78f"
+    },
+    {
+      "candidateId": "208a021c-fa5e-4c2a-80b3-6194e5523e9b",
+      "provider": "sofascore",
+      "externalId": "1997651",
+      "appPlayerId": "d6d8b6d8-a226-4bff-8d13-77f28e6c1913",
+      "appTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "208a021c-fa5e-4c2a-80b3-6194e5523e9b",
+        "sofascoreExternalId": "1997651",
+        "appPlayerId": "d6d8b6d8-a226-4bff-8d13-77f28e6c1913",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1997651",
+              "candidateId": "208a021c-fa5e-4c2a-80b3-6194e5523e9b",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "d6d8b6d8-a226-4bff-8d13-77f28e6c1913"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "G",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "3c4ea3b8971997a746d084a94a937a57d7c7b235d20bce2aea7d16801cbe99a2"
+    },
+    {
+      "candidateId": "297a6990-e96d-49ae-9aec-1e58f0a4930a",
+      "provider": "sofascore",
+      "externalId": "2238809",
+      "appPlayerId": "5d2c13e8-d7a1-47c9-878d-aed89341ae6f",
+      "appTeamId": "c499006b-2af3-4013-862c-854ab74b59cf",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "297a6990-e96d-49ae-9aec-1e58f0a4930a",
+        "sofascoreExternalId": "2238809",
+        "appPlayerId": "5d2c13e8-d7a1-47c9-878d-aed89341ae6f",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2238809",
+              "candidateId": "297a6990-e96d-49ae-9aec-1e58f0a4930a",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "5d2c13e8-d7a1-47c9-878d-aed89341ae6f"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "a85c989c7535762c05b451c772a6bcbeb7af91a217e65f2ac9be8770bac3a871"
+    },
+    {
+      "candidateId": "29bad1b2-e4fe-40dc-bcfd-c1f731b6526e",
+      "provider": "sofascore",
+      "externalId": "2762916",
+      "appPlayerId": "6b2054b3-5556-415e-8f40-98ec2a156097",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "29bad1b2-e4fe-40dc-bcfd-c1f731b6526e",
+        "sofascoreExternalId": "2762916",
+        "appPlayerId": "6b2054b3-5556-415e-8f40-98ec2a156097",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762916",
+              "candidateId": "29bad1b2-e4fe-40dc-bcfd-c1f731b6526e",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "6b2054b3-5556-415e-8f40-98ec2a156097"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "cd263c050771f6c27a1f0928a1a629b590e9441e503169afaa279ea2a245d007"
+    },
+    {
+      "candidateId": "2aa792f9-5582-416a-98e4-e3c761d03fe3",
+      "provider": "sofascore",
+      "externalId": "1140894",
+      "appPlayerId": "06f65c19-2547-4e22-8794-78d0ba5311c5",
+      "appTeamId": "8059c0cf-8b7b-4317-be7e-fd646d377cd0",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "2aa792f9-5582-416a-98e4-e3c761d03fe3",
+        "sofascoreExternalId": "1140894",
+        "appPlayerId": "06f65c19-2547-4e22-8794-78d0ba5311c5",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1140894",
+              "candidateId": "2aa792f9-5582-416a-98e4-e3c761d03fe3",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "06f65c19-2547-4e22-8794-78d0ba5311c5"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "4026a001e34959c9122a26617e4adea44f184e76fd05413eb44d55f9242abaa7"
+    },
+    {
+      "candidateId": "341c0941-9cef-4972-b4a0-2ad698b7238c",
+      "provider": "sofascore",
+      "externalId": "1469601",
+      "appPlayerId": "d49520d2-c56a-4550-8219-3e3d9d4a1bd9",
+      "appTeamId": "d5d8c59b-f7ab-4b30-9dfb-1d17a36bd0fc",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "341c0941-9cef-4972-b4a0-2ad698b7238c",
+        "sofascoreExternalId": "1469601",
+        "appPlayerId": "d49520d2-c56a-4550-8219-3e3d9d4a1bd9",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1469601",
+              "candidateId": "341c0941-9cef-4972-b4a0-2ad698b7238c",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "d49520d2-c56a-4550-8219-3e3d9d4a1bd9"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "635e05725c14fda98df0b14a307a3fbedcb00d15acc25bb8258731ab628393c9"
+    },
+    {
+      "candidateId": "3757da3c-849e-4208-9a37-7aa26391201e",
+      "provider": "sofascore",
+      "externalId": "1008281",
+      "appPlayerId": "dafb84ba-fc20-418c-8a0d-ecaa2a59ca55",
+      "appTeamId": "e3beb52d-fbfb-4180-a39d-7e3d8f965b62",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "3757da3c-849e-4208-9a37-7aa26391201e",
+        "sofascoreExternalId": "1008281",
+        "appPlayerId": "dafb84ba-fc20-418c-8a0d-ecaa2a59ca55",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1008281",
+              "candidateId": "3757da3c-849e-4208-9a37-7aa26391201e",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "dafb84ba-fc20-418c-8a0d-ecaa2a59ca55"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "G",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "6563ded2d19b2868ff94b7d924fa622c071b6cb63a3cda908b6563e31c5382d0"
+    },
+    {
+      "candidateId": "568751fe-064b-431c-b0e4-6df2376af014",
+      "provider": "sofascore",
+      "externalId": "1022302",
+      "appPlayerId": "6fa5cbdd-0697-40b2-8981-28255838de11",
+      "appTeamId": "c499006b-2af3-4013-862c-854ab74b59cf",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "568751fe-064b-431c-b0e4-6df2376af014",
+        "sofascoreExternalId": "1022302",
+        "appPlayerId": "6fa5cbdd-0697-40b2-8981-28255838de11",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1022302",
+              "candidateId": "568751fe-064b-431c-b0e4-6df2376af014",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "6fa5cbdd-0697-40b2-8981-28255838de11"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "71eefc321dcdb789b859f5445198095fbc11f38d067e1aca8b2059926780baf6"
+    },
+    {
+      "candidateId": "57d1f05a-64e8-435d-b7f5-be9305f346b3",
+      "provider": "sofascore",
+      "externalId": "1004488",
+      "appPlayerId": "6577c9ca-7932-4bda-ae4f-d8bc7f5fb057",
+      "appTeamId": "e3beb52d-fbfb-4180-a39d-7e3d8f965b62",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "57d1f05a-64e8-435d-b7f5-be9305f346b3",
+        "sofascoreExternalId": "1004488",
+        "appPlayerId": "6577c9ca-7932-4bda-ae4f-d8bc7f5fb057",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1004488",
+              "candidateId": "57d1f05a-64e8-435d-b7f5-be9305f346b3",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "6577c9ca-7932-4bda-ae4f-d8bc7f5fb057"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "3e342e94ca86a8cc512412d39cae4bb098cdd53dd9c228240817f02ea4e5baac"
+    },
+    {
+      "candidateId": "5b666f06-0971-437e-9d03-508503d2a410",
+      "provider": "sofascore",
+      "externalId": "2762912",
+      "appPlayerId": "5a15231b-9919-42bc-b04d-a35071c5e185",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "5b666f06-0971-437e-9d03-508503d2a410",
+        "sofascoreExternalId": "2762912",
+        "appPlayerId": "5a15231b-9919-42bc-b04d-a35071c5e185",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762912",
+              "candidateId": "5b666f06-0971-437e-9d03-508503d2a410",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "5a15231b-9919-42bc-b04d-a35071c5e185"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "0cd29e2399d154f7a1d4d4f087fda07e6d2ad99fc6b0c9f006723cf6da39975c"
+    },
+    {
+      "candidateId": "61aed7da-9265-487c-b777-02b4c7f22366",
+      "provider": "sofascore",
+      "externalId": "1401850",
+      "appPlayerId": "00854f0a-b41a-4f3f-98cb-fbc87aaa6bbf",
+      "appTeamId": "e3beb52d-fbfb-4180-a39d-7e3d8f965b62",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "61aed7da-9265-487c-b777-02b4c7f22366",
+        "sofascoreExternalId": "1401850",
+        "appPlayerId": "00854f0a-b41a-4f3f-98cb-fbc87aaa6bbf",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1401850",
+              "candidateId": "61aed7da-9265-487c-b777-02b4c7f22366",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "00854f0a-b41a-4f3f-98cb-fbc87aaa6bbf"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "16b7d04708b37ca331afd48b60f7592ddf593fd90699628f6528667939858ab4"
+    },
+    {
+      "candidateId": "627481f0-33d5-42a7-9c4e-253ed2db3f76",
+      "provider": "sofascore",
+      "externalId": "1017970",
+      "appPlayerId": "00d80b9c-c312-43bd-9d0d-915751fc9710",
+      "appTeamId": "d5d8c59b-f7ab-4b30-9dfb-1d17a36bd0fc",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "627481f0-33d5-42a7-9c4e-253ed2db3f76",
+        "sofascoreExternalId": "1017970",
+        "appPlayerId": "00d80b9c-c312-43bd-9d0d-915751fc9710",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1017970",
+              "candidateId": "627481f0-33d5-42a7-9c4e-253ed2db3f76",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "00d80b9c-c312-43bd-9d0d-915751fc9710"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "ebfcfb275dba7671277913f98d7c05938e02a7a8dca6b53aa83b868247c6ffef"
+    },
+    {
+      "candidateId": "68bdaec7-95d2-43fd-b18b-6e69e65bc236",
+      "provider": "sofascore",
+      "externalId": "2762920",
+      "appPlayerId": "2b211517-4dc0-467f-b32e-cbbe356922e6",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "68bdaec7-95d2-43fd-b18b-6e69e65bc236",
+        "sofascoreExternalId": "2762920",
+        "appPlayerId": "2b211517-4dc0-467f-b32e-cbbe356922e6",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762920",
+              "candidateId": "68bdaec7-95d2-43fd-b18b-6e69e65bc236",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "2b211517-4dc0-467f-b32e-cbbe356922e6"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "122028deac3b2e68d861c8ea896ecb28667f131d8a18b56114d7f5ab2b164954"
+    },
+    {
+      "candidateId": "72f29371-08ed-4a30-abb5-5fad646809fa",
+      "provider": "sofascore",
+      "externalId": "2786568",
+      "appPlayerId": "bd0996be-0ad8-4e9f-a16c-18339ad7c0f0",
+      "appTeamId": "b78eaee8-93af-4630-8335-b208151cbf37",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "72f29371-08ed-4a30-abb5-5fad646809fa",
+        "sofascoreExternalId": "2786568",
+        "appPlayerId": "bd0996be-0ad8-4e9f-a16c-18339ad7c0f0",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2786568",
+              "candidateId": "72f29371-08ed-4a30-abb5-5fad646809fa",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "bd0996be-0ad8-4e9f-a16c-18339ad7c0f0"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "3d8365251c8d596ceac07ab1af4dc2aa8264e097ca94e2fd5a5b6d5b434a90a9"
+    },
+    {
+      "candidateId": "858bc88a-74ea-4b5d-bec8-0e8bfb91ec37",
+      "provider": "sofascore",
+      "externalId": "2762927",
+      "appPlayerId": "9a583975-4f26-4f6c-bc1d-1067e3f60be3",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "858bc88a-74ea-4b5d-bec8-0e8bfb91ec37",
+        "sofascoreExternalId": "2762927",
+        "appPlayerId": "9a583975-4f26-4f6c-bc1d-1067e3f60be3",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762927",
+              "candidateId": "858bc88a-74ea-4b5d-bec8-0e8bfb91ec37",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "9a583975-4f26-4f6c-bc1d-1067e3f60be3"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "bc896e0ab64562ff2e44c2e018e15bfe251a57fb134277f693e3823a1f31b820"
+    },
+    {
+      "candidateId": "8b6c5ecf-6482-4c7a-a071-e23dad9d62ad",
+      "provider": "sofascore",
+      "externalId": "1004247",
+      "appPlayerId": "b0bcf4a0-6712-447e-87bb-51143bd25084",
+      "appTeamId": "d60d9d72-cb7a-4c94-944f-67081ef0a009",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "8b6c5ecf-6482-4c7a-a071-e23dad9d62ad",
+        "sofascoreExternalId": "1004247",
+        "appPlayerId": "b0bcf4a0-6712-447e-87bb-51143bd25084",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1004247",
+              "candidateId": "8b6c5ecf-6482-4c7a-a071-e23dad9d62ad",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "b0bcf4a0-6712-447e-87bb-51143bd25084"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "bf6bd3438e729c2c435cf28cdb6f071a3b79d6e3b4ba7c7093ffbb31d9b20006"
+    },
+    {
+      "candidateId": "95762c0c-bed5-4756-a11b-6e4510a2bee7",
+      "provider": "sofascore",
+      "externalId": "2776292",
+      "appPlayerId": "97052dbf-bbe4-44e3-b7ab-026afd321186",
+      "appTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "95762c0c-bed5-4756-a11b-6e4510a2bee7",
+        "sofascoreExternalId": "2776292",
+        "appPlayerId": "97052dbf-bbe4-44e3-b7ab-026afd321186",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2776292",
+              "candidateId": "95762c0c-bed5-4756-a11b-6e4510a2bee7",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "97052dbf-bbe4-44e3-b7ab-026afd321186"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "6220af6b1580311eb14f8187a810b377a9b5689e15ad74f96b3bc423261bae05"
+    },
+    {
+      "candidateId": "97f08a71-27e1-4b91-a7fe-c58f40d42c96",
+      "provider": "sofascore",
+      "externalId": "1459156",
+      "appPlayerId": "a78db3c4-b8d8-40d2-8c3e-14b3463a19db",
+      "appTeamId": "b78eaee8-93af-4630-8335-b208151cbf37",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "97f08a71-27e1-4b91-a7fe-c58f40d42c96",
+        "sofascoreExternalId": "1459156",
+        "appPlayerId": "a78db3c4-b8d8-40d2-8c3e-14b3463a19db",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1459156",
+              "candidateId": "97f08a71-27e1-4b91-a7fe-c58f40d42c96",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "a78db3c4-b8d8-40d2-8c3e-14b3463a19db"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "47d534c9b572893c3771800db3f8489d21706c10c0efe4bda05e0c26c4a58fca"
+    },
+    {
+      "candidateId": "a3403eba-c955-46f6-af0b-66d2cfb5004d",
+      "provider": "sofascore",
+      "externalId": "2776312",
+      "appPlayerId": "d94eda90-e819-4ed1-ba09-e46c8687b05b",
+      "appTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "a3403eba-c955-46f6-af0b-66d2cfb5004d",
+        "sofascoreExternalId": "2776312",
+        "appPlayerId": "d94eda90-e819-4ed1-ba09-e46c8687b05b",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2776312",
+              "candidateId": "a3403eba-c955-46f6-af0b-66d2cfb5004d",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "d94eda90-e819-4ed1-ba09-e46c8687b05b"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "ce466cdc8a10e4f98741a517d6aa70ef4bcfdb333b33bcecf5a6993c55c3218c"
+    },
+    {
+      "candidateId": "aad00e00-d91c-4b31-8a1f-fea18bd4c6fb",
+      "provider": "sofascore",
+      "externalId": "2776302",
+      "appPlayerId": "ada115c1-d524-4edc-8589-f68a917bda38",
+      "appTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "aad00e00-d91c-4b31-8a1f-fea18bd4c6fb",
+        "sofascoreExternalId": "2776302",
+        "appPlayerId": "ada115c1-d524-4edc-8589-f68a917bda38",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2776302",
+              "candidateId": "aad00e00-d91c-4b31-8a1f-fea18bd4c6fb",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "ada115c1-d524-4edc-8589-f68a917bda38"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "207c6c20b2ae5df36d73c29f0b2405c543a4dbbb6ea52989b5f43e53dc3b465f"
+    },
+    {
+      "candidateId": "ad03fe33-5294-4195-8507-ae9e568a0016",
+      "provider": "sofascore",
+      "externalId": "1863859",
+      "appPlayerId": "e6d8a7b7-dc51-4863-ad6a-cb9d8927194f",
+      "appTeamId": "80a3fb82-02ae-46bc-aae9-5160ba8f3648",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "ad03fe33-5294-4195-8507-ae9e568a0016",
+        "sofascoreExternalId": "1863859",
+        "appPlayerId": "e6d8a7b7-dc51-4863-ad6a-cb9d8927194f",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1863859",
+              "candidateId": "ad03fe33-5294-4195-8507-ae9e568a0016",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "e6d8a7b7-dc51-4863-ad6a-cb9d8927194f"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "654e22c5778d20c1ccf448933ace6facd5f90826a795775d76987f5658fad52d"
+    },
+    {
+      "candidateId": "bbed00b1-9300-4463-a3ff-3467b9dfd026",
+      "provider": "sofascore",
+      "externalId": "2762926",
+      "appPlayerId": "3d33011c-385d-4116-860d-998d2c8ab45a",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "bbed00b1-9300-4463-a3ff-3467b9dfd026",
+        "sofascoreExternalId": "2762926",
+        "appPlayerId": "3d33011c-385d-4116-860d-998d2c8ab45a",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762926",
+              "candidateId": "bbed00b1-9300-4463-a3ff-3467b9dfd026",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "3d33011c-385d-4116-860d-998d2c8ab45a"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "4b82e617778106d475f1d750924d202e620b20ef32a977b527e7176c584423a1"
+    },
+    {
+      "candidateId": "bfc8f680-7a81-4a16-af55-eef21cb701b8",
+      "provider": "sofascore",
+      "externalId": "2762918",
+      "appPlayerId": "cd00ac34-38a5-48d1-a1b2-ad179212ecb5",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "A",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "match"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "bfc8f680-7a81-4a16-af55-eef21cb701b8",
+        "sofascoreExternalId": "2762918",
+        "appPlayerId": "cd00ac34-38a5-48d1-a1b2-ad179212ecb5",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762918",
+              "candidateId": "bfc8f680-7a81-4a16-af55-eef21cb701b8",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "cd00ac34-38a5-48d1-a1b2-ad179212ecb5"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "match",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "1a0ac6804d27d9ca64a2c766640525de04738847c69ca3d6aab656ec3be4b65b"
+    },
+    {
+      "candidateId": "c7282cc2-22c3-4bb9-9f60-445188c0f5ad",
+      "provider": "sofascore",
+      "externalId": "2762924",
+      "appPlayerId": "13868dc8-33b0-4c6c-a2b4-090411e8e464",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "A",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "match"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "c7282cc2-22c3-4bb9-9f60-445188c0f5ad",
+        "sofascoreExternalId": "2762924",
+        "appPlayerId": "13868dc8-33b0-4c6c-a2b4-090411e8e464",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762924",
+              "candidateId": "c7282cc2-22c3-4bb9-9f60-445188c0f5ad",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "13868dc8-33b0-4c6c-a2b4-090411e8e464"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "match",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "d9249ff1f4e3ca6bc4a2c9f6a426a510bfeb9cbacc032c9ec7f977fd80db5508"
+    },
+    {
+      "candidateId": "cb5c81e0-44b3-47a5-9dcf-5a10d9befd9d",
+      "provider": "sofascore",
+      "externalId": "2762911",
+      "appPlayerId": "a0793384-54a0-4050-8fc7-093975efa2c2",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "cb5c81e0-44b3-47a5-9dcf-5a10d9befd9d",
+        "sofascoreExternalId": "2762911",
+        "appPlayerId": "a0793384-54a0-4050-8fc7-093975efa2c2",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762911",
+              "candidateId": "cb5c81e0-44b3-47a5-9dcf-5a10d9befd9d",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "a0793384-54a0-4050-8fc7-093975efa2c2"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "G",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "e7eec10287bc53c690a91f751fc8fbd414b9116751e5efa9a75458b8826f05fb"
+    },
+    {
+      "candidateId": "cb968c3f-9fe0-4ac4-9bae-f45b2cb8a684",
+      "provider": "sofascore",
+      "externalId": "2762914",
+      "appPlayerId": "1d9b59b3-ab0e-4c1b-8c0a-1980f380a33d",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "cb968c3f-9fe0-4ac4-9bae-f45b2cb8a684",
+        "sofascoreExternalId": "2762914",
+        "appPlayerId": "1d9b59b3-ab0e-4c1b-8c0a-1980f380a33d",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762914",
+              "candidateId": "cb968c3f-9fe0-4ac4-9bae-f45b2cb8a684",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "1d9b59b3-ab0e-4c1b-8c0a-1980f380a33d"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "151e85f94e6e623fe3cad42f88845aa4024bd25844bb4d8b8edce186fcf94844"
+    },
+    {
+      "candidateId": "cf1d577d-f7f9-48ef-a0bd-9dd94b6ab1fb",
+      "provider": "sofascore",
+      "externalId": "2660739",
+      "appPlayerId": "d133840b-8b7b-4dd6-9616-deab252f35a7",
+      "appTeamId": "b78eaee8-93af-4630-8335-b208151cbf37",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "cf1d577d-f7f9-48ef-a0bd-9dd94b6ab1fb",
+        "sofascoreExternalId": "2660739",
+        "appPlayerId": "d133840b-8b7b-4dd6-9616-deab252f35a7",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2660739",
+              "candidateId": "cf1d577d-f7f9-48ef-a0bd-9dd94b6ab1fb",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "d133840b-8b7b-4dd6-9616-deab252f35a7"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "eaa33d3037b53e2a485112fb6d8ad0c98aab90a055620f3b9c3e8701c2dae5cf"
+    },
+    {
+      "candidateId": "d0a2dfdc-34df-4610-923c-04b350b8e105",
+      "provider": "sofascore",
+      "externalId": "2762425",
+      "appPlayerId": "c03c0b64-fd9f-425e-90ea-f8675b13f7f9",
+      "appTeamId": "e3beb52d-fbfb-4180-a39d-7e3d8f965b62",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "d0a2dfdc-34df-4610-923c-04b350b8e105",
+        "sofascoreExternalId": "2762425",
+        "appPlayerId": "c03c0b64-fd9f-425e-90ea-f8675b13f7f9",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762425",
+              "candidateId": "d0a2dfdc-34df-4610-923c-04b350b8e105",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "c03c0b64-fd9f-425e-90ea-f8675b13f7f9"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "fdb519abffd365d36d010f17c3d8c96ebfd3040f4273c54893562e04d1acd3c9"
+    },
+    {
+      "candidateId": "d6985729-a372-4f35-a5f0-96f62a76faaa",
+      "provider": "sofascore",
+      "externalId": "2746243",
+      "appPlayerId": "e9c9c9ec-bc09-4a35-819b-83bef3d704f7",
+      "appTeamId": "d5d8c59b-f7ab-4b30-9dfb-1d17a36bd0fc",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "d6985729-a372-4f35-a5f0-96f62a76faaa",
+        "sofascoreExternalId": "2746243",
+        "appPlayerId": "e9c9c9ec-bc09-4a35-819b-83bef3d704f7",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2746243",
+              "candidateId": "d6985729-a372-4f35-a5f0-96f62a76faaa",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "e9c9c9ec-bc09-4a35-819b-83bef3d704f7"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "78018784324f0bdf5587170978491c1a6a79fbe14b67b9e4154ad26cd295e2d3"
+    },
+    {
+      "candidateId": "db9a1fa6-922c-4f6a-88b7-70bf62942bad",
+      "provider": "sofascore",
+      "externalId": "2600949",
+      "appPlayerId": "7fe731c3-9694-4121-9a50-bd657a2323e7",
+      "appTeamId": "1ebd788b-9f71-4a78-bfa8-68359d7f3a3f",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "db9a1fa6-922c-4f6a-88b7-70bf62942bad",
+        "sofascoreExternalId": "2600949",
+        "appPlayerId": "7fe731c3-9694-4121-9a50-bd657a2323e7",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2600949",
+              "candidateId": "db9a1fa6-922c-4f6a-88b7-70bf62942bad",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "7fe731c3-9694-4121-9a50-bd657a2323e7"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "56b8abd8bcf8bf28ab4bb98ab914c59780b897501ac732e866601e2babad9f8f"
+    },
+    {
+      "candidateId": "e49deb2a-0e95-42e6-be17-2ec658b69d3f",
+      "provider": "sofascore",
+      "externalId": "1874627",
+      "appPlayerId": "51226649-2164-4bf4-9ae6-8b23404c1132",
+      "appTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "e49deb2a-0e95-42e6-be17-2ec658b69d3f",
+        "sofascoreExternalId": "1874627",
+        "appPlayerId": "51226649-2164-4bf4-9ae6-8b23404c1132",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "1874627",
+              "candidateId": "e49deb2a-0e95-42e6-be17-2ec658b69d3f",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "51226649-2164-4bf4-9ae6-8b23404c1132"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "8d26a83c096bbaaee42f6d424ac51145d227d0772bec611b3d213fc75dd30101"
+    },
+    {
+      "candidateId": "e9cae79f-73b0-4777-8c21-f8475f380e78",
+      "provider": "sofascore",
+      "externalId": "2762915",
+      "appPlayerId": "7e7e4707-dabe-4c44-80e3-c0f4f4af87e2",
+      "appTeamId": "7d508334-d7a9-4a74-b057-7030c21a0eda",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "e9cae79f-73b0-4777-8c21-f8475f380e78",
+        "sofascoreExternalId": "2762915",
+        "appPlayerId": "7e7e4707-dabe-4c44-80e3-c0f4f4af87e2",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2762915",
+              "candidateId": "e9cae79f-73b0-4777-8c21-f8475f380e78",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "7e7e4707-dabe-4c44-80e3-c0f4f4af87e2"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "D",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "fae6b16d44716c626e71e49ca49d789a621dcd763f683c6968b1aed173a01b93"
+    },
+    {
+      "candidateId": "ef490624-f9c3-4a72-be23-f3d3a8d1167d",
+      "provider": "sofascore",
+      "externalId": "2776314",
+      "appPlayerId": "b194c0d8-9723-4b16-b625-58dd761223bd",
+      "appTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "ef490624-f9c3-4a72-be23-f3d3a8d1167d",
+        "sofascoreExternalId": "2776314",
+        "appPlayerId": "b194c0d8-9723-4b16-b625-58dd761223bd",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2776314",
+              "candidateId": "ef490624-f9c3-4a72-be23-f3d3a8d1167d",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "b194c0d8-9723-4b16-b625-58dd761223bd"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "1322eeaabae52bb505b45cdd76877c51cc3a5f185ad2cd571ad516eddfd7a9bc"
+    },
+    {
+      "candidateId": "f9a76f89-1e42-4b7e-a90f-f0c9e20641ee",
+      "provider": "sofascore",
+      "externalId": "2776291",
+      "appPlayerId": "73eec14d-f43f-4c7d-b7a5-f14bb43847e3",
+      "appTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "f9a76f89-1e42-4b7e-a90f-f0c9e20641ee",
+        "sofascoreExternalId": "2776291",
+        "appPlayerId": "73eec14d-f43f-4c7d-b7a5-f14bb43847e3",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2776291",
+              "candidateId": "f9a76f89-1e42-4b7e-a90f-f0c9e20641ee",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "73eec14d-f43f-4c7d-b7a5-f14bb43847e3"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "4dc51125afe7142282e2224eec491fa7db43d3bab41988941d1314e78cd68ca6"
+    },
+    {
+      "candidateId": "fb58ebca-9bba-4547-9881-489d17a1e255",
+      "provider": "sofascore",
+      "externalId": "2217473",
+      "appPlayerId": "b3996984-d435-4e79-9962-d52b27407c2b",
+      "appTeamId": "8059c0cf-8b7b-4317-be7e-fd646d377cd0",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "fb58ebca-9bba-4547-9881-489d17a1e255",
+        "sofascoreExternalId": "2217473",
+        "appPlayerId": "b3996984-d435-4e79-9962-d52b27407c2b",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "2217473",
+              "candidateId": "fb58ebca-9bba-4547-9881-489d17a1e255",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "b3996984-d435-4e79-9962-d52b27407c2b"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "F",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "f8f5fbfdb4e96ab875bc13b1b7b19584eb5faa0c2733d642fa5228e1face0863"
+    },
+    {
+      "candidateId": "fb5d0a1a-fdea-4820-9d2e-ea15716c1475",
+      "provider": "sofascore",
+      "externalId": "365552",
+      "appPlayerId": "83aab6c6-59bf-47bd-a475-804db02fc955",
+      "appTeamId": "1ebd788b-9f71-4a78-bfa8-68359d7f3a3f",
+      "evidenceRevision": 2,
+      "tier": "B",
+      "candidateStatus": "unmapped",
+      "currentMappingState": "none",
+      "openProposalState": "none",
+      "observationCount": 1,
+      "squadCompleteness": "COMPLETE",
+      "signals": {
+        "dob": "match",
+        "position": "match",
+        "club": "match",
+        "shirt": "no_signal"
+      },
+      "sportsMonksCorroboration": true,
+      "fingerprintInputs": {
+        "kind": "map",
+        "basis": "manual",
+        "sofascoreCandidateId": "fb5d0a1a-fdea-4820-9d2e-ea15716c1475",
+        "sofascoreExternalId": "365552",
+        "appPlayerId": "83aab6c6-59bf-47bd-a475-804db02fc955",
+        "candidateRevisions": {
+          "sofascore": 2
+        },
+        "evidence": {
+          "refs": [],
+          "candidates": [
+            {
+              "provider": "sofascore",
+              "externalId": "365552",
+              "candidateId": "fb5d0a1a-fdea-4820-9d2e-ea15716c1475",
+              "observationCount": 1
+            }
+          ],
+          "appPlayerId": "83aab6c6-59bf-47bd-a475-804db02fc955"
+        },
+        "signals": {
+          "sofascore": {
+            "dob": "match",
+            "club": "match",
+            "flags": [],
+            "shirt": "no_signal",
+            "position": "match",
+            "dobReason": null,
+            "observationCount": 1,
+            "providerPosition": "M",
+            "registeredTeamDisagreement": false
+          }
+        },
+        "positionDisagreement": false
+      },
+      "expectedFingerprint": "9a448ea811c24751e263f894ee1fe307af2d424558e7ac5e5b5244ac907ca7d6"
+    }
+  ],
+  "manifestSha256": "08fcf6cb64d446e304a366b7956949ce47d3f32b341f29323ef62c7d3f1c8000"
+}

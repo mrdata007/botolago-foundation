@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { BottomNav } from "@/components/shell/BottomNav";
+import { StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { TopBar } from "@/components/shell/TopBar";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -58,17 +59,35 @@ import { cn } from "@/lib/utils";
  * lifted above the nav leaves it off. A bar that sticks to the bottom of a
  * screen that has the nav sits at `bottom-[var(--bottomnav-h)]` (0 from `md`,
  * where the nav is hidden).
+ *
+ * STICKY BOTTOM BAR (BG-0154) — from `md` the column rounds its corners and
+ * clips what overflows them. It used to clip with `overflow: hidden`, and
+ * `hidden` makes the column a scroll container, so a `sticky bottom-0` bar
+ * inside it stuck to the column, which never scrolls, instead of the window:
+ * it did not stick at all. On a notched iPhone turned sideways (844x390, an
+ * `md` width) the player page's actions sat below the window and ran into the
+ * home indicator as the page scrolled. `stickyBottomBar` clips with
+ * `overflow: clip` instead, which clips the same corners without making a
+ * scroll container, and `flow-root` keeps the block formatting context
+ * `hidden` gave (`clip` does not make one). The player page opts in, and so
+ * does Pick Team for its confirmation bar (BG-0157). The squad
+ * builder and transfer confirmation bars are sticky in the column too and do
+ * not stick from `md` either; they keep today's behaviour until that is
+ * decided for them.
  */
 export function FantasyFrame({
   children,
   bottomNav = false,
   topBar = "desktop",
+  stickyBottomBar = false,
   className,
   background = "light",
 }: {
   children: ReactNode;
   /** Render the application bottom navigation (phones; it is `md:hidden`). */
   bottomNav?: boolean;
+  /** The screen has a `sticky bottom-0` bar in the column that must stick from `md` too. */
+  stickyBottomBar?: boolean;
   /** `always` shows the global top bar on phones too — the hub, which has no `UiHeader`. */
   topBar?: "desktop" | "always";
   className?: string;
@@ -83,9 +102,18 @@ export function FantasyFrame({
       {topBar === "always" ? (
         <TopBar />
       ) : (
-        <div className="hidden md:contents">
-          <TopBar />
-        </div>
+        <>
+          <div className="hidden md:contents">
+            <TopBar />
+          </div>
+          {/* STATUS BAR (BG-0151) — on a phone the inner screen's `UiHeader`
+              does not stick, so in the app (`viewport-fit=cover`, transparent
+              status bar) scrolled content would pass under the clock. The
+              strip is exactly as tall as the status bar, in the header's own
+              surface, and stays there. 0px tall in a browser. From `md` the
+              sticky top bar above takes over. */}
+          <StatusBarStrip surface={ui.surface.bar} className="md:hidden" />
+        </>
       )}
       <main
         className={cn(
@@ -94,7 +122,8 @@ export function FantasyFrame({
           // kept: the viewport-containment tooling selects `main.fpl-column`.
           "fpl-column relative",
           ui.space.content,
-          "md:my-4 md:min-h-[calc(100dvh-7rem)] md:overflow-hidden",
+          "md:my-4 md:min-h-[calc(100dvh-7rem)]",
+          stickyBottomBar ? "md:flow-root md:overflow-clip" : "md:overflow-hidden",
           "md:rounded-[var(--ui-radius-column)] md:shadow-[var(--ui-shadow-column)]",
           bottomNav ? "pb-28 md:pb-12" : "pb-8",
           surface,

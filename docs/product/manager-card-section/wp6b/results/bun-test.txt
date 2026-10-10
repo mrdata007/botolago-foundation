@@ -1,0 +1,8 @@
+bun test (whole repository), merged head, run 2026-10-09:
+74: 7152 pass
+75: 17 skip
+76: 1 fail
+78:Ran 7170 tests across 535 files. [42.76s]
+(fail) the scheduled time as the editor reads it > Morocco's Ramadan clock change is followed (UTC+0 in Ramadan 2027) [0.41ms]
+
+The one failure is src/backend/news/editorial-session.test.ts: this machine's ICU prints « GMT+0 » where the test expects « GMT ». It fails the same way on origin/main 3f9c57fc and on the section branch before this work.

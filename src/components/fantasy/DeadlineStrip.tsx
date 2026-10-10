@@ -29,9 +29,13 @@ export function DeadlineStrip({
   flush?: boolean;
 }) {
   const { t, lang } = useI18n();
-  const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const left = `${nf.format(time.hours)} ${t("home.hours")} ${nf.format(time.minutes).padStart(2, lang === "ar" ? "٠" : "0")}`;
-  const when = moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
+  // Latin digits in both languages (BG-0157), the padding zero included. The
+  // Arabic-Indic zero (U+0660) used here before read as a dot next to a Latin
+  // digit, so 4 minutes did not read as "04".
+  const locale = lang === "ar" ? "ar-MA-u-nu-latn" : "fr-FR";
+  const nf = new Intl.NumberFormat(locale);
+  const left = `${nf.format(time.hours)} ${t("home.hours")} ${nf.format(time.minutes).padStart(2, "0")}`;
+  const when = moroccoDateTimeFormat(locale, {
     weekday: "short",
     hour: "2-digit",
     minute: "2-digit",
@@ -57,7 +61,7 @@ export function DeadlineStrip({
     >
       <Clock className="h-4 w-4 shrink-0" aria-hidden />
       <span className="min-w-0 flex-1 text-balance">{text}</span>
-      <ChevronRight className="h-4 w-4 shrink-0 rtl:-scale-x-100" aria-hidden />
+      <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
     </Link>
   );
 }

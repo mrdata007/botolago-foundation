@@ -82,17 +82,11 @@ export interface SavedArticleRepository {
 
 export type SessionRevocationScope = "local" | "global" | "others";
 
-export interface AccountDeletionRequestDto {
-  readonly id: string;
-  readonly status: "requested" | "cancelled" | "processing" | "completed" | "rejected";
-  readonly requestedAt: string;
-  readonly updatedAt: string;
-  readonly processedAt: string | null;
-}
-
 export interface AccountSecurityRepository {
+  /**
+   * Asks for the account to be deleted (api.request_account_deletion). Closes
+   * it at once; the worker erases it after the hold. Not cancellable.
+   */
   requestDeletion(context: RepositoryContext): Promise<string>;
-  cancelDeletion(context: RepositoryContext): Promise<void>;
-  listDeletionRequests(context: RepositoryContext): Promise<readonly AccountDeletionRequestDto[]>;
   recordSessionRevocation(scope: SessionRevocationScope, context: RepositoryContext): Promise<void>;
 }

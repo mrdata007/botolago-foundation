@@ -1,0 +1,4 @@
+30 screenshots compared, worst fantasy-ar-light-1440.png at 0.0000%
+requests: no new data or document request and none for the section's code; up to 11 shared chunk(s) re-split per page (GET /assets/ClientOnly-#.js, GET /assets/FlipScore-#.js, GET /assets/fantasy-hub-share-#.js, GET /assets/jsx-runtime-#.js, GET /assets/mutation-#.js, GET /assets/my-clubs-#.js, GET /assets/trending-up-#.js, GET /assets/tslib.es6-#.js, GET /assets/utils-#.js, GET /assets/CreateLeagueInvite-#.js, GET /assets/FantasyScreenGate-#.js, GET /assets/gameweek-presentation-#.js, GET /assets/link-2-#.js, GET /assets/use-native-image-actions-#.js)
+5 server bodies: 5 identical
+OFF MEANS IDENTICAL: no difference found.

@@ -1,0 +1,11 @@
+100 drawings (10 names x 5 widths x 2 themes; ink read in the light theme): 100 fit, 0 do not
+  longNameLatin (fixture)                              widest ink  786.76 (budget 790), widest rect  792.16; ink gap to the rule >= 38.19, between lines >= 29.41; at 336 ink [266.37-731.4] y 1185.27-1235.86 / [107.14-892.86] y 1266.37-1364.58
+  arabicName (fixture)                                 widest ink  244.49 (budget 790), widest rect  253.35; ink gap to the rule >= 37.75, between lines >= 42.19; at 336 ink [377.98-621.28] y 1174.85-1235.86 / [381.7-610.12] y 1278.27-1366.07
+  24-character single word                             widest ink  786.32 (budget 790), widest rect   793.4; ink gap to the rule >= 72.75, between lines >= Infinity; at 336 ink [106.4-891.37] y 1265.63-1331.1
+  24-character single word, Arabic interface           widest ink  786.32 (budget 790), widest rect   793.4; ink gap to the rule >= 72.75, between lines >= Infinity; at 336 ink [106.4-891.37] y 1265.63-1331.1
+  particles (Les Lions du Derb Sidi Maarouf)           widest ink   787.5 (budget 790), widest rect  791.33; ink gap to the rule >= 60.25, between lines >= 35.94; at 336 ink [328.13-674.11] y 1184.52-1237.35 / [106.4-893.6] y 1273.81-1343.75
+  long Arabic with ibn (عبد الرحمن بن جلون العلوي)     widest ink  592.19 (budget 790), widest rect  605.19; ink gap to the rule >= 21.19, between lines >= 18.38; at 336 ink [317.71-684.52] y 1174.85-1258.93 / [203.87-794.64] y 1278.27-1381.7
+  long Arabic name, French interface                   widest ink  592.19 (budget 790), widest rect  605.19; ink gap to the rule >= 21.19, between lines >= 18.38; at 336 ink [317.71-684.52] y 1174.85-1258.93 / [203.87-794.64] y 1278.27-1381.7
+  long Latin name, Arabic interface                    widest ink  786.76 (budget 790), widest rect  792.16; ink gap to the rule >= 38.19, between lines >= 29.41; at 336 ink [266.37-731.4] y 1185.27-1235.86 / [107.14-892.86] y 1266.37-1364.58
+  one short word (ALI)                                 widest ink  160.47 (budget 790), widest rect  167.92; ink gap to the rule >= 87.75, between lines >= Infinity; at 336 ink [417.41-577.38] y 1210.57-1316.22
+  empty name (guest)                                   widest ink       0 (budget 790), widest rect       0; ink gap to the rule >= Infinity, between lines >= Infinity; at 336 ink none

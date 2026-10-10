@@ -1,0 +1,37 @@
+30 screenshots compared, worst home-returning-fr-light-390.png at 0.1142%
+requests: no new data or document request and none for the section's code; up to 0 shared chunk(s) re-split per page ()
+5 server bodies: 0 identical
+  vs reference fantasy-ar-light-390.png: 0.389% in {"x":129,"y":511,"width":517,"height":1013}
+  vs reference fantasy-fr-dark-390.png: 0.507% in {"x":132,"y":417,"width":519,"height":944}
+  vs reference fantasy-fr-light-1440.png: 0.156% in {"x":497,"y":224,"width":448,"height":430}
+  vs reference fantasy-fr-light-390.png: 0.508% in {"x":132,"y":417,"width":519,"height":944}
+  vs reference home-ar-light-390.png: 0.065% in {"x":530,"y":1380,"width":76,"height":23}
+  vs reference home-fr-light-390.png: 0.101% in {"x":473,"y":1200,"width":84,"height":23}
+  vs reference pepites-ar-light-1440.png: 0.000%
+  vs reference pepites-ar-light-390.png: 0.000%
+  vs reference pepites-fr-light-390.png: 0.000%
+FAILURES:
+  home-returning-fr-light-390.png: 0.114% differs
+  fantasy.html: <body> differs at 23282
+  home-returning.html: <body> differs at 23463
+  home.html: <body> differs at 23463
+  matches.html: <body> differs at 23463
+  pepites.html: <body> differs at 23463
+  home-fr-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  home-ar-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  home-fr-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  home-ar-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  home-returning-fr-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  home-returning-ar-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  home-returning-fr-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  home-returning-ar-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  fantasy-fr-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  fantasy-ar-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  fantasy-fr-dark-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  fantasy-fr-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  fantasy-ar-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  pepites-fr-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  pepites-ar-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  pepites-fr-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  pepites-ar-light-1440: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts
+  matches-fr-light-390: new requests GET /src/backend/manager-card/fixture-selection.ts, GET /src/routes/gradins.carte.tsx, GET /src/routes/gradins.index.tsx, GET /src/routes/gradins.les-votres.tsx, GET /src/routes/gradins.saisons.tsx, GET /src/routes/gradins.tsx, GET /src/services/manager-card-status.ts

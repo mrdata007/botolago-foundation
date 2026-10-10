@@ -154,6 +154,21 @@ select extensions.ok((select prices_completed_at is null and completed_at is nul
   from app_private.fantasy_gameweek_postwork
   where gameweek_id = 'e9150000-0000-4000-8000-000000000001'),
   'a partial price page cannot mark completion');
+insert into app.players (id, slug, full_name, display_name, position)
+values ('e91b0000-0000-4000-8000-000000000004', 'postwork-player-4', 'New Player', 'New Player', 'goalkeeper');
+select extensions.throws_ok(
+  $$insert into app.fantasy_players (id, fantasy_season_id, football_player_id, football_team_id, position_id, price)
+    select 'e91c0000-0000-4000-8000-000000000004', fantasy_season_id,
+      'e91b0000-0000-4000-8000-000000000004', football_team_id, position_id, 6
+    from app.fantasy_players where id = 'e91c0000-0000-4000-8000-000000000001'$$,
+  'PT409', 'fantasy_price_processing_in_progress', 'catalog additions cannot split an unfinished price pass');
+select extensions.throws_ok(
+  $$update app.fantasy_players set football_team_id = 'e9190000-0000-4000-8000-000000000002'
+    where id = 'e91c0000-0000-4000-8000-000000000001'$$,
+  'PT409', 'fantasy_price_processing_in_progress', 'roster moves cannot split an unfinished price pass');
+select extensions.throws_ok(
+  $$delete from app.fantasy_players where id = 'e91c0000-0000-4000-8000-000000000003'$$,
+  'PT409', 'fantasy_price_processing_in_progress', 'catalog removal cannot split an unfinished price pass');
 set local role service_role;
 select extensions.throws_ok(
   $$select api.service_run_fantasy_price_batch('e9150000-0000-4000-8000-000000000001', 7,
@@ -186,6 +201,11 @@ select extensions.ok((select prices_completed_at is not null and completed_at is
 select extensions.is((select count(*)::integer from app.fantasy_player_price_history
   where gameweek_id = 'e9150000-0000-4000-8000-000000000001'), 0,
   'zero-movement pages complete without inventing price history');
+-- Catalog additions after prices finish must not prevent notification completion.
+insert into app.fantasy_players (id, fantasy_season_id, football_player_id, football_team_id, position_id, price)
+select 'e91c0000-0000-4000-8000-000000000004', fantasy_season_id,
+  'e91b0000-0000-4000-8000-000000000004', football_team_id, position_id, 6
+from app.fantasy_players where id = 'e91c0000-0000-4000-8000-000000000001';
 set local role service_role;
 select extensions.throws_ok(
   $$select api.service_complete_fantasy_postwork('e9150000-0000-4000-8000-000000000001', 7)$$,
@@ -208,6 +228,23 @@ select extensions.ok((select completed_at is not null and completed_at >= prices
   from app_private.fantasy_gameweek_postwork
   where gameweek_id = 'e9150000-0000-4000-8000-000000000001' and calculation_version = 7),
   'next-gameweek progression has an exact-version completion timestamp to verify');
+
+set local role service_role;
+select extensions.is(api.service_run_fantasy_price_batch(
+  'e9150000-0000-4000-8000-000000000001', 7, null, 1)->>'hasMore', 'false',
+  'completed price replay ignores later catalog additions');
+select extensions.throws_ok(
+  $$select api.service_run_fantasy_price_batch('e9150000-0000-4000-8000-000000000001', 7,
+    'e91c0000-0000-4000-8000-000000000004', 1)$$,
+  'PT409', 'fantasy_price_cursor_invalid', 'completion does not allow arbitrary cursors');
+select extensions.throws_ok(
+  $$select api.service_run_fantasy_price_batch('e9150000-0000-4000-8000-000000000001', 8)$$,
+  'PT409', 'gameweek_not_finalizable', 'catalog-independent replay still requires the exact version');
+reset role;
+select extensions.is((select cardinality(price_player_ids) from app_private.fantasy_gameweek_postwork
+  where gameweek_id = 'e9150000-0000-4000-8000-000000000001'), 3, 'historical cohort is unchanged');
+select extensions.is((select count(*)::integer from app.fantasy_player_price_history
+  where gameweek_id = 'e9150000-0000-4000-8000-000000000001'), 0, 'replay writes no new price history');
 
 select * from extensions.finish();
 rollback;

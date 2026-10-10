@@ -68,7 +68,12 @@ export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled 
       const node = (
         <span
           key={`${row.opponentClubId}-${row.isHome ? "h" : "a"}`}
-          className="inline-flex items-center gap-1 rounded-full px-1.5 align-middle"
+          // Never wider than the plate's figure band (a narrow plate cut its
+          // end off and left the band's ellipsis as a stray dot). The plate
+          // is a size container: below 80px the crest drops (the badge with
+          // it needs ~73px, the band of a 76px plate holds 68), below 68px
+          // the padding tightens, and only then is the code cut with "…".
+          className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full px-1.5 align-middle @max-[68px]:px-1"
           style={{
             backgroundColor: `var(--ui-fdr-${row.difficulty})`,
             color: `var(--ui-on-fdr-${row.difficulty})`,
@@ -81,10 +86,10 @@ export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled 
               alt=""
               aria-hidden
               draggable={false}
-              className="h-3.5 w-3.5 shrink-0 object-contain"
+              className="h-3.5 w-3.5 shrink-0 object-contain @max-[80px]:hidden"
             />
           ) : null}
-          <span>{text}</span>
+          <span className="min-w-0 truncate">{text}</span>
         </span>
       );
 
@@ -100,10 +105,14 @@ export function useNextFixtures(clubs: Club[], gameweek: number | null, enabled 
         list.length === 1 ? (
           list[0]!.node
         ) : (
-          <span className="inline-flex items-center gap-1">
+          <span className="inline-flex max-w-full min-w-0 items-center gap-1">
             {list.map((part, index) => (
-              <span key={index} className="inline-flex items-center gap-1">
-                {index > 0 ? <span aria-hidden>·</span> : null}
+              <span key={index} className="inline-flex min-w-0 items-center gap-1">
+                {index > 0 ? (
+                  <span aria-hidden className="shrink-0">
+                    ·
+                  </span>
+                ) : null}
                 {part.node}
               </span>
             ))}

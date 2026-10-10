@@ -1,0 +1,2405 @@
+{
+  "rows": [
+    {
+      "active": true,
+      "version": "football_player_mapping:05de5284-a876-48c9-9a97-8b4083630595",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "3999411b-12d3-44d2-9ee1-0f4509e60595",
+      "updatedAt": "2026-10-03T21:03:47.588934+00:00",
+      "externalId": "0Q2O9YaL",
+      "appPlayerId": "c3818d6f-3e94-4a5e-8247-970c85b29822"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6d01e444-dff5-4737-a8eb-ef9ec8334b72",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "b21fc275-60a1-4d44-a586-cb762abf02d2",
+      "updatedAt": "2026-10-03T15:43:33.12465+00:00",
+      "externalId": "2JPjkS5d",
+      "appPlayerId": "af26ed6a-c39a-438e-8ec8-dd81cf902087"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:634fdbfb-9c70-450f-bc57-57e2935198fb",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "fdab0ad0-18ff-4f24-ab9f-537e7ae665ca",
+      "updatedAt": "2026-10-03T21:01:01.316812+00:00",
+      "externalId": "4xHMwRii",
+      "appPlayerId": "7cb65cb6-e9a5-401f-9045-f5ba6bde3e42"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:41db546c-4b2b-4995-b204-56e3d078dd9b",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "bd4804fc-249e-4da6-8e9d-a0ceadd6532f",
+      "updatedAt": "2026-10-03T15:43:52.713784+00:00",
+      "externalId": "6cwv6kvA",
+      "appPlayerId": "f7374a2a-384c-4f26-9777-384f4999ed75"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:26df567f-2732-49ad-8c35-95aa0e856a7c",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "8af1771e-2028-4264-a9cf-df9c9bcb71ff",
+      "updatedAt": "2026-10-03T15:43:08.889202+00:00",
+      "externalId": "6DsTnU9B",
+      "appPlayerId": "34c9d2a8-2746-4fe4-9fc0-8ee62a48069d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:65af7866-b9df-4f9c-aa6b-21f30cf02e4a",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "a40ae5cd-ed50-4a3e-b6ce-0b98308f9de9",
+      "updatedAt": "2026-10-03T15:43:56.591348+00:00",
+      "externalId": "8AYnWqxg",
+      "appPlayerId": "55db263a-4636-467b-8e2f-fd7d909779a5"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:154376c6-8fee-4b2e-b2f1-e0bdded4d87d",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "5acfd7b1-26f1-48e9-98de-0cfd1423ffae",
+      "updatedAt": "2026-10-03T15:43:36.957416+00:00",
+      "externalId": "bRIP5a57",
+      "appPlayerId": "6c565bcf-cb72-40de-bfd8-32ccd0a000ee"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6508f8e3-9a38-46e3-8b0a-4edd590bab3b",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "5da1cba1-cd59-4107-81b5-eb2e689060cc",
+      "updatedAt": "2026-10-03T15:43:16.903338+00:00",
+      "externalId": "bZiBAurE",
+      "appPlayerId": "d719e8c6-e166-44a7-8601-220281488e8f"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:ab02c06f-f65b-48a4-8768-d867bab011a4",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "039c6d64-4d58-4022-8937-934e43bf54e6",
+      "updatedAt": "2026-10-03T21:03:49.837181+00:00",
+      "externalId": "CQehl7o7",
+      "appPlayerId": "a43c3048-d8a4-46a3-ab52-5d0315c07b0f"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9c476c80-2f75-46ea-8400-63eb6e2ddaf7",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "ce033d8e-fca2-4b69-8b84-f722e0bf446e",
+      "updatedAt": "2026-10-03T15:43:58.469383+00:00",
+      "externalId": "dQxpyrI6",
+      "appPlayerId": "2d8e936b-9bbf-46de-b673-91b913b24d13"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:eaab909f-2262-46e1-a21c-542009299c2a",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "fb98385f-c23a-4e98-9a3a-b6d4eb8f19ae",
+      "updatedAt": "2026-10-03T15:43:48.817079+00:00",
+      "externalId": "EuEfpDyB",
+      "appPlayerId": "07ed1779-e5db-4e2f-81a1-6233e0c32b41"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9fced1b5-0a0a-4ede-8e03-c8d46d2e2efd",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "7a506977-3a3b-4f24-bad5-ef47c59d3b62",
+      "updatedAt": "2026-10-03T21:03:49.114168+00:00",
+      "externalId": "Gdld376S",
+      "appPlayerId": "7ab491d5-7f2b-4057-b56d-109ed615e63b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:fafc7611-c531-4e1c-9705-1e676633bd22",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "550a9a1d-7773-458b-9baa-ae21afd0591b",
+      "updatedAt": "2026-10-03T15:44:30.157733+00:00",
+      "externalId": "GhxoOstL",
+      "appPlayerId": "e0bba0c4-6caf-4b08-8cc3-25af8c655dbc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:fe714990-4f84-4ed5-a321-3f2bada47a35",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "4a511320-88a9-4c2f-965e-6261e8cf83da",
+      "updatedAt": "2026-10-03T15:43:54.641726+00:00",
+      "externalId": "GlQ4Tuvh",
+      "appPlayerId": "9285f7bb-cc04-4701-994f-36ae5f1955f4"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b8c4960c-f468-4c4a-a760-7ee79a5715e9",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "4ebb0bf5-3718-4a19-8b78-a06eae7d1c33",
+      "updatedAt": "2026-10-03T15:43:18.830704+00:00",
+      "externalId": "GtdSc5PJ",
+      "appPlayerId": "26934f44-83b5-4dbe-90d7-7895b59d3434"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b68f3c0c-4f08-4732-ba87-af51c9ed15d7",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "cdeb6c55-7afc-48ef-9b8b-735abf9a8ccc",
+      "updatedAt": "2026-10-03T21:03:44.778544+00:00",
+      "externalId": "h884iXeS",
+      "appPlayerId": "b99cd2a8-dea8-4257-8d1d-44879408bba3"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:98fcd1ac-85f1-4876-9b7d-5e00f35335b4",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "2eeeae53-b681-42d6-9651-db32d900b118",
+      "updatedAt": "2026-10-03T15:43:42.854014+00:00",
+      "externalId": "hIlAyesq",
+      "appPlayerId": "726e252d-4021-4f0e-a6a3-3e3f5b3bb132"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:acc9c916-ea30-4cd0-96d3-edf471d14d2c",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "bd0494b2-4d9f-48d2-b774-fbf5fc59660a",
+      "updatedAt": "2026-10-03T15:43:44.772067+00:00",
+      "externalId": "hUeu7ybK",
+      "appPlayerId": "2c7173d9-9aec-44e5-b7f1-cec3f0989e81"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a31c80d2-f1d7-4560-931c-9eacfd2983c5",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "4e824f55-39a9-4417-9f91-91f596dd34c7",
+      "updatedAt": "2026-10-03T15:43:12.935821+00:00",
+      "externalId": "IgZjAvPd",
+      "appPlayerId": "91e5fd67-3e36-4706-ba0c-a3a09be0b2ae"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:df85903e-5b46-4237-8a3a-b57ebfcfb5bb",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "7a8ad8b5-4209-4220-ada1-1cf3502cd470",
+      "updatedAt": "2026-10-03T15:43:21.415663+00:00",
+      "externalId": "IiPLx3S7",
+      "appPlayerId": "ad870b3c-784b-402b-b0ca-d3441f798f40"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5121ee05-427c-4913-9323-9ecee468b83e",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "f2f23efe-4764-4714-93d9-6cb050ab72d0",
+      "updatedAt": "2026-10-03T15:43:14.885373+00:00",
+      "externalId": "jPg1q6AQ",
+      "appPlayerId": "f9112452-900d-4518-a9b2-6f7dcf1ed075"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:68713299-9588-4769-9943-ffcde4932ba2",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "414a6445-0df0-4a86-b22e-e4afa26ca6f5",
+      "updatedAt": "2026-10-03T15:43:29.238165+00:00",
+      "externalId": "K2T6yapr",
+      "appPlayerId": "97ffa238-8d2e-4e5e-84ad-341703787ba6"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:20d92455-3a2b-4ef5-b778-48bc97e2ffaf",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "1ec46d39-e3b0-4e4a-a44a-dcd04d658191",
+      "updatedAt": "2026-10-03T15:44:27.744177+00:00",
+      "externalId": "KKZ6X376",
+      "appPlayerId": "0bff79be-b852-48d0-9688-355d43841fcb"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:3116f09f-87ab-4c22-b966-9e7f7f2f6044",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "5d17f090-93b3-497e-a87a-bbcd440eaf3b",
+      "updatedAt": "2026-10-03T15:43:10.901572+00:00",
+      "externalId": "lIDGjVYr",
+      "appPlayerId": "bb028b7d-db09-4ddb-a53e-92193f28e6a3"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b2a1f774-b787-43f5-be16-ceef17cec58b",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "d400be2e-0809-451d-ac20-0947d9236ee9",
+      "updatedAt": "2026-10-03T15:43:38.925261+00:00",
+      "externalId": "lnuqEiTC",
+      "appPlayerId": "8ca146d7-7535-4b56-8ee7-f31f7ccb7bc5"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:15e42ff5-9dc2-4637-9f78-a1e9ab500d6c",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "9038c413-8276-4678-8ba2-66b8abaea0d3",
+      "updatedAt": "2026-10-03T15:44:02.386814+00:00",
+      "externalId": "lpLhmL70",
+      "appPlayerId": "d5f53ee6-0ad8-4042-9461-e19b3be81f6b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:f527f894-e0d9-4471-8e15-ae96b7db9a04",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "06ffe3c7-d2c8-436e-b454-3fd00898a3ea",
+      "updatedAt": "2026-10-03T15:43:46.736668+00:00",
+      "externalId": "M5krN8rp",
+      "appPlayerId": "9c04eb34-f71c-4469-acfd-2ce662d20f18"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:76a07d29-e582-4e01-ba99-11bdb90666c9",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "6d8e4c32-2ba4-4dfd-a659-06ce6f895afe",
+      "updatedAt": "2026-10-03T15:44:00.461621+00:00",
+      "externalId": "MLRbaNef",
+      "appPlayerId": "a7dbe8e4-4a3f-4c46-8d4c-96bb37516760"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5083f5db-0b5b-45a7-b6fb-bb9daafff6e0",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "f3d15711-c9f2-4e9e-b6b3-33bc6be6ae9b",
+      "updatedAt": "2026-10-03T15:44:04.326234+00:00",
+      "externalId": "nmhUfKh6",
+      "appPlayerId": "b2bf23cb-59e7-4aab-ba81-cd0c13eb153b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:72ac7f05-ee99-4545-bac9-8aad88aca929",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "0d178b4b-026d-4529-a20a-e9f3667a4a0d",
+      "updatedAt": "2026-10-03T15:43:06.8576+00:00",
+      "externalId": "OdVQ5I9B",
+      "appPlayerId": "abef5d77-c69c-49bd-8cc4-8896972e60e7"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7343fd18-e5db-402c-adc2-b18c017d8516",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "7b16fc20-1312-4c80-afad-21f53873eab9",
+      "updatedAt": "2026-10-03T21:03:45.54338+00:00",
+      "externalId": "Op9JSXeq",
+      "appPlayerId": "f9931712-b5b4-4141-9383-d509b8b1d03d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:2886418f-51b3-4ee3-b6cb-279c55f3e50f",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "11ea6d3b-3940-4bb6-8598-753d7b691de9",
+      "updatedAt": "2026-10-03T15:43:23.334052+00:00",
+      "externalId": "plDKsBX7",
+      "appPlayerId": "88c9eaa2-15cc-46f9-987f-368c577cf6ee"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:da088596-b710-4a71-b0b6-26bfe68f95e1",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "8980acac-edce-4a26-882e-0d341575ca41",
+      "updatedAt": "2026-10-03T15:44:06.210074+00:00",
+      "externalId": "Q9pOwskm",
+      "appPlayerId": "11e78c3d-fca0-4b89-80ab-5cc4b1564e90"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:41fa0eb6-5621-48d7-a0fd-9da1fc3e9269",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "cc9368ca-a1de-4aeb-822a-2cfd3744fac6",
+      "updatedAt": "2026-10-03T21:03:46.253759+00:00",
+      "externalId": "Qou7UAOb",
+      "appPlayerId": "8dd1387a-5d76-4dc1-a906-575f8e08289d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:338c896d-cd3c-4615-b385-49f3945a13c6",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "7ebf8c5b-179d-4e83-be2c-1b7652a61e8a",
+      "updatedAt": "2026-10-03T15:43:35.04119+00:00",
+      "externalId": "QyNjhw1F",
+      "appPlayerId": "009def78-8b05-46db-a6ca-286a9bd26124"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:bc807bd4-46ef-4829-b75f-e36313af2afd",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "6fcbe046-8d1e-4b7a-bef8-a2e2a36d7510",
+      "updatedAt": "2026-10-03T21:03:46.901779+00:00",
+      "externalId": "ruVnjhb0",
+      "appPlayerId": "d054ce48-bfc3-4c69-a131-001912c9e8eb"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:c189fd0a-7ff6-49c1-ab56-9db62d9f8a60",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "eee0970d-4e0c-4397-861a-43e1b3d370ce",
+      "updatedAt": "2026-10-03T15:43:40.809917+00:00",
+      "externalId": "t4fKRuVt",
+      "appPlayerId": "7f383d28-2a44-406a-89f9-697418d5b266"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b85348b5-6e73-4ef8-887e-d097c493c809",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "6c319a2c-58c9-48e3-a36b-a29f33c2845c",
+      "updatedAt": "2026-10-03T21:03:48.299922+00:00",
+      "externalId": "W0A7lL4I",
+      "appPlayerId": "287be0a2-631e-4cb8-856d-c052128ad06c"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8c2af7b3-d17a-4238-944b-d54fe37f3ffd",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "12e88485-2c2b-498d-a6a9-68060a7b94a9",
+      "updatedAt": "2026-10-03T15:43:25.271973+00:00",
+      "externalId": "WKliejA7",
+      "appPlayerId": "095172ef-d13d-4d7c-b707-3648d70314cc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e39f0037-5381-4d65-8c5e-81b29213f98a",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "60fb4267-4cb1-4b94-a202-3335b4c24229",
+      "updatedAt": "2026-10-03T15:43:31.113465+00:00",
+      "externalId": "WnHVHDBr",
+      "appPlayerId": "13573551-f2e6-4bc2-a13c-77edb43a4f8a"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:297c7bb4-a10b-4348-9505-50224858d70f",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "842f4ea2-3687-40f7-90b4-a7e2c2f02e3d",
+      "updatedAt": "2026-10-03T15:43:50.810999+00:00",
+      "externalId": "YZ8OD3Ur",
+      "appPlayerId": "887f057a-57d0-49c8-851b-d0241be9ed27"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b52dbc65-5c1e-4070-9c5f-cc7d4f8016e3",
+      "provider": "flashscore",
+      "reviewed": true,
+      "mappingId": "23f0f4f2-f72d-461d-9976-ed581c04bf0d",
+      "updatedAt": "2026-10-03T15:43:27.190086+00:00",
+      "externalId": "zk4gW2UK",
+      "appPlayerId": "94fb5964-bbde-438c-998d-3859e2f86f85"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a2c39622-42e9-4f8e-88f8-c228fb929010",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ba73e2cc-74a7-4bfb-8432-f032eb65b79e",
+      "updatedAt": "2026-10-03T06:13:01.281881+00:00",
+      "externalId": "1000473",
+      "appPlayerId": "4c6a8c81-0ba3-40e3-b0b5-c320cf70496f"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:184cfce2-3c76-4a03-8337-cb9858529025",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ec3a6227-2bfb-4bfb-8600-69aef30e2648",
+      "updatedAt": "2026-10-03T06:14:01.594607+00:00",
+      "externalId": "1000536",
+      "appPlayerId": "1b1d73d2-8328-4eae-9b07-1b7e79c30d68"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:522eb699-2ae1-4b59-a463-ff277c85ef58",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e3e924fc-2d4d-4a2a-9d97-5ec2d62f4759",
+      "updatedAt": "2026-10-03T06:13:20.125858+00:00",
+      "externalId": "1004248",
+      "appPlayerId": "9b3c36e2-bcc3-43ee-8b32-ccc8a09dfd29"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7626060f-ac42-4804-aea7-14a781e026a6",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "feebb152-c33b-4759-84f9-489be6f81931",
+      "updatedAt": "2026-10-03T06:12:24.969942+00:00",
+      "externalId": "1004249",
+      "appPlayerId": "c3818d6f-3e94-4a5e-8247-970c85b29822"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:dfebaefc-9cce-4e2e-b2b4-e1f7c02e458b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "7c4bc4f5-1887-406d-8195-79667d0819f5",
+      "updatedAt": "2026-10-03T06:13:17.809896+00:00",
+      "externalId": "1004260",
+      "appPlayerId": "fcd06838-06b7-48ba-a0e7-badb3795ff64"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:71ae8766-b3ef-427d-a9af-d4b8015d24da",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5e1cef54-3f46-4590-beb4-026bdcf5942c",
+      "updatedAt": "2026-10-03T06:12:33.498978+00:00",
+      "externalId": "1004426",
+      "appPlayerId": "94fb5964-bbde-438c-998d-3859e2f86f85"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:25cfa172-21fa-4966-bdb2-d51ee52deafe",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "98f092e2-1097-4195-bc86-4404d9f2dee2",
+      "updatedAt": "2026-10-03T06:12:57.329128+00:00",
+      "externalId": "1004428",
+      "appPlayerId": "ac7d265e-c87b-45a9-ad84-2d1c1ddd9f08"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:d93ec98a-7932-4fce-94dd-0226963655de",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1329f61b-bc2e-4579-ba10-bef06445815b",
+      "updatedAt": "2026-10-03T06:12:52.26136+00:00",
+      "externalId": "1004434",
+      "appPlayerId": "bfdd6a04-23ba-4c94-9428-455a6c4d0b43"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:790c7e24-c77a-4bb7-ae15-f5dd731beeac",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "fc97c14d-b3d9-499f-ad29-e588cb9956df",
+      "updatedAt": "2026-10-03T06:13:16.077423+00:00",
+      "externalId": "1004521",
+      "appPlayerId": "abef5d77-c69c-49bd-8cc4-8896972e60e7"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:3007be8c-c4cc-48a1-9773-003d7eddde03",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "0a96f728-f830-46ff-8190-e1c853ca39c0",
+      "updatedAt": "2026-10-03T06:14:03.866407+00:00",
+      "externalId": "1005403",
+      "appPlayerId": "baab1b23-f17e-439d-a31b-58f407444753"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5965350e-ce7a-4ff4-a3cf-027e8aaf13ce",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "aa2f6b4b-81de-4a1d-82bd-23c3df7b75a9",
+      "updatedAt": "2026-10-03T06:12:57.887685+00:00",
+      "externalId": "1008280",
+      "appPlayerId": "7c110964-4327-4039-a1e8-0afeef0a6b0e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:039df96a-1900-43b3-9e2c-06ae3c85c363",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e7ba4075-0f3d-44a4-bb40-7f051b0ca204",
+      "updatedAt": "2026-10-03T06:13:16.647222+00:00",
+      "externalId": "1008872",
+      "appPlayerId": "e2305db3-cc0d-4249-bd0c-cb4398f32782"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:d3022589-13e2-4998-b3dc-29a251f404a9",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e1693ce5-375b-4534-a73c-23d19752662b",
+      "updatedAt": "2026-10-03T06:13:01.855174+00:00",
+      "externalId": "1009910",
+      "appPlayerId": "35f02370-3dee-40dd-bd6a-69d9e9b0afc7"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:1882dbb5-bd6e-4836-9edd-633d01c33345",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c52ceda6-3dbf-46c5-823d-7ddc620a790d",
+      "updatedAt": "2026-10-03T06:12:46.016588+00:00",
+      "externalId": "1009912",
+      "appPlayerId": "d71a50e9-0bb2-48f0-a52e-044e74e4baa7"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:01fcd71d-9853-4e32-8e19-eb0863b7084d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "312c6d40-c25b-4e38-8cc8-6a394cde46a6",
+      "updatedAt": "2026-10-03T06:13:09.326867+00:00",
+      "externalId": "1013197",
+      "appPlayerId": "bb028b7d-db09-4ddb-a53e-92193f28e6a3"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7dda5c1f-625f-4fd6-aa9b-b43958eb02aa",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ac1d3537-0462-4be5-b2b4-cf387bb8b18a",
+      "updatedAt": "2026-10-03T06:13:07.039741+00:00",
+      "externalId": "1013427",
+      "appPlayerId": "f32111ac-b161-479b-892d-c57134d9e4b8"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:62abc24d-a7d9-47c7-bdda-cbfda7168207",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "902c2414-b3ef-4eeb-8f5b-df18dd955764",
+      "updatedAt": "2026-10-03T06:14:06.701716+00:00",
+      "externalId": "1014324",
+      "appPlayerId": "d7d33284-24e7-459d-9be7-35d3412dd511"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:147cea4c-c61f-466e-b7da-ab1b069133c4",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "02fe1bf0-68e4-4a6e-b1ee-59fd9310821a",
+      "updatedAt": "2026-10-03T06:13:45.053064+00:00",
+      "externalId": "1017984",
+      "appPlayerId": "8aac52de-77be-4b29-befb-483569734cce"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:53d459aa-f547-4d15-96c5-f51d10b7aac9",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d89bdfef-3df7-44f2-a0b9-18d8779f4b34",
+      "updatedAt": "2026-10-03T06:13:54.71475+00:00",
+      "externalId": "1020449",
+      "appPlayerId": "42848b95-bada-466b-9baa-16fd9f2cbaaa"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:4f7aa1dd-c628-4e22-b6c1-bb4fbea709c6",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "8ac86225-3194-48f3-8ec7-679b1da19090",
+      "updatedAt": "2026-10-03T06:12:48.289344+00:00",
+      "externalId": "1021138",
+      "appPlayerId": "5ba445a0-225c-4b46-b156-f2174d847eb9"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:90dc4bb1-a00e-4c31-9d48-063e9e672127",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d78ec40e-6ccc-4af4-969a-7fd5b27623b4",
+      "updatedAt": "2026-10-03T06:14:02.728605+00:00",
+      "externalId": "1029681",
+      "appPlayerId": "9df5d51a-41aa-47e2-a988-0f89d99a7f21"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:ab38e2d0-fd81-47c1-8057-cd24f0a824f8",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1febc9cc-040f-4f92-b3aa-7678a2abb46b",
+      "updatedAt": "2026-10-03T06:12:28.379765+00:00",
+      "externalId": "1063163",
+      "appPlayerId": "1cdaa926-89dd-4c02-ae62-c30b594340d9"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:30ceb6b4-8ed4-4cd5-9bea-8cbf2afdfb22",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "4c2fe468-6c12-4a35-9597-cd1e62c77aec",
+      "updatedAt": "2026-10-03T06:13:35.384053+00:00",
+      "externalId": "1095727",
+      "appPlayerId": "7cb65cb6-e9a5-401f-9045-f5ba6bde3e42"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5eb1a927-e808-425d-b9ef-341fd3dada6e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9b23ccb8-a1da-4ad2-95bd-e9bf77dcae32",
+      "updatedAt": "2026-10-03T06:12:40.910535+00:00",
+      "externalId": "1095729",
+      "appPlayerId": "27509072-16c4-426c-8a68-2b286617af8e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:aaf56f04-9bb4-44b9-823f-08626cb2d7f8",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1af8a6d4-7f50-41c4-8786-a27bf690cd4e",
+      "updatedAt": "2026-10-03T06:13:11.570626+00:00",
+      "externalId": "1095732",
+      "appPlayerId": "26934f44-83b5-4dbe-90d7-7895b59d3434"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7ae4f33e-07f6-4e61-a0cf-990f60e3dddc",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5c1db385-c72d-4fe9-b6cf-3921e935c64a",
+      "updatedAt": "2026-10-05T04:42:53.158703+00:00",
+      "externalId": "1096751",
+      "appPlayerId": "18a56065-bd3c-42a4-a36e-314123f145d1"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:0399fb60-e0e5-4ecf-85d9-12d10f9cb40c",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "162ac530-fbac-4951-bbf9-f2c229258b3c",
+      "updatedAt": "2026-10-03T06:12:25.528523+00:00",
+      "externalId": "1102942",
+      "appPlayerId": "abfb270e-248d-4714-b583-471947712226"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:52206f1a-d1e2-45de-9b41-2f591311dc1c",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c4126839-f12a-402d-8f85-21fa12994edc",
+      "updatedAt": "2026-10-03T06:12:55.070784+00:00",
+      "externalId": "1103558",
+      "appPlayerId": "009def78-8b05-46db-a6ca-286a9bd26124"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9725a1a5-ba41-4507-9da8-12adae41d30b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c3ea9b7c-955f-49b2-900a-0cbfc5db27aa",
+      "updatedAt": "2026-10-03T06:12:31.22259+00:00",
+      "externalId": "1107547",
+      "appPlayerId": "c2cc8ea4-fd3c-4366-81ed-781195dbc207"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:d10c03bc-bd7b-40e1-832f-0784f03b8123",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "6154f1bd-9c26-46a6-b49f-fa0749b6b70c",
+      "updatedAt": "2026-10-03T06:14:04.431699+00:00",
+      "externalId": "1107604",
+      "appPlayerId": "07ed1779-e5db-4e2f-81a1-6233e0c32b41"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9bf6dcc8-d840-4021-b9e1-e9d950e052a5",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "763a5d0a-30bc-4c8f-85e7-e601453307a6",
+      "updatedAt": "2026-10-03T06:12:34.636482+00:00",
+      "externalId": "1112763",
+      "appPlayerId": "19498c5c-577e-4397-a9cd-7b1c8b0d962b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8d974939-b65e-445a-abbd-d1d07851e38d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "29d1fc58-8b12-44d7-abd8-dc3aa5b07a77",
+      "updatedAt": "2026-10-03T06:13:24.103611+00:00",
+      "externalId": "1114480",
+      "appPlayerId": "64a9eb5b-13ee-45ff-99ae-77c74a6165e9"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5f53e456-45d0-4c82-831b-e834191f79d1",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "48db2f75-03ca-4ab1-9c44-1fec84e183f9",
+      "updatedAt": "2026-10-03T06:13:42.217976+00:00",
+      "externalId": "1140796",
+      "appPlayerId": "f9112452-900d-4518-a9b2-6f7dcf1ed075"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:20abf14e-2afd-42f5-ad81-0e272512e510",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "aabebc86-aec4-467c-886e-6e6f60b13e99",
+      "updatedAt": "2026-10-03T06:13:39.35791+00:00",
+      "externalId": "1140806",
+      "appPlayerId": "e0bba0c4-6caf-4b08-8cc3-25af8c655dbc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:ac1fa476-ec1f-45cf-a4b0-066c3e728def",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9458866d-eed6-4866-a32f-6e9183a8ffd3",
+      "updatedAt": "2026-10-03T06:13:44.491724+00:00",
+      "externalId": "1140818",
+      "appPlayerId": "13d63aee-0ea7-4991-b666-9a2293ffbe27"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:3a3f4438-1c61-4391-8033-b44d20095edd",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ac8d59b8-9deb-4491-b64b-6364ea976b70",
+      "updatedAt": "2026-10-03T06:12:24.399402+00:00",
+      "externalId": "1140820",
+      "appPlayerId": "55db263a-4636-467b-8e2f-fd7d909779a5"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:f2d6ac44-0695-4f25-ae9e-0258288f359d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "21535c99-cd66-4733-a0f0-cfd333abfc5d",
+      "updatedAt": "2026-10-03T06:13:51.872978+00:00",
+      "externalId": "1140833",
+      "appPlayerId": "a5afce2c-fc67-4346-85a4-62197cb8c699"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:98a5ef8e-5108-47c5-b877-daa3636d51fc",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5d28e9d9-66a7-4b5d-9bc3-3bf9ce5b84e2",
+      "updatedAt": "2026-10-03T06:13:09.881742+00:00",
+      "externalId": "1140850",
+      "appPlayerId": "eaf3798a-2f51-4d1a-b8a1-877b1040a431"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:017e3284-6f84-4ca0-9c13-5d2f3613595d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "0fa82901-e804-4173-9c9e-5cacf95fd529",
+      "updatedAt": "2026-10-03T06:13:49.011121+00:00",
+      "externalId": "1140855",
+      "appPlayerId": "81fcb0e5-b860-4e2a-963b-e12ab6418d86"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:d63d26db-3d1b-4ce7-b083-816325a505bb",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "67631e84-5621-4f52-9abc-26856e24f1a5",
+      "updatedAt": "2026-10-03T06:12:55.632515+00:00",
+      "externalId": "1140857",
+      "appPlayerId": "d054ce48-bfc3-4c69-a131-001912c9e8eb"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:97e3949b-d15a-495c-a31f-ede840294683",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "2988f0eb-c712-4622-b680-e1cd1afbd95c",
+      "updatedAt": "2026-10-03T06:12:36.905067+00:00",
+      "externalId": "1140872",
+      "appPlayerId": "665430bb-2665-440f-932b-a80b26b730e0"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:808aa374-b512-419a-875f-198ee3707387",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "8f308039-a323-47e6-b4f6-6e717f13a47a",
+      "updatedAt": "2026-10-03T06:13:50.740791+00:00",
+      "externalId": "1140885",
+      "appPlayerId": "01415208-525f-4d58-9bca-0bfea93cb094"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:3c61ce6d-8f8e-4e61-a816-d75a06f2bf6b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ca41a8b7-c101-47cf-a5e9-b987056bceb1",
+      "updatedAt": "2026-10-03T06:13:33.12144+00:00",
+      "externalId": "1140890",
+      "appPlayerId": "9d0481fc-34cd-405c-920d-f8ab84c0aa93"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7240b0b3-850b-4cac-a8bb-eb8c2d073da2",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ebffd6a5-91e1-47e8-a55a-7e88cd7a155a",
+      "updatedAt": "2026-10-03T06:12:56.777629+00:00",
+      "externalId": "1140891",
+      "appPlayerId": "e7528935-4560-4fcb-8d76-40844677d622"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7bf09348-4a08-482d-847e-126df61cf690",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d9aceb94-1a09-4714-ba8d-7fd5e64aa64a",
+      "updatedAt": "2026-10-03T06:13:00.719701+00:00",
+      "externalId": "1140922",
+      "appPlayerId": "5d842171-112e-48a3-90e9-e89ccaa55688"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:37614deb-9691-4dbf-84d1-f00ec2942078",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "bac33a85-e719-460d-b723-98f2fa66beb5",
+      "updatedAt": "2026-10-03T06:13:36.522353+00:00",
+      "externalId": "1140927",
+      "appPlayerId": "a7dbe8e4-4a3f-4c46-8d4c-96bb37516760"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8ebc2d87-da69-443b-a217-0651073c778b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "bb11d820-3f02-4c8d-9a9d-fa4169376313",
+      "updatedAt": "2026-10-03T06:13:03.646661+00:00",
+      "externalId": "1140933",
+      "appPlayerId": "e4c5f959-e1db-4d95-bf8c-e062a0c12192"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:88993b2e-41b8-4afb-a640-31e9a3f7c11f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "f57770bc-8468-414a-baa1-ac38719662f6",
+      "updatedAt": "2026-10-03T06:12:32.923894+00:00",
+      "externalId": "1140935",
+      "appPlayerId": "bfd155a8-c760-4990-a7f8-32217e5314e4"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a111b6f3-507a-4b2a-9061-771ef3eaab55",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "62e7ec80-b9a7-4b5c-9484-40aeeacd2079",
+      "updatedAt": "2026-10-03T06:13:55.850511+00:00",
+      "externalId": "1140943",
+      "appPlayerId": "9c04eb34-f71c-4469-acfd-2ce662d20f18"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:4e084ae0-a1ef-4a7b-be0b-e7104fa125c3",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "4a700fa6-810d-45bf-bf60-d8b5ea3ddf2a",
+      "updatedAt": "2026-10-03T06:12:36.341483+00:00",
+      "externalId": "1140954",
+      "appPlayerId": "7f44856a-998c-4623-b625-42efa095ad4a"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:da0960f8-48c7-49dd-b912-f4ed0ad8630b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "754d1428-c399-4548-9b61-0864268fb661",
+      "updatedAt": "2026-10-03T06:12:56.197682+00:00",
+      "externalId": "1140958",
+      "appPlayerId": "358269c5-2c44-46c0-9a6d-4a51c65edd34"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b563a595-9159-4c2c-a0a4-d25481ebfe78",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ad2c7ae1-0f00-44bb-969b-4cf1f1c23ab7",
+      "updatedAt": "2026-10-05T04:43:17.543178+00:00",
+      "externalId": "1140961",
+      "appPlayerId": "9be4bcf8-4e0d-4e76-a630-3c120e1c903d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8c5df607-7cc0-4a64-8be1-9af5b4499c23",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d4bfb83a-f697-4a39-ba47-d1b223128fda",
+      "updatedAt": "2026-10-03T06:12:31.790341+00:00",
+      "externalId": "1151057",
+      "appPlayerId": "a996870e-d689-49ad-970d-3ff1f53f988b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:3377e5e2-5a78-4fc1-b03b-213e356d2506",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e2c27709-7bda-4575-a3a1-7bc2bbff2fc0",
+      "updatedAt": "2026-10-03T06:13:24.673054+00:00",
+      "externalId": "1151070",
+      "appPlayerId": "3a2979b7-55cb-47e6-80a8-6dfa4bf46ba1"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7efa27a5-fbc8-4578-a9ad-6ace06e483ac",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "43699f9c-dc3a-42cc-ac9f-da8abc3abfce",
+      "updatedAt": "2026-10-03T06:13:50.16366+00:00",
+      "externalId": "1166995",
+      "appPlayerId": "bbe0f5e3-5326-4ab2-9f61-44ed205f91a4"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:42aacefc-a8ec-4770-ba6c-e350a136bb5d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "2ab3ba92-c1b0-42ec-8680-b24c3828f4cd",
+      "updatedAt": "2026-10-03T06:13:25.235807+00:00",
+      "externalId": "1168539",
+      "appPlayerId": "74e1a467-fb7a-4973-a00a-47dc75ef66cf"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:1e5c763d-3d03-4e7a-b6d2-6025351ac456",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "05bbd319-5de1-4f4c-88f2-9b7e0c861a9a",
+      "updatedAt": "2026-10-03T06:12:50.573595+00:00",
+      "externalId": "1168799",
+      "appPlayerId": "7ba18b97-8396-42c1-b45f-4e6b47ebf329"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a73938e5-3ab5-480c-bb90-b266e3a15bd0",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "910ec653-7073-4a6f-aeb2-f79ccb86b24f",
+      "updatedAt": "2026-10-03T06:13:06.474442+00:00",
+      "externalId": "1177366",
+      "appPlayerId": "d5f53ee6-0ad8-4042-9461-e19b3be81f6b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:efda11a6-9619-4699-9a8a-ece7fb61632e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1838e769-3de5-40cc-a8da-6bb08b122f1f",
+      "updatedAt": "2026-10-05T04:43:48.014614+00:00",
+      "externalId": "1182110",
+      "appPlayerId": "8711cce0-3af4-49a9-9035-fabe7dd528bc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a34e1a4c-f7c1-409d-8409-ce6737ef6a49",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "428ae50b-e16e-4bef-8d65-afbe13fa41f0",
+      "updatedAt": "2026-10-03T06:13:03.041107+00:00",
+      "externalId": "1185396",
+      "appPlayerId": "2a562791-1f99-4fa3-9606-79216ca303a9"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:2f8f77cd-57a7-489c-8c5f-ad8b12edeafa",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c01a866d-3d63-4b05-9f13-e5ed515a2e09",
+      "updatedAt": "2026-10-03T06:13:21.838646+00:00",
+      "externalId": "1213240",
+      "appPlayerId": "ad91b7fc-ccb6-4f7c-81af-49e61f1b25a8"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:51490864-28bc-4f34-8043-6f099fd6e187",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "24ed1f37-6984-447e-8226-950fc1ded7c6",
+      "updatedAt": "2026-10-03T06:12:35.777876+00:00",
+      "externalId": "1382913",
+      "appPlayerId": "1f3ff3ea-6bf0-4e89-9d85-f84618af5357"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e1488204-a287-4b36-afd4-fab1b2188f60",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9f05640c-e60b-487b-8416-e7c46ed6096b",
+      "updatedAt": "2026-10-03T06:13:30.284711+00:00",
+      "externalId": "1392555",
+      "appPlayerId": "fe3e00a3-777a-4f8a-9152-231967f392f9"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5731a98c-1f51-4c19-a670-f5d3ba824167",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "de3060fd-4174-412f-aacc-11e60c0551cf",
+      "updatedAt": "2026-10-03T06:13:31.98558+00:00",
+      "externalId": "1392556",
+      "appPlayerId": "095172ef-d13d-4d7c-b707-3648d70314cc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5d19eaf6-c75c-43b7-b652-ec4c7f1b6f99",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "38a72b55-7a58-46e0-9a3a-c98ba124e427",
+      "updatedAt": "2026-10-03T06:13:28.028152+00:00",
+      "externalId": "1401580",
+      "appPlayerId": "d9780eae-3c23-427a-baf0-7d53027d5f41"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8508d466-a165-4d49-afe9-03985800051b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "a8f2d434-a589-429a-95f1-e289072bcfb7",
+      "updatedAt": "2026-10-03T06:13:31.416719+00:00",
+      "externalId": "1401592",
+      "appPlayerId": "91f40628-5a3e-4487-9bdb-2375035fd772"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:24cbf204-90d7-4f4a-915c-bc79f7b9d186",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "4e7c0346-b4c3-4ee2-bd33-310e3a29e07e",
+      "updatedAt": "2026-10-03T06:13:52.4357+00:00",
+      "externalId": "1401595",
+      "appPlayerId": "11e78c3d-fca0-4b89-80ab-5cc4b1564e90"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:cd59bb91-30cd-4607-b8de-ec815cfeca0e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ae6be84a-349c-441a-90d8-d865c9ad1214",
+      "updatedAt": "2026-10-03T06:13:58.111558+00:00",
+      "externalId": "1401596",
+      "appPlayerId": "2ddb045f-c1f6-4355-97aa-8d84b8905801"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:c8d4bd70-33dd-42c3-a874-e5a533c1c780",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "97dca837-8541-4ba3-a9d0-8f50e89d6255",
+      "updatedAt": "2026-10-03T06:12:40.352411+00:00",
+      "externalId": "1401604",
+      "appPlayerId": "87e4c19f-6a69-4d19-946d-53b987910752"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:3907ac5c-b304-4df8-8044-8f4c360fed9d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ae0b7165-cff9-4969-9dba-5613a374470f",
+      "updatedAt": "2026-10-03T06:13:12.682997+00:00",
+      "externalId": "1401965",
+      "appPlayerId": "1f44ae29-1347-42b1-9251-9510f2ec0cbc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:0f39314f-9d7c-4c92-bb27-c8c388590c2b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "a683c95b-41da-4c9a-9d7a-4ec92d65024b",
+      "updatedAt": "2026-10-03T06:13:29.722622+00:00",
+      "externalId": "1402635",
+      "appPlayerId": "b854ae3b-b75b-4a4d-ae1e-c90e4ab738ef"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:85417532-b019-4013-aa09-30f0293e6fa8",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "96e143bb-50ff-4220-a0e6-3ef6aa0127e5",
+      "updatedAt": "2026-10-03T06:12:43.184753+00:00",
+      "externalId": "1408170",
+      "appPlayerId": "a8b16ed9-f141-4d15-af0c-806045db74e4"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:bad6895f-f201-441d-a85e-983eb9b3805b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1cb7128a-fd2f-4e18-9953-002e7adbcb59",
+      "updatedAt": "2026-10-03T06:13:54.143366+00:00",
+      "externalId": "141967",
+      "appPlayerId": "30f0d3ee-7121-4115-8403-1ea6426bf85e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6fbaa3d7-ddd1-457a-a63d-688d619b1225",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "59357d77-863a-4ad9-b5d3-a0f0fa01ab4f",
+      "updatedAt": "2026-10-03T06:12:45.452221+00:00",
+      "externalId": "1424464",
+      "appPlayerId": "fb4f6239-1dd8-41f9-ab55-8e747202c428"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:050ae52e-bae6-4c5e-8568-ecd79ba0805c",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ad1ed965-786d-499e-ac3e-29e053daf771",
+      "updatedAt": "2026-10-03T06:12:27.230689+00:00",
+      "externalId": "143786",
+      "appPlayerId": "a2cdc4c5-c3dc-42f0-9ca9-14bdd0c2e064"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:55d81b4b-dca6-40ed-ae3b-2792f7aae72a",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9724b8c8-f5b2-40a0-8d9f-e5a1c48f1636",
+      "updatedAt": "2026-10-03T06:13:08.160883+00:00",
+      "externalId": "1457867",
+      "appPlayerId": "ae0ab01c-f1b3-4f7e-b573-561cbb5be5dd"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7af595b8-5e98-48a1-92f1-38e563757a36",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "245cd6b2-23ad-40a3-b3b5-543a9364249c",
+      "updatedAt": "2026-10-03T06:13:17.24462+00:00",
+      "externalId": "1461306",
+      "appPlayerId": "1c6bc81b-41e4-4a75-8a78-1eaa30c5b397"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e9045995-a553-4e3a-919c-62f300df2eda",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "dfee1db4-90ba-44fa-a066-f226ecdbf465",
+      "updatedAt": "2026-10-03T06:13:25.800804+00:00",
+      "externalId": "1463237",
+      "appPlayerId": "6c565bcf-cb72-40de-bfd8-32ccd0a000ee"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:f2e985d7-ec8e-491c-8310-8bbb3f84aea8",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c9f460cb-b6b3-48de-9b7a-b21a7760897c",
+      "updatedAt": "2026-10-03T06:13:43.35716+00:00",
+      "externalId": "1464148",
+      "appPlayerId": "d5cf95c6-85f0-4960-bf0a-fa2cb19a57cb"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9f46c7b0-eb28-483f-83ac-305142f9ddc3",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "07689b0f-b412-452c-ba1c-1e6b3290c538",
+      "updatedAt": "2026-10-03T06:13:28.585714+00:00",
+      "externalId": "1468076",
+      "appPlayerId": "673bf600-a232-4473-a130-c67562e613dc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:c642e39b-834a-468e-b346-9ff521294d56",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1db3bcfb-28d5-41e1-bcf5-eb647cb7a810",
+      "updatedAt": "2026-10-03T06:12:34.069669+00:00",
+      "externalId": "1474715",
+      "appPlayerId": "7bb88c92-4d0c-419a-b23e-18443aa71b5d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5bad4003-3f19-4966-a85b-7fda010e1109",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9a51fe21-d897-4636-90be-632dad0cd14f",
+      "updatedAt": "2026-10-03T06:13:12.121949+00:00",
+      "externalId": "1476706",
+      "appPlayerId": "d1af2c07-a934-4938-b228-fde489029965"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:f4eab6ab-6f6e-436c-a6ba-58f03457e120",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ad3be7b3-8721-40af-9fbe-baf3a9c3d8b9",
+      "updatedAt": "2026-10-03T06:12:43.753937+00:00",
+      "externalId": "1513292",
+      "appPlayerId": "13e0b84b-209a-4955-8928-d81d5058a62e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:99193f8c-56c8-4361-b1c6-4ab00df7c901",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c0353f6a-f913-427a-b657-33f3f77deb12",
+      "updatedAt": "2026-10-03T06:13:48.445674+00:00",
+      "externalId": "1513448",
+      "appPlayerId": "318398e0-e215-438f-b020-4893900f5382"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e383cfc2-8a38-40eb-a53a-d50206d55416",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e9a096dc-b26f-483d-b59c-f749813ae399",
+      "updatedAt": "2026-10-03T06:13:51.303754+00:00",
+      "externalId": "1525299",
+      "appPlayerId": "4a41ddde-78ab-4c98-87e9-92f7e81ce98e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:cd7ee03e-756b-404d-8d7f-538bf06605a1",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "b9e5aa4d-9413-4de6-904d-1dd7ef39faa9",
+      "updatedAt": "2026-10-03T06:13:14.949444+00:00",
+      "externalId": "1525301",
+      "appPlayerId": "b37e6835-e889-48a7-bf67-718ad59cabc1"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8bcb276e-0804-4ca6-b08a-41c9cdbedac9",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "f8eaa382-c9ab-49b6-b50a-e35e0fb6bdbc",
+      "updatedAt": "2026-10-05T04:41:15.12557+00:00",
+      "externalId": "1525325",
+      "appPlayerId": "50a8ea2c-9559-46d5-8cf3-0da879aabb0b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:638f4fe5-527a-4075-be95-b89c13b797b2",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9d7eb75d-1b7d-4a52-a316-16a9745b90f3",
+      "updatedAt": "2026-10-03T06:13:21.266095+00:00",
+      "externalId": "1525328",
+      "appPlayerId": "2c7173d9-9aec-44e5-b7f1-cec3f0989e81"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:94005936-935f-425b-9ceb-c281029abc76",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "4e677ca0-69a4-412e-a9b7-1a48dbffd119",
+      "updatedAt": "2026-10-03T06:12:30.088583+00:00",
+      "externalId": "1545316",
+      "appPlayerId": "b99cd2a8-dea8-4257-8d1d-44879408bba3"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:de4c7541-8816-44ae-b17e-f8f11d864092",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "aa51f837-e939-451a-bf49-4d2a51c74e53",
+      "updatedAt": "2026-10-03T06:12:41.473179+00:00",
+      "externalId": "1548838",
+      "appPlayerId": "eba99188-88d6-4667-a7d8-c9592a8500d1"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e2fd8b1f-f3ca-4797-8994-e25fb20ec58a",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5a7c6f6a-9734-414e-aafa-3162001d94f2",
+      "updatedAt": "2026-10-03T06:13:42.794886+00:00",
+      "externalId": "1597137",
+      "appPlayerId": "ad870b3c-784b-402b-b0ca-d3441f798f40"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:94b4927c-b661-4adf-a1d8-c349c451c9c2",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9ed5f866-4333-4f1a-946f-4366d3424fe7",
+      "updatedAt": "2026-10-03T06:13:38.219959+00:00",
+      "externalId": "1597138",
+      "appPlayerId": "01f6dba7-76ba-4d18-9784-908c8e4e95b7"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:dd7c2a4f-bedb-430b-b2b4-92f9e3aa365c",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "97749d12-113f-41d1-ae84-595ed1ca7d49",
+      "updatedAt": "2026-10-03T06:13:40.502378+00:00",
+      "externalId": "1597142",
+      "appPlayerId": "078be621-8a00-4953-9dc8-75256f1e0fd1"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:0fdb89f4-4aaf-4095-a0e0-3e5f41a12704",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "cb75b791-7417-4e6b-82fa-b8d0578afa99",
+      "updatedAt": "2026-10-03T06:13:43.923308+00:00",
+      "externalId": "1606001",
+      "appPlayerId": "e349b925-38fc-42de-8002-5496da2fd21e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:4598aeb9-f908-4566-b780-e5679b818c2a",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "b389c516-35ba-4cec-b728-81067ffffe53",
+      "updatedAt": "2026-10-03T06:13:41.072025+00:00",
+      "externalId": "1606005",
+      "appPlayerId": "17205198-05a8-4697-a8cd-c2b5bc845e17"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:4f6d72da-38a5-4aeb-b5ea-fabe0e0876f8",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "078e2ac1-f501-4095-b101-47fd39be2bf4",
+      "updatedAt": "2026-10-03T06:13:26.357632+00:00",
+      "externalId": "1619134",
+      "appPlayerId": "8f642e85-5387-46bb-bf32-ab17511e6cba"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a834022c-c6d5-467c-abe0-0c4a16ec5461",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d2cddba1-7a90-467c-9420-8eb65e849821",
+      "updatedAt": "2026-10-03T06:13:05.910059+00:00",
+      "externalId": "1632211",
+      "appPlayerId": "13573551-f2e6-4bc2-a13c-77edb43a4f8a"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:185bb125-db09-48f8-a605-f304a4460939",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ff4be431-519b-47dd-b1f9-be434e382bd6",
+      "updatedAt": "2026-10-03T06:12:23.830793+00:00",
+      "externalId": "1655428",
+      "appPlayerId": "d4158995-21f8-40a2-818b-75aeefdbb81c"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:bc3f4866-2f52-49e2-93a0-7a8a41882f37",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "b10af4ba-8ddf-477a-8495-7844f1fa405b",
+      "updatedAt": "2026-10-03T06:13:47.88139+00:00",
+      "externalId": "1823726",
+      "appPlayerId": "0bff79be-b852-48d0-9688-355d43841fcb"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:2111b450-58bc-49d5-b941-a27811c67d4a",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5eb8d4ed-125c-4207-b989-ed3d0f3256df",
+      "updatedAt": "2026-10-03T06:12:38.644254+00:00",
+      "externalId": "1845545",
+      "appPlayerId": "af6c98c1-3217-48e2-8005-8e31a235ed2d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:acaf7a30-d050-4b72-ad38-88918f8aae27",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ffd131b0-7fae-4358-9763-f27a1d2df7f2",
+      "updatedAt": "2026-10-03T06:12:26.097656+00:00",
+      "externalId": "1845576",
+      "appPlayerId": "a93d2b4f-7110-491d-876f-ca958e526ca6"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b46cb670-34da-4a29-802b-ea1b7940268f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "42f0b478-e5d0-425d-90b0-5f068754b906",
+      "updatedAt": "2026-10-03T06:12:30.654809+00:00",
+      "externalId": "1868782",
+      "appPlayerId": "ae24016d-48a9-4313-b58d-6203d82abb26"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7ebfc70b-8cba-4409-b3d3-c6aeb53dea62",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e0756a17-3d15-4e97-a4ff-86614285af79",
+      "updatedAt": "2026-10-03T06:13:30.848668+00:00",
+      "externalId": "1878241",
+      "appPlayerId": "e1e8327c-054b-4561-bd68-769bee8e7ef0"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:83bcc20e-a94b-4342-9f9b-95d1990c2444",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "934ee01a-8ad6-4720-8a9e-561b16d013d1",
+      "updatedAt": "2026-10-03T06:13:04.789899+00:00",
+      "externalId": "1893999",
+      "appPlayerId": "6122a373-ca4f-4e0e-8094-87b4d35fe9bb"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8a8b395c-4313-4439-9d6a-a93de8e47bd7",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "664a1900-f56e-461b-b00d-7c598fea17cf",
+      "updatedAt": "2026-10-03T06:13:13.809453+00:00",
+      "externalId": "1919274",
+      "appPlayerId": "30ffcf70-f602-4c69-90ce-80810d3a2e81"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8dd406a0-7f43-4ed0-a860-6aaa942e2363",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "bb7fbd44-a305-4a84-bc69-6e82dc6a98c6",
+      "updatedAt": "2026-10-03T06:12:54.510833+00:00",
+      "externalId": "1919278",
+      "appPlayerId": "555cf14d-4405-4e18-9bf8-430dacfeff5b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:f7c6b7e1-7afe-48bc-ab58-423a7718479f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "4e5fef53-de02-45c2-a572-56111a95cde0",
+      "updatedAt": "2026-10-03T06:13:55.284187+00:00",
+      "externalId": "1919284",
+      "appPlayerId": "cf323e17-ce94-490c-bf26-e8984b60da72"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:77e34252-f967-46f2-95a9-59029418502a",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c5b470ff-331b-43be-9d5d-ea2bb829e113",
+      "updatedAt": "2026-10-03T06:12:48.867151+00:00",
+      "externalId": "1919290",
+      "appPlayerId": "287be0a2-631e-4cb8-856d-c052128ad06c"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7ae11994-85e3-43c4-a868-8826886b2ec3",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "8dcb1d72-57e5-41ac-880f-9634e8a54a37",
+      "updatedAt": "2026-10-03T06:14:06.144365+00:00",
+      "externalId": "1919295",
+      "appPlayerId": "aa41b743-4746-4cfe-b147-43a242a132ee"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6ac30d6e-b024-4f03-a19d-0a38250fe366",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "7a7de70d-ee22-48be-bb94-fbd7bf42e0cd",
+      "updatedAt": "2026-10-05T04:44:13.003312+00:00",
+      "externalId": "1919299",
+      "appPlayerId": "508e12ad-306c-45e2-b71d-45c0ba6f0f2b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7d3e6abb-6a59-47dd-b670-2a5b9aa73c7c",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "2dc8bbea-5cfd-4328-a8bc-dc6cb98fa8e9",
+      "updatedAt": "2026-10-03T06:12:28.949281+00:00",
+      "externalId": "1920160",
+      "appPlayerId": "d87da886-937e-4655-ad6c-8315e684f715"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:fb77cf6c-01bb-4242-80a2-92dc9ea824a7",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "fde26ab6-9095-4aa1-acd2-b1dca974b9f4",
+      "updatedAt": "2026-10-03T06:13:53.016951+00:00",
+      "externalId": "1920270",
+      "appPlayerId": "f7374a2a-384c-4f26-9777-384f4999ed75"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7a8d410c-2217-4ef7-b380-c22f5858fc42",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "83837dc8-613e-4edd-a8cb-3189af41be47",
+      "updatedAt": "2026-10-03T06:13:58.680335+00:00",
+      "externalId": "1924082",
+      "appPlayerId": "75e0ae96-bb0f-44c5-92fa-4a7b545bfb3b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e14e003f-662c-4d85-880d-63ed74f509ec",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "97afc796-f5e1-4cf7-990e-680900b457ac",
+      "updatedAt": "2026-10-03T06:13:37.081946+00:00",
+      "externalId": "1937706",
+      "appPlayerId": "9052ef74-5fad-4fb4-8a69-f9effa358c16"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b8edb4ce-8cdb-4f99-a77b-4a2afceb10c7",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "bfab3a6c-4533-413f-b85b-94bf327b24ea",
+      "updatedAt": "2026-10-03T06:13:13.240579+00:00",
+      "externalId": "1947611",
+      "appPlayerId": "05a5c8bc-541e-46b4-9cd5-82bac1aeb328"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:1fa8a6fc-9435-4296-b12a-cd14ba66fbbc",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "27a53b49-3ddc-4497-ac6e-029bd8606805",
+      "updatedAt": "2026-10-03T06:13:33.689356+00:00",
+      "externalId": "1990600",
+      "appPlayerId": "90323b8d-5a2a-404f-a557-e6d5870ebfd8"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:322bd7d3-ad1d-4fe3-a22b-7cd52b221113",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "922b32b1-dee7-4342-9654-46352c558567",
+      "updatedAt": "2026-10-03T06:12:22.078635+00:00",
+      "externalId": "2002231",
+      "appPlayerId": "6a1bb426-b5f8-48cc-964f-43f1b1a076d6"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5b11ecf6-0656-4333-8c5e-784319f8e4a2",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "45d196f3-f078-4839-aa8e-fdf22dda0f28",
+      "updatedAt": "2026-10-03T06:12:37.492394+00:00",
+      "externalId": "2002384",
+      "appPlayerId": "a6b785dc-0c52-410c-a7a3-ccd63ad449a6"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:29e3f449-8f42-4e8e-991a-cd6af08f2529",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "541a723c-5763-469d-85cf-346e2f35cb74",
+      "updatedAt": "2026-10-03T06:12:23.256575+00:00",
+      "externalId": "2045637",
+      "appPlayerId": "b93b0f29-46e8-4db2-bf52-379ac167d009"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:23f340da-8df0-494e-8fdc-99fc7d22d54f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "12eabbb7-0614-4606-875f-9d09c397b3e5",
+      "updatedAt": "2026-10-03T06:13:59.810077+00:00",
+      "externalId": "2046059",
+      "appPlayerId": "c554b019-c42a-4a8c-9c57-2d7f7da604aa"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:fc666d3e-437f-4cda-ad08-32133f22138f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "a7f5b6fc-150c-4f8e-82a9-dfd628b3804e",
+      "updatedAt": "2026-10-03T06:13:53.581295+00:00",
+      "externalId": "2046419",
+      "appPlayerId": "0cd4e943-cacc-4394-9906-543633f9d192"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9979ad31-e928-4699-8d83-c169c0359000",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "fa709ca5-f44f-4b65-aae0-a6cb15f42870",
+      "updatedAt": "2026-10-03T06:13:37.656308+00:00",
+      "externalId": "2127598",
+      "appPlayerId": "c137ad44-9ddf-4187-8268-900e3e0ec9c7"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b3fb751e-abd4-4616-9c8b-7f1d5795a3dc",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "67ad6b1f-a995-45c1-aab2-4bd610cf07d9",
+      "updatedAt": "2026-10-03T06:14:05.005305+00:00",
+      "externalId": "2142026",
+      "appPlayerId": "7f6a6fcb-854d-4301-a73d-ee3f81909127"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b8d18da2-e0a9-45cf-a641-1730222bab29",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "bb50e95d-2d55-468d-9839-582d6001cdcc",
+      "updatedAt": "2026-10-03T06:13:41.633834+00:00",
+      "externalId": "2161836",
+      "appPlayerId": "af26ed6a-c39a-438e-8ec8-dd81cf902087"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8e75af44-d7ae-4e6d-aae0-6bc7e665e2e1",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ace8e903-e30a-475a-8e07-d200464169df",
+      "updatedAt": "2026-10-03T06:13:00.154635+00:00",
+      "externalId": "2178617",
+      "appPlayerId": "9285f7bb-cc04-4701-994f-36ae5f1955f4"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9a1a38f8-fabe-485a-8cf5-3997a465bb2f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "cacf558b-d22e-47f6-afc4-7523738663e1",
+      "updatedAt": "2026-10-03T06:14:01.029102+00:00",
+      "externalId": "2203635",
+      "appPlayerId": "8d3d0a83-76f0-4bc5-b864-7fc4141b94e2"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:01acf7aa-8c45-4451-a770-7ba348b0b784",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "a8838d3d-8555-4942-ba74-10eef4ba7b71",
+      "updatedAt": "2026-10-03T06:12:39.776192+00:00",
+      "externalId": "2265475",
+      "appPlayerId": "0681edd7-61dd-4531-8f95-e131a7e452c8"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:2d6b1d48-8d1b-4048-8e9d-d9ab313232ec",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "945bd88a-2c0f-4d34-a8fb-ca29bcdd1334",
+      "updatedAt": "2026-10-03T06:13:45.62867+00:00",
+      "externalId": "2267961",
+      "appPlayerId": "dd815797-f67a-4440-b2f7-bbfa6d214c49"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:0df5a0e6-7ad7-4241-8dfb-0536f1808301",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "b32842a8-fe65-4344-a60e-81128d87c906",
+      "updatedAt": "2026-10-03T06:13:07.592655+00:00",
+      "externalId": "2417446",
+      "appPlayerId": "6a69256c-8500-41f8-842d-3e370fa84b1f"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:42ac9e77-f0ba-4e7c-92c1-c86c92c9a721",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "a0ca039a-b2be-4b8c-8b9b-76abe1814033",
+      "updatedAt": "2026-10-03T06:13:04.214002+00:00",
+      "externalId": "2577945",
+      "appPlayerId": "399326a6-127d-41ab-9708-6475653b5aee"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:052d0fc0-1fdb-4f79-bdd7-0bc1296f841b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9e12479d-f07f-4b6d-8c77-c90a61ddb9ef",
+      "updatedAt": "2026-10-03T06:12:59.026228+00:00",
+      "externalId": "2605809",
+      "appPlayerId": "d5b64f24-b77a-4b65-93cc-84e2c3d7760a"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6512e1a2-323e-4d5b-a4cf-0614447aea99",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "f4a6171a-4418-4a6c-bdb2-e9387a041866",
+      "updatedAt": "2026-10-03T06:14:05.57535+00:00",
+      "externalId": "297510",
+      "appPlayerId": "ece8abdc-cd31-4892-b3d7-17174c588c32"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:add2150a-4d34-4e7c-abf1-0017e68bc89d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "3f867678-cb4e-4362-99c3-a2850b34ccb0",
+      "updatedAt": "2026-10-02T16:52:15.976341+00:00",
+      "externalId": "359280",
+      "appPlayerId": "6c06addc-4cdc-4598-ba94-42221728122b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:966323b4-6ea0-4397-9d2f-64f16823fa3f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "fa00757f-a0cd-4f06-bddb-00688239a535",
+      "updatedAt": "2026-10-03T06:13:27.480351+00:00",
+      "externalId": "359288",
+      "appPlayerId": "580e0867-34d4-4743-b035-0a21fc1f49e5"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e03e6aea-ea06-45c0-8478-d7af9d3c5c5d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "a110576d-e66e-4bc6-846e-55fe15e8cbf0",
+      "updatedAt": "2026-10-03T06:13:15.50904+00:00",
+      "externalId": "364758",
+      "appPlayerId": "4ee62228-7897-4fcf-a463-8f51b3d6e46f"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e81bcea9-3ba8-41ff-a1cd-f02ea3ab1e6d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "12786ea5-5983-4395-9f8a-f964573d2218",
+      "updatedAt": "2026-10-03T06:12:27.800669+00:00",
+      "externalId": "366156",
+      "appPlayerId": "aa30cd8c-2e0c-476d-bc4e-8d907cd2ea61"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:2c15eb59-4c4b-4bdd-b85e-963eefd69e6b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "fe1983eb-df18-44ae-8d4f-843d2570dda1",
+      "updatedAt": "2026-10-05T04:42:31.306328+00:00",
+      "externalId": "544156",
+      "appPlayerId": "cdda738e-7b3b-4de7-922c-3cff32f55f8e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:5d0cfd78-6200-4254-999e-ccc851cac9bf",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "f0f3aa6d-8347-4b03-91bf-e34ceef999f8",
+      "updatedAt": "2026-10-03T06:12:50.00905+00:00",
+      "externalId": "782500",
+      "appPlayerId": "3566e5a6-46de-4bce-89b7-d4037b8e7f02"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6576f747-7271-48f2-a2ec-42ef4936e94f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "10b9ef9d-4648-418f-865b-6f25fa52edea",
+      "updatedAt": "2026-10-03T06:13:20.693378+00:00",
+      "externalId": "782542",
+      "appPlayerId": "4fca5876-accf-49bb-a0ca-1d3a9c9c4124"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:f1e72c24-4965-4a94-8bb8-81fe40a9f97a",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "f6349fd5-f331-4d83-9d2a-bb4810fc1d75",
+      "updatedAt": "2026-10-03T06:12:42.037778+00:00",
+      "externalId": "787448",
+      "appPlayerId": "97ffa238-8d2e-4e5e-84ad-341703787ba6"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:528e7f4c-813a-4111-bf9c-53dbebc100da",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "36e70b34-273c-40c7-b731-1ebf78df683d",
+      "updatedAt": "2026-10-03T06:12:53.941187+00:00",
+      "externalId": "789166",
+      "appPlayerId": "f9f5a4f1-1d52-44ff-8f44-79bbacd30718"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:77576dce-1db8-49ea-bc39-2237bba8bcc6",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1f79bf6f-2439-47ca-b7bb-84b707e5b1d2",
+      "updatedAt": "2026-10-02T19:17:13.617001+00:00",
+      "externalId": "794543",
+      "appPlayerId": "e89f9f19-6a19-4086-b157-839deaad2e8e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9e94bdc5-292b-44c2-a3e6-c6638780bc19",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "f39fd88c-76d0-477e-b112-5d3441390b59",
+      "updatedAt": "2026-10-03T06:14:03.296715+00:00",
+      "externalId": "802850",
+      "appPlayerId": "9c8bf34f-56fe-4fa8-b1a0-9ca162f2be8b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:0c5638c4-eaad-45a6-9868-d70345eaf0c2",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ea19b94a-4b74-4f0f-9289-ef41aae865f3",
+      "updatedAt": "2026-10-03T06:13:26.91634+00:00",
+      "externalId": "833301",
+      "appPlayerId": "783045b4-5698-4c52-a67f-2cd9fd20ea55"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:ec19a6b5-cbaf-46ff-bfc3-2190e536ee36",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c229d99c-cba9-4aa6-a79e-fc8eaefc8bc5",
+      "updatedAt": "2026-10-03T06:13:18.939204+00:00",
+      "externalId": "841940",
+      "appPlayerId": "18d6e3b7-4015-4789-8a57-7995ff120b90"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6490a6f0-7e60-48ce-88e7-4831b5221e22",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5eb51ec7-4035-4ae5-8889-22c8d2e72dec",
+      "updatedAt": "2026-10-03T06:13:49.581761+00:00",
+      "externalId": "856594",
+      "appPlayerId": "1dc26ca2-9683-419e-8e97-175b33832619"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a6b7cbb9-b75f-46b2-b37c-8d347a2a5e81",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e6a8a595-adf2-4a98-89d5-9a77d62248db",
+      "updatedAt": "2026-10-03T06:13:23.533331+00:00",
+      "externalId": "867180",
+      "appPlayerId": "65f4d412-134e-433f-b980-1ab4e604c379"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:c846f946-8575-4666-abf9-4cbbc0b0d584",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "0626ce80-d32e-43e2-bd55-4f72497c53d1",
+      "updatedAt": "2026-10-03T06:13:34.260597+00:00",
+      "externalId": "879777",
+      "appPlayerId": "a43c3048-d8a4-46a3-ab52-5d0315c07b0f"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:0337ea40-3adb-4661-815f-a67216e784d4",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5e3f5f5b-82ea-48bc-b924-dc8ba16e335d",
+      "updatedAt": "2026-10-03T06:13:32.553325+00:00",
+      "externalId": "882322",
+      "appPlayerId": "47ff167b-316d-401e-87fb-d219255ef730"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:05a7c388-f9de-47a9-963b-eb43dbb59b3d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "96044dfb-66bc-4780-b354-bae26558207d",
+      "updatedAt": "2026-10-03T06:12:26.665765+00:00",
+      "externalId": "889491",
+      "appPlayerId": "271a0f1e-9c31-43d0-b990-4368c2f0e76d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:fad99175-6ea4-4456-a5e5-96f1188ab733",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5c516312-fcbf-497a-89d3-80fa165d8906",
+      "updatedAt": "2026-10-03T06:13:34.823208+00:00",
+      "externalId": "892083",
+      "appPlayerId": "88f3b9dc-e78b-491b-a7de-1ed8435026af"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:8ce68c47-84dd-45ab-bf80-1eee4e97bc7e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1ff64f42-3f95-4426-ac8b-2a59ac816d21",
+      "updatedAt": "2026-10-03T06:13:05.355668+00:00",
+      "externalId": "895127",
+      "appPlayerId": "7f383d28-2a44-406a-89f9-697418d5b266"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:cd64a929-3b33-426c-bc0a-98fd3c57144e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1bb4ccee-7e50-49db-9102-037d0d90ca74",
+      "updatedAt": "2026-10-03T06:13:39.934073+00:00",
+      "externalId": "906597",
+      "appPlayerId": "b78385ab-6839-4b38-bf19-8cc167c2376e"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:11979420-9885-43d9-9cc9-b042098b3867",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9d83fa95-ec28-4455-aedf-388b0dabcb07",
+      "updatedAt": "2026-10-03T06:12:47.72262+00:00",
+      "externalId": "912144",
+      "appPlayerId": "38861a03-e6e5-4b38-a355-083ce062bd7a"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:010e0d7b-0e67-4be2-845c-4518bd2e9d69",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "2162b043-cb0a-43c5-b12b-359299053437",
+      "updatedAt": "2026-10-03T06:13:18.376339+00:00",
+      "externalId": "919329",
+      "appPlayerId": "7ab491d5-7f2b-4057-b56d-109ed615e63b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:4dd39e99-f550-47f1-9d5a-cdf45f132064",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "8c6a4861-48cd-4a26-a181-700682d4df69",
+      "updatedAt": "2026-10-05T04:40:50.250229+00:00",
+      "externalId": "919340",
+      "appPlayerId": "924c59cd-afdb-4c05-a49a-58a985b79d70"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:bd1df013-1ced-4b78-8f39-edc6eb3eef35",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5d94508a-e8a9-421d-8ae5-827ccc86cce4",
+      "updatedAt": "2026-10-03T06:13:14.389076+00:00",
+      "externalId": "919462",
+      "appPlayerId": "ce8af441-0271-4c43-8de8-af3b04dbcbe8"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:ce696b95-90dd-4068-857a-9702617f6383",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "77578cbd-45d9-4558-ab8d-708fe4aafa85",
+      "updatedAt": "2026-10-03T06:13:56.408177+00:00",
+      "externalId": "919469",
+      "appPlayerId": "0e4b8761-4240-4a82-bf70-be0facb51081"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:50627a24-c952-4859-bb0e-6d0f674c1240",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "eee1a47c-39fa-4519-8861-964909aa65ed",
+      "updatedAt": "2026-10-03T06:14:07.269102+00:00",
+      "externalId": "919474",
+      "appPlayerId": "88c9eaa2-15cc-46f9-987f-368c577cf6ee"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:c55e2785-ff40-46be-b785-ef00171fd35d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d1aab71f-1563-41c7-b05e-77902490088e",
+      "updatedAt": "2026-10-03T06:13:59.242414+00:00",
+      "externalId": "919577",
+      "appPlayerId": "92754c5a-4059-4ae4-94fe-21c51aea6b78"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:9c673ce6-8fd2-46b8-b3b0-d3319dacbf65",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d67a39c4-824c-4759-8bc6-c1eaca83a9f7",
+      "updatedAt": "2026-10-03T06:13:22.972101+00:00",
+      "externalId": "919649",
+      "appPlayerId": "1b308106-c53e-4581-872a-c0f1e699d7fe"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:53e3963c-b33c-47fc-866d-7ab9770974e9",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "b31f7df8-7415-4bfd-a03a-4508193ec399",
+      "updatedAt": "2026-10-03T06:12:42.614346+00:00",
+      "externalId": "919662",
+      "appPlayerId": "e37c0eea-c281-493d-a3e9-7c059fe6aedc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e9a50a17-48a8-4877-a383-30eec7800215",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "82d35e41-2beb-4351-85f8-ac07943408ca",
+      "updatedAt": "2026-10-03T06:12:22.665797+00:00",
+      "externalId": "919671",
+      "appPlayerId": "61f513af-7ea9-4187-a427-43403f30b8ad"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:cc049da6-55b6-4ff1-a893-1b35f15fe9ba",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d8c2bd21-206d-44cd-8991-ee2bede69d14",
+      "updatedAt": "2026-10-03T06:14:00.461681+00:00",
+      "externalId": "919677",
+      "appPlayerId": "b2bf23cb-59e7-4aab-ba81-cd0c13eb153b"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:1de302b1-c0cb-459e-b1fa-6eac1b83aedb",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "98e7cc24-191e-4a68-8d21-6883e670d6f7",
+      "updatedAt": "2026-10-03T06:12:21.49801+00:00",
+      "externalId": "919697",
+      "appPlayerId": "d719e8c6-e166-44a7-8601-220281488e8f"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6a90b1e3-94ed-405f-97b2-5c0a59ce77f9",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "c81b40b9-82fc-4618-8614-e047cbfe8878",
+      "updatedAt": "2026-10-03T06:12:58.44964+00:00",
+      "externalId": "919701",
+      "appPlayerId": "6a1b9666-0c28-423c-8a92-000ae46b763c"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:f953ff7e-04c9-4651-917d-e2a9020ba111",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9359ee2f-4321-40b7-be79-56c60c6e84d1",
+      "updatedAt": "2026-10-03T06:13:38.788916+00:00",
+      "externalId": "919712",
+      "appPlayerId": "887f057a-57d0-49c8-851b-d0241be9ed27"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:bf39038a-76bc-4d21-99b0-f321adf779e3",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "88349862-c1a3-40d1-9a45-9b3ca6c1169d",
+      "updatedAt": "2026-10-03T06:13:57.541323+00:00",
+      "externalId": "919739",
+      "appPlayerId": "cb5f981e-cdb8-483d-9a49-2be6faac70ad"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:c1d97fb5-5fd7-431d-a12d-ccec4269dc8e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "5e9e7b98-0db0-42f3-b8c5-bfb403ad0e3a",
+      "updatedAt": "2026-10-03T06:13:56.974337+00:00",
+      "externalId": "919761",
+      "appPlayerId": "34c9d2a8-2746-4fe4-9fc0-8ee62a48069d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e4a4ee64-617f-452b-b4e9-19d7535c3a45",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "b4571337-9db9-43ae-a23a-5fb1a43c628e",
+      "updatedAt": "2026-10-03T06:13:22.406595+00:00",
+      "externalId": "919768",
+      "appPlayerId": "fc412c79-dcff-46ae-a29c-b986a4fcde34"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:6d4dbac3-2a2f-4002-ace1-f70628c8cb8b",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "d108dc93-31a6-4ec3-acb3-27b9a0891533",
+      "updatedAt": "2026-10-03T06:13:47.323116+00:00",
+      "externalId": "919783",
+      "appPlayerId": "daf8c462-d237-413d-abc0-a8f11c6a4455"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:cd1f9260-07e8-473e-86e9-bdc1c8626d1f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "0c87e36d-0af3-4bf9-86b7-f3053c33026c",
+      "updatedAt": "2026-10-03T06:12:51.142938+00:00",
+      "externalId": "923882",
+      "appPlayerId": "f8d1a8fa-3b76-41a9-869c-482f91655c60"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:1e44810e-5ad2-4b1a-a734-32386074cb63",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "ffb2ad65-581e-4b23-ae2a-bc13e01af60f",
+      "updatedAt": "2026-10-03T06:12:46.584413+00:00",
+      "externalId": "933067",
+      "appPlayerId": "c9bd1a92-16ff-4463-b142-3238e86aabbe"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:10879c60-0dd8-47fb-98ea-7559f9eb20db",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "4a772a84-5734-447b-9924-7431995e6933",
+      "updatedAt": "2026-10-03T06:12:44.314918+00:00",
+      "externalId": "933770",
+      "appPlayerId": "30c01df8-33e3-4472-b7cb-68aed4400d55"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:ab4a450b-14cc-42b1-88ab-6d15ecc0265d",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "610fe28c-e4c0-48b7-9b19-076de080f52d",
+      "updatedAt": "2026-10-03T06:12:44.878005+00:00",
+      "externalId": "934196",
+      "appPlayerId": "528c491d-97e9-4af4-8a0d-903935fee7d8"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7613e31c-7a44-4bae-8875-044bcb6927c0",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "9487b30d-3701-4c9d-9785-c25481a35018",
+      "updatedAt": "2026-10-03T06:13:29.154796+00:00",
+      "externalId": "940226",
+      "appPlayerId": "46712caf-eac8-4b0c-a714-b00e691ebd53"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:56a5c4e1-50d0-47bc-9783-d262c2575285",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "596b794d-a37c-416d-beaf-489b0e0499cf",
+      "updatedAt": "2026-10-03T06:13:46.201955+00:00",
+      "externalId": "960007",
+      "appPlayerId": "a884ecb2-4aa3-4d55-827d-0f0935dcd550"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:7962a924-e4e4-4dd4-aead-616205a0ae08",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "1b3579a3-dc06-4b66-9fb2-f66eeefe253e",
+      "updatedAt": "2026-10-03T06:13:02.480284+00:00",
+      "externalId": "960403",
+      "appPlayerId": "96f8bcea-3f8a-46ae-9b77-2c73c030aa3a"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:16f708ad-66bf-4e49-9015-dbcb5dc149cd",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "73810905-991e-4eff-b1cf-f33de053fe34",
+      "updatedAt": "2026-10-03T06:13:35.952161+00:00",
+      "externalId": "966618",
+      "appPlayerId": "806dc1bd-82de-425a-bded-bf78dc93d8ab"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:32b2259c-3fc0-4c04-a88f-d8595e16062a",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "cc0b8f3c-88e9-4472-9e0c-fc662aeebb39",
+      "updatedAt": "2026-10-03T06:12:20.329213+00:00",
+      "externalId": "970592",
+      "appPlayerId": "90869451-b533-47b4-81fa-6db6672b5afc"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:94a6d7f9-2fa9-4fe9-873c-eb0d399d7bb7",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "305885e7-cecf-466b-ae14-48bf9e1f72c8",
+      "updatedAt": "2026-10-03T06:13:10.440521+00:00",
+      "externalId": "970606",
+      "appPlayerId": "2d8e936b-9bbf-46de-b673-91b913b24d13"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:3d932030-4c8d-4b4d-a34d-bb25f06c93e3",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "3fd09f97-8568-48b7-a0ae-109270cf0ed7",
+      "updatedAt": "2026-10-03T06:13:46.762382+00:00",
+      "externalId": "970630",
+      "appPlayerId": "726e252d-4021-4f0e-a6a3-3e3f5b3bb132"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:670f31b2-2f25-471d-925d-b624a1ae98b9",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "44235cec-8b1e-4530-8a48-386c6a0d0249",
+      "updatedAt": "2026-10-03T06:12:29.52029+00:00",
+      "externalId": "970634",
+      "appPlayerId": "798fa8fa-cbb2-4005-8852-bf74ae23c5e0"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e9068e62-fc1b-4a83-a194-5936c40787be",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "f01d9c7c-5f08-4f05-a81e-d3c1d56f8d24",
+      "updatedAt": "2026-10-03T06:13:08.716929+00:00",
+      "externalId": "970755",
+      "appPlayerId": "9aa4afc9-da8b-4be5-aae3-250d072d6191"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:adfed9bd-3c02-4286-aff9-0c3b6fb5fd6f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "141a0216-2ce1-4f56-a119-703c5f5a5a8a",
+      "updatedAt": "2026-10-03T06:12:59.581981+00:00",
+      "externalId": "970761",
+      "appPlayerId": "91e5fd67-3e36-4706-ba0c-a3a09be0b2ae"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:b00354dc-3730-4e4d-a8c3-535bb9ffd084",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "270ea9fe-87fa-4354-ab85-9e415078af91",
+      "updatedAt": "2026-10-03T06:12:51.701122+00:00",
+      "externalId": "970766",
+      "appPlayerId": "8dd1387a-5d76-4dc1-a906-575f8e08289d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:98b196b2-ee96-45bd-8507-96e3fa01800c",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "bf4114df-ca79-4d23-a3f0-5bef87a2e702",
+      "updatedAt": "2026-10-03T06:12:35.197998+00:00",
+      "externalId": "970794",
+      "appPlayerId": "ba1bc16b-25a8-470f-b4bc-5854fa42792a"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:578f3141-e8f9-4a7d-8c28-0330c709c6c1",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "7e1f9ce6-92a6-4a5d-96de-a361d6183838",
+      "updatedAt": "2026-10-03T06:12:52.822721+00:00",
+      "externalId": "970819",
+      "appPlayerId": "ddf29780-20c7-42f6-9b32-1f3f8634f2cb"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:e437d504-76d1-400c-99c2-f7ef6419a820",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "40167ca6-2e79-4629-90f3-92c853d0c8ca",
+      "updatedAt": "2026-10-03T06:14:02.162379+00:00",
+      "externalId": "970835",
+      "appPlayerId": "b90da7fc-c06b-45b2-8df3-52383477584c"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:13cd943c-59ff-4e98-a5c9-fb4c0f8e22df",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "46f8b818-c496-45aa-873c-0d4dcc65451a",
+      "updatedAt": "2026-10-03T06:12:38.069467+00:00",
+      "externalId": "971021",
+      "appPlayerId": "9a2fb503-ce88-4795-8fa0-d95b8cafd891"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:a698792e-1e40-4d24-bd0b-64e6eefaef4f",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "eaf42d43-63fe-42c9-b6ae-7df6b8e2ac7d",
+      "updatedAt": "2026-10-03T06:12:53.380013+00:00",
+      "externalId": "972819",
+      "appPlayerId": "6834bb3f-5f0f-4607-ab10-2c691a058c63"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:50d9809d-3319-4a19-8462-c4281c23fba8",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "8c005543-d16e-448c-8e06-9c1e4b308907",
+      "updatedAt": "2026-10-03T06:12:39.208363+00:00",
+      "externalId": "973826",
+      "appPlayerId": "18ec5d28-61a6-4537-8b33-8f41dc23cb96"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:19e44ce9-1e15-4d13-9d6d-df61cbb84268",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "7f054c05-4f99-432b-9639-ad3df4e1d840",
+      "updatedAt": "2026-10-03T06:12:20.915345+00:00",
+      "externalId": "975173",
+      "appPlayerId": "8ca146d7-7535-4b56-8ee7-f31f7ccb7bc5"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:2c496c56-e139-4bf0-8462-8a4b8912f486",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "24d2ecd2-7723-41ca-ab00-6a718b241d48",
+      "updatedAt": "2026-10-03T06:13:11.004859+00:00",
+      "externalId": "978955",
+      "appPlayerId": "0122cfbe-cb80-47e6-ab34-5fbdf2a29a89"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:14676375-9849-48ea-8e4e-3a7ed97f1813",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "175dbf0f-6f25-49bb-99f9-046b459fe481",
+      "updatedAt": "2026-10-03T06:12:47.157105+00:00",
+      "externalId": "978956",
+      "appPlayerId": "fec404c6-194e-4b40-adb5-f1a9eac8be72"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:91f57d14-f9b3-4445-b6ae-d6baa9d01479",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "3d4c75bd-9085-4bc9-a31b-b4bd42ba6b45",
+      "updatedAt": "2026-10-03T06:12:32.359803+00:00",
+      "externalId": "980149",
+      "appPlayerId": "49f1efac-b41d-42ba-858c-25be16c0c6f4"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:c3c5c446-d770-46c8-8323-7b157340901e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "fe56cb44-b323-4f81-93a1-5ddef1dad2f2",
+      "updatedAt": "2026-10-03T06:12:49.436481+00:00",
+      "externalId": "981300",
+      "appPlayerId": "f9931712-b5b4-4141-9383-d509b8b1d03d"
+    },
+    {
+      "active": true,
+      "version": "football_player_mapping:4143d8f6-445a-420a-841c-63d24ab0bb5e",
+      "provider": "sofascore",
+      "reviewed": true,
+      "mappingId": "e5f58f30-9c66-4c0e-97e7-ee9caba70eda",
+      "updatedAt": "2026-10-03T06:13:19.543433+00:00",
+      "externalId": "987832",
+      "appPlayerId": "ae6e2fc3-e42b-4386-9e14-072bdd1670d2"
+    }
+  ],
+  "capturedAt": "2026-10-10T15:50:09.036966+00:00"
+}

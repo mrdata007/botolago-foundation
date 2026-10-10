@@ -95,7 +95,13 @@ test.describe("Fantasy — reconstructed FPL journeys", () => {
     const name = page.getByPlaceholder(/Nom de l’équipe/);
     await expect(name).toBeVisible();
     await name.fill("E2E Botola XI");
-    await page.getByRole("button", { name: /Entrer l’effectif/ }).click();
+    // The armband is chosen, never given: one starter each from the last
+    // step's two sheets, which list the eleven starters only.
+    await page.getByRole("button", { name: /^Capitaine : / }).click();
+    await page.getByRole("dialog").locator("li button").nth(3).click();
+    await page.getByRole("button", { name: /^Vice-capitaine : / }).click();
+    await page.getByRole("dialog").locator("li button").nth(6).click();
+    await page.getByRole("button", { name: /Enregistrer mon équipe/ }).click();
     await page.waitForURL((url) => url.pathname.endsWith("/fantasy/team"), { timeout: 60_000 });
     await expectSettled(page);
     await expect(page.getByRole("heading", { name: /Composer l’équipe/ })).toBeVisible();

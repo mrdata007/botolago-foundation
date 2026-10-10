@@ -9,6 +9,12 @@
 // said "[confirmer la région du projet]" and the project is verifiably
 // eu-west-3 (Paris), which is a fact rather than a business decision.
 //
+// Privacy Policy 1.3 (2026-10-06): the owner approved replacing the account
+// retention row ("12 mois après suppression") with the automatic deletion's
+// real timeline (closed at once, erased within 7 days; migration
+// 20261006143700) and the sentence on prizes already handed over, in both
+// languages. That wording was written for this change and approved as is.
+//
 // Every remaining [bracketed] value is the owner's to supply, and
 // legal-content.test.ts fails while any of them survive -- these pages must not
 // reach production carrying "BotolaGO (société en cours de constitution)" or an unissued CNDP number.
@@ -322,7 +328,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.2 — en vigueur au 25 septembre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
+        text: "Version 1.3 — en vigueur au 6 octobre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
       },
       { type: "heading", text: "1. Responsable du traitement" },
       {
@@ -462,7 +468,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
         rows: [
           [
             "Compte et données de jeu",
-            "pendant la vie du compte, puis 12 mois après suppression ou inactivité de 24 mois",
+            "pendant la vie du compte ; en cas de suppression, le compte est fermé immédiatement et ses données sont effacées sous 7 jours (inactivité de 24 mois : suppression dans les mêmes conditions)",
           ],
           ["Journaux techniques et IP", "12 mois"],
           [
@@ -475,7 +481,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       },
       {
         type: "paragraph",
-        text: "À l'issue de ces durées, les données sont supprimées ou anonymisées. Les classements historiques peuvent être conservés sous pseudonyme.",
+        text: "À l'issue de ces durées, les données sont supprimées ou anonymisées. Les classements historiques peuvent être conservés sous pseudonyme. Les traces des lots déjà remis sont conservées détachées du compte supprimé.",
       },
       { type: "heading", text: "8. Vos droits" },
       {
@@ -523,7 +529,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.2 — ساري المفعول ابتداءً من 25 سبتمبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
+        text: "الإصدار 1.3 — ساري المفعول ابتداءً من 6 أكتوبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
       },
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {
@@ -644,7 +650,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
         rows: [
           [
             "الحساب وبيانات اللعب",
-            "طيلة مدة الحساب، ثم 12 شهراً بعد الحذف أو بعد 24 شهراً من عدم النشاط",
+            "طيلة مدة الحساب؛ عند الحذف، يُغلق الحساب فوراً وتُمحى بياناته خلال 7 أيام (عدم النشاط لمدة 24 شهراً: الحذف بنفس الشروط)",
           ],
           ["السجلات التقنية وعناوين IP", "12 شهراً"],
           [
@@ -657,7 +663,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       },
       {
         type: "paragraph",
-        text: "بعد انقضاء هذه المدد، تُحذف البيانات أو تُجهَّل هويتها. يمكن الاحتفاظ بالترتيبات التاريخية باسم مستعار.",
+        text: "بعد انقضاء هذه المدد، تُحذف البيانات أو تُجهَّل هويتها. يمكن الاحتفاظ بالترتيبات التاريخية باسم مستعار. تُحفظ آثار الجوائز المسلَّمة منفصلة عن الحساب المحذوف.",
       },
       { type: "heading", text: "8. حقوقك" },
       {

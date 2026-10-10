@@ -4745,6 +4745,7 @@ begin
            'admin_get_analytics_overview', 'admin_get_approval', 'admin_get_fantasy_prize_settings',
            'admin_get_revocation_worker_health', 'admin_get_session_revocation_status',
            'admin_get_staff_principal', 'admin_get_user', 'admin_list_active_assignments',
+           'admin_home_stories', 'admin_save_home_story', 'admin_publish_home_story',
            'admin_list_approval_queue', 'admin_list_assignment_history', 'admin_list_audit_events',
            'admin_list_audit_events_v2', 'admin_list_fantasy_prize_flags',
            'admin_list_fantasy_prize_winners', 'admin_list_fantasy_prizes',

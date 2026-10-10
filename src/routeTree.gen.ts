@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CurvaRouteImport } from './routes/curva'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as FantasyRouteImport } from './routes/fantasy'
 import { Route as JouerRouteImport } from './routes/jouer'
@@ -23,6 +24,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SuppressionCompteRouteImport } from './routes/suppression-compte'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
@@ -34,6 +36,7 @@ import { Route as AdminPepitesRouteImport } from './routes/admin.pepites'
 import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
+import { Route as AdminStoriesRouteImport } from './routes/admin.stories'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth.forgot-password'
@@ -45,6 +48,10 @@ import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-pas
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
 import { Route as ClubsClubIdRouteImport } from './routes/clubs.$clubId'
+import { Route as CurvaIndexRouteImport } from './routes/curva.index'
+import { Route as CurvaCarteRouteImport } from './routes/curva.carte'
+import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
+import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
@@ -59,6 +66,7 @@ import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
 import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
 import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
+import { Route as JourneePublicIdRouteImport } from './routes/journee.$publicId'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
 import { Route as MatchesStandingsRouteImport } from './routes/matches.standings'
@@ -103,6 +111,11 @@ const AdminRoute = AdminRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CurvaRoute = CurvaRouteImport.update({
+  id: '/curva',
+  path: '/curva',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoRoute = DemoRouteImport.update({
@@ -158,6 +171,11 @@ const PronosticsRoute = PronosticsRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuppressionCompteRoute = SuppressionCompteRouteImport.update({
+  id: '/suppression-compte',
+  path: '/suppression-compte',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -217,6 +235,11 @@ const AdminStaffRoute = AdminStaffRouteImport.update({
   path: '/staff',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminStoriesRoute = AdminStoriesRouteImport.update({
+  id: '/stories',
+  path: '/stories',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -271,6 +294,26 @@ const ClubsClubIdRoute = ClubsClubIdRouteImport.update({
   id: '/clubs/$clubId',
   path: '/clubs/$clubId',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CurvaIndexRoute = CurvaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CurvaRoute,
+} as any)
+const CurvaCarteRoute = CurvaCarteRouteImport.update({
+  id: '/carte',
+  path: '/carte',
+  getParentRoute: () => CurvaRoute,
+} as any)
+const CurvaLesVotresRoute = CurvaLesVotresRouteImport.update({
+  id: '/les-votres',
+  path: '/les-votres',
+  getParentRoute: () => CurvaRoute,
+} as any)
+const CurvaSaisonsRoute = CurvaSaisonsRouteImport.update({
+  id: '/saisons',
+  path: '/saisons',
+  getParentRoute: () => CurvaRoute,
 } as any)
 const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
   id: '/dev/player-mappings-sample',
@@ -341,6 +384,11 @@ const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
   id: '/transfers',
   path: '/transfers',
   getParentRoute: () => FantasyRoute,
+} as any)
+const JourneePublicIdRoute = JourneePublicIdRouteImport.update({
+  id: '/journee/$publicId',
+  path: '/journee/$publicId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const MatchesIndexRoute = MatchesIndexRouteImport.update({
   id: '/matches/',
@@ -502,6 +550,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/jouer': typeof JouerRoute
@@ -513,6 +562,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/suppression-compte': typeof SuppressionCompteRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -524,6 +574,7 @@ export interface FileRoutesByFullPath {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/stories': typeof AdminStoriesRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -534,6 +585,9 @@ export interface FileRoutesByFullPath {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/curva/carte': typeof CurvaCarteRoute
+  '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -547,6 +601,7 @@ export interface FileRoutesByFullPath {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
@@ -557,6 +612,7 @@ export interface FileRoutesByFullPath {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
+  '/curva/': typeof CurvaIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/pepites/': typeof PepitesIndexRoute
@@ -592,6 +648,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/suppression-compte': typeof SuppressionCompteRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -602,6 +659,7 @@ export interface FileRoutesByTo {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/stories': typeof AdminStoriesRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -612,6 +670,9 @@ export interface FileRoutesByTo {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/curva/carte': typeof CurvaCarteRoute
+  '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -625,6 +686,7 @@ export interface FileRoutesByTo {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
@@ -635,6 +697,7 @@ export interface FileRoutesByTo {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs': typeof ClubsIndexRoute
+  '/curva': typeof CurvaIndexRoute
   '/fantasy': typeof FantasyIndexRoute
   '/matches': typeof MatchesIndexRoute
   '/pepites': typeof PepitesIndexRoute
@@ -663,6 +726,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
   '/jouer': typeof JouerRoute
@@ -674,6 +738,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/suppression-compte': typeof SuppressionCompteRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
@@ -685,6 +750,7 @@ export interface FileRoutesById {
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
+  '/admin/stories': typeof AdminStoriesRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -695,6 +761,9 @@ export interface FileRoutesById {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/curva/carte': typeof CurvaCarteRoute
+  '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -708,6 +777,7 @@ export interface FileRoutesById {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
+  '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
   '/news/$articleId': typeof NewsArticleIdRoute
@@ -718,6 +788,7 @@ export interface FileRoutesById {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
+  '/curva/': typeof CurvaIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/pepites/': typeof PepitesIndexRoute
@@ -747,6 +818,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/curva'
     | '/demo'
     | '/fantasy'
     | '/jouer'
@@ -758,6 +830,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/pronostics'
     | '/sitemap.xml'
+    | '/suppression-compte'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -769,6 +842,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/stories'
     | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
@@ -779,6 +853,9 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/curva/carte'
+    | '/curva/les-votres'
+    | '/curva/saisons'
     | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -792,6 +869,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
@@ -802,6 +880,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
+    | '/curva/'
     | '/fantasy/'
     | '/matches/'
     | '/pepites/'
@@ -837,6 +916,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/profile'
     | '/sitemap.xml'
+    | '/suppression-compte'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -847,6 +927,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/stories'
     | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
@@ -857,6 +938,9 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/curva/carte'
+    | '/curva/les-votres'
+    | '/curva/saisons'
     | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -870,6 +954,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
@@ -880,6 +965,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs'
+    | '/curva'
     | '/fantasy'
     | '/matches'
     | '/pepites'
@@ -907,6 +993,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/curva'
     | '/demo'
     | '/fantasy'
     | '/jouer'
@@ -918,6 +1005,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/pronostics'
     | '/sitemap.xml'
+    | '/suppression-compte'
     | '/terms'
     | '/unsubscribe'
     | '/.mcp/list-tools'
@@ -929,6 +1017,7 @@ export interface FileRouteTypes {
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
+    | '/admin/stories'
     | '/admin/users'
     | '/auth/callback'
     | '/auth/forgot-password'
@@ -939,6 +1028,9 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/curva/carte'
+    | '/curva/les-votres'
+    | '/curva/saisons'
     | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -952,6 +1044,7 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
+    | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
     | '/news/$articleId'
@@ -962,6 +1055,7 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
+    | '/curva/'
     | '/fantasy/'
     | '/matches/'
     | '/pepites/'
@@ -990,6 +1084,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  CurvaRoute: typeof CurvaRouteWithChildren
   DemoRoute: typeof DemoRoute
   FantasyRoute: typeof FantasyRouteWithChildren
   JouerRoute: typeof JouerRoute
@@ -1001,12 +1096,14 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  SuppressionCompteRoute: typeof SuppressionCompteRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
+  JourneePublicIdRoute: typeof JourneePublicIdRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
   PrizesTermsRoute: typeof PrizesTermsRoute
@@ -1038,6 +1135,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/curva': {
+      id: '/curva'
+      path: '/curva'
+      fullPath: '/curva'
+      preLoaderRoute: typeof CurvaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo': {
@@ -1117,6 +1221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/suppression-compte': {
+      id: '/suppression-compte'
+      path: '/suppression-compte'
+      fullPath: '/suppression-compte'
+      preLoaderRoute: typeof SuppressionCompteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -1192,6 +1303,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/admin/staff'
       preLoaderRoute: typeof AdminStaffRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/stories': {
+      id: '/admin/stories'
+      path: '/stories'
+      fullPath: '/admin/stories'
+      preLoaderRoute: typeof AdminStoriesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/users': {
@@ -1270,6 +1388,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/clubs/$clubId'
       preLoaderRoute: typeof ClubsClubIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/curva/': {
+      id: '/curva/'
+      path: '/'
+      fullPath: '/curva/'
+      preLoaderRoute: typeof CurvaIndexRouteImport
+      parentRoute: typeof CurvaRoute
+    }
+    '/curva/carte': {
+      id: '/curva/carte'
+      path: '/carte'
+      fullPath: '/curva/carte'
+      preLoaderRoute: typeof CurvaCarteRouteImport
+      parentRoute: typeof CurvaRoute
+    }
+    '/curva/les-votres': {
+      id: '/curva/les-votres'
+      path: '/les-votres'
+      fullPath: '/curva/les-votres'
+      preLoaderRoute: typeof CurvaLesVotresRouteImport
+      parentRoute: typeof CurvaRoute
+    }
+    '/curva/saisons': {
+      id: '/curva/saisons'
+      path: '/saisons'
+      fullPath: '/curva/saisons'
+      preLoaderRoute: typeof CurvaSaisonsRouteImport
+      parentRoute: typeof CurvaRoute
     }
     '/dev/player-mappings-sample': {
       id: '/dev/player-mappings-sample'
@@ -1368,6 +1514,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/transfers'
       preLoaderRoute: typeof FantasyTransfersRouteImport
       parentRoute: typeof FantasyRoute
+    }
+    '/journee/$publicId': {
+      id: '/journee/$publicId'
+      path: '/journee/$publicId'
+      fullPath: '/journee/$publicId'
+      preLoaderRoute: typeof JourneePublicIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/matches/': {
       id: '/matches/'
@@ -1642,6 +1795,7 @@ interface AdminRouteChildren {
   AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
+  AdminStoriesRoute: typeof AdminStoriesRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminFootballPlayerMappingsRoute: typeof AdminFootballPlayerMappingsRoute
 }
@@ -1654,6 +1808,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
+  AdminStoriesRoute: AdminStoriesRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminFootballPlayerMappingsRoute: AdminFootballPlayerMappingsRoute,
 }
@@ -1683,6 +1838,22 @@ const AuthRouteChildren: AuthRouteChildren = {
 }
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface CurvaRouteChildren {
+  CurvaCarteRoute: typeof CurvaCarteRoute
+  CurvaLesVotresRoute: typeof CurvaLesVotresRoute
+  CurvaSaisonsRoute: typeof CurvaSaisonsRoute
+  CurvaIndexRoute: typeof CurvaIndexRoute
+}
+
+const CurvaRouteChildren: CurvaRouteChildren = {
+  CurvaCarteRoute: CurvaCarteRoute,
+  CurvaLesVotresRoute: CurvaLesVotresRoute,
+  CurvaSaisonsRoute: CurvaSaisonsRoute,
+  CurvaIndexRoute: CurvaIndexRoute,
+}
+
+const CurvaRouteWithChildren = CurvaRoute._addFileChildren(CurvaRouteChildren)
 
 interface FantasyLeaguesRouteChildren {
   FantasyLeaguesLeagueIdRoute: typeof FantasyLeaguesLeagueIdRoute
@@ -1811,6 +1982,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  CurvaRoute: CurvaRouteWithChildren,
   DemoRoute: DemoRoute,
   FantasyRoute: FantasyRouteWithChildren,
   JouerRoute: JouerRoute,
@@ -1822,6 +1994,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  SuppressionCompteRoute: SuppressionCompteRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
@@ -1829,6 +2002,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
+  JourneePublicIdRoute: JourneePublicIdRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,
   PrizesTermsRoute: PrizesTermsRoute,

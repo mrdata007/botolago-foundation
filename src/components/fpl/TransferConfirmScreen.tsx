@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { JerseyVisual } from "@/components/fantasy/JerseyVisual";
@@ -45,6 +45,7 @@ export function TransferConfirmScreen({
   onEdit,
   onConfirm,
   busy,
+  notice,
 }: {
   pairs: Array<{ out: FantasyPlayer; in: FantasyPlayer }>;
   clubs: Club[];
@@ -59,6 +60,11 @@ export function TransferConfirmScreen({
   onEdit: () => void;
   onConfirm: () => void;
   busy?: boolean;
+  /**
+   * A block under the Out / In card (the Manager Card's first-transfer line). It brings its own
+   * spacing; absent, the screen is what it was.
+   */
+  notice?: ReactNode;
 }) {
   const { t, tr, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
@@ -165,6 +171,7 @@ export function TransferConfirmScreen({
           {t("fpl.transfers_active_note").replace("{n}", String(gameweek))}
         </p>
       </UiCard>
+      {notice}
 
       <section className={cn("mt-6", ui.space.gutter)}>
         <SectionHeader title={t("fpl.points_overview")} />
@@ -185,7 +192,7 @@ export function TransferConfirmScreen({
 
       <div
         className={cn(
-          "sticky bottom-[var(--bottomnav-h)] z-30 mt-6 grid grid-cols-2 gap-2 pb-2.5 pt-2.5 md:bottom-0 md:pb-3",
+          "sticky bottom-[var(--bottomnav-h)] z-30 mt-6 grid grid-cols-2 gap-2 pb-2.5 pt-2.5 md:bottom-0 md:pb-[max(env(safe-area-inset-bottom),0.75rem)]",
           ui.space.gutter,
           ui.surface.bar,
           ui.rule.blockStart,

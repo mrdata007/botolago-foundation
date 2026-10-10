@@ -16,16 +16,26 @@ import { useRef } from "react";
  *
  * `allowNextNavigation()` lets one intended navigation through without a
  * prompt (e.g. moving to the editor right after a draft is created).
+ *
+ * `letThrough` names destinations that are never blocked, for a screen whose
+ * work survives leaving and that may be sent somewhere it must reach (Pick
+ * Team and the second-factor challenge).
  */
-export function useUnsavedChangesGuard(dirty: boolean, message: string) {
+export function useUnsavedChangesGuard(
+  dirty: boolean,
+  message: string,
+  options: { letThrough?: (pathname: string) => boolean } = {},
+) {
   const bypass = useRef(false);
+  const { letThrough } = options;
   useBlocker({
-    shouldBlockFn: () => {
+    shouldBlockFn: ({ next }) => {
       if (bypass.current) {
         bypass.current = false;
         return false;
       }
       if (!dirty) return false;
+      if (letThrough?.(next.pathname)) return false;
       return !window.confirm(message);
     },
     enableBeforeUnload: () => dirty && !bypass.current,

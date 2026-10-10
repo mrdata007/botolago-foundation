@@ -1,0 +1,16 @@
+$ E2E_BUILT_OUTPUT=1 E2E_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome bunx playwright test tests/e2e/gradins-off.e2e.ts   (round 2 review fixes 18f921ee; Playwright serves the stub-backed build on 4318)
+
+
+Running 9 tests using 1 worker
+
+  ✓  1 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins answers with the Fantasy hub (980ms)
+  ✓  2 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/carte answers with the Fantasy hub (677ms)
+  ✓  3 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/les-votres answers with the Fantasy hub (828ms)
+  ✓  4 tests/e2e/gradins-off.e2e.ts:42:3 › /gradins/saisons answers with the Fantasy hub (778ms)
+  ✓  5 tests/e2e/gradins-off.e2e.ts:51:3 › fr: the bar is today's and Pépites is lit on its own pages (1.4s)
+  ✓  6 tests/e2e/gradins-off.e2e.ts:79:3 › fr: the desktop top bar is today's too (1.0s)
+  ✓  7 tests/e2e/gradins-off.e2e.ts:51:3 › ar: the bar is today's and Pépites is lit on its own pages (1.7s)
+  ✓  8 tests/e2e/gradins-off.e2e.ts:79:3 › ar: the desktop top bar is today's too (1.3s)
+  ✓  9 tests/e2e/gradins-off.e2e.ts:87:1 › no page makes a request, writes a storage key or draws an element that belongs to the section (3.8s)
+
+  9 passed (13.8s)

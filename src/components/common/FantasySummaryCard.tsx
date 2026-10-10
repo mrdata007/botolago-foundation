@@ -7,6 +7,7 @@ import { useI18n } from "@/i18n/provider";
 import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { pointsUnit } from "@/lib/points-unit";
+import { nextActionLabel, type FantasyNextAction } from "@/services/fantasy-next-action";
 
 /**
  * Home's Fantasy card (Option A, A-Home): the action gradient, one link.
@@ -42,24 +43,36 @@ const GRADIENT = { backgroundImage: "var(--ui-grad-action)" } as const;
  *  already the accent, so the markers are dropped rather than coloured. */
 const plain = (text: string) => text.replace(/\{\/?accent\}/g, "");
 
-export function FantasySummaryCard({ summary }: { summary: FantasySummary }) {
+export function FantasySummaryCard({
+  summary,
+  action,
+}: {
+  summary: FantasySummary;
+  /**
+   * The owner's next action (`fantasyNextAction`): where the card leads and
+   * the words under the team name. Without one, the card opens the team.
+   */
+  action?: FantasyNextAction;
+}) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const points = nf.format(summary.gameweekPoints);
   const rank = summary.overallRank === null ? null : nf.format(summary.overallRank);
+  // Pending and retry have no destination of their own: the team page it is.
+  const next = action && "to" in action ? action : null;
   // "58" alone is a number, not a meaning: the link's name says what each
   // figure is, and the visual content under it is hidden from assistive tech.
   const label = [
     summary.teamName,
     `${t("fantasy.gw_points")} ${points}`,
     rank === null ? null : `${t("fantasy.overall_rank")} ${rank}`,
-    t("home.view_fantasy_team"),
+    next ? nextActionLabel(next.kind, t) : t("home.view_fantasy_team"),
   ]
     .filter(Boolean)
     .join(". ");
 
   return (
-    <Link to="/fantasy/team" aria-label={label} className={CARD} style={GRADIENT}>
+    <Link to={next?.to ?? "/fantasy/team"} aria-label={label} className={CARD} style={GRADIENT}>
       <span aria-hidden className="min-w-0 flex-1">
         <span className={cn("block truncate", ui.text.label)}>
           {plain(t("home.fantasy_hub"))} · {summary.teamName}
@@ -78,6 +91,18 @@ export function FantasySummaryCard({ summary }: { summary: FantasySummary }) {
             </bdi>
           </span>
         )}
+        {next ? (
+          <span
+            className={cn(
+              "mt-1 flex items-center gap-1",
+              ui.text.meta,
+              "[font-weight:var(--ui-weight-heavy)]",
+            )}
+          >
+            <span className="min-w-0">{nextActionLabel(next.kind, t)}</span>
+            <ChevronRight className="h-4 w-4 shrink-0" aria-hidden />
+          </span>
+        ) : null}
       </span>
       <span aria-hidden className="flex shrink-0 items-baseline gap-1">
         <bdi className={ui.score.hero}>
@@ -94,15 +119,17 @@ export function FantasySummaryCard({ summary }: { summary: FantasySummary }) {
 export function FantasyCreateCard({
   canCreate,
 }: {
-  /** Whether a team can be created now; otherwise the card opens the hub. */
+  /** Whether a team can be created now; otherwise the card opens the player list. */
   canCreate: boolean;
 }) {
   const { t } = useI18n();
   // Two literal calls rather than one call over a ternary: the i18n gate
   // reads keys statically and counts a computed argument as opaque.
-  const title = canCreate ? t("fantasy.create.title") : t("fantasy.title");
+  // Entries closed: the player list, which stays open to everyone, rather
+  // than a create button that would only meet a closed builder.
+  const title = canCreate ? t("fantasy.create.title") : t("fantasy.next.explore");
   return (
-    <Link to={canCreate ? "/fantasy/create" : "/fantasy"} className={CARD} style={GRADIENT}>
+    <Link to={canCreate ? "/fantasy/create" : "/fantasy/players"} className={CARD} style={GRADIENT}>
       <span className="min-w-0 flex-1">
         {/* The call to action wraps onto a second line rather than ending in
             an ellipsis: a button that cannot be read cannot be trusted. */}

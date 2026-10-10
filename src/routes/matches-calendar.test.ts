@@ -87,3 +87,19 @@ describe("the day's rows keep up with the live strip (A05)", () => {
     );
   });
 });
+
+/**
+ * BG-0155: Home's payload, which this page reads too, grew from 3 fixtures to
+ * a whole round. An empty day's "next match day" link is still worked out
+ * from the first three, so it shows on exactly the days it did before (review
+ * of 2026-10-06: with ten, an empty Tuesday between two rounds offered the
+ * next round's Friday where it had offered nothing).
+ */
+describe("an empty day's next match day (BG-0155)", () => {
+  const page = code("matches.index.tsx");
+  it("reads only the first fixtures of Home's payload, as many as it held before", () => {
+    expect(page).toMatch(
+      /nextMatchDayAfter\(\s*\(upcomingQ\.data\?\.matches \?\? \[\]\)\.slice\(0, HOME_LIST_SIZE\),\s*matchDay,?\s*\)/,
+    );
+  });
+});

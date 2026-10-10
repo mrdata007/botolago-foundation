@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
 import { GlobalSearch } from "./GlobalSearch";
 import { NotificationBell } from "./NotificationBell";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { isPrimaryRouteActive, primaryNavItems } from "./primary-nav";
+import { useManagerCardLive } from "@/services/manager-card-status";
+import { isPrimaryRouteActive, usePrimaryNavItems } from "./primary-nav";
 
 export function TopBar({
   trailing,
@@ -40,6 +41,8 @@ export function TopBar({
   wide?: boolean;
 }) {
   const { t } = useI18n();
+  // Curva takes the fifth slot while it is live, and Profil is in this bar either way.
+  const curvaLive = useManagerCardLive();
   const [searchOpen, setSearchOpen] = useState(false);
   // Back from a search result: the field is open again, holding the query
   // (`GlobalSearch` restores it), and not focused, so no keyboard rises.
@@ -95,7 +98,7 @@ export function TopBar({
           <LanguageSwitcher />
           {/* Pépites takes Profil's slot in the bar once promoted, so the
               profile moves here. */}
-          {PEPITES_PROMOTED ? (
+          {PEPITES_PROMOTED || curvaLive ? (
             <UiIconLinkButton to="/profile" aria-label={t("nav.profile")}>
               <UserRound aria-hidden />
             </UiIconLinkButton>
@@ -122,21 +125,19 @@ export function TopBar({
   );
 }
 
-/**
- * The primary destinations as a centred row, on wide screens only. `night`
- * is the same row on a night bar (the Pépites pages): white on navy, and the
- * selected link a white pill.
- */
-export function PrimaryNavLinks({ tone = "surface" }: { tone?: "surface" | "night" }) {
+/** The primary destinations as a centred row, on wide screens only. */
+export function PrimaryNavLinks() {
   const { t } = useI18n();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const primaryNavItems = usePrimaryNavItems();
+  const curvaLive = useManagerCardLive();
   return (
     <nav
       aria-label={t("nav.primary")}
       className="hidden min-w-0 flex-1 items-center justify-center gap-1 md:flex"
     >
       {primaryNavItems.map((item) => {
-        const active = isPrimaryRouteActive(pathname, item.to);
+        const active = isPrimaryRouteActive(pathname, item.to, curvaLive);
         return (
           <Link
             key={item.to}
@@ -150,22 +151,19 @@ export function PrimaryNavLinks({ tone = "surface" }: { tone?: "surface" | "nigh
               ui.radius.full,
               ui.text.meta,
               "[font-weight:var(--ui-weight-heavy)]",
-              tone === "night" ? ui.focusOnMesh : ui.focus,
-              tone === "night"
-                ? active
-                  ? "bg-[color:var(--pepites-on-night)] text-[color:var(--pepites-night)]"
-                  : "text-[color:var(--pepites-on-night-sub)] hover:text-[color:var(--pepites-on-night)]"
-                : active
-                  ? // Selected is white on navy — the Option A selected
-                    // chip — not the cyan `ui.surface.ink`.
-                    ui.surface.inkPlain
-                  : cn(
-                      ui.tone.muted,
-                      // BG-0083: the hover used to write `--ui-ink`, a FILL,
-                      // as the text colour — 1.25:1 on a dark surface. The
-                      // foreground a hover moves to is the full-strength one.
-                      "hover:bg-[color:var(--ui-surface-sunken)] hover:text-[color:var(--ui-on-surface)]",
-                    ),
+              ui.focus,
+              active
+                ? // Selected is white on navy — the Option A selected
+                  // chip — not the cyan `ui.surface.ink`; in dark, the
+                  // selected fill (BG-0149), since navy vanishes there.
+                  ui.surface.selected
+                : cn(
+                    ui.tone.muted,
+                    // BG-0083: the hover used to write `--ui-ink`, a FILL,
+                    // as the text colour — 1.25:1 on a dark surface. The
+                    // foreground a hover moves to is the full-strength one.
+                    "hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)] hover:text-[color:var(--ui-on-surface)]",
+                  ),
             )}
           >
             {t(item.labelKey)}

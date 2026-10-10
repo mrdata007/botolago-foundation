@@ -4,6 +4,9 @@ import { join } from "node:path";
 
 import {
   DARK_MODE_ENABLED,
+  MANAGER_CARD_BUILD,
+  MANAGER_CARD_ENABLED,
+  MANAGER_CARD_PREVIEW,
   NEWS_ENABLED,
   OAUTH_PROVIDERS_ENABLED,
   PRIZES_ENABLED,
@@ -14,7 +17,7 @@ import {
   PEPITES_PROMOTED,
 } from "@/lib/feature-flags";
 import { SITEMAP_STATIC_PATHS } from "@/lib/sitemap";
-import { primaryNavItems } from "@/components/shell/primary-nav";
+import { liveNavItems, primaryNavItems } from "@/components/shell/primary-nav";
 
 /**
  * BG-0091 — News is hidden at launch (owner decision, 2026-09-21).
@@ -198,13 +201,51 @@ describe("OAUTH_PROVIDERS_ENABLED", () => {
 /**
  * BG-0111 — the theme switcher was gated but the row around it was not, so
  * Profile showed an "Apparence" label with nothing under it.
+ *
+ * BG-0149 — dark mode is ON (owner decision, 2026-10-05). Like the blocks
+ * above, nothing here asserts the value: the flag is the one-line rollback
+ * switch, so these must pass with it either way. They pin that every place
+ * the flag gates still reads it, so flipping it back really does restore
+ * light for everyone.
  */
 describe("DARK_MODE_ENABLED", () => {
-  test("is a single boolean constant", () => {
+  test("is a single boolean constant, recorded with the owner decision", () => {
     expect(typeof DARK_MODE_ENABLED).toBe("boolean");
-    expect(read("src/lib/feature-flags.ts").match(/export const DARK_MODE_ENABLED/g)).toHaveLength(
-      1,
+    const source = read("src/lib/feature-flags.ts");
+    expect(source.match(/export const DARK_MODE_ENABLED/g)).toHaveLength(1);
+    expect(source).toContain("Owner decision, 2026-10-05 (BG-0149)");
+  });
+
+  test("its comment keeps the list of gated places, and each of them reads the flag", () => {
+    const source = read("src/lib/feature-flags.ts");
+    const comment = source.slice(
+      source.lastIndexOf("/**", source.indexOf("export const DARK_MODE_ENABLED")),
+      source.indexOf("export const DARK_MODE_ENABLED"),
     );
+    for (const file of [
+      "src/routes/__root.tsx",
+      "src/theme/provider.tsx",
+      "src/routes/profile.tsx",
+    ]) {
+      expect(comment).toContain(`\`${file}\``);
+      expect(stripComments(read(file))).toContain("DARK_MODE_ENABLED");
+    }
+  });
+
+  test("the pre-paint theme script is in the head only behind the flag", () => {
+    const root = stripComments(read("src/routes/__root.tsx"));
+    expect(root).toContain("...(DARK_MODE_ENABLED ? [{ children: THEME_INIT_SCRIPT }] : [])");
+    // …and nowhere else: a second, ungated copy would serve dark mode to
+    // every dark phone with the flag off.
+    expect(root.match(/THEME_INIT_SCRIPT/g)).toHaveLength(2); // the import and the gated use
+  });
+
+  test("the provider's three effects and the cross-fade all check the flag", () => {
+    const provider = stripComments(read("src/theme/provider.tsx"));
+    // Storage adoption, class application and the OS listener each return
+    // early while the flag is off.
+    expect(provider.match(/if \(!DARK_MODE_ENABLED\b/g)).toHaveLength(3);
+    expect(provider).toContain("if (DARK_MODE_ENABLED) withViewTransition(");
   });
 
   test("profile gates the whole Appearance row, label included", () => {
@@ -402,5 +443,112 @@ describe("ANALYTICS_ENABLED", () => {
       (file) => !allowed.has(file) && stripComments(read(file)).includes("ANALYTICS_ENABLED"),
     );
     expect(strays).toEqual([]);
+  });
+});
+
+/**
+ * Curva (the Manager Card section), owner decision 2026-10-08: built behind a switch so that
+ * merging and publishing change nothing anyone sees. Unlike the flags above, this one's value IS
+ * asserted: shipping it on is the owner's one-line commit, and this test is what tells the
+ * reviewer of any other change that the switch is still off.
+ */
+describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () => {
+  test("the build constant is on (owner launch, 2026-10-10); the database read switch still gates Curva", () => {
+    expect(MANAGER_CARD_ENABLED).toBe(true);
+    expect(read("src/lib/feature-flags.ts")).toContain(
+      "export const MANAGER_CARD_ENABLED: boolean = true;",
+    );
+  });
+
+  test("the preview is the development-only expression, written so Vite can replace it", () => {
+    const source = stripComments(read("src/lib/feature-flags.ts"));
+    // Guarded for Node (the Playwright runner imports this file, where `import.meta.env` is
+    // undefined); the plain `import.meta.env.DEV` form is what Vite replaces in a build.
+    expect(source.replace(/\s+/g, " ")).toContain(
+      'typeof import.meta.env !== "undefined" && import.meta.env.DEV === true && import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1"',
+    );
+    // Only the plain form is replaced statically in a production build.
+    expect(source).not.toContain("import.meta.env?.");
+    expect(MANAGER_CARD_PREVIEW).toBe(false);
+  });
+
+  test("the build lets Curva exist when either layer says so", () => {
+    expect(stripComments(read("src/lib/feature-flags.ts"))).toContain(
+      "export const MANAGER_CARD_BUILD: boolean = MANAGER_CARD_ENABLED || MANAGER_CARD_PREVIEW;",
+    );
+    expect(MANAGER_CARD_BUILD).toBe(true);
+  });
+
+  test("each constant is declared once, with the decision recorded", () => {
+    const source = read("src/lib/feature-flags.ts");
+    for (const name of ["MANAGER_CARD_ENABLED", "MANAGER_CARD_PREVIEW", "MANAGER_CARD_BUILD"]) {
+      expect(source.match(new RegExp(`export const ${name}\\b`, "g"))).toHaveLength(1);
+    }
+    expect(source).toContain("Owner decision, 2026-10-08");
+  });
+
+  test("the gated surfaces its comment lists exist, and the ones this package owns read the build", () => {
+    const source = read("src/lib/feature-flags.ts");
+    const comment = source.slice(
+      source.lastIndexOf("/**", source.indexOf("export const MANAGER_CARD_ENABLED")),
+      source.indexOf("export const MANAGER_CARD_ENABLED"),
+    );
+    const listed = [...comment.matchAll(/^ \* {3}- `(src\/[^`]+)`/gm)].map((match) => match[1]!);
+    expect(listed).toEqual([
+      "src/components/shell/primary-nav.ts",
+      "src/routes/__root.tsx",
+      "src/routes/curva.tsx",
+      "src/routes/fantasy.index.tsx",
+      "src/components/pepites/PepitesHome.tsx",
+    ]);
+    for (const file of listed) expect(read(file).length).toBeGreaterThan(0);
+    expect(stripComments(read("src/components/shell/primary-nav.ts"))).toContain(
+      "MANAGER_CARD_BUILD",
+    );
+    expect(stripComments(read("src/routes/__root.tsx"))).toContain(
+      "...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {})",
+    );
+    expect(stripComments(read("src/routes/curva.tsx"))).toContain("shouldRedirectFromCurva");
+  });
+
+  test("no other source file reads the build constant or the preview directly", () => {
+    const allowed = new Set([
+      "src/lib/feature-flags.ts",
+      "src/components/shell/primary-nav.ts",
+      "src/routes/__root.tsx",
+      "src/services/manager-card-status.ts",
+    ]);
+    const strays = sourceFiles().filter(
+      (file) =>
+        !allowed.has(file) &&
+        /\bMANAGER_CARD_(ENABLED|PREVIEW|BUILD)\b/.test(stripComments(read(file))),
+    );
+    expect(strays).toEqual([]);
+  });
+
+  test("with the switch off the bar is today's, and Curva is only in the live list", () => {
+    expect(primaryNavItems.map((item) => item.to)).not.toContain("/curva");
+    expect(liveNavItems.map((item) => item.to)).toContain("/curva");
+  });
+
+  test("the Curva routes redirect to Fantasy and are never cached or indexed", () => {
+    expect(stripComments(read("src/routes/curva.tsx"))).toContain(
+      'throw redirect({ to: "/fantasy", replace: true })',
+    );
+    expect(read("src/routes/curva.tsx")).toContain('"Cache-Control": "private, no-store"');
+    for (const file of [
+      "src/routes/curva.index.tsx",
+      "src/routes/curva.carte.tsx",
+      "src/routes/curva.les-votres.tsx",
+      "src/routes/curva.saisons.tsx",
+    ]) {
+      expect(read(file)).toContain('{ name: "robots", content: "noindex" }');
+    }
+  });
+
+  test("Curva is not in the sitemap", () => {
+    expect(
+      (SITEMAP_STATIC_PATHS as readonly string[]).some((path) => path.startsWith("/curva")),
+    ).toBe(false);
   });
 });

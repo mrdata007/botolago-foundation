@@ -1,11 +1,12 @@
 import { AnimatedNumber, PopOnChange } from "@/components/common/AnimatedNumber";
 import pointsPendingArt from "@/assets/illustrations/points-pending.webp";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { SectionHeader } from "@/components/common/SectionHeader";
+import { GameweekRecapCard } from "@/components/fantasy/GameweekRecapCard";
 import { GameweekSelector } from "@/components/fantasy/GameweekSelector";
 import { findClub } from "@/components/fpl/club-lookup";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -30,6 +31,7 @@ import { useFantasyDataSource } from "@/services/fantasy-data-source";
 import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
+import { buildGameweekRecap } from "@/services/gameweek-recap";
 import {
   buildPointsViewModel,
   buildServerPointsViewModel,
@@ -40,10 +42,65 @@ import { fantasyHead } from "@/lib/fantasy-meta";
 import { cn } from "@/lib/utils";
 import { pointsUnit } from "@/lib/points-unit";
 
+interface PointsSearch {
+  /** The round to open on (`/fantasy/points?gw=13`), as the hub's team card links it. */
+  gw?: number;
+}
+
+/**
+ * `?gw=` is a positive whole round number or nothing. A value that is not
+ * one is set to `undefined` rather than left out, so nothing of the raw
+ * query survives under the key. Whether that round exists is checked on the
+ * screen, against the rounds its stepper offers.
+ */
+function validatePointsSearch(search: Record<string, unknown>): PointsSearch {
+  const raw = search.gw;
+  const gw = typeof raw === "number" || typeof raw === "string" ? Number(raw) : Number.NaN;
+  return { gw: Number.isInteger(gw) && gw >= 1 && gw <= 1000 ? gw : undefined };
+}
+
 export const Route = createFileRoute("/fantasy/points")({
   head: () => fantasyHead("points"),
+  validateSearch: validatePointsSearch,
   component: PointsPage,
 });
+
+/**
+ * BG-0157 (2) — the round Points opens on: the one the address asks for, if
+ * the stepper offers it; else the current round while it is being played
+ * ("Suivre mes points" at kick-off, before its first scoring pass has written
+ * a result); else the round of the hub's figure (the summary's
+ * `pointsGameweek`: the current round's result, else the latest round with
+ * one for this team); else the current round. `undefined` while a fact it
+ * needs is still on its way, so the screen does not open on one round and
+ * then jump to another.
+ */
+function openingRound({
+  requested,
+  offered,
+  inPlay,
+  resultRound,
+  current,
+}: {
+  requested: number | null;
+  /** The rounds the stepper offers; `undefined` until they are known. */
+  offered: readonly number[] | undefined;
+  /** The current round is live, provisional or finalizing. */
+  inPlay: boolean;
+  /** The summary's `pointsGameweek`; `undefined` until the summary is known. */
+  resultRound: number | null | undefined;
+  current: number;
+}): number | undefined {
+  if (offered === undefined) return undefined;
+  const min = Math.min(...offered);
+  const max = Math.max(...offered);
+  const inRange = (n: number | null | undefined): n is number =>
+    typeof n === "number" && n >= min && n <= max;
+  if (inRange(requested)) return requested;
+  if (inPlay) return current;
+  if (resultRound === undefined) return undefined;
+  return inRange(resultRound) ? resultRound : current;
+}
 
 /**
  * "Points" — what a gameweek actually scored.
@@ -88,11 +145,9 @@ function PointsBody() {
   const players = screen.players;
   const clubs = screen.clubs;
   const currentGw = screen.gameweek?.number ?? null;
+  const search = Route.useSearch();
   const [gw, setGw] = useState<number | null>(null);
   const [view, setView] = useState<"squad" | "list">("squad");
-  useEffect(() => {
-    if (gw === null && currentGw !== null) setGw(currentGw);
-  }, [gw, currentGw]);
 
   const gameweeksQ = useQuery({
     queryKey: ["fantasy-gameweeks-available"],
@@ -100,6 +155,35 @@ function PointsBody() {
     enabled: screen.phase === "ready",
     staleTime: 60_000,
   });
+  // The same query, key and service as the hub's team card, so the round
+  // opened here is the round of the figure the manager tapped.
+  const summaryQ = useQuery({
+    queryKey: key("summary"),
+    queryFn: () => fantasyService.getSummary(),
+    enabled: screen.phase === "ready" && !!team,
+  });
+  // Chosen once; after that the stepper moves between rounds as before.
+  const opening =
+    currentGw === null
+      ? undefined
+      : openingRound({
+          requested: search.gw ?? null,
+          inPlay:
+            screen.gameweek?.status === "live" ||
+            screen.gameweek?.status === "provisional" ||
+            screen.gameweek?.status === "finalizing",
+          // The same fallback as the stepper's range below.
+          offered: gameweeksQ.isPending
+            ? undefined
+            : gameweeksQ.data && gameweeksQ.data.length > 0
+              ? gameweeksQ.data
+              : [currentGw],
+          resultRound: summaryQ.isPending ? undefined : (summaryQ.data?.pointsGameweek ?? null),
+          current: currentGw,
+        });
+  useEffect(() => {
+    if (gw === null && opening !== undefined) setGw(opening);
+  }, [gw, opening]);
   const resultQ = useQuery({
     queryKey: key("gw-result", gw),
     // React Query treats `undefined` as a failed fetch, so a gameweek without
@@ -140,7 +224,14 @@ function PointsBody() {
       <>
         <UiHeader kicker={t("fantasy.title")} title={t("fpl.points")} backTo="/fantasy" />
         <FantasyScreenGate state={screen} next="/fantasy/points">
-          <div />
+          {/* Ready, while the round to open on is worked out: held, not blank. */}
+          <div
+            role="status"
+            aria-label={t("state.loading")}
+            className={cn("pt-3", ui.space.gutter)}
+          >
+            <UiSkeleton className={cn("h-[420px] w-full", ui.radius.sheet)} />
+          </div>
         </FantasyScreenGate>
       </>
     );
@@ -267,6 +358,8 @@ function PointsBody() {
     return player ? tr(player.name) : id;
   };
   const captainName = captainId ? nameOf(captainId) : none;
+  // "Ma journée": finalized server results only (never mock, never provisional).
+  const recap = isCloud ? buildGameweekRecap(resultQ.data, team.teamName) : null;
 
   return (
     <>
@@ -281,6 +374,20 @@ function PointsBody() {
         />
       </UiHeader>
 
+      {recap ? (
+        <GameweekRecapCard
+          recap={recap}
+          nameOf={(id) => {
+            const player = playerOf(id);
+            return player ? tr(player.name) : null;
+          }}
+          currentGameweek={screen.gameweek}
+          onShowDetail={() => {
+            setView("list");
+            document.getElementById("points-detail")?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      ) : null}
       {resultQ.data?.authoritative?.incremental && (
         <p className={cn("mx-[var(--ui-gutter)] my-3", ui.text.meta, ui.tone.muted)}>
           {t("fantasy.scoring.incrementalPolicy")}
@@ -313,7 +420,7 @@ function PointsBody() {
         ]}
       />
 
-      <div className={cn("pt-3", ui.space.gutter)}>
+      <div id="points-detail" className={cn("scroll-mt-20 pt-3", ui.space.gutter)}>
         <UiSegmented
           variant="pill"
           value={view}
@@ -479,6 +586,17 @@ function PointsBody() {
               className="border-b-0"
             />
           </UiCard>
+          <Link
+            to="/fantasy/rules"
+            hash="scoring-policy"
+            className={cn(
+              "mt-2 inline-block underline underline-offset-2",
+              ui.text.meta,
+              ui.tone.muted,
+            )}
+          >
+            {t("fantasy.points.how_scored")}
+          </Link>
         </section>
       ) : null}
 

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { AuthShell, AuthPrimaryButton, AuthSecondaryButton } from "@/components/auth/AuthShell";
 import { authFieldClass, authFieldIconClass } from "@/components/auth/auth-classes";
 import { setupStepFromSearch } from "@/components/auth/account-model";
+import { isFantasyCreateNext } from "@/components/auth/fantasy-create-path";
 import { ui, UiButton, UiCheckbox, UiChip, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 import { clubStyle } from "@/lib/club-palette";
@@ -26,7 +27,9 @@ import { showStepUpNotice } from "@/auth/step-up-notice";
 import { isMfaStepUpError } from "@/backend/auth/step-up";
 import { authService } from "@/services/auth";
 import { footballService } from "@/services/football";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
+import { useNativePushSwitch } from "@/services/use-native-push";
 import type { Language } from "@/types/domain";
 import type { NotificationPreferences } from "@/services/auth";
 import { ClubCrest } from "@/components/common/ClubCrest";
@@ -49,11 +52,25 @@ export const Route = createFileRoute("/auth/profile-setup")({
 
 const STEPS = 3;
 
+/**
+ * The manager card being formed (plan M1c). Loaded on demand, from the live branch only: a static
+ * import would make every visit to this page download the section's code, switch or no switch.
+ */
+const CardSetupSlot = lazy(() =>
+  import("@/components/auth/curva-card-setup-row").then((module) => ({
+    default: module.CardSetupSlot,
+  })),
+);
+
 function ProfileSetupPage() {
   const { t, tr, lang, setLanguage } = useI18n();
   const { user, status, refresh } = useAuth();
   const navigate = useNavigate();
   const { next = "/", step: initialStep } = Route.useSearch();
+  // The manager card (plan M1c): while Curva is live, a guest who came from the Fantasy builder
+  // sees the card being formed on steps 1 and 2. Off, none of it renders.
+  const live = useManagerCardLive();
+  const cardPath = live && isFantasyCreateNext(next);
   const [step, setStep] = useState<number>(initialStep ?? 1);
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
@@ -70,6 +87,10 @@ function ProfileSetupPage() {
   const { preferences: notificationPrefs, setEmailEnabled } = useMyNotificationPreferences();
   const [emailChoice, setEmailChoice] = useState<boolean | null>(null);
   const savedEmail = notificationPrefs?.channels.email;
+  // Push alerts exist only inside the phone app. Unlike e-mail they act at once:
+  // turning the switch on is when the phone asks permission, so the choice is
+  // not held back until "Terminer".
+  const push = useNativePushSwitch();
   const [chosenLang, setChosenLang] = useState<Language>(lang);
   const [submitting, setSubmitting] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -110,6 +131,22 @@ function ProfileSetupPage() {
     const reader = new FileReader();
     reader.onload = () => setAvatar(String(reader.result));
     reader.readAsDataURL(f);
+  };
+
+  const onPushChange = async (next: boolean) => {
+    if (next) {
+      const result = await push.turnOn();
+      if (result === "ok") return;
+      if (result === "mfa") showStepUpNotice(t);
+      else if (result === "denied") toast.error(t("auth.setup.notif_push_denied"));
+      else if (result === "unavailable" || result === "conflict")
+        toast.error(t("auth.setup.notif_push_unavailable"));
+      else toast.error(t("auth.error.generic"));
+      return;
+    }
+    const result = await push.turnOff();
+    if (result === "mfa") showStepUpNotice(t);
+    else if (result === "error") toast.error(t("auth.error.generic"));
   };
 
   const finish = async () => {
@@ -209,6 +246,18 @@ function ProfileSetupPage() {
         </div>
       </div>
 
+      {cardPath && step <= 2 ? (
+        // The fallback holds the row's place (64px and its 16px gap), so nothing moves when it loads.
+        <Suspense fallback={<div className="mb-4 h-16" aria-hidden="true" />}>
+          <CardSetupSlot
+            step={step}
+            name={displayName}
+            clubId={favoriteClubId}
+            clubs={clubsQ.data}
+          />
+        </Suspense>
+      ) : null}
+
       {step === 1 && (
         <div className="grid gap-4">
           <div className="flex items-center gap-4">
@@ -294,6 +343,7 @@ function ProfileSetupPage() {
           <UiInput
             id="displayName"
             label={t("auth.setup.display_name")}
+            hint={cardPath ? t("card.onboarding.m1.setup.name_hint") : undefined}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             fieldClassName={authFieldClass()}
@@ -333,7 +383,15 @@ function ProfileSetupPage() {
               edge in the club's colour on the inline start (`ui.edge.start`,
               a logical border, never the boards' `inset 4px 0 0` shadow). The
               chosen row takes the club's tint and its edge colour all round. */}
-          <div className="grid max-h-72 gap-2 overflow-y-auto pe-1">
+          {/* With the card row above it the list is shorter (13rem, not 18rem), so « Suivant » stays
+              where it was: the row's 64px and its 16px gap come out of the list, not off the screen. */}
+          <div
+            className={
+              cardPath
+                ? "grid max-h-52 gap-2 overflow-y-auto pe-1"
+                : "grid max-h-72 gap-2 overflow-y-auto pe-1"
+            }
+          >
             {clubsQ.data?.map((c) => {
               const active = favoriteClubId === c.id;
               const club = clubStyle(c);
@@ -352,7 +410,7 @@ function ProfileSetupPage() {
                     ui.focus,
                     active
                       ? cn("border-[color:var(--ui-club-edge)]", ui.club.tint)
-                      : "border-[color:var(--ui-rule)] hover:bg-[color:var(--ui-surface-sunken)]",
+                      : "border-[color:var(--ui-rule)] hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
                     // Last, so the 4px start edge is laid over the 1px border.
                     ui.edge.start,
                   )}
@@ -412,6 +470,19 @@ function ProfileSetupPage() {
             hint={t("auth.setup.notif_email_desc")}
             className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
           />
+
+          {/* Only in the phone app, where alerts can be delivered. Disabled
+              until the account's choice and the phone's permission are known. */}
+          {push.available && (
+            <UiCheckbox
+              checked={push.enabled}
+              disabled={!push.loaded || push.busy || submitting}
+              onChange={(e) => void onPushChange(e.target.checked)}
+              label={t("auth.setup.notif_push")}
+              hint={t("auth.setup.notif_push_desc")}
+              className={cn("px-3 py-3", ui.space.row, ui.radius.card, ui.rule.all)}
+            />
+          )}
 
           <div>
             <div id="setupLanguage" className={cn("mb-1.5", ui.text.label, ui.tone.muted)}>

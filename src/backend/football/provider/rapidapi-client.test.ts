@@ -91,6 +91,14 @@ describe("RapidAPI client", () => {
     expect(seen).toHaveLength(3);
   });
 
+  test("a failed call reaching the quota reserve is not sent again", async () => {
+    const seen: { url: string }[] = [];
+    const api = client([reply(503, {}, "99"), reply(200, {})], seen);
+    await expect(api.getJson("x")).rejects.toMatchObject({ code: "provider_rate_limited" });
+    expect(api.requestsSent()).toBe(1);
+    expect(seen).toHaveLength(1);
+  });
+
   test("errors never carry the key or the response body", async () => {
     const api = client([reply(422, { echo: KEY, secret: "body-text" })]);
     try {

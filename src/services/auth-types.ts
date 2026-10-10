@@ -80,6 +80,8 @@ export type AuthErrorCode =
   | "network"
   | "provider_unavailable"
   | "weak_password"
+  /** Supabase Auth refuses a banned account: closed for deletion, or by staff. */
+  | "account_closed"
   /** The server wants this session's second factor first (`PT403 mfa_required`). */
   | "mfa_required"
   | "generic";
@@ -156,10 +158,12 @@ export interface AuthService {
   signInWithApple(next?: string): Promise<AuthResult<AuthUser>>;
   continueAsGuest(): Promise<AuthResult>;
   completeProfile(input: CompleteProfileInput): Promise<AuthResult<AuthUser>>;
+  /**
+   * Deletes the signed-in account. The server closes it at once (no sign-in,
+   * hidden from public boards) and erases it 7 days later; there is no
+   * cancelling. On success this device is signed out too.
+   */
   requestAccountDeletion(): Promise<AuthResult<{ requestId: string }>>;
-  cancelAccountDeletion(): Promise<AuthResult>;
-  /** Real backend-read state, not local UI state — survives reload/another device. */
-  getAccountDeletionStatus(): Promise<AuthResult<{ pending: boolean }>>;
   signOut(options?: SignOutOptions): Promise<void>;
 }
 

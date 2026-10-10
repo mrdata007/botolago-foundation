@@ -1,7 +1,16 @@
 import emptyLeaguesArt from "@/assets/illustrations/empty-leagues.webp";
 import { Link } from "@tanstack/react-router";
-import { ArrowDownUp, Bell, ChevronRight, Mail, Plus, Settings2, Shirt } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import {
+  ArrowDownUp,
+  Bell,
+  ChevronRight,
+  Mail,
+  Plus,
+  Settings2,
+  Shirt,
+  Trophy,
+} from "lucide-react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -15,13 +24,24 @@ import { ui, UiCard, UiLinkButton, UiLivePill, UiSkeleton } from "@/components/u
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { authService } from "@/services/auth";
+import { createDraftProgress } from "@/services/fantasy-create-draft";
+import { useManagerCardLive } from "@/services/manager-card-status";
 import { useMyNotificationPreferences } from "@/services/use-notification-preferences";
 import type { FantasySummary, Gameweek } from "@/types/domain";
 import type { FantasyTeam } from "@/types/fantasy";
 import { CreateLeagueInvite } from "./CreateLeagueInvite";
-import { FantasyGuestIntro } from "./FantasyGuestIntro";
+import { FantasyGuestIntro, FantasyResumeDraft } from "./FantasyGuestIntro";
 import { joinTarget, type FantasyHubLayout } from "./fantasy-hub-layout";
 import { pointsUnit } from "@/lib/points-unit";
+import { fantasyNextAction, nextActionLabel } from "@/services/fantasy-next-action";
+
+// The card's block is its own chunk, requested only while the section is live: with the switch
+// off the hub imports nothing of the Manager Card.
+const HubCardBlock = lazy(() =>
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
+    default: module.HubCardBlock,
+  })),
+);
 
 /**
  * The Fantasy hub's personal parts — the team card's place, "Mes ligues"
@@ -57,6 +77,7 @@ export function FantasyHubTeamArea({
   displayName,
   summary,
   summaryPending,
+  summaryFailed = false,
   prizes,
 }: {
   layout: FantasyHubLayout;
@@ -68,10 +89,23 @@ export function FantasyHubTeamArea({
   displayName: string | null;
   summary: FantasySummary | null;
   summaryPending: boolean;
+  /** The summary request failed: its figures are unknown, not "none yet". */
+  summaryFailed?: boolean;
   /** The prize catalog lists at least one prize, so the proposition may say so. */
   prizes: boolean;
 }) {
   const { t } = useI18n();
+  const { user } = useAuth();
+  // The squad a visitor (or a signed-in manager without a team) started on
+  // this device. Browser storage, so read after mount: the server render and
+  // the first client render agree on "no draft", and the card arrives with
+  // the proposition, which itself waits for the client.
+  const draftOwner = layout.intro === "no_team" ? (user?.id ?? null) : null;
+  const [draft, setDraft] = useState<{ filled: number; total: number } | null>(null);
+  useEffect(() => {
+    setDraft(layout.intro ? createDraftProgress(draftOwner) : null);
+  }, [layout.intro, draftOwner]);
+  const cardLive = useManagerCardLive();
   if (phase === "loading" || layout.audience === "pending") {
     return (
       <div role="status" aria-label={t("state.loading")} className="space-y-3">
@@ -91,13 +125,23 @@ export function FantasyHubTeamArea({
     // button would only lead to a refusal, so the proposition says
     // registration is closed instead. Mock mode carries no enrolment and
     // keeps the button.
+    const audience = layout.intro ?? "no_team";
+    // Only while a team can still be created: with registration closed the
+    // builder would refuse it, and the closed notice says so instead.
+    const resume = draft && gameweek?.enrolment !== null ? draft : null;
     return (
-      <FantasyGuestIntro
-        audience={layout.intro ?? "no_team"}
-        joinBy={joinTarget(gameweek)}
-        registrationClosed={gameweek?.enrolment === null}
-        prizes={prizes}
-      />
+      <>
+        {resume ? (
+          <FantasyResumeDraft filled={resume.filled} total={resume.total} audience={audience} />
+        ) : null}
+        <FantasyGuestIntro
+          audience={audience}
+          joinBy={joinTarget(gameweek)}
+          registrationClosed={gameweek?.enrolment === null}
+          prizes={prizes}
+          hasDraft={resume !== null}
+        />
+      </>
     );
   }
   const manager = displayName?.trim() || summary?.managerName || team.managerName;
@@ -107,17 +151,58 @@ export function FantasyHubTeamArea({
         teamName={team.teamName}
         manager={manager && manager !== team.teamName ? manager : null}
         gameweek={gameweek}
-        points={summary?.gameweekPoints ?? null}
-        total={summary?.totalPoints ?? null}
+        // BG-0157 (2): a figure only with the round it belongs to; with no
+        // round there is no result yet, and its 0 is not a score.
+        points={summary && summary.pointsGameweek !== null ? summary.gameweekPoints : null}
+        pointsGameweek={summary?.pointsGameweek ?? null}
+        // With no round scored the season total is a sum of nothing, not 0.
+        total={summary && summary.pointsGameweek !== null ? summary.totalPoints : null}
+        known={!!summary && !summaryFailed}
         overallRank={summary?.overallRank ?? null}
         pending={summaryPending}
       />
-      <UiLinkButton to="/fantasy/team" variant="gradient" className="mt-3.5">
-        <Shirt className="h-5 w-5" aria-hidden />
-        {t("fpl.pick_team")}
-      </UiLinkButton>
+      <OwnerNextAction gameweek={gameweek} />
       <TransfersRow freeTransfers={team.freeTransfers} bank={team.bank} />
+      {cardLive ? (
+        // After the two rows that act (« Composer l’équipe », the transfers) and before the figures:
+        // the team card keeps its action beside it. The fallback holds the block's height while
+        // its chunk loads, so nothing below moves.
+        <Suspense
+          fallback={
+            <div aria-hidden className="mt-2">
+              <UiSkeleton className={cn("min-h-28", ui.radius.card)} />
+            </div>
+          }
+        >
+          <HubCardBlock gameweek={gameweek} />
+        </Suspense>
+      ) : null}
     </>
+  );
+}
+
+/**
+ * The owner's one primary action, from the shared next-action model: prepare
+ * the team before the deadline, follow the points while the round is played,
+ * the result once it is final, and "prepare" again once the next round is
+ * current (the team editor unlocks only then). The screen
+ * is `ready` here, so the season is open; only the owner branch is reached.
+ */
+function OwnerNextAction({ gameweek }: { gameweek: Gameweek | null }) {
+  const { t } = useI18n();
+  const action = fantasyNextAction({
+    availability: { kind: "ready", canCreate: false },
+    hasTeam: true,
+    gameweek,
+    now: Date.now(),
+  });
+  if (!("to" in action)) return null;
+  const Icon = action.to === "/fantasy/points" ? Trophy : Shirt;
+  return (
+    <UiLinkButton to={action.to} variant="gradient" className="mt-3.5">
+      <Icon className="h-5 w-5" aria-hidden />
+      {nextActionLabel(action.kind, t)}
+    </UiLinkButton>
   );
 }
 
@@ -207,30 +292,56 @@ function DashboardPlaceholder({ section }: { section: "leagues" | "reminders" })
  * The points figure stands alone, so it is Changa (`ui.score.hero`); the
  * three under it are a row read as a set, so they stay on the stat ramp.
  * Every figure is real or an en dash — no invented movement, no zero for
- * "not known yet". The whole card opens the team profile, as the old team
- * link did.
+ * "not known yet".
+ *
+ * BG-0157 (2): the card holds two links instead of being one. The team block
+ * (name, manager, rank) opens the team profile, as the whole card used to;
+ * the points block opens Points at the round its figure belongs to
+ * (`pointsGameweek`, the history row the figure comes from), and the label
+ * under the figure names that round: before, a "58" from last round sat
+ * under this round's deadline as "Points de la journée", and with the
+ * deadline ahead nothing on the hub led to Points. Each link fills its
+ * column's height and draws its own focus ring; the corner it shares with
+ * the card takes the card's radius so the ring follows it. The card no longer
+ * clips its children (that would cut the rings off at its edge), so the
+ * strip rounds its own foot. The strip is not a control.
  */
 function TeamCard({
   teamName,
   manager,
   gameweek,
   points,
+  pointsGameweek,
   total,
   overallRank,
   pending,
+  known,
 }: {
   teamName: string;
   manager: string | null;
   gameweek: Gameweek | null;
+  /** The figure for `pointsGameweek`; `null` when there is none to show. */
   points: number | null;
+  /** The round `points` belongs to; `null` while no round has a result. */
+  pointsGameweek: number | null;
   total: number | null;
   overallRank: number | null;
   pending: boolean;
+  /**
+   * The summary arrived. When its request failed nothing is known, so the
+   * label stays the neutral "Points de la journée" rather than saying there
+   * are no points yet.
+   */
+  known: boolean;
 }) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
   const none = t("fantasy.stat.none");
-  const live = gameweek?.status === "live";
+  // The live pill names the round being played, so it stands in for the
+  // label only when the figure is that round's.
+  const live =
+    gameweek?.status === "live" && pointsGameweek !== null && pointsGameweek === gameweek.number;
+  const round = pointsGameweek === null ? null : nf.format(pointsGameweek);
   const figure = (value: number | null) =>
     pending ? (
       <UiSkeleton className="mx-auto h-6 w-10" />
@@ -242,19 +353,21 @@ function TeamCard({
   const veil = "bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_55%,transparent)]";
   const seam = "border-s border-[color:color-mix(in_oklab,var(--ui-ink-deep)_14%,transparent)]";
   return (
-    <Link
-      to="/fantasy/profile"
-      className={cn(
-        "block overflow-hidden",
-        ui.radius.sheet,
-        ui.shadow.lifted,
-        "text-[color:var(--ui-ink-deep)]",
-        ui.focus,
-      )}
+    <div
+      data-testid="fantasy-team-card"
+      className={cn(ui.radius.sheet, ui.shadow.lifted, "text-[color:var(--ui-ink-deep)]")}
       style={{ backgroundImage: "var(--ui-grad-action)" }}
     >
-      <div className="flex items-start justify-between gap-3 px-4 pb-3.5 pt-4">
-        <div className="flex min-w-0 flex-col gap-0.5">
+      <div className="flex items-stretch">
+        <Link
+          to="/fantasy/profile"
+          data-testid="fantasy-team-card-team"
+          className={cn(
+            "flex min-h-[var(--ui-tap-min)] min-w-0 flex-1 flex-col gap-0.5 pb-3.5 pe-1.5 ps-4 pt-4",
+            "rounded-ss-[var(--ui-radius-sheet)]",
+            ui.focus,
+          )}
+        >
           <p className={cn("line-clamp-2 break-words", ui.display.section)}>{teamName}</p>
           {manager ? (
             <p className={cn("truncate", ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
@@ -266,30 +379,56 @@ function TeamCard({
               {t("fpl.rank")} <span className={ui.text.tabular}>{nf.format(overallRank)}</span>
             </p>
           ) : null}
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <div className="flex items-baseline gap-1">
+        </Link>
+        <Link
+          to="/fantasy/points"
+          search={pointsGameweek === null ? {} : { gw: pointsGameweek }}
+          data-testid="fantasy-team-card-points"
+          className={cn(
+            "flex min-h-[var(--ui-tap-min)] shrink-0 flex-col items-end pb-3.5 pe-4 ps-1.5 pt-4",
+            "rounded-se-[var(--ui-radius-sheet)]",
+            ui.focus,
+          )}
+        >
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex items-baseline gap-1">
+              {pending ? (
+                <UiSkeleton className="h-12 w-16" />
+              ) : (
+                <bdi className={ui.score.hero}>{points === null ? none : nf.format(points)}</bdi>
+              )}
+              <span className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
+                {pointsUnit(points, t)}
+              </span>
+            </div>
             {pending ? (
-              <UiSkeleton className="h-12 w-16" />
+              <UiSkeleton className="h-3.5 w-20" />
+            ) : live && gameweek ? (
+              <UiLivePill
+                label={`${t("fantasy.leagues.gw")}${gameweek.number} · ${t("matches.status.live")}`}
+              />
             ) : (
-              <bdi className={ui.score.hero}>{points === null ? none : nf.format(points)}</bdi>
+              <span className={cn("max-w-[9.5rem] text-balance text-end", ui.text.label)}>
+                {round !== null
+                  ? t("fantasy.hub.points_round").replace("{n}", round)
+                  : known
+                    ? t("fantasy.hub.points_none")
+                    : t("fantasy.gw_points")}
+              </span>
             )}
-            <span className={cn(ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}>
-              {pointsUnit(points, t)}
+            {/* The visible figure and label start the link's name (what a
+                speech-control user says); this says where it leads. */}
+            <span className="sr-only">
+              {round === null
+                ? t("fantasy.hub.points_open_any")
+                : t("fantasy.hub.points_open").replace("{n}", round)}
             </span>
           </div>
-          {live && gameweek ? (
-            <UiLivePill
-              label={`${t("fantasy.leagues.gw")}${gameweek.number} · ${t("matches.status.live")}`}
-            />
-          ) : (
-            <span className={cn("max-w-[9.5rem] text-balance text-end", ui.text.label)}>
-              {t("fantasy.gw_points")}
-            </span>
-          )}
-        </div>
+        </Link>
       </div>
-      <dl className={cn("grid grid-cols-3 text-center", veil)}>
+      <dl
+        className={cn("grid grid-cols-3 text-center", veil, "rounded-b-[var(--ui-radius-sheet)]")}
+      >
         <div className="flex flex-col items-center gap-0.5 px-1 py-2.5">
           <dt className={ui.text.label}>{t("fpl.average")}</dt>
           <dd className={ui.stat.lg}>{figure(gameweek?.averagePoints ?? null)}</dd>
@@ -303,7 +442,7 @@ function TeamCard({
           <dd className={ui.stat.lg}>{figure(total)}</dd>
         </div>
       </dl>
-    </Link>
+    </div>
   );
 }
 
@@ -321,7 +460,7 @@ function TransfersRow({ freeTransfers, bank }: { freeTransfers: number; bank: nu
         "mt-2 flex items-center gap-3 px-3 py-2.5",
         ui.surface.card,
         ui.space.row,
-        "transition-colors hover:bg-[color:var(--ui-surface-sunken)]",
+        "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
         ui.focus,
       )}
     >
