@@ -62,6 +62,9 @@ const limit = (args: Args, fallback: number) =>
 const text = (value: unknown) => (typeof value === "string" ? value : undefined);
 
 const RPC: Record<string, Handler> = {
+  // Curva's status, read by the root route on every server render. Off, as production is until
+  // the owner turns the read switch on.
+  manager_card_status: () => ({ enabled: false, minRated: null, minConfirmed: null }),
   // No published image stories yet: Home shows its section shortcuts.
   home_stories: () => [],
   football_season_catalog: (args) => football.getSeasons(language(args), limit(args, 12), context),
