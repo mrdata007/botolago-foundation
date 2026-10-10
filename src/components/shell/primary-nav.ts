@@ -17,7 +17,7 @@ export type PrimaryRoute =
   | "/fantasy"
   | "/matches"
   | "/pepites"
-  | "/gradins"
+  | "/curva"
   | "/profile";
 
 export type PrimaryNavItem = {
@@ -33,16 +33,16 @@ const allPrimaryNavItems: PrimaryNavItem[] = [
   { to: "/fantasy", labelKey: "nav.fantasy", icon: Trophy },
   { to: "/matches", labelKey: "nav.matches", icon: CalendarDays },
   { to: "/pepites", labelKey: "nav.pepites", icon: Gem },
-  // Gradins (the Manager Card section) takes the fifth slot only while it is live; see
+  // Curva (the Manager Card section) takes the fifth slot only while it is live; see
   // `withFifthSlot` and `usePrimaryNavItems`. `withPepitesSlot` never lets it into `primaryNavItems`.
-  { to: "/gradins", labelKey: "nav.gradins", icon: UsersRound },
+  { to: "/curva", labelKey: "nav.curva", icon: UsersRound },
   { to: "/profile", labelKey: "nav.profile", icon: User },
 ];
 
 /**
  * Pépites, once promoted, takes Profil's slot in the bar (the bar has no room for a
  * sixth), and Profile moves to an icon in the top bar (`TopBar`, `PEPITES_PROMOTED`). Until then
- * Pépites has no slot. Gradins is never in this list: it exists only while it is live
+ * Pépites has no slot. Curva is never in this list: it exists only while it is live
  * (`withFifthSlot`).
  */
 export function withPepitesSlot(
@@ -50,7 +50,7 @@ export function withPepitesSlot(
   promoted: boolean,
 ): PrimaryNavItem[] {
   return items.filter((item) =>
-    item.to === "/gradins"
+    item.to === "/curva"
       ? false
       : item.to === "/pepites"
         ? promoted
@@ -61,20 +61,20 @@ export function withPepitesSlot(
 }
 
 /**
- * The fifth slot: Gradins when it is live, else Pépites when promoted, else Profil. While Gradins
+ * The fifth slot: Curva when it is live, else Pépites when promoted, else Profil. While Curva
  * is live Pépites has no slot (it lives inside Fantasy then) and Profil stays in the top bar.
  */
 export function withFifthSlot(
   items: readonly PrimaryNavItem[],
-  slot: { pepitesPromoted: boolean; gradinsLive: boolean },
+  slot: { pepitesPromoted: boolean; curvaLive: boolean },
 ): PrimaryNavItem[] {
   return items.filter((item) =>
-    item.to === "/gradins"
-      ? slot.gradinsLive
+    item.to === "/curva"
+      ? slot.curvaLive
       : item.to === "/pepites"
-        ? slot.pepitesPromoted && !slot.gradinsLive
+        ? slot.pepitesPromoted && !slot.curvaLive
         : item.to === "/profile"
-          ? !slot.pepitesPromoted && !slot.gradinsLive
+          ? !slot.pepitesPromoted && !slot.curvaLive
           : true,
   );
 }
@@ -88,15 +88,15 @@ const offeredNavItems = allPrimaryNavItems.filter((item) => NEWS_ENABLED || item
  * removes it from the bottom nav and the top bar in one place instead of two.
  * (A third consumer, the Fantasy mobile nav, was deleted with BG-0145.)
  *
- * Exactly today's list: Gradins is never in it, so every existing reader and test of this
+ * Exactly today's list: Curva is never in it, so every existing reader and test of this
  * constant is unchanged.
  */
 export const primaryNavItems: PrimaryNavItem[] = withPepitesSlot(offeredNavItems, PEPITES_PROMOTED);
 
-/** The list while Gradins is live: Accueil, Actualités, Fantasy, Matches, Gradins. */
+/** The list while Curva is live: Accueil, Actualités, Fantasy, Matches, Curva. */
 export const liveNavItems: PrimaryNavItem[] = withFifthSlot(offeredNavItems, {
   pepitesPromoted: PEPITES_PROMOTED,
-  gradinsLive: true,
+  curvaLive: true,
 });
 
 function useLiveAwareNavItems(): PrimaryNavItem[] {
@@ -107,7 +107,7 @@ function useTodaysNavItems(): PrimaryNavItem[] {
 }
 
 /**
- * The bar's items: `primaryNavItems` (the same array object) unless Gradins is live. With the
+ * The bar's items: `primaryNavItems` (the same array object) unless Curva is live. With the
  * build switch off this is a plain function returning that constant: no hook, no query.
  */
 export const usePrimaryNavItems: () => PrimaryNavItem[] = MANAGER_CARD_BUILD
@@ -115,23 +115,23 @@ export const usePrimaryNavItems: () => PrimaryNavItem[] = MANAGER_CARD_BUILD
   : useTodaysNavItems;
 
 /**
- * Whether `route`'s item is the active one at `pathname`. `gradinsLive` lights Fantasy on
+ * Whether `route`'s item is the active one at `pathname`. `curvaLive` lights Fantasy on
  * /pepites pages (Pépites lives inside Fantasy then) and never lights a slot that is not in the
- * bar: Pépites while Gradins is live, Gradins while it is not. The default, false, keeps every
+ * bar: Pépites while Curva is live, Curva while it is not. The default, false, keeps every
  * existing call and test as it is.
  */
 export function isPrimaryRouteActive(
   pathname: string,
   route: PrimaryRoute,
-  gradinsLive = false,
+  curvaLive = false,
 ): boolean {
   if (route === "/") return pathname === "/";
   // Pronostics lives in the Matches section (BG-0146): the bar has no sixth slot.
   if (route === "/matches" && pathname.startsWith("/pronostics")) return true;
-  if (gradinsLive) {
+  if (curvaLive) {
     if (route === "/fantasy" && pathname.startsWith("/pepites")) return true;
     if (route === "/pepites") return false;
-  } else if (route === "/gradins") {
+  } else if (route === "/curva") {
     return false;
   }
   return pathname.startsWith(route);

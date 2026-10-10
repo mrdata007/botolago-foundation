@@ -1,5 +1,7 @@
 # Gradins: the Manager Card section, build plan
 
+> **Renamed Curva on 2026-10-10.** The owner renamed the section from « Gradins » (Arabic «المدرجات») to « Curva » (Arabic «كورفا»): addresses `/curva`, `/curva/carte`, `/curva/les-votres`, `/curva/saisons`, the component folder `src/components/curva`, the chunk `curva-*`, the specs `tests/e2e/curva*.e2e.ts`. The text below is the record of what was done under the old name and is not rewritten: read « Gradins » as « Curva » (and `/gradins` as `/curva`) in it.
+
 Written 2026-10-08 by the planner (Claude Opus) for the parallel build that follows. Branch
 `claude/manager-card-section` (worktree `/home/user/botolago-app`, based on `origin/main`
 `3f9c57fc`). The screen-work brief is [`MANAGER_CARD_SECTION_BRIEF.md`](MANAGER_CARD_SECTION_BRIEF.md);
@@ -143,7 +145,7 @@ for everyone who plays.
 | --------------------------------------------------------- | ---------------------------------------- | -------------------------------------------------- |
 | carte de manager / بطاقة المدرّب                          | « ta carte », badge, NFT, collection     | Approved onboarding wording; direction-independent |
 | note / تقييم; OVR as a unit after the number (« 84 OVR ») | score, niveau, level                     | Lab rule 6; the Fantasy points are the score       |
-| palier / فئة; tier words HOMA → LEGEND                    | rang (taken by the Fantasy rank), niveau | Avoid the « level up » family                      |
+| palier / فئة; tier words LASTREET (key `homa`) → LEGEND   | rang (taken by the Fantasy rank), niveau | Avoid the « level up » family                      |
 | journées terminées / جولات منتهية                         | journées jouées                          | Only final results count                           |
 | provisoire / مبدئي (agreeing: «تقييم مبدئي»)              | confirmée / مؤكَّد, مؤقت                 | Approved copy discipline                           |
 | Fondateur 2026 / عضو مؤسس 2026, « ALI ·26 »               | membre VIP, édition limitée              | Founder is granted, never sold or counted          |
@@ -1774,7 +1776,9 @@ secondaryColor }` (city from club data). Gradins promises club colours to guests
 
 1. **The name.** Gradins / المدرجات (**built**). Another candidate later is a key change and a redirect.
 2. **Arabic tier words.** «حومة، ملعب، محترف، بطل، أسطورة» (**built, as the lab**) or the Latin brand words in
-   both languages. «حومة» is closer to Maghrebi usage than to MSA.
+   both languages. «حومة» is closer to Maghrebi usage than to MSA. **Superseded 2026-10-09 for the lowest
+   tier:** it is shown as « LASTREET » in both languages (key `card.tier.homa`, tier code `homa`), a Latin word
+   isolated left to right in the Arabic interface (Sorare-style plan section 11). The other four stay as above.
 3. **« LEGEND » in the French interface** (an English word). **Kept, as the owner's tier names.**
 4. **Logo Blue in the card art** (the selvedge thread), allowed in the lab on 2026-10-07; the Two Blues
    Rule keeps it out of the interface. **Kept inside the art only.**
@@ -1910,7 +1914,7 @@ Typographic apostrophe ’ in French. `{final}` takes `finalRounds(n)`, `{rounds
 | `card.stat_long.sel`                                           | Votre onze de départ                                    | اختيار التشكيلة                           |
 | `card.stat_long.trf`                                           | Vos transferts                                          | قرارات الانتقالات                         |
 | `card.stat_long.con`                                           | Votre régularité                                        | الثبات                                    |
-| `card.tier.homa` · `.stade` · `.pro` · `.champion` · `.legend` | HOMA · STADE · PRO · CHAMPION · LEGEND                  | حومة · ملعب · محترف · بطل · أسطورة        |
+| `card.tier.homa` · `.stade` · `.pro` · `.champion` · `.legend` | LASTREET · STADE · PRO · CHAMPION · LEGEND              | LASTREET · ملعب · محترف · بطل · أسطورة    |
 | `card.a11y.card_of`                                            | Carte de manager                                        | بطاقة المدرّب                             |
 | `card.a11y.no_rating`                                          | pas encore de note                                      | لا تقييم بعد                              |
 | `card.a11y.separator`                                          | `, `                                                    | `، `                                      |
@@ -2044,10 +2048,10 @@ cases the app needs. Each fixture is `{ id, status, card: MyCardDto | null, leag
 | `clubNull`        | `rated` with no club                                                          |
 | `longNameLatin`   | « Abdelkarim Benjelloun-Alaoui »                                              |
 | `arabicName`      | «فاطمة الزهراء» (raster fallback)                                             |
-| `homa`            | 61 HOMA                                                                       |
+| `homa`            | 61 LASTREET                                                                   |
 
 League sample « Les Lions du Derb » (fictional) with KARIM 78 STADE, SALMA forming 2/3, YASMINE 92
-LEGEND founder, OTHMANE 88 CHAMPION, HAMZA 63 HOMA, and you; Raja for you and SALMA, Wydad for KARIM
+LEGEND founder, OTHMANE 88 CHAMPION, HAMZA 63 LASTREET, and you; Raja for you and SALMA, Wydad for KARIM
 (clubs from the mock football data; colours through the club palette). Names are labelled samples.
 
 ## Appendix C. Analytics events (WP1 adds to `AnalyticsEvent`; names only, no properties)

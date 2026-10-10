@@ -15,7 +15,7 @@ import type { FantasyPlayer, Position } from "@/types/fantasy";
 // The card's hint is its own chunk, requested only while the section is live: with the switch off
 // this sheet imports nothing of the Manager Card.
 const CardHint = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.CardHint,
   })),
 );
@@ -78,23 +78,8 @@ export function PlayerActionSheet({
           ? t("player.pos.MID")
           : t("player.pos.FWD");
 
-  const rowClass = cn(
-    "flex w-full items-center gap-3 px-4 py-1 text-start",
-    ui.space.row,
-    ui.rule.block,
-    ui.text.body,
-    "[font-weight:var(--ui-weight-heavy)]",
-    ui.tone.default,
-    "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
-    ui.focus,
-  );
-  const disc = (tone: "ink" | "negative") =>
-    cn(
-      "grid h-9 w-9 shrink-0 place-items-center",
-      ui.radius.full,
-      ui.surface.sunken,
-      tone === "negative" ? ui.tone.negative : ui.tone.ink,
-    );
+  const rowClass = ROW_CLASS;
+  const disc = discClass;
   const action = (
     icon: ReactNode,
     label: ReactNode,
@@ -155,17 +140,7 @@ export function PlayerActionSheet({
           <CardHint kind="cap" className="mx-4 mb-1 mt-3" />
         </Suspense>
       ) : null}
-      {isStarter && onCaptain
-        ? action(
-            <Shield className="h-5 w-5" aria-hidden />,
-            t("fpl.make_captain"),
-            onCaptain,
-            "captain",
-          )
-        : null}
-      {isStarter && onVice
-        ? action(<ShieldHalf className="h-5 w-5" aria-hidden />, t("fpl.make_vice"), onVice, "vice")
-        : null}
+      <CaptainActions isStarter={isStarter} onCaptain={onCaptain} onVice={onVice} />
       {onSubstitute
         ? action(
             <ArrowLeftRight className="h-5 w-5" aria-hidden />,
@@ -207,5 +182,105 @@ export function PlayerActionSheet({
         {t("fpl.player_info")}
       </Link>
     </UiSheet>
+  );
+}
+
+const ROW_CLASS = cn(
+  "flex w-full items-center gap-3 px-4 py-1 text-start",
+  ui.space.row,
+  ui.rule.block,
+  ui.text.body,
+  "[font-weight:var(--ui-weight-heavy)]",
+  ui.tone.default,
+  "transition-colors hover:bg-[color:var(--ui-surface-sunken)] active:bg-[color:var(--ui-surface-sunken)]",
+  ui.focus,
+);
+
+function discClass(tone: "ink" | "negative" | "muted") {
+  return cn(
+    "grid h-9 w-9 shrink-0 place-items-center",
+    ui.radius.full,
+    ui.surface.sunken,
+    tone === "negative" ? ui.tone.negative : tone === "muted" ? ui.tone.muted : ui.tone.ink,
+  );
+}
+
+/**
+ * "Nommer capitaine" and "Nommer vice-capitaine", for the screens that offer
+ * them (`onCaptain` / `onVice`). A starter gets the two actions. A substitute
+ * gets the same two rows, unavailable, with the reason — "Titulaires
+ * uniquement" — instead of nothing: on the squad builder and "Mon équipe" a
+ * missing captain action on a bench player read as a bug.
+ */
+export function CaptainActions({
+  isStarter,
+  onCaptain,
+  onVice,
+}: {
+  isStarter: boolean;
+  onCaptain?: () => void;
+  onVice?: () => void;
+}) {
+  const { t } = useI18n();
+  const rows: Array<{ key: string; icon: ReactNode; label: string; onSelect?: () => void }> = [
+    {
+      key: "captain",
+      icon: <Shield className="h-5 w-5" aria-hidden />,
+      label: t("fpl.make_captain"),
+      onSelect: onCaptain,
+    },
+    {
+      key: "vice",
+      icon: <ShieldHalf className="h-5 w-5" aria-hidden />,
+      label: t("fpl.make_vice"),
+      onSelect: onVice,
+    },
+  ];
+  return (
+    <>
+      {rows.map((row) =>
+        !row.onSelect ? null : isStarter ? (
+          <button key={row.key} type="button" className={ROW_CLASS} onClick={row.onSelect}>
+            <span className={discClass("ink")}>{row.icon}</span>
+            {row.label}
+          </button>
+        ) : (
+          // `aria-disabled` rather than `disabled`: the row stays in the tab
+          // order and a screen reader announces it as unavailable together
+          // with its reason. No handler, so pressing it does nothing. Muted
+          // text, not faded opacity, so the reason stays readable.
+          <button
+            key={row.key}
+            type="button"
+            aria-disabled="true"
+            data-unavailable={row.key}
+            className={cn(
+              "flex w-full cursor-not-allowed items-center gap-3 px-4 py-1 text-start",
+              ui.space.row,
+              ui.rule.block,
+              ui.text.body,
+              "[font-weight:var(--ui-weight-heavy)]",
+              ui.tone.muted,
+              ui.focus,
+            )}
+          >
+            <span className={discClass("muted")}>{row.icon}</span>
+            <span className="min-w-0">
+              <span className="block">{row.label}</span>
+              <span
+                className={cn(
+                  "block",
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-strong)]",
+                  ui.tone.muted,
+                )}
+              >
+                {t("fantasy.create.starters_only")}
+              </span>
+            </span>
+          </button>
+        ),
+      )}
+    </>
   );
 }

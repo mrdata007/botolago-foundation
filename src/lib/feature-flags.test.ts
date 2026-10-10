@@ -447,16 +447,16 @@ describe("ANALYTICS_ENABLED", () => {
 });
 
 /**
- * Gradins (the Manager Card section), owner decision 2026-10-08: built behind a switch so that
+ * Curva (the Manager Card section), owner decision 2026-10-08: built behind a switch so that
  * merging and publishing change nothing anyone sees. Unlike the flags above, this one's value IS
  * asserted: shipping it on is the owner's one-line commit, and this test is what tells the
  * reviewer of any other change that the switch is still off.
  */
 describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () => {
-  test("the build constant is false", () => {
-    expect(MANAGER_CARD_ENABLED).toBe(false);
+  test("the build constant is on (owner launch, 2026-10-10); the database read switch still gates Curva", () => {
+    expect(MANAGER_CARD_ENABLED).toBe(true);
     expect(read("src/lib/feature-flags.ts")).toContain(
-      "export const MANAGER_CARD_ENABLED: boolean = false;",
+      "export const MANAGER_CARD_ENABLED: boolean = true;",
     );
   });
 
@@ -472,11 +472,11 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
     expect(MANAGER_CARD_PREVIEW).toBe(false);
   });
 
-  test("the build lets Gradins exist when either layer says so, and is off under test", () => {
+  test("the build lets Curva exist when either layer says so", () => {
     expect(stripComments(read("src/lib/feature-flags.ts"))).toContain(
       "export const MANAGER_CARD_BUILD: boolean = MANAGER_CARD_ENABLED || MANAGER_CARD_PREVIEW;",
     );
-    expect(MANAGER_CARD_BUILD).toBe(false);
+    expect(MANAGER_CARD_BUILD).toBe(true);
   });
 
   test("each constant is declared once, with the decision recorded", () => {
@@ -497,7 +497,7 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
     expect(listed).toEqual([
       "src/components/shell/primary-nav.ts",
       "src/routes/__root.tsx",
-      "src/routes/gradins.tsx",
+      "src/routes/curva.tsx",
       "src/routes/fantasy.index.tsx",
       "src/components/pepites/PepitesHome.tsx",
     ]);
@@ -508,7 +508,7 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
     expect(stripComments(read("src/routes/__root.tsx"))).toContain(
       "...(MANAGER_CARD_BUILD ? { beforeLoad: rootBeforeLoad } : {})",
     );
-    expect(stripComments(read("src/routes/gradins.tsx"))).toContain("shouldRedirectFromGradins");
+    expect(stripComments(read("src/routes/curva.tsx"))).toContain("shouldRedirectFromCurva");
   });
 
   test("no other source file reads the build constant or the preview directly", () => {
@@ -526,29 +526,29 @@ describe("MANAGER_CARD_ENABLED / MANAGER_CARD_PREVIEW / MANAGER_CARD_BUILD", () 
     expect(strays).toEqual([]);
   });
 
-  test("with the switch off the bar is today's, and Gradins is only in the live list", () => {
-    expect(primaryNavItems.map((item) => item.to)).not.toContain("/gradins");
-    expect(liveNavItems.map((item) => item.to)).toContain("/gradins");
+  test("with the switch off the bar is today's, and Curva is only in the live list", () => {
+    expect(primaryNavItems.map((item) => item.to)).not.toContain("/curva");
+    expect(liveNavItems.map((item) => item.to)).toContain("/curva");
   });
 
-  test("the Gradins routes redirect to Fantasy and are never cached or indexed", () => {
-    expect(stripComments(read("src/routes/gradins.tsx"))).toContain(
+  test("the Curva routes redirect to Fantasy and are never cached or indexed", () => {
+    expect(stripComments(read("src/routes/curva.tsx"))).toContain(
       'throw redirect({ to: "/fantasy", replace: true })',
     );
-    expect(read("src/routes/gradins.tsx")).toContain('"Cache-Control": "private, no-store"');
+    expect(read("src/routes/curva.tsx")).toContain('"Cache-Control": "private, no-store"');
     for (const file of [
-      "src/routes/gradins.index.tsx",
-      "src/routes/gradins.carte.tsx",
-      "src/routes/gradins.les-votres.tsx",
-      "src/routes/gradins.saisons.tsx",
+      "src/routes/curva.index.tsx",
+      "src/routes/curva.carte.tsx",
+      "src/routes/curva.les-votres.tsx",
+      "src/routes/curva.saisons.tsx",
     ]) {
       expect(read(file)).toContain('{ name: "robots", content: "noindex" }');
     }
   });
 
-  test("Gradins is not in the sitemap", () => {
+  test("Curva is not in the sitemap", () => {
     expect(
-      (SITEMAP_STATIC_PATHS as readonly string[]).some((path) => path.startsWith("/gradins")),
+      (SITEMAP_STATIC_PATHS as readonly string[]).some((path) => path.startsWith("/curva")),
     ).toBe(false);
   });
 });

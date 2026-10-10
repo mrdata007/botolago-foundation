@@ -43,7 +43,7 @@ import { prizesService } from "@/services/prizes";
 // Pépites' tile is its own chunk, requested only while the section is live: with the switch off
 // the hub imports nothing of the Manager Card.
 const PepitesHubTile = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.PepitesHubTile,
   })),
 );
@@ -58,7 +58,7 @@ function useHeroShownThisSession(live: boolean): boolean | null {
   useEffect(() => {
     if (!live) return;
     let cancelled = false;
-    void import("@/components/manager-card/inline/gradins-inline")
+    void import("@/components/manager-card/inline/curva-inline")
       .then((module) => {
         if (!cancelled) setShown(module.heroShownThisSession());
       })

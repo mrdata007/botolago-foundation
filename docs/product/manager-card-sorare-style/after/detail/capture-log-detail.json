@@ -1,0 +1,229 @@
+{
+  "base": "http://127.0.0.1:4490",
+  "pictures": [
+    {
+      "name": "art-base-fr-light",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "art-lastreet-fr-light",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "art-stade-fr-light",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "art-pro-fr-light",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "art-champion-fr-light",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "art-legend-fr-light",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "art-base-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "plate-base-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 395.51,
+        "width": 296,
+        "height": 172.41187499999998
+      }
+    },
+    {
+      "name": "art-lastreet-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "plate-lastreet-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 395.51,
+        "width": 296,
+        "height": 172.41187499999998
+      }
+    },
+    {
+      "name": "art-stade-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "plate-stade-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 395.51,
+        "width": 296,
+        "height": 172.41187499999998
+      }
+    },
+    {
+      "name": "art-pro-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "plate-pro-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 395.51,
+        "width": 296,
+        "height": 172.41187499999998
+      }
+    },
+    {
+      "name": "art-champion-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "plate-champion-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 395.51,
+        "width": 296,
+        "height": 172.41187499999998
+      }
+    },
+    {
+      "name": "art-legend-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 108.156875,
+        "width": 296,
+        "height": 277.77468749999997
+      },
+      "problems": []
+    },
+    {
+      "name": "plate-legend-fr-dark",
+      "clip": {
+        "x": 47,
+        "y": 395.51,
+        "width": 296,
+        "height": 172.41187499999998
+      }
+    },
+    {
+      "name": "art-legend-ar-dark"
+    },
+    {
+      "name": "plate-legend-ar-dark"
+    },
+    {
+      "name": "crisp-pro-dpr2",
+      "clip": {
+        "x": 33,
+        "y": 79,
+        "width": 324,
+        "height": 512.921875
+      },
+      "restTransform": "none",
+      "tiltTransform": "matrix3d(0.996917, -0.00383271, 0.0783654, 0, 0, 0.998806, 0"
+    },
+    {
+      "name": "crisp-legend-dpr2",
+      "clip": {
+        "x": 33,
+        "y": 79,
+        "width": 324,
+        "height": 512.921875
+      },
+      "restTransform": "none",
+      "tiltTransform": "matrix3d(0.996917, -0.00383271, 0.0783654, 0, 0, 0.998806, 0"
+    },
+    {
+      "name": "crisp-pro-dpr3",
+      "clip": {
+        "x": 33,
+        "y": 79,
+        "width": 324,
+        "height": 512.921875
+      },
+      "restTransform": "none",
+      "tiltTransform": "matrix3d(0.996917, -0.00383271, 0.0783654, 0, 0, 0.998806, 0"
+    },
+    {
+      "name": "crisp-legend-dpr3",
+      "clip": {
+        "x": 33,
+        "y": 79,
+        "width": 324,
+        "height": 512.921875
+      },
+      "restTransform": "none",
+      "tiltTransform": "matrix3d(0.996917, -0.00383271, 0.0783654, 0, 0, 0.998806, 0"
+    }
+  ]
+}

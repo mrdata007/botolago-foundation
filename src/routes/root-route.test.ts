@@ -6,16 +6,24 @@ import { managerCardStatusKey, rootBeforeLoad } from "@/services/manager-card-st
 import { Route } from "./__root";
 
 /**
- * Gradins' only change to the root route (plan 3.2, rule 4): a `beforeLoad` that reads the
+ * Curva' only change to the root route (plan 3.2, rule 4): a `beforeLoad` that reads the
  * database's status during the server render. With the build switch off the route object must be
- * what it was before, so there is no `beforeLoad` at all.
+ * what it was before, so there is no `beforeLoad` at all. The build switch is on since the owner's
+ * launch (2026-10-10), so the route now carries it.
  */
 describe("the root route and the Manager Card status", () => {
-  it("has no beforeLoad while the build switch is off", () => {
-    expect(MANAGER_CARD_BUILD).toBe(false);
-    expect("beforeLoad" in Route.options).toBe(false);
+  it("has the status beforeLoad, and nothing else new, while the build switch is on", () => {
+    expect(MANAGER_CARD_BUILD).toBe(true);
+    expect(Route.options.beforeLoad).toBe(rootBeforeLoad);
     expect(Object.keys(Route.options).sort()).toEqual(
-      ["component", "errorComponent", "head", "notFoundComponent", "shellComponent"].sort(),
+      [
+        "beforeLoad",
+        "component",
+        "errorComponent",
+        "head",
+        "notFoundComponent",
+        "shellComponent",
+      ].sort(),
     );
   });
 

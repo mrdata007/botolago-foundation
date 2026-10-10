@@ -4,6 +4,8 @@
  * renderer is the only thing standing between a manager's chosen name and the page: every
  * attribute and text node goes through one escape, and only these tags may appear.
  */
+import { crestHref } from "./crest-href";
+
 export const ALLOWED_CARD_TAGS = [
   "div",
   "span",
@@ -27,7 +29,9 @@ export const ALLOWED_CARD_TAGS = [
   "text",
   "tspan",
   "use",
-  // Inert: the knit grain and the shadows (filters) and the clipped stitches (mask).
+  // The club's crest on the tab's disc, and only with an address `crestHref` accepts (below).
+  "image",
+  // Inert: the fabric grain and the shadows (filters) and the clipped detail (mask).
   "filter",
   "feTurbulence",
   "feColorMatrix",
@@ -72,6 +76,13 @@ export function findUnsafeMarkup(html: string): string[] {
     for (const attribute of source.matchAll(/\s[A-Za-z:-]+="([^"]*)"/g)) {
       if (/[<>]/.test(attribute[1]!)) problems.push("raw angle bracket in an attribute value");
     }
+  }
+  for (const image of html.matchAll(/<image\b[^>]*>/g)) {
+    const href = /\s(?:xlink:)?href="([^"]*)"/.exec(image[0])?.[1];
+    // the attribute is escaped (`&amp;` in a query string): read it back before the check
+    const raw = href?.replace(/&amp;/g, "&");
+    if (!raw || crestHref(raw) === null)
+      problems.push(`image with an unsafe href in ${image[0].slice(0, 60)}`);
   }
   if (/<script/i.test(html)) problems.push("a script element");
   return [...new Set(problems)];

@@ -29,8 +29,10 @@ publishes it, then emails the owner.
   retried next run.
 - **No model HTML.** The model returns plain paragraphs; the function escapes
   them and builds the markup. Source links come from the database, https only.
-- **Attribution.** News and blog posts list the outlets used, and every article
-  carries an "AI-assisted" line.
+- **Public editorial rule.** No AI authorship/generation notices or provider
+  credits on articles, images, captions or alt text. The article parser rejects
+  replies containing such wording. News and blog posts retain factual source
+  attribution; model provenance stays in private audit records.
 - **Owner emails.** Sent to the ops-alert address. A failed send is retried on
   later runs (up to 5 attempts), including while paused.
 

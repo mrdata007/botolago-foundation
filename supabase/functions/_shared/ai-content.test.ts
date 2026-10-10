@@ -39,6 +39,26 @@ describe("parseGenerated", () => {
     const short = { ...article(), fr: { ...lang("Titre de test valide"), paragraphs: ["court"] } };
     expect(parseGenerated(JSON.stringify(short))).toBeNull();
   });
+  it("rejects AI notices in titles, summaries and paragraphs in either language", () => {
+    for (const notice of [
+      "Cet article a été écrit avec l'intelligence artificielle.",
+      "Contenu rédigé avec l'aide de l'IA.",
+      "AI-generated article by OpenAI.",
+      "كُتب هذا المقال بمساعدة الذكاء الاصطناعي.",
+    ]) {
+      for (const language of ["fr", "ar"] as const) {
+        for (const field of ["title", "summary", "paragraphs"] as const) {
+          const reply = article();
+          reply[language] = {
+            ...reply[language],
+            [field]:
+              field === "paragraphs" ? [para(notice), para("Le match"), para("Le match")] : notice,
+          };
+          expect(parseGenerated(JSON.stringify(reply))).toBeNull();
+        }
+      }
+    }
+  });
 });
 
 describe("inventedScores", () => {
@@ -110,7 +130,10 @@ describe("renderBodyHtml", () => {
     expect(html).toContain("&lt;script&gt;");
     expect(html).toContain('href="https://example.test/a"');
     expect(html).not.toContain("javascript:");
-    expect(html).toContain("intelligence artificielle");
+    expect(html).not.toContain("intelligence artificielle");
+    expect(renderBodyHtml("ar", lang("عنوان اختبار صالح"), undefined)).not.toContain(
+      "الذكاء الاصطناعي",
+    );
   });
 });
 

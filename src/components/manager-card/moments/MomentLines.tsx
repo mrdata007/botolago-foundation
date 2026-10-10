@@ -10,11 +10,11 @@ import type { LineSpec } from "../types";
 import { LINE_EVENTS, lineText, momentWords } from "./moment-text";
 import { useMomentGate } from "./use-moment-gate";
 
-/** The lines Gradins' home shows by default; the card page asks for `tier_down` as well. */
+/** The lines Curva' home shows by default; the card page asks for `tier_down` as well. */
 const HOME_LINES: readonly LineSpec["kind"][] = ["provisional_cleared", "season_started"];
 
 /**
- * The one-line states of Gradins (plan 5.1 and 5.3): « Votre note n'est plus provisoire : 85
+ * The one-line states of Curva (plan 5.1 and 5.3): « Votre note n'est plus provisoire : 85
  * après 5 journées terminées » once, when the label clears; « Saison 2027/28 : votre carte garde
  * sa note … » while the card shows last season's number; « Palier actuel : STADE. Meilleur cette
  * saison : PRO. » when a fall is stated (the card page asks for that one with `kinds`).
@@ -35,7 +35,7 @@ export function MomentLines({
 }): JSX.Element | null {
   const { t, lang } = useI18n();
   const words = useMemo(() => momentWords(t, lang), [t, lang]);
-  const gate = useMomentGate("gradins", card);
+  const gate = useMomentGate("curva", card);
   const { ready, lines } = gate;
   const shown = useMemo(
     () => (ready ? lines.filter((line) => kinds.includes(line.kind)) : ([] as LineSpec[])),

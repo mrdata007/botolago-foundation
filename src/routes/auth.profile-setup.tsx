@@ -57,7 +57,7 @@ const STEPS = 3;
  * import would make every visit to this page download the section's code, switch or no switch.
  */
 const CardSetupSlot = lazy(() =>
-  import("@/components/auth/gradins-card-setup-row").then((module) => ({
+  import("@/components/auth/curva-card-setup-row").then((module) => ({
     default: module.CardSetupSlot,
   })),
 );
@@ -67,7 +67,7 @@ function ProfileSetupPage() {
   const { user, status, refresh } = useAuth();
   const navigate = useNavigate();
   const { next = "/", step: initialStep } = Route.useSearch();
-  // The manager card (plan M1c): while Gradins is live, a guest who came from the Fantasy builder
+  // The manager card (plan M1c): while Curva is live, a guest who came from the Fantasy builder
   // sees the card being formed on steps 1 and 2. Off, none of it renders.
   const live = useManagerCardLive();
   const cardPath = live && isFantasyCreateNext(next);

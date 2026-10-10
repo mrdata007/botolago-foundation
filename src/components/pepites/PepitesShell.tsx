@@ -144,7 +144,7 @@ const TITLE_FILLS_AND_WRAPS =
  * - `backTo` puts the back pill on its own row above that, inside the same
  *   white band (the ranking and the method page are one level down from
  *   `/pepites`). `backTestId` names it for the tests, `backLabel` replaces
- *   its "Retour" (the home, while Gradins is live and Pépites sits inside
+ *   its "Retour" (the home, while Curva is live and Pépites sits inside
  *   Fantasy, goes back to « Fantasy »).
  * - `desktop` lines the band up with a `width="desktop"` page.
  * - the heading fills the title row and wraps (see above).

@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
 
-import { cardCopy, gradinsCopy, momentCopy } from "../copy";
+import { cardCopy, curvaCopy, momentCopy } from "../copy";
 
 /**
  * No banned word in anything this package renders (plan 2.5, both languages, the share picture and
@@ -68,7 +68,7 @@ function scanned(): Set<string> {
   for (const set of [
     keysOf((t) => momentCopy(t)),
     keysOf((t) => cardCopy(t, "fr")),
-    keysOf((t) => gradinsCopy(t, "fr")),
+    keysOf((t) => curvaCopy(t, "fr")),
     literalKeys(),
   ]) {
     for (const key of set) keys.add(key);

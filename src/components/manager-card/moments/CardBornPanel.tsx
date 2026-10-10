@@ -7,7 +7,7 @@ import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
-import { ManagerCard } from "../ManagerCard";
+import { CardToken } from "../CardToken";
 import type { BeatName, CardProfile } from "../types";
 import { Collapsible, HeroCard, HeroFrame } from "./HeroFrame";
 import { InviteFriends } from "./InviteFriends";
@@ -19,10 +19,10 @@ import { useMomentGate, useSeenFor } from "./use-moment-gate";
  * with no number yet, and the panel says so, says exactly when the number will arrive, and offers
  * the one social act that is true (« Inviter des amis »). Above the pitch on `/fantasy/team`
  * (`surface="team"`: compact, about 215 px at 390, so the pitch's first row stays on the first
- * screen: the card at 96 px beside the heading with its ×, the number when there is one and when
+ * screen: the card's 80 px token beside the heading with its ×, the number when there is one and when
  * the rating comes, then « Inviter des amis » as a 44 px text line; the sentence on why now is that
- * action's accessible description), or in Gradins' hero slot
- * (`surface="gradins"`: the panel carries the card at the stage's size and plays the `make` beat on
+ * action's accessible description), or in Curva' hero slot
+ * (`surface="curva"`: the panel carries the card at the stage's size and plays the `make` beat on
  * it, the way the hero does; a page that keeps its own stage in the tree passes it as `children`).
  *
  * It decides for itself whether it is due (`useMomentGate(surface, card)`): `card_created`
@@ -32,7 +32,7 @@ import { useMomentGate, useSeenFor } from "./use-moment-gate";
  * `card_created` in one call, and so do two seconds with at least half of it on screen.
  *
  * Fantasy loads it with `React.lazy` (nothing of `moments/**` is imported statically outside
- * Gradins), so it is also the module's default export.
+ * Curva), so it is also the module's default export.
  */
 export function CardBornPanel({
   card,
@@ -45,8 +45,8 @@ export function CardBornPanel({
   profile: CardProfile;
   /** The next Fantasy deadline (ISO), or null when it is not known. */
   nextDeadline: string | null;
-  surface: "team" | "gradins";
-  /** `gradins` only: the page's stage, kept between the label row and the lines. */
+  surface: "team" | "curva";
+  /** `curva` only: the page's stage, kept between the label row and the lines. */
   children?: ReactNode | ((stage: { beat: BeatName | undefined }) => ReactNode);
 }): JSX.Element | null {
   const { t, lang } = useI18n();
@@ -91,7 +91,7 @@ export function CardBornPanel({
     track("card_born_invite");
   };
 
-  if (surface === "gradins") {
+  if (surface === "curva") {
     // Nothing to draw until the panel is due, and the page's slot stays empty.
     if (!shown && children === undefined) return null;
     const text = shown ? bornText(card, words, nextDeadline) : null;
@@ -129,13 +129,12 @@ export function CardBornPanel({
         >
           <UiCard padding="md" className="mb-3">
             <div className="flex items-start gap-3">
-              <ManagerCard
-                profile={profile}
-                width={96}
-                beat={hero.beat ?? undefined}
-                testId="born-card"
-                className="shrink-0"
-              />
+              {/* The token, not the card: the compact card is drawn for 136 px and more (the plate's
+                  text is 6 px at 96), and 136 px would not leave the pitch's first row on screen.
+                  The token keeps the rating (a dash), the tier's identity and the jersey. */}
+              <span data-testid="born-card" className="shrink-0">
+                <CardToken profile={profile} size={80} />
+              </span>
               <div className="min-w-0 flex-1">
                 {/* The × is a 44 px control: it reaches into the card's padding rather than add to its height. */}
                 <div className="-mt-2 flex min-h-[var(--ui-tap-min)] items-center justify-between gap-2">
@@ -156,7 +155,7 @@ export function CardBornPanel({
             </div>
             {text.invite ? (
               // Why now. The panel leaves the pitch's first row on screen, so the sentence is the
-              // action's description for a screen reader; Gradins' hero says it in the open.
+              // action's description for a screen reader; Curva' hero says it in the open.
               <p id={inviteId} className="sr-only" data-testid="born-invite-line">
                 {text.invite}
               </p>

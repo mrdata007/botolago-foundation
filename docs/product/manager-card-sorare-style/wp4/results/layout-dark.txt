@@ -1,0 +1,647 @@
+# layout probe, flags: --theme dark, widths 320,390,1440, 24 routes, retried runs: 0, routes with no result: 0
+
+=== /gradins?mc=forming1 (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=forming1
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=rated (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=rated
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=founder (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=founder
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=legend (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=legend
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=legend
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=legend
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=legend
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=legend
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=legend
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=homa (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=homa
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=homa
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=homa
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=homa
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=homa
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=homa
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=clubNull (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=clubNull
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=clubNull
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=clubNull
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=clubNull
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=clubNull
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=clubNull
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=arabicName (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=arabicName
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=arabicName
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=arabicName
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=arabicName
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=arabicName
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=arabicName
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=longNameLatin (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=longNameLatin
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=longNameLatin
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=longNameLatin
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=longNameLatin
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=longNameLatin
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=longNameLatin
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins?mc=tierUp (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins?mc=tierUp
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /gradins?mc=tierUp
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /gradins?mc=tierUp
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /gradins?mc=tierUp
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /gradins?mc=tierUp
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /gradins?mc=tierUp
+     <h1> "Gradins" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /gradins/carte?mc=rated (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/carte?mc=rated
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /gradins/carte?mc=founder (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/carte?mc=founder
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /gradins/carte?mc=homa (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/carte?mc=homa
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=homa
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=homa
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/carte?mc=homa
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/carte?mc=homa
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/carte?mc=homa
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /gradins/carte?mc=insufficient3 (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/carte?mc=insufficient3
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /gradins/carte?mc=tierDown (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/carte?mc=tierDown
+     <h1> "Votre carte" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /gradins/les-votres?mc=rated (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/les-votres?mc=rated
+     <h1> "Les vôtres" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /gradins/saisons?mc=rated (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/saisons?mc=rated
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /gradins/saisons?mc=born0 (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /gradins/saisons?mc=born0
+     <h1> "Vos saisons" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /fantasy/team?mc=born0 (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /fantasy/team?mc=born0
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /fantasy/team?mc=born0Serial (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /fantasy/team?mc=born0Serial
+     <h1> "Composer l’équipe" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /fantasy?mc=rated (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /fantasy?mc=rated
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /fantasy?mc=rated
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /fantasy?mc=rated
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /fantasy?mc=rated
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /fantasy?mc=rated
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /fantasy?mc=rated
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /fantasy?mc=homa (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /fantasy?mc=homa
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /fantasy?mc=homa
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /fantasy?mc=homa
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /fantasy?mc=homa
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /fantasy?mc=homa
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /fantasy?mc=homa
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /fantasy?mc=legend (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /fantasy?mc=legend
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  fr 390 /fantasy?mc=legend
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  fr 1440 /fantasy?mc=legend
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 320 /fantasy?mc=legend
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 390 /fantasy?mc=legend
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+  ar 1440 /fantasy?mc=legend
+     <h1> "Fantasy" 52>43 (+9px) fs=34px lh=42.5px
+
+=== /fantasy/rankings?mc=rated (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 27 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /fantasy/rankings?mc=rated
+     <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /fantasy/rankings?mc=rated
+     <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /fantasy/rankings?mc=rated
+     <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /fantasy/rankings?mc=rated
+     <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
+     <span> "Aigles de Rabat" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Lions de Casa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères du Rif" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Étoiles de Marrakech" 87>43 (+44px) fs=14px lh=21.7px
+     <span> "Faucons de Tanger" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères de l'Atlas" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères d'Oujda" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Faucons de Marrakech" 87>43 (+44px) fs=14px lh=21.7px
+     <span> "Panthères du Souss" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Panthères de Fès" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Étoiles de l'Atlas" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Cavaliers de Marrakech" 87>43 (+44px) fs=14px lh=21.7px
+     <span> "Faucons de Rabat" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Faucons de Casa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires du Souss" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires de Fès" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Dragons de Casa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Dragons du Draa" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires d'Oujda" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Corsaires du Rif" 65>43 (+22px) fs=14px lh=21.7px
+     <span> "Faucons de l'Atlas" 65>43 (+22px) fs=14px lh=21.7px
+  ar 390 /fantasy/rankings?mc=rated
+     <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /fantasy/rankings?mc=rated
+     <h1> "Classement" 29>24 (+5px) fs=19px lh=23.75px
+
+=== /fantasy/leagues/lg1?mc=rated (exit 0)
+6 checks over 1 routes × 3 widths × 2 languages
+6 route/viewport pairs with findings
+scroll 0 · past 0 · clipW 0 · clipH 0 · decorative 0 · clipH-fontbox 6 (neither a defect) · spill 0 · starved 0
+
+### scroll: none
+### past: none
+### clipW: none
+### clipH: none
+### spill: none
+### starved: none
+### decorative: none
+### clipHFontBox — 6 pairs
+  fr 320 /fantasy/leagues/lg1?mc=rated
+     <h1> "Ligue" 29>24 (+5px) fs=19px lh=23.75px
+  fr 390 /fantasy/leagues/lg1?mc=rated
+     <h1> "Ligue" 29>24 (+5px) fs=19px lh=23.75px
+  fr 1440 /fantasy/leagues/lg1?mc=rated
+     <h1> "Ligue" 29>24 (+5px) fs=19px lh=23.75px
+  ar 320 /fantasy/leagues/lg1?mc=rated
+     <h1> "Ligue" 29>24 (+5px) fs=19px lh=23.75px
+  ar 390 /fantasy/leagues/lg1?mc=rated
+     <h1> "Ligue" 29>24 (+5px) fs=19px lh=23.75px
+  ar 1440 /fantasy/leagues/lg1?mc=rated
+     <h1> "Ligue" 29>24 (+5px) fs=19px lh=23.75px
+

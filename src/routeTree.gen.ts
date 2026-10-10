@@ -12,9 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as CurvaRouteImport } from './routes/curva'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as FantasyRouteImport } from './routes/fantasy'
-import { Route as GradinsRouteImport } from './routes/gradins'
 import { Route as JouerRouteImport } from './routes/jouer'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewsRouteImport } from './routes/news'
@@ -48,6 +48,10 @@ import { Route as AuthUpdatePasswordRouteImport } from './routes/auth.update-pas
 import { Route as AuthVerifyRouteImport } from './routes/auth.verify'
 import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
 import { Route as ClubsClubIdRouteImport } from './routes/clubs.$clubId'
+import { Route as CurvaIndexRouteImport } from './routes/curva.index'
+import { Route as CurvaCarteRouteImport } from './routes/curva.carte'
+import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
+import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
@@ -62,10 +66,6 @@ import { Route as FantasyRulesRouteImport } from './routes/fantasy.rules'
 import { Route as FantasyTeamRouteImport } from './routes/fantasy.team'
 import { Route as FantasyTopPlayersRouteImport } from './routes/fantasy.top-players'
 import { Route as FantasyTransfersRouteImport } from './routes/fantasy.transfers'
-import { Route as GradinsIndexRouteImport } from './routes/gradins.index'
-import { Route as GradinsCarteRouteImport } from './routes/gradins.carte'
-import { Route as GradinsLesVotresRouteImport } from './routes/gradins.les-votres'
-import { Route as GradinsSaisonsRouteImport } from './routes/gradins.saisons'
 import { Route as JourneePublicIdRouteImport } from './routes/journee.$publicId'
 import { Route as MatchesIndexRouteImport } from './routes/matches.index'
 import { Route as MatchesMatchIdRouteImport } from './routes/matches.$matchId'
@@ -113,6 +113,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CurvaRoute = CurvaRouteImport.update({
+  id: '/curva',
+  path: '/curva',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DemoRoute = DemoRouteImport.update({
   id: '/demo',
   path: '/demo',
@@ -121,11 +126,6 @@ const DemoRoute = DemoRouteImport.update({
 const FantasyRoute = FantasyRouteImport.update({
   id: '/fantasy',
   path: '/fantasy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GradinsRoute = GradinsRouteImport.update({
-  id: '/gradins',
-  path: '/gradins',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JouerRoute = JouerRouteImport.update({
@@ -295,6 +295,26 @@ const ClubsClubIdRoute = ClubsClubIdRouteImport.update({
   path: '/clubs/$clubId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CurvaIndexRoute = CurvaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CurvaRoute,
+} as any)
+const CurvaCarteRoute = CurvaCarteRouteImport.update({
+  id: '/carte',
+  path: '/carte',
+  getParentRoute: () => CurvaRoute,
+} as any)
+const CurvaLesVotresRoute = CurvaLesVotresRouteImport.update({
+  id: '/les-votres',
+  path: '/les-votres',
+  getParentRoute: () => CurvaRoute,
+} as any)
+const CurvaSaisonsRoute = CurvaSaisonsRouteImport.update({
+  id: '/saisons',
+  path: '/saisons',
+  getParentRoute: () => CurvaRoute,
+} as any)
 const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
   id: '/dev/player-mappings-sample',
   path: '/dev/player-mappings-sample',
@@ -364,26 +384,6 @@ const FantasyTransfersRoute = FantasyTransfersRouteImport.update({
   id: '/transfers',
   path: '/transfers',
   getParentRoute: () => FantasyRoute,
-} as any)
-const GradinsIndexRoute = GradinsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => GradinsRoute,
-} as any)
-const GradinsCarteRoute = GradinsCarteRouteImport.update({
-  id: '/carte',
-  path: '/carte',
-  getParentRoute: () => GradinsRoute,
-} as any)
-const GradinsLesVotresRoute = GradinsLesVotresRouteImport.update({
-  id: '/les-votres',
-  path: '/les-votres',
-  getParentRoute: () => GradinsRoute,
-} as any)
-const GradinsSaisonsRoute = GradinsSaisonsRouteImport.update({
-  id: '/saisons',
-  path: '/saisons',
-  getParentRoute: () => GradinsRoute,
 } as any)
 const JourneePublicIdRoute = JourneePublicIdRouteImport.update({
   id: '/journee/$publicId',
@@ -550,9 +550,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
-  '/gradins': typeof GradinsRouteWithChildren
   '/jouer': typeof JouerRoute
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
@@ -585,6 +585,9 @@ export interface FileRoutesByFullPath {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/curva/carte': typeof CurvaCarteRoute
+  '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -598,9 +601,6 @@ export interface FileRoutesByFullPath {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
-  '/gradins/carte': typeof GradinsCarteRoute
-  '/gradins/les-votres': typeof GradinsLesVotresRoute
-  '/gradins/saisons': typeof GradinsSaisonsRoute
   '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
@@ -612,8 +612,8 @@ export interface FileRoutesByFullPath {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
+  '/curva/': typeof CurvaIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
-  '/gradins/': typeof GradinsIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/pepites/': typeof PepitesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
@@ -670,6 +670,9 @@ export interface FileRoutesByTo {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/curva/carte': typeof CurvaCarteRoute
+  '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -683,9 +686,6 @@ export interface FileRoutesByTo {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
-  '/gradins/carte': typeof GradinsCarteRoute
-  '/gradins/les-votres': typeof GradinsLesVotresRoute
-  '/gradins/saisons': typeof GradinsSaisonsRoute
   '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
@@ -697,8 +697,8 @@ export interface FileRoutesByTo {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs': typeof ClubsIndexRoute
+  '/curva': typeof CurvaIndexRoute
   '/fantasy': typeof FantasyIndexRoute
-  '/gradins': typeof GradinsIndexRoute
   '/matches': typeof MatchesIndexRoute
   '/pepites': typeof PepitesIndexRoute
   '/prizes': typeof PrizesIndexRoute
@@ -726,9 +726,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
+  '/curva': typeof CurvaRouteWithChildren
   '/demo': typeof DemoRoute
   '/fantasy': typeof FantasyRouteWithChildren
-  '/gradins': typeof GradinsRouteWithChildren
   '/jouer': typeof JouerRoute
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
@@ -761,6 +761,9 @@ export interface FileRoutesById {
   '/auth/update-password': typeof AuthUpdatePasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
+  '/curva/carte': typeof CurvaCarteRoute
+  '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -774,9 +777,6 @@ export interface FileRoutesById {
   '/fantasy/team': typeof FantasyTeamRoute
   '/fantasy/top-players': typeof FantasyTopPlayersRoute
   '/fantasy/transfers': typeof FantasyTransfersRoute
-  '/gradins/carte': typeof GradinsCarteRoute
-  '/gradins/les-votres': typeof GradinsLesVotresRoute
-  '/gradins/saisons': typeof GradinsSaisonsRoute
   '/journee/$publicId': typeof JourneePublicIdRoute
   '/matches/$matchId': typeof MatchesMatchIdRoute
   '/matches/standings': typeof MatchesStandingsRoute
@@ -788,8 +788,8 @@ export interface FileRoutesById {
   '/prizes/terms': typeof PrizesTermsRoute
   '/profile/security': typeof ProfileSecurityRoute
   '/clubs/': typeof ClubsIndexRoute
+  '/curva/': typeof CurvaIndexRoute
   '/fantasy/': typeof FantasyIndexRoute
-  '/gradins/': typeof GradinsIndexRoute
   '/matches/': typeof MatchesIndexRoute
   '/pepites/': typeof PepitesIndexRoute
   '/prizes/': typeof PrizesIndexRoute
@@ -818,9 +818,9 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/curva'
     | '/demo'
     | '/fantasy'
-    | '/gradins'
     | '/jouer'
     | '/mcp'
     | '/news'
@@ -853,6 +853,9 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/curva/carte'
+    | '/curva/les-votres'
+    | '/curva/saisons'
     | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -866,9 +869,6 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
-    | '/gradins/carte'
-    | '/gradins/les-votres'
-    | '/gradins/saisons'
     | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
@@ -880,8 +880,8 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
+    | '/curva/'
     | '/fantasy/'
-    | '/gradins/'
     | '/matches/'
     | '/pepites/'
     | '/prizes/'
@@ -938,6 +938,9 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/curva/carte'
+    | '/curva/les-votres'
+    | '/curva/saisons'
     | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -951,9 +954,6 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
-    | '/gradins/carte'
-    | '/gradins/les-votres'
-    | '/gradins/saisons'
     | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
@@ -965,8 +965,8 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs'
+    | '/curva'
     | '/fantasy'
-    | '/gradins'
     | '/matches'
     | '/pepites'
     | '/prizes'
@@ -993,9 +993,9 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
+    | '/curva'
     | '/demo'
     | '/fantasy'
-    | '/gradins'
     | '/jouer'
     | '/mcp'
     | '/news'
@@ -1028,6 +1028,9 @@ export interface FileRouteTypes {
     | '/auth/update-password'
     | '/auth/verify'
     | '/clubs/$clubId'
+    | '/curva/carte'
+    | '/curva/les-votres'
+    | '/curva/saisons'
     | '/dev/player-mappings-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -1041,9 +1044,6 @@ export interface FileRouteTypes {
     | '/fantasy/team'
     | '/fantasy/top-players'
     | '/fantasy/transfers'
-    | '/gradins/carte'
-    | '/gradins/les-votres'
-    | '/gradins/saisons'
     | '/journee/$publicId'
     | '/matches/$matchId'
     | '/matches/standings'
@@ -1055,8 +1055,8 @@ export interface FileRouteTypes {
     | '/prizes/terms'
     | '/profile/security'
     | '/clubs/'
+    | '/curva/'
     | '/fantasy/'
-    | '/gradins/'
     | '/matches/'
     | '/pepites/'
     | '/prizes/'
@@ -1084,9 +1084,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
+  CurvaRoute: typeof CurvaRouteWithChildren
   DemoRoute: typeof DemoRoute
   FantasyRoute: typeof FantasyRouteWithChildren
-  GradinsRoute: typeof GradinsRouteWithChildren
   JouerRoute: typeof JouerRoute
   McpRoute: typeof McpRoute
   NewsRoute: typeof NewsRouteWithChildren
@@ -1137,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/curva': {
+      id: '/curva'
+      path: '/curva'
+      fullPath: '/curva'
+      preLoaderRoute: typeof CurvaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo': {
       id: '/demo'
       path: '/demo'
@@ -1149,13 +1156,6 @@ declare module '@tanstack/react-router' {
       path: '/fantasy'
       fullPath: '/fantasy'
       preLoaderRoute: typeof FantasyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gradins': {
-      id: '/gradins'
-      path: '/gradins'
-      fullPath: '/gradins'
-      preLoaderRoute: typeof GradinsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/jouer': {
@@ -1389,6 +1389,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ClubsClubIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/curva/': {
+      id: '/curva/'
+      path: '/'
+      fullPath: '/curva/'
+      preLoaderRoute: typeof CurvaIndexRouteImport
+      parentRoute: typeof CurvaRoute
+    }
+    '/curva/carte': {
+      id: '/curva/carte'
+      path: '/carte'
+      fullPath: '/curva/carte'
+      preLoaderRoute: typeof CurvaCarteRouteImport
+      parentRoute: typeof CurvaRoute
+    }
+    '/curva/les-votres': {
+      id: '/curva/les-votres'
+      path: '/les-votres'
+      fullPath: '/curva/les-votres'
+      preLoaderRoute: typeof CurvaLesVotresRouteImport
+      parentRoute: typeof CurvaRoute
+    }
+    '/curva/saisons': {
+      id: '/curva/saisons'
+      path: '/saisons'
+      fullPath: '/curva/saisons'
+      preLoaderRoute: typeof CurvaSaisonsRouteImport
+      parentRoute: typeof CurvaRoute
+    }
     '/dev/player-mappings-sample': {
       id: '/dev/player-mappings-sample'
       path: '/dev/player-mappings-sample'
@@ -1486,34 +1514,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/fantasy/transfers'
       preLoaderRoute: typeof FantasyTransfersRouteImport
       parentRoute: typeof FantasyRoute
-    }
-    '/gradins/': {
-      id: '/gradins/'
-      path: '/'
-      fullPath: '/gradins/'
-      preLoaderRoute: typeof GradinsIndexRouteImport
-      parentRoute: typeof GradinsRoute
-    }
-    '/gradins/carte': {
-      id: '/gradins/carte'
-      path: '/carte'
-      fullPath: '/gradins/carte'
-      preLoaderRoute: typeof GradinsCarteRouteImport
-      parentRoute: typeof GradinsRoute
-    }
-    '/gradins/les-votres': {
-      id: '/gradins/les-votres'
-      path: '/les-votres'
-      fullPath: '/gradins/les-votres'
-      preLoaderRoute: typeof GradinsLesVotresRouteImport
-      parentRoute: typeof GradinsRoute
-    }
-    '/gradins/saisons': {
-      id: '/gradins/saisons'
-      path: '/saisons'
-      fullPath: '/gradins/saisons'
-      preLoaderRoute: typeof GradinsSaisonsRouteImport
-      parentRoute: typeof GradinsRoute
     }
     '/journee/$publicId': {
       id: '/journee/$publicId'
@@ -1839,6 +1839,22 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface CurvaRouteChildren {
+  CurvaCarteRoute: typeof CurvaCarteRoute
+  CurvaLesVotresRoute: typeof CurvaLesVotresRoute
+  CurvaSaisonsRoute: typeof CurvaSaisonsRoute
+  CurvaIndexRoute: typeof CurvaIndexRoute
+}
+
+const CurvaRouteChildren: CurvaRouteChildren = {
+  CurvaCarteRoute: CurvaCarteRoute,
+  CurvaLesVotresRoute: CurvaLesVotresRoute,
+  CurvaSaisonsRoute: CurvaSaisonsRoute,
+  CurvaIndexRoute: CurvaIndexRoute,
+}
+
+const CurvaRouteWithChildren = CurvaRoute._addFileChildren(CurvaRouteChildren)
+
 interface FantasyLeaguesRouteChildren {
   FantasyLeaguesLeagueIdRoute: typeof FantasyLeaguesLeagueIdRoute
   FantasyLeaguesJoinRoute: typeof FantasyLeaguesJoinRoute
@@ -1899,23 +1915,6 @@ const FantasyRouteChildren: FantasyRouteChildren = {
 
 const FantasyRouteWithChildren =
   FantasyRoute._addFileChildren(FantasyRouteChildren)
-
-interface GradinsRouteChildren {
-  GradinsCarteRoute: typeof GradinsCarteRoute
-  GradinsLesVotresRoute: typeof GradinsLesVotresRoute
-  GradinsSaisonsRoute: typeof GradinsSaisonsRoute
-  GradinsIndexRoute: typeof GradinsIndexRoute
-}
-
-const GradinsRouteChildren: GradinsRouteChildren = {
-  GradinsCarteRoute: GradinsCarteRoute,
-  GradinsLesVotresRoute: GradinsLesVotresRoute,
-  GradinsSaisonsRoute: GradinsSaisonsRoute,
-  GradinsIndexRoute: GradinsIndexRoute,
-}
-
-const GradinsRouteWithChildren =
-  GradinsRoute._addFileChildren(GradinsRouteChildren)
 
 interface NewsRouteChildren {
   NewsArticleIdRoute: typeof NewsArticleIdRoute
@@ -1983,9 +1982,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
+  CurvaRoute: CurvaRouteWithChildren,
   DemoRoute: DemoRoute,
   FantasyRoute: FantasyRouteWithChildren,
-  GradinsRoute: GradinsRouteWithChildren,
   JouerRoute: JouerRoute,
   McpRoute: McpRoute,
   NewsRoute: NewsRouteWithChildren,

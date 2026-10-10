@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
+import { MANAGER_CARD_BUILD } from "@/lib/feature-flags";
 import {
   isPrimaryRouteActive,
   liveNavItems,
@@ -53,13 +54,13 @@ const ALL = [
   item("/fantasy"),
   item("/matches"),
   item("/pepites"),
-  item("/gradins"),
+  item("/curva"),
   item("/profile"),
 ];
 const tos = (items: readonly PrimaryNavItem[]) => items.map((entry) => entry.to);
 
-describe("the fifth slot (Gradins, plan 3.3)", () => {
-  it("withPepitesSlot never lets Gradins in, whatever the other switch says", () => {
+describe("the fifth slot (Curva, plan 3.3)", () => {
+  it("withPepitesSlot never lets Curva in, whatever the other switch says", () => {
     expect(tos(withPepitesSlot(ALL, true))).toEqual([
       "/",
       "/news",
@@ -76,40 +77,41 @@ describe("the fifth slot (Gradins, plan 3.3)", () => {
     ]);
   });
 
-  it("withFifthSlot: Gradins when live, else Pépites when promoted, else Profil", () => {
+  it("withFifthSlot: Curva when live, else Pépites when promoted, else Profil", () => {
     const first = ["/", "/news", "/fantasy", "/matches"];
-    expect(tos(withFifthSlot(ALL, { pepitesPromoted: true, gradinsLive: true }))).toEqual([
+    expect(tos(withFifthSlot(ALL, { pepitesPromoted: true, curvaLive: true }))).toEqual([
       ...first,
-      "/gradins",
+      "/curva",
     ]);
-    expect(tos(withFifthSlot(ALL, { pepitesPromoted: false, gradinsLive: true }))).toEqual([
+    expect(tos(withFifthSlot(ALL, { pepitesPromoted: false, curvaLive: true }))).toEqual([
       ...first,
-      "/gradins",
+      "/curva",
     ]);
-    expect(tos(withFifthSlot(ALL, { pepitesPromoted: true, gradinsLive: false }))).toEqual([
+    expect(tos(withFifthSlot(ALL, { pepitesPromoted: true, curvaLive: false }))).toEqual([
       ...first,
       "/pepites",
     ]);
-    expect(tos(withFifthSlot(ALL, { pepitesPromoted: false, gradinsLive: false }))).toEqual([
+    expect(tos(withFifthSlot(ALL, { pepitesPromoted: false, curvaLive: false }))).toEqual([
       ...first,
       "/profile",
     ]);
   });
 
-  it("the shipped list is today's, Gradins is in the live one only", () => {
-    expect(tos(primaryNavItems)).not.toContain("/gradins");
+  it("the shipped list is today's, Curva is in the live one only", () => {
+    expect(tos(primaryNavItems)).not.toContain("/curva");
     expect(tos(primaryNavItems)).toContain("/pepites");
-    expect(tos(liveNavItems)).toEqual(["/", "/news", "/fantasy", "/matches", "/gradins"]);
-    expect(liveNavItems.find((entry) => entry.to === "/gradins")?.labelKey).toBe("nav.gradins");
+    expect(tos(liveNavItems)).toEqual(["/", "/news", "/fantasy", "/matches", "/curva"]);
+    expect(liveNavItems.find((entry) => entry.to === "/curva")?.labelKey).toBe("nav.curva");
   });
 
-  it("with the build switch off the bar's hook hands back the very same array", () => {
-    // Called outside React on purpose: with the build off it is a plain function, no hook.
-    expect(usePrimaryNavItems()).toBe(primaryNavItems);
+  it("with the build switch on the bar's hook is the live-aware one", () => {
+    // Not called: with the build on it reads the status through React Query, so it needs React.
+    expect(MANAGER_CARD_BUILD).toBe(true);
+    expect(usePrimaryNavItems.name).toBe("useLiveAwareNavItems");
   });
 });
 
-describe("isPrimaryRouteActive with Gradins live (plan 3.3)", () => {
+describe("isPrimaryRouteActive with Curva live (plan 3.3)", () => {
   it("lights Fantasy on every /pepites page, and Pépites on none", () => {
     for (const path of [
       "/pepites",
@@ -122,10 +124,10 @@ describe("isPrimaryRouteActive with Gradins live (plan 3.3)", () => {
     }
   });
 
-  it("lights Gradins on its own pages", () => {
-    expect(isPrimaryRouteActive("/gradins", "/gradins", true)).toBe(true);
-    expect(isPrimaryRouteActive("/gradins/carte", "/gradins", true)).toBe(true);
-    expect(isPrimaryRouteActive("/gradins/carte", "/fantasy", true)).toBe(false);
+  it("lights Curva on its own pages", () => {
+    expect(isPrimaryRouteActive("/curva", "/curva", true)).toBe(true);
+    expect(isPrimaryRouteActive("/curva/carte", "/curva", true)).toBe(true);
+    expect(isPrimaryRouteActive("/curva/carte", "/fantasy", true)).toBe(false);
   });
 
   it("leaves Fantasy's own pages and the other tabs alone", () => {
@@ -136,10 +138,10 @@ describe("isPrimaryRouteActive with Gradins live (plan 3.3)", () => {
     expect(isPrimaryRouteActive("/fantasy", "/", true)).toBe(false);
   });
 
-  it("with Gradins off nothing about /pepites or /gradins changes (the default argument)", () => {
+  it("with Curva off nothing about /pepites or /curva changes (the default argument)", () => {
     expect(isPrimaryRouteActive("/pepites/classement", "/pepites")).toBe(true);
     expect(isPrimaryRouteActive("/pepites/classement", "/pepites", false)).toBe(true);
     expect(isPrimaryRouteActive("/pepites/classement", "/fantasy")).toBe(false);
-    expect(isPrimaryRouteActive("/gradins", "/gradins")).toBe(false);
+    expect(isPrimaryRouteActive("/curva", "/curva")).toBe(false);
   });
 });

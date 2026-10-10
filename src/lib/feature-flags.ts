@@ -252,9 +252,9 @@ export const PEPITES_ENABLED: boolean = true;
 export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
 
 /**
- * Gradins (the Manager Card section) — OFF.
+ * Curva (the Manager Card section) — OFF.
  *
- * Owner decision, 2026-10-08: a new section, Gradins, takes Pépites' place in
+ * Owner decision, 2026-10-08: a new section, Curva, takes Pépites' place in
  * the main navigation and Pépites moves inside Fantasy, at the same moment.
  * It is built in the app behind this switch so that merging and publishing
  * change nothing anyone sees. Plan: docs/product/MANAGER_CARD_SECTION_PLAN.md.
@@ -270,15 +270,17 @@ export const PEPITES_PROMOTED: boolean = PEPITES_ENABLED;
  * Gated surfaces (keep this list current):
  *   - `src/components/shell/primary-nav.ts` — the fifth slot, the Fantasy tab on /pepites
  *   - `src/routes/__root.tsx` — the server-side status read (beforeLoad)
- *   - `src/routes/gradins.tsx` — the /gradins routes (redirect to /fantasy when not live)
+ *   - `src/routes/curva.tsx` — the /curva routes (redirect to /fantasy when not live)
  *   - `src/routes/fantasy.index.tsx` — the Pépites tile, the card block
  *   - `src/components/pepites/PepitesHome.tsx` — the back pill to Fantasy
  *   - every inline card surface listed in the plan, section 5.1
+ *
+ * Owner launch, 2026-10-10: on. Curva shows only once the database read switch is on too.
  */
-export const MANAGER_CARD_ENABLED: boolean = false;
+export const MANAGER_CARD_ENABLED: boolean = true;
 
 /**
- * Development preview of Gradins: `VITE_MANAGER_CARD_PREVIEW=1` on a development
+ * Development preview of Curva: `VITE_MANAGER_CARD_PREVIEW=1` on a development
  * server only. `import.meta.env.DEV` is replaced by `false` in a production
  * build, so this is `false` there and every branch it guards is removed.
  *
@@ -293,7 +295,7 @@ export const MANAGER_CARD_PREVIEW: boolean =
   import.meta.env.DEV === true &&
   import.meta.env.VITE_MANAGER_CARD_PREVIEW === "1";
 
-/** The build lets Gradins exist; the database status decides whether it shows. */
+/** The build lets Curva exist; the database status decides whether it shows. */
 export const MANAGER_CARD_BUILD: boolean = MANAGER_CARD_ENABLED || MANAGER_CARD_PREVIEW;
 
 /**

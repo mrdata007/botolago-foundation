@@ -1,0 +1,431 @@
+{
+ "base": "http://127.0.0.1:4500",
+ "render": [],
+ "g1": [
+  {
+   "path": "/gradins?mc=rated",
+   "lang": "fr",
+   "signedIn": true,
+   "cpu": 4,
+   "rows": [
+    {
+     "coldDataToReady": 533,
+     "coldMountToReady": 533,
+     "warmDataToReady": 532,
+     "warmMountToReady": 532,
+     "coldReadyAbs": 5070,
+     "warmReadyAbs": 3419,
+     "coldPaintedAbs": 5521,
+     "warmPaintedAbs": 3787,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 474,
+     "coldMountToReady": 474,
+     "warmDataToReady": 591,
+     "warmMountToReady": 591,
+     "coldReadyAbs": 4255,
+     "warmReadyAbs": 3158,
+     "coldPaintedAbs": 4624,
+     "warmPaintedAbs": 3258,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 476,
+     "coldMountToReady": 476,
+     "warmDataToReady": 564,
+     "warmMountToReady": 564,
+     "coldReadyAbs": 4126,
+     "warmReadyAbs": 3040,
+     "coldPaintedAbs": 4337,
+     "warmPaintedAbs": 3146,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 446,
+     "coldMountToReady": 446,
+     "warmDataToReady": 525,
+     "warmMountToReady": 525,
+     "coldReadyAbs": 4329,
+     "warmReadyAbs": 3150,
+     "coldPaintedAbs": 4525,
+     "warmPaintedAbs": 3331,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 554,
+     "coldMountToReady": 554,
+     "warmDataToReady": 639,
+     "warmMountToReady": 639,
+     "coldReadyAbs": 4016,
+     "warmReadyAbs": 3257,
+     "coldPaintedAbs": 4459,
+     "warmPaintedAbs": 3419,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 503,
+     "coldMountToReady": 503,
+     "warmDataToReady": 487,
+     "warmMountToReady": 487,
+     "coldReadyAbs": 4103,
+     "warmReadyAbs": 3341,
+     "coldPaintedAbs": 4303,
+     "warmPaintedAbs": 3502,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 568,
+     "coldMountToReady": 568,
+     "warmDataToReady": 652,
+     "warmMountToReady": 652,
+     "coldReadyAbs": 4158,
+     "warmReadyAbs": 3474,
+     "coldPaintedAbs": 4565,
+     "warmPaintedAbs": 3649,
+     "dataSeen": true
+    }
+   ]
+  },
+  {
+   "path": "/gradins?mc=rated",
+   "lang": "ar",
+   "signedIn": true,
+   "cpu": 4,
+   "rows": [
+    {
+     "coldDataToReady": 707,
+     "coldMountToReady": 707,
+     "warmDataToReady": 526,
+     "warmMountToReady": 526,
+     "coldReadyAbs": 4713,
+     "warmReadyAbs": 3313,
+     "coldPaintedAbs": 4958,
+     "warmPaintedAbs": 3382,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 509,
+     "coldMountToReady": 509,
+     "warmDataToReady": 581,
+     "warmMountToReady": 581,
+     "coldReadyAbs": 4502,
+     "warmReadyAbs": 3803,
+     "coldPaintedAbs": 4710,
+     "warmPaintedAbs": 3981,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 538,
+     "coldMountToReady": 538,
+     "warmDataToReady": 610,
+     "warmMountToReady": 610,
+     "coldReadyAbs": 4553,
+     "warmReadyAbs": 3546,
+     "coldPaintedAbs": 4805,
+     "warmPaintedAbs": 3611,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 626,
+     "coldMountToReady": 626,
+     "warmDataToReady": 650,
+     "warmMountToReady": 650,
+     "coldReadyAbs": 5663,
+     "warmReadyAbs": 3861,
+     "coldPaintedAbs": 5914,
+     "warmPaintedAbs": 3959,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 694,
+     "coldMountToReady": 694,
+     "warmDataToReady": 601,
+     "warmMountToReady": 601,
+     "coldReadyAbs": 5054,
+     "warmReadyAbs": 3555,
+     "coldPaintedAbs": 5366,
+     "warmPaintedAbs": 3628,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 531,
+     "coldMountToReady": 531,
+     "warmDataToReady": 858,
+     "warmMountToReady": 858,
+     "coldReadyAbs": 4705,
+     "warmReadyAbs": 3861,
+     "coldPaintedAbs": 4980,
+     "warmPaintedAbs": 3929,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 957,
+     "coldMountToReady": 957,
+     "warmDataToReady": 583,
+     "warmMountToReady": 583,
+     "coldReadyAbs": 4710,
+     "warmReadyAbs": 3512,
+     "coldPaintedAbs": 4814,
+     "warmPaintedAbs": 3585,
+     "dataSeen": true
+    }
+   ]
+  },
+  {
+   "path": "/gradins?mc=forming1",
+   "lang": "fr",
+   "signedIn": true,
+   "cpu": 4,
+   "rows": [
+    {
+     "coldDataToReady": 511,
+     "coldMountToReady": 511,
+     "warmDataToReady": 605,
+     "warmMountToReady": 605,
+     "coldReadyAbs": 4002,
+     "warmReadyAbs": 3199,
+     "coldPaintedAbs": 4201,
+     "warmPaintedAbs": 3363,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 792,
+     "coldMountToReady": 792,
+     "warmDataToReady": 625,
+     "warmMountToReady": 625,
+     "coldReadyAbs": 4199,
+     "warmReadyAbs": 3292,
+     "coldPaintedAbs": 4291,
+     "warmPaintedAbs": 3651,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 631,
+     "coldMountToReady": 631,
+     "warmDataToReady": 683,
+     "warmMountToReady": 683,
+     "coldReadyAbs": 4540,
+     "warmReadyAbs": 3345,
+     "coldPaintedAbs": 4634,
+     "warmPaintedAbs": 3525,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 513,
+     "coldMountToReady": 513,
+     "warmDataToReady": 539,
+     "warmMountToReady": 539,
+     "coldReadyAbs": 4316,
+     "warmReadyAbs": 3385,
+     "coldPaintedAbs": 4680,
+     "warmPaintedAbs": 3616,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 597,
+     "coldMountToReady": 597,
+     "warmDataToReady": 469,
+     "warmMountToReady": 469,
+     "coldReadyAbs": 4579,
+     "warmReadyAbs": 3172,
+     "coldPaintedAbs": 5136,
+     "warmPaintedAbs": 3358,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 626,
+     "coldMountToReady": 626,
+     "warmDataToReady": 554,
+     "warmMountToReady": 554,
+     "coldReadyAbs": 4590,
+     "warmReadyAbs": 3290,
+     "coldPaintedAbs": 5110,
+     "warmPaintedAbs": 3495,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 606,
+     "coldMountToReady": 606,
+     "warmDataToReady": 594,
+     "warmMountToReady": 594,
+     "coldReadyAbs": 5074,
+     "warmReadyAbs": 3290,
+     "coldPaintedAbs": 5593,
+     "warmPaintedAbs": 3506,
+     "dataSeen": true
+    }
+   ]
+  },
+  {
+   "path": "/gradins?mc=legend",
+   "lang": "fr",
+   "signedIn": true,
+   "cpu": 4,
+   "rows": [
+    {
+     "coldDataToReady": 606,
+     "coldMountToReady": 606,
+     "warmDataToReady": 574,
+     "warmMountToReady": 574,
+     "coldReadyAbs": 4462,
+     "warmReadyAbs": 3347,
+     "coldPaintedAbs": 4772,
+     "warmPaintedAbs": 3670,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 569,
+     "coldMountToReady": 569,
+     "warmDataToReady": 527,
+     "warmMountToReady": 527,
+     "coldReadyAbs": 4495,
+     "warmReadyAbs": 3149,
+     "coldPaintedAbs": 4920,
+     "warmPaintedAbs": 3578,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 609,
+     "coldMountToReady": 609,
+     "warmDataToReady": 521,
+     "warmMountToReady": 521,
+     "coldReadyAbs": 4172,
+     "warmReadyAbs": 3017,
+     "coldPaintedAbs": 4377,
+     "warmPaintedAbs": 3262,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 587,
+     "coldMountToReady": 587,
+     "warmDataToReady": 524,
+     "warmMountToReady": 524,
+     "coldReadyAbs": 4808,
+     "warmReadyAbs": 3216,
+     "coldPaintedAbs": 5291,
+     "warmPaintedAbs": 3423,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 635,
+     "coldMountToReady": 635,
+     "warmDataToReady": 492,
+     "warmMountToReady": 492,
+     "coldReadyAbs": 4462,
+     "warmReadyAbs": 3055,
+     "coldPaintedAbs": 4874,
+     "warmPaintedAbs": 3230,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 500,
+     "coldMountToReady": 500,
+     "warmDataToReady": 437,
+     "warmMountToReady": 437,
+     "coldReadyAbs": 3910,
+     "warmReadyAbs": 2936,
+     "coldPaintedAbs": 4386,
+     "warmPaintedAbs": 3028,
+     "dataSeen": true
+    },
+    {
+     "coldDataToReady": 524,
+     "coldMountToReady": 524,
+     "warmDataToReady": 543,
+     "warmMountToReady": 543,
+     "coldReadyAbs": 3852,
+     "warmReadyAbs": 3194,
+     "coldPaintedAbs": 4085,
+     "warmPaintedAbs": 3380,
+     "dataSeen": true
+    }
+   ]
+  },
+  {
+   "path": "/gradins",
+   "lang": "fr",
+   "signedIn": false,
+   "cpu": 4,
+   "rows": [
+    {
+     "coldDataToReady": 785,
+     "coldMountToReady": 785,
+     "warmDataToReady": 720,
+     "warmMountToReady": 720,
+     "coldReadyAbs": 3539,
+     "warmReadyAbs": 2842,
+     "coldPaintedAbs": 3628,
+     "warmPaintedAbs": 2952,
+     "dataSeen": false
+    },
+    {
+     "coldDataToReady": 779,
+     "coldMountToReady": 779,
+     "warmDataToReady": 515,
+     "warmMountToReady": 515,
+     "coldReadyAbs": 3556,
+     "warmReadyAbs": 2654,
+     "coldPaintedAbs": 3660,
+     "warmPaintedAbs": 2730,
+     "dataSeen": false
+    },
+    {
+     "coldDataToReady": 652,
+     "coldMountToReady": 652,
+     "warmDataToReady": 640,
+     "warmMountToReady": 640,
+     "coldReadyAbs": 3553,
+     "warmReadyAbs": 2655,
+     "coldPaintedAbs": 3677,
+     "warmPaintedAbs": 2719,
+     "dataSeen": false
+    },
+    {
+     "coldDataToReady": 710,
+     "coldMountToReady": 710,
+     "warmDataToReady": 649,
+     "warmMountToReady": 649,
+     "coldReadyAbs": 3560,
+     "warmReadyAbs": 2842,
+     "coldPaintedAbs": 3651,
+     "warmPaintedAbs": 2911,
+     "dataSeen": false
+    },
+    {
+     "coldDataToReady": 759,
+     "coldMountToReady": 759,
+     "warmDataToReady": 646,
+     "warmMountToReady": 646,
+     "coldReadyAbs": 3524,
+     "warmReadyAbs": 2631,
+     "coldPaintedAbs": 3668,
+     "warmPaintedAbs": 2710,
+     "dataSeen": false
+    },
+    {
+     "coldDataToReady": 613,
+     "coldMountToReady": 613,
+     "warmDataToReady": 573,
+     "warmMountToReady": 573,
+     "coldReadyAbs": 3468,
+     "warmReadyAbs": 2618,
+     "coldPaintedAbs": 3555,
+     "warmPaintedAbs": 2698,
+     "dataSeen": false
+    },
+    {
+     "coldDataToReady": 757,
+     "coldMountToReady": 757,
+     "warmDataToReady": 559,
+     "warmMountToReady": 559,
+     "coldReadyAbs": 3557,
+     "warmReadyAbs": 2648,
+     "coldPaintedAbs": 3645,
+     "warmPaintedAbs": 2712,
+     "dataSeen": false
+    }
+   ]
+  }
+ ]
+}

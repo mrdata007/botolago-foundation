@@ -5,7 +5,7 @@ import { join } from "node:path";
 /**
  * "Off means identical" at the level of the files a visitor downloads (plan 3.7, and
  * `scripts/qa/manager-card-off-bundle-gate.ts` on the built output): a static import of any
- * Gradins or Manager Card module from these pages makes every visit download the section's code,
+ * Curva or Manager Card module from these pages makes every visit download the section's code,
  * switch or no switch. So they import only the status hook statically, and load every card
  * component with `lazy`, inside the live branch.
  */
@@ -35,10 +35,10 @@ function staticImports(source: string): { clause: string; from: string }[] {
 }
 
 describe("the pages WP6 touches keep the section's code out of their own chunks", () => {
-  it.each(FILES)("%s imports no card or Gradins module statically", (file) => {
+  it.each(FILES)("%s imports no card or Curva module statically", (file) => {
     const imports = staticImports(stripComments(read(file)));
     const strays = imports.filter(({ from }) =>
-      /(^@\/components\/(manager-card|gradins)\b)|(^@\/backend\/manager-card\b)|(^@\/services\/(use-manager-card|manager-card)$)|(gradins-card-setup-row|gradins-card-deletion-line)$/.test(
+      /(^@\/components\/(manager-card|curva)\b)|(^@\/backend\/manager-card\b)|(^@\/services\/(use-manager-card|manager-card)$)|(curva-card-setup-row|curva-card-deletion-line)$/.test(
         from,
       ),
     );
@@ -54,12 +54,12 @@ describe("the pages WP6 touches keep the section's code out of their own chunks"
 
   it("loads the two card components on demand, only from a live branch", () => {
     const setup = stripComments(read("src/routes/auth.profile-setup.tsx"));
-    expect(setup).toContain('import("@/components/auth/gradins-card-setup-row")');
+    expect(setup).toContain('import("@/components/auth/curva-card-setup-row")');
     expect(setup).toMatch(/cardPath && step <= 2 \? \(\s*[^]*?<Suspense[^]*?<CardSetupSlot/);
     expect(setup.match(/<CardSetupSlot/g)).toHaveLength(1);
 
     const profile = stripComments(read("src/routes/profile.tsx"));
-    expect(profile).toContain('import("@/components/auth/gradins-card-deletion-line")');
+    expect(profile).toContain('import("@/components/auth/curva-card-deletion-line")');
     const uses = [...profile.matchAll(/<CardDeletionLine/g)];
     expect(uses).toHaveLength(2);
     for (const use of uses) {
@@ -83,7 +83,7 @@ describe("the pages WP6 touches keep the section's code out of their own chunks"
 
   it("reads no copy accessor of the section while off: the two hints are plain dictionary reads", () => {
     for (const file of ["src/routes/auth.register.tsx", "src/routes/auth.profile-setup.tsx"]) {
-      expect(stripComments(read(file))).not.toMatch(/useMomentCopy|useGradinsCopy|useCardCopy/);
+      expect(stripComments(read(file))).not.toMatch(/useMomentCopy|useCurvaCopy|useCardCopy/);
     }
     expect(read("src/routes/auth.register.tsx")).toContain('t("card.onboarding.m1.register.hint")');
     expect(read("src/routes/auth.profile-setup.tsx")).toContain(

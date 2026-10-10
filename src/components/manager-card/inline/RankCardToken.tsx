@@ -8,14 +8,14 @@ import { cn } from "@/lib/utils";
 import { useMyManagerCard } from "@/services/use-manager-card";
 
 import { CardToken } from "../CardToken";
-import { cardLabel, useCardCopy, useCardStrings, useGradinsCopy } from "../copy";
+import { cardLabel, useCardCopy, useCardStrings, useCurvaCopy } from "../copy";
 import { fromMyCard } from "../to-profile";
 import { rankTokenFigure } from "./inline-model";
 
 /**
  * The card at the end of « Mon classement » (plan M3c): the 44 px token and, under it, « 1/3 »
  * while the card forms or « 84 OVR » once it has a number (stacked, so the line beside it keeps
- * the room its three figures need). One link to `/gradins`, a target of at least 48 px like the
+ * the room its three figures need). One link to `/curva`, a target of at least 48 px like the
  * « Aller à ma position » control beside it.
  *
  * Display only: this line never changes the rank above it, and no ranking reads the number. The
@@ -32,13 +32,13 @@ export function RankCardToken() {
 export function RankCardTokenView({ card }: { card: MyCardDto }) {
   const copy = useCardCopy();
   const strings = useCardStrings();
-  const gradins = useGradinsCopy();
+  const curva = useCurvaCopy();
   const profile = useMemo(() => fromMyCard(card), [card]);
   const figure = rankTokenFigure(card);
-  const name = `${cardLabel(profile, strings)}${strings.a11y.separator}${gradins.hubCardView}`;
+  const name = `${cardLabel(profile, strings)}${strings.a11y.separator}${curva.hubCardView}`;
   return (
     <Link
-      to="/gradins"
+      to="/curva"
       aria-label={name}
       onClick={() => track("card_block_open")}
       data-testid="rank-card-token"

@@ -28,18 +28,15 @@ describe("the off-bundle gate", () => {
       ]),
     ).toHaveLength(1);
     expect(
-      findViolations([
-        card,
-        chunk("gradins.index-MMMM.js", 'import{a}from"./ManagerCard-KKKK.js";'),
-      ]),
+      findViolations([card, chunk("curva.index-MMMM.js", 'import{a}from"./ManagerCard-KKKK.js";')]),
     ).toEqual([]);
   });
 
-  it("passes when only Gradins' pages reach the section's code", () => {
+  it("passes when only Curva' pages reach the section's code", () => {
     expect(
       findViolations([
         DATA,
-        chunk("gradins.index-BBBB.js", 'import{a}from"./manager-card-AAAA.js";'),
+        chunk("curva.index-BBBB.js", 'import{a}from"./manager-card-AAAA.js";'),
         chunk("BottomNav-CCCC.js", 'import{b}from"./shared-DDDD.js";'),
         chunk("shared-DDDD.js", "export{b}"),
       ]),

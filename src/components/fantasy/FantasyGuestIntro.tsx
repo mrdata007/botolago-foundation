@@ -1,5 +1,15 @@
 import createTeamArt from "@/assets/illustrations/create-team.webp";
-import { BookOpen, CalendarClock, Coins, Plus, Star, Timer, Trophy, Users } from "lucide-react";
+import {
+  BookOpen,
+  CalendarClock,
+  Coins,
+  Plus,
+  Shirt,
+  Star,
+  Timer,
+  Trophy,
+  Users,
+} from "lucide-react";
 import { lazy, Suspense, useId, type ComponentType } from "react";
 
 import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline";
@@ -13,7 +23,7 @@ import { joinDeadlineToShow } from "./fantasy-hub-layout";
 // The card's fifth point is its own chunk, requested only while the section is live: with the
 // switch off nothing of the Manager Card is imported by this page.
 const GuestIntroCardPoint = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.GuestIntroCardPoint,
   })),
 );
@@ -56,6 +66,12 @@ export function FantasyGuestIntro(props: {
   registrationClosed: boolean;
   /** At least one prize is open, so the line about them is true. */
   prizes: boolean;
+  /**
+   * A squad is already being built on this device: `FantasyResumeDraft`
+   * above carries the one call to action, so this card keeps the
+   * explanation and the deadline without a second gradient button.
+   */
+  hasDraft?: boolean;
 }) {
   return props.registrationClosed ? (
     <FantasyGuestClosed audience={props.audience} />
@@ -69,10 +85,12 @@ function OpenIntro({
   audience,
   joinBy,
   prizes,
+  hasDraft = false,
 }: {
   audience: "signed_out" | "no_team";
   joinBy: { number: number; deadline: string } | null;
   prizes: boolean;
+  hasDraft?: boolean;
 }) {
   const { t, lang } = useI18n();
   const titleId = useId();
@@ -127,24 +145,28 @@ function OpenIntro({
               team first, and an account is asked for only when they press
               "Enregistrer". The note under the button says so, for the one
               audience it is news to (`aria-describedby`). */}
-        <UiLinkButton
-          to={GUEST_CREATE_NEXT}
-          variant="gradient"
-          className="mt-4"
-          aria-describedby={audience === "signed_out" ? signInNoteId : undefined}
-          data-testid="fantasy-intro-create"
-        >
-          <Plus className="h-5 w-5" aria-hidden />
-          {t("fantasy.create.title")}
-        </UiLinkButton>
-        {audience === "signed_out" ? (
-          <p
-            id={signInNoteId}
-            className={cn("mt-2 text-center text-balance", ui.text.meta, ui.tone.muted)}
-          >
-            {t("fantasy.intro.sign_in_note")}
-          </p>
-        ) : null}
+        {hasDraft ? null : (
+          <>
+            <UiLinkButton
+              to={GUEST_CREATE_NEXT}
+              variant="gradient"
+              className="mt-4"
+              aria-describedby={audience === "signed_out" ? signInNoteId : undefined}
+              data-testid="fantasy-intro-create"
+            >
+              <Plus className="h-5 w-5" aria-hidden />
+              {t("fantasy.create.title")}
+            </UiLinkButton>
+            {audience === "signed_out" ? (
+              <p
+                id={signInNoteId}
+                className={cn("mt-2 text-center text-balance", ui.text.meta, ui.tone.muted)}
+              >
+                {t("fantasy.intro.sign_in_note")}
+              </p>
+            ) : null}
+          </>
+        )}
         {deadline ? (
           // Under the button, not above it: with Arabic's taller line
           // height, these two lines above it would put the button at a
@@ -338,6 +360,91 @@ export function FantasyGuestExplainer({ prizes }: { prizes: boolean }) {
         </p>
       ) : null}
       <HowItWorks />
+    </section>
+  );
+}
+
+/**
+ * "Reprendre mon équipe (n/15)": the squad a visitor started on this device,
+ * first on the hub (critique 2026-10-06, issue 2). The builder keeps the draft
+ * on every pick, but the hub said nothing about it and offered "Créer mon
+ * équipe" as if there were none; a visitor who left after twelve players had
+ * no way to tell the work was still there.
+ *
+ * One card, one gradient action back to the builder, which opens the same
+ * draft (`createDraftProgress` reads it the way the builder does). The bar is
+ * how far the squad is; the note says where it lives and, for a visitor, when
+ * an account is asked for — the same sentence as the builder's last step.
+ */
+export function FantasyResumeDraft({
+  filled,
+  total,
+  audience,
+}: {
+  filled: number;
+  total: number;
+  audience: "signed_out" | "no_team";
+}) {
+  const { t } = useI18n();
+  const titleId = useId();
+  const progress = t("fantasy.hub.resume_progress")
+    .replace("{n}", String(filled))
+    .replace("{total}", String(total));
+  return (
+    <section
+      aria-labelledby={titleId}
+      className={cn("mb-3 p-4", ui.surface.card)}
+      data-testid="fantasy-resume-draft"
+    >
+      <div className="flex items-center gap-3">
+        <span
+          className={cn(
+            "grid h-10 w-10 shrink-0 place-items-center",
+            ui.radius.full,
+            ui.surface.sunken,
+            ui.tone.ink,
+          )}
+          aria-hidden
+        >
+          <Shirt className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 id={titleId} className={cn("text-balance", ui.display.teamSm, ui.tone.default)}>
+            {t("fantasy.hub.resume_title")}
+          </h2>
+          {audience === "signed_out" ? (
+            <p className={cn("mt-0.5", ui.text.meta, ui.tone.muted)}>
+              {t("fantasy.create.guest_note")}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={total}
+        aria-valuenow={filled}
+        aria-label={progress}
+        className={cn("mt-3 h-2 overflow-hidden", ui.radius.full, "bg-[color:var(--ui-rule)]")}
+      >
+        <span
+          className="block h-full"
+          style={{
+            width: `${Math.max(0, Math.min(100, (filled / total) * 100))}%`,
+            backgroundImage: "var(--ui-grad-action)",
+          }}
+        />
+      </div>
+      <UiLinkButton
+        to={GUEST_CREATE_NEXT}
+        variant="gradient"
+        className="mt-3"
+        data-testid="fantasy-resume-draft-cta"
+      >
+        {t("fantasy.hub.resume_cta")
+          .replace("{n}", String(filled))
+          .replace("{total}", String(total))}
+      </UiLinkButton>
     </section>
   );
 }

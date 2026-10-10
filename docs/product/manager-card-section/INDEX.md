@@ -1,5 +1,7 @@
 # Gradins (the Manager Card section): evidence index
 
+> **Renamed Curva on 2026-10-10.** The owner renamed the section from « Gradins » (Arabic «المدرجات») to « Curva » (Arabic «كورفا»): addresses `/curva`, `/curva/carte`, `/curva/les-votres`, `/curva/saisons`, the component folder `src/components/curva`, the chunk `curva-*`, the specs `tests/e2e/curva*.e2e.ts`. The text below is the record of what was done under the old name and is not rewritten: read « Gradins » as « Curva » (and `/gradins` as `/curva`) in it.
+
 Every acceptance criterion of plan section 9, how it was measured, what it gave, and the file that holds it.
 The plan is [`../MANAGER_CARD_SECTION_PLAN.md`](../MANAGER_CARD_SECTION_PLAN.md), the screen-work brief
 [`../MANAGER_CARD_SECTION_BRIEF.md`](../MANAGER_CARD_SECTION_BRIEF.md) (copied into the pull request description).

@@ -94,7 +94,7 @@ export type AnalyticsEvent =
   | "profile_setup_complete"
   /** The server confirmed a first Fantasy team was saved (not a draft). */
   | "fantasy_team_created"
-  // Gradins and the Manager Card (plan Appendix C): names only, no properties.
+  // Curva and the Manager Card (plan Appendix C): names only, no properties.
   /** The line about the card was shown above « Entrer l’effectif » on the create flow. */
   | "card_save_line_view"
   /** The card-born panel or hero was shown. */
@@ -153,22 +153,22 @@ export type AnalyticsEvent =
   | "card_season_started_view"
   /** A replay sheet was opened. */
   | "card_replay_open"
-  /** Gradins was opened by a visitor without an account. */
-  | "gradins_view_guest"
-  /** Gradins was opened by a signed-in account without a team. */
-  | "gradins_view_no_team"
-  /** Gradins was opened by a manager. */
-  | "gradins_view_manager"
-  /** A guest tapped a create-or-sign-in button on Gradins. */
-  | "gradins_guest_cta"
+  /** Curva was opened by a visitor without an account. */
+  | "curva_view_guest"
+  /** Curva was opened by a signed-in account without a team. */
+  | "curva_view_no_team"
+  /** Curva was opened by a manager. */
+  | "curva_view_manager"
+  /** A guest tapped a create-or-sign-in button on Curva. */
+  | "curva_guest_cta"
   /** A guest tried a club's colours on the card. */
-  | "gradins_guest_club_try"
+  | "curva_guest_club_try"
   /** « Votre carte » was opened. */
-  | "gradins_card_view"
+  | "curva_card_view"
   /** « Les vôtres » was opened. */
-  | "gradins_people_view"
+  | "curva_people_view"
   /** « Vos saisons » was opened. */
-  | "gradins_seasons_view"
+  | "curva_seasons_view"
   /** Pépites was opened from its tile in the Fantasy hub. */
   | "pepites_from_fantasy";
 

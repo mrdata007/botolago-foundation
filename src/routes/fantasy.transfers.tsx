@@ -38,12 +38,12 @@ import { SQUAD_RULES, type FantasyPlayer } from "@/types/fantasy";
 // The card's hint and first-transfer line are their own chunks, requested only while the section is
 // live: with the switch off this screen imports nothing of the Manager Card.
 const CardHint = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.CardHint,
   })),
 );
 const FirstTransferLine = lazy(() =>
-  import("@/components/manager-card/inline/gradins-inline").then((module) => ({
+  import("@/components/manager-card/inline/curva-inline").then((module) => ({
     default: module.FirstTransferLine,
   })),
 );

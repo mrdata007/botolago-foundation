@@ -510,7 +510,17 @@ function HomeContent() {
   const showStandings = standingsLoading || standingsFailed || standingsRows.length > 0;
 
   return (
-    <AppShell liveStrip matchdayStrip contentWidth="desktop">
+    <AppShell
+      liveStrip
+      matchdayStrip
+      contentWidth="desktop"
+      className={cn(
+        // A populated rail owns its spacing. Keep the screen's original
+        // padding when the deadline strip needs it, or when the feed is empty.
+        !(stripTime && gwQ.data) && "[&>main:has([data-testid=home-stories])]:pt-0",
+        "[&>main:has([data-testid=home-stories])_[data-testid=home-gameweek-band]]:mt-0",
+      )}
+    >
       {/* -------------------------------------------------------- */}
       {/* 1. Gameweek band — the page's anchor                     */}
       {/* -------------------------------------------------------- */}
@@ -1029,6 +1039,7 @@ function GameweekBand({
   const deadlineAhead = deadline !== undefined && deadlineMs !== null && deadlineMs > now;
   return (
     <section
+      data-testid="home-gameweek-band"
       className={cn(
         "relative isolate overflow-hidden",
         // Flush under the bar (and the live strip): UiScreen's `pt-4` is

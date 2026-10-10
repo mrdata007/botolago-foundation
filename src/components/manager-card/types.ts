@@ -1,5 +1,5 @@
 /**
- * Render-facing types for the Manager Card (Gradins). Verbatim from
+ * Render-facing types for the Manager Card (Curva). Verbatim from
  * docs/product/MANAGER_CARD_SECTION_PLAN.md section 6.2. Every field may be empty;
  * empty draws as the object's own empty part (never 0, never a lock).
  */
@@ -23,6 +23,15 @@ export interface CardClub {
   primary: string;
   /** `#rrggbb` from `clubPalette(club).secondary`, or null. */
   secondary: string | null;
+  /** The club's slug, for finding it in the app's club catalogue when the ids differ (development). */
+  slug?: string | null;
+  /**
+   * The club's crest picture, set by the app only once it has loaded in this browser
+   * (`useCardCrest`): the renderer draws it on a light plate in the tab's disc instead of the
+   * initials. Absent: the initials disc. A renderer draws only an `https:` URL, a local `http:` one
+   * or a raster `data:image` (`crestHref`); anything else reads as absent.
+   */
+  crest?: string;
 }
 
 /** What a renderer draws. Every field may be empty; empty draws as the object's own empty part. */
@@ -48,6 +57,11 @@ export interface CardProfile {
   stats: Record<StatCode, number | null>;
   /** Development fixtures only: prints the sample label on the object. */
   sample?: true;
+  /**
+   * The tier ladder's token: draw the material of `tier` although there is no number (a dash), so
+   * five tokens in a row show five materials. A card that carries a rating never needs it.
+   */
+  ladder?: true;
 }
 
 /** The words a renderer may print or speak, from the app dictionary (WP1 `cardStrings`). */

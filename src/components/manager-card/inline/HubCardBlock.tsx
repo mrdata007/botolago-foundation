@@ -14,13 +14,14 @@ import type { Gameweek } from "@/types/domain";
 import { CardToken } from "../CardToken";
 import {
   useCardCopy,
-  useGradinsCopy,
+  useCurvaCopy,
   useMomentCopy,
   type CardCopy,
-  type GradinsCopy,
+  type CurvaCopy,
   type MomentCopy,
 } from "../copy";
 import { fill } from "../interpolate";
+import { TierWord } from "../tier-word";
 import { fromMyCard } from "../to-profile";
 import { hubCardModel, type HubCardHead, type HubCardLine } from "./inline-model";
 
@@ -42,7 +43,7 @@ const bind = (template: string) =>
  * it is, and the next round. Every figure is what the card read says; a count that is not known
  * is not shown, and nothing is 0 that is not.
  *
- * The whole block is one link to `/gradins`. It has no button of its own, because the useful
+ * The whole block is one link to `/curva`. It has no button of its own, because the useful
  * action on this screen is playing the round. « Nouveau » marks a moment that is waiting there:
  * the hub never opens it, the number is on screen whether or not it is ever seen.
  *
@@ -76,7 +77,7 @@ export function HubCardBlockView({
 }) {
   const { lang } = useI18n();
   const moment = useMomentCopy();
-  const gradins = useGradinsCopy();
+  const curva = useCurvaCopy();
   const cardCopy = useCardCopy();
   const profile = useMemo(() => fromMyCard(card), [card]);
   const model = hubCardModel(
@@ -87,7 +88,7 @@ export function HubCardBlockView({
   );
   const line = renderLine(model.line, {
     moment,
-    gradins,
+    curva,
     cardCopy,
     minRated: card.minRated,
     rated: model.head.kind === "number",
@@ -96,10 +97,10 @@ export function HubCardBlockView({
       <bdi className="whitespace-nowrap">{formatDeadline(iso, lang, { weekday: "short" })}</bdi>
     ),
   });
-  const fresh = model.fresh ? <Pill tone="new">{gradins.badgeNew}</Pill> : null;
+  const fresh = model.fresh ? <Pill tone="new">{curva.badgeNew}</Pill> : null;
   return (
     <Link
-      to="/gradins"
+      to="/curva"
       onClick={() => track("card_block_open")}
       data-testid="hub-card-block"
       className={cn(
@@ -113,7 +114,7 @@ export function HubCardBlockView({
         <CardToken profile={profile} size={64} />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
-        <span className="sr-only">{gradins.hubCardView}. </span>
+        <span className="sr-only">{curva.hubCardView}. </span>
         {model.line.kind === "late" ? (
           // The season ended before a first number: the sentence that says so leads, the count
           // and the season it is for follow in a quieter line. No title, no big counter.
@@ -177,7 +178,9 @@ function Head({
         <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{cardCopy.ovr}</span>
       </span>
       {head.tier ? (
-        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>{cardCopy.tier[head.tier]}</span>
+        <span className={cn(ui.text.bodyStrong, ui.tone.default)}>
+          <TierWord tier={head.tier} />
+        </span>
       ) : null}
       {head.provisional ? <Pill tone="quiet">{cardCopy.provisional}</Pill> : null}
     </>
@@ -212,7 +215,7 @@ function renderLine(
   line: HubCardLine,
   ctx: {
     moment: MomentCopy;
-    gradins: GradinsCopy;
+    curva: CurvaCopy;
     cardCopy: CardCopy;
     minRated: number;
     rated: boolean;
@@ -224,7 +227,7 @@ function renderLine(
       return null;
     case "next":
       return ctx.rated
-        ? fill(bind(ctx.gradins.roundLine), {
+        ? fill(bind(ctx.curva.roundLine), {
             gw: line.gameweek,
             deadline: ctx.deadline(line.deadline),
           })
@@ -247,7 +250,7 @@ function renderLine(
       return fill(ctx.moment.m10.closed, {
         season: line.season,
         ovr: line.ovr,
-        tier: ctx.cardCopy.tier[line.tier],
+        tier: <TierWord tier={line.tier} />,
       });
   }
 }

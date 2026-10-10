@@ -32,6 +32,18 @@ function ensureLoaded(): void {
   );
 }
 
+/**
+ * Start loading the renderer's chunk and fonts now, before any card is mounted. A screen that is
+ * about to draw cards calls it as it mounts, so the chunk and the faces load while the card's data
+ * is still on its way (`ensureLoaded` otherwise starts when the first card mounts, which is after
+ * the data arrived). Client only, and idempotent; a screen that never draws a card never calls it,
+ * so with the section off the chunk is never requested.
+ */
+export function preloadCardRenderer(): void {
+  if (typeof window === "undefined") return;
+  ensureLoaded();
+}
+
 function subscribeRenderer(listener: () => void): () => void {
   listeners.add(listener);
   ensureLoaded();

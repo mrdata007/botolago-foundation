@@ -199,8 +199,8 @@ select extensions.ok(
       'app_private.account_deletion_erase(uuid,integer)'::regprocedure),
       format('pg_try_advisory_xact_lock(pg_catalog.hashtextextended(%L, 0))', k)) > 0)
    from unnest(array['fantasy:lifecycle-tick', 'botolago:predictions-score', 'pepites_tick',
-     'botolago.fantasy_prize_evaluation']) as k),
-  'the erasure takes the locks of the Fantasy, Pronostics, Pépites and prize writers');
+     'botolago.fantasy_prize_evaluation', 'botolago:manager-card']) as k),
+  'the erasure takes the locks of the Fantasy, Pronostics, Pépites, prize and Manager Card writers');
 select extensions.ok(
   (select bool_and(has_function_privilege('service_role', f, 'execute')
       and not has_function_privilege('authenticated', f, 'execute')

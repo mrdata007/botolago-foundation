@@ -10,7 +10,7 @@ import {
   managerCardStatusQuery,
   markManagerCardOff,
   readManagerCardStatusOnServer,
-  shouldRedirectFromGradins,
+  shouldRedirectFromCurva,
 } from "./manager-card-status";
 import {
   STATUS_FAILURE_TTL_MS,
@@ -200,17 +200,17 @@ describe("what route guards and components read", () => {
     expect(managerCardStatusFrom(queryClient)).toEqual(STATUS_OFF);
   });
 
-  it("/gradins redirects unless the build AND the database both say yes", () => {
+  it("/curva redirects unless the build AND the database both say yes", () => {
     const on = new QueryClient();
     on.setQueryData(managerCardStatusKey, ON);
     const off = new QueryClient();
     off.setQueryData(managerCardStatusKey, STATUS_OFF);
     const empty = new QueryClient();
-    expect(shouldRedirectFromGradins(on, true)).toBe(false);
-    expect(shouldRedirectFromGradins(on, false)).toBe(true);
-    expect(shouldRedirectFromGradins(off, true)).toBe(true);
-    expect(shouldRedirectFromGradins(empty, true)).toBe(true);
-    // The default is the build constant, which is off.
-    expect(shouldRedirectFromGradins(on)).toBe(true);
+    expect(shouldRedirectFromCurva(on, true)).toBe(false);
+    expect(shouldRedirectFromCurva(on, false)).toBe(true);
+    expect(shouldRedirectFromCurva(off, true)).toBe(true);
+    expect(shouldRedirectFromCurva(empty, true)).toBe(true);
+    // The default is the build constant, which is on since the owner's launch (2026-10-10).
+    expect(shouldRedirectFromCurva(on)).toBe(false);
   });
 });

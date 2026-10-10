@@ -99,9 +99,73 @@ describe("fantasy-create-service — place / remove / dedupe", () => {
     const d2 = setCaptain(d1, def1);
     expect(d2.slots.find((s) => s.playerId === def1)!.isCaptain).toBe(true);
     const d3 = removePlayer(d2, 2);
-    // Captain moves to another XI slot by the default-captaincy invariant.
-    const cap = d3.slots.find((s) => s.isCaptain);
-    expect(cap?.playerId).not.toBe(def1);
+    // The armband leaves with the player; nobody is given it in his place.
+    expect(d3.slots.some((s) => s.isCaptain)).toBe(false);
+  });
+});
+
+describe("fantasy-create-service — the captain is the manager's choice", () => {
+  /**
+   * Fill all 15 slots of a 4-4-2 draft by hand, in slot order, the way a
+   * manager does: one pick per slot, cheapest first, three per club at most.
+   */
+  function fullDraft() {
+    const byPrice = [...players].sort((a, b) => a.price - b.price || a.id.localeCompare(b.id));
+    const clubs = new Map<string, number>();
+    let d = setTeamName(initCreateDraft(), "Atlas FC");
+    for (const slot of d.slots) {
+      const player = byPrice.find(
+        (p) =>
+          p.position === slot.position &&
+          !d.slots.some((s) => s.playerId === p.id) &&
+          (clubs.get(p.clubId) ?? 0) < 3,
+      )!;
+      clubs.set(player.clubId, (clubs.get(player.clubId) ?? 0) + 1);
+      d = placePlayer(d, slot.slot, player.id);
+    }
+    return d;
+  }
+
+  it("building a squad by hand gives nobody the armband", () => {
+    const d = fullDraft();
+    expect(d.slots.every((s) => s.playerId)).toBe(true);
+    expect(d.slots.some((s) => s.isCaptain || s.isViceCaptain)).toBe(false);
+    // So the save gate asks for both, which the last step's captain section
+    // answers; the server's own check is unchanged.
+    const v = validateDraft(d, players);
+    expect(v.errors).toContain("captain_missing");
+    expect(v.errors).toContain("vice_missing");
+  });
+
+  it("an explicit captain and vice-captain among the starters make the squad valid", () => {
+    const d = fullDraft();
+    const starters = d.slots.filter((s) => s.slot < 12);
+    const chosen = setCaptain(setCaptain(d, starters[3].playerId!), starters[6].playerId!, true);
+    expect(validateDraft(chosen, players)).toEqual({ ok: true, errors: [] });
+    const squad = draftToSquad(chosen);
+    expect(squad.find((s) => s.isCaptain)?.slot).toBe(starters[3].slot);
+    expect(squad.find((s) => s.isViceCaptain)?.slot).toBe(starters[6].slot);
+  });
+
+  it("a substitute cannot be made captain or vice-captain", () => {
+    const d = fullDraft();
+    const benchPlayer = d.slots.find((s) => s.slot === 15)!.playerId!;
+    expect(setCaptain(d, benchPlayer)).toBe(d);
+    expect(setCaptain(d, benchPlayer, true)).toBe(d);
+  });
+
+  it("a player brought into the captain's slot does not inherit the armband", () => {
+    const d = fullDraft();
+    const captainSlot = d.slots.find((s) => s.slot === 2)!;
+    const withCaptain = setCaptain(d, captainSlot.playerId!);
+    const replacement = players.find(
+      (p) => p.position === "DEF" && !withCaptain.slots.some((s) => s.playerId === p.id),
+    )!;
+    const replaced = placePlayer(withCaptain, 2, replacement.id);
+    expect(replaced.slots.find((s) => s.slot === 2)!.isCaptain).toBe(false);
+    expect(replaced.slots.some((s) => s.isCaptain)).toBe(false);
+    // Placing the same player again keeps it.
+    expect(placePlayer(withCaptain, 2, captainSlot.playerId!).slots[1].isCaptain).toBe(true);
   });
 });
 
@@ -187,5 +251,17 @@ describe("fantasy-create-service — save payload", () => {
     expect(squad.some((s) => s.isViceCaptain)).toBe(true);
     const prices = draftPurchasePrices(d, players);
     expect(Object.keys(prices)).toHaveLength(15);
+  });
+});
+
+describe("a damaged first-squad draft in browser storage", () => {
+  it("is not a draft, so nothing reads its slots", async () => {
+    const { isCreateDraft } = await import("./fantasy-create-draft");
+    expect(isCreateDraft({ teamName: "X", slots: Array.from({ length: 15 }, () => null) })).toBe(
+      false,
+    );
+    expect(
+      isCreateDraft({ teamName: "X", slots: Array.from({ length: 15 }, (_, i) => ({ slot: i })) }),
+    ).toBe(true);
   });
 });
