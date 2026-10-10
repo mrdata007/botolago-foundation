@@ -60,7 +60,8 @@ root.
     <svg class="mc-l mc-l--num">     the number: the only layer that takes the pointer
     <svg class="mc-l mc-l--frame">   plate, shield band, edge, tab, plaque, capsule, all the text
     <svg class="mc-l mc-l--holo">    CHAMPION and LEGEND only
-    <div class="mc-eclat__foil">     the sheen (and the diffraction on CHAMPION and LEGEND)
+    <div class="mc-eclat__foil">     the sheen, thinned to a fifth over the chest by a mask (and the
+                                     diffraction on CHAMPION and LEGEND)
 ```
 
 - Shapes are drawn left to right and mirrored as a group in Arabic (`mirror`); **a text is never

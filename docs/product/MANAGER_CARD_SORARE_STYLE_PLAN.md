@@ -53,6 +53,13 @@ commit message.
 | D18 | **Hierarchy** (rev. 3): under the shield's point, centred: the tier word in a metal plaque, the name, the stats, the serial (§3.3).                                                                                                                                                                                                                                                       |
 | D19 | **The founder capsule sits along the cut corner** (rev. 3), only on founders; the tubes become two floodlights in the field (§3.3, §5.3, §9).                                                                                                                                                                                                                                             |
 
+**D16, round 2 (2026-10-10).** On a phone, G1's owner stage no longer draws a fixed 296 px: the card is
+`min(100vw − 32 px, clamp(232 px, (100svh − top bar − bottom bar − 236 px) ÷ 1.618, 296 px))` wide, 232 to
+296 px by the phone's height, so that the next-round line clears the bottom bar (evidence finding 2; the
+236 px is what G1 draws around the card in French, with 20 px of room). It stays 1 : 1.618, stays 336 px from
+768 px, and G2, the guest hero and G4 keep the widths above (§10). This departs from D16 as written; it is
+recorded here so that the plan and the code agree, and the draft pull request is where the owner confirms it.
+
 **Legal guardrail.** Match the style and layout language closely; never copy Sorare's logo, wordmark,
 rarity names, season badges or artwork files, never trace or sample their images, never write
 "sorare" in shipped code, class names, file names, assets or copy. Our marks, tier names, serial format
@@ -926,8 +933,8 @@ prop. In its place a **contact shadow**: an ellipse under the card, 86 % of the 
 tall, centred 6 px below the card's bottom, `radial-gradient(closest-side, rgb(0 0 0 / .28),
 transparent)` in light, `.5` in dark, `aria-hidden`, `pointer-events: none`, logical insets only. The
 card's own contact shadow (§8.2) replaces this ellipse when it is drawn; keep the ellipse only for the
-reserved box before the chunk loads. The card is centred; widths **296 px** (`min(296px, 100% )`) and
-**336 px** from 768 px (revision 2); `ManagerCard width={336}`; `pt-5 md:pt-6` kept; the stage gains
+reserved box before the chunk loads. The card is centred; widths **296 px** (`min(296px, 100% )`; on G1's owner
+stage 232 to 296 px by the phone's height, D16 round 2) and **336 px** from 768 px (revision 2); `ManagerCard width={336}`; `pt-5 md:pt-6` kept; the stage gains
 18 px bottom padding and 8 px inline padding for the tilt's travel and the shadow. The e2e overflow probe's rail exemption is removed.
 
 ---
@@ -1295,3 +1302,36 @@ measured with (Chromium 1194, DPR 2, mock data modes, a development server on it
 | The CSS sheen and diffraction crossed the tab: the club initials read 3.98:1 with the pointer over them                                           | The overlay's `clip-path` is the outline with the tab cut out (`FOIL_CLIP`, 20.6 % × 18.7 %), mirrored in Arabic; `holo.test.ts` reads the stylesheet and tests points of the tab and of the body against both polygons                                                                          | Initials against the disc, with the pointer over them, 5.05:1 on PRO, CHAMPION and LEGEND, light and dark, French and Arabic (the same as at rest)                                                                                                                                    |
 | The renderer chunk and fonts started loading when the first card mounted, after the data                                                          | `preloadCardRenderer()` (`use-card-renderer.ts`), called by the `/gradins` layout as it mounts, in parallel with the page's data; with the section off nothing calls it                                                                                                                          | See `eclat/README.md`, « Measured »: development-server figures only                                                                                                                                                                                                                  |
 | No after evidence of the card's surfaces                                                                                                          | `docs/product/manager-card-sorare-style/after/` with an `INDEX.md`, captured with the WP0 script                                                                                                                                                                                                 | See its `INDEX.md`                                                                                                                                                                                                                                                                    |
+
+## 18. Round 2 (2026-10-10, integration)
+
+The evidence of the first build (`docs/product/manager-card-sorare-style/INDEX.md`, « Findings that need the owner's eye ») was
+answered in three lanes and an integration. The sections above are the current spec; this is what changed after §17 and what each
+change was measured with (Chromium 1194, DPR 2 or 3, mock data modes, a development server of the integration tree on its own port).
+
+- **Layout** (`gradins/CardStage.tsx`, `GradinsHome.tsx`, `PeopleBlock.tsx`). « Les vôtres » is no longer cut beside the 352 px card
+  (finding 1): `PeopleBlock` has its own header, in which the link goes under the heading in French from 768 px instead of truncating
+  it; 0 truncated headings in French and Arabic at 768, 1024, 1280 and 1440, and every heading of 13 screens at 7 widths whole. G1's
+  card follows the phone's height (D16 round 2, §10): the next-round line ends 19.89 px (French) and 26.98 px (Arabic) above the bottom
+  bar at 390 × 844 and 7.09 and 8.16 px at 360 × 740, for every state; below about 730 px of height it cannot clear the bar with a
+  card of 232 px or more (finding 2).
+- **Contrast** (§4, §5.2, §5.4, §8.2: `name.ts`, `number.ts`, `foil.ts`, `eclat.css`). A name is sized by its ink as well as its
+  advance, so it keeps the 105 to 895 margin (100 of 100 drawings fit; the widest ink is 786.76). The number's cloth overlay has its
+  own gradient, and the foil's sheen is thinned over the chest (§8.2): the number reads 3.42 or more at rest and 3.41 or more with the
+  pointer on it, on all 64 cards (round 1: 3.00 and 2.94). The outer edge reads 3.46 or more on both pages, for every tier (round 1:
+  2.83 on the light page, 1.96 with the walls on the dark page): CHAMPION's and LEGEND's light-page edge colours were darkened, the
+  base card's dark-page edge lightened, and the walls of the base card, STADE and CHAMPION darkened by about a fifth in `metal[3]`.
+  That last change makes those three tiers' first walls dimmer in the dark theme than the owner's design preview draws them; it is
+  the one decision to review (to undo it: revert the three `metal[3]` values and the `walls` test in `foil.test.ts`, and accept the
+  edge with the walls counted at 1.96 to 2.29 in the dark theme, a reading without a floor).
+- **Tilt** (`eclat/tilt.ts`, `pose.ts`, `lift.ts`, `layers.ts`, the 3D and foil sections of `eclat.css`). A frame no longer restyles
+  every SVG element: the tilt writes two non-inherited properties on the root and the foil, and the layers, the rims and the shadows
+  are moved by transforms the compositor eases (README « Tilt performance »). Median frame 16.7 ms at CPU x1 and x4 (round 1: 33 to
+  50 ms and 67 to 83 ms); a few long tasks of 56 to 75 ms per 3 s run remain, and the 336 px card's frame rate is under 60 on a busy
+  machine, because a software rasteriser's draw time grows with the layers' area. The card also keeps its tilt when the host replaces
+  its markup shortly after mount (a mutation observer on the host's children), which the old tilt lost on 5 of 30 loads. Share art
+  and the founder detail are unchanged; a card that tilts is rebuilt once at mount (`data-mc-lift`).
+- **Integration.** `origin/main` (#389, #390, #391: Home stories) merged with no file touched by both sides. `DESIGN.md` declares the
+  card's own face (Instrument Serif, loaded only with the card), its six materials, its shadow black and its corner. The design
+  preview's whole-page grids were retaken by stitching viewport screenshots: the half-drawn cards in the lower rows were an artefact
+  of a single full-page capture of `preserve-3d` layers, not a bug in the mock.
