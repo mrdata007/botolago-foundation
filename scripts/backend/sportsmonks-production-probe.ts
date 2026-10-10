@@ -195,6 +195,30 @@ async function responseJson(response: Response): Promise<unknown> {
   }
 }
 
+/**
+ * A fixed code for why SportsMonks answered without data, read from its
+ * `message` by keyword. Only the code leaves this function, never the text:
+ * provider text may carry URLs or keys. The order matters (a rate-limit or
+ * subscription message can also mention access).
+ */
+export function providerMessageReason(message: unknown): string {
+  if (typeof message !== "string" || message.trim() === "") return "no_message";
+  const text = message.toLowerCase();
+  if (/rate.?limit|too many requests/.test(text)) return "rate_limited";
+  if (
+    /subscription/.test(text) &&
+    /expired|ended|inactive|cancel|suspend|no active|unpaid/.test(text)
+  )
+    return "subscription_inactive";
+  if (/unauthori[sz]ed|unauthenticated|invalid (api )?token|api.?key/.test(text))
+    return "token_rejected";
+  if (/\binclude/.test(text)) return "include_not_in_plan";
+  if (/no result/.test(text)) return "no_result_or_not_in_plan";
+  if (/access|permission|not allowed|forbidden|\bplan\b|subscription/.test(text))
+    return "not_in_plan";
+  return "unrecognised_message";
+}
+
 /** Fixed field names and types only: provider text, keys and URLs may contain secrets. */
 function envelopeDiagnostic(payload: unknown, status: number, path: string): JsonRecord {
   const valueType = (value: unknown): string =>
@@ -219,6 +243,12 @@ function envelopeDiagnostic(payload: unknown, status: number, path: string): Jso
       field,
       valueType: valueType(envelope[field]),
     })),
+    reason: providerMessageReason(envelope.message ?? envelope.error),
+    ...(isRecord(envelope.rate_limit) &&
+    Number.isSafeInteger(envelope.rate_limit.remaining) &&
+    (envelope.rate_limit.remaining as number) >= 0
+      ? { rateLimitRemaining: envelope.rate_limit.remaining as number }
+      : {}),
   };
 }
 

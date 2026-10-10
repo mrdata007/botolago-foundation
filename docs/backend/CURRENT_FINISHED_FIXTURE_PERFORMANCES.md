@@ -439,3 +439,21 @@ replay and Fantasy recalculation. Follow AGENTS.md writer coordination and the
 existing canary procedure for any production write. Refresh stale match states
 from authoritative provider facts; incomplete counted matches must still prevent
 finalization. Do not close #385/#363 based on passing unit tests alone.
+
+### Reading the provider's reason without opening the run
+
+When SportsMonks answers HTTP 200 without `data`, the diagnostic now carries a
+fixed `reason` code read from its `message` by keyword (never the text) and,
+when sent, `rateLimitRemaining`. The orchestrator's alert issue shows both next
+to each overdue fixture, for example
+`19893370 provider_invalid_data_envelope (not_in_plan, 2999 calls left)`.
+
+| `reason`                   | What to do                                                                |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `subscription_inactive`    | Renew or reactivate the SportsMonks plan (my.sportmonks.com → Billing).   |
+| `not_in_plan`              | The plan no longer covers Botola Pro (league 860) or this endpoint.       |
+| `include_not_in_plan`      | The plan dropped an include the stats need (`lineups.details`, `events`). |
+| `no_result_or_not_in_plan` | SportsMonks' wording for "not found or not in your plan": check the plan. |
+| `rate_limited`             | Wait for the hourly reset; check nothing else is spending the quota.      |
+| `token_rejected`           | The API token in GitHub/Supabase secrets is wrong or was regenerated.     |
+| `unrecognised_message`     | Open the read-only diagnose run's evidence.                               |

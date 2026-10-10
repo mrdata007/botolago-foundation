@@ -224,11 +224,42 @@ describe("provider data envelope failures", () => {
         { field: "code", valueType: "missing" },
         { field: "status", valueType: "missing" },
       ],
+      reason: "unrecognised_message",
     });
     expect(calls).toBe(1);
     const evidence = sportsMonksProbeFailureEvidence(error, COMMIT, NOW);
     expect(evidence.diagnostic).toEqual(error.diagnostic);
     expect(JSON.stringify(evidence)).not.toContain(TOKEN);
+  });
+
+  it("names why the provider sent no data with a fixed code, never its text", async () => {
+    const cases: Array<[unknown, string]> = [
+      [
+        "No result(s) found matching your request. Either the query did not return any results or you don't have access to it via your current subscription.",
+        "no_result_or_not_in_plan",
+      ],
+      ["You do not have access to this endpoint.", "not_in_plan"],
+      ["You do not have access to the include lineups.details", "include_not_in_plan"],
+      ["Your subscription has expired.", "subscription_inactive"],
+      ["You have reached the rate limit for this entity.", "rate_limited"],
+      ["Unauthenticated.", "token_rejected"],
+      [`something new ${TOKEN}`, "unrecognised_message"],
+      [undefined, "no_message"],
+      [42, "no_message"],
+    ];
+    for (const [message, reason] of cases) {
+      const payload = {
+        message,
+        rate_limit: { resets_in_seconds: 3000, remaining: 0, requested_entity: "Fixture" },
+      };
+      const error = await requestSportsMonksJson("/v3/football/fixtures/19893370", {}, TOKEN, {
+        fetch: async () => json(payload),
+      }).catch((error) => error);
+      expect(error.diagnostic.reason).toBe(reason);
+      expect(error.diagnostic.rateLimitRemaining).toBe(0);
+      expect(JSON.stringify(error.diagnostic)).not.toContain(TOKEN);
+      expect(JSON.stringify(error.diagnostic)).not.toContain("subscription has");
+    }
   });
 
   it("rejects null, scalar and root-array envelopes while preserving valid objects and lists", async () => {
