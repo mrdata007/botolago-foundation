@@ -348,6 +348,15 @@ export function StoryViewer({
           className="fixed inset-0 z-50 m-auto h-[100dvh] w-full overflow-hidden bg-black outline-none sm:h-[calc(100dvh-2rem)] sm:w-[min(28rem,56.25dvh)] sm:rounded-2xl"
         >
           <Dialog.Title className="sr-only">{ar ? story.titleAr : story.titleFr}</Dialog.Title>
+          <p
+            className="sr-only"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            data-testid="story-announcement"
+          >
+            {index + 1} / {stories.length}. {ar ? story.titleAr : story.titleFr}
+          </p>
           <StoryFrame
             key={story.id}
             story={story}

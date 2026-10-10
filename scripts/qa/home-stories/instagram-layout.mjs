@@ -112,8 +112,15 @@ for (const lang of ["fr", "ar"])
       assert(!/Illustration IA|بالذكاء الاصطناعي/.test(geometry.alt));
       assert.equal(await page.getByRole("dialog").locator("a").count(), 0);
       await page.screenshot({ path: `${out}/${lang}-${width}-${theme}.png` });
+      const announcement = await page.getByTestId("story-announcement").elementHandle();
       await page.getByTestId("story-next").click();
       await ready(page);
+      assert(await announcement.evaluate((el) => el.isConnected));
+      assert.match(await page.getByTestId("story-announcement").innerText(), /2 \/ 3/);
+      assert.equal(
+        await page.getByTestId("story-announcement").getAttribute("aria-live"),
+        "polite",
+      );
       assert.equal(
         await page.getByTestId("story-headline").innerText(),
         lang === "ar" ? stories[1].titleAr : stories[1].titleFr,
@@ -228,7 +235,7 @@ for (const lang of ["fr", "ar"])
           ]
         : stories;
     await setup(page, lang, data, mode);
-    if (mode !== "long") await page.getByRole("status").waitFor();
+    if (mode !== "long") await page.getByTestId("story-viewer").getByRole("status").waitFor();
     if (mode !== "broken") await ready(page);
     if (mode === "long") {
       const box = await page.getByTestId("story-viewer").locator("figcaption").boundingBox();
