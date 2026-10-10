@@ -115,8 +115,8 @@ already use: `SUPABASE_ACCESS_TOKEN` and `vars.SUPABASE_STAGING_PROJECT_REF`
 (Supabase Management API, one `select`), plus `RAPIDAPI_KEY` for SofaScore. No
 new secret. `scripts/backend/sofascore-id-bridge-fetch.ts` writes `events.json`
 (every page of `get-last-matches` and `get-next-matches` for 937/102220),
-`snapshot.json` and `ids.json`. The Botola 2026/27 season is the single
-`botola-pro*` season labelled 2026/27; any other count stops the run. Logs hold
+`snapshot.json` and `ids.json`. The Botola 2026/27 season is the one
+SportsMonks maps as season `28647`; any other count stops the run. Logs hold
 counts and ids only, no player names.
 
 Three modes (input `mode`):
@@ -157,3 +157,22 @@ variables.
 
 Player mappings stay on the reviewed mapping process (the RPC itself refuses
 SofaScore player mappings with `MAPPING_REVIEW_REQUIRED`).
+
+## Reading production (read only)
+
+Staging holds no real Botola season (2026-10-10: only the load-test and
+scoring-proof seasons), so the owner allowed the two read-only modes to run
+against Production V2 through **SofaScore ID bridge (production, read only)**
+(`.github/workflows/sofascore-id-bridge-production-read.yml`). It has no apply
+mode; the fetch script sends only single SELECT statements (`assertReadOnly`)
+and the bridge script gets no database credentials. Run `propose-teams`, review
+the proposed `{sofascoreTeamId: internalUuid}` pairing, then `dry-run` with the
+approved JSON. Writing the mapping on production remains an owner-run step
+through the release runbook.
+
+Dispatch this production workflow from `main` as the repository owner
+(`mrdata007`). Set `expected_commit` to the full 40-character SHA of the
+reviewed main commit approved for the run. The workflow rejects other branches,
+other actors, reruns and a SHA that differs from the dispatched commit before
+checking out code or exposing production credentials. Checkout is pinned to
+that reviewed SHA; credentials are supplied only to the read-only fetch step.
