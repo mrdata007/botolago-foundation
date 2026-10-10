@@ -10,8 +10,10 @@ import {
   PALETTE_TOKENS,
   clubColoursClash,
   clubFillDistance,
+  clubFillShows,
   clubMatchPalettes,
   clubPalette,
+  clubPaletteBeforeSurfaces,
   clubStyle,
   resolvePaletteColour,
   stripeBand,
@@ -193,7 +195,14 @@ describe("club palette: every kit colour is legible in both themes", () => {
 
   it("never uses a club colour as text in the dark theme", () => {
     for (const hex of colours) {
-      expect(clubPalette({ primaryColor: hex }).dark.fg).toBe("var(--ui-on-surface)");
+      const palette = clubPalette({ primaryColor: hex });
+      // A colour that vanishes on the dark page (black, with no second colour
+      // here) is painted in the ink there, whose text is the brand's own
+      // foreground: still not a club colour.
+      expect({ hex, fg: palette.dark.fg }).toEqual({
+        hex,
+        fg: palette.replaced.dark === "ink" ? "var(--ui-ink-fg)" : "var(--ui-on-surface)",
+      });
     }
   });
 
@@ -466,8 +475,117 @@ describe("club palette: home and away never share a colour", () => {
           label,
           dark: true,
         });
+        // …and neither side trades the clash for a fill that vanishes.
+        for (const theme of THEMES) {
+          expect({
+            label,
+            theme,
+            shows: [pair.home, pair.away].map((side) => clubFillShows(side, theme)),
+          }).toEqual({
+            label,
+            theme,
+            shows: [true, true],
+          });
+        }
       }
     }
+  });
+});
+
+describe("club palette: no club colour vanishes into the page or the card", () => {
+  const ground = (theme: PaletteTheme) =>
+    (["--ui-page", "--ui-surface"] as const).map((name) => token(theme, name));
+  const closest = (palette: ClubPalette, theme: PaletteTheme) =>
+    Math.min(...ground(theme).map((g) => deltaEOk(rgb(palette[theme].fill, theme), g)));
+
+  it("is not a no-op: Zemamra's white and FAR's black do vanish, as their colours compute", () => {
+    const zemamra = clubPaletteBeforeSurfaces({ name: "Renaissance Club Athletic Zemamra" });
+    const far = clubPaletteBeforeSurfaces({ name: "FAR Rabat" });
+    expect(zemamra.light.fill).toBe("#ffffff");
+    expect(closest(zemamra, "light")).toBeLessThan(0.01);
+    expect(closest(far, "dark")).toBeLessThan(0.06);
+    expect(clubFillShows(zemamra, "light")).toBe(false);
+    expect(clubFillShows(far, "dark")).toBe(false);
+  });
+
+  it("paints Zemamra in its green in light and keeps its white kit in dark", () => {
+    const zemamra = clubPalette({ name: "Renaissance Club Athletic Zemamra" });
+    expect(zemamra.replaced).toEqual({ light: "secondary" });
+    expect(zemamra.light).toEqual(clubPaletteBeforeSurfaces({ primaryColor: "#0a7a3c" }).light);
+    expect(zemamra.dark).toEqual(clubPaletteBeforeSurfaces({ primaryColor: "#ffffff" }).dark);
+    expect(closest(zemamra, "light")).toBeGreaterThanOrEqual(CLUB_PALETTE_RULES.clash);
+  });
+
+  it("keeps FAR's black in light and paints its red in dark", () => {
+    const far = clubPalette({ name: "FAR Rabat" });
+    expect(far.replaced).toEqual({ dark: "secondary" });
+    expect(far.light.fill).toBe("#111111");
+    expect(far.dark).toEqual(clubPaletteBeforeSurfaces({ primaryColor: "#c8102e" }).dark);
+  });
+
+  it("falls back to the ink when a colour that vanishes has no second colour", () => {
+    const white = clubPalette({ primaryColor: "#ffffff" });
+    expect(white.replaced).toEqual({ light: "ink" });
+    expect(white.light.fill).toBe("var(--ui-ink)");
+  });
+
+  it("leaves every other club colour as it was", () => {
+    for (const { key, kit } of kitTableEntries()) {
+      const club = { primaryColor: kit.primary, secondaryColor: kit.secondary };
+      const before = clubPaletteBeforeSurfaces(club);
+      const after = clubPalette(club);
+      for (const theme of THEMES) {
+        if (after.replaced[theme]) continue;
+        expect({ key, theme, colours: after[theme] }).toEqual({
+          key,
+          theme,
+          colours: before[theme],
+        });
+      }
+      if (!["far rabat", "zemamra"].includes(key))
+        expect({ key, replaced: after.replaced }).toEqual({ key, replaced: {} });
+    }
+  });
+
+  it("shows every fill it paints, for every kit colour alone and every club's kit, in both themes", () => {
+    const sides = [
+      ...kitTableEntries().flatMap(({ kit }) => [
+        { primaryColor: kit.primary },
+        { primaryColor: kit.secondary },
+        { primaryColor: kit.primary, secondaryColor: kit.secondary },
+      ]),
+      ...mockClubs,
+    ];
+    for (const side of sides) {
+      const palette = clubPalette(side);
+      for (const theme of THEMES) {
+        expect({ side, theme, shows: clubFillShows(palette, theme) }).toEqual({
+          side,
+          theme,
+          shows: true,
+        });
+      }
+    }
+  });
+
+  it("Raja v Zemamra: Zemamra's green would match Raja's in light, so it takes the ink there", () => {
+    const pair = clubMatchPalettes(
+      { name: "Raja Casablanca" },
+      { name: "Renaissance Club Athletic Zemamra" },
+    );
+    expect(pair.clash).toBe(true);
+    expect(pair.away.light.fill).toBe("var(--ui-ink)");
+    // The dark theme did not clash: Zemamra keeps its white kit there.
+    expect(pair.away.dark).toEqual(clubPalette({ name: "Renaissance Club Athletic Zemamra" }).dark);
+  });
+
+  it("FAR v Wydad: only the dark theme, where FAR is red, changes; Wydad keeps its red in light", () => {
+    const pair = clubMatchPalettes({ name: "FAR Rabat" }, { name: "Wydad Casablanca" });
+    const wydad = clubPalette({ name: "Wydad Casablanca" });
+    expect(pair.clash).toBe(true);
+    expect(pair.away.light).toEqual(wydad.light);
+    expect(pair.away.dark).not.toEqual(wydad.dark);
+    expect(pair.away.replaced.dark).toBeDefined();
   });
 });
 
@@ -493,7 +611,11 @@ describe("clubStyle", () => {
       { id: "war", primaryColor: "#c8102e" },
       { id: "mat", primaryColor: "#c00000", secondaryColor: "#ffffff" },
     );
-    expect(clubStyle(away).style["--club-fill-l"]).toBe("#ffffff");
+    // Tétouan's white second kit: the ink in light, where white would be the
+    // card itself, and the white kit in dark.
+    expect(clubStyle(away).style["--club-fill-l"]).toBe("var(--ui-ink)");
+    expect(clubStyle(away).style["--club-fill-d"]).toBe(away.dark.fill);
+    expect(away.dark.fill).toBe(clubPaletteBeforeSurfaces({ primaryColor: "#ffffff" }).dark.fill);
   });
 
   it("writes the ink defaults out for an unknown club, so it never inherits a neighbour's", () => {

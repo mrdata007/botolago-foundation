@@ -6,6 +6,7 @@ import { matchOutcome } from "@/backend/predictions/scoring";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiBadge, UiCard, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubShortName } from "@/lib/club-identity";
 import { useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { presentFootballClub } from "@/services/football";
@@ -71,11 +72,13 @@ export function FixturePredictionCard({
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
 }) {
-  const { t, lang } = useI18n();
+  const { t, tr, lang } = useI18n();
   const home = presentFootballClub(fixture.home);
   const away = presentFootballClub(fixture.away);
-  const homeName = fixture.home.shortName || fixture.home.name;
-  const awayName = fixture.away.shortName || fixture.away.name;
+  // The club's one short name, as on every other screen: "Wydad", never the
+  // "WCA" its short name holds in the data.
+  const homeName = clubShortName(home, tr);
+  const awayName = clubShortName(away, tr);
 
   // A signed-in pick is "locked in" once the server holds exactly it.
   const confirmed = Boolean(saved && pick && saved.home === pick.home && saved.away === pick.away);
@@ -137,7 +140,7 @@ export function FixturePredictionCard({
               {" · "}
             </>
           ) : null}
-          {resultReason(fixture, pick, scored, notCounted, t)}
+          {resultReason(fixture, pick, scored, notCounted, t, { home: homeName, away: awayName })}
           {fixture.corrected ? ` · ${t("predictions.result.corrected")}` : null}
         </p>
       </UiCard>
@@ -274,6 +277,7 @@ function resultReason(
   scored: FixtureScore | null,
   notCounted: boolean,
   t: Translate,
+  names: { home: string; away: string },
 ): string {
   if (notCounted) return t("predictions.result.not_counted");
   if (!pick) return t("predictions.fixture.no_prediction");
@@ -283,8 +287,10 @@ function resultReason(
     case "outcome": {
       const outcome = fixture.result ? matchOutcome(fixture.result) : "draw";
       if (outcome === "draw") return t("predictions.result.outcome_draw");
-      const winner = outcome === "home" ? fixture.home : fixture.away;
-      return t("predictions.result.outcome_win").replace("{team}", winner.shortName || winner.name);
+      return t("predictions.result.outcome_win").replace(
+        "{team}",
+        outcome === "home" ? names.home : names.away,
+      );
     }
     case "miss":
       return t("predictions.result.miss");

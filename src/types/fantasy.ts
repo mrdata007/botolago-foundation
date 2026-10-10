@@ -98,7 +98,12 @@ export interface LeagueStanding {
   clubId?: string;
   rank: number;
   previousRank: number;
-  gameweekScore: number;
+  /**
+   * The journée's points as the server sent them; `null` when it sent none
+   * (no gameweek scored on this board yet), which the tables print as a dash,
+   * never as 0 (PRODUCT.md: an unknown value is a dash).
+   */
+  gameweekScore: number | null;
   totalScore: number;
 }
 

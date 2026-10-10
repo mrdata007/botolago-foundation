@@ -355,6 +355,7 @@ function RankingRow({
   formatMove: (places: number) => string;
   movementLabels: { up: string; down: string; same: string };
 }) {
+  const { t } = useI18n();
   const podium = row.rank <= 3;
   return (
     <UiTR highlighted={isMe} className={cn(isLast && "border-b-0")}>
@@ -399,8 +400,9 @@ function RankingRow({
           )}
         </div>
       </UiTD>
+      {/* A journée nobody has scored yet is a dash, never 0. */}
       <UiTD numeric className={cn(STANDINGS_FIGURE_CELL, ui.tone.muted)}>
-        {nf.format(row.gameweekScore)}
+        {row.gameweekScore === null ? t("fantasy.stat.none") : nf.format(row.gameweekScore)}
       </UiTD>
       <UiTD numeric strong className={cn(STANDINGS_FIGURE_CELL, ui.stat.md, ui.tone.default)}>
         {nf.format(row.totalScore)}

@@ -45,7 +45,7 @@ export function voteMayOpen(match: Match, at: number): boolean {
 }
 
 /**
- * A club's name on a band card: its short name ("RCA Zemamra"), unless that is
+ * A club's name on a band card: its short name ("Zemamra"), unless that is
  * only a code ("FAR"), which is not a name to read; then the full name.
  */
 export function bandClubName(club: Club, tr: (text: LocalizedString) => string): string {

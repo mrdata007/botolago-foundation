@@ -1,6 +1,10 @@
 import wordmark from "@/assets/brand/botolago-wordmark-light.svg";
 import type { PepitesEdition, PepitesPlayerCard, PositionGroup } from "@/backend/pepites/contracts";
-import { CLUB_PALETTE_RULES, clubPalette, resolvePaletteColour } from "@/lib/club-palette";
+import {
+  CLUB_PALETTE_RULES,
+  clubPaletteBeforeSurfaces,
+  resolvePaletteColour,
+} from "@/lib/club-palette";
 import { contrastRatio, mixOklab, parseHex, toHex, type Rgb } from "@/lib/colour";
 import type { Language } from "@/types/domain";
 
@@ -298,12 +302,16 @@ const EDGE_MIN = CLUB_PALETTE_RULES.edge + CLUB_PALETTE_RULES.headroom;
  * navy it is actually drawn on (`SHARE_PALETTE.panel` for the Top 10 rows,
  * `SHARE_PALETTE.ground` for the story card), and lifted toward white in 1%
  * OKLab steps until it clears 3:1 there.
+ *
+ * The palette is taken before the app's surface rule: that rule swaps a fill
+ * that would vanish into the app's own page and cards, and these pictures
+ * paint their own navy ground, on which a white kit shows.
  */
 export function shareClubColours(
   base: string,
   surface: string,
 ): { fill: string; on: string; edge: string } {
-  const palette = clubPalette({ primaryColor: base });
+  const palette = clubPaletteBeforeSurfaces({ primaryColor: base });
   const rgb = (value: string, theme: "light" | "dark"): Rgb =>
     resolvePaletteColour(value, theme) ?? parseHex(SHARE_PALETTE.panel)!;
   const behind = parseHex(surface) ?? parseHex(SHARE_PALETTE.ground)!;

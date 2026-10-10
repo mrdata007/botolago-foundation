@@ -249,7 +249,7 @@ export function StandingsTable({
                     <td className={cn("text-center", ui.stat.sm, narrow)}>{row.drawn}</td>
                     <td className={cn("text-center", ui.stat.sm, narrow)}>{row.lost}</td>
                     <td className={cn("text-center", ui.stat.sm)}>
-                      <bdi>{formatGoalDifference(row.goalDifference)}</bdi>
+                      <bdi dir="ltr">{formatGoalDifference(row.goalDifference)}</bdi>
                     </td>
                   </>
                 ) : (

@@ -175,7 +175,16 @@ describe("presentNewsTeam", () => {
     expect(club.slug).toBe("wydad-ac");
     expect(club.name).toEqual({ fr: "Wydad AC", ar: "Wydad AC" });
     expect(club.city).toEqual({ fr: "", ar: "" });
-    expect(club.crestPlaceholder).toBe("RAJ");
+    // A current club's short name and code come from the club table, as on
+    // every other screen, whatever the data's short name says.
+    expect(club.shortName).toEqual({ fr: "Wydad", ar: "الوداد" });
+    expect(club.crestPlaceholder).toBe("WAC");
+    // A club outside the table keeps the data's: its code, else three letters.
+    const former = presentNewsTeam(
+      team({ slug: "olympic-safi", name: "Olympic Safi", shortName: "Olympic Safi", code: null }),
+    );
+    expect(former.shortName).toEqual({ fr: "Olympic Safi", ar: "Olympic Safi" });
+    expect(former.crestPlaceholder).toBe("OLY");
   });
 });
 

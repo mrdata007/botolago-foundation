@@ -54,7 +54,14 @@ export function summariseHeadToHead(
   return { homeWins, draws, awayWins, counted: homeWins + draws + awayWins };
 }
 
-/** "+14", "0", "-3" — a goal difference as a standings table prints it. */
+/**
+ * "+14", "0", "-3" — a goal difference as a standings table prints it.
+ *
+ * Render it in an element with `dir="ltr"`: the string has no letter to take
+ * a direction from, and an engine that gives such a run its Arabic parent's
+ * direction prints "14+" (PRODUCT.md: numbers stay left to right in Arabic).
+ * `head-to-head.test.ts` checks every caller.
+ */
 export function formatGoalDifference(value: number): string {
   return value > 0 ? `+${value}` : String(value);
 }
