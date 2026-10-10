@@ -507,7 +507,13 @@ authorisation, one step at a time (CLAUDE.md, "Production database writes").
    `20261009211234`. The AI home stories and repair scripts also pin the
    number of recorded migrations and call `app_private.hold_scheduled_jobs()`
    (they refuse while a scheduled job is mid-run); read their own headers
-   before running them.
+   before running them. As written on `main` the counts do not chain: Home
+   stories' script expects 166 rows before and leaves 168, while AI home
+   stories' wants exactly 169. Before running AI home stories, read
+   `select count(*), max(version) from supabase_migrations.schema_migrations;`
+   and, if it refuses with « migration baseline changed », find out why with
+   that script's owner. Never edit a guard to make it pass. The read API
+   script below pins only the newest version, so it is not affected.
    **Then the read API apply script,**
    `scripts/backend/apply-20261010120000-manager-card-api-v2.sql` (migrations
    `20261010120000` to `20261010120300`). It changes nothing anyone sees: it
