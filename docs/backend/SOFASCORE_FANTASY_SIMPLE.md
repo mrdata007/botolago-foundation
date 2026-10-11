@@ -1,6 +1,8 @@
 # SofaScore-only Fantasy scoring
 
-Status: code only, nothing applied or run. Owner decisions of 2026-10-11:
+Status: code only, nothing applied or run. The manual runner described below is
+now the backfill and override tool; the normal path is automatic (see
+"Automatic path"). Owner decisions of 2026-10-11:
 
 - **M6**: SportsMonks is unpaid. Fantasy player points come from SofaScore
   alone. No second provider, no cross-check, no pairing. Flashscore is not
@@ -49,14 +51,16 @@ Evidence:
 
 ### What is new
 
-| File                                                                    | What                                                                                                   |
-| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `supabase/migrations/20261011120000_sofascore_fantasy_observations.sql` | `api.service_record_sofascore_fantasy_observation(fixture, request, dry_run)`, service role only       |
-| `src/backend/fantasy/sofascore-fantasy.ts`                              | pure builder: one SofaScore match + reviewed SofaScore mappings -> request, blockers, mapping worklist |
-| `scripts/backend/sofascore-fantasy-simple-lib.ts`                       | selection, report, plan hash, SQL text (pure)                                                          |
-| `scripts/backend/sofascore-fantasy-simple-ingest.ts`                    | runner: `report` (read only), `rehearse`, `apply`                                                      |
-| `.github/workflows/sofascore-fantasy-simple-{read,rehearsal,apply}.yml` | owner-pinned production workflows                                                                      |
-| `supabase/tests/database/sofascore_fantasy_observations.test.sql`       | pgTAP                                                                                                  |
+| File                                                                                                          | What                                                                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `supabase/migrations/20261011120000_sofascore_fantasy_observations.sql`                                       | `api.service_record_sofascore_fantasy_observation(fixture, request, dry_run)`, service role only                                                           |
+| `supabase/functions/_shared/sofascore-fantasy.ts` (re-exported by `src/backend/fantasy/sofascore-fantasy.ts`) | pure builder: one SofaScore match + reviewed SofaScore mappings -> request, blockers, mapping worklist; one copy, used by the Edge Function and the runner |
+| `supabase/functions/_shared/sofascore-fantasy-auto.ts`                                                        | the automatic step in the Edge Function                                                                                                                    |
+| `supabase/migrations/20261011140000_sofascore_fantasy_auto_state.sql`                                         | attempts table and three service-role functions (state, note, due); no scoring                                                                             |
+| `scripts/backend/sofascore-fantasy-simple-lib.ts`                                                             | selection, report, plan hash, SQL text (pure)                                                                                                              |
+| `scripts/backend/sofascore-fantasy-simple-ingest.ts`                                                          | runner: `report` (read only), `rehearse`, `apply`                                                                                                          |
+| `.github/workflows/sofascore-fantasy-simple-{read,rehearsal,apply}.yml`                                       | owner-pinned production workflows                                                                                                                          |
+| `supabase/tests/database/sofascore_fantasy_observations.test.sql`                                             | pgTAP                                                                                                                                                      |
 
 The migration depends on `20261003180000_reconciled_provider_observations.sql`
 (the recorder's `provider-reconciled` source and flag, and
@@ -117,7 +121,132 @@ The plan hash ignores observation timestamps, so it is stable between a report,
 a rehearsal and the apply, and changes if SofaScore's data, the mappings or the
 selection change.
 
-## What the owner must run, in order
+## Automatic path (Edge Function `football-live-refresh`)
+
+After every finished match the points no longer wait for the owner. The Edge
+Function already fetches the match's SofaScore incidents, lineups and
+statistics (3 requests, for the match page). It now builds the Fantasy request
+from those same replies and records it with
+`api.service_record_sofascore_fantasy_observation`. Nothing extra is requested
+from SofaScore for a match whose details were fetched. Code:
+`supabase/functions/_shared/sofascore-fantasy-auto.ts`, called from
+`sofascore-match-details.ts` (live tick, backfill) and `sofascore-live-refresh.ts`.
+
+### What happens, per finished match
+
+1. The scores are written, then the match details, as before. Fantasy runs
+   last and can never hold back either: it does not throw, and a failure is one
+   log line.
+2. It reads the fixture's state from the database
+   (`api.service_sofascore_fantasy_context`): finished and finalized, the
+   gameweek, whether adaptive scoring is on for it, whether an observation
+   already exists, the stored attempt, and the reviewed SofaScore mappings of the
+   players in the lineup.
+3. If an appearing player has no reviewed mapping, it offers the unmapped
+   players to `api.service_sofascore_auto_map_players(fixture, players)` (written
+   separately) and reads the mappings again. If that function is not installed
+   (error `PGRST202` / `42883`) it carries on without it. The short name is sent
+   as null: the parsed lineup does not keep it.
+4. It runs the same builder as the manual runner. Ready: the observation is
+   recorded (`dry_run => false`). Blocked: the match is held, with the reason.
+5. Every match ends in one log line, `football_live_refresh_fantasy`, with an
+   outcome: `recorded`, `held:<blocker>`, `skipped:<reason>` or `error:<code>`
+   (blockers are the builder's codes, for example `unmapped_players`, plus the
+   database's refusals, for example `held:sofascore_identity_not_reviewed`). The
+   tick's answer carries a `fantasy` summary.
+
+### Switches
+
+| Switch                                                   | Effect                                                                                                                                                                        |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app_private.football_data_source()` is `sofascore`      | Records for real.                                                                                                                                                             |
+| `shadow`                                                 | Dry run only: the database function is called with `dry_run => true`, the result is logged, nothing is written, the auto-mapping is not called, nothing is stored or retried. |
+| `sportsmonks`                                            | Nothing happens (this path does not run).                                                                                                                                     |
+| `SOFASCORE_FANTASY_ENABLED=false` (Edge secret)          | Whole Fantasy step off, without a deploy.                                                                                                                                     |
+| `SOFASCORE_FANTASY_RETRIES_PER_TICK` (default 6, max 20) | Held matches retried per tick from stored replies (0 = none). No SofaScore request.                                                                                           |
+| `SOFASCORE_FANTASY_CATCHUP_PER_TICK` (default 1, max 4)  | Finished matches never attempted that a tick may fetch itself (3 requests each; 0 = none).                                                                                    |
+| `SOFASCORE_FANTASY_CATCHUP_HOURS` (default 72)           | How far back "never attempted" looks.                                                                                                                                         |
+| `SOFASCORE_FANTASY_MAX_ATTEMPTS` (default 24)            | Attempts per held match before it is given up.                                                                                                                                |
+| `SOFASCORE_FANTASY_FETCH_ATTEMPTS` (default 4)           | Attempts for a match that has no stored replies (a fetch each time).                                                                                                          |
+
+It also needs adaptive scoring active for the gameweek
+(`app_private.fantasy_adaptive_policy`); without it the match is held as
+`held:adaptive_policy_not_enabled` and tried again once the owner activates it.
+
+### Retries, and why they do not cost requests
+
+Stored match details cannot rebuild an observation: they keep no per-player
+minutes played, assists, saves or full/limited coverage marker, which the
+builder needs. So a held match keeps its trimmed parsed replies (lineups with
+statistics, incidents, whole-match statistic lines) in
+`app_private.sofascore_fantasy_attempts` (migration `20261011140000`). A later
+tick re-reads them, reads the mappings again and builds again: no SofaScore
+request.
+
+- Wait between tries: 15 minutes (first 3 tries), 1 hour (to the 12th), then 6
+  hours. Default limit 24 tries, about 3.5 days. Then the match is given up and
+  needs the manual runner.
+- Only a match held for `unmapped_players`, or for a database condition that can
+  change (policy not enabled, identity not reviewed, score mismatch, membership
+  missing), is kept for retries. A data problem the same replies cannot fix (an
+  unknown incident, goals that do not add up, a second yellow, minutes that do
+  not fit) is given up at once; the 2-hour refresh window after the final
+  whistle fetches fresh replies and can reopen it.
+- A gameweek that is finalizing or sealed ends the attempts.
+- A finished match that was never attempted (the migration or the function was
+  late, a tick failed) is fetched by the catch-up, at most
+  `SOFASCORE_FANTASY_CATCHUP_PER_TICK` per tick, and given up after
+  `SOFASCORE_FANTASY_FETCH_ATTEMPTS` failed tries.
+- Once an observation exists for a fixture (by any route) the automatic path
+  leaves it alone. A later correction is the manual runner's job
+  (`--include-observed`).
+
+### Request cost
+
+Normal round: 0 extra requests (the details fetch is the same one). Worst case a
+tick adds `SOFASCORE_FANTASY_CATCHUP_PER_TICK x 3` (default 3), and only while a
+finished, finalized, unobserved match from the last 72 hours has no stored
+replies. For scale: a Botola round of 8 matches fetched once each is 24
+requests; the budget is 10,000 a month
+(docs/backend/SOFASCORE_FULL_MIGRATION_PLAN.md, section 4). The post-final
+details refresh of the live tick (2 hours, up to 4 matches per tick) is the
+existing one and is the larger consumer; Fantasy rides on it.
+
+### After the observation: who scores and finalizes
+
+The observation is only a fact. Points and finalization are done by the Fantasy
+lifecycle worker (`scripts/backend/fantasy-lifecycle-runner.ts`), which selects
+the scoring mode, scores each fixture from the observations, persists the
+results and rankings and finalizes the gameweek. Today that worker runs from the
+GitHub Action `fantasy-season-orchestrator.yml` (hourly, minute 12) or
+`fantasy-manual-worker.yml`. The database tick `fantasy-lifecycle-tick` (every 5
+minutes) only locks, goes live and moves to provisional. Switches that must be
+on in production:
+
+- `app_private.fantasy_adaptive_policy`: a row for the season with
+  `from_gameweek` at or below the gameweek (`api.service_activate_adaptive_scoring`
+  after `api.service_adaptive_scoring_audit`). Without it nothing is recorded.
+- `app_private.fantasy_automation_settings.lifecycle_tick_enabled`
+  (`select app_private.fantasy_automation_configure(true)`), for the 5-minute tick.
+- The GitHub repository variable `FANTASY_AUTOMATION_ENABLED=true` for the
+  scheduled orchestrator run.
+- `app_private.football_data_source()` is `sofascore`, and
+  `football_live_refresh_enabled` in `app_private.notification_email_settings`
+  (the live tick that runs this code).
+- Edge secret `RAPIDAPI_KEY`; migrations `20261011120000` and `20261011140000`
+  applied; the Edge Function `football-live-refresh` deployed.
+
+Known gap, not changed here: the orchestrator workflow still requires
+`SPORTSMONKS_API_TOKEN` and runs a SportsMonks fixtures refresh and
+SportsMonks performance ingestion before the worker. With SportsMonks unpaid
+those steps fail or write from a provider that is no longer the source. That
+workflow needs a SofaScore-only variant (an owner decision) before points are
+fully hands-off.
+
+## What the owner must run, in order (manual backfill and override)
+
+Use this for rounds played before the automatic path, for a match the automatic
+path gave up on, and to correct an observed fixture.
 
 Nothing below has been run. Production writes are owner-run only.
 
