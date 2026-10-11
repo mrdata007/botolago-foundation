@@ -320,6 +320,15 @@ Everything that moves is CSS, `prefers-reduced-motion: no-preference` only.
   card with no beat: identical but for anti-aliasing at edges, largest box-filtered difference 21 of
   255).
 
+**Beats in place.** A card the app has drawn takes a beat by its root: `CardRenderer.beatRoot`
+(`full.ts`, `beatRoot`) says which classes and attribute the beat adds (`mc-eclat--beat-x`, the tick's
+`mc-eclat--pulse`, `data-mc-beat`), and `ManagerCard` adds and removes them instead of drawing the card
+again with the beat (two redraws and a `liftCard` each, a replay's tap-to-first-frame 307 ms against
+213). `full-beat-root.test.ts` pins that the root is the only thing such a beat changes. `castoff` (it
+adds the seal line), `legend` and the forming marks' `tick` return `null` and are drawn again: on a card
+the tilt has lifted apart they look different mid-beat. The tilt is mounted again when a beat starts and
+ends, and does not float a card that plays one (`data-mc-beat`), as before.
+
 ### Tilt performance (what is written, what it costs)
 
 **The rule: a frame of tilt is compositing only.** The compositor moves layers that were rasterised
@@ -355,7 +364,11 @@ What the tilt writes now:
 - `tilt.ts` also follows a card whose root was replaced after it mounted (the host sets the card's
   markup again a moment after the first mount): the previous tilt kept the detached first root and the
   card never tilted, on 5 loads of 30 in a first count and on 6 of the 16 before-runs below. It
-  watches the host's children and mounts on the new root.
+  watches the host's children and mounts on the new root. The cause of the second setting was found
+  later: `ManagerCard` passed React 19 a new `{ __html }` object on every render, and React sets
+  `innerHTML` again when the object differs, whatever the string (8 redraws on a `/curva` load, 4 per
+  flip). `ManagerCard` now keeps one object per string (`../inner-html.ts`), so a card is drawn once;
+  the follow stays as a guard (`docs/engineering/CURVA_CARD_SPEED.md`).
 
 Measured (Chromium 1194, headless, software compositing, DPR 2, a 3 s pointer sweep over the card,
 4 cores shared with other work: load average 1.2 to 2.1 during the runs, before and after

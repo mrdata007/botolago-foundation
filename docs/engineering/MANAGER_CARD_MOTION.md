@@ -125,3 +125,8 @@ No new library. CSS keyframes and the Web Animations API, `transform` and
 - **Burst geometry.** The layer is centred with `left/top 50%` and `translate`, at most the window
   wide, and clips its own beams; measured centre offset 0 px at 320, 390 and 1440, LTR and RTL.
 - **Rating chip memory** is one key per account: `botolago.card.rating_badge.v1.<user id or local>`.
+- **Speed work** (`docs/engineering/CURVA_CARD_SPEED.md`, measured on a phone x4): the card is drawn
+  once per string (it was redrawn on every parent render, 8 times on a `/curva` load); beats play in
+  place on the drawn card; the flip turns in 340 ms (`FLIP_MS`, it was the 420 ms hero token); the
+  entrance is hidden at its rest box until the page is quiet (`curva/quiet.ts`, 500 ms at most) and then
+  takes 420 ms (it was 525 ms).
