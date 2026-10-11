@@ -45,7 +45,7 @@ export const PRODUCTION_PROJECT_REF = "tkewgajrljbwgwedqsxn";
 export const APPLY_CONFIRMATION = "ATTACH_SOFASCORE_IDS_ON_STAGING";
 export const SOFASCORE_COMPETITION_ID = "937";
 export const SOFASCORE_SEASON_ID = "102220";
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type BridgeMode = "propose-teams" | "dry-run" | "apply";
 const MODES: readonly BridgeMode[] = ["propose-teams", "dry-run", "apply"];
@@ -74,8 +74,8 @@ export function managementGuard(
   return { ref, token };
 }
 
-const LITERAL = /^[A-Za-z0-9:_.-]{1,64}$/;
-const quote = (value: string) => {
+export const LITERAL = /^[A-Za-z0-9:_.-]{1,64}$/;
+export const quote = (value: string) => {
   if (!LITERAL.test(value) && !UUID.test(value))
     throw new Error("sofascore_bridge_literal_invalid: refusing to build SQL from this value");
   return `'${value}'`;
@@ -239,7 +239,13 @@ async function main() {
     existing: snapshot.existing,
   };
   const plan = planSofascoreIdBridge(input);
-  console.log(JSON.stringify({ mode, summary: summarise(plan) }, null, 2));
+  console.log(
+    JSON.stringify(
+      { mode, summary: summarise(plan), ...(mode === "dry-run" ? { rows: plan.rows } : {}) },
+      null,
+      2,
+    ),
+  );
 
   let exit: 0 | 2 | 4 = needsReview(plan) ? 2 : 0;
   if (mode === "apply" && (db || management)) {
