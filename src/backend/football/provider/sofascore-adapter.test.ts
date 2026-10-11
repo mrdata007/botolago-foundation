@@ -112,6 +112,40 @@ describe("Sofascore adapter, from the Phase 0 fixtures", () => {
     ).toThrow(FootballError);
   });
 
+  test("an injuryTime announcement with no side is skipped (event 17256979 shape)", () => {
+    const incidents = parseSofascoreIncidents({
+      incidents: [
+        { incidentType: "period", time: 90, addedTime: 999 },
+        {
+          incidentType: "substitution",
+          incidentClass: "regular",
+          time: 90,
+          addedTime: 1,
+          isHome: false,
+        },
+        { incidentType: "injuryTime", time: 45, addedTime: 0, length: 2 },
+        { incidentType: "goal", incidentClass: "penalty", time: 40, isHome: true },
+      ],
+    });
+    expect(incidents.map((i) => i.kind)).toEqual(["substitution", "penalty_goal"]);
+  });
+
+  test("a score-relevant or known incident with no side still fails the match", () => {
+    for (const incident of [
+      { incidentType: "card", incidentClass: "yellow", time: 5 },
+      { incidentType: "goal", incidentClass: "ownGoal", time: 5 },
+      { incidentType: "substitution", incidentClass: "regular", time: 5 },
+      { incidentType: "varDecision", incidentClass: "goalAwarded", time: 5 },
+      { incidentType: "injuryTime", isHome: true },
+    ])
+      if (incident.incidentType === "injuryTime") {
+        // No minute but also nothing score-relevant: skipped, not failed.
+        expect(parseSofascoreIncidents({ incidents: [incident] })).toEqual([]);
+      } else {
+        expect(() => parseSofascoreIncidents({ incidents: [incident] })).toThrow(FootballError);
+      }
+  });
+
   test("statistics lines keep the shots-on-goal and keeper-save keys", () => {
     const lines = parseSofascoreStatistics(sofa(`${FULL}.statistics`));
     const keys = new Set(lines.map((line) => line.key));

@@ -39,6 +39,7 @@
  * goal it cannot attribute, a player whose times do not fit.
  */
 import { canonicalJson, sha256Hex } from "./canonical-json.ts";
+import { SCORE_RELEVANT_LABEL, incidentLabel } from "./sofascore-performance-parse.ts";
 import type {
   LineupPosition,
   MatchSide,
@@ -72,7 +73,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** Sofascore `minutesPlayed` counts the clock: up to this many minutes over the substitution time. */
 const MAX_STOPPAGE_MINUTES = 6;
 const MIN_UNDER_MINUTES = 2;
-const SCORE_RELEVANT = /goal|card|penalt|red|yellow|own/i;
+const SCORE_RELEVANT = SCORE_RELEVANT_LABEL;
 const GOAL_KINDS = new Set(["goal", "penalty_goal"]);
 const APP_POSITION: Record<LineupPosition, FantasyPosition> = {
   G: "GK",
@@ -275,7 +276,7 @@ export async function prepareSofascoreObservation(
   // ---- incidents ---------------------------------------------------------------
   for (const i of match.incidents) {
     if (i.kind !== "unknown") continue;
-    const label = `${i.rawType}${i.rawClass ? `/${i.rawClass}` : ""}`;
+    const label = incidentLabel(i.rawType, i.rawClass);
     if (SCORE_RELEVANT.test(label))
       block({
         code: "unknown_incident",
