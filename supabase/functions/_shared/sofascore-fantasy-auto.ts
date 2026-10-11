@@ -19,6 +19,11 @@
 //   * Before building, an appearing player with no reviewed mapping is offered
 //     to api.service_sofascore_auto_map_players (feature-detected: a database
 //     without it just continues), then the mappings are read again.
+//   * An unmapped substitute who left no trace in the scoring facts (no goal, assist, card,
+//     penalty; not a starter) and whom the auto-mapping queued as `no_candidate` does not hold
+//     the match: the builder lists him in the request (`excludedUnmappedPlayers`), the
+//     database confirms it against the queue and the squad (migration 20261011190000) or
+//     refuses with `sofascore_unmapped_exclusion_refused`, which is retried like any hold.
 //   * Pépites: the same observation also feeds app.player_fixture_performances,
 //     the table Pépites reads (migration 20261011180000,
 //     api.service_sync_sofascore_player_performances). The database derives the
@@ -306,6 +311,10 @@ const RETRIABLE_REFUSALS: ReadonlySet<string> = new Set([
   "adaptive_final_score_mismatch",
   "adaptive_player_membership_missing",
   "sofascore_fixture_mapping_missing",
+  // An unmapped substitute left out of the request is not (or no longer) confirmed by the
+  // database (the auto-mapping queue says something else, or a squad member could be him):
+  // staff may map him, so try again, bounded like any other hold.
+  "sofascore_unmapped_exclusion_refused",
 ]);
 /** The gameweek no longer takes observations (it is finalizing or sealed): stop. */
 const SEALED_REFUSALS: ReadonlySet<string> = new Set([
@@ -755,6 +764,10 @@ export class SofascoreFantasyRun {
       expectedMode: prepared.expectedMode,
       rows: prepared.rows,
       unknownFields: prepared.unknownFields,
+      // Auditable: the unmapped substitutes left out of the request (SofaScore ids, never names).
+      ...(prepared.excludedUnmapped.length > 0
+        ? { excludedUnmapped: prepared.excludedUnmapped.map((p) => p.sofascoreId) }
+        : {}),
     };
     if (recorded.error) {
       const label = safeLabel(recorded.error.message);

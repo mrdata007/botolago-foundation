@@ -511,6 +511,33 @@ straight away for the matches you ran in 5.4.
    (`sofascore_performances_other_provider_rows` means SportsMonks covered that
    match and keeps it). Pépites picks the rows up at its next run.
 
+## Follow-up: unknown substitutes (`20261011190000`)
+
+Needed only once the automatic path is live and a match is held with
+`held:unmapped_players` because a **substitute** the app has no player record
+for (the review list shows `no_candidate`) came on. Example: UTS Rabat 0-0 RSB
+Berkane, SofaScore event 17256977. A player the app does not know cannot be in
+anyone's team and cannot earn points, so he no longer needs to hold the match
+for everyone; a starter, or a substitute who scored, assisted or was carded,
+still does.
+
+1. Merge the pull request and wait for a green `database-quality` run.
+2. Run `scripts/backend/apply-20261011190000-sofascore-unmapped-substitutes.sql`
+   exactly like the release script: rehearsal first (it rolls back and says
+   "Rehearsal passed"), then change `rollback;` to `commit;`. It replaces one
+   function, checks the function it replaces by its md5, and writes no fixture,
+   Fantasy, Pépites or user row.
+3. Deploy the Edge Function `football-live-refresh` (same code deploy as step 3
+   above) **after** step 2. In the other order nothing is lost: the old recorder
+   refuses the new request (`sofascore_request_invalid`) and the match stays
+   held.
+4. The held match is picked up by itself within the retry delays; the log line
+   `football_live_refresh_fantasy` shows `recorded` and `excludedUnmapped` (the
+   SofaScore ids left out). If it says
+   `held:sofascore_unmapped_exclusion_refused`, the database found a squad member
+   of that club who could be the player (same shirt number): map him in the
+   review list instead.
+
 ## Optional: hide the test accounts
 
 Only if you want test and QA accounts out of the public rankings. Skip it
