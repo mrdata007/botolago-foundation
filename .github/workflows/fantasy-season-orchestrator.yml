@@ -25,6 +25,13 @@ name: Fantasy season orchestrator
 # window defaults to 72 h / 24 h and can be overridden with the repository
 # variables FANTASY_DEADLINE_WATCH_WARN_HOURS / _ESCALATE_HOURS.
 #
+# While api.football_data_source() is 'sofascore' (or 'shadow') the two steps
+# that call SportsMonks -- the provider refresh above and the pass's finished-
+# fixture performance ingestion -- are skipped, not failed, and
+# SPORTSMONKS_API_TOKEN is not needed; calendar, scoring, rankings and
+# finalization run as ever. If the source cannot be read the run behaves as it
+# always did. docs/backend/SOFASCORE_ORCHESTRATOR.md
+#
 # `escalate` also means a finished fixture has gone without certified
 # statistics for more than FANTASY_COVERAGE_ESCALATE_HOURS (default 6) after
 # its final whistle, or a gameweek has gone that long past the end of its
@@ -111,11 +118,26 @@ jobs:
         run: |
           set -euo pipefail
           bun install --frozen-lockfile
-          bun test scripts/backend/fantasy-season-orchestrator.test.ts scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/current-season-performances.test.ts scripts/backend/current-season-recovery.test.ts
+          bun test scripts/backend/fantasy-season-orchestrator.test.ts scripts/backend/read-football-data-source.test.ts scripts/backend/fantasy-lifecycle-runner.test.ts scripts/backend/current-season-performances.test.ts scripts/backend/current-season-recovery.test.ts
           bun run backend:secrets:check
+
+      # While SofaScore is the football data source (api.football_data_source()
+      # is 'sofascore' or 'shadow') SportsMonks is not called at all: its token
+      # may be absent and its account unpaid. This step only reads the source.
+      # It cannot fail: if the read does not work the outputs say 'unknown' and
+      # the SportsMonks step below runs exactly as before.
+      - name: Read the football data source
+        id: source
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        shell: bash
+        run: |
+          printf '::add-mask::%s\n' "$SUPABASE_SECRET_KEY"
+          bun scripts/backend/read-football-data-source.ts || echo "skip_sportsmonks=false" >> "$GITHUB_OUTPUT"
 
       - name: Refresh provider fixtures and results
         id: recovery
+        if: steps.source.outputs.skip_sportsmonks != 'true'
         continue-on-error: true
         env:
           CONFIRMATION: RUN_CURRENT_SEASON_RECOVERY
