@@ -1,0 +1,154 @@
+[a] Se connecter
+[a] Créer mon équipe
+[p] Fantasy Botola Pro · Gratuit
+[span] Vous connaissez la Botola.
+[span] À vous de jouer.
+[p] Composez votre équipe de joueurs de Botola Pro, choisissez votre capitaine et défiez les autres fans à chaque journée.
+[a] Créer mon équipe
+[a] Comment ça marche
+[p] Composez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.
+[span] Pour jouer dès la Journée 4, enregistrez votre équipe avant le
+[bdi] lun. 12 oct., 18:30
+[span] Gardien
+[span] Défenseur
+[span] Défenseur
+[span] Défenseur
+[span] Défenseur
+[span] Milieu
+[span] Milieu
+[span] Milieu
+[span] Attaquant
+[span] Attaquant
+[span] Attaquant
+[span] Démonstration
+[figcaption] Touchez un joueur pour lui donner le brassard : ses points comptent double.
+[p] En ce moment
+[h2] La Botola Pro, journée après journée
+[p] Les matchs
+[a] Tout le calendrier
+[span] dim. 11 oct.
+[bdi] 20:00
+[span] WCA
+[span] Wydad Casablanca
+[span] COD
+[span] CODM Meknès
+[span] lun. 12 oct.
+[bdi] 20:00
+[span] HAS
+[span] Hassania Agadir
+[span] ASFAR
+[span] FAR Rabat
+[span] mar. 13 oct.
+[bdi] 18:00
+[span] RSB
+[span] RSB Berkane
+[span] RCA
+[span] RCA Zemamra
+[p] Le classement
+[a] Classement complet
+[span] Équipe
+[span] Pts
+[span] MAG
+[span] Maghreb Fès
+[span] UTS
+[span] UTS Rabat
+[span] HAS
+[span] Hassania Agadir
+[span] KAW
+[span] Kawkab Marrakech
+[span] ITT
+[span] Ittihad Tanger
+[p] Comment ça marche
+[h2] Trois gestes à chaque journée
+[h3] Composez votre effectif
+[p] 15 joueurs de Botola Pro, un budget de 100 M et 3 joueurs au maximum par club.
+[span] 15 joueurs
+[span] 100 M
+[p] 2 gardiens · 5 défenseurs · 5 milieux · 3 attaquants
+[h3] Choisissez votre capitaine
+[p] Avant la date limite, alignez votre onze et donnez le brassard : les points du capitaine comptent double.
+[span] Capitaine ×2
+[p] Exemple : votre capitaine marque 6 pts, il vous en rapporte 12.
+[h3] Marquez des points, grimpez au classement
+[p] Vos joueurs marquent des points selon leurs vrais matchs : temps de jeu, buts, passes décisives, cages inviolées.
+[p] Extrait du barème
+[span] But d’un milieu
+[span] 5 pts
+[span] Passe décisive
+[span] 3 pts
+[span] Cage inviolée d’un défenseur
+[span] 4 pts
+[h2] Les joueurs à suivre
+[p] Ceux qui rapportent le plus de points cette saison.
+[a] Tous les joueurs
+[span] Imad Riahi
+[span] HAS
+[span] Attaquant
+[span] 15 pts
+[span] Y. Najjari
+[span] ITT
+[span] Attaquant
+[span] 14 pts
+[span] Saleh Al Sellami
+[span] KAW
+[span] Attaquant
+[span] 14 pts
+[span] Tshegofatso Mabasa
+[span] MAG
+[span] Attaquant
+[span] 12 pts
+[span] Mouad Mouchtanim
+[span] DEJ
+[span] Milieu
+[span] 11 pts
+[span] Anas El Mahraoui
+[span] MAG
+[span] Attaquant
+[span] 11 pts
+[h2] Pourquoi vous allez revenir
+[p] Les joueurs que vous suivez déjà
+[p] Uniquement des joueurs de Botola Pro : votre équipe se joue sur les matchs que vous regardez.
+[p] Des ligues entre amis
+[p] Créez une ligue privée, partagez son code et comparez vos scores à chaque journée.
+[p] Une nouvelle chance à chaque journée
+[p] Transferts, onze et capitaine se règlent de nouveau avant chaque date limite.
+[h3] Pas encore prêt ?
+[p] Matchs, résultats et classement restent ouverts à tous, sans compte.
+[a] Voir les matchs
+[h3] Des lots pour les meilleurs managers
+[p] Les lots en jeu cette saison, attribués selon le règlement :
+[span] Lot de la journée
+[span] Recharge mobile + maillot d'un club de la Botola
+[span] Lot du mois
+[span] Smartphone
+[span] Lot de la saison
+[span] Voyage pour le derby + smartphone haut de gamme
+[p] 100 % gratuit — aucun achat, aucun pari.
+[a] Voir les lots et le règlement
+[h2] Questions fréquentes
+[p] Tout ce qu'il faut savoir avant de composer votre équipe.
+[span] C’est vraiment gratuit ?
+[p] Oui. BotolaGO Fantasy est un jeu gratuit : aucun achat, aucun pari.
+[span] La saison a commencé : puis-je encore jouer ?
+[p] Oui. Une équipe créée maintenant entre dans la prochaine journée ouverte et marque des points à partir de celle-ci.
+[span] Comment marque-t-on des points ?
+[p] Selon les vrais matchs de vos joueurs : temps de jeu, buts, passes décisives, cages inviolées… Les cartons et les buts contre son camp font perdre des points, et votre capitaine compte double.
+[span] Faut-il un compte ?
+[p] Pour composer votre équipe, non. Pour l’enregistrer et entrer au classement, oui : un compte gratuit, avec une adresse e-mail à confirmer.
+[span] Jusqu’à quand puis-je modifier mon équipe ?
+[p] Chaque journée a une date limite, 90 minutes avant le premier coup d’envoi. Ensuite, l’équipe est verrouillée jusqu’à la fin de la journée.
+[a] Lire le règlement complet
+[a] Centre d’aide
+[h2] Votre équipe vous attend.
+[p] Choisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.
+[a] Créer mon équipe
+[p] Composez votre équipe sans compte. Un compte gratuit est demandé seulement pour l’enregistrer.
+[span] Pour jouer dès la Journée 4, enregistrez votre équipe avant le
+[bdi] lun. 12 oct., 18:30
+[span] Choisissez votre langue
+[span] اختر لغتك
+[div] Français
+[div] Actualité & Fantasy du football marocain
+[div] العربية
+[div] أخبار وفانتازي كرة القدم المغربية
+[button] Continuer

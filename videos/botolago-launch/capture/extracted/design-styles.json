@@ -1,0 +1,333 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "Changa",
+      "fontSize": "64.4px",
+      "fontWeight": "800",
+      "lineHeight": "80.5px",
+      "letterSpacing": "normal",
+      "color": "oklch(1 0 0)",
+      "sampleText": "Vous connaissez la Botola.À vous de jouer."
+    },
+    {
+      "role": "heading",
+      "fontFamily": "Changa",
+      "fontSize": "34px",
+      "fontWeight": "800",
+      "lineHeight": "42.5px",
+      "letterSpacing": "normal",
+      "color": "oklch(0.16 0.03 260)",
+      "sampleText": "La Botola Pro, journée après journée"
+    },
+    {
+      "role": "heading-3",
+      "fontFamily": "Changa",
+      "fontSize": "22px",
+      "fontWeight": "800",
+      "lineHeight": "27.5px",
+      "letterSpacing": "normal",
+      "color": "oklch(0.24 0.09 258)",
+      "sampleText": "Des lots pour les meilleurs managers"
+    },
+    {
+      "role": "heading-3",
+      "fontFamily": "Changa",
+      "fontSize": "17px",
+      "fontWeight": "700",
+      "lineHeight": "21.25px",
+      "letterSpacing": "normal",
+      "color": "oklch(0.16 0.03 260)",
+      "sampleText": "Composez votre effectif"
+    },
+    {
+      "role": "body",
+      "fontFamily": "Manrope",
+      "fontSize": "16px",
+      "fontWeight": "800",
+      "lineHeight": "22.4px",
+      "letterSpacing": "normal",
+      "color": "color(srgb 0.999871 1.00005 1.00007 / 0.78)",
+      "sampleText": "Composez votre équipe de joueurs de Botola Pro, choisissez v"
+    },
+    {
+      "role": "body-small",
+      "fontFamily": "Changa",
+      "fontSize": "16px",
+      "fontWeight": "800",
+      "lineHeight": "20px",
+      "letterSpacing": "normal",
+      "color": "oklch(1 0 0)",
+      "sampleText": "1"
+    },
+    {
+      "role": "link",
+      "fontFamily": "Manrope",
+      "fontSize": "15px",
+      "fontWeight": "800",
+      "lineHeight": "23.25px",
+      "letterSpacing": "normal",
+      "color": "oklch(1 0 0)",
+      "sampleText": "Se connecter"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      4,
+      6,
+      8,
+      12,
+      16,
+      20,
+      24,
+      32,
+      40,
+      56,
+      64
+    ],
+    "baseUnit": 8
+  },
+  "radius": [
+    "4px",
+    "8px",
+    "14px",
+    "3.35544e+07px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.32 -0.0207911 -0.0978148 / 0.1) 0px 1px 2px 0px, oklab(0.32 -0.0207911 -0.0978148 / 0.14) 0px 4px 14px -8px",
+      "count": 23
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklch(0.93 0.006 250) 0px 0px 0px 1px inset, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "count": 6
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.24 -0.018712 -0.0880333 / 0.55) 0px 14px 26px -16px",
+      "count": 5
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, color(srgb 0.99987 1.00005 1.00007 / 0.2) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "count": 2
+    },
+    {
+      "value": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "count": 1
+    }
+  ],
+  "buttons": [
+    {
+      "label": "FR",
+      "background": "color(srgb 0.999871 1.00005 1.00007 / 0.1)",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "oklch(1 0 0)",
+      "padding": "0px 12px",
+      "borderRadius": "3.35544e+07px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, color(srgb 0.99987 1.00005 1.00007 / 0.2) 0px 0px 0px 1px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+      "fontSize": "13px",
+      "fontWeight": "800",
+      "height": "44px"
+    },
+    {
+      "label": "Gardien1",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "oklch(1 0 0)",
+      "padding": "0px",
+      "borderRadius": "4px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "90.7812px"
+    },
+    {
+      "label": "button",
+      "background": "oklch(0.93 0.006 250)",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "oklch(0.32 0.1 258)",
+      "padding": "0px",
+      "borderRadius": "3.35544e+07px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "44px"
+    },
+    {
+      "label": "FrançaisActualité & Fantasy du football ",
+      "background": "oklch(0.32 0.1 258)",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "oklch(1 0 0)",
+      "padding": "12px 16px",
+      "borderRadius": "14px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklch(0.975 0.004 250) 0px 0px 0px 2px, oklch(0.32 0.1 258) 0px 0px 0px 4px, oklab(0.32 -0.0207911 -0.0978148 / 0.1) 0px 1px 2px 0px, oklab(0.32 -0.0207911 -0.0978148 / 0.14) 0px 4px 14px -8px",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "67.3906px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "oklch(1 0 0)",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "oklch(0.16 0.03 260)",
+      "padding": "0px",
+      "borderRadius": "14px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.32 -0.0207911 -0.0978148 / 0.1) 0px 1px 2px 0px, oklab(0.32 -0.0207911 -0.0978148 / 0.14) 0px 4px 14px -8px",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "256.344px"
+    },
+    {
+      "label": "card",
+      "background": "oklch(0.93 0.006 250)",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "oklch(0.16 0.03 260)",
+      "padding": "16px",
+      "borderRadius": "14px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "165.391px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "transparent",
+    "backgroundImage": "",
+    "backdropFilter": "",
+    "color": "oklch(1 0 0)",
+    "padding": "12px 16px 0px",
+    "borderRadius": "0px",
+    "border": "0px solid oklch(0.92 0.008 250)",
+    "boxShadow": "none",
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "height": "56px"
+  },
+  "chips": [
+    {
+      "label": "Démonstration",
+      "background": "oklch(0.24 0.09 258)",
+      "color": "oklch(1 0 0)",
+      "padding": "4px 10px",
+      "borderRadius": "3.35544e+07px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "800",
+      "height": "23.3906px"
+    },
+    {
+      "label": "1",
+      "background": "oklch(0.32 0.1 258)",
+      "color": "oklch(1 0 0)",
+      "padding": "0px",
+      "borderRadius": "3.35544e+07px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "800",
+      "height": "40px"
+    },
+    {
+      "label": "15 joueurs",
+      "background": "oklch(1 0 0)",
+      "color": "oklch(0.16 0.03 260)",
+      "padding": "4px 12px",
+      "borderRadius": "14px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.32 -0.0207911 -0.0978148 / 0.1) 0px 1px 2px 0px, oklab(0.32 -0.0207911 -0.0978148 / 0.14) 0px 4px 14px -8px",
+      "fontSize": "13px",
+      "fontWeight": "800",
+      "height": "28.1406px"
+    },
+    {
+      "label": "Voir les matchs",
+      "background": "transparent",
+      "color": "oklch(0.32 0.1 258)",
+      "padding": "0px 12px",
+      "borderRadius": "3.35544e+07px",
+      "border": "1px solid oklch(0.32 0.1 258)",
+      "boxShadow": "none",
+      "fontSize": "13px",
+      "fontWeight": "800",
+      "height": "44px"
+    }
+  ],
+  "statCells": [],
+  "tabs": [
+    {
+      "label": "1",
+      "background": "oklch(0.24 0.09 258)",
+      "color": "oklch(1 0 0)",
+      "padding": "2px 4px",
+      "borderRadius": "0px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "700",
+      "height": "19.3906px"
+    },
+    {
+      "label": "×2",
+      "background": "transparent",
+      "color": "oklch(0.24 0.09 258)",
+      "padding": "2px 4px",
+      "borderRadius": "0px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "700",
+      "height": "19.3906px"
+    },
+    {
+      "label": "1",
+      "background": "transparent",
+      "color": "oklch(0.45 0.02 258)",
+      "padding": "0px",
+      "borderRadius": "0px",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "boxShadow": "none",
+      "fontSize": "13px",
+      "fontWeight": "700",
+      "height": "18.1875px"
+    }
+  ],
+  "backgrounds": [
+    {
+      "value": "radial-gradient(70% 55% at 85% 35%, oklab(0.88 -0.0996939 -0.046488 / 0.22), rgba(0, 0, 0, 0) 70%), linear-gradient(oklab(0.24 -0.018712 -0.0880333 / 0.72) 0%, oklch(0.24 0.09 258) 92%)",
+      "area": 1534740
+    },
+    {
+      "value": "radial-gradient(60% 80% at 50% 0%, oklab(0.88 -0.16776 0.0891996 / 0.18), rgba(0, 0, 0, 0) 70%)",
+      "area": 891180
+    },
+    {
+      "value": "repeating-linear-gradient(color(srgb 0.999871 1.00005 1.00007 / 0.22) 0px, color(srgb 0.999871 1.00005 1.00007 / 0.22) 36px, rgba(0, 0, 0, 0) 36px, rgba(0, 0, 0, 0) 72px), linear-gradient(color(srgb 0.718666 0.99162 0.815986), color(srgb 0.753552 0.967525 0.991068))",
+      "area": 184518
+    }
+  ],
+  "glass": [
+    {
+      "backdropFilter": "blur(12px)",
+      "background": "oklab(0.16 -0.00520944 -0.0295442 / 0.45)",
+      "border": "0px solid oklch(0.92 0.008 250)",
+      "borderRadius": "0px",
+      "boxShadow": "",
+      "area": 2073600
+    }
+  ]
+}

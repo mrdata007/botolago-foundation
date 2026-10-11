@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Changa"; src: url("assets/fonts/changa-latin-wght-normal.woff2") format("woff2"); font-weight: 200 800; }
+      @font-face { font-family: "Manrope"; src: url("assets/fonts/manrope-latin-wght-normal.woff2") format("woff2"); font-weight: 200 800; }
+      :root { --blue:#0151fc; --navy:#0c3164; --deep:#071a3a; --cyan:#21b3ed; --ice:#6eedf5; --mint:#5cfa9f; }
+      * { margin:0; padding:0; box-sizing:border-box; }
+      html, body { width:1080px; height:1920px; overflow:hidden; background:var(--deep); }
+      #root { position:relative; width:100%; height:100%; overflow:hidden; font-family:"Manrope",sans-serif; color:#fff; }
+      .scene { position:absolute; inset:0; overflow:hidden; }
+      .bg { position:absolute; inset:0; }
+
+      /* S1 logo */
+      #s1 .bg { background: radial-gradient(900px 900px at 50% 46%, #2a74ff 0%, var(--blue) 55%, #0036c4 100%); }
+      #logoWrap { position:absolute; left:0; right:0; top:800px; display:flex; flex-direction:column; align-items:center; }
+      #logo { width:880px; display:block; }
+      #logoClip { overflow:hidden; padding:30px 40px; }
+      #ring { position:absolute; left:540px; top:870px; width:200px; height:200px; margin:-100px 0 0 -100px; border-radius:50%; border:6px solid rgba(255,255,255,.9); }
+      #sweep { position:absolute; top:700px; left:-300px; width:200px; height:520px; background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent); transform:skewX(-18deg); }
+      #tag { margin-top:34px; font:700 36px "Manrope"; letter-spacing:.16em; text-transform:uppercase; color:#dbe8ff; }
+
+      /* S2 headline */
+      #s2 .bg { background: radial-gradient(1100px 900px at 30% 20%, #15509c 0%, var(--navy) 55%, var(--deep) 100%); }
+      #headline { position:absolute; left:70px; right:70px; top:500px; font:800 174px/1.0 "Changa"; letter-spacing:-.01em; }
+      #headline .ln { display:block; }
+      #headline .w { display:inline-block; margin-right:.2em; will-change:transform; }
+      #headline .cy { color:var(--ice); }
+      #kick { position:absolute; left:70px; top:400px; font:800 38px "Manrope"; letter-spacing:.16em; color:var(--cyan); }
+
+      /* S3 features */
+      .feat .bg { background: radial-gradient(1000px 800px at 80% 10%, #1a5bb5 0%, var(--navy) 50%, var(--deep) 100%); }
+      .num { position:absolute; left:70px; top:200px; width:96px; height:96px; border-radius:50%; background:linear-gradient(135deg,var(--mint),var(--ice)); color:#052a52; font:800 56px/96px "Changa"; text-align:center; }
+      .ft { position:absolute; left:70px; right:70px; top:318px; font:800 100px/1.02 "Changa"; }
+      .fs { position:absolute; left:70px; right:70px; top:538px; font:600 40px/1.3 "Manrope"; color:#c6d9f7; }
+      .phone { position:absolute; left:160px; top:690px; width:760px; height:1010px; border-radius:76px; background:#0a0f1c; padding:14px; box-shadow:0 60px 120px rgba(0,0,0,.5), 0 0 0 3px rgba(255,255,255,.14), 0 0 160px rgba(33,179,237,.25); }
+      .screen { position:relative; width:100%; height:100%; border-radius:62px; overflow:hidden; background:#f6f8fb; }
+      .screen img { position:absolute; left:0; top:0; width:100%; display:block; transform-origin:50% 0; }
+      #pts { position:absolute; left:0; right:0; top:600px; text-align:center; color:#0c3164; }
+      #ptsLbl { font:700 36px "Manrope"; color:#4b5b78; }
+      #ptsRow { display:flex; align-items:center; justify-content:center; gap:70px; margin-top:10px; font:800 190px/1.1 "Changa"; }
+      #p12 { color:#0151fc; display:inline-block; }
+      #p6 { display:inline-block; }
+      #x2 { position:relative; font-size:60px; padding:14px 30px; }
+      #ptsUnit { font:700 36px "Manrope"; color:#4b5b78; }
+      .badge { position:absolute; padding:18px 34px; border-radius:60px; font:800 54px "Changa"; color:#052a52; background:linear-gradient(135deg,var(--mint),var(--ice)); box-shadow:0 20px 50px rgba(0,0,0,.35); }
+
+      /* S4 CTA */
+      #s4 .bg { background: radial-gradient(1000px 1000px at 50% 30%, #2a74ff 0%, var(--blue) 50%, #0a2a8c 100%); }
+      #s4 .logo { position:absolute; left:100px; width:880px; top:300px; }
+      #ctaH { position:absolute; left:70px; right:70px; top:560px; text-align:center; font:800 128px/1.04 "Changa"; }
+      #ctaP { position:absolute; left:130px; right:130px; top:860px; text-align:center; font:600 40px/1.35 "Manrope"; color:#dbe8ff; }
+      #btn { position:absolute; left:110px; right:110px; top:1130px; height:170px; border-radius:90px; background:linear-gradient(90deg,var(--mint),var(--ice)); color:#052a52; font:800 66px/170px "Changa"; text-align:center; box-shadow:0 30px 70px rgba(0,20,90,.45); }
+      #url { position:absolute; left:0; right:0; top:1350px; text-align:center; font:800 118px "Changa"; letter-spacing:.01em; }
+      #free { position:absolute; left:0; right:0; top:1520px; text-align:center; font:700 34px "Manrope"; letter-spacing:.12em; text-transform:uppercase; color:#cfe0ff; }
+
+      /* transition panel */
+      #wipe { position:absolute; left:0; top:0; width:1080px; height:1920px; z-index:50; pointer-events:none; }
+      #wipe .a { position:absolute; inset:0; background:var(--blue); }
+      #wipe .b { position:absolute; inset:0; background:var(--ice); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1080" data-height="1920">
+
+      <!-- 0-3s logo reveal on brand blue -->
+      <section id="s1" class="scene clip" data-start="0" data-duration="3.15" data-track-index="0">
+        <div class="bg"></div>
+        <div id="ring"></div>
+        <div id="logoWrap">
+          <div id="logoClip"><img id="logo" src="assets/botolago-wordmark-light-B2pMfDk-.svg" alt="BotolaGO" /></div>
+          <div id="tag">Fantasy Botola Pro · Gratuit</div>
+        </div>
+        <div id="sweep"></div>
+      </section>
+
+      <!-- 3-8s kinetic headline -->
+      <section id="s2" class="scene clip" data-start="3" data-duration="5.15" data-track-index="0">
+        <div class="bg"></div>
+        <div id="kick">BOTOLAGO FANTASY</div>
+        <div id="headline">
+          <span class="ln"><span class="w">Vous</span></span>
+          <span class="ln"><span class="w">connaissez</span></span>
+          <span class="ln"><span class="w">la</span><span class="w">Botola.</span></span>
+          <span class="ln cy"><span class="w">À</span><span class="w">vous</span></span>
+          <span class="ln cy"><span class="w">de</span><span class="w">jouer.</span></span>
+        </div>
+      </section>
+
+      <!-- 8-13s feature 1 -->
+      <section id="f1" class="scene feat clip" data-start="8" data-duration="5.15" data-track-index="0">
+        <div class="bg"></div>
+        <div class="num">1</div>
+        <div class="ft">Composez<br />votre équipe</div>
+        <div class="fs">15 joueurs de Botola Pro, 100 M de budget, 3 joueurs max par club.</div>
+        <div class="phone" id="f1phone"><div class="screen"><img id="f1img" src="assets/shots/f-pitch.png" alt="" /></div></div>
+      </section>
+
+      <!-- 13-18s feature 2 -->
+      <section id="f2" class="scene feat clip" data-start="13" data-duration="5.15" data-track-index="0">
+        <div class="bg"></div>
+        <div class="num">2</div>
+        <div class="ft">Donnez<br />le brassard</div>
+        <div class="fs">Les points de votre capitaine comptent double.</div>
+        <div class="phone" id="f2phone"><div class="screen"><img id="f2img" src="assets/shots/f-captain.png" alt="" />
+          <div id="pts"><div id="ptsLbl">Votre capitaine marque</div>
+            <div id="ptsRow"><span id="p6">6</span><span id="x2" class="badge">×2</span><span id="p12">12</span></div>
+            <div id="ptsUnit">points pour vous</div></div></div></div>
+      </section>
+
+      <!-- 18-23s feature 3 -->
+      <section id="f3" class="scene feat clip" data-start="18" data-duration="5.15" data-track-index="0">
+        <div class="bg"></div>
+        <div class="num">3</div>
+        <div class="ft">Suivez la<br />Botola Pro</div>
+        <div class="fs">Matchs, résultats et classement, ouverts à tous, sans compte.</div>
+        <div class="phone" id="f3phone"><div class="screen"><img id="f3img" src="assets/shots/f-matches.png" alt="" /></div></div>
+      </section>
+
+      <!-- 23-30s call to action -->
+      <section id="s4" class="scene clip" data-start="23" data-duration="7" data-track-index="0">
+        <div class="bg"></div>
+        <img class="logo" id="s4logo" src="assets/botolago-wordmark-light-B2pMfDk-.svg" alt="BotolaGO" />
+        <div id="ctaH">Votre équipe<br />vous attend.</div>
+        <div id="ctaP">Choisissez vos 15 joueurs, donnez le brassard et suivez vos points journée après journée.</div>
+        <div id="btn">Créer mon équipe →</div>
+        <div id="url">botolago.com</div>
+        <div id="free">100 % gratuit · aucun achat, aucun pari</div>
+      </section>
+
+      <div id="wipe"><div class="b"></div><div class="a"></div></div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true });
+      const E = { snap: "expo.out", pop: "back.out(1.9)", in: "power3.in" };
+
+      /* ---- S1 logo reveal, 0-3s ---- */
+      tl.fromTo("#logoClip", { clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0% 0 0)", duration: 0.8, ease: "power4.out" }, 0.25)
+        .fromTo("#logo", { scale: 0.6, xPercent: -6 }, { scale: 1, xPercent: 0, duration: 1.0, ease: E.pop }, 0.25)
+        .fromTo("#ring", { scale: 0.2, opacity: 1 }, { scale: 9, opacity: 0, duration: 1.1, ease: "power2.out" }, 0.2)
+        .fromTo("#sweep", { x: 0 }, { x: 1700, duration: 0.9, ease: "power2.inOut" }, 0.7)
+        .fromTo("#tag", { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.snap }, 1.2)
+        .to("#logoWrap", { scale: 1.06, duration: 1.4, ease: "none" }, 1.4);
+
+      /* ---- S2 kinetic headline: one word at a time, 3-8s ---- */
+      const words = gsap.utils.toArray("#headline .w");
+      tl.fromTo("#kick", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.4, ease: E.snap }, 3.25);
+      words.forEach((w, i) => {
+        const t = 3.45 + i * 0.5;
+        const dir = i % 2 ? 1 : -1;
+        tl.fromTo(w, { y: 140, rotate: 7 * dir, scale: 0.55, opacity: 0, transformOrigin: "0% 100%" },
+                     { y: 0, rotate: 0, scale: 1, opacity: 1, duration: 0.42, ease: "back.out(2.2)" }, t);
+      });
+      // punch on the final line
+      tl.to("#headline .cy", { scale: 1.04, transformOrigin: "0% 50%", duration: 0.5, ease: "power2.out" }, 6.95)
+        .to("#headline", { y: -12, duration: 0.8, ease: "none" }, 7.0);
+
+      /* ---- feature scenes: titles, phones, real UI motion ---- */
+      function feature(id, t0) {
+        tl.fromTo(`#${id} .num`, { scale: 0, rotate: -90 }, { scale: 1, rotate: 0, duration: 0.5, ease: E.pop }, t0 + 0.2)
+          .fromTo(`#${id} .ft`, { x: -120, opacity: 0 }, { x: 0, opacity: 1, duration: 0.55, ease: E.snap }, t0 + 0.3)
+          .fromTo(`#${id} .fs`, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.snap }, t0 + 0.55)
+          .fromTo(`#${id} .phone`, { y: 900, rotate: 6, opacity: 0 }, { y: 0, rotate: 0, opacity: 1, duration: 0.8, ease: "power4.out" }, t0 + 0.25)
+          .to(`#${id} .phone`, { y: -14, duration: 3.6, ease: "sine.inOut" }, t0 + 1.2);
+      }
+      feature("f1", 8); feature("f2", 13); feature("f3", 18);
+
+      // F1: slow push-in on the pitch, captain armband lights up
+      tl.fromTo("#f1img", { scale: 1.0, y: -10 }, { scale: 1.14, y: -70, duration: 4.4, ease: "power1.inOut" }, 8.6);
+      // F2: zoom onto the Capitaine x2 card, then the points double
+      tl.fromTo("#f2img", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: E.snap }, 13.8)
+        .fromTo("#ptsLbl", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: E.snap }, 14.8)
+        .fromTo("#p6", { scale: 0.3, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: E.pop }, 15.0)
+        .fromTo("#x2", { scale: 0, rotate: -20, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 0.5, ease: "back.out(2.6)" }, 15.7)
+        .fromTo("#p12", { scale: 0.2, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: "back.out(2.4)" }, 16.3)
+        .fromTo("#ptsUnit", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 16.7)
+        .to("#p12", { scale: 1.05, duration: 0.4, yoyo: true, repeat: 1, ease: "sine.inOut" }, 17.0);
+      // F3: scroll from fixtures down to the table
+      tl.fromTo("#f3img", { y: 0 }, { y: -560, duration: 3.8, ease: "power2.inOut" }, 18.8);
+
+      /* ---- S4 CTA 23-30s ---- */
+      tl.fromTo("#s4logo", { y: -60, opacity: 0, scale: 0.8 }, { y: 0, opacity: 1, scale: 1, duration: 0.7, ease: E.pop }, 23.3)
+        .fromTo("#ctaH", { y: 80, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: E.snap }, 23.8)
+        .fromTo("#ctaP", { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: E.snap }, 24.4)
+        .fromTo("#btn", { scale: 0.6, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.6, ease: E.pop }, 25.0)
+        .fromTo("#url", { y: 60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: E.snap }, 25.6)
+        .fromTo("#free", { opacity: 0 }, { opacity: 1, duration: 0.5 }, 26.3)
+        .to("#btn", { scale: 1.05, duration: 0.45, yoyo: true, repeat: 5, ease: "sine.inOut" }, 26.4);
+
+      /* ---- wipe transitions at 3, 8, 13, 18, 23 ---- */
+      [3, 8, 13, 18, 23].forEach((b) => {
+        tl.set("#wipe", { yPercent: 100 }, b - 0.31)
+          .to("#wipe", { yPercent: 0, duration: 0.28, ease: "power3.in" }, b - 0.3)
+          .to("#wipe", { yPercent: -100, duration: 0.34, ease: "power3.out" }, b + 0.02)
+          .set("#wipe", { yPercent: 100 }, b + 0.4);
+      });
+      gsap.set("#wipe", { yPercent: 100 });
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>
