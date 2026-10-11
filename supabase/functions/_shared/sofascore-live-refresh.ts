@@ -104,7 +104,12 @@ interface Snapshot {
   readonly fixtures: readonly MappedFixtureState[];
 }
 
-type SkipReason = "unchanged" | "stale" | "protected_final_state" | "no_fixture_state";
+type SkipReason =
+  | "unchanged"
+  | "stale"
+  | "protected_final_state"
+  | "no_fixture_state"
+  | "unresolved_round";
 
 export interface SofascoreRequestLog {
   readonly path: string;
@@ -277,9 +282,15 @@ export async function runSofascoreRefresh(
     stale: [],
     protected_final_state: [],
     no_fixture_state: [],
+    unresolved_round: [],
   };
   for (const call of plan.calls) {
-    const reason = skipReason(call, stateByExternalId.get(call.p_external_id));
+    // Ingestion replaces round_id: never detach a fixture from its gameweek
+    // when the provider omitted the round. Leave it for a complete payload.
+    const reason =
+      call.p_fixture.roundId === null
+        ? "unresolved_round"
+        : skipReason(call, stateByExternalId.get(call.p_external_id));
     if (reason) skipped[reason].push(call.p_external_id);
     else toWrite.push(call);
   }
@@ -298,6 +309,7 @@ export async function runSofascoreRefresh(
       stale: skipped.stale,
       protectedFinalState: skipped.protected_final_state,
       noFixtureState: skipped.no_fixture_state,
+      unresolvedRound: skipped.unresolved_round,
     },
   };
 
@@ -361,8 +373,9 @@ export async function runSofascoreRefresh(
   const finalStatus =
     counts.rejected === 0 ? "succeeded" : counts.updated > 0 ? "partial" : "failed";
   const errorCode = counts.rejected === 0 ? null : "fixture_item_rejected";
+  let completionFailed = false;
   try {
-    await rpc("complete_football_ingestion", {
+    const completion = await rpc("complete_football_ingestion", {
       p_run_id: runId,
       p_status: finalStatus,
       p_checkpoint: { source: SOFASCORE_PROVIDER_NAME, job },
@@ -378,17 +391,33 @@ export async function runSofascoreRefresh(
         ? "A SofaScore fixture update was rejected by the database."
         : null,
     });
+    if (completion.error) completionFailed = true;
   } catch {
+    completionFailed = true;
+  }
+  if (completionFailed) {
     // The scores are written; a missing run summary is reported, not retried.
     failures.push({ externalId: "run", code: "complete_run_failed" });
   }
 
   emit({
-    result: counts.rejected === 0 ? "ok" : "partial",
+    result: completionFailed
+      ? counts.updated > 0
+        ? "partial"
+        : "error"
+      : counts.rejected === 0
+        ? "ok"
+        : "partial",
     ...summary,
     written: counts.updated,
     failures,
   });
+  if (completionFailed) {
+    return {
+      status: 502,
+      body: { error: "complete_run_failed", mode, job, written: counts.updated, failures },
+    };
+  }
   if (counts.rejected > 0) {
     return {
       status: 502,

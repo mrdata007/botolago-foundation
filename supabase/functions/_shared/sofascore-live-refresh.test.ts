@@ -81,6 +81,7 @@ function fakeDb(
   source: string,
   snapshot: { mappings: unknown[]; fixtures: unknown[] },
   ingestError: (externalId: string) => { code?: string; message: string } | null = () => null,
+  completion: "ok" | "error" | "throw" = "ok",
 ): FakeDb {
   const calls: FakeDb["calls"] = [];
   const client = {
@@ -96,6 +97,10 @@ function fakeDb(
             case "begin_football_ingestion":
               return Promise.resolve({ data: uuid("9", 1), error: null });
             case "complete_football_ingestion":
+              if (completion === "throw")
+                return Promise.reject(new Error("completion unavailable"));
+              if (completion === "error")
+                return Promise.resolve({ data: null, error: { message: "completion refused" } });
               return Promise.resolve({ data: null, error: null });
             case "ingest_football_fixture": {
               const error = ingestError(String(args.p_external_id));
@@ -163,6 +168,53 @@ function run(
 const ingests = (db: FakeDb) => db.calls.filter((c) => c.name === "ingest_football_fixture");
 
 describe("sofascore live refresh", () => {
+  for (const mode of ["shadow", "sofascore"] as const) {
+    test(`${mode} skips a changed fixture with no round instead of erasing its gameweek`, async () => {
+      const db = fakeDb(mode, { mappings: mappings([1]), fixtures: [fixtureState(1)] });
+      const { fetch } = fakeFetch({
+        [SOFASCORE_LIVE_EVENTS_PATH]: {
+          events: [event(1, 101, 102, LIVE, { roundInfo: undefined })],
+        },
+      });
+      const { outcome, lines } = await run(mode, "fixtures", db, fetch);
+      expect(outcome.status).toBe(200);
+      expect(ingests(db)).toHaveLength(0);
+      expect(JSON.parse(lines[0]).skipped.unresolvedRound).toEqual(["1"]);
+      if (mode === "shadow") expect(JSON.parse(lines[0]).wouldIngest).toEqual([]);
+    });
+  }
+
+  for (const completion of ["error", "throw"] as const) {
+    for (const changed of [true, false]) {
+      test(`completion ${completion} reports failure after ${changed ? "one write" : "no writes"}`, async () => {
+        const db = fakeDb(
+          "sofascore",
+          {
+            mappings: mappings([1]),
+            fixtures: [fixtureState(1, changed ? {} : { homeScore: 1 })],
+          },
+          () => null,
+          completion,
+        );
+        const { fetch } = fakeFetch({
+          [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, 101, 102, LIVE)] },
+        });
+        const { outcome, lines } = await run("sofascore", "fixtures", db, fetch);
+        expect(outcome.status).toBe(502);
+        expect(outcome.body).toMatchObject({
+          error: "complete_run_failed",
+          written: changed ? 1 : 0,
+        });
+        expect(ingests(db)).toHaveLength(changed ? 1 : 0);
+        expect(db.calls.filter((c) => c.name === "complete_football_ingestion")).toHaveLength(1);
+        expect(JSON.parse(lines[0])).toMatchObject({
+          result: changed ? "partial" : "error",
+          failures: [{ externalId: "run", code: "complete_run_failed" }],
+        });
+      });
+    }
+  }
+
   test("shadow computes the writes, logs one JSON line and writes nothing", async () => {
     const db = fakeDb("shadow", { mappings: mappings([1]), fixtures: [fixtureState(1)] });
     const { fetch, paths } = fakeFetch({
