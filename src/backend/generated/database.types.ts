@@ -2172,6 +2172,33 @@ export type Database = {
         Args: { p_fixture_id: string; p_players: Json }
         Returns: Json
       }
+      service_sofascore_fantasy_context: {
+        Args: { p_fixture_id: string; p_player_ids?: string[] }
+        Returns: Json
+      }
+      service_sofascore_fantasy_due: {
+        Args: {
+          p_catchup_limit: number
+          p_fetch_max_attempts: number
+          p_hours: number
+          p_max_attempts: number
+          p_retry_limit: number
+        }
+        Returns: Json
+      }
+      service_sofascore_fantasy_note: {
+        Args: {
+          p_blockers: Json
+          p_data_digest: string
+          p_event_id: string
+          p_fixture_id: string
+          p_match_data: Json
+          p_next_retry_at: string
+          p_outcome: string
+          p_status: string
+        }
+        Returns: Json
+      }
       service_stage_fantasy_catalog: {
         Args: {
           p_expected_fixture_count: number
