@@ -220,6 +220,22 @@ Existing player mappings were preserved; the paused pg_cron jobs were restored
 to their original settings. Owner report, 2026-10-10. Fixture
 `1296b2e5-bb59-4f18-8ef7-dc0b2990bc3a` stays unlinked pending review.
 
+### SportsMonks unpaid; staging write for the live switch, 2026-10-11
+
+The owner confirmed SportsMonks is not paid: production results stopped after
+10 Oct (Kawkab Marrakech v Ittihad Tanger, Amal Tiznit v Difaâ El Jadida show no
+score). Permanent fix: PR #422 (live refresh reads SofaScore behind the
+data-source switch) with its owner-run release package
+(`scripts/backend/apply-sofascore-live-switch.sql`,
+`.github/workflows/football-live-refresh-deploy.yml`,
+`docs/production/SOFASCORE_LIVE_RELEASE_RUNBOOK.md`). Stopgap: PR #423.
+
+Staging write (orchestrator, owner-approved staging workflows): Staging V2,
+branch `claude/sofascore-live-edge`; no other staging writer running; `plan`
+(run 38110767594) listed only `20261011090000` and `20261011100000`;
+`rehearse` (38110831694) passed and rolled back; `apply` (38110898595) applied
+both.
+
 ## 7. Owner prerequisites
 
 - ~~Subscribe to a paid SofaScore tier~~ — done 2026-10-10 (10,000 a month).
