@@ -330,6 +330,97 @@ describe("automatic Fantasy: a finished match", () => {
   });
 });
 
+describe("automatic Fantasy: unknown substitutes (no app player)", () => {
+  // 2161842 came on at 86' for 544156 and has no goal, assist or card; 1919299 came on and scored.
+  const UNKNOWN_SUB = "2161842";
+  const UNKNOWN_SCORER = "1919299";
+
+  test("an unmapped substitute with no scoring trace does not hold the match: it is recorded with the exclusion listed", async () => {
+    const world = newWorld();
+    world.mapped.delete(UNKNOWN_SUB);
+    const db = fakeDb({ world });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(records(db)).toHaveLength(1);
+    const payload = (
+      records(db)[0].args as {
+        p_request: {
+          payload: {
+            squadComplete?: boolean;
+            squadCompleteExceptExcluded?: boolean;
+            excludedUnmappedPlayers: { sofascoreId: string; reason: string }[];
+            players: { identity: { sofascoreId: string }; stats: Record<string, unknown> }[];
+          };
+        };
+      }
+    ).p_request.payload;
+    expect(payload.squadComplete).toBeUndefined();
+    expect(payload.squadCompleteExceptExcluded).toBe(true);
+    expect(payload.excludedUnmappedPlayers).toEqual([
+      expect.objectContaining({ sofascoreId: UNKNOWN_SUB, reason: "no_candidate" }),
+    ]);
+    expect(payload.players.some((r) => r.identity.sofascoreId === UNKNOWN_SUB)).toBe(false);
+    // The player he replaced keeps his minutes.
+    expect(payload.players.find((r) => r.identity.sofascoreId === "544156")?.stats.minutes).toBe(
+      86,
+    );
+    expect(lines[0]).toMatchObject({
+      outcome: "recorded",
+      excludedUnmapped: [UNKNOWN_SUB],
+    });
+  });
+
+  test("the database refusing the exclusion keeps the match held, retried later like any hold", async () => {
+    const world = newWorld();
+    world.mapped.delete(UNKNOWN_SUB);
+    const db = fakeDb({
+      world,
+      recordError: { code: "PT409", message: "sofascore_unmapped_exclusion_refused" },
+    });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0]).toMatchObject({
+      outcome: "held:sofascore_unmapped_exclusion_refused",
+      excludedUnmapped: [UNKNOWN_SUB],
+      retry: true,
+    });
+    expect(db.attempts.get(FIXTURE)).toMatchObject({ status: "held" });
+    expect(db.attempts.get(FIXTURE)?.matchData).not.toBeNull();
+    expect(world.observations).toBe(0);
+  });
+
+  test("an unmapped substitute who scored still holds the match, and nothing is sent", async () => {
+    const world = newWorld();
+    world.mapped.delete(UNKNOWN_SCORER);
+    const db = fakeDb({ world });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0]).toMatchObject({ outcome: "held:unmapped_players", unmapped: 1 });
+    expect(records(db)).toHaveLength(0);
+  });
+
+  test("an unmapped starter still holds the match", async () => {
+    const world = newWorld();
+    world.mapped.delete(STARTERS[3]);
+    const db = fakeDb({ world });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0]).toMatchObject({ outcome: "held:unmapped_players" });
+    expect(records(db)).toHaveLength(0);
+  });
+
+  test("an unknown substitute and an unknown scorer together send nothing", async () => {
+    const world = newWorld();
+    world.mapped.delete(UNKNOWN_SUB);
+    world.mapped.delete(UNKNOWN_SCORER);
+    const db = fakeDb({ world });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0]).toMatchObject({ outcome: "held:unmapped_players", unmapped: 2 });
+    expect(records(db)).toHaveLength(0);
+  });
+});
+
 describe("automatic Fantasy: a match held back is retried without a request", () => {
   test("unmapped players hold it, then a later tick records it from the stored replies", async () => {
     const world = newWorld();

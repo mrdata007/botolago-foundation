@@ -272,3 +272,206 @@ describe("SofaScore-only Fantasy observation", () => {
     expect(a.requestDigest).toBe(b.requestDigest);
   });
 });
+
+describe("unknown (unmapped, no candidate) substitutes", () => {
+  // Fixture 17132481: home subs 1182110 (90', for the penalty scorer 895127) and 2161842 (86',
+  // for 544156), away sub 2790119 (81', for 2776291); 1919299 came on at 46' and scored.
+  const subHome = "2161842";
+  const subHomeLate = "1182110";
+  const subAway = "2790119";
+  const rowOf = (p: Awaited<ReturnType<typeof prepare>>, id: string) =>
+    p.request!.payload.players.find((r) => r.identity.sofascoreId === id);
+
+  test("a substitute with no scoring trace is left out and listed, the request is otherwise complete", async () => {
+    const match = load("17132481");
+    const p = await prepare(match, {}, [subHome]);
+    expect(p.blockers).toEqual([]);
+    expect(p.request).not.toBeNull();
+    expect(p.excludedUnmapped).toEqual([
+      expect.objectContaining({ sofascoreId: subHome, reason: "no_candidate" }),
+    ]);
+    expect(p.unmapped.map((u) => u.sofascoreId)).toEqual([subHome]);
+    const payload = p.request!.payload;
+    expect(payload.excludedUnmappedPlayers).toEqual(p.excludedUnmapped);
+    expect(payload.squadCompleteExceptExcluded).toBe(true);
+    expect("squadComplete" in payload).toBe(false);
+    expect(rowOf(p, subHome)).toBeUndefined();
+    // Names never travel.
+    expect(JSON.stringify(payload.excludedUnmappedPlayers)).not.toContain(
+      match.lineups.players.find((pl) => pl.externalId === subHome)!.name,
+    );
+    // Eleven starters a side, as the recorder needs.
+    for (const team of [binding.homeTeamId, binding.awayTeamId])
+      expect(payload.players.filter((r) => r.teamId === team && r.started).length).toBe(11);
+  });
+
+  test("a request without exclusions is unchanged: squadComplete, no exclusion keys", async () => {
+    const p = await prepare(load("17132481"));
+    const payload = p.request!.payload as unknown as Record<string, unknown>;
+    expect(payload.squadComplete).toBe(true);
+    expect("squadCompleteExceptExcluded" in payload).toBe(false);
+    expect("excludedUnmappedPlayers" in payload).toBe(false);
+    expect(p.excludedUnmapped).toEqual([]);
+  });
+
+  test("the player the unknown substitute replaced keeps his exact minutes, goals and cards", async () => {
+    const match = load("17132481");
+    const base = await prepare(match);
+    // 1182110 replaced the penalty scorer 895127 at 90'; 2161842 replaced 544156 at 86'.
+    const both = await prepare(match, {}, [subHomeLate, subHome, subAway]);
+    expect(both.blockers).toEqual([]);
+    expect(both.excludedUnmapped.map((e) => e.sofascoreId).sort()).toEqual(
+      [subHome, subHomeLate, subAway].sort(),
+    );
+    for (const off of ["895127", "544156", "2776291"]) {
+      const a = rowOf(base, off)!;
+      const b = rowOf(both, off)!;
+      expect(b.stats).toEqual(a.stats);
+      const states = (r: typeof a) =>
+        Object.fromEntries(Object.entries(r.evidence).map(([k, v]) => [k, v.state]));
+      expect(states(b)).toEqual(states(a));
+    }
+    expect(rowOf(both, "895127")!.stats.minutes).toBe(90);
+    expect(rowOf(both, "895127")!.stats.goals).toBe(1);
+    // Everyone else is identical too.
+    const others = (r: typeof both) =>
+      r
+        .request!.payload.players.filter(
+          (x) => ![subHomeLate, subHome, subAway].includes(x.identity.sofascoreId),
+        )
+        .map((x) => [x.identity.sofascoreId, x.stats]);
+    expect(others(both)).toEqual(others(base));
+    expect(both.expectedMode).toBe(base.expectedMode);
+  });
+
+  test("one unknown substitute on each side, as in the held production match", async () => {
+    const p = await prepare(load("17132481"), {}, [subHome, subAway]);
+    expect(p.blockers).toEqual([]);
+    expect(p.excludedUnmapped.map((e) => e.side).sort()).toEqual(["away", "home"]);
+  });
+
+  test("an unknown substitute who scored still holds the match", async () => {
+    const p = await prepare(load("17132481"), {}, ["1919299"]);
+    expect(p.excludedUnmapped).toEqual([]);
+    expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
+    expect(p.request).toBeNull();
+  });
+
+  test("an unknown substitute who is named assister, carded, or counted by SofaScore still holds the match", async () => {
+    const match = load("17132481");
+    const goal = match.incidents.find((i) => i.kind === "goal" && i.side === "home")!;
+    const assisted: SofascoreMatchData = {
+      ...match,
+      incidents: match.incidents.map((i) =>
+        i === goal ? { ...i, assist: { ...i.assist!, externalId: subHome } } : i,
+      ),
+    };
+    const yellow = match.incidents.find((i) => i.kind === "yellow_card" && i.side === "home")!;
+    const carded: SofascoreMatchData = {
+      ...match,
+      incidents: [
+        ...match.incidents,
+        { ...yellow, player: { ...yellow.player!, externalId: subHome } },
+      ],
+    };
+    const red: SofascoreMatchData = {
+      ...match,
+      incidents: [
+        ...match.incidents,
+        {
+          ...yellow,
+          kind: "red_card" as const,
+          player: { ...yellow.player!, externalId: subHome },
+        },
+      ],
+    };
+    for (const m of [
+      assisted,
+      carded,
+      red,
+      withStats(match, subHome, { goals: 1 }),
+      withStats(match, subHome, { assists: 1 }),
+      withStats(match, subHome, { ownGoals: 1 }),
+      withStats(match, subHome, { penaltyMissed: 1 }),
+    ]) {
+      const p = await prepare(m, {}, [subHome]);
+      expect(p.excludedUnmapped).toEqual([]);
+      expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
+      expect(p.request).toBeNull();
+    }
+  });
+
+  test("an unknown starter always holds the match: eleven starters a side are needed", async () => {
+    const match = load("17132481");
+    const starter = match.lineups.players.find((pl) => pl.starter && pl.side === "home")!;
+    const p = await prepare(match, {}, [starter.externalId]);
+    expect(p.excludedUnmapped).toEqual([]);
+    expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
+    expect(p.request).toBeNull();
+  });
+
+  test("a goal by the unknown substitute cannot hide: the incident names him, so he is not left out", async () => {
+    const match = load("17132481");
+    const goal = match.incidents.find((i) => i.kind === "goal" && i.side === "home")!;
+    const m: SofascoreMatchData = {
+      ...match,
+      incidents: match.incidents.map((i) =>
+        i === goal ? { ...i, player: { ...i.player!, externalId: subHome } } : i,
+      ),
+    };
+    const p = await prepare(m, {}, [subHome]);
+    expect(p.request).toBeNull();
+    expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
+  });
+
+  test("a replaced player whose exit the incidents do not carry still fails the minutes check", async () => {
+    const match = load("17132481");
+    const m: SofascoreMatchData = {
+      ...match,
+      incidents: match.incidents.map((i) =>
+        i.kind === "substitution" && i.playerIn?.externalId === "1213241"
+          ? { ...i, playerOut: null }
+          : i,
+      ),
+    };
+    // 1213241 came on at 73' for 1894253, whose SofaScore minutes (73) no longer fit a full match.
+    const p = await prepare(m, {}, ["1213241"]);
+    expect(p.request).toBeNull();
+    expect(p.blockers.map((b) => b.code)).toContain("minutes_mismatch");
+  });
+
+  test("an unknown substitute with minutes but no substitution incident is still unexplained", async () => {
+    const match = load("17132481");
+    const m: SofascoreMatchData = {
+      ...match,
+      incidents: match.incidents.filter(
+        (i) => !(i.kind === "substitution" && i.playerIn?.externalId === subHome),
+      ),
+    };
+    const p = await prepare(withStats(m, subHome, { minutesPlayed: 4 }), {}, [subHome]);
+    expect(p.blockers.map((b) => b.code)).toContain("appearance_unexplained");
+    expect(p.request).toBeNull();
+  });
+
+  test("goal incidents must still add up to the score when an unknown substitute is left out", async () => {
+    const match = load("17132481");
+    const p = await prepare(
+      {
+        ...match,
+        incidents: match.incidents.filter((i) => !(i.kind === "goal" && i.minute === 48)),
+      },
+      {},
+      [subHome],
+    );
+    expect(p.blockers.map((b) => b.code)).toContain("goals_do_not_add_up");
+    expect(p.request).toBeNull();
+  });
+
+  test("the same facts give the same digest, and the exclusion is part of it", async () => {
+    const match = load("17132481");
+    const a = await prepare(match, {}, [subHome]);
+    const b = await prepare(match, {}, [subHome]);
+    expect(a.requestDigest).toBe(b.requestDigest);
+    expect(a.requestDigest).not.toBe((await prepare(match)).requestDigest);
+  });
+});

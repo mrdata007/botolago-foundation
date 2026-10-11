@@ -11,7 +11,17 @@
  *
  * What is established, and how:
  * - Identity: only a reviewed SofaScore player mapping. Never a name or a shirt.
- *   An appearing player without one holds the whole match back.
+ *   An appearing player without one holds the whole match back, with ONE
+ *   exception (decision of 2026-10-11, "unknown players"): a substitute who came
+ *   on and left no trace in the scoring facts (see `untouchedSubstitute`) is
+ *   listed in `excludedUnmapped` instead of holding the match. The database
+ *   accepts that only for a player the auto-mapping queued as `no_candidate`
+ *   and whom no squad member of that club can be (see
+ *   api.service_record_sofascore_fantasy_observation, migration 20261011190000);
+ *   otherwise it refuses and the match stays held. A player the app does not
+ *   know cannot be in a Fantasy team and cannot earn points, and the club-level
+ *   facts (goals conceded, clean sheet) are computed from the incidents, not
+ *   from who is in the rows.
  * - Goals: from the incident list, never the lineup statistics (they undercount).
  *   Each side's goals must add up to the final score.
  * - Cards: from the incident list.
@@ -117,6 +127,20 @@ export interface UnmappedPlayer {
   readonly position: LineupPosition | null;
 }
 
+/**
+ * An appearing, unmapped SofaScore player left out of the request on purpose.
+ * Written into the request (and so into the stored observation and its digest)
+ * so that the exclusion is auditable: SofaScore id and shirt only, never a name.
+ */
+export interface ExcludedUnmappedPlayer {
+  readonly sofascoreId: string;
+  readonly side: MatchSide;
+  readonly shirtNumber: number | null;
+  readonly position: LineupPosition | null;
+  /** The only reason the database accepts: the auto-mapping found no squad candidate. */
+  readonly reason: "no_candidate";
+}
+
 export interface ObservationRow {
   readonly playerId: string;
   readonly teamId: string;
@@ -139,7 +163,15 @@ export interface SofascoreObservationRequest {
     readonly participationComplete: true;
     readonly disciplineComplete: true;
     /** Every player SofaScore says appeared has a row; the database derives who did not take part. */
-    readonly squadComplete: true;
+    readonly squadComplete?: true;
+    /**
+     * Instead of `squadComplete`, when `excludedUnmappedPlayers` is not empty: every appearing
+     * player has a row EXCEPT those listed. A different key on purpose: a database without
+     * migration 20261011190000 refuses the request (it requires `squadComplete`) instead of
+     * recording it without checking the exclusions.
+     */
+    readonly squadCompleteExceptExcluded?: true;
+    readonly excludedUnmappedPlayers?: readonly ExcludedUnmappedPlayer[];
     readonly players: readonly ObservationRow[];
   };
 }
@@ -149,7 +181,10 @@ export interface PreparedSofascoreObservation {
   readonly appFixtureId: string;
   readonly coverage: "full" | "limited";
   readonly blockers: readonly Blocker[];
+  /** Every appearing player with no reviewed mapping (the worklist), excluded ones included. */
   readonly unmapped: readonly UnmappedPlayer[];
+  /** The unmapped players left out of the request (no scoring trace); empty when none. */
+  readonly excludedUnmapped: readonly ExcludedUnmappedPlayer[];
   /** The mode the database should report for these facts: full only when every field is established. */
   readonly expectedMode: "full" | "simple" | null;
   readonly rows: number;
@@ -172,6 +207,46 @@ export interface PrepareInput {
 
 const minutesAgree = (observed: number, computed: number) =>
   observed - computed >= -MIN_UNDER_MINUTES && observed - computed <= MAX_STOPPAGE_MINUTES;
+
+/**
+ * May this unmapped, appearing player be left out of the request?
+ *
+ * Only a substitute who came on and has NOTHING that scores or is scored for
+ * him: no goal, own goal, penalty, assist (named by an incident or counted in the
+ * lineup statistics) and no card, and who is named by no incident except the
+ * substitutions that brought him on and, maybe, took him off. A starter never
+ * qualifies: the database needs eleven starters a side and refuses to invent one.
+ *
+ * Why this is enough for every other player: a known player's minutes come from
+ * his own substitution incidents and are checked against SofaScore's own
+ * `minutesPlayed` (a player replaced by the unknown still has his exit minute,
+ * and one whose exit is missing fails the minutes check); goals conceded and the
+ * clean sheet come from the opponent's goal incidents and each known player's own
+ * timeline; each side's goal incidents still have to equal the score; assists and
+ * cards are read per player from incidents naming that player.
+ */
+function untouchedSubstitute(
+  p: PerformanceLineupPlayer,
+  incidents: readonly PerformanceIncident[],
+): boolean {
+  if (p.starter) return false;
+  const stats = p.stats;
+  if (
+    (stats?.goals ?? 0) > 0 ||
+    (stats?.assists ?? 0) > 0 ||
+    (stats?.ownGoals ?? 0) > 0 ||
+    (stats?.penaltyMissed ?? 0) > 0
+  )
+    return false;
+  for (const i of incidents) {
+    const named = i.player?.externalId === p.externalId || i.assist?.externalId === p.externalId;
+    const inSubstitution =
+      i.playerIn?.externalId === p.externalId || i.playerOut?.externalId === p.externalId;
+    if (named) return false;
+    if (inSubstitution && i.kind !== "substitution") return false;
+  }
+  return true;
+}
 
 export async function prepareSofascoreObservation(
   input: PrepareInput,
@@ -286,6 +361,7 @@ export async function prepareSofascoreObservation(
       });
 
   const unmapped: UnmappedPlayer[] = [];
+  const excludedUnmapped: ExcludedUnmappedPlayer[] = [];
   const appOf = new Map<string, string>();
   const seenApp = new Set<string>();
   for (const p of appearing) {
@@ -298,6 +374,14 @@ export async function prepareSofascoreObservation(
         started: p.starter,
         position: p.position,
       });
+      if (untouchedSubstitute(p, match.incidents))
+        excludedUnmapped.push({
+          sofascoreId: p.externalId,
+          side: p.side,
+          shirtNumber: p.shirtNumber,
+          position: p.position,
+          reason: "no_candidate",
+        });
       continue;
     }
     const lower = app.toLowerCase();
@@ -310,10 +394,11 @@ export async function prepareSofascoreObservation(
     seenApp.add(lower);
     appOf.set(p.externalId, lower);
   }
-  if (unmapped.length > 0)
+  const holding = unmapped.length - excludedUnmapped.length;
+  if (holding > 0)
     block({
       code: "unmapped_players",
-      message: `${unmapped.length} appearing player(s) have no reviewed SofaScore mapping.`,
+      message: `${holding} appearing player(s) have no reviewed SofaScore mapping.`,
     });
 
   // ---- saves identity (full coverage): saves + goals conceded = shots on target faced
@@ -480,6 +565,9 @@ export async function prepareSofascoreObservation(
     appFixtureId: binding.appFixtureId,
     coverage: (full ? "full" : "limited") as "full" | "limited",
     unmapped,
+    excludedUnmapped: [...excludedUnmapped].sort((a, b) =>
+      a.sofascoreId < b.sofascoreId ? -1 : a.sofascoreId > b.sofascoreId ? 1 : 0,
+    ),
     rows: rows.length,
     unknownFields,
   };
@@ -503,7 +591,12 @@ export async function prepareSofascoreObservation(
       references,
       participationComplete: true,
       disciplineComplete: true,
-      squadComplete: true,
+      ...(base.excludedUnmapped.length > 0
+        ? {
+            squadCompleteExceptExcluded: true as const,
+            excludedUnmappedPlayers: base.excludedUnmapped,
+          }
+        : { squadComplete: true as const }),
       players: rows.sort((a, b) => (a.playerId < b.playerId ? -1 : 1)),
     },
   };

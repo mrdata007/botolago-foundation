@@ -254,6 +254,70 @@ select extensions.throws_ok(format($$select api.service_record_fantasy_observati
   'PT400', 'adaptive_payload_invalid', '7.2 the recorder refuses the provider source when called directly (identities would be unchecked)');
 
 -- ===========================================================================
+-- 7b. Unknown substitutes (migration 20261011190000): an unmapped substitute the
+--     auto-mapping queued as no_candidate may be left out of the rows, listed in
+--     the request; the database confirms it against the queue and the squad.
+--     Home club 1 (squad 1-11, 23), away club 2 (squad 12-22, 24; 24 is unmapped).
+-- ===========================================================================
+create function pg_temp.ex(p_id text, p_side text default 'home', p_shirt integer default 40, p_pos text default 'M')
+returns jsonb language sql as $$
+  select jsonb_build_object('sofascoreId', p_id, 'side', p_side, 'shirtNumber', p_shirt, 'position', p_pos, 'reason', 'no_candidate')
+$$;
+create function pg_temp.exreq(p_arr jsonb) returns jsonb language sql as $$
+  select jsonb_set(pg_temp.request(), '{payload}', ((pg_temp.request() -> 'payload') - 'squadComplete')
+    || jsonb_build_object('squadCompleteExceptExcluded', true, 'excludedUnmappedPlayers', p_arr))
+$$;
+insert into app_private.sofascore_player_match_queue (sofascore_player_id, fixture_id, team_id, side, name, shirt_number, position, reason)
+values ('S900', pg_temp.id('f0', 1), pg_temp.id('c1', 1), 'home', 'Unknown Home Sub', 40, 'midfielder', 'no_candidate'),
+  ('S901', pg_temp.id('f0', 1), pg_temp.id('c1', 1), 'home', 'Ambiguous Home Sub', 41, 'midfielder', 'ambiguous_name'),
+  ('S902', pg_temp.id('f0', 1), pg_temp.id('c1', 2), 'away', 'Unknown Away Sub', 24, 'defender', 'no_candidate');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), jsonb_set(pg_temp.request(), '{payload,excludedUnmappedPlayers}', jsonb_build_array(pg_temp.ex('S900')))),
+  'sofascore_request_invalid', '7b.1 a list of exclusions next to squadComplete is refused (one or the other)');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), jsonb_set(pg_temp.request(), '{payload,squadCompleteExceptExcluded}', 'true')),
+  'sofascore_request_invalid', '7b.2 squadCompleteExceptExcluded needs the list (and replaces squadComplete)');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq('[]')), 'sofascore_request_invalid', '7b.3 and the list cannot be empty');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S777')))),
+  'sofascore_unmapped_exclusion_refused', '7b.4 a player the queue does not hold is refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S901', 'home', 41)))),
+  'sofascore_unmapped_exclusion_refused', '7b.5 a queued player whose reason is not no_candidate is refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S900', 'away')))),
+  'sofascore_unmapped_exclusion_refused', '7b.6 a queued player of the other club is refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S23')))),
+  'sofascore_unmapped_exclusion_refused', '7b.7 a player who has a mapping is refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S5')))),
+  'sofascore_request_invalid', '7b.8 a player who also has a row is refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S900'), pg_temp.ex('S900')))),
+  'sofascore_request_invalid', '7b.9 a duplicate is refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S900') || '{"name":"x"}'))),
+  'sofascore_request_invalid', '7b.10 an entry carries no name or other field');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S900') || '{"reason":"ambiguous_name"}'))),
+  'sofascore_request_invalid', '7b.11 the only reason accepted is no_candidate');
+-- S902 (away, shirt 24, defender): squad member 24 is unmapped and wears 24, so he could be 24.
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.exreq(jsonb_build_array(pg_temp.ex('S902', 'away', 24, 'D')))),
+  'sofascore_unmapped_exclusion_refused', '7b.12 an unmapped squad member with the same shirt number could be him: refused');
+select extensions.is(pg_temp.observations(), 1, '7b.13 nothing of this was stored');
+select extensions.is((api.service_record_sofascore_fantasy_observation(pg_temp.id('f0', 1),
+  pg_temp.exreq(jsonb_build_array(pg_temp.ex('S900'))), true) ->> 'excludedUnmapped')::int, 1,
+  '7b.14 a confirmed unknown substitute is accepted (dry run), and counted');
+select extensions.is((api.service_record_sofascore_fantasy_observation(pg_temp.id('f0', 1),
+  pg_temp.exreq(jsonb_build_array(pg_temp.ex('S900'))), true) ->> 'nonParticipants')::int, 2,
+  '7b.15 the squad members missing from the rows are still the derived non-participants (23 and 24)');
+select extensions.is(pg_temp.observations(), 1, '7b.16 the dry run stored nothing');
+select pg_temp.put('rec', api.service_record_sofascore_fantasy_observation(pg_temp.id('f0', 1),
+  pg_temp.exreq(jsonb_build_array(pg_temp.ex('S900'))), false)::text);
+select extensions.is((pg_temp.get('rec')::jsonb ->> 'created')::boolean, true, '7b.17 recorded for real');
+select extensions.is((select payload #>> '{excludedUnmappedPlayers,0,sofascoreId}' from app_private.fantasy_fixture_observations order by id desc limit 1),
+  'S900', '7b.18 the stored observation lists the exclusion (auditable)');
+select extensions.is((select payload ? 'squadComplete' or payload ? 'squadCompleteExceptExcluded' from app_private.fantasy_fixture_observations order by id desc limit 1),
+  false, '7b.19 and carries neither squad flag');
+select extensions.is((select jsonb_array_length(payload -> 'players') from app_private.fantasy_fixture_observations order by id desc limit 1), 22,
+  '7b.20 with no row for the unknown player');
+select extensions.is((select jsonb_array_length(payload -> 'verifiedNonParticipants') from app_private.fantasy_fixture_observations order by id desc limit 1), 2,
+  '7b.21 and the derived non-participants');
+select extensions.is((select count(*)::int from app_private.fantasy_fixture_observations), 2,
+  '7b.22 a second observation for the fixture (its facts differ by the exclusion)');
+
+-- ===========================================================================
 -- 8. A reviewed correction still wins
 -- ===========================================================================
 select api.service_record_fantasy_observation(pg_temp.id('f0', 1),

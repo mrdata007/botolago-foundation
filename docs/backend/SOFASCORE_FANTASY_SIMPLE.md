@@ -97,6 +97,27 @@ overridden, retries dedupe by digest):
   back** (`unmapped_players`) and goes on the worklist (SofaScore id, side, shirt
   number, started, position; never a name). An unmapped bench player who never
   came on is ignored.
+- **Unknown substitutes** (migration `20261011190000`): the one exception to the
+  rule above. A player the app has no record of cannot be in a Fantasy team and
+  cannot earn points, yet used to hold the match for everyone. A **substitute**
+  (never a starter: the recorder needs eleven starters a side) who has no goal,
+  own goal, penalty missed, assist (named by an incident or counted in the lineup
+  statistics) and no card, and who appears in no incident except his own
+  substitution, is left out of the rows and listed in the request
+  (`squadCompleteExceptExcluded: true`, `excludedUnmappedPlayers`: SofaScore id,
+  side, shirt, position, reason `no_candidate`; no name). The list is kept in the
+  stored observation and its digest. The database accepts it only after
+  confirming, for each player: no mapping exists for his id; the auto-mapping
+  queue holds him open as `no_candidate` for that club; and no still-unmapped
+  squad member of that club could be him (same shirt number, or no shirt number
+  on file and a compatible position), because squad members missing from the rows
+  are recorded as not having played. Otherwise it refuses with
+  `sofascore_unmapped_exclusion_refused` and the match stays held (retried like
+  any hold). The players he replaced keep exact minutes (their exit comes from
+  the substitution incident and is still checked against SofaScore's minutes),
+  and goals conceded and the clean sheet come from the incidents, so they do not
+  depend on who is in the rows. An unknown scorer, assister, carded player or
+  starter still holds the match.
 - **Goals** come from incidents, never lineup statistics (they undercount). Each
   side's goal incidents must equal the final score.
 - **Minutes, clean sheet, goals conceded**: from substitution and dismissal
