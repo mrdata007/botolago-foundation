@@ -86,7 +86,7 @@ describe("add-sofascore-only-players.sql", () => {
     expect(code).not.toMatch(/fantasy_initial_price|fantasy_player_price_history/);
     expect(code).not.toMatch(/(update|delete from)\s+app_private\.football_provider_mappings/);
     expect(code).not.toMatch(/(update|delete from)\s+app\.players/);
-    expect(code).toContain("update app.team_memberships set active = false where id = v_obsolete");
+    expect(code).toContain("delete from app.team_memberships where id = v_obsolete");
     expect(code).toContain("obsolete membership evidence changed");
   });
 });

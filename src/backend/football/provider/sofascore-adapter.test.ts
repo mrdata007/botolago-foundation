@@ -146,6 +146,17 @@ describe("Sofascore adapter, from the Phase 0 fixtures", () => {
       }
   });
 
+  test("unplaced unknown incidents and attributed added time still fail closed", () => {
+    for (const incident of [
+      { incidentType: "substitution", incidentClass: "newClass", time: 70 },
+      { incidentType: "varDecision", incidentClass: "regular", time: 70 },
+      { incidentType: "newIncident", time: 70 },
+      { incidentType: "injuryTime", incidentClass: "newClass", time: 45 },
+      { incidentType: "injuryTime", time: 45, player: { id: 1, name: "Player" } },
+      { incidentType: "injuryTime", time: 45, playerOut: { id: 1, name: "Player" } },
+    ]) expect(() => parseSofascoreIncidents({ incidents: [incident] })).toThrow(FootballError);
+  });
+
   test("statistics lines keep the shots-on-goal and keeper-save keys", () => {
     const lines = parseSofascoreStatistics(sofa(`${FULL}.statistics`));
     const keys = new Set(lines.map((line) => line.key));

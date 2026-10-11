@@ -304,8 +304,9 @@ begin
       raise exception 'stop: unexpected current club membership for %', v_name;
     end if;
     if v_obsolete is not null then
-      -- Exact stale Wydad roster row measured on 2026-10-11. Preserve its
-      -- dates and history; no transfer date or Fantasy price is invented.
+      -- Exact unused stale Wydad row measured on 2026-10-11.
+      -- Remove it under the catalog move rule: scoring selects by dates,
+      -- not the active flag. No transfer date or Fantasy price is invented.
       if v_existing_player is distinct from '6824ba3d-1e99-472d-a3c7-9d789b24036e'::uuid
         or v_obsolete <> 'cb870b60-f432-4109-a29c-c084a2ddce0c'::uuid
         or not exists (select 1 from app.team_memberships where id = v_obsolete
@@ -338,7 +339,7 @@ begin
         v_name, v_name, v_position::app.football_position, 'unknown', true);
     end if;
     if v_obsolete is not null then
-      update app.team_memberships set active = false where id = v_obsolete;
+      delete from app.team_memberships where id = v_obsolete;
       -- Reviewed catalog move rule: change only club, keep price and identity.
       update app.fantasy_players set football_team_id=v_team where id='5951d4c9-fe4f-4aff-8405-3006ab34745e';
     end if;

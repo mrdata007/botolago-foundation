@@ -233,8 +233,8 @@ export const incidentLabel = (rawType: string, rawClass: string | null): string 
  * regular, and `period` markers (skipped). Anything else, including an own
  * goal (not seen in any of the ten matches), is `unknown` with its raw labels.
  * Rescinded incidents (VAR) are dropped.
- * An `unknown` kind without a minute or side is dropped when its label carries no
- * scoring meaning (`injuryTime`); a score-relevant one fails the match.
+ * Only the explicitly understood `injuryTime` announcement without a class or
+ * player attribution may be dropped when its minute or side is absent.
  */
 export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
   const check = new Check("incidents");
@@ -288,12 +288,13 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
     else if (rawType === "card" && rawClass === "red") kind = "red_card";
     else if (rawType === "substitution" && rawClass === "regular") kind = "substitution";
     if (incident.time === undefined || incident.isHome === undefined) {
-      // An incident of a kind that carries no scoring meaning and is not placed
-      // on a side or minute (SofaScore's `injuryTime` added-time announcement, a
-      // VAR note) says nothing about the match result: leave it out. Anything
-      // score-relevant, or any kind the builder understands, still fails below.
-      if (kind === "unknown" && !SCORE_RELEVANT_LABEL.test(incidentLabel(rawType, rawClass)))
-        continue;
+      // Only the reviewed added-time announcement is harmless metadata.
+      // Unknown substitutions, VAR decisions and other unplaced labels fail closed.
+      if (
+        rawType === "injuryTime" && rawClass === null &&
+        incident.player === undefined && incident.assist1 === undefined &&
+        incident.playerIn === undefined && incident.playerOut === undefined
+      ) continue;
       // An incident that cannot be placed must not be guessed at: fail the whole
       // match so it goes to review instead of scoring on partial data.
       throw new SofascoreParseError("incidents", [`${rawType}: no minute or side`]);
