@@ -33,7 +33,7 @@ import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import { createRapidApiClient, RapidApiError } from "./rapidapi-client.ts";
 import type { SofascoreShadowClient } from "./sofascore-fixtures.ts";
-import { runSofascoreRefresh } from "./sofascore-live-refresh.ts";
+import { runSofascoreDetailsBackfill, runSofascoreRefresh } from "./sofascore-live-refresh.ts";
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -139,24 +139,6 @@ export async function handleFootballLiveRefreshRequest(
   const source = await liveDataSource(dependencies.client);
   if (source === "invalid") return json(503, { error: "football_data_source_invalid" });
   if (source !== "sportsmonks") {
-    // Match details (events, lineups, statistics) are not read from SofaScore
-    // yet: that job has nothing to do on this path.
-    if (job === "match_details_backfill") {
-      console.log(
-        JSON.stringify({
-          event: "football_live_refresh",
-          result: "match_details_not_implemented_for_sofascore",
-          source,
-          job,
-        }),
-      );
-      return json(200, {
-        status: "skipped",
-        reason: "match_details_not_implemented_for_sofascore",
-        source,
-        job,
-      });
-    }
     let rapid = dependencies.rapidApi;
     if (!rapid) {
       try {
@@ -177,13 +159,24 @@ export async function handleFootballLiveRefreshRequest(
         return json(503, { error: "provider_not_configured", source, job });
       }
     }
+    const now = (dependencies.now ?? (() => new Date()))();
+    if (job === "match_details_backfill") {
+      const backfill = await runSofascoreDetailsBackfill({
+        mode: source,
+        client: dependencies.client,
+        rapid,
+        environment: dependencies.environment,
+        now,
+      });
+      return json(backfill.status, backfill.body);
+    }
     const outcome = await runSofascoreRefresh({
       mode: source,
       job,
       client: dependencies.client,
       rapid,
       environment: dependencies.environment,
-      now: (dependencies.now ?? (() => new Date()))(),
+      now,
     });
     return json(outcome.status, outcome.body);
   }

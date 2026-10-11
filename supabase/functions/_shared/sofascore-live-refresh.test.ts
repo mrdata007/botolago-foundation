@@ -159,7 +159,8 @@ function run(
     job,
     client: db.client,
     rapid: rapid(fetch, minRemaining),
-    environment: {},
+    // These tests are about scores: the details step has its own tests.
+    environment: { SOFASCORE_DETAILS_PER_TICK: "0" },
     now: NOW,
     log: (line) => lines.push(line),
   }).then((outcome) => ({ outcome, lines }));
@@ -442,7 +443,11 @@ describe("handler wiring", () => {
       headers: { "content-type": "application/json", "x-botolago-scheduler-token": TOKEN },
       body,
     });
-  const environment = { BOTOLAGO_SCHEDULER_TOKEN: TOKEN, RAPIDAPI_KEY: "k" };
+  const environment = {
+    BOTOLAGO_SCHEDULER_TOKEN: TOKEN,
+    RAPIDAPI_KEY: "k",
+    SOFASCORE_DETAILS_PER_TICK: "0",
+  };
 
   test("sofascore source goes through RapidAPI and the ingest RPC, never SportsMonks", async () => {
     const db = fakeDb("sofascore", { mappings: mappings([1]), fixtures: [fixtureState(1)] });
