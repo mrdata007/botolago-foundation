@@ -256,6 +256,18 @@ md5s pinned from CI run 38110909523); `football-live-refresh` deployed;
 on. Pending: read the first `football_live_refresh_sofascore` shadow log (next
 season tick ≈ 05:30 UTC), then switch to `'sofascore'`.
 
+Owner then switched the source to `'sofascore'` without waiting for a match.
+The 06:30 and 07:30 UTC season ticks returned HTTP 503
+`scheduler_token_not_configured`: the Edge secret `BOTOLAGO_SCHEDULER_TOKEN`
+was missing in Production V2 (SportsMonks being unpaid hid this until then).
+Owner saved the secret from the Vault value and reset the season heartbeat; no
+redeploy. At 08:00 UTC SofaScore marked the three missing round matches
+finished — Moghreb Tétouan 0–0 FUS Rabat, Kawkab Marrakech 2–1 Ittihad Tanger,
+Amal Tiznit 2–5 Difaâ El Jadida — and the live run returned HTTP 200. Source
+stays `'sofascore'`, live refresh on. Still to confirm: the other scheduled
+functions that send the same token (notification email/push dispatch, ops
+alert email, AI content, account deletion) stopped returning 503.
+
 ## 7. Owner prerequisites
 
 - ~~Subscribe to a paid SofaScore tier~~ — done 2026-10-10 (10,000 a month).
