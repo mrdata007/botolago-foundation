@@ -36,7 +36,7 @@ begin
   select sp.auth_user_id into strict v_user from app_private.staff_principals sp
     join app_private.staff_role_assignments a on a.staff_principal_id=sp.id
     join app_private.admin_roles r on r.id=a.role_id
-    where sp.status='active' and r.name='owner'
+    where sp.status='active' and r.name='platform_admin'
       and sp.auth_user_id='d4eaa24d-ab24-45c6-9bdd-f8b8bac3b731';
   if not exists(select 1 from app.players where id='52b4637e-68a4-4f26-9f2d-66cb94b0f988'
       and full_name='Anas Moulhami' and date_of_birth='2001-01-17' and position='defender' and active)
