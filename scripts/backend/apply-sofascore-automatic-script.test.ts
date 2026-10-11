@@ -32,7 +32,8 @@ import {
  * The ONE guarded script that installs SofaScore Fantasy scoring on production
  * (20261003180000, 20261011110000, 20261011120000, the automatic player
  * matching 20261011130000, the automatic Fantasy state 20261011140000, the
- * ops health coverage 20261011150000 and the Pépites performances 20261011180000)
+ * ops health coverage 20261011150000, the public ranking exclusions 20261011160000
+ * and the Pépites performances 20261011180000)
  * and catches production up with the migrations the owner found missing from
  * the history on 2026-10-11: four applied as steps (20260925090500, 20261001170000,
  * 20261010140000, 20261011170000), one function brought to its reviewed body
@@ -215,6 +216,14 @@ describe("apply-sofascore-automatic.sql", () => {
           "legacyFixtureCheckAfter",
           "performancesSync",
           "performancesSyncFixture",
+          "fantasyLeaguesAfter",
+          "fantasyLeagueStandingsAfter",
+          "fantasyOverallStandingsAfter",
+          "predictionsLeaderboardAfter",
+          "fantasyHiddenAhead",
+          "predictionHiddenAhead",
+          "adminListPublicRankingExclusions",
+          "adminSetPublicRankingExclusion",
           "leaguePageAfter",
           "leaguePageAfterProsrc",
           "attachTeamCrestAfter",
@@ -353,6 +362,7 @@ describe("apply-sofascore-automatic.sql", () => {
       "20261011130000",
       "20261011140000",
       "20261011150000",
+      "20261011160000",
       "20261011170000",
       "20261011180000",
     ]);
@@ -446,6 +456,10 @@ describe("apply-sofascore-automatic.sql", () => {
       "opsHealthBefore",
       "scoringDocumentBaseBefore",
       "legacyFixtureCheckBefore",
+      "fantasyLeaguesBefore",
+      "fantasyLeagueStandingsBefore",
+      "fantasyOverallStandingsBefore",
+      "predictionsLeaderboardBefore",
     ] as const) {
       const at = workflow.indexOf(`'${label(key)}'`);
       expect({ key, inPreStateStep: at > pre && at < full }).toEqual({ key, inPreStateStep: true });
@@ -466,6 +480,14 @@ describe("apply-sofascore-automatic.sql", () => {
       "legacyFixtureCheckAfter",
       "performancesSync",
       "performancesSyncFixture",
+      "fantasyLeaguesAfter",
+      "fantasyLeagueStandingsAfter",
+      "fantasyOverallStandingsAfter",
+      "predictionsLeaderboardAfter",
+      "fantasyHiddenAhead",
+      "predictionHiddenAhead",
+      "adminListPublicRankingExclusions",
+      "adminSetPublicRankingExclusion",
       "leaguePageAfter",
       "attachTeamCrestAfter",
       "setCuratedTeamCrest",
@@ -477,6 +499,190 @@ describe("apply-sofascore-automatic.sql", () => {
         afterReset: true,
       });
     }
+  });
+
+  describe("20261011160000 public ranking exclusions", () => {
+    const readers = [
+      ["fantasyLeagues", "api.fantasy_leagues(uuid,text,integer)"],
+      ["fantasyLeagueStandings", "api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)"],
+      ["fantasyOverallStandings", "api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)"],
+      ["predictionsLeaderboard", "api.predictions_leaderboard(text,integer,integer,uuid,integer)"],
+    ] as const;
+    const created = [
+      ["FANTASY_HIDDEN_AHEAD", "app_private.fantasy_hidden_ahead(uuid,uuid,uuid,bigint,boolean)"],
+      ["PREDICTION_HIDDEN_AHEAD", "app_private.prediction_hidden_ahead(uuid,uuid,integer)"],
+      ["ADMIN_LIST_PUBLIC_RANKING_EXCLUSIONS", "api.admin_list_public_ranking_exclusions()"],
+      [
+        "ADMIN_SET_PUBLIC_RANKING_EXCLUSION",
+        "api.admin_set_public_ranking_exclusion(uuid,text,boolean,text,uuid)",
+      ],
+    ] as const;
+    const step = STEPS.find((candidate) => candidate.version === "20261011160000")!;
+    const preflight = script.slice(
+      script.indexOf("do $preflight$"),
+      script.indexOf("do $history_check$"),
+    );
+    const postflight = script.slice(
+      script.indexOf("do $postflight$"),
+      script.lastIndexOf("\nrollback;\n"),
+    );
+    const migrationSql = read("supabase/migrations/20261011160000_public_ranking_exclusions.sql");
+
+    test("sits between 20261011150000 and 20261011170000 and replaces exactly the four readers the migration replaces", () => {
+      const versions = STEPS.map((candidate) => candidate.version);
+      expect(versions.indexOf("20261011160000")).toBe(versions.indexOf("20261011150000") + 1);
+      expect(versions.indexOf("20261011170000")).toBe(versions.indexOf("20261011160000") + 1);
+      const replaced = [...migrationSql.matchAll(/^create or replace function (api\.\w+)\(/gm)].map(
+        (match) => match[1],
+      );
+      expect(replaced.sort()).toEqual(readers.map(([, sig]) => sig.split("(")[0]).sort());
+      const createdByMigration = [...migrationSql.matchAll(/^create function ([\w.]+)\(/gm)].map(
+        (match) => match[1],
+      );
+      expect(createdByMigration.sort()).toEqual(created.map(([, sig]) => sig.split("(")[0]).sort());
+    });
+
+    test("pending: objects it creates absent, prerequisites present, readers pinned 'before' (checked before the first write)", () => {
+      const at = (text: string) => preflight.indexOf(text);
+      for (const text of [
+        "to_regclass('app_private.public_ranking_exclusions') is not null",
+        ...created.map(([, sig]) => `to_regprocedure('${sig}') is not null`),
+        "from app_private.admin_permissions where name = 'rankings.manage'",
+        "stop: 20261011160000 is not recorded but an object it creates already exists",
+        "the permission rankings.manage it creates already exists",
+        "an object migration 20261011160000 depends on is missing",
+        "(the platform_admin role)",
+        "to_regprocedure('app_private.admin_assert_permission(text,boolean)') is null",
+        "to_regprocedure('app_private.write_admin_audit(uuid,text,text,uuid,text,uuid,uuid,uuid,jsonb,jsonb,app_private.admin_audit_outcome,text,boolean)') is null",
+        "to_regprocedure('app_private.admin_begin_idempotent_operation(uuid,text,uuid,jsonb)') is null",
+        "to_regclass('app.prediction_standings') is null",
+        "to_regclass('app.fantasy_rankings') is null",
+        "to_regclass('app_private.staff_principals') is null",
+        ...readers.map(
+          ([key, sig]) =>
+            `md5(pg_get_functiondef('${sig}'::regprocedure)) is distinct from '${PINS[`${key}Before` as keyof typeof PINS]}'`,
+        ),
+        "create temporary table sofascore_ranking_reader_grants on commit drop as",
+      ]) {
+        expect({ text, found: at(text) !== -1 }).toEqual({ text, found: true });
+        expect({ text, beforeFirstWrite: at(text) < preflight.length }).toEqual({
+          text,
+          beforeFirstWrite: true,
+        });
+        expect(script.indexOf(text)).toBeLessThan(firstWrite);
+      }
+    });
+
+    test("the 'before' and 'after' pins of the four readers and the four new functions are CI placeholders named for the CI line that prints them", () => {
+      for (const [key] of readers) {
+        for (const side of ["Before", "After"] as const) {
+          const name = `${key}${side}` as keyof typeof PINS;
+          expect(step.pins[name]).toBe(PINS[name]);
+          expect(isRealMd5(PINS[name]) || PINS[name].startsWith("FILL_FROM_CI_")).toBe(true);
+        }
+      }
+      expect(step.pins.fantasyHiddenAhead).toBe(PINS.fantasyHiddenAhead);
+      expect(step.pins.adminSetPublicRankingExclusion).toBe(PINS.adminSetPublicRankingExclusion);
+      const workflow = read(".github/workflows/backend-quality.yml");
+      const pre = workflow.indexOf(
+        "SofaScore automatic pre-state md5 (database at 20261011120000)",
+      );
+      const full = workflow.indexOf("- run: bun run backend:db:reset");
+      const post = workflow.indexOf("SofaScore automatic post-state md5");
+      const lines: [string, string, boolean][] = [
+        ...readers.map(
+          ([key, sig]) =>
+            [
+              `FILL_FROM_CI_${key.replace(/([A-Z])/g, "_$1").toUpperCase()}_BEFORE_MD5`,
+              sig,
+              true,
+            ] as [string, string, boolean],
+        ),
+        ...readers.map(
+          ([key, sig]) =>
+            [
+              `FILL_FROM_CI_${key.replace(/([A-Z])/g, "_$1").toUpperCase()}_AFTER_MD5`,
+              sig,
+              false,
+            ] as [string, string, boolean],
+        ),
+        ...created.map(
+          ([label, sig]) => [`FILL_FROM_CI_${label}_MD5`, sig, false] as [string, string, boolean],
+        ),
+      ];
+      expect(lines).toHaveLength(12);
+      for (const [label, sig, isBefore] of lines) {
+        const line = `('${label}', '${sig}'::regprocedure)`;
+        const at = workflow.indexOf(line);
+        expect({ label, printed: at !== -1 }).toEqual({ label, printed: true });
+        // The "before" values come from the database at 20261011120000, the others after the full reset.
+        expect({ label, where: isBefore ? at > pre && at < full : at > post }).toEqual({
+          label,
+          where: true,
+        });
+      }
+    });
+
+    test("verify: the new objects are checked (definer or invoker, grants, forced RLS), and the readers keep their grants", () => {
+      expect(postflight).toContain("'app_private.public_ranking_exclusions'");
+      for (const [, sig] of created) {
+        expect(postflight).toContain(`fn := to_regprocedure('${sig}');`);
+      }
+      for (const [, sig] of readers) {
+        expect(postflight).toContain(`fn := to_regprocedure('${sig}');`);
+      }
+      // The two helpers are security invoker with an empty search_path; the staff functions and readers are definer.
+      expect(postflight).toContain("not security invoker with an empty search_path");
+      expect(occurrences(postflight, "where p.oid = fn and not p.prosecdef and")).toBe(2);
+      // Staff functions: signed-in staff only.
+      const staff = postflight.slice(
+        postflight.indexOf("fn := to_regprocedure('api.admin_list_public_ranking_exclusions()');"),
+        postflight.indexOf("fn := to_regprocedure('api.fantasy_leagues(uuid,text,integer)');"),
+      );
+      expect(staff).toContain("or not has_function_privilege('authenticated', fn, 'execute')");
+      expect(staff).toContain("or has_function_privilege('anon', fn, 'execute')");
+      // Reader grants: remembered before, compared after.
+      expect(postflight).toContain("the grants of a ranking reader changed");
+      expect(postflight).toContain("pg_temp.sofascore_ranking_reader_grants");
+      // The permission row and its grant (the only data the migration writes).
+      expect(postflight).toContain("the permission rankings.manage is missing or not active");
+      expect(postflight).toContain(
+        "the permission rankings.manage is not granted to platform_admin",
+      );
+      expect(postflight).toContain("the exclusion list lacks its reason check");
+      expect(postflight).toContain("does not have its two foreign keys");
+    });
+
+    test("the migration writes only the permission row and its grant, and the step's checks never write", () => {
+      const inserts = [...migrationSql.matchAll(/^insert into ([\w.]+)/gm)].map(
+        (match) => match[1],
+      );
+      expect(inserts).toEqual([
+        "app_private.admin_permissions",
+        "app_private.admin_role_permissions",
+      ]);
+      // The step names no account and hides nothing.
+      expect(migrationSql).not.toMatch(
+        /insert into app_private\.public_ranking_exclusions[^;]*values \(\s*'/,
+      );
+      const stepText = step.pending + step.verify;
+      expect(stepText.toLowerCase()).not.toMatch(
+        /\b(insert into|update|delete from)\s+(app|app_private)\./,
+      );
+    });
+
+    test("the runbook says what it is in plain words and sends the owner to the optional step", () => {
+      const runbook = read("docs/production/SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md").replace(
+        /\s*\n>?\s*/g,
+        " ",
+      );
+      expect(runbook).toContain("20261011160000_public_ranking_exclusions");
+      expect(runbook).toContain(
+        "nothing is hidden until you do the step in docs/backend/PUBLIC_RANKING_EXCLUSIONS.md",
+      );
+      expect(runbook).toContain("## Optional: hide the test accounts");
+      expect(runbook).toContain("docs/backend/PUBLIC_RANKING_EXCLUSIONS.md");
+    });
   });
 
   test("the deploy gate requires the match-details migration as well", () => {

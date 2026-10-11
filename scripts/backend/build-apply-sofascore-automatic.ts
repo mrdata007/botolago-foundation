@@ -158,6 +158,25 @@ export const PINS = {
   // (md5 of the body text, recomputed by the test). Production's older body is
   // GAMEWEEK_SUMMARY.productionProsrcMd5.
   gameweekSummaryProsrc: "96f6cbe0f8fa40c0ff3d440ce1ef2f09",
+
+  // 20261011160000: the four public ranking readers it REPLACES (pre-state step
+  // "SofaScore automatic pre-state md5": before; post-state step: after) and the
+  // four functions it CREATES (post-state step only). Production is expected to
+  // hold the 20260926003100 definitions; if it holds anything else the script
+  // stops before changing anything. FILL THESE from the green database-quality
+  // run: each CI line has a `pin` column naming the placeholder it fills.
+  fantasyLeaguesBefore: "FILL_FROM_CI_FANTASY_LEAGUES_BEFORE_MD5",
+  fantasyLeaguesAfter: "FILL_FROM_CI_FANTASY_LEAGUES_AFTER_MD5",
+  fantasyLeagueStandingsBefore: "FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_BEFORE_MD5",
+  fantasyLeagueStandingsAfter: "FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_AFTER_MD5",
+  fantasyOverallStandingsBefore: "FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_BEFORE_MD5",
+  fantasyOverallStandingsAfter: "FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_AFTER_MD5",
+  predictionsLeaderboardBefore: "FILL_FROM_CI_PREDICTIONS_LEADERBOARD_BEFORE_MD5",
+  predictionsLeaderboardAfter: "FILL_FROM_CI_PREDICTIONS_LEADERBOARD_AFTER_MD5",
+  fantasyHiddenAhead: "FILL_FROM_CI_FANTASY_HIDDEN_AHEAD_MD5",
+  predictionHiddenAhead: "FILL_FROM_CI_PREDICTION_HIDDEN_AHEAD_MD5",
+  adminListPublicRankingExclusions: "FILL_FROM_CI_ADMIN_LIST_PUBLIC_RANKING_EXCLUSIONS_MD5",
+  adminSetPublicRankingExclusion: "FILL_FROM_CI_ADMIN_SET_PUBLIC_RANKING_EXCLUSION_MD5",
 } as const;
 
 /** Migrations other lanes still have to add. Remove an entry when it moves to STEPS. Empty: every slot is filled. */
@@ -182,6 +201,8 @@ interface FnCheck {
   pin?: keyof typeof PINS;
   /** Key in PINS for the reviewed body text (md5 of pg_proc.prosrc). */
   prosrc?: keyof typeof PINS;
+  /** A security INVOKER helper (still with an empty search_path). Default: security definer. */
+  invoker?: boolean;
 }
 
 const GRANT_TESTS: Record<Callable, string> = {
@@ -221,8 +242,8 @@ const verifyFunctions = (version: string, fns: FnCheck[]) => `
         problems := problems || '${version}: ${f.sig} is missing'::text;
       else
         if not exists (select 1 from pg_proc p
-            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
-          problems := problems || ('${version}: not security definer with an empty search_path: ' || fn::text);
+            where p.oid = fn and ${f.invoker ? "not p.prosecdef" : "p.prosecdef"} and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('${version}: not ${f.invoker ? "security invoker" : "security definer"} with an empty search_path: ' || fn::text);
         end if;
         if ${GRANT_TESTS[f.callable]} then
           problems := problems || ('${version}: callable by the wrong roles: ' || fn::text);
@@ -316,6 +337,24 @@ const ATTACH_CREST_SIG = "api.attach_football_team_crest(text,text,text,text,tex
 const SET_CURATED_CREST_SIG = "api.service_set_curated_team_crest(text,text,text,text)";
 const REPOINT_SIG = "api.repoint_football_fixture_mapping(text,uuid,text,text,text)";
 const NEWS_DETAIL_SIG = "api.news_article_detail(text,text)";
+// 20261011160000: the four readers it replaces, the four functions it creates.
+const FANTASY_LEAGUES_SIG = "api.fantasy_leagues(uuid,text,integer)";
+const FANTASY_LEAGUE_STANDINGS_SIG = "api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)";
+const FANTASY_OVERALL_STANDINGS_SIG =
+  "api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)";
+const PREDICTIONS_LEADERBOARD_SIG =
+  "api.predictions_leaderboard(text,integer,integer,uuid,integer)";
+const FANTASY_HIDDEN_AHEAD_SIG = "app_private.fantasy_hidden_ahead(uuid,uuid,uuid,bigint,boolean)";
+const PREDICTION_HIDDEN_AHEAD_SIG = "app_private.prediction_hidden_ahead(uuid,uuid,integer)";
+const ADMIN_LIST_EXCLUSIONS_SIG = "api.admin_list_public_ranking_exclusions()";
+const ADMIN_SET_EXCLUSION_SIG =
+  "api.admin_set_public_ranking_exclusion(uuid,text,boolean,text,uuid)";
+const RANKING_READER_SIGS = [
+  FANTASY_LEAGUES_SIG,
+  FANTASY_LEAGUE_STANDINGS_SIG,
+  FANTASY_OVERALL_STANDINGS_SIG,
+  PREDICTIONS_LEADERBOARD_SIG,
+];
 
 export const STEPS: Step[] = [
   {
@@ -784,6 +823,164 @@ ${verifyFunctions("20261011140000", [
     },
   },
   {
+    version: "20261011160000",
+    name: "public_ranking_exclusions",
+    summary:
+      "test accounts can be hidden from the public rankings: one private list (empty), two staff functions to hide or show an account, the permission rankings.manage (granted to platform_admin), and the four public ranking readers replaced so they skip hidden accounts (same signatures and grants; production still holds the 20260926003100 text); nothing is hidden until the owner does the step of docs/backend/PUBLIC_RANKING_EXCLUSIONS.md, and no existing ranking row changes",
+    pending: `${mustNotExist("20261011160000", {
+      tables: ["app_private.public_ranking_exclusions"],
+      functions: [
+        FANTASY_HIDDEN_AHEAD_SIG,
+        PREDICTION_HIDDEN_AHEAD_SIG,
+        ADMIN_LIST_EXCLUSIONS_SIG,
+        ADMIN_SET_EXCLUSION_SIG,
+      ],
+    })}
+    if exists (select 1 from app_private.admin_permissions where name = 'rankings.manage') then
+      raise exception 'stop: 20261011160000 is not recorded but the permission rankings.manage it creates already exists -- production is not the state it was written for';
+    end if;${mustExist("20261011160000", {
+      tables: [
+        "app.profiles",
+        "app.fantasy_teams",
+        "app.fantasy_rankings",
+        "app.fantasy_leagues",
+        "app.fantasy_league_memberships",
+        "app.fantasy_seasons",
+        "app.fantasy_gameweeks",
+        "app.prediction_standings",
+        "app.rounds",
+        "app.fixtures",
+        "app_private.prediction_settings",
+        "app_private.prediction_fixture_scoring",
+        "app_private.user_bans",
+        "app_private.staff_principals",
+        "app_private.admin_permissions",
+        "app_private.admin_roles",
+        "app_private.admin_role_permissions",
+      ],
+      functions: [
+        "app_private.admin_assert_permission(text,boolean)",
+        "app_private.admin_begin_idempotent_operation(uuid,text,uuid,jsonb)",
+        "app_private.admin_complete_idempotent_operation(uuid,text,uuid,jsonb)",
+        "app_private.write_admin_audit(uuid,text,text,uuid,text,uuid,uuid,uuid,jsonb,jsonb,app_private.admin_audit_outcome,text,boolean)",
+        "app_private.assert_mfa_step_up()",
+        "app_private.fantasy_mask_username(text)",
+        "app_private.predictions_access_allowed(uuid)",
+        "app_private.predictions_current_season()",
+        "app_private.predictions_resolve_round(uuid,integer,timestamptz)",
+        "app_private.prediction_round_state(uuid,timestamptz)",
+        ...RANKING_READER_SIGS,
+      ],
+    })}
+    -- The permission is granted to this role; without it nobody could use the staff functions.
+    if not exists (select 1 from app_private.admin_roles where name = 'platform_admin') then
+      raise exception 'stop: an object migration 20261011160000 depends on is missing (the platform_admin role) -- production is not the state it was written for';
+    end if;
+    -- It replaces exactly the definitions migration 20260926003100 left.${mustMatchMd5(
+      "20261011160000",
+      FANTASY_LEAGUES_SIG,
+      PINS.fantasyLeaguesBefore,
+    )}${mustMatchMd5("20261011160000", FANTASY_LEAGUE_STANDINGS_SIG, PINS.fantasyLeagueStandingsBefore)}${mustMatchMd5(
+      "20261011160000",
+      FANTASY_OVERALL_STANDINGS_SIG,
+      PINS.fantasyOverallStandingsBefore,
+    )}${mustMatchMd5("20261011160000", PREDICTIONS_LEADERBOARD_SIG, PINS.predictionsLeaderboardBefore)}
+    -- create or replace keeps the grants; remember them to prove it afterwards.
+    create temporary table sofascore_ranking_reader_grants on commit drop as
+    select f.sig,
+           has_function_privilege('public', to_regprocedure(f.sig), 'execute') as public_can,
+           has_function_privilege('anon', to_regprocedure(f.sig), 'execute') as anon_can,
+           has_function_privilege('authenticated', to_regprocedure(f.sig), 'execute') as authenticated_can,
+           has_function_privilege('service_role', to_regprocedure(f.sig), 'execute') as service_can
+      from (values ${RANKING_READER_SIGS.map((sig) => `('${sig}')`).join(", ")}) as f(sig);`,
+    verify: `${verifyPrivateTables("20261011160000", ["app_private.public_ranking_exclusions"])}
+${verifyFunctions("20261011160000", [
+  {
+    sig: FANTASY_HIDDEN_AHEAD_SIG,
+    callable: "nobody",
+    pin: "fantasyHiddenAhead",
+    invoker: true,
+  },
+  {
+    sig: PREDICTION_HIDDEN_AHEAD_SIG,
+    callable: "nobody",
+    pin: "predictionHiddenAhead",
+    invoker: true,
+  },
+  {
+    sig: ADMIN_LIST_EXCLUSIONS_SIG,
+    callable: "admin",
+    pin: "adminListPublicRankingExclusions",
+  },
+  {
+    sig: ADMIN_SET_EXCLUSION_SIG,
+    callable: "admin",
+    pin: "adminSetPublicRankingExclusion",
+  },
+  { sig: FANTASY_LEAGUES_SIG, callable: "any", pin: "fantasyLeaguesAfter" },
+  { sig: FANTASY_LEAGUE_STANDINGS_SIG, callable: "any", pin: "fantasyLeagueStandingsAfter" },
+  { sig: FANTASY_OVERALL_STANDINGS_SIG, callable: "any", pin: "fantasyOverallStandingsAfter" },
+  { sig: PREDICTIONS_LEADERBOARD_SIG, callable: "any", pin: "predictionsLeaderboardAfter" },
+])}
+    declare
+      reader_sig text;
+    begin
+      -- The remembered grants exist only when this run applied the migration.
+      if to_regclass('pg_temp.sofascore_ranking_reader_grants') is not null then
+        foreach reader_sig in array array[${RANKING_READER_SIGS.map((s) => `'${s}'`).join(", ")}] loop
+          if to_regprocedure(reader_sig) is not null and exists (select 1 from pg_temp.sofascore_ranking_reader_grants g
+            where g.sig = reader_sig
+              and (g.public_can is distinct from has_function_privilege('public', to_regprocedure(reader_sig), 'execute')
+                or g.anon_can is distinct from has_function_privilege('anon', to_regprocedure(reader_sig), 'execute')
+                or g.authenticated_can is distinct from has_function_privilege('authenticated', to_regprocedure(reader_sig), 'execute')
+                or g.service_can is distinct from has_function_privilege('service_role', to_regprocedure(reader_sig), 'execute'))) then
+            problems := problems || ('20261011160000: the grants of a ranking reader changed: ' || reader_sig);
+          end if;
+        end loop;
+      end if;
+    end;
+    declare
+      ranking_permission uuid;
+    begin
+      -- The permission row and its grant to platform_admin (the only data this migration writes).
+      select p.id into ranking_permission from app_private.admin_permissions p
+       where p.name = 'rankings.manage' and p.domain = 'rankings' and p.active and p.requires_mfa and p.requires_recent_auth;
+      if ranking_permission is null then
+        problems := problems || '20261011160000: the permission rankings.manage is missing or not active, with a second factor and a recent sign-in required'::text;
+      elsif not exists (select 1 from app_private.admin_role_permissions rp
+          join app_private.admin_roles r on r.id = rp.role_id
+         where rp.permission_id = ranking_permission and r.name = 'platform_admin') then
+        problems := problems || '20261011160000: the permission rankings.manage is not granted to platform_admin'::text;
+      end if;
+      -- The list: its reason check and its two links (account, staff principal).
+      if to_regclass('app_private.public_ranking_exclusions') is not null then
+        if not exists (select 1 from pg_constraint
+            where conrelid = 'app_private.public_ranking_exclusions'::regclass
+              and conname = 'public_ranking_exclusions_reason_check') then
+          problems := problems || '20261011160000: the exclusion list lacks its reason check'::text;
+        end if;
+        if (select count(*) from pg_constraint
+             where conrelid = 'app_private.public_ranking_exclusions'::regclass and contype = 'f') <> 2 then
+          problems := problems || '20261011160000: the exclusion list does not have its two foreign keys (profile, staff principal)'::text;
+        end if;
+      end if;
+    end;`,
+    pins: {
+      fantasyLeaguesBefore: PINS.fantasyLeaguesBefore,
+      fantasyLeaguesAfter: PINS.fantasyLeaguesAfter,
+      fantasyLeagueStandingsBefore: PINS.fantasyLeagueStandingsBefore,
+      fantasyLeagueStandingsAfter: PINS.fantasyLeagueStandingsAfter,
+      fantasyOverallStandingsBefore: PINS.fantasyOverallStandingsBefore,
+      fantasyOverallStandingsAfter: PINS.fantasyOverallStandingsAfter,
+      predictionsLeaderboardBefore: PINS.predictionsLeaderboardBefore,
+      predictionsLeaderboardAfter: PINS.predictionsLeaderboardAfter,
+      fantasyHiddenAhead: PINS.fantasyHiddenAhead,
+      predictionHiddenAhead: PINS.predictionHiddenAhead,
+      adminListPublicRankingExclusions: PINS.adminListPublicRankingExclusions,
+      adminSetPublicRankingExclusion: PINS.adminSetPublicRankingExclusion,
+    },
+  },
+  {
     version: "20261011170000",
     name: "news_article_detail_other_language_id",
     summary:
@@ -1008,7 +1205,8 @@ ${steps.map((s) => `--   ${s.version}_${s.name}\n--     ${s.summary}`).join("\n"
 --     body of 20260921200000 (create or replace; the script stops if the body
 --     is neither that older production body nor the reviewed one);
 --   * the three catch-up steps above (20260925090500, 20261001170000,
---     20261010140000) and 20261011170000 are applied as full steps.
+--     20261010140000) and 20261011170000 are applied as full steps, and so is
+--     20261011160000 (test accounts can be hidden from the public rankings).
 --
 -- HOW TO RUN
 --   Check nothing else is writing (AGENTS.md; the runbook says how). Then run
@@ -1036,9 +1234,11 @@ ${steps.map((s) => `--   ${s.version}_${s.name}\n--     ${s.summary}`).join("\n"
 --     two review-list functions), every new table forces row level security and
 --     is readable by no API role, and each definition is the reviewed one (md5).
 --   It writes no fixture, Fantasy, news or user row and pauses nothing: it only
---   creates or replaces functions, creates three empty private tables and one
+--   creates or replaces functions, creates four empty private tables and one
 --   check, lets two columns of app.player_fixture_performances (assists,
---   penalties_missed) be NULL, and writes history rows. The pg_cron jobs
+--   penalties_missed) be NULL, adds one admin permission row (rankings.manage)
+--   with its grant to platform_admin (20261011160000; it hides no account), and
+--   writes history rows. The pg_cron jobs
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 ${

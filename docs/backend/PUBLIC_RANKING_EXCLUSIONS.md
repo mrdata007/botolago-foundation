@@ -7,6 +7,12 @@ what the public sees when an account is hidden.
 Migration: `20261011160000_public_ranking_exclusions.sql`. Tests:
 `supabase/tests/database/public_ranking_exclusions.test.sql`.
 
+On production this migration is installed by the single owner script of
+[`SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md`](../production/SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md)
+(its optional last section points here). The install hides nobody: the list
+starts empty, and the steps below are what hide an account. Run them only after
+that script has been committed.
+
 ## What "hidden" means
 
 - The account stays. Its team, points, history and private screens are

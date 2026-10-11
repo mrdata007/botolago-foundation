@@ -11,11 +11,12 @@ short list of switches. Nothing here is run by an agent: every production write
 is yours and covers only the step you were told to do (`CLAUDE.md`, production
 database writes).
 
-> **Status: ready for the owner after the pull request is merged.** The script
-> contains every migration of this release and the md5 fingerprints of the
-> functions it checks, copied from the `database-quality` job of the pull request
-> (run 38137117250). If production differs from what the script expects, it stops
-> before changing anything and says why.
+> **Status: wait for the go.** The script contains every migration of this
+> release. The md5 pins are filled from CI: they are the fingerprints of the
+> functions the script checks, and the last twelve (the public ranking exclusions
+> step, below) are copied in after the `database-quality` job of the pull request
+> has printed them. Until then the script refuses to run by itself and saves
+> nothing. Do not start until the person who hands you this says the pins are in.
 
 ## What you will do, in short
 
@@ -74,24 +75,26 @@ the script treats each case on its own terms. In plain words:
 The full steps, in the order the script runs them (it is the version order,
 and no step depends on one that comes after it):
 
-| Order | Migration                                              | What it gives you                                                                                                                                                                                                                                                                |
-| ----- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | `20260925090500_fantasy_league_page_skip_empty`        | The Fantasy scoring worker stops walking leagues that have no Fantasy member (a league created from Pronostics starts with none), so they cannot use up its call budget. Replaces one function (production still holds the older `20260914200719` text); no data.                |
-| 2     | `20261001170000_curated_team_crests`                   | Club crests supplied by BotolaGO are kept apart from the provider's: adds `api.service_set_curated_team_crest` and replaces `api.attach_football_team_crest` so the provider sync never overwrites a supplied crest. Functions only; no data.                                    |
-| 3     | `20261003180000_reconciled_provider_observations`      | The place where a finished match is recorded as a scoring input (service-only). Recorded in production, so it is skipped and verified.                                                                                                                                           |
-| 4     | `20261010140000_sofascore_repoint_fixture_mapping`     | A replayed (postponed) SofaScore match gets a new event number: one service-only function moves that fixture's SofaScore mapping to the new number, in place, and writes an audit line. Creates no table; changes no existing row.                                               |
-| 5     | `20261011110000_football_sofascore_snapshot_teams`     | The two clubs of each fixture, which the SofaScore match details need.                                                                                                                                                                                                           |
-| 6     | `20261011120000_sofascore_fantasy_observations`        | The function that records a finished SofaScore match for Fantasy scoring (SofaScore only).                                                                                                                                                                                       |
-| 7     | `20261011130000_sofascore_player_auto_map`             | Automatic player matching: matches the safe cases by itself, puts the doubtful ones on a short review list. Two empty private tables and the staff review functions.                                                                                                             |
-| 8     | `20261011140000_sofascore_fantasy_auto_state`          | The memory of the automatic Fantasy path (retries, what was tried). One empty private table and three service-only functions.                                                                                                                                                    |
-| 9     | `20261011150000_ops_health_adaptive_coverage`          | The health checks count SofaScore Fantasy matches as covered, so they do not page by mistake. Same checks, same output.                                                                                                                                                          |
-| 10    | `20261011170000_news_article_detail_other_language_id` | An article link carrying the id of the other language's edition now opens the reader's own language edition instead of answering "not found" (which left a failed request in the browser console). Replaces one function; permissions unchanged (the script proves it); no data. |
-| 11    | `20261011180000_sofascore_player_performances`         | Pépites works again: each finished SofaScore match fills the table Pépites reads, from the data Fantasy already recorded. One service-only function; see below.                                                                                                                  |
+| Order | Migration                                              | What it gives you                                                                                                                                                                                                                                                                                                                          |
+| ----- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1     | `20260925090500_fantasy_league_page_skip_empty`        | The Fantasy scoring worker stops walking leagues that have no Fantasy member (a league created from Pronostics starts with none), so they cannot use up its call budget. Replaces one function (production still holds the older `20260914200719` text); no data.                                                                          |
+| 2     | `20261001170000_curated_team_crests`                   | Club crests supplied by BotolaGO are kept apart from the provider's: adds `api.service_set_curated_team_crest` and replaces `api.attach_football_team_crest` so the provider sync never overwrites a supplied crest. Functions only; no data.                                                                                              |
+| 3     | `20261003180000_reconciled_provider_observations`      | The place where a finished match is recorded as a scoring input (service-only). Recorded in production, so it is skipped and verified.                                                                                                                                                                                                     |
+| 4     | `20261010140000_sofascore_repoint_fixture_mapping`     | A replayed (postponed) SofaScore match gets a new event number: one service-only function moves that fixture's SofaScore mapping to the new number, in place, and writes an audit line. Creates no table; changes no existing row.                                                                                                         |
+| 5     | `20261011110000_football_sofascore_snapshot_teams`     | The two clubs of each fixture, which the SofaScore match details need.                                                                                                                                                                                                                                                                     |
+| 6     | `20261011120000_sofascore_fantasy_observations`        | The function that records a finished SofaScore match for Fantasy scoring (SofaScore only).                                                                                                                                                                                                                                                 |
+| 7     | `20261011130000_sofascore_player_auto_map`             | Automatic player matching: matches the safe cases by itself, puts the doubtful ones on a short review list. Two empty private tables and the staff review functions.                                                                                                                                                                       |
+| 8     | `20261011140000_sofascore_fantasy_auto_state`          | The memory of the automatic Fantasy path (retries, what was tried). One empty private table and three service-only functions.                                                                                                                                                                                                              |
+| 9     | `20261011150000_ops_health_adaptive_coverage`          | The health checks count SofaScore Fantasy matches as covered, so they do not page by mistake. Same checks, same output.                                                                                                                                                                                                                    |
+| 10    | `20261011160000_public_ranking_exclusions`             | Test accounts can be hidden from public rankings; nothing is hidden until you do the step in docs/backend/PUBLIC_RANKING_EXCLUSIONS.md (optional, at the end of this page). One empty private list, two staff functions, one staff permission, and the four public ranking readers replaced (permissions unchanged, the script proves it). |
+| 11    | `20261011170000_news_article_detail_other_language_id` | An article link carrying the id of the other language's edition now opens the reader's own language edition instead of answering "not found" (which left a failed request in the browser console). Replaces one function; permissions unchanged (the script proves it); no data.                                                           |
+| 12    | `20261011180000_sofascore_player_performances`         | Pépites works again: each finished SofaScore match fills the table Pépites reads, from the data Fantasy already recorded. One service-only function; see below.                                                                                                                                                                            |
 
 Why this order: it is simply the order of the migration numbers, and none of the
-four new ones needs anything that a later one brings. `20261011170000` (the
-article function) touches nothing the SofaScore steps use, so it sits between
-`20261011150000` and `20261011180000` by number. Before it replaces
+four new ones needs anything that a later one brings. `20261011160000` (the
+public ranking exclusions) and `20261011170000` (the article function) touch
+nothing the SofaScore steps use, so they sit between `20261011150000` and
+`20261011180000` by number. Before the article step replaces
 `api.news_article_detail` the script has already checked, in the history block,
 that production holds the text of `20260924200600` (the last one that function
 had), and the step checks it again.
@@ -103,10 +106,15 @@ pg_proc.prosrc, the body alone"); the whole-definition fingerprints (printed by
 CI) are used for the results.
 
 It changes no fixture, no player, no point and no user. It adds or replaces
-functions, creates three empty private tables, lets two statistics columns
-(assists, penalties missed) be empty, and writes the migration history lines.
+functions, creates four empty private tables, lets two statistics columns
+(assists, penalties missed) be empty, adds one staff permission (`rankings.manage`,
+given to `platform_admin`), and writes the migration history lines.
 Nothing anyone sees changes by itself, apart from the reviewed gameweek summary
-and the article link fix.
+and the article link fix. The four public ranking readers are replaced by
+versions that look at an empty list, so the rankings read exactly as before: test
+accounts can be hidden from public rankings, but nothing is hidden until you do
+the step in docs/backend/PUBLIC_RANKING_EXCLUSIONS.md (optional, at the end of
+this page).
 
 **Fantasy automatic updates must be off for `20260925090500`** (and for
 `20261003180000` if it were not recorded): both replace a Fantasy function. See
@@ -131,13 +139,13 @@ says so once.
 ## Before you hand over (for whoever finishes the work, not the owner)
 
 - **The md5 pins.** In the green `database-quality` run of the merged pull
-  request, two steps print them: `SofaScore automatic pre-state md5` (five
+  request, two steps print them: `SofaScore automatic pre-state md5` (nine
   values, measured on a database built up to `20261011120000`, which is what
   production holds; none of them is for the catch-up migrations, whose "before"
   fingerprints are the body-text ones you measured on production and are already
   in the script) and the md5 step after the full reset, which prints
   `SofaScore Fantasy observation md5` and `SofaScore automatic post-state md5`
-  (twenty-one values: sixteen for the SofaScore steps and five for the catch-up migrations). Each line has a `pin` column naming the placeholder
+  (twenty-nine values: sixteen for the SofaScore steps, five for the catch-up migrations and eight for the public ranking exclusions). Each line has a `pin` column naming the placeholder
   (`FILL_FROM_CI_...`) in `PINS` of
   `scripts/backend/build-apply-sofascore-automatic.ts` that it fills; the
   Fantasy observation one is the single `SofaScore Fantasy observation md5` line
@@ -504,6 +512,43 @@ straight away for the matches you ran in 5.4.
    (`sofascore_performances_other_provider_rows` means SportsMonks covered that
    match and keeps it). Pépites picks the rows up at its next run.
 
+## Optional: hide the test accounts
+
+Only if you want test and QA accounts out of the public rankings. Skip it
+otherwise: after step 2 the rankings read exactly as before, and nothing is
+hidden until you do this. It is a separate production write that you decide on,
+after step 2, never as part of the script.
+
+The steps are in
+[`docs/backend/PUBLIC_RANKING_EXCLUSIONS.md`](../backend/PUBLIC_RANKING_EXCLUSIONS.md);
+this is the order, in plain words:
+
+1. Same check as "Before you start", item 1: nothing else is writing to
+   production. This write touches only the hidden-accounts list and the admin
+   audit log, which no scheduled job writes.
+2. Run the read-only query "Finding the test accounts" of that page and decide,
+   account by account, which ones to hide. Write the user ids down.
+3. Run the guarded block "2. A guarded SQL script (from the SQL editor)" once,
+   with your own sign-in id (the `auth` user id of your active staff account) and
+   the confirmed user ids filled in. It is one transaction: it refuses if you
+   are not an active staff member or an id has no profile, and writes one audit
+   line per account. Running it again with the same ids changes nothing.
+4. Read back (read only):
+
+   ```sql
+   select e.user_id, p.username, e.reason, e.created_at
+     from app_private.public_ranking_exclusions e
+     left join app.profiles p on p.id = e.user_id order by e.created_at;
+   ```
+
+   Then open the Fantasy season ranking and the Pronostics leaderboard: the
+   listed accounts are gone and the ranks read 1, 2, 3 with no hole. A change
+   shows on the next read (cached pages follow their own time).
+
+To show an account again, follow "Hide or show an account" in that page: delete
+its row and write the audit line the same way. Nothing else needs undoing; no
+score or rank is recalculated either way.
+
 ## If it stops
 
 | The message says                                                                                             | What it means and what to do                                                                                                                                                                                                                                              |
@@ -528,7 +573,7 @@ straight away for the matches you ran in 5.4.
 
 - **Before step 2:** nothing to undo. The rehearsal saves nothing.
 - **After step 2:** the migrations only add things nobody calls yet (new
-  service-only functions, three private tables that no API role can read, two
+  service-only functions, four private tables that no API role can read, two
   staff functions, a recorder and a "reviewed" check that behave as before for
   what already existed, and a health check that now also counts SofaScore
   matches). They cannot be removed by hand: migrations only go forward. If
@@ -596,6 +641,7 @@ None of the unknown ones is needed by this release, except the first row above
 | `20261011130000_sofascore_player_auto_map`                                                                 | **Not applied**    | Installed by this script                                                                                                                                                                                    |
 | `20261011140000_sofascore_fantasy_auto_state`                                                              | **Not applied**    | Installed by this script                                                                                                                                                                                    |
 | `20261011150000_ops_health_adaptive_coverage`                                                              | **Not applied**    | Installed by this script                                                                                                                                                                                    |
+| `20261011160000_public_ranking_exclusions`                                                                 | **Not applied**    | Installed by this script (test accounts can be hidden from the public rankings; hides nothing by itself)                                                                                                    |
 | `20261011170000_news_article_detail_other_language_id`                                                     | **Not applied**    | Merged to `main` after the SofaScore work (page speed, PR 427). Installed by this script (the article link fix).                                                                                            |
 | `20261011180000_sofascore_player_performances`                                                             | **Not applied**    | Installed by this script (Pépites feed)                                                                                                                                                                     |
 
@@ -608,7 +654,7 @@ None of the unknown ones is needed by this release, except the first row above
 | Applied by another path, objects match the repository (22 of 24) | `20260919130000`, `20260919150000`, `20260919160000`, `20260921120000`, `20260921140000`, `20260921170000`, `20260921180000`, `20260921190000`, `20260921220000`, `20260922180000`, `20260922180100`, `20260922180200`, `20260922200000`, `20260922200100`, `20260924100000`, `20260924120000`, `20260924140000`, `20260924140100`, `20260924163000`, `20260924170000`, `20260924173000`, `20260927153000` | Checks them again at run time, then writes the history line only.                                               |
 | Applied, with the full-line comments removed                     | `20260921160000` (`api.fantasy_player_season_stats`)                                                                                                                                                                                                                                                                                                                                                       | Compares with the comment-free text (fingerprint `1b141bf8...`), then writes the history line.                  |
 | Applied in a different, unreviewed form                          | `20260921200000` (`api.fantasy_gameweek_summary`)                                                                                                                                                                                                                                                                                                                                                          | Brings the function to the reviewed text (only from the exact text you measured), then writes the history line. |
-| Never applied                                                    | `20260925090500`, `20261001170000`, `20261010140000`                                                                                                                                                                                                                                                                                                                                                       | Installed as full steps (rows 1, 2 and 4 above); `20261011170000`, merged later, is row 10.                     |
+| Never applied                                                    | `20260925090500`, `20261001170000`, `20261010140000`                                                                                                                                                                                                                                                                                                                                                       | Installed as full steps (rows 1, 2 and 4 above); `20261011170000`, merged later, is row 11.                     |
 
 On 2026-10-10 production had 173 recorded migrations; the 27 above are why the
 count did not match the repository then. The script does not assume anything
@@ -619,7 +665,7 @@ about them: each decision is made from the database at the moment you run it.
 The earlier scripts for this work (`apply-sofascore-live-switch.sql`,
 `apply-sofascore-match-details.sql`) pause nothing: they refuse while any
 scheduled job is mid-run, and so does this one. The migrations here add and
-replace functions and create three empty private tables and write no row of fixtures, Fantasy, news,
+replace functions and create four empty private tables and write no row of fixtures, Fantasy, news,
 Pépites, predictions, notifications or users, so pausing those jobs would be
 extra steps for no gain. The one exception is the Fantasy functions that two migrations
 replace (the league list `20260925090500`, and the observation recorder of
