@@ -309,3 +309,21 @@ Open: UTS Rabat 0-0 RSB Berkane (event 17256977) held — two appearing SofaScor
 players (Saad Kouk #40, Souleymane Sy #37) have no app player at all
 (`no_candidate`). Fix in progress on `claude/sofascore-unknown-players`. The
 other seven round-3 matches are caught up by the ticks.
+
+### Live compare during WAC v CODM Meknès, 2026-10-11 (read only)
+
+`sofascore-live-shadow-compare.yml` run 38167986357 on main `955d9618`, 12 polls
+10 minutes apart (19:26–21:17 UTC), 11 RapidAPI requests in all.
+
+- Polls 1–4 (19:26–19:56): no Botola match live yet; kick-off was about 20:00.
+- Polls 5–10 and 12 (20:06–21:17): SofaScore event 17256972 was first half,
+  half time, then second half, 0-0 throughout. Production showed the same
+  status and score on every poll (`would_change` `no`), with nothing unmapped,
+  rejected or in conflict. The live switch is therefore on `sofascore` and the
+  live refresh writes in production.
+- Poll 11 (21:07) failed with a provider timeout (`provider_unavailable`) at
+  RapidAPI. That one failure turned the run red; the next poll was normal.
+- The run ended at 21:17, before full time, so it did not see the final
+  result. It also reads only the live list, so it says nothing about
+  Saturday's two missing results. Both still need a read-only check of the
+  fixtures in production.
