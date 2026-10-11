@@ -23,6 +23,8 @@ which covered Fantasy player performances only.
 
 | M7 | 2026-10-11: **Flashscore is no longer used.** SofaScore is the only provider for all football data, including Fantasy. Supersedes M3. |
 
+| M8 | 2026-10-11: assists, saves and penalty saves/misses **score from SofaScore when available**: on full-coverage matches they count (fixture can reach full mode); on limited-coverage matches they are unknown, never 0, and the fixture scores in simple mode. Refines M6. |
+
 ### Open decision carried forward
 
 - **Next season's Fantasy starting prices.** `app_private.fantasy_initial_price_v1`
