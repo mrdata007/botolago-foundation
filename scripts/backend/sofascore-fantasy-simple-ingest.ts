@@ -265,7 +265,7 @@ async function main(): Promise<number> {
   console.log(text);
 
   const missing = [
-    ...(schema.wrapper ? [] : ["migration 20261011110000 is not applied (no database function)"]),
+    ...(schema.wrapper ? [] : ["migration 20261011120000 is not applied (no database function)"]),
     ...(schema.linksTable
       ? []
       : ["migration 20261003180000 is not applied (no fixture links table)"]),

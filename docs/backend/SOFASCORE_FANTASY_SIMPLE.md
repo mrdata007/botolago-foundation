@@ -51,7 +51,7 @@ Evidence:
 
 | File                                                                    | What                                                                                                   |
 | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `supabase/migrations/20261011110000_sofascore_fantasy_observations.sql` | `api.service_record_sofascore_fantasy_observation(fixture, request, dry_run)`, service role only       |
+| `supabase/migrations/20261011120000_sofascore_fantasy_observations.sql` | `api.service_record_sofascore_fantasy_observation(fixture, request, dry_run)`, service role only       |
 | `src/backend/fantasy/sofascore-fantasy.ts`                              | pure builder: one SofaScore match + reviewed SofaScore mappings -> request, blockers, mapping worklist |
 | `scripts/backend/sofascore-fantasy-simple-lib.ts`                       | selection, report, plan hash, SQL text (pure)                                                          |
 | `scripts/backend/sofascore-fantasy-simple-ingest.ts`                    | runner: `report` (read only), `rehearse`, `apply`                                                      |
@@ -125,7 +125,7 @@ Nothing below has been run. Production writes are owner-run only.
    `select version from supabase_migrations.schema_migrations where version in ('20261003180000','20260927094823');`
    If `20261003180000` is missing, apply it first through its guarded script
    `scripts/backend/apply-20261003180000-reconciled-provider-observations.sql`.
-2. **Apply `20261011110000`** through the reviewed migration path
+2. **Apply `20261011120000`** through the reviewed migration path
    (`docs/backend/RELEASE_ACTIVATION_MIGRATION_RUNBOOK.md`). It adds one
    function and changes no data.
 3. **Check adaptive scoring is activated for the gameweek**

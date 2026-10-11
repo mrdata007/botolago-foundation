@@ -276,7 +276,7 @@ describe("no other provider anywhere in the new code", () => {
       "src/backend/fantasy/sofascore-fantasy.ts",
       "scripts/backend/sofascore-fantasy-simple-lib.ts",
       "scripts/backend/sofascore-fantasy-simple-ingest.ts",
-      "supabase/migrations/20261011110000_sofascore_fantasy_observations.sql",
+      "supabase/migrations/20261011120000_sofascore_fantasy_observations.sql",
       "supabase/tests/database/sofascore_fantasy_observations.test.sql",
       ".github/workflows/sofascore-fantasy-simple-read.yml",
       ".github/workflows/sofascore-fantasy-simple-rehearsal.yml",
