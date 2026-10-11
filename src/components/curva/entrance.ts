@@ -44,14 +44,18 @@ export function entranceDecision(gate: EntranceGate): EntranceDecision {
   return { play: true, remember: true };
 }
 
-/** The card's entrance: the longest it may take is the hero token, and it is never under it. */
+/** The card's entrance: the hero token's length, never under 420 ms nor over 600 ms. */
 export const ENTRANCE_MIN_MS = 420;
 export const ENTRANCE_MAX_MS = 600;
 
-/** The entrance's length from the page's `--duration-hero` (ms), clamped to 420-600 ms. */
+/**
+ * The entrance's length from the page's `--duration-hero` (ms), clamped to 420-600 ms. It was the
+ * token stretched by a quarter (525 ms); it is the token itself now (420 ms), because a card that
+ * has been waited for should not also take over half a second to land.
+ */
 export function entranceMs(heroToken: number): number {
   if (!Number.isFinite(heroToken)) return ENTRANCE_MIN_MS;
-  return Math.min(ENTRANCE_MAX_MS, Math.max(ENTRANCE_MIN_MS, Math.round(heroToken * 1.25)));
+  return Math.min(ENTRANCE_MAX_MS, Math.max(ENTRANCE_MIN_MS, Math.round(heroToken)));
 }
 
 /**

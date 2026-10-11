@@ -1652,6 +1652,16 @@ export type Database = {
         }
         Returns: Json
       }
+      repoint_football_fixture_mapping: {
+        Args: {
+          p_internal_fixture_id: string
+          p_new_external_id: string
+          p_old_external_id: string
+          p_provider_name: string
+          p_reason: string
+        }
+        Returns: Json
+      }
       report_client_errors: { Args: { p_events: Json }; Returns: Json }
       report_pepites_data_issue: {
         Args: {

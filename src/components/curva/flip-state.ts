@@ -11,3 +11,12 @@ export function tiltAllowed(state: {
 }): boolean {
   return !state.back && !state.turning && !state.entering;
 }
+
+/**
+ * How long the card takes to turn over, in ms. A turn that answers a tap should be over before the
+ * reader has looked for it: 340 ms, not the 420 ms of the page's hero token (which the entrance
+ * and the sheets keep). Kept here so the transition and the timer that ends the 3D context share one
+ * number, and read without a style lookup (a computed-style read inside the click forced a style
+ * recalculation of the whole page).
+ */
+export const FLIP_MS = 340;

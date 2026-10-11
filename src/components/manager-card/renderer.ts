@@ -110,6 +110,16 @@ export interface CardPalette {
   prism: readonly string[] | null;
 }
 
+/**
+ * What a beat adds to the root element of a card that is already in the page, so the beat can be
+ * played on it as it stands: the classes and attributes `full()` would have written on the root.
+ * `full()` with the beat and `full()` without it differ in these and in nothing else.
+ */
+export interface BeatRoot {
+  classes: readonly string[];
+  attrs: Readonly<Record<string, string>>;
+}
+
 export interface CardRenderer {
   readonly id: string; // "eclat-v1"
   readonly beats: readonly BeatName[];
@@ -131,12 +141,25 @@ export interface CardRenderer {
   /** Total length of a beat in ms (0 when unsupported). */
   beatMs(beat: BeatName): number;
   /**
+   * Optional. What `beat` adds to the root of the card `full(profile)` drew, when that is all it
+   * changes: `ManagerCard` then plays the beat on the card in the page (adds these, takes them off
+   * when it ends) instead of drawing the whole card again, twice, which cost a full parse, layout
+   * and raster each time (`docs/engineering/CURVA_CARD_SPEED.md`). `null`: the beat changes more
+   * than the root (or looks different on a card the tilt has rebuilt), so the card is drawn again.
+   * An empty `BeatRoot`: the beat has nothing to light on this card.
+   */
+  beatRoot?(
+    profile: CardProfile,
+    options: { strings: CardStrings },
+    beat: BeatName,
+  ): BeatRoot | null;
+  /**
    * Optional pointer behaviour for a full card the app has put in the page: the tilt (Éclat turns
    * toward a mouse or pen and floats slowly on a touch-only screen). `el` is the element the markup
    * was inserted into (the card's root is its first element child). Returns the cleanup.
    * `ManagerCard` calls it after inserting the card when the screen asks for it (`tilt`, Curva'
    * G1 and G2) and the reader has not asked for less motion, and runs the cleanup when the markup
-   * changes or the card unmounts.
+   * changes, when a beat starts or ends on the card, or when the card unmounts.
    */
   mount?(el: HTMLElement): () => void;
 }

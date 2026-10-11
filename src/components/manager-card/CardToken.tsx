@@ -4,6 +4,7 @@ import { ui } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 import { cardLabel, useCardStrings } from "./copy";
+import { useInnerHtml } from "./inner-html";
 import { cachedRender } from "./render-cache";
 import { newIdScope, scopeSvgIds } from "./scope-ids";
 import { useCardRenderer, useCardTheme } from "./use-card-renderer";
@@ -43,6 +44,7 @@ export function CardToken({
     };
   }, [renderer, strings, theme, size, profile, scope]);
 
+  const inner = useInnerHtml(view?.html ?? null);
   const box = view?.box ?? { width: size, height: size };
   return (
     <span
@@ -51,7 +53,7 @@ export function CardToken({
       data-mc-ready={view ? "1" : undefined}
     >
       {view ? (
-        <span className="block" dangerouslySetInnerHTML={{ __html: view.html }} />
+        <span className="block" dangerouslySetInnerHTML={inner} />
       ) : (
         <>
           {/* The kit's skeleton is a block element; a token sits in a button or a cell. */}

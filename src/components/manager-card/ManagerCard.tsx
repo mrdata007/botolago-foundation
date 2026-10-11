@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { UiSkeleton, ui } from "@/components/ui-kit";
 import { prefersReducedMotion } from "@/lib/motion";
@@ -6,12 +6,16 @@ import { cn } from "@/lib/utils";
 
 import { activeRenderer } from "./active-renderer";
 import { cardLabel, useCardStrings } from "./copy";
+import { useInnerHtml } from "./inner-html";
 import { mountPointerBehaviour } from "./mount-pointer";
 import { cachedRender, widthBucket } from "./render-cache";
 import { newIdScope, scopeSvgIds } from "./scope-ids";
 import { useCardRenderer, useCardTheme } from "./use-card-renderer";
+import type { BeatRoot } from "./renderer";
 import type { BeatName, CardProfile } from "./types";
 import { useCardCrest, withCrest } from "./use-card-crest";
+
+const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
  * The full card, client-only (plan section 6.5). The server and the first client render draw a
@@ -35,6 +39,14 @@ import { useCardCrest, withCrest } from "./use-card-crest";
  * `beat` is passed to the renderer only when the reader has not asked for less motion, the page
  * is visible and the renderer supports it, and it is dropped after `renderer.beatMs(beat) + 50`
  * ms, so a later re-render does not replay it. Drop the prop and pass it again to replay.
+ *
+ * A beat is played on the card that is in the page when the renderer says that is all it changes
+ * (`CardRenderer.beatRoot`: the root's classes): they are added in a layout effect (so the first
+ * painted frame already has them) and taken off when the beat ends, and the card's markup is not
+ * set again. Drawing the card again for a beat, once to start it and once to end it, cost a parse,
+ * a layout and a raster of the whole card each time, and put the tap-to-first-frame of « Revoir »
+ * at 294 ms (`docs/engineering/CURVA_CARD_SPEED.md`). A beat the renderer cannot play in place is
+ * drawn again, as before.
  */
 export function ManagerCard({
   profile: given,
@@ -86,24 +98,52 @@ export function ManagerCard({
     return () => window.clearTimeout(timer);
   }, [renderer, playing]);
 
+  // What the playing beat adds to the root, when it can be played on the card as it stands. Kept by
+  // value: a parent that builds its profile again on every render must not take the beat's classes
+  // off and put them back, which would start the beat over each time.
+  const inPlaceKey = useMemo(() => {
+    const root =
+      renderer?.beatRoot && playing ? renderer.beatRoot(profile, { strings }, playing) : null;
+    return root ? JSON.stringify(root) : "";
+  }, [renderer, playing, profile, strings]);
+  const inPlace = useMemo(
+    () => (inPlaceKey ? (JSON.parse(inPlaceKey) as BeatRoot) : null),
+    [inPlaceKey],
+  );
+  const drawn = inPlace ? undefined : playing;
   const html = useMemo(() => {
     if (!renderer) return null;
     const key = [
       renderer.id,
       strings.lang,
       theme,
-      playing ?? "",
+      drawn ?? "",
       compact ? "compact" : "",
       widthBucket(width),
       JSON.stringify(profile),
     ].join("|");
     return scopeSvgIds(
-      cachedRender(key, () => renderer.full(profile, { strings, theme, beat: playing, compact })),
+      cachedRender(key, () => renderer.full(profile, { strings, theme, beat: drawn, compact })),
       scope,
     );
-  }, [renderer, strings, theme, playing, compact, width, profile, scope]);
+  }, [renderer, strings, theme, drawn, compact, width, profile, scope]);
 
-  // The renderer's pointer behaviour, once the card is in the page; never for reduced motion.
+  // The beat, on the card that is in the page (see above): added before the first paint it is
+  // seen in, taken off when it ends or when the markup is set again.
+  useIsomorphicLayoutEffect(() => {
+    const root = hostRef.current?.firstElementChild;
+    if (!inPlace || !html || !root) return;
+    root.classList.add(...inPlace.classes);
+    for (const [name, value] of Object.entries(inPlace.attrs)) root.setAttribute(name, value);
+    return () => {
+      root.classList.remove(...inPlace.classes);
+      for (const name of Object.keys(inPlace.attrs)) root.removeAttribute(name);
+    };
+  }, [inPlace, html]);
+
+  // The renderer's pointer behaviour, once the card is in the page; never for reduced motion. It
+  // is mounted again when a beat starts and ends on the card (the tilt keeps a card that plays a
+  // beat still, and lifts and floats it again after).
   useEffect(() => {
     return mountPointerBehaviour({
       tilt,
@@ -112,8 +152,9 @@ export function ManagerCard({
       html,
       reducedMotion: prefersReducedMotion(),
     });
-  }, [tilt, renderer, html]);
+  }, [tilt, renderer, html, inPlace]);
 
+  const inner = useInnerHtml(html);
   const label = cardLabel(profile, strings);
   return (
     <div
@@ -123,7 +164,7 @@ export function ManagerCard({
       data-mc-ready={html ? "1" : undefined}
     >
       {html ? (
-        <div ref={hostRef} dangerouslySetInnerHTML={{ __html: html }} />
+        <div ref={hostRef} dangerouslySetInnerHTML={inner} />
       ) : (
         <div style={{ aspectRatio: `1 / ${activeRenderer.estimateAspect(profile, strings.lang)}` }}>
           <UiSkeleton className={cn("h-full w-full", ui.radius.sheet)} />

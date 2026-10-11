@@ -59,8 +59,9 @@ describe("when the stage's entrance plays", () => {
 });
 
 describe("how long it takes", () => {
-  it("is the hero token a little stretched, never under 420 ms nor over 600 ms", () => {
-    expect(entranceMs(420)).toBe(525);
+  it("is the hero token, never under 420 ms nor over 600 ms", () => {
+    expect(entranceMs(420)).toBe(420);
+    expect(entranceMs(500)).toBe(500);
     expect(entranceMs(100)).toBe(ENTRANCE_MIN_MS);
     expect(entranceMs(2000)).toBe(ENTRANCE_MAX_MS);
     expect(entranceMs(Number.NaN)).toBe(ENTRANCE_MIN_MS);

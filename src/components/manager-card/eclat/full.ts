@@ -7,7 +7,7 @@
  * cut corner, and `cardImage` flattens them into one text-free SVG at the rest pose and hands every
  * text back as a run the share picture draws on a canvas.
  */
-import type { CardImageArt, CardImageCrest, RenderOptions, TextRun } from "../renderer";
+import type { BeatRoot, CardImageArt, CardImageCrest, RenderOptions, TextRun } from "../renderer";
 import type { BeatName, CardProfile, CardStrings } from "../types";
 import { BEAT_MS } from "./beats";
 import { makeCtx, type Ctx } from "./ctx";
@@ -46,6 +46,31 @@ export function appliedBeat(v: View, beat: BeatName | undefined): BeatName | "" 
     default:
       return beat;
   }
+}
+
+/**
+ * What `beat` adds to the root of an Éclat card that is drawn already (`CardRenderer.beatRoot`): the
+ * classes `stack()` writes and `data-mc-beat`. Nothing else in the markup depends on the beat, except
+ * the castoff beat's seal line, so that beat is drawn again; so are the two beats that look different
+ * on a card the tilt has lifted apart (checked mid-beat against the card drawn with the beat, in
+ * both languages: the legend beat's foil shift, and the forming marks' fill, differ by up to a third
+ * of a grey scale on about one pixel in a hundred; every other beat on every tier by antialiasing
+ * only). `full-beat-root.test.ts` pins that the root is the only thing a beat changes.
+ */
+export function beatRoot(
+  profile: CardProfile,
+  strings: CardStrings,
+  beat: BeatName,
+): BeatRoot | null {
+  const v = makeView(profile, strings);
+  const applied = appliedBeat(v, beat);
+  if (!applied) return { classes: [], attrs: {} };
+  const marks = applied === "tick" && v.p.ovr == null;
+  if (applied === "castoff" || applied === "legend" || marks) return null;
+  return {
+    classes: [`mc-eclat--beat-${applied}`, ...(applied === "tick" ? ["mc-eclat--pulse"] : [])],
+    attrs: { "data-mc-beat": applied },
+  };
 }
 
 export interface Built {
