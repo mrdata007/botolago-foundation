@@ -4,7 +4,7 @@ import type { MatchLineupDto } from "@/backend/football/contracts";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
-import { compactClubName } from "@/lib/club-identity";
+import { clubShortName, compactClubName } from "@/lib/club-identity";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { isKickoffDateUnconfirmed, isKickoffTimeUnconfirmed } from "@/lib/match-kickoff";
 import { cn } from "@/lib/utils";
@@ -276,8 +276,9 @@ export function MatchScoreHeader({
  * box over the seam never covers a name. The inner padding (64px on the seam
  * side) is the room the score box takes.
  *
- * The name is the club's recognisable short form when the full one is too long
- * for the column ("Renaissance Sportive de Berkane" is "Renaissance Berkane"),
+ * The name is the club's one short name (`clubShortName`: "Zemamra", "RS
+ * Berkane"), the same one the stats, the timeline and Face à face print, and
+ * cut down further only if a club outside the club table has a long one,
  * set on at most two lines and broken only between words: a name is never cut
  * in the middle of a word (a review at 390px saw "Renaissance" split in two).
  * The full name stays in the page's heading and in the match's share text. The
@@ -294,7 +295,7 @@ function TeamHalf({
 }) {
   const { tr, lang } = useI18n();
   const city = tr(club.city).trim();
-  const name = compactClubName(tr(club.name), lang);
+  const name = compactClubName(clubShortName(club, tr), lang);
   return (
     <div
       {...clubStyle(palette)}

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { buildGlobalRankings, pageForRank, selectRankingsPage } from "./fantasy-rankings";
+import {
+  buildGlobalRankings,
+  compareGameweekScore,
+  pageForRank,
+  selectRankingsPage,
+} from "./fantasy-rankings";
 
 describe("fantasy global rankings", () => {
   it("builds a deterministic board", () => {
@@ -76,6 +81,39 @@ describe("fantasy global rankings", () => {
       expect(gw.rows[i].gameweekScore).toBeLessThanOrEqual(gw.rows[i - 1].gameweekScore);
     }
     expect(gw.rows[0].rank).toBe(1);
+  });
+
+  it("puts a journée score nobody has yet after every known one, and keeps the order otherwise", () => {
+    const row = (managerId: string, gameweekScore: number | null, totalScore: number) => ({
+      managerId,
+      managerName: managerId,
+      teamName: managerId,
+      rank: 0,
+      previousRank: 0,
+      gameweekScore,
+      totalScore,
+    });
+    const board = [row("a", null, 48), row("b", 0, 27), row("c", -4, 15), row("d", 12, 13)];
+    expect(board.toSorted(compareGameweekScore).map((r) => r.managerId)).toEqual([
+      "d",
+      "b",
+      "c",
+      "a",
+    ]);
+    // All unknown: the gameweek sort keeps the order its tie-break gives, as
+    // when every unknown was a 0.
+    const unknown = [row("a", null, 48), row("b", null, 27), row("c", null, 15)];
+    const page = selectRankingsPage(unknown, {
+      page: 1,
+      pageSize: 50,
+      sort: "gameweek",
+      query: "",
+    });
+    expect(page.rows.map((r) => [r.managerId, r.gameweekScore])).toEqual([
+      ["c", null],
+      ["b", null],
+      ["a", null],
+    ]);
   });
 
   it("maps a rank to its page", () => {

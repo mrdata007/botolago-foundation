@@ -20,6 +20,10 @@
     "emailTimeAr": "13:00",
     "emailDayFr": "jeudi 15 janvier",
     "generic": "jeudi 15 janvier à 13:00",
+    "articleDateFr": "15 janv. 2026",
+    "articleDateAr": "15 يناير 2026",
+    "articleFullFr": "15 janvier 2026 à 13:00",
+    "articleFullAr": "15 يناير 2026 في 13:00",
     "quietNight": false
   },
   "2026-02-14T23:30:00Z": {
@@ -43,6 +47,10 @@
     "emailTimeAr": "00:30",
     "emailDayFr": "dimanche 15 février",
     "generic": "dimanche 15 février à 00:30",
+    "articleDateFr": "15 févr. 2026",
+    "articleDateAr": "15 فبراير 2026",
+    "articleFullFr": "15 février 2026 à 00:30",
+    "articleFullAr": "15 فبراير 2026 في 00:30",
     "quietNight": true
   },
   "2026-02-15T00:30:00Z": {
@@ -66,6 +74,10 @@
     "emailTimeAr": "01:30",
     "emailDayFr": "dimanche 15 février",
     "generic": "dimanche 15 février à 01:30",
+    "articleDateFr": "15 févr. 2026",
+    "articleDateAr": "15 فبراير 2026",
+    "articleFullFr": "15 février 2026 à 01:30",
+    "articleFullAr": "15 فبراير 2026 في 01:30",
     "quietNight": true
   },
   "2026-03-21T23:30:00Z": {
@@ -89,6 +101,10 @@
     "emailTimeAr": "23:30",
     "emailDayFr": "samedi 21 mars",
     "generic": "samedi 21 mars à 23:30",
+    "articleDateFr": "21 mars 2026",
+    "articleDateAr": "21 مارس 2026",
+    "articleFullFr": "21 mars 2026 à 23:30",
+    "articleFullAr": "21 مارس 2026 في 23:30",
     "quietNight": true
   },
   "2026-03-22T00:30:00Z": {
@@ -112,6 +128,10 @@
     "emailTimeAr": "00:30",
     "emailDayFr": "dimanche 22 mars",
     "generic": "dimanche 22 mars à 00:30",
+    "articleDateFr": "22 mars 2026",
+    "articleDateAr": "22 مارس 2026",
+    "articleFullFr": "22 mars 2026 à 00:30",
+    "articleFullAr": "22 مارس 2026 في 00:30",
     "quietNight": true
   },
   "2026-09-12T22:59:00Z": {
@@ -135,6 +155,10 @@
     "emailTimeAr": "23:59",
     "emailDayFr": "samedi 12 septembre",
     "generic": "samedi 12 septembre à 23:59",
+    "articleDateFr": "12 sept. 2026",
+    "articleDateAr": "12 شتنبر 2026",
+    "articleFullFr": "12 septembre 2026 à 23:59",
+    "articleFullAr": "12 شتنبر 2026 في 23:59",
     "quietNight": true
   },
   "2026-09-12T23:00:00Z": {
@@ -158,6 +182,10 @@
     "emailTimeAr": "00:00",
     "emailDayFr": "dimanche 13 septembre",
     "generic": "dimanche 13 septembre à 00:00",
+    "articleDateFr": "13 sept. 2026",
+    "articleDateAr": "13 شتنبر 2026",
+    "articleFullFr": "13 septembre 2026 à 00:00",
+    "articleFullAr": "13 شتنبر 2026 في 00:00",
     "quietNight": true
   },
   "2026-09-19T12:00:00Z": {
@@ -181,6 +209,10 @@
     "emailTimeAr": "13:00",
     "emailDayFr": "samedi 19 septembre",
     "generic": "samedi 19 septembre à 13:00",
+    "articleDateFr": "19 sept. 2026",
+    "articleDateAr": "19 شتنبر 2026",
+    "articleFullFr": "19 septembre 2026 à 13:00",
+    "articleFullAr": "19 شتنبر 2026 في 13:00",
     "quietNight": false
   },
   "2026-09-20T00:59:00Z": {
@@ -204,6 +236,10 @@
     "emailTimeAr": "01:59",
     "emailDayFr": "dimanche 20 septembre",
     "generic": "dimanche 20 septembre à 01:59",
+    "articleDateFr": "20 sept. 2026",
+    "articleDateAr": "20 شتنبر 2026",
+    "articleFullFr": "20 septembre 2026 à 01:59",
+    "articleFullAr": "20 شتنبر 2026 في 01:59",
     "quietNight": true
   },
   "2026-09-20T01:00:00Z": {
@@ -227,6 +263,10 @@
     "emailTimeAr": "01:00",
     "emailDayFr": "dimanche 20 septembre",
     "generic": "dimanche 20 septembre à 01:00",
+    "articleDateFr": "20 sept. 2026",
+    "articleDateAr": "20 شتنبر 2026",
+    "articleFullFr": "20 septembre 2026 à 01:00",
+    "articleFullAr": "20 شتنبر 2026 في 01:00",
     "quietNight": true
   },
   "2026-09-20T01:30:00Z": {
@@ -250,6 +290,10 @@
     "emailTimeAr": "01:30",
     "emailDayFr": "dimanche 20 septembre",
     "generic": "dimanche 20 septembre à 01:30",
+    "articleDateFr": "20 sept. 2026",
+    "articleDateAr": "20 شتنبر 2026",
+    "articleFullFr": "20 septembre 2026 à 01:30",
+    "articleFullAr": "20 شتنبر 2026 في 01:30",
     "quietNight": true
   },
   "2026-09-25T23:30:00Z": {
@@ -273,6 +317,10 @@
     "emailTimeAr": "23:30",
     "emailDayFr": "vendredi 25 septembre",
     "generic": "vendredi 25 septembre à 23:30",
+    "articleDateFr": "25 sept. 2026",
+    "articleDateAr": "25 شتنبر 2026",
+    "articleFullFr": "25 septembre 2026 à 23:30",
+    "articleFullAr": "25 شتنبر 2026 في 23:30",
     "quietNight": true
   },
   "2026-09-26T00:30:00Z": {
@@ -296,6 +344,10 @@
     "emailTimeAr": "00:30",
     "emailDayFr": "samedi 26 septembre",
     "generic": "samedi 26 septembre à 00:30",
+    "articleDateFr": "26 sept. 2026",
+    "articleDateAr": "26 شتنبر 2026",
+    "articleFullFr": "26 septembre 2026 à 00:30",
+    "articleFullAr": "26 شتنبر 2026 في 00:30",
     "quietNight": true
   },
   "2026-10-02T16:00:00Z": {
@@ -319,6 +371,10 @@
     "emailTimeAr": "16:00",
     "emailDayFr": "vendredi 2 octobre",
     "generic": "vendredi 2 octobre à 16:00",
+    "articleDateFr": "2 oct. 2026",
+    "articleDateAr": "2 أكتوبر 2026",
+    "articleFullFr": "2 octobre 2026 à 16:00",
+    "articleFullAr": "2 أكتوبر 2026 في 16:00",
     "quietNight": false
   },
   "2026-10-02T23:59:00Z": {
@@ -342,6 +398,10 @@
     "emailTimeAr": "23:59",
     "emailDayFr": "vendredi 2 octobre",
     "generic": "vendredi 2 octobre à 23:59",
+    "articleDateFr": "2 oct. 2026",
+    "articleDateAr": "2 أكتوبر 2026",
+    "articleFullFr": "2 octobre 2026 à 23:59",
+    "articleFullAr": "2 أكتوبر 2026 في 23:59",
     "quietNight": true
   },
   "2026-10-03T00:00:00Z": {
@@ -365,6 +425,10 @@
     "emailTimeAr": "00:00",
     "emailDayFr": "samedi 3 octobre",
     "generic": "samedi 3 octobre à 00:00",
+    "articleDateFr": "3 oct. 2026",
+    "articleDateAr": "3 أكتوبر 2026",
+    "articleFullFr": "3 octobre 2026 à 00:00",
+    "articleFullAr": "3 أكتوبر 2026 في 00:00",
     "quietNight": true
   },
   "2026-12-31T23:30:00Z": {
@@ -388,6 +452,10 @@
     "emailTimeAr": "23:30",
     "emailDayFr": "jeudi 31 décembre",
     "generic": "jeudi 31 décembre à 23:30",
+    "articleDateFr": "31 déc. 2026",
+    "articleDateAr": "31 دجنبر 2026",
+    "articleFullFr": "31 décembre 2026 à 23:30",
+    "articleFullAr": "31 دجنبر 2026 في 23:30",
     "quietNight": true
   },
   "2027-02-10T12:00:00Z": {
@@ -411,6 +479,10 @@
     "emailTimeAr": "12:00",
     "emailDayFr": "mercredi 10 février",
     "generic": "mercredi 10 février à 12:00",
+    "articleDateFr": "10 févr. 2027",
+    "articleDateAr": "10 فبراير 2027",
+    "articleFullFr": "10 février 2027 à 12:00",
+    "articleFullAr": "10 فبراير 2027 في 12:00",
     "quietNight": false
   },
   "2027-03-15T20:00:00Z": {
@@ -434,6 +506,10 @@
     "emailTimeAr": "20:00",
     "emailDayFr": "lundi 15 mars",
     "generic": "lundi 15 mars à 20:00",
+    "articleDateFr": "15 mars 2027",
+    "articleDateAr": "15 مارس 2027",
+    "articleFullFr": "15 mars 2027 à 20:00",
+    "articleFullAr": "15 مارس 2027 في 20:00",
     "quietNight": false
   },
   "2027-07-01T19:00:00Z": {
@@ -457,6 +533,10 @@
     "emailTimeAr": "19:00",
     "emailDayFr": "jeudi 1 juillet",
     "generic": "jeudi 1 juillet à 19:00",
+    "articleDateFr": "1 juil. 2027",
+    "articleDateAr": "1 يوليوز 2027",
+    "articleFullFr": "1 juillet 2027 à 19:00",
+    "articleFullAr": "1 يوليوز 2027 في 19:00",
     "quietNight": false
   },
   "2028-01-15T12:00:00Z": {
@@ -480,6 +560,10 @@
     "emailTimeAr": "12:00",
     "emailDayFr": "samedi 15 janvier",
     "generic": "samedi 15 janvier à 12:00",
+    "articleDateFr": "15 janv. 2028",
+    "articleDateAr": "15 يناير 2028",
+    "articleFullFr": "15 janvier 2028 à 12:00",
+    "articleFullAr": "15 يناير 2028 في 12:00",
     "quietNight": false
   },
   "2030-06-01T12:00:00Z": {
@@ -503,6 +587,10 @@
     "emailTimeAr": "12:00",
     "emailDayFr": "samedi 1 juin",
     "generic": "samedi 1 juin à 12:00",
+    "articleDateFr": "1 juin 2030",
+    "articleDateAr": "1 يونيو 2030",
+    "articleFullFr": "1 juin 2030 à 12:00",
+    "articleFullAr": "1 يونيو 2030 في 12:00",
     "quietNight": false
   }
 }

@@ -67,7 +67,8 @@ const BADGE_SIZES: Record<ClubCrestSize, string> = {
  * `palette` — the colours to paint instead of the club's own. Anything that
  * shows BOTH sides of a fixture takes its colours from `clubMatchPalettes`,
  * whose away side may be re-coloured by the clash rule (Wydad v Tétouan:
- * Tétouan becomes its white second kit). The crest puts `data-club` and the
+ * Tétouan takes its second kit, white in dark and the ink in light, where
+ * white would vanish into the card). The crest puts `data-club` and the
  * `--club-*` vars on its OWN root, which overrides any ancestor's, so an
  * away crest has to be handed that resolved palette —
  * `<ClubCrest club={away} palette={pair.away} />` — or its disc stays the
@@ -105,7 +106,7 @@ export function ClubCrest({
         tone === "inverse"
           ? // The ring again: a surface disc on a white or yellow kit's block
             // is surface on surface, and the club's edge (≥ 3:1) is what
-            // keeps it a disc (Wydad's white second kit against Berkane).
+            // keeps it a disc (Maghreb Fès's yellow; a white kit in dark).
             cn(ui.club.inverse, ui.club.ring, ui.shadow.lifted)
           : // The inner ring is invisible on most clubs (the edge colour is
             // the fill) and is what keeps a white or yellow kit a shape on a

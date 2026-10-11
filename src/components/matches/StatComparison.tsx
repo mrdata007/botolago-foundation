@@ -6,6 +6,7 @@ import { MatchDataState } from "./MatchDataState";
 import { ui, UiCard, UiLivePill } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { clubShortName } from "@/lib/club-identity";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
@@ -146,14 +147,14 @@ export function StatComparison({
             <span
               className={cn("truncate", ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}
             >
-              {tr(home.name)}
+              {clubShortName(home, tr)}
             </span>
           </span>
           <span className="flex min-w-0 items-center gap-2">
             <span
               className={cn("truncate", ui.text.secondary, "[font-weight:var(--ui-weight-heavy)]")}
             >
-              {tr(away.name)}
+              {clubShortName(away, tr)}
             </span>
             <ClubCrest club={away} palette={palettes.away} size="xs" />
           </span>

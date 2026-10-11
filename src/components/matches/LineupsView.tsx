@@ -6,6 +6,7 @@ import { MatchDataState } from "./MatchDataState";
 import { ui, UiCard } from "@/components/ui-kit";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
+import { clubShortName } from "@/lib/club-identity";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
@@ -200,7 +201,7 @@ function TeamBand({ lineup, club, palette }: { lineup: Lineup; club: Club; palet
       className={cn("flex min-h-11 items-center gap-2 px-3 py-1.5", ui.club.fill)}
     >
       <ClubCrest club={club} palette={palette} size="xs" tone="inverse" />
-      <span className={cn("min-w-0 truncate", ui.display.teamSm)}>{tr(club.name)}</span>
+      <span className={cn("min-w-0 truncate", ui.display.teamSm)}>{clubShortName(club, tr)}</span>
       {lineup.formation ? (
         // A formation reads left to right in both languages ("4-2-3-1").
         // A surface pill with the club colour as text (≥ 4.5:1 by the

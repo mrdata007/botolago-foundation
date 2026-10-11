@@ -2,9 +2,13 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { playerDto, seasonStatsById } from "./fantasy-runtime";
+import { overallStandingDto, playerDto, seasonStatsById } from "./fantasy-runtime";
 import { dictionaries } from "@/i18n/dictionaries";
-import type { FantasyPlayerDto, FantasyPlayerSeasonStatDto } from "@/backend/fantasy/contracts";
+import type {
+  FantasyOverallStandingDto,
+  FantasyPlayerDto,
+  FantasyPlayerSeasonStatDto,
+} from "@/backend/fantasy/contracts";
 
 /**
  * BG-0071 — the defect this file guards.
@@ -232,4 +236,53 @@ describe("top players of the week: unknown goals, assists and clean sheets", () 
     expect(source).not.toMatch(/format\(top\.(goals|assists|cleanSheets)\)/);
     expect(source).toContain("countOrNone(nf, top.goals, t)");
   });
+});
+
+/**
+ * The rankings' journée column. Production's overall board answers
+ * `"gameweekPoints": null` for every row while no gameweek is on it
+ * (`gameweekId: null`), and the runtime turned that into 0: seven managers
+ * read "0" for a journée nobody had scored. Unknown is a dash (PRODUCT.md).
+ */
+describe("rankings: a journée score the server did not send is a dash, not 0", () => {
+  const dto = (gameweekPoints: number | null): FantasyOverallStandingDto => ({
+    rank: 1,
+    teamId: "84e5a704-b19c-44e0-b846-be1657eb5dd4",
+    teamName: "ak47 FC",
+    managerName: "ak47 FC",
+    totalPoints: 48,
+    calculatedAt: "2026-10-04T08:45:04.112066+00:00",
+    previousRank: 1,
+    gameweekPoints,
+  });
+
+  test("keeps null as null and every number the server sends as it is", () => {
+    expect(overallStandingDto(dto(null)).gameweekScore).toBeNull();
+    expect(overallStandingDto(dto(0)).gameweekScore).toBe(0);
+    expect(overallStandingDto(dto(-4)).gameweekScore).toBe(-4);
+    expect(overallStandingDto(dto(61))).toMatchObject({ gameweekScore: 61, totalScore: 48 });
+  });
+
+  test("neither standings mapping turns a missing journée score into 0", () => {
+    const source = readFileSync(join(ROOT, "src/services/fantasy-runtime.ts"), "utf8");
+    expect(source).not.toMatch(/gameweekScore: [a-z]+\.gameweekPoints \?\? 0/);
+  });
+
+  for (const surface of [
+    "src/routes/fantasy.rankings.tsx",
+    "src/routes/fantasy.leagues.$leagueId.tsx",
+    "src/components/fantasy/LeagueTable.tsx",
+  ]) {
+    test(`${surface} prints the dash for a null journée score`, () => {
+      const source = readFileSync(join(ROOT, surface), "utf8");
+      const uses = [...source.matchAll(/(format\(|value=\{)[a-z]+\.gameweekScore\b/g)];
+      expect(uses.length).toBeGreaterThan(0);
+      for (const use of uses) {
+        // The dash branch sits just before the figure it guards.
+        const before = source.slice(Math.max(0, use.index - 160), use.index);
+        expect(before).toMatch(/gameweekScore === null/);
+        expect(before).toContain('t("fantasy.stat.none")');
+      }
+    });
+  }
 });

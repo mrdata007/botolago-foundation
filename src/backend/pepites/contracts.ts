@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { findClubIdentity } from "@/lib/kits";
 
 /**
  * Pépites DTOs, as `api.pepites_*` return them
@@ -13,12 +14,19 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 
 const localized = z.object({ fr: z.string(), ar: z.string() });
 
-export const pepitesTeamSchema = z.object({
-  id: z.string().uuid(),
-  slug: z.string().nullable().optional(),
-  name: localized,
-  shortName: localized,
-});
+export const pepitesTeamSchema = z
+  .object({
+    id: z.string().uuid(),
+    slug: z.string().nullable().optional(),
+    name: localized,
+    shortName: localized,
+  })
+  // A current club is shown by the one short name the club table gives it,
+  // as on every other screen ("Zemamra", "Wydad"; `ClubIdentity` in kits.ts).
+  .transform((team) => {
+    const identity = findClubIdentity(team);
+    return identity ? { ...team, shortName: { ...identity.short } } : team;
+  });
 
 export const pepitesPhotoSchema = z.object({
   assetId: z.string().uuid(),

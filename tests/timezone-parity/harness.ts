@@ -1,6 +1,9 @@
 /**
  * Everything the app prints from Morocco's clock, for a fixed list of instants.
  *
+ * News dates (the article date and its full date and time) are here too: they
+ * are server-rendered, and a zone-less formatter made /news fail to hydrate.
+ *
  * This file is bundled once and run in several runtimes that carry different
  * time-zone data (see run.ts). The app's output must be identical in all of
  * them: that is what keeps the server's HTML and the browser's first render
@@ -27,6 +30,8 @@ import {
   matchZoneHour,
   startOfMatchDay,
 } from "../../src/lib/match-kickoff";
+import { formatArticleDate } from "../../src/components/news/news-data";
+import { formatFullDate } from "../../src/lib/format-time";
 import { moroccoDateTimeFormat } from "../../src/lib/morocco-time";
 import { formatDay, formatTime } from "../../supabase/functions/_shared/notification-email-render";
 
@@ -85,6 +90,10 @@ function one(iso: string) {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date),
+    articleDateFr: formatArticleDate(iso, "fr"),
+    articleDateAr: formatArticleDate(iso, "ar"),
+    articleFullFr: formatFullDate(iso, "fr"),
+    articleFullAr: formatFullDate(iso, "ar"),
     quietNight: isWithinQuietHours(date, {
       enabled: true,
       start: "22:00",

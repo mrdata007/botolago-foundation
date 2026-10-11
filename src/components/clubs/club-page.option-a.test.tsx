@@ -191,10 +191,11 @@ describe("club page — the hero", () => {
     );
     expect(html).toMatch(/<h1 id="h"[^>]*>Wydad Casablanca<\/h1>/);
     expect(html).toContain("Botola Pro Inwi · 2025/2026");
-    // French ordinal on the figure; the label says what it is.
-    expect(html).toMatch(/<bdi>3e<\/bdi>/);
-    expect(html).toMatch(/<bdi>43<\/bdi>/);
-    expect(html).toMatch(/<bdi>\+6<\/bdi>/);
+    // French ordinal on the figure; the label says what it is. Every figure
+    // left to right, so Arabic reads "+6", never "6+".
+    expect(html).toMatch(/<bdi dir="ltr">3e<\/bdi>/);
+    expect(html).toMatch(/<bdi dir="ltr">43<\/bdi>/);
+    expect(html).toMatch(/<bdi dir="ltr">\+6<\/bdi>/);
     expect(html).toContain(dictionaries.fr["club.key.played"]);
   });
 
@@ -202,7 +203,7 @@ describe("club page — the hero", () => {
     const html = inFrench(
       <ClubHero club={WYDAD} headingId="h" kicker="" row={{ ...TABLE[2]!, position: 2 }} shared />,
     );
-    expect(html).toMatch(/<bdi>2e<\/bdi>/);
+    expect(html).toMatch(/<bdi dir="ltr">2e<\/bdi>/);
     expect(html).toContain(`>${dictionaries.fr["standings.shared_rank"]}</dt>`);
     expect(html).not.toContain(`>${dictionaries.fr["matches.table.rank"]}</dt>`);
     // Alone on its rank, it is the club's position.

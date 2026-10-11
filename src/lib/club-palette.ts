@@ -35,6 +35,10 @@
  *         club colour survives as text without turning into a pastel.
  *   tint  8% of the club over `--ui-surface` (14% in dark).
  *
+ * A fill that would vanish into the page or the card of its theme takes, in
+ * that theme only, the club's second colour or else the ink (`onItsGround`),
+ * the ladder the home/away clash rule uses.
+ *
  * Hex values are computed here rather than written as `color-mix()` in CSS
  * because the foreground choice depends on the RESULT of the mix, and CSS has
  * no way to branch on a contrast (`contrast-color()` is not shipped).
@@ -77,6 +81,10 @@ export const PALETTE_TOKENS = {
     "--ui-ink": "oklch(0.32 0.1 258)",
     "--ui-ink-deep": "oklch(0.24 0.09 258)",
     "--ui-on-ink-plain": "oklch(1 0 0)",
+    // The ink palette's edge, text and tint: measured too, now that a club
+    // whose own colour vanishes can be painted in the ink.
+    "--ui-ink-fg": "oklch(0.32 0.1 258)",
+    "--ui-surface-sunken": "oklch(0.93 0.006 250)",
   },
   dark: {
     "--ui-page": "oklch(0.15 0.03 260)",
@@ -85,6 +93,8 @@ export const PALETTE_TOKENS = {
     "--ui-ink": "oklch(0.3 0.08 260)",
     "--ui-ink-deep": "oklch(0.22 0.07 260)",
     "--ui-on-ink-plain": "oklch(0.97 0.01 250)",
+    "--ui-ink-fg": "oklch(0.86 0.08 232)",
+    "--ui-surface-sunken": "oklch(0.26 0.03 260)",
   },
 } as const;
 
@@ -103,7 +113,10 @@ export const CLUB_PALETTE_RULES = {
   darkFillWeight: 0.85,
   /** Club share of the tint over `--ui-surface`, per theme. */
   tint: { light: 0.08, dark: 0.14 },
-  /** ΔEok (0..1 scale) under which home and away read as the same colour. */
+  /**
+   * ΔEok (0..1 scale) under which home and away read as the same colour, and
+   * under which a fill reads as the page or card it sits on (`clubFillShows`).
+   */
   clash: 0.1,
   /**
    * Headroom above each threshold. The browser converts the oklch tokens to
@@ -165,6 +178,13 @@ export interface ClubPalette {
   secondary: string | null;
   light: ClubThemeColours;
   dark: ClubThemeColours;
+  /**
+   * The themes whose colours were taken from another step of the ladder (the
+   * second colour, the ink, the neutral slate) because the fill would have
+   * vanished into the page or the card there, or matched the other side's,
+   * and which step they came from. Empty when each theme paints its own.
+   */
+  replaced: Partial<Record<PaletteTheme, ClubPalette["source"]>>;
 }
 
 /** The inline style `clubStyle` returns: React's CSS properties plus the ten `--club-*` vars. */
@@ -281,27 +301,110 @@ function paletteFromHex(
       fg: ON_SURFACE,
       tint: toHex(tintD),
     },
+    replaced: {},
   };
 }
+
+const INK_FILL = "var(--ui-ink)";
 
 /** No club colour: the `--ui-club*` tokens' own defaults, written out. */
 function inkPalette(secondary: string | null, key: string | null): ClubPalette {
   const colours: ClubThemeColours = {
-    fill: "var(--ui-ink)",
+    fill: INK_FILL,
     on: ON_PLAIN,
     edge: "var(--ui-ink-fg)",
     fg: "var(--ui-ink-fg)",
     tint: "var(--ui-surface-sunken)",
   };
-  return { source: "ink", key, base: null, secondary, light: colours, dark: { ...colours } };
+  return {
+    source: "ink",
+    key,
+    base: null,
+    secondary,
+    light: colours,
+    dark: { ...colours },
+    replaced: {},
+  };
+}
+
+/** The ladder's last resort: a slate that is neither a club colour nor the ink. */
+const NEUTRAL = "#5a667d";
+
+const neutralPalette = (key: string | null): ClubPalette =>
+  paletteFromHex(NEUTRAL, { source: "neutral", key, secondary: null });
+
+const THEMES: readonly PaletteTheme[] = ["light", "dark"];
+
+/** The fill a palette actually paints in one theme, as sRGB. */
+const paintedFill = (palette: ClubPalette, theme: PaletteTheme): Rgb =>
+  resolvePaletteColour(palette[theme].fill, theme)!;
+
+/** `palette` with one theme's colours taken from another step of the ladder. */
+function withThemeFrom(palette: ClubPalette, theme: PaletteTheme, from: ClubPalette): ClubPalette {
+  return {
+    ...palette,
+    [theme]: { ...from[theme] },
+    replaced: { ...palette.replaced, [theme]: from.replaced[theme] ?? from.source },
+  };
+}
+
+/** The two grounds a club fill is painted on: the page and the card. */
+const GROUNDS = ["--ui-page", "--ui-surface"] as const;
+
+/**
+ * Whether a palette's fill, in one theme, stands apart from the page and the
+ * card it is painted on, by the distance two sides of a match must keep
+ * (`CLUB_PALETTE_RULES.clash`). Zemamra's white kit does not in light (0.000
+ * from the card); FAR's black does not in dark (0.034 from the page).
+ *
+ * The ink is not measured: it is the design system's own fill, which every ink
+ * button paints on these grounds in both themes (in dark it sits 0.094 from
+ * the card, by design). So the ladder always ends somewhere.
+ */
+export function clubFillShows(palette: ClubPalette, theme: PaletteTheme): boolean {
+  if (palette[theme].fill === INK_FILL) return true;
+  const fill = paintedFill(palette, theme);
+  return GROUNDS.every(
+    (ground) => deltaEOk(fill, rgbOf(theme, ground)) >= CLUB_PALETTE_RULES.clash,
+  );
 }
 
 /**
- * The palette for a club. Accepts a `Club`, a `{ id, slug, name,
- * primaryColor, secondaryColor }` DTO (a plain-string `name` is fine), or
- * nothing — which returns the ink palette, the same as an unknown club.
+ * The surface rule. A fill that would vanish into its ground is treated like a
+ * clash: in that theme only, the palette takes the first next step of the
+ * clash ladder whose fill shows there — the `fallbacks` given (the club's
+ * second colour), then the ink, which always shows (so the neutral slate is
+ * never needed here). The other theme keeps the club's own colour: Zemamra
+ * paints its green in light and its white kit in dark; FAR its black in light
+ * and its red in dark.
  */
-export function clubPalette(club: ClubColourSource | null | undefined): ClubPalette {
+function onItsGround(palette: ClubPalette, fallbacks: readonly ClubPalette[]): ClubPalette {
+  let result = palette;
+  for (const theme of THEMES) {
+    if (clubFillShows(palette, theme)) continue;
+    const ladder = [...fallbacks, inkPalette(palette.secondary, palette.key)];
+    result = withThemeFrom(result, theme, ladder.find((step) => clubFillShows(step, theme))!);
+  }
+  return result;
+}
+
+/** A club's second colour as a step of the ladder, itself held to the surface rule. */
+function secondaryStep(palette: ClubPalette): ClubPalette | null {
+  if (!palette.secondary) return null;
+  const step = paletteFromHex(palette.secondary, {
+    source: "secondary",
+    key: palette.key,
+    secondary: palette.base,
+  });
+  return onItsGround(step, []);
+}
+
+/**
+ * The palette for a club exactly as its colour computes, before the surface
+ * rule: for a picture that paints its own ground (the Pépites share images
+ * draw on navy, where a white kit shows), never for a screen of the app.
+ */
+export function clubPaletteBeforeSurfaces(club: ClubColourSource | null | undefined): ClubPalette {
   if (!club) return inkPalette(null, null);
   const found = findClubKit(club);
   const data = normaliseHex(club.primaryColor);
@@ -313,14 +416,19 @@ export function clubPalette(club: ClubColourSource | null | undefined): ClubPale
   return inkPalette(secondary, null);
 }
 
-/** The clash rule's last resort: a slate that is neither a club colour nor the ink. */
-const NEUTRAL = "#5a667d";
-
-const THEMES: readonly PaletteTheme[] = ["light", "dark"];
-
-/** The fill a palette actually paints in one theme, as sRGB. */
-const paintedFill = (palette: ClubPalette, theme: PaletteTheme): Rgb =>
-  resolvePaletteColour(palette[theme].fill, theme)!;
+/**
+ * The palette for a club. Accepts a `Club`, a `{ id, slug, name,
+ * primaryColor, secondaryColor }` DTO (a plain-string `name` is fine), or
+ * nothing — which returns the ink palette, the same as an unknown club.
+ * A fill that would vanish into the page or the card takes the next step of
+ * the ladder in that theme (`onItsGround`).
+ */
+export function clubPalette(club: ClubColourSource | null | undefined): ClubPalette {
+  const palette = clubPaletteBeforeSurfaces(club);
+  if (THEMES.every((theme) => clubFillShows(palette, theme))) return palette;
+  const second = secondaryStep(palette);
+  return onItsGround(palette, second ? [second] : []);
+}
 
 /**
  * How far apart two sides' PAINTED fills are, per theme (ΔEok, 0..1).
@@ -351,9 +459,17 @@ export function clubColoursClash(a: ClubPalette, b: ClubPalette): boolean {
  * ΔEok 3.4 apart (2.9 in dark), Berkane and Hassania 4.4 (3.8). Painted as
  * they are, a split
  * score header or a two-colour stat bar has no seam. When the two FILLS are
- * closer than 10 in either theme (see `clubColoursClash`), HOME keeps its
- * colour and AWAY changes: to its own second colour if that clears 10
- * against home in both themes, else to the ink, else to a neutral slate.
+ * closer than 10 (see `clubColoursClash`), HOME keeps its colour and AWAY
+ * changes: to its own second colour if that clears 10 against home, else to
+ * the ink, else to a neutral slate. Each step is held to the surface rule
+ * (`onItsGround`), so the away side never trades a clash for a fill that
+ * vanishes: Tétouan's white second kit against Wydad is the ink in light,
+ * where white would be the card, and stays white in dark.
+ *
+ * Only the theme(s) that clash change. A pair that clashes in one theme alone
+ * keeps its own colours in the other: FAR paints its red in dark only (its
+ * black vanishes there), so against Wydad it is the dark theme that changes,
+ * and Wydad keeps its red in light.
  */
 export function clubMatchPalettes(
   home: ClubColourSource | null | undefined,
@@ -361,26 +477,24 @@ export function clubMatchPalettes(
 ): { home: ClubPalette; away: ClubPalette; clash: boolean } {
   const homePalette = clubPalette(home);
   const awayPalette = clubPalette(away);
-  if (!clubColoursClash(homePalette, awayPalette)) {
+  const distance = clubFillDistance(homePalette, awayPalette);
+  const clashing = THEMES.filter((theme) => distance[theme] < CLUB_PALETTE_RULES.clash);
+  if (clashing.length === 0) {
     return { home: homePalette, away: awayPalette, clash: false };
   }
-  const candidates: ClubPalette[] = [];
-  if (awayPalette.secondary) {
-    candidates.push(
-      paletteFromHex(awayPalette.secondary, {
-        source: "secondary",
-        key: awayPalette.key,
-        secondary: awayPalette.base,
-      }),
-    );
-  }
-  candidates.push(inkPalette(awayPalette.secondary, awayPalette.key));
-  const neutral = paletteFromHex(NEUTRAL, {
-    source: "neutral",
-    key: awayPalette.key,
-    secondary: null,
-  });
-  const resolved = candidates.find((c) => !clubColoursClash(homePalette, c)) ?? neutral;
+  const second = secondaryStep(awayPalette);
+  const candidates = [
+    ...(second ? [second] : []),
+    inkPalette(awayPalette.secondary, awayPalette.key),
+  ];
+  const clears = (candidate: ClubPalette) => {
+    const apart = clubFillDistance(homePalette, candidate);
+    return clashing.every((theme) => apart[theme] >= CLUB_PALETTE_RULES.clash);
+  };
+  const step = candidates.find(clears) ?? neutralPalette(awayPalette.key);
+  if (clashing.length === THEMES.length) return { home: homePalette, away: step, clash: true };
+  let resolved: ClubPalette = { ...awayPalette, source: step.source };
+  for (const theme of clashing) resolved = withThemeFrom(resolved, theme, step);
   return { home: homePalette, away: resolved, clash: true };
 }
 

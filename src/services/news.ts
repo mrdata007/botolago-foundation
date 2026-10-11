@@ -11,6 +11,7 @@ import { MockNewsRepository } from "@/backend/news/mock-repository";
 import { SupabaseNewsRepository } from "@/backend/news/supabase-repository";
 import { authService } from "@/services/auth";
 import type { Article, ArticleCategory, Club } from "@/types/domain";
+import { withClubIdentity } from "@/lib/club-identity";
 import { resolveMediaUrl } from "@/lib/media";
 import {
   isAllowedEditorialLinkUrl,
@@ -277,8 +278,11 @@ export function presentArticle(
 }
 
 function presentTeam(team: NewsTeamFilterDto): Club {
-  return {
+  // The slug is Latin in both languages: it is how a current club is found in
+  // the club table for its one short name and code (`withClubIdentity`).
+  return withClubIdentity({
     id: team.id,
+    slug: team.slug,
     name: localized(team.name),
     shortName: localized(team.shortName),
     city: localized(team.city ?? ""),
@@ -286,7 +290,7 @@ function presentTeam(team: NewsTeamFilterDto): Club {
     secondaryColor: team.secondaryColor ?? undefined,
     crestPlaceholder: team.code ?? team.shortName.slice(0, 3).toUpperCase(),
     crestUrl: resolveMediaUrl({ sourceUrl: team.crestUrl, storagePath: team.crestPath }),
-  };
+  });
 }
 
 export function newsArticlesForCategory(

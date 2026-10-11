@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { clubShortName } from "@/lib/club-identity";
 import { tokenMs } from "@/lib/motion";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
@@ -97,7 +98,7 @@ export function GoalMoment({
       <bdi>{score.away}</bdi>
     </span>
   ) : null;
-  const clubName = tr(club.name);
+  const clubName = clubShortName(club, tr);
 
   if (reduced) {
     return (

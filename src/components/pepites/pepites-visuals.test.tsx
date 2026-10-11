@@ -106,7 +106,8 @@ describe("the identity disc", () => {
 
   it("falls back to the club-colour disc with the club's initials without the catalogue", () => {
     const html = render(<PepitesIdentityDisc player={PLAYER} />);
-    expect(html).toContain(">HAS<");
+    // Hassania's code in the club table, as on every other crest.
+    expect(html).toContain(">HUSA<");
     expect(html).toContain("bg-[color:var(--ui-club)]");
     expect(html).not.toContain("<img");
   });
@@ -123,9 +124,18 @@ describe("the identity disc", () => {
     expect(club.slug).toBe(TEAM.slug);
     const bare = teamAsClub(TEAM)!;
     expect(bare.crestUrl).toBeUndefined();
-    expect(bare.crestPlaceholder).toBe("HAS");
-    // A blank catalogue code does not blank the disc.
-    expect(teamAsClub(TEAM, { crestPlaceholder: "  " })!.crestPlaceholder).toBe("HAS");
+    // A current club takes its code from the club table either way.
+    expect(bare.crestPlaceholder).toBe("HUSA");
+    // A former club, outside the table: three letters of its name, and a
+    // blank catalogue code does not blank the disc.
+    const SAFI = {
+      id: "32fb7b61-9af4-4667-8978-b739b5e3f170",
+      slug: "olympic-safi-32fb7b619af4",
+      name: { fr: "Olympic Safi", ar: "أولمبيك أسفي" },
+      shortName: { fr: "Olympic Safi", ar: "أولمبيك أسفي" },
+    };
+    expect(teamAsClub(SAFI)!.crestPlaceholder).toBe("OLY");
+    expect(teamAsClub(SAFI, { crestPlaceholder: "  " })!.crestPlaceholder).toBe("OLY");
   });
 });
 

@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { meetingWinner, newestFirst, summariseHeadToHead } from "./head-to-head";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import {
+  formatGoalDifference,
+  meetingWinner,
+  newestFirst,
+  summariseHeadToHead,
+} from "./head-to-head";
 
 const meeting = (
   homeClubId: string,
@@ -55,4 +63,51 @@ describe("head-to-head summary", () => {
     expect(newestFirst(list).map((m) => m.kickoff.slice(0, 4))).toEqual(["2026", "2025", "2024"]);
     expect(list).toEqual(copy);
   });
+});
+
+describe("a signed goal difference reads left to right in Arabic", () => {
+  // "+2" and "-6" hold no letter, so a bare `<bdi>` leaves their order to the
+  // engine; under an Arabic parent, one that inherits the direction prints
+  // "2+" and "6-". Every place that prints `formatGoalDifference` says
+  // `dir="ltr"` itself (PRODUCT.md: numbers stay left to right).
+  const root = join(import.meta.dir, "..", "..");
+  const callers = [...new Bun.Glob("**/*.tsx").scanSync(root)]
+    .filter((file) => !file.includes(".test."))
+    .map((file) => ({ file, source: readFileSync(join(root, file), "utf8") }))
+    .filter(({ source }) => source.includes("formatGoalDifference("));
+
+  test("prints the sign first", () => {
+    expect([formatGoalDifference(14), formatGoalDifference(0), formatGoalDifference(-3)]).toEqual([
+      "+14",
+      "0",
+      "-3",
+    ]);
+  });
+
+  test("finds the four places that print it", () => {
+    expect(callers.map(({ file }) => file.split("/").pop()).sort()).toEqual([
+      "ClubHero.tsx",
+      "ClubOverview.tsx",
+      "HeadToHead.tsx",
+      "StandingsTable.tsx",
+    ]);
+  });
+
+  for (const { file, source } of callers) {
+    test(`${file.split("/").pop()}: inside an element with dir="ltr"`, () => {
+      for (const match of source.matchAll(/formatGoalDifference\(/g)) {
+        // The JSX element the call sits in: the last tag opened before it.
+        const before = source.slice(0, match.index);
+        const tag = before.slice(before.lastIndexOf("<"));
+        const name = tag.split(/[\s>]/)[0];
+        if (name === "<KeyNumber") {
+          // A value on the club page's key-numbers card, which isolates every
+          // value left to right.
+          expect(source).toContain('<bdi dir="ltr">{value}</bdi>');
+        } else {
+          expect({ file, name, ltr: tag.includes('dir="ltr"') }).toEqual({ file, name, ltr: true });
+        }
+      }
+    });
+  }
 });

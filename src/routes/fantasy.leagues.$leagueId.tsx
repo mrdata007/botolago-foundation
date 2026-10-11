@@ -371,8 +371,11 @@ function LeagueDetailBody() {
                                 )}
                               </div>
                             </UiTD>
+                            {/* A journée nobody has scored yet is a dash, never 0. */}
                             <UiTD numeric className={cn(STANDINGS_FIGURE_CELL, ui.tone.muted)}>
-                              {nf.format(row.gameweekScore)}
+                              {row.gameweekScore === null
+                                ? t("fantasy.stat.none")
+                                : nf.format(row.gameweekScore)}
                             </UiTD>
                             <UiTD
                               numeric

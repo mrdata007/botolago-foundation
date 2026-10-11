@@ -9,6 +9,7 @@ import type {
 } from "@/backend/pepites/contracts";
 import type { TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
+import { withClubIdentity } from "@/lib/club-identity";
 import { resolveMediaUrl } from "@/lib/media";
 import type { Club } from "@/types/domain";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
@@ -45,14 +46,15 @@ export type ListedClub = Pick<Club, "crestUrl" | "crestPlaceholder">;
  * slug. `listed` is the same club in the app's club catalogue (the same ids
  * as `app.teams`), which carries the crest and the short code the rest of
  * the app prints on a crest disc; without it the disc shows the first three
- * letters of the club's name.
+ * letters of the club's name. A current club takes its code from the club
+ * table either way (`withClubIdentity`).
  */
 export function teamAsClub(
   team: PepitesTeam | null | undefined,
   listed?: ListedClub | null,
 ): Club | undefined {
   if (!team) return undefined;
-  return {
+  return withClubIdentity({
     id: team.id,
     slug: team.slug ?? undefined,
     name: team.name,
@@ -62,7 +64,7 @@ export function teamAsClub(
     crestPlaceholder:
       listed?.crestPlaceholder?.trim() || team.shortName.fr.slice(0, 3).toUpperCase(),
     ...(listed?.crestUrl ? { crestUrl: listed.crestUrl } : {}),
-  };
+  });
 }
 
 /** The approved photo's public URL, or null: the page then draws the silhouette. */
