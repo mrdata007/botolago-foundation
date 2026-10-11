@@ -31,6 +31,9 @@
 import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
+import { createRapidApiClient, RapidApiError } from "./rapidapi-client.ts";
+import type { SofascoreShadowClient } from "./sofascore-fixtures.ts";
+import { runSofascoreRefresh } from "./sofascore-live-refresh.ts";
 
 type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -42,6 +45,8 @@ export interface LiveRefreshDependencies {
   readonly fetch?: FetchLike;
   readonly now?: () => Date;
   readonly randomHex?: (bytes: number) => string;
+  /** SofaScore reads; built from RAPIDAPI_KEY when absent (tests inject one). */
+  readonly rapidApi?: SofascoreShadowClient;
 }
 
 // Botola Pro and the 2026/27 season at SportsMonks, as in
@@ -127,6 +132,62 @@ export async function handleFootballLiveRefreshRequest(
   const job = await requestedJob(request);
   if (job === null) return json(400, { error: "invalid_request" });
 
+  // Which provider is live (app_private.football_data_source_settings).
+  // `sportsmonks` is the original path below. `sofascore` (writes) and
+  // `shadow` (computes and logs, writes nothing) read SofaScore through
+  // RapidAPI (sofascore-live-refresh.ts); SportsMonks is not called for them.
+  const source = await liveDataSource(dependencies.client);
+  if (source === "invalid") return json(503, { error: "football_data_source_invalid" });
+  if (source !== "sportsmonks") {
+    // Match details (events, lineups, statistics) are not read from SofaScore
+    // yet: that job has nothing to do on this path.
+    if (job === "match_details_backfill") {
+      console.log(
+        JSON.stringify({
+          event: "football_live_refresh",
+          result: "match_details_not_implemented_for_sofascore",
+          source,
+          job,
+        }),
+      );
+      return json(200, {
+        status: "skipped",
+        reason: "match_details_not_implemented_for_sofascore",
+        source,
+        job,
+      });
+    }
+    let rapid = dependencies.rapidApi;
+    if (!rapid) {
+      try {
+        rapid = createRapidApiClient("sofascore", dependencies.environment, {
+          fetch: dependencies.fetch,
+        });
+      } catch (error) {
+        const code = error instanceof RapidApiError ? error.code : "provider_unavailable";
+        console.log(
+          JSON.stringify({
+            event: "football_live_refresh",
+            result: "error",
+            source,
+            job,
+            error: code,
+          }),
+        );
+        return json(503, { error: "provider_not_configured", source, job });
+      }
+    }
+    const outcome = await runSofascoreRefresh({
+      mode: source,
+      job,
+      client: dependencies.client,
+      rapid,
+      environment: dependencies.environment,
+      now: (dependencies.now ?? (() => new Date()))(),
+    });
+    return json(outcome.status, outcome.body);
+  }
+
   // The fixture handler insists on a one-off trigger secret of its own; it
   // never leaves this process.
   const trigger = (dependencies.randomHex ?? defaultRandomHex)(32);
@@ -184,6 +245,27 @@ export async function handleFootballLiveRefreshRequest(
   }
   const outcome = await details("live");
   return json(scores.status, { ...body, matchDetails: outcome });
+}
+
+type LiveDataSource = "sportsmonks" | "sofascore" | "shadow" | "invalid";
+
+/**
+ * Reads api.football_data_source(). A missing answer (the migration not
+ * applied yet, or a database error) is the default, `sportsmonks`, so deploying
+ * this before the migration, or a failed read, leaves today's behaviour. A
+ * value that is not one of the three is `invalid` and refused.
+ */
+async function liveDataSource(client: LiveRefreshRpcClient): Promise<LiveDataSource> {
+  try {
+    const result = await client.schema("api").rpc("football_data_source", {});
+    if (result.error || result.data === null || result.data === undefined) return "sportsmonks";
+    const value = result.data;
+    return value === "sportsmonks" || value === "sofascore" || value === "shadow"
+      ? value
+      : "invalid";
+  } catch {
+    return "sportsmonks";
+  }
 }
 
 /** Fixture-job failures that leave the provider and the database usable. */

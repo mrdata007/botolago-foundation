@@ -1056,6 +1056,7 @@ export type Database = {
         }
         Returns: Json
       }
+      football_data_source: { Args: never; Returns: string }
       football_head_to_head: {
         Args: { p_fixture_id: string; p_language?: string; p_limit?: number }
         Returns: Json
@@ -1153,6 +1154,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      football_sofascore_live_snapshot: { Args: never; Returns: Json }
       football_standings: {
         Args: {
           p_group_key?: string

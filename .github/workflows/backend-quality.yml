@@ -124,6 +124,60 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run backend:db:start
       - run: bun run backend:db:reset
+      # The owner-run production script apply-sofascore-live-switch.sql does not
+      # pin function definitions by md5 because they could not be measured where
+      # it was written. This step measures them on the freshly reset stack and
+      # asserts what the script's postflight asserts, so the numbers are in this
+      # job's log ("SofaScore switch function md5") for a later pin.
+      - name: SofaScore live switch objects (md5 measurement and security checks)
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql "postgres://postgres:postgres@127.0.0.1:55322/postgres" -v ON_ERROR_STOP=1 <<'SQL'
+          select 'SofaScore switch function md5' as label, p.oid::regprocedure::text as function,
+                 md5(pg_get_functiondef(p.oid)) as definition_md5
+            from pg_proc p
+           where p.oid in ('app_private.football_data_source()'::regprocedure,
+                           'app_private.football_data_source_configure(text)'::regprocedure,
+                           'api.football_data_source()'::regprocedure,
+                           'api.football_sofascore_live_snapshot()'::regprocedure)
+           order by 2;
+          do $check$
+          declare fn regprocedure;
+          begin
+            if (select count(*) from supabase_migrations.schema_migrations
+                 where version in ('20261011090000', '20261011100000')) <> 2 then
+              raise exception 'the two SofaScore switch migrations are not recorded';
+            end if;
+            if app_private.football_data_source() is distinct from 'sportsmonks' then
+              raise exception 'the switch does not default to sportsmonks';
+            end if;
+            foreach fn in array array['app_private.football_data_source()'::regprocedure,
+                'app_private.football_data_source_configure(text)'::regprocedure,
+                'api.football_data_source()'::regprocedure,
+                'api.football_sofascore_live_snapshot()'::regprocedure] loop
+              if not exists (select 1 from pg_proc p where p.oid = fn and p.prosecdef
+                  and coalesce(p.proconfig, '{}') && array['search_path=""'])
+                or has_function_privilege('public', fn, 'execute')
+                or has_function_privilege('anon', fn, 'execute')
+                or has_function_privilege('authenticated', fn, 'execute') then
+                raise exception 'wrong security on %', fn;
+              end if;
+            end loop;
+            if not has_function_privilege('service_role', 'api.football_data_source()', 'execute')
+              or not has_function_privilege('service_role', 'api.football_sofascore_live_snapshot()', 'execute') then
+              raise exception 'the service role cannot call the api functions';
+            end if;
+            if not (select relrowsecurity and relforcerowsecurity from pg_class
+                     where oid = 'app_private.football_data_source_settings'::regclass)
+              or has_table_privilege('anon', 'app_private.football_data_source_settings', 'select')
+              or has_table_privilege('authenticated', 'app_private.football_data_source_settings', 'select')
+              or has_table_privilege('service_role', 'app_private.football_data_source_settings', 'select') then
+              raise exception 'the settings table is readable by an API role or lacks forced RLS';
+            end if;
+          end
+          $check$;
+          SQL
       # Opt-in database tests: each writes to the database its variable names,
       # skips without one and fails if that database does not answer. The
       # variable points it at this job's freshly reset stack (the `[db]` port
