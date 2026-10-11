@@ -25,7 +25,8 @@
 // SOFASCORE_DETAILS_PER_TICK (default 4) fixtures per live tick, so at most 12
 // more requests. Chosen fixtures: a mapped fixture written as finished this
 // tick, then mapped fixtures in play whose score or status was written or whose
-// changeTimestamp moved in the last 150 seconds, most recent change first. The
+// changeTimestamp moved in the last 150 seconds, then fixtures finalized in the
+// last two hours so post-match corrections are refreshed. The
 // season job fetches none. `runSofascoreDetailsBackfill` serves the
 // `match_details_backfill` job. Details never hold a score back: they run after
 // the scores are written, and a failure is reported in `matchDetails`.
@@ -94,6 +95,8 @@ const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
 ]);
 /** A provider change newer than this counts as "moved since the last tick". */
 const DETAILS_CHANGE_WINDOW_MS = 150_000;
+/** Keep refreshing details while post-match incidents and statistics settle. */
+const DETAILS_FINAL_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 export interface SofascoreRefreshDependencies {
   readonly mode: SofascoreRefreshMode;
@@ -252,7 +255,8 @@ function detailsTeams(
 /**
  * Fixtures whose details are worth fetching this tick, in priority order:
  * written as finished first, then in play and changed (written, or the
- * provider's changeTimestamp moved within the last 150 s), newest change first.
+ * provider's changeTimestamp moved within the last 150 s), newest change first,
+ * then fixtures finalized within two hours, even if absent from the live feed.
  */
 export function selectLiveDetailTargets(
   events: readonly SofascoreFixtureEvent[],
@@ -278,6 +282,21 @@ export function selectLiveDetailTargets(
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
     ranked.push({ target: { eventId: event.sofascoreEventId, teams }, rank, changed });
+  }
+  // Finished matches leave the live list and need no score write on later
+  // ticks. Use the snapshot to refresh their details for two hours after
+  // finalization, including when the provider no longer lists them as live.
+  const selected = new Set(ranked.map((item) => item.target.eventId));
+  for (const fixture of snapshot.fixtures) {
+    if (fixture.status !== "finished" || !fixture.finalizedAt || selected.has(fixture.externalId)) {
+      continue;
+    }
+    const finalized = Date.parse(fixture.finalizedAt);
+    const age = now.getTime() - finalized;
+    if (!Number.isFinite(age) || age < 0 || age > DETAILS_FINAL_WINDOW_MS) continue;
+    const teams = detailsTeams(fixture, teamIds, undefined);
+    if (teams)
+      ranked.push({ target: { eventId: fixture.externalId, teams }, rank: 2, changed: finalized });
   }
   ranked.sort((a, b) => a.rank - b.rank || b.changed - a.changed);
   return ranked.slice(0, limit).map((item) => item.target);
@@ -674,6 +693,7 @@ export async function runSofascoreDetailsBackfill(
     rapid,
     now,
     log: emit,
+    unresolvedTargets: unresolved,
   });
   emit({
     result: matchDetails.errors.length > 0 ? "partial" : "ok",

@@ -246,6 +246,48 @@ describe("sofascore details on the live tick", () => {
     expect(detailPaths(paths)).toEqual([]);
   });
 
+  test("recently finalized fixtures refresh after leaving the live list, within the cap", async () => {
+    const recent = new Date(NOW.getTime() - 15 * 60 * 1000).toISOString();
+    const expired = new Date(NOW.getTime() - 2 * 60 * 60 * 1000 - 1).toISOString();
+    const future = new Date(NOW.getTime() + 1).toISOString();
+    const db = fakeDb({
+      mappings: mappings([1, 2, 3, 4]),
+      fixtures: [
+        state(1, { status: "finished", finalizedAt: recent }),
+        state(2, { status: "finished", finalizedAt: recent }),
+        state(3, { status: "finished", finalizedAt: expired }),
+        state(4, { status: "finished", finalizedAt: future }),
+      ],
+    });
+    const { fetch, paths } = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [] } });
+    await tick("sofascore", "fixtures", db, fetch, { SOFASCORE_DETAILS_PER_TICK: "1" });
+    expect(named(db, "ingest_football_fixture")).toHaveLength(0);
+    expect(
+      named(db, "ingest_football_match_details").map((c) => c.args.p_fixture_external_id),
+    ).toEqual(["1"]);
+    expect(detailPaths(paths)).toHaveLength(3);
+  });
+
+  test("unchanged final scores still refresh details without duplicate targets", async () => {
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [
+        state(1, {
+          status: "finished",
+          period: "finished",
+          homeScore: 1,
+          finalizedAt: new Date(NOW.getTime() - 1000).toISOString(),
+        }),
+      ],
+    });
+    const { fetch, paths } = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, FINISHED)] },
+    });
+    await tick("shadow", "fixtures", db, fetch);
+    expect(named(db, "ingest_football_match_details")).toHaveLength(0);
+    expect(detailPaths(paths)).toHaveLength(3);
+  });
+
   test("the clubs sent are the fixture's, from the database's home and away", async () => {
     // The database has the clubs the other way round from the event.
     const db = fakeDb({
@@ -410,6 +452,28 @@ describe("sofascore details backfill", () => {
     expect(paths).toEqual([]);
     expect(outcome.body).toMatchObject({ due: 1, unresolvedTeams: 1 });
     expect(named(db, "ingest_football_match_details")).toHaveLength(0);
+    expect(outcome.status).toBe(502);
+    expect(named(db, "record_football_ingestion_rejection")[0].args).toMatchObject({
+      p_external_id: "11",
+      p_error_code: "unresolved_team_mapping",
+    });
+    expect(named(db, "complete_football_ingestion")[0].args).toMatchObject({
+      p_status: "failed",
+      p_records_rejected: 1,
+    });
+  });
+
+  test("unresolved clubs in shadow are reported without recording a rejection", async () => {
+    const db = fakeDb(
+      { mappings: mappings([11]), fixtures: [state(11, { homeTeamId: uuid("7", 999) })] },
+      [{ externalId: "11" }],
+    );
+    const { fetch, paths } = fakeFetch({});
+    const { outcome } = await run("shadow", db, fetch);
+    expect(outcome.body).toMatchObject({ unresolvedTeams: 1 });
+    expect(paths).toEqual([]);
+    expect(named(db, "begin_football_ingestion")).toHaveLength(0);
+    expect(named(db, "record_football_ingestion_rejection")).toHaveLength(0);
   });
 
   test("a quota refusal answers 429 and stores nothing for that fixture", async () => {

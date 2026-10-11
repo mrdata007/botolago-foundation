@@ -530,6 +530,8 @@ export interface SofascoreDetailsDependencies {
   readonly rapid: SofascoreShadowClient;
   readonly now: Date;
   readonly log: (fields: Record<string, unknown>) => void;
+  /** Backfill fixtures without resolvable clubs; record refusal without guessing. */
+  readonly unresolvedTargets?: readonly string[];
 }
 
 function eventPath(endpoint: string, eventId: string): string {
@@ -598,6 +600,7 @@ export async function runSofascoreMatchDetails(
   dependencies: SofascoreDetailsDependencies,
 ): Promise<SofascoreDetailsSummary> {
   const { mode, scope, client, rapid, now, log } = dependencies;
+  const unresolved = dependencies.unresolvedTargets ?? [];
   const requests: SofascoreDetailsRequestLog[] = [];
   const errors = new Set<string>();
   const skipped: SofascoreDetailsSkipped = { events: 0, statistics: 0, lineupPlayers: 0 };
@@ -617,14 +620,14 @@ export async function runSofascoreMatchDetails(
   const build = (): SofascoreDetailsSummary => ({
     scope,
     mode,
-    offered: targets.length,
+    offered: targets.length + unresolved.length,
     ...totals,
     skipped,
     requests,
     rateLimited,
     errors: [...errors].sort(),
   });
-  if (targets.length === 0) return build();
+  if (targets.length + unresolved.length === 0) return build();
 
   let runId: string | null = null;
   if (mode === "sofascore") {
@@ -643,7 +646,15 @@ export async function runSofascoreMatchDetails(
     }
   }
 
-  const failed: { eventId: string; code: string }[] = [];
+  const failed: { eventId: string; code: string }[] = unresolved.map((eventId) => ({
+    eventId,
+    code: "unresolved_team_mapping",
+  }));
+  if (unresolved.length > 0) {
+    totals.attempted += unresolved.length;
+    totals.rejected += unresolved.length;
+    errors.add("unresolved_team_mapping");
+  }
   for (const target of targets) {
     totals.attempted += 1;
     let normalized: SofascoreMatchDetails;
@@ -732,7 +743,7 @@ export async function runSofascoreMatchDetails(
   if (runId !== null) {
     for (const item of failed) {
       try {
-        await rpc("record_football_ingestion_rejection", {
+        const rejection = await rpc("record_football_ingestion_rejection", {
           p_run_id: runId,
           p_entity_type: "fixture",
           p_external_id: item.eventId,
@@ -740,12 +751,13 @@ export async function runSofascoreMatchDetails(
           p_error_code: item.code,
           p_validation_issues: [{ code: item.code }],
         });
+        if (rejection.error) errors.add("record_rejection_failed");
       } catch {
-        // The run still completes below, with the rejection counted.
+        errors.add("record_rejection_failed");
       }
     }
     try {
-      await rpc("complete_football_ingestion", {
+      const completion = await rpc("complete_football_ingestion", {
         p_run_id: runId,
         p_status:
           totals.rejected === 0
@@ -775,6 +787,7 @@ export async function runSofascoreMatchDetails(
             ? "The SofaScore match details refresh did not complete for every fixture."
             : null,
       });
+      if (completion.error) errors.add("complete_run_failed");
     } catch {
       errors.add("complete_run_failed");
     }
