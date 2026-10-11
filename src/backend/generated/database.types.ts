@@ -1154,6 +1154,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      football_sofascore_live_snapshot: { Args: never; Returns: Json }
       football_standings: {
         Args: {
           p_group_key?: string

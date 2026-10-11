@@ -495,21 +495,31 @@ describe("football live refresh, data-source switch", () => {
   });
 
   for (const source of ["sofascore", "shadow"]) {
-    for (const job of ["fixtures", "season_fixtures", "match_details_backfill"]) {
-      it(`${source} writes nothing and calls no provider for ${job}`, async () => {
-        const calls: string[] = [];
-        const { response, paths } = await run(withSource(source, calls), `{"job":"${job}"}`);
-        expect(response.status).toBe(200);
-        expect(await response.json()).toEqual({
-          status: "skipped",
-          reason: "source_not_implemented",
-          source,
-          job,
-        });
-        expect(paths).toEqual([]);
-        expect(calls).toEqual(["football_data_source"]);
+    it(`${source} skips the match details backfill without calling a provider`, async () => {
+      const calls: string[] = [];
+      const { response, paths } = await run(
+        withSource(source, calls),
+        '{"job":"match_details_backfill"}',
+      );
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({
+        status: "skipped",
+        reason: "match_details_not_implemented_for_sofascore",
+        source,
+        job: "match_details_backfill",
       });
-    }
+      expect(paths).toEqual([]);
+      expect(calls).toEqual(["football_data_source"]);
+    });
+
+    it(`${source} without RAPIDAPI_KEY answers provider_not_configured and writes nothing`, async () => {
+      const calls: string[] = [];
+      const { response, paths } = await run(withSource(source, calls));
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({ error: "provider_not_configured" });
+      expect(paths).toEqual([]);
+      expect(calls).toEqual(["football_data_source"]);
+    });
   }
 
   it("refuses a source it does not know, without writing", async () => {
