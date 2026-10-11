@@ -603,6 +603,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_resolve_sofascore_player_match: {
+        Args: { p_player_id: string; p_sofascore_player_id: string }
+        Returns: Json
+      }
       admin_resolve_staff_user_exact: {
         Args: { p_email: string }
         Returns: Json
@@ -694,6 +698,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_sofascore_player_match_queue: { Args: never; Returns: Json }
       admin_start_session_revocation_worker: {
         Args: { p_synthetic_test?: boolean; p_worker_id: string }
         Returns: Json
@@ -2102,6 +2107,10 @@ export type Database = {
         Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
         Returns: Json
       }
+      service_record_sofascore_fantasy_observation: {
+        Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
+        Returns: Json
+      }
       service_release_account_deletion: {
         Args: { p_error: string; p_request_id: string }
         Returns: boolean
@@ -2157,6 +2166,10 @@ export type Database = {
       }
       service_set_elbotola_source_active: {
         Args: { p_active: boolean }
+        Returns: Json
+      }
+      service_sofascore_auto_map_players: {
+        Args: { p_fixture_id: string; p_players: Json }
         Returns: Json
       }
       service_stage_fantasy_catalog: {
