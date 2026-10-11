@@ -236,6 +236,20 @@ branch `claude/sofascore-live-edge`; no other staging writer running; `plan`
 `rehearse` (38110831694) passed and rolled back; `apply` (38110898595) applied
 both.
 
+### Production release of the live switch, 2026-10-11 (owner-run)
+
+PR #422 merged (main `01910e1bd58e13c82e78c5657da3e19fd2a6e247`), including the
+owner's fix that never sends a null round (skips `unresolved_round`) and reports
+ingestion-run completion failures. Owner-run, following
+`docs/production/SOFASCORE_LIVE_RELEASE_RUNBOOK.md`:
+`scripts/backend/apply-sofascore-live-switch.sql` rehearsal passed, committed
+run "Applied" (migrations `20261011090000`, `20261011100000`; four function
+md5s pinned from CI run 38110909523); `football-live-refresh` deployed;
+`football_data_source_configure('shadow')` returned
+`{"source":"shadow","updatedAt":"2026-10-11T04:56:33Z"}`; live refresh stayed
+on. Pending: read the first `football_live_refresh_sofascore` shadow log (next
+season tick ≈ 05:30 UTC), then switch to `'sofascore'`.
+
 ## 7. Owner prerequisites
 
 - ~~Subscribe to a paid SofaScore tier~~ — done 2026-10-10 (10,000 a month).
