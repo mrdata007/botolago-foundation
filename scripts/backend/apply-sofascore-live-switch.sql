@@ -26,10 +26,9 @@
 --     role may execute the two api ones, nobody but the owner the app_private
 --     ones, and the settings table forces row level security and is readable
 --     by no API role.
---   It does NOT pin the function definitions by md5: that needs a measurement
---   on a database built from the migrations, which could not be taken where this
---   was written (no Docker). The database-quality CI job prints them
---   ("SofaScore switch function md5") so a later revision can pin them.
+--   The four function definitions are pinned by md5, measured by the
+--   database-quality CI job on a database built from the migrations (run
+--   38110909523, "SofaScore switch function md5").
 -- ============================================================================
 
 begin;
@@ -318,6 +317,17 @@ begin
     or has_table_privilege('service_role', 'app_private.football_data_source_settings', 'select')
     or has_table_privilege('public', 'app_private.football_data_source_settings', 'select') then
     problems := problems || 'the settings table is readable by an API role or lacks forced RLS'::text;
+  end if;
+  -- Exactly the reviewed definitions (md5 of pg_get_functiondef, CI run 38110909523).
+  if md5(pg_get_functiondef('app_private.football_data_source()'::regprocedure))
+       <> '6122e1f6c15d0e120f31424a4d970313'
+    or md5(pg_get_functiondef('app_private.football_data_source_configure(text)'::regprocedure))
+       <> 'e1bac99bd3512b590b8066747de3d9b4'
+    or md5(pg_get_functiondef('api.football_data_source()'::regprocedure))
+       <> '94a8db78908cbb7a55541e0709021a5f'
+    or md5(pg_get_functiondef('api.football_sofascore_live_snapshot()'::regprocedure))
+       <> 'e39415311b09f4a5cb29e96897d0d88f' then
+    problems := problems || 'a function definition is not the reviewed version (md5)'::text;
   end if;
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;

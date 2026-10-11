@@ -59,8 +59,8 @@ GitHub Actions; wait for them to finish. Do not publish the website for this.
    ```
 
 The script refuses to run twice, refuses while a pg_cron job is running, and
-refuses if any of the objects already exist. It does not pin the function
-definitions by md5 (see "Known gap" below).
+refuses if any of the objects already exist. Afterwards it checks the four
+function definitions against md5s measured in CI (run 38110909523).
 
 ## (c) Deploy the function
 
@@ -170,14 +170,3 @@ command from `EMAIL_NOTIFICATIONS.md`.
 To go back to the previous function code, run the deploy workflow on the earlier
 `main` commit. The migrations stay (forward-only; they are inert while the
 switch reads `sportsmonks`).
-
-## Known gap: no md5 pins
-
-The newest scripts pin function definitions by md5 measured on a database built
-from the migrations. This one does not: no Docker was available where it was
-written, and no value was invented. The `database-quality` CI job now prints
-the md5s ("SofaScore switch function md5") and asserts the same security
-properties on a freshly reset database. Copy them from a green run into the
-script's postflight if you want them pinned; the script's other checks (objects,
-security definer, search_path, grants, forced RLS, default source, byte-for-byte
-sha256 of both files) are in place without them.
