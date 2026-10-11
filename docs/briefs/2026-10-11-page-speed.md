@@ -71,3 +71,18 @@ median of 3 cold loads, local production build, own port):
   the same pages (the live data in them differs only as the data moved).
 - `bun run typecheck`, `bun run lint`, `bun run format:check` and the unit
   tests pass as they did on `main`.
+
+## Outcome (measured after the change, same method)
+
+Supabase calls counted RPC and storage image requests together; the fixtures
+grid draws 16 club crests, so its "at most 12" target was set without them. Its
+RPC calls fell from 14 to 4; with the crests the page makes 20.
+
+| Page (mobile, French) | Supabase calls | Identical calls | Content visible (ms) |
+| --------------------- | -------------- | --------------- | -------------------- |
+| Home                  | 33 -> 23       | 0 -> 0          | 1395 -> 1327         |
+| Matches               | 4 -> 4         | 0 -> 0          | 605 -> 623           |
+| Match page            | 5 -> 5         | 0 -> 0          | 622 -> 857 (noise)   |
+| Fantasy               | 14 -> 14       | 0 -> 0          | 283 -> 272           |
+| Fantasy top players   | 36 -> 15       | 20 -> 0         | 3289 -> 2569         |
+| Fantasy fixtures      | 30 -> 20       | 1 -> 0          | 3021 -> 1528         |

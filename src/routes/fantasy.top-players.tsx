@@ -93,11 +93,15 @@ function TopPlayersPage() {
   // No magic number: the selection, then the season's current gameweek, then
   // the first gameweek the backend actually knows about.
   const currentGw = gw ?? gwQ.data?.number ?? gwMin;
+  const gwKnown = gw !== null || gwQ.isSuccess || (gwQ.isError && !availableGwsQ.isPending);
 
   const topQ = useQuery({
     queryKey: ["top-players", currentGw],
     queryFn: () => fantasyService.getTopPlayersOfWeek(currentGw),
-    enabled: currentGw > 0,
+    // Not before the gameweek is known: until then `currentGw` is the first
+    // gameweek by default, and the whole round trip (gameweek list, top five,
+    // player pool) was made for it and thrown away when the current one came.
+    enabled: currentGw > 0 && gwKnown,
   });
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
