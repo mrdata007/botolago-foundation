@@ -28,6 +28,28 @@ export const WORDMARK_HEIGHT = 288.1029;
 /** The ball's centre and radius in the viewBox (the 8th path's circle). */
 export const BALL = { cx: 1502.7433, cy: 168.3686, r: 96.8434 } as const;
 
+/**
+ * The ball gets a layer of its own, a square just around it (2% margin), so it
+ * can be scaled, moved and blurred without dragging the whole wordmark's box
+ * along. All in viewBox units, and so as fractions of the wordmark's box.
+ */
+const BALL_SIDE = BALL.r * 2 * 1.02;
+export const BALL_BOX = {
+  /** The square's viewBox, which crops the ball's glyph. */
+  viewBox: `${BALL.cx - BALL_SIDE / 2} ${BALL.cy - BALL_SIDE / 2} ${BALL_SIDE} ${BALL_SIDE}`,
+  /** Its place and size in the wordmark's box, in percent. */
+  left: ((BALL.cx - BALL_SIDE / 2) / WORDMARK_WIDTH) * 100,
+  top: ((BALL.cy - BALL_SIDE / 2) / WORDMARK_HEIGHT) * 100,
+  width: (BALL_SIDE / WORDMARK_WIDTH) * 100,
+  /**
+   * How far the ball is from the middle of the wordmark's box, as a percent of
+   * its own side: the translation that takes it from its place to the middle,
+   * where it arrives, to be undone as it travels home.
+   */
+  toCentreX: -((BALL.cx - WORDMARK_WIDTH / 2) / BALL_SIDE) * 100,
+  toCentreY: -((BALL.cy - WORDMARK_HEIGHT / 2) / BALL_SIDE) * 100,
+} as const;
+
 export const WORDMARK_GLYPHS: readonly WordmarkGlyph[] = [
   {
     name: "B",

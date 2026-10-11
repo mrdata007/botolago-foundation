@@ -3,7 +3,7 @@ import { systemBars } from "@/lib/system-bars";
 import { claimLaunchSplash, releaseLaunchSplash } from "./launch-splash";
 import { startMagicRings } from "./magic-rings";
 import {
-  BALL,
+  BALL_BOX,
   WORDMARK_GLYPHS,
   WORDMARK_HEIGHT,
   WORDMARK_WIDTH,
@@ -16,24 +16,29 @@ interface SplashScreenProps {
 }
 
 // How long the splash is held, counted from its first paint. The choreography
-// (src/styles.css, `.splash-*`) is done at about 1650ms; the rest is the
+// (src/styles.css, `.splash-*`) is done at about 1950ms; the rest is the
 // finished logo, held long enough to be read before the fade.
-const HOLD_MS = 2200;
+const HOLD_MS = 2300;
 const HOLD_REDUCED_MS = 250;
 const FADE_MS = 450;
 const FADE_REDUCED_MS = 200;
 
-// Where the ball sits in the wordmark, as percentages of its box. The rings
-// and the halo are centred on it with CSS alone, so they are right at first
-// paint and at any size, with nothing measured.
-const BALL_X = `${(BALL.cx / WORDMARK_WIDTH) * 100}%`;
-const BALL_Y = `${(BALL.cy / WORDMARK_HEIGHT) * 100}%`;
-
+// The ball's geometry in the wordmark's box, as CSS custom properties, so the
+// ball's arrival at the middle of the screen and its trip home are CSS alone,
+// right at first paint and at any size, with nothing measured.
 const BOX_STYLE = {
   aspectRatio: `${WORDMARK_WIDTH} / ${WORDMARK_HEIGHT}`,
-  "--ball-x": BALL_X,
-  "--ball-y": BALL_Y,
+  "--ball-dx": `${BALL_BOX.toCentreX}%`,
+  "--ball-dy": `${BALL_BOX.toCentreY}%`,
 } as CSSProperties;
+
+const BALL_STYLE = {
+  left: `${BALL_BOX.left}%`,
+  top: `${BALL_BOX.top}%`,
+  width: `${BALL_BOX.width}%`,
+} as CSSProperties;
+
+const BALL_GLYPH = WORDMARK_GLYPHS.find((glyph) => glyph.kind === "ball");
 
 /**
  * The launch splash. It is in the server HTML on every load and shown only
@@ -41,15 +46,17 @@ const BOX_STYLE = {
  * visit it is the first thing painted and its entrance plays from that paint.
  * This component only decides when it leaves, and starts the rings.
  *
- * The story is the logo's own: the ball arrives first, alone and centred, with
- * a spring; the wordmark glides into place and the letters come in after it,
- * outward from the ball; blue rings pulse out from the ball. All of it but the
+ * The story is the logo's own: the ball arrives first, big and alone at the
+ * middle of the screen, with a spring, and blue rings pulse out around it; then
+ * it shrinks and travels to its place at the end of the wordmark, and the
+ * letters come in after it, outward from the ball. All of it but the
  * rings is CSS on this markup, so it needs no JS to start. Under reduced motion
  * none of it moves and there are no rings: what is left is the finished logo.
  */
 export function SplashScreen({ onDone }: SplashScreenProps) {
   const [leaving, setLeaving] = useState(false);
   const ringsRef = useRef<HTMLCanvasElement>(null);
+  const ballRef = useRef<SVGPathElement>(null);
 
   // Read through a ref, so a parent re-render cannot restart the timers. It
   // did: the gate passed a new function on every render, the hold began again
@@ -94,7 +101,9 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
     // The rings join when the code arrives, and fade in. Not under reduced
     // motion; and where WebGL2 is missing this does nothing at all.
     const stopRings =
-      !prefersReduced && ringsRef.current ? startMagicRings(ringsRef.current, shownAt) : undefined;
+      !prefersReduced && ringsRef.current
+        ? startMagicRings(ringsRef.current, shownAt, ballRef.current)
+        : undefined;
 
     return () => {
       window.clearTimeout(t1);
@@ -118,6 +127,11 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
           "radial-gradient(120% 90% at 50% 0%, hsl(219 72% 18%) 0%, hsl(221 70% 10%) 50%, hsl(224 66% 5%) 100%)",
       }}
     >
+      {/* The rings cover the whole screen, so no edge of a box shows, and are
+          centred on the ball wherever it is (JS, magic-rings.ts). Behind the
+          logo. */}
+      <canvas ref={ringsRef} aria-hidden="true" className="splash-rings" />
+
       {/* The wordmark is a Latin logo: it keeps its order, left to right, in
           French and in Arabic, so it is `ltr` whatever the page is. It is one
           image to a screen reader. */}
@@ -128,15 +142,22 @@ export function SplashScreen({ onDone }: SplashScreenProps) {
         className="splash-logo relative"
         style={BOX_STYLE}
       >
-        {/* Everything that moves with the camera pan: the halo, the rings and
-            the glyphs, which are stacked at the same size, one per layer. */}
-        <div className="splash-pan absolute inset-0">
-          <span aria-hidden="true" className="splash-halo" />
-          <canvas ref={ringsRef} aria-hidden="true" className="splash-rings" />
-          {WORDMARK_GLYPHS.map((glyph) => (
-            <Glyph key={glyph.name} glyph={glyph} />
-          ))}
-        </div>
+        {WORDMARK_GLYPHS.filter((glyph) => glyph.kind === "letter").map((glyph) => (
+          <Glyph key={glyph.name} glyph={glyph} />
+        ))}
+        {/* The ball: a layer of its own, so it can arrive big in the middle of
+            the screen and travel home. Over the letters, under the arcs. */}
+        {BALL_GLYPH && (
+          <div aria-hidden="true" className="splash-ball" style={BALL_STYLE}>
+            <span className="splash-halo" />
+            <svg viewBox={BALL_BOX.viewBox} focusable="false" className="splash-ball-glyph">
+              <path ref={ballRef} fill="#fff" d={BALL_GLYPH.d} />
+            </svg>
+          </div>
+        )}
+        {WORDMARK_GLYPHS.filter((glyph) => glyph.kind === "arc").map((glyph) => (
+          <Glyph key={glyph.name} glyph={glyph} />
+        ))}
       </div>
     </div>
   );

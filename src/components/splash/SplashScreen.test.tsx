@@ -22,7 +22,8 @@ describe("premium splash: the server markup", () => {
     expect(markup).toContain('aria-label="BotolaGO"');
     expect(markup).toContain('dir="ltr"');
     expect((markup.match(/<svg/g) ?? []).length).toBe(WORDMARK_GLYPHS.length);
-    expect((markup.match(/data-glyph="ball"/g) ?? []).length).toBe(1);
+    expect((markup.match(/class="splash-ball"/g) ?? []).length).toBe(1);
+    expect((markup.match(/data-glyph="arc"/g) ?? []).length).toBe(2);
     expect((markup.match(/data-glyph="letter"/g) ?? []).length).toBe(7);
     for (const glyph of WORDMARK_GLYPHS) expect(markup).toContain(glyph.d);
   });
@@ -32,6 +33,13 @@ describe("premium splash: the server markup", () => {
     expect(steps.slice().sort((a, b) => a - b)).toEqual([0, 1, 2, 3, 4, 5, 6]);
     expect(WORDMARK_GLYPHS.find((g) => g.name === "G")?.step).toBe(0);
     expect(WORDMARK_GLYPHS.find((g) => g.name === "B")?.step).toBe(6);
+  });
+
+  it("puts the ball's travel in CSS custom properties, so no JS measures it", () => {
+    expect(markup).toMatch(/--ball-dx:-?\d/);
+    expect(markup).toMatch(/--ball-dy:-?\d/);
+    expect(css).toContain("@keyframes splash-ball-scale");
+    expect(css).toContain("--hero: 3.2");
   });
 
   it("keeps the status role, the gating class and the rings canvas", () => {

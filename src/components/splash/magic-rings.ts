@@ -3,7 +3,9 @@
  * fragment shader, without three.js. One full-screen triangle, one draw per
  * frame, uniforms only. The mouse, hover, parallax and burst inputs of the
  * original are gone (this is a two-second phone splash), and `uCenter` places
- * the rings' centre in canvas pixels. Where the original maps its luminance to
+ * the rings' centre in canvas pixels. `uCutaway` scales the original's
+ * angular cut-away (the term that fades a ring towards its top and bottom):
+ * 1 is the original's bracket-like arcs, near 0 is a whole circle. Where the original maps its luminance to
  * alpha for a canvas over a dark page, so does this (`uCoverageAlpha` 0).
  *
  * Where WebGL2 is unavailable or the context cannot be made, `startMagicRings`
@@ -23,7 +25,7 @@ uniform float uTime, uAttenuation, uLineThickness;
 uniform float uBaseRadius, uRadiusStep, uScaleRate;
 uniform float uOpacity, uNoiseAmount, uRotation, uRingGap;
 uniform float uFadeIn, uFadeOut;
-uniform float uCoverageAlpha;
+uniform float uCoverageAlpha, uCutaway;
 uniform vec2 uResolution, uCenter;
 uniform vec3 uColor, uColorTwo;
 uniform int uRingCount;
@@ -38,7 +40,7 @@ float ring(vec2 p, float ri, float cut, float t0, float px) {
   float a = atan(abs(p.y), abs(p.x)) / HP;
   float th = max(1.0 - a, 0.5) * px * uLineThickness;
   float h = (1.0 - smoothstep(th, th * 1.5, d)) + 1.0;
-  d += pow(cut * a, 3.0) * r;
+  d += pow(cut * a, 3.0) * r * uCutaway;
   return h * exp(-uAttenuation * d) * fade(t);
 }
 void main() {
@@ -77,33 +79,36 @@ export function hslToRgb(h: number, s: number, l: number): [number, number, numb
 }
 
 /**
- * The look. Radii are fractions of the canvas's shorter side. The canvas is a
- * square centred on the ball, about 16 ball-radii across, so a ball radius is
- * 1/16 (0.0625): the rings are born at the ball's rim (about 1.2 radii) and
- * spread to about 5.5 radii, each a thin line with a short glow. Every ring
- * shares one base radius, and the original's per-ring phase offsets (2.95s
- * modulo the 3.45s cycle) space the pulses half a second apart.
+ * The look. The rings are drawn around the ball and scale with it, so the
+ * radii are in ball radii (R): each ring is born at `born` R, just outside the
+ * ball, and spreads `spread` R over a cycle. Every ring shares one base radius,
+ * and the original's per-ring phase offsets (2.95s modulo the 3.45s cycle)
+ * space the pulses apart. At the hero size the rings reach about half the
+ * screen's shorter side. `cutaway` is nearly closed circles (see above).
  */
 export const RING_LOOK = {
   ringCount: 5,
-  speed: 1.1,
-  attenuation: 34,
-  lineThickness: 1.5,
-  baseRadius: 0.075,
-  radiusStep: 0,
-  scaleRate: 0.3,
-  noiseAmount: 0.035,
-  ringGap: 1.5,
+  speed: 1.5,
+  attenuation: 55,
+  lineThickness: 1.4,
+  born: 1.2,
+  spread: 1.9,
+  noiseAmount: 0.03,
+  ringGap: 1.08,
+  cutaway: 0.1,
   fadeIn: 0.7,
   fadeOut: 0.5,
+  opacity: 0.9,
   // BotolaGO's floodlight blue: two close hues of the family the splash used.
   color: hslToRgb(205, 1, 0.76),
   colorTwo: hslToRgb(214, 1, 0.62),
 };
 
-/** When the rings begin to fade in, from first paint, and how long that takes. */
-export const FADE_START_MS = 420;
-export const FADE_MS = 520;
+/** When the rings fade in, and out as the ball leaves for its place (ms from first paint). */
+export const FADE_START_MS = 350;
+export const FADE_MS = 500;
+export const OUT_START_MS = 950;
+export const OUT_MS = 650;
 /** Where in the original's 3.45s cycle the first ring is when the fade begins. */
 const TIME_OFFSET = 1;
 
@@ -129,14 +134,20 @@ function smooth(t: number): number {
 }
 
 /**
- * Draw the rings on `canvas` until the returned function is called. `shownAt`
+ * Draw the rings on `canvas` (which covers the whole splash) until the returned
+ * function is called. They are centred on `ball`, wherever it is on screen that
+ * frame, and sized by it. `shownAt`
  * is the splash's first paint on the `performance.now()` clock: the rings keep
  * that clock, so they are in step with the CSS choreography however late the
  * app's code arrived. They fade in from `FADE_START_MS` after it, or from now
  * if that has passed, so they never pop. Safe to call without WebGL2: returns a
  * function that does nothing.
  */
-export function startMagicRings(canvas: HTMLCanvasElement, shownAt: number): () => void {
+export function startMagicRings(
+  canvas: HTMLCanvasElement,
+  shownAt: number,
+  ball: Element | null,
+): () => void {
   const noop = () => {};
   let gl: WebGL2RenderingContext | null = null;
   try {
@@ -181,14 +192,15 @@ export function startMagicRings(canvas: HTMLCanvasElement, shownAt: number): () 
     opacity: at("uOpacity"),
     resolution: at("uResolution"),
     center: at("uCenter"),
+    base: at("uBaseRadius"),
+    rate: at("uScaleRate"),
   };
   const L = RING_LOOK;
   context.uniform1i(at("uRingCount"), L.ringCount);
   context.uniform1f(at("uAttenuation"), L.attenuation);
   context.uniform1f(at("uLineThickness"), L.lineThickness);
-  context.uniform1f(at("uBaseRadius"), L.baseRadius);
-  context.uniform1f(at("uRadiusStep"), L.radiusStep);
-  context.uniform1f(at("uScaleRate"), L.scaleRate);
+  context.uniform1f(at("uRadiusStep"), 0);
+  context.uniform1f(at("uCutaway"), L.cutaway);
   context.uniform1f(at("uNoiseAmount"), L.noiseAmount);
   context.uniform1f(at("uRotation"), 0);
   context.uniform1f(at("uRingGap"), L.ringGap);
@@ -215,19 +227,35 @@ export function startMagicRings(canvas: HTMLCanvasElement, shownAt: number): () 
       canvas.height = h;
     }
     context.viewport(0, 0, w, h);
-    const elapsed = (now - shownAt) / 1000;
-    // The first ring is born as the ball lands; the fade is on the same clock
-    // but never shorter than FADE_MS from this mount.
-    const opacity = Math.min(
-      smooth((now - shownAt - FADE_START_MS) / FADE_MS),
-      smooth((now - mountedAt) / FADE_MS),
-    );
-    context.uniform1f(u.time, (elapsed - FADE_START_MS / 1000) * L.speed + TIME_OFFSET);
-    context.uniform1f(u.opacity, opacity);
-    context.uniform2f(u.resolution, w, h);
-    context.uniform2f(u.center, w / 2, h / 2);
     context.clear(context.COLOR_BUFFER_BIT);
-    context.drawArrays(context.TRIANGLES, 0, 3);
+    // Where the ball is on screen this frame, and how big: the rings follow it.
+    const box = canvas.getBoundingClientRect();
+    const b = ball?.getBoundingClientRect();
+    const k = box.width > 0 ? w / box.width : dpr;
+    const sinceShown = now - shownAt;
+    const opacity =
+      Math.min(
+        smooth((sinceShown - FADE_START_MS) / FADE_MS),
+        smooth((now - mountedAt) / FADE_MS),
+      ) *
+      (1 - smooth((sinceShown - OUT_START_MS) / OUT_MS)) *
+      L.opacity;
+    if (b && b.width > 0 && opacity > 0.002) {
+      const radius = (b.width / 2) * k;
+      const m = Math.min(w, h);
+      context.uniform1f(u.base, (L.born * radius) / m);
+      context.uniform1f(u.rate, (L.spread * radius) / m);
+      context.uniform1f(u.time, ((sinceShown - FADE_START_MS) / 1000) * L.speed + TIME_OFFSET);
+      context.uniform1f(u.opacity, opacity);
+      context.uniform2f(u.resolution, w, h);
+      // gl_FragCoord's y runs up from the bottom of the canvas.
+      context.uniform2f(
+        u.center,
+        (b.left + b.width / 2 - box.left) * k,
+        h - (b.top + b.height / 2 - box.top) * k,
+      );
+      context.drawArrays(context.TRIANGLES, 0, 3);
+    }
     frame = requestAnimationFrame(draw);
   };
   const onVisibility = () => {

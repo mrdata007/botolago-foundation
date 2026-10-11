@@ -1518,19 +1518,25 @@ html[dir="rtl"]
    direction, and do not flip in Arabic.
 
    Timeline, ms from first paint:
-     0 - 760    the ball arrives at the centre: scale with a spring overshoot,
-                blur to sharp, a part-turn to upright
-     80 - 700   the halo blooms behind it
-     420 - 940  the WebGL rings fade in (JS, magic-rings.ts)
-     620 - 1520 the wordmark glides left-to-right into place
-     700 - 1350 the swooshes draw outward from the ball
-     760 + 55n  each letter, n away from the ball: sharp, risen, in
-     ~1650      finished */
+     0 - 800     the ball arrives at the middle of the screen, big (--hero
+                 times its size in the logo): scale with a spring overshoot,
+                 blur to sharp, a part-turn to upright; its glow with it
+     350 - 850   the WebGL rings fade in around it (JS, magic-rings.ts)
+     900 - 1550  the ball shrinks and travels to its place at the end of the
+                 wordmark; the rings follow it and fade out
+     1000 + 50n  each letter, n away from the ball: sharp, risen, in
+     1300 - 1900 the swooshes draw outward from the ball
+     ~1950       finished */
 .splash-logo {
-  width: min(82vw, 30rem);
+  /* The wordmark's width: most of a phone's, 560px at most, and no wider than
+     the screen is tall (a phone on its side), so the hero ball's rings fit. */
+  width: min(80vw, 35rem, 84vh);
+  /* How many times its size in the logo the ball is when it arrives. */
+  --hero: 3.2;
 }
 
 .splash-glyph,
+.splash-ball,
 .splash-halo,
 .splash-rings {
   position: absolute;
@@ -1544,90 +1550,113 @@ html[dir="rtl"]
   overflow: visible;
 }
 
-/* The glow behind the ball, centred on it (--ball-x, --ball-y are set on the
-   box from the logo's own geometry). */
-.splash-halo {
-  inset-inline-start: var(--ball-x);
-  top: var(--ball-y);
-  width: 34%;
+/* The rings' canvas: the whole screen. Transparent until JS draws on it. */
+.splash-rings {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.splash-ball {
   aspect-ratio: 1;
-  translate: -50% -50%;
+}
+
+.splash-ball-glyph {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The glow behind the ball, bigger than it, moving and scaling with it. */
+.splash-halo {
+  inset: -70%;
   border-radius: 50%;
   background: radial-gradient(
     closest-side,
-    hsl(212 100% 70% / 0.34),
+    hsl(212 100% 70% / 0.36),
     hsl(214 100% 62% / 0.12) 55%,
     transparent
   );
 }
 
-/* The rings' canvas: a square about sixteen ball radii across, centred on the
-   ball. The shader draws on it from JS; until then it is transparent. */
-.splash-rings {
-  inset-inline-start: var(--ball-x);
-  top: var(--ball-y);
-  width: 96%;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-}
-
-/* The pan above is physical, so the ball's origin is too. */
-.splash-glyph[data-glyph="ball"] {
-  transform-origin: var(--ball-x) var(--ball-y);
-}
-
 @media (prefers-reduced-motion: no-preference) {
-  /* The ball starts at the middle of the screen: its x in the box is
-     93.06%, so the box starts that far left of centre (43.06% of its width)
-     and glides back. */
-  .launch-splash .splash-pan {
-    animation: splash-pan 900ms cubic-bezier(0.22, 1, 0.36, 1) 620ms both;
+  /* The ball's arrival and trip are four properties on one clock (1550ms),
+     so each has its own curve: the spring is for the size, the turn and the
+     move home. The move is `translate` and `scale`, the individual transform
+     properties, so they combine without sharing one keyframe list. */
+  .launch-splash .splash-ball {
+    animation:
+      splash-ball-scale 1550ms both,
+      splash-ball-move 1550ms both,
+      splash-ball-turn 800ms cubic-bezier(0.34, 1.4, 0.64, 1) both,
+      splash-focus 700ms cubic-bezier(0.22, 1, 0.36, 1) both,
+      splash-fade 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   .launch-splash .splash-halo {
-    animation: splash-halo 900ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
-  }
-
-  /* Two animations, because they want different curves: the spring is for the
-     size and the turn; the fade-in must not overshoot. */
-  .launch-splash .splash-glyph[data-glyph="ball"] {
-    animation:
-      splash-ball 780ms cubic-bezier(0.34, 1.5, 0.64, 1) both,
-      splash-fade 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: splash-fade 500ms ease-out 100ms both;
   }
 
   .launch-splash .splash-glyph[data-glyph="letter"] {
     animation:
-      splash-letter 640ms cubic-bezier(0.22, 1, 0.36, 1) calc(760ms + var(--n) * 55ms) both,
-      splash-fade 300ms cubic-bezier(0.22, 1, 0.36, 1) calc(760ms + var(--n) * 55ms) both;
+      splash-letter 640ms cubic-bezier(0.22, 1, 0.36, 1) calc(1000ms + var(--n) * 50ms) both,
+      splash-fade 300ms cubic-bezier(0.22, 1, 0.36, 1) calc(1000ms + var(--n) * 50ms) both;
   }
 
   .launch-splash .splash-glyph[data-glyph="arc"] {
     animation:
-      splash-arc 650ms cubic-bezier(0.3, 0.7, 0.2, 1) 700ms both,
-      splash-fade 200ms ease-out 700ms both;
+      splash-arc 600ms cubic-bezier(0.3, 0.7, 0.2, 1) 1300ms both,
+      splash-fade 200ms ease-out 1300ms both;
   }
 }
 
-/* The camera: from the ball in the middle of the screen to the wordmark in
-   place. The offset is the ball's distance from the box's middle (93.06% - 50%). */
-@keyframes splash-pan {
-  from {
-    transform: translateX(-43.06%);
+/* The ball's size: arrives at --hero with a spring (the overshoot is in the
+   curve), holds while the rings pulse (to 900ms), then shrinks home with a
+   slight settle. 800ms and 900ms are 51.6% and 58.1% of 1550. */
+@keyframes splash-ball-scale {
+  0% {
+    scale: calc(var(--hero) * 0.62);
+    animation-timing-function: cubic-bezier(0.34, 1.4, 0.64, 1);
   }
-  to {
-    transform: translateX(0);
+  51.6%,
+  58.1% {
+    scale: var(--hero);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1.08);
+  }
+  100% {
+    scale: 1;
   }
 }
 
-@keyframes splash-halo {
+/* Its place: the middle of the screen until 900ms, then home. The offset is
+   the ball's distance from the middle of the logo, from the markup. */
+@keyframes splash-ball-move {
+  0%,
+  58.1% {
+    translate: var(--ball-dx) var(--ball-dy);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.2, 1.08);
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+@keyframes splash-ball-turn {
   from {
-    opacity: 0;
-    transform: scale(0.5);
+    rotate: -24deg;
   }
   to {
-    opacity: 1;
-    transform: scale(1);
+    rotate: 0deg;
+  }
+}
+
+@keyframes splash-focus {
+  from {
+    filter: blur(5px);
+  }
+  to {
+    filter: blur(0);
   }
 }
 
@@ -1637,20 +1666,6 @@ html[dir="rtl"]
   }
   to {
     opacity: 1;
-  }
-}
-
-/* The easing is per animation, so the overshoot is in the curve: it takes the
-   scale to about 1.04 and the turn to about 6 degrees past upright, and back.
-   The turn is the logo's own and does not flip in Arabic. */
-@keyframes splash-ball {
-  from {
-    transform: scale(0.55) rotate(-70deg);
-    filter: blur(10px);
-  }
-  to {
-    transform: scale(1) rotate(0);
-    filter: blur(0);
   }
 }
 

@@ -97,3 +97,39 @@ letters). Hold is measured from first paint. Failsafe and gating unchanged. 7. R
 profile (measured, reported with the caveat that headless Chromium renders
 WebGL in software). 10. Added client JS under 5 KB gzip (measured from `bun run build`). 11. `bun run typecheck`, eslint, prettier, and the full `bun test` pass (the
 known GMT vs GMT+0 `editorial-session.test.ts` failure excepted).
+
+## Revision 2 (owner review: the ball must be the hero)
+
+The first cut showed a small ball in an empty screen. Reworked:
+
+- **Hero ball.** It arrives at the middle of the screen at 3.2 times its size in
+  the logo (about 31% of a 390 px phone's width, 215 px on a desktop), with a
+  spring (scale 0.62 to 1 of that, overshoot), blur 5px to 0 and a 24 degree turn.
+- **Rings around it.** Full-viewport canvas (no box edge), centred every frame
+  on the ball's live on-screen centre (`getBoundingClientRect` of the ball path)
+  and sized by its live radius, DPR capped at 1.5. Born at 1.2 R, spreading 1.9 R
+  per cycle (about 3 R at most, so inside the screen at the hero size even at
+  320 px). `uCutaway` 0.1 scales the original's angular cut-away, so the rings
+  are near-complete circles; ring gap 1.08, attenuation 55, thickness 1.4, noise
+  0.03, 5 rings, speed 1.5.
+- **Assembly.** The ball holds and the rings pulse until 900 ms, then it shrinks
+  and travels to its place at the end of the wordmark in one move (650 ms,
+  slight settle). The rings follow it, scale with it and fade out between 950
+  and 1600 ms, so no edge ever cuts them. The letters reveal outward from it.
+  The travel is `translate` and `scale` from CSS custom properties computed from
+  the logo's geometry: no JS measuring for the CSS part.
+- **Size.** The wordmark is `min(80vw, 35rem, 84vh)`: 80% of a phone's width,
+  560 px on desktop; the `vh` term keeps the hero's rings inside a phone on its
+  side.
+
+Timeline (ms from first paint):
+
+| t (ms)      | Event                                                             |
+| ----------- | ----------------------------------------------------------------- |
+| 0 - 800     | Ball arrives, big, at the middle of the screen. Halo with it.     |
+| 350 - 850   | Rings fade in around it (JS, when mounted; later on a slow load). |
+| 900 - 1550  | Ball shrinks and travels home. Rings follow and fade out.         |
+| 1000 + 50n  | Letters G, A, L, O, T, O, B (n = 0..6): blur to sharp, rise, in.  |
+| 1300 - 1900 | Swoosh arcs draw outward from the ball.                           |
+| about 1950  | Finished frame.                                                   |
+| 2300        | `HOLD_MS`: 450 ms fade with scale to 1.03 into the app.           |
