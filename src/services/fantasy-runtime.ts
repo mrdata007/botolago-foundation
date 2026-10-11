@@ -3,6 +3,7 @@ import { SupabaseFantasyRepository } from "@/backend/fantasy/supabase-repository
 import { supabaseV2 } from "@/integrations/supabase/v2-client";
 import { selectFantasyDataMode } from "./fantasy-v2";
 import { forgetSharedFantasyHub, shareFantasyHub } from "./fantasy-hub-share";
+import { shareRead } from "./shared-read";
 import {
   enrolmentGameweekOf,
   readFantasyAvailability,
@@ -257,26 +258,44 @@ export function seasonStatsById(
   return new Map(items.map((item) => [item.fantasyPlayerId, item]));
 }
 
+/**
+ * The whole pool, read once for the screens that ask together: Home's alert
+ * strip, Top players and the player lists each used to walk it on their own.
+ */
 async function allPlayers(): Promise<FantasyPlayer[]> {
   const current = await hub();
+  return shareRead(`players:${current.season.id}`, () => readAllPlayers(current));
+}
+
+async function readAllPlayers(current: FantasyHubDto): Promise<FantasyPlayer[]> {
   // One statistics read per player-list load, alongside the paged pool. The
   // RPC is `stable` and the routes hold the result in React Query, so paging
   // the pool does not re-read it.
-  const stats = seasonStatsById(
-    (await cloud.getPlayerSeasonStats(current.season.id, null, context())).items,
-  );
-  const players: FantasyPlayer[] = [];
+  // The statistics read runs beside the first page of the pool rather than
+  // before it: the pages are walked by cursor, one after the other, and the
+  // statistics are only needed to dress them once they are all in.
+  const statsRead = cloud.getPlayerSeasonStats(current.season.id, null, context());
+  const items: FantasyPlayerDto[] = [];
   let cursor: { price: number; id: string } | undefined;
-  for (let page = 0; page < 20; page += 1) {
-    const result = await cloud.getPlayerPool(
-      { seasonId: current.season.id, cursor, limit: 100 },
-      context(),
-    );
-    players.push(...result.items.map((item) => playerDto(item, stats.get(item.id))));
-    if (!result.nextCursor) return players;
-    cursor = result.nextCursor;
+  let complete = false;
+  try {
+    for (let page = 0; page < 20 && !complete; page += 1) {
+      const result = await cloud.getPlayerPool(
+        { seasonId: current.season.id, cursor, limit: 100 },
+        context(),
+      );
+      items.push(...result.items);
+      if (result.nextCursor) cursor = result.nextCursor;
+      else complete = true;
+    }
+  } catch (error) {
+    // Do not leave the statistics read to fail unobserved.
+    statsRead.catch(() => undefined);
+    throw error;
   }
-  throw new Error("Fantasy player pool exceeded the bounded route read limit.");
+  const stats = seasonStatsById((await statsRead).items);
+  if (!complete) throw new Error("Fantasy player pool exceeded the bounded route read limit.");
+  return items.map((item) => playerDto(item, stats.get(item.id)));
 }
 
 /**
@@ -304,8 +323,13 @@ async function overallBoard(
   return { rows, myRank };
 }
 
+/** The season's gameweek list; screens that start together share one read. */
+function gameweeksOf(seasonId: string) {
+  return shareRead(`gameweeks:${seasonId}`, () => cloud.getGameweeks(seasonId, null, context()));
+}
+
 async function gameweekIdOf(seasonId: string, sequence: number): Promise<string | null> {
-  const gameweeks = await cloud.getGameweeks(seasonId, null, context());
+  const gameweeks = await gameweeksOf(seasonId);
   return gameweeks.items.find((item) => item.sequence === sequence)?.id ?? null;
 }
 
@@ -522,7 +546,7 @@ export const fantasyService = {
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
     const current = await cloudTeam();
-    const gameweeks = await cloud.getGameweeks(current.hub.season.id, null, context());
+    const gameweeks = await gameweeksOf(current.hub.season.id);
     const gameweek = gameweeks.items.find((item) => item.sequence === sequence);
     if (!gameweek) return undefined;
     const [points, summary] = await Promise.all([
@@ -728,7 +752,7 @@ export const fantasyService = {
   async getTopPlayersOfWeek(gameweek: number): Promise<TopPlayerOfWeek[]> {
     if (mode() === "mock") return mockFantasyService.getTopPlayersOfWeek(gameweek);
     const current = await hub();
-    const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
+    const gameweeks = await gameweeksOf(current.season.id);
     const target = gameweeks.items.find((item) => item.sequence === gameweek);
     if (!target) return [];
     // BG-0071: price, ownership and form used to be literal zeros here. They
@@ -774,7 +798,7 @@ export const fantasyService = {
   async getAvailableTopGameweeks(): Promise<number[]> {
     if (mode() === "mock") return mockFantasyService.getAvailableTopGameweeks();
     const current = await hub();
-    const gameweeks = await cloud.getGameweeks(current.season.id, null, context());
+    const gameweeks = await gameweeksOf(current.season.id);
     return gameweeks.items.map((gameweek) => gameweek.sequence).sort((a, b) => a - b);
   },
   async createLeague(name: string): Promise<{ id: string; code?: string }> {
