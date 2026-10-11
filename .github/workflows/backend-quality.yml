@@ -143,7 +143,13 @@ jobs:
               ('FILL_FROM_CI_SUPPORTING_DEPENDENCY_BEFORE_MD5', 'app_private.football_mapping_supporting_dependency(text,uuid,uuid)'::regprocedure),
               ('FILL_FROM_CI_OPS_HEALTH_BEFORE_MD5', 'app_private.ops_health_checks_before_adaptive()'::regprocedure),
               ('FILL_FROM_CI_SCORING_DOCUMENT_BASE_BEFORE_MD5', 'app_private.fantasy_scoring_input_document_v1(uuid)'::regprocedure),
-              ('FILL_FROM_CI_LEGACY_FIXTURE_CHECK_BEFORE_MD5', 'app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure)
+              ('FILL_FROM_CI_LEGACY_FIXTURE_CHECK_BEFORE_MD5', 'app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure),
+              -- 20261011160000 replaces these four readers; production holds the
+              -- 20260926003100 definitions, which a database at 20261011120000 holds too.
+              ('FILL_FROM_CI_FANTASY_LEAGUES_BEFORE_MD5', 'api.fantasy_leagues(uuid,text,integer)'::regprocedure),
+              ('FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_BEFORE_MD5', 'api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure),
+              ('FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_BEFORE_MD5', 'api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure),
+              ('FILL_FROM_CI_PREDICTIONS_LEADERBOARD_BEFORE_MD5', 'api.predictions_leaderboard(text,integer,integer,uuid,integer)'::regprocedure)
             ) as v(pin, fn)
            order by 2;
           SQL
@@ -209,7 +215,17 @@ jobs:
               ('FILL_FROM_CI_ATTACH_TEAM_CREST_AFTER_MD5', 'api.attach_football_team_crest(text,text,text,text,text,timestamptz)'::regprocedure),
               ('FILL_FROM_CI_SET_CURATED_TEAM_CREST_MD5', 'api.service_set_curated_team_crest(text,text,text,text)'::regprocedure),
               ('FILL_FROM_CI_REPOINT_FIXTURE_MAPPING_MD5', 'api.repoint_football_fixture_mapping(text,uuid,text,text,text)'::regprocedure),
-              ('FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5', 'api.news_article_detail(text,text)'::regprocedure)
+              ('FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5', 'api.news_article_detail(text,text)'::regprocedure),
+              -- 20261011160000 (public ranking exclusions): the four readers it
+              -- replaces and the four functions it creates.
+              ('FILL_FROM_CI_FANTASY_LEAGUES_AFTER_MD5', 'api.fantasy_leagues(uuid,text,integer)'::regprocedure),
+              ('FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_AFTER_MD5', 'api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure),
+              ('FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_AFTER_MD5', 'api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure),
+              ('FILL_FROM_CI_PREDICTIONS_LEADERBOARD_AFTER_MD5', 'api.predictions_leaderboard(text,integer,integer,uuid,integer)'::regprocedure),
+              ('FILL_FROM_CI_FANTASY_HIDDEN_AHEAD_MD5', 'app_private.fantasy_hidden_ahead(uuid,uuid,uuid,bigint,boolean)'::regprocedure),
+              ('FILL_FROM_CI_PREDICTION_HIDDEN_AHEAD_MD5', 'app_private.prediction_hidden_ahead(uuid,uuid,integer)'::regprocedure),
+              ('FILL_FROM_CI_ADMIN_LIST_PUBLIC_RANKING_EXCLUSIONS_MD5', 'api.admin_list_public_ranking_exclusions()'::regprocedure),
+              ('FILL_FROM_CI_ADMIN_SET_PUBLIC_RANKING_EXCLUSION_MD5', 'api.admin_set_public_ranking_exclusion(uuid,text,boolean,text,uuid)'::regprocedure)
             ) as v(pin, fn)
            order by 2;
           do $check$

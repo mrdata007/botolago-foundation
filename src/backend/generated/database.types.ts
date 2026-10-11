@@ -460,6 +460,7 @@ export type Database = {
         Returns: Json
       }
       admin_list_fantasy_prizes: { Args: never; Returns: Json }
+      admin_list_public_ranking_exclusions: { Args: never; Returns: Json }
       admin_list_role_catalog: { Args: never; Returns: Json }
       admin_list_staff_assignments: {
         Args: {
@@ -686,6 +687,16 @@ export type Database = {
           p_note: string
           p_status: string
           p_winner_id: string
+        }
+        Returns: Json
+      }
+      admin_set_public_ranking_exclusion: {
+        Args: {
+          p_hidden: boolean
+          p_idempotency_key: string
+          p_reason: string
+          p_user_id: string
+          p_username: string
         }
         Returns: Json
       }

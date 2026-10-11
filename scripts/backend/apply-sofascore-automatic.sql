@@ -28,6 +28,8 @@
 --     the memory of the automatic SofaScore Fantasy path: one private table (attempts, retry time, trimmed SofaScore replies) and three service-only functions (context, note, due); scores nothing and changes no existing object
 --   20261011150000_ops_health_adaptive_coverage
 --     ops health counts SofaScore (adaptive) Fantasy coverage: adds app_private.fantasy_fixture_health_ready and patches the deployed health body app_private.ops_health_checks_before_adaptive in place (same checks, same output shape); changes no row
+--   20261011160000_public_ranking_exclusions
+--     test accounts can be hidden from the public rankings: one private list (empty), two staff functions to hide or show an account, the permission rankings.manage (granted to platform_admin), and the four public ranking readers replaced so they skip hidden accounts (same signatures and grants; production still holds the 20260926003100 text); nothing is hidden until the owner does the step of docs/backend/PUBLIC_RANKING_EXCLUSIONS.md, and no existing ranking row changes
 --   20261011170000_news_article_detail_other_language_id
 --     an article opened by an edition id from the other language resolves to the reader's own language edition instead of answering 404: replaces api.news_article_detail (same signature; grants preserved by create or replace); changes no data
 --   20261011180000_sofascore_player_performances
@@ -47,7 +49,8 @@
 --     body of 20260921200000 (create or replace; the script stops if the body
 --     is neither that older production body nor the reviewed one);
 --   * the three catch-up steps above (20260925090500, 20261001170000,
---     20261010140000) and 20261011170000 are applied as full steps.
+--     20261010140000) and 20261011170000 are applied as full steps, and so is
+--     20261011160000 (test accounts can be hidden from the public rankings).
 --
 -- HOW TO RUN
 --   Check nothing else is writing (AGENTS.md; the runbook says how). Then run
@@ -75,9 +78,11 @@
 --     two review-list functions), every new table forces row level security and
 --     is readable by no API role, and each definition is the reviewed one (md5).
 --   It writes no fixture, Fantasy, news or user row and pauses nothing: it only
---   creates or replaces functions, creates three empty private tables and one
+--   creates or replaces functions, creates four empty private tables and one
 --   check, lets two columns of app.player_fixture_performances (assists,
---   penalties_missed) be NULL, and writes history rows. The pg_cron jobs
+--   penalties_missed) be NULL, adds one admin permission row (rankings.manage)
+--   with its grant to platform_admin (20261011160000; it hides no account), and
+--   writes history rows. The pg_cron jobs
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 
@@ -93,7 +98,7 @@ set local statement_timeout = '120s';
 create temporary table sofascore_plan on commit drop as
 select v.version,
        exists (select 1 from supabase_migrations.schema_migrations m where m.version = v.version) as was_recorded
-  from (values ('20260925090500'), ('20261001170000'), ('20261003180000'), ('20261010140000'), ('20261011110000'), ('20261011120000'), ('20261011130000'), ('20261011140000'), ('20261011150000'), ('20261011170000'), ('20261011180000'), ('20260919130000'), ('20260919150000'), ('20260919160000'), ('20260921120000'), ('20260921140000'), ('20260921160000'), ('20260921170000'), ('20260921180000'), ('20260921190000'), ('20260921200000'), ('20260921220000'), ('20260922180000'), ('20260922180100'), ('20260922180200'), ('20260922200000'), ('20260922200100'), ('20260924100000'), ('20260924120000'), ('20260924140000'), ('20260924140100'), ('20260924163000'), ('20260924170000'), ('20260924173000'), ('20260927153000')) as v(version);
+  from (values ('20260925090500'), ('20261001170000'), ('20261003180000'), ('20261010140000'), ('20261011110000'), ('20261011120000'), ('20261011130000'), ('20261011140000'), ('20261011150000'), ('20261011160000'), ('20261011170000'), ('20261011180000'), ('20260919130000'), ('20260919150000'), ('20260919160000'), ('20260921120000'), ('20260921140000'), ('20260921160000'), ('20260921170000'), ('20260921180000'), ('20260921190000'), ('20260921200000'), ('20260921220000'), ('20260922180000'), ('20260922180100'), ('20260922180200'), ('20260922200000'), ('20260922200100'), ('20260924100000'), ('20260924120000'), ('20260924140000'), ('20260924140100'), ('20260924163000'), ('20260924170000'), ('20260924173000'), ('20260927153000')) as v(version);
 
 -- Replacing the observation recorder: wait for no scoring observation being written.
 do $hold$
@@ -342,6 +347,78 @@ begin
     if md5(pg_get_functiondef('app_private.ops_health_checks_before_adaptive()'::regprocedure)) is distinct from '1f584b167e83da8858a1377ee416a5b8' then
       raise exception 'stop: app_private.ops_health_checks_before_adaptive() is not the reviewed version 20261011150000 replaces (md5)';
     end if;
+  end if;
+
+  -- 20261011160000_public_ranking_exclusions
+  if exists (select 1 from pg_temp.sofascore_plan where version = '20261011160000' and not was_recorded) then
+    if to_regclass('app_private.public_ranking_exclusions') is not null
+      or to_regprocedure('app_private.fantasy_hidden_ahead(uuid,uuid,uuid,bigint,boolean)') is not null
+      or to_regprocedure('app_private.prediction_hidden_ahead(uuid,uuid,integer)') is not null
+      or to_regprocedure('api.admin_list_public_ranking_exclusions()') is not null
+      or to_regprocedure('api.admin_set_public_ranking_exclusion(uuid,text,boolean,text,uuid)') is not null then
+      raise exception 'stop: 20261011160000 is not recorded but an object it creates already exists -- production is not the state it was written for';
+    end if;
+    if exists (select 1 from app_private.admin_permissions where name = 'rankings.manage') then
+      raise exception 'stop: 20261011160000 is not recorded but the permission rankings.manage it creates already exists -- production is not the state it was written for';
+    end if;
+    if to_regclass('app.profiles') is null
+      or to_regclass('app.fantasy_teams') is null
+      or to_regclass('app.fantasy_rankings') is null
+      or to_regclass('app.fantasy_leagues') is null
+      or to_regclass('app.fantasy_league_memberships') is null
+      or to_regclass('app.fantasy_seasons') is null
+      or to_regclass('app.fantasy_gameweeks') is null
+      or to_regclass('app.prediction_standings') is null
+      or to_regclass('app.rounds') is null
+      or to_regclass('app.fixtures') is null
+      or to_regclass('app_private.prediction_settings') is null
+      or to_regclass('app_private.prediction_fixture_scoring') is null
+      or to_regclass('app_private.user_bans') is null
+      or to_regclass('app_private.staff_principals') is null
+      or to_regclass('app_private.admin_permissions') is null
+      or to_regclass('app_private.admin_roles') is null
+      or to_regclass('app_private.admin_role_permissions') is null
+      or to_regprocedure('app_private.admin_assert_permission(text,boolean)') is null
+      or to_regprocedure('app_private.admin_begin_idempotent_operation(uuid,text,uuid,jsonb)') is null
+      or to_regprocedure('app_private.admin_complete_idempotent_operation(uuid,text,uuid,jsonb)') is null
+      or to_regprocedure('app_private.write_admin_audit(uuid,text,text,uuid,text,uuid,uuid,uuid,jsonb,jsonb,app_private.admin_audit_outcome,text,boolean)') is null
+      or to_regprocedure('app_private.assert_mfa_step_up()') is null
+      or to_regprocedure('app_private.fantasy_mask_username(text)') is null
+      or to_regprocedure('app_private.predictions_access_allowed(uuid)') is null
+      or to_regprocedure('app_private.predictions_current_season()') is null
+      or to_regprocedure('app_private.predictions_resolve_round(uuid,integer,timestamptz)') is null
+      or to_regprocedure('app_private.prediction_round_state(uuid,timestamptz)') is null
+      or to_regprocedure('api.fantasy_leagues(uuid,text,integer)') is null
+      or to_regprocedure('api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)') is null
+      or to_regprocedure('api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)') is null
+      or to_regprocedure('api.predictions_leaderboard(text,integer,integer,uuid,integer)') is null then
+      raise exception 'stop: an object migration 20261011160000 depends on is missing -- production is not the state it was written for';
+    end if;
+    -- The permission is granted to this role; without it nobody could use the staff functions.
+    if not exists (select 1 from app_private.admin_roles where name = 'platform_admin') then
+      raise exception 'stop: an object migration 20261011160000 depends on is missing (the platform_admin role) -- production is not the state it was written for';
+    end if;
+    -- It replaces exactly the definitions migration 20260926003100 left.
+    if md5(pg_get_functiondef('api.fantasy_leagues(uuid,text,integer)'::regprocedure)) is distinct from '12d826d06ba73e5898e250bc796e0493' then
+      raise exception 'stop: api.fantasy_leagues(uuid,text,integer) is not the reviewed version 20261011160000 replaces (md5)';
+    end if;
+    if md5(pg_get_functiondef('api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure)) is distinct from 'f33836a514f0d7da8df27dea9e229d12' then
+      raise exception 'stop: api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer) is not the reviewed version 20261011160000 replaces (md5)';
+    end if;
+    if md5(pg_get_functiondef('api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure)) is distinct from '01fb6ba414c0dad7423efb7afddbd5d8' then
+      raise exception 'stop: api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer) is not the reviewed version 20261011160000 replaces (md5)';
+    end if;
+    if md5(pg_get_functiondef('api.predictions_leaderboard(text,integer,integer,uuid,integer)'::regprocedure)) is distinct from '1a4464772e2f59bcb6bc5a1ce0e2e050' then
+      raise exception 'stop: api.predictions_leaderboard(text,integer,integer,uuid,integer) is not the reviewed version 20261011160000 replaces (md5)';
+    end if;
+    -- create or replace keeps the grants; remember them to prove it afterwards.
+    create temporary table sofascore_ranking_reader_grants on commit drop as
+    select f.sig,
+           has_function_privilege('public', to_regprocedure(f.sig), 'execute') as public_can,
+           has_function_privilege('anon', to_regprocedure(f.sig), 'execute') as anon_can,
+           has_function_privilege('authenticated', to_regprocedure(f.sig), 'execute') as authenticated_can,
+           has_function_privilege('service_role', to_regprocedure(f.sig), 'execute') as service_can
+      from (values ('api.fantasy_leagues(uuid,text,integer)'), ('api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)'), ('api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)'), ('api.predictions_leaderboard(text,integer,integer,uuid,integer)')) as f(sig);
   end if;
 
   -- 20261011170000_news_article_detail_other_language_id
@@ -2746,6 +2823,972 @@ begin
 end
 $apply_20261011150000$;
 
+-- 20261011160000_public_ranking_exclusions: recorded and run only if it was not recorded at the start.
+insert into supabase_migrations.schema_migrations (version, name, statements)
+select
+  '20261011160000',
+  'public_ranking_exclusions',
+  array[$bg_20261011160000_file$-- Public ranking exclusions.
+--
+-- The owner decided on 2026-10-11 to HIDE test and QA accounts from the public
+-- rankings. The accounts stay: they keep their teams, points and private
+-- views. Hiding is reversible and audited.
+--
+-- What this migration adds:
+--
+--   * app_private.public_ranking_exclusions -- the list of hidden accounts.
+--     No grants, row level security forced; it is read only by the functions
+--     below, and written only by the admin function.
+--   * api.admin_list_public_ranking_exclusions / api.admin_set_public_ranking_exclusion
+--     -- the admin way to add or remove an account. New permission
+--     `rankings.manage` (MFA, recent authentication), granted to
+--     platform_admin, and every change is written to the admin audit log.
+--   * The public readers skip hidden accounts and renumber what they show:
+--       api.fantasy_overall_standings   the season board
+--       api.fantasy_league_standings    public leagues only
+--       api.fantasy_leagues             the leader and the caller's rank in public leagues
+--       api.predictions_leaderboard     the Pronostics board
+--
+-- How ranks are shown. app.fantasy_rankings stores one unique rank per team
+-- (row_number, written by api.service_recalculate_fantasy_rankings). Nothing
+-- here changes those stored rows, so history is untouched and un-hiding needs
+-- no recalculation. The readers compute the rank they show on the fly:
+--
+--     shown rank = stored rank - (hidden teams stored above it, same board)
+--
+-- so the public board is 1, 2, 3 ... with no gap, the sort order is unchanged,
+-- and the keyset cursor keeps using the stored rank.
+--
+-- Private views are left alone. A hidden manager still sees their own team,
+-- points and history; api.fantasy_overall_standings still returns their own
+-- `myRank`, with the rank the account would hold on the public board. A hidden
+-- manager does not see their own row inside a public league's list.
+--
+-- Known and accepted: figures frozen at finalization in
+-- app.fantasy_team_gameweek_results (rank, overall_rank, shown in a manager's
+-- own history) still count the hidden accounts. They are a manager's private
+-- history and are not recomputed.
+--
+-- Pronostics: app.prediction_standings ranks can tie, and banned users are
+-- already skipped without renumbering. The same hidden-ahead subtraction is
+-- applied here, so a ban can still leave a gap, as before.
+--
+-- Nothing in this file names an account. Which accounts to hide is decided by
+-- the owner, one call at a time: docs/backend/PUBLIC_RANKING_EXCLUSIONS.md.
+--
+-- Replaced functions are copies of their latest definitions in
+-- 20260926003100_ordinary_account_mfa_step_up.sql (grants are kept by
+-- `create or replace`) with the exclusion added; nothing else is changed.
+
+-- ---------------------------------------------------------------------------
+-- The list
+-- ---------------------------------------------------------------------------
+
+create table app_private.public_ranking_exclusions (
+  user_id uuid primary key references app.profiles(id) on delete cascade,
+  reason text not null,
+  created_by_principal_id uuid not null
+    references app_private.staff_principals(id) on delete restrict,
+  created_at timestamptz not null default statement_timestamp(),
+  constraint public_ranking_exclusions_reason_check check (
+    reason = btrim(reason) and char_length(reason) between 8 and 500
+  )
+);
+comment on table app_private.public_ranking_exclusions is
+  'Accounts hidden from the public rankings (test and QA accounts). Reversible: delete the row. Never exposed; read by the ranking readers, written by api.admin_set_public_ranking_exclusion.';
+create index public_ranking_exclusions_created_by_idx
+  on app_private.public_ranking_exclusions (created_by_principal_id);
+alter table app_private.public_ranking_exclusions enable row level security;
+alter table app_private.public_ranking_exclusions force row level security;
+revoke all on app_private.public_ranking_exclusions from public, anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- Admin permission
+-- ---------------------------------------------------------------------------
+
+insert into app_private.admin_permissions (name, domain, description, requires_recent_auth)
+values (
+  'rankings.manage', 'rankings',
+  'Hides test and QA accounts from the public rankings, and shows them again.',
+  true
+)
+on conflict (name) do nothing;
+
+insert into app_private.admin_role_permissions (role_id, permission_id)
+select role.id, permission.id
+from app_private.admin_roles role
+join app_private.admin_permissions permission on permission.name = 'rankings.manage'
+where role.name = 'platform_admin'
+on conflict (role_id, permission_id) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Helpers used by the readers
+-- ---------------------------------------------------------------------------
+
+-- How many hidden teams sit above p_rank on one board (the board is a season,
+-- a gameweek or null for the season total, and a league or null for overall).
+-- p_previous compares the hidden teams' previous rank instead of their rank.
+-- Starts from the exclusion list, which is a handful of rows.
+create function app_private.fantasy_hidden_ahead(
+  p_season_id uuid,
+  p_gameweek_id uuid,
+  p_league_id uuid,
+  p_rank bigint,
+  p_previous boolean default false
+)
+returns bigint
+language sql
+stable
+set search_path = ''
+as $$
+  select count(*)
+  from app_private.public_ranking_exclusions exclusion
+  join app.fantasy_teams team on team.user_id = exclusion.user_id
+  join app.fantasy_rankings ranking on ranking.fantasy_team_id = team.id
+  where ranking.fantasy_season_id = p_season_id
+    and ranking.gameweek_id is not distinct from p_gameweek_id
+    and ranking.league_id is not distinct from p_league_id
+    and (case when p_previous then ranking.previous_rank else ranking.rank end) < p_rank;
+$$;
+
+create function app_private.prediction_hidden_ahead(
+  p_season_id uuid,
+  p_round_id uuid,
+  p_rank integer
+)
+returns integer
+language sql
+stable
+set search_path = ''
+as $$
+  select count(*)::integer
+  from app_private.public_ranking_exclusions exclusion
+  join app.prediction_standings standing on standing.user_id = exclusion.user_id
+  where standing.rank is not null
+    and standing.rank < p_rank
+    and (
+      (p_round_id is not null and standing.round_id = p_round_id)
+      or (p_round_id is null and standing.season_id = p_season_id and standing.round_id is null)
+    );
+$$;
+
+revoke all on function
+  app_private.fantasy_hidden_ahead(uuid, uuid, uuid, bigint, boolean),
+  app_private.prediction_hidden_ahead(uuid, uuid, integer)
+from public, anon, authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
+-- Admin functions
+-- ---------------------------------------------------------------------------
+
+create function api.admin_list_public_ranking_exclusions()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  perform app_private.admin_assert_permission('rankings.manage', false);
+  return jsonb_build_object('items', coalesce((
+    select jsonb_agg(jsonb_build_object(
+        'userId', exclusion.user_id,
+        'username', profile.username,
+        'displayName', nullif(btrim(profile.display_name), ''),
+        'reason', exclusion.reason,
+        'hiddenAt', exclusion.created_at
+      ) order by exclusion.created_at desc, exclusion.user_id)
+    from app_private.public_ranking_exclusions exclusion
+    left join app.profiles profile on profile.id = exclusion.user_id
+  ), '[]'::jsonb));
+end;
+$$;
+
+-- Hide or show one account, named by user id or by exact username
+-- (case-insensitive). Exactly one of the two. Repeating the same request with
+-- the same idempotency key returns the first answer.
+create function api.admin_set_public_ranking_exclusion(
+  p_user_id uuid,
+  p_username text,
+  p_hidden boolean,
+  p_reason text,
+  p_idempotency_key uuid
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  actor uuid;
+  prior jsonb;
+  target uuid;
+  was_hidden boolean;
+  result jsonb;
+begin
+  actor := app_private.admin_assert_permission('rankings.manage', true);
+  if p_reason is null or p_reason <> btrim(p_reason) or char_length(p_reason) not between 8 and 500 then
+    raise exception using errcode = 'PT400', message = 'ranking_reason_invalid';
+  end if;
+  if p_hidden is null or p_idempotency_key is null or ((p_user_id is null) = (p_username is null)) then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+  if p_user_id is not null then
+    select profile.id into target from app.profiles profile where profile.id = p_user_id;
+  else
+    select profile.id into target from app.profiles profile
+    where profile.normalized_username = lower(btrim(p_username));
+  end if;
+  if target is null then
+    raise exception using errcode = 'PT404', message = 'ranking_account_not_found';
+  end if;
+
+  prior := app_private.admin_begin_idempotent_operation(
+    actor, 'rankings.set_exclusion', p_idempotency_key,
+    jsonb_build_object('userId', target, 'hidden', p_hidden, 'reason', p_reason)
+  );
+  if prior is not null then
+    return prior;
+  end if;
+
+  was_hidden := exists (
+    select 1 from app_private.public_ranking_exclusions exclusion where exclusion.user_id = target
+  );
+  if p_hidden then
+    insert into app_private.public_ranking_exclusions (user_id, reason, created_by_principal_id)
+    values (target, p_reason, actor)
+    on conflict (user_id) do update set
+      reason = excluded.reason, created_by_principal_id = excluded.created_by_principal_id;
+  else
+    delete from app_private.public_ranking_exclusions where user_id = target;
+  end if;
+
+  perform app_private.write_admin_audit(
+    actor, 'rankings.set_exclusion', 'rankings', target, p_reason, p_idempotency_key,
+    gen_random_uuid(), null,
+    jsonb_build_object('status', case when was_hidden then 'hidden' else 'shown' end),
+    jsonb_build_object('status', case when p_hidden then 'hidden' else 'shown' end)
+  );
+
+  result := jsonb_build_object('userId', target, 'hidden', p_hidden);
+  return app_private.admin_complete_idempotent_operation(
+    actor, 'rankings.set_exclusion', p_idempotency_key, result
+  );
+end;
+$$;
+
+revoke all on function
+  api.admin_list_public_ranking_exclusions(),
+  api.admin_set_public_ranking_exclusion(uuid, text, boolean, text, uuid)
+from public, anon, authenticated, service_role;
+
+grant execute on function
+  api.admin_list_public_ranking_exclusions(),
+  api.admin_set_public_ranking_exclusion(uuid, text, boolean, text, uuid)
+to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- Readers
+-- ---------------------------------------------------------------------------
+
+-- As in 20260926003100: the leader and the caller rank in public leagues skip hidden teams.
+create or replace function api.fantasy_leagues(
+  p_season_id uuid,
+  p_visibility text default null,
+  p_limit integer default 50
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path to ''
+as $function$
+declare
+  result jsonb;
+  v_visibility app.fantasy_league_visibility;
+begin
+  perform app_private.assert_mfa_step_up();
+  if p_limit not between 1 and 100 then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  -- Resolve the enum here, where `app` is in reach. An unknown value is a
+  -- client error, not a 500: report it the same way the limit check does,
+  -- rather than letting a raw cast failure surface as an invalid_text_-
+  -- representation from inside the function.
+  if p_visibility is not null then
+    begin
+      v_visibility := p_visibility::app.fantasy_league_visibility;
+    exception when invalid_text_representation then
+      raise exception using errcode = 'PT400', message = 'validation_failed';
+    end;
+  end if;
+
+  with visible as (
+    select league.id, league.name, league.visibility, league.member_count,
+      league.invite_code_hint, membership.role,
+      case when league.visibility = 'public' then
+        ranking.rank - app_private.fantasy_hidden_ahead(
+          ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.rank)
+      else ranking.rank end as rank,
+      case when league.visibility = 'public' then
+        ranking.previous_rank - app_private.fantasy_hidden_ahead(
+          ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.previous_rank, true)
+      else ranking.previous_rank end as previous_rank,
+      ranking.total_points,
+      leader.name as leader_name
+    from app.fantasy_leagues league
+    left join app.fantasy_league_memberships membership
+      on membership.league_id = league.id
+      and membership.user_id = (select auth.uid())
+      and membership.status = 'active'
+    left join app.fantasy_teams member_team on member_team.id = membership.fantasy_team_id
+    left join app.fantasy_rankings ranking
+      on ranking.league_id = league.id and ranking.fantasy_team_id = member_team.id
+      and ranking.gameweek_id is null
+    left join lateral (
+      select ranked_team.name
+      from app.fantasy_rankings leader_rank
+      join app.fantasy_teams ranked_team on ranked_team.id = leader_rank.fantasy_team_id
+      where leader_rank.league_id = league.id and leader_rank.gameweek_id is null
+        and not (league.visibility = 'public'
+          and exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = leader_rank.fantasy_team_id))
+      order by leader_rank.rank, leader_rank.fantasy_team_id limit 1
+    ) leader on true
+    where league.fantasy_season_id = p_season_id and league.active
+      and (v_visibility is null or league.visibility = v_visibility)
+      and (league.visibility = 'public' or membership.id is not null)
+    order by league.member_count desc, league.id
+    limit p_limit
+  )
+  select jsonb_build_object('items', coalesce(jsonb_agg(jsonb_build_object(
+    'id', id, 'name', name, 'visibility', visibility,
+    'memberCount', member_count, 'inviteCodeHint', invite_code_hint,
+    'role', role, 'rank', rank, 'previousRank', previous_rank,
+    'totalPoints', total_points, 'leaderName', leader_name
+  ) order by member_count desc, id), '[]'::jsonb)) into result from visible;
+
+  return result;
+end;
+$function$;
+
+-- As in 20260926003100: public league boards skip hidden teams and show gapless ranks.
+create or replace function api.fantasy_league_standings(
+  p_league_id uuid,
+  p_gameweek_id uuid default null,
+  p_after_rank bigint default null,
+  p_after_team_id uuid default null,
+  p_limit integer default 50
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare target app.fantasy_leagues%rowtype;
+declare items jsonb;
+declare caller uuid := (select auth.uid());
+begin
+  perform app_private.assert_mfa_step_up();
+  if p_limit not between 1 and 100 or ((p_after_rank is null) <> (p_after_team_id is null)) then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  select * into target
+  from app.fantasy_leagues
+  where id = p_league_id and active;
+
+  if not found then
+    raise exception using errcode = 'PT404', message = 'league_not_found';
+  end if;
+
+  if target.visibility = 'private' and not exists (
+    select 1
+    from app.fantasy_league_memberships membership
+    where membership.league_id = target.id
+      and membership.user_id = caller
+      and membership.status = 'active'
+  ) then
+    raise exception using errcode = 'PT403', message = 'league_access_denied';
+  end if;
+
+  if p_gameweek_id is null and p_after_rank is null then
+    with ranked_page as materialized (
+      select ranking.fantasy_team_id, ranking.rank, ranking.previous_rank,
+        ranking.total_points, ranking.gameweek_points, ranking.calculated_at,
+        case when target.visibility = 'public' then
+          ranking.rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.rank)
+        else ranking.rank end as shown_rank,
+        case when target.visibility = 'public' then
+          ranking.previous_rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.previous_rank, true)
+        else ranking.previous_rank end as shown_previous_rank
+      from app.fantasy_rankings ranking
+      where ranking.league_id = target.id
+        and ranking.gameweek_id is null
+        and not (target.visibility = 'public'
+          and exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = ranking.fantasy_team_id))
+      order by ranking.rank, ranking.fantasy_team_id
+      limit p_limit
+    )
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'teamId', ranked_page.fantasy_team_id, 'teamName', team.name,
+      'managerName', case
+        when caller is null then team.name
+        else coalesce(nullif(btrim(profile.display_name), ''), team.name)
+      end,
+      'rank', ranked_page.shown_rank, 'previousRank', ranked_page.shown_previous_rank,
+      'totalPoints', ranked_page.total_points,
+      'gameweekPoints', ranked_page.gameweek_points,
+      'calculatedAt', ranked_page.calculated_at
+    ) order by ranked_page.rank, ranked_page.fantasy_team_id), '[]'::jsonb)
+    into items
+    from ranked_page
+    join app.fantasy_teams team on team.id = ranked_page.fantasy_team_id
+    left join app.profiles profile
+      on profile.id = team.user_id and profile.deleted_at is null;
+  elsif p_gameweek_id is null then
+    with ranked_page as materialized (
+      select ranking.fantasy_team_id, ranking.rank, ranking.previous_rank,
+        ranking.total_points, ranking.gameweek_points, ranking.calculated_at,
+        case when target.visibility = 'public' then
+          ranking.rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.rank)
+        else ranking.rank end as shown_rank,
+        case when target.visibility = 'public' then
+          ranking.previous_rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.previous_rank, true)
+        else ranking.previous_rank end as shown_previous_rank
+      from app.fantasy_rankings ranking
+      where ranking.league_id = target.id
+        and ranking.gameweek_id is null
+        and (ranking.rank, ranking.fantasy_team_id) > (p_after_rank, p_after_team_id)
+        and not (target.visibility = 'public'
+          and exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = ranking.fantasy_team_id))
+      order by ranking.rank, ranking.fantasy_team_id
+      limit p_limit
+    )
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'teamId', ranked_page.fantasy_team_id, 'teamName', team.name,
+      'managerName', case
+        when caller is null then team.name
+        else coalesce(nullif(btrim(profile.display_name), ''), team.name)
+      end,
+      'rank', ranked_page.shown_rank, 'previousRank', ranked_page.shown_previous_rank,
+      'totalPoints', ranked_page.total_points,
+      'gameweekPoints', ranked_page.gameweek_points,
+      'calculatedAt', ranked_page.calculated_at
+    ) order by ranked_page.rank, ranked_page.fantasy_team_id), '[]'::jsonb)
+    into items
+    from ranked_page
+    join app.fantasy_teams team on team.id = ranked_page.fantasy_team_id
+    left join app.profiles profile
+      on profile.id = team.user_id and profile.deleted_at is null;
+  elsif p_after_rank is null then
+    with ranked_page as materialized (
+      select ranking.fantasy_team_id, ranking.rank, ranking.previous_rank,
+        ranking.total_points, ranking.gameweek_points, ranking.calculated_at,
+        case when target.visibility = 'public' then
+          ranking.rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.rank)
+        else ranking.rank end as shown_rank,
+        case when target.visibility = 'public' then
+          ranking.previous_rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.previous_rank, true)
+        else ranking.previous_rank end as shown_previous_rank
+      from app.fantasy_rankings ranking
+      where ranking.league_id = target.id
+        and ranking.gameweek_id = p_gameweek_id
+        and not (target.visibility = 'public'
+          and exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = ranking.fantasy_team_id))
+      order by ranking.rank, ranking.fantasy_team_id
+      limit p_limit
+    )
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'teamId', ranked_page.fantasy_team_id, 'teamName', team.name,
+      'managerName', case
+        when caller is null then team.name
+        else coalesce(nullif(btrim(profile.display_name), ''), team.name)
+      end,
+      'rank', ranked_page.shown_rank, 'previousRank', ranked_page.shown_previous_rank,
+      'totalPoints', ranked_page.total_points,
+      'gameweekPoints', ranked_page.gameweek_points,
+      'calculatedAt', ranked_page.calculated_at
+    ) order by ranked_page.rank, ranked_page.fantasy_team_id), '[]'::jsonb)
+    into items
+    from ranked_page
+    join app.fantasy_teams team on team.id = ranked_page.fantasy_team_id
+    left join app.profiles profile
+      on profile.id = team.user_id and profile.deleted_at is null;
+  else
+    with ranked_page as materialized (
+      select ranking.fantasy_team_id, ranking.rank, ranking.previous_rank,
+        ranking.total_points, ranking.gameweek_points, ranking.calculated_at,
+        case when target.visibility = 'public' then
+          ranking.rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.rank)
+        else ranking.rank end as shown_rank,
+        case when target.visibility = 'public' then
+          ranking.previous_rank - app_private.fantasy_hidden_ahead(
+            ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.previous_rank, true)
+        else ranking.previous_rank end as shown_previous_rank
+      from app.fantasy_rankings ranking
+      where ranking.league_id = target.id
+        and ranking.gameweek_id = p_gameweek_id
+        and (ranking.rank, ranking.fantasy_team_id) > (p_after_rank, p_after_team_id)
+        and not (target.visibility = 'public'
+          and exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = ranking.fantasy_team_id))
+      order by ranking.rank, ranking.fantasy_team_id
+      limit p_limit
+    )
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'teamId', ranked_page.fantasy_team_id, 'teamName', team.name,
+      'managerName', case
+        when caller is null then team.name
+        else coalesce(nullif(btrim(profile.display_name), ''), team.name)
+      end,
+      'rank', ranked_page.shown_rank, 'previousRank', ranked_page.shown_previous_rank,
+      'totalPoints', ranked_page.total_points,
+      'gameweekPoints', ranked_page.gameweek_points,
+      'calculatedAt', ranked_page.calculated_at
+    ) order by ranked_page.rank, ranked_page.fantasy_team_id), '[]'::jsonb)
+    into items
+    from ranked_page
+    join app.fantasy_teams team on team.id = ranked_page.fantasy_team_id
+    left join app.profiles profile
+      on profile.id = team.user_id and profile.deleted_at is null;
+  end if;
+
+  return jsonb_build_object(
+    'league', jsonb_build_object(
+      'id', target.id,
+      'name', target.name,
+      'visibility', target.visibility,
+      'memberCount', target.member_count
+    ),
+    'items', items
+  );
+end;
+$$;
+
+-- As in 20260926003100: the season board skips hidden teams and shows gapless ranks.
+create or replace function api.fantasy_overall_standings(
+  p_season_id uuid,
+  p_gameweek_id uuid default null,
+  p_after_rank bigint default null,
+  p_after_team_id uuid default null,
+  p_limit integer default 50
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare caller uuid := (select auth.uid());
+declare target_gameweek uuid;
+declare items jsonb;
+declare total bigint;
+declare next_cursor jsonb;
+declare my_rank jsonb;
+declare last_rank bigint;
+declare last_team uuid;
+begin
+  perform app_private.assert_mfa_step_up();
+  -- Same validation contract as api.fantasy_league_standings: a page size
+  -- outside 1..100, or half a cursor, is a client bug and not a 500.
+  if p_season_id is null
+    or p_limit is null
+    or p_limit not between 1 and 100
+    or ((p_after_rank is null) <> (p_after_team_id is null)) then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  if not exists (select 1 from app.fantasy_seasons season where season.id = p_season_id) then
+    raise exception using errcode = 'PT404', message = 'fantasy_season_not_found';
+  end if;
+
+  if p_gameweek_id is not null then
+    -- A gameweek from another season is a foreign id, not an empty page.
+    if not exists (
+      select 1 from app.fantasy_gameweeks gameweek
+      where gameweek.id = p_gameweek_id and gameweek.fantasy_season_id = p_season_id
+    ) then
+      raise exception using errcode = 'PT404', message = 'fantasy_gameweek_not_found';
+    end if;
+    target_gameweek := p_gameweek_id;
+  else
+    -- Default scope resolution. The season cumulative board (gameweek_id is
+    -- null) is preferred: it is what "overall standings" means, it carries both
+    -- total_points and the latest gameweek_points, and it is exactly what
+    -- api.fantasy_league_standings returns for a null p_gameweek_id, so the two
+    -- readers speak one dialect. If the lifecycle runner has written the
+    -- per-gameweek overall rows but not yet the cumulative ones, fall back to
+    -- the latest gameweek that actually has overall rows. If neither exists --
+    -- which is production today -- target_gameweek stays null and the scope
+    -- predicate below matches nothing, yielding an empty page, not an error.
+    if exists (
+      select 1 from app.fantasy_rankings ranking
+      where ranking.fantasy_season_id = p_season_id
+        and ranking.league_id is null
+        and ranking.gameweek_id is null
+    ) then
+      target_gameweek := null;
+    else
+      select ranking.gameweek_id into target_gameweek
+      from app.fantasy_rankings ranking
+      join app.fantasy_gameweeks gameweek on gameweek.id = ranking.gameweek_id
+      where ranking.fantasy_season_id = p_season_id
+        and ranking.league_id is null
+        and ranking.gameweek_id is not null
+      order by gameweek.sequence_number desc, gameweek.id desc
+      limit 1;
+    end if;
+  end if;
+
+  select count(*) into total
+  from app.fantasy_rankings ranking
+  where ranking.fantasy_season_id = p_season_id
+    and ranking.league_id is null
+    and (case
+      when target_gameweek is null then ranking.gameweek_id is null
+      else ranking.gameweek_id = target_gameweek
+    end)
+    and not exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = ranking.fantasy_team_id);
+
+  -- Bound the ranking rows on the covering keyset index before joining team
+  -- and profile data, so a 50k-team board never sorts the whole season.
+  with ranked_page as materialized (
+    select ranking.fantasy_team_id, ranking.rank, ranking.previous_rank,
+      ranking.total_points, ranking.gameweek_points, ranking.calculated_at,
+      -- The rank the public sees: the stored rank minus the hidden accounts
+      -- that sit above it, so the board has no gaps. The cursor and the sort
+      -- stay on the stored rank (same order, same keyset index).
+      ranking.rank - app_private.fantasy_hidden_ahead(
+        ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.rank
+      ) as shown_rank,
+      ranking.previous_rank - app_private.fantasy_hidden_ahead(
+        ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.previous_rank, true
+      ) as shown_previous_rank
+    from app.fantasy_rankings ranking
+    where ranking.fantasy_season_id = p_season_id
+      and ranking.league_id is null
+      and (case
+        when target_gameweek is null then ranking.gameweek_id is null
+        else ranking.gameweek_id = target_gameweek
+      end)
+      and (
+        p_after_rank is null
+        or (ranking.rank, ranking.fantasy_team_id) > (p_after_rank, p_after_team_id)
+      )
+      and not exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = ranking.fantasy_team_id)
+    order by ranking.rank, ranking.fantasy_team_id
+    limit p_limit
+  )
+  select coalesce(jsonb_agg(jsonb_build_object(
+      'teamId', ranked_page.fantasy_team_id,
+      'teamName', team.name,
+      'managerName', case
+        when caller is null then team.name
+        else coalesce(nullif(btrim(profile.display_name), ''), team.name)
+      end,
+      'rank', ranked_page.shown_rank,
+      'previousRank', ranked_page.shown_previous_rank,
+      'totalPoints', ranked_page.total_points,
+      'gameweekPoints', ranked_page.gameweek_points,
+      'calculatedAt', ranked_page.calculated_at
+    ) order by ranked_page.rank, ranked_page.fantasy_team_id), '[]'::jsonb),
+    max(ranked_page.rank),
+    (array_agg(ranked_page.fantasy_team_id
+      order by ranked_page.rank desc, ranked_page.fantasy_team_id desc))[1]
+  into items, last_rank, last_team
+  from ranked_page
+  join app.fantasy_teams team on team.id = ranked_page.fantasy_team_id
+  left join app.profiles profile
+    on profile.id = team.user_id and profile.deleted_at is null;
+
+  -- Only advertise a cursor when a row genuinely follows this page, so a client
+  -- that follows nextCursor never burns a round trip on an empty tail.
+  if last_team is not null and exists (
+    select 1
+    from app.fantasy_rankings ranking
+    where ranking.fantasy_season_id = p_season_id
+      and ranking.league_id is null
+      and (case
+        when target_gameweek is null then ranking.gameweek_id is null
+        else ranking.gameweek_id = target_gameweek
+      end)
+      and (ranking.rank, ranking.fantasy_team_id) > (last_rank, last_team)
+      and not exists (select 1 from app.fantasy_teams hidden_team join app_private.public_ranking_exclusions hidden_exclusion on hidden_exclusion.user_id = hidden_team.user_id where hidden_team.id = ranking.fantasy_team_id)
+  ) then
+    next_cursor := jsonb_build_object('rank', last_rank, 'teamId', last_team);
+  end if;
+
+  -- myRank is page-independent: the signed-in manager's own standing, whether
+  -- or not it falls on the page being read. auth.uid() is null for anonymous
+  -- callers, so no row matches and myRank is JSON null -- never an error.
+  select jsonb_build_object(
+    'teamId', ranking.fantasy_team_id,
+    'teamName', team.name,
+    'managerName', coalesce(nullif(btrim(profile.display_name), ''), team.name),
+    -- The caller's own row is never hidden from the caller; it carries the
+    -- rank the account would hold on the public board.
+    'rank', ranking.rank - app_private.fantasy_hidden_ahead(
+      ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.rank),
+    'previousRank', ranking.previous_rank - app_private.fantasy_hidden_ahead(
+      ranking.fantasy_season_id, ranking.gameweek_id, ranking.league_id, ranking.previous_rank, true),
+    'totalPoints', ranking.total_points,
+    'gameweekPoints', ranking.gameweek_points,
+    'calculatedAt', ranking.calculated_at
+  ) into my_rank
+  from app.fantasy_rankings ranking
+  join app.fantasy_teams team on team.id = ranking.fantasy_team_id
+  left join app.profiles profile
+    on profile.id = team.user_id and profile.deleted_at is null
+  where ranking.fantasy_season_id = p_season_id
+    and ranking.league_id is null
+    and (case
+      when target_gameweek is null then ranking.gameweek_id is null
+      else ranking.gameweek_id = target_gameweek
+    end)
+    and team.user_id = caller
+    and team.status = 'active'
+  order by ranking.rank, ranking.fantasy_team_id
+  limit 1;
+
+  return jsonb_build_object(
+    'seasonId', p_season_id,
+    'gameweekId', target_gameweek,
+    'items', items,
+    'nextCursor', next_cursor,
+    'total', total,
+    'myRank', my_rank
+  );
+end;
+$$;
+
+-- As in 20260926003100: the Pronostics board skips hidden accounts and shows gapless ranks.
+create or replace function api.predictions_leaderboard(
+  p_scope text default 'round',
+  p_round_number integer default null,
+  p_after_rank integer default null,
+  p_after_id uuid default null,
+  p_limit integer default 50
+)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  caller uuid := (select auth.uid());
+  now_ts timestamptz := statement_timestamp();
+  settings app_private.prediction_settings%rowtype;
+  v_season_id uuid;
+  v_round_id uuid;
+  v_round_number integer;
+  page_ids uuid[];
+  items jsonb := '[]'::jsonb;
+  total integer;
+  me jsonb;
+  last_rank integer;
+  last_id uuid;
+  round_state text;
+  matches_left integer;
+  has_more boolean;
+begin
+  perform app_private.assert_mfa_step_up();
+  if p_scope is null or p_scope not in ('round', 'season')
+    or p_limit is null or p_limit not between 1 and 100
+    or ((p_after_rank is null) <> (p_after_id is null))
+  then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+  select * into settings from app_private.prediction_settings where id;
+  if not app_private.predictions_access_allowed(caller) then
+    return jsonb_build_object('allowed', false, 'mode', settings.mode);
+  end if;
+  v_season_id := app_private.predictions_current_season();
+  if p_scope = 'round' then
+    v_round_id := app_private.predictions_resolve_round(v_season_id, p_round_number, now_ts);
+  end if;
+  if v_season_id is null or (p_scope = 'round' and v_round_id is null) then
+    return jsonb_build_object('allowed', true, 'scope', p_scope, 'items', '[]'::jsonb,
+      'total', 0, 'nextCursor', null, 'me', null);
+  end if;
+
+  -- The page: one index range per scope (journée rows, or season rows).
+  if p_scope = 'round' then
+    select round_number into v_round_number from app.rounds where id = v_round_id;
+    round_state := app_private.prediction_round_state(v_round_id, now_ts);
+    select count(*) into matches_left
+    from app.fixtures fixture
+    left join app_private.prediction_fixture_scoring scoring on scoring.fixture_id = fixture.id
+    where fixture.round_id = v_round_id
+      and not (fixture.status = 'finished' and fixture.finalized_at is not null)
+      and fixture.status not in ('cancelled', 'abandoned')
+      and scoring.override is distinct from 'void';
+
+    select array_agg(page.id order by page.rank, page.id) into page_ids
+    from (
+      select standing.id, standing.rank
+      from app.prediction_standings standing
+      join app.profiles profile on profile.id = standing.user_id and profile.deleted_at is null
+      where standing.round_id = v_round_id and standing.rank is not null
+        and (p_after_rank is null or (standing.rank, standing.id) > (p_after_rank, p_after_id))
+        and not exists (
+          select 1 from app_private.user_bans ban
+          where ban.user_id = standing.user_id and ban.lifted_at is null
+            and ban.starts_at <= now_ts and (ban.ends_at is null or ban.ends_at > now_ts)
+        )
+        and not exists (select 1 from app_private.public_ranking_exclusions hidden_exclusion where hidden_exclusion.user_id = standing.user_id)
+      order by standing.rank, standing.id
+      limit p_limit + 1
+    ) page;
+    if p_after_rank is null then
+      select count(*) into total
+      from app.prediction_standings standing
+      join app.profiles profile on profile.id = standing.user_id and profile.deleted_at is null
+      where standing.round_id = v_round_id and standing.rank is not null
+        and not exists (
+          select 1 from app_private.user_bans ban
+          where ban.user_id = standing.user_id and ban.lifted_at is null
+            and ban.starts_at <= now_ts and (ban.ends_at is null or ban.ends_at > now_ts)
+        )
+        and not exists (select 1 from app_private.public_ranking_exclusions hidden_exclusion where hidden_exclusion.user_id = standing.user_id);
+    end if;
+    if caller is not null then
+      select jsonb_build_object('rank', standing.rank - app_private.prediction_hidden_ahead(
+          null, standing.round_id, standing.rank), 'points', standing.points,
+        'exact', standing.exact_count)
+      into me from app.prediction_standings standing
+      where standing.round_id = v_round_id and standing.user_id = caller;
+    end if;
+  else
+    select array_agg(page.id order by page.rank, page.id) into page_ids
+    from (
+      select standing.id, standing.rank
+      from app.prediction_standings standing
+      join app.profiles profile on profile.id = standing.user_id and profile.deleted_at is null
+      where standing.season_id = v_season_id and standing.round_id is null
+        and standing.rank is not null
+        and (p_after_rank is null or (standing.rank, standing.id) > (p_after_rank, p_after_id))
+        and not exists (
+          select 1 from app_private.user_bans ban
+          where ban.user_id = standing.user_id and ban.lifted_at is null
+            and ban.starts_at <= now_ts and (ban.ends_at is null or ban.ends_at > now_ts)
+        )
+        and not exists (select 1 from app_private.public_ranking_exclusions hidden_exclusion where hidden_exclusion.user_id = standing.user_id)
+      order by standing.rank, standing.id
+      limit p_limit + 1
+    ) page;
+    if p_after_rank is null then
+      select count(*) into total
+      from app.prediction_standings standing
+      join app.profiles profile on profile.id = standing.user_id and profile.deleted_at is null
+      where standing.season_id = v_season_id and standing.round_id is null
+        and standing.rank is not null
+        and not exists (
+          select 1 from app_private.user_bans ban
+          where ban.user_id = standing.user_id and ban.lifted_at is null
+            and ban.starts_at <= now_ts and (ban.ends_at is null or ban.ends_at > now_ts)
+        )
+        and not exists (select 1 from app_private.public_ranking_exclusions hidden_exclusion where hidden_exclusion.user_id = standing.user_id);
+    end if;
+    if caller is not null then
+      select jsonb_build_object('rank', standing.rank - app_private.prediction_hidden_ahead(
+          standing.season_id, null, standing.rank), 'points', standing.points,
+        'exact', standing.exact_count, 'roundsPlayed', standing.rounds_played)
+      into me from app.prediction_standings standing
+      where standing.season_id = v_season_id and standing.round_id is null
+        and standing.user_id = caller;
+    end if;
+  end if;
+
+  -- One row more than asked says whether another page follows.
+  has_more := coalesce(cardinality(page_ids), 0) > p_limit;
+  if has_more then
+    page_ids := page_ids[1:p_limit];
+  end if;
+
+  -- The rows of the page (at most p_limit), with names and ties.
+  select
+    coalesce(jsonb_agg(jsonb_build_object(
+      'id', standing.id,
+      'rank', standing.rank - case
+        when standing.round_id is null then app_private.prediction_hidden_ahead(
+          standing.season_id, null, standing.rank)
+        else app_private.prediction_hidden_ahead(null, standing.round_id, standing.rank)
+      end,
+      -- Two probes so each one stays on its own partial rank index.
+      'tied', case
+        when standing.round_id is null then exists (
+          select 1 from app.prediction_standings other
+          where other.season_id = standing.season_id and other.round_id is null
+            and other.rank = standing.rank and other.id <> standing.id
+            and not exists (select 1 from app_private.public_ranking_exclusions hidden_exclusion where hidden_exclusion.user_id = other.user_id))
+        else exists (
+          select 1 from app.prediction_standings other
+          where other.round_id = standing.round_id
+            and other.rank = standing.rank and other.id <> standing.id
+            and not exists (select 1 from app_private.public_ranking_exclusions hidden_exclusion where hidden_exclusion.user_id = other.user_id))
+      end,
+      'name', case
+        when caller is null then app_private.fantasy_mask_username(profile.username)
+        else coalesce(nullif(btrim(profile.display_name), ''),
+          app_private.fantasy_mask_username(profile.username))
+      end,
+      'points', standing.points,
+      'exact', standing.exact_count,
+      'roundsPlayed', standing.rounds_played,
+      'isMe', coalesce(standing.user_id = caller, false)
+    ) order by standing.rank, standing.id), '[]'::jsonb),
+    (array_agg(standing.rank order by standing.rank desc, standing.id desc))[1],
+    (array_agg(standing.id order by standing.rank desc, standing.id desc))[1]
+  into items, last_rank, last_id
+  from app.prediction_standings standing
+  left join app.profiles profile on profile.id = standing.user_id and profile.deleted_at is null
+  where standing.id = any(coalesce(page_ids, '{}'::uuid[]));
+
+  return jsonb_build_object(
+    'allowed', true,
+    'scope', p_scope,
+    'round', v_round_number,
+    'provisional', case when p_scope = 'round' then round_state <> 'completed' end,
+    'matchesLeft', matches_left,
+    'total', total,
+    'items', items,
+    'nextCursor', case when has_more
+      then jsonb_build_object('rank', last_rank, 'id', last_id) end,
+    'me', me
+  );
+end;
+$$;
+$bg_20261011160000_file$]
+where exists (select 1 from pg_temp.sofascore_plan where version = '20261011160000' and not was_recorded);
+
+do $apply_20261011160000$
+declare
+  part_20261011160000 text;
+begin
+  if not exists (select 1 from pg_temp.sofascore_plan where version = '20261011160000' and not was_recorded) then
+    return;
+  end if;
+  part_20261011160000 := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261011160000'
+  );
+  if encode(sha256(convert_to(part_20261011160000, 'UTF8')), 'hex')
+    is distinct from 'd78ec0e022016b058baadf84f10f48c4ac84fcc7e2e3ca05d352087ea78722c4' then
+    raise exception 'stop: 20261011160000 is not the repository file byte for byte -- was this script cut short or changed?';
+  end if;
+
+  execute part_20261011160000;
+end
+$apply_20261011160000$;
+
 -- 20261011170000_news_article_detail_other_language_id: recorded and run only if it was not recorded at the start.
 insert into supabase_migrations.schema_migrations (version, name, statements)
 select
@@ -3739,6 +4782,209 @@ begin
       end if;
     end;
 
+  -- 20261011160000_public_ranking_exclusions
+    declare
+      t text;
+    begin
+      foreach t in array array['app_private.public_ranking_exclusions'] loop
+        if to_regclass(t) is null then
+          problems := problems || ('20261011160000: table is missing: ' || t);
+        elsif not (select relrowsecurity and relforcerowsecurity from pg_class where oid = t::regclass)
+          or has_table_privilege('anon', t, 'select, insert, update, delete')
+          or has_table_privilege('authenticated', t, 'select, insert, update, delete')
+          or has_table_privilege('service_role', t, 'select, insert, update, delete') then
+          problems := problems || ('20261011160000: table is readable by an API role or lacks forced RLS: ' || t);
+        end if;
+      end loop;
+    end;
+
+    declare
+      fn regprocedure;
+    begin
+      fn := to_regprocedure('app_private.fantasy_hidden_ahead(uuid,uuid,uuid,bigint,boolean)');
+      if fn is null then
+        problems := problems || '20261011160000: app_private.fantasy_hidden_ahead(uuid,uuid,uuid,bigint,boolean) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and not p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security invoker with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or has_function_privilege('service_role', fn, 'execute') then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'dfb123e012a6cfd7992b9369b1e64818' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('app_private.prediction_hidden_ahead(uuid,uuid,integer)');
+      if fn is null then
+        problems := problems || '20261011160000: app_private.prediction_hidden_ahead(uuid,uuid,integer) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and not p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security invoker with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or has_function_privilege('service_role', fn, 'execute') then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> '2e1668c23137d265644cc53b4d322711' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('api.admin_list_public_ranking_exclusions()');
+      if fn is null then
+        problems := problems || '20261011160000: api.admin_list_public_ranking_exclusions() is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('service_role', fn, 'execute')
+          or not has_function_privilege('authenticated', fn, 'execute') then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> '10dec8bc0c3b8f66a2204f395c95560a' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('api.admin_set_public_ranking_exclusion(uuid,text,boolean,text,uuid)');
+      if fn is null then
+        problems := problems || '20261011160000: api.admin_set_public_ranking_exclusion(uuid,text,boolean,text,uuid) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('service_role', fn, 'execute')
+          or not has_function_privilege('authenticated', fn, 'execute') then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'fd4afe83796dd805f117d1451e14135a' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('api.fantasy_leagues(uuid,text,integer)');
+      if fn is null then
+        problems := problems || '20261011160000: api.fantasy_leagues(uuid,text,integer) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if false then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'b3f3521f5809ef5497b092f832b21e1d' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)');
+      if fn is null then
+        problems := problems || '20261011160000: api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if false then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> '8860dae4f36f67246657544460a6633b' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)');
+      if fn is null then
+        problems := problems || '20261011160000: api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if false then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> '5fc2633944b91c2f5805a0787562e0fb' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('api.predictions_leaderboard(text,integer,integer,uuid,integer)');
+      if fn is null then
+        problems := problems || '20261011160000: api.predictions_leaderboard(text,integer,integer,uuid,integer) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011160000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if false then
+          problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> '9a3cd3da88070c06da1856070e0f745b' then
+          problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+      end if;
+    end;
+    declare
+      reader_sig text;
+    begin
+      -- The remembered grants exist only when this run applied the migration.
+      if to_regclass('pg_temp.sofascore_ranking_reader_grants') is not null then
+        foreach reader_sig in array array['api.fantasy_leagues(uuid,text,integer)', 'api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)', 'api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)', 'api.predictions_leaderboard(text,integer,integer,uuid,integer)'] loop
+          if to_regprocedure(reader_sig) is not null and exists (select 1 from pg_temp.sofascore_ranking_reader_grants g
+            where g.sig = reader_sig
+              and (g.public_can is distinct from has_function_privilege('public', to_regprocedure(reader_sig), 'execute')
+                or g.anon_can is distinct from has_function_privilege('anon', to_regprocedure(reader_sig), 'execute')
+                or g.authenticated_can is distinct from has_function_privilege('authenticated', to_regprocedure(reader_sig), 'execute')
+                or g.service_can is distinct from has_function_privilege('service_role', to_regprocedure(reader_sig), 'execute'))) then
+            problems := problems || ('20261011160000: the grants of a ranking reader changed: ' || reader_sig);
+          end if;
+        end loop;
+      end if;
+    end;
+    declare
+      ranking_permission uuid;
+    begin
+      -- The permission row and its grant to platform_admin (the only data this migration writes).
+      select p.id into ranking_permission from app_private.admin_permissions p
+       where p.name = 'rankings.manage' and p.domain = 'rankings' and p.active and p.requires_mfa and p.requires_recent_auth;
+      if ranking_permission is null then
+        problems := problems || '20261011160000: the permission rankings.manage is missing or not active, with a second factor and a recent sign-in required'::text;
+      elsif not exists (select 1 from app_private.admin_role_permissions rp
+          join app_private.admin_roles r on r.id = rp.role_id
+         where rp.permission_id = ranking_permission and r.name = 'platform_admin') then
+        problems := problems || '20261011160000: the permission rankings.manage is not granted to platform_admin'::text;
+      end if;
+      -- The list: its reason check and its two links (account, staff principal).
+      if to_regclass('app_private.public_ranking_exclusions') is not null then
+        if not exists (select 1 from pg_constraint
+            where conrelid = 'app_private.public_ranking_exclusions'::regclass
+              and conname = 'public_ranking_exclusions_reason_check') then
+          problems := problems || '20261011160000: the exclusion list lacks its reason check'::text;
+        end if;
+        if (select count(*) from pg_constraint
+             where conrelid = 'app_private.public_ranking_exclusions'::regclass and contype = 'f') <> 2 then
+          problems := problems || '20261011160000: the exclusion list does not have its two foreign keys (profile, staff principal)'::text;
+        end if;
+      end if;
+    end;
+
   -- 20261011170000_news_article_detail_other_language_id
     declare
       fn regprocedure;
@@ -3912,12 +5158,12 @@ $postflight$;
 rollback;
 
 select case
-  when (select count(*) from supabase_migrations.schema_migrations where version in ('20260925090500', '20261001170000', '20261003180000', '20261010140000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011170000', '20261011180000', '20260919130000', '20260919150000', '20260919160000', '20260921120000', '20260921140000', '20260921160000', '20260921170000', '20260921180000', '20260921190000', '20260921200000', '20260921220000', '20260922180000', '20260922180100', '20260922180200', '20260922200000', '20260922200100', '20260924100000', '20260924120000', '20260924140000', '20260924140100', '20260924163000', '20260924170000', '20260924173000', '20260927153000')) = 35
+  when (select count(*) from supabase_migrations.schema_migrations where version in ('20260925090500', '20261001170000', '20261003180000', '20261010140000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011160000', '20261011170000', '20261011180000', '20260919130000', '20260919150000', '20260919160000', '20260921120000', '20260921140000', '20260921160000', '20260921170000', '20260921180000', '20260921190000', '20260921200000', '20260921220000', '20260922180000', '20260922180100', '20260922180200', '20260922200000', '20260922200100', '20260924100000', '20260924120000', '20260924140000', '20260924140100', '20260924163000', '20260924170000', '20260924173000', '20260927153000')) = 36
     then 'Installed and verified. Deploy the Edge Function next (runbook, step 3).'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result,
 (select coalesce(string_agg(version, ', ' order by version), 'none')
    from supabase_migrations.schema_migrations
-  where version in ('20260925090500', '20261001170000', '20261003180000', '20261010140000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011170000', '20261011180000')) as recorded_now,
+  where version in ('20260925090500', '20261001170000', '20261003180000', '20261010140000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011160000', '20261011170000', '20261011180000')) as recorded_now,
 (select count(*) from supabase_migrations.schema_migrations
   where version in ('20260919130000', '20260919150000', '20260919160000', '20260921120000', '20260921140000', '20260921160000', '20260921170000', '20260921180000', '20260921190000', '20260921200000', '20260921220000', '20260922180000', '20260922180100', '20260922180200', '20260922200000', '20260922200100', '20260924100000', '20260924120000', '20260924140000', '20260924140100', '20260924163000', '20260924170000', '20260924173000', '20260927153000')) as history_rows_recorded_now;

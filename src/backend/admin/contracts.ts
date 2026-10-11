@@ -50,6 +50,7 @@ export const adminPermissionSchema = z.enum([
   "releases.read",
   "releases.promote",
   "prizes.manage",
+  "rankings.manage",
   "analytics.read",
   "pepites.edit",
   "pepites.publish",
