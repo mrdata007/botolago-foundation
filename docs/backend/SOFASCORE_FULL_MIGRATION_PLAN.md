@@ -283,3 +283,29 @@ listing shows), `matches/detail` for a finished and an upcoming match, `matches/
 (17132481) and a limited (16958239) match, `matches/get-incidents` and `matches/get-statistics` (17132481),
 `teams/get-squad`, `teams/get-next-matches` (fallback), and one `matches/detail` during a live match if one is on.
 Trimmed files only; raw payloads never enter the repository.
+
+### Production release of the automatic path, 2026-10-11 (owner-run)
+
+PRs #426 (automatic Fantasy, player matching, match details, orchestrator
+without SportsMonks, Pépites from SofaScore, single install), #427 (match
+write-ups, Arabic article link), #428 (hide test accounts), #429 (page speed)
+merged; main `638a97863c0e88d1957be7238f6f851734a95cb0`. Before the install the
+owner ran read-only checks: 27 repo versions were missing from
+`schema_migrations`; 22 matched the repo exactly (history only), two had
+nothing to compare, `fantasy_player_season_stats` matched with comments
+stripped, `fantasy_gameweek_summary` differed (replaced by the reviewed
+version), and 20260925090500, 20261001170000 and 20261010140000 were not
+applied. The single script (`scripts/backend/apply-sofascore-automatic.sql`)
+applied or verified all of it. Owner steps: Fantasy tick paused; rehearsal
+passed; commit run "Installed and verified"; `football-live-refresh` deployed
+(run 38152607562, version 20); Manager Card compute paused; adaptive policy
+activated from gameweek 3 (season 5ada3e98…, `{"enabled":true,"fromGameweek":3}`);
+backfill request 1696 HTTP 200, `due` 0; Edge secrets
+`SOFASCORE_FANTASY_CATCHUP_HOURS=168`, `SOFASCORE_FANTASY_CATCHUP_PER_TICK=4`;
+Fantasy tick and Manager Card compute back on; GitHub variable
+`FANTASY_AUTOMATION_ENABLED=true`.
+
+Open: UTS Rabat 0-0 RSB Berkane (event 17256977) held — two appearing SofaScore
+players (Saad Kouk #40, Souleymane Sy #37) have no app player at all
+(`no_candidate`). Fix in progress on `claude/sofascore-unknown-players`. The
+other seven round-3 matches are caught up by the ticks.
