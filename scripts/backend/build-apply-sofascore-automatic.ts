@@ -116,12 +116,12 @@ export const PINS = {
   // place (pre-state step: before; post-state step: after) and the two it
   // CREATES (post-state step only). FILL THESE from the green database-quality
   // run: the CI steps "SofaScore automatic pre-state md5" and "post-state md5".
-  scoringDocumentBaseBefore: "FILL_FROM_CI_SCORING_DOCUMENT_BASE_BEFORE_MD5",
-  scoringDocumentBaseAfter: "FILL_FROM_CI_SCORING_DOCUMENT_BASE_AFTER_MD5",
-  legacyFixtureCheckBefore: "FILL_FROM_CI_LEGACY_FIXTURE_CHECK_BEFORE_MD5",
-  legacyFixtureCheckAfter: "FILL_FROM_CI_LEGACY_FIXTURE_CHECK_AFTER_MD5",
-  performancesSync: "FILL_FROM_CI_PERFORMANCES_SYNC_MD5",
-  performancesSyncFixture: "FILL_FROM_CI_PERFORMANCES_SYNC_FIXTURE_MD5",
+  scoringDocumentBaseBefore: "8c701cdf882a2076a0eacbefce9b29f7",
+  scoringDocumentBaseAfter: "aa25ecdb2ff9f8b1ec814558a19059ee",
+  legacyFixtureCheckBefore: "fdb4c8acc52127ffaa4c77dc71828b02",
+  legacyFixtureCheckAfter: "587ac0304fed1a557104faedbe634b2f",
+  performancesSync: "901f058115adab2e5927f292b3ba1a38",
+  performancesSyncFixture: "62892213172afd4630280f04775fcec1",
 
   // Catch-up migrations (never applied in production: the owner's read-only
   // checks of 2026-10-11). Two kinds of pin below:
@@ -138,22 +138,22 @@ export const PINS = {
   leaguePageBeforeProsrc: "dba725a5659bb5ba9338a00071752b8b",
   leaguePageBeforeDefinition: "021d0a3422cf68d4c213b028974888d2",
   leaguePageAfterProsrc: "86ab0440c3d9d5bea18c438c273e55c6",
-  leaguePageAfter: "FILL_FROM_CI_LEAGUE_PAGE_AFTER_MD5",
+  leaguePageAfter: "7f79f52c973b0cf888ee8c6c2b927573",
   // 20261001170000: api.attach_football_team_crest (replaced; production holds
   // the 20260801010200 version) and api.service_set_curated_team_crest (new).
   attachTeamCrestBeforeProsrc: "3d66fd9f11c51899af702952f7b5b46f",
   attachTeamCrestAfterProsrc: "81dc921ebef73b589b09bf3686a4776d",
-  attachTeamCrestAfter: "FILL_FROM_CI_ATTACH_TEAM_CREST_AFTER_MD5",
+  attachTeamCrestAfter: "0603b277dc75deada03fb35d849e5c74",
   setCuratedTeamCrestProsrc: "ed3bd7ee85ea78269b50e3ca8c722d0a",
-  setCuratedTeamCrest: "FILL_FROM_CI_SET_CURATED_TEAM_CREST_MD5",
+  setCuratedTeamCrest: "50a1e47eda0f6cf04ce5ad373247b5ba",
   // 20261010140000: api.repoint_football_fixture_mapping (new).
   repointFixtureMappingProsrc: "2984ba9c1340feb79b57147c60dc77e6",
-  repointFixtureMapping: "FILL_FROM_CI_REPOINT_FIXTURE_MAPPING_MD5",
+  repointFixtureMapping: "912b8719c46b698147f1f51533fa9b25",
   // 20261011170000: api.news_article_detail(text,text) (replaced). "Before" is the
   // 20260924200600 body, the last one any recorded migration set.
   newsArticleDetailBeforeProsrc: "ffafc51e4ce1d02c4225fdf1d8c69861",
   newsArticleDetailAfterProsrc: "b35f060615b912abc90318deb9e8de03",
-  newsArticleDetailAfter: "FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5",
+  newsArticleDetailAfter: "73fdc5b28f6aa2f5ec53e772dcf9a404",
   // api.fantasy_gameweek_summary(uuid): the reviewed body of 20260921200000
   // (md5 of the body text, recomputed by the test). Production's older body is
   // GAMEWEEK_SUMMARY.productionProsrcMd5.

@@ -81,9 +81,6 @@
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 
---
--- NOT FINAL: md5 pins to fill from the green database-quality run: leaguePageAfter, attachTeamCrestAfter, setCuratedTeamCrest, repointFixtureMapping, newsArticleDetailAfter, scoringDocumentBaseBefore, scoringDocumentBaseAfter, legacyFixtureCheckBefore, legacyFixtureCheckAfter, performancesSync, performancesSyncFixture.
---   Until they are, this script REFUSES TO RUN (first check below).
 -- ============================================================================
 
 begin;
@@ -111,17 +108,6 @@ $hold$;
 
 do $preflight$
 begin
-  raise exception 'stop: this script is not final -- the md5 pin leaguePageAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin attachTeamCrestAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin setCuratedTeamCrest has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin repointFixtureMapping has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin newsArticleDetailAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin scoringDocumentBaseBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin scoringDocumentBaseAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin legacyFixtureCheckBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin legacyFixtureCheckAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin performancesSync has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin performancesSyncFixture has not been filled from CI yet; nothing was saved';
   -- Any run not finished blocks: a recent one, and an older one whose
   -- backend is still alive (a record left behind by a crash does not).
   if exists (select 1 from cron.job_run_details run
@@ -418,10 +404,10 @@ begin
       raise exception 'stop: 20261011180000 is not recorded but a SofaScore performance row exists -- production is not the state it was written for';
     end if;
     -- It patches the text of exactly the two definitions the Fantasy migrations left.
-    if md5(pg_get_functiondef('app_private.fantasy_scoring_input_document_v1(uuid)'::regprocedure)) is distinct from 'FILL_FROM_CI_SCORING_DOCUMENT_BASE_BEFORE_MD5' then
+    if md5(pg_get_functiondef('app_private.fantasy_scoring_input_document_v1(uuid)'::regprocedure)) is distinct from '8c701cdf882a2076a0eacbefce9b29f7' then
       raise exception 'stop: app_private.fantasy_scoring_input_document_v1(uuid) is not the reviewed version 20261011180000 replaces (md5)';
     end if;
-    if md5(pg_get_functiondef('app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure)) is distinct from 'FILL_FROM_CI_LEGACY_FIXTURE_CHECK_BEFORE_MD5' then
+    if md5(pg_get_functiondef('app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure)) is distinct from 'fdb4c8acc52127ffaa4c77dc71828b02' then
       raise exception 'stop: app_private.fantasy_validate_scoring_document_v1(jsonb) is not the reviewed version 20261011180000 replaces (md5)';
     end if;
   end if;
@@ -3325,7 +3311,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20260925090500: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_LEAGUE_PAGE_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '7f79f52c973b0cf888ee8c6c2b927573' then
           problems := problems || ('20260925090500: not the reviewed definition (md5): ' || fn::text);
         end if;
         if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '86ab0440c3d9d5bea18c438c273e55c6' then
@@ -3352,7 +3338,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261001170000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_SET_CURATED_TEAM_CREST_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '50a1e47eda0f6cf04ce5ad373247b5ba' then
           problems := problems || ('20261001170000: not the reviewed definition (md5): ' || fn::text);
         end if;
         if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> 'ed3bd7ee85ea78269b50e3ca8c722d0a' then
@@ -3374,7 +3360,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261001170000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_ATTACH_TEAM_CREST_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '0603b277dc75deada03fb35d849e5c74' then
           problems := problems || ('20261001170000: not the reviewed definition (md5): ' || fn::text);
         end if;
         if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '81dc921ebef73b589b09bf3686a4776d' then
@@ -3438,7 +3424,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261010140000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_REPOINT_FIXTURE_MAPPING_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '912b8719c46b698147f1f51533fa9b25' then
           problems := problems || ('20261010140000: not the reviewed definition (md5): ' || fn::text);
         end if;
         if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '2984ba9c1340feb79b57147c60dc77e6' then
@@ -3768,7 +3754,7 @@ begin
         if false then
           problems := problems || ('20261011170000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '73fdc5b28f6aa2f5ec53e772dcf9a404' then
           problems := problems || ('20261011170000: not the reviewed definition (md5): ' || fn::text);
         end if;
         if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> 'b35f060615b912abc90318deb9e8de03' then
@@ -3809,7 +3795,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011180000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_PERFORMANCES_SYNC_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '901f058115adab2e5927f292b3ba1a38' then
           problems := problems || ('20261011180000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -3828,7 +3814,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011180000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_PERFORMANCES_SYNC_FIXTURE_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '62892213172afd4630280f04775fcec1' then
           problems := problems || ('20261011180000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -3847,7 +3833,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011180000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_SCORING_DOCUMENT_BASE_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'aa25ecdb2ff9f8b1ec814558a19059ee' then
           problems := problems || ('20261011180000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -3866,7 +3852,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011180000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_LEGACY_FIXTURE_CHECK_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '587ac0304fed1a557104faedbe634b2f' then
           problems := problems || ('20261011180000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;

@@ -11,12 +11,11 @@ short list of switches. Nothing here is run by an agent: every production write
 is yours and covers only the step you were told to do (`CLAUDE.md`, production
 database writes).
 
-> **Status: wait for the go.** The script contains every migration of this
-> release. The md5 pins are filled from CI: they are the fingerprints of the
-> functions the script checks, and the last eleven (the Pépites step and the
-> catch-up migrations, below) are copied in after the `database-quality` job of
-> the pull request has printed them. Until then the script refuses to run by itself and saves nothing. Do not
-> start until the person who hands you this says the pins are in.
+> **Status: ready for the owner after the pull request is merged.** The script
+> contains every migration of this release and the md5 fingerprints of the
+> functions it checks, copied from the `database-quality` job of the pull request
+> (run 38137117250). If production differs from what the script expects, it stops
+> before changing anything and says why.
 
 ## What you will do, in short
 
