@@ -79,10 +79,14 @@ describe("add-sofascore-only-players.sql", () => {
     expect(code).toContain("football_mapping_supporting_state(v_mapping)");
   });
 
-  test("leaves the Fantasy pool, prices and other mappings alone", () => {
-    expect(code).not.toMatch(/(insert into|update|delete from)\s+app\.fantasy_/);
+  test("creates no Fantasy entries or prices and preserves other mappings", () => {
+    expect(code).not.toMatch(/(insert into|delete from)\s+app\.fantasy_/);
+    expect(code).toContain("update app.fantasy_players set football_team_id=v_team");
+    expect(code).toContain("reviewed unused Fantasy catalog entry changed");
     expect(code).not.toMatch(/fantasy_initial_price|fantasy_player_price_history/);
     expect(code).not.toMatch(/(update|delete from)\s+app_private\.football_provider_mappings/);
-    expect(code).not.toMatch(/(update|delete from)\s+app\.(players|team_memberships)/);
+    expect(code).not.toMatch(/(update|delete from)\s+app\.players/);
+    expect(code).toContain("update app.team_memberships set active = false where id = v_obsolete");
+    expect(code).toContain("obsolete membership evidence changed");
   });
 });

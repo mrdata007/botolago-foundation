@@ -12,8 +12,8 @@
 --   season, and a REVIEWED SofaScore mapping, then closes the queue entry.
 --
 -- WHAT IT DOES, per player in the list below
---   1. app.players          one new row (full name = display name = the name in
---                           the list, position from the list or the queue).
+--   1. app.players          three new rows; the explicitly reviewed existing
+--                           Soubai and Orebonye identities are reused.
 --   2. app.team_memberships one active row for the club and the season of the
 --                           match that queued him, from the season's first day
 --                           (the recorder reads the squad at kickoff).
@@ -26,7 +26,10 @@
 --                           20261011130000; the script checks it with
 --                           app_private.football_mapping_supporting_state.
 --   4. the queue entry      resolved by that staff member.
---   NOT done: the Fantasy pool (app.fantasy_players). The SofaScore recorder
+--   No new Fantasy pool entry or price is created. Orebonye's existing unused
+--   pool entry moves to Hassania at its unchanged price (the catalog transfer
+--   rule in migration 20260925200000). All other pool entries stay as they are.
+--   The SofaScore recorder
 --   (api.service_record_sofascore_fantasy_observation) never reads the pool: it
 --   needs the player's identity only, so the match is recorded with his
 --   statistics. A player outside the pool cannot be picked by managers, which
@@ -50,9 +53,9 @@
 --   3. Fill in OWNER_EMAIL and the list (both in the first block below).
 --   4. Paste this WHOLE file and press Run. As shipped it is a REHEARSAL: all
 --      writes happen inside one transaction, are checked, and ROLLED BACK. The
---      result row says "Rehearsal passed" and lists what would be created.
+--      checked_player_additions result, before rollback, lists the checked rows.
 --   5. Change the line `rollback;` near the bottom to `commit;` and run again.
---      The result row says "Applied".
+--      Read back the rows independently to verify that they were applied.
 --   If a check fails the script stops with a message saying what, and nothing
 --   is saved. Do not edit a check to make it pass: a check firing means the
 --   database is not in the state this script expects.
@@ -82,11 +85,11 @@ select set_config('botolago.add_players_owner_email', 'PASTE-OWNER-EMAIL', false
   -- the single open no_candidate queue entry that matches name + club (+ shirt).
   -- position is optional: when null it comes from the queue entry.
   set_config('botolago.add_players_list', $list$[
-    {"name": "Ismail Soubai",       "club": "CR Khemis Zemamra", "shirt": 5,  "position": null, "sofascoreId": null},
+    {"name": "Ismail Soubai",       "club": "CR Khemis Zemamra", "shirt": 5,  "position": null, "sofascoreId": null, "playerId": "da935042-8bc0-4cea-8ee7-b6612041b2a4"},
     {"name": "Rabiae Bounnit",      "club": "Widad Témara",      "shirt": 99, "position": null, "sofascoreId": null},
     {"name": "Saad Kouk",           "club": "UTS Rabat",         "shirt": 40, "position": null, "sofascoreId": null},
     {"name": "Souleymane Sy",       "club": "RSB Berkane",       "shirt": 37, "position": null, "sofascoreId": null},
-    {"name": "Tumisang Orebonye",   "club": "Hassania Agadir",   "shirt": 28, "position": null, "sofascoreId": null}
+    {"name": "Tumisang Orebonye",   "club": "Hassania Agadir",   "shirt": 28, "position": null, "sofascoreId": null, "playerId": "6824ba3d-1e99-472d-a3c7-9d789b24036e", "obsoleteMembershipId": "cb870b60-f432-4109-a29c-c084a2ddce0c"}
   ]$list$, false);
 commit;
 
@@ -94,6 +97,11 @@ begin;
 
 set local lock_timeout = '5s';
 set local statement_timeout = '120s';
+select app_private.hold_scheduled_jobs();
+-- Same catalog/squad locks as the reviewed current player-list update path.
+select pg_advisory_xact_lock(hashtextextended('fantasy:catalog:d03223b0-8f4a-4309-93e1-2a708d7c3584',0));
+select pg_advisory_xact_lock(hashtextextended('fantasy:squads:5ada3e98-2929-405a-a3f1-a26de8e51933',0));
+lock table app.team_memberships,app.fantasy_players,app.fantasy_squad_memberships in share row exclusive mode;
 
 -- ---------------------------------------------------------------------------
 -- Preflight: the world is as this script expects
@@ -128,6 +136,11 @@ begin
   if exists (select 1 from cron.job_run_details run where run.status not in ('succeeded', 'failed')) then
     raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
   end if;
+  if exists(select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled)
+    or exists(select 1 from app_private.manager_card_settings where compute_enabled)
+    or exists(select 1 from app_private.notification_email_settings where football_live_refresh_enabled)
+    or exists(select 1 from cron.job where active)
+  then raise exception 'stop: pause and drain production writers first'; end if;
   if exists (select 1 from pg_stat_activity
               where state = 'active' and pid <> pg_backend_pid()
                 and query ilike '%sofascore_player_match%') then
@@ -155,6 +168,8 @@ declare
   q app_private.sofascore_player_match_queue%rowtype;
   v_matches integer;
   v_player uuid;
+  v_existing_player uuid;
+  v_obsolete uuid;
   v_log uuid;
   v_mapping uuid;
   v_state jsonb;
@@ -182,6 +197,8 @@ begin
     v_shirt := nullif(v_item ->> 'shirt', '')::integer;
     v_position := nullif(v_item ->> 'position', '');
     v_sofa := nullif(btrim(coalesce(v_item ->> 'sofascoreId', '')), '');
+    v_existing_player := nullif(v_item ->> 'playerId', '')::uuid;
+    v_obsolete := nullif(v_item ->> 'obsoleteMembershipId', '')::uuid;
     if v_key is null or v_club_key is null or v_shirt is null or v_shirt not between 1 and 99 then
       raise exception 'stop: every player needs a name, a club and a shirt number from 1 to 99 (%)', v_item;
     end if;
@@ -262,12 +279,69 @@ begin
       raise exception 'stop: shirt % is already worn at that club this season (%)', v_shirt, v_name;
     end if;
 
+    -- The queue searches only this club. A missing club membership is not a
+    -- missing identity: reuse only an explicitly reviewed, unique exact name.
+    select count(*), min(pl.id::text)::uuid into v_matches, v_player
+      from app.players pl
+     where app_private.person_name_key(pl.full_name) = v_key
+        or app_private.person_name_key(pl.display_name) = v_key
+        or app_private.person_name_key(concat_ws(' ', pl.first_name, pl.last_name)) = v_key;
+    if v_existing_player is null and v_matches <> 0 then
+      raise exception 'stop: % already exists globally -- review the existing identity, do not duplicate it', v_name;
+    end if;
+    if v_existing_player is not null and (v_matches <> 1 or v_player is distinct from v_existing_player
+      or not exists (select 1 from app.players where id = v_existing_player and active
+        and position = v_position::app.football_position)) then
+      raise exception 'stop: reviewed existing identity changed for %', v_name;
+    end if;
+    if v_existing_player is not null and exists (select 1 from app_private.football_provider_mappings
+      where provider_name = 'sofascore' and entity_type = 'player' and internal_entity_id = v_existing_player) then
+      raise exception 'stop: reviewed existing identity already has a SofaScore mapping (%)', v_name;
+    end if;
+    if exists (select 1 from app.team_memberships where player_id = v_existing_player
+      and season_id = v_season.id and active and team_id <> v_team
+      and (v_obsolete is null or id <> v_obsolete)) then
+      raise exception 'stop: unexpected current club membership for %', v_name;
+    end if;
+    if v_obsolete is not null then
+      -- Exact stale Wydad roster row measured on 2026-10-11. Preserve its
+      -- dates and history; no transfer date or Fantasy price is invented.
+      if v_existing_player is distinct from '6824ba3d-1e99-472d-a3c7-9d789b24036e'::uuid
+        or v_obsolete <> 'cb870b60-f432-4109-a29c-c084a2ddce0c'::uuid
+        or not exists (select 1 from app.team_memberships where id = v_obsolete
+          and player_id = v_existing_player and season_id = v_season.id and active
+          and team_id = '80a3fb82-02ae-46bc-aae9-5160ba8f3648'
+          and valid_from = '2026-09-24' and valid_to = '2027-06-30' and shirt_number is null)
+        or exists (select 1 from app.player_fixture_performances p join app.fixtures f on f.id = p.fixture_id
+          where p.player_id = v_existing_player and p.team_id = '80a3fb82-02ae-46bc-aae9-5160ba8f3648'
+            and f.season_id = v_season.id)
+        or exists (select 1 from app.lineup_players p join app.lineups l on l.id = p.lineup_id
+          join app.fixtures f on f.id = l.fixture_id where p.player_id = v_existing_player
+            and l.team_id = '80a3fb82-02ae-46bc-aae9-5160ba8f3648' and f.season_id = v_season.id) then
+        raise exception 'stop: obsolete membership evidence changed for %', v_name;
+      end if;
+      if not exists(select 1 from app.fantasy_players where id='5951d4c9-fe4f-4aff-8405-3006ab34745e'
+          and football_player_id=v_existing_player and fantasy_season_id='5ada3e98-2929-405a-a3f1-a26de8e51933'
+          and football_team_id='80a3fb82-02ae-46bc-aae9-5160ba8f3648' and price=7.2 and selected_by_count=0)
+        or exists(select 1 from app.fantasy_squad_memberships where fantasy_player_id='5951d4c9-fe4f-4aff-8405-3006ab34745e')
+        or exists(select 1 from app.fantasy_lineup_players where fantasy_player_id='5951d4c9-fe4f-4aff-8405-3006ab34745e')
+        or exists(select 1 from app.fantasy_transfers where '5951d4c9-fe4f-4aff-8405-3006ab34745e'::uuid in (player_in_id,player_out_id))
+      then raise exception 'stop: reviewed unused Fantasy catalog entry changed'; end if;
+    end if;
+
     -- Writes.
-    v_player := gen_random_uuid();
+    v_player := coalesce(v_existing_player, gen_random_uuid());
     v_log := gen_random_uuid();
-    insert into app.players (id, slug, full_name, display_name, position, preferred_foot, active)
-    values (v_player, app_private.football_catalog_slug('player', v_name, v_player),
-      v_name, v_name, v_position::app.football_position, 'unknown', true);
+    if v_existing_player is null then
+      insert into app.players (id, slug, full_name, display_name, position, preferred_foot, active)
+      values (v_player, app_private.football_catalog_slug('player', v_name, v_player),
+        v_name, v_name, v_position::app.football_position, 'unknown', true);
+    end if;
+    if v_obsolete is not null then
+      update app.team_memberships set active = false where id = v_obsolete;
+      -- Reviewed catalog move rule: change only club, keep price and identity.
+      update app.fantasy_players set football_team_id=v_team where id='5951d4c9-fe4f-4aff-8405-3006ab34745e';
+    end if;
     insert into app.team_memberships (player_id, team_id, season_id, shirt_number, squad_role,
       valid_from, valid_to, active)
     values (v_player, v_team, v_season.id, v_shirt, 'player', v_season.starts_on, v_season.ends_on, true);
@@ -308,24 +382,13 @@ begin
     raise exception 'stop: a queue entry of the list is still open after the work';
   end if;
 
-  -- Survives the rollback of a rehearsal (not local to the transaction).
+  -- Read the result BEFORE rollback: SET, including session SET, is transactional.
   perform set_config('botolago.add_players_result', v_done::text, false);
 end
 $work$;
 
--- ---------------------------------------------------------------------------
--- REHEARSAL: nothing is saved. To apply for real, change the next line to:
---   commit;
--- ---------------------------------------------------------------------------
-rollback;
+select current_setting('botolago.add_players_result')::jsonb as checked_player_additions;
 
-select case
-  when exists (select 1 from app_private.football_provider_mappings m
-                where m.provider_name = 'sofascore' and m.entity_type = 'player'
-                  and m.external_id in (select e ->> 'sofascoreId'
-                    from jsonb_array_elements(current_setting('botolago.add_players_result')::jsonb) e))
-    then 'Applied. ' || current_setting('botolago.add_players_result')
-      || ' Restore the previous Pepites mode, then let the matches retry.'
-  else 'Rehearsal passed (nothing saved). Would create: ' || current_setting('botolago.add_players_result')
-    || ' Change rollback; to commit; and run again.'
-  end as result;
+-- REHEARSAL: nothing is saved. To apply for real, change only rollback to commit.
+-- Independently re-read the players, memberships, mappings and queue afterwards.
+rollback;
