@@ -173,7 +173,7 @@ begin
   end if;
   -- Exactly the reviewed new definition (md5 of pg_get_functiondef, from the
   -- green database-quality CI run, "SofaScore snapshot teams md5").
-  if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_SNAPSHOT_TEAMS_MD5' then
+  if md5(pg_get_functiondef(fn)) <> 'c9e9e9dc913d1bf729c7c49bc2f821bc' then
     problems := problems || 'the function definition is not the reviewed version (md5)'::text;
   end if;
   if cardinality(problems) > 0 then

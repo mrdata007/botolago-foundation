@@ -30,11 +30,10 @@ backfill call.
    `botolago-production-v2-mutation` group.
 2. The script refuses while a pg_cron job is mid-run; if it does, run it again
    in a minute.
-3. The script's postflight pins the new function definition by md5. Before you
-   run it, `FILL_FROM_CI_SNAPSHOT_TEAMS_MD5` in the script must have been
-   replaced by the value the green `database-quality` run prints ("SofaScore
-   snapshot teams md5"). While the placeholder is there the script stops at the
-   end and saves nothing; do not edit the check to get past it.
+3. The script's postflight pins the new function definition by md5
+   (`c9e9e9dc913d1bf729c7c49bc2f821bc`, printed as "SofaScore snapshot teams
+   md5" by the green `database-quality` run 38122444749). If it does not match,
+   the script stops and saves nothing; do not edit the check to get past it.
 
 ## (a) Merge
 
