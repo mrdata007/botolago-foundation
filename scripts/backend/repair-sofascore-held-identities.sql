@@ -5,7 +5,7 @@
 -- unused Fantasy club. Keeps all original identity, queue, mapping and scoring
 -- guards. Never create a duplicate Rabiae Bounnit/Bounit.
 -- Stale-shirt sources independently read on 2026-10-11:
--- https://www.sofascore.com/football/player/yassine-el-khalej/1401596 (no team)
+-- https://www.sofascore.com/ar/football/player/mohammad-el-fakih/919342 (Dcheira since 5 Sept)
 -- https://www.sofascore.com/football/player/mohamed-ounajem/879566 (Kenitra since 7 Sept)
 -- Both existing clubs' obsolete shirt claims are cleared to UNKNOWN, without
 -- inventing a replacement club, transfer date or shirt.
@@ -53,8 +53,8 @@ begin
     or exists(select 1 from app_private.pepites_settings where mode<>'off')
   then raise exception 'stop: production writers must be paused and drained'; end if;
   for x in select * from (values
-    ('6fc7c885-5b87-461b-ba1d-6a93c4e1e37f'::uuid,'2ddb045f-c1f6-4355-97aa-8d84b8905801'::uuid,
-     'b78eaee8-93af-4630-8335-b208151cbf37'::uuid,5,'1999-08-02'::date),
+    ('cbc16ba6-a27e-49c0-9592-c3363a47c8d3'::uuid,'0e229394-bf99-455b-ac8a-8593b2e4c5f6'::uuid,
+     'dc6fb819-6f3e-4584-ad73-7d567e80d32c'::uuid,5,'1990-02-07'::date),
     ('0fecb6b6-9eda-4ba3-a478-99ec86c3be34'::uuid,'43732d3d-2b8a-4a2c-ac7c-963c73f8c816'::uuid,
      '9f8c170d-24ed-41a3-99ca-a06167fd9c8b'::uuid,28,'1992-01-04'::date)
   ) reviewed(membership,player,team,shirt,born)
