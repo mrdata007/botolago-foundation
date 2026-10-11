@@ -53,6 +53,37 @@ describe("alert content", () => {
     });
   });
 
+  test("adds the provider's fixed reason code, never its text, to an overdue fixture", () => {
+    const category = categorize({
+      verdict: "escalate",
+      performances: {
+        incomplete: [
+          {
+            fixtureExternalId: "19893370",
+            code: "provider_invalid_data_envelope",
+            diagnostic: {
+              field: "data",
+              valueType: "missing",
+              reason: "not_in_plan",
+              rateLimitRemaining: 2999,
+            },
+            overdue: true,
+          },
+          {
+            fixtureExternalId: "19893371",
+            code: "provider_invalid_data_envelope",
+            diagnostic: { field: "data", reason: "You have no access <script>" },
+            overdue: true,
+          },
+        ],
+      },
+      deadlineWatch: { escalations: [] },
+    });
+    expect(category.detail).toBe(
+      "verdict escalate; 2 finished fixture(s) without statistics past the threshold: 19893370 provider_invalid_data_envelope (not_in_plan, 2999 calls left), 19893371 provider_invalid_data_envelope",
+    );
+  });
+
   test("names finished fixtures still without statistics past the orchestrator's threshold", () => {
     const category = categorize({
       verdict: "escalate",

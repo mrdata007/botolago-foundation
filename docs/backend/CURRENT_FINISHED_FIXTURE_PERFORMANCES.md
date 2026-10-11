@@ -407,3 +407,53 @@ scored once. Tanger scored at 9, 47 and 55, before Tiznit's first substitution a
 (2 appearance + 5 goal), before captain/chip effects. Re-importing creates a new
 performance source version and retains the prior version as inactive history.
 This does not finalize a gameweek or create points by itself.
+
+## HTTP success without fixture data (2026-10-10)
+
+Run `38010419052`, artifact `11653143032`, rejected fixtures 19893370–19893373
+at `data`, with value type `missing`. It processed zero fixtures. The refresh
+also failed: its green step conclusion came from `continue-on-error`, not a
+successful refresh. The artifact does not establish an expired subscription,
+bad credential, or missing player statistics.
+
+The shared request helper now rejects missing/null/scalar data envelopes as
+`provider_invalid_data_envelope` before normalization. Evidence contains HTTP
+status, a fixed endpoint category, envelope/data types and types of five fixed
+error fields. No raw message, provider key, URL or response body is persisted.
+A valid list (including an empty list) still reaches list-specific validation;
+a single-fixture response must still satisfy every existing fixture validator.
+This is a diagnostic repair, not proof of production recovery.
+
+After the reviewed change reaches main, run the existing finished-performance
+workflow with `DIAGNOSE_CURRENT_FINISHED_PERFORMANCES`, its exact main SHA and
+`only_fixture_external_id=19893370`. Inspect the sanitized artifact. Repeat for
+the other affected IDs; do not infer that identical previous errors guarantee
+identical current responses. If access or a provider error is implicated, inspect
+the provider account/support response privately; do not paste credentials or raw
+response text into GitHub evidence. Restore the demonstrated provider contract
+or access issue before ingestion. Do not replace missing data with empty objects,
+lineups or zero statistics.
+
+Only import fixtures that pass all existing validation, then verify idempotent
+replay and Fantasy recalculation. Follow AGENTS.md writer coordination and the
+existing canary procedure for any production write. Refresh stale match states
+from authoritative provider facts; incomplete counted matches must still prevent
+finalization. Do not close #385/#363 based on passing unit tests alone.
+
+### Reading the provider's reason without opening the run
+
+When SportsMonks answers HTTP 200 without `data`, the diagnostic now carries a
+fixed `reason` code read from its `message` by keyword (never the text) and,
+when sent, `rateLimitRemaining`. The orchestrator's alert issue shows both next
+to each overdue fixture, for example
+`19893370 provider_invalid_data_envelope (not_in_plan, 2999 calls left)`.
+
+| `reason`                   | What to do                                                                |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `subscription_inactive`    | Renew or reactivate the SportsMonks plan (my.sportmonks.com → Billing).   |
+| `not_in_plan`              | The plan no longer covers Botola Pro (league 860) or this endpoint.       |
+| `include_not_in_plan`      | The plan dropped an include the stats need (`lineups.details`, `events`). |
+| `no_result_or_not_in_plan` | SportsMonks' wording for "not found or not in your plan": check the plan. |
+| `rate_limited`             | Wait for the hourly reset; check nothing else is spending the quota.      |
+| `token_rejected`           | The API token in GitHub/Supabase secrets is wrong or was regenerated.     |
+| `unrecognised_message`     | Open the read-only diagnose run's evidence.                               |

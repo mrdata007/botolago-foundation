@@ -12,7 +12,7 @@ import {
   manualRunExitCode,
   nameUnnamedStarters,
 } from "./current-season-performances";
-import { SportsMonksProbeError } from "./sportsmonks-production-probe";
+import { SportsMonksProbeError, requestSportsMonksJson } from "./sportsmonks-production-probe";
 
 function fixture(id = 9001) {
   return {
@@ -2133,4 +2133,38 @@ describe("owner-named unnamed starters", () => {
         ],
       });
     });
+});
+
+test("four HTTP-success envelopes without data cannot publish statistics; a valid sibling still imports", async () => {
+  const rejected = [19893370, 19893371, 19893372, 19893373];
+  const { client, calls } = batchClient({
+    items: [...rejected, 19893374].map((id) => ({ externalFixtureId: String(id) })),
+  });
+  const request: typeof requestSportsMonksJson = (path, query, token) =>
+    requestSportsMonksJson(path, query, token, {
+      fetch: async () =>
+        Response.json(
+          path.endsWith("/19893374") ? fixture(19893374) : { message: "secret-provider-text" },
+        ),
+    });
+  const result = await runCurrentPerformanceBatch(client, "test-provider-token", null, request);
+  expect(result.fixturesProcessed).toBe(1);
+  expect(calls.filter((call) => call.startsWith("ingest"))).toEqual([
+    "ingest_current_player_fixture_performance 19893374",
+  ]);
+  expect(result.incomplete).toHaveLength(4);
+  for (const [index, gap] of result.incomplete.entries()) {
+    expect(gap).toMatchObject({
+      fixtureExternalId: String(rejected[index]),
+      stage: "provider",
+      code: "provider_invalid_data_envelope",
+      diagnostic: { httpStatus: 200, field: "data", valueType: "missing" },
+    });
+  }
+  expect(JSON.stringify(result)).not.toContain("secret-provider-text");
+  const diagnosticClient = batchClient({ items: [{ externalFixtureId: "19893370" }] });
+  await runCurrentPerformanceBatch(diagnosticClient.client, "test-provider-token", null, request, {
+    mode: "diagnose",
+  });
+  expect(diagnosticClient.calls).toEqual(["football_current_performance_fixture_batch"]);
 });

@@ -83,7 +83,20 @@ export function categorize(evidence: unknown): AlertCategory {
             typeof gap.code === "string" &&
             SAFE_CODE.test(gap.code),
         )
-        .map((gap) => `${gap.fixtureExternalId as string} ${gap.code as string}`)
+        .map((gap) => {
+          // The provider's reason as a fixed code (sportsmonks-production-probe.ts
+          // providerMessageReason), never its text.
+          const diagnostic = (gap.diagnostic ?? {}) as Record<string, unknown>;
+          const reason =
+            typeof diagnostic.reason === "string" && SAFE_CODE.test(diagnostic.reason)
+              ? ` (${diagnostic.reason}${
+                  Number.isSafeInteger(diagnostic.rateLimitRemaining)
+                    ? `, ${diagnostic.rateLimitRemaining as number} calls left`
+                    : ""
+                })`
+              : "";
+          return `${gap.fixtureExternalId as string} ${gap.code as string}${reason}`;
+        })
     : [];
   // Gameweeks past their window without final points: sequence, status and
   // the worker's code only; or the code of windows that could not be read.

@@ -18,7 +18,10 @@ type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<
 type Sleep = (milliseconds: number) => Promise<void>;
 
 export class SportsMonksProbeError extends Error {
-  constructor(readonly code: string) {
+  constructor(
+    readonly code: string,
+    readonly diagnostic?: Record<string, unknown>,
+  ) {
     super(code);
     this.name = "SportsMonksProbeError";
   }
@@ -78,6 +81,7 @@ export interface SportsMonksProbeFailureEvidence {
   readonly observedAt: string;
   readonly verdict: "fail";
   readonly errorCode: string;
+  readonly diagnostic?: Record<string, unknown>;
 }
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -146,6 +150,9 @@ export function sportsMonksProbeFailureEvidence(
     observedAt: observedAt.toISOString(),
     verdict: "fail",
     errorCode: ERROR_CODE_PATTERN.test(rawCode) ? rawCode : "unexpected_probe_failure",
+    ...(error instanceof SportsMonksProbeError && error.diagnostic
+      ? { diagnostic: error.diagnostic }
+      : {}),
   };
 }
 
@@ -188,6 +195,63 @@ async function responseJson(response: Response): Promise<unknown> {
   }
 }
 
+/**
+ * A fixed code for why SportsMonks answered without data, read from its
+ * `message` by keyword. Only the code leaves this function, never the text:
+ * provider text may carry URLs or keys. The order matters (a rate-limit or
+ * subscription message can also mention access).
+ */
+export function providerMessageReason(message: unknown): string {
+  if (typeof message !== "string" || message.trim() === "") return "no_message";
+  const text = message.toLowerCase();
+  if (/rate.?limit|too many requests/.test(text)) return "rate_limited";
+  if (
+    /subscription/.test(text) &&
+    /expired|ended|inactive|cancel|suspend|no active|unpaid/.test(text)
+  )
+    return "subscription_inactive";
+  if (/unauthori[sz]ed|unauthenticated|invalid (api )?token|api.?key/.test(text))
+    return "token_rejected";
+  if (/\binclude/.test(text)) return "include_not_in_plan";
+  if (/no result/.test(text)) return "no_result_or_not_in_plan";
+  if (/access|permission|not allowed|forbidden|\bplan\b|subscription/.test(text))
+    return "not_in_plan";
+  return "unrecognised_message";
+}
+
+/** Fixed field names and types only: provider text, keys and URLs may contain secrets. */
+function envelopeDiagnostic(payload: unknown, status: number, path: string): JsonRecord {
+  const valueType = (value: unknown): string =>
+    value === undefined
+      ? "missing"
+      : value === null
+        ? "null"
+        : Array.isArray(value)
+          ? "array"
+          : typeof value;
+  const envelope = isRecord(payload) ? payload : {};
+  const resource = path.slice(`${SPORTSMONKS_BASE_PATH}/`.length).split("/")[0];
+  return {
+    httpStatus: status,
+    endpoint: ["fixtures", "leagues", "teams", "rounds", "squads", "players"].includes(resource)
+      ? resource
+      : "other",
+    field: "data",
+    valueType: valueType(envelope.data),
+    envelopeType: valueType(payload),
+    errorFieldTypes: ["message", "error", "errors", "code", "status"].map((field) => ({
+      field,
+      valueType: valueType(envelope[field]),
+    })),
+    reason: providerMessageReason(envelope.message ?? envelope.error),
+    ...(isRecord(envelope.rate_limit) &&
+    Number.isSafeInteger(envelope.rate_limit.remaining) &&
+    (envelope.rate_limit.remaining as number) >= 0
+      ? { rateLimitRemaining: envelope.rate_limit.remaining as number }
+      : {}),
+  };
+}
+
 export async function requestSportsMonksJson(
   path: string,
   query: Readonly<Record<string, string>>,
@@ -226,7 +290,18 @@ export async function requestSportsMonksJson(
       clearTimeout(timeout);
     }
 
-    if (response.ok) return responseJson(response);
+    if (response.ok) {
+      const payload = await responseJson(response);
+      // HTTP success does not prove that a football data envelope was returned.
+      // Do not manufacture data, unwrap an error, or guess access failure from text.
+      if (!isRecord(payload) || (!isRecord(payload.data) && !Array.isArray(payload.data))) {
+        throw new SportsMonksProbeError(
+          "provider_invalid_data_envelope",
+          envelopeDiagnostic(payload, response.status, path),
+        );
+      }
+      return payload;
+    }
     if ((response.status === 429 || response.status >= 500) && attempt < MAX_ATTEMPTS) {
       await sleep(safeRetryDelay(response, now()));
       continue;

@@ -674,7 +674,11 @@ type OrchestratorSummary = Awaited<ReturnType<typeof orchestrateFantasySeason>>;
 function gapReason(gap: CoverageGap): string {
   const diagnostic = gap.diagnostic ?? {};
   if (typeof diagnostic.field === "string")
-    return ` at ${diagnostic.field}${typeof diagnostic.valueType === "string" ? ` (${diagnostic.valueType})` : ""}`;
+    return ` at ${diagnostic.field}${typeof diagnostic.valueType === "string" ? ` (${diagnostic.valueType})` : ""}${
+      typeof diagnostic.reason === "string" && /^[a-z][a-z0-9_]{0,63}$/.test(diagnostic.reason)
+        ? `, provider says ${diagnostic.reason}`
+        : ""
+    }`;
   if (typeof diagnostic.reason === "string") return ` ${diagnostic.reason}`;
   if (typeof diagnostic.unidentifiedStarters === "number")
     return ` (${diagnostic.unidentifiedStarters} unnamed starters)`;
