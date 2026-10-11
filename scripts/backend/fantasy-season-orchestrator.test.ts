@@ -8,9 +8,11 @@ import {
   mergeVerdict,
   orchestrateFantasySeason,
   orchestratorEnvironment,
+  parseFootballDataSource,
   renderHealthSummary,
   selectWorkerTargets,
   shouldFailRun,
+  skipsSportsMonks,
   summarizeDeadlineWatch,
   summarizeProviderRefresh,
   type CalendarSync,
@@ -1415,5 +1417,209 @@ describe("season backlog reliability", () => {
     expect(summary.deferredGameweeks).toEqual([id(103)]);
     expect(summary.verdict).toBe("escalate");
     expect(renderHealthSummary(summary)).toContain("| Deferred gameweeks | 1 |");
+  });
+});
+
+describe("football data source", () => {
+  const liveLifecycle =
+    (waitingReason: string) => (name: string, args: Record<string, unknown>) => {
+      const state = {
+        schemaVersion: 1,
+        gameweekId: args.p_gameweek_id,
+        seasonId: id(1),
+        lockVersion: 7,
+        sequenceNumber: 1,
+        scoringInputVersion: 1,
+        nextGameweekId: id(102),
+        advancedToGameweekId: null,
+      };
+      if (name === "service_fantasy_lifecycle_state") return { ...state, status: "live" };
+      if (name === "service_advance_fantasy_lifecycle")
+        return {
+          ...state,
+          status: "live",
+          changed: false,
+          lockedLineups: 0,
+          hasMore: false,
+          waitingReason,
+        };
+      throw new Error(`unexpected_rpc_${name}`);
+    };
+  /** Makes SportsMonks performance ingestion fail loudly if it is ever called. */
+  function noSportsMonks(run: ReturnType<typeof gateway>) {
+    let ingestCalls = 0;
+    run.gateway.ingestPerformances = async () => {
+      ingestCalls += 1;
+      throw new Error("sportsmonks_called");
+    };
+    return () => ingestCalls;
+  }
+  const failedRefresh = summarizeProviderRefresh(null, { stepOutcome: "failure" });
+  const finalizedLifecycle = (name: string, args: Record<string, unknown>) => {
+    if (name === "service_fantasy_lifecycle_state")
+      return {
+        schemaVersion: 1,
+        gameweekId: args.p_gameweek_id,
+        seasonId: id(1),
+        status: "finalized",
+        lockVersion: 5,
+        sequenceNumber: 1,
+        scoringInputVersion: 1,
+        deadlineAt: "2026-09-24T18:30:00Z",
+        serverTime: now.toISOString(),
+        unlockedLineups: 0,
+        nextGameweekId: id(102),
+        advancedToGameweekId: id(102),
+      };
+    throw new Error(`unexpected_rpc_${name}`);
+  };
+
+  test("parses the source and fails safe to today's behaviour", () => {
+    expect(parseFootballDataSource("sofascore")).toBe("sofascore");
+    expect(parseFootballDataSource("shadow")).toBe("shadow");
+    expect(parseFootballDataSource("sportsmonks")).toBe("sportsmonks");
+    for (const raw of [null, undefined, "", "x", 1])
+      expect(parseFootballDataSource(raw)).toBe("unknown");
+    expect(skipsSportsMonks("sofascore")).toBe(true);
+    expect(skipsSportsMonks("shadow")).toBe(true);
+    expect(skipsSportsMonks("sportsmonks")).toBe(false);
+    expect(skipsSportsMonks("unknown")).toBe(false);
+    expect(skipsSportsMonks(undefined)).toBe(false);
+  });
+
+  test("the SportsMonks token is not required for SofaScore, and still is by default", () => {
+    const base = {
+      FANTASY_AUTOMATION_ENABLED: "true",
+      GITHUB_REPOSITORY: "mrdata007/botolago-foundation",
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_EVENT_NAME: "schedule",
+      GITHUB_RUN_ATTEMPT: "1",
+      EXPECTED_COMMIT: "a".repeat(40),
+      GITHUB_SHA: "a".repeat(40),
+      SUPABASE_PRODUCTION_PROJECT_REF: "tkewgajrljbwgwedqsxn",
+      SUPABASE_PRODUCTION_PROJECT_NAME: "BotolaGO Production V2",
+      SUPABASE_PRODUCTION_URL: "https://tkewgajrljbwgwedqsxn.supabase.co/",
+      SUPABASE_SECRET_KEY: "secret",
+      SPORTSMONKS_API_TOKEN: "",
+      FANTASY_ORCHESTRATOR_EVIDENCE_DIR: "/tmp/evidence",
+    };
+    expect(() => orchestratorEnvironment(base)).toThrow("fantasy_orchestrator_credential_missing");
+    expect(orchestratorEnvironment(base, { requireSportsMonksToken: false }).token).toBeUndefined();
+    // The database key is always required.
+    expect(() =>
+      orchestratorEnvironment(
+        { ...base, SUPABASE_SECRET_KEY: "" },
+        { requireSportsMonksToken: false },
+      ),
+    ).toThrow("fantasy_orchestrator_credential_missing");
+  });
+
+  for (const source of ["sofascore", "shadow"] as const) {
+    test(`${source}: SportsMonks steps are skipped, not failed, and the lifecycle still runs`, async () => {
+      const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-24T18:30:00Z" }]);
+      const run = gateway(cal, { lifecycle: finalizedLifecycle });
+      const ingestCalls = noSportsMonks(run);
+      const summary = await orchestrateFantasySeason(run.gateway, {
+        now,
+        dataSource: source,
+        // What the workflow would hand over when its recovery step has failed:
+        // it must not matter.
+        providerRefresh: failedRefresh,
+      });
+      expect(ingestCalls()).toBe(0);
+      expect(summary.verdict).toBe("ok");
+      expect(shouldFailRun(summary.verdict)).toBe(false);
+      expect(summary.dataSource).toBe(source);
+      expect(summary.providerSteps).toEqual({
+        recovery: `skipped:data_source_${source}`,
+        performances: `skipped:data_source_${source}`,
+      });
+      expect(summary.performances).toEqual({
+        batches: 0,
+        fixturesProcessed: 0,
+        skipped: `skipped:data_source_${source}`,
+      });
+      expect(summary).not.toHaveProperty("providerRefresh");
+      // Lifecycle, calendar, prizes and the deadline watch ran as ever.
+      expect(summary.workers).toHaveLength(1);
+      expect(summary.workers[0]).toMatchObject({ reason: "deadline_passed" });
+      expect(run.calls.filter((c) => c.name === "service_sync_fantasy_calendar")).toHaveLength(2);
+      expect(run.calls.some((c) => c.name === "service_evaluate_fantasy_prizes")).toBe(true);
+      expect(run.calls.some((c) => c.name === "service_fantasy_deadline_watch")).toBe(true);
+      const page = renderHealthSummary(summary);
+      expect(page).toContain(`| Provider refresh | skipped:data_source_${source} |`);
+      expect(page).toContain(`| Performances | skipped:data_source_${source} |`);
+      expect(page).toContain("## Fantasy season orchestrator: OK");
+    });
+  }
+
+  test("sofascore: a lifecycle worker failure still fails the pass", async () => {
+    const cal = calendar([{ sequence: 1, status: "live", scoringInputVersion: 1 }]);
+    const run = gateway(cal, {
+      lifecycle: () => {
+        throw new Error("fantasy_worker_exploded");
+      },
+    });
+    noSportsMonks(run);
+    const summary = await orchestrateFantasySeason(run.gateway, { now, dataSource: "sofascore" });
+    expect(summary.workers[0]).toMatchObject({ outcome: "failed" });
+    expect(summary.verdict).toBe("failed");
+  });
+
+  test("sportsmonks and unknown keep today's behaviour exactly", async () => {
+    for (const dataSource of ["sportsmonks", "unknown", undefined] as const) {
+      const cal = calendar([{ sequence: 1, status: "open", deadlineAt: "2026-09-25T18:30:00Z" }]);
+      const run = gateway(cal);
+      const summary = await orchestrateFantasySeason(run.gateway, {
+        now,
+        ...(dataSource ? { dataSource } : {}),
+        providerRefresh: failedRefresh,
+      });
+      expect(summary.performances).toEqual({ batches: 1, fixturesProcessed: 0 });
+      expect(summary).not.toHaveProperty("providerSteps");
+      expect(summary.providerRefresh).toBeDefined();
+      // The failed refresh still fails the run.
+      expect(summary.verdict).toBe("failed");
+    }
+  });
+
+  test("sofascore: an adaptive wait inside the selection window does not escalate; past it, it does", async () => {
+    const windows = { 1: "2026-09-28T00:00:00+00:00" };
+    const pass = async (at: string, dataSource: "sofascore" | "sportsmonks") => {
+      const cal = calendar([
+        { sequence: 1, status: "live", scoringInputVersion: 1, deadlineAt: "2026-09-24T13:30:00Z" },
+        { sequence: 2, status: "scheduled" },
+      ]);
+      const run = gateway(cal, { lifecycle: liveLifecycle("adaptive_scoring_pending"), windows });
+      if (dataSource === "sofascore") noSportsMonks(run);
+      return orchestrateFantasySeason(run.gateway, { now: new Date(at), dataSource });
+    };
+    // 8 h after the window ended: past the 6 h allowance, inside 6 h + 12 h.
+    const waiting = await pass("2026-09-28T08:00:00Z", "sofascore");
+    expect(waiting.verdict).toBe("waiting");
+    expect(waiting.scoring).toMatchObject({ gameweeks: [{ sequence: 1, overdue: false }] });
+    // Past 18 h: a real incident again.
+    const late = await pass("2026-09-28T19:00:00Z", "sofascore");
+    expect(late.verdict).toBe("escalate");
+    // SportsMonks mode is untouched: it escalates at 6 h as before.
+    const before = await pass("2026-09-28T08:00:00Z", "sportsmonks");
+    expect(before.verdict).toBe("escalate");
+  });
+
+  test("sofascore: a non-adaptive wait (football_not_final) still escalates at the normal threshold", async () => {
+    const cal = calendar([
+      { sequence: 1, status: "live", scoringInputVersion: 1, deadlineAt: "2026-09-24T13:30:00Z" },
+      { sequence: 2, status: "scheduled" },
+    ]);
+    const run = gateway(cal, {
+      lifecycle: liveLifecycle("football_not_final"),
+      windows: { 1: "2026-09-28T00:00:00+00:00" },
+    });
+    noSportsMonks(run);
+    const summary = await orchestrateFantasySeason(run.gateway, {
+      now: new Date("2026-09-28T08:00:00Z"),
+      dataSource: "sofascore",
+    });
+    expect(summary.verdict).toBe("escalate");
   });
 });

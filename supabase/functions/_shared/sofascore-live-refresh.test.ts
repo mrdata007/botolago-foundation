@@ -160,7 +160,7 @@ function run(
     client: db.client,
     rapid: rapid(fetch, minRemaining),
     // These tests are about scores: the details step has its own tests.
-    environment: { SOFASCORE_DETAILS_PER_TICK: "0" },
+    environment: { SOFASCORE_DETAILS_PER_TICK: "0", SOFASCORE_FANTASY_ENABLED: "false" },
     now: NOW,
     log: (line) => lines.push(line),
   }).then((outcome) => ({ outcome, lines }));
@@ -447,6 +447,7 @@ describe("handler wiring", () => {
     BOTOLAGO_SCHEDULER_TOKEN: TOKEN,
     RAPIDAPI_KEY: "k",
     SOFASCORE_DETAILS_PER_TICK: "0",
+    SOFASCORE_FANTASY_ENABLED: "false",
   };
 
   test("sofascore source goes through RapidAPI and the ingest RPC, never SportsMonks", async () => {
