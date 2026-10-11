@@ -341,9 +341,10 @@ function stripArabicMarks(text: string): string {
 }
 
 /**
- * Statements the facts cannot support, which must not be published: any remark
- * that some information is missing, and (for a match report) a penalty
- * shoot-out or extra time unless the facts carry a shoot-out score. Returns
+ * Statements a match report's facts cannot support, which must not be
+ * published: any remark that some information is missing, and a penalty
+ * shoot-out or extra time unless the facts carry a shoot-out score. Other
+ * kinds are not checked here. Returns
  * short labels naming what was found; empty means the article is clean.
  */
 export function unsupportedMentions(job: ContentJob, article: GeneratedArticle): string[] {
@@ -354,8 +355,12 @@ export function unsupportedMentions(job: ContentJob, article: GeneratedArticle):
   for (const language of LANGUAGES) {
     const { title, summary, paragraphs } = article[language];
     const text = stripArabicMarks([title, summary, ...paragraphs].join("\n"));
+    // Only a match report is written from facts alone; a news report or blog
+    // retells sourced news, where "indisponible" or "inconnu" are ordinary words
+    // (an injured player, an undisclosed fee).
+    if (job.kind !== "match_recap") continue;
     if (MISSING_DATA_PATTERNS.some((p) => p.test(text))) found.add("missing_data_remark");
-    if (job.kind === "match_recap" && !wentToPenalties) {
+    if (!wentToPenalties) {
       if (SHOOTOUT_PATTERNS.some((p) => p.test(text))) found.add("penalty_shootout");
       if (EXTRA_TIME_PATTERNS.some((p) => p.test(text))) found.add("extra_time");
     }

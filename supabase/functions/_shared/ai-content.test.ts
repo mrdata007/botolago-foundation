@@ -181,6 +181,13 @@ describe("unsupportedMentions", () => {
       unsupportedMentions(cup, article("Victoire aux tirs au but après prolongation")),
     ).toEqual([]);
   });
+  it("leaves news reports and blogs alone: an unavailable player is ordinary news", () => {
+    const news: ContentJob = { kind: "news_report", fixtureId: null, facts: {} };
+    const blog: ContentJob = { kind: "blog", fixtureId: null, facts: {} };
+    const text = article("Le défenseur est indisponible pour le match", "اللاعب غير متاح للمباراة");
+    expect(unsupportedMentions(news, text)).toEqual([]);
+    expect(unsupportedMentions(blog, text)).toEqual([]);
+  });
   it("does not apply shoot-out checks to previews", () => {
     const preview: ContentJob = { kind: "match_preview", fixtureId: "f", facts: {} };
     expect(unsupportedMentions(preview, article("Une finale, peut-être aux tirs au but"))).toEqual(
