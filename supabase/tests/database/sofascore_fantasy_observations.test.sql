@@ -232,7 +232,7 @@ select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.request(
   '{}', '9001', false)), 'sofascore_limited_coverage_fields', '6.2 nor a zero written for them');
 select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.request(
   (select jsonb_agg(case when i = 4 then jsonb_set(pg_temp.row(i), '{evidence,minutes,state}', '"estimated"') else pg_temp.row(i) end order by i) from generate_series(1, 22) i))),
-  'sofascore_evidence_invalid', '6.3 an estimate is refused');
+  'sofascore_request_invalid', '6.3 an estimate is refused (the estimate check runs before the per-field evidence check)');
 select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.request(
   (select jsonb_agg(case when i = 4 then jsonb_set(pg_temp.row(i), '{evidence,goals,source}', '"another-feed"') else pg_temp.row(i) end order by i) from generate_series(1, 22) i))),
   'sofascore_evidence_invalid', '6.4 evidence from any other source is refused');
