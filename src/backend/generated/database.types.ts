@@ -2217,6 +2217,10 @@ export type Database = {
         Args: { p_fantasy_season_id?: string }
         Returns: Json
       }
+      service_sync_sofascore_player_performances: {
+        Args: { p_fixture_id?: string; p_limit?: number; p_ratings?: Json }
+        Returns: Json
+      }
       service_upsert_fantasy_player_points: {
         Args: {
           p_category: string
@@ -6969,7 +6973,7 @@ export type Database = {
         Row: {
           active: boolean
           appeared: boolean
-          assists: number
+          assists: number | null
           clean_sheets: number
           created_at: string
           fixture_id: string
@@ -6979,7 +6983,7 @@ export type Database = {
           id: string
           minutes: number
           own_goals: number
-          penalties_missed: number
+          penalties_missed: number | null
           penalties_saved: number | null
           player_id: string
           position: Database["app"]["Enums"]["football_position"]
@@ -6998,7 +7002,7 @@ export type Database = {
         Insert: {
           active?: boolean
           appeared: boolean
-          assists: number
+          assists?: number | null
           clean_sheets: number
           created_at?: string
           fixture_id: string
@@ -7008,7 +7012,7 @@ export type Database = {
           id?: string
           minutes: number
           own_goals: number
-          penalties_missed: number
+          penalties_missed?: number | null
           penalties_saved?: number | null
           player_id: string
           position: Database["app"]["Enums"]["football_position"]
@@ -7027,7 +7031,7 @@ export type Database = {
         Update: {
           active?: boolean
           appeared?: boolean
-          assists?: number
+          assists?: number | null
           clean_sheets?: number
           created_at?: string
           fixture_id?: string
@@ -7037,7 +7041,7 @@ export type Database = {
           id?: string
           minutes?: number
           own_goals?: number
-          penalties_missed?: number
+          penalties_missed?: number | null
           penalties_saved?: number | null
           player_id?: string
           position?: Database["app"]["Enums"]["football_position"]

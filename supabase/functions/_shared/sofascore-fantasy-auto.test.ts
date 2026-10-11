@@ -82,6 +82,11 @@ interface Options {
   recordError?: { code?: string; message?: string } | "throw";
   contextMissing?: boolean;
   dueCatchUp?: { fixtureId: string; eventId: string }[];
+  /** The Pépites sync: undefined or "missing" is PGRST202; otherwise its answer (or an error). */
+  performances?:
+    | "missing"
+    | "throw"
+    | ((args: Record<string, unknown>) => { data?: unknown; error?: { message: string } });
 }
 function fakeDb(options: Options = {}) {
   const world = options.world ?? newWorld();
@@ -163,6 +168,13 @@ function fakeDb(options: Options = {}) {
               if (options.autoMap === undefined || options.autoMap === "missing")
                 return Promise.resolve(missing);
               return Promise.resolve({ error: null, data: options.autoMap(args, world) });
+            case "service_sync_sofascore_player_performances": {
+              if (options.performances === undefined || options.performances === "missing")
+                return Promise.resolve(missing);
+              if (options.performances === "throw") return Promise.reject(new Error("boom"));
+              const answer = options.performances(args);
+              return Promise.resolve({ data: answer.data ?? null, error: answer.error ?? null });
+            }
             case "service_record_sofascore_fantasy_observation":
               if (options.recordError === "throw") return Promise.reject(new Error("boom"));
               if (options.recordError)
@@ -207,7 +219,9 @@ function makeRun(
   mode: SofascoreFantasyMode = "sofascore",
   environment: Record<string, string> = {},
 ) {
+  // `lines` are the Fantasy lines; the Pépites sync logs its own event (`performanceLines`).
   const lines: Record<string, unknown>[] = [];
+  const performanceLines: Record<string, unknown>[] = [];
   const net = fakeRapid();
   const run = new SofascoreFantasyRun({
     mode,
@@ -215,13 +229,34 @@ function makeRun(
     rapid: net.rapid,
     environment,
     now: NOW,
-    log: (line) => lines.push(JSON.parse(line)),
+    log: (line) => {
+      const parsed = JSON.parse(line) as Record<string, unknown>;
+      (parsed.event === "football_live_refresh_performances" ? performanceLines : lines).push(
+        parsed,
+      );
+    },
   });
-  return { run, lines, net };
+  return { run, lines, performanceLines, net };
 }
 const names = (db: ReturnType<typeof fakeDb>) => db.calls.map((c) => c.name);
 const records = (db: ReturnType<typeof fakeDb>) =>
   db.calls.filter((c) => c.name === "service_record_sofascore_fantasy_observation");
+const syncs = (db: ReturnType<typeof fakeDb>) =>
+  db.calls.filter((c) => c.name === "service_sync_sofascore_player_performances");
+const written = (fixtureId: string) => ({
+  data: {
+    results: [
+      {
+        fixtureId,
+        outcome: "written",
+        rows: 22,
+        replaced: 0,
+        rated: 20,
+        unknownFields: { assists: 0, penaltiesMissed: 0, goalkeeperSaves: 0 },
+      },
+    ],
+  },
+});
 
 describe("automatic Fantasy: a finished match", () => {
   test("is recorded from the replies already fetched, with no SofaScore request", async () => {
@@ -612,7 +647,10 @@ describe("automatic Fantasy: catch-up of a finished match never attempted", () =
       rapid: refuse,
       environment: { SOFASCORE_FANTASY_CATCHUP_PER_TICK: "3" },
       now: NOW,
-      log: (line) => lines.push(JSON.parse(line)),
+      log: (line) => {
+        const parsed = JSON.parse(line) as Record<string, unknown>;
+        if (parsed.event === "football_live_refresh_fantasy") lines.push(parsed);
+      },
     });
     await run.sweep();
     expect(lines).toHaveLength(1);
@@ -630,6 +668,7 @@ describe("configuration", () => {
       catchUpHours: 72,
       maxAttempts: 24,
       fetchAttempts: 4,
+      performancesPerTick: 20,
     });
     expect(
       readFantasyConfig({
@@ -812,5 +851,234 @@ describe("automatic Fantasy: through the live tick", () => {
     expect(net.paths).toHaveLength(3);
     expect(db.calls.map((c) => c.name)).toContain("service_record_sofascore_fantasy_observation");
     expect(outcome.body.fantasy).toMatchObject({ recorded: 1 });
+  });
+});
+
+// Pépites: the same observation feeds app.player_fixture_performances through
+// api.service_sync_sofascore_player_performances. The database derives the rows,
+// so no SofaScore request is made and a failure never changes the Fantasy outcome.
+describe("automatic Fantasy: Pépites performances", () => {
+  test("right after a recording, one call for that fixture with the ratings of the replies", async () => {
+    const db = fakeDb({ performances: () => written(FIXTURE) });
+    const { run, lines, performanceLines, net } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(net.paths).toEqual([]);
+    expect(names(db).indexOf("service_sync_sofascore_player_performances")).toBeGreaterThan(
+      names(db).indexOf("service_record_sofascore_fantasy_observation"),
+    );
+    expect(syncs(db)).toHaveLength(1);
+    const args = syncs(db)[0].args as {
+      p_fixture_id: string;
+      p_limit: number;
+      p_ratings: Record<string, number>;
+    };
+    expect(args.p_fixture_id).toBe(FIXTURE);
+    expect(args.p_limit).toBe(1);
+    // Every lineup player SofaScore rated, by SofaScore id; nothing outside 0..10.
+    const rated = parseSofascoreLineups(REPLIES.lineups).players.filter(
+      (p) => typeof p.stats?.rating === "number",
+    );
+    expect(Object.keys(args.p_ratings).sort()).toEqual(rated.map((p) => p.externalId).sort());
+    expect(Object.values(args.p_ratings).every((r) => r >= 0 && r <= 10)).toBe(true);
+    expect(args.p_ratings["1140820"]).toBe(5.9);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({ outcome: "recorded" });
+    expect(performanceLines).toHaveLength(1);
+    expect(performanceLines[0]).toMatchObject({
+      event: "football_live_refresh_performances",
+      fixtureId: FIXTURE,
+      eventId: EVENT,
+      source: "fresh",
+      outcome: "written",
+      rows: 22,
+    });
+    expect(run.summary().performances).toEqual({
+      written: 1,
+      unchanged: 0,
+      rated: 0,
+      refused: 0,
+      errors: 0,
+    });
+    expect(run.summary()).toMatchObject({ recorded: 1, requests: 0 });
+  });
+
+  test("a refusal or a database failure never changes the Fantasy outcome", async () => {
+    const refusal = fakeDb({
+      performances: () => ({ error: { message: "sofascore_performances_identity_not_reviewed" } }),
+    });
+    const a = makeRun(refusal);
+    await a.run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(a.lines).toHaveLength(1);
+    expect(a.lines[0]).toMatchObject({ outcome: "recorded" });
+    expect(refusal.attempts.get(FIXTURE)).toMatchObject({ status: "recorded" });
+    expect(a.run.summary()).toMatchObject({ recorded: 1, errors: 0 });
+    expect(a.run.summary().performances).toMatchObject({ refused: 1, errors: 0 });
+    expect(a.performanceLines[0]).toMatchObject({
+      outcome: "error:sofascore_performances_identity_not_reviewed",
+    });
+
+    const down = fakeDb({ performances: "throw" });
+    const b = makeRun(down);
+    await b.run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(b.lines[0]).toMatchObject({ outcome: "recorded" });
+    expect(b.run.summary()).toMatchObject({ recorded: 1, errors: 0 });
+    expect(b.run.summary().performances).toMatchObject({ refused: 0, errors: 1 });
+    expect(b.performanceLines[0]).toMatchObject({ outcome: "error:database_unavailable" });
+  });
+
+  test("a database without the function skips it once, with one log line", async () => {
+    const db = fakeDb(); // performances: missing
+    const { run, lines, performanceLines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    await run.fromReplies(uuid("f", 2), EVENT, REPLIES);
+    await run.sweep();
+    expect(syncs(db)).toHaveLength(1);
+    expect(performanceLines).toHaveLength(1);
+    expect(performanceLines[0]).toMatchObject({ outcome: "skipped:performances_function_missing" });
+    expect(lines.map((l) => l.outcome)).toEqual(["recorded", "skipped:already_observed"]);
+    expect(run.summary().performances).toEqual({
+      written: 0,
+      unchanged: 0,
+      rated: 0,
+      refused: 0,
+      errors: 0,
+    });
+  });
+
+  test("a fixture Fantasy already observed is still offered to Pépites, with the fresh ratings", async () => {
+    const db = fakeDb({
+      world: newWorld({ observations: 1 }),
+      performances: () => ({
+        data: { results: [{ fixtureId: FIXTURE, outcome: "rated", rows: 22, rated: 2 }] },
+      }),
+    });
+    const { run, lines, performanceLines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(records(db)).toHaveLength(0);
+    expect(lines[0]).toMatchObject({ outcome: "skipped:already_observed" });
+    expect(syncs(db)).toHaveLength(1);
+    expect((syncs(db)[0].args as { p_ratings: unknown }).p_ratings).toBeDefined();
+    expect(performanceLines[0]).toMatchObject({ outcome: "rated", rated: 2 });
+    expect(run.summary().performances).toMatchObject({ rated: 1 });
+  });
+
+  test("a recorded attempt is offered too; an unfinished or unfinalized fixture never is", async () => {
+    const db = fakeDb({ performances: () => written(FIXTURE) });
+    db.attempts.set(FIXTURE, {
+      status: "recorded",
+      attempts: 1,
+      matchData: null,
+      outcome: "recorded",
+    });
+    const first = makeRun(db);
+    await first.run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(syncs(db)).toHaveLength(1);
+    for (const over of [{ status: "live_first_half" }, { finalized: false }]) {
+      const other = fakeDb({
+        world: newWorld({ observations: 1, ...over }),
+        performances: () => written(FIXTURE),
+      });
+      await makeRun(other).run.fromReplies(FIXTURE, EVENT, REPLIES);
+      expect(syncs(other)).toHaveLength(0);
+    }
+  });
+
+  test("a held fixture is not offered (there is no observation)", async () => {
+    const db = fakeDb({
+      world: newWorld({ mapped: new Set(STARTERS.slice(1)) }),
+      performances: () => written(FIXTURE),
+    });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0]).toMatchObject({ outcome: "held:unmapped_players" });
+    expect(syncs(db)).toHaveLength(0);
+  });
+
+  test("the sweep asks for the fixtures that need rows, after the retries, with no request", async () => {
+    const db = fakeDb({
+      performances: () => ({
+        data: {
+          results: [
+            { fixtureId: uuid("f", 7), outcome: "written", rows: 22, replaced: 0, rated: 0 },
+            { fixtureId: uuid("f", 8), outcome: "unchanged", rows: 22, replaced: 0, rated: 0 },
+            {
+              fixtureId: uuid("f", 9),
+              outcome: "refused",
+              reason: "sofascore_performances_other_provider_rows",
+            },
+          ],
+        },
+      }),
+    });
+    const { run, performanceLines, net } = makeRun(db);
+    await run.sweep();
+    expect(net.paths).toEqual([]);
+    const order = names(db);
+    expect(order.indexOf("service_sync_sofascore_player_performances")).toBeGreaterThan(
+      order.indexOf("service_sofascore_fantasy_due"),
+    );
+    expect(syncs(db)).toHaveLength(1);
+    expect(syncs(db)[0].args).toEqual({ p_limit: 20 });
+    expect(performanceLines.map((l) => l.outcome)).toEqual([
+      "written",
+      "unchanged",
+      "refused:sofascore_performances_other_provider_rows",
+    ]);
+    expect(performanceLines.map((l) => l.fixtureId)).toEqual([
+      uuid("f", 7),
+      uuid("f", 8),
+      uuid("f", 9),
+    ]);
+    expect(run.summary().performances).toEqual({
+      written: 1,
+      unchanged: 1,
+      rated: 0,
+      refused: 1,
+      errors: 0,
+    });
+  });
+
+  test("the sweep still syncs when the Fantasy state functions are missing or retries are off", async () => {
+    const db = fakeDb({ contextMissing: true, performances: () => ({ data: { results: [] } }) });
+    await makeRun(db).run.sweep();
+    expect(syncs(db)).toHaveLength(1);
+    const off = fakeDb({ performances: () => ({ data: { results: [] } }) });
+    await makeRun(off, "sofascore", {
+      SOFASCORE_FANTASY_RETRIES_PER_TICK: "0",
+      SOFASCORE_FANTASY_CATCHUP_PER_TICK: "0",
+    }).run.sweep();
+    expect(names(off)).toEqual(["service_sync_sofascore_player_performances"]);
+  });
+
+  test("SOFASCORE_PEPITES_SYNC_PER_TICK sets the batch, 0 switches the sync off", async () => {
+    expect(readFantasyConfig({}).performancesPerTick).toBe(20);
+    expect(readFantasyConfig({ SOFASCORE_PEPITES_SYNC_PER_TICK: "7" }).performancesPerTick).toBe(7);
+    expect(readFantasyConfig({ SOFASCORE_PEPITES_SYNC_PER_TICK: "51" }).performancesPerTick).toBe(
+      20,
+    );
+    expect(readFantasyConfig({ SOFASCORE_PEPITES_SYNC_PER_TICK: "x" }).performancesPerTick).toBe(
+      20,
+    );
+    const db = fakeDb({ performances: () => ({ data: { results: [] } }) });
+    const { run } = makeRun(db, "sofascore", { SOFASCORE_PEPITES_SYNC_PER_TICK: "0" });
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    await run.sweep();
+    expect(syncs(db)).toHaveLength(0);
+    const batch = fakeDb({ performances: () => ({ data: { results: [] } }) });
+    await makeRun(batch, "sofascore", { SOFASCORE_PEPITES_SYNC_PER_TICK: "7" }).run.sweep();
+    expect(syncs(batch)[0].args).toEqual({ p_limit: 7 });
+  });
+
+  test("shadow mode and a switched-off path never call it", async () => {
+    const shadow = fakeDb({ performances: () => ({ data: { results: [] } }) });
+    const a = makeRun(shadow, "shadow");
+    await a.run.fromReplies(FIXTURE, EVENT, REPLIES);
+    await a.run.sweep();
+    expect(syncs(shadow)).toHaveLength(0);
+    const disabled = fakeDb({ performances: () => ({ data: { results: [] } }) });
+    const b = makeRun(disabled, "sofascore", { SOFASCORE_FANTASY_ENABLED: "false" });
+    await b.run.fromReplies(FIXTURE, EVENT, REPLIES);
+    await b.run.sweep();
+    expect(disabled.calls).toHaveLength(0);
   });
 });

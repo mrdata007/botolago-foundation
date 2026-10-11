@@ -19,6 +19,18 @@
 //   * Before building, an appearing player with no reviewed mapping is offered
 //     to api.service_sofascore_auto_map_players (feature-detected: a database
 //     without it just continues), then the mappings are read again.
+//   * Pépites: the same observation also feeds app.player_fixture_performances,
+//     the table Pépites reads (migration 20261011180000,
+//     api.service_sync_sofascore_player_performances). The database derives the
+//     rows from the stored observation, so nothing is fetched again. It is
+//     asked for at the end of every sweep (finished fixtures whose observation
+//     has no rows yet: this is also the backfill of the matches finished
+//     before the migration), and for one fixture right after it is recorded or
+//     found already recorded, with the ratings SofaScore gave in the replies in
+//     hand. Feature-detected like the auto-mapping: a database without the
+//     function just skips it, with one log line. A failure never changes the
+//     Fantasy outcome or holds back scores and details. `sofascore` mode only;
+//     a shadow run records no observation, so there is nothing to derive.
 //   * A match held back is retried on later ticks WITHOUT a SofaScore request:
 //     the trimmed parsed replies are kept in app_private.sofascore_fantasy_attempts
 //     (migration 20261011140000) and re-read. Stored match details cannot
@@ -85,6 +97,8 @@ export const FANTASY_MAX_ATTEMPTS_DEFAULT = 24;
 export const FANTASY_MAX_ATTEMPTS_MAX = 100;
 export const FANTASY_FETCH_ATTEMPTS_DEFAULT = 4;
 export const FANTASY_FETCH_ATTEMPTS_MAX = 20;
+export const PERFORMANCES_PER_TICK_DEFAULT = 20;
+export const PERFORMANCES_PER_TICK_MAX = 50;
 const RESULTS_IN_SUMMARY = 25;
 const MAX_PLAYER_IDS = 120;
 
@@ -95,6 +109,8 @@ export interface SofascoreFantasyConfig {
   readonly catchUpHours: number;
   readonly maxAttempts: number;
   readonly fetchAttempts: number;
+  /** Fixtures the Pépites sync may write per sweep (0 switches it off). */
+  readonly performancesPerTick: number;
 }
 
 function bounded(value: string | undefined, fallback: number, max: number, min = 0): number {
@@ -138,6 +154,11 @@ export function readFantasyConfig(
       FANTASY_FETCH_ATTEMPTS_DEFAULT,
       FANTASY_FETCH_ATTEMPTS_MAX,
       1,
+    ),
+    performancesPerTick: bounded(
+      environment.SOFASCORE_PEPITES_SYNC_PER_TICK,
+      PERFORMANCES_PER_TICK_DEFAULT,
+      PERFORMANCES_PER_TICK_MAX,
     ),
   };
 }
@@ -326,7 +347,17 @@ export interface SofascoreFantasySummary {
   readonly errors: number;
   /** SofaScore requests this module made (catch-up fetches only; 0 on the normal path). */
   readonly requests: number;
+  /** What the Pépites sync did (api.service_sync_sofascore_player_performances). */
+  readonly performances: PerformancesSummary;
   readonly results: readonly FantasyFixtureResult[];
+}
+
+export interface PerformancesSummary {
+  readonly written: number;
+  readonly unchanged: number;
+  readonly rated: number;
+  readonly refused: number;
+  readonly errors: number;
 }
 
 export interface SofascoreFantasyDependencies {
@@ -348,6 +379,8 @@ export class SofascoreFantasyRun {
   private autoMapMissing = false;
   private rateLimited = false;
   private counts = { recorded: 0, held: 0, skipped: 0, errors: 0 };
+  private perf = { written: 0, unchanged: 0, rated: 0, refused: 0, errors: 0 };
+  private performancesMissing = false;
 
   constructor(private readonly deps: SofascoreFantasyDependencies) {
     this.config = readFantasyConfig(deps.environment);
@@ -359,6 +392,7 @@ export class SofascoreFantasyRun {
       mode: this.deps.mode,
       ...this.counts,
       requests: this.requestLog.length,
+      performances: { ...this.perf },
       results: this.results.slice(0, RESULTS_IN_SUMMARY),
     };
   }
@@ -388,6 +422,14 @@ export class SofascoreFantasyRun {
    * (3 requests each). `sofascore` mode only: a shadow run keeps no state.
    */
   async sweep(): Promise<void> {
+    const { config, deps } = this;
+    if (!config.enabled || deps.mode !== "sofascore") return;
+    await this.retryAndCatchUp();
+    // After the retries, so a fixture recorded just now is written in this same tick.
+    await this.syncDuePerformances();
+  }
+
+  private async retryAndCatchUp(): Promise<void> {
     const { config, deps } = this;
     if (!config.enabled || deps.mode !== "sofascore" || this.stateMissing) return;
     if (config.retriesPerTick === 0 && config.catchUpPerTick === 0) return;
@@ -555,12 +597,16 @@ export class SofascoreFantasyRun {
       this.finish({ ...base, outcome: "skipped:event_mismatch" });
       return;
     }
+    // An observation exists already: Fantasy has nothing to do, Pépites may (rows
+    // not written yet, or the ratings in these fresh replies).
     if (ctx.attempt?.status === "recorded") {
       this.finish({ ...base, outcome: "skipped:already_recorded" });
+      await this.syncPerformances(fixtureId, eventId, source, ctx, parts);
       return;
     }
     if (ctx.observations > 0) {
       this.finish({ ...base, outcome: "skipped:already_observed" });
+      await this.syncPerformances(fixtureId, eventId, source, ctx, parts);
       return;
     }
     if (ctx.status !== "finished" || !ctx.finalized) {
@@ -745,6 +791,112 @@ export class SofascoreFantasyRun {
       created: result.created === true,
       fullReady: result.fullReady === true,
     });
+    await this.syncPerformances(fixtureId, eventId, source, ctx, parts);
+  }
+
+  // -- Pépites: the rows of app.player_fixture_performances ----------------------
+
+  /**
+   * One fixture whose observation exists: ask the database to derive its
+   * performance rows from it, passing the ratings of these replies. Never
+   * throws, never changes the Fantasy outcome.
+   */
+  private async syncPerformances(
+    fixtureId: string,
+    eventId: string,
+    source: FantasySource,
+    ctx: FantasyContext,
+    parts: MatchParts,
+  ): Promise<void> {
+    const { config, deps } = this;
+    if (deps.mode !== "sofascore" || config.performancesPerTick === 0 || this.performancesMissing)
+      return;
+    if (ctx.status !== "finished" || !ctx.finalized) return;
+    try {
+      const ratings = ratingsOf(parts);
+      const result = await this.call("service_sync_sofascore_player_performances", {
+        p_fixture_id: fixtureId,
+        p_limit: 1,
+        ...(Object.keys(ratings).length > 0 ? { p_ratings: ratings } : {}),
+      });
+      this.notePerformances(result, { fixtureId, eventId, source });
+    } catch {
+      this.perf.errors += 1;
+    }
+  }
+
+  /**
+   * The sweep: finished fixtures whose newest observation is SofaScore's and
+   * has no rows yet (the matches finished before the migration, a tick that
+   * missed one). No SofaScore request; no ratings (the replies are not kept).
+   */
+  private async syncDuePerformances(): Promise<void> {
+    const { config } = this;
+    if (config.performancesPerTick === 0 || this.performancesMissing) return;
+    try {
+      const result = await this.call("service_sync_sofascore_player_performances", {
+        p_limit: config.performancesPerTick,
+      });
+      this.notePerformances(result, { fixtureId: null, eventId: null, source: "stored" });
+    } catch {
+      this.perf.errors += 1;
+    }
+  }
+
+  private notePerformances(
+    result: FixtureRpcResult,
+    where: { fixtureId: string | null; eventId: string | null; source: FantasySource },
+  ): void {
+    if (result.error) {
+      if (isMissingFunction(result.error)) {
+        // Not installed here (yet): carry on, as with the auto-mapping.
+        this.performancesMissing = true;
+        this.logPerformances({ ...where, outcome: "skipped:performances_function_missing" });
+        return;
+      }
+      const label = safeLabel(result.error.message);
+      if (/^sofascore_performances_/.test(label)) this.perf.refused += 1;
+      else this.perf.errors += 1;
+      this.logPerformances({ ...where, outcome: `error:${label}` });
+      return;
+    }
+    const data = isRecord(result.data) ? result.data : {};
+    const list = Array.isArray(data.results) ? data.results : [];
+    for (const item of list) {
+      if (!isRecord(item)) continue;
+      const outcome = typeof item.outcome === "string" ? item.outcome : "unknown";
+      if (outcome === "written") this.perf.written += 1;
+      else if (outcome === "unchanged") this.perf.unchanged += 1;
+      else if (outcome === "rated") this.perf.rated += 1;
+      else if (outcome === "refused") this.perf.refused += 1;
+      else this.perf.errors += 1;
+      this.logPerformances({
+        ...where,
+        fixtureId: typeof item.fixtureId === "string" ? item.fixtureId : where.fixtureId,
+        outcome:
+          outcome === "refused"
+            ? `refused:${safeLabel(typeof item.reason === "string" ? item.reason : undefined)}`
+            : outcome,
+        rows: item.rows,
+        replaced: item.replaced,
+        rated: item.rated,
+        unknownFields: item.unknownFields,
+      });
+    }
+  }
+
+  private logPerformances(entry: Record<string, unknown>): void {
+    try {
+      this.deps.log(
+        JSON.stringify({
+          event: "football_live_refresh_performances",
+          mode: this.deps.mode,
+          ...entry,
+        }),
+      );
+    } catch {
+      // Logging must never break the run.
+    }
   }
 
   // -- holding -------------------------------------------------------------------
@@ -952,6 +1104,23 @@ export class SofascoreFantasyRun {
       // Logging must never break the run.
     }
   }
+}
+
+/** The rating SofaScore gave each player in the lineup reply (display only), by SofaScore id. */
+function ratingsOf(parts: MatchParts): Record<string, number> {
+  const ratings: Record<string, number> = {};
+  for (const player of parts.lineups.players) {
+    const rating = player.stats?.rating;
+    if (
+      typeof rating === "number" &&
+      Number.isFinite(rating) &&
+      rating >= 0 &&
+      rating <= 10 &&
+      Object.keys(ratings).length < 120
+    )
+      ratings[player.externalId] = rating;
+  }
+  return ratings;
 }
 
 /** Players who started or came on: the ones the builder needs an identity for. */

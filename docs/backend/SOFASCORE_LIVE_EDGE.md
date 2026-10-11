@@ -196,6 +196,74 @@ and logs; `sportsmonks` does nothing.
 - Deploy order: migrations, then the Edge Function. Pause the football and
   Fantasy writers first if you write meanwhile (AGENTS.md).
 
+## Pépites (player appearances)
+
+Pépites reads each player's appearances from `app.player_fixture_performances`
+(active rows with minutes). Only SportsMonks used to write it, so when SportsMonks
+stopped, Pépites, its weekly editions and the player stats stopped moving. Migration
+`20261011180000` and the Fantasy step now keep that table from SofaScore.
+
+**How.** The step does not fetch or parse anything again. The database derives the
+rows from the Fantasy observation that was already recorded for the match
+(`api.service_sync_sofascore_player_performances`), so the numbers are the ones
+Fantasy scores, built from the same replies, the same reviewed player mappings and
+the same checks. The Edge Function asks for it in two places, both in `sofascore`
+mode only and both without a SofaScore request:
+
+- right after a match is recorded, or found already recorded, for that one match.
+  The ratings SofaScore gave in the replies in hand are passed along (Pépites uses
+  them; Fantasy does not);
+- at the end of every sweep, for up to `SOFASCORE_PEPITES_SYNC_PER_TICK` finished
+  matches (default 20, 0 switches it off) whose observation has no rows yet. This
+  is also the backfill: the matches finished since SportsMonks stopped are filled
+  by it on the first runs after the migration. Those rows have no rating, because
+  the replies were not kept (Pépites then ranks without a rating component for
+  them and says so with its `low_rating_sample` flag).
+
+**What a row holds.** Minutes, starts, goals, own goals, cards, goals conceded and
+the clean sheet always (SofaScore establishes them for every match). Assists,
+penalties missed, saves and penalties saved only where SofaScore gives them (a
+full-coverage match, or an assist an incident names). Anything else is **empty
+(NULL), never zero**: that is why `assists` and `penalties_missed` may now be NULL
+(`saves` and `penalties_saved` already could). Pépites already reads these columns
+that way (assists summed ignoring empty ones, penalties shown as unknown, a
+goalkeeper's missing saves as "saves unknown"). An outfield player has no saves
+collected (NULL).
+
+**Who wins.** A match another provider already has active rows for keeps them
+(`refused:sofascore_performances_other_provider_rows`). A newer observation of the
+same match replaces the SofaScore rows (the old ones are set inactive, not
+deleted). The same observation again writes nothing. Only a finished, finalized
+match whose newest observation is SofaScore's, whose fixture mapping and every
+player mapping are still reviewed, is written; a reviewed correction as the newest
+observation is not turned into rows.
+
+**Fantasy is not touched.** The Fantasy scoring input embeds a digest of every
+active row of each match and is recomputed against the stored snapshot digest
+(`fantasy_scoring_input_changed`). So the migration also patches the two functions
+that read these rows for that document to ignore `source_provider = 'sofascore'`;
+the document is byte for byte what it was. The legacy coverage table is not
+written.
+
+**Not covered.** Only matches that have a SofaScore observation get rows, so a
+match Fantasy never records (a gameweek already finalizing or finalized, adaptive
+scoring not on for it, held for review, or recorded earlier from SportsMonks) has
+none. A read-only list of finished matches without any active row:
+
+```sql
+select f.id, f.kickoff_at, f.status
+  from app.fixtures f
+ where f.status = 'finished' and f.finalized_at is not null
+   and not exists (select 1 from app.player_fixture_performances p
+                    where p.fixture_id = f.id and p.active)
+ order by f.kickoff_at desc;
+```
+
+If the migration is not applied, the function is missing and the step logs
+`skipped:performances_function_missing` once per run and carries on. Logs:
+`football_live_refresh_performances`, one line per match (`written`, `unchanged`,
+`rated`, `refused:<reason>`).
+
 ## Open points
 
 - Finished status codes 100/110/120 are an assumption (see `sofascore-fixtures.ts`).

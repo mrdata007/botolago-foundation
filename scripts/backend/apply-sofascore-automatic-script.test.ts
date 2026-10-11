@@ -15,8 +15,9 @@ import {
 /**
  * The ONE guarded script that installs SofaScore Fantasy scoring on production
  * (20261003180000, 20261011110000, 20261011120000, the automatic player
- * matching 20261011130000, the automatic Fantasy state 20261011140000 and the
- * ops health coverage 20261011150000). It is generated; this test fails when the
+ * matching 20261011130000, the automatic Fantasy state 20261011140000, the
+ * ops health coverage 20261011150000 and the Pépites performances 20261011180000).
+ * It is generated; this test fails when the
  * committed script drifts from the migration files or from the generator, runs
  * each migration only after its sha256 matches, skips what is already recorded
  * (and verifies it), ships as a rehearsal, and checks production before its
@@ -127,6 +128,14 @@ describe("apply-sofascore-automatic.sql", () => {
       `md5(pg_get_functiondef('app_private.football_mapping_supporting_state(uuid)'::regprocedure)) is distinct from '${PINS.supportingStateBefore}'`,
       `md5(pg_get_functiondef('app_private.football_mapping_supporting_dependency(text,uuid,uuid)'::regprocedure)) is distinct from '${PINS.supportingDependencyBefore}'`,
       `md5(pg_get_functiondef('app_private.ops_health_checks_before_adaptive()'::regprocedure)) is distinct from '${PINS.opsHealthBefore}'`,
+      "an object migration 20261011180000 depends on is missing",
+      "20261011180000 is not recorded but an object it creates already exists",
+      "migration 20261011120000 is neither recorded nor part of this run, but 20261011180000 builds on",
+      "20261011180000 is not recorded but a SofaScore performance row exists",
+      "to_regprocedure('api.service_sync_sofascore_player_performances(uuid,integer,jsonb)') is not null",
+      "to_regprocedure('app_private.sofascore_sync_fixture_performances(uuid,jsonb)') is not null",
+      `md5(pg_get_functiondef('app_private.fantasy_scoring_input_document_v1(uuid)'::regprocedure)) is distinct from '${PINS.scoringDocumentBaseBefore}'`,
+      `md5(pg_get_functiondef('app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure)) is distinct from '${PINS.legacyFixtureCheckBefore}'`,
     ]) {
       const at = script.indexOf(guard);
       expect({ guard, found: at !== -1 }).toEqual({ guard, found: true });
@@ -176,6 +185,10 @@ describe("apply-sofascore-automatic.sql", () => {
           "fantasyDue",
           "fantasyFixtureHealthReady",
           "opsHealthAfter",
+          "scoringDocumentBaseAfter",
+          "legacyFixtureCheckAfter",
+          "performancesSync",
+          "performancesSyncFixture",
         ] as const
       ).map((key) => `'${PINS[key]}'`),
       "p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=\"\"']",
@@ -290,6 +303,7 @@ describe("apply-sofascore-automatic.sql", () => {
       "20261011130000",
       "20261011140000",
       "20261011150000",
+      "20261011180000",
     ]);
     expect(RESERVED_SLOTS).toEqual([]);
     // 130000 and 140000 call the 120000 function, so 120000 is applied first.
@@ -343,6 +357,10 @@ describe("apply-sofascore-automatic.sql", () => {
       "api.service_sofascore_fantasy_due(integer,integer,integer,integer,integer)",
       "app_private.fantasy_fixture_health_ready(uuid,uuid,boolean)",
       "app_private.ops_health_checks_before_adaptive()",
+      "api.service_sync_sofascore_player_performances(uuid,integer,jsonb)",
+      "app_private.sofascore_sync_fixture_performances(uuid,jsonb)",
+      "app_private.fantasy_scoring_input_document_v1(uuid)",
+      "app_private.fantasy_validate_scoring_document_v1(jsonb)",
     ]) {
       expect({ sig, checked: postflight.includes(`fn := to_regprocedure('${sig}');`) }).toEqual({
         sig,
@@ -375,6 +393,8 @@ describe("apply-sofascore-automatic.sql", () => {
       "supportingStateBefore",
       "supportingDependencyBefore",
       "opsHealthBefore",
+      "scoringDocumentBaseBefore",
+      "legacyFixtureCheckBefore",
     ] as const) {
       const at = workflow.indexOf(`'${label(key)}'`);
       expect({ key, inPreStateStep: at > pre && at < full }).toEqual({ key, inPreStateStep: true });
@@ -391,6 +411,10 @@ describe("apply-sofascore-automatic.sql", () => {
       "fantasyDue",
       "fantasyFixtureHealthReady",
       "opsHealthAfter",
+      "scoringDocumentBaseAfter",
+      "legacyFixtureCheckAfter",
+      "performancesSync",
+      "performancesSyncFixture",
     ] as const) {
       expect({ key, afterReset: workflow.indexOf(`'${label(key)}'`) > post }).toEqual({
         key,

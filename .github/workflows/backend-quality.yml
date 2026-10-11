@@ -124,7 +124,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run backend:db:start
       # Pre-state pins for scripts/backend/apply-sofascore-automatic.sql: the
-      # three functions that 20261011130000 and 20261011150000 REPLACE, as they
+      # five functions that 20261011130000, 20261011150000 and 20261011180000
+      # REPLACE (or patch in place), as they
       # stand on a database built only up to 20261011120000 (what production
       # holds before this release). The `pin` column is the name of the
       # placeholder in scripts/backend/build-apply-sofascore-automatic.ts that
@@ -140,7 +141,9 @@ jobs:
             from (values
               ('FILL_FROM_CI_SUPPORTING_STATE_BEFORE_MD5', 'app_private.football_mapping_supporting_state(uuid)'::regprocedure),
               ('FILL_FROM_CI_SUPPORTING_DEPENDENCY_BEFORE_MD5', 'app_private.football_mapping_supporting_dependency(text,uuid,uuid)'::regprocedure),
-              ('FILL_FROM_CI_OPS_HEALTH_BEFORE_MD5', 'app_private.ops_health_checks_before_adaptive()'::regprocedure)
+              ('FILL_FROM_CI_OPS_HEALTH_BEFORE_MD5', 'app_private.ops_health_checks_before_adaptive()'::regprocedure),
+              ('FILL_FROM_CI_SCORING_DOCUMENT_BASE_BEFORE_MD5', 'app_private.fantasy_scoring_input_document_v1(uuid)'::regprocedure),
+              ('FILL_FROM_CI_LEGACY_FIXTURE_CHECK_BEFORE_MD5', 'app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure)
             ) as v(pin, fn)
            order by 2;
           SQL
@@ -195,7 +198,11 @@ jobs:
               ('FILL_FROM_CI_FANTASY_NOTE_MD5', 'api.service_sofascore_fantasy_note(uuid,text,text,text,jsonb,jsonb,text,timestamptz)'::regprocedure),
               ('FILL_FROM_CI_FANTASY_DUE_MD5', 'api.service_sofascore_fantasy_due(integer,integer,integer,integer,integer)'::regprocedure),
               ('FILL_FROM_CI_FANTASY_FIXTURE_HEALTH_READY_MD5', 'app_private.fantasy_fixture_health_ready(uuid,uuid,boolean)'::regprocedure),
-              ('FILL_FROM_CI_OPS_HEALTH_AFTER_MD5', 'app_private.ops_health_checks_before_adaptive()'::regprocedure)
+              ('FILL_FROM_CI_OPS_HEALTH_AFTER_MD5', 'app_private.ops_health_checks_before_adaptive()'::regprocedure),
+              ('FILL_FROM_CI_SCORING_DOCUMENT_BASE_AFTER_MD5', 'app_private.fantasy_scoring_input_document_v1(uuid)'::regprocedure),
+              ('FILL_FROM_CI_LEGACY_FIXTURE_CHECK_AFTER_MD5', 'app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure),
+              ('FILL_FROM_CI_PERFORMANCES_SYNC_MD5', 'api.service_sync_sofascore_player_performances(uuid,integer,jsonb)'::regprocedure),
+              ('FILL_FROM_CI_PERFORMANCES_SYNC_FIXTURE_MD5', 'app_private.sofascore_sync_fixture_performances(uuid,jsonb)'::regprocedure)
             ) as v(pin, fn)
            order by 2;
           do $check$

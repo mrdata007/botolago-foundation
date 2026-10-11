@@ -101,6 +101,17 @@ export const PINS = {
   opsHealthBefore: "1f584b167e83da8858a1377ee416a5b8",
   opsHealthAfter: "ff9d7ab8c83f656b0279447dcc9c14f0",
   fantasyFixtureHealthReady: "b47ed5fb6d6612206771f806b87f91ad",
+
+  // 20261011180000: the two Fantasy scoring-document functions it PATCHES in
+  // place (pre-state step: before; post-state step: after) and the two it
+  // CREATES (post-state step only). FILL THESE from the green database-quality
+  // run: the CI steps "SofaScore automatic pre-state md5" and "post-state md5".
+  scoringDocumentBaseBefore: "FILL_FROM_CI_SCORING_DOCUMENT_BASE_BEFORE_MD5",
+  scoringDocumentBaseAfter: "FILL_FROM_CI_SCORING_DOCUMENT_BASE_AFTER_MD5",
+  legacyFixtureCheckBefore: "FILL_FROM_CI_LEGACY_FIXTURE_CHECK_BEFORE_MD5",
+  legacyFixtureCheckAfter: "FILL_FROM_CI_LEGACY_FIXTURE_CHECK_AFTER_MD5",
+  performancesSync: "FILL_FROM_CI_PERFORMANCES_SYNC_MD5",
+  performancesSyncFixture: "FILL_FROM_CI_PERFORMANCES_SYNC_FIXTURE_MD5",
 } as const;
 
 /** Migrations other lanes still have to add. Remove an entry when it moves to STEPS. Empty: every slot is filled. */
@@ -572,6 +583,94 @@ ${verifyFunctions("20261011140000", [
       fantasyFixtureHealthReady: PINS.fantasyFixtureHealthReady,
     },
   },
+  {
+    version: "20261011180000",
+    name: "sofascore_player_performances",
+    summary:
+      "Pépites feed: api.service_sync_sofascore_player_performances() derives app.player_fixture_performances rows from the SofaScore Fantasy observation already recorded (no new request; unknown assists, penalties and saves are NULL, never zero); assists and penalties_missed may now be NULL; patches the two Fantasy scoring-document functions in place so a SofaScore row never moves a scoring input digest; changes no existing row",
+    pending: `${mustNotExist("20261011180000", {
+      functions: [
+        "api.service_sync_sofascore_player_performances(uuid,integer,jsonb)",
+        "app_private.sofascore_sync_fixture_performances(uuid,jsonb)",
+      ],
+    })}${mustExist("20261011180000", {
+      tables: [
+        "app.player_fixture_performances",
+        "app.players",
+        "app.fixtures",
+        "app_private.fantasy_fixture_observations",
+        "app_private.football_provider_fixture_links",
+        "app_private.football_provider_mappings",
+      ],
+      functions: [
+        "app_private.is_service_request()",
+        "app_private.football_mapping_supporting_state(uuid)",
+        "app_private.fantasy_scoring_input_document_v1(uuid)",
+        "app_private.fantasy_validate_scoring_document_v1(jsonb)",
+      ],
+    })}${needsFantasyObservationFunction("20261011180000")}
+    -- The Fantasy scoring input digests are unchanged only while no SofaScore row exists.
+    if exists (select 1 from app.player_fixture_performances where source_provider = 'sofascore') then
+      raise exception 'stop: 20261011180000 is not recorded but a SofaScore performance row exists -- production is not the state it was written for';
+    end if;
+    -- It patches the text of exactly the two definitions the Fantasy migrations left.${mustMatchMd5(
+      "20261011180000",
+      "app_private.fantasy_scoring_input_document_v1(uuid)",
+      PINS.scoringDocumentBaseBefore,
+    )}${mustMatchMd5(
+      "20261011180000",
+      "app_private.fantasy_validate_scoring_document_v1(jsonb)",
+      PINS.legacyFixtureCheckBefore,
+    )}`,
+    verify: `${verifyFunctions("20261011180000", [
+      {
+        sig: "api.service_sync_sofascore_player_performances(uuid,integer,jsonb)",
+        callable: "service",
+        pin: "performancesSync",
+      },
+      {
+        sig: "app_private.sofascore_sync_fixture_performances(uuid,jsonb)",
+        callable: "nobody",
+        pin: "performancesSyncFixture",
+      },
+      {
+        sig: "app_private.fantasy_scoring_input_document_v1(uuid)",
+        callable: "nobody",
+        pin: "scoringDocumentBaseAfter",
+      },
+      {
+        sig: "app_private.fantasy_validate_scoring_document_v1(jsonb)",
+        callable: "nobody",
+        pin: "legacyFixtureCheckAfter",
+      },
+    ])}
+    declare
+      base text := pg_get_functiondef(to_regprocedure('app_private.fantasy_scoring_input_document_v1(uuid)'));
+      legacy text := pg_get_functiondef(to_regprocedure('app_private.fantasy_validate_scoring_document_v1(jsonb)'));
+      marker constant text := 'p.source_provider is distinct from ''sofascore''';
+    begin
+      if base is null or (length(base) - length(replace(base, marker, ''))) / length(marker) <> 3 then
+        problems := problems || '20261011180000: the base scoring document does not ignore SofaScore rows in its three places'::text;
+      end if;
+      if legacy is null or (length(legacy) - length(replace(legacy, marker, ''))) / length(marker) <> 1 then
+        problems := problems || '20261011180000: the legacy fixture check does not ignore SofaScore rows'::text;
+      end if;
+      if (select a.attnotnull from pg_attribute a
+           where a.attrelid = 'app.player_fixture_performances'::regclass and a.attname = 'assists')
+        or (select a.attnotnull from pg_attribute a
+           where a.attrelid = 'app.player_fixture_performances'::regclass and a.attname = 'penalties_missed') then
+        problems := problems || '20261011180000: assists or penalties_missed is still NOT NULL'::text;
+      end if;
+    end;`,
+    pins: {
+      scoringDocumentBaseBefore: PINS.scoringDocumentBaseBefore,
+      scoringDocumentBaseAfter: PINS.scoringDocumentBaseAfter,
+      legacyFixtureCheckBefore: PINS.legacyFixtureCheckBefore,
+      legacyFixtureCheckAfter: PINS.legacyFixtureCheckAfter,
+      performancesSync: PINS.performancesSync,
+      performancesSyncFixture: PINS.performancesSyncFixture,
+    },
+  },
 ];
 
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
@@ -644,7 +743,8 @@ ${steps.map((s) => `--   ${s.version}_${s.name}\n--     ${s.summary}`).join("\n"
 --     is readable by no API role, and each definition is the reviewed one (md5).
 --   It writes no fixture, Fantasy, news or user row and pauses nothing: it only
 --   creates or replaces functions, creates three empty private tables and one
---   check. The pg_cron jobs
+--   check, and lets two columns of app.player_fixture_performances (assists,
+--   penalties_missed) be NULL. The pg_cron jobs
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 ${

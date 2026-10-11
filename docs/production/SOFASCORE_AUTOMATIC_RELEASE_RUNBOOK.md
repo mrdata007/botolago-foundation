@@ -11,11 +11,12 @@ short list of switches. Nothing here is run by an agent: every production write
 is yours and covers only the step you were told to do (`CLAUDE.md`, production
 database writes).
 
-> **Status: ready for the owner after the pull request is merged.** The script
-> contains every migration of this release and the md5 fingerprints of the
-> functions it checks, copied from the `database-quality` job of the pull request
-> (run 38127384687). If production differs from what the script expects, it stops
-> before changing anything and says why.
+> **Status: wait for the go.** The script contains every migration of this
+> release. The md5 pins are filled from CI: they are the fingerprints of the
+> functions the script checks, and the last six (the Pépites step, below) are
+> copied in after the `database-quality` job of the pull request has printed
+> them. Until then the script refuses to run by itself and saves nothing. Do not
+> start until the person who hands you this says the pins are in.
 
 ## What you will do, in short
 
@@ -39,19 +40,33 @@ It checks which of these are already in production, skips the ones that are, and
 | 4     | `20261011130000_sofascore_player_auto_map`         | Automatic player matching: matches the safe cases by itself, puts the doubtful ones on a short review list. Two empty private tables and the staff review functions. |
 | 5     | `20261011140000_sofascore_fantasy_auto_state`      | The memory of the automatic Fantasy path (retries, what was tried). One empty private table and three service-only functions.                                        |
 | 6     | `20261011150000_ops_health_adaptive_coverage`      | The health checks count SofaScore Fantasy matches as covered, so they do not page by mistake. Same checks, same output.                                              |
+| 7     | `20261011180000_sofascore_player_performances`     | Pépites works again: each finished SofaScore match fills the table Pépites reads, from the data Fantasy already recorded. One service-only function; see below.      |
 
 It changes no fixture, no player, no point and no user. It only adds or replaces
-functions and creates three empty private tables. Nothing anyone sees changes by
-itself.
+functions, creates three empty private tables and lets two statistics columns
+(assists, penalties missed) be empty. Nothing anyone sees changes by itself.
+
+**Pépites, in plain words (step 7).** Pépites reads each player's appearances
+from one table, and only SportsMonks used to write it. Step 7 lets the
+football-live-refresh function write it from SofaScore, using the finished-match
+data Fantasy has already recorded: no extra SofaScore request, the same checked
+players. Where SofaScore does not give a number (assists, saves or penalties on a
+match with limited coverage) the cell stays empty; it is never filled with a
+zero. A match SportsMonks already covered keeps its SportsMonks rows. The matches
+finished since SportsMonks stopped are filled by the same function on its next
+runs, nothing to do by hand. It does not change a single Fantasy input: the two
+Fantasy functions it touches are changed so they ignore these new rows. If you
+deploy the function before this step, Pépites simply stays as it is and the log
+says so once.
 
 ## Before you hand over (for whoever finishes the work, not the owner)
 
 - **The md5 pins.** In the green `database-quality` run of the merged pull
-  request, two steps print them: `SofaScore automatic pre-state md5` (three
+  request, two steps print them: `SofaScore automatic pre-state md5` (five
   values, measured on a database built up to `20261011120000`, which is what
   production holds) and the md5 step after the full reset, which prints
   `SofaScore Fantasy observation md5` and `SofaScore automatic post-state md5`
-  (twelve values). Each line has a `pin` column naming the placeholder
+  (sixteen values). Each line has a `pin` column naming the placeholder
   (`FILL_FROM_CI_...`) in `PINS` of
   `scripts/backend/build-apply-sofascore-automatic.ts` that it fills; the
   Fantasy observation one is the single `SofaScore Fantasy observation md5` line
@@ -400,6 +415,24 @@ straight away for the matches you ran in 5.4.
    operations health page, `fantasy_fixture_coverage` and `fantasy_scoring` should
    not fail for a match that was recorded.
 
+6. **Pépites has appearances again** (read only). Rows from SofaScore, per
+   match; `unknown_assists` and `unknown_saves` are the cells left empty on
+   matches with limited coverage, never zeros:
+
+   ```sql
+   select p.fixture_id, count(*) as players, max(p.provider_observed_at) as observed,
+          count(*) filter (where p.assists is null) as unknown_assists,
+          count(*) filter (where p.saves is null and p.position = 'goalkeeper') as unknown_saves
+     from app.player_fixture_performances p
+    where p.source_provider = 'sofascore' and p.active
+    group by p.fixture_id order by observed desc limit 20;
+   ```
+
+   The log line `football_live_refresh_performances` of the Edge Function says
+   `written`, `unchanged`, `rated` or `refused:<reason>` per match
+   (`sofascore_performances_other_provider_rows` means SportsMonks covered that
+   match and keeps it). Pépites picks the rows up at its next run.
+
 ## If it stops
 
 | The message says                                                                 | What it means and what to do                                                                                                                                                      |
@@ -428,6 +461,9 @@ straight away for the matches you ran in 5.4.
   is safe.
 - **The Edge Function:** run the `Football live refresh deploy` workflow on the
   earlier `main` commit.
+- **Stop only the Pépites feed:** set the Edge Function secret
+  `SOFASCORE_PEPITES_SYNC_PER_TICK` to `0` (no deploy needed). Rows already
+  written stay; a new reviewed migration is the only way to remove them.
 - **Stop the automatic Fantasy records, keep everything else:** set the Edge
   Function secret `SOFASCORE_FANTASY_ENABLED` to `false` (no deploy needed). The
   scores and the match details carry on.
@@ -485,6 +521,7 @@ None of the unknown ones is needed by this release, except the first row above
 | `20261011130000_sofascore_player_auto_map`                                                                 | **Not applied**    | Installed by this script                                                                                                                                                                                    |
 | `20261011140000_sofascore_fantasy_auto_state`                                                              | **Not applied**    | Installed by this script                                                                                                                                                                                    |
 | `20261011150000_ops_health_adaptive_coverage`                                                              | **Not applied**    | Installed by this script                                                                                                                                                                                    |
+| `20261011180000_sofascore_player_performances`                                                             | **Not applied**    | Installed by this script (Pépites feed)                                                                                                                                                                     |
 
 One more number worth knowing: on 2026-10-10 production had 173 recorded
 migrations while the repository then held 175 files up to the newest one, so two
