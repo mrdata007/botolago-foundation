@@ -142,6 +142,12 @@ jobs:
                            'api.football_data_source()'::regprocedure,
                            'api.football_sofascore_live_snapshot()'::regprocedure)
            order by 2;
+          -- Pin for scripts/backend/apply-sofascore-match-details.sql (migration
+          -- 20261011110000 replaces the snapshot function): the NEW definition.
+          select 'SofaScore snapshot teams md5' as label, p.oid::regprocedure::text as function,
+                 md5(pg_get_functiondef(p.oid)) as definition_md5
+            from pg_proc p
+           where p.oid = 'api.football_sofascore_live_snapshot()'::regprocedure;
           do $check$
           declare fn regprocedure;
           begin
