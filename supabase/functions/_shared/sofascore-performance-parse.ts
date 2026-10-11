@@ -221,12 +221,20 @@ export function parseSofascoreLineups(raw: unknown): PerformanceLineups {
   };
 }
 
+/** Labels that may change the score or a card count; shared with the Fantasy builder. */
+export const SCORE_RELEVANT_LABEL = /goal|card|penalt|red|yellow|own/i;
+
+export const incidentLabel = (rawType: string, rawClass: string | null): string =>
+  `${rawType}${rawClass ? `/${rawClass}` : ""}`;
+
 /**
  * Incident type and class pairs seen in Phase 0: goal/regular, goal/penalty,
  * inGamePenalty/missed, card/yellow, card/yellowRed, card/red, substitution/
  * regular, and `period` markers (skipped). Anything else, including an own
  * goal (not seen in any of the ten matches), is `unknown` with its raw labels.
  * Rescinded incidents (VAR) are dropped.
+ * Only the explicitly understood `injuryTime` announcement without a class or
+ * player attribution may be dropped when its minute or side is absent.
  */
 export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
   const check = new Check("incidents");
@@ -280,6 +288,17 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
     else if (rawType === "card" && rawClass === "red") kind = "red_card";
     else if (rawType === "substitution" && rawClass === "regular") kind = "substitution";
     if (incident.time === undefined || incident.isHome === undefined) {
+      // Only the reviewed added-time announcement is harmless metadata.
+      // Unknown substitutions, VAR decisions and other unplaced labels fail closed.
+      if (
+        rawType === "injuryTime" &&
+        rawClass === null &&
+        incident.player === undefined &&
+        incident.assist1 === undefined &&
+        incident.playerIn === undefined &&
+        incident.playerOut === undefined
+      )
+        continue;
       // An incident that cannot be placed must not be guessed at: fail the whole
       // match so it goes to review instead of scoring on partial data.
       throw new SofascoreParseError("incidents", [`${rawType}: no minute or side`]);
