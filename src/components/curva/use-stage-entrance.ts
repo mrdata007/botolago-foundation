@@ -69,28 +69,26 @@ export function useStageEntrance(input: {
     if (decision.remember) markEntranceShown();
     const lift = liftRef.current;
     if (!decision.play || !lift || typeof lift.animate !== "function") return;
-    const duration = entranceMs(tokenMs("--duration-hero", 420));
-    const easing = tokenEasing("--ease-emphasized", "cubic-bezier(0.2, 0.9, 0.1, 1)");
-    const dir = document.documentElement.dir === "rtl" ? -1 : 1;
-    const animations = [lift.animate(entranceFrames(dir), { duration, easing })];
-    const ground = groundRef.current;
-    if (ground) animations.push(ground.animate(groundFrames(), { duration, easing }));
-    // Held at its first frame (opacity 0, so nothing flashes) until the page is quiet: started at
-    // the stage's mount it competes with the rest of the screen's first render and played as three
-    // frames after an empty wait (`quiet.ts`). `finished` still ends it the same way.
-    for (const animation of animations) animation.pause();
-    const quiet = whenQuiet();
-    void quiet.done.then(() => {
-      for (const animation of animations) {
-        if (mounted.current) animation.play();
-        else animation.cancel();
-      }
-    });
+    // Hidden at its rest box (opacity 0 inline, so nothing flashes and the box does not move) until
+    // the page is quiet, then played: started at the stage's mount it competed with the rest of the
+    // screen's first render and the card's first raster, and played as three frames after an empty
+    // wait (`quiet.ts`). The animation's own first frame is opacity 0, so handing over is seamless.
+    lift.style.opacity = "0";
     setEntering(true);
     const done = () => {
       if (mounted.current) setEntering(false);
     };
-    Promise.all(animations.map((animation) => animation.finished)).then(done, done);
+    void whenQuiet().done.then(() => {
+      if (!mounted.current || !lift.isConnected) return;
+      const duration = entranceMs(tokenMs("--duration-hero", 420));
+      const easing = tokenEasing("--ease-emphasized", "cubic-bezier(0.2, 0.9, 0.1, 1)");
+      const dir = document.documentElement.dir === "rtl" ? -1 : 1;
+      const animations = [lift.animate(entranceFrames(dir), { duration, easing })];
+      const ground = groundRef.current;
+      if (ground) animations.push(ground.animate(groundFrames(), { duration, easing }));
+      lift.style.removeProperty("opacity");
+      Promise.all(animations.map((animation) => animation.finished)).then(done, done);
+    });
     // The entrance is a one-off of the mount: nothing here is re-run.
   }, []);
 

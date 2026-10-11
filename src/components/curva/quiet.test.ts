@@ -108,13 +108,16 @@ describe("waiting for the page to be quiet", () => {
 describe("the stage's entrance", () => {
   const source = readFileSync(`${import.meta.dir}/use-stage-entrance.ts`, "utf8");
 
-  it("is held at its first frame until the page is quiet, then played", () => {
-    expect(source).toContain("animation.pause()");
-    expect(source).toContain("whenQuiet()");
-    expect(source).toContain("animation.play()");
+  it("is hidden at its rest box until the page is quiet, then played", () => {
+    expect(source).toContain('lift.style.opacity = "0"');
+    const wait = source.indexOf("whenQuiet()");
+    expect(wait).toBeGreaterThan(source.indexOf('lift.style.opacity = "0"'));
+    // the animation is made after the wait, never at the stage's mount
+    expect(source.indexOf("lift.animate(")).toBeGreaterThan(wait);
+    expect(source).toContain('lift.style.removeProperty("opacity")');
   });
 
-  it("is cancelled, not played, when the stage has gone", () => {
-    expect(source).toContain("animation.cancel()");
+  it("does nothing when the stage has gone before the page was quiet", () => {
+    expect(source).toContain("!mounted.current || !lift.isConnected");
   });
 });

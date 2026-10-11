@@ -988,6 +988,10 @@ test.describe("G1 says what happens next", () => {
     await withoutHero(page);
     await gotoHydrated(page, "/curva?mc=forming1", "fr");
     const stage = page.getByTestId("curva-stage");
+    // the box is read with its transform: wait for the entrance (which starts once the page is
+    // quiet) and the card's beat to land, so the width read is the stage's, not a frame of them
+    await expect(page.locator("[data-stage-lift]")).not.toHaveAttribute("style", /opacity/);
+    await expectNoAnimations(page, "the entrance and the beat have landed");
     const widthAt = async (width: number, height: number) => {
       await page.setViewportSize({ width, height });
       await settle(page);
