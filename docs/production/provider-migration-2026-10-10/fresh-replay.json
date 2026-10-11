@@ -1,0 +1,848 @@
+{
+  "source": "Fresh trimmed provider responses from read-only GitHub run 38065366553, replayed locally through the live loader; no further provider requests or database writes",
+  "providerRequests": 24,
+  "adapterReplayRequests": 24,
+  "usage": {
+    "sofascore": {
+      "requests": 12,
+      "limit": null,
+      "remaining": null
+    },
+    "flashscore": {
+      "requests": 12,
+      "limit": null,
+      "remaining": null
+    }
+  },
+  "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18",
+  "fixtures": [
+    {
+      "binding": {
+        "sofascoreId": "17132480",
+        "flashscoreId": "GYlCyyrB",
+        "appFixtureId": "6266b83c-1bc1-4d02-96c5-9bdd44caad59",
+        "homeTeamId": "d60d9d72-cb7a-4c94-944f-67081ef0a009",
+        "awayTeamId": "9f8c170d-24ed-41a3-99ca-a06167fd9c8b"
+      },
+      "sofascoreId": "17132480",
+      "flashscoreId": "GYlCyyrB",
+      "score": {
+        "home": 2,
+        "away": 3
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 40,
+          "appeared": 32,
+          "reviewed": 18,
+          "appearedReviewed": 14,
+          "appearedUnresolvedIds": [
+            "1004247",
+            "1008871",
+            "1140934",
+            "1168590",
+            "1170317",
+            "1392058",
+            "1401535",
+            "1418569",
+            "1488437",
+            "1494677",
+            "1519084",
+            "1525286",
+            "1952096",
+            "2161833",
+            "2228620",
+            "2293695",
+            "919954",
+            "980301"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 12,
+          "appearedUnresolvedSubstitutes": 6,
+          "unresolvedWithScoringIncidents": 6
+        },
+        "flashscore": {
+          "entries": 40,
+          "appeared": 32,
+          "reviewed": 12,
+          "appearedReviewed": 12,
+          "appearedUnresolvedIds": [
+            "2sSDGBcO",
+            "6ZjiWFfc",
+            "AB34XEoc",
+            "EF5z75qs",
+            "EupW0gD2",
+            "IZw30Qe2",
+            "MBpQdm62",
+            "SfFKElUJ",
+            "SjEj2NiO",
+            "UDsXGbxd",
+            "YcAMKfZR",
+            "YcvvHxCp",
+            "fTaGBfV8",
+            "hfctfBm2",
+            "j7b8WkOE",
+            "jZ9xJvwH",
+            "plpSHEu9",
+            "tb5oS4uU",
+            "txTRlHah",
+            "vLrPoo7T"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 13,
+          "appearedUnresolvedSubstitutes": 7,
+          "unresolvedWithScoringIncidents": 7
+        }
+      },
+      "before": {
+        "mode": "simple",
+        "scorableMode": "simple",
+        "heldBack": 0,
+        "pairedRecords": 40,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 1,
+          "player:penalty_saved_unknown": 1
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "penaltiesSaved": 1
+        },
+        "statusCounts": {
+          "unreviewed_legacy": 40
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "simple",
+        "scorableMode": "simple",
+        "heldBack": 0,
+        "pairedRecords": 40,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 1,
+          "player:penalty_saved_unknown": 1
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {
+          "penaltiesSaved": 1
+        },
+        "statusCounts": {
+          "partially_reviewed": 6,
+          "reviewed_pair": 12,
+          "unreviewed_legacy": 22
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": true,
+        "scoringFieldsReady": true,
+        "scoringReady": true,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 18 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 20 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18",
+      "prepared": {
+        "ready": false,
+        "stages": {
+          "identityResolved": false,
+          "eventsReconciled": true,
+          "participationEstablished": true,
+          "scoringFieldsReady": true,
+          "scoringReady": true,
+          "ingestionReady": false
+        },
+        "blockers": [
+          {
+            "code": "not_ingestion_ready",
+            "message": "Not ingestion-ready (IDENTITIES_RESOLVED): IDENTITY: 18 Sofascore player(s) who appeared have no reviewed mapping. IDENTITY: 20 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 26 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 14 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 25 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 24 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 13 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 17 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 77 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 19 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 88 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 16 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 8 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 1 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 30 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 20 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 2 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 11 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 17 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 14 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 7 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 10 is partially_reviewed, not a reviewed identity on both providers."
+          }
+        ]
+      }
+    },
+    {
+      "binding": {
+        "sofascoreId": "17132481",
+        "flashscoreId": "W81WOcb5",
+        "appFixtureId": "432db163-ee21-4bfa-b2ea-199105ff2758",
+        "homeTeamId": "0257feb3-4c16-431d-a58b-5faf060576ad",
+        "awayTeamId": "dc6fb819-6f3e-4584-ad73-7d567e80d32c"
+      },
+      "sofascoreId": "17132481",
+      "flashscoreId": "W81WOcb5",
+      "score": {
+        "home": 2,
+        "away": 1
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 19,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 19,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 39,
+          "appeared": 31,
+          "reviewed": 20,
+          "appearedReviewed": 16,
+          "appearedUnresolvedIds": [
+            "1004523",
+            "1213241",
+            "1525293",
+            "1528418",
+            "1866448",
+            "1894253",
+            "1919276",
+            "1939981",
+            "2150417",
+            "2161842",
+            "2776291",
+            "2776292",
+            "2790099",
+            "2790119",
+            "919753"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 10,
+          "appearedUnresolvedSubstitutes": 5,
+          "unresolvedWithScoringIncidents": 1
+        },
+        "flashscore": {
+          "entries": 39,
+          "appeared": 31,
+          "reviewed": 7,
+          "appearedReviewed": 7,
+          "appearedUnresolvedIds": [
+            "2HWvWiAh",
+            "2uH4VobK",
+            "6qoLErCJ",
+            "8bFrnTun",
+            "C6xYAm9Q",
+            "G2mkNAAt",
+            "K26kxWp9",
+            "OhuwMnGF",
+            "Q1Q3etwS",
+            "QDdyhjdc",
+            "SnhcX8Di",
+            "WhxNGMST",
+            "Y5ic9nvc",
+            "bqfwOHtS",
+            "dnjhjFGK",
+            "fPvOayMG",
+            "h48Fnz3K",
+            "hCCwZ5We",
+            "hQmap0Dd",
+            "lv0NFKE8",
+            "lzfosEQs",
+            "tAk7omo9",
+            "tKReSnJ8",
+            "z7dlksCn"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 15,
+          "appearedUnresolvedSubstitutes": 9,
+          "unresolvedWithScoringIncidents": 3
+        }
+      },
+      "before": {
+        "mode": "full",
+        "scorableMode": "full",
+        "heldBack": 0,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 6
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {},
+        "statusCounts": {
+          "unreviewed_legacy": 39
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "full",
+        "scorableMode": "full",
+        "heldBack": 0,
+        "pairedRecords": 39,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 6
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {},
+        "statusCounts": {
+          "partially_reviewed": 13,
+          "reviewed_pair": 7,
+          "unreviewed_legacy": 19
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": true,
+        "scoringFieldsReady": true,
+        "scoringReady": true,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 15 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 24 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18",
+      "prepared": {
+        "ready": false,
+        "stages": {
+          "identityResolved": false,
+          "eventsReconciled": true,
+          "participationEstablished": true,
+          "scoringFieldsReady": true,
+          "scoringReady": true,
+          "ingestionReady": false
+        },
+        "blockers": [
+          {
+            "code": "not_ingestion_ready",
+            "message": "Not ingestion-ready (IDENTITIES_RESOLVED): IDENTITY: 15 Sofascore player(s) who appeared have no reviewed mapping. IDENTITY: 24 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 22 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 14 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 19 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 26 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 17 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 29 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 7 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 31 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 20 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 1 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 14 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 4 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 97 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 31 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 18 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 6 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 13 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 7 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 10 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 77 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 9 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 20 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 16 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 11 is unreviewed_legacy, not a reviewed identity on both providers."
+          }
+        ]
+      }
+    },
+    {
+      "binding": {
+        "sofascoreId": "16958239",
+        "flashscoreId": "88o4wcDb",
+        "appFixtureId": "5dddc509-791e-4772-837a-4a2cd97c401c",
+        "homeTeamId": "b78eaee8-93af-4630-8335-b208151cbf37",
+        "awayTeamId": "c499006b-2af3-4013-862c-854ab74b59cf"
+      },
+      "sofascoreId": "16958239",
+      "flashscoreId": "88o4wcDb",
+      "score": {
+        "home": 2,
+        "away": 1
+      },
+      "lineups": [
+        {
+          "provider": "sofascore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "sofascore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "home",
+          "entries": 20,
+          "starters": 11
+        },
+        {
+          "provider": "flashscore",
+          "side": "away",
+          "entries": 20,
+          "starters": 11
+        }
+      ],
+      "coverage": {
+        "sofascore": {
+          "entries": 40,
+          "appeared": 30,
+          "reviewed": 14,
+          "appearedReviewed": 13,
+          "appearedUnresolvedIds": [
+            "1020959",
+            "1140870",
+            "1182630",
+            "1459156",
+            "1461780",
+            "1655612",
+            "1919280",
+            "2077088",
+            "2162075",
+            "2267301",
+            "2605430",
+            "2786568",
+            "2786670",
+            "2800513",
+            "898070",
+            "919749",
+            "919942"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 11,
+          "appearedUnresolvedSubstitutes": 6,
+          "unresolvedWithScoringIncidents": 5
+        },
+        "flashscore": {
+          "entries": 40,
+          "appeared": 29,
+          "reviewed": 4,
+          "appearedReviewed": 4,
+          "appearedUnresolvedIds": [
+            "2P6FH20M",
+            "4W9zY5jn",
+            "84IAWyXH",
+            "8Wpl5TyG",
+            "8jeKcs9j",
+            "ANTNx4ng",
+            "C4iGf8t2",
+            "EBe6ZJTF",
+            "ENnRDcAC",
+            "IJc43I4O",
+            "Kfr4Uw45",
+            "M1QRYd5d",
+            "OCfnzQyo",
+            "SYfsMw6n",
+            "UDJ9aI0S",
+            "Y7ZKkYvM",
+            "f33B3Jdn",
+            "hWfHzfrt",
+            "htRXCojO",
+            "lhTF6Kpn",
+            "nusnqK1F",
+            "rDDfKMJc",
+            "tMOy3hAC",
+            "tnZ20jB7",
+            "zFJ45LbT"
+          ],
+          "benchIncidentUnresolvedIds": [],
+          "incidentOnlyUnresolvedIds": [],
+          "contradictoryParticipationIds": [],
+          "substitutionFeedIncompleteIds": [],
+          "appearedUnresolvedStarters": 18,
+          "appearedUnresolvedSubstitutes": 7,
+          "unresolvedWithScoringIncidents": 8
+        }
+      },
+      "before": {
+        "mode": "full",
+        "scorableMode": "full",
+        "heldBack": 0,
+        "pairedRecords": 40,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 2
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {},
+        "statusCounts": {
+          "unreviewed_legacy": 40
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "after": {
+        "mode": "full",
+        "scorableMode": "full",
+        "heldBack": 0,
+        "pairedRecords": 40,
+        "singleSourceRecords": 0,
+        "unmatchedRecords": 0,
+        "unmatchedAppeared": 0,
+        "discrepancyCounts": {
+          "info:minutes_differ": 2
+        },
+        "fixtureBlockers": [],
+        "unknownFields": {},
+        "statusCounts": {
+          "partially_reviewed": 10,
+          "reviewed_pair": 4,
+          "unreviewed_legacy": 26
+        },
+        "duplicateCanonicalIdentities": 0
+      },
+      "stages": {
+        "identityResolved": false,
+        "eventsReconciled": true,
+        "participationEstablished": true,
+        "scoringFieldsReady": true,
+        "scoringReady": true,
+        "ingestionReady": false
+      },
+      "blockers": [
+        "IDENTITY: 17 Sofascore player(s) who appeared have no reviewed mapping.",
+        "IDENTITY: 25 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+      ],
+      "snapshotDigest": "1760e8532a1a72e13784cca3fe9c53c19f8cf1b504e5e8473056c11eb5878f18",
+      "prepared": {
+        "ready": false,
+        "stages": {
+          "identityResolved": false,
+          "eventsReconciled": true,
+          "participationEstablished": true,
+          "scoringFieldsReady": true,
+          "scoringReady": true,
+          "ingestionReady": false
+        },
+        "blockers": [
+          {
+            "code": "not_ingestion_ready",
+            "message": "Not ingestion-ready (IDENTITIES_RESOLVED): IDENTITY: 17 Sofascore player(s) who appeared have no reviewed mapping. IDENTITY: 25 Flashscore player(s) who appeared have no reviewed mapping (no Flashscore mapping exists yet)."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 25 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 3 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 32 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 15 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 21 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 27 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 20 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 26 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 9 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 29 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 6 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "home shirt 35 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 97 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 2 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 34 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 3 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 21 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 5 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 14 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 18 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 10 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 17 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 9 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 7 is partially_reviewed, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 49 is unreviewed_legacy, not a reviewed identity on both providers."
+          },
+          {
+            "code": "identity_not_reviewed_pair",
+            "message": "away shirt 22 is unreviewed_legacy, not a reviewed identity on both providers."
+          }
+        ]
+      }
+    }
+  ]
+}

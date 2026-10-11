@@ -270,6 +270,10 @@ export interface FlashscoreMatch {
 export class FlashscorePerformanceProvider {
   constructor(private readonly client: RapidApiClient) {}
 
+  usage() {
+    return { requests: this.client.requestsSent(), ...this.client.quota() };
+  }
+
   private path(endpoint: string, eventId: string): string {
     if (!/^[A-Za-z0-9]{6,12}$/.test(eventId)) {
       throw new FootballError("invalid_provider_payload", "A Flashscore event id is malformed.");

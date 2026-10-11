@@ -4,15 +4,21 @@
  *
  *   bun scripts/backend/reconciled-scoring-ingestion.ts \
  *     --plan plan.json --mappings rows.json --captured-at <ISO> \
- *     [--mode local|dry-run|record] [--out report.json]
+ *     [--mode local|dry-run|record] [--source committed|live] [--out report.json]
  *
  * `plan.json`: `[{ "sofascoreId", "flashscoreId", "appFixtureId", "homeTeamId", "awayTeamId" }]`,
  * the provider match pair and the app fixture it is, reviewed by a person.
  * `rows.json`: the output of `scripts/backend/football-reviewed-mapping-snapshot.sql`
  * read from the SAME database the run writes to.
  *
- * Provider data: the committed historical payloads (tests/fixtures/providers). This
- * script makes no provider call.
+ * Provider data (`--source`):
+ * - `committed` (default): the committed historical payloads (tests/fixtures/providers).
+ *   No provider call.
+ * - `live`: downloads each match from Sofascore and Flashscore through the approved
+ *   adapters, 8 requests per match against the monthly quotas. Needs `RAPIDAPI_KEY` and
+ *   `FLASHSCORE_RAPIDAPI_HOST`. `--observed-at` defaults to now. Works in every mode
+ *   (a live `local` run writes nothing). The staging-only rule below still applies to
+ *   the database modes; it is not relaxed.
  *
  * Modes:
  * - `local` (default): no database at all. Builds and checks each request, says
@@ -42,6 +48,11 @@ import {
   buildReviewedIdentitySnapshot,
   type MappingRowInput,
 } from "../../src/backend/fantasy/reviewed-identities";
+import type { ProviderMatchData } from "../../src/backend/fantasy/provider-reconciler";
+import {
+  createFlashscorePerformanceProvider,
+  createSofascorePerformanceProvider,
+} from "../../src/backend/football/provider/rapidapi-config.server";
 import { rowsFromSql } from "./replay-provider-fixtures";
 
 export const PRODUCTION_PROJECT_REF = "tkewgajrljbwgwedqsxn";
@@ -117,6 +128,41 @@ export function exitCodeOf(
   return 0;
 }
 
+export type MatchSource = "committed" | "live";
+
+/** Both providers' data for one planned match, from the committed files or a live download. */
+export async function loadPlannedMatch(
+  source: MatchSource,
+  entry: Pick<PlanEntry, "sofascoreId" | "flashscoreId">,
+  env: Record<string, string | undefined> = process.env,
+): Promise<{ sofascore: ProviderMatchData; flashscore: ProviderMatchData }> {
+  return createPlannedMatchLoader(source, env).load(entry);
+}
+
+/** One pair of clients per batch: quota state survives across match boundaries. */
+export function createPlannedMatchLoader(
+  source: MatchSource,
+  env: Record<string, string | undefined> = process.env,
+) {
+  if (source === "committed")
+    return {
+      load: async (entry: Pick<PlanEntry, "sofascoreId" | "flashscoreId">) =>
+        loadCommittedMatch(entry),
+      usage: () => null,
+    };
+  // Build both providers first, so a missing setting fails before any quota is spent.
+  const sofascoreProvider = createSofascorePerformanceProvider(env);
+  const flashscoreProvider = createFlashscorePerformanceProvider(env);
+  return {
+    load: async (entry: Pick<PlanEntry, "sofascoreId" | "flashscoreId">) => {
+      const sofascore = await sofascoreProvider.getMatch(entry.sofascoreId);
+      const flashscore = await flashscoreProvider.getMatch(entry.flashscoreId);
+      return { sofascore, flashscore };
+    },
+    usage: () => ({ sofascore: sofascoreProvider.usage(), flashscore: flashscoreProvider.usage() }),
+  };
+}
+
 const arg = (name: string) => {
   const at = process.argv.indexOf(name);
   return at >= 0 ? process.argv[at + 1] : undefined;
@@ -136,8 +182,14 @@ async function main() {
   const parsed = JSON.parse(readFileSync(mappingsFile, "utf8"));
   const rows: MappingRowInput[] = Array.isArray(parsed) ? rowsFromSql(parsed) : parsed.rows;
   const snapshot = await buildReviewedIdentitySnapshot(rows, capturedAt);
-  const observedAt = arg("--observed-at") ?? "2026-10-01T12:00:00.000Z";
+  const source = (arg("--source") ?? "committed") as MatchSource;
+  if (!["committed", "live"].includes(source))
+    throw new Error("--source must be committed or live");
+  const observedAt =
+    arg("--observed-at") ??
+    (source === "live" ? new Date().toISOString() : "2026-10-01T12:00:00.000Z");
 
+  const loader = createPlannedMatchLoader(source);
   const prepared: PreparedObservation[] = [];
   for (const entry of plan) {
     prepared.push(
@@ -145,9 +197,15 @@ async function main() {
         observedAt,
         snapshot,
         binding: entry,
-        ...loadCommittedMatch({ sofascoreId: entry.sofascoreId, flashscoreId: entry.flashscoreId }),
+        ...(await loader.load(entry)),
       }),
     );
+    for (const [provider, usage] of Object.entries(loader.usage() ?? {})) {
+      if (usage.remaining !== null && usage.limit !== null && usage.remaining <= usage.limit * 0.2)
+        console.warn(
+          `PROVIDER_QUOTA_LOW ${provider}: ${usage.remaining}/${usage.limit} requests remaining`,
+        );
+    }
   }
   const report = db
     ? await ingestReconciledFixtures(prepared, {
@@ -161,7 +219,11 @@ async function main() {
     : null;
   const evidence = {
     mode,
-    providerData: "committed historical payloads (no provider call)",
+    providerUsage: loader.usage(),
+    providerData:
+      source === "live"
+        ? "live download through the approved adapters"
+        : "committed historical payloads (no provider call)",
     snapshot: {
       digest: snapshot.digest,
       capturedAt: snapshot.capturedAt,

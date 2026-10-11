@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
+  createPlannedMatchLoader,
   databaseGuard,
   exitCodeOf,
+  loadPlannedMatch,
   parsePlan,
   PRODUCTION_PROJECT_REF,
   RECORD_CONFIRMATION,
 } from "./reconciled-scoring-ingestion";
+import { providerFixture } from "../../src/backend/football/provider/performance-fixtures";
 
 const STAGING = "https://abcdefghijklmnopqrst.supabase.co";
 
@@ -81,5 +84,69 @@ describe("exitCodeOf", () => {
   test("local mode is judged on what was prepared", () => {
     expect(exitCodeOf(null, [{ request: {} } as never])).toBe(0);
     expect(exitCodeOf(null, [{ request: null } as never])).toBe(2);
+  });
+});
+
+describe("loadPlannedMatch", () => {
+  const entry = { sofascoreId: "17132481", flashscoreId: "W81WOcb5" };
+  test("committed reads the saved payloads and needs no provider settings", async () => {
+    const m = await loadPlannedMatch("committed", entry, {});
+    expect(m.sofascore.lineups).toBeDefined();
+    expect(m.flashscore.incidents).toBeDefined();
+  });
+  test("live refuses to start without the provider settings, before any request", async () => {
+    const realFetch = globalThis.fetch;
+    let requests = 0;
+    globalThis.fetch = (() => {
+      requests += 1;
+      return Promise.reject(new Error("no request expected"));
+    }) as unknown as typeof fetch;
+    try {
+      await expect(loadPlannedMatch("live", entry, {})).rejects.toThrow();
+      // The Sofascore settings are complete; only the Flashscore host is missing.
+      await expect(loadPlannedMatch("live", entry, { RAPIDAPI_KEY: "k" })).rejects.toThrow();
+      expect(requests).toBe(0);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+  test("live parses both providers and retains their quotas for the next match", async () => {
+    const realFetch = globalThis.fetch;
+    let requests = 0;
+    const sofaNames = ["detail", "lineups", "incidents", "statistics"];
+    const flashNames = ["data", "summary", "lineups", "statistics"];
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      const isSofa = url.includes("sofascore.p.rapidapi.com");
+      expect(url).not.toContain("test-key");
+      expect((init?.headers as Record<string, string>)["x-rapidapi-key"]).toBe("test-key");
+      const index = requests++;
+      const provider = isSofa ? "sofascore" : "flashscore";
+      const id = isSofa ? entry.sofascoreId : entry.flashscoreId;
+      const name = isSofa ? sofaNames[index] : flashNames[index - 4];
+      return new Response(JSON.stringify(providerFixture(provider, `${id}.${name}`)), {
+        headers: {
+          "x-ratelimit-requests-limit": "500",
+          "x-ratelimit-requests-remaining": isSofa ? String(102 - index) : "400",
+        },
+      });
+    }) as typeof fetch;
+    try {
+      const loader = createPlannedMatchLoader("live", {
+        RAPIDAPI_KEY: "test-key",
+        FLASHSCORE_RAPIDAPI_HOST: "flashlive.example",
+      });
+      const loaded = await loader.load(entry);
+      expect(loaded.sofascore.summary.finished).toBe(true);
+      expect(loaded.flashscore.summary.finished).toBe(true);
+      expect(loaded.sofascore.summary.homeScore).toBe(loaded.flashscore.summary.homeScore);
+      expect(loader.usage()).toEqual({
+        sofascore: { requests: 4, limit: 500, remaining: 99 },
+        flashscore: { requests: 4, limit: 500, remaining: 400 },
+      });
+      await expect(loader.load(entry)).rejects.toMatchObject({ code: "provider_rate_limited" });
+      expect(requests).toBe(8);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
   });
 });
