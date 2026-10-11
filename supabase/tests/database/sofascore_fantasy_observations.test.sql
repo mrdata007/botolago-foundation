@@ -264,5 +264,66 @@ select extensions.is((api.service_record_sofascore_fantasy_observation(pg_temp.i
   ->> 'reviewedOverride')::boolean, true, '8.1 after a reviewed correction, new SofaScore facts do not replace it');
 select extensions.is(pg_temp.observations()::text, pg_temp.get('n8'), '8.2 and nothing new is stored');
 
+-- ===========================================================================
+-- 9. The state of the automatic path (migration 20261011140000)
+--    Fixture 2 (SofaScore event 9002) is finished, finalized, in a gameweek with
+--    adaptive scoring on, and has no observation.
+-- ===========================================================================
+select pg_temp.act('svc');
+select extensions.ok(not has_function_privilege('anon', 'api.service_sofascore_fantasy_context(uuid,text[])', 'execute'), '9.1 context: not callable by visitors');
+select extensions.ok(not has_function_privilege('authenticated', 'api.service_sofascore_fantasy_context(uuid,text[])', 'execute'), '9.2 context: not callable by signed-in users');
+select extensions.ok(has_function_privilege('service_role', 'api.service_sofascore_fantasy_context(uuid,text[])', 'execute'), '9.3 context: callable by the service role');
+select extensions.ok(not has_function_privilege('authenticated', 'api.service_sofascore_fantasy_note(uuid,text,text,text,jsonb,jsonb,text,timestamptz)', 'execute'), '9.4 note: not callable by signed-in users');
+select extensions.ok(has_function_privilege('service_role', 'api.service_sofascore_fantasy_note(uuid,text,text,text,jsonb,jsonb,text,timestamptz)', 'execute'), '9.5 note: callable by the service role');
+select extensions.ok(not has_function_privilege('authenticated', 'api.service_sofascore_fantasy_due(integer,integer,integer,integer,integer)', 'execute'), '9.6 due: not callable by signed-in users');
+select extensions.ok(has_function_privilege('service_role', 'api.service_sofascore_fantasy_due(integer,integer,integer,integer,integer)', 'execute'), '9.7 due: callable by the service role');
+select extensions.ok(not has_table_privilege('service_role', 'app_private.sofascore_fantasy_attempts', 'select'), '9.8 the attempts table is not readable through the API role');
+
+select extensions.is(api.service_sofascore_fantasy_context(gen_random_uuid()) ->> 'found', 'false', '9.9 an unknown fixture is not found');
+select pg_temp.put('ctx', api.service_sofascore_fantasy_context(pg_temp.id('f0', 2), array['S1', 'S99'])::text);
+select extensions.is(pg_temp.get('ctx')::jsonb ->> 'sofascoreEventId', '9002', '9.10 the context names the fixture mapping');
+select extensions.is(pg_temp.get('ctx')::jsonb ->> 'status', 'finished', '9.11 and its status');
+select extensions.is((pg_temp.get('ctx')::jsonb ->> 'adaptiveEnabled')::boolean, true, '9.12 adaptive scoring is on for its gameweek');
+select extensions.is((pg_temp.get('ctx')::jsonb ->> 'observations')::int, 0, '9.13 it has no observation');
+select extensions.is(pg_temp.get('ctx')::jsonb -> 'attempt', 'null'::jsonb, '9.14 and no attempt');
+select extensions.is(jsonb_array_length(pg_temp.get('ctx')::jsonb -> 'players'), 1, '9.15 only the asked player ids that have a mapping come back');
+select extensions.is((pg_temp.get('ctx')::jsonb -> 'players' -> 0 ->> 'reviewed')::boolean, true, '9.16 with their review state');
+select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 1)) ->> 'observations')::int > 0, true, '9.17 an observed fixture says so');
+
+select extensions.is((api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'held', 'unmapped_players',
+  '[{"code":"unmapped_players"}]', '{"version":1}', repeat('cd', 32), now() - interval '1 minute') ->> 'attempts')::int, 1,
+  '9.18 a first held attempt is stored');
+select extensions.is((api.service_sofascore_fantasy_due(6, 1, 72, 24, 4) -> 'retry') ? pg_temp.id('f0', 2)::text, true,
+  '9.19 and is due for a retry');
+select extensions.is((api.service_sofascore_fantasy_due(6, 1, 72, 24, 4) -> 'retry') ? pg_temp.id('f0', 1)::text, false,
+  '9.20 an observed fixture is never due');
+select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' -> 'matchData' ->> 'version'), '1',
+  '9.21 the stored replies come back with the context');
+select extensions.is((api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'held', 'unmapped_players',
+  '[]', null, null, now() - interval '1 minute') ->> 'attempts')::int, 2, '9.22 a second attempt is counted');
+select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' -> 'matchData' ->> 'version'), '1',
+  '9.23 and the stored replies are kept when none are given');
+select extensions.is((api.service_sofascore_fantasy_due(6, 1, 72, 2, 4) -> 'retry') ? pg_temp.id('f0', 2)::text, false,
+  '9.24 a fixture that reached the attempt limit is no longer due');
+select extensions.is(api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'gave_up', 'needs_review',
+  '[]', null, null, null) ->> 'status', 'gave_up', '9.25 giving up is stored');
+select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' ->> 'matchData') is null, true,
+  '9.26 and drops the stored replies');
+select extensions.is(api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'recorded', 'recorded',
+  '[]', null, repeat('ef', 32), null) ->> 'status', 'recorded', '9.27 a recorded fixture is stored');
+select extensions.is((api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'held', 'late',
+  '[]', null, null, null) ->> 'unchanged')::boolean, true, '9.28 and stays recorded');
+
+select extensions.throws_ok($$select api.service_sofascore_fantasy_note('f0000000-0000-4000-8000-000000000002', '9002', 'bogus', 'x', '[]', null, null, null)$$,
+  'PT400', 'sofascore_fantasy_note_invalid', '9.29 an unknown status is refused');
+select extensions.throws_ok($$select api.service_sofascore_fantasy_note('f0000000-0000-4000-8000-0000000000ff', '9002', 'held', 'x', '[]', null, null, null)$$,
+  'PT404', 'sofascore_fantasy_fixture_not_found', '9.30 an unknown fixture is refused');
+select extensions.throws_ok($$select api.service_sofascore_fantasy_due(6, 11, 72, 24, 4)$$,
+  'PT400', 'sofascore_fantasy_due_invalid', '9.31 an out-of-range limit is refused');
+select pg_temp.act('op');
+select extensions.throws_ok($$select api.service_sofascore_fantasy_due(6, 1, 72, 24, 4)$$,
+  'PT403', 'forbidden', '9.32 a signed-in user is refused');
+select pg_temp.act('svc');
+
 select * from extensions.finish();
 rollback;

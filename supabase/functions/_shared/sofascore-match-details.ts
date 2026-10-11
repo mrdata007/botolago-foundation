@@ -499,6 +499,12 @@ export interface SofascoreDetailsTarget {
   /** The SofaScore event id (the fixture's `sofascore` mapping). */
   readonly eventId: string;
   readonly teams: SofascoreFixtureTeams;
+  /**
+   * Set only for a fixture that is finished: the app fixture id the Fantasy
+   * step (sofascore-fantasy-auto.ts) records an observation for, from these
+   * same replies. Absent for a match in play.
+   */
+  readonly fantasyFixtureId?: string;
 }
 
 export interface SofascoreDetailsSummary {
@@ -532,6 +538,19 @@ export interface SofascoreDetailsDependencies {
   readonly log: (fields: Record<string, unknown>) => void;
   /** Backfill fixtures without resolvable clubs; record refusal without guessing. */
   readonly unresolvedTargets?: readonly string[];
+  /**
+   * Called with the three raw replies of a target that has a `fantasyFixtureId`,
+   * after its details were stored (or logged, in shadow). Whatever it does or
+   * throws never changes the details outcome.
+   */
+  readonly onReplies?: (
+    target: SofascoreDetailsTarget,
+    replies: {
+      readonly incidents: unknown;
+      readonly lineups: unknown;
+      readonly statistics: unknown;
+    },
+  ) => Promise<void>;
 }
 
 function eventPath(endpoint: string, eventId: string): string {
@@ -658,8 +677,9 @@ export async function runSofascoreMatchDetails(
   for (const target of targets) {
     totals.attempted += 1;
     let normalized: SofascoreMatchDetails;
+    let replies: { incidents: unknown; lineups: unknown; statistics: unknown };
     try {
-      const replies = await fetchSofascoreMatchReplies(rapid, target.eventId, requests);
+      replies = await fetchSofascoreMatchReplies(rapid, target.eventId, requests);
       normalized = normalizeSofascoreMatchDetails(replies, target.teams, now.toISOString());
     } catch (error) {
       const code = failureCode(error);
@@ -675,6 +695,15 @@ export async function runSofascoreMatchDetails(
       continue;
     }
     const { payload } = normalized;
+    // The Fantasy step reads these same replies; it never affects the details.
+    const afterwards = async () => {
+      if (!target.fantasyFixtureId || !dependencies.onReplies) return;
+      try {
+        await dependencies.onReplies(target, replies);
+      } catch {
+        // Fantasy must never hold back the match details.
+      }
+    };
     for (const section of Object.keys(skipped) as Array<keyof SofascoreDetailsSkipped>) {
       skipped[section] += normalized.skipped[section];
     }
@@ -698,6 +727,7 @@ export async function runSofascoreMatchDetails(
         payload,
         written: 0,
       });
+      await afterwards();
       continue;
     }
     try {
@@ -738,6 +768,7 @@ export async function runSofascoreMatchDetails(
       totals.rejected += 1;
       failed.push({ eventId: target.eventId, code });
     }
+    await afterwards();
   }
 
   if (runId !== null) {
