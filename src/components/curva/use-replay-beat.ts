@@ -31,6 +31,8 @@ const HOLD_MS = 900;
 export function useBeatPlayback(): { beat: BeatName | undefined; play: (beat: BeatName) => void } {
   const [beat, setBeat] = useState<BeatName | undefined>(undefined);
   const timers = useRef<number[]>([]);
+  // Whether a beat is set right now (state lags a render behind a tap).
+  const set = useRef(false);
   useEffect(
     () => () => {
       for (const id of timers.current) window.clearTimeout(id);
@@ -39,11 +41,26 @@ export function useBeatPlayback(): { beat: BeatName | undefined; play: (beat: Be
   );
   const play = useCallback((next: BeatName) => {
     for (const id of timers.current) window.clearTimeout(id);
-    setBeat(undefined);
-    timers.current = [
-      window.setTimeout(() => setBeat(next), 30),
-      window.setTimeout(() => setBeat(undefined), 30 + HOLD_MS),
-    ];
+    // A beat that is still set is dropped first and the new one set a moment later, so the card
+    // re-arms and plays it again. With none set there is nothing to drop: the beat starts with the
+    // tap, not 30 ms after it.
+    const rearm = set.current;
+    if (rearm) setBeat(undefined);
+    const start = () => {
+      set.current = true;
+      setBeat(next);
+    };
+    if (rearm) timers.current = [window.setTimeout(start, 30)];
+    else {
+      start();
+      timers.current = [];
+    }
+    timers.current.push(
+      window.setTimeout(() => {
+        set.current = false;
+        setBeat(undefined);
+      }, 30 + HOLD_MS),
+    );
   }, []);
   return { beat, play };
 }
