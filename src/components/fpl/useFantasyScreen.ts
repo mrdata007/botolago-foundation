@@ -47,8 +47,10 @@ export interface FantasyScreenState {
  * and then surface an error with a retry action). Screens that do not need
  * a team (`needsTeam: false`) still receive it when present.
  */
-export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boolean } = {}) {
-  const { needsTeam = true, needsAuth = true } = options;
+export function useFantasyScreen(
+  options: { needsTeam?: boolean; needsAuth?: boolean; needsPlayers?: boolean } = {},
+) {
+  const { needsTeam = true, needsAuth = true, needsPlayers = true } = options;
   const { lang } = useI18n();
   const { status: authStatus } = useAuth();
   const availability = useFantasyAvailability();
@@ -60,7 +62,9 @@ export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boo
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
-    enabled: ready,
+    // A screen that never reads `players` (the fixtures grid) does not wait
+    // for the pool: eight serial pages, ~2 s, before it could draw.
+    enabled: ready && needsPlayers,
     staleTime: 60_000,
     retry: 1,
   });
@@ -80,7 +84,7 @@ export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boo
 
   const retry = () => {
     void availability.refetch();
-    void playersQ.refetch();
+    if (needsPlayers) void playersQ.refetch();
     void clubsQ.refetch();
     void gwQ.refetch();
     void owned.reload();
@@ -97,7 +101,12 @@ export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boo
       isGuest,
       isCloud,
       retry,
-      error: availability.error ?? playersQ.error ?? clubsQ.error ?? gwQ.error ?? owned.loadError,
+      error:
+        availability.error ??
+        (needsPlayers ? playersQ.error : null) ??
+        clubsQ.error ??
+        gwQ.error ??
+        owned.loadError,
     };
     const view = availability.view;
     if (view.kind === "loading") return { ...base, phase: "loading" };
@@ -107,10 +116,12 @@ export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boo
     }
     if (needsAuth && authStatus === "loading") return { ...base, phase: "loading" };
     if (needsAuth && isGuest) return { ...base, phase: "guest" };
-    if (playersQ.isError || clubsQ.isError || gwQ.isError || owned.loadError) {
+    if ((needsPlayers && playersQ.isError) || clubsQ.isError || gwQ.isError || owned.loadError) {
       return { ...base, phase: "error" };
     }
-    if (!playersQ.data || !clubsQ.data || !gwQ.data) return { ...base, phase: "loading" };
+    if ((needsPlayers && !playersQ.data) || !clubsQ.data || !gwQ.data) {
+      return { ...base, phase: "loading" };
+    }
     if (isCloud && owned.isLoading && !owned.snapshot) return { ...base, phase: "loading" };
     if (needsTeam && !base.team) return { ...base, phase: "no_team" };
     return { ...base, phase: "ready" };
@@ -123,6 +134,7 @@ export function useFantasyScreen(options: { needsTeam?: boolean; needsAuth?: boo
     isCloud,
     needsAuth,
     needsTeam,
+    needsPlayers,
     playersQ.data,
     playersQ.isError,
     playersQ.error,
