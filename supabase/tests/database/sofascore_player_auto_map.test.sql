@@ -221,10 +221,10 @@ select extensions.is((app_private.football_mapping_supporting_state(pg_temp.map_
   '7.8 a mapping moved to another player after the fact is no longer reviewed');
 
 -- The automatic ingestion context must agree with the writer's review proof.
-create function pg_temp.context_reviewed(p_sid text) returns boolean language sql as $
+create function pg_temp.context_reviewed(p_sid text) returns boolean language sql as $context$
   select (e ->> 'reviewed')::boolean
     from jsonb_array_elements(api.service_sofascore_fantasy_context(
-      pg_temp.id('f0', 1), array[p_sid]) -> 'players') e where e ->> 'externalId' = p_sid $;
+      pg_temp.id('f0', 1), array[p_sid]) -> 'players') e where e ->> 'externalId' = p_sid $context$;
 select extensions.is(pg_temp.context_reviewed('S1'), true,
   '7.9 automatic context accepts an exact-name proof');
 select extensions.is(pg_temp.context_reviewed('S7'), true,
