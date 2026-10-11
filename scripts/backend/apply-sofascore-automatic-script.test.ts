@@ -14,8 +14,9 @@ import {
 
 /**
  * The ONE guarded script that installs SofaScore Fantasy scoring on production
- * (20261003180000, 20261011110000, 20261011120000, and the slots reserved for
- * the player auto-map and Lane A). It is generated; this test fails when the
+ * (20261003180000, 20261011110000, 20261011120000, the automatic player
+ * matching 20261011130000, the automatic Fantasy state 20261011140000 and the
+ * ops health coverage 20261011150000). It is generated; this test fails when the
  * committed script drifts from the migration files or from the generator, runs
  * each migration only after its sha256 matches, skips what is already recorded
  * (and verifies it), ships as a rehearsal, and checks production before its
@@ -110,6 +111,22 @@ describe("apply-sofascore-automatic.sql", () => {
       "an object migration 20261011120000 calls is missing",
       "the provider fixture links table or the reconciled wrapper already exists",
       "api.service_record_sofascore_fantasy_observation already exists",
+      "an object migration 20261011130000 depends on is missing",
+      "an object migration 20261011140000 depends on is missing",
+      "an object migration 20261011150000 depends on is missing",
+      "20261011130000 is not recorded but an object it creates already exists",
+      "20261011140000 is not recorded but an object it creates already exists",
+      "20261011150000 is not recorded but an object it creates already exists",
+      "migration 20261011120000 is neither recorded nor part of this run, but 20261011130000 builds on",
+      "migration 20261011120000 is neither recorded nor part of this run, but 20261011140000 builds on",
+      "to_regprocedure('app_private.person_name_key(text)') is null",
+      "to_regclass('app_private.sofascore_player_match_log') is not null",
+      "to_regclass('app_private.sofascore_fantasy_attempts') is not null",
+      "to_regprocedure('app_private.fantasy_fixture_health_ready(uuid,uuid,boolean)') is not null",
+      "to_regprocedure('app_private.ops_health_checks_before_adaptive()') is null",
+      `md5(pg_get_functiondef('app_private.football_mapping_supporting_state(uuid)'::regprocedure)) is distinct from '${PINS.supportingStateBefore}'`,
+      `md5(pg_get_functiondef('app_private.football_mapping_supporting_dependency(text,uuid,uuid)'::regprocedure)) is distinct from '${PINS.supportingDependencyBefore}'`,
+      `md5(pg_get_functiondef('app_private.ops_health_checks_before_adaptive()'::regprocedure)) is distinct from '${PINS.opsHealthBefore}'`,
     ]) {
       const at = script.indexOf(guard);
       expect({ guard, found: at !== -1 }).toEqual({ guard, found: true });
@@ -146,6 +163,21 @@ describe("apply-sofascore-automatic.sql", () => {
       `'${PINS.reconciledWrapper}'`,
       `'${PINS.snapshotAfter}'`,
       `'${PINS.sofascoreFantasyObservation}'`,
+      ...(
+        [
+          "supportingStateAfter",
+          "supportingDependencyAfter",
+          "matchEnqueue",
+          "autoMapPlayers",
+          "adminMatchQueue",
+          "adminResolveMatch",
+          "fantasyContext",
+          "fantasyNote",
+          "fantasyDue",
+          "fantasyFixtureHealthReady",
+          "opsHealthAfter",
+        ] as const
+      ).map((key) => `'${PINS[key]}'`),
       "p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=\"\"']",
       "has_function_privilege('public', fn, 'execute')",
       "has_function_privilege('anon', fn, 'execute')",
@@ -246,6 +278,146 @@ describe("apply-sofascore-automatic.sql", () => {
     ] as const) {
       const migration = read(`supabase/migrations/${step.version}_${step.name}.sql`);
       expect(occurrences(read(path), migration)).toBe(1);
+    }
+  });
+
+  test("every migration after 20261011110000 is a step, in dependency order, with nothing reserved", () => {
+    const versions = STEPS.map((step) => step.version);
+    expect(versions).toEqual([
+      "20261003180000",
+      "20261011110000",
+      "20261011120000",
+      "20261011130000",
+      "20261011140000",
+      "20261011150000",
+    ]);
+    expect(RESERVED_SLOTS).toEqual([]);
+    // 130000 and 140000 call the 120000 function, so 120000 is applied first.
+    const at = (version: string) => script.indexOf(`execute part_${version};`);
+    expect(at("20261011120000")).toBeLessThan(at("20261011130000"));
+    expect(at("20261011120000")).toBeLessThan(at("20261011140000"));
+    expect(at("20261011130000")).toBeLessThan(at("20261011140000"));
+    // 120000 builds on 3180000 (already guarded), and the guards of 130000 and 140000
+    // accept the 120000 function being created earlier in this same run.
+    expect(at("20261003180000")).toBeLessThan(at("20261011120000"));
+    for (const version of ["20261011130000", "20261011140000"]) {
+      expect(script).toContain(
+        `migration 20261011120000 is neither recorded nor part of this run, but ${version} builds on`,
+      );
+    }
+  });
+
+  test("the new tables force row level security and are closed to every API role, and each function has its grants checked", () => {
+    const postflight = script.slice(
+      script.indexOf("do $postflight$"),
+      script.lastIndexOf("\nrollback;\n"),
+    );
+    for (const table of [
+      "app_private.sofascore_player_match_log",
+      "app_private.sofascore_player_match_queue",
+      "app_private.sofascore_fantasy_attempts",
+    ]) {
+      expect({ table, checked: postflight.includes(`'${table}'`) }).toEqual({
+        table,
+        checked: true,
+      });
+    }
+    expect(postflight).toContain(
+      "has_table_privilege('anon', t, 'select, insert, update, delete')",
+    );
+    expect(postflight).toContain(
+      "has_table_privilege('authenticated', t, 'select, insert, update, delete')",
+    );
+    expect(postflight).toContain(
+      "has_table_privilege('service_role', t, 'select, insert, update, delete')",
+    );
+    for (const sig of [
+      "api.service_sofascore_auto_map_players(uuid,jsonb)",
+      "api.admin_sofascore_player_match_queue()",
+      "api.admin_resolve_sofascore_player_match(text,uuid)",
+      "app_private.sofascore_player_match_enqueue(text,uuid,uuid,text,text,text,integer,text,text,uuid[])",
+      "app_private.football_mapping_supporting_state(uuid)",
+      "app_private.football_mapping_supporting_dependency(text,uuid,uuid)",
+      "api.service_sofascore_fantasy_context(uuid,text[])",
+      "api.service_sofascore_fantasy_note(uuid,text,text,text,jsonb,jsonb,text,timestamptz)",
+      "api.service_sofascore_fantasy_due(integer,integer,integer,integer,integer)",
+      "app_private.fantasy_fixture_health_ready(uuid,uuid,boolean)",
+      "app_private.ops_health_checks_before_adaptive()",
+    ]) {
+      expect({ sig, checked: postflight.includes(`fn := to_regprocedure('${sig}');`) }).toEqual({
+        sig,
+        checked: true,
+      });
+    }
+    // The two staff functions are for signed-in staff only; the others are not.
+    const admin = postflight.slice(
+      postflight.indexOf("fn := to_regprocedure('api.admin_sofascore_player_match_queue()');"),
+    );
+    expect(admin).toContain("or not has_function_privilege('authenticated', fn, 'execute')");
+  });
+
+  test("every md5 placeholder is printed by a named CI line, and the pre-state ones come from a database at 20261011120000", () => {
+    const workflow = read(".github/workflows/backend-quality.yml");
+    for (const pin of Object.values(PINS)) {
+      if (isRealMd5(pin)) continue;
+      // The Fantasy observation pin has its own, older CI label.
+      if (pin === PINS.sofascoreFantasyObservation) continue;
+      expect({ pin, printed: workflow.includes(`'${pin}'`) }).toEqual({ pin, printed: true });
+    }
+    expect(workflow).toContain("supabase db reset --local --version 20261011120000");
+    // The pre-state step comes before the full reset that every later step needs.
+    const pre = workflow.indexOf("SofaScore automatic pre-state md5 (database at 20261011120000)");
+    const full = workflow.indexOf("- run: bun run backend:db:reset");
+    const post = workflow.indexOf("SofaScore automatic post-state md5");
+    expect(pre).toBeGreaterThan(0);
+    expect(pre).toBeLessThan(full);
+    expect(full).toBeLessThan(post);
+    // Each pre-state pin is measured in the pre-state step, each post-state one after the reset.
+    for (const key of [
+      "supportingStateBefore",
+      "supportingDependencyBefore",
+      "opsHealthBefore",
+    ] as const) {
+      const at = workflow.indexOf(`'${PINS[key]}'`);
+      expect({ key, inPreStateStep: at > pre && at < full }).toEqual({ key, inPreStateStep: true });
+    }
+    for (const key of [
+      "supportingStateAfter",
+      "supportingDependencyAfter",
+      "matchEnqueue",
+      "autoMapPlayers",
+      "adminMatchQueue",
+      "adminResolveMatch",
+      "fantasyContext",
+      "fantasyNote",
+      "fantasyDue",
+      "fantasyFixtureHealthReady",
+      "opsHealthAfter",
+    ] as const) {
+      expect({ key, afterReset: workflow.indexOf(`'${PINS[key]}'`) > post }).toEqual({
+        key,
+        afterReset: true,
+      });
+    }
+  });
+
+  test("the deploy gate requires the match-details migration as well", () => {
+    const workflow = read(".github/workflows/football-live-refresh-deploy.yml");
+    expect(workflow).toContain("version in ('20261011090000', '20261011100000', '20261011110000')");
+    expect(workflow).toContain('if [[ "$n" != "3" ]]; then');
+    expect(workflow).not.toContain('"$n" != "2"');
+  });
+
+  test("the runbook has no empty slot and says the pins come from CI", () => {
+    const runbook = read("docs/production/SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md").replace(
+      /\s*\n>?\s*/g,
+      " ",
+    );
+    expect(runbook).not.toContain("[SLOT");
+    if (Object.values(PINS).some((pin) => !isRealMd5(pin))) {
+      expect(runbook).toContain("md5 pins are filled from CI");
+    } else {
+      expect(runbook).not.toContain("md5 pins are filled from CI");
     }
   });
 

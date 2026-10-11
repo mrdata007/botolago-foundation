@@ -7,11 +7,16 @@ name: Football live refresh deploy
 #
 # Before it deploys it reads production's supabase_migrations.schema_migrations
 # (one SELECT through the Management API, nothing written) and refuses unless
-# 20261011090000 and 20261011100000 are both recorded: the new code calls
-# api.football_data_source() and api.football_sofascore_live_snapshot(), which
-# those migrations create. Apply them first with
-# scripts/backend/apply-sofascore-live-switch.sql
-# (docs/production/SOFASCORE_LIVE_RELEASE_RUNBOOK.md).
+# 20261011090000, 20261011100000 and 20261011110000 are all recorded: the new
+# code calls api.football_data_source() and api.football_sofascore_live_snapshot()
+# (the first two create them) and reads the home and away team ids that
+# 20261011110000 adds to the snapshot. Apply them first with
+# scripts/backend/apply-sofascore-live-switch.sql and then
+# scripts/backend/apply-sofascore-automatic.sql
+# (docs/production/SOFASCORE_LIVE_RELEASE_RUNBOOK.md,
+# docs/production/SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md). The automatic Fantasy
+# code needs 20261011140000 too but detects its absence and stands down
+# (supabase/functions/_shared/sofascore-fantasy-auto.ts), so it is not a gate.
 #
 # Guards mirror the other production workflows: dispatch from main by the owner
 # only, an approved environment, one production mutation at a time, the exact
@@ -96,13 +101,13 @@ jobs:
           bun test supabase/functions/_shared/football-live-refresh.test.ts \
             supabase/functions/_shared/sofascore-live-refresh.test.ts
 
-      - name: Require both migrations in production (read-only)
+      - name: Require the three migrations in production (read-only)
         shell: bash
         run: |
           set -euo pipefail
           runtime_dir="$(mktemp -d)"
           trap 'rm -rf "$runtime_dir"' EXIT
-          query="select count(*)::int as n from supabase_migrations.schema_migrations where version in ('20261011090000', '20261011100000')"
+          query="select count(*)::int as n from supabase_migrations.schema_migrations where version in ('20261011090000', '20261011100000', '20261011110000')"
           jq -n --arg query "$query" '{query: $query}' > "$runtime_dir/query.json"
           status="$(
             curl --silent --show-error --proto '=https' --tlsv1.2 \
@@ -118,11 +123,11 @@ jobs:
             exit 3
           fi
           n="$(jq -r 'if type == "array" then .[0].n else (.result // .data)[0].n end' "$runtime_dir/response.json")"
-          if [[ "$n" != "2" ]]; then
-            echo "::error::Production has $n of the 2 required migrations (20261011090000, 20261011100000). Run scripts/backend/apply-sofascore-live-switch.sql first. Nothing deployed."
+          if [[ "$n" != "3" ]]; then
+            echo "::error::Production has $n of the 3 required migrations (20261011090000, 20261011100000, 20261011110000). Run scripts/backend/apply-sofascore-live-switch.sql, then scripts/backend/apply-sofascore-automatic.sql, first. Nothing deployed."
             exit 3
           fi
-          echo "Both migrations are recorded in production."
+          echo "All three migrations are recorded in production."
 
       - name: Deploy football-live-refresh
         shell: bash
