@@ -19,6 +19,8 @@ which covered Fantasy player performances only.
 | M4 | The SportsMonks-only **pressure chart** on the match page is removed. |
 | M5 | The SportsMonks **preseason player ratings** job is retired. Ratings already stored stay untouched, so this season's Fantasy prices do not change. |
 
+| M6 | 2026-10-11: Fantasy player points come from **SofaScore alone, in simple mode** (minutes, goals, own goals, cards, clean sheet, goals conceded); assists, saves and penalty saves/misses score no points until a second source cross-checks them. Supersedes M3 (Flashscore as required cross-check) for scoring. |
+
 ### Open decision carried forward
 
 - **Next season's Fantasy starting prices.** `app_private.fantasy_initial_price_v1`
