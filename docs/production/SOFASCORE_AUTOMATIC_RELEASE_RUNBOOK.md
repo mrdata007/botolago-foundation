@@ -13,9 +13,9 @@ database writes).
 
 > **Status: wait for the go.** The script contains every migration of this
 > release. The md5 pins are filled from CI: they are the fingerprints of the
-> functions the script checks, and the last six (the Pépites step, below) are
-> copied in after the `database-quality` job of the pull request has printed
-> them. Until then the script refuses to run by itself and saves nothing. Do not
+> functions the script checks, and the last eleven (the Pépites step and the
+> catch-up migrations, below) are copied in after the `database-quality` job of
+> the pull request has printed them. Until then the script refuses to run by itself and saves nothing. Do not
 > start until the person who hands you this says the pins are in.
 
 ## What you will do, in short
@@ -29,24 +29,94 @@ database writes).
 
 ## What the script installs
 
-It checks which of these are already in production, skips the ones that are, and
-**checks** the ones it skipped instead of redoing them:
+On 2026-10-11 you read production (read-only) and found that 27 migrations the
+repository has are missing from the migration history
+(`supabase_migrations.schema_migrations`). They are not all the same case, and
+the script treats each case on its own terms. In plain words:
 
-| Order | Migration                                          | What it gives you                                                                                                                                                    |
-| ----- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | `20261003180000_reconciled_provider_observations`  | The place where a finished match is recorded as a scoring input (service-only). Skipped if it is already in production.                                              |
-| 2     | `20261011110000_football_sofascore_snapshot_teams` | The two clubs of each fixture, which the SofaScore match details need.                                                                                               |
-| 3     | `20261011120000_sofascore_fantasy_observations`    | The function that records a finished SofaScore match for Fantasy scoring (SofaScore only).                                                                           |
-| 4     | `20261011130000_sofascore_player_auto_map`         | Automatic player matching: matches the safe cases by itself, puts the doubtful ones on a short review list. Two empty private tables and the staff review functions. |
-| 5     | `20261011140000_sofascore_fantasy_auto_state`      | The memory of the automatic Fantasy path (retries, what was tried). One empty private table and three service-only functions.                                        |
-| 6     | `20261011150000_ops_health_adaptive_coverage`      | The health checks count SofaScore Fantasy matches as covered, so they do not page by mistake. Same checks, same output.                                              |
-| 7     | `20261011180000_sofascore_player_performances`     | Pépites works again: each finished SofaScore match fills the table Pépites reads, from the data Fantasy already recorded. One service-only function; see below.      |
+- **24 of them are already in production** (someone applied them another way);
+  only the line in the history is missing. The script does **not** run them
+  again. Before it writes a history line it checks, in the database itself, that
+  what the migration made is really there: every function it made has exactly
+  the text of the repository (it compares a fingerprint of the function body),
+  every table is there, every list of values (enum) has its values, and, for the
+  three that put data in, that the data is there (the editorial secret row, the
+  email settings row, and at least the 23 club links the team seed reported). If
+  one check fails the script stops, names the migration and the object, and
+  writes nothing. This is the "history" block; it covers
+  `20260919130000`, `20260919150000`, `20260919160000`, `20260921120000`,
+  `20260921140000`, `20260921160000`, `20260921170000`, `20260921180000`,
+  `20260921190000`, `20260921200000`, `20260921220000`, `20260922180000`,
+  `20260922180100`, `20260922180200`, `20260922200000`, `20260922200100`,
+  `20260924100000`, `20260924120000`, `20260924140000`, `20260924140100`,
+  `20260924163000`, `20260924170000`, `20260924173000` and `20260927153000`.
+  Two details: where a later migration (already recorded) changed a function
+  afterwards, the check compares with that later text, because that is what
+  production must hold. And `api.fantasy_player_season_stats` is compared with
+  its text **without the full-line `--` comments**, because that is how you
+  measured production (the comments are not part of what the function does).
+- **One function is in production in a slightly different, unreviewed form:**
+  `api.fantasy_gameweek_summary` (the average and highest score of a gameweek,
+  from `20260921200000`). Production holds a shorter text (1090 characters; the
+  reviewed one is 1432, almost all of the difference is explanatory comments,
+  and nobody knows exactly what else differs). The script first checks that
+  production still holds **exactly the version you measured** (fingerprint
+  `ae72632e...`); if it holds anything else it stops. It then replaces the
+  function with the reviewed text of the repository (with its comment and
+  permissions: signed-out visitors, signed-in users and the service can call
+  it, nobody else), checks the result, and only then writes the history line of
+  `20260921200000`. If the function already has the reviewed text it is left
+  alone.
+- **Four were never applied** and are installed as full steps below, each only
+  if its objects are really absent, and each checked afterwards.
+- `20261003180000` **is** recorded (you saw it), so it is skipped and only
+  verified, as before.
 
-It changes no fixture, no player, no point and no user. It only adds or replaces
-functions, creates three empty private tables and lets two statistics columns
-(assists, penalties missed) be empty. Nothing anyone sees changes by itself.
+The full steps, in the order the script runs them (it is the version order,
+and no step depends on one that comes after it):
 
-**Pépites, in plain words (step 7).** Pépites reads each player's appearances
+| Order | Migration                                              | What it gives you                                                                                                                                                                                                                                                                |
+| ----- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | `20260925090500_fantasy_league_page_skip_empty`        | The Fantasy scoring worker stops walking leagues that have no Fantasy member (a league created from Pronostics starts with none), so they cannot use up its call budget. Replaces one function (production still holds the older `20260914200719` text); no data.                |
+| 2     | `20261001170000_curated_team_crests`                   | Club crests supplied by BotolaGO are kept apart from the provider's: adds `api.service_set_curated_team_crest` and replaces `api.attach_football_team_crest` so the provider sync never overwrites a supplied crest. Functions only; no data.                                    |
+| 3     | `20261003180000_reconciled_provider_observations`      | The place where a finished match is recorded as a scoring input (service-only). Recorded in production, so it is skipped and verified.                                                                                                                                           |
+| 4     | `20261010140000_sofascore_repoint_fixture_mapping`     | A replayed (postponed) SofaScore match gets a new event number: one service-only function moves that fixture's SofaScore mapping to the new number, in place, and writes an audit line. Creates no table; changes no existing row.                                               |
+| 5     | `20261011110000_football_sofascore_snapshot_teams`     | The two clubs of each fixture, which the SofaScore match details need.                                                                                                                                                                                                           |
+| 6     | `20261011120000_sofascore_fantasy_observations`        | The function that records a finished SofaScore match for Fantasy scoring (SofaScore only).                                                                                                                                                                                       |
+| 7     | `20261011130000_sofascore_player_auto_map`             | Automatic player matching: matches the safe cases by itself, puts the doubtful ones on a short review list. Two empty private tables and the staff review functions.                                                                                                             |
+| 8     | `20261011140000_sofascore_fantasy_auto_state`          | The memory of the automatic Fantasy path (retries, what was tried). One empty private table and three service-only functions.                                                                                                                                                    |
+| 9     | `20261011150000_ops_health_adaptive_coverage`          | The health checks count SofaScore Fantasy matches as covered, so they do not page by mistake. Same checks, same output.                                                                                                                                                          |
+| 10    | `20261011170000_news_article_detail_other_language_id` | An article link carrying the id of the other language's edition now opens the reader's own language edition instead of answering "not found" (which left a failed request in the browser console). Replaces one function; permissions unchanged (the script proves it); no data. |
+| 11    | `20261011180000_sofascore_player_performances`         | Pépites works again: each finished SofaScore match fills the table Pépites reads, from the data Fantasy already recorded. One service-only function; see below.                                                                                                                  |
+
+Why this order: it is simply the order of the migration numbers, and none of the
+four new ones needs anything that a later one brings. `20261011170000` (the
+article function) touches nothing the SofaScore steps use, so it sits between
+`20261011150000` and `20261011180000` by number. Before it replaces
+`api.news_article_detail` the script has already checked, in the history block,
+that production holds the text of `20260924200600` (the last one that function
+had), and the step checks it again.
+
+For every function a step **replaces**, the script pins the text production
+holds now, and stops if it differs. Where you measured the fingerprint of the
+function **body** on production, the guard says so in its message ("md5 of
+pg_proc.prosrc, the body alone"); the whole-definition fingerprints (printed by
+CI) are used for the results.
+
+It changes no fixture, no player, no point and no user. It adds or replaces
+functions, creates three empty private tables, lets two statistics columns
+(assists, penalties missed) be empty, and writes the migration history lines.
+Nothing anyone sees changes by itself, apart from the reviewed gameweek summary
+and the article link fix.
+
+**Fantasy automatic updates must be off for `20260925090500`** (and for
+`20261003180000` if it were not recorded): both replace a Fantasy function. See
+"Before you start", item 2. Run the script when Fantasy gameweek 1 is already
+scored (the league-list migration was written for that; the script checks it
+and stops otherwise), and not at minute 12 of an hour, when the Fantasy
+orchestrator may start.
+
+**Pépites, in plain words (the last row, `20261011180000`).** Pépites reads each player's appearances
 from one table, and only SportsMonks used to write it. Step 7 lets the
 football-live-refresh function write it from SofaScore, using the finished-match
 data Fantasy has already recorded: no extra SofaScore request, the same checked
@@ -56,7 +126,7 @@ zero. A match SportsMonks already covered keeps its SportsMonks rows. The matche
 finished since SportsMonks stopped are filled by the same function on its next
 runs, nothing to do by hand. It does not change a single Fantasy input: the two
 Fantasy functions it touches are changed so they ignore these new rows. If you
-deploy the function before this step, Pépites simply stays as it is and the log
+deploy the function before this row is installed, Pépites simply stays as it is and the log
 says so once.
 
 ## Before you hand over (for whoever finishes the work, not the owner)
@@ -64,9 +134,11 @@ says so once.
 - **The md5 pins.** In the green `database-quality` run of the merged pull
   request, two steps print them: `SofaScore automatic pre-state md5` (five
   values, measured on a database built up to `20261011120000`, which is what
-  production holds) and the md5 step after the full reset, which prints
+  production holds; none of them is for the catch-up migrations, whose "before"
+  fingerprints are the body-text ones you measured on production and are already
+  in the script) and the md5 step after the full reset, which prints
   `SofaScore Fantasy observation md5` and `SofaScore automatic post-state md5`
-  (sixteen values). Each line has a `pin` column naming the placeholder
+  (twenty-one values: sixteen for the SofaScore steps and five for the catch-up migrations). Each line has a `pin` column naming the placeholder
   (`FILL_FROM_CI_...`) in `PINS` of
   `scripts/backend/build-apply-sofascore-automatic.ts` that it fills; the
   Fantasy observation one is the single `SofaScore Fantasy observation md5` line
@@ -93,8 +165,8 @@ AGENTS.md: one writer at a time.
    ```
 
    - `false`: nothing to do.
-   - `true`: the script will refuse the first time, only if migration 1 is still
-     to be installed. In that case run
+   - `true`: the script will refuse the first time if `20260925090500` (the
+     league list) is still to be installed, which it is. In that case run
      `select app_private.fantasy_automation_configure(false);` first, and write
      down that it was on, so you switch it back on in step 5.
 
@@ -435,19 +507,23 @@ straight away for the matches you ran in 5.4.
 
 ## If it stops
 
-| The message says                                                                 | What it means and what to do                                                                                                                                                      |
-| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `this script is not final`                                                       | A fingerprint (md5 pin) is still empty. Stop and tell whoever gave you the script.                                                                                                |
-| `a scheduled (pg_cron) job is running right now`                                 | A background job was in the middle of a run. Wait a minute and run it again.                                                                                                      |
-| `the Fantasy lifecycle tick is on`                                               | Run `select app_private.fantasy_automation_configure(false);`, then run the script again. Switch it back on in step 5.5.                                                          |
-| `a scoring observation is being written right now`                               | Something was recording a match. Wait until it is finished, then run again.                                                                                                       |
-| `migration 20261011090000 or 20261011100000 is not recorded`                     | The earlier live-switch release is missing in production. Stop. Run `scripts/backend/apply-sofascore-live-switch.sql` first (its own runbook).                                    |
-| `... is not the reviewed version ... (md5)`                                      | A function in production is not the one the script was checked against (someone changed it). Stop and ask: do not change anything yourself.                                       |
-| `... already exists` while the migration is not recorded                         | The object is there but the record is missing. Stop and ask. Do not insert a record by hand.                                                                                      |
-| `... is missing`                                                                 | A migration this one builds on is not in production. Stop and ask.                                                                                                                |
-| `an object it creates already exists` or `neither recorded nor part of this run` | Production is not the state the script was written for (an object is there without its record, or an earlier migration is missing). Stop and ask. Do not insert a record by hand. |
-| `is not the repository file byte for byte`                                       | The text pasted was cut short or changed. Copy the whole file again from `main` and run it again.                                                                                 |
-| `the update did not check out`                                                   | After installing, a check found something wrong. Nothing was saved. Stop and send the full message.                                                                               |
+| The message says                                                                                             | What it means and what to do                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `this script is not final`                                                                                   | A fingerprint (md5 pin) is still empty. Stop and tell whoever gave you the script.                                                                                                                                                                                        |
+| `a scheduled (pg_cron) job is running right now`                                                             | A background job was in the middle of a run. Wait a minute and run it again.                                                                                                                                                                                              |
+| `the Fantasy lifecycle tick is on`                                                                           | Run `select app_private.fantasy_automation_configure(false);`, then run the script again. Switch it back on in step 5.5.                                                                                                                                                  |
+| `a scoring observation is being written right now`                                                           | Something was recording a match. Wait until it is finished, then run again.                                                                                                                                                                                               |
+| `migration 20261011090000 or 20261011100000 is not recorded`                                                 | The earlier live-switch release is missing in production. Stop. Run `scripts/backend/apply-sofascore-live-switch.sql` first (its own runbook).                                                                                                                            |
+| `... is not the reviewed version ... (md5)`                                                                  | A function in production is not the one the script was checked against (someone changed it). Stop and ask: do not change anything yourself.                                                                                                                               |
+| `... already exists` while the migration is not recorded                                                     | The object is there but the record is missing. Stop and ask. Do not insert a record by hand.                                                                                                                                                                              |
+| `... is missing`                                                                                             | A migration this one builds on is not in production. Stop and ask.                                                                                                                                                                                                        |
+| `an object it creates already exists` or `neither recorded nor part of this run`                             | Production is not the state the script was written for (an object is there without its record, or an earlier migration is missing). Stop and ask. Do not insert a record by hand.                                                                                         |
+| `is not the repository file byte for byte`                                                                   | The text pasted was cut short or changed. Copy the whole file again from `main` and run it again.                                                                                                                                                                         |
+| `production does not match what migrations missing from the history create`                                  | A migration that is in production but missing from the history does not look like the repository (the message lists each function, table, type or data row, with its migration). Nothing was saved. Stop and send the full message: do not insert a history line by hand. |
+| `api.fantasy_gameweek_summary is neither the version production held on 2026-10-11 ... nor the reviewed one` | The function was changed again after you measured it. Stop and ask.                                                                                                                                                                                                       |
+| `does not have the body text ... replaces (md5 of pg_proc.prosrc`                                            | A function that a step replaces is not the text production was measured to hold. Stop and ask.                                                                                                                                                                            |
+| `Fantasy gameweek 1 has not been scored yet`                                                                 | The league-list migration waits until Fantasy gameweek 1 is finalized. Run the script after that.                                                                                                                                                                         |
+| `the update did not check out`                                                                               | After installing, a check found something wrong. Nothing was saved. Stop and send the full message.                                                                                                                                                                       |
 
 ## How to undo
 
@@ -491,7 +567,7 @@ None of the unknown ones is needed by this release, except the first row above
 
 | Migration                                                                                                  | In production?     | Evidence                                                                                                                                                                                                    |
 | ---------------------------------------------------------------------------------------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `20261003180000_reconciled_provider_observations`                                                          | **Unknown**        | Script and docs exist; `RECONCILED_SCORING_INGESTION.md` says it "goes on production" (owner decision 2026-10-04); no `APPLIED_*` record. The script copes with both.                                       |
+| `20261003180000_reconciled_provider_observations`                                                          | Applied            | Recorded in the history (your read of production on 2026-10-11). The script skips it and verifies it.                                                                                                       |
 | `20261004120000_current_fixture_left_out_players`                                                          | Applied 2026-10-04 | `APPLIED_2026_10_04_GW1_LEFT_OUT_PLAYERS.md` (06:18)                                                                                                                                                        |
 | `20261004130000_current_fixture_left_out_limit`                                                            | Applied 2026-10-04 | same file (06:45)                                                                                                                                                                                           |
 | `20261004140000_fantasy_completion_skips_inactive_leagues`                                                 | Applied 2026-10-04 | same file (07:24)                                                                                                                                                                                           |
@@ -513,7 +589,7 @@ None of the unknown ones is needed by this release, except the first row above
 | `20261010055425_compact_story_labels`                                                                      | Applied (stated)   | same                                                                                                                                                                                                        |
 | `20261010073509_no_public_ai_notices`                                                                      | Applied            | same (the newest row of that read)                                                                                                                                                                          |
 | `20261010120000`, `20261010120100`, `20261010120200`, `20261010120300` (Manager Card read API, 4)          | Unknown            | `apply-20261010120000-manager-card-api-v2.sql` exists; no `APPLIED_*` record                                                                                                                                |
-| `20261010140000_sofascore_repoint_fixture_mapping`                                                         | Unknown            | On `main`; no script, no record. Nothing in this release needs it                                                                                                                                           |
+| `20261010140000_sofascore_repoint_fixture_mapping`                                                         | **Not applied**    | Your read of 2026-10-11: `api.repoint_football_fixture_mapping` is absent. Installed by this script.                                                                                                        |
 | `20261011090000_football_data_source_switch`                                                               | Applied            | Production release of `main` at `01910e1b` (PR 422), as stated for this work; the match-details runbook says production reads `sofascore`                                                                   |
 | `20261011100000_football_sofascore_live_snapshot`                                                          | Applied            | same                                                                                                                                                                                                        |
 | `20261011110000_football_sofascore_snapshot_teams`                                                         | **Not applied**    | Installed by this script                                                                                                                                                                                    |
@@ -521,13 +597,23 @@ None of the unknown ones is needed by this release, except the first row above
 | `20261011130000_sofascore_player_auto_map`                                                                 | **Not applied**    | Installed by this script                                                                                                                                                                                    |
 | `20261011140000_sofascore_fantasy_auto_state`                                                              | **Not applied**    | Installed by this script                                                                                                                                                                                    |
 | `20261011150000_ops_health_adaptive_coverage`                                                              | **Not applied**    | Installed by this script                                                                                                                                                                                    |
+| `20261011170000_news_article_detail_other_language_id`                                                     | **Not applied**    | Merged to `main` after the SofaScore work (page speed, PR 427). Installed by this script (the article link fix).                                                                                            |
 | `20261011180000_sofascore_player_performances`                                                             | **Not applied**    | Installed by this script (Pépites feed)                                                                                                                                                                     |
 
-One more number worth knowing: on 2026-10-10 production had 173 recorded
-migrations while the repository then held 175 files up to the newest one, so two
-repository migrations at or below `20261010073509` were not recorded then. Which
-two is not written anywhere; `20261003180000` ("staging, not applied" on
-2026-10-04) is a candidate. This is why the script does not assume either way.
+**The 27 versions missing from the history** (your read of production on
+2026-10-11; every other repository version up to `20261011100000` is recorded,
+`20261003180000` included):
+
+| Case                                                             | Versions                                                                                                                                                                                                                                                                                                                                                                                                   | What the script does                                                                                            |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Applied by another path, objects match the repository (22 of 24) | `20260919130000`, `20260919150000`, `20260919160000`, `20260921120000`, `20260921140000`, `20260921170000`, `20260921180000`, `20260921190000`, `20260921220000`, `20260922180000`, `20260922180100`, `20260922180200`, `20260922200000`, `20260922200100`, `20260924100000`, `20260924120000`, `20260924140000`, `20260924140100`, `20260924163000`, `20260924170000`, `20260924173000`, `20260927153000` | Checks them again at run time, then writes the history line only.                                               |
+| Applied, with the full-line comments removed                     | `20260921160000` (`api.fantasy_player_season_stats`)                                                                                                                                                                                                                                                                                                                                                       | Compares with the comment-free text (fingerprint `1b141bf8...`), then writes the history line.                  |
+| Applied in a different, unreviewed form                          | `20260921200000` (`api.fantasy_gameweek_summary`)                                                                                                                                                                                                                                                                                                                                                          | Brings the function to the reviewed text (only from the exact text you measured), then writes the history line. |
+| Never applied                                                    | `20260925090500`, `20261001170000`, `20261010140000`                                                                                                                                                                                                                                                                                                                                                       | Installed as full steps (rows 1, 2 and 4 above); `20261011170000`, merged later, is row 10.                     |
+
+On 2026-10-10 production had 173 recorded migrations; the 27 above are why the
+count did not match the repository then. The script does not assume anything
+about them: each decision is made from the database at the moment you run it.
 
 ## Why the script does not pause the background jobs
 
@@ -536,9 +622,10 @@ The earlier scripts for this work (`apply-sofascore-live-switch.sql`,
 scheduled job is mid-run, and so does this one. The migrations here add and
 replace functions and create three empty private tables and write no row of fixtures, Fantasy, news,
 Pépites, predictions, notifications or users, so pausing those jobs would be
-extra steps for no gain. The one exception is the Fantasy observation recorder
-that migration 1 replaces: the script holds the observation table for the
-moment of the change and, only when migration 1 is to be installed, wants the
-Fantasy automatic updates off (step "Before you start" 2), as the single-purpose
+extra steps for no gain. The one exception is the Fantasy functions that two migrations
+replace (the league list `20260925090500`, and the observation recorder of
+`20261003180000` if it were not recorded): the script holds the observation
+table for the moment of the recorder change and, only when one of them is to be
+installed, wants the Fantasy automatic updates off (step "Before you start" 2), as the single-purpose
 script for it always did. The script never changes any switch itself, so there is
 nothing to forget to restore except the Fantasy one you chose to turn off.

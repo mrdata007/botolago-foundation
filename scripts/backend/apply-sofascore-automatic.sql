@@ -10,8 +10,14 @@
 -- order and SKIPPING any migration already recorded in
 -- supabase_migrations.schema_migrations; a skipped one is VERIFIED instead
 -- (its functions, grants and md5 pins), never applied twice:
+--   20260925090500_fantasy_league_page_skip_empty
+--     Fantasy scoring worker skips leagues without a Fantasy member: replaces api.service_fantasy_scoring_league_page (same signature, shape and grants; production still holds the 20260914200719 version); changes no data
+--   20261001170000_curated_team_crests
+--     club crests supplied by BotolaGO: adds api.service_set_curated_team_crest and replaces api.attach_football_team_crest so the provider sync never repoints a team away from a supplied crest (production still holds the 20260801010200 version); changes no data
 --   20261003180000_reconciled_provider_observations
 --     reconciled provider observations: the 'provider-reconciled' source, app_private.football_provider_fixture_links and a service-only wrapper; replaces the observation recorder with the same function that accepts that source only inside the wrapper
+--   20261010140000_sofascore_repoint_fixture_mapping
+--     a replayed SofaScore match follows its new event id: adds the service-only api.repoint_football_fixture_mapping, which moves one SofaScore fixture mapping in place and audits it (creates no table, changes no existing row)
 --   20261011110000_football_sofascore_snapshot_teams
 --     home and away team ids on api.football_sofascore_live_snapshot() (same signature and grants, pure read), which the SofaScore match-details path needs
 --   20261011120000_sofascore_fantasy_observations
@@ -22,8 +28,26 @@
 --     the memory of the automatic SofaScore Fantasy path: one private table (attempts, retry time, trimmed SofaScore replies) and three service-only functions (context, note, due); scores nothing and changes no existing object
 --   20261011150000_ops_health_adaptive_coverage
 --     ops health counts SofaScore (adaptive) Fantasy coverage: adds app_private.fantasy_fixture_health_ready and patches the deployed health body app_private.ops_health_checks_before_adaptive in place (same checks, same output shape); changes no row
+--   20261011170000_news_article_detail_other_language_id
+--     an article opened by an edition id from the other language resolves to the reader's own language edition instead of answering 404: replaces api.news_article_detail (same signature; grants preserved by create or replace); changes no data
 --   20261011180000_sofascore_player_performances
 --     Pépites feed: api.service_sync_sofascore_player_performances() derives app.player_fixture_performances rows from the SofaScore Fantasy observation already recorded (no new request; unknown assists, penalties and saves are NULL, never zero); assists and penalties_missed may now be NULL; patches the two Fantasy scoring-document functions in place so a SofaScore row never moves a scoring input digest; changes no existing row
+--
+-- It also catches the migration history up. On 2026-10-11 the owner's read-only
+-- checks found 27 repository versions missing from the history that were
+-- not all "never applied":
+--   * 24 migrations (20260919130000 to 20260927153000) whose objects
+--     ARE in production, applied by another path: only their history row is
+--     missing. The script writes the row only after it has checked, at run
+--     time, what the migration created (the body of every function by md5 of
+--     pg_proc.prosrc against the repository body, tables, enum types and
+--     labels, and the rows two of them seed). The files are NOT run again;
+--   * api.fantasy_gameweek_summary(uuid), whose production body differs from
+--     the reviewed one (md5 of prosrc ae72632ee97802080b5a08c4215d4c61), is first brought to the reviewed
+--     body of 20260921200000 (create or replace; the script stops if the body
+--     is neither that older production body nor the reviewed one);
+--   * the three catch-up steps above (20260925090500, 20261001170000,
+--     20261010140000) and 20261011170000 are applied as full steps.
 --
 -- HOW TO RUN
 --   Check nothing else is writing (AGENTS.md; the runbook says how). Then run
@@ -38,9 +62,10 @@
 --   * refuses (a `stop:` message, nothing saved) while a pg_cron job is
 --     mid-run, where an object a migration depends on is missing, where an
 --     object it creates already exists although it is not recorded, where the
---     function it replaces is not the reviewed version (md5), and, only when
---     20261003180000 has to be applied (it replaces the Fantasy observation
---     recorder), while the Fantasy lifecycle tick is on;
+--     function it replaces is not the reviewed version (md5), where an object a
+--     migration missing from the history created is absent or different, and,
+--     only when 20261003180000 or 20260925090500 has to be applied (each
+--     replaces a Fantasy function), while the Fantasy lifecycle tick is on;
 --   * records each missing migration file whole in
 --     supabase_migrations.schema_migrations and runs it from that record once
 --     its sha256 matches the repository file;
@@ -51,13 +76,13 @@
 --     is readable by no API role, and each definition is the reviewed one (md5).
 --   It writes no fixture, Fantasy, news or user row and pauses nothing: it only
 --   creates or replaces functions, creates three empty private tables and one
---   check, and lets two columns of app.player_fixture_performances (assists,
---   penalties_missed) be NULL. The pg_cron jobs
+--   check, lets two columns of app.player_fixture_performances (assists,
+--   penalties_missed) be NULL, and writes history rows. The pg_cron jobs
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 
 --
--- NOT FINAL: md5 pins to fill from the green database-quality run: scoringDocumentBaseBefore, scoringDocumentBaseAfter, legacyFixtureCheckBefore, legacyFixtureCheckAfter, performancesSync, performancesSyncFixture.
+-- NOT FINAL: md5 pins to fill from the green database-quality run: leaguePageAfter, attachTeamCrestAfter, setCuratedTeamCrest, repointFixtureMapping, newsArticleDetailAfter, scoringDocumentBaseBefore, scoringDocumentBaseAfter, legacyFixtureCheckBefore, legacyFixtureCheckAfter, performancesSync, performancesSyncFixture.
 --   Until they are, this script REFUSES TO RUN (first check below).
 -- ============================================================================
 
@@ -71,7 +96,7 @@ set local statement_timeout = '120s';
 create temporary table sofascore_plan on commit drop as
 select v.version,
        exists (select 1 from supabase_migrations.schema_migrations m where m.version = v.version) as was_recorded
-  from (values ('20261003180000'), ('20261011110000'), ('20261011120000'), ('20261011130000'), ('20261011140000'), ('20261011150000'), ('20261011180000')) as v(version);
+  from (values ('20260925090500'), ('20261001170000'), ('20261003180000'), ('20261010140000'), ('20261011110000'), ('20261011120000'), ('20261011130000'), ('20261011140000'), ('20261011150000'), ('20261011170000'), ('20261011180000'), ('20260919130000'), ('20260919150000'), ('20260919160000'), ('20260921120000'), ('20260921140000'), ('20260921160000'), ('20260921170000'), ('20260921180000'), ('20260921190000'), ('20260921200000'), ('20260921220000'), ('20260922180000'), ('20260922180100'), ('20260922180200'), ('20260922200000'), ('20260922200100'), ('20260924100000'), ('20260924120000'), ('20260924140000'), ('20260924140100'), ('20260924163000'), ('20260924170000'), ('20260924173000'), ('20260927153000')) as v(version);
 
 -- Replacing the observation recorder: wait for no scoring observation being written.
 do $hold$
@@ -86,6 +111,11 @@ $hold$;
 
 do $preflight$
 begin
+  raise exception 'stop: this script is not final -- the md5 pin leaguePageAfter has not been filled from CI yet; nothing was saved';
+  raise exception 'stop: this script is not final -- the md5 pin attachTeamCrestAfter has not been filled from CI yet; nothing was saved';
+  raise exception 'stop: this script is not final -- the md5 pin setCuratedTeamCrest has not been filled from CI yet; nothing was saved';
+  raise exception 'stop: this script is not final -- the md5 pin repointFixtureMapping has not been filled from CI yet; nothing was saved';
+  raise exception 'stop: this script is not final -- the md5 pin newsArticleDetailAfter has not been filled from CI yet; nothing was saved';
   raise exception 'stop: this script is not final -- the md5 pin scoringDocumentBaseBefore has not been filled from CI yet; nothing was saved';
   raise exception 'stop: this script is not final -- the md5 pin scoringDocumentBaseAfter has not been filled from CI yet; nothing was saved';
   raise exception 'stop: this script is not final -- the md5 pin legacyFixtureCheckBefore has not been filled from CI yet; nothing was saved';
@@ -99,6 +129,69 @@ begin
       and (run.start_time > statement_timestamp() - interval '15 minutes'
         or exists (select 1 from pg_stat_activity activity where activity.pid = run.job_pid))) then
     raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
+  end if;
+
+  -- api.fantasy_gameweek_summary(uuid): production holds a slightly different,
+  -- unreviewed body (md5 of prosrc ae72632ee97802080b5a08c4215d4c61). It is brought to the reviewed
+  -- body of 20260921200000 below. Any other body is not the state this was written for.
+  if to_regprocedure('api.fantasy_gameweek_summary(uuid)') is null
+    or to_regclass('app.fantasy_gameweeks') is null
+    or to_regclass('app.fantasy_team_gameweek_results') is null then
+    raise exception 'stop: api.fantasy_gameweek_summary or a table it reads is missing -- production is not the state 20260921200000 was written for';
+  end if;
+  if (select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.fantasy_gameweek_summary(uuid)'))
+      not in ('ae72632ee97802080b5a08c4215d4c61', '96f6cbe0f8fa40c0ff3d440ce1ef2f09') then
+    raise exception 'stop: api.fantasy_gameweek_summary is neither the version production held on 2026-10-11 (prosrc md5 ae72632ee97802080b5a08c4215d4c61) nor the reviewed one -- production is not the state this was written for';
+  end if;
+
+  -- 20260925090500_fantasy_league_page_skip_empty
+  if exists (select 1 from pg_temp.sofascore_plan where version = '20260925090500' and not was_recorded) then
+    if to_regclass('app.fantasy_gameweeks') is null
+      or to_regclass('app.fantasy_leagues') is null
+      or to_regclass('app.fantasy_league_memberships') is null
+      or to_regclass('app_private.fantasy_automation_settings') is null
+      or to_regprocedure('api.service_fantasy_scoring_league_page(uuid,uuid,integer)') is null
+      or to_regprocedure('app_private.is_service_request()') is null then
+      raise exception 'stop: an object migration 20260925090500 depends on is missing -- production is not the state it was written for';
+    end if;
+    if (select count(*) from supabase_migrations.schema_migrations where version in ('20260925090400')) <> 1 then
+      raise exception 'stop: Pronostics parts 1 to 5 (migration 20260925090400) are not recorded -- production is not the state 20260925090500 was written for';
+    end if;
+    -- The rule this migration was written under: not before Fantasy gameweek 1 is locked and scored.
+    if not exists (select 1 from app.fantasy_gameweeks
+        where sequence_number = 1 and finalized_at is not null and points_state = 'final') then
+      raise exception 'stop: Fantasy gameweek 1 has not been scored yet -- 20260925090500 waits until it is finalized';
+    end if;
+    -- AGENTS.md: a write that touches Fantasy runs with the Fantasy lifecycle tick paused.
+    if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
+      raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false); (switch it back on afterwards)';
+    end if;
+    -- It replaces exactly the 20260914200719 version production holds. Two pins:
+    -- the body text (md5 of pg_proc.prosrc, measured on production 2026-10-11) and
+    -- the whole definition (measured on production 2026-09-24).
+    if (select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.service_fantasy_scoring_league_page(uuid,uuid,integer)')) is distinct from 'dba725a5659bb5ba9338a00071752b8b' then
+      raise exception 'stop: api.service_fantasy_scoring_league_page(uuid,uuid,integer) does not have the body text 20260925090500 replaces (md5 of pg_proc.prosrc, the body alone, not the whole definition)';
+    end if;
+    if md5(pg_get_functiondef('api.service_fantasy_scoring_league_page(uuid,uuid,integer)'::regprocedure)) is distinct from '021d0a3422cf68d4c213b028974888d2' then
+      raise exception 'stop: api.service_fantasy_scoring_league_page(uuid,uuid,integer) is not the reviewed version 20260925090500 replaces (md5)';
+    end if;
+  end if;
+
+  -- 20261001170000_curated_team_crests
+  if exists (select 1 from pg_temp.sofascore_plan where version = '20261001170000' and not was_recorded) then
+    if to_regprocedure('api.service_set_curated_team_crest(text,text,text,text)') is not null then
+      raise exception 'stop: 20261001170000 is not recorded but an object it creates already exists -- production is not the state it was written for';
+    end if;
+    if to_regclass('app_private.football_provider_mappings') is null
+      or to_regclass('app.teams') is null
+      or to_regclass('app.media_assets') is null
+      or to_regprocedure('api.attach_football_team_crest(text,text,text,text,text,timestamptz)') is null then
+      raise exception 'stop: an object migration 20261001170000 depends on is missing -- production is not the state it was written for';
+    end if;
+    -- It replaces exactly the 20260801010200 version production holds (md5 of pg_proc.prosrc, the body text, measured on production 2026-10-11).
+    if (select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.attach_football_team_crest(text,text,text,text,text,timestamptz)')) is distinct from '3d66fd9f11c51899af702952f7b5b46f' then
+      raise exception 'stop: api.attach_football_team_crest(text,text,text,text,text,timestamptz) does not have the body text 20261001170000 replaces (md5 of pg_proc.prosrc, the body alone, not the whole definition)';
+    end if;
   end if;
 
   -- 20261003180000_reconciled_provider_observations
@@ -123,6 +216,24 @@ begin
     if md5(pg_get_functiondef('api.service_record_fantasy_observation(uuid,jsonb,text)'::regprocedure))
         <> '0e4852a0a3c35bc3332ebd891d2cdf8e' then
       raise exception 'stop: the observation recorder is not the version migration 20261003180000 replaces (md5)';
+    end if;
+  end if;
+
+  -- 20261010140000_sofascore_repoint_fixture_mapping
+  if exists (select 1 from pg_temp.sofascore_plan where version = '20261010140000' and not was_recorded) then
+    if to_regprocedure('api.repoint_football_fixture_mapping(text,uuid,text,text,text)') is not null then
+      raise exception 'stop: 20261010140000 is not recorded but an object it creates already exists -- production is not the state it was written for';
+    end if;
+    if to_regclass('app_private.football_provider_mappings') is null
+      or to_regprocedure('app_private.is_service_request()') is null
+      or to_regprocedure('app_private.write_admin_audit(uuid,text,text,uuid,text,uuid,uuid,uuid,jsonb,jsonb,app_private.admin_audit_outcome,text,boolean)') is null then
+      raise exception 'stop: an object migration 20261010140000 depends on is missing -- production is not the state it was written for';
+    end if;
+    if (select count(*) from pg_attribute a
+         where a.attrelid = 'app_private.football_provider_mappings'::regclass and a.attnum > 0 and not a.attisdropped
+           and a.attname in ('id', 'active', 'provider_name', 'entity_type', 'external_id',
+                             'internal_entity_id', 'last_seen_at', 'source_version')) <> 8 then
+      raise exception 'stop: app_private.football_provider_mappings lacks a column migration 20261010140000 uses -- production is not the state it was written for';
     end if;
   end if;
 
@@ -247,6 +358,39 @@ begin
     end if;
   end if;
 
+  -- 20261011170000_news_article_detail_other_language_id
+  if exists (select 1 from pg_temp.sofascore_plan where version = '20261011170000' and not was_recorded) then
+    if to_regclass('app.article_editions') is null
+      or to_regclass('app.story_taxonomies') is null
+      or to_regclass('app.taxonomies') is null
+      or to_regclass('app.taxonomy_translations') is null
+      or to_regclass('app.story_competitions') is null
+      or to_regclass('app.competitions') is null
+      or to_regclass('app.story_teams') is null
+      or to_regclass('app.teams') is null
+      or to_regclass('app.story_players') is null
+      or to_regclass('app.players') is null
+      or to_regprocedure('api.news_article_detail(text,text)') is null
+      or to_regprocedure('app_private.news_language(text)') is null
+      or to_regprocedure('app_private.news_is_public(app.article_editions)') is null
+      or to_regprocedure('app_private.news_article_card(app.article_editions,app.placement_type)') is null
+      or to_regprocedure('app_private.news_content_updated_at(app.article_editions)') is null then
+      raise exception 'stop: an object migration 20261011170000 depends on is missing -- production is not the state it was written for';
+    end if;
+    -- It replaces exactly the 20260924200600 body (md5 of pg_proc.prosrc, the body text; the body is also checked
+    -- by the migration-history check when 20260922180200 is missing from the history).
+    if (select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.news_article_detail(text,text)')) is distinct from 'ffafc51e4ce1d02c4225fdf1d8c69861' then
+      raise exception 'stop: api.news_article_detail(text,text) does not have the body text 20261011170000 replaces (md5 of pg_proc.prosrc, the body alone, not the whole definition)';
+    end if;
+    -- create or replace keeps the grants; remember them to prove it afterwards.
+    create temporary table sofascore_news_detail_grants on commit drop as
+    select has_function_privilege('public', fn, 'execute') as public_can,
+           has_function_privilege('anon', fn, 'execute') as anon_can,
+           has_function_privilege('authenticated', fn, 'execute') as authenticated_can,
+           has_function_privilege('service_role', fn, 'execute') as service_can
+      from (select to_regprocedure('api.news_article_detail(text,text)') as fn) f;
+  end if;
+
   -- 20261011180000_sofascore_player_performances
   if exists (select 1 from pg_temp.sofascore_plan where version = '20261011180000' and not was_recorded) then
     if to_regprocedure('api.service_sync_sofascore_player_performances(uuid,integer,jsonb)') is not null
@@ -283,6 +427,670 @@ begin
   end if;
 end
 $preflight$;
+
+-- Migration history to complete. These 24 migrations are missing from
+-- supabase_migrations.schema_migrations although what they create is in
+-- production (they were applied by another path). Before a history row is
+-- written, what the migration created is checked here: the body of every
+-- function (md5 of pg_proc.prosrc against the repository body), every table,
+-- every enum type and label. api.fantasy_gameweek_summary is checked by its
+-- own step after it is brought to the reviewed body. Nothing is written here.
+do $history_check$
+declare
+  problems text[] := '{}';
+  e record;
+  actual text[];
+begin
+  for e in
+    select * from (values
+      ('20260919130000', 'api', 'editorial_list_revisions', 2, array['7ec61034a89130a4721f430053523920'], '20260919130000'),
+      ('20260919130000', 'api', 'editorial_register_media', 11, array['af6a3f970c16fe3e089ed2937aaf23aa'], '20260919130000'),
+      ('20260919150000', 'app_private', 'has_editorial_role', 1, array['d4decd698b086f6f36bceaa190af9e0a'], '20260919150000'),
+      ('20260919160000', 'api', 'editorial_create_draft', 13, array['b23a23f643833f2363527eea088198b2'], '20260919160000'),
+      ('20260919160000', 'api', 'editorial_update_article', 15, array['b256c182c3f8f49279eb8b129c5f05dd'], '20260919160000'),
+      ('20260919160000', 'api', 'editorial_write_secret_for_service', 0, array['8b1981dccb7ff05a584c5989ee1963bb'], '20260919160000'),
+      ('20260919160000', 'app_private', 'verify_editorial_content_mac', 2, array['86771b6445c311ddb95c6c09ddecf382'], '20260919160000'),
+      ('20260921120000', 'api', 'fantasy_leagues', 3, array['d27b7be479127dc1292c44c1cbd46b9e'], '20260926003100'),
+      ('20260921160000', 'api', 'fantasy_player_gameweek_history_v1', 1, array['f767f873c813291ba01fe3749ea7b81d'], '20260921160000'),
+      ('20260921160000', 'api', 'fantasy_player_season_stats', 2, array['1b141bf8a70e0db8e6ecd402b2f9beb9'], '20260921160000'),
+      ('20260921170000', 'api', 'news_ingest_provider_article', 15, array['76e128476acaa1556137f97554984bc8'], '20260921170000'),
+      ('20260921170000', 'app_private', 'news_stand_down_machine_editions', 0, array['397a20d0aac799f397fd8e9bcd75ba7d'], '20260921170000'),
+      ('20260921180000', 'api', 'fantasy_overall_standings', 5, array['ad609e4c4d98b34256e44e075ab93a2a'], '20260926003100'),
+      ('20260921190000', 'app_private', 'football_team_json', 2, array['a56a4389d72c077dd04a93fdd136070c'], '20260921190000'),
+      ('20260921200000', 'api', 'fantasy_league_standings', 5, array['5de942d9fe0b15345e4cdd72ecd0da37'], '20260926003100'),
+      ('20260921200000', 'api', 'get_my_fantasy_points_v1', 2, array['6750a054faa015a85d4523e6721f3f35'], '20260926003100'),
+      ('20260922180000', 'api', 'editorial_convert_imported_story', 2, array['3a947b955f4e7a7d43d56685ff918d28'], '20260922180000'),
+      ('20260922180000', 'api', 'editorial_get_article', 1, array['aa7cec5cb7166b4fb74df734563c047b'], '20260922180000'),
+      ('20260922180000', 'api', 'editorial_list_stories', 7, array['5231a2b11776b79599201fd431cc7849'], '20260922180000'),
+      ('20260922180000', 'app_private', 'news_is_public', 1, array['c2ad7403a31df2b17f6612bf011174d1'], '20260922180000'),
+      ('20260922180000', 'app_private', 'news_story_is_legacy_import', 1, array['d2041b1c73fe0fdf92478c962b0a8478'], '20260922180000'),
+      ('20260922180100', 'api', 'editorial_schedule_health', 0, array['4fb74be200710873441ce3b912f6f989'], '20260922180100'),
+      ('20260922180100', 'api', 'editorial_transition_article', 4, array['842b37b2667677b20a0f751011881158'], '20260922180100'),
+      ('20260922180100', 'app_private', 'news_publish_due_editions', 1, array['c0381654a5f3f786b6affcf12975ced0'], '20260922180100'),
+      ('20260922180200', 'api', 'news_article_detail', 2, array['ffafc51e4ce1d02c4225fdf1d8c69861'], '20260924200600'),
+      ('20260922200000', 'api', 'ingest_football_fixture', 3, array['3459f8ace12fac99c8dc98097ac15a2a'], '20260922200000'),
+      ('20260922200100', 'api', 'football_current_performance_fixture_batch_v1', 4, array['d9c4072c150ff550bf42533b11974394'], '20260922200100'),
+      ('20260924100000', 'app_private', 'news_article_card', 2, array['83594507d999def45518e32f04938600'], '20260926003100'),
+      ('20260924120000', 'api', 'admin_add_fantasy_prize_winner_note', 3, array['77aff9291bdfa6d534487aa7905dbddf'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_get_fantasy_prize_settings', 1, array['7f301e94ce19d9c9f0c450ab4648276b'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_list_fantasy_prize_flags', 0, array['5b24362a1f411d93ec28ef465c919f09'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_list_fantasy_prize_winners', 4, array['54fd3fb042a48fdcd5cfcba0f924ef3f'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_list_fantasy_prizes', 0, array['927ed8dd6120b36d1ba42bda472a310b'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_override_fantasy_prize_winner', 5, array['4e93b6afb43d2b8dd2bec493f7fe5790'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_save_fantasy_prize', 13, array['a6503fbd59bca36f0315a44ed8a6f473'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_save_fantasy_prize_settings', 5, array['1a0269514618bd6f8beab8d2a0497a83'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_set_fantasy_prize_flag', 5, array['a0c2fe87f9342fa6ed86c3d6ddc56c1a'], '20260924120000'),
+      ('20260924120000', 'api', 'admin_set_fantasy_prize_winner_status', 4, array['3e9bcb7b79a45d7b4f42d2c64ae2b678'], '20260924120000'),
+      ('20260924120000', 'api', 'fantasy_prize_winners', 3, array['31dcb46f4bdf45d9fb0843a6a6e12e64'], '20261006143700'),
+      ('20260924120000', 'api', 'fantasy_prizes', 0, array['cffb75abc4d17049b3105a68d605adf7'], '20260924120000'),
+      ('20260924120000', 'api', 'service_evaluate_fantasy_prizes', 1, array['d4a8b27aaf4574246485c7b8e684ca4f'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_mask_username', 1, array['f48b3e5c1fa8b7798f37bd297d202eee'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_admin_json', 1, array['945bc90d181b2b2d6b93949bab162c3c'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_append_note', 3, array['bf2031b7dbc2ae307a686a63cfb4e4c8'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_assert_reason', 1, array['4f8d5291422760d10a2e3ca1dc52f983'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_award', 8, array['059d4ec81540b771a1ee32b1c7604963'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_block_bounds', 2, array['c05b1b6e4c7cae6cdad828dff2756deb'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_current_season', 0, array['328c51a1df3265da1ca3c3b0c79008dd'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_evaluate_gameweek', 3, array['ae4ed501c22f9b9d4e64d076658dfbb3'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_ineligibility', 4, array['39d48e7e66d88ea7a9b9e72533d5c57b'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_is_staff', 1, array['e91c32779941a2cc5928298fdd346bea'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_season_settings', 1, array['a24f9654025e5fa4f7f206eba74dabff'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_settings_json', 1, array['4419a585018b4056c019bd72a89e8759'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_team_period', 3, array['cb1488e2153606606651895286d7b2e9'], '20260924120000'),
+      ('20260924120000', 'app_private', 'fantasy_prize_winner_admin_json', 1, array['13fadf1a4257850e58a99d03b3fe02c9'], '20260924120000'),
+      ('20260924140100', 'api', 'service_claim_email_deliveries', 2, array['d8f58643501628c18e796beca75d322e'], '20260926110100'),
+      ('20260924140100', 'api', 'service_notification_email_health', 0, array['ea78d02e4363ef0cb4157f2054d1bb67'], '20260924140100'),
+      ('20260924140100', 'api', 'service_pause_email_provider', 2, array['83e937e5b2bbace28f0929ec155df507'], '20260924140100'),
+      ('20260924140100', 'api', 'service_release_email_deliveries', 2, array['aca3ea6cc762949f960aba03695f76dc'], '20260924140100'),
+      ('20260924140100', 'api', 'service_verify_scheduler_token', 1, array['7192aca3debce09dc02f094e82a330fc'], '20260924140100'),
+      ('20260924140100', 'api', 'unsubscribe_notification_email', 1, array['c65260de81fc3a2a8a1c8db187ecfb2b'], '20260926110100'),
+      ('20260924140100', 'app_private', 'football_live_refresh_tick', 0, array['60a0a1f99806b80303f68eb0d5070f21'], '20260926113100'),
+      ('20260924140100', 'app_private', 'invoke_scheduled_function', 3, array['b16a9096e4fcb35bd5c8a07ee1e4b2e9'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_configure', 8, array['829c499f6ab0ccd123a994a759efc854'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_enqueue', 6, array['daeb97312e996d52e81f6667a807391a'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_event_is_stale', 2, array['831ad6197d5de070836480b58973ffcf'], '20260926110100'),
+      ('20260924140100', 'app_private', 'notification_email_fanout', 5, array['cc529d2660ac94e292e0635e4f0dcceb'], '20260926110100'),
+      ('20260924140100', 'app_private', 'notification_email_fixture_json', 1, array['6e24b446d34373dad60fe35e8ad0b394'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_plan', 1, array['c261d9f075f060540e092803e50a2e2d'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_quota', 1, array['1aed8831f9a14cc4878ccbd205b1fef6'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_team_json', 1, array['173b2de4edac4e3639fe78e60d3ffd6b'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_tick', 0, array['7688953ab3ac5e6dc28e8ff20b230c97'], '20260924140100'),
+      ('20260924140100', 'app_private', 'notification_email_unsubscribe_token', 1, array['fa53cc63aa6bcc63fb3fa5288893c00f'], '20260924140100'),
+      ('20260924140100', 'app_private', 'scheduler_token', 0, array['9f565cef4c855d95218a8aadfb2c3327'], '20260924140100'),
+      ('20260924163000', 'api', 'news_sitemap_entries', 1, array['25b5d4ad8e00f9db57202af22a2bedc8'], '20260926003050'),
+      ('20260924163000', 'app_private', 'news_story_is_publishable', 1, array['252df2df0208892bce029945f72cc142'], '20260924163000'),
+      ('20260924170000', 'api', 'news_feed', 9, array['429f7e31aab21a4be7102211171ee724'], '20260924180100'),
+      ('20260924170000', 'api', 'news_home_modules', 2, array['fb54406a609b992c324cc093648b78e0'], '20260924170000'),
+      ('20260924173000', 'api', 'news_search', 6, array['f64301a35bab14376021926be504a7e7'], '20260924173000'),
+      ('20260927153000', 'api', 'news_team_filters', 1, array['0082ef9c68fab35caf2cbb5f338af759'], '20260927153000')
+    ) as t(version, schema_name, fn_name, nargs, accepted, defined_in)
+    where exists (select 1 from pg_temp.sofascore_plan p where p.version = t.version and not p.was_recorded)
+  loop
+    if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = e.schema_name and p.proname = e.fn_name and p.pronargs = e.nargs
+          and md5(p.prosrc) = any (e.accepted)) then
+      problems := problems || (e.version || ': function ' || e.schema_name || '.' || e.fn_name || ' (' || e.nargs
+        || ' arguments) is missing, or its body (md5 of prosrc) is not the repository body last set in ' || e.defined_in);
+    end if;
+  end loop;
+
+  for e in
+    select * from (values
+      ('20260919160000', 'app_private.news_editorial_write_keys'),
+      ('20260921190000', 'app.team_translations'),
+      ('20260922180100', 'app_private.news_schedule_heartbeat'),
+      ('20260922180100', 'app_private.news_schedule_runs'),
+      ('20260924120000', 'app_private.fantasy_prize_evaluations'),
+      ('20260924120000', 'app_private.fantasy_prize_flags'),
+      ('20260924120000', 'app.fantasy_prize_settings'),
+      ('20260924120000', 'app.fantasy_prize_skips'),
+      ('20260924120000', 'app.fantasy_prize_winners'),
+      ('20260924120000', 'app.fantasy_prizes'),
+      ('20260924140100', 'app_private.notification_email_heartbeat'),
+      ('20260924140100', 'app_private.notification_email_runs'),
+      ('20260924140100', 'app_private.notification_email_settings'),
+      ('20260924140100', 'app_private.notification_email_unsubscribe_tokens')
+    ) as t(version, table_name)
+    where exists (select 1 from pg_temp.sofascore_plan p where p.version = t.version and not p.was_recorded)
+  loop
+    if to_regclass(e.table_name) is null then
+      problems := problems || (e.version || ': table ' || e.table_name || ' is missing');
+    end if;
+  end loop;
+
+  for e in
+    select * from (values
+      ('20260924120000', 'app.fantasy_prize_skip_reason', array['flagged', 'staff', 'gameweek_cap_reached', 'mini_league_cap_reached'], false),
+      ('20260924120000', 'app.fantasy_prize_tie_break', array['outright', 'fewer_transfers', 'earlier_registration', 'final_fallback', 'admin_override'], false),
+      ('20260924120000', 'app.fantasy_prize_tier', array['gameweek', 'monthly', 'season', 'mini_league'], false),
+      ('20260924120000', 'app.fantasy_prize_winner_status', array['pending', 'verified', 'paid', 'forfeited', 'overridden'], false)
+    ) as t(version, type_name, labels, extended)
+    where exists (select 1 from pg_temp.sofascore_plan p where p.version = t.version and not p.was_recorded)
+  loop
+    if to_regtype(e.type_name) is null then
+      problems := problems || (e.version || ': type ' || e.type_name || ' is missing');
+    else
+      actual := array(select enumlabel::text from pg_enum
+                       where enumtypid = to_regtype(e.type_name) order by enumsortorder);
+      if (e.extended and not actual @> e.labels) or (not e.extended and actual is distinct from e.labels) then
+        problems := problems || (e.version || ': type ' || e.type_name || ' does not have the labels '
+          || array_to_string(e.labels, ', ') || ' (it has ' || coalesce(array_to_string(actual, ', '), 'none') || ')');
+      end if;
+    end if;
+  end loop;
+
+  for e in
+    select * from (values
+      ('20260924140000', 'app.notification_type', 'matchday_preview'),
+      ('20260924140000', 'app.notification_type', 'matchday_results'),
+      ('20260924140000', 'app.notification_type', 'round_preview')
+    ) as t(version, type_name, label)
+    where exists (select 1 from pg_temp.sofascore_plan p where p.version = t.version and not p.was_recorded)
+  loop
+    if to_regtype(e.type_name) is null
+      or not exists (select 1 from pg_enum where enumtypid = to_regtype(e.type_name) and enumlabel = e.label) then
+      problems := problems || (e.version || ': type ' || e.type_name || ' lacks the value ' || e.label);
+    end if;
+  end loop;
+
+  -- The data these migrations wrote. Only what can be judged fairly is checked.
+  if exists (select 1 from pg_temp.sofascore_plan p where p.version = '20260919160000' and not p.was_recorded) and (
+    to_regclass('app_private.news_editorial_write_keys') is null
+    or not exists (select 1 from app_private.news_editorial_write_keys)) then
+    problems := problems || '20260919160000: the editorial write secret row is missing from app_private.news_editorial_write_keys'::text;
+  end if;
+  if exists (select 1 from pg_temp.sofascore_plan p where p.version = '20260924140100' and not p.was_recorded) and (
+    to_regclass('app_private.notification_email_settings') is null
+    or not exists (select 1 from app_private.notification_email_settings)) then
+    problems := problems || '20260924140100: the email settings row is missing from app_private.notification_email_settings'::text;
+  end if;
+  -- 20260921220000 is a seed derived from headlines (it reported 23 rows when it was
+  -- reviewed). Re-running its query today could match newer articles, so the fair test is that the table holds
+  -- at least the rows it seeded.
+  if exists (select 1 from pg_temp.sofascore_plan p where p.version = '20260921220000' and not p.was_recorded) and (
+    to_regclass('app.story_teams') is null
+    or (select count(*) from app.story_teams) < 23) then
+    problems := problems || 'the story teams seed (20260921220000) is not in place: app.story_teams holds fewer than 23 rows'::text;
+  end if;
+
+  if cardinality(problems) > 0 then
+    raise exception 'stop: production does not match what migrations missing from the history create -- nothing was saved, no history row was written: %', problems;
+  end if;
+end
+$history_check$;
+
+-- api.fantasy_gameweek_summary(uuid) brought to the reviewed body of 20260921200000
+-- (create or replace with the repository text, then its comment and grants).
+-- Skipped when it already has that body.
+do $apply_gameweek_summary$
+declare
+  fix_text text := $bg_fantasy_gameweek_summary_file$create or replace function api.fantasy_gameweek_summary(p_gameweek_id uuid)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare gameweek app.fantasy_gameweeks%rowtype;
+declare team_count bigint;
+declare average_points numeric;
+declare highest_points integer;
+begin
+  if p_gameweek_id is null then
+    raise exception using errcode = 'PT400', message = 'validation_failed';
+  end if;
+
+  select * into gameweek from app.fantasy_gameweeks where id = p_gameweek_id;
+  if not found then
+    raise exception using errcode = 'PT404', message = 'fantasy_gameweek_not_found';
+  end if;
+
+  -- coalesce(final_score, provisional_score) is the same score expression
+  -- api.get_my_fantasy_history uses, so the strip and the history agree while a
+  -- gameweek is still provisional.
+  select count(*),
+    round(avg(coalesce(result_row.final_score, result_row.provisional_score))::numeric, 1),
+    max(coalesce(result_row.final_score, result_row.provisional_score))
+  into team_count, average_points, highest_points
+  from app.fantasy_team_gameweek_results result_row
+  where result_row.gameweek_id = gameweek.id;
+
+  -- No results means no average and no highest. Zero would read as "everybody
+  -- scored nothing", which is the defect BG-0075 exists to remove.
+  return jsonb_build_object(
+    'gameweekId', gameweek.id,
+    'averagePoints', case when team_count = 0 then null else average_points end,
+    'highestPoints', case when team_count = 0 then null else highest_points end,
+    'teamCount', team_count,
+    'pointsState', gameweek.points_state
+  );
+end;
+$$;
+
+comment on function api.fantasy_gameweek_summary(uuid) is
+  'Gameweek-wide average and highest team score. Both are null -- never zero -- while no team has been scored. Callable by anon: the points page is reachable signed out.';
+
+revoke all on function api.fantasy_gameweek_summary(uuid)
+  from public, anon, authenticated, service_role;
+
+grant execute on function api.fantasy_gameweek_summary(uuid)
+  to anon, authenticated, service_role;
+$bg_fantasy_gameweek_summary_file$;
+  current_md5 text := (select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.fantasy_gameweek_summary(uuid)'));
+begin
+  if current_md5 = '96f6cbe0f8fa40c0ff3d440ce1ef2f09' then
+    return;
+  end if;
+  if current_md5 is distinct from 'ae72632ee97802080b5a08c4215d4c61' then
+    raise exception 'stop: api.fantasy_gameweek_summary is not the version production held on 2026-10-11 (prosrc md5)';
+  end if;
+  if encode(sha256(convert_to(fix_text, 'UTF8')), 'hex') is distinct from 'cd03cf5824466d3c3c255b41cf764002e099c8465517254a318d433971a97080' then
+    raise exception 'stop: the api.fantasy_gameweek_summary text is not the repository text byte for byte -- was this script cut short or changed?';
+  end if;
+  execute fix_text;
+end
+$apply_gameweek_summary$;
+
+-- The history rows. Each is written only if it was not recorded at the start,
+-- and only after the check above passed. The file is NOT run: its objects are
+-- already in production (checked).
+insert into supabase_migrations.schema_migrations (version, name, statements)
+select h.version, h.name, array[h.note]
+  from (values
+  ('20260919130000', 'news_editorial_admin_bridge', '-- History row only. supabase/migrations/20260919130000_news_editorial_admin_bridge.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 7f064f52c6cc06097a7381206361cd369505ddcf357e62b77c9efed525c679ee'),
+  ('20260919150000', 'news_editorial_mfa_enforcement', '-- History row only. supabase/migrations/20260919150000_news_editorial_mfa_enforcement.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 fb101569a3169e6b957edb614762740ba8857a691aef45b6d11087f10991c14c'),
+  ('20260919160000', 'news_editorial_server_side_sanitization', '-- History row only. supabase/migrations/20260919160000_news_editorial_server_side_sanitization.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 34817735ec479ee390207eb37090ccd94839009921fe738bb2509d9f94a80c95'),
+  ('20260921120000', 'fantasy_leagues_anon_callable_signature', '-- History row only. supabase/migrations/20260921120000_fantasy_leagues_anon_callable_signature.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 3fc82d88c80f996f19d6eb336c2fd00f3d8f4c2c5b9a9955bed2b6be6ab29898'),
+  ('20260921140000', 'news_article_detail_not_found_status', '-- History row only. supabase/migrations/20260921140000_news_article_detail_not_found_status.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 35f4c0a6c18fa7408b0fd558ddce1f1df972f8f450429c1be4b5af4eef6324c8'),
+  ('20260921160000', 'fantasy_player_statistics', '-- History row only. supabase/migrations/20260921160000_fantasy_player_statistics.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 4de169aec9966165b1b22a4fbda8be60a60980694ed400c41b2be88d025887cb'),
+  ('20260921170000', 'news_stand_down', '-- History row only. supabase/migrations/20260921170000_news_stand_down.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 c329a5d83898bc0fa9e797d63e7fb5f1df50f131165e562a2909b9993a7e5cc9'),
+  ('20260921180000', 'fantasy_overall_standings', '-- History row only. supabase/migrations/20260921180000_fantasy_overall_standings.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 1a7304c4ee7e87b27c4e17a6371f4ae68df52813b4af17bde5ee3e2ebfd585ab'),
+  ('20260921190000', 'team_translations', '-- History row only. supabase/migrations/20260921190000_team_translations.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 a953c69c72dab0b2fcd28d0c52cc75bdd3588c59a47d5464b7cce144c30cecfc'),
+  ('20260921200000', 'fantasy_points_read_surfaces', '-- History row only. supabase/migrations/20260921200000_fantasy_points_read_surfaces.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 0a2d78f003aaa474c871588abaab0df999ac555545468b415c757c19e5bef0d6'),
+  ('20260921220000', 'story_teams_seed', '-- History row only. supabase/migrations/20260921220000_story_teams_seed.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 d8189992dca0ee201c16af74cd834cda4c8730a7a538bfbab714dc283ca0fc74'),
+  ('20260922180000', 'news_legacy_imports', '-- History row only. supabase/migrations/20260922180000_news_legacy_imports.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 8bc7846e7f01eef8bdc0dc191d4e281348dc0bd36cac29222a3a73ee74d06995'),
+  ('20260922180100', 'news_scheduled_publication', '-- History row only. supabase/migrations/20260922180100_news_scheduled_publication.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 60d6f31df45fae16b03d952cb1bb66a275e7b516e61613aaec8859e4a66ce7a5'),
+  ('20260922180200', 'news_public_seo', '-- History row only. supabase/migrations/20260922180200_news_public_seo.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 cfbfff9aa356c76edc08c2f66800c7742d51a568a63c5f3b14f181a68a7f470b'),
+  ('20260922200000', 'fixture_finalization_preserved', '-- History row only. supabase/migrations/20260922200000_fixture_finalization_preserved.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 e0eca48366cd73801be1eaec4f2a93188566d6be3cabf300e526762b27597ba5'),
+  ('20260922200100', 'current_performance_batch_scope', '-- History row only. supabase/migrations/20260922200100_current_performance_batch_scope.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 c7ca2a3002d2b884508e53cefe11e99209754c89641140ddc0e4aed456604cef'),
+  ('20260924100000', 'news_licensed_syndication', '-- History row only. supabase/migrations/20260924100000_news_licensed_syndication.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 52623dd08208c36a18deec3f2fb5f79535a4561de43a0c861ae168deb1d0703b'),
+  ('20260924120000', 'fantasy_prizes', '-- History row only. supabase/migrations/20260924120000_fantasy_prizes.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 1ab96d7b3c1157eba7a777bb6f90a827f0a4c5f0265faf06996a34dcd23b970a'),
+  ('20260924140000', 'notification_email_types', '-- History row only. supabase/migrations/20260924140000_notification_email_types.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 f27d416b5fd76199a0ee988fd558bc0d235fb667608e9af00594c3c2b8824f29'),
+  ('20260924140100', 'notification_email_delivery', '-- History row only. supabase/migrations/20260924140100_notification_email_delivery.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 33ce6b3f6c3d173ba8d3f08fbf6fda71652a77d29274fbc64c4041765692a2fc'),
+  ('20260924163000', 'news_sitemap_licensed', '-- History row only. supabase/migrations/20260924163000_news_sitemap_licensed.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 d9911a988a94a1772bc62af076eb61c99c423b3dbc074eda91ae45941c41327a'),
+  ('20260924170000', 'news_feed_indexes', '-- History row only. supabase/migrations/20260924170000_news_feed_indexes.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 5e36c11fbf29c88d55ad9f9bc88448b9fe95124a8900cea016b9b19060249b99'),
+  ('20260924173000', 'news_search_set_based', '-- History row only. supabase/migrations/20260924173000_news_search_set_based.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 4bff8901f29ce6a13d6da724d15bd4f71a8435df9f7f9aea89998a98451f9454'),
+  ('20260927153000', 'news_team_filters_crest', '-- History row only. supabase/migrations/20260927153000_news_team_filters_crest.sql was applied to production by another path; apply-sofascore-automatic.sql checked what it creates and recorded it without running it. File sha256 21de82f8fbba1eb2a6ee464e713d98ae7edb1f1413d642c34efb3b50ddec3ce3')
+  ) as h(version, name, note)
+ where exists (select 1 from pg_temp.sofascore_plan p where p.version = h.version and not p.was_recorded);
+
+-- 20260925090500_fantasy_league_page_skip_empty: recorded and run only if it was not recorded at the start.
+insert into supabase_migrations.schema_migrations (version, name, statements)
+select
+  '20260925090500',
+  'fantasy_league_page_skip_empty',
+  array[$bg_20260925090500_file$-- BotolaGO Production V2
+-- Pronostics (score predictions), part 6 of 6: Fantasy skips leagues without
+-- Fantasy members.
+--
+-- A league is shared by the two games ("one league, two games"): the row lives
+-- in app.fantasy_leagues, Fantasy managers are in app.fantasy_league_memberships
+-- and Pronostics-only players are in app.prediction_league_members. A league
+-- created from Pronostics starts with no Fantasy member at all.
+--
+-- The Fantasy finalization worker (scripts/backend/fantasy-lifecycle-runner.ts)
+-- walks every active league of the season through this page and makes two
+-- ranking calls per league, inside a fixed call budget (maxBatches, default
+-- 5000). Ranking a league without Fantasy members writes nothing, so those
+-- calls are pure cost, and enough of them would end Fantasy finalization with
+-- fantasy_worker_batch_limit. The page now lists only leagues with at least one
+-- active Fantasy membership, in both the page and the hasMore probe, so the
+-- cursor stays consistent.
+--
+-- Nothing else changes: same signature, same payload, same grants. A league
+-- that gains its first Fantasy member is listed again from the next run.
+--
+-- Apply only after Fantasy gameweek 1 has been locked and scored in production.
+--
+-- Plan: docs/backend/PREDICTIONS_DOMAIN_PLAN.md (BG-0146).
+
+create or replace function api.service_fantasy_scoring_league_page(p_gameweek_id uuid,p_after_league_id uuid default null,p_batch_size integer default 100)
+returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare season_id uuid; ids jsonb; last_id uuid;
+begin
+  if not app_private.is_service_request() then raise exception using errcode='PT403',message='forbidden'; end if;
+  if p_gameweek_id is null or p_batch_size is null or p_batch_size not between 1 and 100 then raise exception using errcode='PT400',message='validation_failed'; end if;
+  select fantasy_season_id into season_id from app.fantasy_gameweeks where id=p_gameweek_id;
+  if not found then raise exception using errcode='PT404',message='fantasy_gameweek_not_found'; end if;
+  select coalesce(jsonb_agg(id order by id),'[]'::jsonb),(array_agg(id order by id desc))[1] into ids,last_id
+    from (select league.id from app.fantasy_leagues league
+      where league.fantasy_season_id=season_id and league.active
+        and (p_after_league_id is null or league.id>p_after_league_id)
+        and exists(select 1 from app.fantasy_league_memberships membership
+          where membership.league_id=league.id and membership.status='active')
+      order by league.id limit p_batch_size) page;
+  return jsonb_build_object('leagueIds',ids,'afterLeagueId',last_id,'hasMore',exists(
+    select 1 from app.fantasy_leagues league
+    where league.fantasy_season_id=season_id and league.active and league.id>last_id
+      and exists(select 1 from app.fantasy_league_memberships membership
+        where membership.league_id=league.id and membership.status='active')));
+end;
+$$;
+revoke all on function api.service_fantasy_scoring_league_page(uuid,uuid,integer) from public,anon,authenticated;
+grant execute on function api.service_fantasy_scoring_league_page(uuid,uuid,integer) to service_role;
+$bg_20260925090500_file$]
+where exists (select 1 from pg_temp.sofascore_plan where version = '20260925090500' and not was_recorded);
+
+do $apply_20260925090500$
+declare
+  part_20260925090500 text;
+begin
+  if not exists (select 1 from pg_temp.sofascore_plan where version = '20260925090500' and not was_recorded) then
+    return;
+  end if;
+  part_20260925090500 := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20260925090500'
+  );
+  if encode(sha256(convert_to(part_20260925090500, 'UTF8')), 'hex')
+    is distinct from '5f48dc1dde7e1d95a2f81f804828a913772a69fe03f0ca3c1c1ceb1ed7634846' then
+    raise exception 'stop: 20260925090500 is not the repository file byte for byte -- was this script cut short or changed?';
+  end if;
+
+  execute part_20260925090500;
+end
+$apply_20260925090500$;
+
+-- 20261001170000_curated_team_crests: recorded and run only if it was not recorded at the start.
+insert into supabase_migrations.schema_migrations (version, name, statements)
+select
+  '20261001170000',
+  'curated_team_crests',
+  array[$bg_20261001170000_file$-- BotolaGO Production V2
+-- Club crests supplied by BotolaGO, kept apart from the provider's crests.
+--
+-- The provider's crests are tiny (about 19 px) and blur at 56 px. A crest we
+-- supply is stored at its own path, `crest-curated.<ext>`, so the provider
+-- sync, which writes `crest.<ext>`, can never overwrite the file, and it is
+-- recorded with its own attribution instead of claiming to come from the
+-- provider. attach_football_team_crest is changed in one place only: it no
+-- longer repoints a team away from a supplied crest.
+
+create or replace function api.service_set_curated_team_crest(
+  p_external_team_id text,
+  p_storage_path text,
+  p_mime_type text,
+  p_attribution text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target_team_id uuid;
+  target_team_name text;
+  target_asset_id uuid;
+  expected_extension text;
+  expected_path text;
+begin
+  if p_external_team_id is null
+    or p_external_team_id !~ '^[0-9]{1,20}$'
+    or p_attribution is null
+    or pg_catalog.btrim(p_attribution) = ''
+    or pg_catalog.char_length(p_attribution) > 120
+    or p_attribution = 'SportsMonks Football API'
+  then
+    raise exception using errcode = '22023', message = 'INVALID_CREST_PAYLOAD';
+  end if;
+
+  expected_extension := case p_mime_type
+    when 'image/avif' then 'avif'
+    when 'image/jpeg' then 'jpg'
+    when 'image/png' then 'png'
+    when 'image/webp' then 'webp'
+    else null
+  end;
+  expected_path :=
+    'football/teams/' || p_external_team_id || '/crest-curated.' || expected_extension;
+  if expected_extension is null or p_storage_path is distinct from expected_path then
+    raise exception using errcode = '22023', message = 'INVALID_CREST_PAYLOAD';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('sportsmonks:team_crest:' || p_external_team_id, 0)
+  );
+
+  select mapping.internal_entity_id, team.name
+  into target_team_id, target_team_name
+  from app_private.football_provider_mappings mapping
+  join app.teams team on team.id = mapping.internal_entity_id
+  where mapping.provider_name = 'sportsmonks'
+    and mapping.entity_type = 'team'
+    and mapping.external_id = p_external_team_id
+    and mapping.active
+    and team.active;
+
+  if target_team_id is null then
+    raise exception using errcode = 'P0002', message = 'MAPPING_NOT_FOUND';
+  end if;
+
+  select id into target_asset_id
+  from app.media_assets
+  where kind = 'team_crest'
+    and storage_path = p_storage_path
+  for update;
+
+  if target_asset_id is null then
+    insert into app.media_assets (
+      kind, storage_path, attribution, validation_status, validated_at, mime_type, alt_text
+    ) values (
+      'team_crest',
+      p_storage_path,
+      p_attribution,
+      'validated',
+      statement_timestamp(),
+      p_mime_type,
+      target_team_name || ' crest'
+    )
+    returning id into target_asset_id;
+  else
+    update app.media_assets
+    set source_url = null,
+        attribution = p_attribution,
+        attribution_url = null,
+        validation_status = 'validated',
+        validated_at = statement_timestamp(),
+        mime_type = p_mime_type,
+        alt_text = target_team_name || ' crest',
+        updated_at = statement_timestamp()
+    where id = target_asset_id;
+  end if;
+
+  update app.teams
+  set crest_asset_id = target_asset_id,
+      updated_at = statement_timestamp()
+  where id = target_team_id;
+
+  return jsonb_build_object(
+    'teamId', target_team_id,
+    'assetId', target_asset_id,
+    'storagePath', p_storage_path
+  );
+exception
+  when check_violation or not_null_violation or string_data_right_truncation then
+    raise exception using errcode = '22023', message = 'INVALID_CREST_PAYLOAD';
+end;
+$$;
+
+revoke all on function api.service_set_curated_team_crest(text, text, text, text)
+  from public, anon, authenticated;
+grant execute on function api.service_set_curated_team_crest(text, text, text, text)
+  to service_role;
+
+comment on function api.service_set_curated_team_crest(text, text, text, text) is
+  'Links a crest supplied by BotolaGO (football-media, crest-curated path) to its team. The provider sync never repoints a team away from it.';
+
+-- Same as the provider attach function, except the last update: a team whose
+-- current crest is not the provider's keeps it.
+create or replace function api.attach_football_team_crest(
+  p_provider_name text,
+  p_external_team_id text,
+  p_source_url text,
+  p_storage_path text,
+  p_mime_type text,
+  p_observed_at timestamptz
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  target_team_id uuid;
+  target_team_name text;
+  target_asset_id uuid;
+  expected_extension text;
+  expected_path text;
+begin
+  if p_provider_name <> 'sportsmonks'
+    or p_external_team_id is null
+    or p_external_team_id !~ '^[0-9]{1,20}$'
+    or p_source_url is null
+    or p_source_url !~* '^https://([a-z0-9-]+[.])*sportmonks[.]com/'
+    or p_source_url ~* '(access[_-]?token|api[_-]?key|signature|credential)='
+    or p_observed_at is null
+  then
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+  end if;
+
+  expected_extension := case p_mime_type
+    when 'image/avif' then 'avif'
+    when 'image/jpeg' then 'jpg'
+    when 'image/png' then 'png'
+    when 'image/webp' then 'webp'
+    else null
+  end;
+  expected_path := 'football/teams/' || p_external_team_id || '/crest.' || expected_extension;
+  if expected_extension is null or p_storage_path is distinct from expected_path then
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(
+      p_provider_name || ':team_crest:' || p_external_team_id,
+      0
+    )
+  );
+
+  select mapping.internal_entity_id, team.name
+  into target_team_id, target_team_name
+  from app_private.football_provider_mappings mapping
+  join app.teams team on team.id = mapping.internal_entity_id
+  where mapping.provider_name = p_provider_name
+    and mapping.entity_type = 'team'
+    and mapping.external_id = p_external_team_id
+    and mapping.active
+    and team.active;
+
+  if target_team_id is null then
+    raise exception using errcode = 'P0002', message = 'MAPPING_NOT_FOUND';
+  end if;
+
+  select id into target_asset_id
+  from app.media_assets
+  where kind = 'team_crest'
+    and storage_path = p_storage_path
+  for update;
+
+  if target_asset_id is null then
+    insert into app.media_assets (
+      kind,
+      storage_path,
+      attribution,
+      attribution_url,
+      validation_status,
+      validated_at,
+      mime_type,
+      alt_text
+    ) values (
+      'team_crest',
+      p_storage_path,
+      'SportsMonks Football API',
+      p_source_url,
+      'validated',
+      p_observed_at,
+      p_mime_type,
+      target_team_name || ' crest'
+    )
+    returning id into target_asset_id;
+  else
+    update app.media_assets
+    set source_url = null,
+        attribution = 'SportsMonks Football API',
+        attribution_url = p_source_url,
+        validation_status = 'validated',
+        validated_at = p_observed_at,
+        mime_type = p_mime_type,
+        alt_text = target_team_name || ' crest',
+        updated_at = statement_timestamp()
+    where id = target_asset_id;
+  end if;
+
+  -- A team with no crest, or with the provider's own, takes this one. A crest
+  -- supplied by BotolaGO (any other attribution) is left in place.
+  update app.teams team
+  set crest_asset_id = target_asset_id,
+      updated_at = statement_timestamp()
+  where team.id = target_team_id
+    and (
+      team.crest_asset_id is null
+      or team.crest_asset_id = target_asset_id
+      or exists (
+        select 1
+        from app.media_assets current_crest
+        where current_crest.id = team.crest_asset_id
+          and current_crest.attribution = 'SportsMonks Football API'
+      )
+    );
+
+  return jsonb_build_object(
+    'teamId', target_team_id,
+    'assetId', target_asset_id,
+    'storagePath', p_storage_path
+  );
+exception
+  when check_violation or not_null_violation or string_data_right_truncation then
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_PAYLOAD';
+end;
+$$;
+
+revoke all on function api.attach_football_team_crest(
+  text, text, text, text, text, timestamptz
+) from public, anon, authenticated;
+grant execute on function api.attach_football_team_crest(
+  text, text, text, text, text, timestamptz
+) to service_role;
+$bg_20261001170000_file$]
+where exists (select 1 from pg_temp.sofascore_plan where version = '20261001170000' and not was_recorded);
+
+do $apply_20261001170000$
+declare
+  part_20261001170000 text;
+begin
+  if not exists (select 1 from pg_temp.sofascore_plan where version = '20261001170000' and not was_recorded) then
+    return;
+  end if;
+  part_20261001170000 := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261001170000'
+  );
+  if encode(sha256(convert_to(part_20261001170000, 'UTF8')), 'hex')
+    is distinct from 'a933315e7274df1024ce163eb4d0250c6329c4729f39c02504f029c0d2bc29c7' then
+    raise exception 'stop: 20261001170000 is not the repository file byte for byte -- was this script cut short or changed?';
+  end if;
+
+  execute part_20261001170000;
+end
+$apply_20261001170000$;
 
 -- 20261003180000_reconciled_provider_observations: recorded and run only if it was not recorded at the start.
 insert into supabase_migrations.schema_migrations (version, name, statements)
@@ -577,6 +1385,156 @@ begin
   execute part_20261003180000;
 end
 $apply_20261003180000$;
+
+-- 20261010140000_sofascore_repoint_fixture_mapping: recorded and run only if it was not recorded at the start.
+insert into supabase_migrations.schema_migrations (version, name, statements)
+select
+  '20261010140000',
+  'sofascore_repoint_fixture_mapping',
+  array[$bg_20261010140000_file$-- SofaScore gives a replayed (postponed) match a NEW event id. The mapping table is
+-- unique on (provider, entity type, external id) and on (provider, entity type,
+-- internal entity id), and api.resolve_football_mapping only inserts or confirms
+-- (it raises MAPPING_COLLISION rather than move a mapping), so a fixture's SofaScore
+-- mapping could not follow the match to its replacement event.
+--
+-- This adds one deliberately narrow service-role function that moves an existing
+-- SofaScore FIXTURE mapping from its old event id to the replacement event id, in
+-- place (same mapping row), and records the move in app_private.admin_audit_events
+-- (the audit trail the football mapping review flow already uses, written through
+-- app_private.write_admin_audit with no staff actor because the caller is a trusted
+-- job). It does not touch api.resolve_football_mapping, any other provider, or any
+-- other entity type. It creates no table and no grant on a table.
+
+create or replace function api.repoint_football_fixture_mapping(
+  p_provider_name text,
+  p_internal_fixture_id uuid,
+  p_old_external_id text,
+  p_new_external_id text,
+  p_reason text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_mapping app_private.football_provider_mappings%rowtype;
+  v_taken_by uuid;
+  v_first text;
+  v_second text;
+  v_audit bigint;
+begin
+  if not app_private.is_service_request() then
+    raise exception using errcode = 'PT403', message = 'forbidden';
+  end if;
+  if p_provider_name is distinct from 'sofascore' then
+    raise exception using errcode = '22023', message = 'REPOINT_PROVIDER_NOT_ALLOWED';
+  end if;
+  if p_internal_fixture_id is null
+    or p_old_external_id is null or p_old_external_id <> btrim(p_old_external_id)
+    or char_length(p_old_external_id) not between 1 and 200
+    or p_new_external_id is null or p_new_external_id <> btrim(p_new_external_id)
+    or char_length(p_new_external_id) not between 1 and 200
+    or p_old_external_id = p_new_external_id then
+    raise exception using errcode = '22023', message = 'REPOINT_INVALID_ARGUMENT';
+  end if;
+  if p_reason is null or p_reason <> btrim(p_reason) or char_length(p_reason) not between 10 and 500 then
+    raise exception using errcode = '22023', message = 'REPOINT_REASON_REQUIRED';
+  end if;
+
+  -- Same lock keys as api.resolve_football_mapping, taken in a fixed order so two
+  -- concurrent calls (or a call racing the ingestion) cannot deadlock.
+  v_first := least(p_old_external_id, p_new_external_id);
+  v_second := greatest(p_old_external_id, p_new_external_id);
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('sofascore:fixture:' || v_first, 0));
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('sofascore:fixture:' || v_second, 0));
+
+  select mapping.* into v_mapping
+  from app_private.football_provider_mappings mapping
+  where mapping.provider_name = 'sofascore'
+    and mapping.entity_type = 'fixture'
+    and mapping.internal_entity_id = p_internal_fixture_id
+  for update;
+
+  if not found or not v_mapping.active then
+    raise exception using errcode = 'P0002', message = 'MAPPING_NOT_FOUND';
+  end if;
+
+  -- Idempotent: already moved, nothing to do and nothing recorded.
+  if v_mapping.external_id = p_new_external_id then
+    return jsonb_build_object(
+      'status', 'unchanged', 'mappingId', v_mapping.id,
+      'fixtureId', p_internal_fixture_id, 'externalId', p_new_external_id);
+  end if;
+
+  if v_mapping.external_id <> p_old_external_id then
+    raise exception using errcode = 'P0001', message = 'MAPPING_OLD_ID_MISMATCH';
+  end if;
+
+  select mapping.internal_entity_id into v_taken_by
+  from app_private.football_provider_mappings mapping
+  where mapping.provider_name = 'sofascore'
+    and mapping.entity_type = 'fixture'
+    and mapping.external_id = p_new_external_id;
+  if found then
+    raise exception using errcode = 'P0001', message = 'MAPPING_COLLISION';
+  end if;
+
+  begin
+    update app_private.football_provider_mappings
+    set external_id = p_new_external_id,
+        last_seen_at = greatest(last_seen_at, statement_timestamp()),
+        source_version = left('repoint-from-' || p_old_external_id, 160)
+    where id = v_mapping.id;
+  exception when unique_violation then
+    raise exception using errcode = 'P0001', message = 'MAPPING_COLLISION';
+  end;
+
+  v_audit := app_private.write_admin_audit(
+    null, 'football.repoint_fixture_mapping', 'football', p_internal_fixture_id,
+    p_reason, gen_random_uuid(), gen_random_uuid(), null,
+    jsonb_build_object('provider', 'sofascore', 'entityType', 'fixture',
+      'mappingId', v_mapping.id, 'externalId', p_old_external_id),
+    jsonb_build_object('provider', 'sofascore', 'entityType', 'fixture',
+      'mappingId', v_mapping.id, 'externalId', p_new_external_id));
+
+  return jsonb_build_object(
+    'status', 'repointed', 'mappingId', v_mapping.id,
+    'fixtureId', p_internal_fixture_id, 'oldExternalId', p_old_external_id,
+    'externalId', p_new_external_id, 'auditId', v_audit);
+end;
+$$;
+
+revoke all on function api.repoint_football_fixture_mapping(text, uuid, text, text, text)
+  from public, anon, authenticated, service_role;
+grant execute on function api.repoint_football_fixture_mapping(text, uuid, text, text, text)
+  to service_role;
+
+comment on function api.repoint_football_fixture_mapping(text, uuid, text, text, text) is
+  'Service role: moves the active SofaScore fixture mapping of one internal fixture from its old event id to the replacement event id (a replayed postponed match), in place, and audits it. SofaScore and fixtures only; refuses if the new id is already mapped; idempotent.';
+$bg_20261010140000_file$]
+where exists (select 1 from pg_temp.sofascore_plan where version = '20261010140000' and not was_recorded);
+
+do $apply_20261010140000$
+declare
+  part_20261010140000 text;
+begin
+  if not exists (select 1 from pg_temp.sofascore_plan where version = '20261010140000' and not was_recorded) then
+    return;
+  end if;
+  part_20261010140000 := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261010140000'
+  );
+  if encode(sha256(convert_to(part_20261010140000, 'UTF8')), 'hex')
+    is distinct from 'ef987b23fcff49e39584b7d5d3964a8f9c610415ddf247d157d62adf660afc37' then
+    raise exception 'stop: 20261010140000 is not the repository file byte for byte -- was this script cut short or changed?';
+  end if;
+
+  execute part_20261010140000;
+end
+$apply_20261010140000$;
 
 -- 20261011110000_football_sofascore_snapshot_teams: recorded and run only if it was not recorded at the start.
 insert into supabase_migrations.schema_migrations (version, name, statements)
@@ -1802,6 +2760,158 @@ begin
 end
 $apply_20261011150000$;
 
+-- 20261011170000_news_article_detail_other_language_id: recorded and run only if it was not recorded at the start.
+insert into supabase_migrations.schema_migrations (version, name, statements)
+select
+  '20261011170000',
+  'news_article_detail_other_language_id',
+  array[$bg_20261011170000_file$-- News article detail: an edition id opened in the other language.
+--
+-- Found by read-only QA on 2026-10-11 (an auto-written match report). In
+-- Arabic mode the site called api.news_article_detail('ar', <French edition
+-- id>); the function only looks in the requested language, so it answered
+-- 404 (NEWS404) and the client retried in French. The retry worked, but the
+-- 404 appeared in the browser console, and the reader got the French text
+-- even though the story has a public Arabic edition.
+--
+-- Now an edition id that is not in the requested language resolves, in order,
+-- to (1) the requested language's public edition of the same story, then (2)
+-- the edition the id names, if public. Anything else is still NEWS404.
+-- Slug lookups are unchanged (slugs are language-specific). The function body
+-- is otherwise verbatim from 20260924200600. Grants are preserved by
+-- CREATE OR REPLACE.
+
+create or replace function api.news_article_detail(p_language text, p_identifier text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  selected_language app.language_code := app_private.news_language(p_language);
+  edition app.article_editions%rowtype;
+  card jsonb;
+begin
+  select candidate.* into edition
+  from app.article_editions candidate
+  where candidate.language = selected_language
+    and candidate.id = case
+      when p_identifier ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+        then p_identifier::uuid
+      else candidate.id
+    end
+    and (
+      candidate.slug = p_identifier
+      or p_identifier ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+    )
+    and app_private.news_is_public(candidate)
+  limit 1;
+
+  -- An edition id shared with a reader in the other language: serve that
+  -- reader's own edition of the same story when one is public, otherwise the
+  -- edition the id names (the page marks its language). Before this, the
+  -- request answered 404 and the client retried in the other language, which
+  -- left a failed request in the reader's console and showed the untranslated
+  -- text even when a translation existed. Slugs stay language-specific.
+  if not found and p_identifier ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' then
+    select sibling.* into edition
+    from app.article_editions named
+    join app.article_editions sibling
+      on sibling.story_id = named.story_id and sibling.language = selected_language
+    where named.id = p_identifier::uuid
+      and sibling.visibility = 'public'
+      and app_private.news_is_public(sibling)
+    limit 1;
+
+    if not found then
+      select candidate.* into edition
+      from app.article_editions candidate
+      where candidate.id = p_identifier::uuid
+        and app_private.news_is_public(candidate)
+      limit 1;
+    end if;
+  end if;
+
+  if not found then
+    raise sqlstate 'PGRST' using
+      message = json_build_object(
+        'code', 'NEWS404',
+        'message', 'news_article_not_found',
+        'details', null,
+        'hint', null
+      )::text,
+      detail = json_build_object('status', 404, 'headers', json_build_object())::text;
+  end if;
+
+  card := app_private.news_article_card(edition, null);
+  return card || jsonb_build_object(
+    -- When the article's text last really changed (see the header).
+    'contentUpdatedAt', app_private.news_content_updated_at(edition),
+    'bodyHtml', edition.body_html,
+    'bodyFormat', edition.body_format,
+    'seo', jsonb_build_object('title', edition.seo_title, 'description', edition.seo_description),
+    'taxonomies', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', taxonomy.id, 'type', taxonomy.taxonomy_type, 'slug', taxonomy.slug,
+        'name', coalesce(translation.display_name, taxonomy.slug)
+      ) order by taxonomy.taxonomy_type, taxonomy.display_order, taxonomy.slug)
+      from app.story_taxonomies relation join app.taxonomies taxonomy on taxonomy.id = relation.taxonomy_id
+      left join app.taxonomy_translations translation
+        on translation.taxonomy_id = taxonomy.id and translation.language = edition.language
+      where relation.story_id = edition.story_id
+    ), '[]'::jsonb),
+    'competitions', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', competition.id, 'slug', competition.slug, 'name', competition.name
+    ) order by competition.display_order, competition.name)
+      from app.story_competitions relation join app.competitions competition on competition.id = relation.competition_id
+      where relation.story_id = edition.story_id), '[]'::jsonb),
+    'teams', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', team.id, 'slug', team.slug, 'name', team.name
+    ) order by team.name)
+      from app.story_teams relation join app.teams team on team.id = relation.team_id
+      where relation.story_id = edition.story_id), '[]'::jsonb),
+    'players', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', player.id, 'slug', player.slug, 'name', player.display_name
+    ) order by player.display_name)
+      from app.story_players relation join app.players player on player.id = relation.player_id
+      where relation.story_id = edition.story_id), '[]'::jsonb),
+    -- The other-language editions of the same story that a reader could open
+    -- right now. An unpublished, scheduled, private or unlisted sibling is
+    -- never listed, so hreflang can never point at something not public.
+    'translations', coalesce((select jsonb_agg(jsonb_build_object(
+      'id', sibling.id, 'language', sibling.language, 'slug', sibling.slug
+    ) order by sibling.language)
+      from app.article_editions sibling
+      where sibling.story_id = edition.story_id
+        and sibling.id <> edition.id
+        and sibling.visibility = 'public'
+        and app_private.news_is_public(sibling)), '[]'::jsonb)
+  );
+end;
+$$;
+$bg_20261011170000_file$]
+where exists (select 1 from pg_temp.sofascore_plan where version = '20261011170000' and not was_recorded);
+
+do $apply_20261011170000$
+declare
+  part_20261011170000 text;
+begin
+  if not exists (select 1 from pg_temp.sofascore_plan where version = '20261011170000' and not was_recorded) then
+    return;
+  end if;
+  part_20261011170000 := (
+    select statements[1] from supabase_migrations.schema_migrations where version = '20261011170000'
+  );
+  if encode(sha256(convert_to(part_20261011170000, 'UTF8')), 'hex')
+    is distinct from 'c31c5e3066457d5a90984823a055a378e0f1b3fd5c6379332f4652ee3eaaa0c6' then
+    raise exception 'stop: 20261011170000 is not the repository file byte for byte -- was this script cut short or changed?';
+  end if;
+
+  execute part_20261011170000;
+end
+$apply_20261011170000$;
+
 -- 20261011180000_sofascore_player_performances: recorded and run only if it was not recorded at the start.
 insert into supabase_migrations.schema_migrations (version, name, statements)
 select
@@ -2197,6 +3307,82 @@ do $postflight$
 declare
   problems text[] := '{}';
 begin
+  -- 20260925090500_fantasy_league_page_skip_empty
+    declare
+      fn regprocedure;
+    begin
+      fn := to_regprocedure('api.service_fantasy_scoring_league_page(uuid,uuid,integer)');
+      if fn is null then
+        problems := problems || '20260925090500: api.service_fantasy_scoring_league_page(uuid,uuid,integer) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20260925090500: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or not has_function_privilege('service_role', fn, 'execute') then
+          problems := problems || ('20260925090500: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_LEAGUE_PAGE_AFTER_MD5' then
+          problems := problems || ('20260925090500: not the reviewed definition (md5): ' || fn::text);
+        end if;
+        if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '86ab0440c3d9d5bea18c438c273e55c6' then
+          problems := problems || ('20260925090500: not the reviewed body text (md5 of prosrc): ' || fn::text);
+        end if;
+      end if;
+    end;
+
+  -- 20261001170000_curated_team_crests
+    declare
+      fn regprocedure;
+    begin
+      fn := to_regprocedure('api.service_set_curated_team_crest(text,text,text,text)');
+      if fn is null then
+        problems := problems || '20261001170000: api.service_set_curated_team_crest(text,text,text,text) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261001170000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or not has_function_privilege('service_role', fn, 'execute') then
+          problems := problems || ('20261001170000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_SET_CURATED_TEAM_CREST_MD5' then
+          problems := problems || ('20261001170000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+        if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> 'ed3bd7ee85ea78269b50e3ca8c722d0a' then
+          problems := problems || ('20261001170000: not the reviewed body text (md5 of prosrc): ' || fn::text);
+        end if;
+      end if;
+
+      fn := to_regprocedure('api.attach_football_team_crest(text,text,text,text,text,timestamptz)');
+      if fn is null then
+        problems := problems || '20261001170000: api.attach_football_team_crest(text,text,text,text,text,timestamptz) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261001170000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or not has_function_privilege('service_role', fn, 'execute') then
+          problems := problems || ('20261001170000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_ATTACH_TEAM_CREST_AFTER_MD5' then
+          problems := problems || ('20261001170000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+        if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '81dc921ebef73b589b09bf3686a4776d' then
+          problems := problems || ('20261001170000: not the reviewed body text (md5 of prosrc): ' || fn::text);
+        end if;
+      end if;
+    end;
+
   -- 20261003180000_reconciled_provider_observations
     declare
       recorder regprocedure := to_regprocedure('api.service_record_fantasy_observation(uuid,jsonb,text)');
@@ -2232,6 +3418,33 @@ begin
           problems := problems || ('20261003180000: callable by the wrong roles: ' || fn::text);
         end if;
       end loop;
+    end;
+
+  -- 20261010140000_sofascore_repoint_fixture_mapping
+    declare
+      fn regprocedure;
+    begin
+      fn := to_regprocedure('api.repoint_football_fixture_mapping(text,uuid,text,text,text)');
+      if fn is null then
+        problems := problems || '20261010140000: api.repoint_football_fixture_mapping(text,uuid,text,text,text) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261010140000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or not has_function_privilege('service_role', fn, 'execute') then
+          problems := problems || ('20261010140000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_REPOINT_FIXTURE_MAPPING_MD5' then
+          problems := problems || ('20261010140000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+        if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '2984ba9c1340feb79b57147c60dc77e6' then
+          problems := problems || ('20261010140000: not the reviewed body text (md5 of prosrc): ' || fn::text);
+        end if;
+      end if;
     end;
 
   -- 20261011110000_football_sofascore_snapshot_teams
@@ -2540,6 +3753,44 @@ begin
       end if;
     end;
 
+  -- 20261011170000_news_article_detail_other_language_id
+    declare
+      fn regprocedure;
+    begin
+      fn := to_regprocedure('api.news_article_detail(text,text)');
+      if fn is null then
+        problems := problems || '20261011170000: api.news_article_detail(text,text) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20261011170000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if false then
+          problems := problems || ('20261011170000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5' then
+          problems := problems || ('20261011170000: not the reviewed definition (md5): ' || fn::text);
+        end if;
+        if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> 'b35f060615b912abc90318deb9e8de03' then
+          problems := problems || ('20261011170000: not the reviewed body text (md5 of prosrc): ' || fn::text);
+        end if;
+      end if;
+    end;
+    declare
+      fn regprocedure := to_regprocedure('api.news_article_detail(text,text)');
+    begin
+      -- The remembered grants exist only when this run applied the migration.
+      if fn is not null and to_regclass('pg_temp.sofascore_news_detail_grants') is not null then
+        if exists (select 1 from pg_temp.sofascore_news_detail_grants g
+          where g.public_can is distinct from has_function_privilege('public', fn, 'execute')
+             or g.anon_can is distinct from has_function_privilege('anon', fn, 'execute')
+             or g.authenticated_can is distinct from has_function_privilege('authenticated', fn, 'execute')
+             or g.service_can is distinct from has_function_privilege('service_role', fn, 'execute')) then
+          problems := problems || '20261011170000: the grants of api.news_article_detail changed'::text;
+        end if;
+      end if;
+    end;
+
   -- 20261011180000_sofascore_player_performances
     declare
       fn regprocedure;
@@ -2638,6 +3889,30 @@ begin
         problems := problems || '20261011180000: assists or penalties_missed is still NOT NULL'::text;
       end if;
     end;
+
+  -- 20260921200000: api.fantasy_gameweek_summary has the reviewed body
+    declare
+      fn regprocedure;
+    begin
+      fn := to_regprocedure('api.fantasy_gameweek_summary(uuid)');
+      if fn is null then
+        problems := problems || '20260921200000: api.fantasy_gameweek_summary(uuid) is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('20260921200000: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if has_function_privilege('public', fn, 'execute')
+          or not has_function_privilege('anon', fn, 'execute')
+          or not has_function_privilege('authenticated', fn, 'execute')
+          or not has_function_privilege('service_role', fn, 'execute') then
+          problems := problems || ('20260921200000: callable by the wrong roles: ' || fn::text);
+        end if;
+        if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '96f6cbe0f8fa40c0ff3d440ce1ef2f09' then
+          problems := problems || ('20260921200000: not the reviewed body text (md5 of prosrc): ' || fn::text);
+        end if;
+      end if;
+    end;
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
   end if;
@@ -2651,10 +3926,12 @@ $postflight$;
 rollback;
 
 select case
-  when (select count(*) from supabase_migrations.schema_migrations where version in ('20261003180000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011180000')) = 7
+  when (select count(*) from supabase_migrations.schema_migrations where version in ('20260925090500', '20261001170000', '20261003180000', '20261010140000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011170000', '20261011180000', '20260919130000', '20260919150000', '20260919160000', '20260921120000', '20260921140000', '20260921160000', '20260921170000', '20260921180000', '20260921190000', '20260921200000', '20260921220000', '20260922180000', '20260922180100', '20260922180200', '20260922200000', '20260922200100', '20260924100000', '20260924120000', '20260924140000', '20260924140100', '20260924163000', '20260924170000', '20260924173000', '20260927153000')) = 35
     then 'Installed and verified. Deploy the Edge Function next (runbook, step 3).'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result,
 (select coalesce(string_agg(version, ', ' order by version), 'none')
    from supabase_migrations.schema_migrations
-  where version in ('20261003180000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011180000')) as recorded_now;
+  where version in ('20260925090500', '20261001170000', '20261003180000', '20261010140000', '20261011110000', '20261011120000', '20261011130000', '20261011140000', '20261011150000', '20261011170000', '20261011180000')) as recorded_now,
+(select count(*) from supabase_migrations.schema_migrations
+  where version in ('20260919130000', '20260919150000', '20260919160000', '20260921120000', '20260921140000', '20260921160000', '20260921170000', '20260921180000', '20260921190000', '20260921200000', '20260921220000', '20260922180000', '20260922180100', '20260922180200', '20260922200000', '20260922200100', '20260924100000', '20260924120000', '20260924140000', '20260924140100', '20260924163000', '20260924170000', '20260924173000', '20260927153000')) as history_rows_recorded_now;

@@ -202,7 +202,14 @@ jobs:
               ('FILL_FROM_CI_SCORING_DOCUMENT_BASE_AFTER_MD5', 'app_private.fantasy_scoring_input_document_v1(uuid)'::regprocedure),
               ('FILL_FROM_CI_LEGACY_FIXTURE_CHECK_AFTER_MD5', 'app_private.fantasy_validate_scoring_document_v1(jsonb)'::regprocedure),
               ('FILL_FROM_CI_PERFORMANCES_SYNC_MD5', 'api.service_sync_sofascore_player_performances(uuid,integer,jsonb)'::regprocedure),
-              ('FILL_FROM_CI_PERFORMANCES_SYNC_FIXTURE_MD5', 'app_private.sofascore_sync_fixture_performances(uuid,jsonb)'::regprocedure)
+              ('FILL_FROM_CI_PERFORMANCES_SYNC_FIXTURE_MD5', 'app_private.sofascore_sync_fixture_performances(uuid,jsonb)'::regprocedure),
+              -- The catch-up migrations the same script applies (never applied in
+              -- production): 20260925090500, 20261001170000, 20261010140000, 20261011170000.
+              ('FILL_FROM_CI_LEAGUE_PAGE_AFTER_MD5', 'api.service_fantasy_scoring_league_page(uuid,uuid,integer)'::regprocedure),
+              ('FILL_FROM_CI_ATTACH_TEAM_CREST_AFTER_MD5', 'api.attach_football_team_crest(text,text,text,text,text,timestamptz)'::regprocedure),
+              ('FILL_FROM_CI_SET_CURATED_TEAM_CREST_MD5', 'api.service_set_curated_team_crest(text,text,text,text)'::regprocedure),
+              ('FILL_FROM_CI_REPOINT_FIXTURE_MAPPING_MD5', 'api.repoint_football_fixture_mapping(text,uuid,text,text,text)'::regprocedure),
+              ('FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5', 'api.news_article_detail(text,text)'::regprocedure)
             ) as v(pin, fn)
            order by 2;
           do $check$

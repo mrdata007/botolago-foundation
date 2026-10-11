@@ -11,13 +11,33 @@ import {
   isRealMd5,
   tagFor,
 } from "./build-apply-sofascore-automatic";
+import {
+  CHAIN_END,
+  GAMEWEEK_SUMMARY,
+  HISTORY_VERSIONS,
+  NEW_STEP_VERSIONS,
+  SEASON_STATS_PRODUCTION_PROSRC_MD5,
+  gameweekFix,
+} from "./sofascore-install-catchup";
+import {
+  followChain,
+  listMigrations,
+  md5,
+  readChain,
+  splitStatements,
+  stripFullLineComments,
+} from "./sql-migration-objects";
 
 /**
  * The ONE guarded script that installs SofaScore Fantasy scoring on production
  * (20261003180000, 20261011110000, 20261011120000, the automatic player
  * matching 20261011130000, the automatic Fantasy state 20261011140000, the
- * ops health coverage 20261011150000 and the Pépites performances 20261011180000).
- * It is generated; this test fails when the
+ * ops health coverage 20261011150000 and the Pépites performances 20261011180000)
+ * and catches production up with the migrations the owner found missing from
+ * the history on 2026-10-11: four applied as steps (20260925090500, 20261001170000,
+ * 20261010140000, 20261011170000), one function brought to its reviewed body
+ * (api.fantasy_gameweek_summary) and 24 history rows written only after their
+ * objects are checked in the database. It is generated; this test fails when the
  * committed script drifts from the migration files or from the generator, runs
  * each migration only after its sha256 matches, skips what is already recorded
  * (and verifies it), ships as a rehearsal, and checks production before its
@@ -146,20 +166,26 @@ describe("apply-sofascore-automatic.sql", () => {
     }
   });
 
-  test("the Fantasy tick must be off only when the recorder is about to be replaced", () => {
-    const tick = script.indexOf("where lifecycle_tick_enabled) then");
-    const pendingFor3180 = script.lastIndexOf(
-      "if exists (select 1 from pg_temp.sofascore_plan where version = '20261003180000' and not was_recorded) then",
-      tick,
+  test("the Fantasy tick must be off only when a Fantasy function is about to be replaced (20260925090500, 20261003180000)", () => {
+    const pendingFor = (version: string) =>
+      script.indexOf(
+        `if exists (select 1 from pg_temp.sofascore_plan where version = '${version}' and not was_recorded) then`,
+        script.indexOf("do $preflight$"),
+      );
+    const ticks = [...script.matchAll(/where lifecycle_tick_enabled\) then/g)].map(
+      (match) => match.index!,
     );
-    const nextStep = script.indexOf(
-      "-- 20261011110000_football_sofascore_snapshot_teams",
-      pendingFor3180,
-    );
-    expect(pendingFor3180).toBeGreaterThan(0);
-    expect(tick).toBeGreaterThan(pendingFor3180);
-    expect(tick).toBeLessThan(nextStep);
-    expect(occurrences(script, "lifecycle_tick_enabled)")).toBe(1);
+    expect(ticks).toHaveLength(2);
+    const stepStart = (version: string) => pendingFor(version);
+    const nextStart = (version: string) => {
+      const versions = STEPS.map((step) => step.version);
+      return stepStart(versions[versions.indexOf(version) + 1]!);
+    };
+    for (const version of ["20260925090500", "20261003180000"]) {
+      const inside = ticks.filter((at) => at > stepStart(version) && at < nextStart(version));
+      expect({ version, guards: inside.length }).toEqual({ version, guards: 1 });
+    }
+    expect(occurrences(script, "lifecycle_tick_enabled)")).toBe(2);
   });
 
   test("verifies every migration after the run, whether applied now or before", () => {
@@ -189,6 +215,17 @@ describe("apply-sofascore-automatic.sql", () => {
           "legacyFixtureCheckAfter",
           "performancesSync",
           "performancesSyncFixture",
+          "leaguePageAfter",
+          "leaguePageAfterProsrc",
+          "attachTeamCrestAfter",
+          "attachTeamCrestAfterProsrc",
+          "setCuratedTeamCrest",
+          "setCuratedTeamCrestProsrc",
+          "repointFixtureMapping",
+          "repointFixtureMappingProsrc",
+          "newsArticleDetailAfter",
+          "newsArticleDetailAfterProsrc",
+          "gameweekSummaryProsrc",
         ] as const
       ).map((key) => `'${PINS[key]}'`),
       "p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=\"\"']",
@@ -209,7 +246,9 @@ describe("apply-sofascore-automatic.sql", () => {
 
   test("the result row says Installed only when every migration is recorded", () => {
     const tail = script.slice(script.lastIndexOf("\nrollback;\n"));
-    expect(tail).toContain(`= ${STEPS.length}\n    then 'Installed and verified.`);
+    expect(tail).toContain(
+      `= ${STEPS.length + HISTORY_VERSIONS.length}\n    then 'Installed and verified.`,
+    );
     expect(tail).toContain("else 'Rehearsal passed. Nothing was saved.");
   });
 
@@ -265,7 +304,7 @@ describe("apply-sofascore-automatic.sql", () => {
     // The only statements the script itself runs besides the migrations are the
     // schema_migrations record, the temporary plan table and the lock.
     const outside = script
-      .split(/\$bg_\d+_file\$/)
+      .split(/\$bg_\w+_file\$/)
       .filter((_, index) => index % 2 === 0)
       .join("\n")
       .toLowerCase();
@@ -285,9 +324,17 @@ describe("apply-sofascore-automatic.sql", () => {
   test("the migration files in the chain are the ones the old single-purpose scripts carry", () => {
     // Two scripts already carry 110000 and 3180000; the generator must not
     // diverge from them in the migration text it embeds.
+    const stepOf = (version: string) => STEPS.find((step) => step.version === version)!;
     for (const [path, step] of [
-      ["scripts/backend/apply-sofascore-match-details.sql", STEPS[1]!],
-      ["scripts/backend/apply-20261003180000-reconciled-provider-observations.sql", STEPS[0]!],
+      ["scripts/backend/apply-sofascore-match-details.sql", stepOf("20261011110000")],
+      [
+        "scripts/backend/apply-20261003180000-reconciled-provider-observations.sql",
+        stepOf("20261003180000"),
+      ],
+      [
+        "scripts/backend/apply-20260925090500-fantasy-league-page-skip-empty.sql",
+        stepOf("20260925090500"),
+      ],
     ] as const) {
       const migration = read(`supabase/migrations/${step.version}_${step.name}.sql`);
       expect(occurrences(read(path), migration)).toBe(1);
@@ -297,12 +344,16 @@ describe("apply-sofascore-automatic.sql", () => {
   test("every migration after 20261011110000 is a step, in dependency order, with nothing reserved", () => {
     const versions = STEPS.map((step) => step.version);
     expect(versions).toEqual([
+      "20260925090500",
+      "20261001170000",
       "20261003180000",
+      "20261010140000",
       "20261011110000",
       "20261011120000",
       "20261011130000",
       "20261011140000",
       "20261011150000",
+      "20261011170000",
       "20261011180000",
     ]);
     expect(RESERVED_SLOTS).toEqual([]);
@@ -415,6 +466,11 @@ describe("apply-sofascore-automatic.sql", () => {
       "legacyFixtureCheckAfter",
       "performancesSync",
       "performancesSyncFixture",
+      "leaguePageAfter",
+      "attachTeamCrestAfter",
+      "setCuratedTeamCrest",
+      "repointFixtureMapping",
+      "newsArticleDetailAfter",
     ] as const) {
       expect({ key, afterReset: workflow.indexOf(`'${label(key)}'`) > post }).toEqual({
         key,
@@ -454,5 +510,355 @@ describe("apply-sofascore-automatic.sql", () => {
         mentioned: true,
       });
     }
+  });
+});
+
+/**
+ * The catch-up part: what the owner found on 2026-10-11 (27 repository
+ * versions missing from the history of production). Everything the script
+ * checks at run time is recomputed here from the migration files.
+ */
+describe("apply-sofascore-automatic.sql catch-up (history rows, gameweek summary, four steps)", () => {
+  const migrationFiles = listMigrations(root);
+  const fileOf = (version: string) => migrationFiles.find((m) => m.version === version)!;
+  const sqlOf = (version: string) => read(`supabase/migrations/${fileOf(version).file}`);
+  const skipped = new Set<string>(NEW_STEP_VERSIONS);
+  const chain = followChain(readChain(root, (v) => v <= CHAIN_END && !skipped.has(v)));
+  const everything = followChain(readChain(root, () => true));
+  const fnKey = (name: string, nargs: number) => `${name}/${nargs}`;
+  const bodyIn = (version: string, name: string, nargs: number) => {
+    const fn = followChain([{ version, sql: sqlOf(version) }]).functions.get(fnKey(name, nargs));
+    if (!fn) throw new Error(`${name}/${nargs} is not defined in ${version}`);
+    return fn.body;
+  };
+  const chainBody = (name: string, nargs: number) => chain.functions.get(fnKey(name, nargs))!.body;
+
+  test("the 27 versions the owner found missing are exactly 24 history rows plus 3 steps (and the later 20261011170000)", () => {
+    const missing = [
+      "20260919130000 20260919150000 20260919160000 20260921120000 20260921140000",
+      "20260921160000 20260921170000 20260921180000 20260921190000 20260921200000",
+      "20260921220000 20260922180000 20260922180100 20260922180200 20260922200000",
+      "20260922200100 20260924100000 20260924120000 20260924140000 20260924140100",
+      "20260924163000 20260924170000 20260924173000 20260925090500 20260927153000",
+      "20261001170000 20261010140000",
+    ]
+      .join(" ")
+      .split(" ");
+    expect(missing).toHaveLength(27);
+    expect(
+      [...HISTORY_VERSIONS, "20260925090500", "20261001170000", "20261010140000"].sort(),
+    ).toEqual(missing);
+    expect(NEW_STEP_VERSIONS).toEqual([
+      "20260925090500",
+      "20261001170000",
+      "20261010140000",
+      "20261011170000",
+    ]);
+    for (const version of NEW_STEP_VERSIONS) {
+      expect(STEPS.map((step) => step.version)).toContain(version);
+    }
+    for (const version of HISTORY_VERSIONS) {
+      expect(STEPS.map((step) => step.version)).not.toContain(version);
+      expect(existsSync(join(root, `supabase/migrations/${fileOf(version).file}`))).toBe(true);
+    }
+  });
+
+  test("the md5(prosrc) pins equal the md5 of the body text recomputed from the repository", () => {
+    const after = [
+      ["leaguePageAfterProsrc", "20260925090500", "api.service_fantasy_scoring_league_page", 3],
+      ["attachTeamCrestAfterProsrc", "20261001170000", "api.attach_football_team_crest", 6],
+      ["setCuratedTeamCrestProsrc", "20261001170000", "api.service_set_curated_team_crest", 4],
+      ["repointFixtureMappingProsrc", "20261010140000", "api.repoint_football_fixture_mapping", 5],
+      ["newsArticleDetailAfterProsrc", "20261011170000", "api.news_article_detail", 2],
+      ["gameweekSummaryProsrc", "20260921200000", "api.fantasy_gameweek_summary", 1],
+    ] as const;
+    for (const [key, version, name, nargs] of after) {
+      expect({ key, md5: PINS[key] }).toEqual({ key, md5: md5(bodyIn(version, name, nargs)) });
+    }
+    // "Before" pins: the body the chain of recorded migrations leaves (production's measured facts).
+    const before = [
+      ["leaguePageBeforeProsrc", "api.service_fantasy_scoring_league_page", 3],
+      ["attachTeamCrestBeforeProsrc", "api.attach_football_team_crest", 6],
+      ["newsArticleDetailBeforeProsrc", "api.news_article_detail", 2],
+    ] as const;
+    for (const [key, name, nargs] of before) {
+      expect({ key, md5: PINS[key] }).toEqual({ key, md5: md5(chainBody(name, nargs)) });
+    }
+    // The owner's measurements: league page old body, comment-stripped season stats.
+    expect(PINS.leaguePageBeforeProsrc).toBe("dba725a5659bb5ba9338a00071752b8b");
+    expect(PINS.attachTeamCrestBeforeProsrc).toBe("3d66fd9f11c51899af702952f7b5b46f");
+    expect(SEASON_STATS_PRODUCTION_PROSRC_MD5).toBe("1b141bf8a70e0db8e6ecd402b2f9beb9");
+    expect(md5(stripFullLineComments(chainBody("api.fantasy_player_season_stats", 2)))).toBe(
+      SEASON_STATS_PRODUCTION_PROSRC_MD5,
+    );
+    // The gameweek summary: production's body is not the repository's (1432 characters; 1093 without comment lines).
+    const summary = bodyIn("20260921200000", "api.fantasy_gameweek_summary", 1);
+    expect(summary).toHaveLength(1432);
+    expect(stripFullLineComments(summary)).toHaveLength(1093);
+    expect(GAMEWEEK_SUMMARY.productionProsrcMd5).toBe("ae72632ee97802080b5a08c4215d4c61");
+    expect(GAMEWEEK_SUMMARY.productionProsrcMd5).not.toBe(md5(summary));
+  });
+
+  test("no later migration redefines the functions of the four steps (applying them cannot regress anything)", () => {
+    const owners: [string, number, string[]][] = [
+      ["api.service_fantasy_scoring_league_page", 3, ["20260914200719", "20260925090500"]],
+      ["api.attach_football_team_crest", 6, ["20260801010200", "20261001170000"]],
+      ["api.service_set_curated_team_crest", 4, ["20261001170000"]],
+      ["api.repoint_football_fixture_mapping", 5, ["20261010140000"]],
+    ];
+    for (const [name, nargs, touched] of owners) {
+      expect({ name, touched: everything.functions.get(fnKey(name, nargs))!.touchedBy }).toEqual({
+        name,
+        touched,
+      });
+    }
+    const news = everything.functions.get(fnKey("api.news_article_detail", 2))!;
+    expect(news.touchedBy.slice(-2)).toEqual(["20260924200600", "20261011170000"]);
+  });
+
+  test("history rows: every row carries the sha256 of its repository file, is written once, and the files are not run", () => {
+    const rows = [
+      ...script.matchAll(
+        /\('(\d{14})', '([a-z0-9_]+)', '-- History row only\. [^']*? File sha256 ([0-9a-f]{64})'\)/g,
+      ),
+    ].map((m) => ({ version: m[1]!, name: m[2]!, sha: m[3]! }));
+    expect(rows.map((r) => r.version)).toEqual([...HISTORY_VERSIONS]);
+    for (const row of rows) {
+      expect({ row: row.version, name: row.name }).toEqual({
+        row: row.version,
+        name: fileOf(row.version).name,
+      });
+      expect({ row: row.version, sha: row.sha }).toEqual({
+        row: row.version,
+        sha: sha256(sqlOf(row.version)),
+      });
+      // The file text is not in the script (it is checked, not run).
+      expect(script.includes(sqlOf(row.version))).toBe(false);
+      expect(script).not.toContain(`$bg_${row.version}_file$`);
+    }
+    expect(script).toContain(
+      "where exists (select 1 from pg_temp.sofascore_plan p where p.version = h.version and not p.was_recorded);",
+    );
+    // The plan lists every history version, so each decision uses the state at the start.
+    const planValues = script.slice(
+      script.indexOf("create temporary table sofascore_plan"),
+      script.indexOf("as v(version);"),
+    );
+    for (const version of HISTORY_VERSIONS) expect(planValues).toContain(`('${version}')`);
+  });
+
+  test("the history check runs before any write, then the summary fix, then the history rows, then the steps", () => {
+    const check = script.indexOf("do $history_check$");
+    const fixApply = script.indexOf("do $apply_gameweek_summary$");
+    const insert = script.indexOf("select h.version, h.name, array[h.note]");
+    const firstStep = script.indexOf(
+      "-- 20260925090500_fantasy_league_page_skip_empty: recorded and run only",
+    );
+    expect(check).toBeGreaterThan(script.indexOf("$preflight$;"));
+    expect(check).toBeLessThan(fixApply);
+    expect(fixApply).toBeLessThan(insert);
+    expect(insert).toBeLessThan(firstStep);
+    // The check reads production, writes nothing and stops with every problem named.
+    const block = script.slice(check, script.indexOf("$history_check$;"));
+    expect(block).not.toMatch(/\b(insert into|update|delete from)\b/);
+    expect(block).toContain(
+      "raise exception 'stop: production does not match what migrations missing from the history create",
+    );
+    // Only rows not recorded at the start are checked.
+    expect(occurrences(block, "not p.was_recorded")).toBeGreaterThanOrEqual(4);
+  });
+
+  test("every function a history migration created is checked against the current repository body", () => {
+    const rows = [
+      ...script.matchAll(/\('(\d{14})', '(\w+)', '(\w+)', (\d+), array\[([^\]]*)\], '(\d{14})'\)/g),
+    ].map((m) => ({
+      version: m[1]!,
+      schema: m[2]!,
+      name: m[3]!,
+      nargs: Number(m[4]),
+      accepted: [...m[5]!.matchAll(/'([0-9a-f]{32})'/g)].map((x) => x[1]!),
+      definedIn: m[6]!,
+    }));
+    const history = new Set<string>(HISTORY_VERSIONS);
+    const expected = [...chain.functions.values()].filter(
+      (fn) =>
+        fn.touchedBy.some((v) => history.has(v)) &&
+        !(fn.name === GAMEWEEK_SUMMARY.name && fn.nargs === GAMEWEEK_SUMMARY.nargs),
+    );
+    expect(rows).toHaveLength(expected.length);
+    expect(expected.length).toBeGreaterThan(60);
+    for (const fn of expected) {
+      const row = rows.find((r) => `${r.schema}.${r.name}` === fn.name && r.nargs === fn.nargs);
+      expect({ fn: fn.name, found: row !== undefined }).toEqual({ fn: fn.name, found: true });
+      expect(row!.definedIn).toBe(fn.definedIn);
+      const stripped = md5(stripFullLineComments(fn.body));
+      expect(row!.accepted).toContain(
+        fn.name === "api.fantasy_player_season_stats" ? stripped : md5(fn.body),
+      );
+      // The row belongs to the latest history migration that touched the function.
+      expect(row!.version).toBe(fn.touchedBy.filter((v) => history.has(v)).at(-1));
+      // Only the comment-stripped migration may accept a second form (the season stats only the stripped one).
+      if (fn.definedIn !== "20260921160000") expect(row!.accepted).toEqual([md5(fn.body)]);
+      else expect(row!.accepted).toContain(stripped);
+    }
+    const seasonStats = rows.find((r) => r.name === "fantasy_player_season_stats")!;
+    expect(seasonStats.accepted).toEqual([SEASON_STATS_PRODUCTION_PROSRC_MD5]);
+    // The gameweek summary is not in this list: its own step brings it to the reviewed body first.
+    expect(rows.some((r) => r.name === "fantasy_gameweek_summary")).toBe(false);
+    // The function the article step replaces is checked at its pre-step body (20260924200600).
+    const news = rows.find((r) => r.name === "news_article_detail")!;
+    expect(news.definedIn).toBe("20260924200600");
+    expect(news.accepted).toEqual([PINS.newsArticleDetailBeforeProsrc]);
+  });
+
+  test("tables, enum types, their labels and the values added by alter type are checked", () => {
+    const history = new Set<string>(HISTORY_VERSIONS);
+    for (const table of chain.tables.values()) {
+      if (!history.has(table.createdIn)) continue;
+      expect(script).toContain(`('${table.createdIn}', '${table.name}')`);
+    }
+    for (const type of chain.types.values()) {
+      if (!history.has(type.createdIn)) continue;
+      expect(script).toContain(
+        `('${type.createdIn}', '${type.name}', array[${type.labels.map((l) => `'${l}'`).join(", ")}], ${type.extended})`,
+      );
+    }
+    for (const label of ["matchday_preview", "matchday_results", "round_preview"]) {
+      expect(script).toContain(`('20260924140000', 'app.notification_type', '${label}')`);
+    }
+    // The seed and the two singleton rows.
+    expect(script).toContain("(select count(*) from app.story_teams) < 23");
+    expect(script).toContain("not exists (select 1 from app_private.news_editorial_write_keys)");
+    expect(script).toContain("not exists (select 1 from app_private.notification_email_settings)");
+  });
+
+  test("api.fantasy_gameweek_summary: only from the measured production body, to the exact repository text", () => {
+    const fix = gameweekFix(root);
+    const summary = bodyIn("20260921200000", "api.fantasy_gameweek_summary", 1);
+    expect(fix.prosrcMd5).toBe(md5(summary));
+    expect(fix.prosrcMd5).toBe(PINS.gameweekSummaryProsrc);
+    expect(fix.sha256).toBe(sha256(fix.text));
+    // The text is the four statements of the migration, as written there.
+    expect(fix.text.startsWith("create or replace function api.fantasy_gameweek_summary")).toBe(
+      true,
+    );
+    expect(fix.text).toContain(`$$${summary}$$`);
+    expect(fix.text).toContain("comment on function api.fantasy_gameweek_summary(uuid) is");
+    expect(fix.text).toContain(
+      "revoke all on function api.fantasy_gameweek_summary(uuid)\n  from public, anon, authenticated, service_role;",
+    );
+    expect(fix.text).toContain(
+      "grant execute on function api.fantasy_gameweek_summary(uuid)\n  to anon, authenticated, service_role;",
+    );
+    expect(sqlOf("20260921200000")).toContain(summary);
+    expect(occurrences(script, fix.text)).toBe(1);
+    // The guards: preflight accepts exactly the old and the reviewed body; the apply skips the reviewed one.
+    expect(script).toContain(
+      `not in ('${GAMEWEEK_SUMMARY.productionProsrcMd5}', '${fix.prosrcMd5}') then`,
+    );
+    expect(script).toContain(`if current_md5 = '${fix.prosrcMd5}' then\n    return;`);
+    expect(script).toContain(
+      `if current_md5 is distinct from '${GAMEWEEK_SUMMARY.productionProsrcMd5}' then`,
+    );
+    expect(script).toContain(
+      `if encode(sha256(convert_to(fix_text, 'UTF8')), 'hex') is distinct from '${fix.sha256}' then`,
+    );
+    expect(script.indexOf("neither the version production held on 2026-10-11")).toBeLessThan(
+      script.indexOf("insert into supabase_migrations.schema_migrations"),
+    );
+    // The result is verified after the run, with the grants.
+    const postflight = script.slice(script.indexOf("do $postflight$"));
+    expect(postflight).toContain(`fn := to_regprocedure('${GAMEWEEK_SUMMARY.signature}');`);
+    expect(postflight).toContain(`<> '${PINS.gameweekSummaryProsrc}' then`);
+  });
+
+  test("the four steps guard their prerequisites, absent objects and the function they replace, and say which md5 it is", () => {
+    for (const guard of [
+      "Pronostics parts 1 to 5 (migration 20260925090400) are not recorded",
+      "Fantasy gameweek 1 has not been scored yet -- 20260925090500 waits",
+      "an object migration 20260925090500 depends on is missing",
+      "20261001170000 is not recorded but an object it creates already exists",
+      "an object migration 20261001170000 depends on is missing",
+      "20261010140000 is not recorded but an object it creates already exists",
+      "an object migration 20261010140000 depends on is missing",
+      "app_private.football_provider_mappings lacks a column migration 20261010140000 uses",
+      "app_private.write_admin_audit(uuid,text,text,uuid,text,uuid,uuid,uuid,jsonb,jsonb,app_private.admin_audit_outcome,text,boolean)",
+      "an object migration 20261011170000 depends on is missing",
+      "md5 of pg_proc.prosrc, the body alone, not the whole definition",
+      `(select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.service_fantasy_scoring_league_page(uuid,uuid,integer)')) is distinct from '${PINS.leaguePageBeforeProsrc}'`,
+      `md5(pg_get_functiondef('api.service_fantasy_scoring_league_page(uuid,uuid,integer)'::regprocedure)) is distinct from '${PINS.leaguePageBeforeDefinition}'`,
+      `(select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.attach_football_team_crest(text,text,text,text,text,timestamptz)')) is distinct from '${PINS.attachTeamCrestBeforeProsrc}'`,
+      `(select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('api.news_article_detail(text,text)')) is distinct from '${PINS.newsArticleDetailBeforeProsrc}'`,
+      "to_regprocedure('api.service_set_curated_team_crest(text,text,text,text)') is not null",
+      "to_regprocedure('api.repoint_football_fixture_mapping(text,uuid,text,text,text)') is not null",
+    ]) {
+      const at = script.indexOf(guard);
+      expect({ guard, found: at !== -1 }).toEqual({ guard, found: true });
+      expect({ guard, beforeFirstWrite: at < firstWrite }).toEqual({
+        guard,
+        beforeFirstWrite: true,
+      });
+    }
+    // The grants of the article function are remembered before the step and compared afterwards.
+    expect(script).toContain(
+      "create temporary table sofascore_news_detail_grants on commit drop as",
+    );
+    expect(script).toContain("the grants of api.news_article_detail changed");
+  });
+
+  test("the new steps' placeholders are filled from CI, each by a named line, and the 'before' pins are real", () => {
+    for (const key of [
+      "leaguePageAfter",
+      "attachTeamCrestAfter",
+      "setCuratedTeamCrest",
+      "repointFixtureMapping",
+      "newsArticleDetailAfter",
+    ] as const) {
+      const step = STEPS.find((candidate) => key in candidate.pins)!;
+      expect(step.pins[key]).toBe(PINS[key]);
+      expect(isRealMd5(PINS[key]) || PINS[key].startsWith("FILL_FROM_CI_")).toBe(true);
+    }
+    for (const key of [
+      "leaguePageBeforeProsrc",
+      "leaguePageBeforeDefinition",
+      "attachTeamCrestBeforeProsrc",
+      "newsArticleDetailBeforeProsrc",
+    ] as const) {
+      expect(isRealMd5(PINS[key])).toBe(true);
+    }
+    const workflow = read(".github/workflows/backend-quality.yml");
+    for (const [label, signature] of [
+      [
+        "FILL_FROM_CI_LEAGUE_PAGE_AFTER_MD5",
+        "api.service_fantasy_scoring_league_page(uuid,uuid,integer)",
+      ],
+      [
+        "FILL_FROM_CI_ATTACH_TEAM_CREST_AFTER_MD5",
+        "api.attach_football_team_crest(text,text,text,text,text,timestamptz)",
+      ],
+      [
+        "FILL_FROM_CI_SET_CURATED_TEAM_CREST_MD5",
+        "api.service_set_curated_team_crest(text,text,text,text)",
+      ],
+      [
+        "FILL_FROM_CI_REPOINT_FIXTURE_MAPPING_MD5",
+        "api.repoint_football_fixture_mapping(text,uuid,text,text,text)",
+      ],
+      ["FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5", "api.news_article_detail(text,text)"],
+    ] as const) {
+      expect(workflow).toContain(`('${label}', '${signature}'::regprocedure)`);
+    }
+  });
+
+  test("the runbook accounts for every history row and every step", () => {
+    const runbook = read("docs/production/SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md");
+    for (const version of [...HISTORY_VERSIONS, ...NEW_STEP_VERSIONS]) {
+      expect({ version, mentioned: runbook.includes(version) }).toEqual({
+        version,
+        mentioned: true,
+      });
+    }
+    expect(runbook).toContain("ae72632e");
+    expect(runbook).toContain("1b141bf8");
   });
 });

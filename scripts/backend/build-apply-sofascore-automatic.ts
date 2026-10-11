@@ -24,6 +24,16 @@
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import {
+  HISTORY_VERSIONS,
+  GAMEWEEK_SUMMARY,
+  gameweekFix,
+  gameweekFixApplySql,
+  gameweekFixPreflightSql,
+  historyInsertSql,
+  historyModel,
+  historyVerifySql,
+} from "./sofascore-install-catchup";
 
 const root = join(import.meta.dir, "../..");
 export const SCRIPT_PATH = "scripts/backend/apply-sofascore-automatic.sql";
@@ -112,6 +122,42 @@ export const PINS = {
   legacyFixtureCheckAfter: "FILL_FROM_CI_LEGACY_FIXTURE_CHECK_AFTER_MD5",
   performancesSync: "FILL_FROM_CI_PERFORMANCES_SYNC_MD5",
   performancesSyncFixture: "FILL_FROM_CI_PERFORMANCES_SYNC_FIXTURE_MD5",
+
+  // Catch-up migrations (never applied in production: the owner's read-only
+  // checks of 2026-10-11). Two kinds of pin below:
+  //   *Prosrc  md5(pg_proc.prosrc), the md5 of the function BODY TEXT alone. The
+  //            owner measured the "before" ones on production; the "after" ones
+  //            are the md5 of the body text in the migration file (the test
+  //            recomputes every one of them from the repository).
+  //   others   md5(pg_get_functiondef(...)), the whole definition: "before" from
+  //            the earlier owner script, "after" printed by the CI step
+  //            "SofaScore automatic post-state md5" (FILL THEM).
+  //
+  // 20260925090500: api.service_fantasy_scoring_league_page(uuid,uuid,integer).
+  // Production holds the 20260914200719 version.
+  leaguePageBeforeProsrc: "dba725a5659bb5ba9338a00071752b8b",
+  leaguePageBeforeDefinition: "021d0a3422cf68d4c213b028974888d2",
+  leaguePageAfterProsrc: "86ab0440c3d9d5bea18c438c273e55c6",
+  leaguePageAfter: "FILL_FROM_CI_LEAGUE_PAGE_AFTER_MD5",
+  // 20261001170000: api.attach_football_team_crest (replaced; production holds
+  // the 20260801010200 version) and api.service_set_curated_team_crest (new).
+  attachTeamCrestBeforeProsrc: "3d66fd9f11c51899af702952f7b5b46f",
+  attachTeamCrestAfterProsrc: "81dc921ebef73b589b09bf3686a4776d",
+  attachTeamCrestAfter: "FILL_FROM_CI_ATTACH_TEAM_CREST_AFTER_MD5",
+  setCuratedTeamCrestProsrc: "ed3bd7ee85ea78269b50e3ca8c722d0a",
+  setCuratedTeamCrest: "FILL_FROM_CI_SET_CURATED_TEAM_CREST_MD5",
+  // 20261010140000: api.repoint_football_fixture_mapping (new).
+  repointFixtureMappingProsrc: "2984ba9c1340feb79b57147c60dc77e6",
+  repointFixtureMapping: "FILL_FROM_CI_REPOINT_FIXTURE_MAPPING_MD5",
+  // 20261011170000: api.news_article_detail(text,text) (replaced). "Before" is the
+  // 20260924200600 body, the last one any recorded migration set.
+  newsArticleDetailBeforeProsrc: "ffafc51e4ce1d02c4225fdf1d8c69861",
+  newsArticleDetailAfterProsrc: "b35f060615b912abc90318deb9e8de03",
+  newsArticleDetailAfter: "FILL_FROM_CI_NEWS_ARTICLE_DETAIL_AFTER_MD5",
+  // api.fantasy_gameweek_summary(uuid): the reviewed body of 20260921200000
+  // (md5 of the body text, recomputed by the test). Production's older body is
+  // GAMEWEEK_SUMMARY.productionProsrcMd5.
+  gameweekSummaryProsrc: "96f6cbe0f8fa40c0ff3d440ce1ef2f09",
 } as const;
 
 /** Migrations other lanes still have to add. Remove an entry when it moves to STEPS. Empty: every slot is filled. */
@@ -125,15 +171,17 @@ const recordedGuard = (versions: string[]) =>
 // ---------------------------------------------------------------------------
 // Building blocks for the `pending` and `verify` text of the steps below.
 // ---------------------------------------------------------------------------
-type Callable = "service" | "admin" | "nobody" | "not_api";
+type Callable = "service" | "admin" | "nobody" | "not_api" | "any" | "readers";
 
 interface FnCheck {
   /** Signature as to_regprocedure() reads it. */
   sig: string;
   /** Who may execute it: service_role only, authenticated only, no API role at all, or just not the three public-facing ones. */
   callable: Callable;
-  /** Key in PINS for the reviewed definition. */
+  /** Key in PINS for the reviewed definition (md5 of pg_get_functiondef). */
   pin?: keyof typeof PINS;
+  /** Key in PINS for the reviewed body text (md5 of pg_proc.prosrc). */
+  prosrc?: keyof typeof PINS;
 }
 
 const GRANT_TESTS: Record<Callable, string> = {
@@ -152,6 +200,13 @@ const GRANT_TESTS: Record<Callable, string> = {
   not_api: `has_function_privilege('public', fn, 'execute')
           or has_function_privilege('anon', fn, 'execute')
           or has_function_privilege('authenticated', fn, 'execute')`,
+  // Not judged here: the step compares the grants with what they were before it ran.
+  any: `false`,
+  // Every API role but PUBLIC: the anonymous reading API, signed-in readers and the service role.
+  readers: `has_function_privilege('public', fn, 'execute')
+          or not has_function_privilege('anon', fn, 'execute')
+          or not has_function_privilege('authenticated', fn, 'execute')
+          or not has_function_privilege('service_role', fn, 'execute')`,
 };
 
 /** plpgsql for the postflight: each function exists, is security definer with an empty search_path, has the right grants and the reviewed md5. */
@@ -176,6 +231,13 @@ const verifyFunctions = (version: string, fns: FnCheck[]) => `
             ? `
         if md5(pg_get_functiondef(fn)) <> '${PINS[f.pin]}' then
           problems := problems || ('${version}: not the reviewed definition (md5): ' || fn::text);
+        end if;`
+            : ""
+        }${
+          f.prosrc
+            ? `
+        if (select md5(p.prosrc) from pg_proc p where p.oid = fn) <> '${PINS[f.prosrc]}' then
+          problems := problems || ('${version}: not the reviewed body text (md5 of prosrc): ' || fn::text);
         end if;`
             : ""
         }
@@ -231,6 +293,17 @@ const mustMatchMd5 = (version: string, sig: string, pin: string) => `
       raise exception 'stop: ${sig} is not the reviewed version ${version} replaces (md5)';
     end if;`;
 
+/**
+ * plpgsql (preflight, pending only): the function being replaced has the body
+ * production was measured to hold. This is md5(pg_proc.prosrc), the md5 of the
+ * body text alone (what the owner's read-only check on production printed), not
+ * of the whole definition.
+ */
+const mustMatchProsrc = (version: string, sig: string, pin: string) => `
+    if (select md5(p.prosrc) from pg_proc p where p.oid = to_regprocedure('${sig}')) is distinct from '${pin}' then
+      raise exception 'stop: ${sig} does not have the body text ${version} replaces (md5 of pg_proc.prosrc, the body alone, not the whole definition)';
+    end if;`;
+
 /** The 20261011120000 function is installed, or is applied earlier in this same run. */
 const needsFantasyObservationFunction = (version: string) => `
     if to_regprocedure('api.service_record_sofascore_fantasy_observation(uuid,jsonb,boolean)') is null
@@ -238,7 +311,100 @@ const needsFantasyObservationFunction = (version: string) => `
       raise exception 'stop: migration 20261011120000 is neither recorded nor part of this run, but ${version} builds on api.service_record_sofascore_fantasy_observation';
     end if;`;
 
+const LEAGUE_PAGE_SIG = "api.service_fantasy_scoring_league_page(uuid,uuid,integer)";
+const ATTACH_CREST_SIG = "api.attach_football_team_crest(text,text,text,text,text,timestamptz)";
+const SET_CURATED_CREST_SIG = "api.service_set_curated_team_crest(text,text,text,text)";
+const REPOINT_SIG = "api.repoint_football_fixture_mapping(text,uuid,text,text,text)";
+const NEWS_DETAIL_SIG = "api.news_article_detail(text,text)";
+
 export const STEPS: Step[] = [
+  {
+    version: "20260925090500",
+    name: "fantasy_league_page_skip_empty",
+    summary:
+      "Fantasy scoring worker skips leagues without a Fantasy member: replaces api.service_fantasy_scoring_league_page (same signature, shape and grants; production still holds the 20260914200719 version); changes no data",
+    pending: `${mustExist("20260925090500", {
+      tables: [
+        "app.fantasy_gameweeks",
+        "app.fantasy_leagues",
+        "app.fantasy_league_memberships",
+        "app_private.fantasy_automation_settings",
+      ],
+      functions: [LEAGUE_PAGE_SIG, "app_private.is_service_request()"],
+    })}
+    if ${recordedGuard(["20260925090400"])} <> 1 then
+      raise exception 'stop: Pronostics parts 1 to 5 (migration 20260925090400) are not recorded -- production is not the state 20260925090500 was written for';
+    end if;
+    -- The rule this migration was written under: not before Fantasy gameweek 1 is locked and scored.
+    if not exists (select 1 from app.fantasy_gameweeks
+        where sequence_number = 1 and finalized_at is not null and points_state = 'final') then
+      raise exception 'stop: Fantasy gameweek 1 has not been scored yet -- 20260925090500 waits until it is finalized';
+    end if;
+    -- AGENTS.md: a write that touches Fantasy runs with the Fantasy lifecycle tick paused.
+    if exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled) then
+      raise exception 'stop: the Fantasy lifecycle tick is on -- pause it first with select app_private.fantasy_automation_configure(false); (switch it back on afterwards)';
+    end if;
+    -- It replaces exactly the 20260914200719 version production holds. Two pins:
+    -- the body text (md5 of pg_proc.prosrc, measured on production 2026-10-11) and
+    -- the whole definition (measured on production 2026-09-24).${mustMatchProsrc(
+      "20260925090500",
+      LEAGUE_PAGE_SIG,
+      PINS.leaguePageBeforeProsrc,
+    )}${mustMatchMd5("20260925090500", LEAGUE_PAGE_SIG, PINS.leaguePageBeforeDefinition)}`,
+    verify: verifyFunctions("20260925090500", [
+      {
+        sig: LEAGUE_PAGE_SIG,
+        callable: "service",
+        pin: "leaguePageAfter",
+        prosrc: "leaguePageAfterProsrc",
+      },
+    ]),
+    pins: {
+      leaguePageBeforeProsrc: PINS.leaguePageBeforeProsrc,
+      leaguePageBeforeDefinition: PINS.leaguePageBeforeDefinition,
+      leaguePageAfterProsrc: PINS.leaguePageAfterProsrc,
+      leaguePageAfter: PINS.leaguePageAfter,
+    },
+  },
+  {
+    version: "20261001170000",
+    name: "curated_team_crests",
+    summary:
+      "club crests supplied by BotolaGO: adds api.service_set_curated_team_crest and replaces api.attach_football_team_crest so the provider sync never repoints a team away from a supplied crest (production still holds the 20260801010200 version); changes no data",
+    pending: `${mustNotExist("20261001170000", { functions: [SET_CURATED_CREST_SIG] })}${mustExist(
+      "20261001170000",
+      {
+        tables: ["app_private.football_provider_mappings", "app.teams", "app.media_assets"],
+        functions: [ATTACH_CREST_SIG],
+      },
+    )}
+    -- It replaces exactly the 20260801010200 version production holds (md5 of pg_proc.prosrc, the body text, measured on production 2026-10-11).${mustMatchProsrc(
+      "20261001170000",
+      ATTACH_CREST_SIG,
+      PINS.attachTeamCrestBeforeProsrc,
+    )}`,
+    verify: verifyFunctions("20261001170000", [
+      {
+        sig: SET_CURATED_CREST_SIG,
+        callable: "service",
+        pin: "setCuratedTeamCrest",
+        prosrc: "setCuratedTeamCrestProsrc",
+      },
+      {
+        sig: ATTACH_CREST_SIG,
+        callable: "service",
+        pin: "attachTeamCrestAfter",
+        prosrc: "attachTeamCrestAfterProsrc",
+      },
+    ]),
+    pins: {
+      attachTeamCrestBeforeProsrc: PINS.attachTeamCrestBeforeProsrc,
+      attachTeamCrestAfterProsrc: PINS.attachTeamCrestAfterProsrc,
+      attachTeamCrestAfter: PINS.attachTeamCrestAfter,
+      setCuratedTeamCrestProsrc: PINS.setCuratedTeamCrestProsrc,
+      setCuratedTeamCrest: PINS.setCuratedTeamCrest,
+    },
+  },
   {
     version: "20261003180000",
     name: "reconciled_provider_observations",
@@ -306,6 +472,40 @@ export const STEPS: Step[] = [
       recorderBefore: PINS.recorderBefore,
       recorderAfter: PINS.recorderAfter,
       reconciledWrapper: PINS.reconciledWrapper,
+    },
+  },
+  {
+    version: "20261010140000",
+    name: "sofascore_repoint_fixture_mapping",
+    summary:
+      "a replayed SofaScore match follows its new event id: adds the service-only api.repoint_football_fixture_mapping, which moves one SofaScore fixture mapping in place and audits it (creates no table, changes no existing row)",
+    pending: `${mustNotExist("20261010140000", { functions: [REPOINT_SIG] })}${mustExist(
+      "20261010140000",
+      {
+        tables: ["app_private.football_provider_mappings"],
+        functions: [
+          "app_private.is_service_request()",
+          "app_private.write_admin_audit(uuid,text,text,uuid,text,uuid,uuid,uuid,jsonb,jsonb,app_private.admin_audit_outcome,text,boolean)",
+        ],
+      },
+    )}
+    if (select count(*) from pg_attribute a
+         where a.attrelid = 'app_private.football_provider_mappings'::regclass and a.attnum > 0 and not a.attisdropped
+           and a.attname in ('id', 'active', 'provider_name', 'entity_type', 'external_id',
+                             'internal_entity_id', 'last_seen_at', 'source_version')) <> 8 then
+      raise exception 'stop: app_private.football_provider_mappings lacks a column migration 20261010140000 uses -- production is not the state it was written for';
+    end if;`,
+    verify: verifyFunctions("20261010140000", [
+      {
+        sig: REPOINT_SIG,
+        callable: "service",
+        pin: "repointFixtureMapping",
+        prosrc: "repointFixtureMappingProsrc",
+      },
+    ]),
+    pins: {
+      repointFixtureMappingProsrc: PINS.repointFixtureMappingProsrc,
+      repointFixtureMapping: PINS.repointFixtureMapping,
     },
   },
   {
@@ -584,6 +784,73 @@ ${verifyFunctions("20261011140000", [
     },
   },
   {
+    version: "20261011170000",
+    name: "news_article_detail_other_language_id",
+    summary:
+      "an article opened by an edition id from the other language resolves to the reader's own language edition instead of answering 404: replaces api.news_article_detail (same signature; grants preserved by create or replace); changes no data",
+    pending: `${mustExist("20261011170000", {
+      tables: [
+        "app.article_editions",
+        "app.story_taxonomies",
+        "app.taxonomies",
+        "app.taxonomy_translations",
+        "app.story_competitions",
+        "app.competitions",
+        "app.story_teams",
+        "app.teams",
+        "app.story_players",
+        "app.players",
+      ],
+      functions: [
+        NEWS_DETAIL_SIG,
+        "app_private.news_language(text)",
+        "app_private.news_is_public(app.article_editions)",
+        "app_private.news_article_card(app.article_editions,app.placement_type)",
+        "app_private.news_content_updated_at(app.article_editions)",
+      ],
+    })}
+    -- It replaces exactly the 20260924200600 body (md5 of pg_proc.prosrc, the body text; the body is also checked
+    -- by the migration-history check when 20260922180200 is missing from the history).${mustMatchProsrc(
+      "20261011170000",
+      NEWS_DETAIL_SIG,
+      PINS.newsArticleDetailBeforeProsrc,
+    )}
+    -- create or replace keeps the grants; remember them to prove it afterwards.
+    create temporary table sofascore_news_detail_grants on commit drop as
+    select has_function_privilege('public', fn, 'execute') as public_can,
+           has_function_privilege('anon', fn, 'execute') as anon_can,
+           has_function_privilege('authenticated', fn, 'execute') as authenticated_can,
+           has_function_privilege('service_role', fn, 'execute') as service_can
+      from (select to_regprocedure('${NEWS_DETAIL_SIG}') as fn) f;`,
+    verify: `${verifyFunctions("20261011170000", [
+      {
+        sig: NEWS_DETAIL_SIG,
+        callable: "any",
+        pin: "newsArticleDetailAfter",
+        prosrc: "newsArticleDetailAfterProsrc",
+      },
+    ])}
+    declare
+      fn regprocedure := to_regprocedure('${NEWS_DETAIL_SIG}');
+    begin
+      -- The remembered grants exist only when this run applied the migration.
+      if fn is not null and to_regclass('pg_temp.sofascore_news_detail_grants') is not null then
+        if exists (select 1 from pg_temp.sofascore_news_detail_grants g
+          where g.public_can is distinct from has_function_privilege('public', fn, 'execute')
+             or g.anon_can is distinct from has_function_privilege('anon', fn, 'execute')
+             or g.authenticated_can is distinct from has_function_privilege('authenticated', fn, 'execute')
+             or g.service_can is distinct from has_function_privilege('service_role', fn, 'execute')) then
+          problems := problems || '20261011170000: the grants of api.news_article_detail changed'::text;
+        end if;
+      end if;
+    end;`,
+    pins: {
+      newsArticleDetailBeforeProsrc: PINS.newsArticleDetailBeforeProsrc,
+      newsArticleDetailAfterProsrc: PINS.newsArticleDetailAfterProsrc,
+      newsArticleDetailAfter: PINS.newsArticleDetailAfter,
+    },
+  },
+  {
     version: "20261011180000",
     name: "sofascore_player_performances",
     summary:
@@ -702,6 +969,16 @@ export function buildScript(options: BuildOptions = {}): string {
   const placeholders = steps.flatMap((s) =>
     Object.entries(s.pins).filter(([, pin]) => !isRealMd5(pin)),
   );
+  // Catch-up: migrations whose objects are already in production (history rows
+  // only, after a check), and the gameweek summary body fix.
+  const history = historyModel(root);
+  const fix = gameweekFix(root);
+  const allVersions = [...versions, ...HISTORY_VERSIONS];
+  if (fix.prosrcMd5 !== PINS.gameweekSummaryProsrc) {
+    throw new Error(
+      "PINS.gameweekSummaryProsrc is not the md5 of the repository body of 20260921200000",
+    );
+  }
 
   const header = `-- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
@@ -717,6 +994,22 @@ export function buildScript(options: BuildOptions = {}): string {
 -- (its functions, grants and md5 pins), never applied twice:
 ${steps.map((s) => `--   ${s.version}_${s.name}\n--     ${s.summary}`).join("\n")}
 --
+-- It also catches the migration history up. On 2026-10-11 the owner's read-only
+-- checks found ${history.rows.length + 3} repository versions missing from the history that were
+-- not all "never applied":
+--   * ${history.rows.length} migrations (${history.rows[0]!.version} to ${history.rows[history.rows.length - 1]!.version}) whose objects
+--     ARE in production, applied by another path: only their history row is
+--     missing. The script writes the row only after it has checked, at run
+--     time, what the migration created (the body of every function by md5 of
+--     pg_proc.prosrc against the repository body, tables, enum types and
+--     labels, and the rows two of them seed). The files are NOT run again;
+--   * api.fantasy_gameweek_summary(uuid), whose production body differs from
+--     the reviewed one (md5 of prosrc ${GAMEWEEK_SUMMARY.productionProsrcMd5}), is first brought to the reviewed
+--     body of 20260921200000 (create or replace; the script stops if the body
+--     is neither that older production body nor the reviewed one);
+--   * the three catch-up steps above (20260925090500, 20261001170000,
+--     20261010140000) and 20261011170000 are applied as full steps.
+--
 -- HOW TO RUN
 --   Check nothing else is writing (AGENTS.md; the runbook says how). Then run
 --   the WHOLE file. As shipped it is a REHEARSAL (rolled back; "Rehearsal
@@ -730,9 +1023,10 @@ ${steps.map((s) => `--   ${s.version}_${s.name}\n--     ${s.summary}`).join("\n"
 --   * refuses (a \`stop:\` message, nothing saved) while a pg_cron job is
 --     mid-run, where an object a migration depends on is missing, where an
 --     object it creates already exists although it is not recorded, where the
---     function it replaces is not the reviewed version (md5), and, only when
---     20261003180000 has to be applied (it replaces the Fantasy observation
---     recorder), while the Fantasy lifecycle tick is on;
+--     function it replaces is not the reviewed version (md5), where an object a
+--     migration missing from the history created is absent or different, and,
+--     only when 20261003180000 or 20260925090500 has to be applied (each
+--     replaces a Fantasy function), while the Fantasy lifecycle tick is on;
 --   * records each missing migration file whole in
 --     supabase_migrations.schema_migrations and runs it from that record once
 --     its sha256 matches the repository file;
@@ -743,8 +1037,8 @@ ${steps.map((s) => `--   ${s.version}_${s.name}\n--     ${s.summary}`).join("\n"
 --     is readable by no API role, and each definition is the reviewed one (md5).
 --   It writes no fixture, Fantasy, news or user row and pauses nothing: it only
 --   creates or replaces functions, creates three empty private tables and one
---   check, and lets two columns of app.player_fixture_performances (assists,
---   penalties_missed) be NULL. The pg_cron jobs
+--   check, lets two columns of app.player_fixture_performances (assists,
+--   penalties_missed) be NULL, and writes history rows. The pg_cron jobs
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 ${
@@ -775,7 +1069,7 @@ set local statement_timeout = '120s';
 create temporary table sofascore_plan on commit drop as
 select v.version,
        exists (select 1 from supabase_migrations.schema_migrations m where m.version = v.version) as was_recorded
-  from (values ${versions.map((v) => `('${v}')`).join(", ")}) as v(version);
+  from (values ${allVersions.map((v) => `('${v}')`).join(", ")}) as v(version);
 `;
 
   const hold = `
@@ -813,6 +1107,7 @@ ${unfinished ? `${unfinished}\n` : ""}  -- Any run not finished blocks: a recent
         or exists (select 1 from pg_stat_activity activity where activity.pid = run.job_pid))) then
     raise exception 'stop: a scheduled (pg_cron) job is running right now -- nothing was saved; run this again in a minute';
   end if;
+${gameweekFixPreflightSql(fix)}
 ${steps
   .map(
     (s) => `
@@ -823,14 +1118,18 @@ ${steps
   .join("\n")}
 end
 $preflight$;
-`;
+${historyVerifySql(history)}`;
 
-  const apply = steps
-    .map((s) => {
-      const migration = read(s);
-      const tag = tagFor(s.version);
-      if (migration.includes(tag)) throw new Error(`${s.version} contains its own quote tag`);
-      return `
+  const catchUp = `${gameweekFixApplySql(fix)}${historyInsertSql(history)}`;
+
+  const apply =
+    catchUp +
+    steps
+      .map((s) => {
+        const migration = read(s);
+        const tag = tagFor(s.version);
+        if (migration.includes(tag)) throw new Error(`${s.version} contains its own quote tag`);
+        return `
 -- ${s.version}_${s.name}: recorded and run only if it was not recorded at the start.
 insert into supabase_migrations.schema_migrations (version, name, statements)
 select
@@ -858,8 +1157,8 @@ begin
 end
 $apply_${s.version}$;
 `;
-    })
-    .join("");
+      })
+      .join("");
 
   const postflight = `
 do $postflight$
@@ -867,6 +1166,17 @@ declare
   problems text[] := '{}';
 begin
 ${steps.map((s) => `  -- ${s.version}_${s.name}${s.verify}`).join("\n\n")}
+
+  -- ${GAMEWEEK_SUMMARY.version}: api.fantasy_gameweek_summary has the reviewed body${verifyFunctions(
+    GAMEWEEK_SUMMARY.version,
+    [
+      {
+        sig: GAMEWEEK_SUMMARY.signature,
+        callable: "readers",
+        prosrc: "gameweekSummaryProsrc",
+      },
+    ],
+  )}
   if cardinality(problems) > 0 then
     raise exception 'stop: the update did not check out: %', problems;
   end if;
@@ -882,13 +1192,15 @@ $postflight$;
 rollback;
 
 select case
-  when ${recordedGuard(versions)} = ${versions.length}
+  when ${recordedGuard(allVersions)} = ${allVersions.length}
     then 'Installed and verified. Deploy the Edge Function next (runbook, step 3).'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result,
 (select coalesce(string_agg(version, ', ' order by version), 'none')
    from supabase_migrations.schema_migrations
-  where version in (${versions.map((v) => `'${v}'`).join(", ")})) as recorded_now;
+  where version in (${versions.map((v) => `'${v}'`).join(", ")})) as recorded_now,
+(select count(*) from supabase_migrations.schema_migrations
+  where version in (${HISTORY_VERSIONS.map((v) => `'${v}'`).join(", ")})) as history_rows_recorded_now;
 `;
 
   return header + hold + preflight + apply + postflight + tail;
