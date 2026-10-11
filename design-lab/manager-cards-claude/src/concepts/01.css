@@ -1,0 +1,883 @@
+/* 01 LUCARNE. Every selector is scoped under .c01. The mouth is see-through, so the ink
+   follows the ground the goal stands on: night (default) and day tokens below. The goal's
+   own materials (paint, galvanised steel, chalk on breeze block, concrete, cast iron) look
+   the same on both grounds. The net is drawn in the club's colour (--c01-club, set per
+   render), lifted toward white on the night ground so the cords still read. The share
+   image is always night. */
+
+/* ---------- night ground (default) ---------- */
+.c01 {
+  --c01-ink: #f2f4f6;
+  --c01-key: transparent;
+  --c01-line: #e3e8ee;
+  --c01-net: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 55%,
+    transparent
+  );
+  --c01-knot: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 45%, #ffffff) 85%,
+    transparent
+  );
+  --c01-knot2: color-mix(in srgb, var(--c01-club2, #e9e4d6) 92%, transparent);
+  --c01-braid: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 66%, #ffffff) 58%,
+    transparent
+  );
+  --c01-bknot: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 58%, #ffffff) 72%,
+    transparent
+  );
+  --c01-blite: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 30%, #ffffff) 55%,
+    transparent
+  );
+  --c01-steelnet: rgba(198, 208, 219, 0.42);
+  --c01-rearsteel: #8f9aa5;
+  --c01-rearw: #e9eef3;
+  --c01-bagfill: rgba(5, 11, 24, 0.5);
+  --c01-beam-a: 0.09;
+  --c01-beam-b: 0.065;
+  --c01-beam-c: 0.04;
+  --c01-show-l: none;
+  --c01-backframe: rgba(242, 244, 246, 0.4);
+  /* small marks */
+  --c01-tnet: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 80%,
+    transparent
+  );
+  --c01-tsteel: rgba(198, 208, 219, 0.6);
+  --c01-tgalv: #a3adb8;
+  --c01-tconc: #a9adb2;
+  --c01-twall: rgba(169, 173, 178, 0.55);
+  --c01-mcord: color-mix(in oklab, var(--c01-club, currentColor) 50%, #ffffff);
+  --c01-wallfill: #72787f;
+  --c01-wallmortar: #5f656c;
+}
+
+/* ---------- day ground ---------- */
+.app-light .c01:not(.c01-share),
+:root[data-ground="day"] .c01:not(.c01-share) {
+  --c01-ink: #001c49;
+  --c01-key: #6e7884;
+  --c01-line: #f4f6f8;
+  --c01-net: color-mix(in srgb, var(--c01-club, #8f9aa5) 60%, transparent);
+  --c01-knot: color-mix(in srgb, var(--c01-club, #8f9aa5) 90%, transparent);
+  --c01-knot2: color-mix(in oklab, var(--c01-club2, #e9e4d6) 45%, var(--c01-club, #3b4a5e));
+  --c01-braid: color-mix(in srgb, var(--c01-club, #8f9aa5) 52%, transparent);
+  --c01-bknot: color-mix(in srgb, var(--c01-club, #8f9aa5) 70%, transparent);
+  --c01-blite: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 40%, #ffffff) 90%,
+    transparent
+  );
+  --c01-steelnet: rgba(110, 120, 132, 0.55);
+  --c01-rearsteel: #8f9aa5;
+  --c01-rearw: #f2f4f6;
+  --c01-bagfill: rgba(0, 28, 73, 0.05);
+  --c01-beam-a: 0;
+  --c01-beam-b: 0;
+  --c01-beam-c: 0;
+  --c01-show-l: inline;
+  --c01-backframe: rgba(0, 28, 73, 0.35);
+  --c01-tnet: color-mix(in srgb, var(--c01-club, #6e7884) 75%, transparent);
+  --c01-tsteel: rgba(110, 120, 132, 0.7);
+  --c01-tgalv: #6e7884;
+  --c01-tconc: #8a9097;
+  --c01-twall: rgba(95, 101, 108, 0.5);
+  --c01-mcord: var(--c01-club, currentColor);
+  /* the HOMA wall: on the light ground its edges fade into a pale page, which lifts the grey the
+     chalk sits on; the block itself is darker so the chalk stays above 4.5:1 across that fade */
+  --c01-wallfill: #33383f;
+  --c01-wallmortar: #1d2126;
+}
+
+/* ---------- a night context inside a day page wins back ---------- */
+.app-dark .c01:not(.c01-share),
+:root[data-ground] .app-dark .c01:not(.c01-share) {
+  --c01-ink: #f2f4f6;
+  --c01-key: transparent;
+  --c01-line: #e3e8ee;
+  --c01-net: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 55%,
+    transparent
+  );
+  --c01-knot: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 45%, #ffffff) 85%,
+    transparent
+  );
+  --c01-knot2: color-mix(in srgb, var(--c01-club2, #e9e4d6) 92%, transparent);
+  --c01-braid: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 66%, #ffffff) 58%,
+    transparent
+  );
+  --c01-bknot: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 58%, #ffffff) 72%,
+    transparent
+  );
+  --c01-blite: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 30%, #ffffff) 55%,
+    transparent
+  );
+  --c01-steelnet: rgba(198, 208, 219, 0.42);
+  --c01-rearsteel: #8f9aa5;
+  --c01-rearw: #e9eef3;
+  --c01-bagfill: rgba(5, 11, 24, 0.5);
+  --c01-beam-a: 0.09;
+  --c01-beam-b: 0.065;
+  --c01-beam-c: 0.04;
+  --c01-show-l: none;
+  --c01-backframe: rgba(242, 244, 246, 0.4);
+  --c01-tnet: color-mix(
+    in srgb,
+    color-mix(in oklab, var(--c01-club, #8f9aa5) 50%, #ffffff) 80%,
+    transparent
+  );
+  --c01-tsteel: rgba(198, 208, 219, 0.6);
+  --c01-tgalv: #a3adb8;
+  --c01-tconc: #a9adb2;
+  --c01-twall: rgba(169, 173, 178, 0.55);
+  --c01-mcord: color-mix(in oklab, var(--c01-club, currentColor) 50%, #ffffff);
+  --c01-wallfill: #72787f;
+  --c01-wallmortar: #5f656c;
+}
+
+.c01 .th-l {
+  display: var(--c01-show-l);
+}
+
+/* ---------- full card ---------- */
+.c01.c01-card {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 360 / 280;
+}
+.c01.c01-card > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  direction: ltr;
+  overflow: hidden;
+}
+.c01.c01-card > .c01-back {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+/* the turn, only once mount() has made the card live */
+.c01.c01-card.is-live {
+  perspective: 1100px;
+  cursor: pointer;
+}
+.c01.c01-card.is-live > .c01-face {
+  backface-visibility: hidden;
+  transition: transform 650ms cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+.c01.c01-card.is-live > .c01-back {
+  visibility: visible;
+  transform: rotateY(180deg);
+}
+.c01.c01-card.is-live.is-flipped > .c01-front {
+  transform: rotateY(-180deg);
+}
+.c01.c01-card.is-live.is-flipped > .c01-back {
+  transform: rotateY(0deg);
+}
+.c01.c01-card.no-anim > .c01-face,
+.c01.c01-card.is-rest > .c01-face {
+  transition: none;
+}
+.c01.c01-card.is-hl .c01-frameg {
+  opacity: 0.72;
+}
+
+.c01 .c01-84 {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+  font-size: 104px;
+}
+.c01 .c01-name {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  font-weight: 800;
+  font-size: 34px;
+}
+.c01 .c01-tier {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+}
+.c01 .c01-tier-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* the stat line painted on the crossbar */
+.c01 .c01-sl {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.c01 .c01-sl .c01-sl-l {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+.c01 .c01-sl .c01-sl-v {
+  font-size: 13px;
+}
+.c01 .c01-sl-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+}
+.c01 .c01-sl-ar .c01-sl-l {
+  font-size: 12px;
+  letter-spacing: 0;
+}
+.c01 .c01-sl-ar .c01-sl-v {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-size: 12.5px;
+}
+.c01 .c01-slv {
+  display: none;
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* the founder plate and the back face */
+.c01 .c01-fyear {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+  font-size: 14px;
+}
+.c01 .c01-bk {
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+.c01 .c01-bk[direction="rtl"] {
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c01 .c01-pl {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+.c01 .c01-pl-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+}
+.c01 .c01-pl26 {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+  font-size: 56px;
+}
+.c01 .c01-backframe {
+  stroke: var(--c01-backframe);
+}
+.c01 .c01-backline {
+  fill: var(--c01-backframe);
+}
+.c01 .c01-backslab {
+  stroke: #6e7884;
+  stroke-width: 1px;
+}
+.c01 .c01-replaybg {
+  fill: none;
+  stroke: var(--c01-ink);
+  stroke-width: 1.2px;
+}
+.c01 .c01-replayt {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  fill: var(--c01-ink);
+}
+.c01 .c01-replayt-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  fill: var(--c01-ink);
+}
+.c01 .c01-replayi {
+  stroke: var(--c01-ink);
+}
+
+.c01 .c01-ink {
+  fill: var(--c01-ink);
+}
+.c01 .c01-paint {
+  fill: #001c49;
+}
+.c01 .c01-wallf {
+  fill: var(--c01-wallfill, #72787f);
+}
+.c01 .c01-wallm {
+  stroke: var(--c01-wallmortar, #5f656c);
+}
+.c01 .c01-chalkf {
+  fill: #f4f6f8;
+}
+.c01 .c01-chalk {
+  stroke: #f4f6f8;
+}
+.c01 .c01-marks circle {
+  fill: #5f656c;
+  fill-opacity: 0.55;
+  stroke: #8a9097;
+  stroke-width: 0.8px;
+  stroke-dasharray: 2 1.6;
+}
+.c01 .c01-key {
+  stroke: var(--c01-key);
+}
+.c01 .c01-keyed {
+  stroke: var(--c01-key);
+  stroke-width: 2px;
+  paint-order: stroke;
+}
+.c01 .c01-linec {
+  fill: var(--c01-line);
+}
+.c01 .c01-net {
+  stroke: var(--c01-net);
+}
+.c01 .c01-knot {
+  stroke: var(--c01-knot);
+}
+.c01 .c01-steelnet {
+  stroke: var(--c01-steelnet);
+}
+.c01 .c01-rearsteel {
+  stroke: var(--c01-rearsteel);
+}
+.c01 .c01-rearw {
+  stroke: var(--c01-rearw);
+}
+.c01 .c01-rearhi {
+  stroke: #d5dce3;
+  opacity: 0.7;
+}
+.c01 .c01-weld {
+  fill: #a9b3bd;
+}
+.c01 .c01-netlite {
+  stroke: var(--c01-blite);
+  fill: none;
+}
+/* LEGEND's braided cord: deeper in the club colour, so its weight shows as body and sheen rather than glare */
+.c01 .c01-braid {
+  stroke: var(--c01-braid);
+}
+.c01 .c01-bknot {
+  stroke: var(--c01-bknot);
+}
+.c01 .c01-knot2 {
+  stroke: var(--c01-knot2);
+}
+/* the net's clearance round the tier: the small card's larger tier label has its own twin */
+.c01 .c01-kt-big {
+  display: none;
+}
+.c01 .c01-bagfill {
+  fill: var(--c01-bagfill);
+}
+.c01 .c01-bagnet {
+  stroke: var(--c01-net);
+}
+.c01 .c01-bagcord {
+  stroke: var(--c01-knot);
+}
+.c01 .c01-glint {
+  fill: #ffffff;
+}
+.c01 .c01-beam1 {
+  fill: rgba(234, 246, 255, var(--c01-beam-a));
+}
+.c01 .c01-beam2 {
+  fill: rgba(234, 246, 255, var(--c01-beam-b));
+}
+.c01 .c01-beam3 {
+  fill: rgba(234, 246, 255, var(--c01-beam-c));
+}
+
+/* small card (the 200px tier strip): the stat labels go and the values grow; fine marks drop */
+@container (max-width: 260px) {
+  .c01 .c01-sl {
+    display: none;
+  }
+  .c01 .c01-slv {
+    display: inline;
+  }
+  .c01 .c01-tier {
+    font-size: 15px;
+  }
+  .c01 .c01-tier-ar {
+    font-size: 16px;
+  }
+  .c01 .c01-kt {
+    display: none;
+  }
+  .c01 .c01-kt-big {
+    display: inline;
+  }
+}
+@container (max-width: 250px) {
+  .c01 .c01-fine {
+    display: none;
+  }
+}
+.c01[dir="rtl"] text[direction="rtl"] {
+  letter-spacing: 0;
+}
+
+/* ---------- tokens ---------- */
+.c01.c01-tok {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 0;
+  flex: none;
+}
+.c01.c01-tok > svg {
+  display: block;
+  overflow: visible;
+  direction: ltr;
+}
+.c01 .c01-t84 {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+}
+.c01 .c01-tframe {
+  fill: currentColor;
+}
+.c01 .c01-tgalv {
+  fill: var(--c01-tgalv);
+}
+.c01 .c01-tnet {
+  stroke: var(--c01-tnet);
+}
+.c01 .c01-tsteel {
+  stroke: var(--c01-tsteel);
+}
+.c01 .c01-twall {
+  stroke: var(--c01-twall);
+}
+.c01 .c01-tconc {
+  fill: var(--c01-tconc);
+}
+.c01 .c01-mcord {
+  stroke: var(--c01-mcord);
+}
+
+/* ---------- My position compact card ---------- */
+.c01.c01-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 358px;
+  height: 64px;
+  padding-inline: 8px 14px;
+  border-radius: 12px;
+  box-sizing: border-box;
+  color: var(--ui-on-surface, #f0f6fc);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c01.c01-row[dir="rtl"] {
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+}
+.c01.c01-row.is-me {
+  background: var(--ui-me, rgba(155, 219, 253, 0.12));
+}
+.c01 .c01-rk {
+  flex: none;
+  width: 22px;
+  text-align: center;
+  font:
+    800 16px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  color: var(--ui-on-surface-muted, #a9b2be);
+}
+.c01.c01-row.is-me .c01-rk {
+  color: inherit;
+}
+.c01 .c01-rt {
+  flex: none;
+  display: block;
+  height: 44px;
+}
+.c01 .c01-rn {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.c01 .c01-rn b {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  font:
+    800 15px/1.25 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c01 .c01-r26 {
+  margin-inline-start: 4px;
+  font:
+    800 13px/1 "Changa",
+    sans-serif;
+  color: var(--ui-on-surface-muted, #a9b2be);
+}
+.c01 .c01-rn small {
+  font:
+    700 11px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--ui-on-surface-muted, #a9b2be);
+}
+.c01.c01-row[dir="rtl"] .c01-rn small {
+  font:
+    700 12px/1.5 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c01 .c01-rp {
+  flex: none;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+.c01 .c01-rp b {
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c01 .c01-rp small {
+  font:
+    700 10px/1.2 "Manrope",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--ui-on-surface-muted, #a9b2be);
+}
+.c01.c01-row[dir="rtl"] .c01-rp small {
+  font:
+    700 11px/1.3 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+
+/* ---------- share (always night) ---------- */
+.c01.c01-share {
+  width: 100%;
+  height: 100%;
+  background: #001c49;
+}
+.c01.c01-share > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  direction: ltr;
+  overflow: hidden;
+}
+.c01.c01-share .c01-sh84 {
+  fill: #f2f4f6;
+}
+.c01.c01-share .c01-sh-name {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  font-weight: 800;
+  font-size: 30px;
+  fill: #ffffff;
+}
+.c01.c01-share .c01-sh-meta {
+  font-family: "Manrope", sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  fill: #a9b2be;
+  font-variant-numeric: tabular-nums;
+}
+.c01.c01-share .c01-sh-meta-ar {
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+}
+
+/* ---------- onboarding states ---------- */
+/* k of N chalk tallies on the start post, in the ink of the ground (navy on day, white on night); the
+   rounds not yet counted stay as faint rungs. */
+.c01 .c01-tally {
+  stroke: var(--c01-ink);
+}
+.c01 .c01-tally.is-off {
+  opacity: 0.5;
+}
+.c01 .c01-ttal {
+  stroke: currentColor;
+}
+.c01 .c01-ttal.is-off {
+  opacity: 0.5;
+}
+
+/* « Provisoire » / «مبدئي» on the share image */
+.c01.c01-share .c01-sh-chip rect {
+  fill: none;
+  stroke: #a9b2be;
+  stroke-width: 1.2px;
+}
+.c01.c01-share .c01-sh-chipt {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  fill: #f2f4f6;
+}
+.c01.c01-share .c01-sh-chipt-ar {
+  font-family: "Noto Sans Arabic", sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---------- the beats (only when a card is rendered with o.beat; nothing under reduced motion) ---------- */
+.c01 .c01-chalkfx,
+.c01 .c01-bball,
+.c01 .c01-speck {
+  opacity: 0;
+  pointer-events: none;
+}
+.c01 .c01-speck {
+  fill: var(--c01-ink);
+}
+.c01 .c01-bc {
+  stroke: var(--c01-ink);
+}
+.c01 .c01-bring {
+  fill: none;
+  stroke: var(--c01-ink);
+  stroke-width: 1.4px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* tick: one more rung drawn on the post, with a little dust */
+  .c01 .c01-tally.is-new,
+  .c01 .c01-ttal.is-new {
+    stroke-dasharray: 1 1.01;
+    stroke-dashoffset: 1;
+    animation: c01-draw 300ms cubic-bezier(0.3, 0.7, 0.2, 1) 60ms both;
+  }
+  .c01 .c01-speck {
+    animation: c01-speck 220ms ease-out forwards;
+  }
+
+  /* make: the goal chalked on the wall, stroke by stroke. The chalk leads, the tube is revealed behind it */
+  .c01.is-beat-make .c01-chalkfx {
+    opacity: 1;
+    animation: c01-chalkout 700ms linear both;
+  }
+  .c01.is-beat-make .c01-bc {
+    stroke-dasharray: 1 1.01;
+    stroke-dashoffset: 1;
+    animation: c01-draw 160ms cubic-bezier(0.4, 0.1, 0.3, 1) forwards;
+  }
+  .c01.is-beat-make .c01-bc-line {
+    animation-duration: 140ms;
+  }
+  .c01.is-beat-make .c01-bcn {
+    stroke-width: 1.3px;
+    animation-duration: 120ms;
+  }
+  .c01.is-beat-make .c01-nb {
+    stroke-dasharray: 1 1.01;
+    stroke-dashoffset: 1;
+    animation: c01-draw 120ms cubic-bezier(0.4, 0.1, 0.3, 1) forwards;
+  }
+  .c01.is-beat-make .th-l,
+  .c01.is-beat-make .c01-linec {
+    animation: c01-wipe-x 150ms linear 30ms both;
+  }
+  .c01.is-beat-make .c01-pl1 {
+    animation: c01-wipe-up 170ms cubic-bezier(0.3, 0.6, 0.3, 1) 125ms both;
+  }
+  .c01.is-beat-make .c01-bar1,
+  .c01.is-beat-make .c01-sl,
+  .c01.is-beat-make .c01-slv {
+    animation: c01-wipe-x 150ms linear 255ms both;
+  }
+  .c01.is-beat-make .c01-pl2 {
+    animation: c01-wipe-down 150ms cubic-bezier(0.3, 0.6, 0.3, 1) 375ms both;
+  }
+  .c01.is-beat-make .c01-sticker,
+  .c01.is-beat-make .c01-foot,
+  .c01.is-beat-make .c01-tallies,
+  .c01.is-beat-make .c01-knots {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: c01-stick 140ms ease-out 540ms both;
+  }
+
+  /* first: the ball curls up the end-post side into the corner behind the 84, the net pulls in (the keyframes
+     that re-path it are inline), a hard cut at impact, one beat held, then everything settles */
+  .c01.is-beat-first .c01-bball {
+    opacity: 1;
+  }
+  .c01.is-beat-first .c01-ball1 {
+    animation: c01-ball 600ms linear both;
+  }
+  .c01.is-beat-first .c01-bring {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: c01-ring 600ms linear both;
+  }
+}
+@keyframes c01-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes c01-speck {
+  from {
+    opacity: 0.9;
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+@keyframes c01-chalkout {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes c01-wipe-x {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes c01-wipe-up {
+  from {
+    clip-path: inset(100% 0 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes c01-wipe-down {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes c01-stick {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes c01-ring {
+  0%,
+  49.9% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  77%,
+  100% {
+    opacity: 0;
+    transform: scale(2.7);
+  }
+}
+@keyframes c01-ball {
+  0% {
+    opacity: 0;
+    transform: translate(130px, 228px) scale(1.3);
+  }
+  3% {
+    opacity: 1;
+  }
+  5% {
+    transform: translate(133.6px, 227.5px) scale(1.3);
+  }
+  10% {
+    transform: translate(144px, 226.1px) scale(1.29);
+  }
+  15% {
+    transform: translate(160.7px, 223.1px) scale(1.27);
+  }
+  20% {
+    transform: translate(182.4px, 218px) scale(1.25);
+  }
+  25% {
+    transform: translate(207.6px, 209.7px) scale(1.23);
+  }
+  30% {
+    transform: translate(234.3px, 197px) scale(1.19);
+  }
+  35% {
+    transform: translate(259.8px, 178.3px) scale(1.15);
+  }
+  40% {
+    transform: translate(281.3px, 151.9px) scale(1.11);
+  }
+  45% {
+    transform: translate(295.3px, 115.6px) scale(1.06);
+  }
+  50%,
+  77% {
+    opacity: 1;
+    transform: translate(298px, 67px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(298px, 67px) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .c01 * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

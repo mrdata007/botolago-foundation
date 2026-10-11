@@ -1,0 +1,389 @@
+/* 03 PORTE-CLÉS. The object's material lives in the SVG; this sheet carries the ground-dependent
+   edges (a lit rim on the dark ground, none on the light one), the row and the share layout.
+   Dark ground is the default; the light ground overrides it. The viewBox (0 -14 260 474) keeps
+   headroom above the ring on every tier for LEGEND's carabiner. */
+.c03 {
+  --c03-rim: #9ba3ae;
+  --c03-clear: #e4eef7;
+  --c03-ring: #9fb3cc;
+  --c03-rimr: #b8c2ce;
+  --c03-cap: rgb(233 238 245 / 0.6);
+  --c03-drop: drop-shadow(0 1.2cqi 1.4cqi rgb(0 0 0 / 0.65));
+  --c03-row-bg: #121b29;
+  --c03-row-fg: #f0f6fc;
+  --c03-row-mute: #a9b2be;
+  --c03-row-sh: 0 0 0 1px rgb(240 246 252 / 0.09);
+  --c03-me-bg: color-mix(in oklab, oklch(0.86 0.08 232) 14%, #121b29);
+  --c03-me-ring: rgb(115 237 250 / 0.55);
+}
+.app-light .c03,
+:root[data-ground="day"] .c03 {
+  --c03-rim: rgb(18 16 14 / 0);
+  --c03-clear: #7f93a8;
+  --c03-ring: #3a4e6b;
+  --c03-rimr: rgb(30 36 44 / 0.35);
+  --c03-cap: rgb(6 13 26 / 0.58);
+  --c03-drop: drop-shadow(0 1.4cqi 1.6cqi rgb(12 49 100 / 0.24));
+  --c03-row-bg: #ffffff;
+  --c03-row-fg: #060d1a;
+  --c03-row-mute: #4e5661;
+  --c03-row-sh: 0 1px 2px 0 rgb(12 49 100 / 0.1), 0 4px 14px -8px rgb(12 49 100 / 0.14);
+  --c03-me-bg: color-mix(in oklab, oklch(0.88 0.11 205) 22%, #ffffff);
+  --c03-me-ring: rgb(0 140 200 / 0.45);
+}
+:root[data-ground] .app-dark .c03,
+.app-dark .c03 {
+  --c03-rim: #9ba3ae;
+  --c03-clear: #e4eef7;
+  --c03-ring: #9fb3cc;
+  --c03-rimr: #b8c2ce;
+  --c03-cap: rgb(233 238 245 / 0.6);
+  --c03-drop: drop-shadow(0 1.2cqi 1.4cqi rgb(0 0 0 / 0.65));
+  --c03-row-bg: #121b29;
+  --c03-row-fg: #f0f6fc;
+  --c03-row-mute: #a9b2be;
+  --c03-row-sh: 0 0 0 1px rgb(240 246 252 / 0.09);
+  --c03-me-bg: color-mix(in oklab, oklch(0.86 0.08 232) 14%, #121b29);
+  --c03-me-ring: rgb(115 237 250 / 0.55);
+}
+
+/* ---------- edges that depend on the ground ---------- */
+.c03 .c03-rim {
+  stroke: var(--c03-rim);
+}
+.c03 .c03-clear {
+  stroke: var(--c03-clear);
+}
+.c03 .c03-rimr {
+  stroke: var(--c03-rimr);
+}
+.c03 .c03-mr {
+  stroke: var(--c03-ring);
+}
+.c03 .c03-mc {
+  stroke: var(--c03-ring);
+}
+.c03 .c03-cap {
+  fill: var(--c03-cap);
+}
+
+/* ---------- full card ---------- */
+.c03-full {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 260 / 474;
+}
+.c03-full .c03-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: var(--c03-drop);
+  touch-action: pan-y;
+}
+.c03-full.is-thumb .c03-art {
+  filter: none;
+}
+
+/* the fob swings on the eyelet; each charm on its own jump ring */
+.c03 .c03-fob {
+  transform-box: view-box;
+  transform-origin: 130px 115px;
+}
+.c03 .c03-sw {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.c03[data-motion] .c03-fob {
+  animation: c03-settle 900ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+}
+.c03[data-motion] .c03-sw {
+  animation: c03-charm 900ms cubic-bezier(0.22, 1.1, 0.36, 1) both;
+}
+.c03[data-motion][data-tier="LEGEND"] .c03-fob,
+.c03[data-motion][data-tier="LEGEND"] .c03-sw {
+  animation-duration: 1300ms;
+}
+@keyframes c03-settle {
+  0% {
+    transform: rotate(8deg);
+  }
+  24% {
+    transform: rotate(-5deg);
+  }
+  48% {
+    transform: rotate(2.6deg);
+  }
+  72% {
+    transform: rotate(-1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@keyframes c03-charm {
+  0% {
+    transform: rotate(-10deg);
+  }
+  28% {
+    transform: rotate(7deg);
+  }
+  54% {
+    transform: rotate(-3deg);
+  }
+  78% {
+    transform: rotate(1deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c03 .c03-fob,
+  .c03 .c03-sw {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ---------- token ---------- */
+.c03-tok {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.c03-tok svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- row: the "My position" compact card ---------- */
+.c03-row {
+  display: grid;
+  grid-template-columns: 24px 50px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 358px;
+  height: 66px;
+  padding-inline: 8px 16px;
+  border-radius: 14px;
+  background: var(--c03-row-bg);
+  color: var(--c03-row-fg);
+  box-shadow: var(--c03-row-sh);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c03-row.is-me {
+  background: var(--c03-me-bg);
+  box-shadow:
+    inset 0 0 0 1.5px var(--c03-me-ring),
+    var(--c03-row-sh);
+}
+.c03-rk {
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--c03-row-mute);
+}
+.c03-rt {
+  display: grid;
+  place-items: center;
+  height: 56px;
+}
+.c03-rn {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.c03-rn b {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  font:
+    800 19px/1.2 "Changa",
+    sans-serif;
+}
+.c03-rnm {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.c03-rn i {
+  flex: none;
+  font:
+    600 13px/1 "Changa",
+    sans-serif;
+  font-style: normal;
+  color: var(--c03-row-mute);
+}
+.c03-rn small {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font:
+    800 11px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.1em;
+  color: var(--c03-row-mute);
+}
+.c03-pg {
+  flex: none;
+  display: block;
+}
+.c03-rp {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+}
+.c03-rp b {
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c03-rp small {
+  font:
+    700 10px/1 "Manrope",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--c03-row-mute);
+}
+.c03-row[dir="rtl"] .c03-rn b {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  line-height: 1.5;
+}
+.c03-row[dir="rtl"] .c03-rn small {
+  font:
+    700 12px/1.6 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c03-row[dir="rtl"] .c03-rp small {
+  font:
+    700 11px/1.5 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c03-row[dir="rtl"] .c03-rn {
+  gap: 0;
+}
+
+/* ---------- share: "Sur mon sac" ---------- */
+.c03-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #26282c;
+  color: #f0f2f5;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c03-share .c03-rim {
+  stroke: #9ba3ae;
+}
+.c03-share .c03-clear {
+  stroke: #e4eef7;
+}
+.c03-sh-bg {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.c03-sh-logo {
+  position: absolute;
+  top: 30px;
+  inset-inline-start: 24px;
+  width: 124px;
+}
+/* a woven label sewn onto the bag in the corner the swing leaves free (bottom-left in both
+   languages: the object never mirrors, so neither does the free corner) */
+.c03-sh-tag {
+  position: absolute;
+  left: 14px;
+  bottom: 16px;
+  box-sizing: border-box;
+  padding: 6px 15px 7px;
+  border-radius: 2px;
+  color: #22252b;
+  background:
+    repeating-linear-gradient(0deg, rgb(60 50 30 / 0.07) 0 1px, transparent 1px 2.4px),
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.16) 0 1px, transparent 1px 3px),
+    linear-gradient(180deg, #f1ebdb, #e2d9c3);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 2px 0 -0.5px rgb(0 0 0 / 0.45),
+    0 12px 18px -10px rgb(0 0 0 / 0.75);
+}
+.c03-sh-tag::before,
+.c03-sh-tag::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background: linear-gradient(90deg, #cfc6ae, #ddd4bd);
+  border-right: 1px dashed rgb(70 60 40 / 0.55);
+}
+.c03-sh-tag::before {
+  left: 0;
+}
+.c03-sh-tag::after {
+  right: 0;
+  border-right: 0;
+  border-left: 1px dashed rgb(70 60 40 / 0.55);
+  background: linear-gradient(270deg, #cfc6ae, #ddd4bd);
+}
+.c03-sh-name {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font:
+    800 25px/1.1 "Changa",
+    sans-serif;
+}
+.c03-sh-name i {
+  font:
+    600 15px/1 "Changa",
+    sans-serif;
+  font-style: normal;
+  color: #5b5d63;
+}
+.c03-sh-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 0;
+  font:
+    800 11.5px/1.4 "Manrope",
+    sans-serif;
+  letter-spacing: 0.02em;
+}
+.c03-sh-meta em {
+  font:
+    600 8.5px/1 "Manrope",
+    sans-serif;
+  font-style: normal;
+  letter-spacing: 0.04em;
+  color: #6b6658;
+}
+.c03-share[dir="rtl"] .c03-sh-name {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  line-height: 1.3;
+}
+.c03-share[dir="rtl"] .c03-sh-name b {
+  font-size: 22px;
+}
+.c03-share[dir="rtl"] .c03-sh-name i {
+  font-size: 14px;
+}
+.c03-share[dir="rtl"] .c03-sh-meta em {
+  font:
+    600 9.5px/1.4 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}

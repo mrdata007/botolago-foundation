@@ -1,0 +1,397 @@
+/* 04 POCHOIR — the stencil plate and its print. Everything is scoped under .c04 / .c04-*.
+   Dark-ground values are the default: the cuts are open and show the ground (8:1 against the
+   plate), so the 84 is a hole in the outline. The light ground lays the plate on its print sheet
+   (--c04-printo: 1), adds the plate's 1px edge and a navy-tinted lift shadow, because the page
+   behind an open cut would sit at about 2:1. */
+.c04,
+.c04-tok,
+.c04-row {
+  --c04-edgeo: 0;
+  --c04-printo: 0;
+  --c04-shc: #000;
+  --c04-sho: 0.55;
+}
+.app-light .c04,
+.app-light .c04-tok,
+.app-light .c04-row,
+:root[data-ground="day"] .c04,
+:root[data-ground="day"] .c04-tok,
+:root[data-ground="day"] .c04-row {
+  --c04-edgeo: 1;
+  --c04-printo: 1;
+  --c04-shc: #0c1e3d;
+  --c04-sho: 0.28;
+}
+.app-dark .c04,
+.app-dark .c04-tok,
+.app-dark .c04-row,
+:root[data-ground] .app-dark .c04,
+:root[data-ground] .app-dark .c04-tok,
+:root[data-ground] .app-dark .c04-row {
+  --c04-edgeo: 0;
+  --c04-printo: 0;
+  --c04-shc: #000;
+  --c04-sho: 0.55;
+}
+
+/* ---------------- full card: print sheet, plate, (LEGEND) frame clamps ---------------- */
+.c04 {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 352 / 160;
+  isolation: isolate;
+}
+.c04 .c04-print,
+.c04 .c04-plate,
+.c04 .c04-clamps {
+  position: absolute;
+  inset: 0;
+}
+.c04 .c04-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  direction: ltr;
+}
+.c04 .c04-edge,
+.c04-tok .c04-edge {
+  opacity: var(--c04-edgeo);
+}
+.c04 .c04-shadow {
+  fill: var(--c04-shc);
+  opacity: var(--c04-sho);
+}
+/* the print sheet under the cuts (full card and token): light ground only, except during the
+   LEGEND lift, when the spray goes through the cuts and the lifted plate shows it */
+.c04 .c04-pr,
+.c04-tok .c04-pr {
+  opacity: var(--c04-printo);
+}
+/* the club-colour overspray rim around the cuts: dark ground only */
+.c04 .c04-prn,
+.c04-tok .c04-prn {
+  opacity: calc(1 - var(--c04-printo));
+}
+
+/* LEGEND: the plate lifts on its hinge clamps (top edge) and shows the print beneath.
+   It rests flat; the lift is a replay (motion on) or follows the pointer on the profile. */
+.c04--legend .c04-plate {
+  transform-origin: 50% 0%;
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.c04--legend.c04--hover .c04-plate {
+  transform: perspective(700cqi) rotateX(var(--c04-lift, 0deg));
+}
+.c04--legend .c04-pr {
+  transition: opacity 260ms ease-out;
+}
+.c04--legend.c04--hover .c04-pr {
+  opacity: 1;
+}
+.c04--legend.c04--motion .c04-plate {
+  animation: c04-lift 1500ms cubic-bezier(0.22, 1, 0.36, 1) 300ms backwards;
+}
+/* the spray: the print appears in the cuts, stays while the plate is up, and is gone again
+   (on the dark ground) once the plate has settled; on the light ground it never leaves */
+.c04--legend.c04--motion .c04-pr {
+  animation: c04-spray 1700ms linear 150ms backwards;
+}
+@keyframes c04-spray {
+  0% {
+    opacity: var(--c04-printo);
+  }
+  12%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: var(--c04-printo);
+  }
+}
+.c04--legend.c04--motion.c04--fd .c04-pr {
+  animation-delay: 1450ms;
+}
+@keyframes c04-lift {
+  0% {
+    transform: perspective(700cqi) rotateX(0deg);
+  }
+  38%,
+  58% {
+    transform: perspective(700cqi) rotateX(58deg);
+  }
+  100% {
+    transform: perspective(700cqi) rotateX(0deg);
+  }
+}
+.c04--legend.c04--motion.c04--fd .c04-plate {
+  animation-delay: 1600ms;
+}
+
+/* Founders: the first cut. A knife line traces the 26 (900ms), then the piece drops out. */
+.c04 .c04-knife,
+.c04 .c04-slug {
+  display: none;
+}
+.c04--motion .c04-knife,
+.c04--motion .c04-slug {
+  display: inline;
+}
+.c04--motion .c04-knife path {
+  stroke-dasharray: 1 1;
+  animation: c04-knife 900ms cubic-bezier(0.3, 0.6, 0.3, 1) 150ms both;
+}
+.c04--motion .c04-slug {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: c04-drop 450ms cubic-bezier(0.5, 0, 0.75, 0) 1050ms both;
+}
+@keyframes c04-knife {
+  0% {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+@keyframes c04-drop {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(0, 9px) rotate(7deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c04--motion .c04-knife,
+  .c04--motion .c04-slug {
+    display: none;
+  }
+  .c04--legend .c04-plate,
+  .c04--legend .c04-pr {
+    transition: none;
+  }
+  .c04--legend.c04--motion .c04-plate,
+  .c04--legend.c04--hover .c04-plate {
+    animation: none;
+    transform: none;
+  }
+  .c04--legend.c04--motion .c04-pr,
+  .c04--legend.c04--hover .c04-pr {
+    animation: none;
+    opacity: var(--c04-printo);
+  }
+}
+
+/* ---------------- token ---------------- */
+.c04-tok {
+  display: inline-block;
+  line-height: 0;
+  vertical-align: middle;
+}
+.c04-tok svg {
+  display: block;
+  overflow: visible;
+  direction: ltr;
+}
+
+/* ---------------- "My position" compact card ---------------- */
+.c04-row {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 26px auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 12px;
+  width: 100%;
+  max-width: 358px;
+  min-height: 64px;
+  padding-block: 8px;
+  padding-inline: 10px 14px;
+  border-radius: 10px;
+  background: var(--ui-surface, #fff);
+  color: var(--ui-on-surface, #060d1a);
+  box-shadow: var(--ui-card-shadow, 0 1px 2px rgba(12, 49, 100, 0.1));
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c04-row.is-me {
+  background: var(--ui-me, #e6f6fb);
+  box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--ui-ink-fg, #0c3164) 45%, transparent);
+}
+.c04-row .c04-rk {
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--ui-on-surface-muted, #4e5661);
+}
+.c04-row.is-me .c04-rk {
+  color: var(--ui-on-surface, #060d1a);
+}
+.c04-row .c04-rtok {
+  display: grid;
+  place-items: center;
+  min-height: 40px;
+}
+.c04-row .c04-who {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.c04-row .c04-who b {
+  font:
+    800 18px/1.2 "Changa",
+    sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c04-row .c04-who b.ar {
+  font:
+    800 17px/1.45 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
+}
+.c04-row .c04-who b i {
+  font-style: normal;
+  font-weight: 700;
+  opacity: 0.62;
+}
+.c04-row .c04-who small {
+  font:
+    800 10.5px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ui-on-surface-muted, #4e5661);
+  white-space: nowrap;
+}
+.c04-row[dir="rtl"] .c04-who small {
+  font:
+    700 11.5px/1.5 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c04-row .c04-pts {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.c04-row .c04-pts b {
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c04-row .c04-pts small {
+  font:
+    800 9.5px/1 "Manrope",
+    sans-serif;
+  letter-spacing: 0.1em;
+  color: var(--ui-on-surface-muted, #4e5661);
+}
+.c04-row[dir="rtl"] .c04-pts small {
+  font:
+    700 10.5px/1.4 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+
+/* ---------------- share (360 × 640): the print on a bib, the plate beside it ---------------- */
+.c04-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #001c49;
+  color: #ffffff;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c04-share .c04-sh-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  direction: ltr;
+}
+.c04-share .c04-sh-logo {
+  position: absolute;
+  top: 40px;
+  inset-inline-start: 24px;
+  width: 118px;
+}
+/* the plate that made the print, lying beside the bib under one hard light */
+.c04-share .c04-sh-plate {
+  position: absolute;
+  top: 392px;
+  inset-inline-end: 18px;
+  width: 188px;
+  container-type: inline-size;
+  transform: rotate(-6deg);
+  filter: drop-shadow(5px 9px 2px rgba(0, 0, 0, 0.5));
+}
+.c04-share[dir="rtl"] .c04-sh-plate {
+  transform: rotate(6deg);
+  filter: drop-shadow(-5px 9px 2px rgba(0, 0, 0, 0.5));
+}
+.c04-share .c04-sh-meta {
+  position: absolute;
+  bottom: 118px;
+  inset-inline-start: 24px;
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+}
+.c04-share .c04-sh-meta b {
+  font:
+    800 30px/1 "Changa",
+    sans-serif;
+}
+.c04-share .c04-sh-meta b.ar {
+  line-height: 1.3;
+}
+.c04-share .c04-sh-meta b span {
+  font-weight: 700;
+  color: #c9d4e6;
+}
+.c04-share .c04-sh-tier {
+  font-weight: 800;
+  color: #ffffff;
+}
+.c04-share .c04-sh-ex {
+  position: absolute;
+  top: 46px;
+  inset-inline-end: 24px;
+  font:
+    700 11px/1.2 "Manrope",
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: #c9d4e6;
+}
+.c04-share[dir="rtl"] .c04-sh-ex {
+  font-family: "Noto Sans Arabic", sans-serif;
+  letter-spacing: 0;
+}
+.c04-share .c04-sh-line {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font:
+    700 11px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.06em;
+  color: #c9d4e6;
+}
+.c04-share[dir="rtl"] .c04-sh-line {
+  font-family: "Noto Sans Arabic", "Manrope", sans-serif;
+  letter-spacing: 0;
+}

@@ -1,0 +1,168 @@
+/* BotolaGO app context for testing cards where they will live: the app page,
+   the white Fantasy card, ranking rows and comment lines, in light and dark.
+   Values copied from src/styles.css (kit tokens); nothing here is shared back. */
+.app-light {
+  --ui-page: oklch(0.975 0.004 250);
+  --ui-surface: oklch(1 0 0);
+  --ui-surface-sunken: oklch(0.93 0.006 250);
+  --ui-on-surface: oklch(0.16 0.03 260);
+  --ui-on-surface-muted: oklch(0.45 0.02 258);
+  --ui-rule: oklch(0.93 0.006 250);
+  --ui-ink: oklch(0.32 0.1 258);
+  --ui-ink-deep: oklch(0.24 0.09 258);
+  --ui-ink-fg: oklch(0.32 0.1 258);
+  --ui-me: color-mix(in oklab, oklch(0.88 0.11 205) 22%, oklch(1 0 0));
+  --ui-card-shadow:
+    0 1px 2px 0 color-mix(in oklab, oklch(0.32 0.1 258) 10%, transparent),
+    0 4px 14px -8px color-mix(in oklab, oklch(0.32 0.1 258) 14%, transparent);
+  color-scheme: light;
+}
+.app-dark {
+  --ui-page: oklch(0.15 0.03 260);
+  --ui-surface: oklch(0.22 0.03 260);
+  --ui-surface-sunken: oklch(0.26 0.03 260);
+  --ui-on-surface: oklch(0.97 0.01 250);
+  --ui-on-surface-muted: oklch(0.76 0.02 258);
+  --ui-rule: color-mix(in oklab, oklch(0.97 0.01 250) 14%, transparent);
+  --ui-ink: oklch(0.3 0.08 260);
+  --ui-ink-deep: oklch(0.22 0.07 260);
+  --ui-ink-fg: oklch(0.86 0.08 232);
+  --ui-me: color-mix(in oklab, oklch(0.86 0.08 232) 14%, oklch(0.22 0.03 260));
+  --ui-card-shadow: 0 0 0 1px color-mix(in oklab, oklch(0.97 0.01 250) 10%, transparent);
+  color-scheme: dark;
+}
+.app-light,
+.app-dark {
+  background: var(--ui-page);
+  color: var(--ui-on-surface);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.app-light[dir="rtl"],
+.app-dark[dir="rtl"] {
+  font-family: "Noto Sans Arabic", "Changa", sans-serif;
+}
+
+/* A ranking card: the white card with 48px+ rows and hairlines, like fantasy.rankings. */
+.app-rank-card {
+  background: var(--ui-surface);
+  border-radius: 14px;
+  box-shadow: var(--ui-card-shadow);
+  overflow: hidden;
+}
+.app-rank-head {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr auto;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--ui-surface-sunken);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: var(--ui-on-surface-muted);
+}
+[dir="rtl"] .app-rank-head {
+  letter-spacing: 0;
+}
+.app-rank-row {
+  display: grid;
+  grid-template-columns: 2.25rem auto 1fr auto;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 3.5rem;
+  padding: 0.375rem 0.75rem;
+  border-block-end: 1px solid var(--ui-rule);
+}
+.app-rank-row:last-child {
+  border-block-end: 0;
+}
+.app-rank-row.is-me {
+  background: var(--ui-me);
+}
+.app-rank-pos {
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--ui-on-surface-muted);
+}
+.app-rank-token {
+  display: grid;
+  place-items: center;
+  height: var(--token-h, 44px);
+  min-width: var(--token-h, 44px);
+}
+.app-rank-name {
+  min-width: 0;
+  font:
+    800 15px/1.25 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+}
+.app-rank-name small {
+  display: block;
+  font:
+    600 12px/1.4 "Manrope",
+    "Noto Sans Arabic",
+    sans-serif;
+  color: var(--ui-on-surface-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-rank-pts {
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A comment / H2H line where the mini identity sits inline with text. */
+.app-comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--ui-surface);
+  border-radius: 14px;
+  box-shadow: var(--ui-card-shadow);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.app-comment .mini {
+  flex: none;
+  display: grid;
+  place-items: center;
+  height: var(--mini-h, 28px);
+  min-width: var(--mini-h, 28px);
+}
+.app-comment b {
+  font-weight: 800;
+}
+.app-h2h {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--ui-surface);
+  border-radius: 14px;
+  box-shadow: var(--ui-card-shadow);
+}
+.app-h2h .side {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.app-h2h .side:last-child {
+  flex-direction: row-reverse;
+  text-align: end;
+}
+.app-h2h .vs {
+  font:
+    800 13px/1 "Changa",
+    sans-serif;
+  color: var(--ui-on-surface-muted);
+}

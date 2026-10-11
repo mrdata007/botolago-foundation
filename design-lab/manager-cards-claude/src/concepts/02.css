@@ -1,0 +1,675 @@
+/* 02 TIR — the shot. Every selector is scoped under .c02.
+   Dark app ground is the default; the light ground overrides below. */
+
+/* ---------- ground tokens ---------- */
+.c02,
+:root .app-light .app-dark .c02 {
+  --c02-ball-hi: #eef2f6;
+  --c02-ball: #e3e8ee;
+  --c02-ball-lo: #c9d1db;
+  --c02-ball-flat: #e3e8ee;
+  --c02-ring: #737b86;
+  --c02-ring-blade: #858d99;
+  --c02-trail-rim: #737b86;
+  --c02-blade-rim: rgba(0, 0, 0, 0);
+  --c02-blade-hi: #ffffff;
+  --c02-blade: #eef1f4;
+  --c02-blade-lo: #dde3ea;
+  --c02-blade-edge: #ffffff;
+  --c02-blade-rim-w: 0;
+  --c02-dimple-pit: #d6dde5;
+  --c02-dimple-sh: #8f9aa7;
+  --c02-example: #6b7480;
+  --c02-cres-rim: #737b86;
+  /* rows */
+  --c02-surface: oklch(0.22 0.03 260);
+  --c02-text: #f0f6fc;
+  --c02-muted: #a9b2be;
+  --c02-me: color-mix(in oklab, #9bdbfd 14%, oklch(0.22 0.03 260));
+  --c02-row-edge: color-mix(in oklab, #f0f6fc 10%, transparent);
+  --c02-yr: #6f9bff;
+}
+.app-light .c02,
+:root[data-ground="day"] .c02,
+:root .app-dark .app-light .c02 {
+  --c02-ball-hi: #ffffff;
+  --c02-ball: #fbfcfd;
+  --c02-ball-lo: #dfe5ec;
+  --c02-ball-flat: #ffffff;
+  --c02-ring: #858d99;
+  --c02-ring-blade: #858d99;
+  --c02-trail-rim: rgba(0, 0, 0, 0);
+  /* LEGEND on the mist ground: a shaded blade held by an ink keyline, so the top tier is never
+     the faintest object on the light theme (keyline #0C3164 on the mist, 11.9:1) */
+  --c02-blade-rim: #0c3164;
+  --c02-blade-rim-w: 1.25;
+  --c02-blade-hi: #e6ebf0;
+  --c02-blade: #dce2e8;
+  --c02-blade-lo: #cbd3dd;
+  --c02-blade-edge: #0c3164;
+  --c02-dimple-pit: #c2cbd6;
+  --c02-dimple-sh: #6b7480;
+  --c02-example: #4e5661;
+  --c02-cres-rim: rgba(0, 0, 0, 0);
+  --c02-surface: #ffffff;
+  --c02-text: #060d1a;
+  --c02-muted: #4e5661;
+  --c02-me: color-mix(in oklab, oklch(0.88 0.11 205) 22%, #ffffff);
+  --c02-row-edge: color-mix(in oklab, #0c3164 9%, transparent);
+  --c02-yr: #0151fc;
+}
+/* the share is always staged on the night pitch, whatever ground it is shown on */
+.c02.c02-share,
+.app-light .c02.c02-share,
+:root[data-ground="day"] .c02.c02-share,
+:root .app-dark .app-light .c02.c02-share {
+  --c02-blade-rim: rgba(0, 0, 0, 0);
+  --c02-blade-rim-w: 0;
+  --c02-blade-hi: #ffffff;
+  --c02-blade: #eef1f4;
+  --c02-blade-lo: #dde3ea;
+  --c02-blade-edge: #ffffff;
+  --c02-dimple-pit: #d6dde5;
+  --c02-dimple-sh: #8f9aa7;
+  --c02-example: #6b7480;
+}
+:root .app-dark .c02 {
+  --c02-ball-hi: #eef2f6;
+  --c02-ball: #e3e8ee;
+  --c02-ball-lo: #c9d1db;
+  --c02-ball-flat: #e3e8ee;
+  --c02-ring: #737b86;
+  --c02-ring-blade: #858d99;
+  --c02-trail-rim: #737b86;
+  --c02-blade-rim: rgba(0, 0, 0, 0);
+  --c02-blade-hi: #ffffff;
+  --c02-blade: #eef1f4;
+  --c02-blade-lo: #dde3ea;
+  --c02-blade-edge: #ffffff;
+  --c02-blade-rim-w: 0;
+  --c02-dimple-pit: #d6dde5;
+  --c02-dimple-sh: #8f9aa7;
+  --c02-example: #6b7480;
+  --c02-cres-rim: #737b86;
+  --c02-surface: oklch(0.22 0.03 260);
+  --c02-text: #f0f6fc;
+  --c02-muted: #a9b2be;
+  --c02-me: color-mix(in oklab, #9bdbfd 14%, oklch(0.22 0.03 260));
+  --c02-row-edge: color-mix(in oklab, #f0f6fc 10%, transparent);
+  --c02-yr: #6f9bff;
+}
+
+/* ---------- the card object: no frame, a 300×420 footprint ---------- */
+.c02.c02-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 300 / 420;
+  -webkit-tap-highlight-color: transparent;
+}
+.c02 .c02-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  direction: ltr;
+}
+
+/* type */
+.c02 .c02-t-num {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+}
+.c02 .c02-t-name {
+  font-family: "Changa", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.c02 .c02-t-arname {
+  font-family: "Changa", "Noto Sans Arabic", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+.c02 .c02-t-lab {
+  font-family: "Manrope", sans-serif;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.c02 .c02-t-print {
+  font-family: "Manrope", sans-serif;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+.c02 .c02-t-ar {
+  font-family: "Noto Sans Arabic", "Changa", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.c02 .c02-track {
+  letter-spacing: 0.08em;
+}
+.c02 .c02-track-s {
+  letter-spacing: 0.06em;
+}
+
+/* gradient stops driven by the ground */
+.c02 .c02-s-ballhi {
+  stop-color: var(--c02-ball-hi);
+}
+.c02 .c02-s-ball {
+  stop-color: var(--c02-ball);
+}
+.c02 .c02-s-balllo {
+  stop-color: var(--c02-ball-lo);
+}
+.c02 .c02-s-blade-hi {
+  stop-color: var(--c02-blade-hi);
+}
+.c02 .c02-s-blade {
+  stop-color: var(--c02-blade);
+}
+.c02 .c02-s-blade-lo {
+  stop-color: var(--c02-blade-lo);
+}
+
+/* ---------- ball ---------- */
+.c02 .c02-ball-flat {
+  fill: var(--c02-ball-flat);
+}
+.c02 .c02-panel {
+  fill: #001c49;
+}
+.c02 .c02-ring {
+  stroke: var(--c02-ring);
+}
+.c02 .c02-ring.is-blade {
+  stroke: var(--c02-ring-blade);
+}
+.c02 .c02-seam {
+  fill: none;
+  stroke: #c9d2dc;
+  stroke-width: 0.7;
+}
+.c02 .c02-print1 {
+  fill: #001c49;
+}
+.c02 .c02-print2 {
+  fill: #4e5661;
+}
+.c02 .c02-print2.c02-t-print {
+  font-weight: 700;
+}
+.c02 .c02-founder-26 {
+  fill: #ffffff;
+}
+.c02 .c02-ball-back {
+  opacity: 0;
+  pointer-events: none;
+}
+.c02 .c02-back-l1 {
+  fill: #ffffff;
+}
+.c02 .c02-back-l2 {
+  fill: #9bdbfd;
+}
+
+/* ---------- trail materials ---------- */
+.c02 .c02-trail-rim {
+  stroke: var(--c02-trail-rim);
+  stroke-width: 1;
+}
+.c02 .c02-trail-rim.is-blade {
+  stroke: var(--c02-blade-rim);
+}
+/* the blade's keyline: 1.25u on the card, 1.25px on the tokens (whose rim does not scale) */
+.c02.c02-card .c02-trail-rim.is-blade {
+  vector-effect: none;
+  stroke-width: var(--c02-blade-rim-w);
+}
+.c02.c02-token .c02-trail-rim.is-blade {
+  stroke-width: calc(var(--c02-blade-rim-w) * 1px);
+}
+.c02 .c02-paint {
+  fill: #0c3164;
+}
+.c02 .c02-concrete {
+  fill: #4a515b;
+}
+.c02 .c02-rubber {
+  fill: #2b2f35;
+}
+.c02 .c02-blade {
+  fill: var(--c02-blade);
+}
+.c02 .c02-blade-edge {
+  stroke: var(--c02-blade-edge);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+.c02 .c02-blade-bevel {
+  stroke: #c9d2dc;
+  stroke-width: 0.5;
+  opacity: 0.8;
+}
+.c02 .c02-chalk-line {
+  fill: none;
+  stroke: #eef0ea;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* swooshes: Logo Blue, ink, and the club colour (CHAMPION) */
+.c02 .c02-cres {
+  stroke: var(--c02-cres-rim);
+  stroke-width: 0;
+}
+.c02 .c02-cres-blue {
+  fill: #0151fc;
+}
+.c02 .c02-cres-ink {
+  fill: #001c49;
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+.c02 .c02-cres-club {
+  stroke-width: 1px;
+  vector-effect: non-scaling-stroke;
+}
+
+/* lanes: equal, faint, running on to the tip */
+.c02 .c02-lane {
+  stroke: #2a4a7e;
+  stroke-width: 0.5;
+  fill: none;
+}
+.c02 .c02-lane-homa {
+  stroke: #eef0ea;
+  stroke-width: 0.9;
+  opacity: 0.85;
+}
+.c02 .c02-lane-champion {
+  stroke: #535a64;
+  stroke-width: 0.6;
+}
+.c02 .c02-lane-legend {
+  stroke: #c9d2dc;
+  stroke-width: 0.6;
+}
+
+/* LEGEND dimples: debossed, one per gameweek */
+.c02 .c02-dimple-pit {
+  fill: var(--c02-dimple-pit);
+}
+.c02 .c02-dimple-sh {
+  fill: none;
+  stroke: var(--c02-dimple-sh);
+  stroke-width: 0.8;
+  stroke-linecap: round;
+}
+.c02 .c02-dimple-hi {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 0.7;
+  stroke-linecap: round;
+}
+.c02 .c02-example {
+  fill: var(--c02-example);
+}
+
+/* ---------- words on the trail ---------- */
+.c02 .c02-name,
+.c02 .c02-ovr,
+.c02 .c02-sval {
+  fill: #ffffff;
+}
+.c02 .c02-tier {
+  fill: #9bdbfd;
+}
+.c02 .c02-slab {
+  fill: #b6c1d1;
+}
+/* HOMA: chalk on concrete */
+.c02.c02--homa .c02-name,
+.c02.c02--homa .c02-ovr,
+.c02.c02--homa .c02-sval,
+.c02 .c02-ovr.is-chalk {
+  fill: #eef0ea;
+}
+.c02.c02--homa .c02-tier {
+  fill: #eef0ea;
+}
+.c02.c02--homa .c02-slab {
+  fill: #c9ced6;
+}
+/* LEGEND: ink on the white blade */
+.c02.c02--legend .c02-name,
+.c02.c02--legend .c02-ovr,
+.c02.c02--legend .c02-sval,
+.c02 .c02-ovr.is-ink {
+  fill: #001c49;
+}
+.c02.c02--legend .c02-tier {
+  fill: #0151fc;
+}
+.c02.c02--legend .c02-slab {
+  fill: #4e5661;
+}
+
+/* ---------- size-aware text (the slot is an inline-size container) ---------- */
+@container (max-width: 259.98px) {
+  .c02 .c02-print2,
+  .c02 .c02-example {
+    display: none;
+  }
+}
+@container (max-width: 219.98px) {
+  .c02 .c02-print1,
+  .c02 .c02-seam {
+    display: none;
+  }
+}
+@container (max-width: 169.98px) {
+  .c02 .c02-stats,
+  .c02 .c02-fig {
+    display: none;
+  }
+}
+
+/* ---------- motion (only when asked; never under reduced motion) ---------- */
+.c02 .c02-ballg,
+.c02 .c02-ball-front,
+.c02 .c02-ball-back,
+.c02 .c02-founder,
+.c02 .c02-dimple {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+/* the founder strike: a die-press frame, once */
+.c02.c02--motion.is-founder .c02-founder {
+  animation: c02-press 120ms cubic-bezier(0.2, 0.7, 0.2, 1) 300ms both;
+}
+/* LEGEND: contact, flight to rest while the blade draws in, then the dimples press in */
+.c02.c02--motion.c02--legend .c02-ballg {
+  animation: c02-contact 480ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.c02.c02--motion.c02--legend .c02-dimple {
+  animation: c02-dimple 160ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(500ms + var(--i) * 20ms);
+}
+/* tap: the ball pulls back and springs forward while the lanes redraw */
+.c02.is-strike .c02-ballg {
+  animation: c02-strike 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.c02.is-strike .c02-lane {
+  stroke-dasharray: 1;
+  animation: c02-lane 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+/* long-press: the ball turns over to its provenance */
+.c02.is-flipped .c02-ball-front {
+  opacity: 0;
+}
+.c02.is-flipped .c02-ball-back {
+  opacity: 1;
+}
+.c02.is-flipped .c02-ballg {
+  animation: c02-flip 650ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+/* CHAMPION: a sheen on the ball follows the tilt */
+.c02.c02--champion .c02-sheen {
+  transform: translateX(calc(var(--c02-tilt, 0) * 46px));
+  transition: transform 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes c02-press {
+  from {
+    transform: scale(0.94);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes c02-contact {
+  0% {
+    transform: translate(-14px, 22px) scale(0.92, 1.06);
+  }
+  14% {
+    transform: translate(-14px, 22px) scale(0.92, 1.06);
+  }
+  100% {
+    transform: translate(0, 0) scale(1, 1);
+  }
+}
+@keyframes c02-dimple {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes c02-strike {
+  0% {
+    transform: translate(0, 0);
+  }
+  35% {
+    transform: translate(3.3px, -5px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+@keyframes c02-lane {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes c02-flip {
+  0% {
+    transform: scaleX(1);
+  }
+  50% {
+    transform: scaleX(0);
+  }
+  100% {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c02 *,
+  .c02.is-strike *,
+  .c02.c02--motion * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- token ---------- */
+.c02.c02-token {
+  display: block;
+  flex: none;
+}
+.c02.c02-token svg {
+  display: block;
+}
+
+/* ---------- row: the "My position" compact card ---------- */
+.c02.c02-row {
+  display: grid;
+  grid-template-columns: 24px auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  max-width: 358px;
+  min-height: 60px;
+  padding-block: 8px;
+  padding-inline: 8px 14px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: var(--c02-surface);
+  box-shadow: 0 0 0 1px var(--c02-row-edge);
+  color: var(--c02-text);
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c02.c02-row.is-me {
+  background: var(--c02-me);
+}
+.c02 .c02-row-rank {
+  font:
+    800 15px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--c02-muted);
+}
+.c02.is-me .c02-row-rank {
+  color: var(--c02-text);
+}
+.c02 .c02-row-token {
+  display: grid;
+  place-items: center;
+}
+.c02 .c02-row-who {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.c02 .c02-row-who b {
+  font:
+    800 17px/1.15 "Changa",
+    sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c02 .c02-row-yr {
+  font:
+    800 13px/1 "Changa",
+    sans-serif;
+  font-style: normal;
+  color: var(--c02-yr);
+}
+.c02 .c02-row-who small {
+  font:
+    800 10.5px/1.3 "Manrope",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--c02-muted);
+}
+.c02.c02-row[dir="rtl"] .c02-row-who b {
+  font:
+    800 17px/1.5 "Changa",
+    "Noto Sans Arabic",
+    sans-serif;
+}
+.c02.c02-row[dir="rtl"] .c02-row-who small {
+  font:
+    700 11.5px/1.6 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+.c02 .c02-row-pts {
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+.c02 .c02-row-pts b {
+  font:
+    800 17px/1 "Manrope",
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+.c02 .c02-row-pts small {
+  font:
+    700 10px/1.2 "Manrope",
+    sans-serif;
+  letter-spacing: 0.08em;
+  color: var(--c02-muted);
+}
+.c02.c02-row[dir="rtl"] .c02-row-pts small {
+  font:
+    700 11px/1.5 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
+
+/* ---------- share ---------- */
+.c02.c02-share {
+  position: relative;
+  width: 360px;
+  height: 640px;
+  overflow: hidden;
+  background: #001c49;
+  color: #ffffff;
+  font-family: "Manrope", "Noto Sans Arabic", sans-serif;
+}
+.c02 .c02-share-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  direction: ltr;
+}
+.c02.c02-share .c02-trail-rim {
+  stroke: #737b86;
+}
+.c02.c02-share .c02-trail-rim.is-blade {
+  stroke: rgba(0, 0, 0, 0);
+}
+.c02.c02-share .c02-cres {
+  stroke: #737b86;
+}
+.c02.c02-share .c02-ring {
+  stroke: #737b86;
+}
+/* the share's footer chip already marks the sample; the blade's own tag would sit on the frame edge */
+.c02.c02-share .c02-example {
+  display: none;
+}
+.c02 .c02-sh-logo {
+  position: absolute;
+  top: 28px;
+  left: 22px;
+  width: 128px;
+}
+.c02 .c02-sh-foot {
+  position: absolute;
+  inset-inline: 22px;
+  bottom: 60px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.c02 .c02-sh-foot b {
+  font:
+    800 16px/1 "Manrope",
+    sans-serif;
+  margin-inline-end: auto;
+}
+.c02 .c02-sh-foot span {
+  font:
+    600 12px/1 "Manrope",
+    sans-serif;
+  color: #a9b2be;
+}
+.c02 .c02-sh-foot em {
+  font:
+    700 10px/1 "Manrope",
+    sans-serif;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  color: #001c49;
+  background: #9bdbfd;
+  padding: 4px 7px;
+  border-radius: 999px;
+}
+.c02.c02-share[dir="rtl"] .c02-sh-foot em {
+  font:
+    700 11px/1.2 "Noto Sans Arabic",
+    sans-serif;
+  letter-spacing: 0;
+}
