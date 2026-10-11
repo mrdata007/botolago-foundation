@@ -492,17 +492,23 @@ describe("SYNTHETIC: compatibility, determinism, no side effects", () => {
 
   test("the reconciler files import no database client, network client or clock source", async () => {
     const { readFileSync } = await import("node:fs");
+    // reviewed-identities.ts re-exports the shared copy in supabase/functions/_shared
+    // (the Edge Function builds the same snapshot); that copy is held to the same
+    // rule below, so a path into `_shared/` is allowed and the file it names is checked.
     for (const file of [
       "provider-reconciler.ts",
       "provider-matching.ts",
       "reviewed-identities.ts",
+      "../../../supabase/functions/_shared/reviewed-identities.ts",
       "provider-replay.ts",
       "provider-identity-bridge.ts",
     ]) {
       const source = readFileSync(new URL(`./${file}`, import.meta.url), "utf8");
       const imports = [...source.matchAll(/^import[\s\S]*?from\s+"([^"]+)"/gm)].map((m) => m[1]);
       expect(
-        imports.filter((i) => /supabase|fetch|server|node:|gateway|repository/i.test(i ?? "")),
+        imports
+          .filter((i) => !/\/supabase\/functions\/_shared\/reviewed-identities\.ts$/.test(i ?? ""))
+          .filter((i) => /supabase|fetch|server|node:|gateway|repository/i.test(i ?? "")),
       ).toEqual([]);
       expect(source).not.toMatch(/Date\.now\(|new Date\(|\bfetch\(|\.from\(["']/);
     }

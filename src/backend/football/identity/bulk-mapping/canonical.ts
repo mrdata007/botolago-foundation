@@ -1,19 +1,11 @@
-/** Deterministic JSON: object keys sorted, no whitespace. The same value always hashes the same. */
-export function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "null";
-  if (Array.isArray(value)) return `[${value.map((item) => canonicalJson(item)).join(",")}]`;
-  const entries = Object.entries(value as Record<string, unknown>)
-    .filter(([, v]) => v !== undefined)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`;
-}
+import { sha256Hex } from "../../../../../supabase/functions/_shared/canonical-json.ts";
 
-const hex = (bytes: ArrayBuffer): string =>
-  [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
-
-export async function sha256Hex(text: string): Promise<string> {
-  return hex(await globalThis.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
-}
+// canonicalJson and sha256Hex live in the Edge-shared folder so the SofaScore
+// Fantasy builder can run in the Edge Function and here from one source.
+export {
+  canonicalJson,
+  sha256Hex,
+} from "../../../../../supabase/functions/_shared/canonical-json.ts";
 
 /**
  * A UUID derived from a seed (the same seed always gives the same UUID). Used for
