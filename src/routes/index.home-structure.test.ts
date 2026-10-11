@@ -138,6 +138,56 @@ describe("Accueil (Home) structural contract", () => {
   });
 
   /**
+   * Owner decision 2026-10-07: `/` is Home for everyone. A first visit
+   * without an account used to get the landing page in Home's place, with no
+   * navigation and the matches thousands of pixels down. The landing page now
+   * lives only at `/jouer`, and Home's Fantasy card does the selling.
+   */
+  describe("`/` is Home for every reader", () => {
+    test("the route renders Home itself, with nothing in front of it", () => {
+      expect(source).toContain("  component: HomePage,\n");
+      // The one component the route names is the Home page, the one that
+      // draws the sections above.
+      const page = source.slice(indexOfOrThrow("\nfunction HomePage() {"));
+      expect(page.indexOf('t("home.live_upcoming")')).toBeGreaterThan(-1);
+      expect(source.match(/\nfunction HomePage\(\)/g)).toHaveLength(1);
+    });
+
+    test("no first-visit swap: no landing page, welcome check or loading screen", () => {
+      for (const gone of [
+        "components/landing/LandingPage",
+        "LandingFallback",
+        "showLanding",
+        "hasWelcomed",
+        "@/lib/welcome",
+        "<Suspense",
+        "lazy(",
+      ]) {
+        expect(source).not.toContain(gone);
+      }
+    });
+
+    test("the newcomer's way into the game is Home's own Fantasy card", () => {
+      // A reader without an account is a device guest: the card offers the
+      // builder (or the player list once entries close), as it always has.
+      expect(source).toMatch(
+        /source === "guest" \? \(\s*<FantasyCreateCard canCreate=\{canCreate\} \/>/,
+      );
+      const card = readFileSync(
+        join(import.meta.dir, "..", "components", "common", "FantasySummaryCard.tsx"),
+        "utf8",
+      );
+      expect(card).toContain('to={canCreate ? "/fantasy/create" : "/fantasy/players"}');
+    });
+
+    test("the landing page keeps its own address", () => {
+      const jouer = readFileSync(join(import.meta.dir, "jouer.tsx"), "utf8");
+      expect(jouer).toContain('createFileRoute("/jouer")');
+      expect(jouer).toContain("return <LandingPage onLeave={markWelcomeDone} />;");
+    });
+  });
+
+  /**
    * BG-0091 — News is hidden at launch. The section and the discovery tile
    * above stay in the source (this is a hide, not a deletion) but both must be
    * behind `NEWS_ENABLED`, and Home must not fetch a News edition while the

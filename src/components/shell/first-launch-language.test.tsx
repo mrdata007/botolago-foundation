@@ -46,7 +46,7 @@ describe("the language chooser's selection semantics", () => {
     expect(group).not.toBe("");
     const ids = attr(group, "aria-labelledby")?.split(" ") ?? [];
     expect(ids).toHaveLength(2);
-    const named = ids.map((id) => new RegExp(`id="${id}">([^<]*)<`).exec(html)?.[1]);
+    const named = ids.map((id) => new RegExp(`id="${id}"[^>]*>([^<]*)<`).exec(html)?.[1]);
     expect(named).toEqual([fr["language.choose_title"], CHOOSER_ARABIC["language.choose_title"]]);
   });
 
@@ -74,6 +74,48 @@ describe("the language chooser's selection semantics", () => {
     for (const tag of radios(draw())) {
       expect(attr(tag, "class")).toContain("focus-visible:ring-2");
     }
+  });
+});
+
+/**
+ * Critique 2026-10-06 (P1-4): "Choisissez votre langue" was the 34px display
+ * title and "اختر لغتك" a 14px muted line under it, the dialog's description.
+ * Neither language is secondary (PRODUCT.md), so both are now the title, on
+ * one display step, each in its own language.
+ */
+describe("the language chooser's bilingual title", () => {
+  const heading = (html: string) => /<h2[^>]*>([\s\S]*?)<\/h2>/.exec(html)?.[1] ?? "";
+  const lines = (html: string) => heading(html).match(/<span[^>]*>[^<]*<\/span>/g) ?? [];
+
+  it("holds both languages, French then Arabic, each marked as its own", () => {
+    const [french, arabic, ...rest] = lines(draw());
+    expect(rest).toEqual([]);
+    expect(french).toContain(`>${fr["language.choose_title"]}<`);
+    expect(attr(french, "lang")).toBe("fr");
+    expect(attr(french, "dir")).toBe("ltr");
+    expect(arabic).toContain(`>${CHOOSER_ARABIC["language.choose_title"]}<`);
+    expect(attr(arabic, "lang")).toBe("ar");
+    expect(attr(arabic, "dir")).toBe("rtl");
+  });
+
+  it("sets both lines on the same display step, with no letter-spacing", () => {
+    const [french, arabic] = lines(draw());
+    const step = attr(french, "class");
+    expect(attr(arabic, "class")).toBe(step);
+    // The display face and its leading, which `[lang="ar"]` turns into
+    // Changa's Arabic at 1.95 for the Arabic line.
+    expect(step).toContain("[font-family:var(--ui-font-display)]");
+    expect(step).toContain("text-[length:var(--ui-display-section)]");
+    expect(step).toContain("leading-[var(--ui-leading-display)]");
+    expect(step).not.toMatch(/tracking-/);
+    expect(heading(draw())).not.toMatch(/tracking-/);
+  });
+
+  it("is not split into a title and a muted description any more", () => {
+    const html = draw();
+    // The one paragraph left is the sr-only status line.
+    expect(html.match(/<p[\s>][^>]*>/g)).toEqual(['<p role="status" class="sr-only">']);
+    expect(html).not.toContain(CHOOSER_ARABIC["language.choose_title"] + "</span></p>");
   });
 });
 

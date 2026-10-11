@@ -79,7 +79,7 @@ export type AnalyticsEvent =
   | "fantasy_recap_public_view"
   /** "Créer mon équipe" (or the research action) tapped on a public recap page. */
   | "fantasy_recap_public_cta"
-  /** The landing page was shown (at `/jouer`, or at `/` to a first-time visitor). */
+  /** The landing page was shown (at `/jouer`; until 2026-10-07 also at `/` to a first-time visitor). */
   | "landing_view"
   /** "Créer mon équipe" tapped on the landing page, one event per placement. */
   | "landing_cta_header"

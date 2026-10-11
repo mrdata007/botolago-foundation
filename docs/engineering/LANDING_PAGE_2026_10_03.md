@@ -6,13 +6,13 @@ What a new visitor sees, why, and how to tell whether it works.
 
 - **`/jouer`**: the landing page as its own address, the link to share in a
   post, a bio or a message. Shown to everyone; its button adapts to the reader.
-- **`/`**: a first visit **without an account** (`status === "anonymous"`,
-  never welcomed on this device) gets the same page in Home's place, after the
-  splash. It replaces the old welcome dialog (three buttons, two of which did
-  the same thing). The server still renders Home, so crawlers and every
-  returning reader get Home's content. Signed-in readers, device guests and
-  anyone already welcomed always get Home. Leaving the landing page by any
-  link counts as the welcome.
+- **`/`** is Home for everyone (owner decision 2026-10-07). From 2026-10-03 to
+  2026-10-07 a first visit without an account got the landing page in Home's
+  place, with no navigation; Home's own Fantasy card now does the selling to a
+  newcomer (`docs/engineering/tasks/first-visit-home/screen-brief.md`). Since
+  then `landing_view` counts `/jouer` only, so it does not compare with the
+  days before. Leaving the landing page by any link still writes the welcome
+  flag, which nothing reads any more.
 
 ## The story
 
@@ -105,13 +105,9 @@ Everything above is a hypothesis until there is post-release data.
 
 ## Loading
 
-The landing page is its own chunk on `/` (`lazy`), so signed-in and returning
-readers do not download it. A first visit without an account starts the
-download as soon as the session resolves, while the splash plays; until it
-arrives the screen is the hero's dark ground (Home as the fallback measured
-CLS 0.10 — it kept loading and moving underneath). A chunk that fails to load
-falls back to Home. `/jouer` imports the page directly; the route is already
-its own chunk.
+`/jouer` imports the page directly; the route is already its own chunk. Until
+2026-10-07 `/` also loaded it as a chunk of its own for a first visit, with
+the hero's dark ground as the fallback; `/` no longer loads it at all.
 
 ## Not verified
 
