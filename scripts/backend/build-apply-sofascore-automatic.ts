@@ -76,20 +76,156 @@ export const PINS = {
   // api.service_record_sofascore_fantasy_observation(): printed by the CI step
   // "SofaScore Fantasy observation md5" in database-quality. FILL THIS.
   sofascoreFantasyObservation: "FILL_FROM_CI_SOFASCORE_FANTASY_OBSERVATION_MD5",
+
+  // 20261011130000, the two functions it REPLACES. "Before" is what production
+  // holds now (measured by the CI step "SofaScore automatic pre-state md5" on a
+  // database reset to version 20261011120000); "after" is the reviewed new
+  // definition (CI step "SofaScore automatic post-state md5", full reset).
+  supportingStateBefore: "FILL_FROM_CI_SUPPORTING_STATE_BEFORE_MD5",
+  supportingStateAfter: "FILL_FROM_CI_SUPPORTING_STATE_AFTER_MD5",
+  supportingDependencyBefore: "FILL_FROM_CI_SUPPORTING_DEPENDENCY_BEFORE_MD5",
+  supportingDependencyAfter: "FILL_FROM_CI_SUPPORTING_DEPENDENCY_AFTER_MD5",
+  // 20261011130000, the four functions it CREATES (post-state step only).
+  matchEnqueue: "FILL_FROM_CI_MATCH_ENQUEUE_MD5",
+  autoMapPlayers: "FILL_FROM_CI_AUTO_MAP_PLAYERS_MD5",
+  adminMatchQueue: "FILL_FROM_CI_ADMIN_MATCH_QUEUE_MD5",
+  adminResolveMatch: "FILL_FROM_CI_ADMIN_RESOLVE_MATCH_MD5",
+
+  // 20261011140000, the three functions it CREATES (post-state step only).
+  fantasyContext: "FILL_FROM_CI_FANTASY_CONTEXT_MD5",
+  fantasyNote: "FILL_FROM_CI_FANTASY_NOTE_MD5",
+  fantasyDue: "FILL_FROM_CI_FANTASY_DUE_MD5",
+
+  // 20261011150000: the ops health body it PATCHES (pre-state step: before;
+  // post-state step: after) and the helper it CREATES.
+  opsHealthBefore: "FILL_FROM_CI_OPS_HEALTH_BEFORE_MD5",
+  opsHealthAfter: "FILL_FROM_CI_OPS_HEALTH_AFTER_MD5",
+  fantasyFixtureHealthReady: "FILL_FROM_CI_FANTASY_FIXTURE_HEALTH_READY_MD5",
 } as const;
 
-/** The migrations still to be written by other lanes. Remove an entry when it moves to STEPS. */
-export const RESERVED_SLOTS: ReservedSlot[] = [
-  // TODO(orchestrator): Lane B, branch claude/sofascore-auto-players.
-  { version: "20261011130000", name: "sofascore_player_auto_map", owner: "Lane B" },
-  // TODO(orchestrator): Lane A, only if it adds a migration.
-  { version: "20261011140000", name: "(Lane A migration, name to be set)", owner: "Lane A" },
-];
+/** Migrations other lanes still have to add. Remove an entry when it moves to STEPS. Empty: every slot is filled. */
+export const RESERVED_SLOTS: ReservedSlot[] = [];
 
 const recordedGuard = (versions: string[]) =>
   `(select count(*) from supabase_migrations.schema_migrations where version in (${versions
     .map((v) => `'${v}'`)
     .join(", ")}))`;
+
+// ---------------------------------------------------------------------------
+// Building blocks for the `pending` and `verify` text of the steps below.
+// ---------------------------------------------------------------------------
+type Callable = "service" | "admin" | "nobody" | "not_api";
+
+interface FnCheck {
+  /** Signature as to_regprocedure() reads it. */
+  sig: string;
+  /** Who may execute it: service_role only, authenticated only, no API role at all, or just not the three public-facing ones. */
+  callable: Callable;
+  /** Key in PINS for the reviewed definition. */
+  pin?: keyof typeof PINS;
+}
+
+const GRANT_TESTS: Record<Callable, string> = {
+  service: `has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or not has_function_privilege('service_role', fn, 'execute')`,
+  admin: `has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('service_role', fn, 'execute')
+          or not has_function_privilege('authenticated', fn, 'execute')`,
+  nobody: `has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')
+          or has_function_privilege('service_role', fn, 'execute')`,
+  not_api: `has_function_privilege('public', fn, 'execute')
+          or has_function_privilege('anon', fn, 'execute')
+          or has_function_privilege('authenticated', fn, 'execute')`,
+};
+
+/** plpgsql for the postflight: each function exists, is security definer with an empty search_path, has the right grants and the reviewed md5. */
+const verifyFunctions = (version: string, fns: FnCheck[]) => `
+    declare
+      fn regprocedure;
+    begin${fns
+      .map(
+        (f) => `
+      fn := to_regprocedure('${f.sig}');
+      if fn is null then
+        problems := problems || '${version}: ${f.sig} is missing'::text;
+      else
+        if not exists (select 1 from pg_proc p
+            where p.oid = fn and p.prosecdef and coalesce(p.proconfig, '{}') && array['search_path=""']) then
+          problems := problems || ('${version}: not security definer with an empty search_path: ' || fn::text);
+        end if;
+        if ${GRANT_TESTS[f.callable]} then
+          problems := problems || ('${version}: callable by the wrong roles: ' || fn::text);
+        end if;${
+          f.pin
+            ? `
+        if md5(pg_get_functiondef(fn)) <> '${PINS[f.pin]}' then
+          problems := problems || ('${version}: not the reviewed definition (md5): ' || fn::text);
+        end if;`
+            : ""
+        }
+      end if;`,
+      )
+      .join("\n")}
+    end;`;
+
+/** plpgsql for the postflight: each private table forces row level security and no API role can touch it. */
+const verifyPrivateTables = (version: string, tables: string[]) => `
+    declare
+      t text;
+    begin
+      foreach t in array array[${tables.map((t) => `'${t}'`).join(", ")}] loop
+        if to_regclass(t) is null then
+          problems := problems || ('${version}: table is missing: ' || t);
+        elsif not (select relrowsecurity and relforcerowsecurity from pg_class where oid = t::regclass)
+          or has_table_privilege('anon', t, 'select, insert, update, delete')
+          or has_table_privilege('authenticated', t, 'select, insert, update, delete')
+          or has_table_privilege('service_role', t, 'select, insert, update, delete') then
+          problems := problems || ('${version}: table is readable by an API role or lacks forced RLS: ' || t);
+        end if;
+      end loop;
+    end;`;
+
+/** plpgsql (preflight, pending only): none of these objects may exist yet. */
+const mustNotExist = (version: string, objects: { functions?: string[]; tables?: string[] }) => {
+  const tests = [
+    ...(objects.tables ?? []).map((t) => `to_regclass('${t}') is not null`),
+    ...(objects.functions ?? []).map((f) => `to_regprocedure('${f}') is not null`),
+  ];
+  return `
+    if ${tests.join("\n      or ")} then
+      raise exception 'stop: ${version} is not recorded but an object it creates already exists -- production is not the state it was written for';
+    end if;`;
+};
+
+/** plpgsql (preflight, pending only): all of these must exist. */
+const mustExist = (version: string, objects: { functions?: string[]; tables?: string[] }) => {
+  const tests = [
+    ...(objects.tables ?? []).map((t) => `to_regclass('${t}') is null`),
+    ...(objects.functions ?? []).map((f) => `to_regprocedure('${f}') is null`),
+  ];
+  return `
+    if ${tests.join("\n      or ")} then
+      raise exception 'stop: an object migration ${version} depends on is missing -- production is not the state it was written for';
+    end if;`;
+};
+
+/** plpgsql (preflight, pending only): the function being replaced is the reviewed one. */
+const mustMatchMd5 = (version: string, sig: string, pin: string) => `
+    if md5(pg_get_functiondef('${sig}'::regprocedure)) is distinct from '${pin}' then
+      raise exception 'stop: ${sig} is not the reviewed version ${version} replaces (md5)';
+    end if;`;
+
+/** The 20261011120000 function is installed, or is applied earlier in this same run. */
+const needsFantasyObservationFunction = (version: string) => `
+    if to_regprocedure('api.service_record_sofascore_fantasy_observation(uuid,jsonb,boolean)') is null
+      and not exists (select 1 from pg_temp.sofascore_plan where version = '20261011120000' and not was_recorded) then
+      raise exception 'stop: migration 20261011120000 is neither recorded nor part of this run, but ${version} builds on api.service_record_sofascore_fantasy_observation';
+    end if;`;
 
 export const STEPS: Step[] = [
   {
@@ -251,8 +387,191 @@ export const STEPS: Step[] = [
     end;`,
     pins: { sofascoreFantasyObservation: PINS.sofascoreFantasyObservation },
   },
-  // SLOT 4 -- 20261011130000_sofascore_player_auto_map (Lane B): see RESERVED_SLOTS.
-  // SLOT 5 -- 20261011140000 (Lane A, if any): see RESERVED_SLOTS.
+  {
+    version: "20261011130000",
+    name: "sofascore_player_auto_map",
+    summary:
+      "automatic SofaScore player matching: two private tables (match log, review queue), the service function that maps the safe cases and queues the rest, the two staff functions for the review list, and the second proof of 'reviewed' (replaces app_private.football_mapping_supporting_state and football_mapping_supporting_dependency); changes no existing row",
+    pending: `${mustNotExist("20261011130000", {
+      tables: [
+        "app_private.sofascore_player_match_log",
+        "app_private.sofascore_player_match_queue",
+      ],
+      functions: [
+        "app_private.sofascore_player_match_enqueue(text,uuid,uuid,text,text,text,integer,text,text,uuid[])",
+        "api.service_sofascore_auto_map_players(uuid,jsonb)",
+        "api.admin_sofascore_player_match_queue()",
+        "api.admin_resolve_sofascore_player_match(text,uuid)",
+      ],
+    })}${mustExist("20261011130000", {
+      tables: [
+        "app_private.football_provider_mappings",
+        "app_private.football_player_mapping_proposals",
+        "app_private.staff_principals",
+        "app.fixtures",
+        "app.players",
+        "app.teams",
+        "app.team_memberships",
+        "auth.users",
+      ],
+      functions: [
+        "app_private.football_mapping_supporting_state(uuid)",
+        "app_private.football_mapping_supporting_dependency(text,uuid,uuid)",
+        "app_private.person_name_key(text)",
+        "app_private.is_service_request()",
+        "app_private.admin_assert_principal(boolean,boolean)",
+        "app_private.admin_assert_permission(text,boolean)",
+        "app_private.admin_payload_fingerprint(jsonb)",
+        "app_private.football_mapping_refuse(text)",
+        "app_private.football_mapping_require_reader(uuid)",
+      ],
+    })}${needsFantasyObservationFunction("20261011130000")}
+    -- It replaces exactly the definitions migration 20261003120000 left.${mustMatchMd5(
+      "20261011130000",
+      "app_private.football_mapping_supporting_state(uuid)",
+      PINS.supportingStateBefore,
+    )}${mustMatchMd5(
+      "20261011130000",
+      "app_private.football_mapping_supporting_dependency(text,uuid,uuid)",
+      PINS.supportingDependencyBefore,
+    )}`,
+    verify: `${verifyPrivateTables("20261011130000", [
+      "app_private.sofascore_player_match_log",
+      "app_private.sofascore_player_match_queue",
+    ])}
+${verifyFunctions("20261011130000", [
+  {
+    sig: "app_private.football_mapping_supporting_state(uuid)",
+    callable: "nobody",
+    pin: "supportingStateAfter",
+  },
+  {
+    sig: "app_private.football_mapping_supporting_dependency(text,uuid,uuid)",
+    callable: "nobody",
+    pin: "supportingDependencyAfter",
+  },
+  {
+    sig: "app_private.sofascore_player_match_enqueue(text,uuid,uuid,text,text,text,integer,text,text,uuid[])",
+    callable: "nobody",
+    pin: "matchEnqueue",
+  },
+  {
+    sig: "api.service_sofascore_auto_map_players(uuid,jsonb)",
+    callable: "service",
+    pin: "autoMapPlayers",
+  },
+  { sig: "api.admin_sofascore_player_match_queue()", callable: "admin", pin: "adminMatchQueue" },
+  {
+    sig: "api.admin_resolve_sofascore_player_match(text,uuid)",
+    callable: "admin",
+    pin: "adminResolveMatch",
+  },
+])}`,
+    pins: {
+      supportingStateBefore: PINS.supportingStateBefore,
+      supportingStateAfter: PINS.supportingStateAfter,
+      supportingDependencyBefore: PINS.supportingDependencyBefore,
+      supportingDependencyAfter: PINS.supportingDependencyAfter,
+      matchEnqueue: PINS.matchEnqueue,
+      autoMapPlayers: PINS.autoMapPlayers,
+      adminMatchQueue: PINS.adminMatchQueue,
+      adminResolveMatch: PINS.adminResolveMatch,
+    },
+  },
+  {
+    version: "20261011140000",
+    name: "sofascore_fantasy_auto_state",
+    summary:
+      "the memory of the automatic SofaScore Fantasy path: one private table (attempts, retry time, trimmed SofaScore replies) and three service-only functions (context, note, due); scores nothing and changes no existing object",
+    pending: `${mustNotExist("20261011140000", {
+      tables: ["app_private.sofascore_fantasy_attempts"],
+      functions: [
+        "api.service_sofascore_fantasy_context(uuid,text[])",
+        "api.service_sofascore_fantasy_note(uuid,text,text,text,jsonb,jsonb,text,timestamptz)",
+        "api.service_sofascore_fantasy_due(integer,integer,integer,integer,integer)",
+      ],
+    })}${mustExist("20261011140000", {
+      tables: [
+        "app_private.fantasy_fixture_observations",
+        "app_private.football_provider_mappings",
+        "app.fixtures",
+        "app.fantasy_fixture_assignments",
+        "app.fantasy_gameweeks",
+      ],
+      functions: ["app_private.is_service_request()", "app_private.fantasy_adaptive_enabled(uuid)"],
+    })}${needsFantasyObservationFunction("20261011140000")}`,
+    verify: `${verifyPrivateTables("20261011140000", ["app_private.sofascore_fantasy_attempts"])}
+${verifyFunctions("20261011140000", [
+  {
+    sig: "api.service_sofascore_fantasy_context(uuid,text[])",
+    callable: "service",
+    pin: "fantasyContext",
+  },
+  {
+    sig: "api.service_sofascore_fantasy_note(uuid,text,text,text,jsonb,jsonb,text,timestamptz)",
+    callable: "service",
+    pin: "fantasyNote",
+  },
+  {
+    sig: "api.service_sofascore_fantasy_due(integer,integer,integer,integer,integer)",
+    callable: "service",
+    pin: "fantasyDue",
+  },
+])}`,
+    pins: {
+      fantasyContext: PINS.fantasyContext,
+      fantasyNote: PINS.fantasyNote,
+      fantasyDue: PINS.fantasyDue,
+    },
+  },
+  {
+    version: "20261011150000",
+    name: "ops_health_adaptive_coverage",
+    summary:
+      "ops health counts SofaScore (adaptive) Fantasy coverage: adds app_private.fantasy_fixture_health_ready and patches the deployed health body app_private.ops_health_checks_before_adaptive in place (same checks, same output shape); changes no row",
+    pending: `${mustNotExist("20261011150000", {
+      functions: ["app_private.fantasy_fixture_health_ready(uuid,uuid,boolean)"],
+    })}${mustExist("20261011150000", {
+      tables: [
+        "app_private.fantasy_fixture_scoring_modes",
+        "app_private.fantasy_fixture_observations",
+      ],
+      functions: [
+        "app_private.ops_health_checks_before_adaptive()",
+        "app_private.fantasy_fixture_ready(uuid,uuid,boolean)",
+        "app_private.fantasy_adaptive_enabled(uuid)",
+      ],
+    })}
+    -- It patches the text of exactly the health body the adaptive scoring release left.${mustMatchMd5(
+      "20261011150000",
+      "app_private.ops_health_checks_before_adaptive()",
+      PINS.opsHealthBefore,
+    )}`,
+    verify: `${verifyFunctions("20261011150000", [
+      {
+        sig: "app_private.fantasy_fixture_health_ready(uuid,uuid,boolean)",
+        callable: "nobody",
+        pin: "fantasyFixtureHealthReady",
+      },
+      {
+        sig: "app_private.ops_health_checks_before_adaptive()",
+        callable: "not_api",
+        pin: "opsHealthAfter",
+      },
+    ])}
+    declare
+      body text := pg_get_functiondef(to_regprocedure('app_private.ops_health_checks_before_adaptive()'));
+    begin
+      if body is null or position('app_private.fantasy_fixture_health_ready(g.id,f.id,' in body) = 0 then
+        problems := problems || '20261011150000: the health body does not call fantasy_fixture_health_ready'::text;
+      end if;
+    end;`,
+    pins: {
+      opsHealthBefore: PINS.opsHealthBefore,
+      opsHealthAfter: PINS.opsHealthAfter,
+      fantasyFixtureHealthReady: PINS.fantasyFixtureHealthReady,
+    },
+  },
 ];
 
 const sha256 = (text: string) => createHash("sha256").update(text, "utf8").digest("hex");
@@ -320,10 +639,12 @@ ${steps.map((s) => `--   ${s.version}_${s.name}\n--     ${s.summary}`).join("\n"
 --     its sha256 matches the repository file;
 --   * checks the result for every migration, applied now or before: the
 --     functions are security definer with an empty search_path, only the
---     service role may call them, the new table forces row level security and
+--     intended role may call each one (service role, or signed-in staff for the
+--     two review-list functions), every new table forces row level security and
 --     is readable by no API role, and each definition is the reviewed one (md5).
 --   It writes no fixture, Fantasy, news or user row and pauses nothing: it only
---   creates or replaces functions, one table and one check. The pg_cron jobs
+--   creates or replaces functions, creates three empty private tables and one
+--   check. The pg_cron jobs
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 ${

@@ -1,6 +1,6 @@
 # SofaScore-only Fantasy scoring
 
-Status: code only, nothing applied or run. The manual runner described below is
+Status: code only, nothing applied or run on production. The manual runner described below is
 now the backfill and override tool; the normal path is automatic (see
 "Automatic path"). Owner decisions of 2026-10-11:
 
@@ -143,8 +143,9 @@ from SofaScore for a match whose details were fetched. Code:
    already exists, the stored attempt, and the reviewed SofaScore mappings of the
    players in the lineup.
 3. If an appearing player has no reviewed mapping, it offers the unmapped
-   players to `api.service_sofascore_auto_map_players(fixture, players)` (written
-   separately) and reads the mappings again. If that function is not installed
+   players to `api.service_sofascore_auto_map_players(fixture, players)`
+   (migration `20261011130000`, `SOFASCORE_PLAYER_MATCHING.md`) and reads the
+   mappings again. If that function is not installed
    (error `PGRST202` / `42883`) it carries on without it. The short name is sent
    as null: the parsed lineup does not keep it.
 4. It runs the same builder as the manual runner. Ready: the observation is
@@ -234,14 +235,17 @@ on in production:
   `football_live_refresh_enabled` in `app_private.notification_email_settings`
   (the live tick that runs this code).
 - Edge secret `RAPIDAPI_KEY`; migrations `20261011120000` and `20261011140000`
-  applied; the Edge Function `football-live-refresh` deployed.
+  applied (without the second, the automatic path stands down with
+  `skipped:state_function_missing` and records nothing; `20261011130000`, the
+  automatic player matching, is optional: without it unmapped players hold their
+  match back until they are reviewed by hand); the Edge Function
+  `football-live-refresh` deployed.
 
-Known gap, not changed here: the orchestrator workflow still requires
-`SPORTSMONKS_API_TOKEN` and runs a SportsMonks fixtures refresh and
-SportsMonks performance ingestion before the worker. With SportsMonks unpaid
-those steps fail or write from a provider that is no longer the source. That
-workflow needs a SofaScore-only variant (an owner decision) before points are
-fully hands-off.
+The orchestrator workflow no longer needs SportsMonks while the data source is
+`sofascore`: it skips the SportsMonks refresh and performance ingestion and does
+not need `SPORTSMONKS_API_TOKEN` (`SOFASCORE_ORCHESTRATOR.md`). The owner's
+step-by-step for all these switches is
+`docs/production/SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md`.
 
 ## What the owner must run, in order (manual backfill and override)
 

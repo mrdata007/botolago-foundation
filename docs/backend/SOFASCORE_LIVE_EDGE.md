@@ -183,7 +183,14 @@ and logs; `sportsmonks` does nothing.
   `SOFASCORE_FANTASY_CATCHUP_PER_TICK`, `SOFASCORE_FANTASY_CATCHUP_HOURS`,
   `SOFASCORE_FANTASY_MAX_ATTEMPTS` and `SOFASCORE_FANTASY_FETCH_ATTEMPTS`.
 - Needs migrations `20261011120000` and `20261011140000`; without the second the
-  step logs `skipped:state_function_missing` once and does nothing else.
+  step logs `skipped:state_function_missing` once and does nothing else, so no
+  match is recorded. `20261011130000` (automatic player matching) is optional:
+  the function is feature-detected (`PGRST202` / `42883`) and, when missing,
+  unmapped players simply hold their match back. `20261011110000` is required by
+  the deploy workflow's gate.
+- Adaptive scoring must be active for the gameweek
+  (`app_private.fantasy_adaptive_policy`), or the match is held as
+  `held:adaptive_policy_not_enabled` and retried after the owner activates it.
 - Before building, unmapped appearing players are offered to
   `api.service_sofascore_auto_map_players` when that function exists.
 - Deploy order: migrations, then the Edge Function. Pause the football and
