@@ -86,9 +86,6 @@
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 
---
--- NOT FINAL: md5 pins to fill from the green database-quality run: fantasyLeaguesBefore, fantasyLeaguesAfter, fantasyLeagueStandingsBefore, fantasyLeagueStandingsAfter, fantasyOverallStandingsBefore, fantasyOverallStandingsAfter, predictionsLeaderboardBefore, predictionsLeaderboardAfter, fantasyHiddenAhead, predictionHiddenAhead, adminListPublicRankingExclusions, adminSetPublicRankingExclusion.
---   Until they are, this script REFUSES TO RUN (first check below).
 -- ============================================================================
 
 begin;
@@ -116,18 +113,6 @@ $hold$;
 
 do $preflight$
 begin
-  raise exception 'stop: this script is not final -- the md5 pin fantasyLeaguesBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyLeaguesAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyLeagueStandingsBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyLeagueStandingsAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyOverallStandingsBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyOverallStandingsAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin predictionsLeaderboardBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin predictionsLeaderboardAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyHiddenAhead has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin predictionHiddenAhead has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin adminListPublicRankingExclusions has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin adminSetPublicRankingExclusion has not been filled from CI yet; nothing was saved';
   -- Any run not finished blocks: a recent one, and an older one whose
   -- backend is still alive (a record left behind by a crash does not).
   if exists (select 1 from cron.job_run_details run
@@ -414,16 +399,16 @@ begin
       raise exception 'stop: an object migration 20261011160000 depends on is missing (the platform_admin role) -- production is not the state it was written for';
     end if;
     -- It replaces exactly the definitions migration 20260926003100 left.
-    if md5(pg_get_functiondef('api.fantasy_leagues(uuid,text,integer)'::regprocedure)) is distinct from 'FILL_FROM_CI_FANTASY_LEAGUES_BEFORE_MD5' then
+    if md5(pg_get_functiondef('api.fantasy_leagues(uuid,text,integer)'::regprocedure)) is distinct from '12d826d06ba73e5898e250bc796e0493' then
       raise exception 'stop: api.fantasy_leagues(uuid,text,integer) is not the reviewed version 20261011160000 replaces (md5)';
     end if;
-    if md5(pg_get_functiondef('api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure)) is distinct from 'FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_BEFORE_MD5' then
+    if md5(pg_get_functiondef('api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure)) is distinct from 'f33836a514f0d7da8df27dea9e229d12' then
       raise exception 'stop: api.fantasy_league_standings(uuid,uuid,bigint,uuid,integer) is not the reviewed version 20261011160000 replaces (md5)';
     end if;
-    if md5(pg_get_functiondef('api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure)) is distinct from 'FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_BEFORE_MD5' then
+    if md5(pg_get_functiondef('api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer)'::regprocedure)) is distinct from '01fb6ba414c0dad7423efb7afddbd5d8' then
       raise exception 'stop: api.fantasy_overall_standings(uuid,uuid,bigint,uuid,integer) is not the reviewed version 20261011160000 replaces (md5)';
     end if;
-    if md5(pg_get_functiondef('api.predictions_leaderboard(text,integer,integer,uuid,integer)'::regprocedure)) is distinct from 'FILL_FROM_CI_PREDICTIONS_LEADERBOARD_BEFORE_MD5' then
+    if md5(pg_get_functiondef('api.predictions_leaderboard(text,integer,integer,uuid,integer)'::regprocedure)) is distinct from '1a4464772e2f59bcb6bc5a1ce0e2e050' then
       raise exception 'stop: api.predictions_leaderboard(text,integer,integer,uuid,integer) is not the reviewed version 20261011160000 replaces (md5)';
     end if;
     -- create or replace keeps the grants; remember them to prove it afterwards.
@@ -4830,7 +4815,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_HIDDEN_AHEAD_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'dfb123e012a6cfd7992b9369b1e64818' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -4849,7 +4834,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_PREDICTION_HIDDEN_AHEAD_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '2e1668c23137d265644cc53b4d322711' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -4868,7 +4853,7 @@ begin
           or not has_function_privilege('authenticated', fn, 'execute') then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_ADMIN_LIST_PUBLIC_RANKING_EXCLUSIONS_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '10dec8bc0c3b8f66a2204f395c95560a' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -4887,7 +4872,7 @@ begin
           or not has_function_privilege('authenticated', fn, 'execute') then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_ADMIN_SET_PUBLIC_RANKING_EXCLUSION_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'fd4afe83796dd805f117d1451e14135a' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -4903,7 +4888,7 @@ begin
         if false then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_LEAGUES_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'b3f3521f5809ef5497b092f832b21e1d' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -4919,7 +4904,7 @@ begin
         if false then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '8860dae4f36f67246657544460a6633b' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -4935,7 +4920,7 @@ begin
         if false then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '5fc2633944b91c2f5805a0787562e0fb' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -4951,7 +4936,7 @@ begin
         if false then
           problems := problems || ('20261011160000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_PREDICTIONS_LEADERBOARD_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '9a3cd3da88070c06da1856070e0f745b' then
           problems := problems || ('20261011160000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;

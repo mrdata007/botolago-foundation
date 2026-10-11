@@ -165,18 +165,18 @@ export const PINS = {
   // hold the 20260926003100 definitions; if it holds anything else the script
   // stops before changing anything. FILL THESE from the green database-quality
   // run: each CI line has a `pin` column naming the placeholder it fills.
-  fantasyLeaguesBefore: "FILL_FROM_CI_FANTASY_LEAGUES_BEFORE_MD5",
-  fantasyLeaguesAfter: "FILL_FROM_CI_FANTASY_LEAGUES_AFTER_MD5",
-  fantasyLeagueStandingsBefore: "FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_BEFORE_MD5",
-  fantasyLeagueStandingsAfter: "FILL_FROM_CI_FANTASY_LEAGUE_STANDINGS_AFTER_MD5",
-  fantasyOverallStandingsBefore: "FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_BEFORE_MD5",
-  fantasyOverallStandingsAfter: "FILL_FROM_CI_FANTASY_OVERALL_STANDINGS_AFTER_MD5",
-  predictionsLeaderboardBefore: "FILL_FROM_CI_PREDICTIONS_LEADERBOARD_BEFORE_MD5",
-  predictionsLeaderboardAfter: "FILL_FROM_CI_PREDICTIONS_LEADERBOARD_AFTER_MD5",
-  fantasyHiddenAhead: "FILL_FROM_CI_FANTASY_HIDDEN_AHEAD_MD5",
-  predictionHiddenAhead: "FILL_FROM_CI_PREDICTION_HIDDEN_AHEAD_MD5",
-  adminListPublicRankingExclusions: "FILL_FROM_CI_ADMIN_LIST_PUBLIC_RANKING_EXCLUSIONS_MD5",
-  adminSetPublicRankingExclusion: "FILL_FROM_CI_ADMIN_SET_PUBLIC_RANKING_EXCLUSION_MD5",
+  fantasyLeaguesBefore: "12d826d06ba73e5898e250bc796e0493",
+  fantasyLeaguesAfter: "b3f3521f5809ef5497b092f832b21e1d",
+  fantasyLeagueStandingsBefore: "f33836a514f0d7da8df27dea9e229d12",
+  fantasyLeagueStandingsAfter: "8860dae4f36f67246657544460a6633b",
+  fantasyOverallStandingsBefore: "01fb6ba414c0dad7423efb7afddbd5d8",
+  fantasyOverallStandingsAfter: "5fc2633944b91c2f5805a0787562e0fb",
+  predictionsLeaderboardBefore: "1a4464772e2f59bcb6bc5a1ce0e2e050",
+  predictionsLeaderboardAfter: "9a3cd3da88070c06da1856070e0f745b",
+  fantasyHiddenAhead: "dfb123e012a6cfd7992b9369b1e64818",
+  predictionHiddenAhead: "2e1668c23137d265644cc53b4d322711",
+  adminListPublicRankingExclusions: "10dec8bc0c3b8f66a2204f395c95560a",
+  adminSetPublicRankingExclusion: "fd4afe83796dd805f117d1451e14135a",
 } as const;
 
 /** Migrations other lanes still have to add. Remove an entry when it moves to STEPS. Empty: every slot is filled. */
