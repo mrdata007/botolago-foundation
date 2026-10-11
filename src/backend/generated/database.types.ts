@@ -604,6 +604,10 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_resolve_sofascore_player_match: {
+        Args: { p_player_id: string; p_sofascore_player_id: string }
+        Returns: Json
+      }
       admin_resolve_staff_user_exact: {
         Args: { p_email: string }
         Returns: Json
@@ -705,6 +709,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_sofascore_player_match_queue: { Args: never; Returns: Json }
       admin_start_session_revocation_worker: {
         Args: { p_synthetic_test?: boolean; p_worker_id: string }
         Returns: Json
@@ -2113,6 +2118,10 @@ export type Database = {
         Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
         Returns: Json
       }
+      service_record_sofascore_fantasy_observation: {
+        Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
+        Returns: Json
+      }
       service_release_account_deletion: {
         Args: { p_error: string; p_request_id: string }
         Returns: boolean
@@ -2170,6 +2179,37 @@ export type Database = {
         Args: { p_active: boolean }
         Returns: Json
       }
+      service_sofascore_auto_map_players: {
+        Args: { p_fixture_id: string; p_players: Json }
+        Returns: Json
+      }
+      service_sofascore_fantasy_context: {
+        Args: { p_fixture_id: string; p_player_ids?: string[] }
+        Returns: Json
+      }
+      service_sofascore_fantasy_due: {
+        Args: {
+          p_catchup_limit: number
+          p_fetch_max_attempts: number
+          p_hours: number
+          p_max_attempts: number
+          p_retry_limit: number
+        }
+        Returns: Json
+      }
+      service_sofascore_fantasy_note: {
+        Args: {
+          p_blockers: Json
+          p_data_digest: string
+          p_event_id: string
+          p_fixture_id: string
+          p_match_data: Json
+          p_next_retry_at: string
+          p_outcome: string
+          p_status: string
+        }
+        Returns: Json
+      }
       service_stage_fantasy_catalog: {
         Args: {
           p_expected_fixture_count: number
@@ -2186,6 +2226,10 @@ export type Database = {
       }
       service_sync_fantasy_calendar: {
         Args: { p_fantasy_season_id?: string }
+        Returns: Json
+      }
+      service_sync_sofascore_player_performances: {
+        Args: { p_fixture_id?: string; p_limit?: number; p_ratings?: Json }
         Returns: Json
       }
       service_upsert_fantasy_player_points: {
@@ -6940,7 +6984,7 @@ export type Database = {
         Row: {
           active: boolean
           appeared: boolean
-          assists: number
+          assists: number | null
           clean_sheets: number
           created_at: string
           fixture_id: string
@@ -6950,7 +6994,7 @@ export type Database = {
           id: string
           minutes: number
           own_goals: number
-          penalties_missed: number
+          penalties_missed: number | null
           penalties_saved: number | null
           player_id: string
           position: Database["app"]["Enums"]["football_position"]
@@ -6969,7 +7013,7 @@ export type Database = {
         Insert: {
           active?: boolean
           appeared: boolean
-          assists: number
+          assists?: number | null
           clean_sheets: number
           created_at?: string
           fixture_id: string
@@ -6979,7 +7023,7 @@ export type Database = {
           id?: string
           minutes: number
           own_goals: number
-          penalties_missed: number
+          penalties_missed?: number | null
           penalties_saved?: number | null
           player_id: string
           position: Database["app"]["Enums"]["football_position"]
@@ -6998,7 +7042,7 @@ export type Database = {
         Update: {
           active?: boolean
           appeared?: boolean
-          assists?: number
+          assists?: number | null
           clean_sheets?: number
           created_at?: string
           fixture_id?: string
@@ -7008,7 +7052,7 @@ export type Database = {
           id?: string
           minutes?: number
           own_goals?: number
-          penalties_missed?: number
+          penalties_missed?: number | null
           penalties_saved?: number | null
           player_id?: string
           position?: Database["app"]["Enums"]["football_position"]

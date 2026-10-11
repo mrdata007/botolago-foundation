@@ -77,7 +77,7 @@ type SortKey = "team" | number;
 
 function FdrBody() {
   const { t, tr, lang } = useI18n();
-  const screen = useFantasyScreen({ needsAuth: false, needsTeam: false });
+  const screen = useFantasyScreen({ needsAuth: false, needsTeam: false, needsPlayers: false });
   const clubs = screen.clubs;
   const fdrQ = useQuery({
     queryKey: ["fantasy-fixture-difficulty"],

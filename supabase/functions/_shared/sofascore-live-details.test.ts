@@ -142,9 +142,11 @@ async function tick(
   job: "fixtures" | "season_fixtures",
   db: Db,
   fetch: (input: string) => Promise<Response>,
-  environment: Record<string, string> = {},
+  environmentOverrides: Record<string, string> = {},
   minRemaining = 100,
 ) {
+  // These tests are about match details: the Fantasy step has its own tests.
+  const environment = { SOFASCORE_FANTASY_ENABLED: "false", ...environmentOverrides };
   const lines: string[] = [];
   const outcome = await runSofascoreRefresh({
     mode,
@@ -354,9 +356,10 @@ describe("sofascore details backfill", () => {
     mode: "sofascore" | "shadow",
     db: Db,
     fetch: (input: string) => Promise<Response>,
-    environment: Record<string, string> = {},
+    environmentOverrides: Record<string, string> = {},
   ) => {
     const lines: string[] = [];
+    const environment = { SOFASCORE_FANTASY_ENABLED: "false", ...environmentOverrides };
     return runSofascoreDetailsBackfill({
       mode,
       client: db.client,

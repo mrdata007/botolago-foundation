@@ -349,10 +349,15 @@ function HomeContent() {
     queryFn: () => fantasyService.getAlerts(),
     enabled: fantasyReady,
   });
+  const hasAlerts = (alertsQ.data?.length ?? 0) > 0;
   const playersQ = useQuery({
     queryKey: ["all-players-for-alerts"],
     queryFn: () => fantasyService.getTrendingPlayers(),
-    enabled: fantasyReady,
+    // The players only dress the alert rows. With no alert there is nothing to
+    // dress, and reading them cost the home page the hub, the top five, the
+    // season statistics and eight serial pages of the player pool (10 RPCs,
+    // 2.5 s of waterfall on 2026-10-11) for a strip that stays hidden.
+    enabled: fantasyReady && hasAlerts,
   });
   // News is hidden at launch (owner decision — see `@/lib/feature-flags`), so
   // the edition is not even fetched: no News RPC, no third-party media URLs
@@ -807,7 +812,7 @@ function HomeContent() {
               source !== "guest" &&
               !alertsQ.isError &&
               !playersQ.isError &&
-              !(alertsQ.data && playersQ.data && alertsQ.data.length === 0) && (
+              !(alertsQ.data && alertsQ.data.length === 0) && (
                 <div className="mt-3">
                   {alertsQ.isError || playersQ.isError ? null : alertsQ.data && playersQ.data ? (
                     alertsQ.data.length > 0 && (

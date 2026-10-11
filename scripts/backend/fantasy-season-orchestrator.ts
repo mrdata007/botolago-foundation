@@ -209,6 +209,41 @@ export const COVERAGE_ESCALATE_HOURS = 6;
  */
 export const ESTIMATED_MATCH_HOURS = 2;
 
+/**
+ * Where production football data comes from (`api.football_data_source()`,
+ * migration 20261011090000). `sportsmonks` is today's behaviour. With
+ * `sofascore` (and `shadow`, which the owner treats the same for this pass) the
+ * Edge Function records Fantasy observations itself, so the SportsMonks steps
+ * (fixture refresh, per-pass performance ingestion) are skipped, not failed.
+ * Anything this pass cannot read or recognise is `unknown` and behaves as
+ * `sportsmonks`: fail safe, exactly as before.
+ */
+export type FootballDataSource = "sportsmonks" | "sofascore" | "shadow" | "unknown";
+
+export function parseFootballDataSource(raw: unknown): FootballDataSource {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return value === "sportsmonks" || value === "sofascore" || value === "shadow" ? value : "unknown";
+}
+
+/** True when SportsMonks is not the live source and its steps must be skipped. */
+export function skipsSportsMonks(source: FootballDataSource | undefined): boolean {
+  return source === "sofascore" || source === "shadow";
+}
+
+/**
+ * Hours an adaptive gameweek may wait past its normal allowance. Adaptive
+ * scoring selects each fixture's mode 12 h after the final whistle
+ * (api.service_select_fantasy_scoring_modes), so final points cannot arrive
+ * sooner; escalating at the SportsMonks-era 6 h would page for a wait that is
+ * by design. Applied only when the worker names an adaptive wait and the
+ * source is not SportsMonks.
+ */
+export const ADAPTIVE_SELECTION_GRACE_HOURS = 12;
+const ADAPTIVE_WAIT_CODES: readonly string[] = [
+  "adaptive_scoring_pending",
+  "remaining_fixtures_pending",
+];
+
 export type CoverageGap = IncompleteFixture & {
   finalWhistleSource: "kickoff_plus_estimate" | "unknown";
   hoursSinceFinalWhistle: number | null;
@@ -302,6 +337,7 @@ export function assessScoring(
   workers: readonly WorkerRun[],
   now: Date,
   escalateHours: number = COVERAGE_ESCALATE_HOURS,
+  adaptiveGraceHours = 0,
 ): ScoringGap[] {
   return windows.items
     .filter((gw) => POINTS_PENDING.includes(gw.status))
@@ -317,7 +353,11 @@ export function assessScoring(
         status: gw.status,
         windowEndsAt: gw.endsAt,
         hoursSinceWindowEnd: hours,
-        overdue: hours === null || hours >= escalateHours,
+        overdue:
+          hours === null ||
+          hours >=
+            escalateHours +
+              (workerCode && ADAPTIVE_WAIT_CODES.includes(workerCode) ? adaptiveGraceHours : 0),
         ...(workerCode ? { workerCode } : {}),
       };
     })
@@ -351,6 +391,12 @@ export interface OrchestratorOptions {
   maxPerformanceBatches?: number;
   /** Outcome of the provider fixture/result refresh that ran before this pass. */
   providerRefresh?: ProviderRefresh;
+  /**
+   * The football data source. `sofascore` / `shadow` skip the SportsMonks
+   * steps (recorded as `skipped:data_source_<source>`); anything else, or
+   * nothing, runs them as before.
+   */
+  dataSource?: FootballDataSource;
   /** Deadline watch window; defaults mirror the RPC defaults. */
   deadlineWatch?: { warnHours?: number; escalateHours?: number };
   /** Coverage age after which a finished fixture escalates; see COVERAGE_ESCALATE_HOURS. */
@@ -451,6 +497,8 @@ export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
   return { targets, skipped };
 }
 
+class SportsMonksSkip extends Error {}
+
 export async function orchestrateFantasySeason(
   gateway: OrchestratorGateway,
   options: OrchestratorOptions = {},
@@ -483,7 +531,13 @@ export async function orchestrateFantasySeason(
   // ten pages of three retries with up to 30 s of Retry-After each would
   // outlast the job.
   let providerOutage: string | null = null;
+  const dataSource = options.dataSource ?? "unknown";
+  const sportsMonksSkipped = skipsSportsMonks(dataSource)
+    ? (`skipped:data_source_${dataSource}` as const)
+    : null;
   try {
+    // SofaScore feeds the adaptive path on its own: nothing to ingest here.
+    if (sportsMonksSkipped) throw new SportsMonksSkip();
     do {
       const batch = await gateway.ingestPerformances(cursor, { providerOutage });
       batches += 1;
@@ -499,9 +553,11 @@ export async function orchestrateFantasySeason(
   } catch (error) {
     // Per-fixture problems come back in `incomplete`; what reaches here is the
     // fixture listing itself (a database read, its contract, the cursor), with
-    // nothing to age.
-    performanceError = safeCode(error, "performance_ingestion_failed");
-    performanceDiagnostic = safeDiagnostic(error);
+    // nothing to age. A skip is neither a failure nor a wait.
+    if (!(error instanceof SportsMonksSkip)) {
+      performanceError = safeCode(error, "performance_ingestion_failed");
+      performanceDiagnostic = safeDiagnostic(error);
+    }
   }
   const coverage = assessCoverage(incomplete, now, coverageEscalateHours);
 
@@ -579,7 +635,15 @@ export async function orchestrateFantasySeason(
           p_limit: 100,
         }),
       );
-      scoring = { gameweeks: assessScoring(windows, workers, now, coverageEscalateHours) };
+      scoring = {
+        gameweeks: assessScoring(
+          windows,
+          workers,
+          now,
+          coverageEscalateHours,
+          sportsMonksSkipped ? ADAPTIVE_SELECTION_GRACE_HOURS : 0,
+        ),
+      };
     } catch (error) {
       // Without the windows this pass cannot show a gameweek on time, nor
       // late: it waits, named by `scoring.error`. The watchdog's
@@ -591,7 +655,9 @@ export async function orchestrateFantasySeason(
   else if (scoring.gameweeks.some((gap) => gap.overdue))
     verdict = mergeVerdict(verdict, "escalate");
   else if (scoring.gameweeks.length > 0) verdict = mergeVerdict(verdict, "waiting");
-  const providerRefresh = options.providerRefresh;
+  // With SofaScore as the source there is no SportsMonks refresh to wait for or
+  // to fail: whatever the workflow's recovery step reported is not read.
+  const providerRefresh = sportsMonksSkipped ? undefined : options.providerRefresh;
   // Without a fixture refresh the pass can only work from data already in the
   // database; it is still safe, but never "ok" until the provider is read again.
   // A refresh that was expected to pass and did not (fixtures-only scope, or a
@@ -625,6 +691,10 @@ export async function orchestrateFantasySeason(
     observedAt: now.toISOString(),
     ...(invalidSettings.length > 0 ? { invalidSettings } : {}),
     ...(providerRefresh ? { providerRefresh } : {}),
+    dataSource,
+    ...(sportsMonksSkipped
+      ? { providerSteps: { recovery: sportsMonksSkipped, performances: sportsMonksSkipped } }
+      : {}),
     calendar: {
       seasonId: after.seasonId,
       seasonStatus: after.seasonStatus,
@@ -648,6 +718,7 @@ export async function orchestrateFantasySeason(
       ...(performanceError ? { error: performanceError } : {}),
       ...(performanceDiagnostic ? { diagnostic: performanceDiagnostic } : {}),
       ...(truncated ? { truncated: true } : {}),
+      ...(sportsMonksSkipped ? { skipped: sportsMonksSkipped } : {}),
       ...(providerOutage ? { providerOutage } : {}),
       ...(coverage.length > 0 ? { coverageEscalateHours, incomplete: coverage } : {}),
     },
@@ -737,17 +808,19 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
   const rows: Array<[string, string]> = [
     [
       "Provider refresh",
-      !refresh
-        ? "not run"
-        : refresh.verdict === "pass"
-          ? `pass (${refresh.fixtureWindows} fixture window${refresh.fixtureWindows === 1 ? "" : "s"})`
-          : `${refresh.verdict}${refresh.errorCode ? `: \`${refresh.errorCode}\`` : ""}${
-              refresh.fixturesRefreshed
-                ? " (fixtures refreshed)"
-                : refresh.failed && refresh.fixtureWindows > 0
-                  ? ` (partial: ${refresh.fixtureWindows} fixture window${refresh.fixtureWindows === 1 ? "" : "s"} before the failure)`
-                  : ""
-            }`,
+      summary.providerSteps
+        ? summary.providerSteps.recovery
+        : !refresh
+          ? "not run"
+          : refresh.verdict === "pass"
+            ? `pass (${refresh.fixtureWindows} fixture window${refresh.fixtureWindows === 1 ? "" : "s"})`
+            : `${refresh.verdict}${refresh.errorCode ? `: \`${refresh.errorCode}\`` : ""}${
+                refresh.fixturesRefreshed
+                  ? " (fixtures refreshed)"
+                  : refresh.failed && refresh.fixtureWindows > 0
+                    ? ` (partial: ${refresh.fixtureWindows} fixture window${refresh.fixtureWindows === 1 ? "" : "s"} before the failure)`
+                    : ""
+              }`,
     ],
     [
       "Calendar",
@@ -767,7 +840,9 @@ export function renderHealthSummary(summary: OrchestratorSummary): string {
     ],
     [
       "Performances",
-      `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}${summary.performances.truncated ? ", listing truncated" : ""}`,
+      summary.providerSteps
+        ? summary.providerSteps.performances
+        : `${summary.performances.fixturesProcessed} fixtures in ${summary.performances.batches} batch(es)${summary.performances.error ? `, error \`${summary.performances.error}\`` : ""}${summary.performances.diagnostic ? ` \`${JSON.stringify(summary.performances.diagnostic)}\`` : ""}${summary.performances.truncated ? ", listing truncated" : ""}`,
     ],
     ["Deferred gameweeks", String(summary.deferredGameweeks.length)],
     ["Finished without statistics", renderCoverage(summary.performances)],
@@ -926,7 +1001,10 @@ function deadlineWatchHours(raw: string | undefined, fallback: number) {
   return value;
 }
 
-export function orchestratorEnvironment(env: Record<string, string | undefined>) {
+export function orchestratorEnvironment(
+  env: Record<string, string | undefined>,
+  { requireSportsMonksToken = true }: { requireSportsMonksToken?: boolean } = {},
+) {
   // A scheduled pass runs only while the repository variable is on; an owner
   // dispatch is authorized by the typed confirmation instead, so one reviewed
   // pass can run before the schedule is enabled.
@@ -950,7 +1028,10 @@ export function orchestratorEnvironment(env: Record<string, string | undefined>)
     env.SUPABASE_PRODUCTION_URL?.replace(/\/$/, "") !== "https://tkewgajrljbwgwedqsxn.supabase.co"
   )
     throw new Error("fantasy_orchestrator_environment_mismatch");
-  if (!env.SUPABASE_SECRET_KEY || !env.SPORTSMONKS_API_TOKEN)
+  // The SportsMonks token is only needed while SportsMonks is the source; the
+  // runner decides that after reading the source (requireSportsMonksToken false)
+  // and checks the token itself, so nothing else here changes.
+  if (!env.SUPABASE_SECRET_KEY || (requireSportsMonksToken && !env.SPORTSMONKS_API_TOKEN))
     throw new Error("fantasy_orchestrator_credential_missing");
   if (!env.FANTASY_ORCHESTRATOR_EVIDENCE_DIR)
     throw new Error("fantasy_orchestrator_evidence_directory_missing");
@@ -972,7 +1053,7 @@ export function orchestratorEnvironment(env: Record<string, string | undefined>)
     invalidSettings: coverageHours === null ? ["FANTASY_COVERAGE_ESCALATE_HOURS"] : [],
     url: env.SUPABASE_PRODUCTION_URL.replace(/\/$/, ""),
     key: env.SUPABASE_SECRET_KEY,
-    token: env.SPORTSMONKS_API_TOKEN,
+    token: env.SPORTSMONKS_API_TOKEN || undefined,
     evidenceDir: env.FANTASY_ORCHESTRATOR_EVIDENCE_DIR,
     commit: env.EXPECTED_COMMIT!,
   };
@@ -992,7 +1073,7 @@ if (import.meta.main) {
   let evidenceDir: string | undefined;
   let commit = "";
   try {
-    const config = orchestratorEnvironment(process.env);
+    const config = orchestratorEnvironment(process.env, { requireSportsMonksToken: false });
     evidenceDir = config.evidenceDir;
     commit = config.commit;
     await mkdir(evidenceDir, { recursive: true, mode: 0o700 });
@@ -1014,6 +1095,7 @@ if (import.meta.main) {
         return data;
       },
       async ingestPerformances(afterFixtureExternalId, options) {
+        if (!config.token) throw new Error("fantasy_orchestrator_credential_missing");
         const result = await runCurrentPerformanceBatch(
           rawClient,
           config.token,
@@ -1030,6 +1112,16 @@ if (import.meta.main) {
         };
       },
     };
+    // Fail safe: a source that cannot be read is treated as SportsMonks, which
+    // is what this pass did before the switch existed (and needs its token).
+    let dataSource: FootballDataSource = "unknown";
+    try {
+      dataSource = parseFootballDataSource(await gateway.rpc("football_data_source", {}));
+    } catch {
+      dataSource = "unknown";
+    }
+    if (!skipsSportsMonks(dataSource) && !config.token)
+      throw new Error("fantasy_orchestrator_credential_missing");
     const providerRefresh = summarizeProviderRefresh(
       await readRecoveryEvidence(process.env.CURRENT_SEASON_EVIDENCE_DIR),
       { stepOutcome: process.env.RECOVERY_STEP_OUTCOME },
@@ -1038,13 +1130,14 @@ if (import.meta.main) {
       expectedCommit: commit,
       ...(await orchestrateFantasySeason(gateway, {
         providerRefresh,
+        dataSource,
         deadlineWatch: config.deadlineWatch,
         coverage: config.coverage,
         invalidSettings: config.invalidSettings,
       })),
     };
     const serialized = `${JSON.stringify(summary, null, 2)}\n`;
-    if (serialized.includes(config.key) || serialized.includes(config.token))
+    if (serialized.includes(config.key) || (config.token && serialized.includes(config.token)))
       throw new Error("credential_in_evidence");
     await writeFile(resolve(evidenceDir, "fantasy-season-orchestrator.json"), serialized, {
       mode: 0o600,

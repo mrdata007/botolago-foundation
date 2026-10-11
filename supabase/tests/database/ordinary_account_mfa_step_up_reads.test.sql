@@ -373,6 +373,8 @@ create function pg_temp.unguarded_api_functions() returns text[] language sql st
          'admin_football_mapping_list_candidates', 'admin_football_mapping_list_proposals',
          'admin_football_mapping_propose', 'admin_football_mapping_refresh_evidence',
          'admin_football_mapping_reviewer_availability',
+         -- SofaScore player review list and its resolve (20261011130000).
+         'admin_sofascore_player_match_queue', 'admin_resolve_sofascore_player_match',
          -- Public ranking exclusions (20261011160000).
          'admin_set_public_ranking_exclusion', 'admin_list_public_ranking_exclusions',
          'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',

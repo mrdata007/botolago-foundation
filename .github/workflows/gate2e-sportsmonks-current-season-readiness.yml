@@ -28,13 +28,19 @@ permissions:
 
 jobs:
   probe:
+    # SportsMonks is not paid for and production football data now comes from
+    # SofaScore, so the daily probe only runs while the repository variable
+    # SPORTSMONKS_CHECKS_ENABLED is 'true' (it skips otherwise, rather than
+    # going red against an account that cannot answer). The push trigger and
+    # the owner's manual dispatch are unchanged.
     name: Verify current Botola season provider readiness
     if: >-
       always() &&
       github.repository == 'mrdata007/botolago-foundation' &&
       github.ref == 'refs/heads/main' &&
       github.actor == 'mrdata007' &&
-      (github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event_name == 'schedule')
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'push' ||
+       (github.event_name == 'schedule' && vars.SPORTSMONKS_CHECKS_ENABLED == 'true'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: production-football-ingestion

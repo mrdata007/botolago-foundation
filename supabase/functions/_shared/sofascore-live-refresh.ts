@@ -64,6 +64,7 @@ import {
   type SofascoreDetailsSummary,
   type SofascoreDetailsTarget,
 } from "./sofascore-match-details.ts";
+import { SofascoreFantasyRun, type SofascoreFantasySummary } from "./sofascore-fantasy-auto.ts";
 import type { FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 
 export type SofascoreRefreshMode = "sofascore" | "shadow";
@@ -114,6 +115,8 @@ export interface SofascoreRefreshOutcome {
 }
 
 interface MappedFixtureState {
+  /** The app fixture id (the snapshot always sends it). */
+  readonly id?: string;
   readonly externalId: string;
   readonly kickoffAt: string;
   readonly status: string;
@@ -281,7 +284,17 @@ export function selectLiveDetailTargets(
     if (rank === null) continue;
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
-    ranked.push({ target: { eventId: event.sofascoreEventId, teams }, rank, changed });
+    // A finished match also feeds the Fantasy step with the same replies.
+    const fantasyFixtureId = event.status === "finished" ? state.id : undefined;
+    ranked.push({
+      target: {
+        eventId: event.sofascoreEventId,
+        teams,
+        ...(fantasyFixtureId ? { fantasyFixtureId } : {}),
+      },
+      rank,
+      changed,
+    });
   }
   // Finished matches leave the live list and need no score write on later
   // ticks. Use the snapshot to refresh their details for two hours after
@@ -296,7 +309,15 @@ export function selectLiveDetailTargets(
     if (!Number.isFinite(age) || age < 0 || age > DETAILS_FINAL_WINDOW_MS) continue;
     const teams = detailsTeams(fixture, teamIds, undefined);
     if (teams)
-      ranked.push({ target: { eventId: fixture.externalId, teams }, rank: 2, changed: finalized });
+      ranked.push({
+        target: {
+          eventId: fixture.externalId,
+          teams,
+          ...(fixture.id ? { fantasyFixtureId: fixture.id } : {}),
+        },
+        rank: 2,
+        changed: finalized,
+      });
   }
   ranked.sort((a, b) => a.rank - b.rank || b.changed - a.changed);
   return ranked.slice(0, limit).map((item) => item.target);
@@ -443,6 +464,24 @@ export async function runSofascoreRefresh(
   // Details (events, lineups, statistics) for the fixtures that just changed:
   // after the scores, capped, and never a reason to fail the scores.
   const liveSnapshot = snapshot;
+  // Fantasy observations from the same replies, after the scores and the
+  // details. It never throws and never changes what was written above.
+  const fantasy = new SofascoreFantasyRun({
+    mode,
+    client,
+    rapid,
+    environment,
+    now,
+    log: (line) => log(line),
+  });
+  const runFantasy = async (): Promise<SofascoreFantasySummary> => {
+    try {
+      await fantasy.sweep();
+    } catch {
+      // Reported through the summary; nothing else depends on it.
+    }
+    return fantasy.summary();
+  };
   const runDetails = async (): Promise<SofascoreDetailsSummary | { status: "skipped" }> => {
     if (job !== "fixtures") return { status: "skipped" };
     const cap = boundedInt(
@@ -458,15 +497,28 @@ export async function runSofascoreRefresh(
       rapid,
       now,
       log: emit,
+      onReplies: (target, replies) =>
+        target.fantasyFixtureId
+          ? fantasy.fromReplies(target.fantasyFixtureId, target.eventId, replies)
+          : Promise.resolve(),
     });
   };
 
   if (mode === "shadow") {
     emit({ result: "shadow", ...summary, wouldIngest: toWrite, written: 0 });
     const matchDetails = await runDetails();
+    const fantasySummary = await runFantasy();
     return {
       status: 200,
-      body: { status: "shadow", mode, job, wouldIngest: toWrite.length, written: 0, matchDetails },
+      body: {
+        status: "shadow",
+        mode,
+        job,
+        wouldIngest: toWrite.length,
+        written: 0,
+        matchDetails,
+        fantasy: fantasySummary,
+      },
     };
   }
 
@@ -550,6 +602,7 @@ export async function runSofascoreRefresh(
   }
 
   const matchDetails = await runDetails();
+  const fantasySummary = await runFantasy();
   emit({
     result: completionFailed
       ? counts.updated > 0
@@ -562,6 +615,7 @@ export async function runSofascoreRefresh(
     written: counts.updated,
     failures,
     matchDetails,
+    fantasy: fantasySummary,
   });
   if (completionFailed) {
     return {
@@ -573,6 +627,7 @@ export async function runSofascoreRefresh(
         written: counts.updated,
         failures,
         matchDetails,
+        fantasy: fantasySummary,
       },
     };
   }
@@ -586,6 +641,7 @@ export async function runSofascoreRefresh(
         written: counts.updated,
         failures,
         matchDetails,
+        fantasy: fantasySummary,
       },
     };
   }
@@ -601,6 +657,7 @@ export async function runSofascoreRefresh(
       unmapped: plan.unmapped.length,
       unknownStatus: unknownStatus.length,
       matchDetails,
+      fantasy: fantasySummary,
     },
   };
 }
@@ -682,10 +739,22 @@ export async function runSofascoreDetailsBackfill(
   const targets: SofascoreDetailsTarget[] = [];
   const unresolved: string[] = [];
   for (const eventId of due) {
-    const teams = detailsTeams(stateById.get(eventId), teamIds, undefined);
-    if (teams) targets.push({ eventId, teams });
-    else unresolved.push(eventId);
+    const state = stateById.get(eventId);
+    const teams = detailsTeams(state, teamIds, undefined);
+    if (teams) {
+      // A finished fixture also feeds the Fantasy step with the same replies.
+      const fantasyFixtureId = state?.status === "finished" ? state.id : undefined;
+      targets.push({ eventId, teams, ...(fantasyFixtureId ? { fantasyFixtureId } : {}) });
+    } else unresolved.push(eventId);
   }
+  const fantasy = new SofascoreFantasyRun({
+    mode,
+    client,
+    rapid,
+    environment,
+    now,
+    log: (line) => log(line),
+  });
   const matchDetails = await runSofascoreMatchDetails(targets, {
     mode,
     scope: "backfill",
@@ -694,11 +763,22 @@ export async function runSofascoreDetailsBackfill(
     now,
     log: emit,
     unresolvedTargets: unresolved,
+    onReplies: (target, replies) =>
+      target.fantasyFixtureId
+        ? fantasy.fromReplies(target.fantasyFixtureId, target.eventId, replies)
+        : Promise.resolve(),
   });
+  try {
+    await fantasy.sweep();
+  } catch {
+    // Reported through the summary.
+  }
+  const fantasySummary = fantasy.summary();
   emit({
     result: matchDetails.errors.length > 0 ? "partial" : "ok",
     unresolvedTeams: unresolved,
     matchDetails,
+    fantasy: fantasySummary,
   });
   const failed = matchDetails.rateLimited
     ? 429
@@ -714,6 +794,7 @@ export async function runSofascoreDetailsBackfill(
       due: due.length,
       unresolvedTeams: unresolved.length,
       matchDetails,
+      fantasy: fantasySummary,
     },
   };
 }
