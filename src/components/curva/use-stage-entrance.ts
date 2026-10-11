@@ -80,14 +80,21 @@ export function useStageEntrance(input: {
     };
     void whenQuiet().done.then(() => {
       if (!mounted.current || !lift.isConnected) return;
-      const duration = entranceMs(tokenMs("--duration-hero", 420));
-      const easing = tokenEasing("--ease-emphasized", "cubic-bezier(0.2, 0.9, 0.1, 1)");
-      const dir = document.documentElement.dir === "rtl" ? -1 : 1;
-      const animations = [lift.animate(entranceFrames(dir), { duration, easing })];
-      const ground = groundRef.current;
-      if (ground) animations.push(ground.animate(groundFrames(), { duration, easing }));
-      lift.style.removeProperty("opacity");
-      Promise.all(animations.map((animation) => animation.finished)).then(done, done);
+      try {
+        const duration = entranceMs(tokenMs("--duration-hero", 420));
+        const easing = tokenEasing("--ease-emphasized", "cubic-bezier(0.2, 0.9, 0.1, 1)");
+        const dir = document.documentElement.dir === "rtl" ? -1 : 1;
+        const animations = [lift.animate(entranceFrames(dir), { duration, easing })];
+        const ground = groundRef.current;
+        if (ground) animations.push(ground.animate(groundFrames(), { duration, easing }));
+        Promise.all(animations.map((animation) => animation.finished)).then(done, done);
+      } catch {
+        // Whatever failed, the card is shown at rest and its tilt comes back.
+        done();
+      } finally {
+        // The hold ends here on every path: the stage is never left invisible.
+        lift.style.removeProperty("opacity");
+      }
     });
     // The entrance is a one-off of the mount: nothing here is re-run.
   }, []);
