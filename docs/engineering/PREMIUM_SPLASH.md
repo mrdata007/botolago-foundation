@@ -71,8 +71,12 @@ and burst uniforms removed. No three.js, no dependency.
   letters; DPR capped at 1.5; luminance alpha mode (`uCoverageAlpha` 0).
 - Parameters are tuned in px relative to the ball radius `R`, not the screen:
   rings start at about 1.2 R and spread to about 6 R; ring count 5; attenuation
-  and thickness tuned so they read as fine light lines. Final numbers are in
-  `magic-rings.ts` and in the commit that tunes them.
+  and thickness tuned so they read as fine light lines. Final numbers (`RING_LOOK`
+  in `magic-rings.ts`): 5 rings, speed 1.1, attenuation 34, line thickness 1.5,
+  base radius 0.075, scale rate 0.30, noise 0.035, ring gap 1.5, fade in 0.7,
+  fade out 0.5, `hsl(205 100% 76%)` to `hsl(214 100% 62%)`; rings fade in from
+  420 ms over 520 ms, with the cycle offset by 1 s so the first pulses are near
+  the ball. The swoosh arcs draw from 700 ms (final tuning).
 - Stops when the document is hidden or the component unmounts; GL resources
   disposed; `webglcontextlost` stops drawing. No WebGL2: no rings, never an
   error.

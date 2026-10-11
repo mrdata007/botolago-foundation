@@ -539,9 +539,6 @@
   --mesh-x-trail: 100%;
   --mesh-x-lead-out: -8%;
 
-  /* The splash shine's travel and skew. +1 with the reading direction. */
-  --splash-dir: 1;
-
   /* The lean of the `club-stripes` texture. A gradient angle is physical
      (rule 3), so the angle lives here and flips below, like the origins. */
   --stripe-angle: -45deg;
@@ -551,7 +548,6 @@
   --mesh-x-lead: 100%;
   --mesh-x-trail: 0%;
   --mesh-x-lead-out: 108%;
-  --splash-dir: -1;
   --stripe-angle: 45deg;
 }
 
@@ -1511,200 +1507,176 @@ html[dir="rtl"]
   display: none;
 }
 
-/* The wordmark pulling into focus as the ball lands. Nothing here names a
-   direction, so it plays the same in both scripts. */
-@keyframes splash-reveal {
-  0% {
-    opacity: 0;
-    filter: blur(14px);
-    transform: scale(1.07);
+/* The launch splash's choreography. Everything is declared under
+   `no-preference`, so the default state of every layer is its finished state:
+   under reduced motion the splash is the finished logo and nothing moves,
+   without needing to undo anything. The animations are `both`, so they hold
+   their first frame through their delay, from first paint.
+
+   The wordmark is a fixed Latin logo (`dir="ltr"` in the markup), so the few
+   physical directions below belong to the logo and not to the reading
+   direction, and do not flip in Arabic.
+
+   Timeline, ms from first paint:
+     0 - 760    the ball arrives at the centre: scale with a spring overshoot,
+                blur to sharp, a part-turn to upright
+     80 - 700   the halo blooms behind it
+     420 - 940  the WebGL rings fade in (JS, magic-rings.ts)
+     620 - 1520 the wordmark glides left-to-right into place
+     700 - 1350 the swooshes draw outward from the ball
+     760 + 55n  each letter, n away from the ball: sharp, risen, in
+     ~1650      finished */
+.splash-logo {
+  width: min(82vw, 30rem);
+}
+
+.splash-glyph,
+.splash-halo,
+.splash-rings {
+  position: absolute;
+  pointer-events: none;
+}
+
+.splash-glyph {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* The glow behind the ball, centred on it (--ball-x, --ball-y are set on the
+   box from the logo's own geometry). */
+.splash-halo {
+  inset-inline-start: var(--ball-x);
+  top: var(--ball-y);
+  width: 34%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    hsl(212 100% 70% / 0.34),
+    hsl(214 100% 62% / 0.12) 55%,
+    transparent
+  );
+}
+
+/* The rings' canvas: a square about sixteen ball radii across, centred on the
+   ball. The shader draws on it from JS; until then it is transparent. */
+.splash-rings {
+  inset-inline-start: var(--ball-x);
+  top: var(--ball-y);
+  width: 96%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+}
+
+/* The pan above is physical, so the ball's origin is too. */
+.splash-glyph[data-glyph="ball"] {
+  transform-origin: var(--ball-x) var(--ball-y);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The ball starts at the middle of the screen: its x in the box is
+     93.06%, so the box starts that far left of centre (43.06% of its width)
+     and glides back. */
+  .launch-splash .splash-pan {
+    animation: splash-pan 900ms cubic-bezier(0.22, 1, 0.36, 1) 620ms both;
   }
-  100% {
-    opacity: 1;
-    filter: blur(0);
-    transform: scale(1);
+
+  .launch-splash .splash-halo {
+    animation: splash-halo 900ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both;
+  }
+
+  /* Two animations, because they want different curves: the spring is for the
+     size and the turn; the fade-in must not overshoot. */
+  .launch-splash .splash-glyph[data-glyph="ball"] {
+    animation:
+      splash-ball 780ms cubic-bezier(0.34, 1.5, 0.64, 1) both,
+      splash-fade 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .launch-splash .splash-glyph[data-glyph="letter"] {
+    animation:
+      splash-letter 640ms cubic-bezier(0.22, 1, 0.36, 1) calc(760ms + var(--n) * 55ms) both,
+      splash-fade 300ms cubic-bezier(0.22, 1, 0.36, 1) calc(760ms + var(--n) * 55ms) both;
+  }
+
+  .launch-splash .splash-glyph[data-glyph="arc"] {
+    animation:
+      splash-arc 650ms cubic-bezier(0.3, 0.7, 0.2, 1) 700ms both,
+      splash-fade 200ms ease-out 700ms both;
   }
 }
 
-/* Floodlights catching: `steps(1, end)` on the element holds each value until
-   the next keyframe, so this is a hard flicker rather than a fade. */
-@keyframes splash-lights {
-  0% {
-    opacity: 0;
+/* The camera: from the ball in the middle of the screen to the wordmark in
+   place. The offset is the ball's distance from the box's middle (93.06% - 50%). */
+@keyframes splash-pan {
+  from {
+    transform: translateX(-43.06%);
   }
-  10% {
-    opacity: 0.8;
-  }
-  16% {
-    opacity: 0.15;
-  }
-  28% {
-    opacity: 0.9;
-  }
-  36% {
-    opacity: 0.4;
-  }
-  52%,
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes splash-pitch {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-/* --splash-dir is +1 in a left-to-right document and -1 in a right-to-left
-   one, so the shine leaves the leading edge and travels with the reading
-   direction in both. */
-@keyframes splash-sweep {
-  0% {
-    transform: translateX(0) skewX(calc(-18deg * var(--splash-dir)));
-    opacity: 0;
-  }
-  25% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(calc(420% * var(--splash-dir))) skewX(calc(-18deg * var(--splash-dir)));
-    opacity: 0;
-  }
-}
-
-/* The ball. Sideways travel, height, fade and spin are separate animations on
-   nested elements (see SplashScreen.tsx); --splash-dir starts it from the
-   reading direction's leading side. It lands at 1000ms, hops once, and is
-   gone by 1600ms. */
-@keyframes splash-ball-x {
-  0% {
-    transform: translateX(calc(-60vw * var(--splash-dir)));
-  }
-  100% {
+  to {
     transform: translateX(0);
   }
 }
 
-@keyframes splash-ball-y {
-  0% {
-    transform: translateY(0);
-    animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
+@keyframes splash-halo {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
   }
-  31.25% {
-    transform: translateY(-170px);
-    animation-timing-function: cubic-bezier(0.6, 0, 0.75, 0.4);
-  }
-  62.5% {
-    transform: translateY(0);
-    animation-timing-function: cubic-bezier(0.25, 0.6, 0.4, 1);
-  }
-  70.6% {
-    transform: translateY(-26px);
-    animation-timing-function: cubic-bezier(0.6, 0, 0.75, 0.4);
-  }
-  78.75%,
-  100% {
-    transform: translateY(0);
-  }
-}
-
-/* Once the ball has settled (the hop ends at 1260ms), it sinks into the
-   ground line: the element scales about its bottom edge, which sits on the
-   line, so shrinking it draws the ball down into it. */
-@keyframes splash-ball-fade {
-  0%,
-  80% {
+  to {
     opacity: 1;
     transform: scale(1);
   }
-  100% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
 }
 
-/* Two and a half turns, ending at rotate(0): the ball lands the way up it is
-   drawn, which is the logo's ball the way up it is in the wordmark. Spinning
-   from 0 to 900deg instead turns the same way at the same speed but lands it
-   upside down. */
-@keyframes splash-ball-spin {
-  0% {
-    transform: rotate(calc(-900deg * var(--splash-dir)));
-  }
-  100% {
-    transform: rotate(0);
-  }
-}
-
-/* The ball's tail: in as the ball comes on screen, and gone by the landing
-   (1000ms), before its dots catch the ball up on the landing spot. */
-@keyframes splash-tail {
-  0% {
+@keyframes splash-fade {
+  from {
     opacity: 0;
   }
-  10%,
-  70% {
+  to {
     opacity: 1;
   }
-  92%,
-  100% {
-    opacity: 0;
+}
+
+/* The easing is per animation, so the overshoot is in the curve: it takes the
+   scale to about 1.04 and the turn to about 6 degrees past upright, and back.
+   The turn is the logo's own and does not flip in Arabic. */
+@keyframes splash-ball {
+  from {
+    transform: scale(0.55) rotate(-70deg);
+    filter: blur(10px);
+  }
+  to {
+    transform: scale(1) rotate(0);
+    filter: blur(0);
   }
 }
 
-/* The ground line flaring as the ball lands on it. */
-@keyframes splash-flare {
-  0% {
-    opacity: 0;
-    transform: scaleX(0.4);
+@keyframes splash-letter {
+  from {
+    transform: translateY(10%);
+    filter: blur(6px);
   }
-  18% {
-    opacity: 1;
-    transform: scaleX(1.15);
+  55% {
+    transform: translateY(-1.5%);
+    filter: blur(0);
   }
-  100% {
-    opacity: 0;
-    transform: scaleX(1.6);
-  }
-}
-
-/* The ripple the landing sends across the turf: wide and flat, like a circle
-   seen along the ground. */
-@keyframes splash-ground-ripple {
-  0% {
-    opacity: 0.75;
-    transform: scale(0.15, 0.04);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(2.6, 0.7);
+  to {
+    transform: translateY(0);
+    filter: blur(0);
   }
 }
 
-@keyframes splash-breathe {
-  0%,
-  100% {
-    opacity: 0.85;
-    transform: scale(1);
+/* A wipe that begins at the ball (the right-hand end of the box) and draws the
+   arcs leftwards over the G. They span 74% to 95% of the box. */
+@keyframes splash-arc {
+  from {
+    clip-path: inset(0 0 0 96%);
   }
-  50% {
-    opacity: 1;
-    transform: scale(1.06);
-  }
-}
-
-@keyframes splash-bar {
-  0% {
-    opacity: 0;
-    transform: scaleX(0.1);
-  }
-  100% {
-    opacity: 1;
-    transform: scaleX(1);
+  to {
+    clip-path: inset(0 0 0 72%);
   }
 }
 
