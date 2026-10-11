@@ -495,17 +495,17 @@ describe("football live refresh, data-source switch", () => {
   });
 
   for (const source of ["sofascore", "shadow"]) {
-    it(`${source} skips the match details backfill without calling a provider`, async () => {
+    it(`${source} runs the match details backfill through SofaScore, never SportsMonks`, async () => {
+      // No RAPIDAPI_KEY in this environment: the backfill is refused before any
+      // provider call, exactly as the score job is.
       const calls: string[] = [];
       const { response, paths } = await run(
         withSource(source, calls),
         '{"job":"match_details_backfill"}',
       );
-      expect(response.status).toBe(200);
-      expect(await response.json()).toEqual({
-        status: "skipped",
-        reason: "match_details_not_implemented_for_sofascore",
-        source,
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        error: "provider_not_configured",
         job: "match_details_backfill",
       });
       expect(paths).toEqual([]);

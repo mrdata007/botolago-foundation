@@ -20,11 +20,15 @@
 // (`provider_rate_limited`) or any provider failure returns an error with
 // nothing written.
 //
-// NOT IN SCOPE here: match details (events, lineups, team statistics). The
-// SportsMonks path fetches them after the scores (runMatchDetailsRefresh);
-// this path does not, and the `match_details_backfill` job answers `skipped`.
-// A later change ports them. Until then the match page shows no new details
-// for matches read from SofaScore.
+// Match details (events, lineups, team statistics) come after the scores, from
+// sofascore-match-details.ts: 3 requests per fixture, at most
+// SOFASCORE_DETAILS_PER_TICK (default 4) fixtures per live tick, so at most 12
+// more requests. Chosen fixtures: a mapped fixture written as finished this
+// tick, then mapped fixtures in play whose score or status was written or whose
+// changeTimestamp moved in the last 150 seconds, most recent change first. The
+// season job fetches none. `runSofascoreDetailsBackfill` serves the
+// `match_details_backfill` job. Details never hold a score back: they run after
+// the scores are written, and a failure is reported in `matchDetails`.
 //
 // Unmapped events are logged and never ingested: api.ingest_football_fixture
 // creates a fixture when it finds no mapping. Events with a status the status
@@ -50,6 +54,15 @@ import {
   buildSofascoreMappingLookup,
   type FootballProviderMappingRow,
 } from "./sofascore-mapping-lookup.ts";
+import {
+  SOFASCORE_DETAILS_BACKFILL_DEFAULT,
+  SOFASCORE_DETAILS_BACKFILL_MAX,
+  SOFASCORE_DETAILS_PER_TICK_DEFAULT,
+  SOFASCORE_DETAILS_PER_TICK_MAX,
+  runSofascoreMatchDetails,
+  type SofascoreDetailsSummary,
+  type SofascoreDetailsTarget,
+} from "./sofascore-match-details.ts";
 import type { FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 
 export type SofascoreRefreshMode = "sofascore" | "shadow";
@@ -71,6 +84,16 @@ const IN_PLAY_STATUSES: ReadonlySet<string> = new Set([
 ]);
 /** A status production does not leave without a correction (the freshness trigger). */
 const FINAL_STATUSES: ReadonlySet<string> = new Set(["finished", "cancelled", "abandoned"]);
+/** In play for the details step (a delayed or suspended match has nothing new). */
+const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
+  "live_first_half",
+  "half_time",
+  "live_second_half",
+  "extra_time",
+  "penalties",
+]);
+/** A provider change newer than this counts as "moved since the last tick". */
+const DETAILS_CHANGE_WINDOW_MS = 150_000;
 
 export interface SofascoreRefreshDependencies {
   readonly mode: SofascoreRefreshMode;
@@ -97,6 +120,9 @@ interface MappedFixtureState {
   readonly providerUpdatedAt: string;
   readonly sourceSequence: number | string | null;
   readonly finalizedAt: string | null;
+  /** Internal club ids; absent until migration 20261011110000 is applied. */
+  readonly homeTeamId?: string;
+  readonly awayTeamId?: string;
 }
 
 interface Snapshot {
@@ -173,6 +199,88 @@ function dedupeEvents(
     }
   }
   return [...byId.values()];
+}
+
+/** 0 is allowed: it switches the details step off without a deploy. */
+function boundedInt(value: string | undefined, fallback: number, max: number): number {
+  const raw = value?.trim();
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 && parsed <= max ? parsed : fallback;
+}
+
+/** Internal team id -> SofaScore team id; an id with two SofaScore ids is left out. */
+function teamExternalIds(mappings: readonly FootballProviderMappingRow[]): Map<string, string> {
+  const found = new Map<string, string | null>();
+  for (const row of mappings) {
+    if (
+      row.provider_name !== SOFASCORE_PROVIDER_NAME ||
+      row.entity_type !== "team" ||
+      row.active !== true
+    ) {
+      continue;
+    }
+    const existing = found.get(row.internal_entity_id);
+    found.set(
+      row.internal_entity_id,
+      existing === undefined || existing === row.external_id ? row.external_id : null,
+    );
+  }
+  const out = new Map<string, string>();
+  for (const [internal, external] of found) if (external) out.set(internal, external);
+  return out;
+}
+
+/**
+ * The fixture's clubs as SofaScore ids: from the database's home/away when the
+ * snapshot has them (that is the side the page shows), else from the event.
+ */
+function detailsTeams(
+  fixture: MappedFixtureState | undefined,
+  teamIds: ReadonlyMap<string, string>,
+  event: SofascoreFixtureEvent | undefined,
+): SofascoreDetailsTarget["teams"] | null {
+  const home = fixture?.homeTeamId ? teamIds.get(fixture.homeTeamId) : undefined;
+  const away = fixture?.awayTeamId ? teamIds.get(fixture.awayTeamId) : undefined;
+  if (home && away && home !== away) return { home, away };
+  if (event && event.homeTeamId !== event.awayTeamId) {
+    return { home: event.homeTeamId, away: event.awayTeamId };
+  }
+  return null;
+}
+
+/**
+ * Fixtures whose details are worth fetching this tick, in priority order:
+ * written as finished first, then in play and changed (written, or the
+ * provider's changeTimestamp moved within the last 150 s), newest change first.
+ */
+export function selectLiveDetailTargets(
+  events: readonly SofascoreFixtureEvent[],
+  toWrite: readonly SofascoreIngestCall[],
+  snapshot: Snapshot,
+  now: Date,
+  limit: number,
+): SofascoreDetailsTarget[] {
+  const written = new Set(toWrite.map((call) => call.p_external_id));
+  const stateById = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
+  const teamIds = teamExternalIds(snapshot.mappings);
+  const ranked: { target: SofascoreDetailsTarget; rank: number; changed: number }[] = [];
+  for (const event of events) {
+    const state = stateById.get(event.sofascoreEventId);
+    if (!state) continue; // not mapped to a fixture: the RPC would refuse it
+    const changed = event.changeTimestamp === null ? -1 : event.changeTimestamp * 1000;
+    const isWritten = written.has(event.sofascoreEventId);
+    const moved = changed >= 0 && now.getTime() - changed <= DETAILS_CHANGE_WINDOW_MS;
+    let rank: number | null = null;
+    if (event.status === "finished" && isWritten) rank = 0;
+    else if (DETAILS_LIVE_STATUSES.has(event.status) && (isWritten || moved)) rank = 1;
+    if (rank === null) continue;
+    const teams = detailsTeams(state, teamIds, event);
+    if (!teams) continue;
+    ranked.push({ target: { eventId: event.sofascoreEventId, teams }, rank, changed });
+  }
+  ranked.sort((a, b) => a.rank - b.rank || b.changed - a.changed);
+  return ranked.slice(0, limit).map((item) => item.target);
 }
 
 /** Why a call must not be sent, or null when it should be. */
@@ -313,11 +421,33 @@ export async function runSofascoreRefresh(
     },
   };
 
+  // Details (events, lineups, statistics) for the fixtures that just changed:
+  // after the scores, capped, and never a reason to fail the scores.
+  const liveSnapshot = snapshot;
+  const runDetails = async (): Promise<SofascoreDetailsSummary | { status: "skipped" }> => {
+    if (job !== "fixtures") return { status: "skipped" };
+    const cap = boundedInt(
+      environment.SOFASCORE_DETAILS_PER_TICK,
+      SOFASCORE_DETAILS_PER_TICK_DEFAULT,
+      SOFASCORE_DETAILS_PER_TICK_MAX,
+    );
+    const targets = selectLiveDetailTargets(collapsed.events, toWrite, liveSnapshot, now, cap);
+    return runSofascoreMatchDetails(targets, {
+      mode,
+      scope: "live",
+      client,
+      rapid,
+      now,
+      log: emit,
+    });
+  };
+
   if (mode === "shadow") {
     emit({ result: "shadow", ...summary, wouldIngest: toWrite, written: 0 });
+    const matchDetails = await runDetails();
     return {
       status: 200,
-      body: { status: "shadow", mode, job, wouldIngest: toWrite.length, written: 0 },
+      body: { status: "shadow", mode, job, wouldIngest: toWrite.length, written: 0, matchDetails },
     };
   }
 
@@ -400,6 +530,7 @@ export async function runSofascoreRefresh(
     failures.push({ externalId: "run", code: "complete_run_failed" });
   }
 
+  const matchDetails = await runDetails();
   emit({
     result: completionFailed
       ? counts.updated > 0
@@ -411,17 +542,32 @@ export async function runSofascoreRefresh(
     ...summary,
     written: counts.updated,
     failures,
+    matchDetails,
   });
   if (completionFailed) {
     return {
       status: 502,
-      body: { error: "complete_run_failed", mode, job, written: counts.updated, failures },
+      body: {
+        error: "complete_run_failed",
+        mode,
+        job,
+        written: counts.updated,
+        failures,
+        matchDetails,
+      },
     };
   }
   if (counts.rejected > 0) {
     return {
       status: 502,
-      body: { error: "fixture_item_rejected", mode, job, written: counts.updated, failures },
+      body: {
+        error: "fixture_item_rejected",
+        mode,
+        job,
+        written: counts.updated,
+        failures,
+        matchDetails,
+      },
     };
   }
   return {
@@ -435,8 +581,119 @@ export async function runSofascoreRefresh(
       unchanged: skipped.unchanged.length,
       unmapped: plan.unmapped.length,
       unknownStatus: unknownStatus.length,
-      // Match details are not read from SofaScore yet (see the header).
-      matchDetails: { status: "skipped", reason: "not_implemented_for_sofascore" },
+      matchDetails,
+    },
+  };
+}
+
+export interface SofascoreBackfillDependencies {
+  readonly mode: SofascoreRefreshMode;
+  readonly client: FixtureRpcClient;
+  readonly rapid: SofascoreShadowClient;
+  readonly environment: Readonly<Record<string, string | undefined>>;
+  readonly now: Date;
+  readonly log?: (line: string) => void;
+}
+
+/**
+ * The `match_details_backfill` job for SofaScore: finished fixtures of the
+ * current season, mapped to SofaScore, with no details stored (the same
+ * selection the SportsMonks backfill uses: api.service_football_match_details_due
+ * with scope `backfill`, which skips a fixture whose details are marked done
+ * and one refused twice). At most SOFASCORE_DETAILS_BACKFILL_LIMIT (default 4,
+ * max 10) fixtures per run, 3 requests each. Shadow reads and logs, writes
+ * nothing.
+ */
+export async function runSofascoreDetailsBackfill(
+  dependencies: SofascoreBackfillDependencies,
+): Promise<SofascoreRefreshOutcome> {
+  const { mode, client, rapid, environment, now } = dependencies;
+  const job = "match_details_backfill";
+  const log = dependencies.log ?? ((line: string) => console.log(line));
+  const emit = (fields: Record<string, unknown>) =>
+    log(JSON.stringify({ event: "football_live_refresh_sofascore", mode, job, ...fields }));
+  const seasonId = envId(environment.SOFASCORE_SEASON_ID, DEFAULT_SOFASCORE_SEASON_ID);
+  const cap = boundedInt(
+    environment.SOFASCORE_DETAILS_BACKFILL_LIMIT,
+    SOFASCORE_DETAILS_BACKFILL_DEFAULT,
+    SOFASCORE_DETAILS_BACKFILL_MAX,
+  );
+
+  if (cap === 0) {
+    // Switched off (SOFASCORE_DETAILS_BACKFILL_LIMIT=0): nothing is read.
+    emit({ result: "skipped", reason: "disabled" });
+    return { status: 200, body: { status: "skipped", reason: "disabled", mode, job } };
+  }
+
+  let snapshot: Snapshot | null;
+  let due: string[] | null = null;
+  try {
+    const result = await client.schema("api").rpc("football_sofascore_live_snapshot", {});
+    snapshot = result.error ? null : parseSnapshot(result.data);
+    if (snapshot) {
+      const listed = await client.schema("api").rpc("service_football_match_details_due", {
+        p_provider_name: SOFASCORE_PROVIDER_NAME,
+        p_season_external_id: seasonId,
+        p_scope: "backfill",
+        p_limit: cap,
+      });
+      if (!listed.error && Array.isArray(listed.data) && listed.data.length <= cap) {
+        const ids = listed.data.map((item: unknown) =>
+          typeof item === "object" && item !== null
+            ? (item as { externalId?: unknown }).externalId
+            : null,
+        );
+        if (
+          ids.every((id): id is string => typeof id === "string" && /^[1-9][0-9]{0,11}$/.test(id))
+        ) {
+          due = ids;
+        }
+      }
+    }
+  } catch {
+    snapshot = null;
+  }
+  if (!snapshot || due === null) {
+    emit({ result: "error", error: "database_unavailable", stage: "due" });
+    return { status: 502, body: { error: "database_unavailable", mode, job } };
+  }
+
+  const stateById = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
+  const teamIds = teamExternalIds(snapshot.mappings);
+  const targets: SofascoreDetailsTarget[] = [];
+  const unresolved: string[] = [];
+  for (const eventId of due) {
+    const teams = detailsTeams(stateById.get(eventId), teamIds, undefined);
+    if (teams) targets.push({ eventId, teams });
+    else unresolved.push(eventId);
+  }
+  const matchDetails = await runSofascoreMatchDetails(targets, {
+    mode,
+    scope: "backfill",
+    client,
+    rapid,
+    now,
+    log: emit,
+  });
+  emit({
+    result: matchDetails.errors.length > 0 ? "partial" : "ok",
+    unresolvedTeams: unresolved,
+    matchDetails,
+  });
+  const failed = matchDetails.rateLimited
+    ? 429
+    : matchDetails.rejected > 0 && matchDetails.stored + matchDetails.wouldStore === 0
+      ? 502
+      : 200;
+  return {
+    status: failed,
+    body: {
+      provider: SOFASCORE_PROVIDER_NAME,
+      mode,
+      job,
+      due: due.length,
+      unresolvedTeams: unresolved.length,
+      matchDetails,
     },
   };
 }
