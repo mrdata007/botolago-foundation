@@ -6,7 +6,9 @@ import {
   inventedScores,
   parseGenerated,
   renderBodyHtml,
+  modelFacts,
   renderOwnerEmail,
+  unsupportedMentions,
   type ContentJob,
   type GeneratedArticle,
 } from "./ai-content.ts";
@@ -102,6 +104,88 @@ describe("inventedScores", () => {
   it("reads Arabic-Indic digits and ignores dates and clock times", () => {
     expect(inventedScores(recap, article("x", "فاز الفريق ٤-٠"))).toEqual(["4-0"]);
     expect(inventedScores(recap, article("Le 2026-10-03 à 20:00 le match"))).toEqual([]);
+  });
+});
+
+describe("modelFacts and the recap prompt", () => {
+  it("drops unknown half-time and shoot-out scores instead of sending nulls", () => {
+    const job: ContentJob = {
+      kind: "match_recap",
+      fixtureId: "f",
+      facts: {
+        homeScore: 2,
+        awayScore: 5,
+        halfTimeHome: null,
+        halfTimeAway: null,
+        penaltyHome: null,
+        penaltyAway: null,
+      },
+    };
+    expect(modelFacts(job.facts!)).toEqual({ homeScore: 2, awayScore: 5 });
+    const factsJson = buildUserMessage(job).split("FACTS (JSON):")[1];
+    expect(factsJson).not.toContain("null");
+    expect(factsJson).not.toContain("halfTime");
+    expect(factsJson).not.toContain("penalty");
+  });
+  it("keeps a complete pair and drops a half-known one", () => {
+    expect(
+      modelFacts({ homeScore: 1, awayScore: 1, halfTimeHome: 0, halfTimeAway: 1, penaltyHome: 4 }),
+    ).toEqual({ homeScore: 1, awayScore: 1, halfTimeHome: 0, halfTimeAway: 1 });
+  });
+});
+
+describe("unsupportedMentions", () => {
+  const league: ContentJob = {
+    kind: "match_recap",
+    fixtureId: "f",
+    facts: { homeScore: 2, awayScore: 5, halfTimeHome: null, halfTimeAway: null },
+  };
+  it("accepts a clean report", () => {
+    expect(unsupportedMentions(league, article("Une belle victoire", "المباراة"))).toEqual([]);
+  });
+  it("rejects remarks about missing data in French and Arabic", () => {
+    for (const fr of [
+      "Le score à la mi-temps n'a pas été communiqué.",
+      "Le score à la mi-temps reste inconnu.",
+      "Aucune information sur la mi-temps.",
+      "Score non communiqué",
+    ]) {
+      expect(unsupportedMentions(league, article(fr))).toEqual(["missing_data_remark"]);
+    }
+    for (const ar of [
+      "لم يتم الإعلان عن نتيجة الشوط الأول.",
+      "نتيجة الشوط الأول غير متوفرة.",
+      "لَمْ يُعلَن عن النتيجة",
+    ]) {
+      expect(unsupportedMentions(league, article("Le match", ar))).toEqual(["missing_data_remark"]);
+    }
+  });
+  it("rejects a shoot-out or extra time in a match without a shoot-out score", () => {
+    expect(unsupportedMentions(league, article("Pas de tirs au but, victoire nette"))).toEqual([
+      "penalty_shootout",
+    ]);
+    expect(unsupportedMentions(league, article("Le match", "حسمت ركلات الترجيح اللقاء"))).toEqual([
+      "penalty_shootout",
+    ]);
+    expect(unsupportedMentions(league, article("Après prolongation, victoire"))).toEqual([
+      "extra_time",
+    ]);
+  });
+  it("allows a shoot-out when the facts carry the shoot-out score", () => {
+    const cup: ContentJob = {
+      kind: "match_recap",
+      fixtureId: "f",
+      facts: { homeScore: 1, awayScore: 1, penaltyHome: 4, penaltyAway: 3 },
+    };
+    expect(
+      unsupportedMentions(cup, article("Victoire aux tirs au but après prolongation")),
+    ).toEqual([]);
+  });
+  it("does not apply shoot-out checks to previews", () => {
+    const preview: ContentJob = { kind: "match_preview", fixtureId: "f", facts: {} };
+    expect(unsupportedMentions(preview, article("Une finale, peut-être aux tirs au but"))).toEqual(
+      [],
+    );
   });
 });
 
@@ -258,6 +342,22 @@ describe("handleAiContentRequest", () => {
     });
     expect(await response.json()).toMatchObject({ published: 0, rejected: 1 });
     expect(calls.some((c) => c.name === "service_ai_content_publish")).toBe(false);
+  });
+
+  it("does not publish a report that mentions missing data or a shoot-out", async () => {
+    for (const body of [
+      "Le score à la mi-temps n'a pas été communiqué.",
+      "Match décidé aux tirs au but.",
+    ]) {
+      const calls: { name: string; args: unknown }[] = [];
+      const response = await handleAiContentRequest(request(), {
+        environment: env,
+        client: fakeClient({ enabled: true, jobs: [recap] }, calls),
+        fetchImpl: fetchStub(article(body), []),
+      });
+      expect(await response.json()).toMatchObject({ published: 0, rejected: 1 });
+      expect(calls.some((c) => c.name === "service_ai_content_publish")).toBe(false);
+    }
   });
 
   it("does nothing when the feature is off, and never calls the AI", async () => {

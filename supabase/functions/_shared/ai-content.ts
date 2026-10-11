@@ -86,6 +86,10 @@ const SYSTEM_PROMPT = [
   "Write ONLY from the facts supplied in the user message. Never add a score,",
   "scorer, minute, injury, quote, transfer, table position or statistic that is",
   "not in the facts. If a detail is not supplied, leave it out. Do not guess.",
+  "Never write that information is missing, unknown, unavailable or not",
+  "communicated (for example a half-time score): simply say nothing about it.",
+  "Never mention a penalty shoot-out or extra time unless the facts contain a",
+  "penalty shoot-out score; a league match cannot go to penalties.",
   "For news and blog pieces, put every claim in your own words and credit the",
   "outlet by name when you rely on it; never copy sentences from an excerpt.",
   "Write any score as digits with a hyphen, like 2-1, never in words.",
@@ -103,15 +107,37 @@ const KIND_BRIEF: Record<ContentKind, string> = {
   match_preview:
     "Write a match preview. Use the kickoff time, the two teams and, where useful, each side's last results as supplied. Do not predict an exact score.",
   match_recap:
-    "Write a match report on the finished game using the final score, the half-time score and any penalty shoot-out score as supplied, and nothing else about how the game went.",
+    "Write a match report on the finished game using the final score, plus the half-time score and the penalty shoot-out score only when they appear in the facts, and nothing else about how the game went. Do not mention any detail that is absent from the facts, not even to say it is absent.",
   news_report:
     "Write one news roundup of the Botola Pro 1 that reports what the supplied stories say, crediting each outlet by name.",
   blog: "Write an opinion-style blog post for fans about the current Botola Pro 1 picture, grounded only in the supplied stories and results. Make clear it is commentary.",
 };
 
+/**
+ * Facts as sent to the model: a null is not a fact. A missing half-time or
+ * shoot-out score is dropped (a pair is kept only when both halves are known),
+ * so the model has nothing to remark on and cannot write "not communicated".
+ */
+export function modelFacts(facts: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(facts)) {
+    if (value !== null && value !== undefined) out[key] = value;
+  }
+  for (const [a, b] of [
+    ["halfTimeHome", "halfTimeAway"],
+    ["penaltyHome", "penaltyAway"],
+  ] as const) {
+    if (typeof out[a] !== "number" || typeof out[b] !== "number") {
+      delete out[a];
+      delete out[b];
+    }
+  }
+  return out;
+}
+
 export function buildUserMessage(job: ContentJob): string {
   const payload: Record<string, unknown> = {};
-  if (job.facts) payload.facts = job.facts;
+  if (job.facts) payload.facts = modelFacts(job.facts);
   if (job.news) {
     payload.stories = job.news.map(({ title, excerpt, sourceName }) => ({
       outlet: sourceName,
@@ -272,6 +298,66 @@ export function inventedScores(job: ContentJob, article: GeneratedArticle): stri
         const pair = `${match[1]}-${match[2]}`;
         if (!allowed.has(pair)) found.add(pair);
       }
+    }
+  }
+  return [...found];
+}
+
+// ------------------------------------------------- unsupported statements
+
+const MISSING_DATA_PATTERNS: readonly RegExp[] = [
+  // French: "n'a pas été communiqué", "non communiqué", "reste inconnu" ...
+  /\b(?:n['’]a|n['’]ont|n['’]est|ne sont|n['’]étaient?|n['’]avait)\s+pas\s+(?:été\s+)?(?:communiqué|précisé|fourni|disponible|connu|renseigné|publié|indiqué|divulgué)/iu,
+  /\b(?:non|pas)\s+(?:communiqué|précisé|disponible|connu|renseigné|indiqué)/iu,
+  /\b(?:inconnu|indisponible)s?\b/iu,
+  /\baucune\s+(?:information|donnée|précision)\b/iu,
+  /\b(?:informations?|données?|détails?)\s+(?:manquantes?|non disponibles?|indisponibles?)/iu,
+  /\bmanque\s+d['’](?:informations?|données?)/iu,
+  // Arabic (diacritics are stripped before matching)
+  /لم\s+(?:يتم|يتوفر|تتوفر|يعلن|تعلن|يذكر|تذكر|يصدر|يكشف)/u,
+  /غير\s+(?:متوفر|متوفرة|متاح|متاحة|معروف|معروفة|معلن|معلنة|مذكور|مذكورة)/u,
+  /لا\s+(?:تتوفر|تتوافر|توجد)\s+(?:معلومات|بيانات|تفاصيل)/u,
+];
+
+const SHOOTOUT_PATTERNS: readonly RegExp[] = [
+  /\btirs?\s+aux?\s+buts?\b/iu,
+  /\bséance\s+de\s+(?:tirs|penalt)/iu,
+  /\bpenalt(?:y|ys|ies)\s+(?:shoot|en\s+séance)/iu,
+  /\bshoot-?\s?outs?\b/iu,
+  /ركلات\s+الترجيح/u,
+  /ركلات\s+الجزاء\s+الترجيحية/u,
+];
+
+const EXTRA_TIME_PATTERNS: readonly RegExp[] = [
+  /\bprolongations?\b/iu,
+  /\bextra[- ]time\b/iu,
+  /الأشواط\s+الإضافية/u,
+  /الوقت\s+الإضافي/u,
+  /شوطين\s+إضافيين/u,
+];
+
+function stripArabicMarks(text: string): string {
+  return text.replace(/[\u0610-\u061A\u064B-\u065F\u0670\u0640]/g, "");
+}
+
+/**
+ * Statements the facts cannot support, which must not be published: any remark
+ * that some information is missing, and (for a match report) a penalty
+ * shoot-out or extra time unless the facts carry a shoot-out score. Returns
+ * short labels naming what was found; empty means the article is clean.
+ */
+export function unsupportedMentions(job: ContentJob, article: GeneratedArticle): string[] {
+  const facts = job.facts ? modelFacts(job.facts) : {};
+  const wentToPenalties =
+    typeof facts.penaltyHome === "number" && typeof facts.penaltyAway === "number";
+  const found = new Set<string>();
+  for (const language of LANGUAGES) {
+    const { title, summary, paragraphs } = article[language];
+    const text = stripArabicMarks([title, summary, ...paragraphs].join("\n"));
+    if (MISSING_DATA_PATTERNS.some((p) => p.test(text))) found.add("missing_data_remark");
+    if (job.kind === "match_recap" && !wentToPenalties) {
+      if (SHOOTOUT_PATTERNS.some((p) => p.test(text))) found.add("penalty_shootout");
+      if (EXTRA_TIME_PATTERNS.some((p) => p.test(text))) found.add("extra_time");
     }
   }
   return [...found];
@@ -507,7 +593,11 @@ export async function handleAiContentRequest(
   for (const job of plan.jobs.slice(0, MAX_JOBS_PER_RUN)) {
     const raw = await askModel(job, { apiKey, model }, fetchImpl);
     const article = raw ? parseGenerated(raw) : null;
-    if (!article || inventedScores(job, article).length > 0) {
+    if (
+      !article ||
+      inventedScores(job, article).length > 0 ||
+      unsupportedMentions(job, article).length > 0
+    ) {
       summary.rejected += 1;
       continue;
     }
