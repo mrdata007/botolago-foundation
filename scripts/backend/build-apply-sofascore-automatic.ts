@@ -75,32 +75,32 @@ export const PINS = {
   snapshotAfter: "c9e9e9dc913d1bf729c7c49bc2f821bc",
   // api.service_record_sofascore_fantasy_observation(): printed by the CI step
   // "SofaScore Fantasy observation md5" in database-quality. FILL THIS.
-  sofascoreFantasyObservation: "FILL_FROM_CI_SOFASCORE_FANTASY_OBSERVATION_MD5",
+  sofascoreFantasyObservation: "e97f34f2bf5acfc7447b3e9dd35386ac",
 
   // 20261011130000, the two functions it REPLACES. "Before" is what production
   // holds now (measured by the CI step "SofaScore automatic pre-state md5" on a
   // database reset to version 20261011120000); "after" is the reviewed new
   // definition (CI step "SofaScore automatic post-state md5", full reset).
-  supportingStateBefore: "FILL_FROM_CI_SUPPORTING_STATE_BEFORE_MD5",
-  supportingStateAfter: "FILL_FROM_CI_SUPPORTING_STATE_AFTER_MD5",
-  supportingDependencyBefore: "FILL_FROM_CI_SUPPORTING_DEPENDENCY_BEFORE_MD5",
-  supportingDependencyAfter: "FILL_FROM_CI_SUPPORTING_DEPENDENCY_AFTER_MD5",
+  supportingStateBefore: "0ef7dfd0a98b3dda7015ea6fc47342c1",
+  supportingStateAfter: "b4ff52c3a45e260cdf75f2eb51487189",
+  supportingDependencyBefore: "f86e4e6cc17c59f444016b0ddacba9ff",
+  supportingDependencyAfter: "5b14152b9e20dcf4923e175038d65115",
   // 20261011130000, the four functions it CREATES (post-state step only).
-  matchEnqueue: "FILL_FROM_CI_MATCH_ENQUEUE_MD5",
-  autoMapPlayers: "FILL_FROM_CI_AUTO_MAP_PLAYERS_MD5",
-  adminMatchQueue: "FILL_FROM_CI_ADMIN_MATCH_QUEUE_MD5",
-  adminResolveMatch: "FILL_FROM_CI_ADMIN_RESOLVE_MATCH_MD5",
+  matchEnqueue: "f51a0243311a532ad1656daed3bc7402",
+  autoMapPlayers: "04d85b5c744e2dbbe1bea10d0e521cf6",
+  adminMatchQueue: "85062ca7513d4c9795efc6759ee10237",
+  adminResolveMatch: "967114b9fd92243ffcd05ce5606ac34d",
 
   // 20261011140000, the three functions it CREATES (post-state step only).
-  fantasyContext: "FILL_FROM_CI_FANTASY_CONTEXT_MD5",
-  fantasyNote: "FILL_FROM_CI_FANTASY_NOTE_MD5",
-  fantasyDue: "FILL_FROM_CI_FANTASY_DUE_MD5",
+  fantasyContext: "bfbdcc58895a89fc2c5b8d069bbee728",
+  fantasyNote: "0b5cc256492be22047036de44136abc5",
+  fantasyDue: "15f47827acd7f8e6af81c0ac0c9557e1",
 
   // 20261011150000: the ops health body it PATCHES (pre-state step: before;
   // post-state step: after) and the helper it CREATES.
-  opsHealthBefore: "FILL_FROM_CI_OPS_HEALTH_BEFORE_MD5",
-  opsHealthAfter: "FILL_FROM_CI_OPS_HEALTH_AFTER_MD5",
-  fantasyFixtureHealthReady: "FILL_FROM_CI_FANTASY_FIXTURE_HEALTH_READY_MD5",
+  opsHealthBefore: "1f584b167e83da8858a1377ee416a5b8",
+  opsHealthAfter: "ff9d7ab8c83f656b0279447dcc9c14f0",
+  fantasyFixtureHealthReady: "b47ed5fb6d6612206771f806b87f91ad",
 } as const;
 
 /** Migrations other lanes still have to add. Remove an entry when it moves to STEPS. Empty: every slot is filled. */

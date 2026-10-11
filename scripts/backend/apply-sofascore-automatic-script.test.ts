@@ -358,12 +358,10 @@ describe("apply-sofascore-automatic.sql", () => {
 
   test("every md5 placeholder is printed by a named CI line, and the pre-state ones come from a database at 20261011120000", () => {
     const workflow = read(".github/workflows/backend-quality.yml");
-    for (const pin of Object.values(PINS)) {
-      if (isRealMd5(pin)) continue;
-      // The Fantasy observation pin has its own, older CI label.
-      if (pin === PINS.sofascoreFantasyObservation) continue;
-      expect({ pin, printed: workflow.includes(`'${pin}'`) }).toEqual({ pin, printed: true });
-    }
+    // The CI steps name each pin by its label, FILL_FROM_CI_<KEY>_MD5, whether or
+    // not the value has been copied into PINS yet.
+    const label = (key: string) =>
+      `FILL_FROM_CI_${key.replace(/([A-Z])/g, "_$1").toUpperCase()}_MD5`;
     expect(workflow).toContain("supabase db reset --local --version 20261011120000");
     // The pre-state step comes before the full reset that every later step needs.
     const pre = workflow.indexOf("SofaScore automatic pre-state md5 (database at 20261011120000)");
@@ -378,7 +376,7 @@ describe("apply-sofascore-automatic.sql", () => {
       "supportingDependencyBefore",
       "opsHealthBefore",
     ] as const) {
-      const at = workflow.indexOf(`'${PINS[key]}'`);
+      const at = workflow.indexOf(`'${label(key)}'`);
       expect({ key, inPreStateStep: at > pre && at < full }).toEqual({ key, inPreStateStep: true });
     }
     for (const key of [
@@ -394,7 +392,7 @@ describe("apply-sofascore-automatic.sql", () => {
       "fantasyFixtureHealthReady",
       "opsHealthAfter",
     ] as const) {
-      expect({ key, afterReset: workflow.indexOf(`'${PINS[key]}'`) > post }).toEqual({
+      expect({ key, afterReset: workflow.indexOf(`'${label(key)}'`) > post }).toEqual({
         key,
         afterReset: true,
       });

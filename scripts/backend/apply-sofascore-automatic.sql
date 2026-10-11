@@ -53,9 +53,6 @@
 --   AGENTS.md lists therefore stay as they are (the live-switch and
 --   match-details releases did the same).
 
---
--- NOT FINAL: md5 pins to fill from the green database-quality run: sofascoreFantasyObservation, supportingStateBefore, supportingStateAfter, supportingDependencyBefore, supportingDependencyAfter, matchEnqueue, autoMapPlayers, adminMatchQueue, adminResolveMatch, fantasyContext, fantasyNote, fantasyDue, opsHealthBefore, opsHealthAfter, fantasyFixtureHealthReady.
---   Until they are, this script REFUSES TO RUN (first check below).
 -- ============================================================================
 
 begin;
@@ -83,21 +80,6 @@ $hold$;
 
 do $preflight$
 begin
-  raise exception 'stop: this script is not final -- the md5 pin sofascoreFantasyObservation has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin supportingStateBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin supportingStateAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin supportingDependencyBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin supportingDependencyAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin matchEnqueue has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin autoMapPlayers has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin adminMatchQueue has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin adminResolveMatch has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyContext has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyNote has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyDue has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin opsHealthBefore has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin opsHealthAfter has not been filled from CI yet; nothing was saved';
-  raise exception 'stop: this script is not final -- the md5 pin fantasyFixtureHealthReady has not been filled from CI yet; nothing was saved';
   -- Any run not finished blocks: a recent one, and an older one whose
   -- backend is still alive (a record left behind by a crash does not).
   if exists (select 1 from cron.job_run_details run
@@ -204,10 +186,10 @@ begin
       raise exception 'stop: migration 20261011120000 is neither recorded nor part of this run, but 20261011130000 builds on api.service_record_sofascore_fantasy_observation';
     end if;
     -- It replaces exactly the definitions migration 20261003120000 left.
-    if md5(pg_get_functiondef('app_private.football_mapping_supporting_state(uuid)'::regprocedure)) is distinct from 'FILL_FROM_CI_SUPPORTING_STATE_BEFORE_MD5' then
+    if md5(pg_get_functiondef('app_private.football_mapping_supporting_state(uuid)'::regprocedure)) is distinct from '0ef7dfd0a98b3dda7015ea6fc47342c1' then
       raise exception 'stop: app_private.football_mapping_supporting_state(uuid) is not the reviewed version 20261011130000 replaces (md5)';
     end if;
-    if md5(pg_get_functiondef('app_private.football_mapping_supporting_dependency(text,uuid,uuid)'::regprocedure)) is distinct from 'FILL_FROM_CI_SUPPORTING_DEPENDENCY_BEFORE_MD5' then
+    if md5(pg_get_functiondef('app_private.football_mapping_supporting_dependency(text,uuid,uuid)'::regprocedure)) is distinct from 'f86e4e6cc17c59f444016b0ddacba9ff' then
       raise exception 'stop: app_private.football_mapping_supporting_dependency(text,uuid,uuid) is not the reviewed version 20261011130000 replaces (md5)';
     end if;
   end if;
@@ -248,7 +230,7 @@ begin
       raise exception 'stop: an object migration 20261011150000 depends on is missing -- production is not the state it was written for';
     end if;
     -- It patches the text of exactly the health body the adaptive scoring release left.
-    if md5(pg_get_functiondef('app_private.ops_health_checks_before_adaptive()'::regprocedure)) is distinct from 'FILL_FROM_CI_OPS_HEALTH_BEFORE_MD5' then
+    if md5(pg_get_functiondef('app_private.ops_health_checks_before_adaptive()'::regprocedure)) is distinct from '1f584b167e83da8858a1377ee416a5b8' then
       raise exception 'stop: app_private.ops_health_checks_before_adaptive() is not the reviewed version 20261011150000 replaces (md5)';
     end if;
   end if;
@@ -1854,7 +1836,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || '20261011120000: the Fantasy observation function is callable by the wrong roles'::text;
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_SOFASCORE_FANTASY_OBSERVATION_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'e97f34f2bf5acfc7447b3e9dd35386ac' then
           problems := problems || '20261011120000: the Fantasy observation function is not the reviewed version (md5)'::text;
         end if;
       end if;
@@ -1893,7 +1875,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011130000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_SUPPORTING_STATE_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'b4ff52c3a45e260cdf75f2eb51487189' then
           problems := problems || ('20261011130000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -1912,7 +1894,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011130000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_SUPPORTING_DEPENDENCY_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '5b14152b9e20dcf4923e175038d65115' then
           problems := problems || ('20261011130000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -1931,7 +1913,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011130000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_MATCH_ENQUEUE_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'f51a0243311a532ad1656daed3bc7402' then
           problems := problems || ('20261011130000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -1950,7 +1932,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011130000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_AUTO_MAP_PLAYERS_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '04d85b5c744e2dbbe1bea10d0e521cf6' then
           problems := problems || ('20261011130000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -1969,7 +1951,7 @@ begin
           or not has_function_privilege('authenticated', fn, 'execute') then
           problems := problems || ('20261011130000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_ADMIN_MATCH_QUEUE_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '85062ca7513d4c9795efc6759ee10237' then
           problems := problems || ('20261011130000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -1988,7 +1970,7 @@ begin
           or not has_function_privilege('authenticated', fn, 'execute') then
           problems := problems || ('20261011130000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_ADMIN_RESOLVE_MATCH_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '967114b9fd92243ffcd05ce5606ac34d' then
           problems := problems || ('20261011130000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -2027,7 +2009,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011140000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_CONTEXT_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'bfbdcc58895a89fc2c5b8d069bbee728' then
           problems := problems || ('20261011140000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -2046,7 +2028,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011140000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_NOTE_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '0b5cc256492be22047036de44136abc5' then
           problems := problems || ('20261011140000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -2065,7 +2047,7 @@ begin
           or not has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011140000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_DUE_MD5' then
+        if md5(pg_get_functiondef(fn)) <> '15f47827acd7f8e6af81c0ac0c9557e1' then
           problems := problems || ('20261011140000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -2089,7 +2071,7 @@ begin
           or has_function_privilege('service_role', fn, 'execute') then
           problems := problems || ('20261011150000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_FANTASY_FIXTURE_HEALTH_READY_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'b47ed5fb6d6612206771f806b87f91ad' then
           problems := problems || ('20261011150000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
@@ -2107,7 +2089,7 @@ begin
           or has_function_privilege('authenticated', fn, 'execute') then
           problems := problems || ('20261011150000: callable by the wrong roles: ' || fn::text);
         end if;
-        if md5(pg_get_functiondef(fn)) <> 'FILL_FROM_CI_OPS_HEALTH_AFTER_MD5' then
+        if md5(pg_get_functiondef(fn)) <> 'ff9d7ab8c83f656b0279447dcc9c14f0' then
           problems := problems || ('20261011150000: not the reviewed definition (md5): ' || fn::text);
         end if;
       end if;
