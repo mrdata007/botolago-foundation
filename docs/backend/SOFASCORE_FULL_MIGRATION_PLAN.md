@@ -21,6 +21,8 @@ which covered Fantasy player performances only.
 
 | M6 | 2026-10-11: Fantasy player points come from **SofaScore alone, in simple mode** (minutes, goals, own goals, cards, clean sheet, goals conceded); assists, saves and penalty saves/misses score no points until a second source cross-checks them. Supersedes M3 (Flashscore as required cross-check) for scoring. |
 
+| M7 | 2026-10-11: **Flashscore is no longer used.** SofaScore is the only provider for all football data, including Fantasy. Supersedes M3. |
+
 ### Open decision carried forward
 
 - **Next season's Fantasy starting prices.** `app_private.fantasy_initial_price_v1`
