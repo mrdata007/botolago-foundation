@@ -154,7 +154,8 @@ describe("Sofascore adapter, from the Phase 0 fixtures", () => {
       { incidentType: "injuryTime", incidentClass: "newClass", time: 45 },
       { incidentType: "injuryTime", time: 45, player: { id: 1, name: "Player" } },
       { incidentType: "injuryTime", time: 45, playerOut: { id: 1, name: "Player" } },
-    ]) expect(() => parseSofascoreIncidents({ incidents: [incident] })).toThrow(FootballError);
+    ])
+      expect(() => parseSofascoreIncidents({ incidents: [incident] })).toThrow(FootballError);
   });
 
   test("statistics lines keep the shots-on-goal and keeper-save keys", () => {
