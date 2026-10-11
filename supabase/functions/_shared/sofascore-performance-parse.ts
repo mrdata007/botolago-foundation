@@ -291,10 +291,14 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
       // Only the reviewed added-time announcement is harmless metadata.
       // Unknown substitutions, VAR decisions and other unplaced labels fail closed.
       if (
-        rawType === "injuryTime" && rawClass === null &&
-        incident.player === undefined && incident.assist1 === undefined &&
-        incident.playerIn === undefined && incident.playerOut === undefined
-      ) continue;
+        rawType === "injuryTime" &&
+        rawClass === null &&
+        incident.player === undefined &&
+        incident.assist1 === undefined &&
+        incident.playerIn === undefined &&
+        incident.playerOut === undefined
+      )
+        continue;
       // An incident that cannot be placed must not be guessed at: fail the whole
       // match so it goes to review instead of scoring on partial data.
       throw new SofascoreParseError("incidents", [`${rawType}: no minute or side`]);
