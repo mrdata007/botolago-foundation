@@ -212,10 +212,14 @@ select extensions.is(pg_temp.code(pg_temp.id('f0', 9), pg_temp.request()), 'sofa
 -- ===========================================================================
 -- 5. One SofaScore match per fixture
 -- ===========================================================================
-insert into app_private.football_provider_mappings (provider_name, entity_type, external_id, internal_entity_id, source_version, last_seen_at)
-values ('sofascore', 'fixture', '9003', pg_temp.id('f0', 1), 'test', now());
+-- A fixture has one SofaScore mapping (unique per internal id), so the other
+-- match is reached by re-pointing it, then put back for the sections below.
+update app_private.football_provider_mappings set external_id = '9003'
+where provider_name = 'sofascore' and entity_type = 'fixture' and internal_entity_id = pg_temp.id('f0', 1);
 select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.request(null, '{}', '9003')), 'sofascore_fixture_link_conflict',
   '5.1 a fixture linked to one SofaScore match cannot be fed from another');
+update app_private.football_provider_mappings set external_id = '9001'
+where provider_name = 'sofascore' and entity_type = 'fixture' and internal_entity_id = pg_temp.id('f0', 1);
 
 -- ===========================================================================
 -- 6. Coverage and evidence rules

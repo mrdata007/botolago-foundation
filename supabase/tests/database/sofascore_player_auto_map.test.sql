@@ -205,7 +205,7 @@ select extensions.is(app_private.football_mapping_supporting_state(pg_temp.map_i
   'automatic_exact_name', '7.2 and says why');
 select extensions.is(app_private.football_mapping_supporting_state(pg_temp.map_id('S7')) ->> 'reviewProvenance',
   'automatic_name_and_shirt', '7.3 the shirt rule says so too');
-select extensions.like((select source_version from app_private.football_provider_mappings where external_id = 'S1'),
+select extensions.alike((select source_version from app_private.football_provider_mappings where external_id = 'S1'),
   'sofascore-auto-map:exact-name:%', '7.4 the source_version names the automatic method');
 select extensions.is((app_private.football_mapping_supporting_state(pg_temp.map_id('S10')) ->> 'reviewed')::boolean, false,
   '7.5 a legacy unreviewed mapping stays unreviewed');
