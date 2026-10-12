@@ -434,8 +434,11 @@ select extensions.is((api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9
   '[]', null, null, now() - interval '1 minute') ->> 'attempts')::int, 2, '9.22 a second attempt is counted');
 select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' -> 'matchData' ->> 'version'), '1',
   '9.23 and the stored replies are kept when none are given');
-select extensions.is((api.service_sofascore_fantasy_due(6, 1, 72, 2, 4) -> 'retry') ? pg_temp.id('f0', 2)::text, false,
-  '9.24 a fixture that reached the attempt limit is no longer due');
+-- 20261013150100: the attempt-limit argument is accepted and ignored. A held match is
+-- retried until kickoff + 21 days whatever its attempt count; past that (this fixture
+-- kicked off on 2026-08-11) it keeps three tries, and it has had two.
+select extensions.is((api.service_sofascore_fantasy_due(6, 1, 72, 2, 4) -> 'retry') ? pg_temp.id('f0', 2)::text, true,
+  '9.24 the old attempt limit no longer ends retries (two of three tries used)');
 select extensions.is(api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'gave_up', 'needs_review',
   '[]', null, null, null) ->> 'status', 'gave_up', '9.25 giving up is stored');
 select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' ->> 'matchData') is null, true,
