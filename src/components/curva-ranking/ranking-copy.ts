@@ -31,6 +31,7 @@ export function rankingCopy(t: Translate) {
     emptyAll: t("curva_ranking.empty.all"),
     off: t("curva_ranking.off"),
     backToCurva: t("curva_ranking.back"),
+    waiting: t("curva_ranking.waiting"),
     rankA11y: (n: number) => fillText(t("curva_ranking.rank_a11y"), { n }),
   };
 }

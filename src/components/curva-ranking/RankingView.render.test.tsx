@@ -132,6 +132,15 @@ for (const lang of ["fr", "ar"] as const) {
       expect(body).toContain("91");
     });
 
+    it("marks a missing statistic as waiting, never with a dash", async () => {
+      language = lang;
+      const html = await render();
+      // Mehdi has 2 empty stats, Nadia 4, Hamza 1; Nadia and Mehdi also have no rank.
+      expect((html.match(/data-waiting/g) ?? []).length).toBe(2 + 4 + 1 + 2);
+      expect(html).toContain(dictionaries[lang]["curva_ranking.waiting"]);
+      expect(text(html)).not.toMatch(/[—–]/);
+    });
+
     it("never prints a team id or an e-mail", async () => {
       language = lang;
       const body = text(await render());

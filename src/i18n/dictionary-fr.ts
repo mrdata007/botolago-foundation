@@ -2806,6 +2806,7 @@ export const fr = {
   "curva_ranking.off":
     "Le classement Curva n’est pas disponible pour le moment. Revenez un peu plus tard.",
   "curva_ranking.back": "Retour à Curva",
+  "curva_ranking.waiting": "en attente",
   "curva_ranking.rank_a11y": "Rang {n}",
   "curva.club.title": "Votre club",
   "curva.club.mates_one": "Dans « {league} », supporter de {club} aussi : {names}",

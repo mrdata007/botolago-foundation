@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { CSSProperties, JSX } from "react";
 
-import { CODE_CLASS, DASH, Figure, PersonName, ProvisionalBadge } from "@/components/curva/figures";
+import { CODE_CLASS, Figure, PersonName, ProvisionalBadge } from "@/components/curva/figures";
 import { useCardCopy, useCurvaCopy } from "@/components/manager-card/copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import { STAT_CODES } from "@/components/manager-card/types";
@@ -288,8 +288,7 @@ function RankingRow({
       <span className={cn("pt-0.5 text-center", ui.stat.sm, ui.tone.muted)}>
         {rank === null ? (
           <>
-            <span aria-hidden>{DASH}</span>
-            <span className="sr-only">{card.a11y.noRating}</span>
+            <Waiting label={copy.waiting} />
           </>
         ) : (
           <>
@@ -349,7 +348,11 @@ function RankingRow({
                   entry.stats[code] === null ? ui.tone.muted : ui.tone.default,
                 )}
               >
-                {entry.stats[code] === null ? DASH : <Figure>{entry.stats[code]}</Figure>}
+                {entry.stats[code] === null ? (
+                  <Waiting label={copy.waiting} />
+                ) : (
+                  <Figure>{entry.stats[code]}</Figure>
+                )}
               </dd>
             </div>
           ))}
@@ -373,5 +376,15 @@ function RankingRow({
         )}
       </div>
     </li>
+  );
+}
+
+/** A value that has not arrived: a muted « … » the screen reader reads as « en attente ». Never a dash. */
+function Waiting({ label }: { label: string }): JSX.Element {
+  return (
+    <span data-waiting="">
+      <span aria-hidden>…</span>
+      <span className="sr-only">{label}</span>
+    </span>
   );
 }

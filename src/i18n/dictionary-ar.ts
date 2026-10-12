@@ -2645,6 +2645,7 @@ export const ar = {
   "curva_ranking.empty.all": "يظهر الترتيب العام بعد انتهاء الجولة الأولى.",
   "curva_ranking.off": "ترتيب كورفا غير متاح حاليًا. عاود المحاولة بعد قليل.",
   "curva_ranking.back": "العودة إلى كورفا",
+  "curva_ranking.waiting": "قيد الانتظار",
   "curva_ranking.rank_a11y": "المركز {n}",
   "curva.club.title": "ناديك",
   "curva.club.mates_one": "في «{league}»، من مشجّعي {club} أيضًا: {names}",
