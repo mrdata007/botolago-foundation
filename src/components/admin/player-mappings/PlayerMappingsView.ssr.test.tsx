@@ -155,7 +155,7 @@ describe("the queue at production scale (1,004 candidates)", () => {
     for (const id of ["club", "provider", "status", "evidence", "flag", "search"])
       has(html, `data-testid="mapping-filter-${id}"`);
     has(html, 'role="search"');
-    has(html, "Filtre seulement, ne classe jamais.");
+    has(html, "La recherche filtre la liste, sans modifier le classement.");
     // Sixteen clubs, each with its candidate count.
     has(html, "Widad Témara");
     has(html, "Maghreb Fès");
@@ -718,7 +718,7 @@ describe("dual control, as drawn", () => {
       initial: { selection: { kind: "proposal", id: w.id } },
     });
     has(held, "Conflit d’identité");
-    has(held, "le monde a changé");
+    has(held, "les données ont changé");
     lacks(held, 'data-testid="mapping-approve"');
     const heldList = render({ state: ready(await w.seenBy(approver)), initial: { view: "held" } });
     has(heldList, 'data-testid="mapping-proposal-row"');
