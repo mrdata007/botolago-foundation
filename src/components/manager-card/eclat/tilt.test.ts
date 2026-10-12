@@ -732,13 +732,14 @@ describe("a finger's drag on a phone (collectible motion)", () => {
   it("tilts the card toward a finger that is dragging across it", () => {
     touch = true;
     const { el, classes, vars, listeners, parts } = fakeCard();
-    mountTilt(el);
+    const stop = mountTilt(el);
     down(listeners);
     drag(listeners, 100 + 300, 200);
     flush();
     expect(classes.has("mc-eclat--active")).toBe(true);
     expect(vars.get("--mc-ax")).toBe("1.000");
     expect(transform(parts.tilt)).toBe(tilt([1, 1]));
+    stop();
   });
 
   it("does not tilt for a finger that never touched down on the card, or another finger", () => {
@@ -757,7 +758,7 @@ describe("a finger's drag on a phone (collectible motion)", () => {
     for (const type of ["pointerup", "pointercancel"]) {
       touch = true;
       const { el, classes, listeners, vars } = fakeCard();
-      mountTilt(el);
+      const stop = mountTilt(el);
       down(listeners);
       drag(listeners, 400, 200);
       flush();
@@ -765,6 +766,7 @@ describe("a finger's drag on a phone (collectible motion)", () => {
       expect(classes.has("mc-eclat--active")).toBe(false);
       expect(classes.has("mc-eclat--settle")).toBe(true);
       expect(vars.get("--mc-ax")).toBe("0.240");
+      stop();
     }
   });
 
@@ -781,12 +783,13 @@ describe("a finger's drag on a phone (collectible motion)", () => {
 
   it("does not let a mouse button's release end a hover tilt", () => {
     const { el, classes, listeners } = fakeCard();
-    mountTilt(el);
+    const stop = mountTilt(el);
     move(listeners, 300, 300);
     flush();
     listeners.get("pointerup")!({ pointerType: "mouse", pointerId: 1 });
     expect(classes.has("mc-eclat--active")).toBe(true);
     expect(classes.has("mc-eclat--settle")).toBe(false);
+    stop();
   });
 
   it("asks for a vertical pan only on a touch-only screen, and gives it back", () => {
@@ -804,7 +807,7 @@ describe("a finger's drag on a phone (collectible motion)", () => {
 
   it("settles as a spring: the inner parts pass the rest light a little and come back to it", () => {
     const { el, listeners, parts } = fakeCard();
-    mountTilt(el);
+    const stop = mountTilt(el);
     move(listeners, 400, 200);
     flush(60);
     listeners.get("pointerleave")!({});
@@ -821,5 +824,6 @@ describe("a finger's drag on a phone (collectible motion)", () => {
     expect(seen[0]! > rest).toBe(true);
     expect(Math.min(...seen) < rest).toBe(true);
     expect(seen[seen.length - 1]).toBe(rest);
+    stop();
   });
 });
