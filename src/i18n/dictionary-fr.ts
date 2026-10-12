@@ -2780,6 +2780,36 @@ export const fr = {
   "curva.people.cards_failed": "Impossible de charger les cartes de la ligue.",
   "curva.people.same_club": "Supporters de {club}",
   "curva.people.compare": "Comparer les cartes de la ligue",
+
+  /* Curva ranking (`/curva/classement`): the managers ranked by their card's rating. */
+  "curva_ranking.meta": "Classement Curva — BotolaGO",
+  "curva_ranking.title": "Classement Curva",
+  "curva_ranking.link.title": "Classement Curva",
+  "curva_ranking.link.body": "Les managers classés par note de carte.",
+  "curva_ranking.view.label": "Vue du classement",
+  "curva_ranking.view.league": "Ma ligue",
+  "curva_ranking.view.all": "Tous",
+  "curva_ranking.leagues.label": "Mes ligues",
+  "curva_ranking.all.note":
+    "Les {n} premiers managers du classement général Fantasy, classés par note de carte.",
+  "curva_ranking.rated.title": "Managers classés",
+  "curva_ranking.unrated.title": "Pas encore de note",
+  "curva_ranking.unrated.hint":
+    "Ces managers ne sont pas encore classés : la note arrive quand trois statistiques sur quatre sont remplies.",
+  "curva_ranking.unrated.stats": "{k}/{n} statistiques",
+  "curva_ranking.unrated.forming": "{k}/{n} journées comptées",
+  "curva_ranking.none_rated":
+    "Personne n’a encore de note ici. Le classement apparaît dès que les cartes sont notées.",
+  "curva_ranking.empty.no_league":
+    "Créez ou rejoignez une ligue pour voir le classement de vos amis.",
+  "curva_ranking.empty.all": "Le classement général apparaît après la première journée terminée.",
+  "curva_ranking.off":
+    "Le classement Curva n’est pas disponible pour le moment. Revenez un peu plus tard.",
+  "curva_ranking.back": "Retour à Curva",
+  "curva_ranking.truncated":
+    "Classement établi sur les {shown} premiers de la ligue, sur {total} managers. Votre ligne est ajoutée en dessous, sans rang.",
+  "curva_ranking.waiting": "en attente",
+  "curva_ranking.rank_a11y": "Rang {n}",
   "curva.club.title": "Votre club",
   "curva.club.mates_one": "Dans « {league} », supporter de {club} aussi : {names}",
   "curva.club.mates_other": "Dans « {league} », supporters de {club} aussi : {names}",

@@ -1,0 +1,19 @@
+/* The ranking's rows rise a few pixels and fade in, one after the other. Keyframes only inside the
+   no-preference block, transform and opacity only: under reduced motion the rows are drawn at rest. */
+@media (prefers-reduced-motion: no-preference) {
+  .cr-row {
+    animation: cr-row-in var(--duration-quick, 180ms) cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    animation-delay: calc(var(--cr-i, 0) * 28ms);
+  }
+
+  @keyframes cr-row-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
