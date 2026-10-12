@@ -15,12 +15,18 @@ import type { MappingRpcClient } from "./mapping-repository";
  */
 
 export const SOFASCORE_QUEUE_REASONS = [
+  // Current: the matcher decides by side + shirt number + position (migration 20261013150000).
+  "awaiting_second_match",
+  "ambiguous_shirt",
+  "no_shirt",
+  "shirt_conflict",
   "no_candidate",
-  "ambiguous_name",
-  "partial_name",
   "candidate_already_mapped",
   "inactive_mapping_exists",
   "position_mismatch",
+  // Legacy: queued by the name-based matcher; kept valid until the player is next seen.
+  "ambiguous_name",
+  "partial_name",
   "duplicate_name_in_squad",
 ] as const;
 export type SofascoreQueueReason = (typeof SOFASCORE_QUEUE_REASONS)[number];

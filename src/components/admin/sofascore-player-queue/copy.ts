@@ -95,17 +95,33 @@ const FR: SofascoreQueueCopy = {
       : `${n} lignes de la liste étaient illisibles et ont été ignorées.`,
   reasonLabel: "Pourquoi il est en attente",
   reasons: {
+    awaiting_second_match: {
+      title: "Vu une seule fois : en attente d’un second match",
+      body: "Un seul joueur du club porte ce numéro à ce poste, mais ce rapprochement n’a été vu que dans un match. Il sera fait automatiquement dès qu’un second match le confirme. Si ce joueur est bien le bon, vous pouvez le confirmer tout de suite ci-dessous. Le nom affiché par SofaScore n’est qu’une information : il ne décide jamais.",
+    },
+    ambiguous_shirt: {
+      title: "Plusieurs joueurs avec ce numéro",
+      body: "Plusieurs joueurs du club ont ce numéro de maillot à un poste compatible. Choisissez le bon dans la liste ci-dessous.",
+    },
+    no_shirt: {
+      title: "Numéro de maillot absent",
+      body: "SofaScore n’indique pas de numéro de maillot pour ce joueur : le rapprochement automatique (côté, numéro, poste) est impossible. Choisissez le bon joueur à la main s’il doit rapporter des points.",
+    },
+    shirt_conflict: {
+      title: "Les observations se contredisent",
+      body: "Ce joueur SofaScore a déjà été rapproché d’un autre joueur de l’application, ou un autre joueur SofaScore est rapproché du même joueur. Rien n’est lié automatiquement : vérifiez les candidats avant de confirmer.",
+    },
     no_candidate: {
       title: "Aucun joueur correspondant",
-      body: "Aucun joueur de ce club n’a ce nom dans l’application. S’il n’a rien marqué, le match n’est pas mis en attente à cause de lui. Ajoutez le joueur à l’application s’il doit rapporter des points.",
+      body: "Aucun joueur de ce club n’a ce numéro de maillot dans l’application. S’il n’a rien marqué, le match n’est pas mis en attente à cause de lui. Ajoutez le joueur à l’application s’il doit rapporter des points.",
     },
     ambiguous_name: {
-      title: "Plusieurs joueurs possibles",
-      body: "Plusieurs joueurs de l’application portent ce nom. Choisissez le bon dans la liste ci-dessous.",
+      title: "Plusieurs joueurs possibles (ancienne règle)",
+      body: "Ancien motif, posé quand le rapprochement se faisait par le nom : plusieurs joueurs de l’application portaient ce nom. Choisissez le bon dans la liste ci-dessous.",
     },
     partial_name: {
-      title: "Nom seulement en partie identique",
-      body: "Le nom ne correspond qu’en partie (nom incomplet ou orthographe différente). Vérifiez que c’est bien la même personne avant de confirmer.",
+      title: "Nom seulement en partie identique (ancienne règle)",
+      body: "Ancien motif, posé quand le rapprochement se faisait par le nom. Vérifiez que c’est bien la même personne avant de confirmer.",
     },
     candidate_already_mapped: {
       title: "Déjà rattaché à un autre joueur SofaScore",
@@ -117,11 +133,11 @@ const FR: SofascoreQueueCopy = {
     },
     position_mismatch: {
       title: "Le poste ne correspond pas",
-      body: "Le nom correspond, mais pas le poste (par exemple défenseur d’un côté, attaquant de l’autre). Vérifiez que c’est bien la même personne avant de confirmer.",
+      body: "Un joueur du club a ce numéro, mais pas à un poste compatible (par exemple gardien d’un côté, joueur de champ de l’autre). Vérifiez que c’est bien la même personne avant de confirmer.",
     },
     duplicate_name_in_squad: {
-      title: "Deux joueurs du club portent ce nom",
-      body: "Deux joueurs de ce club portent le même nom dans l’application : impossible de choisir sans risque d’erreur. Corrigez d’abord le doublon dans l’effectif.",
+      title: "Deux joueurs du club portent ce nom (ancienne règle)",
+      body: "Ancien motif, posé quand le rapprochement se faisait par le nom. Le rapprochement se fait maintenant par côté, numéro et poste : ce joueur sera réexaminé au prochain match.",
     },
   },
   unknownReason: {
@@ -214,17 +230,33 @@ const AR: SofascoreQueueCopy = {
       : `تعذّرت قراءة ${n} أسطر من القائمة وتم تجاهلها.`,
   reasonLabel: "سبب الانتظار",
   reasons: {
+    awaiting_second_match: {
+      title: "ظهر مرة واحدة فقط: بانتظار مباراة ثانية",
+      body: "لاعب واحد فقط في النادي يحمل هذا الرقم في هذا المركز، لكن هذه المطابقة لم تُرصد إلا في مباراة واحدة. ستتم تلقائيًا بمجرد أن تؤكدها مباراة ثانية. إن كنت متأكدًا من أنه اللاعب الصحيح فيمكنك تأكيده الآن أدناه. الاسم الذي يعرضه SofaScore للاطلاع فقط ولا يُعتمد عليه أبدًا.",
+    },
+    ambiguous_shirt: {
+      title: "عدة لاعبين بالرقم نفسه",
+      body: "عدة لاعبين في النادي يحملون رقم القميص هذا في مركز متوافق. اختر اللاعب الصحيح من القائمة أدناه.",
+    },
+    no_shirt: {
+      title: "رقم القميص غير متوفر",
+      body: "لا يقدّم SofaScore رقم قميص لهذا اللاعب، لذا تستحيل المطابقة التلقائية (الجهة والرقم والمركز). اختر اللاعب الصحيح يدويًا إذا كان يجب أن يكسب نقاطًا.",
+    },
+    shirt_conflict: {
+      title: "الملاحظات متناقضة",
+      body: "سبق أن رُبط لاعب SofaScore هذا بلاعب آخر في التطبيق، أو أن لاعب SofaScore آخر مرتبط باللاعب نفسه. لا يتم أي ربط تلقائي: تحقق من المرشحين قبل التأكيد.",
+    },
     no_candidate: {
       title: "لا يوجد لاعب مطابق",
-      body: "لا يوجد في التطبيق لاعب بهذا الاسم في هذا النادي. إذا لم يسجّل أي نقطة فلن تُعلَّق المباراة بسببه. أضف اللاعب إلى التطبيق إذا كان يجب أن يكسب نقاطًا.",
+      body: "لا يوجد في التطبيق لاعب في هذا النادي يحمل رقم القميص هذا. إذا لم يسجّل أي نقطة فلن تُعلَّق المباراة بسببه. أضف اللاعب إلى التطبيق إذا كان يجب أن يكسب نقاطًا.",
     },
     ambiguous_name: {
-      title: "عدة لاعبين محتملين",
-      body: "عدة لاعبين في التطبيق يحملون هذا الاسم. اختر اللاعب الصحيح من القائمة أدناه.",
+      title: "عدة لاعبين محتملين (قاعدة قديمة)",
+      body: "سبب قديم وُضع حين كانت المطابقة بالاسم: عدة لاعبين في التطبيق يحملون هذا الاسم. اختر اللاعب الصحيح من القائمة أدناه.",
     },
     partial_name: {
-      title: "الاسم متطابق جزئيًا فقط",
-      body: "الاسم لا يتطابق إلا جزئيًا (اسم ناقص أو كتابة مختلفة). تأكد أنه الشخص نفسه قبل التأكيد.",
+      title: "الاسم متطابق جزئيًا فقط (قاعدة قديمة)",
+      body: "سبب قديم وُضع حين كانت المطابقة بالاسم. تأكد أنه الشخص نفسه قبل التأكيد.",
     },
     candidate_already_mapped: {
       title: "مرتبط بلاعب آخر من SofaScore",
@@ -236,11 +268,11 @@ const AR: SofascoreQueueCopy = {
     },
     position_mismatch: {
       title: "المركز غير متطابق",
-      body: "الاسم متطابق لكن المركز مختلف (مثلًا مدافع في جهة ومهاجم في الأخرى). تأكد أنه الشخص نفسه قبل التأكيد.",
+      body: "يوجد في النادي لاعب بهذا الرقم لكن في مركز غير متوافق (مثلًا حارس مرمى من جهة ولاعب ميدان من الأخرى). تأكد أنه الشخص نفسه قبل التأكيد.",
     },
     duplicate_name_in_squad: {
-      title: "لاعبان في النادي بالاسم نفسه",
-      body: "يوجد لاعبان في هذا النادي بالاسم نفسه في التطبيق، ولا يمكن الاختيار دون خطر الخطأ. صحّح التكرار في التشكيلة أولًا.",
+      title: "لاعبان في النادي بالاسم نفسه (قاعدة قديمة)",
+      body: "سبب قديم وُضع حين كانت المطابقة بالاسم. أصبحت المطابقة الآن بالجهة والرقم والمركز: ستُعاد دراسة هذا اللاعب في المباراة القادمة.",
     },
   },
   unknownReason: {
