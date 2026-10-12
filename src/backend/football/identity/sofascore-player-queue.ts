@@ -15,11 +15,12 @@ import type { MappingRpcClient } from "./mapping-repository";
  */
 
 export const SOFASCORE_QUEUE_REASONS = [
-  // Current: the matcher decides by side + shirt number + position (migration 20261013150000).
-  "awaiting_second_match",
+  // Current: the matcher decides by club, shirt number and position (migration 20261013150000).
   "ambiguous_shirt",
   "no_shirt",
+  "no_shirt_on_file",
   "shirt_conflict",
+  "weak_match",
   "no_candidate",
   "candidate_already_mapped",
   "inactive_mapping_exists",

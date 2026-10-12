@@ -95,13 +95,17 @@ const FR: SofascoreQueueCopy = {
       : `${n} lignes de la liste étaient illisibles et ont été ignorées.`,
   reasonLabel: "Pourquoi il est en attente",
   reasons: {
-    awaiting_second_match: {
-      title: "Vu une seule fois : en attente d’un second match",
-      body: "Un seul joueur du club porte ce numéro à ce poste, mais ce rapprochement n’a été vu que dans un match. Il sera fait automatiquement dès qu’un second match le confirme. Si ce joueur est bien le bon, vous pouvez le confirmer tout de suite ci-dessous. Le nom affiché par SofaScore n’est qu’une information : il ne décide jamais.",
-    },
     ambiguous_shirt: {
       title: "Plusieurs joueurs avec ce numéro",
       body: "Plusieurs joueurs du club ont ce numéro de maillot à un poste compatible. Choisissez le bon dans la liste ci-dessous.",
+    },
+    weak_match: {
+      title: "Un candidat probable, poste inconnu",
+      body: "Un seul joueur du club correspond (même club, même numéro), mais le poste de l’un des deux est inconnu : le rapprochement n’a pas été fait automatiquement. Si c’est bien le bon joueur, confirmez-le.",
+    },
+    no_shirt_on_file: {
+      title: "Un joueur du club n’a pas de numéro enregistré",
+      body: "Aucun joueur du club n’a ce numéro, mais un joueur du club n’a aucun numéro enregistré et pourrait être celui-ci. Rien n’est créé ni lié automatiquement : confirmez le bon joueur s’il est dans la liste.",
     },
     no_shirt: {
       title: "Numéro de maillot absent",
@@ -113,7 +117,7 @@ const FR: SofascoreQueueCopy = {
     },
     no_candidate: {
       title: "Aucun joueur correspondant",
-      body: "Aucun joueur de ce club n’a ce numéro de maillot dans l’application. S’il n’a rien marqué, le match n’est pas mis en attente à cause de lui. Ajoutez le joueur à l’application s’il doit rapporter des points.",
+      body: "Le joueur n’a pas pu être créé automatiquement (poste inconnu, nom trop court, saison passée ou catalogue momentanément occupé) et personne dans ce club ne porte ce numéro. S’il n’a rien marqué, le match n’est pas mis en attente à cause de lui ; la création est ré-essayée au prochain passage.",
     },
     ambiguous_name: {
       title: "Plusieurs joueurs possibles (ancienne règle)",
@@ -230,13 +234,17 @@ const AR: SofascoreQueueCopy = {
       : `تعذّرت قراءة ${n} أسطر من القائمة وتم تجاهلها.`,
   reasonLabel: "سبب الانتظار",
   reasons: {
-    awaiting_second_match: {
-      title: "ظهر مرة واحدة فقط: بانتظار مباراة ثانية",
-      body: "لاعب واحد فقط في النادي يحمل هذا الرقم في هذا المركز، لكن هذه المطابقة لم تُرصد إلا في مباراة واحدة. ستتم تلقائيًا بمجرد أن تؤكدها مباراة ثانية. إن كنت متأكدًا من أنه اللاعب الصحيح فيمكنك تأكيده الآن أدناه. الاسم الذي يعرضه SofaScore للاطلاع فقط ولا يُعتمد عليه أبدًا.",
-    },
     ambiguous_shirt: {
       title: "عدة لاعبين بالرقم نفسه",
       body: "عدة لاعبين في النادي يحملون رقم القميص هذا في مركز متوافق. اختر اللاعب الصحيح من القائمة أدناه.",
+    },
+    weak_match: {
+      title: "مرشح محتمل، المركز غير معروف",
+      body: "لاعب واحد فقط في النادي يطابق (النادي والرقم نفسهما) لكن مركز أحدهما غير معروف، لذا لم تتم المطابقة تلقائيًا. إن كان هو اللاعب الصحيح فأكّده.",
+    },
+    no_shirt_on_file: {
+      title: "لاعب في النادي بلا رقم مسجَّل",
+      body: "لا يوجد في النادي لاعب بهذا الرقم، لكن يوجد لاعب في النادي بلا رقم مسجَّل وقد يكون هو. لا يتم إنشاء أو ربط أي شيء تلقائيًا: أكّد اللاعب الصحيح إن كان في القائمة.",
     },
     no_shirt: {
       title: "رقم القميص غير متوفر",
@@ -248,7 +256,7 @@ const AR: SofascoreQueueCopy = {
     },
     no_candidate: {
       title: "لا يوجد لاعب مطابق",
-      body: "لا يوجد في التطبيق لاعب في هذا النادي يحمل رقم القميص هذا. إذا لم يسجّل أي نقطة فلن تُعلَّق المباراة بسببه. أضف اللاعب إلى التطبيق إذا كان يجب أن يكسب نقاطًا.",
+      body: "تعذّر إنشاء اللاعب تلقائيًا (مركز غير معروف أو اسم قصير جدًا أو موسم سابق أو الفهرس مشغول مؤقتًا) ولا أحد في هذا النادي يحمل هذا الرقم. إذا لم يسجّل أي نقطة فلن تُعلَّق المباراة بسببه، وستُعاد محاولة الإنشاء في المرة القادمة.",
     },
     ambiguous_name: {
       title: "عدة لاعبين محتملين (قاعدة قديمة)",
