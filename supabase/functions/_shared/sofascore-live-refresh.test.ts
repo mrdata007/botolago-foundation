@@ -160,7 +160,12 @@ function run(
     client: db.client,
     rapid: rapid(fetch, minRemaining),
     // These tests are about scores: the details step has its own tests.
-    environment: { SOFASCORE_DETAILS_PER_TICK: "0", SOFASCORE_FANTASY_ENABLED: "false" },
+    environment: {
+      SOFASCORE_DETAILS_PER_TICK: "0",
+      SOFASCORE_FANTASY_ENABLED: "false",
+      // The table has its own tests (sofascore-standings.test.ts).
+      SOFASCORE_STANDINGS_ENABLED: "false",
+    },
     now: NOW,
     log: (line) => lines.push(line),
   }).then((outcome) => ({ outcome, lines }));

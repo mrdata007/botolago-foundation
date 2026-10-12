@@ -66,12 +66,22 @@ import {
   type SofascoreDetailsTarget,
 } from "./sofascore-match-details.ts";
 import { SofascoreFantasyRun, type SofascoreFantasySummary } from "./sofascore-fantasy-auto.ts";
+import {
+  finishedWrittenThisTick,
+  isDailyStandingsHour,
+  runStandingsRefresh,
+  type StandingsSummary,
+  type StandingsTrigger,
+} from "./sofascore-standings.ts";
 import type { FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 
 export type SofascoreRefreshMode = "sofascore" | "shadow";
 export type SofascoreRefreshJob = "fixtures" | "season_fixtures";
 
 export const DEFAULT_SOFASCORE_SEASON_ID = "102220";
+/** Pages per direction the daily full-season pull may read (30 or so events each). */
+export const SOFASCORE_SEASON_FULL_MAX_PAGES_DEFAULT = 12;
+export const SOFASCORE_SEASON_FULL_MAX_PAGES_MAX = 20;
 export const SOFASCORE_SEASON_REFRESH_DAYS_AHEAD = 42;
 /** A not-yet-started fixture this recent is expected to be in play. */
 const RECENT_KICKOFF_MS = 3 * 60 * 60 * 1000;
@@ -167,8 +177,9 @@ function eventListPath(
   endpoint: "get-last-matches" | "get-next-matches",
   tournamentId: string,
   seasonId: string,
+  page = 0,
 ): string {
-  return `tournaments/${endpoint}?tournamentId=${tournamentId}&seasonId=${seasonId}&pageIndex=0`;
+  return `tournaments/${endpoint}?tournamentId=${tournamentId}&seasonId=${seasonId}&pageIndex=${page}`;
 }
 
 function parseSnapshot(data: unknown): Snapshot | null {
@@ -405,10 +416,18 @@ export async function runSofascoreRefresh(
   const parseOptions = { uniqueTournamentId: Number(tournamentId) };
 
   // 2. Provider reads. Any failure stops here, before anything is written.
+  const dailyPass = job === "season_fixtures" && isDailyStandingsHour(now, environment);
+  /** `hasNextPage` of the last page read per endpoint (the daily full pull). */
+  const seasonHasNextPage = new Map<string, boolean>();
   const fetchList = async (path: string): Promise<SofascoreParsedEvents> => {
     const result = await rapid.getJson(path);
     const quota: RapidApiQuota = result.quota;
     requests.push({ path, quotaRemaining: quota.remaining, quotaLimit: quota.limit });
+    const endpoint = /^tournaments\/(get-next-matches|get-last-matches)\?/.exec(path)?.[1];
+    if (endpoint) {
+      const next = (result.data as { hasNextPage?: unknown } | null)?.hasNextPage;
+      seasonHasNextPage.set(endpoint, next === true);
+    }
     return parseSofascoreEvents(result.data, parseOptions);
   };
   const parsedLists: SofascoreParsedEvents[] = [];
@@ -426,6 +445,27 @@ export async function runSofascoreRefresh(
     } else {
       parsedLists.push(await fetchList(eventListPath("get-next-matches", tournamentId, seasonId)));
       parsedLists.push(await fetchList(eventListPath("get-last-matches", tournamentId, seasonId)));
+      if (dailyPass) {
+        // Once a day (the hour SOFASCORE_DAILY_HOUR_UTC, default 03 UTC) the
+        // whole season schedule: the hourly pass above reads page 0 of each
+        // direction only (about 30 events each way), so a kickoff moved or a
+        // postponement far from today is caught here. Pages 1.. until the
+        // provider says there is no next page, bounded.
+        const maxPages = boundedInt(
+          environment.SOFASCORE_SEASON_FULL_MAX_PAGES,
+          SOFASCORE_SEASON_FULL_MAX_PAGES_DEFAULT,
+          SOFASCORE_SEASON_FULL_MAX_PAGES_MAX,
+        );
+        for (const endpoint of ["get-next-matches", "get-last-matches"] as const) {
+          let more = seasonHasNextPage.get(endpoint) === true;
+          for (let page = 1; more && page < maxPages; page += 1) {
+            parsedLists.push(
+              await fetchList(eventListPath(endpoint, tournamentId, seasonId, page)),
+            );
+            more = seasonHasNextPage.get(endpoint) === true;
+          }
+        }
+      }
     }
   } catch (error) {
     const code = error instanceof RapidApiError ? error.code : "invalid_provider_payload";
@@ -523,8 +563,38 @@ export async function runSofascoreRefresh(
     });
   };
 
+  // The Botola table: one request after a tick that wrote a match as finished
+  // (however many finished together), and once a day in the season job.
+  const runStandings = async (): Promise<StandingsSummary | { status: "skipped" }> => {
+    const trigger: StandingsTrigger | null =
+      job === "fixtures"
+        ? finishedWrittenThisTick(toWrite)
+          ? "after_match"
+          : null
+        : dailyPass
+          ? "daily"
+          : null;
+    if (
+      trigger === null ||
+      environment.SOFASCORE_STANDINGS_ENABLED?.trim().toLowerCase() === "false"
+    ) {
+      return { status: "skipped" };
+    }
+    return runStandingsRefresh({
+      mode,
+      trigger,
+      client,
+      rapid,
+      tournamentId,
+      seasonId,
+      now,
+      log: emit,
+    });
+  };
+
   if (mode === "shadow") {
     emit({ result: "shadow", ...summary, wouldIngest: toWrite, written: 0 });
+    const standings = await runStandings();
     const matchDetails = await runDetails();
     const fantasySummary = await runFantasy();
     return {
@@ -535,6 +605,7 @@ export async function runSofascoreRefresh(
         job,
         wouldIngest: toWrite.length,
         written: 0,
+        standings,
         matchDetails,
         fantasy: fantasySummary,
       },
@@ -620,6 +691,7 @@ export async function runSofascoreRefresh(
     failures.push({ externalId: "run", code: "complete_run_failed" });
   }
 
+  const standings = await runStandings();
   const matchDetails = await runDetails();
   const fantasySummary = await runFantasy();
   emit({
@@ -633,6 +705,7 @@ export async function runSofascoreRefresh(
     ...summary,
     written: counts.updated,
     failures,
+    standings,
     matchDetails,
     fantasy: fantasySummary,
   });
@@ -675,6 +748,7 @@ export async function runSofascoreRefresh(
       unchanged: skipped.unchanged.length,
       unmapped: plan.unmapped.length,
       unknownStatus: unknownStatus.length,
+      standings,
       matchDetails,
       fantasy: fantasySummary,
     },

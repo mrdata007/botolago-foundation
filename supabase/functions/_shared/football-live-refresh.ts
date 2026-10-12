@@ -32,7 +32,12 @@ import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sports
 import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import { createRapidApiCallCounter, type RapidApiCallCounter } from "./rapidapi-call-counter.ts";
-import { createRapidApiClient, RapidApiError } from "./rapidapi-client.ts";
+import { RapidApiError } from "./rapidapi-client.ts";
+import {
+  createCatalogRapidClient,
+  runCatalogWeekly,
+  type CatalogStorage,
+} from "./sofascore-catalog.ts";
 import type { SofascoreShadowClient } from "./sofascore-fixtures.ts";
 import { runSofascoreDetailsBackfill, runSofascoreRefresh } from "./sofascore-live-refresh.ts";
 
@@ -48,6 +53,8 @@ export interface LiveRefreshDependencies {
   readonly randomHex?: (bytes: number) => string;
   /** SofaScore reads; built from RAPIDAPI_KEY when absent (tests inject one). */
   readonly rapidApi?: SofascoreShadowClient;
+  /** Supabase Storage (the service client's `.storage`), for the catalog_weekly images. */
+  readonly storage?: CatalogStorage;
 }
 
 // Botola Pro and the 2026/27 season at SportsMonks, as in
@@ -139,6 +146,10 @@ export async function handleFootballLiveRefreshRequest(
   // RapidAPI (sofascore-live-refresh.ts); SportsMonks is not called for them.
   const source = await liveDataSource(dependencies.client);
   if (source === "invalid") return json(503, { error: "football_data_source_invalid" });
+  // The weekly catalog refresh exists for SofaScore only.
+  if (job === "catalog_weekly" && source === "sportsmonks") {
+    return json(200, { status: "skipped", reason: "data_source_sportsmonks", job });
+  }
   if (source !== "sportsmonks") {
     let rapid = dependencies.rapidApi;
     // Every request this client sends is counted per job, endpoint and status
@@ -148,10 +159,13 @@ export async function handleFootballLiveRefreshRequest(
     if (!rapid) {
       try {
         counter = createRapidApiCallCounter({ client: dependencies.client, job });
-        rapid = createRapidApiClient("sofascore", dependencies.environment, {
-          fetch: dependencies.fetch,
-          onRequest: counter.record,
-        });
+        // The same RapidAPI client as ever; it can also return image bytes
+        // for the catalog_weekly job (sofascore-catalog.ts).
+        rapid = createCatalogRapidClient(
+          dependencies.environment,
+          dependencies.fetch as Parameters<typeof createCatalogRapidClient>[1],
+          { onRequest: counter.record },
+        );
       } catch (error) {
         const code = error instanceof RapidApiError ? error.code : "provider_unavailable";
         console.log(
@@ -168,6 +182,17 @@ export async function handleFootballLiveRefreshRequest(
     }
     const now = (dependencies.now ?? (() => new Date()))();
     try {
+      if (job === "catalog_weekly") {
+        const catalog = await runCatalogWeekly({
+          mode: source,
+          client: dependencies.client,
+          rapid,
+          storage: dependencies.storage,
+          environment: dependencies.environment,
+          now,
+        });
+        return json(catalog.status, catalog.body);
+      }
       if (job === "match_details_backfill") {
         const backfill = await runSofascoreDetailsBackfill({
           mode: source,
@@ -280,11 +305,12 @@ const DETAILS_AFTER_ERRORS: ReadonlySet<string> = new Set([
 
 /**
  * `{"job":"fixtures"}` (the live tick's, and the default), `{"job":"season_fixtures"}`
- * (the hourly season tick's) or `{"job":"match_details_backfill"}`.
+ * (the hourly season tick's), `{"job":"match_details_backfill"}` or
+ * `{"job":"catalog_weekly"}` (the weekly clubs and players refresh, SofaScore only).
  */
 async function requestedJob(
   request: Request,
-): Promise<"fixtures" | "season_fixtures" | "match_details_backfill" | null> {
+): Promise<"fixtures" | "season_fixtures" | "match_details_backfill" | "catalog_weekly" | null> {
   const source = await request.text();
   if (source.length > MAX_REQUEST_BYTES) return null;
   if (!source.trim()) return "fixtures";
@@ -297,6 +323,7 @@ async function requestedJob(
     if (job === undefined || job === "fixtures") return "fixtures";
     if (job === "season_fixtures") return "season_fixtures";
     if (job === "match_details_backfill") return "match_details_backfill";
+    if (job === "catalog_weekly") return "catalog_weekly";
     return null;
   } catch {
     return null;
