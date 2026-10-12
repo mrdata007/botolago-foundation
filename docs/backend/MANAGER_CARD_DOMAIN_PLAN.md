@@ -136,6 +136,29 @@ This is installed as rules v1 by
 scales can follow as a later rules version once there are hundreds of teams
 with five or more weeks.
 
+**Change to D1, D3, D6 and D8 (owner, 2026-10-12): calm early scores and a
+fairer Selection, installed as rules v2.** Calculation only; Fantasy points are
+untouched.
+
+- Shrinkage (D1, D6): after a stat is mapped onto 1–99 it is pulled toward 50 by
+  how many samples it rests on: `shrunk = round(50 + (scaled − 50) × n / (n +
+k))`, kept in 1–99, with k = 4 for CAP, SEL, CON and TRF. n is the weeks with
+  a CAP ratio, the weeks with a SEL ratio, the weeks counted for CON and the
+  number of transfers counted for TRF. Two perfect weeks therefore read 66, not 99. OVR keeps D1 (mean of the stats that exist, at least three of four) over
+  the pulled stats, and the tier follows OVR.
+- Selection (D3): the numerator is the points of the eleven the manager picked
+  as starters (`fantasy_lineup_players.slot = 'starter'`, their own
+  `final_points`; a starter who did not play contributes his 0), not
+  `starting_points` after automatic substitutions and without the captain's
+  bonus. The denominator is unchanged. The SEL scale becomes 0.5 → 1, 0.8 → 50,
+  1 → 99 (0.8 of the best eleven is average, 1.0 is perfect).
+- Provisional (D8): until 5 finished weeks (`provisional_below` 5); the minimum
+  stays 2 weeks.
+- Installed by `scripts/backend/apply-manager-card-rules-v2-calm.sql` together
+  with migration `20261012170000`. Rules without the new keys (v1) behave as
+  before, so v1 is unchanged until v2 is activated. See the operations runbook,
+  "Rules v2".
+
 ### Identity
 
 | #   | Question           | Recommendation                                                                                                                                                                                                                                         |
@@ -179,8 +202,9 @@ For each evaluable gameweek where the team has a `final` result and a lineup:
 - Best legal eleven: the highest-scoring 1 GK + 3–5 DEF + 2–5 MID + 1–3 FWD
   from those fifteen, by `final_points` (`fantasy_position_rules`). With 15
   players this is a small fixed search (at most a handful of formations).
-- Ratio = `starting_points` ÷ best eleven. Skip Bench Boost weeks and any
-  optimum ≤ 0. Clamp to 0..1.
+- Ratio = `starting_points` ÷ best eleven (rules v1; rules v2 uses the picked
+  starters' points instead, see the 2026-10-12 change to D3). Skip Bench Boost
+  weeks and any optimum ≤ 0. Clamp to 0..1.
 - Season SEL raw = mean of weekly ratios.
 
 ### TRF — transfers
@@ -203,7 +227,8 @@ For each evaluable gameweek where the team has a `final` result and a lineup:
 ### From raw figures to the card
 
 - Each raw figure goes through its piecewise-linear scale (points stored in the
-  rules row) to a whole number 1–99.
+  rules row) to a whole number 1–99. Rules v2 then pulls it toward 50 by its
+  sample count (2026-10-12 change above); a row without `shrinkage` does not.
 - OVR per D1; tier from the rules row's cut-offs.
 - Weeks counted = the team's `final` results in evaluable gameweeks.
   Under the minimum: everything null. Under the provisional mark: `provisional`.
