@@ -1,6 +1,7 @@
 import type { Club } from "@/types/domain";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { responsiveMedia } from "@/lib/media";
+import { usableImageUrl } from "@/lib/image-fallback";
 import { cn } from "@/lib/utils";
 import { crestMonogramClass, crestStyle } from "./club-crest-style";
 import { FailureAwareImage } from "./FailureAwareImage";
@@ -93,7 +94,10 @@ export function ClubCrest({
   // A passed palette is already computed, so `clubStyle` only writes it out;
   // the memoised path is for the club's own colours.
   const { style, "data-club": dataClub } = palette ? clubStyle(palette) : crestStyle(club);
-  const badge = responsiveMedia(club.crestUrl, { kind: "crest", sizes: BADGE_SIZES[size] });
+  const badge = responsiveMedia(usableImageUrl(club.crestUrl), {
+    kind: "crest",
+    sizes: BADGE_SIZES[size],
+  });
   return (
     <div
       data-club={dataClub}

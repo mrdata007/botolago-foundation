@@ -204,6 +204,19 @@ null, false);` before a write that touches fixtures or notifications, and
    `select app_private.ai_home_stories_configure(previous_enabled, previous_cap);`
    only after the write completes. See
    [AI_HOME_STORIES.md](docs/backend/AI_HOME_STORIES.md).
+   Where migration 20261013120200 is applied, pg_cron also runs
+   `football-catalog-weekly` on Sundays at 04:17 UTC. It calls the Edge
+   Function `football-live-refresh` with `{"job":"catalog_weekly"}` and, when
+   the data source is `sofascore`, updates display names and shirt numbers of
+   already-mapped players, club crests (`app.teams.crest_asset_id`,
+   `app.media_assets`), `app.players.catalog_photo_path`,
+   `app_private.catalog_image_state` and `football-media` storage. It runs
+   under the live refresh switch, so
+   `select app_private.notification_email_configure('off', null, null, false);`
+   stops it; `shadow` writes nothing. After a
+   fixture is written as finished, and once a day in the season job, the same
+   function also rewrites `app.standings`
+   ([SOFASCORE_CATALOG_AND_STANDINGS.md](docs/backend/SOFASCORE_CATALOG_AND_STANDINGS.md)).
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

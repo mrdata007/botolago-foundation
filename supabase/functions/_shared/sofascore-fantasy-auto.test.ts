@@ -937,7 +937,7 @@ describe("automatic Fantasy: through the live tick", () => {
           { RAPIDAPI_KEY: "k" },
           { fetch: net.fetch, maxRetries: 0 },
         ),
-        environment: {},
+        environment: { SOFASCORE_STANDINGS_ENABLED: "false" },
         now: NOW,
         log: (line) => lines.push(line),
       });
