@@ -98,16 +98,16 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       {
         type: "list",
         items: [
-          "Certains classements peuvent être dotés de lots offerts par BotolaGO ou par un sponsor. Chaque concours doté fait l'objet d'un règlement spécifique (durée, lots, critères, modalités de remise) publié dans l'Application.",
-          "Les lots sont attribués au seul titulaire du compte gagnant. Une vérification d'identité (pièce d'identité, justificatif de résidence) est exigée avant remise. Un gagnant qui ne répond pas dans un délai de 15 jours, ou dont le compte enfreint les CGU, perd son lot.",
-          "Les lots ne sont ni échangeables, ni cessibles, ni convertibles en espèces, sauf mention contraire dans le règlement du concours.",
-          "BotolaGO ne prélève aucun frais pour participer. Les éventuels impôts et taxes applicables aux lots sont à la charge du gagnant selon la législation en vigueur.",
+          "Certains classements peuvent être dotés de prix offerts par BotolaGO ou par un sponsor. Chaque concours doté fait l'objet d'un règlement spécifique (durée, prix, critères, modalités de remise) publié dans l'Application.",
+          "Les prix sont attribués au seul titulaire du compte gagnant. Une vérification d'identité (pièce d'identité, justificatif de résidence) est exigée avant remise. Un gagnant qui ne répond pas dans un délai de 15 jours, ou dont le compte enfreint les CGU, perd son prix.",
+          "Les prix ne sont ni échangeables, ni cessibles, ni convertibles en espèces, sauf mention contraire dans le règlement du concours.",
+          "BotolaGO ne prélève aucun frais pour participer. Les éventuels impôts et taxes applicables aux prix sont à la charge du gagnant selon la législation en vigueur.",
         ],
       },
       { type: "heading", text: "8. Fair-play et comportements interdits" },
       {
         type: "paragraph",
-        text: "Sont interdits, et peuvent entraîner la suspension immédiate du compte et l'annulation des points ou lots :",
+        text: "Sont interdits, et peuvent entraîner la suspension immédiate du compte et l'annulation des points ou prix :",
       },
       {
         type: "list",
@@ -165,7 +165,7 @@ export const TERMS: Readonly<Record<Language, LegalDocument>> = {
       { type: "heading", text: "14. Résiliation" },
       {
         type: "paragraph",
-        text: "Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l'Application ou en écrivant à support@botolago.com. BotolaGO peut suspendre ou résilier votre accès, avec ou sans préavis selon la gravité, en cas de violation des CGU. La suppression du compte entraîne la perte des points, classements et lots non réclamés.",
+        text: "Vous pouvez supprimer votre compte à tout moment depuis les paramètres de l'Application ou en écrivant à support@botolago.com. BotolaGO peut suspendre ou résilier votre accès, avec ou sans préavis selon la gravité, en cas de violation des CGU. La suppression du compte entraîne la perte des points, classements et prix non réclamés.",
       },
       { type: "heading", text: "15. Droit applicable et litiges" },
       {
@@ -364,7 +364,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           [
             "Dotations",
             "nom, prénom, copie de pièce d'identité, adresse postale, téléphone",
-            "vous, uniquement si vous gagnez un lot",
+            "vous, uniquement si vous gagnez un prix",
           ],
           ["Support", "contenu de vos messages au support", "vous"],
         ],
@@ -383,7 +383,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "exécution du contrat (CGU)",
           ],
           [
-            "Vérifier votre éligibilité et remettre les lots",
+            "Vérifier votre éligibilité et remettre les prix",
             "exécution du contrat et obligation légale",
           ],
           ["Prévenir la fraude, les comptes multiples et les abus", "intérêt légitime"],
@@ -473,7 +473,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ["Journaux techniques et IP", "12 mois"],
           [
             "Pièces justificatives des gagnants",
-            "5 ans à compter de la remise du lot (obligations comptables et fiscales)",
+            "5 ans à compter de la remise du prix (obligations comptables et fiscales)",
           ],
           ["Consentement marketing", "jusqu'au retrait, puis 3 ans à titre de preuve"],
           ["Messages au support", "2 ans après clôture de la demande"],
@@ -481,7 +481,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
       },
       {
         type: "paragraph",
-        text: "À l'issue de ces durées, les données sont supprimées ou anonymisées. Les classements historiques peuvent être conservés sous pseudonyme. Les traces des lots déjà remis sont conservées détachées du compte supprimé.",
+        text: "À l'issue de ces durées, les données sont supprimées ou anonymisées. Les classements historiques peuvent être conservés sous pseudonyme. Les traces des prix déjà remis sont conservées détachées du compte supprimé.",
       },
       { type: "heading", text: "8. Vos droits" },
       {
