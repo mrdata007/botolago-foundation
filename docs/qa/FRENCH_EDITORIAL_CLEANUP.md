@@ -4,7 +4,7 @@
 
 French reward labels now use **prix**, including singular rewards, across the shared dictionary, prize administration, landing page and demo source. Grammar and terminology were tightened in navigation, Fantasy, auth, profile, account-deletion explanations, predictions, Pépites, Curva and manager cards. Hardcoded administration messages were also reviewed and corrected. No publication, database writes, routes, styles, scoring, authentication behavior or other functionality changed.
 
-Existing forms of address were preserved: most app screens use **vous**, while existing personal invitation/share messages retain **tu**. Arabic dictionary values were not rewritten. Only obvious English-only hardcoded admin labels gained French/Arabic equivalents.
+French UI addresses readers as **vous**, following `PRODUCT.md`; **tu** is reserved for friend-to-friend invitation/share messages. The established chip names **Joker**, **Triple Capitaine**, **Free Hit** and **Bench Boost** remain unchanged. Arabic dictionary values were not rewritten. Only obvious English-only hardcoded admin labels gained French/Arabic equivalents.
 
 ## Exact files changed for this task
 
@@ -79,3 +79,11 @@ bun test src/i18n src/components/landing/LandingPage.test.tsx src/components/pri
 - Demo **source** copy is updated. Its standalone generated bundle was not rebuilt or published; it needs the normal demo build process before those source changes appear there.
 - The full repository test suite was not run; the report covers the relevant existing checks above.
 - **Nothing was published.** The owner can inspect the diff before publication.
+
+## Review workflow clarification
+
+The inspection and brief were recorded before the editorial changes. On the owner's clarification, a read-only check confirmed the French dictionary retains all four established chip names and limits « tu » to personal share/invite messages; no additional application changes were needed.
+
+At that check, the environment-managed branch was `edit/edt-6ed7336b-6152-4f69-bfd6-52fd45c42f63`, with application-copy commit `bb9aa21c0080d2cee16e80938fe6128b5146938c` (`Fixed reward labels and msgs`). Later documentation/memory edits may advance the environment-managed ref.
+
+This environment prohibits agent-managed stateful Git commands, has no available GitHub PR tool or installed GitHub CLI, and cannot establish a separate named feature branch plus draft GitHub PR through those mechanisms. **No draft PR was created or claimed.** The existing edit branch is the review reference; creating a repository draft PR remains pending outside this workflow. No merge, deployment or publication was performed.
