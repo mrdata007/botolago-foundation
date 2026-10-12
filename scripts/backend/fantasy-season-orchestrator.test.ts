@@ -8,6 +8,8 @@ import {
   mergeVerdict,
   orchestrateFantasySeason,
   orchestratorEnvironment,
+  orchestratorRpcFailure,
+  rpcDiagnostic,
   parseFootballDataSource,
   renderHealthSummary,
   selectWorkerTargets,
@@ -23,6 +25,62 @@ import { rpcFailure } from "./fantasy-lifecycle-runner";
 
 const id = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const now = new Date("2026-09-24T22:00:00Z");
+
+describe("sanitized RPC failure evidence", () => {
+  test("records the failing save and SQLSTATE, not its server message", () => {
+    const error = orchestratorRpcFailure("service_persist_fantasy_scoring_results", {
+      message: "canceling statement due to statement timeout; private payload",
+      code: "57014",
+    });
+    expect(error.message).toBe("fantasy_orchestrator_rpc_failed");
+    expect(rpcDiagnostic(error)).toEqual({
+      rpcName: "service_persist_fantasy_scoring_results",
+      postgresCode: "57014",
+    });
+    expect(JSON.stringify(rpcDiagnostic(error))).not.toContain("private payload");
+  });
+
+  test("retains safe application error labels and missing-RPC codes", () => {
+    const error = orchestratorRpcFailure("service_sync_fantasy_calendar", {
+      message: "stale_update",
+      code: "PGRST202",
+    });
+    expect(error.message).toBe("stale_update");
+    expect(rpcDiagnostic(error).postgresCode).toBe("PGRST202");
+  });
+
+  test("rejects arbitrary names, error codes and non-error payloads", () => {
+    expect(
+      rpcDiagnostic(
+        Object.assign(new Error("safe"), {
+          rpcName: "https://example.test/?secret=x",
+          postgrestCode: "secret server text",
+        }),
+      ),
+    ).toEqual({});
+    expect(rpcDiagnostic({ rpcName: "service_save", postgrestCode: "57014" })).toEqual({});
+  });
+
+  test("worker failures carry diagnostics in the serialized run evidence", async () => {
+    const cal = calendar([{ sequence: 3, status: "provisional", scoringInputVersion: 1 }]);
+    const { gateway: g } = gateway(cal, {
+      lifecycle: () => {
+        throw orchestratorRpcFailure("service_persist_fantasy_scoring_results", {
+          message: "timeout with secret details",
+          code: "57014",
+        });
+      },
+    });
+    const summary = await orchestrateFantasySeason(g, { now, dataSource: "sofascore" });
+    expect(summary.workers[0]).toMatchObject({
+      outcome: "failed",
+      code: "fantasy_orchestrator_rpc_failed",
+      rpcName: "service_persist_fantasy_scoring_results",
+      postgresCode: "57014",
+    });
+    expect(JSON.stringify(summary)).not.toContain("secret details");
+  });
+});
 
 function calendar(
   gameweeks: Array<Partial<CalendarSync["gameweeks"][number]> & { sequence: number }>,

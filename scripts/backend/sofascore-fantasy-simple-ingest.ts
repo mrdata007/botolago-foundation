@@ -69,6 +69,26 @@ const API = "https://api.supabase.com";
 
 class Refused extends Error {}
 
+/** This line also reaches the step summary: redact credentials before printing. */
+export function reportRefusal(error: unknown, secrets: readonly (string | undefined)[]): string {
+  let reason = error instanceof Error ? error.message : "unknown_failure";
+  const variants = [
+    ...new Set(
+      secrets.flatMap((secret) =>
+        secret ? [secret, secret.trim(), encodeURIComponent(secret.trim())].filter(Boolean) : [],
+      ),
+    ),
+  ].sort((a, b) => b.length - a.length);
+  for (const secret of variants) reason = reason.split(secret).join("[REDACTED]");
+  reason = Array.from(reason, (char) => {
+    const code = char.codePointAt(0)!;
+    return code < 32 || code === 127 || "`<>".includes(char) ? " " : char;
+  })
+    .join("")
+    .slice(0, 500);
+  return `SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE: ${reason}`;
+}
+
 const arg = (name: string) => {
   const at = process.argv.indexOf(name);
   return at >= 0 ? process.argv[at + 1] : undefined;
@@ -393,7 +413,7 @@ if (import.meta.main) {
     process.exitCode = await main();
   } catch (error) {
     console.log(
-      `SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE: ${error instanceof Error ? error.message : error}`,
+      reportRefusal(error, [process.env.RAPIDAPI_KEY, process.env.SUPABASE_ACCESS_TOKEN]),
     );
     process.exitCode = 2;
   }

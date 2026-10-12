@@ -720,3 +720,11 @@ Order matters: deploy `football-live-refresh` from the merged main commit first 
 Migration `20261012170000_manager_card_shrinkage_and_selection` (Manager Card rules v2, "calm scores") has nothing to do with SofaScore: it replaces one Manager Card calculation function and is installed by its own guarded script, `scripts/backend/apply-manager-card-rules-v2-calm.sql` (see `docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md`, "Rules v2"). It is listed here only so this runbook accounts for every migration after `20261003180000`.
 
 Migrations `20261012200000_manager_card_ovr_change_type` and `20261012200100_manager_card_week_one` (Manager Card rules v3, "week one", and the rating-change notification) have nothing to do with SofaScore either. They are installed after the rules v2 script by their own guarded scripts, `scripts/backend/apply-20261012200000-manager-card-ovr-change-type.sql` then `scripts/backend/apply-manager-card-rules-v3-week-one.sql` (see `docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md`, "Rules v3"), and are listed here for the same reason.
+
+Migration `20261012174642_fantasy_scoring_save_set_based` removes repeated
+player-result/fixture scans in scoring persistence without changing scoring or
+identity rules. It is a separate, draft-only owner release using
+`scripts/backend/apply-20261012174642-fantasy-scoring-save.sql`, not part of the
+automatic SofaScore install or its baseline. See
+`docs/backend/GW3_FINALIZATION_REPAIR.md` for pause/drain, rehearsal, independent
+rollback verification, commit/readback, and remaining GW3 stop conditions.

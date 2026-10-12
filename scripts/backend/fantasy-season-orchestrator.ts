@@ -415,6 +415,8 @@ export type WorkerRun = {
   calculationVersion: number;
   outcome: string;
   code?: string;
+  rpcName?: string;
+  postgresCode?: string;
 };
 
 export type SkippedTarget = {
@@ -588,6 +590,7 @@ export async function orchestrateFantasySeason(
         ...target,
         outcome: "failed",
         code: safeCode(error, "fantasy_worker_failed"),
+        ...rpcDiagnostic(error),
       });
       verdict = mergeVerdict(verdict, "failed");
       // RPC mutations are transactional and scoped to this gameweek. Keep
@@ -950,6 +953,33 @@ function safeCode(error: unknown, fallback: string) {
     : fallback;
 }
 
+/** Fixed RPC identifiers and SQLSTATE/PostgREST codes only, never server text. */
+export function rpcDiagnostic(error: unknown): { rpcName?: string; postgresCode?: string } {
+  if (!(error instanceof Error)) return {};
+  const value = error as Error & { rpcName?: unknown; postgrestCode?: unknown };
+  return {
+    ...(typeof value.rpcName === "string" &&
+    /^(?:service_[a-z0-9_]{1,90}|fantasy_gameweeks|football_data_source)$/.test(value.rpcName)
+      ? { rpcName: value.rpcName }
+      : {}),
+    ...(typeof value.postgrestCode === "string" &&
+    /^(?:[A-Z0-9]{5}|PGRST[0-9]{3})$/.test(value.postgrestCode)
+      ? { postgresCode: value.postgrestCode }
+      : {}),
+  };
+}
+
+export function orchestratorRpcFailure(
+  rpcName: string,
+  error: { message?: string; code?: string },
+): Error {
+  const failure = rpcFailure(
+    safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
+    error.code,
+  );
+  return Object.assign(failure, { rpcName });
+}
+
 /**
  * What the statistics import says about its failure, when it says something
  * (`CurrentPerformanceError.diagnostic`): which provider field, which fixture,
@@ -1086,13 +1116,14 @@ if (import.meta.main) {
     });
     const gateway: OrchestratorGateway = {
       async rpc(name, args) {
-        const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(60000));
-        if (error)
-          throw rpcFailure(
-            safeCode(new Error(error.message), "fantasy_orchestrator_rpc_failed"),
-            error.code,
-          );
-        return data;
+        try {
+          const { data, error } = await api.rpc(name, args).abortSignal(AbortSignal.timeout(60000));
+          if (error) throw orchestratorRpcFailure(name, error);
+          return data;
+        } catch (error) {
+          if (rpcDiagnostic(error).rpcName) throw error;
+          throw orchestratorRpcFailure(name, {});
+        }
       },
       async ingestPerformances(afterFixtureExternalId, options) {
         if (!config.token) throw new Error("fantasy_orchestrator_credential_missing");
@@ -1154,7 +1185,7 @@ if (import.meta.main) {
     if (evidenceDir) {
       await writeFile(
         resolve(evidenceDir, "fantasy-season-orchestrator.json"),
-        `${JSON.stringify({ expectedCommit: commit, verdict: "failed", code }, null, 2)}\n`,
+        `${JSON.stringify({ expectedCommit: commit, verdict: "failed", code, ...rpcDiagnostic(error) }, null, 2)}\n`,
         { mode: 0o600 },
       ).catch(() => undefined);
     }
