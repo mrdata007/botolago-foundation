@@ -154,10 +154,16 @@ null, false);` before a write that touches fixtures or notifications, and
    every Fantasy manager from their finished gameweeks and writes
    `app.manager_cards`, `app.manager_card_seasons`,
    `app.manager_card_gameweeks`, `app_private.manager_card_evaluations` and
-   `app_private.manager_card_job_log`. It writes only while compute is
+   `app_private.manager_card_job_log` (and, where migration 20261012200100
+   is applied, `app.manager_card_ovr_changes`; while
+   `notify_ovr_changes` is also on, `app_private.notification_events`,
+   `app.notifications` and `app.notification_deliveries` for the
+   rating-change notification). It writes only while compute is
    switched on in `app_private.manager_card_settings` and an active rules row
    exists in `app_private.manager_card_rules`
    ([MANAGER_CARD_OPERATIONS_RUNBOOK.md](docs/backend/MANAGER_CARD_OPERATIONS_RUNBOOK.md)).
+   Pausing compute pauses the notification with it; to stop only the
+   notification: `select app_private.manager_card_notify_configure(false);`.
    Pause it before a write that touches Fantasy results, lineups, player
    points, gameweeks, teams, transfers, profiles or the card tables. The
    command below switches compute off and leaves the read switch as it is

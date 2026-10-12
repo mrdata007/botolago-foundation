@@ -583,7 +583,7 @@ select extensions.is(
 select extensions.is(
   (select count(*)::integer from pg_proc p
    where p.pronamespace = 'app_private'::regnamespace and p.proname ~ '^manager_card'),
-  26, 'twenty-six Manager Card functions live in app_private');
+  29, 'twenty-nine Manager Card functions live in app_private');
 select extensions.ok(
   not exists (
     select 1 from pg_proc p
@@ -1156,10 +1156,10 @@ select extensions.is(
   (select array_agg(k order by k) from jsonb_object_keys(pg_temp.card_of(pg_temp.usr('A'))) k),
   array['bestTier', 'calculatedAt', 'club', 'createdAt', 'firstCountedGameweekSeq',
     'firstRatedGameweekSeq', 'founder', 'gameweeksCounted', 'handle', 'minConfirmed', 'minRated',
-    'moments', 'name', 'nextTier', 'ovr', 'ovrNullReason', 'previousSeason', 'provisional',
+    'moments', 'name', 'nextTier', 'ovr', 'ovrChanges', 'ovrNullReason', 'previousSeason', 'provisional',
     'ratingGameweeks', 'ratingGameweeksComplete', 'ratingState', 'rulesVersion', 'season',
     'seasonClosed', 'seasons', 'serial', 'stats', 'teamId', 'throughGameweekSeq', 'tier'],
-  'a card has exactly those thirty fields');
+  'a card has exactly those thirty-one fields (ovrChanges added by 20261012200100)');
 select extensions.ok(
   position(pg_temp.usr('A')::text in pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))::text) = 0
   and position('example.test' in pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))::text) = 0,

@@ -313,6 +313,144 @@ activate it the same way (`update ... set active = false where active`, insert,
 `commit`), and the next tick recomputes again. The function change itself needs
 no rollback: without the new keys it is the old calculation.
 
+## Rules v3 (week one) and the rating-change notification
+
+Owner decisions 2026-10-12: "Everything counts from week 1; every time the
+rating goes up or down there's a notification saying your score went up /
+went down, and it shows as an animation when the user opens the app and checks
+the card." Then: CAP, SEL, TRF and CON each have a number from a manager's
+first finished gameweek, and OVR is built from all four.
+
+Migrations `20261012200000_manager_card_ovr_change_type` (the notification
+type, alone: an enum value cannot be used in the transaction that adds it) and
+`20261012200100_manager_card_week_one`.
+
+| Key                           | v2                        | v3                                      |
+| ----------------------------- | ------------------------- | --------------------------------------- |
+| `minimum_gameweeks`           | 2                         | 1 (a card is rated from week 1)         |
+| `ovr_min_stats`               | absent (3 of 4)           | 1 (OVR from the stats that exist)       |
+| `empty_stat_neutral`          | absent (empty stays null) | `true` (a stat with no sample reads 50) |
+| `cap_ignore_deadlines_before` | `2026-10-10T12:38:05Z`    | removed (CAP counts every week)         |
+
+Everything else is v2's (provisional below 5 weeks, the scales, the shrinkage
+k = 4, Selection on the picked eleven). The two new keys are optional in the
+code: **a rules row without them (v1, v2) gives exactly the figures it gave
+before** (`supabase/tests/database/manager_card_week_one.test.sql` checks both).
+
+**What week one looks like.** With the shrinkage, a stat with no sample is 50
+(that is what the formula gives at n = 0), so `empty_stat_neutral` simply
+writes that 50 instead of leaving the stat empty; its raw figure stays null.
+Week-one numbers sit near 50 and move as weeks add up, which is the owner's
+"calm early scores". A manager after one finished gameweek, with the captain the
+squad builder gave him and no transfer, reads for example CAP 53 (his week,
+6 of 9), SEL 60, TRF 50 (no transfer judged yet), CON 40 and OVR 51,
+provisional. TRF stays 50 until a transfer's three-week window is judged; a
+week whose captain did not play (nor the vice) or a Bench Boost week simply has
+no sample for that stat. Because every stat now has a number, the cards'
+"waiting" reasons (`nullReason`) no longer appear under v3; nothing in the app
+breaks when every stat is filled.
+
+**The default captain.** Before PR #376 the squad builder gave a manager who
+did nothing an armband (the first starter) and saved it as an ordinary captain:
+the database has **no per-week fact** telling a default captain from a chosen
+one. v3 therefore drops the cut-off date and counts every week's captain, as the
+owner asked; a rule that skipped "only the default captains" would have nothing
+reliable to read and is not offered.
+
+**Rating changes.** Each evaluation reads, per manager, the previous evaluated
+OVR (the latest earlier history row of the season) and records a change in
+`app.manager_card_ovr_changes` when both OVRs exist, they differ, the earlier
+row is under the same rules version, and this week's own row is new or already
+under it. So:
+
+- the first OVR a card ever gets is not a change (it is the existing
+  `first_rating` moment);
+- the recalculation a new rules version starts (every history row still under
+  the old version) records **no change and sends no notification**;
+- a recalculation under the same version (a scoring correction) updates or
+  removes the row.
+
+The card read `api.get_my_manager_card` adds one key, `card.ovrChanges`: the
+pending change (zero or one): the latest of the current season under the
+card's rules, whose new OVR is still the card's OVR, not yet acknowledged.
+Shape: `{kind: "ovr_changed", key: "ovr_up:<gameweek id>" | "ovr_down:<gameweek
+id>", direction, gameweekSeq, fromOvr, toOvr, delta, fromTier, toTier,
+occurredAt}`. The existing `moments` list is unchanged. The app animates it once
+and acknowledges the key through `api.ack_manager_card_moments`, which now
+accepts the two key shapes, so it never replays, on any device.
+
+**The notification** (`manager_card_ovr_change`, category fantasy):
+
+- one per reader and gameweek (event deduplication key
+  `manager_card:ovr_change:<user>:<gameweek>`), only for the season's latest
+  finished gameweek (a correction of an older week is not news);
+- in the app, plus a push to each working phone when the reader has push on
+  (the push claim sends it only while the push switch allows; its life is 12
+  hours). No email: the free plan's emails are kept for the moments that need
+  them;
+- only to readers with notifications, in-app notifications and **Fantasy
+  reminders** on (the existing switch for Fantasy messages is the opt-out);
+  quiet hours move it, as everywhere else;
+- text in French and Arabic, four templates (`manager_card_ovr_up`,
+  `manager_card_ovr_down`): « Votre note Curva monte à 72 (+4) 📈 », « Votre
+  note Curva descend à 68 (−3) », with a body « Journée N : ouvrez votre carte
+  Curva pour voir ce qui a bougé. » A change of wording is a new template
+  version, not a deploy. Have a native Arabic reader check the Arabic before
+  switching it on;
+- a change is considered once: a reader who had reminders off at the time is
+  not told later.
+
+**It ships off.** `app_private.manager_card_settings.notify_ovr_changes` is
+`false`; changes are still recorded (the animation needs them) but nothing is
+created. The owner switches it, with the `postgres` role:
+
+```sql
+select notify_ovr_changes from app_private.manager_card_settings;
+select app_private.manager_card_notify_configure(true);    -- on
+select app_private.manager_card_notify_configure(false);   -- off
+```
+
+While it is on, the tick also writes `app_private.notification_events`,
+`app.notifications` and `app.notification_deliveries` (AGENTS.md lists it).
+
+### Installing v3
+
+Order (each script is a rehearsal ending in `rollback;`, then `commit;`):
+
+1. `scripts/backend/apply-manager-card-rules-v2-calm.sql`, committed (see
+   "Installing v2"); its migration is what v3 builds on.
+2. `scripts/backend/apply-20261012200000-manager-card-ovr-change-type.sql`,
+   committed. One enum value; nothing reads it yet; no writer needs pausing.
+3. `scripts/backend/apply-manager-card-rules-v3-week-one.sql`. It refuses unless
+   1 and 2 are saved.
+
+Steps 1 and 3 can be run back to back while the tick is paused, so the tick
+recalculates once, under v3. For step 3:
+
+1. Pause the card's writers exactly as for v2 (compute off, `manager-card-tick`
+   paused, no run in progress). Push must be off (`select mode from
+app_private.notification_push_settings;` reads `off` until the phone app
+   exists): the script replaces the push topic and life functions.
+2. Rehearse. The script checks the predecessors are saved, each function it
+   replaces is byte for byte the reviewed one (md5), nothing it adds exists
+   yet, exactly two rules rows (v1 inactive, v2 active) and that v3 differs from
+   v2 only in the intended keys; then applies the migration (sha256 of its
+   text), checks every new or replaced body (md5), owners, `security definer`,
+   empty `search_path`, grants and the closed table, inserts v3 active, checks
+   every key, that compute and the notification are still off, that the tick
+   answers `off` and that nothing was written; and rolls back. Confirm
+   independently: no `20261012200100` row, v2 still the active row.
+3. Commit (change only the last line). Read back: one `20261012200100` row,
+   three rules rows, v3 the only active one.
+4. Resume the tick and compute exactly as they were. The tick recalculates every
+   finished gameweek under v3 (no change recorded, no notification).
+5. When the owner decides: `select app_private.manager_card_notify_configure(true);`.
+   The first notification is for the next finished gameweek.
+
+To go back: insert a new version with the v2 numbers and activate it (rows are
+never edited); switch the notification off with
+`manager_card_notify_configure(false)`.
+
 ## The founder grant
 
 FOUNDER marks the early 2026/27 managers. It is granted **once, by the owner,
@@ -553,6 +691,8 @@ card:
   and nothing else, to `app_private.manager_card_retired_serials` (no user id,
   no link to the person). It is never issued again;
 - the FOUNDER mark goes with the account;
+- the rating changes (`app.manager_card_ovr_changes`, migration
+  `20261012200100`) cascade from the profile too;
 - the moments the user acknowledged (`app.manager_card_moment_acks`) go the same
   way, by cascade from the profile. Nothing is kept: they hold no number. They
   need no extra lock, because the tick never writes them and a user who is
