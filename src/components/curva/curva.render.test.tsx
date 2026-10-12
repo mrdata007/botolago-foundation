@@ -239,10 +239,11 @@ describe("G1 for a manager", () => {
     expect(text(html.match(/data-testid="curva-round"[\s\S]*?<\/section>/)![0])).toContain("J14");
   });
 
-  it("shows a dash and the reason for a statistic that is not there, never a zero", async () => {
+  it("shows the short reason and the full one for a statistic that is not there, never a dash or a zero", async () => {
     const html = await owner("ratedTrfNull");
     const trf = html.match(/data-stat="trf"[\s\S]*?<\/li>/)![0];
-    expect(text(trf)).toContain("—");
+    expect(text(trf)).not.toContain("—");
+    expect(text(trf)).toContain(fr["card.wait.no_transfers"]);
     expect(text(trf)).toContain(fr["card.reason.no_transfers"]);
     expect(text(trf)).not.toMatch(/\b0\b/);
   });

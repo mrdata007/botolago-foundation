@@ -50,8 +50,11 @@ import { Route as ClubsIndexRouteImport } from './routes/clubs.index'
 import { Route as ClubsClubIdRouteImport } from './routes/clubs.$clubId'
 import { Route as CurvaIndexRouteImport } from './routes/curva.index'
 import { Route as CurvaCarteRouteImport } from './routes/curva.carte'
+import { Route as CurvaClassementRouteImport } from './routes/curva.classement'
 import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
 import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
+import { Route as DevCurvaRankingSampleRouteImport } from './routes/dev.curva-ranking-sample'
+import { Route as DevManagerCardSampleRouteImport } from './routes/dev.manager-card-sample'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
 import { Route as DevSofascorePlayersSampleRouteImport } from './routes/dev.sofascore-players-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
@@ -307,6 +310,11 @@ const CurvaCarteRoute = CurvaCarteRouteImport.update({
   path: '/carte',
   getParentRoute: () => CurvaRoute,
 } as any)
+const CurvaClassementRoute = CurvaClassementRouteImport.update({
+  id: '/classement',
+  path: '/classement',
+  getParentRoute: () => CurvaRoute,
+} as any)
 const CurvaLesVotresRoute = CurvaLesVotresRouteImport.update({
   id: '/les-votres',
   path: '/les-votres',
@@ -316,6 +324,16 @@ const CurvaSaisonsRoute = CurvaSaisonsRouteImport.update({
   id: '/saisons',
   path: '/saisons',
   getParentRoute: () => CurvaRoute,
+} as any)
+const DevCurvaRankingSampleRoute = DevCurvaRankingSampleRouteImport.update({
+  id: '/dev/curva-ranking-sample',
+  path: '/dev/curva-ranking-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevManagerCardSampleRoute = DevManagerCardSampleRouteImport.update({
+  id: '/dev/manager-card-sample',
+  path: '/dev/manager-card-sample',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
   id: '/dev/player-mappings-sample',
@@ -600,8 +618,11 @@ export interface FileRoutesByFullPath {
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
   '/curva/carte': typeof CurvaCarteRoute
+  '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
@@ -687,8 +708,11 @@ export interface FileRoutesByTo {
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
   '/curva/carte': typeof CurvaCarteRoute
+  '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
@@ -780,8 +804,11 @@ export interface FileRoutesById {
   '/auth/verify': typeof AuthVerifyRoute
   '/clubs/$clubId': typeof ClubsClubIdRoute
   '/curva/carte': typeof CurvaCarteRoute
+  '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
@@ -874,8 +901,11 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/clubs/$clubId'
     | '/curva/carte'
+    | '/curva/classement'
     | '/curva/les-votres'
     | '/curva/saisons'
+    | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
@@ -961,8 +991,11 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/clubs/$clubId'
     | '/curva/carte'
+    | '/curva/classement'
     | '/curva/les-votres'
     | '/curva/saisons'
+    | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
@@ -1053,8 +1086,11 @@ export interface FileRouteTypes {
     | '/auth/verify'
     | '/clubs/$clubId'
     | '/curva/carte'
+    | '/curva/classement'
     | '/curva/les-votres'
     | '/curva/saisons'
+    | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
@@ -1128,6 +1164,8 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
+  DevCurvaRankingSampleRoute: typeof DevCurvaRankingSampleRoute
+  DevManagerCardSampleRoute: typeof DevManagerCardSampleRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
   DevSofascorePlayersSampleRoute: typeof DevSofascorePlayersSampleRoute
   JourneePublicIdRoute: typeof JourneePublicIdRoute
@@ -1430,6 +1468,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CurvaCarteRouteImport
       parentRoute: typeof CurvaRoute
     }
+    '/curva/classement': {
+      id: '/curva/classement'
+      path: '/classement'
+      fullPath: '/curva/classement'
+      preLoaderRoute: typeof CurvaClassementRouteImport
+      parentRoute: typeof CurvaRoute
+    }
     '/curva/les-votres': {
       id: '/curva/les-votres'
       path: '/les-votres'
@@ -1443,6 +1488,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/curva/saisons'
       preLoaderRoute: typeof CurvaSaisonsRouteImport
       parentRoute: typeof CurvaRoute
+    }
+    '/dev/curva-ranking-sample': {
+      id: '/dev/curva-ranking-sample'
+      path: '/dev/curva-ranking-sample'
+      fullPath: '/dev/curva-ranking-sample'
+      preLoaderRoute: typeof DevCurvaRankingSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/manager-card-sample': {
+      id: '/dev/manager-card-sample'
+      path: '/dev/manager-card-sample'
+      fullPath: '/dev/manager-card-sample'
+      preLoaderRoute: typeof DevManagerCardSampleRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dev/player-mappings-sample': {
       id: '/dev/player-mappings-sample'
@@ -1884,6 +1943,7 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
 interface CurvaRouteChildren {
   CurvaCarteRoute: typeof CurvaCarteRoute
+  CurvaClassementRoute: typeof CurvaClassementRoute
   CurvaLesVotresRoute: typeof CurvaLesVotresRoute
   CurvaSaisonsRoute: typeof CurvaSaisonsRoute
   CurvaIndexRoute: typeof CurvaIndexRoute
@@ -1891,6 +1951,7 @@ interface CurvaRouteChildren {
 
 const CurvaRouteChildren: CurvaRouteChildren = {
   CurvaCarteRoute: CurvaCarteRoute,
+  CurvaClassementRoute: CurvaClassementRoute,
   CurvaLesVotresRoute: CurvaLesVotresRoute,
   CurvaSaisonsRoute: CurvaSaisonsRoute,
   CurvaIndexRoute: CurvaIndexRoute,
@@ -2044,6 +2105,8 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
+  DevCurvaRankingSampleRoute: DevCurvaRankingSampleRoute,
+  DevManagerCardSampleRoute: DevManagerCardSampleRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
   DevSofascorePlayersSampleRoute: DevSofascorePlayersSampleRoute,
   JourneePublicIdRoute: JourneePublicIdRoute,
