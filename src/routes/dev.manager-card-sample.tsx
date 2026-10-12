@@ -5,7 +5,6 @@ import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { CardStage, RatingLine } from "@/components/curva/CardStage";
 import { cardView, roundBlock, waitingBox } from "@/components/curva/curva-state";
 import { IdentityLine } from "@/components/curva/IdentityLine";
-import { PendingCardPanel } from "@/components/curva/PendingCardPanel";
 import { pendingFacts, showsPendingPanel } from "@/components/curva/pending-card";
 import type { PeopleRow } from "@/components/curva/people";
 import { RoundGlance } from "@/components/curva/RoundGlance";
@@ -211,16 +210,16 @@ function Owner({ card }: { card: MyCardDto }) {
           />
         </div>
         <RoundGlance round={SAMPLE_ROUND} composeLabel="Composer l'équipe" />
-        {showsPendingPanel(card, roundBlock(card, { gameweek: null, now: Date.now() })) ? (
-          <PendingCardPanel
-            card={card}
-            facts={pendingFacts(card, SAMPLE_ROWS)}
-            className="mt-4 px-4 md:px-0"
-          />
-        ) : null}
       </div>
       <div className={cn("mt-5 flex min-w-0 flex-col gap-5 px-4 md:mt-0 md:px-0 md:pt-5")}>
-        <StatTiles card={card} />
+        <StatTiles
+          card={card}
+          facts={
+            showsPendingPanel(card, roundBlock(card, { gameweek: null, now: Date.now() }))
+              ? pendingFacts(card, SAMPLE_ROWS)
+              : null
+          }
+        />
       </div>
     </div>
   );

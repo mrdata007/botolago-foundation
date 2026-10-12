@@ -173,9 +173,15 @@ describe("every fixture, language and theme (plan 12.4)", () => {
     for (const t of texts(ar)) expect(t.attrs.transform ?? "").not.toContain("matrix(-1");
   });
 
-  it("keeps the four stats in order with a dash for a missing one", () => {
+  it("keeps the four stats in order, with three waiting dots (no dash) for a missing one", () => {
     const html = draw(MOCK_CARDS[4]!.profile); // trf: null
-    expect(textsWith(html, "stat").map((t) => t.text)).toEqual(["90", "87", "—", "88"]);
+    expect(textsWith(html, "stat").map((t) => t.text)).toEqual(["90", "87", "88"]);
+    expect(html.match(/data-stat-wait="1"/g)).toHaveLength(3);
+    // the dots sit in the missing stat's column (third from the left), centred on it
+    const xs = [...html.matchAll(/<circle cx="([\d.]+)"[^>]*data-stat-wait/g)].map((m) =>
+      Number(m[1]),
+    );
+    expect(Math.abs(xs[1]! - Number(textsWith(html, "label")[2]!.attrs.x))).toBeLessThan(2);
     expect(textsWith(html, "label").map((t) => t.text)).toEqual(["CAP", "SEL", "TRF", "CON"]);
   });
 
