@@ -79,6 +79,8 @@ import {
   parseSofascoreIncidents,
   parseSofascoreLineups,
   parseSofascoreStatistics,
+  parseSofascoreStoppage,
+  type SofascoreStoppage,
 } from "./sofascore-performance-parse.ts";
 import type { FixtureRpcClient, FixtureRpcResult } from "./sportsmonks-fixtures.ts";
 
@@ -182,11 +184,14 @@ interface StoredMatch {
   readonly lineups: PerformanceLineups;
   readonly incidents: readonly PerformanceIncident[];
   readonly statistics: readonly PerformanceStatisticLine[];
+  /** Added later; replies stored before it have none (the builder then uses its fixed limit). */
+  readonly stoppage?: SofascoreStoppage;
 }
 interface MatchParts {
   readonly lineups: PerformanceLineups;
   readonly incidents: readonly PerformanceIncident[];
   readonly statistics: readonly PerformanceStatisticLine[];
+  readonly stoppage?: SofascoreStoppage;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -199,6 +204,19 @@ function trim(parts: MatchParts): StoredMatch {
     lineups: parts.lineups,
     incidents: parts.incidents,
     statistics: parts.statistics.filter((line) => line.period === "ALL"),
+    ...(parts.stoppage ? { stoppage: parts.stoppage } : {}),
+  };
+}
+
+const stoppageMinutes = (value: unknown): number | null =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 20 ? value : null;
+
+/** A stored stoppage, or undefined when there is none or it is not well formed. */
+function readStoppage(value: unknown): SofascoreStoppage | undefined {
+  if (!isRecord(value)) return undefined;
+  return {
+    firstHalf: stoppageMinutes(value.firstHalf),
+    secondHalf: stoppageMinutes(value.secondHalf),
   };
 }
 
@@ -214,10 +232,12 @@ function readStored(value: unknown): MatchParts | null {
     !Array.isArray(statistics)
   )
     return null;
+  const stoppage = readStoppage(value.stoppage);
   return {
     lineups: lineups as unknown as PerformanceLineups,
     incidents: incidents as PerformanceIncident[],
     statistics: statistics as PerformanceStatisticLine[],
+    ...(stoppage ? { stoppage } : {}),
   };
 }
 
@@ -384,6 +404,7 @@ export class SofascoreFantasyRun {
   private readonly results: FantasyFixtureResult[] = [];
   private readonly requestLog: SofascoreDetailsRequestLog[] = [];
   private readonly done = new Set<string>();
+  private readonly liveDone = new Set<string>();
   private stateMissing = false;
   private autoMapMissing = false;
   private rateLimited = false;
@@ -422,6 +443,72 @@ export class SofascoreFantasyRun {
       await this.processReplies(fixtureId, eventId, replies, source);
     } catch {
       this.finish({ fixtureId, eventId, source, outcome: "error:unexpected" });
+    }
+  }
+
+  /**
+   * A match in play whose three replies were just fetched for the match details:
+   * offer its unmapped lineup players to the auto-mapping now, so the safe ones are
+   * mapped and the doubtful ones are on the staff list before full time instead of
+   * after it. No SofaScore request, nothing recorded, `sofascore` mode only. The
+   * finished-match path is unchanged and offers them again. Never throws.
+   */
+  async fromLiveReplies(
+    fixtureId: string,
+    eventId: string,
+    replies: SofascoreRawReplies,
+  ): Promise<void> {
+    const { config, deps } = this;
+    if (!config.enabled || deps.mode !== "sofascore" || this.autoMapMissing) return;
+    if (this.liveDone.has(fixtureId)) return;
+    this.liveDone.add(fixtureId);
+    const line = (outcome: string, extra: Record<string, unknown> = {}) => {
+      try {
+        deps.log(
+          JSON.stringify({
+            event: "football_live_refresh_live_matching",
+            mode: deps.mode,
+            fixtureId,
+            eventId,
+            outcome,
+            ...extra,
+          }),
+        );
+      } catch {
+        // Logging must never break the run.
+      }
+    };
+    try {
+      if (replies.lineups === null) return line("skipped:no_lineups");
+      let lineups: PerformanceLineups;
+      try {
+        lineups = parseSofascoreLineups(replies.lineups);
+      } catch {
+        return line("skipped:lineups_unreadable");
+      }
+      // Substitutes who have come on so far; an unreadable timeline leaves the starters.
+      let incidents: readonly PerformanceIncident[] = [];
+      try {
+        incidents = parseSofascoreIncidents(replies.incidents);
+      } catch {
+        incidents = [];
+      }
+      const parts: MatchParts = { lineups, incidents, statistics: [] };
+      const ids = [...new Set(lineups.players.map((p) => p.externalId))].slice(0, MAX_PLAYER_IDS);
+      const ctx = await this.context(fixtureId, ids);
+      if (ctx === "missing" || ctx === "error" || ctx === null)
+        return line("skipped:state_unavailable");
+      if (ctx.sofascoreEventId !== eventId) return line("skipped:event_mismatch");
+      const mapped = new Set(
+        ctx.players.filter((r) => r.active && r.reviewed).map((r) => r.externalId),
+      );
+      const appearing = appearingIds(parts);
+      const missing = lineups.players.filter((p) => !mapped.has(p.externalId));
+      if (!missing.some((p) => appearing.has(p.externalId))) return line("not_needed");
+      const result = await this.autoMapPlayers(fixtureId, missing, appearing);
+      line("offered", { autoMap: result.label });
+    } catch {
+      line("error:unexpected");
     }
   }
 
@@ -509,6 +596,7 @@ export class SofascoreFantasyRun {
         lineups: parseSofascoreLineups(replies.lineups),
         incidents: parseSofascoreIncidents(replies.incidents),
         statistics: replies.statistics === null ? [] : parseSofascoreStatistics(replies.statistics),
+        stoppage: parseSofascoreStoppage(replies.incidents),
       };
     } catch (error) {
       const code =
@@ -712,6 +800,7 @@ export class SofascoreFantasyRun {
         lineups: parts.lineups,
         incidents: parts.incidents,
         statistics: parts.statistics,
+        ...(parts.stoppage ? { stoppage: parts.stoppage } : {}),
       };
       prepared = await prepareSofascoreObservation({
         observedAt: now.toISOString(),
@@ -723,6 +812,8 @@ export class SofascoreFantasyRun {
             lineups: parts.lineups,
             incidents: parts.incidents,
             statistics: parts.statistics,
+            // The stoppage time can be what makes a player's minutes acceptable: bind it too.
+            ...(parts.stoppage ? { stoppage: parts.stoppage } : {}),
           }),
         ),
       });

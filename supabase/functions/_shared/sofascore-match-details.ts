@@ -505,6 +505,12 @@ export interface SofascoreDetailsTarget {
    * same replies. Absent for a match in play.
    */
   readonly fantasyFixtureId?: string;
+  /**
+   * Set only for a match in play: the app fixture id whose lineup players the
+   * player matching (sofascore-fantasy-auto.ts, `fromLiveReplies`) may map while
+   * the match is on, from these same replies.
+   */
+  readonly liveFixtureId?: string;
 }
 
 export interface SofascoreDetailsSummary {
@@ -544,6 +550,19 @@ export interface SofascoreDetailsDependencies {
    * throws never changes the details outcome.
    */
   readonly onReplies?: (
+    target: SofascoreDetailsTarget,
+    replies: {
+      readonly incidents: unknown;
+      readonly lineups: unknown;
+      readonly statistics: unknown;
+    },
+  ) => Promise<void>;
+  /**
+   * Called with the three raw replies of a target that has a `liveFixtureId`,
+   * after its details were stored (or logged, in shadow). Whatever it does or
+   * throws never changes the details outcome.
+   */
+  readonly onLiveReplies?: (
     target: SofascoreDetailsTarget,
     replies: {
       readonly incidents: unknown;
@@ -697,9 +716,11 @@ export async function runSofascoreMatchDetails(
     const { payload } = normalized;
     // The Fantasy step reads these same replies; it never affects the details.
     const afterwards = async () => {
-      if (!target.fantasyFixtureId || !dependencies.onReplies) return;
       try {
-        await dependencies.onReplies(target, replies);
+        if (target.fantasyFixtureId && dependencies.onReplies)
+          await dependencies.onReplies(target, replies);
+        else if (target.liveFixtureId && dependencies.onLiveReplies)
+          await dependencies.onLiveReplies(target, replies);
       } catch {
         // Fantasy must never hold back the match details.
       }

@@ -181,7 +181,8 @@ describe("SofaScore-only Fantasy observation", () => {
 
   test("an appearing player with no reviewed mapping holds the match back and lands on the worklist", async () => {
     const match = load("17132481");
-    const starter = match.lineups.players.find((pl) => pl.starter && pl.side === "home")!;
+    // 895127 started and scored a penalty: an unmapped scorer can never be left out.
+    const starter = match.lineups.players.find((pl) => pl.externalId === "895127")!;
     const sub = match.incidents.find((i) => i.kind === "substitution")!.playerIn!.externalId!;
     const p = await prepare(match, {}, [starter.externalId, sub]);
     expect(p.request).toBeNull();
@@ -223,6 +224,47 @@ describe("SofaScore-only Fantasy observation", () => {
     expect(over.request).toBeNull();
     const under = await prepare(withStats(match, off, { minutesPlayed: baseMinutes - 3 }));
     expect(under.blockers.map((b) => b.code)).toContain("minutes_mismatch");
+  });
+
+  test("a player on the pitch at half time may be over by the first half's stoppage time plus 2", async () => {
+    const match = load("17132481");
+    // A starter replaced in the second half: he played through the first half's stoppage time.
+    const sub = match.incidents.find(
+      (i) => i.kind === "substitution" && i.minute > 45 && i.minute < 80,
+    )!;
+    const off = sub.playerOut!.externalId!;
+    const base = await prepare(match);
+    const minutes = base.request!.payload.players.find((r) => r.identity.sofascoreId === off)!.stats
+      .minutes as number;
+    const announced = (firstHalf: number | null) => ({
+      ...withStats(match, off, { minutesPlayed: minutes + 7 }),
+      stoppage: { firstHalf, secondHalf: null },
+    });
+    // Seven over: refused with no stoppage known, or with 4 announced (limit stays 6) ...
+    expect((await prepare(announced(null))).blockers.map((b) => b.code)).toContain(
+      "minutes_mismatch",
+    );
+    expect((await prepare(announced(4))).blockers.map((b) => b.code)).toContain("minutes_mismatch");
+    // ... accepted with 5 announced (limit 7), and 8 over is still refused then.
+    expect((await prepare(announced(5))).blockers).toEqual([]);
+    const eight = {
+      ...withStats(match, off, { minutesPlayed: minutes + 8 }),
+      stoppage: { firstHalf: 5, secondHalf: null },
+    };
+    expect((await prepare(eight)).blockers.map((b) => b.code)).toContain("minutes_mismatch");
+    // A first-half incident at 45+6 proves at least six minutes were played: limit 8.
+    const card = match.incidents.find((i) => i.kind === "yellow_card")!;
+    const late = {
+      ...withStats(match, off, { minutesPlayed: minutes + 8 }),
+      incidents: [...match.incidents, { ...card, minute: 45, addedMinutes: 6 }],
+    };
+    expect((await prepare(late)).blockers).toEqual([]);
+    // Period markers carry 999 added minutes: never read as stoppage time.
+    const marker = {
+      ...withStats(match, off, { minutesPlayed: minutes + 7 }),
+      incidents: [...match.incidents, { ...card, minute: 45, addedMinutes: 999 }],
+    };
+    expect((await prepare(marker)).blockers.map((b) => b.code)).toContain("minutes_mismatch");
   });
 
   test("goal incidents that do not add up to the score hold the match back", async () => {
@@ -357,7 +399,7 @@ describe("unknown (unmapped, no candidate) substitutes", () => {
     expect(p.request).toBeNull();
   });
 
-  test("an unknown substitute who is named assister, carded, or counted by SofaScore still holds the match", async () => {
+  test("an unknown substitute who is named assister or carded is left out: those only ever score for him", async () => {
     const match = load("17132481");
     const goal = match.incidents.find((i) => i.kind === "goal" && i.side === "home")!;
     const assisted: SofascoreMatchData = {
@@ -385,12 +427,20 @@ describe("unknown (unmapped, no candidate) substitutes", () => {
         },
       ],
     };
+    for (const m of [assisted, carded, red, withStats(match, subHome, { assists: 1 })]) {
+      const p = await prepare(m, {}, [subHome]);
+      expect(p.blockers).toEqual([]);
+      expect(p.excludedUnmapped.map((x) => x.sofascoreId)).toEqual([subHome]);
+      expect(p.request!.payload.players.some((r) => r.identity.sofascoreId === subHome)).toBe(
+        false,
+      );
+    }
+  });
+
+  test("an unknown substitute counted by SofaScore with a goal, an own goal or a missed penalty still holds the match", async () => {
+    const match = load("17132481");
     for (const m of [
-      assisted,
-      carded,
-      red,
       withStats(match, subHome, { goals: 1 }),
-      withStats(match, subHome, { assists: 1 }),
       withStats(match, subHome, { ownGoals: 1 }),
       withStats(match, subHome, { penaltyMissed: 1 }),
     ]) {
@@ -401,10 +451,73 @@ describe("unknown (unmapped, no candidate) substitutes", () => {
     }
   });
 
-  test("an unknown starter always holds the match: eleven starters a side are needed", async () => {
+  test("an unknown starter with no goal is left out and counted as an anonymous starter of his club", async () => {
     const match = load("17132481");
-    const starter = match.lineups.players.find((pl) => pl.starter && pl.side === "home")!;
-    const p = await prepare(match, {}, [starter.externalId]);
+    const homeStarters = match.lineups.players.filter((pl) => pl.starter && pl.side === "home");
+    const awayStarter = match.lineups.players.find(
+      (pl) => pl.starter && pl.side === "away" && pl.externalId !== "1939981",
+    )!;
+    const left = [homeStarters[0].externalId, homeStarters[1].externalId, awayStarter.externalId];
+    const p = await prepare(match, {}, left);
+    expect(p.blockers).toEqual([]);
+    expect(p.excludedUnmapped.map((x) => x.sofascoreId).sort()).toEqual([...left].sort());
+    expect(p.excludedUnmapped.every((x) => x.started === true)).toBe(true);
+    const payload = p.request!.payload;
+    expect(payload.anonymousStarters).toBe(3);
+    expect(payload.anonymousByTeam).toEqual({ [binding.homeTeamId]: 2, [binding.awayTeamId]: 1 });
+    expect(payload.squadCompleteExceptExcluded).toBe(true);
+    // Eleven a side still add up: rows plus the anonymous ones.
+    for (const [team, anon] of [
+      [binding.homeTeamId, 2],
+      [binding.awayTeamId, 1],
+    ] as const)
+      expect(payload.players.filter((r) => r.teamId === team && r.started).length + anon).toBe(11);
+  });
+
+  test("a substitute left out carries no `started` key, so an older database reads the request as before", async () => {
+    const p = await prepare(load("17132481"), {}, [subHome]);
+    expect(Object.keys(p.excludedUnmapped[0])).not.toContain("started");
+    expect(p.request!.payload.anonymousStarters).toBe(0);
+    expect(p.request!.payload.anonymousByTeam).toEqual({});
+  });
+
+  test("more than six unknown players in one match hold it (the database takes at most six)", async () => {
+    const match = load("17132481");
+    const came = new Set(
+      match.incidents.filter((i) => i.kind === "substitution").map((i) => i.playerIn!.externalId!),
+    );
+    const scorers = new Set(
+      match.incidents.flatMap((i) =>
+        i.kind === "goal" || i.kind === "penalty_goal" ? [i.player?.externalId] : [],
+      ),
+    );
+    const subs = match.lineups.players
+      .filter((pl) => !pl.starter && came.has(pl.externalId) && !scorers.has(pl.externalId))
+      .map((pl) => pl.externalId);
+    const starters = (side: "home" | "away") =>
+      match.lineups.players
+        .filter((pl) => pl.starter && pl.side === side && !scorers.has(pl.externalId))
+        .slice(0, 2)
+        .map((pl) => pl.externalId);
+    const ids = [...starters("home"), ...starters("away"), ...subs];
+    expect(ids.length).toBeGreaterThan(6);
+    const p = await prepare(match, {}, ids);
+    expect(p.excludedUnmapped).toEqual([]);
+    expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
+    expect(p.request).toBeNull();
+    // Six are still fine.
+    const six = await prepare(match, {}, ids.slice(0, 6));
+    expect(six.excludedUnmapped).toHaveLength(6);
+    expect(six.blockers).toEqual([]);
+  });
+
+  test("three unknown starters on one side hold the match", async () => {
+    const match = load("17132481");
+    const ids = match.lineups.players
+      .filter((pl) => pl.starter && pl.side === "home" && pl.externalId !== "895127")
+      .slice(0, 3)
+      .map((pl) => pl.externalId);
+    const p = await prepare(match, {}, ids);
     expect(p.excludedUnmapped).toEqual([]);
     expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
     expect(p.request).toBeNull();
