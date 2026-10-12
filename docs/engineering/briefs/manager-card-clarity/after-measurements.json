@@ -1,0 +1,470 @@
+[
+ {
+  "name": "after-two-390-fr.png",
+  "vw": 390,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 48,
+   "bottom": 455,
+   "left": 69,
+   "right": 321,
+   "w": 251
+  },
+  "box": {
+   "top": 471,
+   "bottom": 563,
+   "left": 47,
+   "right": 343,
+   "w": 296
+  },
+  "identity": {
+   "top": 585,
+   "bottom": 605,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": {
+   "top": 665,
+   "bottom": 944,
+   "left": 0,
+   "right": 390,
+   "w": 390
+  },
+  "tiles": {
+   "top": 964,
+   "bottom": 1261,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-two-1280-fr.png",
+  "vw": 1280,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 52,
+   "bottom": 596,
+   "left": 160,
+   "right": 496,
+   "w": 336
+  },
+  "box": {
+   "top": 612,
+   "bottom": 704,
+   "left": 176,
+   "right": 480,
+   "w": 304
+  },
+  "identity": {
+   "top": 726,
+   "bottom": 746,
+   "left": 168,
+   "right": 488,
+   "w": 320
+  },
+  "panel": {
+   "top": 806,
+   "bottom": 1086,
+   "left": 152,
+   "right": 504,
+   "w": 352
+  },
+  "tiles": {
+   "top": 48,
+   "bottom": 330,
+   "left": 528,
+   "right": 1128,
+   "w": 600
+  }
+ },
+ {
+  "name": "after-two-390-ar.png",
+  "vw": 390,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 41,
+   "bottom": 441,
+   "left": 71,
+   "right": 319,
+   "w": 248
+  },
+  "box": {
+   "top": 457,
+   "bottom": 539,
+   "left": 47,
+   "right": 343,
+   "w": 296
+  },
+  "identity": {
+   "top": 543,
+   "bottom": 568,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": {
+   "top": 628,
+   "bottom": 964,
+   "left": 0,
+   "right": 390,
+   "w": 390
+  },
+  "tiles": {
+   "top": 984,
+   "bottom": 1312,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-two-1280-ar.png",
+  "vw": 1280,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 57,
+   "bottom": 600,
+   "left": 784,
+   "right": 1120,
+   "w": 336
+  },
+  "box": {
+   "top": 616,
+   "bottom": 698,
+   "left": 800,
+   "right": 1104,
+   "w": 304
+  },
+  "identity": {
+   "top": 720,
+   "bottom": 745,
+   "left": 792,
+   "right": 1112,
+   "w": 320
+  },
+  "panel": {
+   "top": 805,
+   "bottom": 1141,
+   "left": 776,
+   "right": 1128,
+   "w": 352
+  },
+  "tiles": {
+   "top": 53,
+   "bottom": 366,
+   "left": 152,
+   "right": 752,
+   "w": 600
+  }
+ },
+ {
+  "name": "after-full-390-fr.png",
+  "vw": 390,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 48,
+   "bottom": 515,
+   "left": 51,
+   "right": 339,
+   "w": 288
+  },
+  "box": {
+   "top": 527,
+   "bottom": 560,
+   "left": 77,
+   "right": 313,
+   "w": 237
+  },
+  "identity": {
+   "top": 582,
+   "bottom": 602,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": null,
+  "tiles": {
+   "top": 666,
+   "bottom": 898,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-full-1280-fr.png",
+  "vw": 1280,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 52,
+   "bottom": 596,
+   "left": 160,
+   "right": 496,
+   "w": 336
+  },
+  "box": {
+   "top": 608,
+   "bottom": 641,
+   "left": 210,
+   "right": 446,
+   "w": 237
+  },
+  "identity": {
+   "top": 663,
+   "bottom": 683,
+   "left": 168,
+   "right": 488,
+   "w": 320
+  },
+  "panel": null,
+  "tiles": {
+   "top": 48,
+   "bottom": 281,
+   "left": 528,
+   "right": 1128,
+   "w": 600
+  }
+ },
+ {
+  "name": "after-full-390-ar.png",
+  "vw": 390,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 41,
+   "bottom": 501,
+   "left": 53,
+   "right": 337,
+   "w": 285
+  },
+  "box": {
+   "top": 507,
+   "bottom": 546,
+   "left": 86,
+   "right": 304,
+   "w": 218
+  },
+  "identity": {
+   "top": 550,
+   "bottom": 575,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": null,
+  "tiles": {
+   "top": 639,
+   "bottom": 918,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-full-1280-ar.png",
+  "vw": 1280,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 57,
+   "bottom": 600,
+   "left": 784,
+   "right": 1120,
+   "w": 336
+  },
+  "box": {
+   "top": 612,
+   "bottom": 651,
+   "left": 843,
+   "right": 1061,
+   "w": 218
+  },
+  "identity": {
+   "top": 673,
+   "bottom": 698,
+   "left": 792,
+   "right": 1112,
+   "w": 320
+  },
+  "panel": null,
+  "tiles": {
+   "top": 53,
+   "bottom": 332,
+   "left": 152,
+   "right": 752,
+   "w": 600
+  }
+ },
+ {
+  "name": "after-zero-390-fr.png",
+  "vw": 390,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 48,
+   "bottom": 500,
+   "left": 55,
+   "right": 335,
+   "w": 279
+  },
+  "box": {
+   "top": 516,
+   "bottom": 563,
+   "left": 47,
+   "right": 343,
+   "w": 296
+  },
+  "identity": {
+   "top": 585,
+   "bottom": 605,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": {
+   "top": 665,
+   "bottom": 909,
+   "left": 0,
+   "right": 390,
+   "w": 390
+  },
+  "tiles": {
+   "top": 929,
+   "bottom": 1226,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-zero-1280-fr.png",
+  "vw": 1280,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 52,
+   "bottom": 596,
+   "left": 160,
+   "right": 496,
+   "w": 336
+  },
+  "box": {
+   "top": 612,
+   "bottom": 659,
+   "left": 176,
+   "right": 480,
+   "w": 304
+  },
+  "identity": {
+   "top": 681,
+   "bottom": 701,
+   "left": 168,
+   "right": 488,
+   "w": 320
+  },
+  "panel": {
+   "top": 761,
+   "bottom": 1005,
+   "left": 152,
+   "right": 504,
+   "w": 352
+  },
+  "tiles": {
+   "top": 48,
+   "bottom": 315,
+   "left": 528,
+   "right": 1128,
+   "w": 600
+  }
+ },
+ {
+  "name": "after-zero-390-ar.png",
+  "vw": 390,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 41,
+   "bottom": 486,
+   "left": 57,
+   "right": 333,
+   "w": 275
+  },
+  "box": {
+   "top": 502,
+   "bottom": 555,
+   "left": 47,
+   "right": 343,
+   "w": 296
+  },
+  "identity": {
+   "top": 559,
+   "bottom": 584,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": {
+   "top": 644,
+   "bottom": 923,
+   "left": 0,
+   "right": 390,
+   "w": 390
+  },
+  "tiles": {
+   "top": 943,
+   "bottom": 1256,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-zero-1280-ar.png",
+  "vw": 1280,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 57,
+   "bottom": 600,
+   "left": 784,
+   "right": 1120,
+   "w": 336
+  },
+  "box": {
+   "top": 616,
+   "bottom": 669,
+   "left": 800,
+   "right": 1104,
+   "w": 304
+  },
+  "identity": {
+   "top": 691,
+   "bottom": 716,
+   "left": 792,
+   "right": 1112,
+   "w": 320
+  },
+  "panel": {
+   "top": 776,
+   "bottom": 1055,
+   "left": 776,
+   "right": 1128,
+   "w": 352
+  },
+  "tiles": {
+   "top": 53,
+   "bottom": 366,
+   "left": 152,
+   "right": 752,
+   "w": 600
+  }
+ }
+]

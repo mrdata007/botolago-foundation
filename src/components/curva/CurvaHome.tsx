@@ -36,6 +36,8 @@ import {
 } from "./curva-state";
 import { IdentityLine } from "./IdentityLine";
 import { NoTeamHero } from "./NoTeamHero";
+import { PendingCardPanel } from "./PendingCardPanel";
+import { pendingFacts, showsPendingPanel } from "./pending-card";
 import { PeopleBlock } from "./PeopleBlock";
 import { RoundGlance } from "./RoundGlance";
 import { SeasonsBlock } from "./SeasonsBlock";
@@ -261,6 +263,21 @@ export function OwnerHome({
         </CardStage>
         <div className="mt-1 px-4 max-md:rtl:mt-0">{identity}</div>
         {glance ? <RoundGlance round={glance} composeLabel={t("fpl.pick_team")} /> : null}
+        {/* Under the next-round line, so the first screen's fit is untouched: while the card has
+            no number, its four statistics in words, what each empty one waits for, and the facts
+            the screen already holds. */}
+        {showsPendingPanel(card, block) ? (
+          <PendingCardPanel
+            card={card}
+            facts={pendingFacts(
+              card,
+              people.leaguesPending || people.standingsPending || people.standingsError
+                ? []
+                : people.rows,
+            )}
+            className={cn("mt-4", ui.space.gutter, "md:px-0")}
+          />
+        ) : null}
         <div className={cn("mt-4 hidden md:block", ui.space.gutter, "md:px-0")}>{action}</div>
       </div>
 
