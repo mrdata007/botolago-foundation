@@ -141,6 +141,22 @@ for (const lang of ["fr", "ar"] as const) {
       expect(text(html)).not.toMatch(/[—–]/);
     });
 
+    it("says when the league is longer than the list, and pins the reader's row without a rank", async () => {
+      language = lang;
+      const listed = new Set(
+        SAMPLE_CARDS.filter((card) => card.teamId !== SAMPLE_OWN_ID).map((card) => card.teamId),
+      );
+      const ranking = buildRanking(SAMPLE_CARDS, SAMPLE_OWN_ID, listed);
+      const html = await render({ ranking, truncated: { shown: 100, total: 250 } });
+      expect(html).toContain("ranking-truncated-note");
+      expect(text(html)).toContain("250");
+      const pinned = html.slice(html.indexOf("curva-ranking-own-outside"));
+      expect(pinned).toContain(`data-team="${SAMPLE_OWN_ID}"`);
+      expect(pinned).not.toContain("data-rank=");
+      expect(html.match(/data-own="true"/g)).toHaveLength(1);
+      expect(await render()).not.toContain("ranking-truncated-note");
+    });
+
     it("never prints a team id or an e-mail", async () => {
       language = lang;
       const body = text(await render());

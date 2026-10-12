@@ -75,6 +75,7 @@ function RankingBody(): JSX.Element {
       ranking={data.ranking}
       status={status}
       cardsError={data.cardsError}
+      truncated={data.truncated}
       limit={RANKING_LIMIT}
       onRetry={data.retry}
     />

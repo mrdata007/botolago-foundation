@@ -50,6 +50,12 @@ export interface Ranking {
   unrated: RankingEntry[];
   /** Rows dropped because they could not be read. */
   skipped: number;
+  /**
+   * The reader's own card when their team is not in the list that was ranked (a league of more than
+   * 100 teams, or the overall board past its first 100). It has no rank here: a rank among a
+   * partial list would be a wrong number.
+   */
+  ownOutside: RankingEntry | null;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -111,11 +117,14 @@ const byName = (a: RankingEntry, b: RankingEntry) =>
 export function buildRanking(
   cards: readonly unknown[],
   ownTeamId: string | null | undefined,
+  /** The teams of the list that was ranked; the reader's card outside it is set aside. */
+  listedIds?: ReadonlySet<string>,
 ): Ranking {
   const seen = new Set<string>();
   const rated: RankingEntry[] = [];
   const unrated: RankingEntry[] = [];
   let skipped = 0;
+  let ownOutside: RankingEntry | null = null;
   for (const raw of cards) {
     const entry = toEntry(raw, ownTeamId);
     if (!entry) {
@@ -124,6 +133,10 @@ export function buildRanking(
     }
     if (seen.has(entry.teamId)) continue;
     seen.add(entry.teamId);
+    if (entry.own && listedIds && !listedIds.has(entry.teamId)) {
+      ownOutside = entry;
+      continue;
+    }
     (entry.ovr === null ? unrated : rated).push(entry);
   }
 
@@ -136,7 +149,7 @@ export function buildRanking(
     const tied = previous !== undefined && previous.entry.ovr === entry.ovr;
     rows.push({ entry, rank: tied ? previous.rank : index + 1, tied });
   });
-  return { rated: rows, unrated, skipped };
+  return { rated: rows, unrated, skipped, ownOutside };
 }
 
 /** The team ids to ask the card read about: at most `limit`, the reader's own always in. */

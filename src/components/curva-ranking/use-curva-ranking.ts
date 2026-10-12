@@ -22,6 +22,8 @@ export interface CurvaRankingData {
   ranking: Ranking;
   /** The teams ranked (before the card read drops hidden ones). */
   asked: number;
+  /** « Ma ligue » only: the league has more teams than the standings page returned. */
+  truncated: { shown: number; total: number } | null;
   leaguesPending: boolean;
   /** The list of teams (a league's standings, or the overall board) is loading. */
   listPending: boolean;
@@ -80,15 +82,28 @@ export function useCurvaRanking(
     enabled: enabled && scope === "all" && status === "authenticated",
   });
 
+  const listed = useMemo(
+    () =>
+      (scope === "league" ? (standings.data ?? []) : (board.data?.rows ?? [])).map(
+        (row) => row.managerId,
+      ),
+    [scope, standings.data, board.data],
+  );
+  const listedSet = useMemo(() => new Set(listed), [listed]);
+  // The reader's own team is always asked about, even past the first page of a long list, so their
+  // row can be shown (apart, without a rank) when the list does not reach them.
   const ids = useMemo(() => {
-    const source = scope === "league" ? (standings.data ?? []) : (board.data?.rows ?? []);
-    return rankingTeamIds(
-      source.map((row) => row.managerId),
-      ownTeamId,
-    );
-  }, [scope, standings.data, board.data, ownTeamId]);
+    const head = rankingTeamIds(listed, ownTeamId);
+    if (ownTeamId && listed.length > 0 && !head.includes(ownTeamId)) {
+      return [...head.slice(0, RANKING_LIMIT - 1), ownTeamId];
+    }
+    return head;
+  }, [listed, ownTeamId]);
   const cards = useManagerCards(enabled && status === "authenticated" ? ids : []);
-  const ranking = useMemo(() => buildRanking(cards.data ?? [], ownTeamId), [cards.data, ownTeamId]);
+  const ranking = useMemo(
+    () => buildRanking(cards.data ?? [], ownTeamId, listedSet),
+    [cards.data, ownTeamId, listedSet],
+  );
 
   const list = scope === "league" ? standings : board;
   const off = cards.error instanceof ManagerCardError && cards.error.code === "unavailable";
@@ -97,6 +112,10 @@ export function useCurvaRanking(
     league,
     ranking,
     asked: ids.length,
+    truncated:
+      scope === "league" && league && standings.data && league.members > standings.data.length
+        ? { shown: standings.data.length, total: league.members }
+        : null,
     leaguesPending: scope === "league" && enabled && leagues.isPending,
     listPending: scope === "league" ? league !== null && standings.isPending : board.isPending,
     cardsPending: ids.length > 0 && cards.isPending && cards.fetchStatus !== "idle",

@@ -110,7 +110,12 @@ describe("buildRanking: rows that cannot be read are skipped", () => {
   });
 
   it("returns an empty ranking for no cards", () => {
-    expect(buildRanking([], null)).toEqual({ rated: [], unrated: [], skipped: 0 });
+    expect(buildRanking([], null)).toEqual({
+      rated: [],
+      unrated: [],
+      skipped: 0,
+      ownOutside: null,
+    });
   });
 
   it("shows the name the API gave, trimmed, and nothing else in its place", () => {
@@ -139,5 +144,32 @@ describe("rankingTeamIds", () => {
 
   it("asks once per team", () => {
     expect(rankingTeamIds(["a", "b", "a"])).toEqual(["a", "b"]);
+  });
+});
+
+describe("buildRanking: the reader's team is not in the ranked list", () => {
+  const listed = new Set(
+    SAMPLE_CARDS.filter((card) => card.teamId !== SAMPLE_OWN_ID).map((card) => card.teamId),
+  );
+
+  it("sets their card aside, without a rank, and ranks the others as if they were not there", () => {
+    const result = buildRanking(SAMPLE_CARDS, SAMPLE_OWN_ID, listed);
+    expect(result.ownOutside?.name).toBe("Ali");
+    expect(result.ownOutside?.ovr).toBe(77);
+    const everyone = [...result.rated.map((row) => row.entry), ...result.unrated];
+    expect(everyone.some((entry) => entry.own)).toBe(false);
+    expect(result.rated.map((row) => row.rank)).toEqual([1, 1, 3, 4, 4]);
+  });
+
+  it("keeps them in the ranking when the list does reach them", () => {
+    const all = new Set(SAMPLE_CARDS.map((card) => card.teamId));
+    const result = buildRanking(SAMPLE_CARDS, SAMPLE_OWN_ID, all);
+    expect(result.ownOutside).toBeNull();
+    expect(result.rated.some((row) => row.entry.own)).toBe(true);
+  });
+
+  it("has nothing outside when no list is given or they have no card", () => {
+    expect(buildRanking(SAMPLE_CARDS, SAMPLE_OWN_ID).ownOutside).toBeNull();
+    expect(buildRanking(SAMPLE_CARDS, "someone-else", listed).ownOutside).toBeNull();
   });
 });

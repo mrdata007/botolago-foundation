@@ -34,6 +34,8 @@ export interface RankingViewProps {
   status: RankingStatus;
   /** The card read failed after the list of teams loaded. */
   cardsError?: boolean;
+  /** « Ma ligue » only: the league has more teams than the list that was ranked. */
+  truncated?: { shown: number; total: number } | null;
   /** How many managers « Tous » ranks at most. */
   limit: number;
   onRetry: () => void;
@@ -87,6 +89,14 @@ export function RankingView(props: RankingViewProps): JSX.Element {
           data-testid="ranking-all-note"
         >
           {copy.allNote(props.limit)}
+        </p>
+      ) : null}
+      {scope === "league" && status === "ready" && props.truncated ? (
+        <p
+          className={cn("text-pretty", ui.text.meta, ui.tone.muted)}
+          data-testid="ranking-truncated-note"
+        >
+          {copy.truncated(props.truncated.shown, props.truncated.total)}
         </p>
       ) : null}
       <Body {...props} />
@@ -159,7 +169,7 @@ function Body(props: RankingViewProps): JSX.Element {
       />
     );
   }
-  if (ranking.rated.length === 0 && ranking.unrated.length === 0) {
+  if (ranking.rated.length === 0 && ranking.unrated.length === 0 && !ranking.ownOutside) {
     return (
       <UiEmptyState
         title={scope === "all" ? copy.emptyAll : copy.noneRated}
@@ -209,6 +219,13 @@ function Body(props: RankingViewProps): JSX.Element {
           </UiCard>
         </section>
       ) : null}
+      {ranking.ownOutside ? (
+        <UiCard padding="none" className="overflow-hidden" testId="curva-ranking-own-outside">
+          <ul>
+            <RankingRow entry={ranking.ownOutside} rank="outside" index={0} last />
+          </ul>
+        </UiCard>
+      ) : null}
       {props.cardsError ? (
         <p className={cn("flex items-center justify-between gap-3", ui.text.meta, ui.tone.muted)}>
           <FailedLine onRetry={props.onRetry} />
@@ -251,8 +268,8 @@ function RankingRow({
   last,
 }: {
   entry: RankingEntry;
-  /** `null` for an unrated manager: no number. */
-  rank: number | null;
+  /** `null` for an unrated manager: no number. `"outside"`: the reader's row, past the ranked list. */
+  rank: number | "outside" | null;
   index: number;
   last: boolean;
 }): JSX.Element {
@@ -275,7 +292,7 @@ function RankingRow({
       style={{ "--cr-i": Math.min(index, STAGGER_CAP) } as CSSProperties}
       data-own={entry.own ? "true" : undefined}
       data-team={entry.teamId}
-      data-rank={rank ?? undefined}
+      data-rank={typeof rank === "number" ? rank : undefined}
     >
       {entry.own ? (
         <span
@@ -286,7 +303,7 @@ function RankingRow({
         />
       ) : null}
       <span className={cn("pt-0.5 text-center", ui.stat.sm, ui.tone.muted)}>
-        {rank === null ? (
+        {rank === "outside" ? null : rank === null ? (
           <>
             <Waiting label={copy.waiting} />
           </>
