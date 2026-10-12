@@ -290,6 +290,76 @@ Route: `/plus` (French and Arabic share the URL, as everywhere today; `/ar/plus`
 exist). Linked from Profil, from locked premium entry points (a lock chip, never a modal that blocks
 the free content), and from Curva. Not indexed while the offer is off.
 
+**Revised 2026-10-12 after the owner's feedback on the first sketch:** the first contact with
+BotolaGO+ is now a **six-step onboarding** (3.0b below, drawn in the sketch). The long scrolling
+page of 3.1 stays as `/plus` for people who come back to compare plans or read the questions.
+
+### 3.0a Onboarding patterns from Mobbin
+
+Researched on Mobbin (iOS flows, 2026-10-12). Patterns only: no asset, layout or wording is copied.
+
+| App and flow                                  | What it does well                                                                                                                                                                                                         | What BotolaGO+ takes from it                                                                                 |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Duolingo, "Subscribing to Super" (two flows)  | A numbered progress bar across several value screens, **one benefit per screen** before any price; a free-vs-paid comparison; "most popular" badge on one plan; "cancel anytime" right by the button; a plain "No thanks" | Progress bar, one idea per step, value before price, recommended badge, reassurance under the call to action |
+| Strava, "Subscribing to Strava"               | A vertical **timeline** (today / reminder before it ends / when you pay) that removes the fear of a hidden charge; "Skip" always visible; the price restated under the button                                             | Step 5 timeline, switched by plan; skip ("Voir les prix") on every value step                                |
+| Grok, "Upgrade a plan"                        | Dark, premium register; a short benefit list with icons; a two-plan selector; one high-contrast button; the renewal line under it; restore purchases in the footer                                                        | Dark aurora register, two-plan selector, single primary button, restore link (store builds)                  |
+| Jomo, "Subscribing to Jomo Plus"              | **Personalised** headline (the user's name and their own numbers); a price anchor ("the price of a coffee"); a warm thank-you screen after paying                                                                         | The member's own card and numbers as the hero; « moins de 7 MAD par semaine »; step 6 welcome                |
+| Public, "Subscribing to Public"               | A dedicated **welcome** screen once paid that says what is now unlocked                                                                                                                                                   | Step 6 with the two first things to do                                                                       |
+| FotMob, "Subscribing to FotMob" (football)    | Honest benefit list for a sports audience, including what the subscription does **not** cover                                                                                                                             | The « le jeu reste gratuit, aucun point en plus » line on step 1 and under the button                        |
+| DAZN, "Subscribe to DAZN plan" (football)     | Stadium mood, gold-on-dark comparison, and an explicit hand-off to web checkout                                                                                                                                           | Mood only; the hand-off is a reminder that store builds must not link to web checkout (5.6)                  |
+| Fixtured, "Subscribing to Fixtured+" (sports) | Free-vs-Plus table and user reviews next to the plans                                                                                                                                                                     | Table kept on `/plus`; **reviews not used** until real ones exist (no invented social proof)                 |
+| KOHO, "Upgrading a plan"                      | A short confirmation ("plan upgraded") back in context                                                                                                                                                                    | After step 6, return the member to the screen they came from                                                 |
+
+What makes them clear and premium, and the rule we keep for each:
+
+1. **Story before price.** Three short value screens, each about the person's own data, then the
+   price. Skipping straight to the price is always one tap away.
+2. **Show, not list.** Each value screen shows the real thing (the chart, the duel, the card) with
+   the member's figures; a sample is labelled « Exemple ».
+3. **One primary button per screen**, same verb family (« Découvrir », « Continuer », « Rejoindre »).
+4. **Reassurance at the moment of paying:** what happens next, when money moves, how to cancel.
+5. **Social proof only when true.** Counts of members or ratings appear only once measured; until
+   then the slot is empty, never a placeholder that looks real.
+6. **Close and back always visible**; Escape and the arrow keys work; swiping moves between value
+   steps (not past the price, so nobody pays by swiping).
+
+### 3.0b The six steps (drawn in `botolago-plus-sketch.html`)
+
+| Step | Purpose         | French headline (copy)                             | Arabic headline                          | Button                        |
+| ---- | --------------- | -------------------------------------------------- | ---------------------------------------- | ----------------------------- |
+| 1    | Hook            | Votre carte a une histoire. Vivez-la en entier.    | لبطاقتك قصة. عِشها كاملة.                | Découvrir BotolaGO+           |
+| 2    | Career          | Comprenez enfin pourquoi votre note bouge.         | افهم أخيرًا لماذا يتغيّر تقييمك.         | Continuer                     |
+| 3    | Duel            | Vos potes disent qu'ils sont meilleurs ? Vérifiez. | أصدقاؤك يقولون إنهم الأفضل؟ تحقّق بنفسك. | Continuer                     |
+| 4    | Designs         | Une carte à votre image.                           | بطاقة تشبهك.                             | Voir les formules             |
+| 5    | Plan + timeline | Toute la saison pour 199 MAD.                      | الموسم كله بـ199 درهمًا.                 | Rejoindre BotolaGO+ · 199 MAD |
+| 6    | Welcome         | Bienvenue dans BotolaGO+.                          | مرحبًا بك في BotolaGO+.                  | Voir ma carrière              |
+
+Supporting lines (FR; the Arabic is in the sketch):
+
+- Step 1: « Chaque journée de Fantasy laisse une trace. BotolaGO+ vous la montre : vos stats, vos
+  duels, vos plus belles cartes. » and, under the card, « Fantasy, Pronostics et Pépites restent
+  gratuits pour tous. BotolaGO+ ne donne aucun point en plus. »
+- Step 2 insights: « Bon capitaine 6/11 », « Vos transferts ont rapporté +18 », « Votre meilleure
+  journée 71 ».
+- Step 3: « Uniquement avec les membres de vos ligues privées. »
+- Step 4: « Même note, même palier. Une édition change le style de votre carte, jamais vos
+  chiffres. »
+- Step 5 plans: « Pass saison 2026/27 — 199 MAD, une fois — soit 20 MAD par mois · 91 MAD
+  d'économie » (badge « Le plus avantageux ») and « Mensuel — 29 MAD / mois — moins de 7 MAD par
+  semaine ». Timeline for the pass: Aujourd'hui (tout est débloqué) → Toute la saison (mise à jour
+  après chaque journée) → Fin de saison (le pass se termine, aucun prélèvement automatique). For
+  monthly: Aujourd'hui (29 MAD) → 3 jours avant le renouvellement (on vous prévient dans l'app) →
+  Dans 30 jours (renouvellement, annulable avant). Under the button: « Aucun renouvellement
+  automatique. Le jeu reste gratuit pour tous. » / « Annulez quand vous voulez, en deux clics
+  depuis Profil. »
+- Step 6: « Votre carrière est prête et votre édition Zellige est déjà sur votre carte. »
+
+Copy rules applied: outcome over feature, specific numbers, short sentences, `vous`, one verb family
+for buttons, reassurance under the button, no hype words, no invented proof. The 91 MAD saving is
+29 × 10 months − 199 and must be recomputed if prices change. The monthly reminder promise needs a
+working in-app reminder before launch (email is off today); if it is not built, remove that line.
+« Potes » is deliberately familiar for the duel step only; the owner may prefer « amis ».
+
 ### 3.1 Sections (mobile first, 390 px; one 672 px column from 768 px)
 
 1. **Hero** on the dark mesh register (`ui.surface.mesh`, `ui.tone.onMesh*`): aurora background,
