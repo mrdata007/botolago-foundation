@@ -336,11 +336,12 @@ describe("the dictionary of the section", () => {
       key === "fantasy.hub.card_view",
   );
 
+  // 205: the 18 keys of the strip under a pending card (statistic words, short reasons, panel).
   // 184: Appendix A's 183 and « Vos moments » (finish review). 187: the waiting box's
   // « Statistiques remplies » title and its accessible sentence, and the league row's
   // « statistiques remplies 2/4 » (the card that waits for a statistic, 2026-10-10).
-  it("has the 187 keys of Appendix A (183, « Vos moments », and the three of the statistics wait), in both languages", () => {
-    expect(sectionKeys).toHaveLength(187);
+  it("has the 205 keys of Appendix A (183, « Vos moments », the three of the statistics wait and the 18 of the pending strip), in both languages", () => {
+    expect(sectionKeys).toHaveLength(205);
     for (const key of sectionKeys) {
       expect(dictionaries.ar[key as keyof typeof dictionaries.ar]).toBeDefined();
     }

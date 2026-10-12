@@ -190,6 +190,53 @@ export function statReasonText(
   }
 }
 
+/**
+ * What a card knows about the journées, for the short reason of an empty statistic: how many are
+ * counted, how many the rating needs, and the journées the server listed for it (`ratingGameweeks`).
+ */
+export interface WaitContext {
+  counted: number;
+  min: number;
+  listed: readonly number[];
+}
+
+/**
+ * The short reason a statistic is empty, a few words for a compact strip (« après J7 », « pas de
+ * transfert »). It is derived only from the statistic's `nullReason` and the journées the card
+ * lists; it never says a number the card does not have. The full sentence stays `statReasonText`.
+ *
+ * `pending_minimum` names the journée the card lists as the one that completes the count (« après
+ * J7 ») only while that journée is still to come (`counted < min`); a card whose journées are all
+ * counted and whose statistic is still waiting just says it is waiting.
+ */
+export function statWaitText(
+  reason: StatNullReason | null,
+  wait: WaitContext,
+  lang: Language,
+  t: Translate,
+): string {
+  switch (reason) {
+    case "pending_minimum": {
+      const last = wait.counted < wait.min ? wait.listed[wait.min - 1] : undefined;
+      return last === undefined
+        ? t("card.wait.pending")
+        : fillText(t("card.wait.after_gw"), { gw: last });
+    }
+    case "no_transfers":
+      return t("card.wait.no_transfers");
+    case "window_open":
+      return fillText(t("card.wait.window_open"), { rounds: rounds(wait.min, lang, t) });
+    case "excluded_weeks_only":
+      return t("card.wait.excluded_weeks_only");
+    case "board_not_final":
+      return t("card.wait.board_not_final");
+    case "pre_captain_fix":
+      return t("card.wait.pre_captain_fix");
+    default:
+      return t("card.wait.pending");
+  }
+}
+
 /* ------------------------------------------------------------------------------------------ */
 /* The groups                                                                                   */
 /* ------------------------------------------------------------------------------------------ */
@@ -291,6 +338,25 @@ export function cardCopy(t: Translate, lang: Language) {
       trf: t("card.stat_long.trf"),
       con: t("card.stat_long.con"),
     },
+    /** The word a code stands for, on its own (« Capitaine »): the strip under a pending card. */
+    statWord: {
+      cap: t("card.stat_word.cap"),
+      sel: t("card.stat_word.sel"),
+      trf: t("card.stat_word.trf"),
+      con: t("card.stat_word.con"),
+    },
+    pending: {
+      title: t("card.pending.title"),
+      points: t("card.pending.points"),
+      rank: t("card.pending.rank"),
+      rounds: t("card.pending.rounds"),
+      /** « {word} : {value} », the accessible name of a statistic that has a value. */
+      statValue: t("card.pending.stat_value"),
+      /** « {word} : {reason} », the accessible name of a statistic that is empty. */
+      statWait: t("card.pending.stat_wait"),
+      /** « {rank} sur {total} » spoken; shown as « 3/12 ». */
+      rankOf: t("card.pending.rank_of"),
+    },
     tier: {
       homa: t("card.tier.homa"),
       stade: t("card.tier.stade"),
@@ -321,6 +387,9 @@ export function cardCopy(t: Translate, lang: Language) {
     gwList: (seqs: readonly number[]) => gwList(seqs, lang, t),
     reasonText: (reason: StatNullReason, minRated: number | null) =>
       statReasonText(reason, lang, t, minRated),
+    /** The few words for an empty statistic in a compact strip (« après J7 »). */
+    waitText: (reason: StatNullReason | null, wait: WaitContext) =>
+      statWaitText(reason, wait, lang, t),
   };
 }
 export type CardCopy = ReturnType<typeof cardCopy>;

@@ -54,6 +54,7 @@ import { Route as CurvaClassementRouteImport } from './routes/curva.classement'
 import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
 import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
 import { Route as DevCurvaRankingSampleRouteImport } from './routes/dev.curva-ranking-sample'
+import { Route as DevManagerCardSampleRouteImport } from './routes/dev.manager-card-sample'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
 import { Route as DevSofascorePlayersSampleRouteImport } from './routes/dev.sofascore-players-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
@@ -327,6 +328,11 @@ const CurvaSaisonsRoute = CurvaSaisonsRouteImport.update({
 const DevCurvaRankingSampleRoute = DevCurvaRankingSampleRouteImport.update({
   id: '/dev/curva-ranking-sample',
   path: '/dev/curva-ranking-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevManagerCardSampleRoute = DevManagerCardSampleRouteImport.update({
+  id: '/dev/manager-card-sample',
+  path: '/dev/manager-card-sample',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
@@ -616,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
@@ -705,6 +712,7 @@ export interface FileRoutesByTo {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
@@ -800,6 +808,7 @@ export interface FileRoutesById {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
@@ -896,6 +905,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
@@ -985,6 +995,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
@@ -1079,6 +1090,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
@@ -1153,6 +1165,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
   DevCurvaRankingSampleRoute: typeof DevCurvaRankingSampleRoute
+  DevManagerCardSampleRoute: typeof DevManagerCardSampleRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
   DevSofascorePlayersSampleRoute: typeof DevSofascorePlayersSampleRoute
   JourneePublicIdRoute: typeof JourneePublicIdRoute
@@ -1481,6 +1494,13 @@ declare module '@tanstack/react-router' {
       path: '/dev/curva-ranking-sample'
       fullPath: '/dev/curva-ranking-sample'
       preLoaderRoute: typeof DevCurvaRankingSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/manager-card-sample': {
+      id: '/dev/manager-card-sample'
+      path: '/dev/manager-card-sample'
+      fullPath: '/dev/manager-card-sample'
+      preLoaderRoute: typeof DevManagerCardSampleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/player-mappings-sample': {
@@ -2086,6 +2106,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
   DevCurvaRankingSampleRoute: DevCurvaRankingSampleRoute,
+  DevManagerCardSampleRoute: DevManagerCardSampleRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
   DevSofascorePlayersSampleRoute: DevSofascorePlayersSampleRoute,
   JourneePublicIdRoute: JourneePublicIdRoute,

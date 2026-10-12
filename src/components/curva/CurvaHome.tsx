@@ -36,6 +36,7 @@ import {
 } from "./curva-state";
 import { IdentityLine } from "./IdentityLine";
 import { NoTeamHero } from "./NoTeamHero";
+import { pendingFacts, showsPendingPanel } from "./pending-card";
 import { PeopleBlock } from "./PeopleBlock";
 import { RoundGlance } from "./RoundGlance";
 import { SeasonsBlock } from "./SeasonsBlock";
@@ -302,7 +303,20 @@ export function OwnerHome({
         />
         <section data-testid="curva-stats" aria-label={curva.statsTitle}>
           <QuietHeading>{curva.statsTitle}</QuietHeading>
-          <StatTiles card={card} />
+          <StatTiles
+            card={card}
+            facts={
+              showsPendingPanel(card, block)
+                ? pendingFacts(
+                    card,
+                    people.leaguesPending || people.standingsPending || people.standingsError
+                      ? []
+                      : people.rows,
+                    people.league?.members,
+                  )
+                : null
+            }
+          />
         </section>
         <div className="md:hidden">{action}</div>
       </div>

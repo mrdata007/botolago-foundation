@@ -185,8 +185,18 @@ export function plate(c: Ctx, plaque: Plaque): Plate {
       );
     }
     const value = p.stats[code];
+    if (value == null) {
+      // Not there yet: three small dots, an ellipsis that reads as « waiting », in the label's
+      // muted tone. Shapes, not a glyph, so it needs no face and the picture's size is the same.
+      const r = compact ? 5.5 : 4.5;
+      const gap = compact ? 17 : 14;
+      for (const k of [-1, 0, 1]) {
+        shapes += `<circle cx="${n2(x + k * gap)}" cy="${valY - (compact ? 11 : 9)}" r="${r}" fill="${F.label}" data-stat-wait="1"/>`;
+      }
+      return;
+    }
     texts.push({
-      text: value == null ? "—" : String(value),
+      text: String(value),
       x,
       y: valY,
       size: compact ? 64 : 52,

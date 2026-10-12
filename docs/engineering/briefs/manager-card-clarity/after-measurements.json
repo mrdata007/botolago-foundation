@@ -1,0 +1,142 @@
+[
+ {
+  "name": "after-two-390-fr.jpg",
+  "vw": 390,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 48,
+   "bottom": 455,
+   "left": 69,
+   "right": 321,
+   "w": 251
+  },
+  "box": {
+   "top": 471,
+   "bottom": 563,
+   "left": 47,
+   "right": 343,
+   "w": 296
+  },
+  "identity": {
+   "top": 585,
+   "bottom": 605,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": null,
+  "tiles": {
+   "top": 669,
+   "bottom": 1068,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-two-1280-fr.jpg",
+  "vw": 1280,
+  "dir": "ltr",
+  "overflow": [],
+  "card": {
+   "top": 52,
+   "bottom": 596,
+   "left": 160,
+   "right": 496,
+   "w": 336
+  },
+  "box": {
+   "top": 612,
+   "bottom": 704,
+   "left": 176,
+   "right": 480,
+   "w": 304
+  },
+  "identity": {
+   "top": 726,
+   "bottom": 746,
+   "left": 168,
+   "right": 488,
+   "w": 320
+  },
+  "panel": null,
+  "tiles": {
+   "top": 48,
+   "bottom": 388,
+   "left": 528,
+   "right": 1128,
+   "w": 600
+  }
+ },
+ {
+  "name": "after-two-390-ar.jpg",
+  "vw": 390,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 41,
+   "bottom": 441,
+   "left": 71,
+   "right": 319,
+   "w": 248
+  },
+  "box": {
+   "top": 457,
+   "bottom": 539,
+   "left": 47,
+   "right": 343,
+   "w": 296
+  },
+  "identity": {
+   "top": 543,
+   "bottom": 568,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  },
+  "panel": null,
+  "tiles": {
+   "top": 632,
+   "bottom": 1032,
+   "left": 16,
+   "right": 374,
+   "w": 358
+  }
+ },
+ {
+  "name": "after-two-1280-ar.jpg",
+  "vw": 1280,
+  "dir": "rtl",
+  "overflow": [],
+  "card": {
+   "top": 57,
+   "bottom": 600,
+   "left": 784,
+   "right": 1120,
+   "w": 336
+  },
+  "box": {
+   "top": 616,
+   "bottom": 698,
+   "left": 800,
+   "right": 1104,
+   "w": 304
+  },
+  "identity": {
+   "top": 720,
+   "bottom": 745,
+   "left": 792,
+   "right": 1112,
+   "w": 320
+  },
+  "panel": null,
+  "tiles": {
+   "top": 53,
+   "bottom": 413,
+   "left": 152,
+   "right": 752,
+   "w": 600
+  }
+ }
+]
