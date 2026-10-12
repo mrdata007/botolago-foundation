@@ -717,3 +717,109 @@ describe("the tilt (plan 8.3)", () => {
     expect(() => stop()).not.toThrow();
   });
 });
+
+describe("a finger's drag on a phone (collectible motion)", () => {
+  const down = (listeners: Map<string, Handler>, id = 1) =>
+    listeners.get("pointerdown")!({ pointerType: "touch", pointerId: id });
+  const drag = (listeners: Map<string, Handler>, x: number, y: number, id = 1) =>
+    listeners.get("pointermove")!({
+      pointerType: "touch",
+      pointerId: id,
+      clientX: x,
+      clientY: y,
+    });
+
+  it("tilts the card toward a finger that is dragging across it", () => {
+    touch = true;
+    const { el, classes, vars, listeners, parts } = fakeCard();
+    mountTilt(el);
+    down(listeners);
+    drag(listeners, 100 + 300, 200);
+    flush();
+    expect(classes.has("mc-eclat--active")).toBe(true);
+    expect(vars.get("--mc-ax")).toBe("1.000");
+    expect(transform(parts.tilt)).toBe(tilt([1, 1]));
+  });
+
+  it("does not tilt for a finger that never touched down on the card, or another finger", () => {
+    touch = true;
+    const { el, classes, listeners } = fakeCard();
+    mountTilt(el);
+    drag(listeners, 250, 300);
+    flush();
+    down(listeners, 1);
+    drag(listeners, 250, 300, 2);
+    flush();
+    expect(classes.has("mc-eclat--active")).toBe(false);
+  });
+
+  it("lets the card go with the settle when the finger lifts, or the browser takes the touch for a scroll", () => {
+    for (const type of ["pointerup", "pointercancel"]) {
+      touch = true;
+      const { el, classes, listeners, vars } = fakeCard();
+      mountTilt(el);
+      down(listeners);
+      drag(listeners, 400, 200);
+      flush();
+      listeners.get(type)!({ pointerType: "touch", pointerId: 1 });
+      expect(classes.has("mc-eclat--active")).toBe(false);
+      expect(classes.has("mc-eclat--settle")).toBe(true);
+      expect(vars.get("--mc-ax")).toBe("0.240");
+    }
+  });
+
+  it("leaves the float alone for a tap (down and up with no drag between)", () => {
+    touch = true;
+    const { el, classes, listeners } = fakeCard();
+    mountTilt(el);
+    observed!.cb([{ isIntersecting: true }]);
+    down(listeners);
+    listeners.get("pointerup")!({ pointerType: "touch", pointerId: 1 });
+    expect(classes.has("mc-eclat--settle")).toBe(false);
+    expect(classes.has("mc-eclat--idle")).toBe(true);
+  });
+
+  it("does not let a mouse button's release end a hover tilt", () => {
+    const { el, classes, listeners } = fakeCard();
+    mountTilt(el);
+    move(listeners, 300, 300);
+    flush();
+    listeners.get("pointerup")!({ pointerType: "mouse", pointerId: 1 });
+    expect(classes.has("mc-eclat--active")).toBe(true);
+    expect(classes.has("mc-eclat--settle")).toBe(false);
+  });
+
+  it("asks for a vertical pan only on a touch-only screen, and gives it back", () => {
+    touch = true;
+    const phone = fakeCard();
+    const stop = mountTilt(phone.el);
+    expect((phone.root.style as unknown as Record<string, string>).touchAction).toBe("pan-y");
+    stop();
+    expect((phone.root.style as unknown as Record<string, string>).touchAction).toBe("");
+    touch = false;
+    const desktop = fakeCard();
+    mountTilt(desktop.el);
+    expect((desktop.root.style as unknown as Record<string, string>).touchAction).toBeUndefined();
+  });
+
+  it("settles as a spring: the inner parts pass the rest light a little and come back to it", () => {
+    const { el, listeners, parts } = fakeCard();
+    mountTilt(el);
+    move(listeners, 400, 200);
+    flush(60);
+    listeners.get("pointerleave")!({});
+    const seen: number[] = [];
+    for (let i = 0; i < 120 && (frames.length || i === 0); i += 1) {
+      flush();
+      const m = /translate\((-?[\d.]+)px/.exec(String(transform(parts.spec)));
+      if (m) seen.push(Number(m[1]));
+    }
+    const rest = Number(
+      /translate\((-?[\d.]+)px/.exec(follow("spec", restLight(false), false))![1],
+    );
+    // it started on the other side of the rest light and crossed it
+    expect(seen[0]! > rest).toBe(true);
+    expect(Math.min(...seen) < rest).toBe(true);
+    expect(seen[seen.length - 1]).toBe(rest);
+  });
+});

@@ -202,14 +202,19 @@
 /* how the parts that follow the light ease: with a short lag while the pointer moves them, over the
    depth's 450 ms when the card turns toward it for the first time and when it settles back */
 .mc-eclat--active {
-  --mc-ms: 120ms;
-  --mc-ease: ease-out;
+  --mc-ms: 150ms;
+  --mc-ease: cubic-bezier(0.22, 0.9, 0.3, 1);
 }
 .mc-eclat--active.mc-eclat--enter,
-.mc-eclat--idle,
-.mc-eclat--settle {
+.mc-eclat--idle {
   --mc-ms: 450ms;
   --mc-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* letting go: the card goes back to rest with a little inertia (it passes the rest pose and returns,
+   as a thing with weight does); tilt.ts's timer outlasts this (SETTLE_MS) */
+.mc-eclat--settle {
+  --mc-ms: 760ms;
+  --mc-ease: cubic-bezier(0.22, 1.45, 0.4, 1);
 }
 :is(.mc-eclat--active, .mc-eclat--idle, .mc-eclat--settle)
   :is(.mc-eclat__tilt, .mc-eclat__shadow, .mc-rim, .mc-cast) {

@@ -1,4 +1,4 @@
-import { bell, round, springFrames } from "@/components/manager-card/motion/spring";
+import { bell, bezierAt, bezierFrames, round } from "@/components/manager-card/motion/spring";
 
 /**
  * Whether the card's own motion (the pointer tilt and the touch float, `tilt.ts`) may run. It is
@@ -15,7 +15,7 @@ export function tiltAllowed(state: {
 }
 
 /**
- * How long the card takes to turn over, in ms: a spring (`FLIP_ZETA`) that carries the card a little
+ * How long the card takes to turn over, in ms: an eased turn with a settle (`FLIP_CURVE`) that carries the card a little
  * past the half-turn's end and settles back, so it reads as a real card with weight. About half a
  * second is the feel of a card turned over by a thumb; the faces are readable well before it ends
  * (the spring has covered nine tenths of the turn at 40 % of the time). Kept here so the animation
@@ -23,7 +23,14 @@ export function tiltAllowed(state: {
  * computed-style read inside the click forced a style recalculation of the whole page).
  */
 export const FLIP_MS = 520;
-export const FLIP_ZETA = 0.62;
+/**
+ * The turn's curve: it leaves slowly (the card has mass), swings fast through the edge-on point,
+ * passes the end by about 5 % (9 degrees) and settles back. A spring from rest leaves at full
+ * speed, which read as a snap; this is the same overshoot with the weight in front of it.
+ */
+export const FLIP_CURVE = [0.5, 0, 0.2, 1.22] as const;
+/** Where the turn is at `time` of its duration, 0 to 1 (a little past 1 on the overshoot). */
+export const flipProgress = (time: number): number => bezierAt(FLIP_CURVE, time);
 /** How far the card lifts toward the reader mid-turn (translateZ, px, under a 1400 px perspective). */
 export const FLIP_LIFT_PX = 90;
 /** Half of the card's thickness, px: the faces stand this far from the middle, the edge layers fill it. */
@@ -46,7 +53,7 @@ export function flipPose(
  * card where it was and the last is the rest state of the face it turns to (no lift).
  */
 export function flipFrames(from: number, to: number, dir: 1 | -1): Keyframe[] {
-  return springFrames(FLIP_ZETA, 28, (p, time) => {
+  return bezierFrames(FLIP_CURVE, 32, (p, time) => {
     const { angle, lift } = flipPose(from, to, p, time);
     return {
       transform: `translateZ(${round(lift, 2)}px) rotateY(${round(angle * dir, 2)}deg)`,
@@ -65,7 +72,7 @@ export function faceShade(angle: number, face: 0 | 180): number {
 
 /** A face's shade over the turn (opacity keyframes of a black layer over the face). */
 export function shadeFrames(from: number, to: number, face: 0 | 180): Keyframe[] {
-  return springFrames(FLIP_ZETA, 28, (p, time) => ({
+  return bezierFrames(FLIP_CURVE, 32, (p, time) => ({
     opacity: faceShade(flipPose(from, to, p, time).angle, face),
   }));
 }

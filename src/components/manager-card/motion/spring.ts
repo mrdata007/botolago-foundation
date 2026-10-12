@@ -79,3 +79,43 @@ export const mix = (from: number, to: number, progress: number): number =>
 export const bell = (time: number): number => Math.sin(Math.PI * Math.min(1, Math.max(0, time)));
 
 export { r as round };
+
+/**
+ * A cubic Bezier easing's value at `time` (0 to 1), the way CSS reads `cubic-bezier(x1, y1, x2, y2)`;
+ * with `y2` over 1 it overshoots and comes back. Used where a thing has to start slowly (a card
+ * lifted by a thumb has mass, so it does not leave at full speed, as a spring from rest does) and
+ * still land with a settle.
+ */
+export function bezierAt(
+  curve: readonly [x1: number, y1: number, x2: number, y2: number],
+  time: number,
+): number {
+  if (time <= 0) return 0;
+  if (time >= 1) return 1;
+  const [x1, y1, x2, y2] = curve;
+  const at = (a: number, b: number, u: number): number =>
+    3 * a * u * (1 - u) ** 2 + 3 * b * u ** 2 * (1 - u) + u ** 3;
+  // solve x(u) = time by bisection (x is monotonic for x1, x2 in 0..1)
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 28; i += 1) {
+    const mid = (lo + hi) / 2;
+    if (at(x1, x2, mid) < time) lo = mid;
+    else hi = mid;
+  }
+  return at(y1, y2, (lo + hi) / 2);
+}
+
+/** `samples + 1` keyframes of a cubic Bezier (see `springFrames`; the same first and last frame). */
+export function bezierFrames(
+  curve: readonly [number, number, number, number],
+  samples: number,
+  build: (progress: number, time: number) => Keyframe,
+): Keyframe[] {
+  const frames: Keyframe[] = [];
+  for (let i = 0; i <= samples; i += 1) {
+    const time = i / samples;
+    frames.push({ ...build(i === samples ? 1 : bezierAt(curve, time), time), offset: r(time, 4) });
+  }
+  return frames;
+}

@@ -75,7 +75,7 @@ describe("what the turn moves", () => {
     expect(Math.max(...angles)).toBeLessThan(200);
   });
   it("turns the other way in Arabic", () => {
-    expect(String(flipFrames(0, 180, -1)[28]!.transform)).toContain("rotateY(-180deg)");
+    expect(String(flipFrames(0, 180, -1).at(-1)!.transform)).toContain("rotateY(-180deg)");
   });
   it("darkens a face edge-on and not when it faces the reader", () => {
     expect(faceShade(0, 0)).toBe(0);

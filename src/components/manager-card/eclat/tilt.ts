@@ -49,8 +49,18 @@ const f3 = (v: number): string => v.toFixed(3);
 /** The float's three lights (the first at the rest light, then across, then back near it), 7 s a way. */
 const FLOAT_MS = 7000;
 /** The inner parts' ease: time constants of the exponential approach (about a third of the lag). */
-const TAU_ACTIVE = 45;
-const TAU_SETTLE = 90;
+/**
+ * The inner parts' spring (they cannot ride the compositor, see below): the light's own travel is a
+ * damped spring. Following a pointer it is critically damped (no overshoot, a soft lag of about
+ * 40 ms); settling back it is under-damped, so the light passes the rest light a little and returns,
+ * as the card's own turn does (`eclat.css`, `.mc-eclat--settle`). Angular frequency in rad/s.
+ */
+const OMEGA_ACTIVE = 26;
+const ZETA_ACTIVE = 1;
+const OMEGA_SETTLE = 9.5;
+const ZETA_SETTLE = 0.55;
+/** How long the settle's transition takes, which the fallback timer has to outlast (`eclat.css`). */
+const SETTLE_MS = 760;
 const floatLights = (rtl: boolean): Light[] => {
   const m = rtl ? -1 : 1;
   return [
@@ -213,25 +223,39 @@ function mountOn(root: HTMLElement): () => void {
     parts.foil?.style.setProperty("--mc-ay", f3(light[1]));
   };
 
-  /* the light's travel: `lightT` is where it is going, `lightS` where the inner parts are */
+  /* the light's travel: `lightT` is where it is going, `lightS` where the inner parts are, `lightV` how fast */
   let lightT: Light = rest;
   let lightS: Light = rest;
+  let lightV: Light = [0, 0];
   let settling = false;
   let loop = 0;
   let last = 0;
   const step = (now?: number): void => {
     loop = 0;
     const at = now ?? performance.now();
-    const dt = Math.min(64, last ? at - last : 16);
+    const dt = Math.min(64, last ? at - last : 16) / 1000;
     last = at;
-    // the pointer's 120 ms lag, and the settle's 450 ms, as exponential approaches
-    const k = 1 - Math.exp(-dt / (settling ? TAU_SETTLE : TAU_ACTIVE));
-    const next: Light = [
-      lightS[0] + (lightT[0] - lightS[0]) * k,
-      lightS[1] + (lightT[1] - lightS[1]) * k,
-    ];
-    const done = Math.abs(lightT[0] - next[0]) < 0.002 && Math.abs(lightT[1] - next[1]) < 0.002;
+    // a damped spring toward the target, in small steps so a long frame stays stable
+    const omega = settling ? OMEGA_SETTLE : OMEGA_ACTIVE;
+    const zeta = settling ? ZETA_SETTLE : ZETA_ACTIVE;
+    const next: [number, number] = [lightS[0], lightS[1]];
+    const vel: [number, number] = [lightV[0], lightV[1]];
+    const sub = Math.max(1, Math.ceil(dt / 0.008));
+    const h = dt / sub;
+    for (let n = 0; n < sub; n += 1) {
+      for (const axis of [0, 1] as const) {
+        const accel = omega * omega * (lightT[axis] - next[axis]) - 2 * zeta * omega * vel[axis];
+        vel[axis] += accel * h;
+        next[axis] += vel[axis] * h;
+      }
+    }
+    const done =
+      Math.abs(lightT[0] - next[0]) < 0.002 &&
+      Math.abs(lightT[1] - next[1]) < 0.002 &&
+      Math.abs(vel[0]) < 0.02 &&
+      Math.abs(vel[1]) < 0.02;
     lightS = done ? lightT : next;
+    lightV = done ? [0, 0] : vel;
     writeInner(lightS);
     if (done) last = 0;
     else loop = requestAnimationFrame(step);
@@ -251,6 +275,7 @@ function mountOn(root: HTMLElement): () => void {
     loop = 0;
     lightS = rest;
     lightT = rest;
+    lightV = [0, 0];
     for (const p of everything) p?.style.removeProperty("transform");
     for (const p of [...parts.glintA, ...parts.glintB]) p.style.removeProperty("opacity");
     parts.foil?.style.removeProperty("--mc-ax");
@@ -304,8 +329,24 @@ function mountOn(root: HTMLElement): () => void {
       writeDepth(1);
     }
   };
+  // a finger on the card: a drag that has moved tilts it (below); a tap or a vertical swipe does not
+  let finger: { id: number; moved: boolean } | null = null;
+  const onDown = (e: PointerEvent): void => {
+    if (e.pointerType !== "touch") return;
+    finger = { id: e.pointerId, moved: false };
+  };
   const onMove = (e: PointerEvent): void => {
-    if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+    if (e.pointerType === "touch") {
+      if (!finger || finger.id !== e.pointerId) return;
+      if (!finger.moved) {
+        finger.moved = true;
+        try {
+          root.setPointerCapture?.(e.pointerId);
+        } catch {
+          /* a pointer that is already gone has nothing to capture */
+        }
+      }
+    } else if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
     const b = root.getBoundingClientRect();
     if (!(b.width > 0) || !(b.height > 0)) return;
     const light: Light = [
@@ -320,10 +361,7 @@ function mountOn(root: HTMLElement): () => void {
       travel(light);
     });
   };
-  const onLeave = (e?: PointerEvent): void => {
-    // a finger lifting after a tap, or a pan taking the touch over, is not a pointer leaving a tilt
-    // that never started: the float goes on
-    if (e?.pointerType === "touch") return;
+  const release = (): void => {
     cancelAnimationFrame(raf);
     clearTimeout(enterTimer);
     root.classList.remove("mc-eclat--enter");
@@ -335,8 +373,23 @@ function mountOn(root: HTMLElement): () => void {
     settling = true;
     travel(rest);
     clearTimeout(timer);
-    // a fallback for the transition's end (520 ms: the settle is 450)
-    timer = window.setTimeout(flat, 520);
+    // a fallback for the transition's end (the settle is `SETTLE_MS`)
+    timer = window.setTimeout(flat, SETTLE_MS + 60);
+  };
+  const onLeave = (e?: PointerEvent): void => {
+    if (e?.pointerType === "touch") {
+      // a finger lifting after a drag lets the card go; after a tap, or a pan taking the touch over
+      // from a drag that never moved, nothing was tilted and the float goes on
+      const dragged = !!finger?.moved;
+      finger = null;
+      if (dragged) release();
+      return;
+    }
+    release();
+  };
+  // a mouse button lifting over the card is not the pointer leaving it: only a finger's lift lets go
+  const onUp = (e: PointerEvent): void => {
+    if (e.pointerType === "touch") onLeave(e);
   };
   const onEnd = (e: TransitionEvent): void => {
     if (e.target !== parts.tilt || e.propertyName !== "transform") return;
@@ -345,8 +398,10 @@ function mountOn(root: HTMLElement): () => void {
       return;
     flat();
   };
+  root.addEventListener("pointerdown", onDown);
   root.addEventListener("pointermove", onMove);
   root.addEventListener("pointerleave", onLeave);
+  root.addEventListener("pointerup", onUp);
   root.addEventListener("pointercancel", onLeave);
   root.addEventListener("transitionend", onEnd);
 
@@ -401,6 +456,8 @@ function mountOn(root: HTMLElement): () => void {
   const touchOnly =
     window.matchMedia?.("(hover: none)").matches && typeof IntersectionObserver !== "undefined";
   if (touchOnly) {
+    // a sideways drag tilts the card; a vertical swipe still scrolls the page
+    root.style.touchAction = "pan-y";
     observer = new IntersectionObserver(([entry]) => {
       onScreen = !!entry?.isIntersecting;
       syncIdle();
@@ -410,8 +467,10 @@ function mountOn(root: HTMLElement): () => void {
   }
 
   return () => {
+    root.removeEventListener("pointerdown", onDown);
     root.removeEventListener("pointermove", onMove);
     root.removeEventListener("pointerleave", onLeave);
+    root.removeEventListener("pointerup", onUp);
     root.removeEventListener("pointercancel", onLeave);
     root.removeEventListener("transitionend", onEnd);
     doc?.removeEventListener("visibilitychange", syncIdle);
@@ -429,5 +488,6 @@ function mountOn(root: HTMLElement): () => void {
     clear();
     root.style.removeProperty("--mc-ax");
     root.style.removeProperty("--mc-ay");
+    root.style.touchAction = "";
   };
 }

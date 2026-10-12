@@ -19,7 +19,6 @@ import { fill } from "@/components/manager-card/interpolate";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { CardGlint, type GlintHandle } from "@/components/manager-card/motion/CardGlint";
 import { cardOutline } from "@/components/manager-card/motion/outline";
-import { springAt } from "@/components/manager-card/motion/spring";
 import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
 import { useCardPalette } from "@/components/manager-card/use-card-palette";
@@ -36,7 +35,7 @@ import {
   FLIP_GLINT_MS,
   FLIP_HALF_THICKNESS,
   FLIP_MS,
-  FLIP_ZETA,
+  flipProgress,
   flipFrames,
   shadeFrames,
   tiltAllowed,
@@ -200,7 +199,7 @@ export function CardStage({
     let from = back ? 0 : 180;
     if (last) {
       const done = Math.min(1, (now - last.at) / FLIP_MS);
-      from = last.from + (last.to - last.from) * springAt(done, FLIP_ZETA);
+      from = last.from + (last.to - last.from) * flipProgress(done);
       for (const animation of last.animations) animation.cancel();
     }
     const to = back ? 180 : 0;
