@@ -9,8 +9,11 @@ Fantasy must score and progress on the first stage while the second refines it.
 
 - **Core data**: minutes, goals, cards (and so goals conceded and clean sheet).
   Available right after the match for some matches.
-- **Full coverage**: every player with `minutesPlayed > 0` has both `rating` and
-  `totalPass`. The lineup parser (`parseSofascoreLineups`) now uses exactly this
+- **Full coverage**: every player with at least 8 minutes played
+  (`FULL_COVERAGE_MIN_MINUTES`) has both `rating` and `totalPass`. SofaScore
+  leaves very late substitutes unrated (seen at 7 minutes or less in 5 of the 7
+  full-coverage samples), so they are not counted (owner decision 2026-10-12).
+  The lineup parser (`parseSofascoreLineups`) now uses exactly this
   (it used "any player has `totalPass`" before). A request built from a full
   lineup is `coverage: "full"`; anything else is `limited`.
 - **Match data status** (per fixture, `app_private.sofascore_staged_stats`):
@@ -226,6 +229,7 @@ The 9,000 stop in the due list protects the rest of the month.
 - A fixture with a SofaScore observation but no staged row cannot exist (the
   trigger registers it); a fixture with a non-SofaScore latest observation is
   treated as settled.
-- Owner decisions: activate the staged policy per season; accept the 28-day
-  `final_pull_missing` and 21-day `FINAL_LIMITED` rules; confirm that points of
-  `FINAL_LIMITED` matches stay in simple mode forever (no rules change).
+- Owner decisions of 2026-10-12: full coverage ignores players under 8 minutes;
+  the 28-day `final_pull_missing` and 21-day `FINAL_LIMITED` rules are accepted;
+  points of `FINAL_LIMITED` matches stay in simple mode for good (no rules
+  change). Still open: activating the staged policy per season (off by default).

@@ -10,7 +10,7 @@ now the backfill and override tool; the normal path is automatic (see
 - **M8**: minutes, started, goals, own goals, cards, clean sheet and goals
   conceded always count. Assists, saves, penalties saved and penalties missed
   are scored from SofaScore **when available**: on a full-coverage match (the
-  player with minutes carries both `rating` and `totalPass`; see SOFASCORE_STAGED_STATS.md) they count and the fixture can reach
+  player with at least 8 minutes carries both `rating` and `totalPass`; see SOFASCORE_STAGED_STATS.md) they count and the fixture can reach
   FULL mode. On a limited-coverage match they are UNKNOWN, never written as
   zero, and the fixture scores in SIMPLE mode. An assist may also come from an
   incident's `assist1` where present. One named switch,

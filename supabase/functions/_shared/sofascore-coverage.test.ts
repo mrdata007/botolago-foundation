@@ -2,8 +2,9 @@ import { describe, expect, test } from "bun:test";
 
 import { parseSofascoreLineups } from "./sofascore-performance-parse.ts";
 
-// Full coverage (owner, 2026-10-12): every player with minutesPlayed > 0 has both
-// `rating` and `totalPass`. Anything else is limited.
+// Full coverage (owner, 2026-10-12): every player with at least 8 minutes
+// (FULL_COVERAGE_MIN_MINUTES) has both `rating` and `totalPass`. Anything else is
+// limited. SofaScore leaves very late substitutes unrated, so they do not count.
 
 type Stats = {
   minutesPlayed?: number;
@@ -36,12 +37,34 @@ describe("SofaScore full coverage", () => {
   test("a player who played without a rating makes it limited", () => {
     const result = lineups([
       entry(1, full),
-      entry(2, { ...full, rating: undefined, minutesPlayed: 2 }),
+      entry(2, { ...full, rating: undefined, minutesPlayed: 12 }),
     ]);
     expect(result.fullCoverage).toBe(false);
     // Unknown, never zero.
     expect(result.players[0].stats?.assists).toBeNull();
     expect(result.players[0].stats?.saves).toBeNull();
+  });
+
+  test("a late substitute under 8 minutes without a rating does not make it limited", () => {
+    const result = lineups([
+      entry(1, full),
+      entry(2, { minutesPlayed: 7, totalPass: 2 }, true),
+      entry(3, { minutesPlayed: 3 }, true),
+    ]);
+    expect(result.fullCoverage).toBe(true);
+    expect(result.players[0].stats?.assists).toBe(1);
+  });
+
+  test("at exactly 8 minutes the player counts: unrated means limited", () => {
+    expect(
+      lineups([entry(1, full), entry(2, { minutesPlayed: 8, totalPass: 4 }, true)]).fullCoverage,
+    ).toBe(false);
+  });
+
+  test("only players under 8 minutes on the pitch: not full", () => {
+    expect(lineups([entry(1, { minutesPlayed: 5, rating: 6, totalPass: 1 })]).fullCoverage).toBe(
+      false,
+    );
   });
 
   test("a player who played without a pass count makes it limited", () => {
