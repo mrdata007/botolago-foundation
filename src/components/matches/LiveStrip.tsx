@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "@tanstack/react-router";
 import { ClubCrest } from "@/components/common/ClubCrest";
+import { RevealOnArrive } from "@/components/common/RevealOnArrive";
 import { ui } from "@/components/ui-kit";
 import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n/provider";
@@ -46,95 +47,95 @@ export function LiveStrip() {
     };
   }, [shown]);
 
-  if (!present) return null;
-
   const clubById = (id: string) => liveQ.data?.clubs.find((club) => club.id === id);
   const scoreTemplate = t("matches.a11y.score");
 
   return (
-    <section
-      aria-label={t("matches.live_strip")}
-      inert={hidden}
-      className={cn(
-        "sticky top-[var(--topbar-h)] z-[25] h-[var(--livestrip-h-open)]",
-        ui.surface.bar,
-        ui.rule.block,
-        "transition-[transform,opacity] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]",
-        hidden && "pointer-events-none -translate-y-full opacity-0",
-      )}
-    >
-      <ul
+    <RevealOnArrive show={present} transparent>
+      <section
+        aria-label={t("matches.live_strip")}
+        inert={hidden}
         className={cn(
-          "mx-auto flex h-full items-center gap-2 overflow-x-auto md:max-w-[var(--ui-content-max)]",
-          "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-          ui.space.gutter,
+          "sticky top-[var(--topbar-h)] z-[25] h-[var(--livestrip-h-open)]",
+          ui.surface.bar,
+          ui.rule.block,
+          "transition-[transform,opacity] duration-[var(--duration-sheet)] ease-[var(--ease-standard)]",
+          hidden && "pointer-events-none -translate-y-full opacity-0",
         )}
       >
-        {matches.map((match) => {
-          const home = clubById(match.homeClubId);
-          const away = clubById(match.awayClubId);
-          if (!home || !away) return null;
-          const hs = match.homeScore ?? 0;
-          const as = match.awayScore ?? 0;
-          const minute = match.minute ? `${match.minute}′` : "";
-          const label = `${scoreTemplate
-            .replace("{home}", tr(home.shortName))
-            .replace("{hs}", String(hs))
-            .replace("{away}", tr(away.shortName))
-            .replace("{as}", String(as))}${minute ? ` — ${minute}` : ""}`;
-          const colours = clubMatchPalettes(home, away);
-          return (
-            <li key={match.id} className="shrink-0">
-              <Link
-                to="/matches/$matchId"
-                params={{ matchId: match.id }}
-                aria-label={label}
-                className={cn(
-                  "inline-flex items-center gap-2 pe-3 ps-1",
-                  "min-h-[var(--ui-tap-min)]",
-                  ui.radius.full,
-                  ui.surface.inkPlain,
-                  ui.text.meta,
-                  "[font-weight:var(--ui-weight-heavy)]",
-                  ui.focus,
-                  "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
-                  "hover:bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_12%,var(--ui-ink))]",
-                )}
-              >
-                {/* The pair of discs, side by side. The boards overlap them,
+        <ul
+          className={cn(
+            "mx-auto flex h-full items-center gap-2 overflow-x-auto md:max-w-[var(--ui-content-max)]",
+            "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            ui.space.gutter,
+          )}
+        >
+          {matches.map((match) => {
+            const home = clubById(match.homeClubId);
+            const away = clubById(match.awayClubId);
+            if (!home || !away) return null;
+            const hs = match.homeScore ?? 0;
+            const as = match.awayScore ?? 0;
+            const minute = match.minute ? `${match.minute}′` : "";
+            const label = `${scoreTemplate
+              .replace("{home}", tr(home.shortName))
+              .replace("{hs}", String(hs))
+              .replace("{away}", tr(away.shortName))
+              .replace("{as}", String(as))}${minute ? ` — ${minute}` : ""}`;
+            const colours = clubMatchPalettes(home, away);
+            return (
+              <li key={match.id} className="shrink-0">
+                <Link
+                  to="/matches/$matchId"
+                  params={{ matchId: match.id }}
+                  aria-label={label}
+                  className={cn(
+                    "inline-flex items-center gap-2 pe-3 ps-1",
+                    "min-h-[var(--ui-tap-min)]",
+                    ui.radius.full,
+                    ui.surface.inkPlain,
+                    ui.text.meta,
+                    "[font-weight:var(--ui-weight-heavy)]",
+                    ui.focus,
+                    "transition-colors duration-[var(--duration-quick)] ease-[var(--ease-standard)]",
+                    "hover:bg-[color:color-mix(in_oklab,var(--ui-on-ink-plain)_12%,var(--ui-ink))]",
+                  )}
+                >
+                  {/* The pair of discs, side by side. The boards overlap them,
                     but they drew bare colour dots: a real disc carries the
                     monogram, or in production the club's badge, and an 8px
                     overlap hid a third of the home one (measured: "WAC" read
                     "WA" under the FAR disc). */}
-                <span aria-hidden className="flex shrink-0 items-center gap-0.5">
-                  <ClubCrest club={home} palette={colours.home} size="xs" />
-                  <ClubCrest club={away} palette={colours.away} size="xs" />
-                </span>
-                <span>{home.crestPlaceholder}</span>
-                {/* Three flex children in a container that follows the page
+                  <span aria-hidden className="flex shrink-0 items-center gap-0.5">
+                    <ClubCrest club={home} palette={colours.home} size="xs" />
+                    <ClubCrest club={away} palette={colours.away} size="xs" />
+                  </span>
+                  <span>{home.crestPlaceholder}</span>
+                  {/* Three flex children in a container that follows the page
                     direction, so home is on the right in Arabic. */}
-                <span className={cn("flex items-center gap-1", ui.score.row)}>
-                  <FlipScore value={hs} />
-                  <span aria-hidden>–</span>
-                  <FlipScore value={as} />
-                </span>
-                <span>{away.crestPlaceholder}</span>
-                <span
-                  aria-hidden
-                  className="live-breathe h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--ui-live)]"
-                />
-                {match.minute ? (
-                  <TickingMinute
-                    minute={match.minute}
-                    running={match.status === "live"}
-                    className={ui.text.tabular}
+                  <span className={cn("flex items-center gap-1", ui.score.row)}>
+                    <FlipScore value={hs} />
+                    <span aria-hidden>–</span>
+                    <FlipScore value={as} />
+                  </span>
+                  <span>{away.crestPlaceholder}</span>
+                  <span
+                    aria-hidden
+                    className="live-breathe h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--ui-live)]"
                   />
-                ) : null}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+                  {match.minute ? (
+                    <TickingMinute
+                      minute={match.minute}
+                      running={match.status === "live"}
+                      className={ui.text.tabular}
+                    />
+                  ) : null}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </RevealOnArrive>
   );
 }
