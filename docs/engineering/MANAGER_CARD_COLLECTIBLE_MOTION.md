@@ -130,3 +130,5 @@ left and a shaded edge down and right. On the front the edges are one group (`mc
 the tilt by up to about 2 px (`pose.ts` `FOLLOW.hex`, written by `tilt.ts` like the foil, transform only;
 in the holographic tiers only the edges move, the foil's cell mask stays). No parallax under reduced
 motion, where the emboss stays. The markup budget rose to 50 kB (the logo and the emboss).
+
+The front's emboss was doubled after review (edges .85 dark and .6 light at 3.4 and 2.2 units, cell shade .2 to .36, and the fade mask raised to .34 at the centre so the upper field behind the shirt shows it).
