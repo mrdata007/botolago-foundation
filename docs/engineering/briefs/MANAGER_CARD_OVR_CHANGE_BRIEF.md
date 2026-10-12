@@ -68,8 +68,10 @@ when it is not, so it can merge before or after the backend.
 
 Visual
 
-- 390 x 844 and 1280 x 800, French and Arabic (right to left): the rating line
-  and chip stay on one line under the card; no horizontal overflow (element
+- 390 x 844 and 1280 x 800, French and Arabic (right to left): on a phone the
+  rating line and chip stay on one line under the card (in the 352 px desktop
+  column the « Provisoire » pill may wrap under them, centred, as it already
+  does with the history chip); no horizontal overflow (element
   rectangles inside the viewport, measured, not `scrollWidth`); the chip keeps
   « +4 ▲ » left to right in Arabic.
 - During the count the halo is visible behind the card and ends transparent;
@@ -98,3 +100,32 @@ Evidence
   (`/dev/manager-card-ovr-change-sample`, same guard as
   `/dev/manager-card-sample`), at most eight compressed JPEGs next to this brief
   in `manager-card-ovr-change/`, with the overflow measurements.
+
+## Results (validation before review)
+
+Screenshots in `manager-card-ovr-change/` (eight compressed JPEGs, 336 KB in
+all). "Before" is the existing sample route (`/dev/manager-card-sample?case=full`,
+no change to tell), taken before the first interface change. "After" is
+`/dev/manager-card-ovr-change-sample`, 820 ms after the glow lit: a rise
+58 → 62 (provisional) at 390 px in French and Arabic, a fall 66 → 63 at 1280 px
+in French and Arabic. `measurements.json` holds every measurement:
+
+- horizontal overflow from element rectangles: 0 px in all fourteen runs (before,
+  rise and fall at 390 and 1280 in both languages, and reduced motion);
+- the rating line is one line on a phone (33 px French, 39 px Arabic); at
+  1280 px in French the « Provisoire » pill wraps under the rise's chip in the
+  352 px column, as it does with the existing history chip;
+- the count, sampled every 60 ms: rise 58 → 59 → 60 → 61 → 62 on both the rating
+  line and the card's print, glow `up` while it counts, the chip « +4 ▲ »
+  popping, then the glow off and one acknowledgement
+  (`ovr_up:<gameweek id>`); fall 66 → 65 → 64 → 63 the same way in `down`;
+- reduced motion: 62 and « +4 ▲ » at once, no glow, no pop, and the change
+  acknowledged;
+- the Arabic chip keeps « +4 ▲ » / « −3 ▼ » left to right (`bdi dir="ltr"`) and
+  speaks « ارتفع التقييم بمقدار 4 ».
+
+Tests: `src/components/curva/ovr-change.test.ts` (the model and the contract)
+and `ovr-change.render.test.tsx` (server render in French and Arabic: the card's
+own number, the provisional pill, no glow, no chip, nothing acknowledged; the
+chip in both directions; the halo's tones), plus the existing Curva, Manager
+Card, services and QA tests.

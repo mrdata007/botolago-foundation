@@ -21,6 +21,7 @@ import type { Club, Gameweek } from "@/types/domain";
 
 import { CardBack } from "./CardBack";
 import { CardStage, RatingLine } from "./CardStage";
+import { useOvrChangeBeat } from "./use-ovr-change";
 import { useRatingBadge } from "./use-rating-change";
 import { useStageBeat } from "./use-stage-beat";
 import { ClubBlock } from "./ClubBlock";
@@ -164,6 +165,7 @@ export function OwnerHome({
     newSeason: view.newSeason,
     seasonId: card.season.id,
   });
+  const change = useOvrChangeBeat({ card, ovr: view.ovr, hold: gate.hero !== null });
   useViewEvent("curva_view_manager");
 
   // Whether a hero is, or is about to be, this visit's moment (it would carry the card and hide the
@@ -190,7 +192,7 @@ export function OwnerHome({
   const over = isOverForming(block);
   const rating = over ? null : (
     <RatingLine
-      ovr={view.ovr}
+      ovr={change.shownOvr}
       tier={view.tier}
       provisional={card.provisional && !view.newSeason}
       counted={card.gameweeksCounted}
@@ -199,7 +201,7 @@ export function OwnerHome({
       season={view.newSeason ? view.numberSeason : null}
       formingLabel={moments.m3.label}
       closedSeason={card.seasonClosed ? card.season.label : null}
-      change={badge}
+      change={change.badge ?? badge}
     />
   );
   const identity = (
@@ -257,6 +259,8 @@ export function OwnerHome({
           flippable
           entrance={{ heroDue }}
           waiting={over ? null : waitingBox(view.ovr, card.gameweeksCounted, card.minRated)}
+          glow={change.glow}
+          countOvr={change.shownOvr}
         >
           {rating}
         </CardStage>
