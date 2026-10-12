@@ -495,6 +495,7 @@ select extensions.is((select final_score from app.fantasy_team_gameweek_results 
 select extensions.is((select count(*)::integer from app_private.notification_events where event_type = 'gameweek_finalized'), 0,
   'finalized notifications still wait for postwork');
 select extensions.is(api.service_fantasy_lifecycle_state('f6400000-0000-4000-8000-000000000001') ->> 'postworkCompleted', 'false', 'postwork owed');
+select extensions.is((select (g ->> 'postworkPending')::boolean from jsonb_array_elements(api.service_sync_fantasy_calendar('f6300000-0000-4000-8000-000000000001') -> 'gameweeks') g where (g ->> 'sequence')::integer = 1), true, 'the work list names the locked gameweek that owes its postwork');
 select extensions.is(api.service_adopt_fantasy_close_prices('f6400000-0000-4000-8000-000000000001',
   (current_setting('test.s3')::jsonb ->> 'version')::bigint) ->> 'adopted', 'true', 'the close price pass is adopted');
 select extensions.is(api.service_run_fantasy_price_batch('f6400000-0000-4000-8000-000000000001',
@@ -505,6 +506,7 @@ select extensions.is(api.service_enqueue_gameweek_finalized_notifications('f6400
 select extensions.is((select count(*)::integer from app_private.notification_events where event_type = 'gameweek_finalized'), 2, 'one per team');
 select extensions.is(api.service_complete_fantasy_postwork('f6400000-0000-4000-8000-000000000001',
   (current_setting('test.s3')::jsonb ->> 'version')::bigint) ->> 'completed', 'true', 'postwork completes');
+select extensions.is((select (g ->> 'postworkPending')::boolean from jsonb_array_elements(api.service_sync_fantasy_calendar('f6300000-0000-4000-8000-000000000001') -> 'gameweeks') g where (g ->> 'sequence')::integer = 1), false, 'and no longer once it is done');
 select extensions.is(api.service_prepare_next_fantasy_gameweek('f6400000-0000-4000-8000-000000000001', 'f6400000-0000-4000-8000-000000000002',
   (current_setting('test.s3')::jsonb ->> 'version')::bigint, 100) ->> 'alreadyAdvanced', 'true',
   'the opening done at close is not repeated at the lock');

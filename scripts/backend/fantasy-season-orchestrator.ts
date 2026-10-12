@@ -39,7 +39,10 @@ import {
  *      statistics are really missing.
  *   3. the trusted lifecycle worker (`runFantasyLifecycle`) for every gameweek
  *      that has work: an open gameweek past its deadline, a gameweek that is
- *      locked / live / provisional / finalizing, or a finalized gameweek whose
+ *      locked / live / provisional / finalizing (a gameweek that closed on
+ *      provisional points is still `provisional`: it is re-scored when a later
+ *      SofaScore pull changed its inputs and locked once every match is FINAL or
+ *      FINAL_LIMITED, docs/backend/SOFASCORE_STAGED_STATS.md), or a finalized gameweek whose
  *      staged successor has not been opened yet.
  *   4. `api.service_evaluate_fantasy_prizes` — a catch-up for prize winners.
  *      The worker already evaluates what it has just finalized; this pass picks
@@ -118,6 +121,12 @@ export const calendarSyncSchema = z.object({
       scoringInputVersion: z.number().int().min(0),
       nextGameweekId: uuid.nullable(),
       advancedToGameweekId: uuid.nullable(),
+      /**
+       * A gameweek that closed on provisional points (its successor opened then) and
+       * has since locked, but whose finalized notifications and postwork are still
+       * owed (migration 20261013160200). Absent on an older database.
+       */
+      postworkPending: z.boolean().optional(),
     }),
   ),
 });
@@ -525,7 +534,10 @@ export function selectWorkerTargets(calendar: CalendarSync, now: Date) {
         reason: "deadline_passed",
         calculationVersion,
       });
-    } else if (gw.status === "finalized" && gw.nextGameweekId && !gw.advancedToGameweekId) {
+    } else if (
+      gw.status === "finalized" &&
+      ((gw.nextGameweekId && !gw.advancedToGameweekId) || gw.postworkPending === true)
+    ) {
       targets.push({
         gameweekId: gw.id,
         sequence: gw.sequence,

@@ -230,6 +230,52 @@ describe("fantasy season orchestrator", () => {
     });
   });
 
+  test("a gameweek that closed on provisional points is still provisional: it keeps being picked up for re-scoring and the lock", () => {
+    const cal = calendar([
+      {
+        sequence: 1,
+        status: "provisional",
+        scoringInputVersion: 5,
+        nextGameweekId: id(102),
+        advancedToGameweekId: id(102),
+      },
+      { sequence: 2, status: "open", deadlineAt: "2026-10-30T18:30:00Z" },
+    ]);
+    expect(selectWorkerTargets(cal, now)).toEqual({
+      targets: [{ gameweekId: id(101), sequence: 1, reason: "in_progress", calculationVersion: 5 }],
+      skipped: [],
+    });
+  });
+
+  test("a gameweek locked after it closed, whose postwork is still owed, is re-run even though its successor is open", () => {
+    const owed = calendar([
+      {
+        sequence: 1,
+        status: "finalized",
+        scoringInputVersion: 6,
+        nextGameweekId: id(102),
+        advancedToGameweekId: id(102),
+        postworkPending: true,
+      },
+      { sequence: 2, status: "open", deadlineAt: "2026-10-30T18:30:00Z" },
+    ]);
+    expect(selectWorkerTargets(owed, now).targets).toEqual([
+      { gameweekId: id(101), sequence: 1, reason: "progression_pending", calculationVersion: 6 },
+    ]);
+    const done = calendar([
+      {
+        sequence: 1,
+        status: "finalized",
+        scoringInputVersion: 6,
+        nextGameweekId: id(102),
+        advancedToGameweekId: id(102),
+        postworkPending: false,
+      },
+      { sequence: 2, status: "open", deadlineAt: "2026-10-30T18:30:00Z" },
+    ]);
+    expect(selectWorkerTargets(done, now).targets).toEqual([]);
+  });
+
   test("in-progress gameweeks (locked/live/provisional/finalizing) are always picked up", () => {
     for (const status of ["locked", "live", "provisional", "finalizing"] as const) {
       const cal = calendar([{ sequence: 1, status, scoringInputVersion: 1 }]);

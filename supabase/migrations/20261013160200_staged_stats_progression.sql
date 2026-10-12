@@ -429,3 +429,17 @@ begin
 end $$;
 revoke all on function api.get_my_fantasy_points(uuid, uuid) from public, anon;
 grant execute on function api.get_my_fantasy_points(uuid, uuid) to authenticated, service_role;
+
+-- The calendar sync (the orchestrator's work list) also says which locked
+-- gameweeks that closed earlier still owe their postwork (notifications), since
+-- their successor is already open and nothing else would bring the worker back.
+do $patch$
+declare original text; changed text;
+begin
+  original := pg_get_functiondef('api.service_sync_fantasy_calendar(uuid)'::regprocedure);
+  changed := replace(original,
+    E'where pr.previous_gameweek_id = g.id and pr.opened_at is not null)\n      ) order by g.sequence_number)',
+    E'where pr.previous_gameweek_id = g.id and pr.opened_at is not null),\n        ''postworkPending'', (g.status = ''finalized'' and g.closed_at is not null and not exists(\n          select 1 from app_private.fantasy_gameweek_postwork w\n          where w.gameweek_id = g.id and w.calculation_version = g.scoring_input_version and w.completed_at is not null))\n      ) order by g.sequence_number)');
+  if changed = original then raise exception 'STAGED_CALENDAR_PATCH_MISMATCH'; end if;
+  execute changed;
+end $patch$;
