@@ -219,7 +219,7 @@ function RankingsPage() {
         role="tabpanel"
         id={`rankings-panel-${tab}`}
         aria-labelledby={`rankings-tab-${tab}`}
-        className={cn("tab-panel-in space-y-5 px-4 pb-8 pt-6", ui.surface.page)}
+        className={cn("space-y-5 px-4 pb-8 pt-6", ui.surface.page)}
       >
         {rankingsQ.isError ? (
           <UiErrorState onRetry={() => void rankingsQ.refetch()} />

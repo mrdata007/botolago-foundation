@@ -1182,26 +1182,7 @@ html[dir="rtl"]
   background-color: var(--tab-accent);
   pointer-events: none;
   transform: translateX(calc(var(--tab-index, 0) * 100% * var(--vt-dir, 1)));
-  transition: transform var(--duration-route) var(--ease-emphasized);
-}
-
-/* A tab panel's content arriving after a switch: a quick fade and a 4px
-   rise. Give the panel `key={tab}` so each switch mounts it afresh. The fill
-   is `backwards`, not `both`: once it ends the panel keeps no transform, so a
-   sticky or fixed element inside it is placed against the page as before. */
-@keyframes tab-panel-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@utility tab-panel-in {
-  animation: tab-panel-in var(--duration-quick) var(--ease-standard) backwards;
+  transition: transform var(--duration-route) var(--ease-spring);
 }
 
 /* A step of a flow arriving: it slides in from the reading side. */
@@ -1360,16 +1341,25 @@ html[dir="rtl"]
 }
 
 /* ------------------------------------------------------------------ */
-/* Page transitions                                                   */
-/* src/lib/page-transition.ts picks the kind per navigation. The page  */
-/* is the `root` group; the bottom bar is held still in its own group  */
-/* (`bottom-nav`). --vt-dir is +1 left-to-right and -1 right-to-left, */
-/* so a page arrives from the reading side in Arabic too. No          */
-/* transition runs under reduced motion: the router asks first, and   */
-/* the rule at the end of this block is the belt to that braces.      */
+/* Page transitions (calm screens: docs/engineering/MOTION_CALM_SCREENS.md) */
+/* src/lib/page-transition.ts picks the kind per navigation. Only a      */
+/* drill-down (`forward`/`back`) or an unrelated page (`fade`) runs one.  */
+/* The OLD page is never faded: it stays opaque and still underneath and */
+/* the NEW page eases in over it, so the composite never drops below     */
+/* full opacity. (Fading both at once, with the UA's `plus-lighter`      */
+/* blend, was the grey, washed-out film.) The page group is held on the  */
+/* reading side by --vt-dir, so Arabic arrives from the right. The      */
+/* bottom bar is its own group, held still. Reduced motion: none (the    */
+/* router asks first; the rule at the end of this block is the belt).    */
 /* ------------------------------------------------------------------ */
 :root {
   --vt-dir: 1;
+  /* A short spring: fast start, soft settle. `--ease-spring` has the tiniest
+     overshoot, for indicators (the tab underline); `--ease-settle-soft` has
+     none, for things that arrive. */
+  --ease-spring: cubic-bezier(0.34, 1.32, 0.5, 1);
+  --ease-settle-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-page: 200ms;
 }
 :root[dir="rtl"] {
   --vt-dir: -1;
@@ -1377,24 +1367,22 @@ html[dir="rtl"]
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: var(--duration-route);
-  animation-timing-function: var(--ease-standard);
+  mix-blend-mode: normal;
+  animation-duration: var(--duration-page);
+  animation-timing-function: var(--ease-settle-soft);
 }
 
-@keyframes vt-out-forward {
-  to {
+::view-transition-old(root) {
+  animation: none;
+}
+
+@keyframes vt-in-fade {
+  from {
     opacity: 0;
-    transform: translateX(calc(var(--vt-dir) * -16px));
   }
 }
 @keyframes vt-in-forward {
   from {
-    opacity: 0;
-    transform: translateX(calc(var(--vt-dir) * 24px));
-  }
-}
-@keyframes vt-out-back {
-  to {
     opacity: 0;
     transform: translateX(calc(var(--vt-dir) * 16px));
   }
@@ -1402,18 +1390,15 @@ html[dir="rtl"]
 @keyframes vt-in-back {
   from {
     opacity: 0;
-    transform: translateX(calc(var(--vt-dir) * -24px));
+    transform: translateX(calc(var(--vt-dir) * -16px));
   }
 }
 
-:root:active-view-transition-type(forward)::view-transition-old(root) {
-  animation-name: vt-out-forward;
+::view-transition-new(root) {
+  animation-name: vt-in-fade;
 }
 :root:active-view-transition-type(forward)::view-transition-new(root) {
   animation-name: vt-in-forward;
-}
-:root:active-view-transition-type(back)::view-transition-old(root) {
-  animation-name: vt-out-back;
 }
 :root:active-view-transition-type(back)::view-transition-new(root) {
   animation-name: vt-in-back;

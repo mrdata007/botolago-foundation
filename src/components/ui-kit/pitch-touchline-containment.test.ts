@@ -155,7 +155,7 @@ const INSET_PCT = Number(inset?.[2]) / 100;
 const INSET_PX = Number(inset?.[3]);
 
 /** The gap between plates in a pitch row, in px (Tailwind's 4px step). */
-const pitchRow = divClasses.find((classes) => classes.includes("stagger flex items-start"));
+const pitchRow = divClasses.find((classes) => classes.includes("flex items-start justify-evenly"));
 const GAP = Number(/(?:^|\s)gap-([\d.]+)(?:\s|$)/.exec(pitchRow ?? "")?.[1]) * 4;
 
 /** The 2px the warning disc (`-start-0.5`) and badge (`-end-0.5`) hang out. */

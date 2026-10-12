@@ -4,7 +4,6 @@ import type { RankingRow } from "@/backend/pepites/contracts";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle } from "@/lib/club-palette";
-import { staggerStyle } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 import {
@@ -144,7 +143,7 @@ export function TopTenList({
   return (
     <ol className="flex flex-col gap-2.5" data-testid={testId} start={items[0]?.rank}>
       {items.map((item, index) => (
-        <li key={item.player.id} className="enter-rise stagger" style={staggerStyle(index)}>
+        <li key={item.player.id}>
           <LeaderboardRow
             item={item}
             stats={stats.get(item.player.id)}
