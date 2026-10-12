@@ -104,7 +104,6 @@ import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
-import { staggerStyle } from "@/lib/motion";
 import { useDarkStatusBand } from "@/lib/system-bars";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
@@ -606,11 +605,7 @@ function HomeContent() {
                   <EmptyState compact>{t("state.empty")}</EmptyState>
                 ) : (
                   newsPreview.map((a, index) => (
-                    <div
-                      key={a.id}
-                      className="enter-rise stagger min-w-0"
-                      style={staggerStyle(index)}
-                    >
+                    <div key={a.id} className="min-w-0">
                       <ArticleCard article={a} variant="compact" clubs={clubsQ.data ?? []} />
                     </div>
                   ))

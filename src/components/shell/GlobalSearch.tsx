@@ -11,7 +11,6 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import { highlightParts, searchEntries, type SearchEntry } from "@/lib/global-search";
-import { staggerStyle } from "@/lib/motion";
 import { ExitFade, ExitPresence } from "@/lib/motion-exit";
 import { recallSearchQuery, rememberSearchQuery } from "@/lib/search-context";
 import { cn } from "@/lib/utils";
@@ -192,16 +191,12 @@ export function GlobalSearch({
                   }}
                   onMouseEnter={() => setActive(index)}
                 >
-                  {/* The arrival (`enter-rise`) is on the inside: a CSS
-                      animation that fills holds `opacity`, which would hide
-                      the row's fade-out. */}
                   <div
-                    style={staggerStyle(index)}
                     className={cn(
                       // The name first, on its own lines, and what it is under it:
                       // beside the name, the metadata took the width and the
                       // player's name was the part that got cut.
-                      "enter-rise stagger flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
+                      "flex min-h-11 cursor-pointer flex-col justify-center gap-0.5 px-3 py-2",
                       ui.radius.control,
                       ui.text.meta,
                       index === active && "bg-[color:var(--ui-surface-sunken)]",
