@@ -15,6 +15,19 @@
 // 20261006143700) and the sentence on prizes already handed over, in both
 // languages. That wording was written for this change and approved as is.
 //
+// Privacy Policy 1.4 (proposed 2026-10-12 for the App Store and Google Play
+// submission; the owner approves it before merge, as for 1.3): push alerts on
+// the phone app get a row in the data table (section 2), a purpose with
+// consent as its basis (section 3), a few words on what Apple's and Google's
+// push services receive (section 5) and a retention row (section 7). The
+// retention row states what the code does: turning alerts off keeps the
+// registration but stops the sending (api.disable_my_notification_device);
+// the token is erased at sign-out on that phone
+// (api.unregister_my_notification_device), when another account registers the
+// same phone (migration 20261005140000), and when deletion is requested
+// (app_private.account_deletion_disable, migration 20261006143700). The
+// effective date gives the 7 days' notice section 12 promises.
+//
 // Every remaining [bracketed] value is the owner's to supply, and
 // legal-content.test.ts fails while any of them survive -- these pages must not
 // reach production carrying "BotolaGO (société en cours de constitution)" or an unissued CNDP number.
@@ -328,7 +341,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "Version 1.3 — en vigueur au 6 octobre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
+        text: "Version 1.4 — en vigueur au 19 octobre 2026. Cette politique explique quelles données BotolaGO collecte, pourquoi, avec qui elles sont partagées et quels sont vos droits, conformément à la loi n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel.",
       },
       { type: "heading", text: "1. Responsable du traitement" },
       {
@@ -355,6 +368,11 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "Données techniques",
             "modèle d'appareil, système d'exploitation, identifiant de notification push, adresse IP, journaux de connexion, version de l'Application",
             "collecte automatique",
+          ],
+          [
+            "Notifications push",
+            "identifiant push du téléphone (jeton Apple ou Google), plateforme (iOS ou Android), identifiant d'installation aléatoire créé par l'Application, version de l'Application, langue et fuseau horaire",
+            "votre téléphone, uniquement si vous activez les alertes",
           ],
           [
             "Usage et analyse",
@@ -390,6 +408,10 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           [
             "Envoyer les notifications de jeu et de match, dans l'Application et par e-mail (programme et résultats des matchs, rappels de deadline, bilan Fantasy)",
             "exécution du contrat ; désactivables dans les paramètres ou par le lien de désabonnement présent dans chaque e-mail",
+          ],
+          [
+            "Envoyer des alertes push sur votre téléphone (coup d'envoi, buts et résultats des matchs de vos clubs, rappels Fantasy), si vous les activez dans l'Application",
+            "consentement : activées seulement à votre demande et avec l'autorisation de votre téléphone ; désactivables à tout moment dans les paramètres de l'Application ou du téléphone",
           ],
           [
             "Envoyer des communications marketing ou offres de sponsors",
@@ -428,7 +450,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
           ],
           [
             "Apple / Google",
-            "distribution de l'Application, notifications push, connexion sociale",
+            "distribution de l'Application, notifications push (Apple Push Notification service et Firebase Cloud Messaging reçoivent l'identifiant push du téléphone et le texte de chaque alerte), connexion sociale",
             "selon leurs politiques",
           ],
           // The analytics row follows ANALYTICS_ENABLED: the script and this
@@ -471,6 +493,10 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "pendant la vie du compte ; en cas de suppression, le compte est fermé immédiatement et ses données sont effacées sous 7 jours (inactivité de 24 mois : suppression dans les mêmes conditions)",
           ],
           ["Journaux techniques et IP", "12 mois"],
+          [
+            "Identifiant push du téléphone",
+            "tant que ce téléphone est enregistré sur votre compte. Désactiver les alertes arrête les envois ; l'identifiant est effacé lorsque vous vous déconnectez de l'Application sur ce téléphone, lorsqu'un autre compte active les alertes sur ce même téléphone, ou immédiatement lorsque vous demandez la suppression de votre compte",
+          ],
           [
             "Pièces justificatives des gagnants",
             "5 ans à compter de la remise du lot (obligations comptables et fiscales)",
@@ -529,7 +555,7 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
     blocks: [
       {
         type: "paragraph",
-        text: "الإصدار 1.3 — ساري المفعول ابتداءً من 6 أكتوبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
+        text: "الإصدار 1.4 — ساري المفعول ابتداءً من 19 أكتوبر 2026. تشرح هذه السياسة البيانات التي تجمعها BotolaGO، ولماذا، ومع من تُشارك، وما هي حقوقك، طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي.",
       },
       { type: "heading", text: "1. المسؤول عن المعالجة" },
       {
@@ -556,6 +582,11 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "البيانات التقنية",
             "طراز الجهاز، نظام التشغيل، معرّف الإشعارات، عنوان IP، سجلات الاتصال، إصدار التطبيق",
             "جمع تلقائي",
+          ],
+          [
+            "الإشعارات الفورية",
+            "معرّف الإشعارات الفورية للهاتف (رمز Apple أو Google)، المنصة (iOS أو Android)، معرّف تثبيت عشوائي ينشئه التطبيق، إصدار التطبيق، اللغة والمنطقة الزمنية",
+            "هاتفك، فقط إذا فعّلت التنبيهات",
           ],
           [
             "الاستعمال والتحليل",
@@ -589,6 +620,10 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "إرسال إشعارات اللعبة والمباريات داخل التطبيق وعبر البريد الإلكتروني (برنامج المباريات ونتائجها، تذكيرات الموعد النهائي، حصيلة الفانتازي)",
             "تنفيذ العقد؛ يمكن تعطيلها من الإعدادات أو عبر رابط إلغاء الاشتراك الموجود في كل رسالة",
           ],
+          [
+            "إرسال تنبيهات فورية إلى هاتفك (انطلاق مباريات أنديتك وأهدافها ونتائجها، تذكيرات الفانتازي)، إذا فعّلتها داخل التطبيق",
+            "الموافقة: لا تُفعَّل إلا بطلب منك وبإذن من هاتفك؛ ويمكن تعطيلها في أي وقت من إعدادات التطبيق أو الهاتف",
+          ],
           ["إرسال الاتصالات التسويقية أو عروض الرعاة", "الموافقة، قابلة للسحب في أي وقت"],
           ["قياس الجمهور وتحسين التطبيق", "المصلحة المشروعة (بيانات مجمّعة)"],
           [
@@ -617,7 +652,11 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "الاتحاد الأوروبي — باريس، فرنسا (eu-west-3)",
           ],
           ["مزوّد البيانات الرياضية", "إحصائيات المباريات (لا تُنقل إليه أي بيانات شخصية)", "—"],
-          ["Apple / Google", "توزيع التطبيق، الإشعارات، تسجيل الدخول الاجتماعي", "وفق سياساتهما"],
+          [
+            "Apple / Google",
+            "توزيع التطبيق، الإشعارات الفورية (تتوصل خدمتا الإشعارات لدى Apple وGoogle بمعرّف الإشعارات الخاص بالهاتف وبنص كل تنبيه)، تسجيل الدخول الاجتماعي",
+            "وفق سياساتهما",
+          ],
           ANALYTICS_ENABLED
             ? [
                 "Seline Analytics",
@@ -653,6 +692,10 @@ export const PRIVACY: Readonly<Record<Language, LegalDocument>> = {
             "طيلة مدة الحساب؛ عند الحذف، يُغلق الحساب فوراً وتُمحى بياناته خلال 7 أيام (عدم النشاط لمدة 24 شهراً: الحذف بنفس الشروط)",
           ],
           ["السجلات التقنية وعناوين IP", "12 شهراً"],
+          [
+            "معرّف الإشعارات الفورية للهاتف",
+            "طالما بقي هذا الهاتف مسجلاً في حسابك. يؤدي تعطيل التنبيهات إلى إيقاف الإرسال؛ ويُمحى المعرّف عند تسجيل خروجك من التطبيق على هذا الهاتف، أو عند تفعيل حساب آخر للتنبيهات على الهاتف نفسه، أو فوراً عند طلبك حذف حسابك",
+          ],
           [
             "وثائق إثبات الفائزين",
             "5 سنوات من تاريخ تسليم الجائزة (الالتزامات المحاسبية والضريبية)",
