@@ -250,13 +250,13 @@ describe("what a card says and how big it is", () => {
     expect(eclatRenderer.tokenBox(PROFILES.rated, 80)).toEqual({ width: 49, height: 80 });
   });
 
-  it("keeps a stage card's markup within the 49 kB budget (it was 46 kB; the rail logo is 5.6 kB of path data, drawn once and used twice)", () => {
+  it("keeps a stage card's markup within the 50 kB budget (it was 46 kB: the rail logo is 5.6 kB of path data drawn once and used twice, the embossed honeycomb about 0.7 kB)", () => {
     for (const c of [...MOCK_CARDS, ...MOCK_ARABIC, ...MOCK_NAMES]) {
       const html = eclatRenderer.full(c.profile, {
         strings: c.lang === "ar" ? AR : FR,
         theme: "dark",
       });
-      expect(html.length, c.caption).toBeLessThan(49_000);
+      expect(html.length, c.caption).toBeLessThan(50_000);
     }
   });
 

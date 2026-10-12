@@ -79,13 +79,37 @@ export function CardBack({ profile }: { profile: CardProfile }) {
         <div className="relative h-full w-full" style={plate}>
           <svg
             aria-hidden
-            className="pointer-events-none absolute inset-0 h-full w-full opacity-30"
+            data-back-honeycomb=""
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-45"
             viewBox="0 0 100 161.8"
             preserveAspectRatio="xMidYMid slice"
           >
             <defs>
+              <linearGradient id={`${pattern}-g`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="white" stopOpacity="0.1" />
+                <stop offset="0.5" stopColor="white" stopOpacity="0" />
+                <stop offset="1" stopColor="black" stopOpacity="0.2" />
+              </linearGradient>
+              {/* each cell embossed, lit from the upper left like the front: a soft cell shade, a
+                  shaded edge down and right, a light edge up and left, then the cell's own line */}
               <pattern id={pattern} width="8.66" height="15" patternUnits="userSpaceOnUse">
-                <path d={HONEYCOMB} fill="none" stroke={palette.light} strokeWidth="0.22" />
+                <path d={HONEYCOMB} fill={`url(#${pattern}-g)`} stroke="none" />
+                <path
+                  d={HONEYCOMB}
+                  fill="none"
+                  stroke="black"
+                  strokeOpacity="0.7"
+                  strokeWidth="0.3"
+                  transform="translate(0.2 0.24)"
+                />
+                <path
+                  d={HONEYCOMB}
+                  fill="none"
+                  stroke={palette.light}
+                  strokeOpacity="0.6"
+                  strokeWidth="0.22"
+                  transform="translate(-0.14 -0.16)"
+                />
               </pattern>
             </defs>
             <rect width="100" height="161.8" fill={`url(#${pattern})`} />

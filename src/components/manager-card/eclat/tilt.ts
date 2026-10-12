@@ -83,6 +83,7 @@ interface Parts {
   hi: Part[];
   sh: Part[];
   foilShift: Part[];
+  hexShift: Part[];
   spec: Part[];
   light: Part[];
   glintA: Part[];
@@ -115,6 +116,7 @@ function collect(root: HTMLElement): Parts {
     hi: all(".mc-num-hi"),
     sh: all(".mc-num-sh"),
     foilShift: all(".mc-foil-shift"),
+    hexShift: all(".mc-hex-shift"),
     spec: all(".mc-spec-shift"),
     light: all(".mc-light-follow"),
     glintA: all(".mc-glint-a"),
@@ -172,6 +174,7 @@ function mountOn(root: HTMLElement): () => void {
     ...parts.hi,
     ...parts.sh,
     ...parts.foilShift,
+    ...parts.hexShift,
     ...parts.spec,
     ...parts.light,
   ];
@@ -216,6 +219,7 @@ function mountOn(root: HTMLElement): () => void {
     for (const p of parts.hi) put(p, follow("hi", light, rtl));
     for (const p of parts.sh) put(p, follow("sh", light, rtl));
     for (const p of parts.foilShift) put(p, follow("foil", light, rtl));
+    for (const p of parts.hexShift) put(p, follow("hex", light, rtl));
     for (const p of parts.spec) put(p, follow("spec", light, rtl));
     for (const p of parts.light) put(p, follow("light", light, rtl));
     for (const p of parts.glintA) p.style.opacity = String(glintA(light));

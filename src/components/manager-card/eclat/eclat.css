@@ -263,6 +263,9 @@
 .mc-foil-shift {
   transform: translate(calc(var(--mc-rx) * 50px * var(--mc-dx)), calc(var(--mc-ry) * -30px));
 }
+.mc-hex-shift {
+  transform: translate(calc(var(--mc-rx) * 6px * var(--mc-dx)), calc(var(--mc-ry) * -4px));
+}
 .mc-spec-shift {
   transform: translate(calc(var(--mc-rx) * 160px * var(--mc-dx)), calc(var(--mc-ry) * -100px));
 }

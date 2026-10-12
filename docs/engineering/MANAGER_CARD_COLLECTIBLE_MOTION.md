@@ -121,3 +121,12 @@ Functional:
   mapping, backend) and still seeds the honeycomb's phase. Pins that asserted it was shown now assert it is
   absent (`render.test.ts`, `copy.test.ts`, `card-share-image.draw.test.ts`, `moment-text.test.tsx`, ...).
 - The rail's typed « BOTOLAGO » and the back's letter-spaced one are the logo (`wordmark-paths.ts`).
+
+## Embossed honeycomb
+
+Each cell of the front's honeycomb (all tiers) and of the back's is bevelled, lit from the upper left like
+the card's sheen: a soft per-cell gradient (one `<pattern>` tile, `hexB`), a light edge offset up and
+left and a shaded edge down and right. On the front the edges are one group (`mc-hex-shift`) that follows
+the tilt by up to about 2 px (`pose.ts` `FOLLOW.hex`, written by `tilt.ts` like the foil, transform only;
+in the holographic tiers only the edges move, the foil's cell mask stays). No parallax under reduced
+motion, where the emboss stays. The markup budget rose to 50 kB (the logo and the emboss).

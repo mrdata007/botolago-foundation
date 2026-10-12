@@ -837,3 +837,30 @@ describe("a finger's drag on a phone (collectible motion)", () => {
     stop();
   });
 });
+
+describe("the honeycomb's depth on movement (collectible motion)", () => {
+  it("shifts the honeycomb's edges against the surface with the light, a few units at most, and mirrors in Arabic", () => {
+    const { el, listeners, parts } = fakeCard();
+    const hex = part();
+    (parts as unknown as Record<string, unknown>).hexShift = [hex];
+    const original = (el as unknown as { querySelector: (s: string) => unknown }).querySelector;
+    void original;
+    const root = (
+      el as unknown as { querySelector: (s: string) => Record<string, unknown> }
+    ).querySelector(".mc-eclat");
+    const qa = root.querySelectorAll as (s: string) => unknown[];
+    root.querySelectorAll = (sel: string) => (sel === ".mc-hex-shift" ? [hex] : qa(sel));
+    const stop = mountTilt(el);
+    move(listeners, 100 + 300, 200);
+    flush(200);
+    expect(transform(hex)).toBe(follow("hex", [1, 1], false));
+    const [x, y] = [...String(transform(hex)).matchAll(/-?[\d.]+/g)].map((m) =>
+      Math.abs(Number(m[0])),
+    );
+    expect(x!).toBeLessThanOrEqual(8);
+    expect(y!).toBeLessThanOrEqual(8);
+    stop();
+    expect(hex.props.has("transform")).toBe(false);
+    expect(follow("hex", [1, 0], true)).toContain("translate(-6px");
+  });
+});

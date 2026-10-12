@@ -60,6 +60,8 @@ export const FOLLOW = {
   hi: { x: 4, y: -4, y0: -2 },
   sh: { x: -6, y: 6, y0: 5 },
   foil: { x: 50, y: -30 },
+  /** The honeycomb's edges against the card's surface: a few units (about 2 px at most) of depth. */
+  hex: { x: 6, y: -4 },
   spec: { x: 160, y: -100 },
   light: { x: 260, y: -220 },
 } as const;
@@ -139,7 +141,7 @@ export function castDelta(light: Light, rest: Light): string {
  * the foil, the streak and the pool of light are (`rtl` flips their x, as the group's mirror does).
  */
 export function follow(
-  part: "hi" | "sh" | "foil" | "spec" | "light" | "cast",
+  part: "hi" | "sh" | "foil" | "spec" | "light" | "cast" | "hex",
   [ax, ay]: Light,
   rtl: boolean,
 ): string {
