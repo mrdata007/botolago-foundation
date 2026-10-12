@@ -702,7 +702,9 @@ cut-off date exists, and a « Revoir » button playing the `founder` beat; on G6
 ### 4.9 Not built, and why
 
 - A public club page or club board: no honest data (4.5).
-- A global or league ranking by OVR: banned (display-only).
+- A global or league ranking by OVR: banned (display-only). **Superseded 2026-10-12**: the owner approved
+  the Curva ranking, `/curva/classement` (`docs/engineering/briefs/CURVA_RANKING_BRIEF.md`). « Les vôtres »
+  still shows the league's points order.
 - A three-frame story (M4c): v2 only if measured (approved decision 7).
 - XP, badges, achievements: not in v1 (D10).
 - A notification or nav badge for new moments: a dot on every page would need the card read on every

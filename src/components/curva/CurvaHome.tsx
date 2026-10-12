@@ -39,6 +39,7 @@ import { NoTeamHero } from "./NoTeamHero";
 import { PeopleBlock } from "./PeopleBlock";
 import { RoundGlance } from "./RoundGlance";
 import { SeasonsBlock } from "./SeasonsBlock";
+import { RankingLink } from "@/components/curva-ranking/RankingLink";
 import { CurvaError, CurvaLoading, CurvaUnavailable } from "./StateBlocks";
 import { StatTiles } from "./StatTiles";
 import { ThisRoundBlock } from "./ThisRoundBlock";
@@ -293,6 +294,7 @@ export function OwnerHome({
           clubById={clubBlock.clubById}
         />
         <SeasonsBlock card={card} />
+        <RankingLink />
         <ThisRoundBlock
           block={block}
           composeLabel={t("fpl.pick_team")}
