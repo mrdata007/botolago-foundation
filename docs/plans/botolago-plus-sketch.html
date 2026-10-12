@@ -450,7 +450,6 @@
         font-size: 8.7px;
       }
       .mc {
-        --ang: 0.15turn;
         --sw: 40%;
         position: relative;
         aspect-ratio: 1 / 1.45;
@@ -688,16 +687,11 @@
       .mc.st-pixel .mc-face {
         background: #0d1320;
       }
-      /* The three candidates (Options A, B, C). None of them touches the photo: each
-   effect sits over the card or round its edge. No tier colour, no LEGEND prism. */
-      .fx-spot,
-      .fx-edge,
-      .fx-star,
+      /* Chrome noir does not touch the photo: the effect sits round the card edge.
+   No tier colour, no LEGEND prism. */
       .fx-chrome {
         display: none;
       }
-      .fx-edge,
-      .fx-star,
       .fx-chrome {
         -webkit-mask:
           linear-gradient(#000 0 0) content-box,
@@ -707,58 +701,7 @@
           linear-gradient(#000 0 0) content-box exclude,
           linear-gradient(#000 0 0);
       }
-      /* Option A « Projecteur » — mimics React Bits <SpotlightCard /> (a soft light that
-   follows the pointer across the card, and lights the edge nearest to it). */
-      .mc.st-spot .fx-spot {
-        display: block;
-        background:
-          radial-gradient(
-            45% 32% at var(--px) var(--py),
-            rgba(255, 255, 255, 0.34),
-            transparent 75%
-          ),
-          radial-gradient(
-            90% 70% at var(--px) var(--py),
-            transparent 30%,
-            rgba(4, 6, 10, 0.42) 100%
-          );
-      }
-      .mc.st-spot .fx-edge {
-        display: block;
-        inset: -0.26em;
-        padding: 0.26em;
-        border-radius: 1.55em;
-        background: radial-gradient(
-          60% 45% at var(--px) var(--py),
-          #ffffff,
-          rgba(255, 255, 255, 0.3) 55%,
-          rgba(255, 255, 255, 0.12)
-        );
-        filter: drop-shadow(0 0 0.3em rgba(255, 255, 255, 0.45));
-      }
-      .mc.st-spot .mc-face {
-        background: #10141b;
-      }
-      /* Option B « Étoile filante » — mimics React Bits <StarBorder /> (a light that runs
-   round the card's edge, over a faint track). White and silver only. */
-      .mc.st-star .fx-star {
-        display: block;
-        inset: -0.3em;
-        padding: 0.3em;
-        border-radius: 1.6em;
-        background:
-          conic-gradient(
-            from var(--ang, 0turn),
-            transparent 0 0.6turn,
-            rgba(255, 255, 255, 0.25) 0.75turn,
-            #ffffff 0.88turn,
-            #ffffff 0.9turn,
-            transparent 0.95turn
-          ),
-          rgba(255, 255, 255, 0.14);
-        filter: drop-shadow(0 0 0.35em rgba(255, 255, 255, 0.55));
-      }
-      /* Option C « Chrome noir » — mimics React Bits <MetallicPaint /> (polished liquid
+      /* Style « Chrome noir » — mimics React Bits <MetallicPaint /> (polished liquid
    metal), drawn as a gunmetal frame with a gloss sweep like <GlareHover />. Dark
    chrome, so it does not read as the steel, amber or ice-blue tier metals. */
       .mc.st-chrome .fx-chrome {
@@ -1114,7 +1057,7 @@
       }
       .swatches {
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 8px;
       }
       .swatch small {
@@ -1163,15 +1106,6 @@
       .sw-pixel {
         background: repeating-conic-gradient(var(--ui-accent-sky) 0 25%, #0d1320 0 50%) 0 0 / 8px
           8px;
-      }
-      .sw-spot {
-        background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.85), #10141b 62%);
-      }
-      .sw-star {
-        background: #10141b;
-        box-shadow:
-          inset 0 0 0 2px rgba(255, 255, 255, 0.25),
-          inset 6px -6px 0 -4px #ffffff;
       }
       .sw-chrome {
         background: linear-gradient(to bottom, #5d636c, #1b1e23 30%, #8b929b 55%, #0f1114);
@@ -1693,26 +1627,8 @@
                 <button class="swatch" type="button" aria-pressed="false" data-style="pixel">
                   <i class="sw-pixel"></i><span data-i18n="sty.pixel">Pixels</span>
                 </button>
-                <button class="swatch" type="button" aria-pressed="false" data-style="spot">
-                  <i class="sw-spot"></i
-                  ><span
-                    ><span data-i18n="opt.a">Option A</span
-                    ><small data-i18n="sty.spot">Projecteur</small></span
-                  >
-                </button>
-                <button class="swatch" type="button" aria-pressed="false" data-style="star">
-                  <i class="sw-star"></i
-                  ><span
-                    ><span data-i18n="opt.b">Option B</span
-                    ><small data-i18n="sty.star">Étoile filante</small></span
-                  >
-                </button>
                 <button class="swatch" type="button" aria-pressed="false" data-style="chrome">
-                  <i class="sw-chrome"></i
-                  ><span
-                    ><span data-i18n="opt.c">Option C</span
-                    ><small data-i18n="sty.chrome">Chrome noir</small></span
-                  >
+                  <i class="sw-chrome"></i><span data-i18n="sty.chrome">Chrome noir</span>
                 </button>
               </div>
               <p class="mini-line" data-i18n="s4.rule"><b>Même note, même palier.</b></p>
@@ -1867,12 +1783,7 @@
           "sty.holo": "هولو",
           "sty.electric": "كهربائي",
           "sty.pixel": "بكسل",
-          "sty.spot": "كشّاف",
-          "sty.star": "شهاب",
           "sty.chrome": "كروم أسود",
-          "opt.a": "الخيار <bdi>A</bdi>",
-          "opt.b": "الخيار <bdi>B</bdi>",
-          "opt.c": "الخيار <bdi>C</bdi>",
           "s5.h": "الموسم كله: 199&nbsp;درهمًا.",
           "p.best": "الأوفر",
           "p.season": "بطاقة الموسم",
@@ -1944,8 +1855,6 @@
           holo: "sty.holo",
           electric: "sty.electric",
           pixel: "sty.pixel",
-          spot: "sty.spot",
-          star: "sty.star",
           chrome: "sty.chrome",
         };
 
@@ -1983,8 +1892,7 @@
             "</div>" +
             '<div class="fx fx-holo"></div><div class="fx fx-glare"></div>' +
             '<canvas class="fx fx-pixel"></canvas>' +
-            '<div class="fx fx-spot"></div><div class="fx fx-edge"></div>' +
-            '<div class="fx fx-star"></div><div class="fx fx-chrome"></div>' +
+            '<div class="fx fx-chrome"></div>' +
             '<svg class="fx fx-electric" viewBox="0 0 100 145" preserveAspectRatio="none" aria-hidden="true"><rect x="4" y="4" width="92" height="137" rx="11" fill="none" stroke="#5fe3a1" stroke-width="1.6" filter="url(#electricFx)"/><rect x="4" y="4" width="92" height="137" rx="11" fill="none" stroke="rgba(150,240,190,0.5)" stroke-width="3.5" filter="url(#electricFx)" style="opacity:.5"/></svg>'
           );
         }
@@ -2386,8 +2294,7 @@
           // The chosen style follows the member to the welcome screen.
           document.getElementById("welcomeCard").className = "mc st-" + s;
           var nm = document.getElementById("styleName");
-          var OPT = { spot: "opt.a", star: "opt.b", chrome: "opt.c" };
-          nm.innerHTML = (OPT[s] ? t(OPT[s]) + " · " : "") + t(STYLE_NAMES[s]);
+          nm.innerHTML = t(STYLE_NAMES[s]);
           document.querySelectorAll("[data-style]").forEach(function (b) {
             b.setAttribute("aria-pressed", String(b.dataset.style === s));
           });
@@ -2478,18 +2385,7 @@
             { opacity: [0, 1], y: [14, 0] },
             { duration: 0.6, delay: M.stagger(0.08), ease: [0.16, 1, 0.3, 1] },
           );
-          // Option B: the light runs round the edge (StarBorder).
-          M.animate(0, 1, {
-            duration: 3.6,
-            repeat: Infinity,
-            ease: "linear",
-            onUpdate: function (v) {
-              document.querySelectorAll(".mc.st-star").forEach(function (c) {
-                c.style.setProperty("--ang", (lang === "ar" ? 1 - v : v).toFixed(4) + "turn");
-              });
-            },
-          });
-          // Option C: a gloss sweep crosses the chrome frame every few seconds.
+          // Chrome noir: a gloss sweep crosses the chrome frame every few seconds.
           M.animate(-30, 130, {
             duration: 1.4,
             repeat: Infinity,

@@ -208,16 +208,16 @@ the photo distorted the player's face; three candidates replace it for the owner
 (Options A, B and C). **Rule: no style may distort or warp the photo**; effects sit over the card or
 round its edge.
 
-| Style (FR / AR)                      | React Bits component it follows               | Look                                                                                                                      |
-| ------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| « Holo » / هولو                      | ProfileCard                                   | Holographic foil through a tiled pattern, light follows the pointer or finger; green-to-cyan only, never the LEGEND prism |
-| « Électrique » / كهربائي             | ElectricBorder                                | An SVG noise-displaced border that crackles round the card, in the brand green                                            |
-| « Pixels » / بكسل                    | PixelCard                                     | A canvas of small pixels that shimmer in from the centre over the card                                                    |
-| Option A « Projecteur » / كشّاف      | SpotlightCard                                 | A soft light follows the pointer across the card and lights the nearest edge; the rest dims slightly                      |
-| Option B « Étoile filante » / شهاب   | StarBorder                                    | A white light runs round the card's edge over a faint silver track                                                        |
-| Option C « Chrome noir » / كروم أسود | MetallicPaint (with a GlareHover-style gloss) | A dark gunmetal frame with a gloss sweep every few seconds, darker than the steel tier metal                              |
-| Club edition (future)                | —                                             | Frame in the club's colours (`src/lib/club-palette.ts`) — **only with the club's written permission**                     |
-| Sponsor edition (future)             | —                                             | A partner's design, sold or given away as a campaign — revenue line, needs a contract                                     |
+The owner chose « Chrome noir » (2026-10-12) from three candidates that replaced « Onde » (Projecteur / SpotlightCard and Étoile filante / StarBorder were not kept).
+
+| Style (FR / AR)             | React Bits component it follows               | Look                                                                                                                      |
+| --------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| « Holo » / هولو             | ProfileCard                                   | Holographic foil through a tiled pattern, light follows the pointer or finger; green-to-cyan only, never the LEGEND prism |
+| « Électrique » / كهربائي    | ElectricBorder                                | An SVG noise-displaced border that crackles round the card, in the brand green                                            |
+| « Pixels » / بكسل           | PixelCard                                     | A canvas of small pixels that shimmer in from the centre over the card                                                    |
+| « Chrome noir » / كروم أسود | MetallicPaint (with a GlareHover-style gloss) | A dark gunmetal frame with a gloss sweep every few seconds, darker than the steel tier metal                              |
+| Club edition (future)       | —                                             | Frame in the club's colours (`src/lib/club-palette.ts`) — **only with the club's written permission**                     |
+| Sponsor edition (future)    | —                                             | A partner's design, sold or given away as a campaign — revenue line, needs a contract                                     |
 
 **Player photo on the card.** The art shows the manager's captain for the latest counted journée
 (name and club under it), never a photo the manager uploads. **Photo rights at launch:** only photos
