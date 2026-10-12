@@ -201,14 +201,28 @@ standard design and the premium ones locked (a preview plays once, then a lock).
 design; the choice applies everywhere their card is drawn (their own screens, league minis, share
 picture). Examples:
 
-| Design (FR / AR)                  | Look                                                                                                       |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| « Nuit de match » / ليلة المباراة | Carbon-black plate, floodlight beams sweep once on entrance (Motion), cool white rim                       |
-| « Zellige » / زليج                | A geometric eight-point star lattice etched into the backboard, catching the tilt light                    |
-| « Atlas » / الأطلس                | Warm sandstone and copper frame, brushed texture                                                           |
-| « Holo Curva » / هولو كورفا       | Full holographic film over the frame that follows the pointer or finger (tilt)                             |
-| Club edition (future)             | Frame in the club's colours (from `src/lib/club-palette.ts`) — **only with the club's written permission** |
-| Sponsor edition (future)          | A partner's design, sold or given away as a campaign — revenue line, needs a contract                      |
+**Revised 2026-10-12 (owner):** the four styles are now taken from React Bits card components,
+and the card art carries a real Botola Pro player photo (the manager's captain of the week, with
+name and club), drawn in the sketch.
+
+| Style (FR / AR)          | React Bits component it follows | Look                                                                                                                      |
+| ------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| « Holo » / هولو          | ProfileCard                     | Holographic foil through a tiled pattern, light follows the pointer or finger; green-to-cyan only, never the LEGEND prism |
+| « Électrique » / كهربائي | ElectricBorder                  | An SVG noise-displaced border that crackles round the card, in the brand green                                            |
+| « Pixels » / بكسل        | PixelCard                       | A canvas of small pixels that shimmer in from the centre over the card                                                    |
+| « Onde » / موجة          | DecayCard                       | The photo alone warps with an SVG turbulence displacement that follows the pointer                                        |
+| Club edition (future)    | —                               | Frame in the club's colours (`src/lib/club-palette.ts`) — **only with the club's written permission**                     |
+| Sponsor edition (future) | —                               | A partner's design, sold or given away as a campaign — revenue line, needs a contract                                     |
+
+**Player photo on the card.** The art shows the manager's captain for the latest counted journée
+(name and club under it), never a photo the manager uploads. **Photo rights at launch:** only photos
+with a BotolaGO release published through the Pépites pipeline
+(`app_private.player_photo_releases`, `scripts/backend/pepites-photo-job.ts`) are cleared, and on
+2026-10-12 the live ranking read returned none; SportsMonks and Sofascore player images are **not**
+cleared (internal placeholders only); Wikimedia Commons photos (used in the sketch, CC BY-SA, credited)
+clear copyright with attribution but not the player's image right or club/FRMF marks on the shirt,
+so they need the lawyer's view before public use. Without a cleared photo the card keeps today's
+club-colour art.
 
 **Rules that keep it honest:**
 
@@ -239,48 +253,8 @@ which checks the entitlement). `api.get_my_manager_card()` and `api.get_manager_
 key, `design`, resolved server-side (`'standard'` when not entitled) — a contract change that needs
 the zod schemas in `src/backend/manager-card/contracts.ts` and the key-set tests updated together.
 
-React Bits components that inspire the designs (copied as source, see 3.4): **ProfileCard**
-(holographic tilt card), **GlareHover** (light sweep), **TiltedCard** (spring tilt, `motion`).
-Because Éclat already has tilt, foil and holo layers, the build should **extend Éclat** rather than
-wrap the card in a ProfileCard: React Bits is the reference for the effect, not a second renderer.
-
-### 2d. No ads
-
-**What exists today (checked in the code, 2026-10-12):** **there are no ads in the app.** No ad
-network, ad SDK or ad slot exists in `src/` (searched for AdSense, AdMob, `googlesyndication`,
-advert/publicité components). Sponsor placements ("journée présentée par", "classement présenté
-par") exist only in the pitch demo at `/demo`. The per-prize sponsor credit (« Offert par … ») is
-built into `/prizes` and `/admin/prizes` but unused. The Terms (`src/content/legal/documents.ts`,
-section 11) say the app "est financée par le sponsoring et peut afficher des contenus publicitaires
-ou de marque".
-
-**How "no ads" fits honestly** (copy must not promise what the system does not deliver):
-
-- At launch the benefit is a **guarantee**, not a removal: « Jamais de publicité pour les membres »
-  / «بدون إعلانات للأعضاء، دائمًا». Do not write « Supprimez les pubs » while there are none.
-- When ad or sponsor slots are built, each slot component reads the entitlement
-  (`usePremium()`, section 5.5) and renders nothing for members. That includes display ads,
-  "presented by" bands and interstitials. It **does not** include factual attribution that is part
-  of the content: the licensed-news credit (« Source : ElBotola »), a prize's « Offert par … » line
-  and club names. Those stay for everyone (licence and prize-terms obligations).
-- Sponsor _card designs_ (2c) are opt-in items, not ads.
-
-### 2e. Optional extras (recommended, maximum three — each needs its own owner approval)
-
-1. **Optional — « Bilan de saison » (season wrap-up).** At season close (`seasonClosed` in the card
-   read), a short story-style sequence of the member's season (best week, best captain, best
-   transfer, final card) with a share picture of **their own** figures only. Built on 2a's read.
-2. **Optional — Collector's export.** A high-resolution PNG of the card (and its design) for
-   printing or wallpaper, generated from the existing share-picture code
-   (`src/components/manager-card/moments/card-share-image.ts`) at a larger size.
-3. **Optional — Founding member mark.** Members who join in the first season get a permanent
-   « Membre fondateur + » line on their card's back face (not the front, so it never competes with
-   the tier or the FOUNDER mark the card already has). Server-granted, like
-   `manager_card_founder_grants`.
-
-Deliberately **not** recommended: anything that informs a Fantasy or Pronostics pick (projections,
-advanced player stats, deadline assistants, extra leagues with prizes). They would make BotolaGO+
-pay-to-win, weaken the "free, fair" principle and complicate the prize question in section 4.
+The build should **extend Éclat** with these looks rather than ship React Bits components as a second
+renderer: React Bits is the reference for each effect (see 3.4 for the licence).
 
 ---
 
@@ -325,34 +299,27 @@ What makes them clear and premium, and the rule we keep for each:
 
 ### 3.0b The six steps (drawn in `botolago-plus-sketch.html`)
 
-| Step | Purpose         | French headline (copy)                            | Arabic headline                          | Button                        |
-| ---- | --------------- | ------------------------------------------------- | ---------------------------------------- | ----------------------------- |
-| 1    | Hook            | Votre carte a une histoire. Vivez-la en entier.   | لبطاقتك قصة. عِشها كاملة.                | Découvrir BotolaGO+           |
-| 2    | Career          | Comprenez enfin pourquoi votre note bouge.        | افهم أخيرًا لماذا يتغيّر تقييمك.         | Continuer                     |
-| 3    | Duel            | Vos amis disent qu'ils sont meilleurs ? Vérifiez. | أصدقاؤك يقولون إنهم الأفضل؟ تحقّق بنفسك. | Continuer                     |
-| 4    | Designs         | Une carte à votre image.                          | بطاقة تشبهك.                             | Voir les formules             |
-| 5    | Plan + timeline | Toute la saison pour 199 MAD.                     | الموسم كله بـ199 درهمًا.                 | Rejoindre BotolaGO+ · 199 MAD |
-| 6    | Welcome         | Bienvenue dans BotolaGO+.                         | مرحبًا بك في BotolaGO+.                  | Voir ma carrière              |
+**Revised 2026-10-12 (owner): headlines only.** Each step is one short headline, the visual and
+one button. The only other words kept are the honest minimum: « Jeu gratuit pour tous. Aucun point
+en plus. », « Exemple » on sample data, « Ligues privées uniquement », « Même note, même palier. »,
+the example-price line and the renewal line under the buy button.
 
-Supporting lines (FR; the Arabic is in the sketch):
+| Step | Purpose | French headline                | Arabic headline         | Button              |
+| ---- | ------- | ------------------------------ | ----------------------- | ------------------- |
+| 1    | Hook    | Votre carte. Votre saison.     | بطاقتك. موسمك.          | Découvrir BotolaGO+ |
+| 2    | Season  | Votre saison en un coup d'œil. | موسمك في لمحة.          | Continuer           |
+| 3    | Duel    | Défiez vos amis.               | تحدَّ أصدقاءك.          | Continuer           |
+| 4    | Styles  | Choisissez votre style.        | اختر أسلوبك.            | Voir les formules   |
+| 5    | Plan    | Toute la saison : 199 MAD.     | الموسم كله: 199 درهمًا. | Rejoindre · 199 MAD |
+| 6    | Welcome | Bienvenue dans le club.        | مرحبًا بك في النادي.    | Voir ma saison      |
 
-- Step 1: « Chaque journée de Fantasy laisse une trace. BotolaGO+ vous la montre : vos stats, vos
-  duels, vos plus belles cartes. » and, under the card, « Fantasy, Pronostics et Pépites restent
-  gratuits pour tous. BotolaGO+ ne donne aucun point en plus. »
-- Step 2 insights: « Bon capitaine 6/11 », « Vos transferts ont rapporté +18 », « Votre meilleure
-  journée 71 ».
-- Step 3: « Uniquement avec les membres de vos ligues privées. »
-- Step 4: « Même note, même palier. Une édition change le style de votre carte, jamais vos
-  chiffres. »
-- Step 5 plans: « Pass saison 2026/27 — 199 MAD, une fois — soit 20 MAD par mois · 91 MAD
-  d'économie » (badge « Le plus avantageux ») and « Mensuel — 29 MAD / mois — moins de 7 MAD par
-  semaine ». Timeline for the pass: Aujourd'hui (tout est débloqué) → Toute la saison (mise à jour
-  après chaque journée) → Fin de saison (le pass se termine, aucun prélèvement automatique). For
-  monthly: Aujourd'hui (29 MAD) → 3 jours avant le renouvellement (on vous prévient dans l'app) →
-  Dans 30 jours (renouvellement, annulable avant). Under the button: « Aucun renouvellement
-  automatique. Le jeu reste gratuit pour tous. » / « Annulez quand vous voulez, en deux clics
-  depuis Profil. »
-- Step 6: « Votre carrière est prête et votre édition Zellige est déjà sur votre carte. »
+Step 2 visuals: a radial OVR gauge with the tier and the next tier's threshold, four stat tiles
+(value, change since last week, sparkline), and points per journée as bars with the best week
+highlighted by the captain's photo. All count up or draw in with Motion; static under reduced
+motion. Step 5 keeps a three-point timeline (season pass: Aujourd'hui · tout débloqué → Chaque
+journée · mise à jour → Fin de saison · fin, sans prélèvement; monthly: Aujourd'hui · 29 MAD → J-3 ·
+rappel → Jour 30 · renouvellement) and the line under the button (« Sans renouvellement
+automatique. » / « Renouvelé chaque mois. Annulable à tout moment. »).
 
 Copy rules applied: outcome over feature, specific numbers, short sentences, `vous`, one verb family
 for buttons, reassurance under the button, no hype words, no invented proof. The 91 MAD saving is
@@ -446,13 +413,14 @@ a CSS flip.
   hand or through its CLI (`jsrepo` / shadcn registry). It is **not an npm dependency**: the chosen
   files are copied into the repo (proposed folder `src/components/plus/fx/`), adapted to the design
   system (tokens, logical properties, `ltr:`-only tracking, no `deg` gradients) and owned from then on.
-- **Licence:** described as MIT; the repository's licence file has also been published as "MIT +
-  Commons Clause" (which forbids selling the components themselves, not using them in an app).
-  **To confirm** by reading `LICENSE.md` in the React Bits repository at the commit copied, and keep
-  its notice in a header comment of each copied file.
+- **Licence (checked 2026-10-12):** the repository's `LICENSE.md` reads "MIT + Commons Clause License
+  Condition v1.0", allowing use, copy and modification **as part of an application, website, or
+  product** but not selling the components themselves. Keep its notice in a header comment of each
+  copied file.
 - **Dependencies per component (to confirm at copy time):** CountUp, TiltedCard, BlurText use
   `motion` (already in the app); Aurora uses `ogl` (new); ShinyText, SpotlightCard, StarBorder,
-  GlareHover and ProfileCard are CSS/React only.
+  GlareHover and ProfileCard are CSS/React only. ElectricBorder, PixelCard and DecayCard (the
+  styles in 2c) use SVG filters or a canvas; ReflectiveCard uses WebGL and was not picked.
 - Version pinning: record the React Bits commit hash each file was copied from in the header
   comment.
 

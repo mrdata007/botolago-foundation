@@ -16,10 +16,16 @@
     />
     <!-- Motion, vanilla build, exact version pinned (the app itself ships motion 13.4.4). -->
     <script src="https://cdn.jsdelivr.net/npm/motion@11.11.17/dist/motion.js"></script>
+    <!--
+  Player photos: Wikimedia Commons, embedded as small WebP data URIs (cropped and resized).
+  - Khalid Boutaïb: "Khalid Boutaïb.jpg" by Антон Зайцев, CC BY-SA 3.0.
+  - Badr Benoun: "Badr Benoun 2019.jpg" by Oussama 499, CC BY-SA 4.0.
+  Both are on the app's 2026/27 Fantasy player list (Kawkab Marrakech, Raja Casablanca).
+  Neither has a BotolaGO photo release; see the plan, section 2c, before any public use.
+-->
     <style>
       /* ------------------------------------------------------------------
    Tokens: the app's dark theme values (src/styles.css, .dark).
-   Dark is the default; the premium flow is designed on the dark register.
    ------------------------------------------------------------------ */
       :root {
         color-scheme: dark;
@@ -43,12 +49,10 @@
         --ui-grad-action: linear-gradient(to bottom, var(--ui-accent-spring), var(--ui-accent-sky));
         --ui-glass: color-mix(in srgb, white 8%, transparent);
         --ui-glass-rule: color-mix(in srgb, white 16%, transparent);
-        /* PRO tier metal (eclat/foil.ts). Every design keeps it: a design never changes the tier. */
+        /* PRO tier metal (eclat/foil.ts). Every style keeps it: a style never changes the tier. */
         --tier-a: #9e1c24;
         --tier-b: #e0424a;
-        --tier-c: #4a080e;
         --radius-card: 14px;
-        --radius-sheet: 16px;
         --tap: 2.75rem;
         --font-display: "Changa", "Manrope", ui-sans-serif, system-ui, sans-serif;
         --font-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
@@ -88,18 +92,15 @@
       bdi {
         unicode-bidi: isolate;
       }
-      .num {
-        font-variant-numeric: tabular-nums;
-      }
       :lang(fr) .track {
         letter-spacing: 0.08em;
-      } /* tracking is Latin-only */
+      }
       :focus-visible {
         outline: 2px solid var(--ui-ink-fg);
         outline-offset: 2px;
       }
 
-      /* ---------- Page layout: the phone, plus a storyboard for the owner from 900px ---------- */
+      /* ---------- Layout: the phone, plus a storyboard for the owner from 900px ---------- */
       .stage {
         display: grid;
         grid-template-columns: minmax(0, 1fr);
@@ -109,7 +110,7 @@
           grid-template-columns: 260px 420px;
           justify-content: center;
           gap: 40px;
-          padding: 32px 16px;
+          padding: 32px 16px 8px;
           align-items: start;
         }
       }
@@ -123,14 +124,13 @@
           inset-block-start: 32px;
         }
         .story h1 {
-          margin: 0;
+          margin: 0 0 4px;
           font-family: var(--font-display);
           font-size: 22px;
           font-weight: 800;
-          line-height: 1.3;
         }
         .story p {
-          margin: 6px 0 16px;
+          margin: 0 0 14px;
           font-size: 13px;
           color: var(--ui-on-surface-muted);
         }
@@ -159,10 +159,12 @@
           border-color: transparent;
         }
         .story .langrow {
-          margin-block-start: 16px;
+          margin-block-start: 14px;
+        }
+        #langMobile {
+          display: none;
         }
       }
-
       .phone {
         position: relative;
         isolation: isolate;
@@ -183,8 +185,19 @@
             0 40px 80px -40px black;
         }
       }
+      .credits {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 14px 16px 28px;
+        font-size: 11px;
+        color: var(--ui-on-surface-faint);
+        text-align: center;
+      }
+      .credits a {
+        color: var(--ui-on-surface-muted);
+      }
 
-      /* Mimics React Bits <Aurora />: drifting colour fields (React Bits uses an ogl shader; here CSS + Motion). */
+      /* Mimics React Bits <Aurora /> (ogl shader there; CSS + Motion here). */
       .aurora {
         position: absolute;
         inset: -10% -20% 40%;
@@ -197,7 +210,7 @@
         aspect-ratio: 1;
         border-radius: 50%;
         filter: blur(48px);
-        opacity: 0.42;
+        opacity: 0.4;
       }
       .aurora span:nth-child(1) {
         inset-block-start: 0;
@@ -223,7 +236,7 @@
         pointer-events: none;
       }
 
-      /* ---------- Top bar: back, progress, close ---------- */
+      /* ---------- Top bar ---------- */
       .top {
         display: grid;
         grid-template-columns: var(--tap) 1fr var(--tap);
@@ -313,6 +326,16 @@
         visibility: hidden;
         display: inline-block;
       }
+      .chip {
+        min-height: var(--tap);
+        padding-inline: 13px;
+        border-radius: 999px;
+        border: 1px solid var(--ui-rule-strong);
+        background: transparent;
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 13px;
+      }
 
       /* ---------- Steps ---------- */
       .steps {
@@ -327,53 +350,33 @@
         flex-direction: column;
         overflow-y: auto;
         overflow-x: hidden;
-        padding: 8px 20px 0;
+        padding: 6px 20px 0;
       }
       .step[hidden] {
         display: none;
       }
       .step .body {
         flex: 1;
-      }
-      .kicker {
-        margin: 4px 0 0;
-        font-size: 12px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: var(--ui-on-ink);
+        display: flex;
+        flex-direction: column;
       }
       .h {
-        margin: 6px 0 8px;
+        margin: 4px 0 14px;
         font-family: var(--font-display);
         font-weight: 800;
         font-size: 30px;
         line-height: 1.2;
+        text-align: center;
       }
       :root:lang(ar) .h {
-        line-height: 1.6;
+        line-height: 1.55;
         font-size: 28px;
       }
-      .h em {
-        font-style: normal;
-      }
-      .shiny-word {
+      .h .g {
         background-image: var(--ui-grad-action);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
-      }
-      @media (min-width: 900px) {
-        #langMobile {
-          display: none;
-        }
-      }
-      .lede {
-        margin: 0 0 14px;
-        font-size: 15px;
-        color: var(--ui-on-surface-muted);
-      }
-      .center {
-        text-align: center;
       }
       .tag {
         display: inline-block;
@@ -384,9 +387,16 @@
         background: var(--ui-glass);
         border: 1px solid var(--ui-glass-rule);
         color: var(--ui-on-surface-muted);
-        vertical-align: middle;
       }
-
+      .mini-line {
+        margin: 12px 0 0;
+        text-align: center;
+        font-size: 13px;
+        color: var(--ui-on-surface-muted);
+      }
+      .mini-line b {
+        color: var(--ui-on-surface);
+      }
       .foot {
         position: sticky;
         inset-block-end: 0;
@@ -411,18 +421,6 @@
         font-size: 18px;
         box-shadow: 0 12px 28px -14px var(--ui-accent-spring);
       }
-      .cta-2 {
-        display: block;
-        width: 100%;
-        min-height: var(--tap);
-        margin-block-start: 6px;
-        border: 0;
-        background: none;
-        cursor: pointer;
-        font-weight: 700;
-        font-size: 14px;
-        color: var(--ui-on-surface-muted);
-      }
       .reassure {
         margin: 8px 0 0;
         text-align: center;
@@ -433,205 +431,274 @@
         color: var(--ui-on-surface);
       }
 
-      /* ---------- The card (simplified stand-in for the Éclat renderer) ---------- */
-      .card-wrap {
-        width: 210px;
+      /* ==================================================================
+   The card. A stand-in for the Éclat renderer with a player photo as
+   its art. OVR, tier and stats are identical in every style.
+   ================================================================== */
+      .mc-wrap {
+        width: 214px;
         margin-inline: auto;
         perspective: 900px;
+        font-size: 14px;
       }
-      .card-wrap.md {
-        width: 180px;
+      .mc-wrap.md {
+        width: 190px;
+        font-size: 12.5px;
       }
-      .card-wrap.sm {
-        width: 128px;
+      .mc-wrap.sm {
+        width: 132px;
+        font-size: 8.7px;
       }
-      .card {
+      .mc {
         position: relative;
-        aspect-ratio: 1 / 1.4;
+        aspect-ratio: 1 / 1.45;
+        border-radius: 1.3em;
         transform-style: preserve-3d;
         will-change: transform;
         --px: 50%;
         --py: 30%;
       }
-      .card .shell {
+      .mc-face {
         position: absolute;
         inset: 0;
-        clip-path: polygon(0 4%, 4% 0, 96% 0, 100% 4%, 100% 82%, 50% 100%, 0 82%);
-        background: linear-gradient(to bottom, var(--tier-b), var(--tier-a) 40%, var(--tier-c));
+        border-radius: inherit;
+        overflow: hidden;
+        background: #12151c;
+        box-shadow:
+          inset 0 0 0 0.12em color-mix(in srgb, var(--tier-b) 70%, transparent),
+          0 1.4em 2.4em -1.2em black;
       }
-      .card .plate {
+      .mc-art {
         position: absolute;
-        inset: 3.5%;
-        clip-path: polygon(0 3%, 3% 0, 97% 0, 100% 3%, 100% 82%, 50% 100%, 0 82%);
-        background: radial-gradient(90% 60% at 50% 18%, #3a3f48, #1d2026 70%);
+        inset: 0 0 34% 0;
         overflow: hidden;
       }
-      .card .pattern {
+      .mc-art img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 50% 15%;
+        display: block;
+      }
+      .mc-art::after {
+        content: "";
         position: absolute;
         inset: 0;
-        opacity: 0.35;
+        background: linear-gradient(
+          to bottom,
+          rgba(18, 21, 28, 0.35),
+          transparent 30%,
+          transparent 55%,
+          #12151c 98%
+        );
       }
-      .card .pattern rect {
-        display: none;
-      }
-      .card .ovr {
+      .mc-top {
         position: absolute;
-        inset-block-start: 9%;
-        inset-inline: 0;
-        text-align: center;
+        inset-block-start: 0.8em;
+        inset-inline-start: 0.85em;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+      }
+      .mc-ovr {
         font-family: var(--font-card);
-        font-size: 4.6em;
-        line-height: 1;
-        color: #f4f1ea;
+        font-size: 3.3em;
+        line-height: 0.9;
+        color: #fff;
+        text-shadow: 0 0.06em 0.3em rgba(0, 0, 0, 0.6);
       }
-      .card .ovr small {
-        display: block;
-        font-family: var(--font-body);
+      .mc-ovrl {
+        font-size: 0.6em;
         font-weight: 800;
-        font-size: 0.16em;
-        color: #c9c4b8;
-        margin-block-start: 2px;
+        color: #e8e4da;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
       }
-      .card .tier {
-        position: absolute;
-        inset-block-start: 47%;
-        inset-inline: 22%;
-        padding: 0.15em 0;
-        text-align: center;
+      .mc-tier {
+        margin-block-start: 0.3em;
+        padding: 0.05em 0.5em;
+        border-radius: 0.3em;
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: 0.95em;
-        line-height: 1.3;
-        color: white;
-        border-radius: 4px;
+        font-size: 0.8em;
+        line-height: 1.4;
+        color: #fff;
         background: linear-gradient(to bottom, var(--tier-b), var(--tier-a));
       }
-      .card .who {
+      .mc-cap {
         position: absolute;
-        inset-block-start: 58.5%;
-        inset-inline: 6%;
+        inset-block-end: 35.5%;
+        inset-inline: 0.7em;
+        z-index: 2;
+        display: flex;
+        gap: 0.35em;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.68em;
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .mc-cap .c {
+        flex: none;
+        width: 1.5em;
+        height: 1.5em;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        color: #12151c;
+        font-size: 0.85em;
+        text-shadow: none;
+      }
+      .mc-name {
+        position: absolute;
+        inset-block-start: 66%;
+        inset-inline: 0.6em;
         text-align: center;
         font-family: var(--font-card);
-        font-size: 1.3em;
+        font-size: 1.35em;
         line-height: 1.2;
         color: #f4f1ea;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        z-index: 2;
       }
-      .card .st {
+      .mc-stats {
         position: absolute;
-        inset-block-start: 69%;
-        inset-inline: 10%;
+        inset-block-start: 77%;
+        inset-inline: 0.8em;
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         text-align: center;
+        z-index: 2;
       }
-      .card .st b {
+      .mc-stats b {
         display: block;
         font-size: 1em;
         font-weight: 800;
         color: #f4f1ea;
         font-variant-numeric: tabular-nums;
+        line-height: 1.2;
       }
-      .card .st i {
+      .mc-stats i {
         display: block;
         font-style: normal;
         font-size: 0.55em;
         font-weight: 800;
         color: #b9b3a6;
       }
-      .card .serial {
+      .mc-serial {
         position: absolute;
-        inset-block-end: 9%;
+        inset-block-end: 0.7em;
         inset-inline: 0;
         text-align: center;
-        font-size: 0.55em;
+        font-size: 0.5em;
         font-weight: 800;
-        color: #b9b3a6;
+        color: #9a958a;
         font-variant-numeric: tabular-nums;
+        z-index: 2;
       }
-      .card-wrap {
-        font-size: 14px;
-      }
-      .card-wrap.md {
-        font-size: 12px;
-      }
-      .card-wrap.sm {
-        font-size: 8.5px;
-      }
-      .card .holo,
-      .card .glare,
-      .card .beams {
+      .fx {
         position: absolute;
         inset: 0;
+        border-radius: inherit;
         pointer-events: none;
-        clip-path: polygon(0 4%, 4% 0, 96% 0, 100% 4%, 100% 82%, 50% 100%, 0 82%);
+        z-index: 3;
       }
-      /* Designs: backboard, texture and light only. Tier plaque, number and stats never change. */
-      .card.d-standard .pat-h {
-        display: inline;
+      .fx-electric,
+      .fx-pixel,
+      .fx-holo,
+      .fx-glare {
+        display: none;
       }
-      .card.d-zellige .plate {
-        background: radial-gradient(90% 60% at 50% 18%, #20324a, #0d1622 72%);
+
+      /* Style « Holo » — mimics React Bits <ProfileCard /> (holographic foil showing
+   through a tiled pattern, light following the pointer). Foil kept to the brand's
+   green-to-cyan band, never the LEGEND prism. */
+      .mc.st-holo .mc-face {
+        background: #0f1a22;
       }
-      .card.d-zellige .pattern {
-        opacity: 0.6;
-      }
-      .card.d-zellige .pat-z {
-        display: inline;
-      }
-      .card.d-nuit .plate {
-        background: radial-gradient(120% 70% at 50% 0%, #2a2f3a, #07080b 70%);
-      }
-      .card.d-nuit .pat-c {
-        display: inline;
-      }
-      .card.d-nuit .beams {
-        background:
-          radial-gradient(40% 70% at 8% 0%, rgba(255, 255, 255, 0.28), transparent 70%),
-          radial-gradient(40% 70% at 92% 0%, rgba(255, 255, 255, 0.28), transparent 70%);
-        mix-blend-mode: screen;
-      }
-      .card.d-atlas .plate {
-        background: radial-gradient(90% 60% at 50% 18%, #6b4a33, #2c1a10 72%);
-      }
-      .card.d-atlas .pattern {
-        opacity: 0.5;
-      }
-      .card.d-atlas .pat-b {
-        display: inline;
-      }
-      /* Mimics React Bits <ProfileCard /> / <GlareHover />: holographic film and glare following the light. */
-      .card.holo-on .holo {
+      .mc.st-holo .fx-holo {
+        display: block;
         mix-blend-mode: color-dodge;
-        opacity: 0.42;
+        opacity: 0.55;
         background:
           radial-gradient(
             circle at var(--px) var(--py),
-            oklch(0.85 0.15 150 / 0.9),
-            transparent 30%
+            oklch(0.86 0.16 152 / 0.95),
+            transparent 32%
           ),
           radial-gradient(
             circle at calc(100% - var(--px)) calc(100% - var(--py)),
-            oklch(0.8 0.14 220 / 0.9),
-            transparent 35%
+            oklch(0.84 0.12 205 / 0.9),
+            transparent 38%
           ),
-          radial-gradient(
-            circle at 50% calc(var(--py) + 30%),
-            oklch(0.75 0.16 300 / 0.7),
-            transparent 40%
+          repeating-radial-gradient(
+            circle at var(--px) var(--py),
+            oklch(0.8 0.14 175 / 0.5) 0 0.4em,
+            transparent 0.4em 1.1em
           );
+        -webkit-mask: repeating-conic-gradient(
+            from 0.125turn,
+            black 0 0.25turn,
+            rgba(0, 0, 0, 0.35) 0 0.5turn
+          )
+          0 0 / 1.1em 1.1em;
+        mask: repeating-conic-gradient(
+            from 0.125turn,
+            black 0 0.25turn,
+            rgba(0, 0, 0, 0.35) 0 0.5turn
+          )
+          0 0 / 1.1em 1.1em;
       }
-      .card.holo-on .glare {
+      .mc.st-holo .fx-glare {
+        display: block;
         background: radial-gradient(
           circle at var(--px) var(--py),
-          rgba(255, 255, 255, 0.32),
-          transparent 40%
+          rgba(255, 255, 255, 0.4),
+          transparent 42%
         );
         mix-blend-mode: overlay;
       }
-      .card-shadow {
+      /* Style « Électrique » — mimics React Bits <ElectricBorder /> (an SVG noise-displaced
+   border that crackles round the card). Brand green, not a tier colour. */
+      .mc.st-electric .fx-electric {
+        display: block;
+        inset: -0.6em;
+        overflow: visible;
+      }
+      .mc.st-electric .mc-face {
+        box-shadow:
+          inset 0 0 0 0.12em color-mix(in srgb, var(--tier-b) 70%, transparent),
+          0 0 1.6em -0.2em color-mix(in srgb, var(--ui-accent-spring) 55%, transparent),
+          0 1.4em 2.4em -1.2em black;
+      }
+      /* Style « Pixels » — mimics React Bits <PixelCard /> (a canvas of pixels that
+   shimmer in from the centre). */
+      .mc.st-pixel .fx-pixel {
+        display: block;
+        mix-blend-mode: screen;
+      }
+      .mc.st-pixel .mc-face {
+        background: #0d1320;
+      }
+      /* Style « Onde » — mimics React Bits <DecayCard /> (the picture warped by an SVG
+   turbulence displacement that follows the pointer). Only the photo moves. */
+      .mc.st-decay .mc-art img {
+        filter: url(#decayFx) saturate(1.15) contrast(1.05);
+      }
+      .mc.st-decay .mc-face {
+        background: #1a1110;
+      }
+      /* Free card (Sami's): plain face, same tier rim. */
+      .mc.st-free .mc-face {
+        background: #15181f;
+      }
+      .mc-shadow {
         width: 60%;
         height: 14px;
         margin: 10px auto 0;
@@ -639,128 +706,192 @@
         background: radial-gradient(closest-side, rgba(0, 0, 0, 0.6), transparent);
       }
 
-      /* ---------- Step 1: hook ---------- */
-      .s1 .card-wrap {
-        margin-block: 10px 0;
+      /* ---------- Step 1 ---------- */
+      .s1 .mc-wrap {
+        margin-block-start: 4px;
       }
-      .free-note {
-        display: flex;
-        gap: 10px;
-        align-items: flex-start;
-        margin: 14px 0 0;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: var(--ui-glass);
-        border: 1px solid var(--ui-glass-rule);
-        font-size: 13px;
-        color: var(--ui-on-surface-muted);
-      }
-      .free-note svg {
-        flex: none;
-        margin-block-start: 3px;
-        color: var(--ui-positive);
+      .kick {
+        margin: 0;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--ui-on-ink);
       }
 
-      /* ---------- Step 2: career ---------- */
-      .hero-num {
+      /* ---------- Step 2: career visuals ---------- */
+      .gauge-row {
         display: flex;
-        align-items: flex-end;
-        gap: 12px;
-        margin: 2px 0 10px;
+        align-items: center;
+        gap: 14px;
       }
-      .hero-num .big {
-        font-family: var(--font-display);
-        font-weight: 800;
-        font-size: 56px;
-        line-height: 1.05;
+      .gauge {
+        position: relative;
+        width: 150px;
+        flex: none;
       }
-      .hero-num .delta {
-        font-weight: 800;
-        color: var(--ui-positive);
-        font-size: 15px;
-        padding-block-end: 8px;
-      }
-      .hero-num .delta small {
-        display: block;
-        font-weight: 600;
-        font-size: 12px;
-        color: var(--ui-on-surface-muted);
-      }
-      .chips {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        margin-block-end: 8px;
-      }
-      .chip {
-        min-height: var(--tap);
-        padding-inline: 13px;
-        border-radius: 999px;
-        border: 1px solid var(--ui-rule-strong);
-        background: transparent;
-        cursor: pointer;
-        font-weight: 800;
-        font-size: 13px;
-      }
-      .chip[aria-pressed="true"] {
-        background: var(--ui-ink-fg);
-        color: var(--ui-ink-deep);
-        border-color: transparent;
-      }
-      .panel {
-        padding: 12px;
-        border-radius: var(--radius-card);
-        background: color-mix(in srgb, var(--ui-surface) 88%, transparent);
-        border: 1px solid var(--ui-rule);
-      }
-      .panel svg {
+      .gauge svg {
         display: block;
         width: 100%;
         height: auto;
       }
-      .insights {
-        display: grid;
-        gap: 8px;
-        margin-block-start: 10px;
+      .gauge .val {
+        position: absolute;
+        inset: 22% 0 auto;
+        text-align: center;
       }
-      .insight {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: color-mix(in srgb, var(--ui-surface) 88%, transparent);
-        border: 1px solid var(--ui-rule);
-        min-height: 56px;
-      }
-      .insight .ic {
-        flex: none;
-        width: 34px;
-        height: 34px;
-        border-radius: 10px;
-        display: grid;
-        place-items: center;
-        background: var(--ui-ink);
-        color: var(--ui-on-ink);
-      }
-      .insight .t {
-        flex: 1;
-        min-width: 0;
-        font-size: 14px;
-        line-height: 1.35;
-      }
-      .insight .t small {
+      .gauge .val bdi {
         display: block;
-        font-size: 12px;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 44px;
+        line-height: 1.05;
+      }
+      .gauge .val span {
+        font-size: 11px;
+        font-weight: 800;
         color: var(--ui-on-surface-muted);
       }
-      .insight .v {
-        font-size: 20px;
+      .gauge-side {
+        flex: 1;
+        min-width: 0;
+        display: grid;
+        gap: 8px;
+        justify-items: start;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+        width: fit-content;
+      }
+      .pill.up {
+        background: color-mix(in srgb, var(--ui-positive) 18%, transparent);
+        color: var(--ui-positive);
+      }
+      .pill.tier {
+        background: linear-gradient(to bottom, var(--tier-b), var(--tier-a));
+        color: #fff;
+        font-family: var(--font-display);
+      }
+      .pill.next {
+        background: var(--ui-glass);
+        border: 1px solid var(--ui-glass-rule);
+        color: var(--ui-on-surface-muted);
+        font-weight: 700;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-block-start: 12px;
+      }
+      .tile {
+        padding: 10px 10px 8px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--ui-surface) 90%, transparent);
+        border: 1px solid var(--ui-rule);
+      }
+      .tile .row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .tile .code {
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--ui-on-surface-muted);
+      }
+      .tile .v {
+        font-size: 24px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+      }
+      .tile .d {
+        font-size: 12px;
         font-weight: 800;
         font-variant-numeric: tabular-nums;
       }
-      .up {
+      .tile .d.up {
         color: var(--ui-positive);
+      }
+      .tile .d.dn {
+        color: var(--ui-negative);
+      }
+      .tile svg {
+        display: block;
+        width: 100%;
+        height: 30px;
+        margin-block-start: 4px;
+      }
+      .weeks {
+        margin-block-start: 10px;
+        padding: 10px 10px 6px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--ui-surface) 90%, transparent);
+        border: 1px solid var(--ui-rule);
+      }
+      .weeks .head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--ui-on-surface-muted);
+        margin-block-end: 2px;
+      }
+      .bars {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(11, 1fr);
+        gap: 4px;
+        align-items: end;
+        height: 92px;
+        padding-block-start: 30px;
+      }
+      .bars i {
+        display: block;
+        border-radius: 4px 4px 2px 2px;
+        background: color-mix(in srgb, var(--ui-ink-fg) 45%, transparent);
+        transform-origin: bottom center;
+      }
+      .bars i.best {
+        background: var(--ui-grad-action);
+      }
+      .best-flag {
+        position: absolute;
+        inset-block-start: 0;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        font-size: 11px;
+        font-weight: 800;
+      }
+      :root[dir="rtl"] .best-flag {
+        transform: translateX(50%);
+      }
+      .best-flag img {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        object-fit: cover;
+        object-position: 50% 12%;
+        border: 2px solid var(--ui-accent-spring);
+      }
+      .bars-x {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--ui-on-surface-faint);
+        padding-block-start: 3px;
       }
 
       /* ---------- Step 3: duel ---------- */
@@ -769,7 +900,6 @@
         grid-template-columns: 1fr auto 1fr;
         align-items: center;
         gap: 6px;
-        margin-block: 6px 12px;
       }
       .versus figure {
         margin: 0;
@@ -784,7 +914,7 @@
       .vs {
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: 14px;
+        font-size: 13px;
         color: var(--ui-on-surface-muted);
         width: 34px;
         height: 34px;
@@ -794,22 +924,26 @@
         background: var(--ui-glass);
         border: 1px solid var(--ui-glass-rule);
       }
-      .score-line {
-        display: flex;
-        align-items: baseline;
-        justify-content: space-between;
-        margin-block-end: 8px;
+      .duel {
+        margin-block-start: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        background: color-mix(in srgb, var(--ui-surface) 90%, transparent);
+        border: 1px solid var(--ui-rule);
       }
-      .score-line .sc {
+      .duel .sc {
+        display: flex;
+        justify-content: center;
+        align-items: baseline;
+        gap: 10px;
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: 28px;
-        display: flex;
-        gap: 6px;
+        font-size: 34px;
+        line-height: 1.1;
+        margin-block-end: 8px;
       }
-      .score-line span {
-        font-size: 13px;
-        color: var(--ui-on-surface-muted);
+      .duel .sc .me {
+        color: var(--ui-positive);
       }
       .strip {
         display: grid;
@@ -817,7 +951,7 @@
         gap: 3px;
       }
       .strip i {
-        height: 24px;
+        height: 22px;
         border-radius: 5px;
         background: var(--ui-surface-sunken);
       }
@@ -828,153 +962,120 @@
         background: var(--ui-negative);
         opacity: 0.75;
       }
-      .strip-legend {
-        display: flex;
-        justify-content: space-between;
-        font-size: 11px;
-        color: var(--ui-on-surface-faint);
-        margin-block-start: 4px;
-      }
-      .bars {
+      .cmp {
         display: grid;
-        gap: 8px;
+        gap: 7px;
         margin-block-start: 12px;
       }
-      .bar-row {
+      .cmp-row {
         display: grid;
-        grid-template-columns: 2.4rem 1fr 2.6rem 1fr 2.4rem;
+        grid-template-columns: 2.2rem 1fr 2.6rem 1fr 2.2rem;
         align-items: center;
         gap: 6px;
         font-size: 13px;
         font-variant-numeric: tabular-nums;
       }
-      .bar-row .code {
+      .cmp-row .code {
         text-align: center;
         font-weight: 800;
         color: var(--ui-on-surface-muted);
         font-size: 12px;
       }
-      .bar-row b {
+      .cmp-row b {
         text-align: center;
       }
-      .bar-row .track-l,
-      .bar-row .track-r {
+      .cmp-row .tl,
+      .cmp-row .tr {
         height: 6px;
         border-radius: 6px;
         background: var(--ui-surface-sunken);
         position: relative;
         overflow: hidden;
       }
-      .bar-row .fill {
+      .cmp-row .fill {
         position: absolute;
         inset-block: 0;
         border-radius: 6px;
         background: var(--ui-ink-fg);
       }
-      .bar-row .track-l .fill {
+      .cmp-row .tl .fill {
         inset-inline-end: 0;
+        transform-origin: right center;
       }
-      .bar-row .track-r .fill {
+      :root[dir="rtl"] .cmp-row .tl .fill {
+        transform-origin: left center;
+      }
+      .cmp-row .tr .fill {
         inset-inline-start: 0;
         background: var(--ui-on-surface-faint);
+        transform-origin: left center;
       }
-      .privacy {
-        display: flex;
-        gap: 8px;
-        align-items: flex-start;
-        margin: 12px 0 0;
-        font-size: 12.5px;
-        color: var(--ui-on-surface-muted);
-      }
-      .privacy svg {
-        flex: none;
-        margin-block-start: 3px;
+      :root[dir="rtl"] .cmp-row .tr .fill {
+        transform-origin: right center;
       }
 
-      /* ---------- Step 4: designs ---------- */
-      .design-stage {
-        position: relative;
-        margin-block: 4px 6px;
-      }
-      .design-name {
+      /* ---------- Step 4: styles ---------- */
+      .style-name {
         text-align: center;
-        margin: 8px 0 2px;
+        margin: 18px 0 10px;
         font-family: var(--font-display);
         font-weight: 800;
         font-size: 20px;
       }
-      .design-desc {
-        text-align: center;
-        margin: 0 0 10px;
-        font-size: 13px;
-        color: var(--ui-on-surface-muted);
-        min-height: 2.6em;
-      }
       .swatches {
-        display: flex;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
         gap: 8px;
-        justify-content: center;
-        flex-wrap: wrap;
       }
       .swatch {
-        min-height: var(--tap);
-        padding: 4px 12px 4px 4px;
-        border-radius: 999px;
+        min-height: 64px;
+        padding: 6px 2px;
+        border-radius: 12px;
         border: 1px solid var(--ui-rule-strong);
         background: transparent;
         cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
+        display: grid;
+        justify-items: center;
+        gap: 4px;
+        font-size: 12px;
         font-weight: 800;
       }
-      :root[dir="rtl"] .swatch {
-        padding: 4px 4px 4px 12px;
-      }
       .swatch i {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        border: 2px solid var(--tier-b);
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
       }
       .swatch[aria-pressed="true"] {
         border-color: var(--ui-ink-fg);
         background: color-mix(in srgb, var(--ui-ink-fg) 14%, transparent);
       }
-      .sw-standard {
-        background: radial-gradient(circle at 50% 30%, #3a3f48, #1d2026);
+      .sw-holo {
+        background: radial-gradient(
+          circle at 30% 30%,
+          oklch(0.86 0.16 152),
+          oklch(0.6 0.12 205) 60%,
+          #0f1a22
+        );
       }
-      .sw-zellige {
-        background: radial-gradient(circle at 50% 30%, #2d4a6b, #0d1622);
+      .sw-electric {
+        background: #0f1218;
+        box-shadow:
+          inset 0 0 0 2px var(--ui-accent-spring),
+          0 0 10px var(--ui-accent-spring);
       }
-      .sw-nuit {
-        background: radial-gradient(circle at 50% 0%, #4a5060, #07080b);
+      .sw-pixel {
+        background: repeating-conic-gradient(var(--ui-accent-sky) 0 25%, #0d1320 0 50%) 0 0 / 8px
+          8px;
       }
-      .sw-atlas {
-        background: radial-gradient(circle at 50% 30%, #8a6142, #2c1a10);
-      }
-      .rule-note {
-        display: flex;
-        gap: 8px;
-        align-items: flex-start;
-        margin: 12px 0 0;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: var(--ui-glass);
-        border: 1px solid var(--ui-glass-rule);
-        font-size: 13px;
-        color: var(--ui-on-surface-muted);
-      }
-      .rule-note b {
-        color: var(--ui-on-surface);
+      .sw-decay {
+        background: radial-gradient(circle at 40% 40%, #c98b5a, #2a1712 70%);
       }
 
-      /* ---------- Step 5: plans + timeline ---------- */
+      /* ---------- Step 5: plans ---------- */
       .plans {
         display: grid;
-        gap: 10px;
-        margin-block: 4px 14px;
+        gap: 12px;
+        margin-block: 4px 16px;
       }
       .plan {
         position: relative;
@@ -1013,7 +1114,7 @@
         border-radius: 50%;
         background: var(--ui-ink-deep);
       }
-      /* Mimics React Bits <StarBorder />: a light travelling round the chosen plan's edge. */
+      /* Mimics React Bits <StarBorder />. */
       .plan[aria-checked="true"]::before {
         content: "";
         position: absolute;
@@ -1050,11 +1151,12 @@
       .plan .note {
         display: block;
         font-size: 12.5px;
-        color: var(--ui-on-surface-muted);
-      }
-      .plan .note .save {
         color: var(--ui-positive);
         font-weight: 800;
+      }
+      .plan .note.muted {
+        color: var(--ui-on-surface-muted);
+        font-weight: 700;
       }
       .plan .price {
         text-align: end;
@@ -1064,7 +1166,7 @@
         display: block;
         font-family: var(--font-display);
         font-weight: 800;
-        font-size: 24px;
+        font-size: 26px;
         line-height: 1.15;
       }
       .plan .price span {
@@ -1082,38 +1184,40 @@
         background: var(--ui-grad-action);
         color: var(--ui-ink-deep);
       }
-      .sub-h {
-        margin: 0 0 8px;
-        font-family: var(--font-display);
-        font-weight: 700;
-        font-size: 16px;
-      }
       .timeline {
         list-style: none;
         margin: 0;
         padding: 0;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
         position: relative;
       }
       .timeline::before {
         content: "";
         position: absolute;
-        inset-block: 10px 18px;
-        inset-inline-start: 11px;
-        width: 2px;
-        background: linear-gradient(to bottom, var(--ui-accent-spring), var(--ui-rule-strong));
+        inset-block-start: 9px;
+        inset-inline: 16% 16%;
+        height: 2px;
+        background: linear-gradient(to right, var(--ui-accent-spring), var(--ui-rule-strong));
+      }
+      :root[dir="rtl"] .timeline::before {
+        background: linear-gradient(to left, var(--ui-accent-spring), var(--ui-rule-strong));
       }
       .timeline li {
         position: relative;
-        padding-inline-start: 36px;
-        padding-block-end: 12px;
+        text-align: center;
+        padding-block-start: 26px;
+        font-size: 12.5px;
+        line-height: 1.35;
       }
       .timeline li::before {
         content: "";
         position: absolute;
-        inset-inline-start: 4px;
-        inset-block-start: 4px;
-        width: 16px;
-        height: 16px;
+        inset-block-start: 1px;
+        inset-inline-start: calc(50% - 9px);
+        width: 18px;
+        height: 18px;
         border-radius: 50%;
         background: var(--ui-deep);
         border: 2px solid var(--ui-rule-strong);
@@ -1124,34 +1228,14 @@
       }
       .timeline b {
         display: block;
-        font-size: 14px;
+        font-size: 13px;
       }
       .timeline span {
         display: block;
-        font-size: 12.5px;
         color: var(--ui-on-surface-muted);
       }
-      .included {
-        list-style: none;
-        margin: 4px 0 0;
-        padding: 0;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 6px 10px;
-        font-size: 13px;
-      }
-      .included li {
-        display: flex;
-        gap: 6px;
-        align-items: flex-start;
-      }
-      .included svg {
-        flex: none;
-        margin-block-start: 3px;
-        color: var(--ui-positive);
-      }
       .fine {
-        margin: 10px 0 0;
+        margin: 14px 0 0;
         text-align: center;
         font-size: 11.5px;
         color: var(--ui-on-surface-faint);
@@ -1168,20 +1252,17 @@
         min-height: 24px;
       }
 
-      /* ---------- Step 6: welcome ---------- */
+      /* ---------- Step 6 ---------- */
       .s6 .body {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
         justify-content: center;
-        text-align: center;
+        align-items: center;
       }
       .burst {
         position: absolute;
-        inset-block-start: 6%;
+        inset-block-start: 4%;
         inset-inline: 0;
         margin-inline: auto;
-        width: 300px;
+        width: 320px;
         max-width: 100%;
         aspect-ratio: 1;
         border-radius: 50%;
@@ -1197,7 +1278,7 @@
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        margin-block: 14px 4px;
+        margin-block: 16px 2px;
         padding: 4px 12px;
         border-radius: 999px;
         background: var(--ui-grad-action);
@@ -1206,12 +1287,17 @@
         font-weight: 800;
         font-size: 13px;
       }
-      .nexts {
+      .cta-2 {
+        display: block;
         width: 100%;
-        display: grid;
-        gap: 8px;
-        margin-block-start: 14px;
-        text-align: start;
+        min-height: var(--tap);
+        margin-block-start: 6px;
+        border: 0;
+        background: none;
+        cursor: pointer;
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--ui-on-surface-muted);
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -1222,10 +1308,93 @@
     </style>
   </head>
   <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true" focusable="false">
+      <defs>
+        <!-- React Bits <DecayCard /> idea: turbulence + displacement on the photo only. -->
+        <filter id="decayFx" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence
+            id="decayTurb"
+            type="turbulence"
+            baseFrequency="0.012"
+            numOctaves="2"
+            seed="4"
+            result="n"
+          />
+          <feDisplacementMap
+            id="decayMap"
+            in="SourceGraphic"
+            in2="n"
+            scale="18"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+        <!-- React Bits <ElectricBorder /> idea: a noise field slid along to make the border crackle. -->
+        <filter
+          id="electricFx"
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
+          color-interpolation-filters="sRGB"
+        >
+          <feTurbulence
+            type="turbulence"
+            baseFrequency="0.03"
+            numOctaves="8"
+            result="n1"
+            seed="1"
+          />
+          <feOffset in="n1" dx="0" dy="0" result="o1">
+            <animate
+              attributeName="dy"
+              values="200;0"
+              dur="6s"
+              repeatCount="indefinite"
+              calcMode="linear"
+            />
+          </feOffset>
+          <feTurbulence
+            type="turbulence"
+            baseFrequency="0.03"
+            numOctaves="8"
+            result="n2"
+            seed="2"
+          />
+          <feOffset in="n2" dx="0" dy="0" result="o2">
+            <animate
+              attributeName="dx"
+              values="0;-200"
+              dur="6s"
+              repeatCount="indefinite"
+              calcMode="linear"
+            />
+          </feOffset>
+          <feComposite
+            in="o1"
+            in2="o2"
+            operator="arithmetic"
+            k1="0"
+            k2="1"
+            k3="1"
+            k4="0"
+            result="c"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="c"
+            scale="7"
+            xChannelSelector="R"
+            yChannelSelector="B"
+          />
+        </filter>
+      </defs>
+    </svg>
+
     <div class="stage">
       <aside class="story" aria-label="Storyboard">
         <h1><bdi dir="ltr">BotolaGO+</bdi></h1>
-        <p data-i18n="sb.note">Esquisse à valider. Données et prix d'exemple.</p>
+        <p data-i18n="sb.note">Esquisse. Données et prix d'exemple.</p>
         <ol id="storyList"></ol>
         <div class="langrow">
           <button class="chip" type="button" data-lang-toggle lang="ar">العربية</button>
@@ -1234,7 +1403,6 @@
 
       <main class="phone" id="phone" aria-roledescription="onboarding">
         <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-
         <div class="top">
           <button
             class="icon-btn"
@@ -1312,37 +1480,14 @@
         <div class="steps" id="steps">
           <!-- 1. Hook -->
           <section class="step s1" data-step="1" aria-labelledby="h1">
-            <div class="body center">
-              <p class="kicker track" data-i18n="s1.k">Nouveau · BotolaGO+</p>
+            <div class="body">
               <h2 class="h" id="h1" data-i18n="s1.h">
-                Votre carte a une histoire. <em class="shiny-word">Vivez-la en entier.</em>
+                Votre carte. <span class="g">Votre saison.</span>
               </h2>
-              <p class="lede" data-i18n="s1.p">
-                Chaque journée de Fantasy laisse une trace. BotolaGO+ vous la montre : vos stats,
-                vos duels, vos plus belles cartes.
-              </p>
-              <div class="card-wrap" data-tilt>
-                <div class="card d-zellige holo-on" data-card></div>
-              </div>
-              <div class="card-shadow" aria-hidden="true"></div>
-              <p class="free-note">
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="M5 12l5 5 9-10" />
-                </svg>
-                <span data-i18n="s1.free"
-                  >Fantasy, Pronostics et Pépites restent gratuits pour tous. BotolaGO+ ne donne
-                  aucun point en plus.</span
-                >
+              <div class="mc-wrap" data-tilt><div class="mc st-holo" data-card="me"></div></div>
+              <div class="mc-shadow" aria-hidden="true"></div>
+              <p class="mini-line" data-i18n="s1.free">
+                <b>Jeu gratuit pour tous.</b> Aucun point en plus.
               </p>
             </div>
             <div class="foot">
@@ -1355,76 +1500,53 @@
           <!-- 2. Career -->
           <section class="step s2" data-step="2" aria-labelledby="h2" hidden>
             <div class="body">
-              <p class="kicker track" data-i18n="s2.k">1 · Votre carrière</p>
-              <h2 class="h" id="h2" data-i18n="s2.h">Comprenez enfin pourquoi votre note bouge.</h2>
-              <div class="hero-num">
-                <bdi class="big" data-count="73" data-from="64">64</bdi>
-                <span class="delta"
-                  ><bdi>+9</bdi> <span data-i18n="s2.since">depuis la J3</span
-                  ><small data-i18n="s2.ex">Exemple</small></span
-                >
-              </div>
-              <div class="chips" role="group" aria-label="Stat">
-                <button class="chip" type="button" aria-pressed="true" data-stat="ovr">OVR</button>
-                <button class="chip" type="button" aria-pressed="false" data-stat="cap">CAP</button>
-                <button class="chip" type="button" aria-pressed="false" data-stat="sel">SEL</button>
-                <button class="chip" type="button" aria-pressed="false" data-stat="trf">TRF</button>
-                <button class="chip" type="button" aria-pressed="false" data-stat="con">CON</button>
-              </div>
-              <div class="panel">
-                <svg viewBox="0 0 340 130" role="img" id="chart" aria-label="OVR">
-                  <g id="gridlines" stroke="var(--ui-rule)" stroke-width="1"></g>
-                  <path id="area" fill="url(#fillGrad)" opacity="0.5"></path>
-                  <path
-                    id="line"
-                    fill="none"
-                    stroke="var(--ui-ink-fg)"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  ></path>
-                  <g id="dots"></g>
-                  <g
-                    id="xlabels"
-                    font-size="10"
-                    fill="var(--ui-on-surface-muted)"
-                    font-family="Manrope, sans-serif"
-                    font-weight="700"
-                  ></g>
-                  <defs>
-                    <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0" stop-color="var(--ui-ink-fg)" stop-opacity="0.5" />
-                      <stop offset="1" stop-color="var(--ui-ink-fg)" stop-opacity="0" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-              </div>
-              <div class="insights">
-                <div class="insight">
-                  <span class="ic" aria-hidden="true">C</span
-                  ><span class="t" data-i18n="s2.i1"
-                    >Bon capitaine<small>Le meilleur de vos titulaires</small></span
-                  ><span class="v" dir="ltr"
-                    ><bdi data-count="6">0</bdi
-                    ><small style="font-size: 13px; color: var(--ui-on-surface-muted)"
-                      >/11</small
-                    ></span
+              <h2 class="h" id="h2" data-i18n="s2.h">Votre saison en un coup d'œil.</h2>
+              <div class="gauge-row">
+                <div class="gauge" aria-hidden="true">
+                  <svg viewBox="0 0 120 100">
+                    <defs>
+                      <linearGradient id="gGrad" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0" stop-color="#6fd3e8" />
+                        <stop offset="1" stop-color="#5fe3a1" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      id="gTrack"
+                      d=""
+                      fill="none"
+                      stroke="var(--ui-surface-sunken)"
+                      stroke-width="10"
+                      stroke-linecap="round"
+                    />
+                    <path
+                      id="gFill"
+                      d=""
+                      fill="none"
+                      stroke="url(#gGrad)"
+                      stroke-width="10"
+                      stroke-linecap="round"
+                    />
+                    <g id="gTicks"></g>
+                  </svg>
+                  <div class="val"><bdi data-count="73" data-from="0">73</bdi><span>OVR</span></div>
+                </div>
+                <div class="gauge-side">
+                  <span class="pill up"
+                    ><bdi dir="ltr">+9</bdi> <span data-i18n="s2.since">depuis J3</span></span
                   >
+                  <span class="pill tier">PRO</span>
+                  <span class="pill next" data-i18n="s2.next">CHAMPION à 80</span>
+                  <span class="tag" data-i18n="ex">Exemple</span>
                 </div>
-                <div class="insight">
-                  <span class="ic" aria-hidden="true">T</span
-                  ><span class="t" data-i18n="s2.i2"
-                    >Vos transferts ont rapporté<small
-                      >Sur 3 journées, pénalités déduites</small
-                    ></span
-                  ><span class="v up"><bdi data-count="18" data-prefix="+">0</bdi></span>
+              </div>
+              <div class="tiles" id="tiles"></div>
+              <div class="weeks">
+                <div class="head">
+                  <span data-i18n="s2.weeks">Points par journée</span
+                  ><span data-i18n="s2.best">Meilleure : J.7</span>
                 </div>
-                <div class="insight">
-                  <span class="ic" aria-hidden="true">★</span
-                  ><span class="t" data-i18n="s2.i3"
-                    >Votre meilleure journée<small>J.7 · capitaine à 14 pts</small></span
-                  ><span class="v"><bdi data-count="71">0</bdi></span>
-                </div>
+                <div class="bars" id="bars" aria-hidden="true"></div>
+                <div class="bars-x"><bdi>J.3</bdi><bdi>J.13</bdi></div>
               </div>
             </div>
             <div class="foot">
@@ -1435,130 +1557,60 @@
           <!-- 3. Duel -->
           <section class="step s3" data-step="3" aria-labelledby="h3" hidden>
             <div class="body">
-              <p class="kicker track" data-i18n="s3.k">2 · Face-à-face+</p>
-              <h2 class="h" id="h3" data-i18n="s3.h">
-                Vos amis disent qu'ils sont meilleurs ? Vérifiez.
-              </h2>
+              <h2 class="h" id="h3" data-i18n="s3.h">Défiez vos amis.</h2>
               <div class="versus">
                 <figure>
-                  <div class="card-wrap sm">
-                    <div class="card d-zellige holo-on" data-card></div>
-                  </div>
+                  <div class="mc-wrap sm"><div class="mc st-holo" data-card="me"></div></div>
                   <figcaption data-i18n="s3.you">Vous</figcaption>
                 </figure>
                 <span class="vs" data-i18n="s3.vs">VS</span>
                 <figure>
-                  <div class="card-wrap sm">
-                    <div class="card d-standard" data-card data-name="Sami" data-ovr="70"></div>
-                  </div>
+                  <div class="mc-wrap sm"><div class="mc st-free" data-card="sami"></div></div>
                   <figcaption>Sami</figcaption>
                 </figure>
               </div>
-              <div class="panel">
-                <div class="score-line">
-                  <div class="sc">
-                    <bdi data-count="7">0</bdi><span aria-hidden="true">–</span
-                    ><bdi data-count="4">0</bdi>
-                  </div>
-                  <span data-i18n="s3.lead">Vous menez, journée par journée</span>
+              <div class="duel">
+                <div class="sc">
+                  <bdi class="me" data-count="7">7</bdi><span aria-hidden="true">–</span
+                  ><bdi data-count="4">4</bdi>
                 </div>
                 <div class="strip" id="strip" aria-hidden="true">
                   <i class="w"></i><i class="l"></i><i class="w"></i><i class="w"></i
                   ><i class="l"></i><i class="w"></i><i class="w"></i><i class="l"></i
                   ><i class="w"></i><i class="l"></i><i class="w"></i>
                 </div>
-                <div class="strip-legend"><bdi>J.3</bdi><bdi>J.13</bdi></div>
-                <div class="bars">
-                  <div class="bar-row">
-                    <b>76</b
-                    ><span class="track-l"><span class="fill" style="width: 76%"></span></span
-                    ><span class="code">CAP</span
-                    ><span class="track-r"><span class="fill" style="width: 69%"></span></span
-                    ><b>69</b>
-                  </div>
-                  <div class="bar-row">
-                    <b>72</b
-                    ><span class="track-l"><span class="fill" style="width: 72%"></span></span
-                    ><span class="code">SEL</span
-                    ><span class="track-r"><span class="fill" style="width: 74%"></span></span
-                    ><b>74</b>
-                  </div>
-                  <div class="bar-row">
-                    <b>68</b
-                    ><span class="track-l"><span class="fill" style="width: 68%"></span></span
-                    ><span class="code">TRF</span
-                    ><span class="track-r"><span class="fill" style="width: 61%"></span></span
-                    ><b>61</b>
-                  </div>
-                  <div class="bar-row">
-                    <b>74</b
-                    ><span class="track-l"><span class="fill" style="width: 74%"></span></span
-                    ><span class="code">CON</span
-                    ><span class="track-r"><span class="fill" style="width: 70%"></span></span
-                    ><b>70</b>
-                  </div>
-                </div>
+                <div class="cmp" id="cmp"></div>
               </div>
-              <p class="privacy">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.4"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  aria-hidden="true"
-                >
-                  <rect x="5" y="11" width="14" height="10" rx="2" />
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                </svg>
-                <span data-i18n="s3.priv"
-                  >Uniquement avec les membres de vos ligues privées. Exemple de données.</span
-                >
-              </p>
+              <p class="mini-line" data-i18n="s3.priv">Ligues privées uniquement · Exemple</p>
             </div>
             <div class="foot">
               <button class="cta" type="button" data-next data-i18n="a.next">Continuer</button>
             </div>
           </section>
 
-          <!-- 4. Designs -->
+          <!-- 4. Styles -->
           <section class="step s4" data-step="4" aria-labelledby="h4" hidden>
             <div class="body">
-              <p class="kicker track" data-i18n="s4.k">3 · Éditions</p>
-              <h2 class="h" id="h4" data-i18n="s4.h">Une carte à votre image.</h2>
-              <div class="design-stage">
-                <div class="card-wrap md" data-tilt>
-                  <div class="card d-zellige holo-on" data-card id="designCard"></div>
-                </div>
-                <div class="card-shadow" aria-hidden="true"></div>
+              <h2 class="h" id="h4" data-i18n="s4.h">Choisissez votre style.</h2>
+              <div class="mc-wrap md" data-tilt>
+                <div class="mc st-holo" data-card="me" id="styleCard"></div>
               </div>
-              <p class="design-name" id="designName" data-i18n="dz.n">Zellige</p>
-              <p class="design-desc" id="designDesc" data-i18n="dz.d">
-                Un motif d'étoiles qui s'allume quand vous inclinez la carte.
-              </p>
-              <div class="swatches" role="group" aria-label="Design">
-                <button class="swatch" type="button" aria-pressed="false" data-design="standard">
-                  <i class="sw-standard"></i><span data-i18n="ds.n">Standard</span>
+              <p class="style-name" id="styleName">Holo</p>
+              <div class="swatches" role="group" aria-label="Style">
+                <button class="swatch" type="button" aria-pressed="true" data-style="holo">
+                  <i class="sw-holo"></i><span data-i18n="sty.holo">Holo</span>
                 </button>
-                <button class="swatch" type="button" aria-pressed="true" data-design="zellige">
-                  <i class="sw-zellige"></i><span data-i18n="dz.n">Zellige</span>
+                <button class="swatch" type="button" aria-pressed="false" data-style="electric">
+                  <i class="sw-electric"></i><span data-i18n="sty.electric">Électrique</span>
                 </button>
-                <button class="swatch" type="button" aria-pressed="false" data-design="nuit">
-                  <i class="sw-nuit"></i><span data-i18n="dn.n">Nuit de match</span>
+                <button class="swatch" type="button" aria-pressed="false" data-style="pixel">
+                  <i class="sw-pixel"></i><span data-i18n="sty.pixel">Pixels</span>
                 </button>
-                <button class="swatch" type="button" aria-pressed="false" data-design="atlas">
-                  <i class="sw-atlas"></i><span data-i18n="da.n">Atlas</span>
+                <button class="swatch" type="button" aria-pressed="false" data-style="decay">
+                  <i class="sw-decay"></i><span data-i18n="sty.decay">Onde</span>
                 </button>
               </div>
-              <p class="rule-note">
-                <span data-i18n="s4.rule"
-                  ><b>Même note, même palier.</b> Une édition change le style de votre carte, jamais
-                  vos chiffres.</span
-                >
-              </p>
+              <p class="mini-line" data-i18n="s4.rule"><b>Même note, même palier.</b></p>
             </div>
             <div class="foot">
               <button class="cta" type="button" data-next data-i18n="s4.cta">
@@ -1570,8 +1622,7 @@
           <!-- 5. Plans -->
           <section class="step s5" data-step="5" aria-labelledby="h5" hidden>
             <div class="body">
-              <p class="kicker track" data-i18n="s5.k">4 · Votre formule</p>
-              <h2 class="h" id="h5" data-i18n="s5.h">Toute la saison pour 199&nbsp;MAD.</h2>
+              <h2 class="h" id="h5" data-i18n="s5.h">Toute la saison : 199&nbsp;MAD.</h2>
               <div class="plans" role="radiogroup" aria-labelledby="h5">
                 <button
                   class="plan"
@@ -1583,14 +1634,10 @@
                   <span class="badge" data-i18n="p.best">Le plus avantageux</span>
                   <span class="radio" aria-hidden="true"></span>
                   <span class="info"
-                    ><span class="name" data-i18n="p.season">Pass saison 2026/27</span
-                    ><span class="note" data-i18n="p.seasonN"
-                      >Soit 20 MAD par mois · <span class="save">91 MAD d'économie</span></span
-                    ></span
+                    ><span class="name" data-i18n="p.season">Pass saison</span
+                    ><span class="note" data-i18n="p.seasonN">−91 MAD</span></span
                   >
-                  <span class="price"
-                    ><bdi>199</bdi><span data-i18n="p.once">MAD, une fois</span></span
-                  >
+                  <span class="price"><bdi>199</bdi><span data-i18n="p.once">MAD</span></span>
                 </button>
                 <button
                   class="plan"
@@ -1602,80 +1649,16 @@
                   <span class="radio" aria-hidden="true"></span>
                   <span class="info"
                     ><span class="name" data-i18n="p.month">Mensuel</span
-                    ><span class="note" data-i18n="p.monthN">Moins de 7 MAD par semaine</span></span
+                    ><span class="note muted" data-i18n="p.monthN">Sans engagement</span></span
                   >
                   <span class="price"
                     ><bdi>29</bdi><span data-i18n="p.permonth">MAD / mois</span></span
                   >
                 </button>
               </div>
-              <p class="sub-h" data-i18n="s5.next">Ce qui se passe ensuite</p>
               <ol class="timeline" id="timeline"></ol>
-              <p class="sub-h" data-i18n="s5.inc">Inclus</p>
-              <ul class="included">
-                <li>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12l5 5 9-10" /></svg
-                  ><span data-i18n="inc.1">Votre carrière complète</span>
-                </li>
-                <li>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12l5 5 9-10" /></svg
-                  ><span data-i18n="inc.2">Face-à-face+</span>
-                </li>
-                <li>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12l5 5 9-10" /></svg
-                  ><span data-i18n="inc.3">Toutes les éditions</span>
-                </li>
-                <li>
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                  >
-                    <path d="M5 12l5 5 9-10" /></svg
-                  ><span data-i18n="inc.4">Jamais de publicité</span>
-                </li>
-              </ul>
               <p class="fine">
-                <span data-i18n="p.fine">Prix d'exemple, TTC, à valider.</span>
+                <span data-i18n="p.fine">Prix d'exemple, TTC.</span>
                 <button class="linkish" type="button" data-i18n="p.restore">
                   Restaurer un achat
                 </button>
@@ -1683,10 +1666,10 @@
             </div>
             <div class="foot">
               <button class="cta" type="button" data-next id="buyBtn" data-i18n="s5.cta.season">
-                Rejoindre BotolaGO+ · 199 MAD
+                Rejoindre · 199 MAD
               </button>
               <p class="reassure" id="reassure" data-i18n="s5.r.season">
-                <b>Aucun renouvellement automatique.</b> Le jeu reste gratuit pour tous.
+                <b>Sans renouvellement automatique.</b>
               </p>
             </div>
           </section>
@@ -1695,99 +1678,27 @@
           <section class="step s6" data-step="6" aria-labelledby="h6" hidden>
             <div class="burst" id="burst" aria-hidden="true"></div>
             <div class="body">
-              <div class="card-wrap md" data-tilt>
-                <div class="card d-zellige holo-on" data-card></div>
+              <div class="mc-wrap md" data-tilt>
+                <div class="mc st-holo" data-card="me" id="welcomeCard"></div>
               </div>
               <span class="member" dir="ltr">BotolaGO+ <span aria-hidden="true">✦</span></span>
-              <h2 class="h" id="h6" data-i18n="s6.h">Bienvenue dans BotolaGO+.</h2>
-              <p class="lede" data-i18n="s6.p">
-                Votre carrière est prête et votre édition Zellige est déjà sur votre carte.
-              </p>
-              <div class="nexts">
-                <div class="insight">
-                  <span class="ic" aria-hidden="true">1</span
-                  ><span class="t" data-i18n="s6.n1"
-                    >Ouvrez votre carrière<small>Vos stats depuis la J3</small></span
-                  >
-                </div>
-                <div class="insight">
-                  <span class="ic" aria-hidden="true">2</span
-                  ><span class="t" data-i18n="s6.n2"
-                    >Lancez un face-à-face<small>Avec un membre de vos ligues</small></span
-                  >
-                </div>
-              </div>
+              <h2 class="h" id="h6" data-i18n="s6.h">Bienvenue dans le club.</h2>
             </div>
             <div class="foot">
-              <button class="cta" type="button" data-done data-i18n="s6.cta">
-                Voir ma carrière
-              </button>
-              <button class="cta-2" type="button" data-i18n="s6.cta2">
-                Gérer mon abonnement dans Profil
-              </button>
+              <button class="cta" type="button" data-done data-i18n="s6.cta">Voir ma saison</button>
+              <button class="cta-2" type="button" data-i18n="s6.cta2">Gérer mon abonnement</button>
             </div>
           </section>
         </div>
       </main>
     </div>
-
-    <template id="cardTpl">
-      <div class="shell"></div>
-      <div class="plate">
-        <svg
-          class="pattern"
-          viewBox="0 0 60 84"
-          preserveAspectRatio="xMidYMid slice"
-          width="100%"
-          height="100%"
-          aria-hidden="true"
-        >
-          <defs>
-            <pattern id="PID-h" width="6" height="10.4" patternUnits="userSpaceOnUse">
-              <path
-                d="M3 0l3 1.73v3.47L3 6.93 0 5.2V1.73z M3 6.93v3.47"
-                fill="none"
-                stroke="#8b8f98"
-                stroke-width="0.3"
-              />
-            </pattern>
-            <pattern id="PID-z" width="12" height="12" patternUnits="userSpaceOnUse">
-              <path
-                d="M6 1l1.5 3.5L11 6 7.5 7.5 6 11 4.5 7.5 1 6l3.5-1.5z"
-                fill="none"
-                stroke="#9fb8d6"
-                stroke-width="0.45"
-              />
-              <circle cx="6" cy="6" r="0.8" fill="#9fb8d6" />
-            </pattern>
-            <pattern id="PID-c" width="4" height="4" patternUnits="userSpaceOnUse">
-              <rect width="2" height="2" fill="#1a1d24" />
-              <rect x="2" y="2" width="2" height="2" fill="#1a1d24" />
-            </pattern>
-            <pattern id="PID-b" width="60" height="1.6" patternUnits="userSpaceOnUse">
-              <path d="M0 0.8h60" stroke="#e6c3a0" stroke-width="0.18" opacity="0.6" />
-            </pattern>
-          </defs>
-          <rect class="pat-h" width="60" height="84" fill="url(#PID-h)" />
-          <rect class="pat-z" width="60" height="84" fill="url(#PID-z)" />
-          <rect class="pat-c" width="60" height="84" fill="url(#PID-c)" />
-          <rect class="pat-b" width="60" height="84" fill="url(#PID-b)" />
-        </svg>
-        <div class="ovr"><bdi data-ovr-slot>73</bdi><small>OVR</small></div>
-        <div class="tier">PRO</div>
-        <div class="who" dir="auto" data-name-slot>Karim B.</div>
-        <div class="st">
-          <span><b>76</b><i>CAP</i></span
-          ><span><b>72</b><i>SEL</i></span
-          ><span><b>68</b><i>TRF</i></span
-          ><span><b>74</b><i>CON</i></span>
-        </div>
-        <div class="serial" dir="ltr">BOT #004821 · 2026/27</div>
-      </div>
-      <div class="beams"></div>
-      <div class="holo"></div>
-      <div class="glare"></div>
-    </template>
+    <p class="credits" data-i18n="credits">
+      Photos :
+      <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">Khalid Boutaïb</a>
+      par Антон Зайцев, CC BY-SA 3.0 ·
+      <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">Badr Benoun</a> par
+      Oussama 499, CC BY-SA 4.0 · Wikimedia Commons, recadrées. Esquisse interne, données d'exemple.
+    </p>
 
     <script>
       (function () {
@@ -1797,144 +1708,228 @@
         var lang = "fr",
           step = 1,
           plan = "season",
-          design = "zellige",
-          current = "ovr";
+          style = "holo";
         var TOTAL = 6;
+        var PHOTO = {
+          boutaib:
+            "data:image/webp;base64,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",
+          benoun:
+            "data:image/webp;base64,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",
+        };
+        var CARDS = {
+          me: {
+            ovr: 73,
+            name: "Karim B.",
+            stats: [76, 72, 68, 74],
+            photo: "boutaib",
+            cap: "K. Boutaïb · KACM",
+            serial: "004821",
+          },
+          sami: {
+            ovr: 70,
+            name: "Sami",
+            stats: [69, 74, 61, 70],
+            photo: "benoun",
+            cap: "B. Benoun · Raja",
+            serial: "011207",
+          },
+        };
 
-        /* ---------- Copy. French primary; Arabic is Modern Standard Arabic. ---------- */
+        /* ---------- Copy (FR primary; Arabic in Modern Standard Arabic) ---------- */
         var B = '<bdi dir="ltr">BotolaGO+</bdi>';
         var AR = {
-          "sb.note": "مسودة للموافقة. بيانات وأسعار توضيحية.",
+          "sb.note": "مسودة. بيانات وأسعار توضيحية.",
           "a.back": "رجوع",
           "a.close": "إغلاق",
           "a.skip": "عرض الأسعار",
           "a.next": "متابعة",
-          "s1.k": "جديد · " + B,
-          "s1.h": 'لبطاقتك قصة. <em class="shiny-word">عِشها كاملة.</em>',
-          "s1.p":
-            "كل جولة في الفانتازي تترك أثرًا. " +
-            B +
-            " يُريك إياه: إحصائياتك، مواجهاتك، وأجمل بطاقاتك.",
-          "s1.free":
-            "الفانتازي والتوقعات والجواهر تبقى مجانية للجميع. " + B + " لا يمنح أي نقطة إضافية.",
+          ex: "مثال",
+          "s1.h": 'بطاقتك. <span class="g">موسمك.</span>',
+          "s1.free": "<b>اللعب مجاني للجميع.</b> بلا نقاط إضافية.",
           "s1.cta": "اكتشف " + B,
-          "s2.k": "1 · مسيرتك",
-          "s2.h": "افهم أخيرًا لماذا يتغيّر تقييمك.",
+          "s2.h": "موسمك في لمحة.",
           "s2.since": "منذ الجولة 3",
-          "s2.ex": "مثال",
-          "s2.i1": "قائد موفَّق<small>الأفضل بين أساسييك</small>",
-          "s2.i2": "ما ربحته من انتقالاتك<small>على 3 جولات، بعد خصم العقوبات</small>",
-          "s2.i3": "أفضل جولة لك<small>الجولة 7 · القائد 14 نقطة</small>",
-          "s3.k": "2 · مواجهة+",
-          "s3.h": "أصدقاؤك يقولون إنهم الأفضل؟ تحقّق بنفسك.",
+          "s2.next": "CHAMPION عند 80",
+          "s2.weeks": "النقاط في كل جولة",
+          "s2.best": "الأفضل: الجولة 7",
+          "s3.h": "تحدَّ أصدقاءك.",
           "s3.you": "أنت",
           "s3.vs": "ضد",
-          "s3.lead": "أنت متقدّم، جولة بجولة",
-          "s3.priv": "مع أعضاء دورياتك الخاصة فقط. بيانات توضيحية.",
-          "s4.k": "3 · إصدارات",
-          "s4.h": "بطاقة تشبهك.",
-          "s4.rule": "<b>نفس التقييم، نفس المستوى.</b> الإصدار يغيّر شكل بطاقتك، لا أرقامك أبدًا.",
+          "s3.priv": "الدوريات الخاصة فقط · مثال",
+          "s4.h": "اختر أسلوبك.",
+          "s4.rule": "<b>نفس التقييم، نفس المستوى.</b>",
           "s4.cta": "عرض الباقات",
-          "ds.n": "عادي",
-          "ds.d": "التصميم المجاني الذي يملكه الجميع.",
-          "dz.n": "زليج",
-          "dz.d": "نقش نجوم يلمع حين تُميل البطاقة.",
-          "dn.n": "ليلة المباراة",
-          "dn.d": "خلفية داكنة وأضواء الملعب.",
-          "da.n": "الأطلس",
-          "da.d": "حجر رملي دافئ بلمسة مصقولة.",
-          "s5.k": "4 · باقتك",
-          "s5.h": "الموسم كله بـ199 درهمًا.",
+          "sty.holo": "هولو",
+          "sty.electric": "كهربائي",
+          "sty.pixel": "بكسل",
+          "sty.decay": "موجة",
+          "s5.h": "الموسم كله: 199&nbsp;درهمًا.",
           "p.best": "الأوفر",
-          "p.season": "بطاقة موسم 2026/27",
-          "p.seasonN": 'أي 20 درهمًا في الشهر · <span class="save">توفير 91 درهمًا</span>',
-          "p.once": "درهم، مرة واحدة",
+          "p.season": "بطاقة الموسم",
+          "p.seasonN": "−91 درهمًا",
+          "p.once": "درهم",
           "p.month": "شهري",
-          "p.monthN": "أقل من 7 دراهم في الأسبوع",
+          "p.monthN": "بدون التزام",
           "p.permonth": "درهم / شهر",
-          "s5.next": "ماذا يحدث بعد ذلك",
-          "s5.inc": "يشمل",
-          "inc.1": "مسيرتك كاملة",
-          "inc.2": "مواجهة+",
-          "inc.3": "كل الإصدارات",
-          "inc.4": "بدون إعلانات أبدًا",
-          "p.fine": "أسعار توضيحية، شاملة الضريبة، للموافقة.",
+          "p.fine": "أسعار توضيحية، شاملة الضريبة.",
           "p.restore": "استعادة عملية شراء",
-          "s5.cta.season": "انضمّ إلى " + B + " · 199 درهمًا",
-          "s5.cta.month": "انضمّ إلى " + B + " · 29 درهمًا",
-          "s5.r.season": "<b>بدون تجديد تلقائي.</b> اللعب يبقى مجانيًا للجميع.",
-          "s5.r.month": "<b>ألغِ متى شئت</b> بنقرتين من الملف الشخصي.",
+          "s5.cta.season": "انضمّ · 199 درهمًا",
+          "s5.cta.month": "انضمّ · 29 درهمًا",
+          "s5.r.season": "<b>بدون تجديد تلقائي.</b>",
+          "s5.r.month": "<b>يتجدد كل شهر.</b> ألغِ متى شئت.",
           "t.s1": "اليوم",
-          "t.s1d": "كل شيء مفتوح: مسيرتك، المواجهات، الإصدارات.",
-          "t.s2": "طوال الموسم",
-          "t.s2d": "تُحدَّث بطاقتك ومسيرتك بعد كل جولة.",
+          "t.s1d": "كل شيء مفتوح",
+          "t.s2": "كل جولة",
+          "t.s2d": "تحديث",
           "t.s3": "نهاية الموسم",
-          "t.s3d": "تنتهي البطاقة. لا خصم تلقائي، وتبقى إصداراتك محفوظة.",
+          "t.s3d": "ينتهي، بلا خصم",
           "t.m1": "اليوم",
-          "t.m1d": "29 درهمًا، وكل شيء مفتوح.",
-          "t.m2": "قبل 3 أيام من التجديد",
-          "t.m2d": "نذكّرك داخل التطبيق.",
-          "t.m3": "بعد 30 يومًا",
-          "t.m3d": "تجديد بـ29 درهمًا. ألغِ قبله وقتما شئت.",
-          "s6.h": "مرحبًا بك في " + B + ".",
-          "s6.p": "مسيرتك جاهزة، وإصدار زليج أصبح على بطاقتك.",
-          "s6.n1": "افتح مسيرتك<small>إحصائياتك منذ الجولة 3</small>",
-          "s6.n2": "ابدأ مواجهة<small>مع عضو من دورياتك</small>",
-          "s6.cta": "عرض مسيرتي",
-          "s6.cta2": "إدارة اشتراكي من الملف الشخصي",
+          "t.m1d": "29 درهمًا",
+          "t.m2": "قبل 3 أيام",
+          "t.m2d": "تذكير",
+          "t.m3": "اليوم 30",
+          "t.m3d": "تجديد",
+          "s6.h": "مرحبًا بك في النادي.",
+          "s6.cta": "عرض موسمي",
+          "s6.cta2": "إدارة اشتراكي",
+          credits:
+            'الصور: <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">خالد بوطيب</a> بعدسة Антон Зайцев، CC BY-SA 3.0 · <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">بدر بانون</a> بعدسة Oussama 499، CC BY-SA 4.0 · ويكيميديا كومنز، مقصوصة. مسودة داخلية، بيانات توضيحية.',
           "st.1": "1 · الجذب",
-          "st.2": "2 · مسيرتك",
-          "st.3": "3 · مواجهة+",
-          "st.4": "4 · إصدارات",
-          "st.5": "5 · الباقة والجدول الزمني",
+          "st.2": "2 · موسمك",
+          "st.3": "3 · التحدي",
+          "st.4": "4 · الأسلوب",
+          "st.5": "5 · الباقة",
           "st.6": "6 · الترحيب",
+          cap: "القائد",
         };
         var FR = {
-          "s5.cta.month": "Rejoindre BotolaGO+ · 29 MAD",
-          "s5.r.month": "<b>Annulez quand vous voulez</b>, en deux clics depuis Profil.",
-          "ds.d": "Le design gratuit, celui de tout le monde.",
-          "dn.d": "Fond carbone et projecteurs de stade.",
-          "da.d": "Grès chaud et reflets brossés.",
+          "s5.cta.month": "Rejoindre · 29 MAD",
+          "s5.r.month": "<b>Renouvelé chaque mois.</b> Annulable à tout moment.",
           "t.s1": "Aujourd'hui",
-          "t.s1d": "Tout est débloqué : carrière, face-à-face, éditions.",
-          "t.s2": "Toute la saison",
-          "t.s2d": "Votre carte et votre carrière se mettent à jour après chaque journée.",
+          "t.s1d": "Tout débloqué",
+          "t.s2": "Chaque journée",
+          "t.s2d": "Mise à jour",
           "t.s3": "Fin de saison",
-          "t.s3d":
-            "Le pass se termine. Aucun prélèvement automatique, vos éditions restent enregistrées.",
+          "t.s3d": "Fin, sans prélèvement",
           "t.m1": "Aujourd'hui",
-          "t.m1d": "29 MAD, tout est débloqué.",
-          "t.m2": "3 jours avant le renouvellement",
-          "t.m2d": "On vous prévient dans l'app.",
-          "t.m3": "Dans 30 jours",
-          "t.m3d": "Renouvellement à 29 MAD. Annulez avant, quand vous voulez.",
+          "t.m1d": "29 MAD",
+          "t.m2": "J-3",
+          "t.m2d": "Rappel",
+          "t.m3": "Jour 30",
+          "t.m3d": "Renouvellement",
           "st.1": "1 · Accroche",
-          "st.2": "2 · Votre carrière",
-          "st.3": "3 · Face-à-face+",
-          "st.4": "4 · Éditions",
-          "st.5": "5 · Formule et calendrier",
+          "st.2": "2 · Votre saison",
+          "st.3": "3 · Défi",
+          "st.4": "4 · Style",
+          "st.5": "5 · Formule",
           "st.6": "6 · Bienvenue",
           "a.back": "Retour",
           "a.close": "Fermer",
+          cap: "Capitaine",
         };
         function t(k) {
           return lang === "ar" ? (AR[k] != null ? AR[k] : FR[k]) : FR[k];
         }
+        var STYLE_NAMES = {
+          holo: "sty.holo",
+          electric: "sty.electric",
+          pixel: "sty.pixel",
+          decay: "sty.decay",
+        };
 
-        /* ---------- Cards ---------- */
+        /* ---------- Card markup ---------- */
+        function cardHTML(c) {
+          var codes = ["CAP", "SEL", "TRF", "CON"];
+          return (
+            '<div class="mc-face">' +
+            '<div class="mc-art"><img alt="' +
+            c.cap.split(" · ")[0] +
+            '" src="' +
+            PHOTO[c.photo] +
+            '"></div>' +
+            '<div class="mc-top"><bdi class="mc-ovr">' +
+            c.ovr +
+            '</bdi><span class="mc-ovrl">OVR</span><span class="mc-tier">PRO</span></div>' +
+            '<div class="mc-cap"><span class="c" aria-hidden="true">C</span><span><span data-cap-label>' +
+            t("cap") +
+            '</span> · <bdi dir="ltr">' +
+            c.cap +
+            "</bdi></span></div>" +
+            '<div class="mc-name" dir="auto">' +
+            c.name +
+            "</div>" +
+            '<div class="mc-stats">' +
+            c.stats
+              .map(function (v, i) {
+                return "<span><b>" + v + "</b><i>" + codes[i] + "</i></span>";
+              })
+              .join("") +
+            "</div>" +
+            '<div class="mc-serial" dir="ltr">BOT #' +
+            c.serial +
+            " · 2026/27</div>" +
+            "</div>" +
+            '<div class="fx fx-holo"></div><div class="fx fx-glare"></div>' +
+            '<canvas class="fx fx-pixel"></canvas>' +
+            '<svg class="fx fx-electric" viewBox="0 0 100 145" preserveAspectRatio="none" aria-hidden="true"><rect x="4" y="4" width="92" height="137" rx="11" fill="none" stroke="#5fe3a1" stroke-width="1.6" filter="url(#electricFx)"/><rect x="4" y="4" width="92" height="137" rx="11" fill="none" stroke="rgba(150,240,190,0.5)" stroke-width="3.5" filter="url(#electricFx)" style="opacity:.5"/></svg>'
+          );
+        }
         function fillCards() {
-          var tpl = document.getElementById("cardTpl").innerHTML;
-          document.querySelectorAll("[data-card]").forEach(function (el, i) {
-            el.innerHTML = tpl.replace(/PID/g, "p" + i);
-            if (el.dataset.name) el.querySelector("[data-name-slot]").textContent = el.dataset.name;
-            if (el.dataset.ovr) {
-              el.querySelector("[data-ovr-slot]").textContent = el.dataset.ovr;
-              var v = ["69", "74", "61", "70"]; // Sami's stats (example)
-              el.querySelectorAll(".st b").forEach(function (b, j) {
-                b.textContent = v[j];
+          document.querySelectorAll("[data-card]").forEach(function (el) {
+            el.innerHTML = cardHTML(CARDS[el.dataset.card]);
+          });
+        }
+
+        /* ---------- Pixel style (mimics React Bits <PixelCard />): pixels shimmer in from the centre ---------- */
+        var pixelRuns = new Map();
+        function startPixels(card) {
+          var cv = card.querySelector(".fx-pixel");
+          var r = card.getBoundingClientRect();
+          var dpr = Math.min(2, window.devicePixelRatio || 1);
+          cv.width = Math.round(r.width * dpr);
+          cv.height = Math.round(r.height * dpr);
+          var ctx = cv.getContext("2d"),
+            gap = Math.max(5, Math.round(r.width / 26)) * dpr;
+          var cols = ["#e0f2fe", "#7dd3fc", "#86efac"],
+            px = [];
+          var cx = cv.width / 2,
+            cy = cv.height / 2;
+          for (var x = 0; x < cv.width; x += gap)
+            for (var y = 0; y < cv.height; y += gap) {
+              px.push({
+                x: x,
+                y: y,
+                d: Math.hypot(x - cx, y - cy),
+                c: cols[(Math.random() * 3) | 0],
+                p: Math.random() * 6.28,
+                m: 0.4 + Math.random() * 0.6,
               });
             }
-          });
+          var maxD = Math.hypot(cx, cy),
+            t0 = performance.now();
+          function frame(now) {
+            var t = (now - t0) / 1000;
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            for (var i = 0; i < px.length; i++) {
+              var p = px[i];
+              var reveal = reduce ? 1 : Math.max(0, Math.min(1, t * 1.6 - p.d / maxD));
+              var tw = reduce ? 0.5 : 0.5 + 0.5 * Math.sin(p.p + t * 2.4);
+              var s = gap * 0.45 * reveal * p.m;
+              if (s <= 0.2) continue;
+              ctx.globalAlpha = (0.1 + 0.22 * tw) * reveal;
+              ctx.fillStyle = p.c;
+              ctx.fillRect(p.x + (gap - s) / 2, p.y + (gap - s) / 2, s, s);
+            }
+            if (!reduce && card.classList.contains("st-pixel") && card.isConnected)
+              pixelRuns.set(card, requestAnimationFrame(frame));
+          }
+          stopPixels(card);
+          pixelRuns.set(card, requestAnimationFrame(frame));
+        }
+        function stopPixels(card) {
+          var id = pixelRuns.get(card);
+          if (id) cancelAnimationFrame(id);
+          pixelRuns.delete(card);
         }
 
         /* ---------- Language ---------- */
@@ -1944,6 +1939,9 @@
             var k = n.getAttribute("data-i18n");
             if (!(k in FR)) FR[k] = n.innerHTML;
             n.innerHTML = t(k);
+          });
+          document.querySelectorAll("[data-cap-label]").forEach(function (n) {
+            n.textContent = t("cap");
           });
           document.querySelectorAll("[data-i18n-label]").forEach(function (n) {
             n.setAttribute("aria-label", t(n.getAttribute("data-i18n-label")));
@@ -1956,8 +1954,9 @@
           });
           renderStory();
           renderPlan();
-          setDesign(design, false);
-          drawChart(current, false);
+          setStyle(style, false);
+          drawCareer(false);
+          drawCmp(false);
         }
 
         /* ---------- Steps ---------- */
@@ -1992,9 +1991,8 @@
           to.scrollTop = 0;
           var dir = (n > prev ? 1 : -1) * (lang === "ar" ? -1 : 1);
           if (from && from !== to) {
-            if (reduce || !M) {
-              from.hidden = true;
-            } else {
+            if (reduce || !M) from.hidden = true;
+            else {
               M.animate(from, { opacity: [1, 0], x: [0, -40 * dir] }, { duration: 0.22 }).then(
                 function () {
                   from.hidden = true;
@@ -2012,8 +2010,7 @@
           document.querySelectorAll(".progress i").forEach(function (i, k) {
             i.style.setProperty("--f", k < n ? 1 : 0);
           });
-          var pb = document.getElementById("progress");
-          pb.setAttribute("aria-valuenow", n);
+          document.getElementById("progress").setAttribute("aria-valuenow", n);
           document.getElementById("backBtn").hidden = n === 1 || n === TOTAL;
           document.getElementById("skipBtn").hidden = n >= 5;
           renderStory();
@@ -2025,23 +2022,17 @@
         function onEnter(n) {
           var s = document.querySelector('.step[data-step="' + n + '"]');
           s.querySelectorAll("[data-count]").forEach(countUp);
-          if (n === 2) drawChart(current, true);
-          if (n === 3 && !reduce && M) {
-            M.animate(
-              "#strip i",
-              { opacity: [0, 1], scaleY: [0.2, 1] },
-              { delay: M.stagger(0.05, { startDelay: 0.15 }), duration: 0.3 },
-            );
-            M.animate(
-              ".s3 .fill",
-              { scaleX: [0, 1] },
-              {
-                delay: M.stagger(0.06, { startDelay: 0.3 }),
-                duration: 0.6,
-                ease: [0.16, 1, 0.3, 1],
-              },
-            );
+          if (n === 2) drawCareer(true);
+          if (n === 3) {
+            drawCmp(true);
+            if (!reduce && M)
+              M.animate(
+                "#strip i",
+                { opacity: [0, 1], scaleY: [0.2, 1] },
+                { delay: M.stagger(0.05, { startDelay: 0.15 }), duration: 0.3 },
+              );
           }
+          if (n === 4 && style === "pixel") startPixels(document.getElementById("styleCard"));
           if (n === 6 && !reduce && M) {
             M.animate(
               "#burst",
@@ -2049,7 +2040,7 @@
               { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
             );
             M.animate(
-              ".s6 .card-wrap",
+              ".s6 .mc-wrap",
               { y: [40, 0], rotateY: [-180, 0], opacity: [0, 1] },
               { type: "spring", stiffness: 120, damping: 14 },
             );
@@ -2073,143 +2064,221 @@
             write(to);
             return;
           }
-          M.animate(from, to, { duration: 0.9, ease: [0.16, 1, 0.3, 1], onUpdate: write });
+          M.animate(from, to, { duration: 1, ease: [0.16, 1, 0.3, 1], onUpdate: write });
         }
 
-        /* ---------- Chart (example data; provisional journées hollow) ---------- */
-        var DATA = {
-          ovr: [64, 66, 65, 68, 70, 69, 72, 71, 73, 72, 73],
-          cap: [58, 70, 40, 66, 74, 61, 88, 69, 80, 63, 76],
-          sel: [70, 66, 69, 71, 72, 70, 75, 73, 72, 71, 72],
-          trf: [50, 50, 55, 58, 61, 60, 63, 66, 70, 67, 68],
-          con: [60, 63, 62, 66, 68, 69, 71, 72, 73, 73, 74],
+        /* ---------- Step 2 visuals (example data) ---------- */
+        var SERIES = {
+          CAP: [58, 70, 40, 66, 74, 61, 88, 69, 80, 63, 76],
+          SEL: [70, 66, 69, 71, 72, 70, 75, 73, 72, 74, 72],
+          TRF: [50, 50, 55, 58, 61, 60, 63, 66, 70, 67, 68],
+          CON: [60, 63, 62, 66, 68, 69, 71, 72, 73, 73, 74],
         };
-        var W = 340,
-          PADX = 14,
-          TOP = 10,
-          BOT = 110,
-          LO = 30,
-          HI = 100;
-        function xy(i, v) {
-          var x = PADX + i * ((W - PADX * 2) / 10);
-          if (lang === "ar") x = W - x;
-          return [x, BOT - ((v - LO) / (HI - LO)) * (BOT - TOP)];
+        var WEEKS = [48, 55, 39, 52, 60, 44, 71, 50, 63, 46, 58];
+        var BEST = 6;
+        function arc(cx, cy, r, a0, a1) {
+          var p0 = [cx + r * Math.cos(a0), cy + r * Math.sin(a0)],
+            p1 = [cx + r * Math.cos(a1), cy + r * Math.sin(a1)];
+          var large = a1 - a0 > Math.PI ? 1 : 0;
+          return (
+            "M" +
+            p0[0].toFixed(2) +
+            " " +
+            p0[1].toFixed(2) +
+            " A" +
+            r +
+            " " +
+            r +
+            " 0 " +
+            large +
+            " 1 " +
+            p1[0].toFixed(2) +
+            " " +
+            p1[1].toFixed(2)
+          );
         }
-        function pathOf(a) {
-          return a
-            .map(function (v, i) {
-              var p = xy(i, v);
-              return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
-            })
-            .join(" ");
-        }
-        function drawChart(key, animate) {
-          var arr = DATA[key];
-          LO = Math.floor((Math.min.apply(null, arr) - 5) / 10) * 10;
-          HI = Math.ceil((Math.max.apply(null, arr) + 5) / 10) * 10;
-          var g = document.getElementById("gridlines");
-          g.innerHTML = "";
-          for (var gv = LO + 10; gv < HI; gv += 10) {
-            var gy = xy(0, gv)[1];
-            g.insertAdjacentHTML(
+        function drawCareer(animate) {
+          var A0 = Math.PI * 0.75,
+            A1 = Math.PI * 2.25,
+            val = 73;
+          // The gauge fills in the reading direction: mirror it in Arabic.
+          var svg = document.querySelector(".gauge svg");
+          svg.style.transform = lang === "ar" ? "scaleX(-1)" : "";
+          document.getElementById("gTrack").setAttribute("d", arc(60, 56, 44, A0, A1));
+          var fill = document.getElementById("gFill");
+          fill.setAttribute("d", arc(60, 56, 44, A0, A0 + (A1 - A0) * (val / 99)));
+          var ticks = document.getElementById("gTicks");
+          ticks.innerHTML = "";
+          [50, 65, 80, 90].forEach(function (tv) {
+            var a = A0 + (A1 - A0) * (tv / 99),
+              c = Math.cos(a),
+              s = Math.sin(a);
+            ticks.insertAdjacentHTML(
               "beforeend",
-              '<line x1="0" x2="' +
-                W +
+              '<line x1="' +
+                (60 + 36 * c) +
                 '" y1="' +
-                gy +
+                (56 + 36 * s) +
+                '" x2="' +
+                (60 + 31 * c) +
                 '" y2="' +
-                gy +
-                '"/><text x="' +
-                (lang === "ar" ? W - 2 : 2) +
-                '" y="' +
-                (gy - 3) +
-                '" font-size="9" fill="var(--ui-on-surface-faint)" stroke="none" text-anchor="' +
-                (lang === "ar" ? "end" : "start") +
-                '">' +
-                gv +
-                "</text>",
+                (56 + 31 * s) +
+                '" stroke="var(--ui-on-surface-faint)" stroke-width="1.6" stroke-linecap="round"/>',
             );
-          }
-          var d = pathOf(arr),
-            line = document.getElementById("line");
-          line.setAttribute("d", d);
-          var f = xy(0, arr[0]),
-            l = xy(arr.length - 1, arr[arr.length - 1]);
-          document
-            .getElementById("area")
-            .setAttribute("d", d + " L" + l[0] + " " + BOT + " L" + f[0] + " " + BOT + " Z");
-          var dots = document.getElementById("dots");
-          dots.innerHTML = "";
-          arr.forEach(function (v, i) {
-            var p = xy(i, v),
-              prov = i >= arr.length - 2;
-            dots.insertAdjacentHTML(
+          });
+          // Stat tiles: value this week, change vs last week, sparkline.
+          var tiles = document.getElementById("tiles");
+          tiles.innerHTML = "";
+          Object.keys(SERIES).forEach(function (k) {
+            var a = SERIES[k],
+              v = a[a.length - 1],
+              d = v - a[a.length - 2];
+            var lo = Math.min.apply(null, a) - 4,
+              hi = Math.max.apply(null, a) + 4;
+            var pts = a.map(function (y, i) {
+              var x = 2 + i * (96 / 10);
+              if (lang === "ar") x = 100 - x;
+              return x.toFixed(1) + "," + (28 - ((y - lo) / (hi - lo)) * 24).toFixed(1);
+            });
+            var last = pts[pts.length - 1].split(",");
+            tiles.insertAdjacentHTML(
               "beforeend",
-              '<circle cx="' +
-                p[0] +
+              '<div class="tile"><div class="row"><span class="code">' +
+                k +
+                '</span><span class="d ' +
+                (d >= 0 ? "up" : "dn") +
+                '"><bdi dir="ltr">' +
+                (d >= 0 ? "▲ +" : "▼ ") +
+                d +
+                "</bdi></span></div>" +
+                '<div class="v">' +
+                v +
+                "</div>" +
+                '<svg viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline class="spark" points="' +
+                pts.join(" ") +
+                '" fill="none" stroke="var(--ui-ink-fg)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/><circle cx="' +
+                last[0] +
                 '" cy="' +
-                p[1] +
-                '" r="3.6" fill="' +
-                (prov ? "var(--ui-surface)" : "var(--ui-ink-fg)") +
-                '" stroke="var(--ui-ink-fg)" stroke-width="2"/>',
+                last[1] +
+                '" r="2.4" fill="var(--ui-accent-spring)"/></svg></div>',
             );
           });
-          var xl = document.getElementById("xlabels");
-          xl.innerHTML = "";
-          [0, 5, 10].forEach(function (i) {
-            var p = xy(i, LO);
-            xl.insertAdjacentHTML(
+          // Points per journée, best highlighted with the captain's photo.
+          var bars = document.getElementById("bars");
+          bars.innerHTML = "";
+          var max = Math.max.apply(null, WEEKS);
+          WEEKS.forEach(function (w, i) {
+            bars.insertAdjacentHTML(
               "beforeend",
-              '<text x="' + p[0] + '" y="126" text-anchor="middle">J.' + (i + 3) + "</text>",
+              '<i class="' +
+                (i === BEST ? "best" : "") +
+                '" style="height:' +
+                Math.round((w / max) * 100) +
+                '%"></i>',
             );
           });
-          document.getElementById("chart").setAttribute("aria-label", key.toUpperCase());
+          var pos = ((BEST + 0.5) / WEEKS.length) * 100;
+          bars.insertAdjacentHTML(
+            "beforeend",
+            '<span class="best-flag" style="inset-inline-start:' +
+              pos +
+              '%"><img alt="" src="' +
+              PHOTO.boutaib +
+              '"><bdi dir="ltr">71</bdi></span>',
+          );
           if (animate && !reduce && M && step === 2) {
-            var len = line.getTotalLength();
-            line.style.strokeDasharray = len;
-            line.style.strokeDashoffset = len;
+            // Draw-in through pathLength (a Motion strokeDashoffset tween left the arc blank in Chromium).
+            fill.setAttribute("pathLength", "100");
+            fill.style.strokeDasharray = "100";
+            fill.style.strokeDashoffset = "100";
+            M.animate(0, 1, {
+              duration: 1,
+              ease: [0.16, 1, 0.3, 1],
+              onUpdate: function (v) {
+                fill.style.strokeDashoffset = String(100 * (1 - v));
+              },
+            });
+            var hidden = lang === "ar" ? "inset(0 0 0 100%)" : "inset(0 100% 0 0)";
+            document.querySelectorAll(".tile svg").forEach(function (sv) {
+              M.animate(
+                sv,
+                { clipPath: [hidden, "inset(0 0 0 0)"] },
+                { duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] },
+              );
+            });
             M.animate(
-              line,
-              { strokeDashoffset: [len, 0] },
-              { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+              "#bars i",
+              { scaleY: [0, 1] },
+              {
+                delay: M.stagger(0.04, { startDelay: 0.25 }),
+                duration: 0.45,
+                ease: [0.16, 1, 0.3, 1],
+              },
             );
-            M.animate(
-              "#dots circle",
-              { opacity: [0, 1] },
-              { delay: M.stagger(0.04, { startDelay: 0.3 }), duration: 0.25 },
-            );
-          } else {
-            line.style.strokeDasharray = "";
-            line.style.strokeDashoffset = "";
+            M.animate(".best-flag", { opacity: [0, 1], y: [8, 0] }, { delay: 0.8, duration: 0.4 });
           }
         }
-
-        /* ---------- Designs ---------- */
-        var DESIGN_KEYS = { standard: "ds", zellige: "dz", nuit: "dn", atlas: "da" };
-        function setDesign(d, animate) {
-          design = d;
-          var card = document.getElementById("designCard");
-          card.className = "card d-" + d + (d === "standard" ? "" : " holo-on");
-          var k = DESIGN_KEYS[d];
-          var n = document.getElementById("designName"),
-            ds = document.getElementById("designDesc");
-          n.setAttribute("data-i18n", k + ".n");
-          ds.setAttribute("data-i18n", k + ".d");
-          if (!(k + ".d" in FR)) FR[k + ".d"] = ds.innerHTML;
-          n.innerHTML = t(k + ".n");
-          ds.innerHTML = t(k + ".d");
-          document.querySelectorAll("[data-design]").forEach(function (b) {
-            b.setAttribute("aria-pressed", String(b.dataset.design === d));
-          });
+        function drawCmp(animate) {
+          var me = CARDS.me.stats,
+            them = CARDS.sami.stats,
+            codes = ["CAP", "SEL", "TRF", "CON"];
+          var el = document.getElementById("cmp");
+          el.innerHTML = codes
+            .map(function (c, i) {
+              return (
+                '<div class="cmp-row"><b' +
+                (me[i] > them[i] ? ' style="color:var(--ui-positive)"' : "") +
+                ">" +
+                me[i] +
+                '</b><span class="tl"><span class="fill" style="width:' +
+                me[i] +
+                '%"></span></span><span class="code">' +
+                c +
+                '</span><span class="tr"><span class="fill" style="width:' +
+                them[i] +
+                '%"></span></span><b>' +
+                them[i] +
+                "</b></div>"
+              );
+            })
+            .join("");
           if (animate && !reduce && M)
             M.animate(
-              card,
-              { opacity: [0.2, 1], scale: [0.94, 1] },
-              { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+              "#cmp .fill",
+              { scaleX: [0, 1] },
+              {
+                delay: M.stagger(0.06, { startDelay: 0.3 }),
+                duration: 0.6,
+                ease: [0.16, 1, 0.3, 1],
+              },
             );
         }
 
-        /* ---------- Plans and timeline ---------- */
+        /* ---------- Styles ---------- */
+        function setStyle(s, animate) {
+          style = s;
+          ["styleCard"].forEach(function (id) {
+            var card = document.getElementById(id);
+            card.className = "mc st-" + s;
+            if (s === "pixel" && step === 4) startPixels(card);
+            else stopPixels(card);
+            if (animate && !reduce && M)
+              M.animate(
+                card,
+                { opacity: [0.3, 1], scale: [0.94, 1] },
+                { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+              );
+          });
+          // The chosen style follows the member to the welcome screen.
+          document.getElementById("welcomeCard").className = "mc st-" + s;
+          var nm = document.getElementById("styleName");
+          nm.innerHTML = t(STYLE_NAMES[s]);
+          document.querySelectorAll("[data-style]").forEach(function (b) {
+            b.setAttribute("aria-pressed", String(b.dataset.style === s));
+          });
+        }
+
+        /* ---------- Plans ---------- */
         function renderPlan() {
           document.querySelectorAll("[data-plan]").forEach(function (b) {
             b.setAttribute("aria-checked", String(b.dataset.plan === plan));
@@ -2226,13 +2295,20 @@
             rk = plan === "season" ? "s5.r.season" : "s5.r.month";
           buy.setAttribute("data-i18n", bk);
           re.setAttribute("data-i18n", rk);
+          if (!(bk in FR)) FR[bk] = buy.innerHTML;
+          if (!(rk in FR)) FR[rk] = re.innerHTML;
           buy.innerHTML = t(bk);
           re.innerHTML = t(rk);
         }
 
-        /* ---------- Ambient effects ---------- */
+        /* ---------- Ambient ---------- */
         function initAmbient() {
-          if (reduce || !M) return;
+          if (reduce || !M) {
+            try {
+              document.querySelector("svg").pauseAnimations();
+            } catch (e) {}
+            return;
+          }
           var paths = [
             [
               [0, 0],
@@ -2268,13 +2344,11 @@
               { duration: 16 + i * 3, repeat: Infinity, ease: "easeInOut" },
             );
           });
-          // Mimics React Bits <ShinyText />.
           M.animate(
             "#shiny",
             { backgroundPosition: ["100% 0", "0% 0"] },
             { duration: 1.6, delay: 1, repeat: Infinity, repeatDelay: 4.4, ease: "easeInOut" },
           );
-          // Star border light travelling round the chosen plan.
           M.animate(0, 100, {
             duration: 3.2,
             repeat: Infinity,
@@ -2284,19 +2358,29 @@
               if (p) p.style.setProperty("--sx", (lang === "ar" ? 100 - v : v) + "%");
             },
           });
-          // Hook entrance (mimics React Bits <BlurText />, without animating blur).
           M.animate(
             ".s1 .body > *",
             { opacity: [0, 1], y: [14, 0] },
-            { duration: 0.6, delay: M.stagger(0.07), ease: [0.16, 1, 0.3, 1] },
+            { duration: 0.6, delay: M.stagger(0.08), ease: [0.16, 1, 0.3, 1] },
           );
+          // Decay: the displacement breathes slowly (and follows the pointer below).
+          var map = document.getElementById("decayMap");
+          M.animate(0, 1, {
+            duration: 4,
+            repeat: Infinity,
+            repeatType: "mirror",
+            ease: "easeInOut",
+            onUpdate: function (v) {
+              map.setAttribute("scale", (10 + v * 22).toFixed(1));
+            },
+          });
         }
 
-        /* ---------- Holographic tilt (mimics React Bits <ProfileCard /> / <TiltedCard />) ---------- */
+        /* ---------- Tilt (mimics React Bits <TiltedCard /> / <ProfileCard /> pointer light) ---------- */
         function initTilt() {
           if (reduce || !M) return;
           document.querySelectorAll("[data-tilt]").forEach(function (wrap) {
-            var card = wrap.querySelector(".card"),
+            var card = wrap.querySelector(".mc"),
               active = false;
             function set(rx, ry, px, py) {
               M.animate(
@@ -2312,7 +2396,11 @@
               var r = wrap.getBoundingClientRect();
               var nx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
                 ny = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-              set((0.5 - ny) * 18, (nx - 0.5) * 22, nx * 100, ny * 100);
+              set((0.5 - ny) * 16, (nx - 0.5) * 20, nx * 100, ny * 100);
+              if (card.classList.contains("st-decay"))
+                document
+                  .getElementById("decayTurb")
+                  .setAttribute("baseFrequency", (0.008 + nx * 0.012).toFixed(4));
             });
             wrap.addEventListener("pointerleave", function () {
               active = false;
@@ -2327,7 +2415,7 @@
               onUpdate: function (v) {
                 if (active) return;
                 card.style.transform =
-                  "rotateY(" + (v - 0.5) * 16 + "deg) rotateX(" + (0.5 - v) * 5 + "deg)";
+                  "rotateY(" + (v - 0.5) * 14 + "deg) rotateX(" + (0.5 - v) * 4 + "deg)";
                 card.style.setProperty("--px", 20 + v * 60 + "%");
               },
             });
@@ -2362,18 +2450,9 @@
             applyLang(lang === "fr" ? "ar" : "fr");
           });
         });
-        document.querySelectorAll("[data-stat]").forEach(function (b) {
+        document.querySelectorAll("[data-style]").forEach(function (b) {
           b.addEventListener("click", function () {
-            document.querySelectorAll("[data-stat]").forEach(function (o) {
-              o.setAttribute("aria-pressed", String(o === b));
-            });
-            current = b.dataset.stat;
-            drawChart(current, true);
-          });
-        });
-        document.querySelectorAll("[data-design]").forEach(function (b) {
-          b.addEventListener("click", function () {
-            setDesign(b.dataset.design, true);
+            setStyle(b.dataset.style, true);
           });
         });
         document.querySelectorAll("[data-plan]").forEach(function (b) {
@@ -2383,14 +2462,12 @@
           });
         });
         document.addEventListener("keydown", function (e) {
-          if (e.target.closest && e.target.closest("input,textarea")) return;
           var fwd = lang === "ar" ? "ArrowLeft" : "ArrowRight",
             bwd = lang === "ar" ? "ArrowRight" : "ArrowLeft";
-          if (e.key === fwd) go(step + 1);
+          if (e.key === fwd && step < 5) go(step + 1);
           else if (e.key === bwd) go(step - 1);
           else if (e.key === "Escape") go(1);
         });
-        // Swipe between steps (horizontal only; vertical scrolls the step).
         (function () {
           var sx = null,
             sy = null,
@@ -2417,15 +2494,18 @@
         })();
 
         var q = new URLSearchParams(location.search);
+        var s0 = q.get("style");
+        if (s0 && STYLE_NAMES[s0]) style = s0;
         renderPlan();
-        setDesign("zellige", false);
-        drawChart("ovr", false);
+        setStyle(style, false);
+        drawCareer(false);
+        drawCmp(false);
         renderStory();
         if (q.get("lang") === "ar") applyLang("ar");
         initAmbient();
         initTilt();
-        var s0 = +q.get("step") || 1;
-        if (s0 !== 1) go(s0);
+        var st = +q.get("step") || 1;
+        if (st !== 1) go(st);
         else go(1, { force: true });
       })();
     </script>
