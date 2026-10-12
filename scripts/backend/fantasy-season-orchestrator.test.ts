@@ -1,14 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { CurrentPerformanceError, type IncompleteFixture } from "./current-season-performances";
 import {
+  ADAPTIVE_SELECTION_GRACE_HOURS,
   assessCoverage,
   assessScoring,
   calendarSyncSchema,
+  CORE_DATA_WINDOW_HOURS,
   deadlineWatchSchema,
+  FULL_STATS_WINDOW_DAYS,
   mergeVerdict,
   orchestrateFantasySeason,
   orchestratorEnvironment,
   parseFootballDataSource,
+  PROVISIONAL_POINTS_OUTCOME,
   renderHealthSummary,
   selectWorkerTargets,
   shouldFailRun,
@@ -1621,5 +1625,94 @@ describe("football data source", () => {
       dataSource: "sofascore",
     });
     expect(summary.verdict).toBe("escalate");
+  });
+});
+
+// Two-stage statistics (migration 20261013140000): SofaScore publishes core
+// data at once and full statistics 5 to 16 days later. Provisional points
+// count as points, so a gameweek the worker published core points for is not
+// late for waiting on the rest.
+describe("two-stage statistics: provisional points are not late", () => {
+  const run = (outcome: string, code: string) => ({
+    gameweekId: id(101),
+    sequence: 1,
+    reason: "in_progress" as const,
+    calculationVersion: 1,
+    outcome,
+    code,
+  });
+  const windows = (endsAt: string) => ({
+    items: [{ id: id(101), sequence: 1, status: "provisional" as const, endsAt }],
+  });
+  const at = (hoursAfterEnd: number) =>
+    new Date(Date.parse("2026-09-28T00:00:00Z") + hoursAfterEnd * 3_600_000);
+
+  test("the constants mirror the database's named constants", () => {
+    expect(CORE_DATA_WINDOW_HOURS).toBe(12);
+    expect(FULL_STATS_WINDOW_DAYS).toBe(21);
+    expect(ADAPTIVE_SELECTION_GRACE_HOURS).toBe(CORE_DATA_WINDOW_HOURS);
+    expect(PROVISIONAL_POINTS_OUTCOME).toBe("points_published");
+  });
+
+  test("provisional core points published: not overdue however long the full statistics take, up to 21 days", () => {
+    const published = [run("points_published", "remaining_fixtures_pending")];
+    for (const hours of [3, 19, 24 * 5, 24 * 16, 24 * 21 - 1]) {
+      const [gap] = assessScoring(
+        windows("2026-09-28T00:00:00+00:00"),
+        published,
+        at(hours),
+        6,
+        ADAPTIVE_SELECTION_GRACE_HOURS,
+      );
+      expect(gap).toMatchObject({ sequence: 1, overdue: false, provisional: true });
+    }
+  });
+
+  test("at 21 days the exemption ends, as the database's final-limited failure does", () => {
+    const [gap] = assessScoring(
+      windows("2026-09-28T00:00:00+00:00"),
+      [run("points_published", "remaining_fixtures_pending")],
+      at(24 * 21),
+      6,
+      ADAPTIVE_SELECTION_GRACE_HOURS,
+    );
+    expect(gap).toMatchObject({ overdue: true });
+    expect(gap).not.toHaveProperty("provisional");
+  });
+
+  test("a wait with no points published still escalates after 6 h + 12 h, and a failed worker is not exempt", () => {
+    for (const published of [
+      run("waiting", "adaptive_scoring_pending"),
+      run("waiting", "football_not_final"),
+      run("failed", "fantasy_worker_failed"),
+    ]) {
+      const [early] = assessScoring(
+        windows("2026-09-28T00:00:00+00:00"),
+        [published],
+        at(8),
+        6,
+        ADAPTIVE_SELECTION_GRACE_HOURS,
+      );
+      const [late] = assessScoring(
+        windows("2026-09-28T00:00:00+00:00"),
+        [published],
+        at(19),
+        6,
+        ADAPTIVE_SELECTION_GRACE_HOURS,
+      );
+      expect(early?.overdue).toBe(published.code === "adaptive_scoring_pending" ? false : true);
+      expect(late?.overdue).toBe(true);
+      expect(late).not.toHaveProperty("provisional");
+    }
+  });
+
+  test("an unreadable window end is overdue even with points published", () => {
+    const [gap] = assessScoring(
+      windows("not a time"),
+      [run("points_published", "remaining_fixtures_pending")],
+      at(1),
+      6,
+    );
+    expect(gap).toMatchObject({ hoursSinceWindowEnd: null, overdue: true });
   });
 });

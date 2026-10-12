@@ -55,6 +55,12 @@ import {
  *      and is still not finalized escalates, whatever the worker said. A
  *      gameweek can wait on `football_not_final` forever with every match
  *      certified; the worker alone would call that `waiting` on every pass.
+ *      One exception (two-stage statistics, migration 20261013140000): when
+ *      the worker published provisional core points this pass
+ *      (`points_published`), the gameweek is waiting for full statistics,
+ *      which never block it, so it is not late for that until
+ *      `FULL_STATS_WINDOW_DAYS`. A match with no core data is the database's
+ *      `fantasy_fixture_coverage` failure, 12 h after full time.
  *      Windows that cannot be read leave the pass `waiting`; the watchdog's
  *      `fantasy_points` row reads them on its own.
  *   6. `api.service_fantasy_deadline_watch` — a read-only guard that reports
@@ -231,14 +237,28 @@ export function skipsSportsMonks(source: FootballDataSource | undefined): boolea
 }
 
 /**
- * Hours an adaptive gameweek may wait past its normal allowance. Adaptive
- * scoring selects each fixture's mode 12 h after the final whistle
- * (api.service_select_fantasy_scoring_modes), so final points cannot arrive
- * sooner; escalating at the SportsMonks-era 6 h would page for a wait that is
- * by design. Applied only when the worker names an adaptive wait and the
- * source is not SportsMonks.
+ * The two stages SofaScore publishes Botola statistics in (migration
+ * 20261013140000). CORE data (minutes, goals, cards) is what scoring needs and
+ * is expected within `CORE_DATA_WINDOW_HOURS` of full time; FULL statistics
+ * (rating, passes, saves, assists...) arrive 5 to 16 days later and never
+ * block points or progression. These mirror the database constants
+ * app_private.fantasy_core_data_window() (12 h) and
+ * app_private.fantasy_full_stats_window() (21 days): change them together.
  */
-export const ADAPTIVE_SELECTION_GRACE_HOURS = 12;
+export const CORE_DATA_WINDOW_HOURS = 12;
+export const FULL_STATS_WINDOW_DAYS = 21;
+/** The worker outcome that means provisional core points are published. */
+export const PROVISIONAL_POINTS_OUTCOME = "points_published";
+
+/**
+ * Hours an adaptive gameweek may wait past its normal allowance. Adaptive
+ * scoring selects each fixture's mode `CORE_DATA_WINDOW_HOURS` after the final
+ * whistle (api.service_select_fantasy_scoring_modes), so final points cannot
+ * arrive sooner; escalating at the SportsMonks-era 6 h would page for a wait
+ * that is by design. Applied only when the worker names an adaptive wait and
+ * the source is not SportsMonks.
+ */
+export const ADAPTIVE_SELECTION_GRACE_HOURS = CORE_DATA_WINDOW_HOURS;
 const ADAPTIVE_WAIT_CODES: readonly string[] = [
   "adaptive_scoring_pending",
   "remaining_fixtures_pending",
@@ -318,6 +338,14 @@ export type ScoringGap = {
   overdue: boolean;
   /** Why the worker waited on it in this pass, when it ran for it. */
   workerCode?: string;
+  /**
+   * The worker published provisional core points for it in this pass
+   * (`points_published`): provisional points count as points, so the gameweek
+   * is not late for being provisional, until `FULL_STATS_WINDOW_DAYS` after its
+   * window ended (the database's `fantasy_fixture_coverage` fails a match still
+   * without full statistics at the same age).
+   */
+  provisional?: true;
 };
 
 /**
@@ -346,7 +374,17 @@ export function assessScoring(
       const hours = Number.isNaN(end)
         ? null
         : Math.round(((now.getTime() - end) / 3_600_000) * 10) / 10;
-      const workerCode = workers.find((run) => run.gameweekId === gw.id)?.code;
+      const run = workers.find((candidate) => candidate.gameweekId === gw.id);
+      const workerCode = run?.code;
+      // Provisional points count as points. A gameweek the worker has just
+      // published core points for is waiting for full statistics, which never
+      // block it: not late, until the full statistics window is over. A match
+      // with no core data at all is the database's `fantasy_fixture_coverage`
+      // failure (12 h after full time), which pages on its own.
+      const provisional =
+        run?.outcome === PROVISIONAL_POINTS_OUTCOME &&
+        hours !== null &&
+        hours < FULL_STATS_WINDOW_DAYS * 24;
       return {
         gameweekId: gw.id,
         sequence: gw.sequence,
@@ -354,11 +392,13 @@ export function assessScoring(
         windowEndsAt: gw.endsAt,
         hoursSinceWindowEnd: hours,
         overdue:
-          hours === null ||
-          hours >=
-            escalateHours +
-              (workerCode && ADAPTIVE_WAIT_CODES.includes(workerCode) ? adaptiveGraceHours : 0),
+          !provisional &&
+          (hours === null ||
+            hours >=
+              escalateHours +
+                (workerCode && ADAPTIVE_WAIT_CODES.includes(workerCode) ? adaptiveGraceHours : 0)),
         ...(workerCode ? { workerCode } : {}),
+        ...(provisional ? { provisional: true as const } : {}),
       };
     })
     .filter((gap) => gap.hoursSinceWindowEnd === null || gap.hoursSinceWindowEnd >= 0)
@@ -762,7 +802,7 @@ function renderScoring(scoring: OrchestratorSummary["scoring"]): string {
         gap.hoursSinceWindowEnd === null
           ? "window end unreadable"
           : `window ended ${gap.hoursSinceWindowEnd} h ago`
-      }`,
+      }${gap.provisional ? ", provisional core points published (not late)" : ""}`,
   );
   return `${scoring.gameweeks.length} gameweek(s), ${overdue} past ${scoring.escalateHours} h: ${listed.join("; ")}`;
 }
