@@ -118,6 +118,17 @@ overridden, retries dedupe by digest):
   and goals conceded and the clean sheet come from the incidents, so they do not
   depend on who is in the rows. An unknown scorer, assister, carded player or
   starter still holds the match.
+
+  Since migration `20261013150000` the auto-mapping decides by side, shirt number
+  and position, never by name, and links only after the same pairing is seen in
+  two matches. So a player the app does know, but whom the matcher has seen once,
+  is queued as `awaiting_second_match` (not `no_candidate`) and **holds** the
+  match, starter or substitute, until a second match links him or staff confirm
+  the pre-filled candidate. `no_candidate` (nobody in the squad wears that number)
+  is still the only reason that lets a substitute with nothing at stake be left
+  out; a player with no shirt number (`no_shirt`) is never left out. When a link
+  is made, the club's held matches are tried again on the next tick.
+
 - **Goals** come from incidents, never lineup statistics (they undercount). Each
   side's goal incidents must equal the final score.
 - **Minutes, clean sheet, goals conceded**: from substitution and dismissal
