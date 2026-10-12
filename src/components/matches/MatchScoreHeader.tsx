@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
 import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
+import { liveMinuteLabel } from "@/lib/live-minute";
 import { BallIcon } from "./BallIcon";
 import { FlipScore } from "./FlipScore";
 import { GOAL_EVENT_TYPES } from "./goal-moment";
@@ -188,7 +189,14 @@ export function MatchScoreHeader({
 
           {isLive ? (
             <>
-              <UiLivePill size="md" minute={liveMinute} />
+              <UiLivePill
+                size="md"
+                minute={liveMinuteLabel({
+                  minute: liveMinute,
+                  period: match.period,
+                  addedTime: match.addedTime,
+                })}
+              />
               {/* The page refreshes itself while live; said once, quietly. */}
               <span className="sr-only">{t("matches.detail.live_updating")}</span>
             </>
