@@ -56,10 +56,16 @@ Lovable reported 24 guest/public browser states across French/Arabic and desktop
 
 The brief was committed on `copy/french-prix-natural-wording` before the UI-source commit. This branch carries only the reviewed copy, related existing expectations and documentation. Unrelated environment updates to dependencies and the Lovable MCP manifest were excluded.
 
-No authenticated admin or signed-in Fantasy browser journey was performed. Demo source copy changed; its generated standalone bundle still needs the normal demo build before those edits appear there. Database-authored prize names, provider/news content, and operational batch « lot » labels were left as data or batch terminology. The full repository suite was not run in this session; GitHub CI can validate the feature branch under the repository's pinned dependencies.
+No authenticated admin or signed-in Fantasy browser journey was performed. Demo source and its checked-in public HTML now use the same reviewed French copy. Database-authored prize names, provider/news content, and operational batch « lot » labels were left as data or batch terminology. The full repository suite was not run in this session; GitHub CI can validate the feature branch under the repository's pinned dependencies.
 
 GitHub main was unchanged at `53749aa8da68d2bfc7123ea7cfad35356856cbc7` when the source was prepared. Nothing was merged or published. The owner reviews the draft PR before merge/publication, as required by AGENTS.md.
 
 ## Full CI review after owner approval
 
 The initial full application CI found nine outdated literal French wording expectations (8,368 passed, nine failed). Those expectations were updated to the reviewed copy without removing assertions, including the unchanged squad rules, 60-minute scoring threshold, standings columns, tier text, leave prompt, percentiles and prize navigation. No production code changes were needed. Current main `0ed71e90` was incorporated with a forward merge; its seven changed files did not overlap the copy scope. Final full CI results must be checked before merge/publication.
+
+## Final generated-demo review
+
+Updated `public/demo/app.html` and `public/demo/index.html` to mirror all ten reviewed French source-copy substitutions. This is a targeted synchronization of the existing inline build: embedded fonts, imagery, styles and executable logic are preserved. A fresh Vite demo rebuild was not performed. All obsolete reviewed strings are absent in the generated pages. All three inline JavaScript blocks passed `node --check` locally. Both artifacts are included for deployment, so the demo no longer waits for a separate build to receive this wording.
+
+The brief warning was independently checked: `5d999ea3` adds only the brief and is the sole parent of the first UI-source commit `9c45c8f5`. The pre-edit checkpoint therefore exists without rewriting history. The original final application/database CI was green on `899fe9cc`; CI is rerun for this artifact synchronization before merge/publication.
