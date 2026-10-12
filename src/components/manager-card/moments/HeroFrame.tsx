@@ -125,12 +125,15 @@ export function HeroCard({
   profile,
   beat,
   burst = null,
+  back,
 }: {
   profile: CardProfile;
   beat: BeatName | undefined;
   burst?: TierCode | null;
+  /** The card's back for the ceremony's spin (see `TierCeremonyCard`). */
+  back?: ReactNode;
 }) {
-  if (burst) return <TierCeremonyCard profile={profile} beat={beat} tier={burst} />;
+  if (burst) return <TierCeremonyCard profile={profile} beat={beat} tier={burst} back={back} />;
   return (
     <div className="flex justify-center px-4 pb-[18px] pt-2" data-hero-card="">
       <div className="relative isolate max-w-full">

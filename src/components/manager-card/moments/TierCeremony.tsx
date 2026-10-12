@@ -1,10 +1,18 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
-import { CardBack } from "@/components/curva/CardBack";
 import { useI18n } from "@/i18n/provider";
 import { prefersReducedMotion } from "@/lib/motion";
 
 import { ManagerCard } from "../ManagerCard";
+import { cardOutline } from "../motion/outline";
 import { CardGlint, type GlintHandle } from "../motion/CardGlint";
 import { TierWord } from "../tier-word";
 import type { BeatName, CardProfile, TierCode } from "../types";
@@ -50,10 +58,13 @@ export function TierCeremonyCard({
   profile,
   beat,
   tier,
+  back,
 }: {
   profile: CardProfile;
   beat: BeatName | undefined;
   tier: TierCode;
+  /** The card's back, which the spin shows halfway (Curva passes `CardBack`); a plain plate when absent. */
+  back?: ReactNode;
 }) {
   const spec = useMemo(() => burstSpec(tier), [tier]);
   const renderer = useCardRenderer();
@@ -242,7 +253,12 @@ export function TierCeremonyCard({
                 className="absolute inset-0 [backface-visibility:hidden]"
                 style={{ transform: "rotateY(180deg) translateZ(1px)" }}
               >
-                <CardBack profile={profile} />
+                {back ?? (
+                  <div
+                    className="h-full w-full"
+                    style={{ backgroundColor: palette.plate, clipPath: cardOutline(rtl) }}
+                  />
+                )}
               </div>
             ) : null}
           </div>
