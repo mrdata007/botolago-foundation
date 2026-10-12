@@ -82,3 +82,33 @@ Functional:
 - The stage has the same box before and after; the SVG's content is untouched.
 - `bun run typecheck`, ESLint and Prettier on changed files, full `bun test` (one known
   unrelated failure: `src/backend/news/editorial-session.test.ts`), and `bun run build`.
+
+## As built
+
+- **Springs** are `manager-card/motion/spring.ts` (damped spring and cubic-Bezier sampled into Web
+  Animations keyframes). `CardGlint` (`motion/CardGlint.tsx`) is the band of light, clipped to the
+  card outline (`motion/outline.ts`).
+- **Entrance** (`curva/entrance.ts`, `use-stage-entrance.ts`): spring (zeta 0.52), 780 ms, rises 56 px,
+  tipped back 26 degrees, one overshoot; the light sweep starts at 34 % (about 265 ms) and takes
+  620 ms; the ground shadow grows with it. `entranceFrames` keeps its tested shape.
+- **Flip** (`curva/flip-state.ts`, `CardStage.tsx`): 520 ms, curve `cubic-bezier(0.5, 0, 0.2, 1.22)`
+  (leaves slowly, swings fast, overshoots 5 %, settles; a spring from rest leaves at full speed and
+  read as a snap). Lift 90 px (translateZ), 9 edge layers of the tier's metal (5 px thick) while
+  turning, faces shaded up to 50 % edge-on, glint on the face turning in, ground shadow grows
+  to 1.16 x 1.7. A second tap mid-turn turns back from where the card is.
+- **Tilt** (`eclat/tilt.ts`, `eclat.css`): follow 150 ms; letting go is a 760 ms transition with
+  overshoot (`cubic-bezier(0.22, 1.45, 0.4, 1)`) and the inner parts' light is a real damped spring
+  (critically damped following, zeta 0.55 settling). A finger that touches down and drags tilts the
+  card (pointer events; `touch-action: pan-y` only on touch-only screens); no orientation sensor.
+- **Tier-up** (`moments/TierCeremony.tsx`, `ceremony.ts`, `ceremony.css`): 1.5 s. Dim with a spotlight
+  (fixed layer inside the card's raised stacking context, tap or Escape ends it), spin in one full
+  turn over 980 ms (lands at 520 ms), thud, burst over the dim (800 ms, screen blend), badge stamp at
+  560 ms, glint (rainbow for Legend), fade from 1240 ms. The card's back for the spin is passed in
+  by Curva (`cardBack`) because nothing outside Curva may import Curva's files.
+  Lesson recorded: an opacity animation on the spinner flattens its 3D context, so the fade is on the
+  perspective wrapper.
+- **Chip** (`curva/card-motion.css`): spring pop and ring, after 620 ms so it follows the entrance.
+- **Pinned test changed**: `flip-state.test.ts` (340 ms to a 450-600 ms animation). Additive tests:
+  `spring.test.ts`, `ceremony.test.ts`, the flip's frames, the tilt's drag and spring.
+- Not done: phone drag tilt is the existing 9 degree range (modest by design); the beat of the card
+  itself is unchanged and plays at the impact.

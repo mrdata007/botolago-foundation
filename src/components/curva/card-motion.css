@@ -3,7 +3,7 @@
    only, like the card's beats. */
 
 /* The rating change chip: it lands with a confident spring (scale past 1, back under it, home) and
-   a soft ring of the chip's own colour goes out from it. The chip is drawn at rest without any of
+   a soft ring of the chip's own colour goes out from it. It waits 620 ms, for the card's entrance to land first. The chip is drawn at rest without any of
    this under reduced motion. */
 .mc-chip {
   position: relative;
@@ -21,10 +21,10 @@
 @media (prefers-reduced-motion: no-preference) {
   .mc-chip-pop {
     transform-origin: 50% 55%;
-    animation: mc-chip-pop 680ms linear 80ms both;
+    animation: mc-chip-pop 680ms linear 620ms both;
   }
   .mc-chip-pop::after {
-    animation: mc-chip-ring 620ms cubic-bezier(0.2, 0.7, 0.3, 1) 160ms both;
+    animation: mc-chip-ring 620ms cubic-bezier(0.2, 0.7, 0.3, 1) 700ms both;
   }
 
   /* a spring sampled by hand: 0.25 up to 1.26, under to 0.94, over to 1.04, home at 1 */
