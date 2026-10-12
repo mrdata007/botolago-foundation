@@ -431,14 +431,14 @@ function MatchDetailPage() {
             homePalette={palettes.home}
           />
 
-          {/* Keyed on the tab so every switch remounts the panel and replays a
-          quick fade — the swap is still instant, just no longer invisible. */}
+          {/* Keyed on the tab so every switch remounts the panel, which is drawn
+          at once with no fade: only the tab underline moves. */}
           <div
             key={tab}
             id={MATCH_PANEL_ID}
             role="tabpanel"
             aria-labelledby={`${MATCH_TAB_ID_BASE}-tab-${tab}`}
-            className="mt-4 tab-panel-in"
+            className="mt-4"
           >
             {tab === "summary" && (
               <>

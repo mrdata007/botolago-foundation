@@ -336,7 +336,7 @@ function ArticlePage() {
                 loading="eager"
                 fetchPriority="high"
                 frame={{ sizes: FULL_COLUMN_SIZES, ratio: 2, mdRatio: 16 / 7 }}
-                className="absolute inset-0 animate-in fade-in duration-500"
+                className="absolute inset-0 animate-in fade-in duration-200"
               />
             </HeroParallax>
             <span aria-hidden className="absolute inset-0" style={HERO_SCRIM} />
@@ -363,7 +363,6 @@ function ArticlePage() {
           style={colour?.style}
           className={cn(
             "relative bg-[color:var(--ui-surface)] px-5 pb-2",
-            "animate-in fade-in-0 slide-in-from-bottom-1 duration-500 ease-out",
             caption ? "pt-3" : cn(SHEET_TOP, "pt-5"),
           )}
         >

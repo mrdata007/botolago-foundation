@@ -1182,26 +1182,7 @@ html[dir="rtl"]
   background-color: var(--tab-accent);
   pointer-events: none;
   transform: translateX(calc(var(--tab-index, 0) * 100% * var(--vt-dir, 1)));
-  transition: transform var(--duration-route) var(--ease-emphasized);
-}
-
-/* A tab panel's content arriving after a switch: a quick fade and a 4px
-   rise. Give the panel `key={tab}` so each switch mounts it afresh. The fill
-   is `backwards`, not `both`: once it ends the panel keeps no transform, so a
-   sticky or fixed element inside it is placed against the page as before. */
-@keyframes tab-panel-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@utility tab-panel-in {
-  animation: tab-panel-in var(--duration-quick) var(--ease-standard) backwards;
+  transition: transform var(--duration-route) var(--ease-spring);
 }
 
 /* A step of a flow arriving: it slides in from the reading side. */
@@ -1360,16 +1341,25 @@ html[dir="rtl"]
 }
 
 /* ------------------------------------------------------------------ */
-/* Page transitions                                                   */
-/* src/lib/page-transition.ts picks the kind per navigation. The page  */
-/* is the `root` group; the bottom bar is held still in its own group  */
-/* (`bottom-nav`). --vt-dir is +1 left-to-right and -1 right-to-left, */
-/* so a page arrives from the reading side in Arabic too. No          */
-/* transition runs under reduced motion: the router asks first, and   */
-/* the rule at the end of this block is the belt to that braces.      */
+/* Page transitions (calm screens: docs/engineering/MOTION_CALM_SCREENS.md) */
+/* src/lib/page-transition.ts picks the kind per navigation. Only a      */
+/* drill-down (`forward`/`back`) or an unrelated page (`fade`) runs one.  */
+/* The OLD page is never faded: it stays opaque and still underneath and */
+/* the NEW page eases in over it, so the composite never drops below     */
+/* full opacity. (Fading both at once, with the UA's `plus-lighter`      */
+/* blend, was the grey, washed-out film.) The page group is held on the  */
+/* reading side by --vt-dir, so Arabic arrives from the right. The      */
+/* bottom bar is its own group, held still. Reduced motion: none (the    */
+/* router asks first; the rule at the end of this block is the belt).    */
 /* ------------------------------------------------------------------ */
 :root {
   --vt-dir: 1;
+  /* A short spring: fast start, soft settle. `--ease-spring` has the tiniest
+     overshoot, for indicators (the tab underline); `--ease-settle-soft` has
+     none, for things that arrive. */
+  --ease-spring: cubic-bezier(0.34, 1.32, 0.5, 1);
+  --ease-settle-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-page: 200ms;
 }
 :root[dir="rtl"] {
   --vt-dir: -1;
@@ -1377,24 +1367,22 @@ html[dir="rtl"]
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: var(--duration-route);
-  animation-timing-function: var(--ease-standard);
+  mix-blend-mode: normal;
+  animation-duration: var(--duration-page);
+  animation-timing-function: var(--ease-settle-soft);
 }
 
-@keyframes vt-out-forward {
-  to {
+::view-transition-old(root) {
+  animation: none;
+}
+
+@keyframes vt-in-fade {
+  from {
     opacity: 0;
-    transform: translateX(calc(var(--vt-dir) * -16px));
   }
 }
 @keyframes vt-in-forward {
   from {
-    opacity: 0;
-    transform: translateX(calc(var(--vt-dir) * 24px));
-  }
-}
-@keyframes vt-out-back {
-  to {
     opacity: 0;
     transform: translateX(calc(var(--vt-dir) * 16px));
   }
@@ -1402,18 +1390,15 @@ html[dir="rtl"]
 @keyframes vt-in-back {
   from {
     opacity: 0;
-    transform: translateX(calc(var(--vt-dir) * -24px));
+    transform: translateX(calc(var(--vt-dir) * -16px));
   }
 }
 
-:root:active-view-transition-type(forward)::view-transition-old(root) {
-  animation-name: vt-out-forward;
+::view-transition-new(root) {
+  animation-name: vt-in-fade;
 }
 :root:active-view-transition-type(forward)::view-transition-new(root) {
   animation-name: vt-in-forward;
-}
-:root:active-view-transition-type(back)::view-transition-old(root) {
-  animation-name: vt-out-back;
 }
 :root:active-view-transition-type(back)::view-transition-new(root) {
   animation-name: vt-in-back;
@@ -2629,3 +2614,201 @@ html[dir="rtl"]
   color: var(--editorial-muted);
   text-align: start;
 }
+
+/* ==========================================================================
+   GOAL MOMENT motion (src/components/matches/GoalMoment.tsx,
+   docs/engineering/GOAL_MOMENT_MOTION.md). Owned by that component; nothing
+   else uses these classes. transform / translate / scale / opacity only.
+   The reduced-motion branch of the component renders a static banner and
+   never mounts these elements, so they live in the no-preference block.
+   Timeline (ms, of GOAL_MOMENT_MS = 2400): panel in 0-320, word slams 120-680
+   (impact ~315), stack shake 300-560, light sweep 300-820, card swings
+   520-1160, score rolls 1100-1460 and pops 1400-1800, hold with a slow
+   push-in and a panning stripe layer, panel out from 2080.
+   ========================================================================== */
+@media (prefers-reduced-motion: no-preference) {
+  .goal-moment {
+    --goal-dir: 1;
+  }
+  [dir="rtl"] .goal-moment {
+    --goal-dir: -1;
+  }
+
+  /* An oversized layer that is moved, not repainted: two periods of the
+     80px stripe (113px along x at 45 degrees) over the whole moment. */
+  .goal-stripes {
+    position: absolute;
+    inset: -240px;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      var(--stripe-angle),
+      color-mix(in srgb, var(--ui-club-band) 17%, transparent) 0 40px,
+      transparent 40px 80px
+    );
+    will-change: transform;
+    animation: goal-pan 2400ms linear both;
+  }
+  .goal-stack {
+    animation:
+      goal-push 2400ms cubic-bezier(0.2, 0.6, 0.3, 1) both,
+      goal-shake 260ms linear 300ms both;
+  }
+  .goal-word {
+    animation: goal-slam 560ms cubic-bezier(0.25, 0.8, 0.3, 1) 120ms both;
+  }
+  .goal-label {
+    animation: goal-label-in 300ms var(--ease-decelerate) 60ms both;
+  }
+  .goal-card {
+    transform-origin: 50% 70%;
+    animation: goal-swing 640ms cubic-bezier(0.25, 0.8, 0.3, 1) 520ms both;
+  }
+  .goal-sweep {
+    position: absolute;
+    inset-block: -20%;
+    inset-inline-start: 0;
+    width: 36%;
+    pointer-events: none;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, white 34%, transparent),
+      transparent
+    );
+    animation: goal-sweep 520ms var(--ease-standard) 300ms both;
+  }
+  /* The scoring side's number: a window one digit tall with old over new. */
+  .goal-tick {
+    display: inline-block;
+    height: 1em;
+    line-height: 1;
+    overflow: hidden;
+    vertical-align: middle;
+  }
+  .goal-tick-col {
+    display: flex;
+    flex-direction: column;
+    animation: goal-roll 420ms cubic-bezier(0.3, 0.9, 0.3, 1) 1100ms both;
+  }
+  .goal-tick-col > bdi {
+    display: block;
+    height: 1em;
+    line-height: 1;
+  }
+  .goal-tick-pop {
+    display: inline-block;
+    animation: goal-score-pop 480ms var(--ease-settle) 1400ms both;
+  }
+
+  @keyframes goal-pan {
+    to {
+      transform: translate3d(calc(var(--goal-dir) * -226px), 0, 0);
+    }
+  }
+  @keyframes goal-push {
+    from {
+      scale: 1;
+    }
+    to {
+      scale: 1.035;
+    }
+  }
+  @keyframes goal-shake {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    18% {
+      transform: translate3d(-6px, 3px, 0);
+    }
+    40% {
+      transform: translate3d(5px, -3px, 0);
+    }
+    62% {
+      transform: translate3d(-3px, 2px, 0);
+    }
+    82% {
+      transform: translate3d(1px, -1px, 0);
+    }
+  }
+  @keyframes goal-slam {
+    0% {
+      opacity: 0;
+      transform: scale(3);
+    }
+    22% {
+      opacity: 1;
+    }
+    56% {
+      transform: scale(0.9);
+    }
+    76% {
+      transform: scale(1.05);
+    }
+    90% {
+      transform: scale(0.99);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes goal-label-in {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes goal-swing {
+    0% {
+      opacity: 0;
+      transform: perspective(700px) translateY(40px) rotateX(14deg)
+        rotateY(calc(var(--goal-dir) * -78deg)) scale(0.88);
+    }
+    35% {
+      opacity: 1;
+    }
+    62% {
+      transform: perspective(700px) translateY(-6px) rotateX(-3deg)
+        rotateY(calc(var(--goal-dir) * 9deg)) scale(1.03);
+    }
+    82% {
+      transform: perspective(700px) translateY(1px) rotateX(1deg)
+        rotateY(calc(var(--goal-dir) * -3deg)) scale(0.995);
+    }
+    100% {
+      opacity: 1;
+      transform: perspective(700px) translateY(0) rotateX(0) rotateY(0) scale(1);
+    }
+  }
+  @keyframes goal-sweep {
+    from {
+      opacity: 0;
+      transform: translate3d(calc(var(--goal-dir) * -120%), 0, 0) skewX(-18deg);
+    }
+    30% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      transform: translate3d(calc(var(--goal-dir) * 380%), 0, 0) skewX(-18deg);
+    }
+  }
+  @keyframes goal-roll {
+    to {
+      transform: translate3d(0, -50%, 0);
+    }
+  }
+  @keyframes goal-score-pop {
+    0% {
+      transform: scale(1);
+    }
+    40% {
+      transform: scale(1.4);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+}
+/* ======================= end GOAL MOMENT motion ========================== */

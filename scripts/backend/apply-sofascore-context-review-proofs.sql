@@ -93,7 +93,7 @@ declare source text;
 begin
   select statements[1] into source from supabase_migrations.schema_migrations where version='20261011191737';
   if encode(sha256(convert_to(source,'UTF8')),'hex')
-    is distinct from 'e5a7c7233e11dde33baf86adf8a8b12f7386dd3674a02d65766277fddd87eec4'
+    is distinct from 'bd6e5a19061740e5eb40343a90a05cde17e9bc5c6269d0326ae193da285c120b'
   then raise exception 'stop: migration differs from reviewed repository bytes'; end if;
   execute source;
 end $apply$;
