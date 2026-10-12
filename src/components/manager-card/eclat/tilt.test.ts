@@ -13,6 +13,11 @@ import {
   rimRest,
   shadow,
   tilt,
+  tiltDrag,
+  DRAG_ROT_X,
+  DRAG_ROT_Y,
+  ROT_X,
+  ROT_Y,
 } from "./pose";
 import { mountTilt } from "./tilt";
 
@@ -738,7 +743,12 @@ describe("a finger's drag on a phone (collectible motion)", () => {
     flush();
     expect(classes.has("mc-eclat--active")).toBe(true);
     expect(vars.get("--mc-ax")).toBe("1.000");
-    expect(transform(parts.tilt)).toBe(tilt([1, 1]));
+    expect(transform(parts.tilt)).toBe(tiltDrag([1, 1]));
+    expect(DRAG_ROT_Y).toBeGreaterThanOrEqual(14);
+    expect(DRAG_ROT_Y).toBeLessThanOrEqual(16);
+    expect(DRAG_ROT_X).toBeGreaterThan(ROT_X);
+    expect(ROT_Y).toBe(9);
+    expect(tilt([1, 1])).not.toBe(tiltDrag([1, 1]));
     stop();
   });
 

@@ -122,8 +122,12 @@ describe("every fixture, language and theme (plan 12.4)", () => {
       expect(trackingOf(label), `${lang} OVR`).toBe("0.2em");
       const serial = all.find((t) => "data-meta" in t.attrs && t.attrs["data-meta"] === "serial");
       expect(serial && trackingOf(serial), `${lang} serial`).toBe("0.04em");
-      const mark = all.find((t) => t.text === "BOTOLAGO");
-      expect(mark && trackingOf(mark), `${lang} wordmark`).toBe("0.14em");
+      // the rail's wordmark is the logo (shapes, `data-meta="wordmark"`), no longer typed text
+      expect(
+        all.some((t) => t.text === "BOTOLAGO"),
+        `${lang} no typed wordmark`,
+      ).toBe(false);
+      expect(html.includes('data-meta="wordmark"'), `${lang} logo on the rail`).toBe(true);
       // Arabic-script runs are never tracked: tracking breaks the joins
       for (const t of all) {
         if (/\p{Script=Arabic}/u.test(t.text))
@@ -244,13 +248,13 @@ describe("what a card says and how big it is", () => {
     expect(eclatRenderer.tokenBox(PROFILES.rated, 80)).toEqual({ width: 49, height: 80 });
   });
 
-  it("keeps a stage card's markup within the 46 kB budget", () => {
+  it("keeps a stage card's markup within the 49 kB budget (it was 46 kB; the rail logo is 5.6 kB of path data, drawn once and used twice)", () => {
     for (const c of [...MOCK_CARDS, ...MOCK_ARABIC, ...MOCK_NAMES]) {
       const html = eclatRenderer.full(c.profile, {
         strings: c.lang === "ar" ? AR : FR,
         theme: "dark",
       });
-      expect(html.length, c.caption).toBeLessThan(46_000);
+      expect(html.length, c.caption).toBeLessThan(49_000);
     }
   });
 
@@ -447,6 +451,9 @@ describe("the detail and the share art (plan 7)", () => {
       // the serif and the light faces are asked for by name; the wordmark on the rail is not drawn
       expect(art.texts.some((r) => r.face === "serif")).toBe(true);
       expect(art.texts.some((r) => r.text === "BOTOLAGO")).toBe(false);
+      // and the logo that replaced it is not in the share picture either
+      expect(art.svg).not.toContain("-logo");
+      expect(art.svg).not.toContain('data-meta="wordmark"');
       for (const r of art.texts) {
         expect(r.size).toBeGreaterThan(0);
         expect(r.x).toBeGreaterThan(0);

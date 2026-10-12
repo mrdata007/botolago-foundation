@@ -1,5 +1,6 @@
 import { useId, type CSSProperties } from "react";
 
+import { WORDMARK_HEIGHT, WORDMARK_PATHS, WORDMARK_WIDTH } from "@/assets/brand/wordmark-paths";
 import { useCardCopy, useCardStrings } from "@/components/manager-card/copy";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { TierWord } from "@/components/manager-card/tier-word";
@@ -35,7 +36,7 @@ const HONEYCOMB = [hex(4.33, 5), hex(0, 12.5), hex(8.66, 12.5)].join("");
  * The back of the card, plain DOM (the stage's « Retourner »), made of the front's own parts: the
  * cut-cornered outline and its rim stroke, the lacquer with the backlight and the honeycomb, the
  * club's disc and the season as on the front's tab, the name in the front's serif, the tier in its
- * pointed chip, the four statistics with a bar each, the wordmark and the serial. The colours are
+ * pointed chip, the four statistics with a bar each, the logo (the BotolaGO wordmark, from its path data) and the serial. The colours are
  * the tier's material from the active renderer (`useCardPalette`), so the back is the same object
  * as the front. Everything is sized in the back's own container units, like the card, so it scales
  * with the stage's 296 to 336 px. The lower start corner stays empty: the stage's flip button sits
@@ -187,8 +188,19 @@ export function CardBack({ profile }: { profile: CardProfile }) {
               className="flex items-baseline justify-between gap-[3cqw] ps-[15cqw] text-[4cqw] leading-none"
               style={label}
             >
-              <span dir="ltr" className="ltr:tracking-[0.35em]" style={display}>
-                BOTOLAGO
+              <span dir="ltr" className="block" data-back-logo="">
+                <svg
+                  role="img"
+                  aria-label="BotolaGO"
+                  viewBox={`0 0 ${WORDMARK_WIDTH} ${WORDMARK_HEIGHT}`}
+                  className="block h-[4.6cqw] w-auto"
+                  style={{ aspectRatio: `${WORDMARK_WIDTH} / ${WORDMARK_HEIGHT}` }}
+                  fill="currentColor"
+                >
+                  {WORDMARK_PATHS.map((d, i) => (
+                    <path key={i} d={d} />
+                  ))}
+                </svg>
               </span>
               {profile.serial !== null ? (
                 <bdi dir="ltr" className="[font-weight:var(--ui-weight-heavy)]">

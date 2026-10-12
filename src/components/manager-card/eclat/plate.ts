@@ -7,6 +7,7 @@
  * run. Nothing smaller than 30 units is drawn on the full card and nothing under 58 on the
  * face-à-face card.
  */
+import { WORDMARK_HEIGHT, WORDMARK_PATHS, WORDMARK_WIDTH } from "@/assets/brand/wordmark-paths";
 import { STAT_CODES } from "../types";
 import type { Ctx } from "./ctx";
 import { inkOn, mix } from "./foil";
@@ -15,6 +16,9 @@ import { fitLabel, layoutName } from "./name";
 import type { Plaque } from "./plaque";
 import type { TextSpec } from "./text";
 import { esc, serialLine } from "./view";
+
+/** The rail logo's height across the rail, in card units (the text it replaced was 34 units tall). */
+export const RAIL_LOGO_HEIGHT = 44;
 
 export interface Plate {
   /** Shapes, in card coordinates (not mirrored again). */
@@ -239,23 +243,21 @@ export function plate(c: Ctx, plaque: Plaque): Plate {
     }
   }
 
-  // the rail's wordmark: debossed, the card's one brand signature (not in the share picture)
-  if (!compact) {
-    const place = { tx: X(32), ty: 600, rotate: -90 };
-    const wm = {
-      text: "BOTOLAGO",
-      x: 2.4,
-      y: 0,
-      size: 34,
-      face: "d" as const,
-      central: true,
-      tracking: 0.14,
-      dir: "ltr" as const,
-      place,
-      noImage: true as const,
-    };
-    texts.push({ ...wm, fill: "#000", fillOpacity: 0.5, dy: 1.5 });
-    texts.push({ ...wm, fill: "#fff", fillOpacity: 0.78, data: { meta: "wordmark" } });
+  // the rail's wordmark, the BotolaGO logo itself (the ball and the letters, drawn from its path data,
+  // not typed): debossed, the card's one brand signature, read from the bottom up along the rail. It
+  // is shapes, so the share picture (`c.runs`), which has no use for it, leaves it out as it left out
+  // the text. Never mirrored: the logo reads left to right in Arabic too.
+  if (!compact && !c.runs) {
+    const h = RAIL_LOGO_HEIGHT;
+    const k = h / WORDMARK_HEIGHT;
+    const w = WORDMARK_WIDTH * k;
+    // the path data once, in the layer's defs, and the two copies (the dark offset one and the light
+    // one) refer to it: the logo is 6.7 kB of paths and the card's markup has a budget
+    shapes += `<defs><g id="${c.id}-logo">${WORDMARK_PATHS.map((d) => `<path d="${d}"/>`).join("")}</g></defs>`;
+    const copy = (fill: string, opacity: number, dy: number, meta: string): string =>
+      `<use href="#${c.id}-logo" transform="translate(${n2(X(32))} 600) rotate(-90) translate(${n2(-w / 2)} ${n2(-h / 2 + dy)}) scale(${k.toFixed(5)})" fill="${fill}" fill-opacity="${opacity}"${meta}/>`;
+    shapes += copy("#000", 0.5, 1.5, "");
+    shapes += copy("#fff", 0.78, 0, ' data-meta="wordmark"');
   }
 
   return { shapes, texts, name };

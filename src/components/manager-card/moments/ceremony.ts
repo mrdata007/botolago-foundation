@@ -14,17 +14,25 @@ import { bezierAt, bezierFrames, mix, round } from "../motion/spring";
  * Pure data and keyframe builders, so a test reads the numbers. Transform and opacity only, on
  * wrappers outside the card's SVG and its tilt tree.
  */
-export const CEREMONY_MS = 1500;
+/** The dim comes first: the card does not appear until it is in (`LEAD_MS`). */
+export const LEAD_MS = 150;
+export const CEREMONY_MS = 1580;
 export const SPIN_MS = 980;
 /** The spin: leaves with a little weight, arrives fast, passes its end by about 9 % and comes back. */
 export const SPIN_CURVE = [0.35, 0.05, 0.25, 1.45] as const;
-/** How far the card turns, degrees: one full turn, so it lands on its front. */
-export const SPIN_DEGREES = 360;
+/**
+ * How far the card turns, degrees. It starts edge-on (270: its back is about to turn into view) and
+ * lands on its front (0), so nothing of it shows before it turns in and the first thing seen is a face
+ * in motion.
+ */
+export const SPIN_DEGREES = 270;
+/** The turn's exponent: an ease-out that does most of its turning early, so it is quick through the edge-on points and slows only over the last stretch. */
+export const SPIN_EASE = 2.2;
 export const BURST_RUN_MS = 800;
-export const STAMP_MS = 300;
+export const STAMP_MS = 260;
 export const STAMP_GAP_MS = 40;
-export const FADE_AT_MS = 1240;
-export const DIM_IN_MS = 220;
+export const FADE_AT_MS = 1200;
+export const DIM_IN_MS = LEAD_MS;
 /** The darkest the page gets (a share of black over it, around the spotlight). */
 export const DIM_PEAK = 0.78;
 
@@ -40,7 +48,15 @@ export function impactMs(): number {
   return Math.round(hi * SPIN_MS);
 }
 export const IMPACT_MS = impactMs();
-export const STAMP_AT_MS = IMPACT_MS + STAMP_GAP_MS;
+/** From the ceremony's start (the card's own start is `LEAD_MS` in). */
+export const IMPACT_AT_MS = LEAD_MS + IMPACT_MS;
+export const STAMP_AT_MS = IMPACT_AT_MS + STAMP_GAP_MS;
+
+/** The turn's progress (0 to 1) at `time` of the spin: an ease-out that has finished by the impact. */
+export const turnProgress = (time: number): number => {
+  const u = Math.min(1, (time * SPIN_MS) / IMPACT_MS);
+  return 1 - (1 - u) ** SPIN_EASE;
+};
 
 /**
  * The card's keyframes (the spin wrapper): it drops in from above and toward the reader, turns once
@@ -49,22 +65,22 @@ export const STAMP_AT_MS = IMPACT_MS + STAMP_GAP_MS;
  * into the table (smaller than rest, lower) and comes back up.
  */
 export function spinFrames(dir: 1 | -1): Keyframe[] {
-  return bezierFrames(SPIN_CURVE, 40, (p) => ({
-    transform: `translateY(${round(mix(-64, 0, p), 2)}px) translateZ(${round(mix(300, 0, p), 2)}px) rotateY(${round(SPIN_DEGREES * (1 - Math.min(p, 1)) * dir, 2)}deg) scale(${round(mix(1.1, 1, p), 4)})`,
+  return bezierFrames(SPIN_CURVE, 60, (p, time) => ({
+    transform: `translateY(${round(mix(-64, 0, p), 2)}px) translateZ(${round(mix(300, 0, p), 2)}px) rotateY(${round(SPIN_DEGREES * (1 - turnProgress(time)) * dir, 2)}deg) scale(${round(mix(1.1, 1, p), 4)})`,
   }));
 }
 
 /**
- * The card's fade-in, on the perspective wrapper and not on the spinner: an opacity animation on the
- * spinner flattens its 3D context (the card's far side would show through, mirrored).
+ * The card is hidden until the dim is in (`LEAD_MS`): a hold of `visibility`, which switches at once
+ * and has no ghost of a half-faded card. (Not an opacity animation, which on the spinner flattens its
+ * 3D context, and which on anything shows the oversized card dimly before it spins.)
  */
-export function fadeInFrames(): Keyframe[] {
+export function holdFrames(): Keyframe[] {
   return [
-    { opacity: 0, offset: 0 },
-    { opacity: 1, offset: 1 },
+    { visibility: "hidden", offset: 0 },
+    { visibility: "hidden", offset: 1 },
   ];
 }
-export const FADE_IN_MS = 70;
 
 /** The shadow on the ground: a thud at the impact, a wide dark flash that shrinks back and is gone. */
 export function thudFrames(): Keyframe[] {
@@ -92,9 +108,11 @@ export function dimFrames(): Keyframe[] {
 export function stampFrames(dir: 1 | -1): Keyframe[] {
   const at = (scale: number, tilt: number) => `scale(${scale}) rotate(${round(tilt * dir, 2)}deg)`;
   return [
-    { opacity: 0, transform: at(2.7, -14), offset: 0 },
-    { opacity: 1, transform: at(0.9, 2), offset: 0.5 },
-    { opacity: 1, transform: at(1.07, -4), offset: 0.75 },
+    // solid from its first frames (a half-faded oversized badge reads as a ghost)
+    { opacity: 0, transform: at(2.2, -12), offset: 0 },
+    { opacity: 1, transform: at(1.9, -10), offset: 0.1 },
+    { opacity: 1, transform: at(0.92, 2), offset: 0.55 },
+    { opacity: 1, transform: at(1.06, -4), offset: 0.78 },
     { opacity: 1, transform: at(1, -3), offset: 1 },
   ];
 }

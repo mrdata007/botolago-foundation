@@ -117,7 +117,10 @@ describe("the back of the card", () => {
     expect(html).toContain("clip-path:polygon(");
     expect(html).toContain("<pattern");
     expect(html).toContain(">RCA<");
-    expect(html).toContain("BOTOLAGO");
+    // the wordmark is the logo itself now (inline paths, named for a screen reader), not typed text
+    expect(html).toContain(`aria-label="BotolaGO"`);
+    expect(html).toContain("data-back-logo");
+    expect(html).not.toContain(">BOTOLAGO<");
     expect(html).toContain("ALI");
   });
 

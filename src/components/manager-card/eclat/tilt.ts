@@ -38,6 +38,7 @@ import {
   rimRest,
   shadow,
   tilt,
+  tiltDrag,
   type Light,
 } from "./pose";
 
@@ -199,8 +200,8 @@ function mountOn(root: HTMLElement): () => void {
    * What the compositor moves, at depth factor `t` (at 0 each part is at its rest pose): the card's
    * turn, the shadow, the walls of the rims and the cast shadow's layer. The stylesheet eases each.
    */
-  const writePose = (light: Light, t: number): void => {
-    put(parts.tilt, tilt(light, t));
+  const writePose = (light: Light, t: number, drag = false): void => {
+    put(parts.tilt, drag ? tiltDrag(light, t) : tilt(light, t));
     put(parts.shadow, shadow(light));
     for (const { el: wall, k } of parts.rims) put(wall, t ? rim(k, light) : rimRest(k, rtl));
     put(parts.cast, t ? castDelta(light, rest) : "translate(0cqw, 0cqw)");
@@ -347,6 +348,7 @@ function mountOn(root: HTMLElement): () => void {
         }
       }
     } else if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+    const drag = e.pointerType === "touch";
     const b = root.getBoundingClientRect();
     if (!(b.width > 0) || !(b.height > 0)) return;
     const light: Light = [
@@ -357,7 +359,7 @@ function mountOn(root: HTMLElement): () => void {
     raf = requestAnimationFrame(() => {
       begin();
       writeLight(light);
-      writePose(light, 1);
+      writePose(light, 1, drag);
       travel(light);
     });
   };

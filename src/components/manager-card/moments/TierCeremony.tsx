@@ -24,13 +24,13 @@ import {
   BURST_RUN_MS,
   CEREMONY_MS,
   FADE_AT_MS,
-  IMPACT_MS,
   SPIN_MS,
   STAMP_AT_MS,
   STAMP_MS,
-  FADE_IN_MS,
+  IMPACT_AT_MS,
+  LEAD_MS,
   dimFrames,
-  fadeInFrames,
+  holdFrames,
   spinFrames,
   stampFrames,
   stampOutFrames,
@@ -112,18 +112,24 @@ export function TierCeremonyCard({
     }
     const sign = document.documentElement.dir === "rtl" ? -1 : 1;
     const animations: Animation[] = [
-      spinner.animate(spinFrames(sign), { duration: SPIN_MS, easing: "linear" }),
+      spinner.animate(spinFrames(sign), {
+        duration: SPIN_MS,
+        delay: LEAD_MS,
+        easing: "linear",
+        fill: "backwards",
+      }),
     ];
     if (stage.current) {
-      animations.push(
-        stage.current.animate(fadeInFrames(), { duration: FADE_IN_MS, easing: "linear" }),
-      );
+      animations.push(stage.current.animate(holdFrames(), { duration: LEAD_MS }));
     }
     const dimEl = dim.current;
     if (dimEl)
       animations.push(dimEl.animate(dimFrames(), { duration: CEREMONY_MS, easing: "ease" }));
     const groundEl = ground.current;
-    if (groundEl) animations.push(groundEl.animate(thudFrames(), { duration: SPIN_MS }));
+    if (groundEl)
+      animations.push(
+        groundEl.animate(thudFrames(), { duration: SPIN_MS, delay: LEAD_MS, fill: "backwards" }),
+      );
     const stampEl = stamp.current;
     if (stampEl) {
       animations.push(
@@ -143,11 +149,11 @@ export function TierCeremonyCard({
       );
     }
     glint.current?.play({
-      delay: IMPACT_MS,
+      delay: IMPACT_AT_MS,
       duration: tier === "legend" ? 760 : 520,
       rainbow: tier === "legend",
     });
-    const impactTimer = window.setTimeout(() => setImpact(true), IMPACT_MS);
+    const impactTimer = window.setTimeout(() => setImpact(true), IMPACT_AT_MS);
     let finished = false;
     const finish = () => {
       if (finished) return;
