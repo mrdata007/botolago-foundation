@@ -203,16 +203,21 @@ picture). Examples:
 
 **Revised 2026-10-12 (owner):** the four styles are now taken from React Bits card components,
 and the card art carries a real Botola Pro player photo (the manager's captain of the week, with
-name and club), drawn in the sketch.
+name and club), drawn in the sketch. « Onde » (DecayCard) was dropped on 2026-10-12 because warping
+the photo distorted the player's face; three candidates replace it for the owner to choose one
+(Options A, B and C). **Rule: no style may distort or warp the photo**; effects sit over the card or
+round its edge.
 
-| Style (FR / AR)          | React Bits component it follows | Look                                                                                                                      |
-| ------------------------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| « Holo » / هولو          | ProfileCard                     | Holographic foil through a tiled pattern, light follows the pointer or finger; green-to-cyan only, never the LEGEND prism |
-| « Électrique » / كهربائي | ElectricBorder                  | An SVG noise-displaced border that crackles round the card, in the brand green                                            |
-| « Pixels » / بكسل        | PixelCard                       | A canvas of small pixels that shimmer in from the centre over the card                                                    |
-| « Onde » / موجة          | DecayCard                       | The photo alone warps with an SVG turbulence displacement that follows the pointer                                        |
-| Club edition (future)    | —                               | Frame in the club's colours (`src/lib/club-palette.ts`) — **only with the club's written permission**                     |
-| Sponsor edition (future) | —                               | A partner's design, sold or given away as a campaign — revenue line, needs a contract                                     |
+| Style (FR / AR)                      | React Bits component it follows               | Look                                                                                                                      |
+| ------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| « Holo » / هولو                      | ProfileCard                                   | Holographic foil through a tiled pattern, light follows the pointer or finger; green-to-cyan only, never the LEGEND prism |
+| « Électrique » / كهربائي             | ElectricBorder                                | An SVG noise-displaced border that crackles round the card, in the brand green                                            |
+| « Pixels » / بكسل                    | PixelCard                                     | A canvas of small pixels that shimmer in from the centre over the card                                                    |
+| Option A « Projecteur » / كشّاف      | SpotlightCard                                 | A soft light follows the pointer across the card and lights the nearest edge; the rest dims slightly                      |
+| Option B « Étoile filante » / شهاب   | StarBorder                                    | A white light runs round the card's edge over a faint silver track                                                        |
+| Option C « Chrome noir » / كروم أسود | MetallicPaint (with a GlareHover-style gloss) | A dark gunmetal frame with a gloss sweep every few seconds, darker than the steel tier metal                              |
+| Club edition (future)                | —                                             | Frame in the club's colours (`src/lib/club-palette.ts`) — **only with the club's written permission**                     |
+| Sponsor edition (future)             | —                                             | A partner's design, sold or given away as a campaign — revenue line, needs a contract                                     |
 
 **Player photo on the card.** The art shows the manager's captain for the latest counted journée
 (name and club under it), never a photo the manager uploads. **Photo rights at launch:** only photos
@@ -419,8 +424,8 @@ a CSS flip.
   copied file.
 - **Dependencies per component (to confirm at copy time):** CountUp, TiltedCard, BlurText use
   `motion` (already in the app); Aurora uses `ogl` (new); ShinyText, SpotlightCard, StarBorder,
-  GlareHover and ProfileCard are CSS/React only. ElectricBorder, PixelCard and DecayCard (the
-  styles in 2c) use SVG filters or a canvas; ReflectiveCard uses WebGL and was not picked.
+  GlareHover and ProfileCard are CSS/React only. ElectricBorder and PixelCard (styles in 2c) use an
+  SVG filter or a canvas; MetallicPaint uses WebGL, so Option C reproduces its look in CSS; ReflectiveCard uses WebGL and was not picked.
 - Version pinning: record the React Bits commit hash each file was copied from in the header
   comment.
 
