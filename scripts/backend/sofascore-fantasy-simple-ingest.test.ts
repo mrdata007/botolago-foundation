@@ -129,7 +129,8 @@ describe("report and plan", () => {
   test("unmapped appearing players form the worklist (ids and shirts, no names) and hold their fixture back", async () => {
     const probe = await world();
     const lineup = probe.fetched.get(uuid(1)).data.lineups.players;
-    const starter = lineup.find((p: { starter: boolean }) => p.starter)!;
+    // 895127 started and scored a penalty: an unmapped scorer is never left out, so he holds it.
+    const starter = lineup.find((p: { externalId: string }) => p.externalId === "895127")!;
     const { cands, fetched, snapshot } = await world([starter.externalId]);
     const prepared = await prepareAll(cands, fetched, snapshot, "2026-10-11T12:00:00.000Z");
     const report = buildReport({ selected: cands, skipped: [] }, prepared);
