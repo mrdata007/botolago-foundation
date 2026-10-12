@@ -89,6 +89,8 @@ const STOPPAGE_SLACK_MINUTES = 2;
 const MAX_FIRST_HALF_STOPPAGE = 20;
 /** At most this many unmapped starters a side may be left out; more holds the match. */
 const MAX_EXCLUDED_STARTERS_PER_SIDE = 2;
+/** The database takes at most this many left out per match; more holds the match for a person. */
+const MAX_EXCLUDED_PER_MATCH = 6;
 const SCORE_RELEVANT = SCORE_RELEVANT_LABEL;
 const GOAL_KINDS = new Set(["goal", "penalty_goal"]);
 const APP_POSITION: Record<LineupPosition, FantasyPosition> = {
@@ -457,6 +459,9 @@ export async function prepareSofascoreObservation(
     if (left.length > MAX_EXCLUDED_STARTERS_PER_SIDE)
       for (const x of left) excludedUnmapped.splice(excludedUnmapped.indexOf(x), 1);
   }
+  // So many unknown players in one match is not a few newcomers either (and the database
+  // refuses a longer list, which would give the match up): hold it for a person.
+  if (excludedUnmapped.length > MAX_EXCLUDED_PER_MATCH) excludedUnmapped.length = 0;
   const holding = unmapped.length - excludedUnmapped.length;
   if (holding > 0)
     block({

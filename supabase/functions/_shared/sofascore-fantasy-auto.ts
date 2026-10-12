@@ -812,6 +812,8 @@ export class SofascoreFantasyRun {
             lineups: parts.lineups,
             incidents: parts.incidents,
             statistics: parts.statistics,
+            // The stoppage time can be what makes a player's minutes acceptable: bind it too.
+            ...(parts.stoppage ? { stoppage: parts.stoppage } : {}),
           }),
         ),
       });

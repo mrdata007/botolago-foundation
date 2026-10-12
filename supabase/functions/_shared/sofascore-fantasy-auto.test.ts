@@ -1356,6 +1356,24 @@ describe("automatic Fantasy: stoppage time is kept with the stored replies", () 
     expect(retry.lines[0]).toMatchObject({ outcome: "recorded", source: "stored" });
   });
 
+  test("the stoppage time is part of the payload reference the observation carries", async () => {
+    const payloadRef = async (replies: SofascoreRawReplies) => {
+      const db = fakeDb();
+      await makeRun(db).run.fromReplies(FIXTURE, EVENT, replies);
+      const request = records(db)[0].args.p_request as { payload: { references: string[] } };
+      return request.payload.references.find((r) => r.startsWith("sofascore:payload:"));
+    };
+    const incidents = JSON.parse(JSON.stringify(REPLIES.incidents)) as {
+      incidents: Record<string, unknown>[];
+    };
+    incidents.incidents.push({ incidentType: "injuryTime", time: 45, addedTime: 0, length: 6 });
+    const plain = await payloadRef(REPLIES);
+    const announced = await payloadRef({ ...REPLIES, incidents });
+    expect(plain).toBeDefined();
+    expect(announced).toBeDefined();
+    expect(announced).not.toBe(plain);
+  });
+
   test("replies stored before stoppage time was kept still retry", async () => {
     const world = newWorld();
     world.mapped.delete(HOME_SCORER);

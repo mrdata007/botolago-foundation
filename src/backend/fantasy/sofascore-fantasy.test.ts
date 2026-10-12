@@ -481,6 +481,36 @@ describe("unknown (unmapped, no candidate) substitutes", () => {
     expect(p.request!.payload.anonymousByTeam).toEqual({});
   });
 
+  test("more than six unknown players in one match hold it (the database takes at most six)", async () => {
+    const match = load("17132481");
+    const came = new Set(
+      match.incidents.filter((i) => i.kind === "substitution").map((i) => i.playerIn!.externalId!),
+    );
+    const scorers = new Set(
+      match.incidents.flatMap((i) =>
+        i.kind === "goal" || i.kind === "penalty_goal" ? [i.player?.externalId] : [],
+      ),
+    );
+    const subs = match.lineups.players
+      .filter((pl) => !pl.starter && came.has(pl.externalId) && !scorers.has(pl.externalId))
+      .map((pl) => pl.externalId);
+    const starters = (side: "home" | "away") =>
+      match.lineups.players
+        .filter((pl) => pl.starter && pl.side === side && !scorers.has(pl.externalId))
+        .slice(0, 2)
+        .map((pl) => pl.externalId);
+    const ids = [...starters("home"), ...starters("away"), ...subs];
+    expect(ids.length).toBeGreaterThan(6);
+    const p = await prepare(match, {}, ids);
+    expect(p.excludedUnmapped).toEqual([]);
+    expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
+    expect(p.request).toBeNull();
+    // Six are still fine.
+    const six = await prepare(match, {}, ids.slice(0, 6));
+    expect(six.excludedUnmapped).toHaveLength(6);
+    expect(six.blockers).toEqual([]);
+  });
+
   test("three unknown starters on one side hold the match", async () => {
     const match = load("17132481");
     const ids = match.lineups.players
