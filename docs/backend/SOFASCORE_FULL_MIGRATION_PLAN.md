@@ -481,3 +481,79 @@ override the database's partial-name queue guard and is not accepted proof.
 The independent production read after the repair still shows zero observations;
 existing next-retry times remain unchanged (Kawkab earliest 11:00 UTC / 15:00
 Dubai). Public launch readiness is not established.
+
+### 12 October: owner-authorized #441 release and #440 activation
+
+The owner explicitly ordered #441 merge, live-refresh deployment, guarded SQL
+rehearsal and installation, then #440 merge. #441 passed application-quality
+and database-quality in run **38238143313** and merged normally as
+`60464d7da0b60829aff09b30a717f40e17d61085`. The final additional safeguards
+(six excluded players maximum and stoppage evidence in the payload hash) were
+reviewed and the focused local suite passed **55 tests / 234 assertions**.
+
+Live-refresh deployment **38239531188** succeeded at 10:58 UTC from that exact
+merge, before the SQL installer. Independent production metadata confirmed
+ACTIVE version 24, bundle SHA256
+`161a662fc8a5a31cd709baff2ef2410d6abfd2c09d0b7cb21ea1296a14ac5544`.
+A second owner-account dispatch **38240275465** deployed the same commit and
+also completed successfully before installation.
+
+This operator was the production database writer. Other agents, GitHub runs,
+cron, pending HTTP, generating home stories and active database clients were
+checked. The two GitHub writer workflows were disabled, and the reviewed
+maintenance scripts paused all 21 cron jobs and writer switches. An initial
+pause commit was refused because a scheduled job was running; after it drained,
+the unchanged script succeeded. No guard was weakened.
+
+The exact reviewed `apply-20261012120000-sofascore-hands-off.sql` installer was
+rehearsed ending in rollback. Independent schema, settings and full-row
+fingerprints across 16 domain tables matched the pre-rehearsal baseline.
+Only its final rollback was then changed to commit. Readback confirmed migration
+20261012120000 with source SHA256
+`1d28672d495c985fc252efe585a294a2b931b05800908e5311c0f4e3500aa9ef`,
+all three expected function-body fingerprints and exact access grants.
+Among the 16 tables, only the retry table changed: five eligible fixtures were
+reopened with zero attempts. No player, membership, mapping, Fantasy price,
+observation or points row changed during installation.
+
+Pause and resume also had rollback rehearsals and independent readback. All 21
+jobs, writer settings and both GitHub writer workflows were restored and
+verified against the original baseline. Automated processing is on.
+
+After deployment, before installation, production had already recorded
+Kawkab–Tanger, FAR–Témara and MAS–Raja, with **63 SofaScore performances**.
+Five other fixtures were reopened for automatic retries; reopening is not a
+claim that their data will pass the guards. In particular, the saved Zemamra
+evidence still does not establish seven minutes of first-half stoppage, and
+the WAC identity/minutes issues above remain unresolved. No guessed identity
+mapping or invented minutes were applied. Round 3 scoring still needs its
+separate orchestrator verification; the twelve-hour rule is unchanged.
+
+Post-install readback still showed 736 J.3 point placeholders, all zero. The
+minute cron is running successfully but `football_live_refresh_tick()` is idle
+outside live/near-kickoff/recently-finalized fixtures. Its fifteen-minute cadence
+only applies within two hours of finalization; older held fixtures depend on
+the hourly catch-up. Do not promise every reopened match retries in fifteen
+minutes while the match window is idle.
+
+During #440's final CI, another session pushed language-switch notice handling
+(`d3f6f39d`), which was reviewed. Both checks subsequently passed in
+**38241188817** (application 14m53s, database 4m20s). Another session then merged
+#443 into main (`9b2f7caf`), requiring a normal branch update and fresh checks
+before #440 could merge under branch protection. #443 adds a retry for
+`sofascore_request_invalid` to the installer; our already-completed installation
+had no such attempts (three recorded, four unmapped holds and one minutes hold).
+The applied migration was not edited or rerun.
+
+The final #440 head `ad0c0f66ce6aef88fd5e9f398aa5cf1cd466e94e` passed both
+checks in **38242948255** (application 15m21s, database 4m23s). It merged
+normally at **11:45:18 UTC** as
+`53749aa8da68d2bfc7123ea7cfad35356856cbc7`, after deployment, installation,
+verification and job restoration. No force push or branch-protection bypass
+was used. The admin confirmation screen is merged for Lovable sync; website
+Publish/Update is a separate owner action and was not performed here.
+
+Final production readback: all 21 cron jobs active; Football, Fantasy and
+Manager Card switches on; three recorded matches, five held/reopened matches,
+63 SofaScore performances and zero nonzero J.3 point rows. This completes the
+requested release order, not an end-to-end public-launch readiness sign-off.
