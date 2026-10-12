@@ -2875,7 +2875,7 @@ export const fr = {
   "card.wait.window_open": "{rounds} après le transfert",
   "card.wait.excluded_weeks_only": "semaines non comptées",
   "card.wait.board_not_final": "classement non définitif",
-  "card.wait.pre_captain_fix": "capitaine par défaut",
+  "card.wait.pre_captain_fix": "non compté",
   "card.stat_word.cap": "Capitaine",
   "card.stat_word.sel": "Titulaires",
   "card.stat_word.trf": "Transferts",

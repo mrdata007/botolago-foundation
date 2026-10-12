@@ -72,7 +72,7 @@ now. The existing panel and the card's own strip are improved instead.
      `nullReason` (French and Arabic): "après J7" (only while the journée the
      card lists is still to come), "en attente", "pas de transfert",
      "{n} journées après le transfert", "semaines non comptées",
-     "classement non définitif", "capitaine par défaut", in the muted tone. The
+     "classement non définitif", "non compté", in the muted tone. The
      existing longer explanation line stays. No number is invented.
 2. **Clearer labels.** In that panel each label reads "CAP · Capitaine",
    "SEL · Titulaires", "TRF · Transferts", "CON · Régularité"; Arabic shows the

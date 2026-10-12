@@ -2714,7 +2714,7 @@ export const ar = {
   "card.wait.window_open": "بعد {rounds} من الانتقال",
   "card.wait.excluded_weeks_only": "جولات غير محتسبة",
   "card.wait.board_not_final": "الترتيب غير نهائي",
-  "card.wait.pre_captain_fix": "قائد معيَّن تلقائيًا",
+  "card.wait.pre_captain_fix": "غير محتسب",
   "card.stat_word.cap": "القائد",
   "card.stat_word.sel": "التشكيلة",
   "card.stat_word.trf": "الانتقالات",

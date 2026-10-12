@@ -165,7 +165,7 @@ describe("the statistics panel (StatTiles) while the card has no number", () => 
     const cap = cell(html, "cap");
     expect(text(cap)).toContain("CAP · Capitaine");
     expect(cap).toContain('data-testid="curva-stat-wait"');
-    expect(text(cap)).toContain("capitaine par défaut");
+    expect(text(cap)).toContain("non compté");
     expect(text(cap)).not.toContain("—");
     // the existing longer lines stay
     expect(text(cap)).toContain("Vos capitaines");
