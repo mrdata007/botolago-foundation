@@ -1,11 +1,12 @@
 -- Production install of migration 20261013150000_sofascore_automatch_no_names on tkewgajrljbwgwedqsxn
 -- (docs/production/SOFASCORE_AUTOMATIC_RELEASE_RUNBOOK.md, "Follow-up: matching without names").
--- It replaces the SofaScore player auto-matcher so it decides by side + shirt number + position
--- (two matches) and never by name. It writes no data: no mapping is created, changed or removed.
+-- It replaces the SofaScore player auto-matcher so it decides by club, shirt number and position and
+-- never by name, and creates a player the catalog has nobody for. It writes no data when applied: no
+-- mapping, player or pool entry is created, changed or removed here.
 -- 1. Merge the reviewed PR; its database-quality job must have passed.
 -- 2. Pause and drain every writer with sofascore-held-maintenance-pause.sql.
 -- 3. Run this script as it is (it ends in rollback): every guard and the whole migration run,
---    then nothing stays. Read the last result row. Confirm independently that the history row
+--    then nothing stays. Read the last result rows. Confirm independently that the history row
 --    is absent again.
 -- 4. Change only the final rollback to commit, run it once, read it back independently, and
 --    restore the writers with sofascore-held-maintenance-resume.sql right away.
@@ -26,8 +27,6 @@ begin
        is distinct from '27b3f9b0bc31a041c7754a43efcb8b64'
     or md5((select prosrc from pg_proc where oid='app_private.football_mapping_supporting_state(uuid)'::regprocedure))
        is distinct from '70a9e683d51321cd5812091aa1712fe9'
-    or to_regclass('app_private.sofascore_player_sightings') is not null
-    or to_regprocedure('app_private.sofascore_automatch_min_matches()') is not null
     or to_regprocedure('app_private.sofascore_position_compatible(text,text)') is not null then
     raise exception 'stop: the functions this replaces are not the reviewed versions';
   end if;
@@ -46,58 +45,80 @@ create temporary table automatch_before on commit drop as
          (select md5(string_agg(m.id::text||m.internal_entity_id::text||m.active::text||coalesce(m.source_version,''), ',' order by m.id))
             from app_private.football_provider_mappings m where m.provider_name='sofascore' and m.entity_type='player') as mapping_digest,
          (select count(*) from app_private.sofascore_player_match_log) as log_rows,
-         (select count(*) from app_private.sofascore_player_match_queue) as queue_rows;
+         (select count(*) from app_private.sofascore_player_match_queue) as queue_rows,
+         (select count(*) from app.players) as players,
+         (select count(*) from app.fantasy_players) as pool;
 insert into supabase_migrations.schema_migrations(version,name,statements)
-values('20261013150000','sofascore_automatch_no_names',array[$migration$-- SofaScore player auto-matching decides by side, shirt number and position, never by name
+values('20261013150000','sofascore_automatch_no_names',array[$migration$-- SofaScore is the single source: the player catalog is keyed on the SofaScore player id, and the
+-- automatic matcher decides by club (side), shirt number and position, never by name
 -- (docs/backend/SOFASCORE_PLAYER_MATCHING.md).
 --
--- WHY. The owner decided that a name must not decide who a SofaScore player is. Names are
--- spelled differently by every provider, and a shared name or a shared last name is exactly
--- how one person's points land on another. A shirt number inside one club's squad on one
--- day is a far stronger key, and it is the same key the unmapped-substitute exclusion check
--- (api.service_record_sofascore_fantasy_observation) already uses.
+-- WHY. The owner decided that a name must not decide who a SofaScore player is. Names are spelled
+-- differently by every provider, and a shared name or last name is how one person's points land on
+-- another. A shirt number inside one club's squad on one day is a far stronger key, and it is the
+-- key the unmapped-substitute exclusion check (api.service_record_sofascore_fantasy_observation)
+-- already uses. A one-time squad-based bulk link (scripts/backend/sofascore-squad-link.ts) establishes
+-- the existing catalog; this matcher then keeps it complete without anyone clicking.
 --
--- THE RULE. For a SofaScore player with no mapping, on one side of one fixture:
---   candidate = an app player with an active membership in that side's club for the fixture's
---               season (valid on the kickoff date), with NO active SofaScore mapping, whose
---               membership shirt number equals the lineup shirt number, and whose position is
---               compatible (equal; neighbouring lines defender-midfielder or midfielder-forward;
---               or either one unknown; a goalkeeper only with a goalkeeper).
---   exactly one candidate, and the same pairing (SofaScore id, candidate) seen in at least
---   AUTOMATCH_MIN_MATCHES distinct fixtures (2) with no conflicting sighting
---       -> linked automatically, method 'side-shirt-position'.
---   anything else -> queued for staff with a reason and the candidate(s) pre-filled:
---       awaiting_second_match  one candidate, seen in fewer fixtures than the minimum
---       ambiguous_shirt        two or more candidates
---       no_shirt               the lineup has no shirt number for him
---       no_candidate           nobody in the squad has that shirt number
---       position_mismatch      the shirt number exists, but only with an incompatible position
---       shirt_conflict         the sightings disagree: he was paired with another player, or
---                              another SofaScore id is paired with the same player
+-- THE RULE. For an appearing SofaScore player with no mapping, on one side of one fixture, the
+-- members of that side's club for the fixture's season (active, valid on the kickoff date, no active
+-- SofaScore mapping) are looked at by shirt number and position:
+--   candidate = same shirt number AND a compatible position (equal; neighbouring lines
+--               defender-midfielder or midfielder-forward; or either one unknown; a goalkeeper only
+--               with a goalkeeper).
+--   exactly one candidate -> LINKED at once, method 'side-shirt-position'.
+--   no candidate, no member with that shirt at an incompatible position, no member with no shirt on
+--   file and a compatible position (the same test the unmapped-exclusion check uses)
+--                         -> a NEW PLAYER IS CREATED (see below), method 'sofascore-created'.
+--   anything else -> queued for staff, candidates pre-filled, one click on the admin screen:
+--       ambiguous_shirt      two or more candidates
+--       shirt_conflict       two SofaScore ids in this very call point at the same one candidate
+--       no_shirt_on_file     no candidate, but a squad member with no shirt number on file could be him
+--       position_mismatch    the shirt number exists, but only at an incompatible position
+--       no_shirt             the lineup has no shirt number for him
 --       candidate_already_mapped / inactive_mapping_exists   as before
---   The names in the lineup are stored for display and evidence only; nothing here compares one.
+--       weak_match           one candidate from the squad link, but a position is unknown
+--       no_candidate         nobody known and a new player could not be created (no position, a name
+--                            under two characters, not the current season, or the catalog refused)
+--   The names in the lineup are stored for display and as the new player's name only; nothing here
+--   compares one.
+--
+-- A NEW PLAYER. When SofaScore shows an appearing player the catalog has no one for, the matcher
+-- creates him so the match is never held for him and he can be picked like anyone else:
+--   * app.players (name from SofaScore, position G/D/M/F -> goalkeeper/defender/midfielder/forward);
+--   * a membership at the side's club for the current season, valid for the whole season (so it covers
+--     the match being read, whenever it was played), with the shirt number (left blank if another
+--     active member holds it, as the player-list update does);
+--   * an active SofaScore mapping and a log row of method 'sofascore-created', which
+--     football_mapping_supporting_state reports as reviewed (automatic_sofascore_created);
+--   * a Fantasy pool entry (app.fantasy_players, status available) priced by
+--     app_private.fantasy_initial_price_v1 exactly as the opening catalog and the player-list update
+--     price a player with no previous rating (rating 6.0, confidence 0), with its price evidence and
+--     price history rows.
+--   It takes the same advisory locks as the player-list update (fantasy:catalog exclusively,
+--   fantasy:squads shared). It does NOT pause crons or lock tables: it runs from the live refresh,
+--   which is itself a cron job. If the catalog refuses (for example while the weekly price processing
+--   is between pages) the creation is rolled back and he is queued as no_candidate; the next call tries again.
 --
 -- WHAT THIS MIGRATION CHANGES.
---   1. app_private.sofascore_player_sightings   one row per (SofaScore id, candidate, fixture)
---      seen with exactly one candidate: "seen in N matches" is a count of these rows.
---   2. sofascore_player_match_log_method_check  also allows 'side-shirt-position'.
---   3. sofascore_player_match_queue_reason_check also allows the new reasons. Every old value
---      stays valid: rows already queued keep their reason until the player is next seen.
---   4. app_private.football_mapping_supporting_state  (replaced) also accepts a log row of
---      method 'side-shirt-position' as a review proof, reporting reviewProvenance
---      'automatic_side_shirt_position'. Everything else in it is byte for byte the version of
---      20261011130000. The earlier methods stay valid for the mappings already made.
---      The Flashscore supporting-evidence check is unchanged: it still accepts only an
---      executed, person-approved proposal.
---   5. api.service_sofascore_auto_map_players  (replaced) with the rule above. Signature,
---      grants, return shape ({mapped, queued, conflicts}), advisory lock and idempotency as in
---      20261011130000. A re-run of the same fixture adds no sighting and changes no mapping.
---      A link made here also sets the club's finished matches that wait on a player identity to be
---      tried on the next tick (app_private.sofascore_fantasy_reopen), as staff resolution does.
+--   1. app_private.sofascore_position_compatible   the position rule.
+--   2. sofascore_player_match_log_method_check     also allows 'side-shirt-position' and 'sofascore-created'.
+--   3. sofascore_player_match_queue_reason_check    also allows the new reasons (and a queue entry may have no side). Every old value stays
+--      valid: rows already queued keep their reason until the player is next seen.
+--   4. app_private.football_mapping_supporting_state  (replaced) also accepts a log row of those two
+--      methods as a review proof ('automatic_side_shirt_position', 'automatic_sofascore_created').
+--      Everything else in it is byte for byte the version of 20261011130000. The earlier methods stay
+--      valid for the mappings already made. The Flashscore supporting-evidence check is unchanged: it
+--      still accepts only an executed, person-approved proposal.
+--   5. api.service_sofascore_auto_map_players  (replaced) with the rule above. Signature, grants,
+--      advisory lock, idempotency as in 20261011130000; the result gains `created` and `createFailed`
+--      counts next to {mapped, queued, conflicts}. A link or a creation also sets the club's finished
+--      matches that wait on a player identity to be tried on the next tick
+--      (app_private.sofascore_fantasy_reopen), as staff resolution does.
 --   Staff resolution (api.admin_resolve_sofascore_player_match, with the hands-off reopen of
 --   20261012120000) is not touched: confirming a pre-filled candidate is one click.
 --
--- Applying it writes no data: no mapping is created, changed or removed here.
+-- Applying it writes no data: no mapping, player or pool entry is created, changed or removed here.
 --
 -- Prerequisites: 20261011130000 (the function replaced) and 20261012120000 (hands-off).
 do $$
@@ -106,19 +127,16 @@ begin
     or to_regclass('app_private.sofascore_player_match_log') is null
     or to_regclass('app_private.sofascore_player_match_queue') is null
     or to_regprocedure('app_private.football_mapping_supporting_state(uuid)') is null
-    or to_regprocedure('app_private.sofascore_fantasy_reopen(uuid,uuid)') is null then
+    or to_regprocedure('app_private.sofascore_fantasy_reopen(uuid,uuid)') is null
+    or to_regprocedure('app_private.fantasy_initial_price_v1(text,numeric,numeric)') is null
+    or to_regprocedure('app_private.football_catalog_slug(text,text,uuid)') is null then
     raise exception 'sofascore_automatch_prerequisite_missing: apply migrations 20261011130000 and 20261012120000 first';
   end if;
 end $$;
 
 -- ===========================================================================
--- 1. The constant, the position rule and the sightings
+-- 1. The position rule
 -- ===========================================================================
--- AUTOMATCH_MIN_MATCHES: how many distinct fixtures must show the same pairing before it is linked.
-create function app_private.sofascore_automatch_min_matches()
-returns integer language sql immutable set search_path = '' as $$ select 2 $$;
-revoke all on function app_private.sofascore_automatch_min_matches() from public, anon, authenticated, service_role;
-
 -- Positions are app.football_position values as text (null = unknown). Equal, neighbouring lines
 -- (defender-midfielder, midfielder-forward) or either unknown; a goalkeeper only with a goalkeeper.
 create function app_private.sofascore_position_compatible(p_a text, p_b text)
@@ -132,43 +150,32 @@ returns boolean language sql immutable set search_path = '' as $$
 $$;
 revoke all on function app_private.sofascore_position_compatible(text, text) from public, anon, authenticated, service_role;
 
-create table app_private.sofascore_player_sightings (
-  sofascore_player_id text not null,
-  player_id uuid not null references app.players(id) on delete cascade,
-  fixture_id uuid not null references app.fixtures(id) on delete cascade,
-  side text not null,
-  shirt_number integer not null,
-  seen_at timestamptz not null default statement_timestamp(),
-  primary key (sofascore_player_id, player_id, fixture_id),
-  constraint sofascore_player_sightings_id_check
-    check (sofascore_player_id = btrim(sofascore_player_id) and char_length(sofascore_player_id) between 1 and 200),
-  constraint sofascore_player_sightings_side_check check (side in ('home', 'away'))
-);
-create index sofascore_player_sightings_player_idx on app_private.sofascore_player_sightings (player_id);
-create index sofascore_player_sightings_fixture_idx on app_private.sofascore_player_sightings (fixture_id);
-alter table app_private.sofascore_player_sightings enable row level security;
-alter table app_private.sofascore_player_sightings force row level security;
-revoke all on table app_private.sofascore_player_sightings from public, anon, authenticated, service_role;
-
 -- ===========================================================================
--- 2. Constraints: one more method, more reasons (the old values stay valid)
+-- 2. Constraints: more methods, more reasons (the old values stay valid)
 -- ===========================================================================
 alter table app_private.sofascore_player_match_log drop constraint sofascore_player_match_log_method_check;
 alter table app_private.sofascore_player_match_log add constraint sofascore_player_match_log_method_check
-  check (method in ('exact-name', 'name-and-shirt', 'staff-resolution', 'side-shirt-position'));
+  check (method in ('exact-name', 'name-and-shirt', 'staff-resolution', 'side-shirt-position', 'sofascore-created'));
 
 alter table app_private.sofascore_player_match_queue drop constraint sofascore_player_match_queue_reason_check;
 alter table app_private.sofascore_player_match_queue add constraint sofascore_player_match_queue_reason_check
   check (reason in (
     'no_candidate', 'ambiguous_name', 'partial_name', 'candidate_already_mapped',
     'inactive_mapping_exists', 'position_mismatch', 'duplicate_name_in_squad',
-    'awaiting_second_match', 'ambiguous_shirt', 'no_shirt', 'shirt_conflict'));
+    'ambiguous_shirt', 'no_shirt', 'shirt_conflict', 'no_shirt_on_file', 'weak_match'));
+
+-- The one-time squad link (scripts/backend/sofascore-squad-link.ts) queues suggestions from a club
+-- squad, which has no side. A queue entry may now have none; the staff list shows "unknown".
+alter table app_private.sofascore_player_match_queue alter column side drop not null;
+alter table app_private.sofascore_player_match_queue drop constraint sofascore_player_match_queue_side_check;
+alter table app_private.sofascore_player_match_queue add constraint sofascore_player_match_queue_side_check
+  check (side is null or side in ('home', 'away'));
 
 -- ===========================================================================
 -- 3. "Reviewed", with the third automatic proof
 -- ===========================================================================
 -- Identical to the 20261011130000 version, except that the log branch also knows
--- 'side-shirt-position' (source_version 'sofascore-auto-map:side-shirt-position:<log id>').
+-- 'side-shirt-position' and 'sofascore-created' (source_version 'sofascore-auto-map:<method>:<log id>').
 create or replace function app_private.football_mapping_supporting_state(p_mapping_id uuid)
 returns jsonb
 language plpgsql
@@ -219,7 +226,7 @@ begin
   -- log row says it should be, and the log row must agree with the mapping.
   if not v_reviewed and m.provider_name = 'sofascore' and m.entity_type = 'player' then
     v_parts := regexp_match(coalesce(m.source_version, ''),
-      '^sofascore-(auto-map:exact-name|auto-map:name-and-shirt|auto-map:side-shirt-position|admin-resolve):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$');
+      '^sofascore-(auto-map:exact-name|auto-map:name-and-shirt|auto-map:side-shirt-position|auto-map:sofascore-created|admin-resolve):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$');
     if v_parts is not null then
       select * into v_log from app_private.sofascore_player_match_log where id = v_parts[2]::uuid;
       if found then
@@ -227,6 +234,7 @@ begin
           when 'exact-name' then 'sofascore-auto-map:exact-name:' || v_log.id::text
           when 'name-and-shirt' then 'sofascore-auto-map:name-and-shirt:' || v_log.id::text
           when 'side-shirt-position' then 'sofascore-auto-map:side-shirt-position:' || v_log.id::text
+          when 'sofascore-created' then 'sofascore-auto-map:sofascore-created:' || v_log.id::text
           else 'sofascore-admin-resolve:' || v_log.id::text end;
       end if;
       if found
@@ -242,6 +250,7 @@ begin
           when 'exact-name' then 'automatic_exact_name'
           when 'name-and-shirt' then 'automatic_name_and_shirt'
           when 'side-shirt-position' then 'automatic_side_shirt_position'
+          when 'sofascore-created' then 'automatic_sofascore_created'
           else 'staff_resolution' end;
         v_pid := v_log.id;
       end if;
@@ -283,14 +292,19 @@ create or replace function api.service_sofascore_auto_map_players(p_fixture_id u
 returns jsonb language plpgsql security definer set search_path = '' as $$
 declare
   f app.fixtures%rowtype;
+  s app.seasons%rowtype;
+  fs app.fantasy_seasons%rowtype;
   p jsonb;
   v_id text; v_side text; v_name text; v_short text; v_pos text;
   v_shirt integer; v_appeared boolean; v_team uuid;
   v_existing app_private.football_provider_mappings%rowtype;
-  v_cands uuid[]; v_same_shirt uuid[]; v_other uuid[];
-  v_pick uuid; v_reason text; v_conflict boolean; v_matches integer;
-  v_log uuid; v_mapping uuid;
+  v_cands uuid[]; v_other uuid[]; v_nullshirt uuid[];
+  v_pick uuid; v_method text; v_reason text; v_conflict boolean;
+  v_log uuid; v_mapping uuid; v_new uuid; v_new_fantasy uuid;
+  v_claims text[] := '{}';
+  v_pos_code text; v_price numeric; v_membership_shirt integer;
   v_mapped jsonb := '[]'::jsonb; v_queued integer := 0; v_conflicts integer := 0;
+  v_created integer := 0; v_create_failed integer := 0;
   v_linked_home boolean := false; v_linked_away boolean := false;
 begin
   if not app_private.is_service_request() then
@@ -314,21 +328,21 @@ begin
 
   select * into f from app.fixtures where id = p_fixture_id;
   if not found then raise exception using errcode = 'PT404', message = 'sofascore_fixture_not_found'; end if;
+  select * into s from app.seasons where id = f.season_id;
+  select * into fs from app.fantasy_seasons where football_season_id = f.season_id;
 
   -- One matcher at a time: two calls for the same players cannot interleave.
   perform pg_advisory_xact_lock(hashtextextended('sofascore-player-auto-map', 0));
 
-  -- Pass 1: record what this fixture shows, for every unmapped player with exactly one
-  -- candidate, BEFORE anyone is decided. Two SofaScore ids pointing at one player in this very
-  -- fixture are then both visible as a conflict, whichever comes first in the list.
+  -- Pass 1: which unmapped player has exactly one candidate? Two SofaScore ids pointing at one
+  -- candidate in this very call are a conflict for both, whichever comes first in the list.
   for p in select value from jsonb_array_elements(p_players) loop
     v_id := p ->> 'sofascorePlayerId';
-    v_side := p ->> 'side';
     v_shirt := case when jsonb_typeof(p -> 'shirtNumber') = 'number'
                      and (p ->> 'shirtNumber') ~ '^[0-9]{1,2}$' then (p ->> 'shirtNumber')::integer end;
     v_pos := case p ->> 'position' when 'G' then 'goalkeeper' when 'D' then 'defender'
                                    when 'M' then 'midfielder' when 'F' then 'forward' end;
-    v_team := case v_side when 'home' then f.home_team_id else f.away_team_id end;
+    v_team := case p ->> 'side' when 'home' then f.home_team_id else f.away_team_id end;
     continue when v_shirt is null;
     continue when exists (select 1 from app_private.football_provider_mappings m
                            where m.provider_name = 'sofascore' and m.entity_type = 'player' and m.external_id = v_id);
@@ -344,9 +358,7 @@ begin
                         where m.provider_name = 'sofascore' and m.entity_type = 'player'
                           and m.internal_entity_id = pl.id and m.active);
     if cardinality(v_cands) = 1 then
-      insert into app_private.sofascore_player_sightings (sofascore_player_id, player_id, fixture_id, side, shirt_number)
-      values (v_id, v_cands[1], f.id, v_side, v_shirt)
-      on conflict do nothing;
+      v_claims := v_claims || (v_id || '|' || v_cands[1]::text);
     end if;
   end loop;
 
@@ -354,7 +366,7 @@ begin
   for p in select value from jsonb_array_elements(p_players) loop
     v_id := p ->> 'sofascorePlayerId';
     v_side := p ->> 'side';
-    v_name := btrim(p ->> 'name');      -- display and evidence only; never compared
+    v_name := btrim(p ->> 'name');      -- display and the new player's name only; never compared
     v_short := nullif(btrim(coalesce(p ->> 'shortName', '')), '');
     v_shirt := case when jsonb_typeof(p -> 'shirtNumber') = 'number'
                      and (p ->> 'shirtNumber') ~ '^[0-9]{1,2}$' then (p ->> 'shirtNumber')::integer end;
@@ -381,62 +393,45 @@ begin
       continue;
     end if;
 
-    v_cands := '{}'; v_pick := null; v_reason := null; v_conflict := false;
+    v_cands := '{}'; v_other := '{}'; v_nullshirt := '{}';
+    v_pick := null; v_method := null; v_reason := null; v_conflict := false; v_new := null;
     if v_shirt is null then
       v_reason := 'no_shirt';
     else
-      -- Candidates: this club's squad on match day, this shirt number, a compatible position, and no
-      -- active SofaScore mapping. Squad members with this shirt but an incompatible position are
-      -- kept apart, to explain a refusal and to pre-fill the review.
-      select coalesce(array_agg(distinct pl.id) filter (where
-               app_private.sofascore_position_compatible(pl.position::text, v_pos)), '{}'),
-             coalesce(array_agg(distinct pl.id) filter (where
-               not app_private.sofascore_position_compatible(pl.position::text, v_pos)), '{}')
-        into v_cands, v_other
+      -- This club's squad on match day without an active SofaScore mapping: those with this shirt
+      -- number at a compatible position (candidates), at an incompatible one, and those with no
+      -- shirt number on file at a compatible position (who could be anyone).
+      select coalesce(array_agg(distinct pl.id) filter (where mem.shirt_number = v_shirt
+               and app_private.sofascore_position_compatible(pl.position::text, v_pos)), '{}'),
+             coalesce(array_agg(distinct pl.id) filter (where mem.shirt_number = v_shirt
+               and not app_private.sofascore_position_compatible(pl.position::text, v_pos)), '{}'),
+             coalesce(array_agg(distinct pl.id) filter (where mem.shirt_number is null
+               and app_private.sofascore_position_compatible(pl.position::text, v_pos)), '{}')
+        into v_cands, v_other, v_nullshirt
         from app.team_memberships mem
         join app.players pl on pl.id = mem.player_id
        where mem.team_id = v_team and mem.season_id = f.season_id and mem.active
          and mem.valid_from <= f.kickoff_at::date
          and (mem.valid_to is null or mem.valid_to >= f.kickoff_at::date)
-         and mem.shirt_number = v_shirt
+         and (mem.shirt_number = v_shirt or mem.shirt_number is null)
          and not exists (select 1 from app_private.football_provider_mappings m
                           where m.provider_name = 'sofascore' and m.entity_type = 'player'
                             and m.internal_entity_id = pl.id and m.active);
-      if cardinality(v_cands) = 0 then
-        if cardinality(v_other) > 0 then
-          v_reason := 'position_mismatch'; v_cands := v_other;
-        else
-          v_reason := 'no_candidate';
-        end if;
-      elsif cardinality(v_cands) > 1 then
+      if cardinality(v_cands) > 1 then
         v_reason := 'ambiguous_shirt';
-      else
-        -- One candidate. Do the sightings agree, and are there enough of them?
-        v_same_shirt := v_cands;
-        if exists (select 1 from app_private.sofascore_player_sightings s
-                    where s.sofascore_player_id = v_id and s.player_id <> v_cands[1])
-          or exists (select 1 from app_private.sofascore_player_sightings s
-                      where s.player_id = v_cands[1] and s.sofascore_player_id <> v_id
-                        and not exists (select 1 from app_private.football_provider_mappings m
-                                         where m.provider_name = 'sofascore' and m.entity_type = 'player'
-                                           and m.external_id = s.sofascore_player_id and m.active)) then
-          v_reason := 'shirt_conflict';
-          select coalesce(array_agg(distinct x), '{}') into v_cands from (
-            select unnest(v_same_shirt) as x
-            union
-            select s.player_id from app_private.sofascore_player_sightings s
-             where s.sofascore_player_id = v_id) u;
-          v_conflict := true;
+      elsif cardinality(v_cands) = 1 then
+        if (select count(distinct split_part(c, '|', 1)) from unnest(v_claims) c
+             where split_part(c, '|', 2) = v_cands[1]::text) > 1 then
+          v_reason := 'shirt_conflict'; v_conflict := true;
         else
-          select count(distinct s.fixture_id)::integer into v_matches
-            from app_private.sofascore_player_sightings s
-           where s.sofascore_player_id = v_id and s.player_id = v_cands[1];
-          if v_matches >= app_private.sofascore_automatch_min_matches() then
-            v_pick := v_cands[1];
-          else
-            v_reason := 'awaiting_second_match';
-          end if;
+          v_pick := v_cands[1]; v_method := 'side-shirt-position';
         end if;
+      elsif cardinality(v_other) > 0 then
+        v_reason := 'position_mismatch'; v_cands := v_other;
+      elsif cardinality(v_nullshirt) > 0 then
+        v_reason := 'no_shirt_on_file'; v_cands := v_nullshirt;
+      else
+        v_reason := 'no_candidate';
       end if;
     end if;
 
@@ -445,6 +440,76 @@ begin
          select 1 from app_private.football_provider_mappings m
           where m.provider_name = 'sofascore' and m.entity_type = 'player' and m.internal_entity_id = v_pick) then
       v_reason := 'candidate_already_mapped'; v_cands := array[v_pick]; v_pick := null; v_conflict := true;
+    end if;
+
+    -- Nobody in the catalog: create him (only a player who appeared, in the current season, with a
+    -- position and a usable name). A failure rolls the creation back and leaves him queued.
+    if v_pick is null and v_reason = 'no_candidate' and v_appeared and v_pos is not null
+       and s.is_current and char_length(v_name) between 2 and 200 then
+      begin
+        perform pg_advisory_xact_lock(hashtextextended('fantasy:catalog:' || f.season_id::text, 0));
+        if fs.id is not null then
+          perform pg_advisory_xact_lock_shared(hashtextextended('fantasy:squads:' || fs.id::text, 0));
+        end if;
+        v_new := gen_random_uuid();
+        insert into app.players (id, slug, full_name, display_name, position, preferred_foot, active)
+        values (v_new, app_private.football_catalog_slug('player', left(v_name, 120), v_new),
+          v_name, left(v_name, 120), v_pos::app.football_position, 'unknown', true);
+        -- A shirt number another active member of the club already wears is left blank, as the
+        -- player-list update does (the club may have a stale member; staff can correct it).
+        v_membership_shirt := v_shirt;
+        if exists (select 1 from app.team_memberships mem
+                    where mem.team_id = v_team and mem.season_id = f.season_id and mem.active
+                      and mem.shirt_number = v_shirt) then
+          v_membership_shirt := null;
+        end if;
+        insert into app.team_memberships (player_id, team_id, season_id, shirt_number, squad_role,
+          valid_from, valid_to, active)
+        values (v_new, v_team, f.season_id, v_membership_shirt, 'player', s.starts_on, s.ends_on, true);
+        v_log := gen_random_uuid(); v_mapping := null;
+        insert into app_private.football_provider_mappings (
+          provider_name, entity_type, external_id, internal_entity_id, source_version, last_seen_at,
+          active, manually_corrected)
+        values ('sofascore', 'player', v_id, v_new,
+          'sofascore-auto-map:sofascore-created:' || v_log::text, statement_timestamp(), true, false)
+        returning id into v_mapping;
+        insert into app_private.sofascore_player_match_log (id, method, mapping_id, sofascore_player_id,
+          player_id, fixture_id, evidence)
+        values (v_log, 'sofascore-created', v_mapping, v_id, v_new, f.id, jsonb_build_object(
+          'sofascoreName', v_name, 'shirtNumber', v_shirt, 'membershipShirt', v_membership_shirt,
+          'position', v_pos, 'side', v_side, 'teamId', v_team, 'fantasySeasonId', fs.id));
+        if fs.id is not null then
+          v_pos_code := case v_pos when 'goalkeeper' then 'GK' when 'defender' then 'DEF'
+                                   when 'midfielder' then 'MID' else 'FWD' end;
+          -- No earlier rating: the opening catalog and the player-list update price this the same way.
+          v_price := round(app_private.fantasy_initial_price_v1(v_pos_code, 6.0, 0.0), 1);
+          insert into app.fantasy_players (fantasy_season_id, football_player_id, football_team_id,
+            position_id, price, status, eligible, active)
+          values (fs.id, v_new, v_team,
+            (select fp.id from app.fantasy_positions fp where fp.code = v_pos_code),
+            v_price, 'available', true, true)
+          returning id into v_new_fantasy;
+          insert into app_private.fantasy_initial_price_evidence (
+            fantasy_player_id, algorithm_code, source_rating_season_id, source_rating_algorithm,
+            source_rating, source_confidence, calculated_price)
+          values (v_new_fantasy, 'botolago-initial-price-v1.0', null, null, 6.0, 0.0, v_price);
+          insert into app.fantasy_player_price_history (fantasy_player_id, gameweek_id, old_price,
+            new_price, reason, effective_at, source_version, movement)
+          values (v_new_fantasy, null, null, v_price, 'sofascore_player_created_v1',
+            statement_timestamp(), 1, 0);
+        end if;
+        update app_private.sofascore_player_match_queue
+           set resolved_at = statement_timestamp(), resolved_player_id = v_new
+         where sofascore_player_id = v_id and resolved_at is null;
+        v_mapped := v_mapped || jsonb_build_array(jsonb_build_object('sofascorePlayerId', v_id, 'playerId', v_new));
+        v_created := v_created + 1;
+        if v_side = 'home' then v_linked_home := true; else v_linked_away := true; end if;
+        continue;
+      exception when others then
+        -- Everything the block did is rolled back; he stays unmapped and queued.
+        v_create_failed := v_create_failed + 1;
+        v_new := null;
+      end;
     end if;
 
     if v_pick is not null then
@@ -460,8 +525,7 @@ begin
         insert into app_private.sofascore_player_match_log (id, method, mapping_id, sofascore_player_id,
           player_id, fixture_id, evidence)
         values (v_log, 'side-shirt-position', v_mapping, v_id, v_pick, f.id, jsonb_build_object(
-          'sofascoreName', v_name, 'shirtNumber', v_shirt, 'position', v_pos, 'side', v_side, 'teamId', v_team,
-          'matches', v_matches, 'minMatches', app_private.sofascore_automatch_min_matches()));
+          'sofascoreName', v_name, 'shirtNumber', v_shirt, 'position', v_pos, 'side', v_side, 'teamId', v_team));
         v_mapped := v_mapped || jsonb_build_array(jsonb_build_object('sofascorePlayerId', v_id, 'playerId', v_pick));
         update app_private.sofascore_player_match_queue
            set resolved_at = statement_timestamp(), resolved_player_id = v_pick
@@ -488,39 +552,36 @@ begin
     end if;
   end loop;
 
-  -- A club that gained a link this call: its finished matches that wait on a player identity are
-  -- tried again on the next tick, as when staff match a player (20261012120000). Without this, a
-  -- new player's first match would wait for the retry back-off, or be given up, before his
-  -- second match links him.
+  -- A club that gained a player this call: its finished matches that wait on a player identity are
+  -- tried again on the next tick, as when staff match a player (20261012120000).
   if v_linked_home then perform app_private.sofascore_fantasy_reopen(f.home_team_id, null); end if;
   if v_linked_away then perform app_private.sofascore_fantasy_reopen(f.away_team_id, null); end if;
 
-  return jsonb_build_object('mapped', v_mapped, 'queued', v_queued, 'conflicts', v_conflicts);
+  return jsonb_build_object('mapped', v_mapped, 'queued', v_queued, 'conflicts', v_conflicts,
+    'created', v_created, 'createFailed', v_create_failed);
 end $$;
 revoke all on function api.service_sofascore_auto_map_players(uuid, jsonb) from public, anon, authenticated;
 grant execute on function api.service_sofascore_auto_map_players(uuid, jsonb) to service_role;
 comment on function api.service_sofascore_auto_map_players(uuid, jsonb) is
-  'Service role: maps a SofaScore player to a BotolaGO player only when exactly one squad member of the right side has his shirt number and a compatible position, and the same pairing was seen in at least two fixtures with no conflicting sighting; queues every other one for staff with the candidates pre-filled. Never compares names. Never changes an existing mapping.';
+  'Service role: maps a SofaScore player to the one squad member of the right club with his shirt number and a compatible position, creates the player (membership, mapping, priced Fantasy pool entry) when the catalog has nobody for him, and queues the ambiguous rest for staff with the candidates pre-filled. Never compares names. Never changes an existing mapping.';
 $migration$]);
 do $apply$
 declare source text;
 begin
   select statements[1] into source from supabase_migrations.schema_migrations where version='20261013150000';
   if encode(sha256(convert_to(source,'UTF8')),'hex')
-    is distinct from 'ec17467998a0556366b91175e9a9175b10d0f2ff60130fb5ad72b71fac99faf4'
+    is distinct from '2e428c489a176b24d2c217d1ae2e8b8cf4e09829c7cfb65752ca3258c6dbefc7'
   then raise exception 'stop: migration differs from reviewed repository bytes'; end if;
   execute source;
 end $apply$;
 do $verify$
 begin
   if md5((select prosrc from pg_proc where oid='api.service_sofascore_auto_map_players(uuid,jsonb)'::regprocedure))
-       is distinct from '3e61d047093b93a9e75922d48c4e6233'
+       is distinct from 'f73d3f889417c3c664267049976d264e'
     or md5((select prosrc from pg_proc where oid='app_private.football_mapping_supporting_state(uuid)'::regprocedure))
-       is distinct from '97bb0a847cdfc9598f0e578ac0527f19'
+       is distinct from '8dcffad06bbf9e6b5db59e6fd79b6fc6'
     or md5((select prosrc from pg_proc where oid='app_private.sofascore_position_compatible(text,text)'::regprocedure))
        is distinct from 'f564d8102c194997d9c2e524b7cb77c7'
-    or md5((select prosrc from pg_proc where oid='app_private.sofascore_automatch_min_matches()'::regprocedure))
-       is distinct from '101ae94b5c6da3fa9122a65a0470e525'
   then raise exception 'stop: a function body differs from the reviewed migration'; end if;
   if has_function_privilege('anon','api.service_sofascore_auto_map_players(uuid,jsonb)','execute')
     or has_function_privilege('authenticated','api.service_sofascore_auto_map_players(uuid,jsonb)','execute')
@@ -529,27 +590,25 @@ begin
     or has_function_privilege('authenticated','app_private.football_mapping_supporting_state(uuid)','execute')
     or has_function_privilege('service_role','app_private.football_mapping_supporting_state(uuid)','execute')
     or has_function_privilege('service_role','app_private.sofascore_position_compatible(text,text)','execute')
-    or has_function_privilege('service_role','app_private.sofascore_automatch_min_matches()','execute')
-    or has_table_privilege('anon','app_private.sofascore_player_sightings','select')
-    or has_table_privilege('authenticated','app_private.sofascore_player_sightings','select')
-    or has_table_privilege('service_role','app_private.sofascore_player_sightings','select')
-    or not (select relrowsecurity and relforcerowsecurity from pg_class where oid='app_private.sofascore_player_sightings'::regclass)
   then raise exception 'stop: permissions differ from the reviewed migration'; end if;
-  -- The migration creates objects and replaces functions only: no mapping, log row or queue row changed.
-  if (select count(*) from app_private.football_provider_mappings where provider_name='sofascore' and entity_type='player')
-       <> (select mappings from automatch_before)
+  -- The migration creates objects and replaces functions only: nothing was written.
+  if exists(select 1 from automatch_before b where
+       (select count(*) from app_private.football_provider_mappings where provider_name='sofascore' and entity_type='player') <> b.mappings
     or (select md5(string_agg(m.id::text||m.internal_entity_id::text||m.active::text||coalesce(m.source_version,''), ',' order by m.id))
-          from app_private.football_provider_mappings m where m.provider_name='sofascore' and m.entity_type='player')
-       is distinct from (select mapping_digest from automatch_before)
-    or (select count(*) from app_private.sofascore_player_match_log) <> (select log_rows from automatch_before)
-    or (select count(*) from app_private.sofascore_player_match_queue) <> (select queue_rows from automatch_before)
-    or (select count(*) from app_private.sofascore_player_sightings) <> 0
+          from app_private.football_provider_mappings m where m.provider_name='sofascore' and m.entity_type='player') is distinct from b.mapping_digest
+    or (select count(*) from app_private.sofascore_player_match_log) <> b.log_rows
+    or (select count(*) from app_private.sofascore_player_match_queue) <> b.queue_rows
+    or (select count(*) from app.players) <> b.players
+    or (select count(*) from app.fantasy_players) <> b.pool)
   then raise exception 'stop: data changed in a way the migration does not do'; end if;
-  -- The new reason and method are accepted by their constraints (the old ones stay valid).
+  -- The new reasons and methods are accepted by their constraints (the old ones stay valid), and a
+  -- queue entry may have no side.
   if not exists(select 1 from pg_constraint where conname='sofascore_player_match_queue_reason_check'
-                 and pg_get_constraintdef(oid) like '%awaiting_second_match%' and pg_get_constraintdef(oid) like '%duplicate_name_in_squad%')
+                 and pg_get_constraintdef(oid) like '%weak_match%' and pg_get_constraintdef(oid) like '%duplicate_name_in_squad%')
     or not exists(select 1 from pg_constraint where conname='sofascore_player_match_log_method_check'
-                 and pg_get_constraintdef(oid) like '%side-shirt-position%' and pg_get_constraintdef(oid) like '%exact-name%')
+                 and pg_get_constraintdef(oid) like '%sofascore-created%' and pg_get_constraintdef(oid) like '%exact-name%')
+    or exists(select 1 from pg_attribute where attrelid='app_private.sofascore_player_match_queue'::regclass
+               and attname='side' and attnotnull)
   then raise exception 'stop: a constraint differs from the reviewed migration'; end if;
 end $verify$;
 -- What stays queued under an old (name-based) reason until the player is next seen.

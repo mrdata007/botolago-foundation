@@ -75,15 +75,12 @@ describe("copy", () => {
     }
   });
 
-  test("the shirt-based reasons say that a name never decides, in both languages", () => {
-    expect(SOFASCORE_QUEUE_COPY.fr.reasons.awaiting_second_match.body).toContain(
-      "ne décide jamais",
-    );
-    expect(SOFASCORE_QUEUE_COPY.ar.reasons.awaiting_second_match.body).toContain(
-      "لا يُعتمد عليه أبدًا",
-    );
-    expect(SOFASCORE_QUEUE_COPY.fr.reasons.no_candidate.body).toContain("numéro de maillot");
+  test("the shirt-based reasons are described by number and club, in both languages", () => {
+    expect(SOFASCORE_QUEUE_COPY.fr.reasons.ambiguous_shirt.body).toContain("numéro de maillot");
+    expect(SOFASCORE_QUEUE_COPY.ar.reasons.ambiguous_shirt.body).toContain("رقم القميص");
+    expect(SOFASCORE_QUEUE_COPY.fr.reasons.no_candidate.body).toContain("ce numéro");
     expect(SOFASCORE_QUEUE_COPY.fr.reasons.no_candidate.body).not.toContain("ce nom");
+    expect(Object.keys(SOFASCORE_QUEUE_COPY.fr.reasons)).not.toContain("awaiting_second_match");
   });
 
   test("the no_candidate explanation says the match is not held for a player who scored nothing", () => {
@@ -98,8 +95,8 @@ describe("SofascorePlayerQueueView, French", () => {
     has(html, 'dir="ltr"');
     has(html, 'lang="fr"');
     has(html, 'data-direction="ltr"');
-    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(11);
-    has(html, "11 joueurs à confirmer");
+    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(12);
+    has(html, "12 joueurs à confirmer");
     has(html, "Joueur Exemple Alpha");
   });
 
@@ -111,8 +108,8 @@ describe("SofascorePlayerQueueView, French", () => {
   });
 
   test("offers a confirm button only for selectable candidates", () => {
-    // Selectable candidates: Alpha 2, Epsilon 1, Zeta 1, the Arabic one 1, Eta 1, Thêta 2, Mu 2 = 10.
-    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(10);
+    // Selectable candidates: Alpha 2, Epsilon 1, Zeta 1, the Arabic one 1, Eta 1, Thêta 2, Mu 2, Omicron 1 = 11.
+    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(11);
     expect(count(html, /data-locked="true"/g)).toBe(1);
     has(html, "Déjà rattaché au joueur SofaScore 811111");
   });
@@ -131,7 +128,7 @@ describe("SofascorePlayerQueueView, French", () => {
     const reader = render({ canManage: false });
     lacks(reader, "sofascore-confirm-open");
     has(reader, "sofascore-queue-reader-notice");
-    expect(count(reader, /data-testid="sofascore-queue-entry"/g)).toBe(11);
+    expect(count(reader, /data-testid="sofascore-queue-entry"/g)).toBe(12);
     lacks(html, "sofascore-queue-reader-notice");
   });
 
@@ -229,15 +226,15 @@ describe("SofascorePlayerQueueView, Arabic (right to left)", () => {
     has(html, 'dir="rtl"');
     has(html, 'lang="ar"');
     has(html, 'data-direction="rtl"');
-    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(11);
-    has(html, "11 لاعبين بانتظار التأكيد");
+    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(12);
+    has(html, "12 لاعبين بانتظار التأكيد");
   });
 
   test("shows the Arabic explanation of each reason and the confirm buttons", () => {
     for (const reason of SOFASCORE_QUEUE_REASONS) {
       has(html, SOFASCORE_QUEUE_COPY.ar.reasons[reason].title);
     }
-    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(10);
+    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(11);
     has(html, "تأكيد هذا اللاعب");
     has(html, "مرتبط أصلًا بلاعب SofaScore 811111");
   });

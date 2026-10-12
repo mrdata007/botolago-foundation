@@ -119,15 +119,14 @@ overridden, retries dedupe by digest):
   depend on who is in the rows. An unknown scorer, assister, carded player or
   starter still holds the match.
 
-  Since migration `20261013150000` the auto-mapping decides by side, shirt number
-  and position, never by name, and links only after the same pairing is seen in
-  two matches. So a player the app does know, but whom the matcher has seen once,
-  is queued as `awaiting_second_match` (not `no_candidate`) and **holds** the
-  match, starter or substitute, until a second match links him or staff confirm
-  the pre-filled candidate. `no_candidate` (nobody in the squad wears that number)
-  is still the only reason that lets a substitute with nothing at stake be left
-  out; a player with no shirt number (`no_shirt`) is never left out. When a link
-  is made, the club's held matches are tried again on the next tick.
+  Since migration `20261013150000` the auto-mapping decides by club, shirt number and position, never by
+  name. One candidate is linked at once; a player the catalog has nobody for is **created** (player,
+  membership, reviewed link, priced pool entry), so he no longer holds anything. Only the rare leftovers
+  (`ambiguous_shirt`, `shirt_conflict`, `no_shirt_on_file`, `position_mismatch`, `no_shirt`) hold the match
+  as an unknown starter or substitute, until staff confirm the pre-filled candidate. `no_candidate`
+  (nobody in the squad wears that number and the player could not be created) is still the only reason
+  that lets a substitute with nothing at stake be left out; a player with no shirt number is never left
+  out. When a player is linked or created, the club's held matches are tried again on the next tick.
 
 - **Goals** come from incidents, never lineup statistics (they undercount). Each
   side's goal incidents must equal the final score.
@@ -190,17 +189,16 @@ from SofaScore for a match whose details were fetched. Code:
 
 ### Switches
 
-| Switch                                                   | Effect                                                                                                                                                                        |
-| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app_private.football_data_source()` is `sofascore`      | Records for real.                                                                                                                                                             |
-| `shadow`                                                 | Dry run only: the database function is called with `dry_run => true`, the result is logged, nothing is written, the auto-mapping is not called, nothing is stored or retried. |
-| `sportsmonks`                                            | Nothing happens (this path does not run).                                                                                                                                     |
-| `SOFASCORE_FANTASY_ENABLED=false` (Edge secret)          | Whole Fantasy step off, without a deploy.                                                                                                                                     |
-| `SOFASCORE_FANTASY_RETRIES_PER_TICK` (default 6, max 20) | Held matches retried per tick from stored replies (0 = none). No SofaScore request.                                                                                           |
-| `SOFASCORE_FANTASY_CATCHUP_PER_TICK` (default 1, max 4)  | Finished matches never attempted that a tick may fetch itself (3 requests each; 0 = none).                                                                                    |
-| `SOFASCORE_FANTASY_CATCHUP_HOURS` (default 72)           | How far back "never attempted" looks.                                                                                                                                         |
-| `SOFASCORE_FANTASY_MAX_ATTEMPTS` (default 24)            | Attempts per held match before it is given up.                                                                                                                                |
-| `SOFASCORE_FANTASY_FETCH_ATTEMPTS` (default 4)           | Attempts for a match that has no stored replies (a fetch each time).                                                                                                          |
+| Switch                                                    | Effect                                                                                                                                                                        |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app_private.football_data_source()` is `sofascore`       | Records for real.                                                                                                                                                             |
+| `shadow`                                                  | Dry run only: the database function is called with `dry_run => true`, the result is logged, nothing is written, the auto-mapping is not called, nothing is stored or retried. |
+| `sportsmonks`                                             | Nothing happens (this path does not run).                                                                                                                                     |
+| `SOFASCORE_FANTASY_ENABLED=false` (Edge secret)           | Whole Fantasy step off, without a deploy.                                                                                                                                     |
+| `SOFASCORE_FANTASY_RETRIES_PER_TICK` (default 6, max 20)  | Held matches retried per tick from stored replies (0 = none). No SofaScore request.                                                                                           |
+| `SOFASCORE_FANTASY_CATCHUP_PER_TICK` (default 1, max 4)   | Finished matches never attempted that a tick may fetch itself (3 requests each; 0 = none).                                                                                    |
+| `SOFASCORE_FANTASY_CATCHUP_HOURS` (default 504 = 21 days) | How far back "never attempted" looks (max 720).                                                                                                                               |
+| `SOFASCORE_FANTASY_FETCH_ATTEMPTS` (default 4)            | Attempts for a match that has no stored replies (a fetch each time).                                                                                                          |
 
 It also needs adaptive scoring active for the gameweek
 (`app_private.fantasy_adaptive_policy`); without it the match is held as
@@ -217,8 +215,12 @@ tick re-reads them, reads the mappings again and builds again: no SofaScore
 request.
 
 - Wait between tries: 15 minutes (first 3 tries), 1 hour (to the 12th), then 6
-  hours. Default limit 24 tries, about 3.5 days. Then the match is given up and
-  needs the manual runner.
+  hours. A match is held until **21 days after kickoff** (migration
+  `20261013150100`), whatever the number of tries, then given up and needs the
+  manual runner. The stored replies are kept until then, so the long retry
+  costs no SofaScore request: at most about four database reads a day per held
+  match once the wait is 6 hours. After a reopen (a link, staff, the squad link)
+  a match past its 21 days still gets three more tries.
 - Only a match held for `unmapped_players`, or for a database condition that can
   change (policy not enabled, identity not reviewed, score mismatch, membership
   missing), is kept for retries. A data problem the same replies cannot fix (an

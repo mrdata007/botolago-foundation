@@ -42,7 +42,9 @@
 //     rebuild an observation (no per-player minutes, assists, saves or coverage
 //     marker), so that table is the source for a retry.
 //   * Bounded: a retry waits 15 minutes (3 tries), then an hour (to 12), then six
-//     hours, and stops after SOFASCORE_FANTASY_MAX_ATTEMPTS. A data problem that
+//     hours, and goes on until 21 days after kickoff (decided by the database, migration
+//     20261013150100: api.service_sofascore_fantasy_due / _note), so a link made any time
+//     in that window releases the match. A data problem that
 //     the same replies cannot fix (an unknown incident, goals that do not add
 //     up) is not retried from storage; fresh replies from the 2-hour refresh
 //     window can still reopen it. A fixture finished but never attempted (the
@@ -98,10 +100,14 @@ export const FANTASY_RETRIES_PER_TICK_DEFAULT = 6;
 export const FANTASY_RETRIES_PER_TICK_MAX = 20;
 export const FANTASY_CATCHUP_PER_TICK_DEFAULT = 1;
 export const FANTASY_CATCHUP_PER_TICK_MAX = 4;
-export const FANTASY_CATCHUP_HOURS_DEFAULT = 72;
+/** 21 days: the window a held match is retried in (migration 20261013150100) and a finished one is fetched in. */
+export const FANTASY_CATCHUP_HOURS_DEFAULT = 504;
 export const FANTASY_CATCHUP_HOURS_MAX = 720;
-export const FANTASY_MAX_ATTEMPTS_DEFAULT = 24;
-export const FANTASY_MAX_ATTEMPTS_MAX = 100;
+/**
+ * Sent to api.service_sofascore_fantasy_due, which ignores it since migration 20261013150100: a
+ * held match is retried until 21 days after kickoff, decided by the database, not by a count.
+ */
+const LEGACY_MAX_ATTEMPTS = 100;
 export const FANTASY_FETCH_ATTEMPTS_DEFAULT = 4;
 export const FANTASY_FETCH_ATTEMPTS_MAX = 20;
 export const PERFORMANCES_PER_TICK_DEFAULT = 20;
@@ -114,7 +120,6 @@ export interface SofascoreFantasyConfig {
   readonly retriesPerTick: number;
   readonly catchUpPerTick: number;
   readonly catchUpHours: number;
-  readonly maxAttempts: number;
   readonly fetchAttempts: number;
   /** Fixtures the Pépites sync may write per sweep (0 switches it off). */
   readonly performancesPerTick: number;
@@ -148,12 +153,6 @@ export function readFantasyConfig(
       environment.SOFASCORE_FANTASY_CATCHUP_HOURS,
       FANTASY_CATCHUP_HOURS_DEFAULT,
       FANTASY_CATCHUP_HOURS_MAX,
-      1,
-    ),
-    maxAttempts: bounded(
-      environment.SOFASCORE_FANTASY_MAX_ATTEMPTS,
-      FANTASY_MAX_ATTEMPTS_DEFAULT,
-      FANTASY_MAX_ATTEMPTS_MAX,
       1,
     ),
     fetchAttempts: bounded(
@@ -534,7 +533,7 @@ export class SofascoreFantasyRun {
         p_retry_limit: config.retriesPerTick,
         p_catchup_limit: config.catchUpPerTick,
         p_hours: config.catchUpHours,
-        p_max_attempts: config.maxAttempts,
+        p_max_attempts: LEGACY_MAX_ATTEMPTS,
         p_fetch_max_attempts: config.fetchAttempts,
       });
       if (due.error) {
@@ -1026,9 +1025,9 @@ export class SofascoreFantasyRun {
     }
     const attemptsBefore = ctx.attempt?.attempts ?? 0;
     const next = attemptsBefore + 1;
-    const limit = this.config.maxAttempts;
-    if (!retriable || next >= limit) {
-      // Needs a person (or fresh replies from the refresh window): stop retrying.
+    if (!retriable) {
+      // Needs a person (or fresh replies from the refresh window): stop retrying. A retriable
+      // hold is kept until kickoff + 21 days; the database turns it into gave_up after that.
       await this.note(fixtureId, eventId, "gave_up", ordered[0] ?? "unknown", ordered, null, null);
     } else {
       const trimmed = trim(parts);
@@ -1052,7 +1051,7 @@ export class SofascoreFantasyRun {
       outcome,
       blockers: ordered,
       attempts: next,
-      retry: retriable && next < limit,
+      retry: retriable,
       ...extra,
     });
   }

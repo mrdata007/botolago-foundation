@@ -361,7 +361,7 @@ and logs; `sportsmonks` does nothing.
 - Off switch: Edge secret `SOFASCORE_FANTASY_ENABLED=false`. The other optional
   settings are `SOFASCORE_FANTASY_RETRIES_PER_TICK`,
   `SOFASCORE_FANTASY_CATCHUP_PER_TICK`, `SOFASCORE_FANTASY_CATCHUP_HOURS`,
-  `SOFASCORE_FANTASY_MAX_ATTEMPTS` and `SOFASCORE_FANTASY_FETCH_ATTEMPTS`.
+  and `SOFASCORE_FANTASY_FETCH_ATTEMPTS`. (`SOFASCORE_FANTASY_MAX_ATTEMPTS` is gone: a held match is retried until 21 days after kickoff, decided by the database; `SOFASCORE_FANTASY_CATCHUP_HOURS` now defaults to 504.)
 - Needs migrations `20261011120000` and `20261011140000`; without the second the
   step logs `skipped:state_function_missing` once and does nothing else, so no
   match is recorded. `20261011130000` (automatic player matching) is optional:
