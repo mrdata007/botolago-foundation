@@ -122,7 +122,7 @@ function TeamProfileBody() {
           role="tabpanel"
           id={`profile-panel-${tab}`}
           aria-labelledby={`profile-tab-${tab}`}
-          className={cn("tab-panel-in px-4 pb-8 pt-4", ui.surface.page)}
+          className={cn("px-4 pb-8 pt-4", ui.surface.page)}
         >
           {tab === "season" && team ? (
             <UiCard padding="none" className={cn("overflow-hidden", ui.radius.sheet)}>

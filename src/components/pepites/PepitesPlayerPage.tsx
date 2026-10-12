@@ -218,13 +218,7 @@ export function PepitesPlayerPage({
       <PlayerHero data={data} fantasyPlayerId={fantasyPlayerId} />
       <PlayerTabs player={data.player} tab={tab} onTabChange={onTabChange} />
       {data.preview ? <PepitesPreviewBanner /> : null}
-      <div
-        key={tab}
-        role="tabpanel"
-        id={PANEL_ID}
-        aria-labelledby={`pepites-player-tab-${tab}`}
-        className="tab-panel-in"
-      >
+      <div key={tab} role="tabpanel" id={PANEL_ID} aria-labelledby={`pepites-player-tab-${tab}`}>
         {tab === "matches" ? (
           <PlayerMatches
             loading={matches.isPending}
