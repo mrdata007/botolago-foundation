@@ -33,6 +33,14 @@ const lifecycleSchema = z.object({
   scoringInputVersion: integer.min(0),
   nextGameweekId: uuid.nullable().optional(),
   advancedToGameweekId: uuid.nullable().optional(),
+  // Staged SofaScore statistics (migration 20261013160200). Absent on an older database.
+  stagedStatsEnabled: z.boolean().optional(),
+  closedAt: z.string().nullable().optional(),
+  closedCalculationVersion: integer.nullable().optional(),
+  closeCompleted: z.boolean().optional(),
+  stagedLockBlocker: z.string().nullable().optional(),
+  stagedRescoreNeeded: z.boolean().optional(),
+  postworkCompleted: z.boolean().optional(),
   hasMore: z.boolean().optional(),
   changed: z.boolean().optional(),
   waitingReason: z.string().nullable().optional(),
@@ -438,13 +446,65 @@ export async function runFantasyLifecycle(
   let refreshIncrementalCapability = state.status === "open";
   const expectedSeasonId = state.seasonId;
   const nextGameweekId = state.nextGameweekId ?? null;
-  const finishPublishedWork = async () => {
+  // Opens the next gameweek (resumable pages). At a staged close the version is the
+  // close's; at the lock the database recognises a gameweek it already opened.
+  const openNextGameweek = async (version: number) => {
+    if (!nextGameweekId) return { nextGameweekId: null, nextGameweekStatus: "not_staged" };
+    do {
+      const page = z
+        .object({
+          prepared: integer.min(0),
+          hasMore: z.boolean(),
+          nextGameweekId: uuid,
+          status,
+          alreadyAdvanced: z.boolean(),
+        })
+        .parse(
+          await call("service_prepare_next_fantasy_gameweek", {
+            p_previous_gameweek_id: gameweekId,
+            p_next_gameweek_id: nextGameweekId,
+            p_calculation_version: version,
+            p_batch_size: batchSize,
+          }),
+        );
+      if (page.nextGameweekId !== nextGameweekId) throw new Error("fantasy_worker_scope_mismatch");
+      if (!page.hasMore) return { nextGameweekId, nextGameweekStatus: page.status };
+      if (!page.prepared) throw new Error("fantasy_worker_no_progress");
+    } while (calls <= maxBatches);
+    throw new Error("fantasy_worker_batch_limit");
+  };
+  const restoreAndRollFreeTransfers = async () => {
+    do {
+      const result = z.object({ restored: integer.min(0), hasMore: z.boolean() }).parse(
+        await call("service_restore_free_hit", {
+          p_gameweek_id: gameweekId,
+          p_batch_size: batchSize,
+        }),
+      );
+      if (!result.hasMore) break;
+      if (result.restored === 0) throw new Error("fantasy_worker_no_progress");
+    } while (calls <= maxBatches);
+    do {
+      const result = z.object({ updated: integer.min(0) }).parse(
+        await call("service_roll_fantasy_free_transfers", {
+          p_gameweek_id: gameweekId,
+          p_batch_size: batchSize,
+        }),
+      );
+      if (result.updated === 0) break;
+    } while (calls <= maxBatches);
+  };
+  // Staged statistics: what the next gameweek needs, done on provisional points
+  // (Free Hit squads, free transfers, prices), then the next gameweek opens.
+  // Every step is idempotent, so an interrupted close is resumed here.
+  const runCloseSteps = async (version: number) => {
+    await restoreAndRollFreeTransfers();
     let afterPlayerId: string | null = null;
     do {
       const page = z.object({ afterPlayerId: uuid.nullable(), hasMore: z.boolean() }).parse(
-        await call("service_run_fantasy_price_batch", {
+        await call("service_run_fantasy_close_price_batch", {
           p_gameweek_id: gameweekId,
-          p_calculation_version: calculationVersion,
+          p_calculation_version: version,
           p_after_player_id: afterPlayerId,
           p_batch_size: batchSize,
         }),
@@ -454,6 +514,38 @@ export async function runFantasyLifecycle(
         throw new Error("fantasy_worker_cursor_invalid");
       afterPlayerId = page.afterPlayerId;
     } while (calls <= maxBatches);
+    z.object({ completed: z.literal(true) }).parse(
+      await call("service_complete_fantasy_close", {
+        p_gameweek_id: gameweekId,
+        p_calculation_version: version,
+      }),
+    );
+    return openNextGameweek(version);
+  };
+  const finishPublishedWork = async () => {
+    if (state.closedAt) {
+      // The close already applied the prices: adopt that pass, never repeat it.
+      await call("service_adopt_fantasy_close_prices", {
+        p_gameweek_id: gameweekId,
+        p_calculation_version: calculationVersion,
+      });
+    } else {
+      let afterPlayerId: string | null = null;
+      do {
+        const page = z.object({ afterPlayerId: uuid.nullable(), hasMore: z.boolean() }).parse(
+          await call("service_run_fantasy_price_batch", {
+            p_gameweek_id: gameweekId,
+            p_calculation_version: calculationVersion,
+            p_after_player_id: afterPlayerId,
+            p_batch_size: batchSize,
+          }),
+        );
+        if (!page.hasMore) break;
+        if (!page.afterPlayerId || page.afterPlayerId === afterPlayerId)
+          throw new Error("fantasy_worker_cursor_invalid");
+        afterPlayerId = page.afterPlayerId;
+      } while (calls <= maxBatches);
+    }
     let afterNotificationTeamId: string | null = null;
     do {
       const page = z
@@ -480,34 +572,12 @@ export async function runFantasyLifecycle(
     // Winners are computed only once the gameweek is final and its postwork is
     // durable; see evaluateFantasyPrizes for why this never throws.
     const prizes = await evaluateFantasyPrizes(call);
-    if (!nextGameweekId) return { nextGameweekId: null, nextGameweekStatus: "not_staged", prizes };
-    do {
-      const page = z
-        .object({
-          prepared: integer.min(0),
-          hasMore: z.boolean(),
-          nextGameweekId: uuid,
-          status,
-          alreadyAdvanced: z.boolean(),
-        })
-        .parse(
-          await call("service_prepare_next_fantasy_gameweek", {
-            p_previous_gameweek_id: gameweekId,
-            p_next_gameweek_id: nextGameweekId,
-            p_calculation_version: calculationVersion,
-            p_batch_size: batchSize,
-          }),
-        );
-      if (page.nextGameweekId !== nextGameweekId) throw new Error("fantasy_worker_scope_mismatch");
-      if (!page.hasMore) return { nextGameweekId, nextGameweekStatus: page.status, prizes };
-      if (!page.prepared) throw new Error("fantasy_worker_no_progress");
-    } while (calls <= maxBatches);
-    throw new Error("fantasy_worker_batch_limit");
+    return { ...(await openNextGameweek(calculationVersion)), prizes };
   };
   if (state.status === "finalized") {
     if (state.scoringInputVersion !== calculationVersion)
       throw new Error("fantasy_calculation_version_mismatch");
-    if (state.advancedToGameweekId)
+    if (state.advancedToGameweekId && state.postworkCompleted !== false)
       return {
         outcome: "already_advanced",
         gameweekId,
@@ -523,6 +593,33 @@ export async function runFantasyLifecycle(
       await call("service_fantasy_lifecycle_state", { p_gameweek_id: gameweekId }),
     );
     calculationVersion = Math.max(calculationVersion, fresh.scoringInputVersion);
+    // The mode selection may have changed what the staged gate and the re-score need.
+    if (fresh.gameweekId === gameweekId && fresh.seasonId === expectedSeasonId) state = fresh;
+  }
+  const staged = state.stagedStatsEnabled === true;
+  if (staged && state.status === "provisional" && state.closedAt) {
+    const closeVersion = positive.parse(state.closedCalculationVersion);
+    // An interrupted close (or opening) is resumed with the close's own version.
+    if (!state.closeCompleted || (nextGameweekId && !state.advancedToGameweekId)) {
+      const progression = await runCloseSteps(closeVersion);
+      return {
+        outcome: "closed",
+        gameweekId,
+        calculationVersion: closeVersion,
+        ...progression,
+        calls,
+      };
+    }
+    // Nothing changed and the lock is not due: provisional points stand.
+    if (!state.stagedRescoreNeeded && state.stagedLockBlocker)
+      return {
+        outcome: "points_published",
+        gameweekId,
+        calculationVersion,
+        reason: "awaiting_final_statistics",
+        blocker: state.stagedLockBlocker,
+        calls,
+      };
   }
   let staleRereads = 0;
   while (["open", "locked", "live"].includes(state.status)) {
@@ -697,6 +794,38 @@ export async function runFantasyLifecycle(
     }
     return { outcome: "waiting", gameweekId, reason: "adaptive_scoring_pending", calls };
   }
+  if (staged && state.status === "provisional") {
+    if (!state.closedAt) {
+      // Every counted match has core data: close on provisional points and open the next one.
+      await publishRankings();
+      await call("service_begin_fantasy_close", {
+        p_gameweek_id: gameweekId,
+        p_calculation_version: calculationVersion,
+        p_input_digest: digest,
+      });
+      const progression = await runCloseSteps(calculationVersion);
+      return {
+        outcome: "closed",
+        gameweekId,
+        calculationVersion,
+        processedTeams,
+        ...progression,
+        calls,
+      };
+    }
+    if (state.stagedLockBlocker) {
+      await publishRankings();
+      return {
+        outcome: "points_published",
+        gameweekId,
+        calculationVersion,
+        processedTeams,
+        reason: "awaiting_final_statistics",
+        blocker: state.stagedLockBlocker,
+        calls,
+      };
+    }
+  }
   await call("service_begin_fantasy_finalization", {
     p_gameweek_id: gameweekId,
     p_calculation_version: calculationVersion,
@@ -722,25 +851,7 @@ export async function runFantasyLifecycle(
       throw new Error("fantasy_worker_cursor_invalid");
     afterResultTeamId = result.afterTeamId;
   } while (calls <= maxBatches);
-  do {
-    const result = z.object({ restored: integer.min(0), hasMore: z.boolean() }).parse(
-      await call("service_restore_free_hit", {
-        p_gameweek_id: gameweekId,
-        p_batch_size: batchSize,
-      }),
-    );
-    if (!result.hasMore) break;
-    if (result.restored === 0) throw new Error("fantasy_worker_no_progress");
-  } while (calls <= maxBatches);
-  do {
-    const result = z.object({ updated: integer.min(0) }).parse(
-      await call("service_roll_fantasy_free_transfers", {
-        p_gameweek_id: gameweekId,
-        p_batch_size: batchSize,
-      }),
-    );
-    if (result.updated === 0) break;
-  } while (calls <= maxBatches);
+  await restoreAndRollFreeTransfers();
 
   await publishRankings();
   await call("service_complete_fantasy_gameweek", {

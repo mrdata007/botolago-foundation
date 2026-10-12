@@ -35,9 +35,22 @@ const part = (name: string) =>
       "utf8",
     ),
   );
+// The sample is real SofaScore data in which a few players who came on late have no
+// rating (SofaScore does not rate them). Full coverage now needs a rating and a pass
+// count for every player who played, so give those players a rating here.
+const completeRatings = (lineups: {
+  home: { players: { statistics?: { minutesPlayed?: number; rating?: number } }[] };
+  away: { players: { statistics?: { minutesPlayed?: number; rating?: number } }[] };
+}) => {
+  for (const side of [lineups.home, lineups.away])
+    for (const entry of side.players)
+      if ((entry.statistics?.minutesPlayed ?? 0) > 0 && entry.statistics?.rating === undefined)
+        entry.statistics = { ...entry.statistics, rating: 6.1 };
+  return lineups;
+};
 const REPLIES: SofascoreRawReplies = {
   incidents: part("incidents"),
-  lineups: part("lineups"),
+  lineups: completeRatings(part("lineups")),
   statistics: part("statistics"),
 };
 const DETAIL = part("detail") as {

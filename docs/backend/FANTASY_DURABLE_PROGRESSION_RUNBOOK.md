@@ -77,6 +77,16 @@ provisional with core data for every counted match and its last whistle is under
 warn/fail thresholds otherwise (a match without core data, a predecessor that
 should have finalized and has not, a match not finished, a passed deadline).
 
+### Built since: staged statistics
+
+The owner decided on 2026-10-12 to build it. The gameweek may now close on
+provisional points (it stays `provisional` with `closed_at` set, the next gameweek
+opens), later pulls re-score it, and it locks only when every counted match is
+`FINAL` or `FINAL_LIMITED`. See
+[SOFASCORE_STAGED_STATS.md](SOFASCORE_STAGED_STATS.md). It is off until a season is
+switched on, so the text below still describes a season that is not. Written before
+that decision:
+
 ### Decision for the owner: what the code does not do
 
 The owner's sentence also says that later re-pulls update points. The code does

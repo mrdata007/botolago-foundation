@@ -10,7 +10,7 @@ now the backfill and override tool; the normal path is automatic (see
 - **M8**: minutes, started, goals, own goals, cards, clean sheet and goals
   conceded always count. Assists, saves, penalties saved and penalties missed
   are scored from SofaScore **when available**: on a full-coverage match (the
-  player statistics carry `totalPass`) they count and the fixture can reach
+  player with minutes carries both `rating` and `totalPass`; see SOFASCORE_STAGED_STATS.md) they count and the fixture can reach
   FULL mode. On a limited-coverage match they are UNKNOWN, never written as
   zero, and the fixture scores in SIMPLE mode. An assist may also come from an
   incident's `assist1` where present. One named switch,
@@ -353,11 +353,14 @@ are in [ALERTS.md](../operations/ALERTS.md#two-stage-statistics)):
   core data, because the lifecycle cannot finalize it
   ([FANTASY_DURABLE_PROGRESSION_RUNBOOK.md](FANTASY_DURABLE_PROGRESSION_RUNBOOK.md#provisional-predecessors-two-stage-statistics)).
 
-Not built yet, and a Fantasy scoring decision for the owner: re-pulling a match
-after its full statistics appear and letting them refine points. Today the
-automatic path records one observation per match and leaves it alone ("Retries"
-above), and the scoring mode is selected once, at the 12 h cutoff. The
-progression runbook lists what that would involve.
+Built since (owner decision of 2026-10-12, migrations `20261013160000` to
+`20261013160300`, off until a season is switched on): re-pulling a finished match
+until its full statistics appear, refining the points, closing a gameweek on
+provisional points and locking it only when every match is `FINAL` or
+`FINAL_LIMITED`. The design, the schedule and the request cost are in
+[SOFASCORE_STAGED_STATS.md](SOFASCORE_STAGED_STATS.md). Until a season is switched
+on, the automatic path still records one observation per match and the scoring mode
+is selected once, at the 12 h cutoff.
 
 ## Risks
 

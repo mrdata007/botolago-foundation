@@ -67,6 +67,7 @@ import {
   type SofascoreDetailsTarget,
 } from "./sofascore-match-details.ts";
 import { SofascoreFantasyRun, type SofascoreFantasySummary } from "./sofascore-fantasy-auto.ts";
+import { SofascoreStagedStats, type StagedSummary } from "./sofascore-staged-stats.ts";
 import {
   finishedWrittenThisTick,
   isDailyStandingsHour,
@@ -547,13 +548,30 @@ export async function runSofascoreRefresh(
     now,
     log: (line) => log(line),
   });
-  const runFantasy = async (): Promise<SofascoreFantasySummary> => {
+  const runFantasy = async (): Promise<SofascoreFantasySummary & { staged?: StagedSummary }> => {
     try {
       await fantasy.sweep();
     } catch {
       // Reported through the summary; nothing else depends on it.
     }
-    return fantasy.summary();
+    // The later pulls of finished matches (staged statistics), after the first
+    // pulls above. Its own requests go through the same counted client.
+    let staged: StagedSummary | undefined;
+    try {
+      // SOFASCORE_FANTASY_ENABLED=false switches the whole Fantasy step off, this too.
+      if (fantasy.config.enabled)
+        staged = await new SofascoreStagedStats({
+          mode,
+          client,
+          rapid,
+          environment,
+          now,
+          log: (line) => log(line),
+        }).sweep();
+    } catch {
+      // Reported through the summary; nothing else depends on it.
+    }
+    return { ...fantasy.summary(), ...(staged ? { staged } : {}) };
   };
   const runDetails = async (): Promise<SofascoreDetailsSummary | { status: "skipped" }> => {
     if (job !== "fixtures") return { status: "skipped" };

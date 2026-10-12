@@ -82,8 +82,8 @@ export interface PerformanceLineups {
   readonly provider: PerformanceProvider;
   readonly players: readonly PerformanceLineupPlayer[];
   /**
-   * Sofascore: true when the statistics carry the full-coverage marker
-   * (`totalPass`). On a limited match assists are 0 for everyone, which means
+   * Sofascore: true when every player with minutes played carries both
+   * `rating` and `totalPass` (full coverage). On a limited match assists are 0 for everyone, which means
    * unknown. Flashscore has no per-player statistics, so this is false.
    */
   readonly fullCoverage: boolean;
