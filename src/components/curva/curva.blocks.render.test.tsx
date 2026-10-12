@@ -110,7 +110,7 @@ describe("« Revoir »", () => {
     const html = await render(<RevoirList items={items} card={f.card!} onOpen={() => {}} />);
     expect(html.match(/<button/g)).toHaveLength(3);
     expect(text(html)).toContain("La première note · J7");
-    expect(text(html)).toContain("Première fois PRO · J8");
+    expect(text(html)).toContain("Premier passage au palier PRO · J8");
     expect(text(html)).toContain(fr["card.onboarding.m9.heading"]);
   });
 

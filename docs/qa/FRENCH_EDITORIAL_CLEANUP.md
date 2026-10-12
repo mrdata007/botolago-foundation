@@ -59,3 +59,7 @@ The brief was committed on `copy/french-prix-natural-wording` before the UI-sour
 No authenticated admin or signed-in Fantasy browser journey was performed. Demo source copy changed; its generated standalone bundle still needs the normal demo build before those edits appear there. Database-authored prize names, provider/news content, and operational batch « lot » labels were left as data or batch terminology. The full repository suite was not run in this session; GitHub CI can validate the feature branch under the repository's pinned dependencies.
 
 GitHub main was unchanged at `53749aa8da68d2bfc7123ea7cfad35356856cbc7` when the source was prepared. Nothing was merged or published. The owner reviews the draft PR before merge/publication, as required by AGENTS.md.
+
+## Full CI review after owner approval
+
+The initial full application CI found nine outdated literal French wording expectations (8,368 passed, nine failed). Those expectations were updated to the reviewed copy without removing assertions, including the unchanged squad rules, 60-minute scoring threshold, standings columns, tier text, leave prompt, percentiles and prize navigation. No production code changes were needed. Current main `0ed71e90` was incorporated with a forward merge; its seven changed files did not overlap the copy scope. Final full CI results must be checked before merge/publication.

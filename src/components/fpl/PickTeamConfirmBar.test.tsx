@@ -106,7 +106,7 @@ describe("the status line", () => {
 
   it("the leave prompt is the brief's sentence in both languages", () => {
     expect(dictionaries.fr["fantasy.team.unsaved.leave_confirm"]).toBe(
-      "Vos changements ne sont pas confirmés et ne compteront pas pour cette journée. Quitter quand même ?",
+      "Vos modifications ne sont pas confirmées et ne compteront pas pour cette journée. Quitter quand même ?",
     );
     expect(dictionaries.ar["fantasy.team.unsaved.leave_confirm"]).toBe(
       "لم تُؤكَّد تغييراتك ولن تُحتسب في هذه الجولة. هل تريد المغادرة رغم ذلك؟",

@@ -201,7 +201,7 @@ describe("Frozen Admin Console contracts", () => {
     const prizes = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/prizes");
     expect(prizes?.permission).toBe("prizes.manage");
     expect(prizes?.testId).toBe("admin-nav-prizes");
-    expect(prizes?.labels.fr).toBe("Lots");
+    expect(prizes?.labels.fr).toBe("Prix");
     expect(prizes?.labels.ar).toBe("الجوائز");
     expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/prizes")).toBe(false);
   });

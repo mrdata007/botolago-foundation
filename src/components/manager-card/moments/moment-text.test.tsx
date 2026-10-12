@@ -76,7 +76,7 @@ describe("the heroes' sentences (French)", () => {
   it("tier: the tier word, the number and the journée", () => {
     const { c, hero } = heroOf("tierUp");
     const out = heroText(hero!, c, fr);
-    expect(text(out.label)).toBe("Votre carte passe CHAMPION.");
+    expect(text(out.label)).toBe("Votre carte atteint le palier CHAMPION.");
     expect(out.lines.map(text)).toEqual([
       "88 OVR après la J12. Le palier suit votre note, journée après journée.",
     ]);

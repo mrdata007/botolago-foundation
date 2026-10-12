@@ -299,7 +299,7 @@ describe("in Arabic, LASTREET sits in a bdi dir=ltr", () => {
 });
 
 describe("in French, the same word, plain in the sentence", () => {
-  it("shows « 63 OVR · LASTREET » and « Première fois LASTREET »", async () => {
+  it("shows « 63 OVR · LASTREET » and « Premier passage au palier LASTREET »", async () => {
     language = "fr";
     const rated = FIXTURES.rated;
     const rows = buildRows(rated.league!.standings, rated.league!.members, rated.card!.teamId);
@@ -314,7 +314,7 @@ describe("in French, the same word, plain in the sentence", () => {
       row: null,
     };
     expect(text(markup(replayView(item, homaCard, words("fr")).title))).toBe(
-      "Première fois LASTREET · J7",
+      "Premier passage au palier LASTREET · J7",
     );
   });
 });

@@ -154,7 +154,7 @@ describe("the percentile wheel and its legend", () => {
     expect(legend).toMatch(/>96<\/bdi>/);
     expect(legend).toMatch(/>44<\/bdi>/);
     expect(legend).toMatch(/>–<\/bdi>/);
-    expect(legend).toContain("Percentiles · vs les U23 classés");
+    expect(legend).toContain("Percentiles · Par rapport aux U23 classés");
   });
 });
 
