@@ -2781,8 +2781,8 @@ export const fr = {
   "curva.people.same_club": "Supporters de {club}",
   "curva.people.compare": "Comparer les cartes de la ligue",
   "curva.club.title": "Votre club",
-  "curva.club.mates_one": "Dans « {league} », soutient aussi {club} : {names}",
-  "curva.club.mates_other": "Dans « {league} », soutiennent aussi {club} : {names}",
+  "curva.club.mates_one": "Dans « {league} », {names} soutient aussi {club}.",
+  "curva.club.mates_other": "Dans « {league} », {names} soutiennent aussi {club}.",
   "curva.club.next_match": "Prochain match",
   "curva.club.none":
     "Votre carte n’a pas encore de club. Le club choisi dans votre profil lui donne sa couleur.",
