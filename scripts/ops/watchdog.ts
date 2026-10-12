@@ -382,6 +382,17 @@ export async function orchestratorRecency(
 
 /** Mirrors COVERAGE_ESCALATE_HOURS in scripts/backend/fantasy-season-orchestrator.ts. */
 export const POINTS_ESCALATE_HOURS = 6;
+/**
+ * A `provisional` gameweek has its core points and waits for SofaScore's full
+ * statistics, which arrive 5 to 16 days later and never block it (migration
+ * 20261013140000: provisional points count as points). It is not late for
+ * that until the full statistics window is over; mirrors FULL_STATS_WINDOW_DAYS
+ * in scripts/backend/fantasy-season-orchestrator.ts. What would make a
+ * provisional gameweek really late (a match without core data, points missing
+ * 13 h after full time, a next gameweek that cannot open) is the database's
+ * `fantasy_fixture_coverage`, `fantasy_scoring` and `fantasy_progression`.
+ */
+export const PROVISIONAL_POINTS_ESCALATE_HOURS = 21 * 24;
 const POINTS_PENDING = ["open", "locked", "live", "provisional", "finalizing"];
 
 /**
@@ -400,8 +411,10 @@ export function pointsEscalateHours(raw: string | undefined): number | null {
  * use (`api.fantasy_hub` for the season, `api.fantasy_gameweeks` for the
  * windows), so it holds whether or not the orchestrator runs: on 2026-09-25
  * GitHub started that job only every three to six hours. A gameweek still
- * open, locked, live, provisional or finalizing more than `escalateHours`
- * after its window ended fails; one inside that allowance warns. The window
+ * open, locked, live or finalizing more than `escalateHours` after its window
+ * ended fails, and a provisional one only after
+ * `PROVISIONAL_POINTS_ESCALATE_HOURS` (provisional points count as points);
+ * one inside its allowance warns. The window
  * end is `endsAt` as `api.fantasy_gameweeks` returns it (the stored
  * `app.fantasy_gameweeks.ends_at`), not a fixed offset from the last counted
  * kickoff: production's GW1 ends 28 Sep 00:00 UTC, four hours after its last
@@ -471,7 +484,9 @@ export async function fantasyPoints(
       status: "ok",
       detail: "every gameweek whose window has ended has final points",
     };
-  const overdue = ended.filter((gw) => gw.hours === null || gw.hours >= escalateHours);
+  const allowance = (gw: { status: string }) =>
+    gw.status === "provisional" ? PROVISIONAL_POINTS_ESCALATE_HOURS : escalateHours;
+  const overdue = ended.filter((gw) => gw.hours === null || gw.hours >= allowance(gw));
   const listed = ended
     .slice(0, 5)
     .map(
@@ -487,7 +502,9 @@ export async function fantasyPoints(
     detail: `${listed}: ${
       overdue.length
         ? `past ${escalateHours} h without final points (docs/backend/FANTASY_SEASON_ORCHESTRATION_RUNBOOK.md)`
-        : `points pending, escalates at ${escalateHours} h`
+        : ended.every((gw) => gw.status === "provisional")
+          ? `provisional points count, escalates at ${PROVISIONAL_POINTS_ESCALATE_HOURS} h`
+          : `points pending, escalates at ${escalateHours} h`
     }`.slice(0, 200),
   };
 }
