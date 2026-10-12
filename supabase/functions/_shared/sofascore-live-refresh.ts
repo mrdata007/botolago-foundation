@@ -46,6 +46,7 @@ import {
   SOFASCORE_PROVIDER_NAME,
   buildFixtureIngestPlan,
   collapseReplacedEvents,
+  computeLiveMinute,
   parseSofascoreEvents,
   type SofascoreFixtureEvent,
   type SofascoreIngestCall,
@@ -371,6 +372,10 @@ export function skipReason(
   if (FINAL_STATUSES.has(fixture.status) && next.status !== fixture.status) {
     return "protected_final_state";
   }
+  // A running clock is a change in itself: the minute moves while nothing else does.
+  // (The snapshot does not carry the stored minute, so a computed one is always written.)
+  const minuteMoves =
+    next.minute !== null && (fixture as { minute?: number | null }).minute !== next.minute;
   const sameKickoff = Date.parse(fixture.kickoffAt) === Date.parse(next.kickoffAt);
   const gainsFinalization = next.finalizedAt !== null && fixture.finalizedAt === null;
   if (
@@ -379,6 +384,7 @@ export function skipReason(
     fixture.period === next.period &&
     fixture.homeScore === next.homeScore &&
     fixture.awayScore === next.awayScore &&
+    !minuteMoves &&
     !gainsFinalization
   ) {
     return "unchanged";
@@ -478,6 +484,17 @@ export async function runSofascoreRefresh(
   const events = dedupeEvents(parsedLists.map((list) => list.events));
   const collapsed = collapseReplacedEvents(events);
   const plan = buildFixtureIngestPlan(collapsed.events, mapping.lookup, now);
+  // One entry per fixture in a running period, per tick, no payload: does the feed
+  // send time.currentPeriodStartTimestamp, and so is a minute written? Reported in
+  // the tick's summary line (`periodStart`), and only when something is in play.
+  const periodStart = collapsed.events
+    .filter((event) => ["first_half", "second_half", "extra_time"].includes(event.period))
+    .map((event) => ({
+      eventId: event.sofascoreEventId,
+      period: event.period,
+      present: event.periodStartTimestamp !== null,
+      minute: computeLiveMinute(event, now.getTime()),
+    }));
   const stateByExternalId = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
   const toWrite: SofascoreIngestCall[] = [];
   const skipped: Record<SkipReason, string[]> = {
@@ -500,6 +517,7 @@ export async function runSofascoreRefresh(
   const unknownStatus = parsedLists.flatMap((list) => list.unknownStatus);
   const summary = {
     requests,
+    ...(periodStart.length > 0 ? { periodStart } : {}),
     polledEvents: parsedLists.reduce((total, list) => total + list.polledCount, 0),
     botolaEvents: collapsed.events.length,
     supersededEventIds: collapsed.supersededIds,

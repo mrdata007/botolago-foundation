@@ -11,7 +11,8 @@ import { cn } from "@/lib/utils";
 import type { MatchEvent } from "@/services/match-live";
 import type { Club, Match } from "@/types/domain";
 import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
-import { liveMinuteLabel } from "@/lib/live-minute";
+import { liveClock } from "@/lib/live-minute";
+import { useLiveStageLabels } from "./live-stage";
 import { BallIcon } from "./BallIcon";
 import { FlipScore } from "./FlipScore";
 import { GOAL_EVENT_TYPES } from "./goal-moment";
@@ -71,7 +72,14 @@ export function MatchScoreHeader({
   const { t, tr, lang } = useI18n();
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   // The minute keeps ticking between refreshes (at most one ahead of the data).
+  const stages = useLiveStageLabels();
   const liveMinute = useTickingMinute(match.minute, match.status === "live");
+  const clock = liveClock({
+    stages,
+    minute: liveMinute,
+    period: match.period,
+    addedTime: match.addedTime,
+  });
   // The match ended while the page was open: the final score settles, the FT pill pops.
   const justFinished = useJustTurnedOn(match.status === "finished");
   const kickoff = new Date(match.kickoff);
@@ -189,14 +197,7 @@ export function MatchScoreHeader({
 
           {isLive ? (
             <>
-              <UiLivePill
-                size="md"
-                minute={liveMinuteLabel({
-                  minute: liveMinute,
-                  period: match.period,
-                  addedTime: match.addedTime,
-                })}
-              />
+              <UiLivePill size="md" minute={clock.minute} label={clock.stage} />
               {/* The page refreshes itself while live; said once, quietly. */}
               <span className="sr-only">{t("matches.detail.live_updating")}</span>
             </>

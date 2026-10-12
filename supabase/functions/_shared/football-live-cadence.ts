@@ -13,11 +13,11 @@
 //           or kickoff has passed without the feed saying so (last 3 h): the
 //           start is caught within two minutes.
 //   300 s   a fixture kicks off within 10 minutes.
-//   900 s   a fixture was finalized within the last 2 hours (post-match refresh
+//   1800 s  a fixture was finalized within the last 2 hours (post-match refresh
 //           of events, lineups and statistics, unchanged).
 //   null    idle: nothing is called.
 // Stop: a fixture leaves the 60 s class when its status becomes `finished` (or
-// any other non-play status). The post-final 900 s refresh then takes over.
+// any other non-play status). The post-final 1800 s refresh then takes over.
 
 export const LIVE_PLAY_STATUSES: readonly string[] = [
   "live_first_half",
@@ -32,7 +32,7 @@ export const LIVE_NOT_STARTED_STATUSES: readonly string[] = ["scheduled", "not_s
 export const LIVE_CADENCE_IN_PLAY_SECONDS = 60;
 export const LIVE_CADENCE_UNCERTAIN_SECONDS = 120;
 export const LIVE_CADENCE_PRE_KICKOFF_SECONDS = 300;
-export const LIVE_CADENCE_POST_FINAL_SECONDS = 900;
+export const LIVE_CADENCE_POST_FINAL_SECONDS = 1800;
 /** pg_cron can start a tick a few seconds late; this keeps 60 s from slipping to 120 s. */
 export const LIVE_CADENCE_SLACK_SECONDS = 20;
 

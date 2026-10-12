@@ -227,6 +227,8 @@ export const ar = {
   "matches.status.delayed": "متأخر",
   "matches.status.penalties": "ركلات ترجيح",
   "matches.status.extra_time": "وقت إضافي",
+  "matches.stage.first_half": "الشوط الأول",
+  "matches.stage.second_half": "الشوط الثاني",
   "matches.gameweek": "ج.",
   "matches.vs": "ضد",
   "matches.competition.botola": "البطولة الاحترافية إنوي",

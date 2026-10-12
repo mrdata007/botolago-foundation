@@ -161,7 +161,8 @@ fixtures, so this can only happen to a match that was live across the switch.
 ## Live polling every 60 seconds
 
 Migration `20261013110100_football_live_refresh_60s.sql` replaces
-`app_private.football_live_refresh_tick()`. pg_cron already wakes it every minute
+`app_private.football_live_refresh_tick()`; `20261013110200_football_live_refresh_post_final_30min.sql`
+replaces it again (post-match refresh every 30 minutes instead of 15, below). pg_cron already wakes it every minute
 (`* * * * *`, 20260924200500), so only the cadence changed, not the schedule.
 
 | When (current season, kickoff confirmed)                                                         | Calls the function   |
@@ -169,13 +170,13 @@ Migration `20261013110100_football_live_refresh_60s.sql` replaces
 | a fixture is `live_first_half`, `half_time`, `live_second_half`, `extra_time` or `penalties`     | every 60 s           |
 | `delayed` / `suspended`, or past kickoff while the feed still says scheduled / not started (3 h) | every 2 min          |
 | kickoff within the next 10 minutes                                                               | every 5 min          |
-| finalized within the last 2 hours (post-match refresh, unchanged)                                | every 15 min         |
+| finalized within the last 2 hours (post-match refresh)                                           | every 30 min         |
 | otherwise                                                                                        | idle: nothing called |
 
 Start: the first minute tick after a fixture shows an in-play status (or, for a
 match the feed has not announced, within 2 minutes of kickoff). Stop: when the
-fixture turns `finished` it leaves the 60 s class; the 15-minute post-match
-refresh then takes over, exactly as before. Outside windows the tick is `idle`
+fixture turns `finished` it leaves the 60 s class; the 30-minute post-match
+refresh (2 hours after the final whistle, as before but half as often) takes over. Outside windows the tick is `idle`
 and forgets its last call, so the next match starts at once. The 20 s slack on
 the heartbeat is kept: a tick pg_cron starts a few seconds late still calls.
 
@@ -229,8 +230,8 @@ Shared by all matches of one slot (live-events requests are per tick, not per ma
 | start not yet announced (2 min)             | about 1 tick x 1 | 1        |
 | in play, 60 s                               | 110 ticks x 1    | 110      |
 | final whistle fallback (`get-last-matches`) | 1                | 1        |
-| post-match 2 h at 15 min                    | 8 ticks x 1      | 8        |
-| **slot total**                              |                  | **122**  |
+| post-match 2 h at 30 min                    | 4 ticks x 1      | 4        |
+| **slot total**                              |                  | **118**  |
 
 Per match:
 
@@ -238,25 +239,26 @@ Per match:
 | ---------------------------------------------------------------------------------- | ---------- | -------- |
 | incidents in play: 15 x 1.7 = 25.5, + 3 status writes, + 1 lineups at start, about | -          | 29       |
 | full time: incidents + lineups + statistics                                        | 3          | 3        |
-| post-match refresh, 8 ticks x 3 replies                                            | 8 x 3      | 24       |
-| **match total**                                                                    |            | **56**   |
+| post-match refresh, 4 ticks x 3 replies                                            | 4 x 3      | 12       |
+| **match total**                                                                    |            | **44**   |
 
-Round: 5 slots x 122 + 8 matches x 56 = 610 + 448 = **1,058 requests**.
-Month: 4 rounds x 1,058 = 4,232, plus the season job 2 x 24 x 30 = 1,440, so about
-**5,670 of 10,000**. That leaves about 4,300 for the other SofaScore lanes
+Round: 5 slots x 118 + 8 matches x 44 = 590 + 352 = **942 requests**.
+Month: 4 rounds x 942 = 3,768, plus the season job 2 x 24 x 30 = 1,440, so about
+**5,210 of 10,000**. That leaves about 4,800 for the other SofaScore lanes
 (standings, clubs and players, images, ID mapping) and for backfills, before the
 8,000 warning.
 
 For comparison, the same model with the previous rules (2 min in play, all three
-replies for a changed match, 150 s window) is 5 x 67 + 8 x 102 = 335 + 816 = 1,151
-per round, so the 60 s cadence with incidents-only is slightly cheaper than the 2
-minute one, while twice as fresh.
+replies for a changed match, 150 s window, post-match every 15 min) is
+5 x 67 + 8 x 102 = 335 + 816 = 1,151 per round, so the 60 s cadence with
+incidents-only is cheaper than the 2 minute one while twice as fresh.
 
-The largest single part is the post-match refresh (24 per match, 192 per round
-of 8, about 770 a month), kept as it was. Refreshing every 30 minutes instead
-would save about 380 a month; that is the owner's call. Live-events cost scales
-with slots, not matches: a round played in 3 slots instead of 5 saves about
-2 x 122 = 244 requests.
+Post-match refresh every 30 minutes instead of 15 (this migration): per match
+4 x 3 = 12 instead of 8 x 3 = 24, per slot 4 live-events requests instead of 8.
+Saving per round: 8 x 12 + 5 x 4 = 96 + 20 = 116; per month 4 x 116 = **464
+requests** (the earlier "about 380" left out the shared live-events ticks).
+Round 1,058 -> 942, month 5,672 -> 5,208. Live-events cost scales with slots, not
+matches: a round played in 3 slots instead of 5 saves about 2 x 118 = 236.
 
 ## RapidAPI call counter and budget
 
@@ -299,17 +301,39 @@ select job, endpoint, sum(calls) calls
 The count is our own tally, not the provider's: RapidAPI's dashboard stays the
 authority (the client also logs `quotaRemaining` and refuses below the floor).
 
-## The minute in stoppage time
+## The live minute
 
-SofaScore's clock stops at 45 and 90 (120 in extra time) while time is added. The
-app writes that as **45+**, **90+** and **120+**, from the period and the minute
-alone: `src/lib/live-minute.ts` (`liveMinuteLabel`), used by the match card, the
-match header, the top bar and the live strip. The added minutes ("45+2") appear
-only if the provider gave `addedTime`; they are never worked out. No minute, no
-label; half-time and penalties have none. Extra time has one period in the data,
-so only its end (120+) is told apart; the first extra half's stoppage shows as the
-number. The SofaScore path writes `minute: null` today (`sofascore-fixtures.ts`),
-so the label appears once the minute is filled in; see "Open points".
+**Server.** `computeLiveMinute` (`sofascore-fixtures.ts`, pure, tested) writes
+`fixtures.minute` from SofaScore's `time.currentPeriodStartTimestamp` (seconds, when
+the current half started): minute = the period's base (0 first half, 45 second
+half, 90 first extra half, 105 second extra half) + whole minutes since the half
+started + 1, capped at the end of the period (45 / 90 / 105 / 120). Extra time is
+told apart by the status code (41 first half, 42 second). **No half start time, no
+minute is written** (and none at half-time, penalties or outside play); a start
+more than 2 minutes in the future is treated as a bad clock. `addedTime` stays
+null: added minutes are never computed. While a clock runs the fixture is written
+every tick even if the score did not change (the minute moved), at no SofaScore
+cost; the stored minute is not in the live snapshot, so a computed minute is always
+written.
+
+**App.** `src/lib/live-minute.ts`: `liveMinuteLabel` / `liveClock`. A capped
+minute reads **45+ / 90+ / 105+ / 120+** (the clock stopped, time is being
+added); "45+2" appears only if the provider gave `addedTime`. With no minute, the
+match stage stands in so a live match never shows a blank clock: "1re mi-temps" /
+"Mi-temps" / "2e mi-temps" / "Prolongations" / "T.a.b." (Arabic: الشوط الأول /
+استراحة / الشوط الثاني / وقت إضافي / ركلات ترجيح; keys `matches.stage.*` and
+`matches.status.*`). Used by the match card, header, top bar and live strip. The
+ticking minute does not tick past a capped minute.
+
+**Confirm that SofaScore sends the half start.** Each live tick's summary line
+(`event: "football_live_refresh_sofascore"`, `job: "fixtures"`) carries
+`periodStart`, one entry per fixture in a running period, once per tick, no
+payload: `{eventId, period, present, minute}`. In the Supabase dashboard, Edge
+Functions > `football-live-refresh` > Logs, search for `periodStart` during a live
+match: `present: true` with a `minute` means SofaScore sends it; `present: false`
+(and `minute: null`) means it does not, and the app shows the stage words. The
+line is absent when nothing is in a running period. In shadow mode the same field
+is in the shadow line.
 
 ## Fantasy observations (automatic)
 
@@ -422,11 +446,9 @@ If the migration is not applied, the function is missing and the step logs
 
 ## Open points
 
-- The SofaScore ingest writes `minute` and `addedTime` as null, so the live minute
-  (and the "45+" / "90+" label) has nothing to show for a SofaScore match yet.
-  SofaScore's live event may carry `time.currentPeriodStartTimestamp` (not in the
-  committed samples, so not relied on here); with it the minute could be computed
-  on the server per tick. Owner decision.
+- `time.currentPeriodStartTimestamp` is not in the committed samples: until the
+  `periodStart` log shows `present: true` on a live match, the minute may stay null
+  and the app shows the stage words.
 - Finished status codes 100/110/120 are an assumption (see `sofascore-fixtures.ts`).
 - After the switch, a fixture last written by SportsMonks keeps its
   `provider_updated_at`; SofaScore updates older than that are skipped as stale

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import { PERIOD_END_MINUTES } from "@/lib/live-minute";
 import { flushSync } from "react-dom";
 
 /**
@@ -357,7 +358,8 @@ export function useTickingMinute(minute: number | undefined, running: boolean): 
   }, [minute]);
 
   useEffect(() => {
-    if (!running || minute === undefined) return;
+    // At the end of a period the clock has stopped (45+ / 90+ / 105+ / 120+): no tick.
+    if (!running || minute === undefined || PERIOD_END_MINUTES.has(minute)) return;
     const timer = setInterval(() => {
       if (typeof document !== "undefined" && document.hidden) return;
       const next = (tickedMinute(minute, receivedAt.current, Date.now()) ?? minute) - minute;

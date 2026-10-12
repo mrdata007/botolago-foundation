@@ -511,3 +511,37 @@ describe("sofascore details backfill", () => {
     expect(named(db, "ingest_football_match_details")).toHaveLength(0);
   });
 });
+
+describe("the live minute on the live tick", () => {
+  const timed = (periodStart: number | undefined) => ({
+    ...event(1, LIVE, START + 3000),
+    ...(periodStart === undefined ? {} : { time: { currentPeriodStartTimestamp: periodStart } }),
+  });
+  const run = async (periodStart: number | undefined) => {
+    const quiet = state(1, { homeScore: 1 });
+    const db = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
+    const { fetch } = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [timed(periodStart)] } });
+    const { lines } = await tick("sofascore", "fixtures", db, fetch, {
+      SOFASCORE_DETAILS_PER_TICK: "0",
+    });
+    return { db, summary: JSON.parse(lines[0]) };
+  };
+
+  test("an unchanged score is still written while the clock runs, with the minute", async () => {
+    const { db, summary } = await run(START + 3000);
+    const calls = named(db, "ingest_football_fixture");
+    expect(calls).toHaveLength(1);
+    expect((calls[0].args.p_fixture as { minute: number }).minute).toBe(11);
+    expect(summary.periodStart).toEqual([
+      { eventId: "1", period: "first_half", present: true, minute: 11 },
+    ]);
+  });
+
+  test("without the half start nothing is written and the log says it was absent", async () => {
+    const { db, summary } = await run(undefined);
+    expect(named(db, "ingest_football_fixture")).toHaveLength(0);
+    expect(summary.periodStart).toEqual([
+      { eventId: "1", period: "first_half", present: false, minute: null },
+    ]);
+  });
+});
