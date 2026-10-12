@@ -285,7 +285,7 @@ describe("the privacy policy matches the analytics switch", () => {
     expect(fr()).toContain("ses données sont effacées sous 7 jours");
     expect(ar()).toContain("تُمحى بياناته خلال 7 أيام");
     expect(fr()).not.toContain("12 mois après suppression");
-    expect(fr()).toContain("Les traces des prix déjà remis sont conservées détachées");
+    expect(fr()).toContain("Les traces des lots déjà remis sont conservées détachées");
     expect(ar()).toContain("تُحفظ آثار الجوائز المسلَّمة منفصلة عن الحساب المحذوف");
   });
 
