@@ -1,5 +1,12 @@
 import { FlipHorizontal2 } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
 import {
@@ -10,8 +17,12 @@ import {
 } from "@/components/manager-card/copy";
 import { fill } from "@/components/manager-card/interpolate";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
+import { CardGlint, type GlintHandle } from "@/components/manager-card/motion/CardGlint";
+import { cardOutline } from "@/components/manager-card/motion/outline";
 import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
+import { useCardPalette } from "@/components/manager-card/use-card-palette";
+import { useI18n } from "@/i18n/provider";
 import { ui, UiBadge, UiIconButton } from "@/components/ui-kit";
 import { prefersReducedMotion } from "@/lib/motion";
 import { useMotionAllowed } from "./use-replay-beat";
@@ -19,7 +30,18 @@ import { cn } from "@/lib/utils";
 
 import { nextSeasonLabel, waitingBox, type WaitingBox } from "./curva-state";
 import { CardBack } from "./CardBack";
-import { FLIP_MS, tiltAllowed } from "./flip-state";
+import {
+  FLIP_GLINT_AT,
+  FLIP_GLINT_MS,
+  FLIP_HALF_THICKNESS,
+  FLIP_MS,
+  flipProgress,
+  flipFrames,
+  shadeFrames,
+  tiltAllowed,
+  turnGroundFrames,
+} from "./flip-state";
+import "./card-motion.css";
 import { Figure, ProvisionalBadge } from "./figures";
 import { deltaArrow, signedDelta } from "./rating-change";
 import type { RatingBadge } from "./use-rating-change";
@@ -129,13 +151,28 @@ export function CardStage({
     heroDue: entrance?.heroDue ?? (() => false),
   });
 
-  // The turn is a CSS transition; it ends with `transitionend`, with a timer behind it for a turn
-  // that was cut short (a hidden tab, a removed node), so the 3D context never outlives it.
+  // The turn is a spring played by the Web Animations API on the inner box (a compositor animation:
+  // transform and opacity only). It ends the 3D context with `finished`, with a timer behind it for
+  // a turn that was cut short (a hidden tab, a removed node), so the context never outlives it.
   useEffect(() => {
     if (!turning) return;
     const timer = window.setTimeout(() => setTurning(false), FLIP_MS + 120);
     return () => window.clearTimeout(timer);
   }, [turning, turnKey]);
+
+  const innerRef = useRef<HTMLDivElement | null>(null);
+  const frontShade = useRef<HTMLSpanElement | null>(null);
+  const backShade = useRef<HTMLSpanElement | null>(null);
+  const frontGlint = useRef<GlintHandle | null>(null);
+  const backGlint = useRef<GlintHandle | null>(null);
+  // The turn in flight (from and to in degrees, when it began), so a tap in the middle of it turns
+  // the card back from where it is.
+  const flight = useRef<{ from: number; to: number; at: number; animations: Animation[] } | null>(
+    null,
+  );
+  const { dir } = useI18n();
+  const rtl = dir === "rtl";
+  const palette = useCardPalette(profile.ovr === null ? null : profile.tier);
 
   const flip = () => {
     const next = !back;
@@ -151,6 +188,64 @@ export function CardStage({
   // by being shown and hidden, with no 3D context and no transform at all.
   const motionOk = useMotionAllowed();
   const in3d = motionOk && (back || turning);
+
+  // Plays the turn before the first painted frame of it (the state has just put the 3D context and
+  // the final angle on the box), from where the card is: 0 or 180, or part-way for a second tap.
+  useLayoutEffect(() => {
+    const inner = innerRef.current;
+    if (turnKey === 0 || !inner || typeof inner.animate !== "function") return;
+    const now = performance.now();
+    const last = flight.current;
+    let from = back ? 0 : 180;
+    if (last) {
+      const done = Math.min(1, (now - last.at) / FLIP_MS);
+      from = last.from + (last.to - last.from) * flipProgress(done);
+      for (const animation of last.animations) animation.cancel();
+    }
+    const to = back ? 180 : 0;
+    const sign = document.documentElement.dir === "rtl" ? -1 : 1;
+    const animations = [
+      inner.animate(flipFrames(from, to, sign), { duration: FLIP_MS, easing: "linear" }),
+    ];
+    const frontShadeEl = frontShade.current;
+    const backShadeEl = backShade.current;
+    if (frontShadeEl) {
+      animations.push(
+        frontShadeEl.animate(shadeFrames(from, to, 0), { duration: FLIP_MS, easing: "linear" }),
+      );
+    }
+    if (backShadeEl) {
+      animations.push(
+        backShadeEl.animate(shadeFrames(from, to, 180), { duration: FLIP_MS, easing: "linear" }),
+      );
+    }
+    const ground = stage.groundRef.current;
+    if (ground) {
+      animations.push(
+        ground.animate(turnGroundFrames(), {
+          duration: FLIP_MS,
+          easing: "cubic-bezier(0.3, 0.1, 0.3, 1)",
+        }),
+      );
+    }
+    (back ? backGlint : frontGlint).current?.play({
+      delay: Math.round(FLIP_MS * FLIP_GLINT_AT),
+      duration: FLIP_GLINT_MS,
+    });
+    const record = { from, to, at: now, animations };
+    flight.current = record;
+    void Promise.all(animations.map((animation) => animation.finished)).then(
+      () => {
+        if (flight.current === record) {
+          flight.current = null;
+          setTurning(false);
+        }
+      },
+      () => undefined, // cancelled by a second tap: that turn ends it
+    );
+    // a turn per tap: `turnKey` is the only trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [turnKey]);
 
   return (
     <section
@@ -189,7 +284,7 @@ export function CardStage({
             "group-has-[[data-mc-ready]]/stage:hidden",
           )}
         />
-        {entrance ? (
+        {entrance || flippable ? (
           <span
             ref={stage.groundRef}
             aria-hidden
@@ -209,23 +304,22 @@ export function CardStage({
               className={cn(in3d && "[perspective:1400px]")}
             >
               <div
+                ref={innerRef}
                 data-flip-inner=""
-                className={cn(
-                  "relative transition-transform ease-[var(--ease-emphasized)]",
-                  in3d && "[transform-style:preserve-3d]",
-                )}
+                className={cn("relative", in3d && "[transform-style:preserve-3d]")}
                 style={{
-                  transitionDuration: `${FLIP_MS}ms`,
                   transform:
                     motionOk && back ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined,
                 }}
-                onTransitionEnd={(event) => {
-                  if (event.target === event.currentTarget) setTurning(false);
-                }}
               >
+                {in3d && turning ? <FlipEdge palette={palette.metal} rtl={rtl} /> : null}
                 <div
                   data-flip-face="front"
-                  className={cn("[backface-visibility:hidden]", !motionOk && back && "invisible")}
+                  className={cn(
+                    "relative [backface-visibility:hidden]",
+                    !motionOk && back && "invisible",
+                  )}
+                  style={in3d ? { transform: `translateZ(${FLIP_HALF_THICKNESS}px)` } : undefined}
                   inert={back}
                   aria-hidden={back || undefined}
                 >
@@ -237,6 +331,8 @@ export function CardStage({
                     testId={testId}
                     className="relative"
                   />
+                  <FaceShade ref={frontShade} rtl={rtl} />
+                  <CardGlint ref={frontGlint} rtl={rtl} />
                 </div>
                 <div
                   data-flip-face="back"
@@ -245,12 +341,16 @@ export function CardStage({
                     !motionOk && !back && "invisible",
                   )}
                   style={{
-                    transform: motionOk ? "rotateY(calc(var(--vt-dir, 1) * 180deg))" : undefined,
+                    transform: motionOk
+                      ? `rotateY(calc(var(--vt-dir, 1) * 180deg)) translateZ(${FLIP_HALF_THICKNESS}px)`
+                      : undefined,
                   }}
                   inert={!back}
                   aria-hidden={!back || undefined}
                 >
                   <CardBack profile={profile} />
+                  <FaceShade ref={backShade} rtl={rtl} />
+                  <CardGlint ref={backGlint} rtl={rtl} />
                 </div>
               </div>
             </div>
@@ -264,6 +364,7 @@ export function CardStage({
               className="relative"
             />
           )}
+          {entrance ? <CardGlint ref={stage.glintRef} rtl={rtl} /> : null}
         </div>
         {flippable ? (
           <>
@@ -301,6 +402,50 @@ export function CardStage({
         </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * The card's edge: thin layers of the tier's metal stacked between the two faces, so when the card
+ * is edge-on during the turn it has a thickness and not a hairline. Drawn only while the 3D context
+ * exists (`in3d`), hidden behind the faces otherwise. Each layer is the card's outline.
+ */
+const EDGE_LAYERS = 9;
+function FlipEdge({ palette, rtl }: { palette: readonly string[]; rtl: boolean }) {
+  const step = (FLIP_HALF_THICKNESS * 2) / (EDGE_LAYERS - 1);
+  return (
+    <>
+      {Array.from({ length: EDGE_LAYERS }, (_, i) => {
+        const z = -FLIP_HALF_THICKNESS + i * step;
+        const style: CSSProperties = {
+          clipPath: cardOutline(rtl),
+          transform: `translateZ(${z.toFixed(2)}px)`,
+          backgroundColor: palette[i % 2 === 0 ? 2 : 4] ?? palette[3] ?? "var(--ui-ink)",
+        };
+        return (
+          <span
+            key={i}
+            aria-hidden
+            data-flip-edge=""
+            className="pointer-events-none absolute inset-0"
+            style={style}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/** A black layer over a face, darker the more the face turns away: the turn's shading. */
+function FaceShade({ ref, rtl }: { ref: React.Ref<HTMLSpanElement>; rtl: boolean }) {
+  return (
+    <span
+      ref={ref}
+      aria-hidden
+      data-flip-shade=""
+      className="pointer-events-none absolute inset-0 z-10 bg-black opacity-0"
+      style={{ clipPath: cardOutline(rtl) }}
+    />
   );
 }
 
@@ -449,7 +594,7 @@ export function RatingLine({
  * « +3 ▲ » / « −2 ▼ » in the positive or negative colour, with the arrow as the second cue after
  * the colour and the sentence for a screen reader (« note en hausse de 3 »). The figure and the
  * arrow are one left-to-right run (`<bdi dir="ltr">`), so Arabic keeps « +3 ▲ ». It pops once
- * (`pop`, the app's overshoot) when `change.pop` says this round is new on this phone.
+ * (`mc-chip-pop`, a spring and a ring, `card-motion.css`) when `change.pop` says this round is new on this phone.
  */
 function RatingChangeChip({ change }: { change: RatingBadge }) {
   const motion = useMotionCopy();
@@ -457,13 +602,13 @@ function RatingChangeChip({ change }: { change: RatingBadge }) {
   return (
     <UiBadge
       tone={up ? "positive" : "negative"}
-      className={cn("self-center gap-1 px-2 py-0.5", change.pop && "pop")}
+      className={cn("mc-chip self-center gap-1 px-2.5 py-1", change.pop && "mc-chip-pop")}
     >
       <span
         data-testid="curva-rating-change"
         data-change={up ? "up" : "down"}
         data-pop={change.pop ? "1" : undefined}
-        className="inline-flex items-center"
+        className="inline-flex items-center text-[1.12em]"
       >
         <bdi dir="ltr" aria-hidden>
           {signedDelta(change.delta)} {deltaArrow(change.delta)}

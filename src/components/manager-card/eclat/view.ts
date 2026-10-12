@@ -99,13 +99,6 @@ export function makeView(profile: CardProfile, strings: CardStrings): View {
   return { p, s, ar: s.lang === "ar", tierKey, F: FOIL[tierKey] };
 }
 
-/** The serial's carrier: the id, or the same carrier with a dash. No sentence, no placeholder. */
-export function serialLine(s: CardStrings, serial: string | null): string {
-  if (serial) return s.serial(serial);
-  const prefix = s.serial("").replace(/\s*#?\s*$/, "");
-  return `${prefix} ${DASH}`;
-}
-
 /** What a label may not carry into an attribute: control and direction-override characters. */
 export const stripControls = (text: string): string =>
   [...text]

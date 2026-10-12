@@ -537,7 +537,6 @@ export function cardLabel(profile: CardProfile, strings: CardStrings): string {
   }
   if (profile.club) parts.push(profile.club.name[strings.lang]);
   if (profile.founder !== null) parts.push(strings.founderLine);
-  if (profile.serial !== null) parts.push(strings.serial(profile.serial));
   if (profile.sample) parts.push(strings.sample);
   return parts.join(strings.a11y.separator);
 }

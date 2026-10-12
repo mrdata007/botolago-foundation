@@ -34,6 +34,13 @@ export const GOAL_MOMENT_MS = 2400;
  *   banner is the calm version of the same news.)
  * - The panel slides up out of a clipping frame that starts under the bar,
  *   so it never passes over the bar on its way out.
+ * - It moves the whole time (docs/engineering/GOAL_MOMENT_MOTION.md; the
+ *   keyframes are the `GOAL MOMENT motion` block of styles.css): a stripe layer
+ *   pans behind everything; "BUT !" slams in from large with a small impact
+ *   shake and a light sweep; the scorer card swings in a beat later; the
+ *   scoring side's number rolls from the old value to the new one; the stack
+ *   pushes in slowly while it is held; then the panel leaves as one.
+ *   Transform and opacity only.
  * - "BUT !" leans forward in French only: Changa has no italic, and a
  *   synthesised slant would lean Arabic the wrong way; the small tilt is
  *   mirrored instead.
@@ -90,11 +97,35 @@ export function GoalMoment({
       {event.addedTime > 0 ? `+${event.addedTime}` : ""}′
     </bdi>
   );
+  // The reduced-motion banner shows the plain score; the takeover rolls the
+  // scoring side's number from what it was before the goal.
   const newScore = score ? (
     <span className="inline-flex items-center gap-1">
       <bdi>{score.home}</bdi>
       <span>–</span>
       <bdi>{score.away}</bdi>
+    </span>
+  ) : null;
+  const rolled = (side: "home" | "away") => {
+    if (!score) return null;
+    const now = score[side];
+    if (side !== event.side || now < 1) return <bdi>{now}</bdi>;
+    return (
+      <span className="goal-tick-pop">
+        <span className="goal-tick">
+          <span className="goal-tick-col">
+            <bdi>{now - 1}</bdi>
+            <bdi>{now}</bdi>
+          </span>
+        </span>
+      </span>
+    );
+  };
+  const tickScore = score ? (
+    <span className="inline-flex items-center gap-1">
+      {rolled("home")}
+      <span>–</span>
+      {rolled("away")}
     </span>
   ) : null;
   const clubName = tr(club.name);
@@ -152,73 +183,72 @@ export function GoalMoment({
       aria-hidden
       data-goal-moment="takeover"
       onClick={onDone}
-      className="fixed inset-x-0 bottom-0 top-[var(--topbar-h)] z-[45] cursor-pointer overflow-hidden"
+      className="fixed inset-x-0 bottom-0 top-[var(--topbar-h)] z-[45] goal-moment cursor-pointer overflow-hidden"
     >
       <div
         {...clubStyle(palette)}
         className={cn(
-          "flex h-full flex-col items-center justify-center gap-6 px-4",
+          "flex h-full flex-col items-center justify-center relative gap-6 overflow-hidden px-4",
           ui.club.fill,
-          ui.club.stripes,
           leaving
             ? "animate-out fill-mode-forwards slide-out-to-top duration-[var(--duration-sheet)] ease-[var(--ease-standard)]"
             : "animate-in slide-in-from-bottom duration-[var(--duration-sheet)] ease-[var(--ease-emphasized)]",
         )}
       >
-        {/* On a patch of plain fill: the palette measures the club's text
-            against the fill, and the stripes' lighter bands would take this
-            small line under 4.5:1 on a club that only just carries white. */}
-        <p
-          className={cn(
-            "max-w-full truncate px-2.5 py-0.5",
-            ui.radius.full,
-            ui.club.fill,
-            ui.text.label,
-          )}
-        >
-          {minute} · {clubName}
-        </p>
-        <p
-          className={cn(
-            "whitespace-nowrap ltr:italic ltr:-rotate-[4deg] rtl:rotate-[4deg]",
-            ui.display.mega,
-            // The word must fit a 320px screen: "هدف!" is 296px at 112px.
-            "text-[length:min(var(--ui-display-mega),30vw)] leading-[var(--ui-leading-display)]",
-            !leaving &&
-              "animate-in fade-in zoom-in-150 duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]",
-          )}
-        >
-          {t("matches.detail.goal_title")}
-        </p>
-        <div
-          className={cn(
-            "flex max-w-full items-center gap-3.5 py-3.5 pe-5 ps-3.5",
-            ui.surface.card,
-            ui.radius.sheet,
-            ui.shadow.lifted,
-            !leaving &&
-              "animate-in fade-in slide-in-from-bottom-6 duration-[var(--duration-hero)] ease-[var(--ease-emphasized)]",
-          )}
-        >
-          <ClubCrest club={club} palette={palette} size="lg" />
-          <div className="min-w-0">
-            <p className={cn("truncate", ui.display.section)}>{scorer ?? clubName}</p>
-            <p
-              className={cn(
-                "flex flex-wrap items-center gap-x-1.5",
-                ui.text.meta,
-                "[font-weight:var(--ui-weight-strong)]",
-                ui.tone.muted,
-              )}
-            >
-              {assist ? (
-                <span>
-                  {t("matches.event.assist")} {assist}
-                </span>
-              ) : null}
-              {assist && newScore ? <span aria-hidden>·</span> : null}
-              {newScore}
-            </p>
+        <div className="goal-stripes" />
+        <div className="goal-sweep" />
+        <div className="goal-stack relative flex max-w-full flex-col items-center gap-6">
+          {/* On a patch of plain fill: the palette measures the club's text
+              against the fill, and the stripes' lighter bands would take this
+              small line under 4.5:1 on a club that only just carries white. */}
+          <p
+            className={cn(
+              "goal-label max-w-full truncate px-2.5 py-0.5",
+              ui.radius.full,
+              ui.club.fill,
+              ui.text.label,
+            )}
+          >
+            {minute} · {clubName}
+          </p>
+          <p
+            className={cn(
+              "goal-word whitespace-nowrap ltr:italic ltr:-rotate-[4deg] rtl:rotate-[4deg]",
+              ui.display.mega,
+              // The word must fit a 320px screen: "هدف!" is 296px at 112px.
+              "text-[length:min(var(--ui-display-mega),30vw)] leading-[var(--ui-leading-display)]",
+            )}
+          >
+            {t("matches.detail.goal_title")}
+          </p>
+          <div
+            className={cn(
+              "goal-card flex max-w-full items-center gap-3.5 py-3.5 pe-5 ps-3.5",
+              ui.surface.card,
+              ui.radius.sheet,
+              ui.shadow.lifted,
+            )}
+          >
+            <ClubCrest club={club} palette={palette} size="lg" />
+            <div className="min-w-0">
+              <p className={cn("truncate", ui.display.section)}>{scorer ?? clubName}</p>
+              <p
+                className={cn(
+                  "flex flex-wrap items-center gap-x-1.5",
+                  ui.text.meta,
+                  "[font-weight:var(--ui-weight-strong)]",
+                  ui.tone.muted,
+                )}
+              >
+                {assist ? (
+                  <span>
+                    {t("matches.event.assist")} {assist}
+                  </span>
+                ) : null}
+                {assist && tickScore ? <span aria-hidden>·</span> : null}
+                {tickScore}
+              </p>
+            </div>
           </div>
         </div>
       </div>

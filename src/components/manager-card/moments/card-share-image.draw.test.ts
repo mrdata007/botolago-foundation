@@ -200,22 +200,15 @@ describe("what it says", () => {
     }
   });
 
-  it("the serial line is there with a serial and absent without one", async () => {
-    const withSerial = await draw("rated", "fr");
-    expect(withSerial.model.serial).toBe("BOT #482913");
-    expect(
-      texts(withSerial.ops).find(
-        (op) => op.text === "BOT #482913" && op.baseline === L.meta.baseline,
-      ),
-    ).toBeDefined();
-
-    const without = await draw("rated", "fr", { serial: null });
-    expect(without.model.serial).toBeNull();
-    expect(
-      texts(without.ops).some((op) => op.baseline === L.meta.baseline && /BOT/.test(op.text!)),
-    ).toBe(false);
-    // The season is still on the meta line, alone.
-    expect(find(without.ops, "2026/27")).toBeDefined();
+  it("never draws the serial, with one or without, and the season stands alone on the meta line", async () => {
+    for (const patch of [{}, { serial: null }] as const) {
+      const picture = await draw("rated", "fr", patch);
+      expect(
+        texts(picture.ops).some((op) => /BOT/.test(op.text ?? "")),
+        "no serial run",
+      ).toBe(false);
+      expect(find(picture.ops, "2026/27")).toBeDefined();
+    }
   });
 
   it("the name is in Changa 800, the number and its unit and tier follow", async () => {
@@ -398,17 +391,13 @@ describe("Arabic is the French picture mirrored", () => {
     expect(tier.direction).toBe("rtl");
   });
 
-  it("the serial and the season are left-to-right runs, placed from the right", async () => {
+  it("the season is a left-to-right run, placed from the right", async () => {
     const ar = await draw("rated", "ar");
-    const serial = texts(ar.ops).find(
-      (op) => op.text === "BOT #482913" && op.baseline === L.meta.baseline,
-    )!;
     const season = texts(ar.ops).find(
       (op) => op.text === "2026/27" && op.baseline === L.meta.baseline,
     )!;
-    expect(serial.right).toBe(W - L.pad);
-    expect(serial.direction).toBe("ltr");
-    expect(season.right).toBeLessThan(serial.left);
+    expect(season.right).toBe(W - L.pad);
+    expect(season.direction).toBe("ltr");
   });
 
   it("the Arabic picture uses the Arabic body face and Changa for the name, French the Latin one", async () => {

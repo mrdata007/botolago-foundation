@@ -124,6 +124,11 @@ function PrizeWelcome() {
   return <ArrivalDialog />;
 }
 
+const DEADLINE_SKELETON_HEIGHT = {
+  guest: { fr: "h-[199px]", ar: "h-[233px]" },
+  owner: { fr: "h-[317px]", ar: "h-[361px]" },
+} as const;
+
 function FantasyHub() {
   const { t, lang } = useI18n();
   const { user, status: authStatus } = useAuth();
@@ -198,7 +203,20 @@ function FantasyHub() {
           freeTransfers={hasTeam && team ? team.freeTransfers : undefined}
         />
       ) : screen.phase === "loading" ? (
-        <UiSkeleton className="h-24 rounded-none" />
+        // Hold the height of the card that is coming, so nothing below moves
+        // when it arrives. A visitor with no account gets the countdown alone;
+        // anyone signed in is held at the manager's card (countdown, checklist
+        // and two buttons), the common case. Measured at 390px: French 199 and
+        // 317, Arabic 233 and 361. A signed-in reader with no team, or a
+        // gameweek past its deadline, gets a shorter card than the placeholder.
+        <UiSkeleton
+          className={cn(
+            "rounded-none",
+            DEADLINE_SKELETON_HEIGHT[
+              authStatus === "guest" || authStatus === "anonymous" ? "guest" : "owner"
+            ][lang === "ar" ? "ar" : "fr"],
+          )}
+        />
       ) : null}
 
       <div className={cn("pt-3.5", ui.space.gutter)}>

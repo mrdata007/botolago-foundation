@@ -1,6 +1,7 @@
 import { useId, type CSSProperties } from "react";
 
-import { useCardCopy, useCardStrings } from "@/components/manager-card/copy";
+import { WORDMARK_HEIGHT, WORDMARK_PATHS, WORDMARK_WIDTH } from "@/assets/brand/wordmark-paths";
+import { useCardCopy } from "@/components/manager-card/copy";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import { STAT_CODES, type CardProfile } from "@/components/manager-card/types";
@@ -35,7 +36,7 @@ const HONEYCOMB = [hex(4.33, 5), hex(0, 12.5), hex(8.66, 12.5)].join("");
  * The back of the card, plain DOM (the stage's « Retourner »), made of the front's own parts: the
  * cut-cornered outline and its rim stroke, the lacquer with the backlight and the honeycomb, the
  * club's disc and the season as on the front's tab, the name in the front's serif, the tier in its
- * pointed chip, the four statistics with a bar each, the wordmark and the serial. The colours are
+ * pointed chip, the four statistics with a bar each, and the logo (the BotolaGO wordmark, from its path data), centred at the foot. The serial is data and is not shown. The colours are
  * the tier's material from the active renderer (`useCardPalette`), so the back is the same object
  * as the front. Everything is sized in the back's own container units, like the card, so it scales
  * with the stage's 296 to 336 px. The lower start corner stays empty: the stage's flip button sits
@@ -48,7 +49,6 @@ const HONEYCOMB = [hex(4.33, 5), hex(0, 12.5), hex(8.66, 12.5)].join("");
 export function CardBack({ profile }: { profile: CardProfile }) {
   const copy = useCardCopy();
   const motion = useMotionCopy();
-  const strings = useCardStrings();
   const { dir } = useI18n();
   const rtl = dir === "rtl";
   const palette = useCardPalette(profile.ovr === null ? null : profile.tier);
@@ -79,13 +79,37 @@ export function CardBack({ profile }: { profile: CardProfile }) {
         <div className="relative h-full w-full" style={plate}>
           <svg
             aria-hidden
-            className="pointer-events-none absolute inset-0 h-full w-full opacity-30"
+            data-back-honeycomb=""
+            className="pointer-events-none absolute inset-0 h-full w-full opacity-45"
             viewBox="0 0 100 161.8"
             preserveAspectRatio="xMidYMid slice"
           >
             <defs>
+              <linearGradient id={`${pattern}-g`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stopColor="white" stopOpacity="0.1" />
+                <stop offset="0.5" stopColor="white" stopOpacity="0" />
+                <stop offset="1" stopColor="black" stopOpacity="0.2" />
+              </linearGradient>
+              {/* each cell embossed, lit from the upper left like the front: a soft cell shade, a
+                  shaded edge down and right, a light edge up and left, then the cell's own line */}
               <pattern id={pattern} width="8.66" height="15" patternUnits="userSpaceOnUse">
-                <path d={HONEYCOMB} fill="none" stroke={palette.light} strokeWidth="0.22" />
+                <path d={HONEYCOMB} fill={`url(#${pattern}-g)`} stroke="none" />
+                <path
+                  d={HONEYCOMB}
+                  fill="none"
+                  stroke="black"
+                  strokeOpacity="0.7"
+                  strokeWidth="0.3"
+                  transform="translate(0.2 0.24)"
+                />
+                <path
+                  d={HONEYCOMB}
+                  fill="none"
+                  stroke={palette.light}
+                  strokeOpacity="0.6"
+                  strokeWidth="0.22"
+                  transform="translate(-0.14 -0.16)"
+                />
               </pattern>
             </defs>
             <rect width="100" height="161.8" fill={`url(#${pattern})`} />
@@ -184,17 +208,23 @@ export function CardBack({ profile }: { profile: CardProfile }) {
             </dl>
 
             <div
-              className="flex items-baseline justify-between gap-[3cqw] ps-[15cqw] text-[4cqw] leading-none"
+              className="flex items-center justify-center text-[4cqw] leading-none"
               style={label}
             >
-              <span dir="ltr" className="ltr:tracking-[0.35em]" style={display}>
-                BOTOLAGO
+              <span dir="ltr" className="block" data-back-logo="">
+                <svg
+                  role="img"
+                  aria-label="BotolaGO"
+                  viewBox={`0 0 ${WORDMARK_WIDTH} ${WORDMARK_HEIGHT}`}
+                  className="block h-[4.6cqw] w-auto"
+                  style={{ aspectRatio: `${WORDMARK_WIDTH} / ${WORDMARK_HEIGHT}` }}
+                  fill="currentColor"
+                >
+                  {WORDMARK_PATHS.map((d, i) => (
+                    <path key={i} d={d} />
+                  ))}
+                </svg>
               </span>
-              {profile.serial !== null ? (
-                <bdi dir="ltr" className="[font-weight:var(--ui-weight-heavy)]">
-                  {strings.serial(profile.serial)}
-                </bdi>
-              ) : null}
             </div>
           </div>
         </div>

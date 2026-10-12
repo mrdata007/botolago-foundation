@@ -37,6 +37,7 @@ export function MomentHero({
   profile,
   onDetail,
   onShare,
+  cardBack,
   children,
 }: {
   surface: "curva";
@@ -44,6 +45,8 @@ export function MomentHero({
   profile: CardProfile;
   onDetail: () => void;
   onShare: () => void;
+  /** The card's back, shown halfway through a tier-up's spin. */
+  cardBack?: ReactNode;
   children?: ReactNode | ((stage: { beat: BeatName | undefined }) => ReactNode);
 }): JSX.Element | null {
   const { t, lang } = useI18n();
@@ -73,7 +76,12 @@ export function MomentHero({
   // The card the hero carries: the page's own stage when it passes one, else the hero draws it.
   const stage = (beat: BeatName | undefined): ReactNode =>
     children === undefined ? (
-      <HeroCard profile={profile} beat={beat} burst={hero?.kind === "tier_up" ? hero.tier : null} />
+      <HeroCard
+        profile={profile}
+        beat={beat}
+        burst={hero?.kind === "tier_up" ? hero.tier : null}
+        back={cardBack}
+      />
     ) : typeof children === "function" ? (
       children({ beat })
     ) : (

@@ -41,7 +41,7 @@ import type {
   ThHTMLAttributes,
 } from "react";
 import { isValidElement, useId, useRef } from "react";
-import { staggerStyle, useJustChanged } from "@/lib/motion";
+import { useJustChanged } from "@/lib/motion";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -2441,13 +2441,7 @@ export function UiPitchSurface({
             402px iPhone). Pinned by `pitch-touchline-containment.test.ts`. */}
         <div className="relative flex flex-col gap-3 px-[calc(3.3%+6px)] pb-4 pt-3">
           {rows.map((row, rowIndex) => (
-            // The lines arrive one after another, goalkeeper first. A row is
-            // keyed by its place, so a swap never replays it.
-            <div
-              key={rowIndex}
-              className="enter-rise stagger flex items-start justify-evenly gap-1"
-              style={staggerStyle(rowIndex)}
-            >
+            <div key={rowIndex} className="flex items-start justify-evenly gap-1">
               {row.map((slot, slotIndex) => {
                 // A player card carries its player's id as its React key; the
                 // slot wears it as `data-flip-key`, so `useFlip` on the pitch
@@ -2471,11 +2465,11 @@ export function UiPitchSurface({
       {bench && bench.length > 0 ? (
         <div
           className={cn(
-            "enter-rise stagger relative px-2 pb-3 pt-2",
+            "relative px-2 pb-3 pt-2",
             benchHighlighted &&
               "outline outline-2 -outline-offset-2 outline-[color:var(--ui-accent-sky)]",
           )}
-          style={{ background: "var(--ui-pitch-bench)", ...staggerStyle(rows.length) }}
+          style={{ background: "var(--ui-pitch-bench)" }}
         >
           {benchLabels ? (
             <div className="mb-1 flex items-start justify-evenly gap-1">

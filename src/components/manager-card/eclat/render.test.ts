@@ -13,7 +13,7 @@ import { appliedBeat } from "./full";
 import { tierWord, TIER_KEYS } from "./foil";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS, MOCK_NAMES, PROFILES } from "./test-data";
 import { elementsByClass, layer, texts, textsWith, trackingOf } from "./test-markup";
-import { makeView, serialLine } from "./view";
+import { makeView } from "./view";
 import type { BeatName, CardProfile } from "../types";
 
 const tFor =
@@ -57,13 +57,17 @@ describe("every fixture, language and theme (plan 12.4)", () => {
     }
   });
 
-  it("carries the serial, with a dash when there is none, in the frame", () => {
+  it("does not show the serial: no text, no label and no run carries it, with one or without", () => {
     for (const [id, p] of ALL) {
       const html = draw(p);
-      const [serial] = textsWith(html, "meta").filter((t) => t.attrs["data-meta"] === "serial");
-      expect(serial?.text, id).toBe(serialLine(FR, p.serial));
+      expect(
+        textsWith(html, "meta").some((t) => t.attrs["data-meta"] === "serial"),
+        id,
+      ).toBe(false);
+      expect(html.includes("BOT #"), id).toBe(false);
+      expect(html.includes("BOT —"), id).toBe(false);
+      if (p.serial) expect(html.includes(p.serial), id).toBe(false);
     }
-    expect(serialLine(FR, null)).toBe("BOT —");
   });
 
   it("has the founder's capsule and mark for a founder and neither for anyone else", () => {
@@ -120,10 +124,12 @@ describe("every fixture, language and theme (plan 12.4)", () => {
       expect(word.attrs.style, lang).toBe("letter-spacing:0.22em");
       const label = all.find((t) => "data-ovrlabel" in t.attrs)!;
       expect(trackingOf(label), `${lang} OVR`).toBe("0.2em");
-      const serial = all.find((t) => "data-meta" in t.attrs && t.attrs["data-meta"] === "serial");
-      expect(serial && trackingOf(serial), `${lang} serial`).toBe("0.04em");
-      const mark = all.find((t) => t.text === "BOTOLAGO");
-      expect(mark && trackingOf(mark), `${lang} wordmark`).toBe("0.14em");
+      // the rail's wordmark is the logo (shapes, `data-meta="wordmark"`), no longer typed text
+      expect(
+        all.some((t) => t.text === "BOTOLAGO"),
+        `${lang} no typed wordmark`,
+      ).toBe(false);
+      expect(html.includes('data-meta="wordmark"'), `${lang} logo on the rail`).toBe(true);
       // Arabic-script runs are never tracked: tracking breaks the joins
       for (const t of all) {
         if (/\p{Script=Arabic}/u.test(t.text))
@@ -244,13 +250,13 @@ describe("what a card says and how big it is", () => {
     expect(eclatRenderer.tokenBox(PROFILES.rated, 80)).toEqual({ width: 49, height: 80 });
   });
 
-  it("keeps a stage card's markup within the 46 kB budget", () => {
+  it("keeps a stage card's markup within the 50 kB budget (it was 46 kB: the rail logo is 5.6 kB of path data drawn once and used twice, the embossed honeycomb about 0.7 kB)", () => {
     for (const c of [...MOCK_CARDS, ...MOCK_ARABIC, ...MOCK_NAMES]) {
       const html = eclatRenderer.full(c.profile, {
         strings: c.lang === "ar" ? AR : FR,
         theme: "dark",
       });
-      expect(html.length, c.caption).toBeLessThan(46_000);
+      expect(html.length, c.caption).toBeLessThan(50_000);
     }
   });
 
@@ -428,17 +434,7 @@ describe("the detail and the share art (plan 7)", () => {
       expect(art.height / art.width).toBeCloseTo(1.618, 2);
       const spoken = art.texts.map((r) => r.text);
       const tier = tierWord("legend", lang === "ar" ? AR : FR);
-      for (const expected of [
-        "99",
-        "OVR",
-        "26",
-        "BOT #5508",
-        "2026/27",
-        tier,
-        "YASMINE",
-        "ALAOUI",
-        "FAR",
-      ]) {
+      for (const expected of ["99", "OVR", "26", "2026/27", tier, "YASMINE", "ALAOUI", "FAR"]) {
         expect(spoken, `${lang} ${expected}`).toContain(expected);
       }
       // no stylesheet in an SVG drawn as an image: the moving parts carry their rest transforms
@@ -447,6 +443,9 @@ describe("the detail and the share art (plan 7)", () => {
       // the serif and the light faces are asked for by name; the wordmark on the rail is not drawn
       expect(art.texts.some((r) => r.face === "serif")).toBe(true);
       expect(art.texts.some((r) => r.text === "BOTOLAGO")).toBe(false);
+      // and the logo that replaced it is not in the share picture either
+      expect(art.svg).not.toContain("-logo");
+      expect(art.svg).not.toContain('data-meta="wordmark"');
       for (const r of art.texts) {
         expect(r.size).toBeGreaterThan(0);
         expect(r.x).toBeGreaterThan(0);
