@@ -19,7 +19,7 @@
       {
         "name": "get_profile",
         "title": "Get my profile",
-        "description": "Returns the signed-in BotolaGO user's profile (username, display name, favorite club, preferred language).",
+        "description": "Returns the signed-in BotolaGO user's profile (username, display name, favorite club, preferred language). An account that uses two-step sign-in does not share it with connected apps.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
@@ -35,7 +35,7 @@
       {
         "name": "get_fantasy_team",
         "title": "Get my fantasy team",
-        "description": "Returns the signed-in user's BotolaGO fantasy team summary: team name, manager, formation, bank, free transfers, and current gameweek.",
+        "description": "Returns the signed-in user's BotolaGO fantasy team summary for the current season: team name, formation, bank, team value, free transfers, and current gameweek. An account that uses two-step sign-in does not share it with connected apps.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,
