@@ -25,7 +25,8 @@
 // SOFASCORE_DETAILS_PER_TICK (default 4) fixtures per live tick, so at most 12
 // more requests. Chosen fixtures: a mapped fixture written as finished this
 // tick, then mapped fixtures in play whose score or status was written or whose
-// changeTimestamp moved in the last 150 seconds, then fixtures finalized in the
+// changeTimestamp moved in the last 90 seconds (incidents only: 1 request, plus the
+// lineups on the tick that sees the match start; statistics are read at full time), then fixtures finalized in the
 // last two hours so post-match corrections are refreshed. The
 // season job fetches none. `runSofascoreDetailsBackfill` serves the
 // `match_details_backfill` job. Details never hold a score back: they run after
@@ -94,8 +95,12 @@ const DETAILS_LIVE_STATUSES: ReadonlySet<string> = new Set([
   "extra_time",
   "penalties",
 ]);
-/** A provider change newer than this counts as "moved since the last tick". */
-const DETAILS_CHANGE_WINDOW_MS = 150_000;
+/**
+ * A provider change newer than this counts as "moved since the last tick". The
+ * live tick runs every 60 s, so 90 s covers one late tick and no more: a change
+ * is fetched once or twice, not for as long as 150 s.
+ */
+const DETAILS_CHANGE_WINDOW_MS = 90_000;
 /** Keep refreshing details while post-match incidents and statistics settle. */
 const DETAILS_FINAL_WINDOW_MS = 2 * 60 * 60 * 1000;
 
@@ -258,7 +263,7 @@ function detailsTeams(
 /**
  * Fixtures whose details are worth fetching this tick, in priority order:
  * written as finished first, then in play and changed (written, or the
- * provider's changeTimestamp moved within the last 150 s), newest change first,
+ * provider's changeTimestamp moved within the last 90 s; incidents only), newest change first,
  * then fixtures finalized within two hours, even if absent from the live feed.
  */
 export function selectLiveDetailTargets(
@@ -284,16 +289,23 @@ export function selectLiveDetailTargets(
     if (rank === null) continue;
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
-    // A finished match also feeds the Fantasy step with the same replies; a match
-    // in play feeds the player matching, so unknown names surface before full time.
+    // A finished match reads all three replies and feeds the Fantasy step with
+    // them. A match in play reads the incidents only (1 request): goals, cards and
+    // substitutions; statistics wait for full time. The one exception is the tick
+    // that sees the match start (stored status not yet in play): it also reads the
+    // lineups (2 requests), once, so unknown players reach the staff's matching
+    // list before full time, as they did when every tick read all three.
     const fantasyFixtureId = event.status === "finished" ? state.id : undefined;
-    const liveFixtureId = DETAILS_LIVE_STATUSES.has(event.status) ? state.id : undefined;
+    const starting = rank === 1 && !DETAILS_LIVE_STATUSES.has(state.status);
+    const liveFixtureId = starting ? state.id : undefined;
     ranked.push({
       target: {
         eventId: event.sofascoreEventId,
         teams,
         ...(fantasyFixtureId ? { fantasyFixtureId } : {}),
         ...(liveFixtureId ? { liveFixtureId } : {}),
+        ...(rank === 1 ? { incidentsOnly: true } : {}),
+        ...(starting ? { withLineups: true } : {}),
       },
       rank,
       changed,
