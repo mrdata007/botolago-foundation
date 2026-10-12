@@ -557,3 +557,13 @@ Final production readback: all 21 cron jobs active; Football, Fantasy and
 Manager Card switches on; three recorded matches, five held/reopened matches,
 63 SofaScore performances and zero nonzero J.3 point rows. This completes the
 requested release order, not an end-to-end public-launch readiness sign-off.
+
+### 12 October: website published on the owner's request
+
+The owner subsequently explicitly requested publication in Lovable. The project
+was ready and synced to main `0ed71e90f28d4200ba1ccaedb3d0b5b83bf0435a`
+(#440 plus #444's database/scripts/docs-only changes). Publishing was requested
+through Lovable, deployment `09c59cda-517e-43ea-a82e-a0ad94fb6170`.
+At 13:30 UTC, an independent HTTP 200 response from `botolago.com` carried that
+exact `x-botolago-release` value. The website is now published; no database
+installer or Edge deployment was run during this website publication.
