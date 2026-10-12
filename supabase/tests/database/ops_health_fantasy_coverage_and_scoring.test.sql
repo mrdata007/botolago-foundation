@@ -7,14 +7,16 @@
 -- counted match not finished once the 48 h the rules keep it in the gameweek
 -- have passed since the kickoff it was frozen with: fail, naming the
 -- procedure that then resolves it (20260926003500), or saying a developer is
--- needed where that procedure cannot free the gameweek; points: warn 1 h,
--- fail 8 h after the last statistics were certified; a club twice in a
+-- needed where that procedure cannot free the gameweek; points: warn when a
+-- final match still has no core points 13 h after its whistle, never fail for
+-- provisional points (20261013140000, which replaced the earlier "warn 1 h,
+-- fail 8 h after the last statistics were certified" clocks); a club twice in a
 -- gameweek not locked yet: warn, fail within 24 h of its deadline), with
 -- several gameweeks at once, and their way through the alert tick. Nothing
 -- is sent from a test: pg_net only queues the request, and the rollback at
 -- the end discards the queue rows.
 begin;
-select extensions.plan(126);
+select extensions.plan(119);
 
 create function pg_temp.check(p_name text) returns jsonb language sql as $$
   select c from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
@@ -84,6 +86,10 @@ insert into app.fantasy_seasons (id, fantasy_competition_id, football_season_id,
 values ('e6300000-0000-4000-8000-000000000001', 'e6000000-0000-4000-8000-000000000001',
   'e2000000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000100',
   'Coverage season', 'active', current_date - 10, current_date + 100);
+insert into app.fantasy_players (id, fantasy_season_id, football_player_id, football_team_id, position_id, price)
+values ('ed000000-0000-4000-8000-000000000001', 'e6300000-0000-4000-8000-000000000001',
+  'e8000000-0000-4000-8000-000000000001', md5('cov-club-1')::uuid,
+  (select id from app.fantasy_positions where code = 'FWD'), 6);
 insert into app.fantasy_gameweeks (id, fantasy_season_id, football_round_id, sequence_number, name,
   deadline_at, starts_at, ends_at, status, points_state, finalized_at)
 values
@@ -574,11 +580,21 @@ where id = 'e9000000-0000-4000-8000-000000000012';
 select pg_temp.certify('e9000000-0000-4000-8000-000000000012', interval '3 hours');
 
 -- ---------------------------------------------------------------------------
--- fantasy_scoring once every counted match is final. While a match lacks
--- statistics: due until 6 h after the last whistle, then a warning (the
--- coverage check is the one that fails). Once all are certified: due for an
--- hour, then a warning, and a failure 8 h after the last certification.
+-- fantasy_scoring once every counted match is final (20261013140000). Core
+-- points, provisional or not, are what it checks. With live scoring off the
+-- points come after the last match; once every match is final it is due until
+-- 13 h (12 h + the 1 h scoring run grace) after the oldest final whistle among
+-- the matches without points, then a warning. It never fails for points being
+-- provisional: only a counted match stuck unfinished fails it.
 -- ---------------------------------------------------------------------------
+-- The scoring worker has published a match's (provisional) core points.
+create function pg_temp.publish(p_fixture uuid, p_gameweek uuid default 'e7000000-0000-4000-8000-000000000002')
+returns void language sql as $$
+  insert into app.fantasy_player_point_events (fantasy_player_id, gameweek_id, fixture_id, category, points,
+    state, scoring_version, source_sequence, source_key)
+  values ('ed000000-0000-4000-8000-000000000001', p_gameweek, p_fixture, 'minutes', 2, 'provisional', 1, 1,
+    'fixture-stats:' || p_fixture || ':player:minutes')
+$$;
 select extensions.is(pg_temp.detail('fantasy_scoring'),
   'GW2 live: 2 of 3 counted matches final; points come after the last one',
   'two of three final: still in play, ok');
@@ -590,90 +606,52 @@ update app.fixtures set status = 'finished', home_score = 0, away_score = 1,
 where id = 'e9000000-0000-4000-8000-000000000013';
 select extensions.is(pg_temp.status('fantasy_scoring'), 'ok',
   'every match final, the last 2 h ago: points are due, not late');
-select extensions.ok(pg_temp.detail('fantasy_scoring') ~ '^GW2: every counted match final, points due by \d\d:\d\d UTC$',
+select extensions.ok(pg_temp.detail('fantasy_scoring') ~ '^GW2: every counted match final, core points due by \d\d:\d\d UTC$',
   'and says by when: ' || pg_temp.detail('fantasy_scoring'));
 select extensions.is(pg_temp.detail('fantasy_scoring'),
-  'GW2: every counted match final, points due by '
-    || (select to_char((finalized_at + interval '6 hours') at time zone 'UTC', 'HH24:MI') from app.fixtures
-        where id = 'e9000000-0000-4000-8000-000000000013') || ' UTC',
-  'which, while a match lacks statistics, is 6 h after the last final whistle');
+  'GW2: every counted match final, core points due by '
+    || (select to_char((min(coalesce(finalized_at, kickoff_at + interval '2 hours')) + interval '13 hours') at time zone 'UTC', 'HH24:MI')
+        from app.fixtures where id in ('e9000000-0000-4000-8000-000000000011',
+          'e9000000-0000-4000-8000-000000000012', 'e9000000-0000-4000-8000-000000000013')) || ' UTC',
+  'which is 13 h after the oldest final whistle among the matches still without points');
 
-update app.fixtures set finalized_at = statement_timestamp() - interval '5 hours 59 minutes'
+select pg_temp.publish('e9000000-0000-4000-8000-000000000011');
+select pg_temp.publish('e9000000-0000-4000-8000-000000000012');
+update app.fixtures set finalized_at = statement_timestamp() - interval '12 hours 59 minutes'
 where id = 'e9000000-0000-4000-8000-000000000013';
-select extensions.is(pg_temp.status('fantasy_scoring'), 'ok', 'at 5 h 59 min it is still due');
-update app.fixtures set finalized_at = statement_timestamp() - interval '6 hours 1 minute'
+select extensions.is(pg_temp.status('fantasy_scoring'), 'ok', 'at 12 h 59 min the last match is still due');
+update app.fixtures set kickoff_at = statement_timestamp() - interval '15 hours',
+  finalized_at = statement_timestamp() - interval '13 hours 1 minute'
 where id = 'e9000000-0000-4000-8000-000000000013';
 select extensions.is(pg_temp.check('fantasy_scoring'),
-  '{"name": "fantasy_scoring", "status": "warn", "detail": "GW2: every counted match final for 6 h, no points yet: 1 match(es) still without complete player statistics (fantasy_fixture_coverage)"}'::jsonb,
-  'past 6 h with a match still lacking statistics it warns and points at the coverage check');
-select extensions.is(pg_temp.status('fantasy_fixture_coverage'), 'warn',
-  'which warns for that match too: neither pages yet');
-update app.fixtures set kickoff_at = statement_timestamp() - interval '14 hours',
-  finalized_at = statement_timestamp() - interval '12 hours 1 minute'
-where id = 'e9000000-0000-4000-8000-000000000013';
-select extensions.ok(pg_temp.status('fantasy_fixture_coverage') = 'fail' and pg_temp.status('fantasy_scoring') = 'warn',
-  'past 12 h the coverage check fails for that match and scoring stays a warning: the cause pages once, not twice');
-update app.fixtures set kickoff_at = statement_timestamp() - interval '8 hours',
-  finalized_at = statement_timestamp() - interval '6 hours 1 minute'
-where id = 'e9000000-0000-4000-8000-000000000013';
+  '{"name": "fantasy_scoring", "status": "warn", "detail": "GW2: core points missing for 1 counted match(es) 12+ h after full time (oldest final 13 h ago): still live, not handed to scoring; 1 match(es) without core player statistics (fantasy_fixture_coverage)"}'::jsonb,
+  'past 13 h with a match still without core points it warns, and points at the coverage check when that match has no statistics');
+select extensions.is(pg_temp.status('fantasy_fixture_coverage'), 'fail',
+  'which fails for that match: the cause pages once, scoring only warns');
 
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '59 minutes');
+select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '12 hours');
 select extensions.is(pg_temp.detail('fantasy_scoring'),
-  'GW2: every counted match final, points due by '
-    || (select to_char((min(created_at) + interval '1 hour') at time zone 'UTC', 'HH24:MI')
-        from app.player_fixture_performances
-        where fixture_id = 'e9000000-0000-4000-8000-000000000013' and active) || ' UTC',
-  'statistics certified 59 min ago: the run that brought them may still be scoring, so points are due an hour after them');
-select extensions.is(pg_temp.status('fantasy_scoring'), 'ok', 'and it is ok');
-
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '61 minutes');
+  'GW2: core points missing for 1 counted match(es) 12+ h after full time (oldest final 13 h ago): still live, not handed to scoring',
+  'with statistics but no points, it names the stage and no longer points at coverage');
+select pg_temp.publish('e9000000-0000-4000-8000-000000000013');
 select extensions.is(pg_temp.check('fantasy_scoring'),
-  jsonb_build_object('name', 'fantasy_scoring', 'status', 'warn', 'detail',
-    'GW2: statistics complete for 1 h, no final points yet (still live, not handed to scoring): '
-    || 'only a Fantasy season orchestrator run scores; fails at '
-    || (select to_char((min(created_at) + interval '8 hours') at time zone 'UTC', 'HH24:MI')
-        from app.player_fixture_performances
-        where fixture_id = 'e9000000-0000-4000-8000-000000000013' and active) || ' UTC'),
-  'an hour after the last statistics it warns, says what scores and when it fails: statistics certified outside a run wait for the next one');
-select extensions.is(pg_temp.check('fantasy_fixture_coverage') ->> 'detail',
-  '3 of 3 finished counted match(es) with complete player statistics',
-  'while coverage is ok');
-
--- 8 h after the last certification. (Every match final before it was
--- certified, as in production.)
-update app.fixtures set kickoff_at = statement_timestamp() - interval '11 hours',
-  finalized_at = statement_timestamp() - interval '9 hours'
+  '{"name": "fantasy_scoring", "status": "ok", "detail": "GW2 live: core points present for all 3 counted match(es); provisional points count as points"}'::jsonb,
+  'provisional core points present for every match: ok');
+update app.fixtures set kickoff_at = statement_timestamp() - interval '9 days', finalized_at = statement_timestamp() - interval '9 days' + interval '2 hours'
 where id = 'e9000000-0000-4000-8000-000000000013';
-select pg_temp.certify('e9000000-0000-4000-8000-000000000011', interval '10 hours');
-select pg_temp.certify('e9000000-0000-4000-8000-000000000012', interval '10 hours');
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '7 hours 59 minutes');
-select extensions.is(pg_temp.status('fantasy_scoring'), 'warn',
-  '7 h 59 min after the last certification it still warns: GitHub has left 6.3 h between orchestrator runs');
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '8 hours 1 minute');
-select extensions.is(pg_temp.check('fantasy_scoring'),
-  '{"name": "fantasy_scoring", "status": "fail", "detail": "GW2: every counted match final for 9 h, statistics complete for 8 h, no final points: still live, not handed to scoring"}'::jsonb,
-  '8 h after the last certification it fails and names the stage');
-
--- The clock runs from when the current statistics were certified: not from
--- the coverage row's created_at (an earlier uncertified import may have set
--- it), and not from its updated_at (every re-observation moves it).
-update app_private.historical_performance_fixture_coverage set provider_observed_at = statement_timestamp()
-where fixture_id = 'e9000000-0000-4000-8000-000000000013';
-select extensions.is(pg_temp.status('fantasy_scoring'), 'fail',
-  'a re-observation of the same statistics (updated_at moves) does not restart the clock');
-update app_private.historical_performance_fixture_coverage set created_at = statement_timestamp() - interval '10 hours'
-where fixture_id in ('e9000000-0000-4000-8000-000000000011', 'e9000000-0000-4000-8000-000000000012',
-  'e9000000-0000-4000-8000-000000000013');
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '30 minutes');
 select extensions.is(pg_temp.status('fantasy_scoring'), 'ok',
-  'a new statistics version certified 30 min ago into a coverage row created 10 h ago: points are due, not late');
+  'days later, the gameweek still not final: scoring does not warn or fail for provisional points');
+update app.fixtures set kickoff_at = statement_timestamp() - interval '13 hours',
+  finalized_at = statement_timestamp() - interval '11 hours'
+where id = 'e9000000-0000-4000-8000-000000000013';
 
 -- ---------------------------------------------------------------------------
 -- Several gameweeks at once. A season has one gameweek past its lock at a
 -- time (fantasy_gameweeks_one_current_idx), so that takes a second Fantasy
--- competition: a cup whose GW1 is locked, with one match final 13 h ago and
--- certified 9 h ago. Gameweeks are then named with their season; the most
--- severe is reported, then the earliest deadline, with how many more fail.
+-- competition: a cup whose GW1 is locked, with one match final 13 h 1 min ago
+-- and certified, but without core points. Gameweeks are then named with their
+-- season; the most severe is reported (a stall before a warning before a
+-- gameweek with its points), then the earliest deadline.
 -- ---------------------------------------------------------------------------
 insert into app.competitions (id, slug, name, short_name, competition_type, country_id)
 values ('e1000000-0000-4000-8000-000000000002', 'cov-cup', 'Coverage Cup', 'CUP', 'cup',
@@ -701,8 +679,8 @@ insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id,
 values
   ('e9000000-0000-4000-8000-000000000016', 'e1000000-0000-4000-8000-000000000002',
    'e2000000-0000-4000-8000-000000000002', 'e3000000-0000-4000-8000-000000000011',
-   md5('cov-club-1')::uuid, md5('cov-club-2')::uuid, statement_timestamp() - interval '15 hours',
-   'finished', 0, 0, statement_timestamp() - interval '13 hours', statement_timestamp(), 1),
+   md5('cov-club-1')::uuid, md5('cov-club-2')::uuid, statement_timestamp() - interval '15 hours 1 minute',
+   'finished', 0, 0, statement_timestamp() - interval '13 hours 1 minute', statement_timestamp(), 1),
   ('e9000000-0000-4000-8000-000000000017', 'e1000000-0000-4000-8000-000000000002',
    'e2000000-0000-4000-8000-000000000002', 'e3000000-0000-4000-8000-000000000011',
    md5('cov-club-5')::uuid, md5('cov-club-6')::uuid, statement_timestamp() - interval '8 hours 1 minute',
@@ -715,28 +693,22 @@ from app.fixtures f where f.id = 'e9000000-0000-4000-8000-000000000016';
 select pg_temp.certify('e9000000-0000-4000-8000-000000000016', interval '9 hours');
 
 select extensions.is(pg_temp.check('fantasy_scoring'),
-  '{"name": "fantasy_scoring", "status": "fail", "detail": "Cup GW1: every counted match final for 13 h, statistics complete for 9 h, no final points: still locked, not handed to scoring"}'::jsonb,
-  'a failing cup gameweek is reported over a league gameweek whose points are only due, named with its season and its locked stage');
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '8 hours 1 minute');
-select extensions.is(pg_temp.detail('fantasy_scoring'),
-  'Coverage season GW2: every counted match final for 9 h, statistics complete for 8 h, no final points: still live, not handed to scoring (+1 more gameweek(s))',
-  'with both failing, the earlier deadline (league GW2) is reported and the other counted');
+  '{"name": "fantasy_scoring", "status": "warn", "detail": "Cup GW1: core points missing for 1 counted match(es) 12+ h after full time (oldest final 13 h ago): still locked, not handed to scoring"}'::jsonb,
+  'a cup gameweek without core points is reported over a league gameweek that has its points, named with its season and its locked stage');
+select pg_temp.publish('e9000000-0000-4000-8000-000000000016', 'e7000000-0000-4000-8000-000000000000');
+select extensions.is(pg_temp.status('fantasy_scoring'), 'ok', 'with the cup''s points published both gameweeks are fine');
 
 insert into app.fantasy_fixture_assignments (fantasy_season_id, fixture_id, gameweek_id,
   original_gameweek_id, original_kickoff_at, assigned_kickoff_at, source_version, frozen_at)
 select 'e6300000-0000-4000-8000-000000000002', f.id, 'e7000000-0000-4000-8000-000000000000',
   'e7000000-0000-4000-8000-000000000000', f.kickoff_at, f.kickoff_at, 1, statement_timestamp() - interval '16 hours'
 from app.fixtures f where f.id = 'e9000000-0000-4000-8000-000000000017';
-select extensions.is(pg_temp.detail('fantasy_scoring'),
-  'Coverage season GW2: every counted match final for 9 h, statistics complete for 8 h, no final points: still live, not handed to scoring (+1 more gameweek(s))',
-  'a cup gameweek stalled by an unplayed match counts among the failing ones');
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '30 minutes');
 select extensions.is(pg_temp.check('fantasy_scoring'),
   jsonb_build_object('name', 'fantasy_scoring', 'status', 'fail', 'detail',
     'Cup GW1: counted match CC5 v CC6 still not_started 8 h after its kickoff; points wait until it finishes (a provider refresh corrects a stale row); if it is not completed by '
     || pg_temp.resolvable('e9000000-0000-4000-8000-000000000017')
     || ' UTC, scripts/backend/resolve-fantasy-postponed-assignment.sql takes it out'),
-  'and is reported, stall first, once the league gameweek is only due');
+  'a cup gameweek stalled by an unplayed match fails, and is reported ahead of any warning');
 delete from app_private.historical_performance_fixture_coverage
 where fixture_id = 'e9000000-0000-4000-8000-000000000016';
 select extensions.is(pg_temp.detail('fantasy_fixture_coverage'),
@@ -745,28 +717,41 @@ select extensions.is(pg_temp.detail('fantasy_fixture_coverage'),
 
 -- The cup closed: one season watched again, gameweeks named as before.
 update app.fantasy_seasons set status = 'completed' where id = 'e6300000-0000-4000-8000-000000000002';
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '8 hours 1 minute');
 select extensions.is(pg_temp.detail('fantasy_scoring'),
-  'GW2: every counted match final for 9 h, statistics complete for 8 h, no final points: still live, not handed to scoring',
+  'GW2 live: core points present for all 3 counted match(es); provisional points count as points',
   'a closed season leaves both checks');
 
+-- Where a gameweek that has no points yet stands, in words: every match final
+-- 14 h ago, none with core points.
+update app.fixtures set kickoff_at = statement_timestamp() - interval '16 hours',
+  finalized_at = statement_timestamp() - interval '14 hours'
+where id in ('e9000000-0000-4000-8000-000000000011', 'e9000000-0000-4000-8000-000000000012',
+  'e9000000-0000-4000-8000-000000000013');
+delete from app.fantasy_player_point_events where gameweek_id = 'e7000000-0000-4000-8000-000000000002';
 update app.fantasy_gameweeks set status = 'provisional' where id = 'e7000000-0000-4000-8000-000000000002';
-select extensions.ok(pg_temp.status('fantasy_scoring') = 'fail'
-  and pg_temp.detail('fantasy_scoring') like '%no final points: no scoring run has stored anything',
-  'provisional with no scoring snapshot: no scoring run has stored anything (not "zero points")');
+select extensions.ok(pg_temp.status('fantasy_scoring') = 'warn'
+  and pg_temp.detail('fantasy_scoring') like '%: no scoring run has stored anything',
+  'provisional with no scoring snapshot: no scoring run has stored anything (not "zero points"): ' || pg_temp.detail('fantasy_scoring'));
 insert into app_private.fantasy_scoring_snapshots (gameweek_id, calculation_version, input_digest, payload)
 values ('e7000000-0000-4000-8000-000000000002', 1, repeat('d', 64), '{}'::jsonb);
-select extensions.ok(pg_temp.status('fantasy_scoring') = 'fail'
-  and pg_temp.detail('fantasy_scoring') like '%no final points: scoring started, not finished',
+select extensions.ok(pg_temp.status('fantasy_scoring') = 'warn'
+  and pg_temp.detail('fantasy_scoring') like '%: scoring started, not finished',
   'provisional with a snapshot: scoring started, not finished');
 update app.fantasy_gameweeks set status = 'finalizing' where id = 'e7000000-0000-4000-8000-000000000002';
-select extensions.ok(pg_temp.status('fantasy_scoring') = 'fail'
-  and pg_temp.detail('fantasy_scoring') like '%no final points: points sealed, finalization not finished',
-  'finalizing: points sealed, finalization not finished');
-select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '2 hours');
 select extensions.ok(pg_temp.status('fantasy_scoring') = 'warn'
-  and pg_temp.detail('fantasy_scoring') like 'GW2: statistics complete for 2 h, no final points yet (points sealed, finalization not finished): only a Fantasy season orchestrator run scores; fails at __:__ UTC',
-  'inside the 8 h the warning names the stage too: ' || pg_temp.detail('fantasy_scoring'));
+  and pg_temp.detail('fantasy_scoring') like '%: points sealed, finalization not finished',
+  'finalizing: points sealed, finalization not finished');
+select pg_temp.publish('e9000000-0000-4000-8000-000000000011');
+select pg_temp.publish('e9000000-0000-4000-8000-000000000012');
+select pg_temp.publish('e9000000-0000-4000-8000-000000000013');
+select extensions.is(pg_temp.status('fantasy_scoring'), 'ok', 'with the points published it is ok in every stage');
+delete from app.fantasy_player_point_events;
+update app.fixtures set kickoff_at = statement_timestamp() - interval '14 hours',
+  finalized_at = statement_timestamp() - interval '12 hours 1 minute'
+where id = 'e9000000-0000-4000-8000-000000000011';
+update app.fixtures set kickoff_at = statement_timestamp() - interval '13 hours',
+  finalized_at = statement_timestamp() - interval '11 hours'
+where id in ('e9000000-0000-4000-8000-000000000012', 'e9000000-0000-4000-8000-000000000013');
 select pg_temp.certify('e9000000-0000-4000-8000-000000000013', interval '8 hours 1 minute');
 
 -- ---------------------------------------------------------------------------
@@ -776,8 +761,8 @@ insert into app.fixtures (id, competition_id, season_id, round_id, home_team_id,
   kickoff_at, status, home_score, away_score, finalized_at, provider_updated_at, source_sequence)
 values ('e9000000-0000-4000-8000-000000000015', 'e1000000-0000-4000-8000-000000000001',
   'e2000000-0000-4000-8000-000000000001', 'e3000000-0000-4000-8000-000000000002',
-  md5('cov-club-7')::uuid, md5('cov-club-8')::uuid, statement_timestamp() - interval '15 hours',
-  'finished', 2, 1, statement_timestamp() - interval '13 hours', statement_timestamp(), 1);
+  md5('cov-club-7')::uuid, md5('cov-club-8')::uuid, statement_timestamp() - interval '16 hours',
+  'finished', 2, 1, statement_timestamp() - interval '14 hours', statement_timestamp(), 1);
 insert into app.fantasy_fixture_assignments (fantasy_season_id, fixture_id, gameweek_id,
   original_gameweek_id, original_kickoff_at, assigned_kickoff_at, source_version, frozen_at)
 values ('e6300000-0000-4000-8000-000000000001', 'e9000000-0000-4000-8000-000000000015',
@@ -785,15 +770,15 @@ values ('e6300000-0000-4000-8000-000000000001', 'e9000000-0000-4000-8000-0000000
   statement_timestamp() - interval '15 hours', statement_timestamp() - interval '15 hours', 1,
   statement_timestamp() - interval '1 day');
 select extensions.is(pg_temp.detail('fantasy_fixture_coverage'),
-  '1 counted match(es) final 12+ h ago without complete player statistics (oldest: GW2, final 13 h ago): their Fantasy points cannot be computed',
-  'a fourth match final 13 h ago without statistics: coverage fails with its age');
+  '1 counted match(es) final 12+ h ago without complete player statistics (oldest: GW2, final 14 h ago): their Fantasy points cannot be computed',
+  'a fourth match final 14 h ago without statistics: coverage fails with its age');
 select extensions.is(pg_temp.status('fantasy_scoring'), 'warn',
-  'and scoring falls back to a warning, since that match blocks it');
+  'and scoring only warns: the missing core points are the same cause, and a warning never pages');
 update app.fixtures set finalized_at = statement_timestamp() - interval '2 hours 30 minutes'
 where id = 'e9000000-0000-4000-8000-000000000015';
 select extensions.ok(pg_temp.status('fantasy_scoring') = 'ok' and pg_temp.status('fantasy_fixture_coverage') = 'ok',
-  'while a match lacks statistics the last final whistle sets the clock: final 2 h 30 min ago, points are due');
-update app.fixtures set finalized_at = statement_timestamp() - interval '13 hours'
+  'a match final 2 h 30 min ago without statistics or points: both still wait');
+update app.fixtures set finalized_at = statement_timestamp() - interval '14 hours'
 where id = 'e9000000-0000-4000-8000-000000000015';
 
 -- Every other check pinned healthy, so the tick's decision is these two.
@@ -802,12 +787,19 @@ values (true, now(), 'idle')
 on conflict (id) do update set last_run_at = excluded.last_run_at;
 delete from cron.job_run_details where status = 'failed';
 do $$ begin perform app_private.news_sitemap_refresh(true); end $$;
+-- fantasy_scoring now fails only for a counted match stuck unfinished: fixture 12
+-- is not_started 9 h after its kickoff, the row having stopped following the
+-- match. (A finished match leaving 'finished' is a correction.)
+update app.fantasy_gameweeks set status = 'live' where id = 'e7000000-0000-4000-8000-000000000002';
+select set_config('app.allow_fixture_correction', 'on', true);
+select pg_temp.frozen_ago('not_started', interval '9 hours');
+select set_config('app.allow_fixture_correction', 'off', true);
 update app.fantasy_gameweeks set status = 'provisional' where id = 'e7000000-0000-4000-8000-000000000002';
 select pg_temp.certify('e9000000-0000-4000-8000-000000000015', interval '8 hours 1 minute');
 select extensions.is(
   (select array_agg(c ->> 'name' order by c ->> 'name') from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
    where c ->> 'status' = 'fail'),
-  array['fantasy_scoring'], 'only fantasy_scoring fails now');
+  array['fantasy_scoring'], 'only fantasy_scoring fails now: a counted match is stuck unfinished');
 
 select extensions.is(app_private.ops_alert_tick(), 'disabled', 'alerts are off in a fresh database');
 
@@ -817,8 +809,8 @@ select extensions.is(app_private.ops_alert_tick(), 'sent', 'with alerts on, the 
 select set_config('test.alert', (select convert_from(body, 'utf8') from net.http_request_queue
   where url = 'https://alerts.example.invalid/ops' order by id desc limit 1), true);
 select extensions.ok(current_setting('test.alert')::jsonb ->> 'text'
-    like '[BotolaGO production] FAIL at %- fantasy_scoring [fail]: GW2: every counted match final for % h, statistics complete for % h, no final points: scoring started, not finished%',
-  'the alert names the check, the gameweek and the stage');
+    like '[BotolaGO production] FAIL at %- fantasy_scoring [fail]: GW2: counted match CC3 v CC4 still not_started 9 h after its kickoff;%',
+  'the alert names the check, the gameweek and the stuck match');
 select extensions.is((select last_signature from app_private.ops_alert_state where id), 'fantasy_scoring',
   'and remembers the incident by check name');
 
@@ -828,12 +820,12 @@ select extensions.is(app_private.ops_alert_tick(), 'sent', 'a new failing check 
 select set_config('test.alert', (select convert_from(body, 'utf8') from net.http_request_queue
   where url = 'https://alerts.example.invalid/ops' order by id desc limit 1), true);
 select extensions.ok(current_setting('test.alert')::jsonb ->> 'text'
-    like '%- fantasy_fixture_coverage [fail]: 1 counted match(es) final 12+ h ago without complete player statistics (oldest: GW2, final 13 h ago): their Fantasy points cannot be computed%',
+    like '%- fantasy_fixture_coverage [fail]: 1 counted match(es) final 12+ h ago without complete player statistics (oldest: GW2, final 14 h ago): their Fantasy points cannot be computed%',
   'naming the match that lacks statistics');
-select extensions.ok(current_setting('test.alert')::jsonb ->> 'text' like '%- fantasy_scoring [warn]: GW2: every counted match final for 9 h, no points yet%',
-  'with the scoring warning after it, not a second failure');
-select extensions.is((select last_signature from app_private.ops_alert_state where id), 'fantasy_fixture_coverage',
-  'the incident is now the coverage check');
+select extensions.ok(current_setting('test.alert')::jsonb ->> 'text' like '%- fantasy_scoring [fail]: GW2: counted match CC3 v CC4 still not_started 9 h after its kickoff;%',
+  'with the stuck match''s failure still listed');
+select extensions.is((select last_signature from app_private.ops_alert_state where id), 'fantasy_fixture_coverage,fantasy_scoring',
+  'the incident is now both checks');
 
 -- The sitemap check (20260926003050) is still there and still pages.
 update app_private.news_sitemap_snapshot set computed_at = statement_timestamp() - interval '11 minutes',
