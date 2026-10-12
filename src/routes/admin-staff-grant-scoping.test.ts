@@ -172,7 +172,7 @@ describe("each confirm step names what will happen, in both languages", () => {
     ["Confirmer la création", "تأكيد الإنشاء"],
     ["Confirmer l’affectation", "تأكيد منح الدور"],
     ["Confirmer la demande", "تأكيد الطلب"],
-    ["Créer l’identité staff de ", "إنشاء هوية الطاقم لـ "],
+    ["Créer l’identité du membre du personnel pour ", "إنشاء هوية الطاقم لـ "],
     ["Affecter le rôle ", "منح الدور "],
     ["Demander le rôle ", "طلب دور "],
   ])("%s is shipped with its Arabic counterpart", (fr, ar) => {

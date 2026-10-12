@@ -80,7 +80,7 @@ const FR: SofascoreQueueCopy = {
   dir: "ltr",
   title: "Joueurs SofaScore à confirmer",
   intro:
-    "Le rapprochement automatique n’a pas pu associer ces joueurs SofaScore à un joueur de l’application sans risque d’erreur. Pour chacun, choisissez le bon joueur BotolaGO : une confirmation, puis le match est ré-essayé automatiquement.",
+    "Le rapprochement automatique n’a pas pu associer ces joueurs SofaScore à un joueur de l’application sans risque d’erreur. Pour chacun, choisissez le bon joueur BotolaGO : après confirmation, les données du match sont traitées à nouveau automatiquement.",
   readerNotice:
     "Vous pouvez lire cette liste, mais votre rôle ne permet pas de confirmer un joueur (permission « gérer les rapprochements » requise).",
   loading: "Chargement de la liste…",
@@ -167,13 +167,13 @@ const FR: SofascoreQueueCopy = {
     prompt: (sofascoreName, appName) =>
       `Rattacher le joueur SofaScore « ${iso(sofascoreName)} » au joueur BotolaGO « ${iso(appName)} » ?`,
     consequence:
-      "Le rapprochement est enregistré tout de suite. Le match en attente sera ré-essayé automatiquement d’ici environ 15 minutes.",
+      "Le rapprochement est enregistré immédiatement. Les données du match en attente seront traitées à nouveau automatiquement d’ici environ 15 minutes.",
     yes: "Oui, rattacher",
     cancel: "Annuler",
     working: "Enregistrement…",
   },
   done: (sofascoreName, appName) =>
-    `« ${iso(sofascoreName)} » est rattaché à « ${iso(appName)} ». Le match sera ré-essayé automatiquement d’ici environ 15 minutes.`,
+    `« ${iso(sofascoreName)} » est rattaché à « ${iso(appName)} ». Les données du match seront traitées à nouveau automatiquement d’ici environ 15 minutes.`,
   alreadyDone: (sofascoreName) =>
     `« ${iso(sofascoreName)} » était déjà rattaché à ce joueur. Rien n’a changé.`,
   errors: {

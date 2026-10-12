@@ -286,7 +286,7 @@ const fr: PlayerMappingCopy = {
     evidence: "Preuves disponibles",
     flag: "Signalement",
     search: "Recherche",
-    searchHint: "Nom ou identifiant fournisseur. Filtre seulement, ne classe jamais.",
+    searchHint: "Nom ou identifiant du fournisseur. La recherche filtre la liste, sans modifier le classement.",
     all: "Tous",
     clear: "Réinitialiser les filtres",
     results: (shown, total) => `${shown} sur ${total} candidats`,
@@ -464,8 +464,8 @@ const fr: PlayerMappingCopy = {
     selfApprovalNotice:
       "Vous êtes l’auteur de cette proposition et vous pouvez l’approuver vous-même : personne d’autre ne la vérifie. Relisez l’empreinte et les preuves avant d’approuver.",
     selfApprovedNote: "Approuvée par son auteur, sans second relecteur.",
-    expired: "Cette proposition a expiré. Elle ne peut plus être décidée.",
-    held: "Cette proposition est bloquée : le monde a changé depuis qu’elle a été faite.",
+    expired: "Cette proposition a expiré. Elle ne peut plus être approuvée ni rejetée.",
+    held: "Cette proposition est bloquée : les données ont changé depuis sa création.",
     notPending: "Cette proposition n’attend plus de décision.",
     executionSeparate:
       "L’approbation ne rapproche rien. L’exécution est une étape distincte, plus bas : rien n’est écrit tant que vous ne l’avez pas confirmée.",
@@ -504,7 +504,7 @@ const fr: PlayerMappingCopy = {
     cancelPrompt: "Retirer votre proposition ? Le candidat redevient non rapproché.",
     acknowledge:
       "J’ai lu la note : je reconnais que les postes diffèrent et je veux quand même approuver.",
-    notePlaceholder: "Pourquoi ces deux postes désignent-ils la même personne ?",
+    notePlaceholder: "Pourquoi s’agit-il de la même personne malgré les postes différents ?",
     noteLabel: "Note sur le poste (10 à 500 caractères)",
     noteSave: "Enregistrer la note",
     noteNeeded: "Le poste diffère : ajoutez une note avant que quelqu’un puisse approuver.",
