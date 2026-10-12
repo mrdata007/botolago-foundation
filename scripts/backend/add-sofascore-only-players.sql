@@ -3,6 +3,11 @@
 -- Add players the app has no record of, so the SofaScore Fantasy recorder can
 -- accept the matches they hold back (held:unmapped_players).
 --
+-- Production rehearsal on 2026-10-11 refused this initial list. Rabiae
+-- Bounnit already exists as Rabiae Bounit; two shirt claims are stale. Use the
+-- guarded repair-sofascore-held-identities.sql refinement after its PR merges.
+-- This original script keeps its guards and must not be forced through.
+--
 -- WHY
 --   A starter, scorer, assister or carded player with no BotolaGO player record
 --   holds the whole match (a substitute who did nothing is already left out,
@@ -45,16 +50,19 @@
 --        select job.jobname, run.status, run.start_time
 --        from cron.job_run_details run join cron.job job using (jobid)
 --        where run.status not in ('succeeded', 'failed');
---   2. This writes players and team memberships, so pause Pepites first (the
---      script refuses while it is on), and write down the previous mode:
---        select mode from app_private.pepites_settings;
---        select app_private.pepites_configure('off', null);
---      Afterwards restore it with the same function and the recorded mode.
+--   2. Pause and drain ALL production writers with
+--      scripts/backend/sofascore-held-maintenance-pause.sql. Rehearse that
+--      script, independently verify rollback, then commit its pause. Confirm
+--      all cron jobs and writer switches are off and no Edge request is pending.
+--      Afterwards restore the exact baseline with
+--      scripts/backend/sofascore-held-maintenance-resume.sql, using the same
+--      rehearsal -> independent rollback check -> commit -> readback sequence.
 --   3. Fill in OWNER_EMAIL and the list (both in the first block below).
 --   4. Paste this WHOLE file and press Run. As shipped it is a REHEARSAL: all
 --      writes happen inside one transaction, are checked, and ROLLED BACK. The
 --      checked_player_additions result, before rollback, lists the checked rows.
---   5. Change the line `rollback;` near the bottom to `commit;` and run again.
+--   5. Independently verify rollback before proceeding. After the reviewed
+--      repair is merged, change only the final `rollback;` to `commit;`.
 --      Read back the rows independently to verify that they were applied.
 --   If a check fails the script stops with a message saying what, and nothing
 --   is saved. Do not edit a check to make it pass: a check firing means the
