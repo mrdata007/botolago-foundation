@@ -307,8 +307,9 @@ Fantasy tick and Manager Card compute back on; GitHub variable
 
 Open: UTS Rabat 0-0 RSB Berkane (event 17256977) held — two appearing SofaScore
 players (Saad Kouk #40, Souleymane Sy #37) have no app player at all
-(`no_candidate`). Fix in progress on `claude/sofascore-unknown-players`. The
-other seven round-3 matches are caught up by the ticks.
+(`no_candidate`). Fix in progress on `claude/sofascore-unknown-players`.
+The expected catch-up did not complete: the 2026-10-12 production checks below
+supersede this initial expectation.
 
 ### Live compare during WAC v CODM Meknès, 2026-10-11 (read only)
 
@@ -327,3 +328,98 @@ other seven round-3 matches are caught up by the ticks.
   result. It also reads only the live list, so it says nothing about
   Saturday's two missing results. Both still need a read-only check of the
   fixtures in production.
+
+### Production recovery, 2026-10-12 (owner-authorized execution)
+
+The owner authorized execution in this order: merge/install #432, merge/apply
+#433, resolve the two identities from #432, restore jobs, and check J.3.
+The identities in #432 are Difaâ El Jadida players, not Hassania players.
+
+- #432 merged as `e1aec3c3325b5500b2b9e9dcfb3a3f546ab883c0`; its refreshed
+  quality run `38209226528` passed both required jobs. Its first installation
+  rehearsal stopped at the migration-byte guard and rolled back. The embedded
+  source matched the merged migration, but the expected SHA-256 was stale.
+  #435 corrected only that pin and added two regression tests (nine assertions,
+  passed locally); quality run `38219655887` passed. #435 merged as
+  `5195cdd13a7f9ab6e8c9ed7beafbbbf7ce5ad9b8`.
+- The corrected `apply-sofascore-context-review-proofs.sql` was rehearsed,
+  independently verified as rolled back, committed, and independently read
+  back in Production V2 (`tkewgajrljbwgwedqsxn`). Migration `20261011191737`
+  has SHA-256 `bd6e5a19061740e5eb40343a90a05cde17e9bc5c6269d0326ae193da285c120b`;
+  context definition MD5 `2c63a7fd3c176b98c904e3b68714c722`, body MD5
+  `66386e3d8b4a09fb068da9a014c9acf0`. Execute remains denied to anon and
+  authenticated, granted to service_role. All 16 measured domain-table
+  fingerprints stayed unchanged. The reader now recognizes 159 current
+  automatic review proofs alongside the existing manual mappings.
+- #433 was refreshed with main without rewriting history. Both quality jobs
+  passed in run `38221386384`; it merged as
+  `cf2d503b4a8eedbd8c0ce819bae7ae7012d4c242`. Its
+  `repair-sofascore-held-identities.sql` was rehearsed, all 16 full-table
+  fingerprints independently confirmed unchanged, then committed and read
+  back. Kouk and Sy were created; Soubai, Orebonye and Bounit were reused.
+  Four current-season memberships were added and Orebonye's exact unused
+  obsolete Wydad membership removed. Two stale shirt claims became unknown.
+  His existing unused Fantasy entry moved to Hassania at its unchanged 7.2
+  price. No new Fantasy pool row was created; Fantasy prices and positions
+  were preserved.
+- `resolve-sofascore-held-dhj-players.sql` resolved Moulhami `1402176` and
+  Ennakouss/Nakous `1140816` to the reviewed existing identities. An initial
+  rehearsal refused transient activity; after it drained, fingerprints were
+  rechecked and the unchanged script was rehearsed successfully, rollback
+  independently verified, then committed and independently verified. Both
+  mappings have current `staff_resolution` proof; the conflicting Dominik Zak
+  candidate was preserved and not selected.
+- Production writer was this authorized execution session. Before each
+  maintenance window, GitHub runs/queues, cron runs, HTTP responses, pending
+  requests, generating home-story jobs and active database queries were
+  checked. All 21 cron jobs and writer switches were paused through the
+  guarded maintenance path, then restored through rehearsal/readback/commit/
+  readback. GitHub Fantasy orchestrator and football recovery are active again.
+  The source remains SofaScore; Fantasy lifecycle and Manager Card compute
+  are on. No scoring or payload guard was loosened.
+
+Final repair totals: players 1084 -> 1086, memberships 1981 -> 1984,
+provider mappings 2107 -> 2114, match logs 159 -> 166, Fantasy pool unchanged
+at 736, and seven target queue entries resolved. Fixtures, existing lineups,
+performances, squad selections, transfers, observations and player points
+were unchanged by these repairs.
+
+**Verification still blocks launch.** At 08:43 UTC on 12 Oct, all 21 cron jobs
+were active and the Football/Fantasy/Manager switches were on, but there were
+still zero Fantasy observations, zero SofaScore performance rows and no
+nonzero or final J.3 points. Public rankings show only the three real managers,
+including ak47 FC; the four confirmed QA accounts stay hidden. The French
+article correction is visible publicly, and `/fantasy/top-players` still shows
+zero-point placeholders for J.3. Mounir El Gouje's public player page explicitly
+shows J.3 as provisional and waiting for data, with zero points and minutes.
+Football live/season and Fantasy lifecycle cron runs succeeded after the
+restore (latest inspected starts 08:43/08:40/08:40 UTC respectively), so a
+check more than fifteen minutes after restoration still found no observations.
+
+A read-only replay of the stored replies using the merged builder and current
+reviewed mappings passes for MAS–Raja, UTS–Berkane, FAR–Témara, MAT–FUS and
+Tiznit–DHJ. This is preparation evidence, not a recorded observation or a
+successful scoring run. Existing retry bookkeeping has not been reset:
+FAR/MAS are no earlier than 11:00 UTC, UTS 13:00 UTC, and MAT/DHJ 14:00 UTC
+(15:00, 17:00 and 18:00 Dubai respectively); actual processing follows a
+later eligible tick. A fifteen-minute completion claim is not supported.
+
+Remaining payload blockers, outside these seven reviewed identity repairs:
+
+- Zemamra–Hassania `17256968`: Doumbia `879777` and Azri `1401535` have 66
+  reported minutes versus substitution minute 59. The existing minute check
+  still refuses the match.
+- Kawkab–Tanger `17256979`: starter Rhabra `1004247` and scorer Najari
+  `1186787` need separate reviewed identity resolutions. The old injuryTime
+  parser failure has cleared after #431's deploy (run `38168596980`).
+- Wydad–CODM `17256972`: Moussadak `1140815`, El Hassouni `880105`, Hamani
+  `2637442` and El Wasti `880101` remain queued. Hamani's existing partial-name
+  candidate must not be selected without independent identity evidence.
+  CODM's Ayoub Lakhlifi `1526456` (#97) also has no provider minutes to validate his
+  substitution. Do not treat the read-only builder's unknown-substitute
+  exclusion as permission to bypass the database's stricter queue checks.
+
+Next verification: after the genuine blockers are resolved and retries record
+the fixtures, confirm the hourly orchestrator scores them, public player J.3
+points and top players update, and Pépites receives SofaScore appearances.
+The twelve-hour scoring-mode selection delay remains unchanged.
