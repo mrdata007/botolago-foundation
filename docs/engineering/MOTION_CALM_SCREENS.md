@@ -12,7 +12,7 @@ owned elsewhere: Manager Card, launch splash, `GoalMoment`.
 
 1. **Blank page, then a grey fade-in.** `Section` (`src/components/common/Section.tsx`)
    wraps almost every block of every page in `animate-in fade-in-0
-   slide-in-from-bottom-2 duration-500`. Each Section mounts at opacity 0, so
+slide-in-from-bottom-2 duration-500`. Each Section mounts at opacity 0, so
    the first 80-120 ms of every page open show a blank body, and the whole page
    then fades up over 500 ms while sliding 8 px. A skeleton that is swapped for
    real content remounts the Section, so it fades in again and shifts.
