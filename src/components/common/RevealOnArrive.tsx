@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { cn } from "@/lib/utils";
 import { prefersReducedMotion } from "@/lib/motion";
 
-type Phase = "rest" | "from" | "to";
+export type Phase = "rest" | "from" | "to";
 
 /**
  * A block that arrives after the page is already on screen (the live-matches
@@ -56,23 +56,47 @@ export function RevealOnArrive({
 
   if (!show) return null;
 
-  if (phase === "rest") {
-    return <div className={cn(transparent && "contents", className)}>{children}</div>;
-  }
+  return (
+    <RevealFrame phase={phase} transparent={transparent} className={className}>
+      {children}
+    </RevealFrame>
+  );
+}
 
+/**
+ * One outer and one inner element in every phase, so the children keep their
+ * place in the tree (and their state, focus and queries) from the first frame
+ * of the reveal to the last. Only classes and styles change between phases.
+ */
+export function RevealFrame({
+  phase,
+  transparent,
+  className,
+  children,
+}: {
+  phase: Phase;
+  transparent: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  const resting = phase === "rest";
   return (
     <div
-      className={cn("grid", className)}
-      style={{
-        gridTemplateRows: phase === "to" ? "1fr" : "0fr",
-        opacity: phase === "to" ? 1 : 0,
-        transition:
-          phase === "to"
-            ? "grid-template-rows 240ms var(--ease-settle-soft), opacity 200ms var(--ease-settle-soft)"
-            : "none",
-      }}
+      className={cn(resting ? transparent && "contents" : "grid", className)}
+      style={
+        resting
+          ? undefined
+          : {
+              gridTemplateRows: phase === "to" ? "1fr" : "0fr",
+              opacity: phase === "to" ? 1 : 0,
+              transition:
+                phase === "to"
+                  ? "grid-template-rows 240ms var(--ease-settle-soft), opacity 200ms var(--ease-settle-soft)"
+                  : "none",
+            }
+      }
     >
-      <div className="min-h-0 overflow-hidden">{children}</div>
+      <div className={resting ? "contents" : "min-h-0 overflow-hidden"}>{children}</div>
     </div>
   );
 }
