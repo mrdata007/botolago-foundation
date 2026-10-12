@@ -5909,6 +5909,70 @@ export type Database = {
           },
         ]
       }
+      manager_card_ovr_changes: {
+        Row: {
+          created_at: string
+          fantasy_season_id: string
+          from_ovr: number
+          from_tier: string | null
+          gameweek_id: string
+          notified_at: string | null
+          rules_version: number
+          to_ovr: number
+          to_tier: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fantasy_season_id: string
+          from_ovr: number
+          from_tier?: string | null
+          gameweek_id: string
+          notified_at?: string | null
+          rules_version: number
+          to_ovr: number
+          to_tier?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fantasy_season_id?: string
+          from_ovr?: number
+          from_tier?: string | null
+          gameweek_id?: string
+          notified_at?: string | null
+          rules_version?: number
+          to_ovr?: number
+          to_tier?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_card_ovr_changes_fantasy_season_id_fkey"
+            columns: ["fantasy_season_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_ovr_changes_gameweek_id_fkey"
+            columns: ["gameweek_id"]
+            isOneToOne: false
+            referencedRelation: "fantasy_gameweeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_card_ovr_changes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       manager_card_seasons: {
         Row: {
           calculated_at: string
@@ -8728,6 +8792,7 @@ export type Database = {
         | "round_preview"
         | "pepites_weekly"
         | "goal_cancelled"
+        | "manager_card_ovr_change"
       placement_scope: "global" | "competition" | "team" | "country"
       placement_type:
         | "home_lead"
@@ -9152,6 +9217,7 @@ export const Constants = {
         "round_preview",
         "pepites_weekly",
         "goal_cancelled",
+        "manager_card_ovr_change",
       ],
       placement_scope: ["global", "competition", "team", "country"],
       placement_type: [

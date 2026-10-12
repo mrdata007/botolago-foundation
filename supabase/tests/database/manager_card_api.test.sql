@@ -421,8 +421,8 @@ select extensions.is(
     'ovrNullReason', 'tier', 'bestTier', 'nextTier', 'provisional', 'stats', 'gameweeksCounted',
     'minRated', 'minConfirmed', 'rulesVersion', 'throughGameweekSeq', 'calculatedAt',
     'firstCountedGameweekSeq', 'firstRatedGameweekSeq', 'ratingGameweeks', 'ratingGameweeksComplete',
-    'previousSeason', 'seasonClosed', 'seasons', 'createdAt', 'moments'),
-  'M''s card has exactly the 30 keys of myCardSchema');
+    'previousSeason', 'seasonClosed', 'seasons', 'createdAt', 'moments', 'ovrChanges'),
+  'M''s card has exactly the 30 keys of myCardSchema plus ovrChanges (20261012200100)');
 select extensions.is(
   (select concat_ws('|',
     (select string_agg(pg_temp.keys(c -> 'stats' -> s), ',' order by s) from unnest(array['cap', 'con', 'sel', 'trf']) s),
