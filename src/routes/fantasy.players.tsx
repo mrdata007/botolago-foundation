@@ -1,6 +1,8 @@
 import noPlayersArt from "@/assets/illustrations/empty-watchlist.webp";
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
+import { unavailableHeaders } from "@/lib/page-availability";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Plus, Scale } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 
@@ -36,6 +38,19 @@ import type { FantasyPlayer, Position } from "@/types/fantasy";
 import { pointsUnit } from "@/lib/points-unit";
 
 export const Route = createFileRoute("/fantasy/players")({
+  loader: async ({ context, location }) => {
+    // This route also wraps player details; do not fetch the pool twice there.
+    if (location.pathname.replace(/\/$/, "") !== "/fantasy/players") return;
+    await prefetchForSsr(context.queryClient, [
+      { queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() },
+      {
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+      },
+    ]);
+    return ssrAvailability(context.queryClient);
+  },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   /**
    * `?compare=<playerId>` — "Comparer" on a player page lands here with that
    * player already picked and compare mode on. Optional, and read once: the
