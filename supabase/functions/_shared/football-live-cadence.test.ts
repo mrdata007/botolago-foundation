@@ -166,7 +166,10 @@ describe("shouldInvokeLiveRefresh", () => {
 
 describe("the SQL tick says the same thing", () => {
   const sql = readFileSync(
-    join(import.meta.dir, "../../migrations/20261013110100_football_live_refresh_60s.sql"),
+    join(
+      import.meta.dir,
+      "../../migrations/20261013110200_football_live_refresh_post_final_30min.sql",
+    ),
     "utf8",
   );
   const listOf = (statuses: readonly string[]) => statuses.map((s) => `'${s}'`).join(", ");
@@ -182,7 +185,8 @@ describe("the SQL tick says the same thing", () => {
     expect(sql).toContain(`interval '${LIVE_CADENCE_IN_PLAY_SECONDS} seconds'`);
     expect(sql).toContain("interval '2 minutes'");
     expect(sql).toContain("interval '5 minutes'");
-    expect(sql).toContain("interval '15 minutes'");
+    expect(sql).toContain(`interval '${LIVE_CADENCE_POST_FINAL_SECONDS / 60} minutes'`);
+    expect(LIVE_CADENCE_POST_FINAL_SECONDS).toBe(1800);
     expect(sql).toContain("now_at - interval '24 hours' and now_at + interval '10 minutes'");
     expect(sql).toContain("now_at - interval '3 hours' and now_at");
     expect(sql).toContain("fixture.finalized_at >= now_at - interval '2 hours'");

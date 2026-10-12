@@ -4,6 +4,7 @@ import {
   SOFASCORE_LIVE_EVENTS_PATH,
   buildFixtureIngestPlan,
   collapseReplacedEvents,
+  computeLiveMinute,
   createMapLookup,
   mapSofascoreStatus,
   parseSofascoreEvents,
@@ -313,5 +314,82 @@ describe("runSofascoreLiveShadow", () => {
     expect(report.wouldIngest.map((c) => c.p_external_id)).toEqual(["1", "3", "7"]);
     expect(report.unmapped).toEqual([{ sofascoreEventId: "2", missing: ["away_team"] }]);
     expect(report.unknownStatus).toHaveLength(1);
+  });
+});
+
+describe("computeLiveMinute", () => {
+  const at = (seconds: number) => (START + seconds) * 1000;
+  const live = (
+    period: "first_half" | "second_half" | "extra_time" | "half_time" | "penalties",
+    rawStatusCode: number,
+    periodStartTimestamp: number | null = START,
+  ) => ({ period, rawStatusCode, periodStartTimestamp });
+
+  test("counts whole minutes since the half started, plus one", () => {
+    expect(computeLiveMinute(live("first_half", 6), at(0))).toBe(1);
+    expect(computeLiveMinute(live("first_half", 6), at(59))).toBe(1);
+    expect(computeLiveMinute(live("first_half", 6), at(60))).toBe(2);
+    expect(computeLiveMinute(live("first_half", 6), at(30 * 60))).toBe(31);
+  });
+
+  test("the second half starts from 45, extra time from 90 and 105", () => {
+    expect(computeLiveMinute(live("second_half", 7), at(10))).toBe(46);
+    expect(computeLiveMinute(live("second_half", 7), at(20 * 60))).toBe(66);
+    expect(computeLiveMinute(live("extra_time", 41), at(10))).toBe(91);
+    expect(computeLiveMinute(live("extra_time", 42), at(10))).toBe(106);
+  });
+
+  test("never runs past 45 / 90 / 105 / 120", () => {
+    expect(computeLiveMinute(live("first_half", 6), at(50 * 60))).toBe(45);
+    expect(computeLiveMinute(live("second_half", 7), at(60 * 60))).toBe(90);
+    expect(computeLiveMinute(live("extra_time", 41), at(40 * 60))).toBe(105);
+    expect(computeLiveMinute(live("extra_time", 42), at(40 * 60))).toBe(120);
+  });
+
+  test("no half start, no minute", () => {
+    expect(computeLiveMinute(live("first_half", 6, null), at(600))).toBeNull();
+    expect(computeLiveMinute(live("second_half", 7, null), at(600))).toBeNull();
+  });
+
+  test("no minute outside a running period, or for an unknown extra-time half", () => {
+    expect(computeLiveMinute(live("half_time", 31), at(600))).toBeNull();
+    expect(computeLiveMinute(live("penalties", 50), at(600))).toBeNull();
+    expect(computeLiveMinute(live("extra_time", 99), at(600))).toBeNull();
+  });
+
+  test("a half start well in the future is a bad clock, a few seconds ahead is rounding", () => {
+    expect(computeLiveMinute(live("first_half", 6, START + 600), at(0))).toBeNull();
+    expect(computeLiveMinute(live("first_half", 6, START + 5), at(0))).toBe(1);
+  });
+});
+
+describe("the live minute in the ingest plan", () => {
+  const withTime = (seconds: number | undefined) =>
+    event(
+      1,
+      101,
+      102,
+      { code: 7, type: "inprogress" },
+      {
+        homeScore: score(1),
+        awayScore: score(0),
+        ...(seconds === undefined ? {} : { time: { currentPeriodStartTimestamp: seconds } }),
+      },
+    );
+
+  test("is written from time.currentPeriodStartTimestamp", () => {
+    const parsed = parseSofascoreEvents({ events: [withTime(START + 2700)] });
+    expect(parsed.events[0].periodStartTimestamp).toBe(START + 2700);
+    const call = buildFixtureIngestPlan(parsed.events, lookup, OBSERVED).calls[0];
+    // OBSERVED is START + 3000: 300 s into the half, so the 6th minute of it
+    expect(call.p_fixture.minute).toBe(51);
+    expect(call.p_fixture.addedTime).toBeNull();
+  });
+
+  test("is not written, never guessed, when the half start is missing", () => {
+    const parsed = parseSofascoreEvents({ events: [withTime(undefined)] });
+    expect(parsed.events[0].periodStartTimestamp).toBeNull();
+    const call = buildFixtureIngestPlan(parsed.events, lookup, OBSERVED).calls[0];
+    expect(call.p_fixture.minute).toBeNull();
   });
 });

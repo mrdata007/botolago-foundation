@@ -3,7 +3,8 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiBackButton, UiHeader, UiIconButton, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
-import { liveMinuteLabel } from "@/lib/live-minute";
+import { liveClock } from "@/lib/live-minute";
+import { useLiveStageLabels } from "./live-stage";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
 
@@ -91,8 +92,15 @@ function CompactBar({
   onShare?: () => void;
 }) {
   const { t } = useI18n();
+  const stages = useLiveStageLabels();
   const isLive = match.status === "live";
   const showScore = isLive || match.status === "finished";
+  const clock = liveClock({
+    stages,
+    minute: match.minute,
+    period: match.period,
+    addedTime: match.addedTime,
+  });
   return (
     <div
       inert={!shown}
@@ -148,15 +156,7 @@ function CompactBar({
                 <bdi>{match.awayScore ?? 0}</bdi>
               </span>
             ) : null}
-            {isLive ? (
-              <UiLivePill
-                minute={liveMinuteLabel({
-                  minute: match.minute,
-                  period: match.period,
-                  addedTime: match.addedTime,
-                })}
-              />
-            ) : null}
+            {isLive ? <UiLivePill minute={clock.minute} label={clock.stage} /> : null}
           </div>
           <ClubCrest
             club={away}

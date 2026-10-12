@@ -240,6 +240,8 @@ export const fr = {
   "matches.status.delayed": "Retardé",
   "matches.status.penalties": "T.a.b.",
   "matches.status.extra_time": "Prolongations",
+  "matches.stage.first_half": "1re mi-temps",
+  "matches.stage.second_half": "2e mi-temps",
   "matches.gameweek": "J.",
   "matches.vs": "vs",
   "matches.competition.botola": "Botola Pro Inwi",

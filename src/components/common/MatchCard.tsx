@@ -6,7 +6,8 @@ import { ClubCrest } from "./ClubCrest";
 import { FlipScore } from "@/components/matches/FlipScore";
 import { LiveProgress } from "@/components/matches/LiveProgress";
 import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
-import { liveMinuteLabel } from "@/lib/live-minute";
+import { liveClock } from "@/lib/live-minute";
+import { useLiveStageLabels } from "@/components/matches/live-stage";
 import { MatchReminderBell } from "./MatchReminderBell";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
@@ -139,7 +140,9 @@ export function MatchCard({
   // The minute keeps ticking between data refreshes (at most one ahead).
   const liveMinute = useTickingMinute(match.minute, status === "live");
   // "45+" / "90+" once the clock reaches the end of a period; never a made-up minute.
-  const minuteLabel = liveMinuteLabel({
+  const stages = useLiveStageLabels();
+  const clock = liveClock({
+    stages,
     minute: liveMinute,
     period: match.period,
     addedTime: match.addedTime,
@@ -189,9 +192,9 @@ export function MatchCard({
       .replace("{as}", String(as));
     if (isLive) {
       const state =
-        minuteLabel === undefined
+        clock.minute === undefined
           ? t("matches.status.live")
-          : t("matches.a11y.live_minute").replace("{minute}", minuteLabel);
+          : t("matches.a11y.live_minute").replace("{minute}", clock.minute);
       return `${score} — ${state}`;
     }
     if (isFinished) {
@@ -219,10 +222,12 @@ export function MatchCard({
     if (isLive) {
       return (
         <UiLivePill
-          minute={minuteLabel}
+          minute={clock.minute}
           size={isHero ? "md" : "sm"}
           // Extra time names itself on the pill; the rest of play is "live".
-          label={status === "extra_time" ? t("matches.status.extra_time") : undefined}
+          label={
+            clock.stage ?? (status === "extra_time" ? t("matches.status.extra_time") : undefined)
+          }
         />
       );
     }
