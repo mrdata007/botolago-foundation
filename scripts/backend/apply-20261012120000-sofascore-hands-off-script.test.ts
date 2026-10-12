@@ -68,6 +68,10 @@ describe("production install of the hands-off migration", () => {
       "has_function_privilege('anon','api.admin_resolve_sofascore_player_match",
     );
     expect(script.trimEnd().endsWith("rollback;")).toBe(true);
+    // The matches refused between the function deploy and this migration are reopened after it.
+    const reopen = script.indexOf("a.last_outcome = 'sofascore_request_invalid'");
+    expect(reopen).toBeGreaterThan(script.indexOf("execute source;"));
+    expect(script).toContain("timestamptz '2026-10-12 11:04:00+00'");
     expect(script).not.toContain("commit;");
   });
 });

@@ -473,7 +473,15 @@ begin
                where a.status = 'recorded' and b.status <> 'recorded')
   then raise exception 'stop: the attempts changed in a way the migration does not do'; end if;
 end $verify$;
--- What the migration reopened: these matches are tried on the next tick after the writers resume.
+-- The new football-live-refresh was deployed (11:04 UTC on 12 October) before this migration.
+-- Between the two, a request leaving an unknown starter out was refused by the previous
+-- recording function as sofascore_request_invalid, which the function treats as final. Reopen
+-- exactly those, through the migration's own helper (finished, unrecorded, gameweek open).
+select app_private.sofascore_fantasy_reopen(null, a.fixture_id)
+  from app_private.sofascore_fantasy_attempts a
+ where a.last_outcome = 'sofascore_request_invalid'
+   and a.last_attempt_at >= timestamptz '2026-10-12 11:04:00+00';
+-- What was reopened: these matches are tried on the next tick after the writers resume.
 select a.fixture_id, b.status as status_before, b.attempts as attempts_before, a.status, a.attempts,
        a.last_outcome, a.match_data is null as refetch_needed
   from app_private.sofascore_fantasy_attempts a join hands_off_before b using (fixture_id)
