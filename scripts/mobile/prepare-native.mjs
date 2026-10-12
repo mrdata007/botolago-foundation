@@ -13,14 +13,21 @@
 //            Arabic second, and the camera and photo permission texts, reading
 //            and adding (also translated, in fr.lproj and ar.lproj
 //            InfoPlist.strings). PrivacyInfo.xcprivacy, Apple's privacy
-//            manifest, in the app.
+//            manifest, in the app. The app's own address, botolago://, so the
+//            phone's browser can hand a Google or Apple sign-in back to it
+//            (src/lib/native-oauth.ts); and, once the Apple Team ID is set in
+//            src/lib/app-links.ts, the Associated Domains entitlement for
+//            botolago.com's e-mail links (Universal Links).
 //   Android  AndroidManifest.xml declares POST_NOTIFICATIONS. Without it Android
 //            13 and later never show the permission prompt. It also names the
 //            push alerts' small icon and colour, and holds the screen upright.
 //            The file provider @capacitor/share hands the share picture
 //            through, with the app's cache in its paths (both in Capacitor's
 //            template; kept). Saving to the gallery needs no permission.
-//            styles.xml: the launch screen's colour and icon.
+//            styles.xml: the launch screen's colour and icon. The app's own
+//            address, botolago://auth, for the sign-in's return; and, once
+//            the signing fingerprints are set in src/lib/app-links.ts, the
+//            verified link filter for botolago.com's e-mail links (App Links).
 //            build.gradle signs the release with the keystore the cloud build
 //            provides (CM_KEYSTORE_* variables); on a developer machine, where
 //            they are not set, nothing changes.
@@ -40,6 +47,9 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+
+import { androidFingerprints, appleTeamId } from "../../src/lib/app-links.ts";
+import { APP_LINK_HOSTS, APP_LINK_PATHS, APP_URL_SCHEME } from "../../src/lib/native-oauth.ts";
 
 const APP_DELEGATE_METHODS = `
     // Push alerts: hands Apple's token (or its failure) to Capacitor's push plugin.
@@ -97,15 +107,29 @@ const ENTITLEMENTS_PATH = "App/App.entitlements";
 
 // `production`: every iPhone build the cloud makes is an App Store / TestFlight
 // one, signed for Apple's production push servers (the sender's default).
-const ENTITLEMENTS = `<?xml version="1.0" encoding="UTF-8"?>
+//
+// `associatedDomains`: botolago.com's e-mail links open the app (Universal
+// Links). Added only once the Apple Team ID is set (src/lib/app-links.ts),
+// because the App ID at Apple must have the Associated Domains capability
+// ticked first: an entitlement the provisioning profile does not allow fails
+// the build's signing.
+export function entitlements({ associatedDomains = false } = {}) {
+  const domains = associatedDomains
+    ? `\t<key>com.apple.developer.associated-domains</key>
+\t<array>
+${APP_LINK_HOSTS.map((host) => `\t\t<string>applinks:${host}</string>\n`).join("")}\t</array>
+`
+    : "";
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 \t<key>aps-environment</key>
 \t<string>production</string>
-</dict>
+${domains}</dict>
 </plist>
 `;
+}
 
 /**
  * `source` (project.pbxproj) with the app target's build settings pointing at
@@ -277,6 +301,48 @@ export function infoPlistStrings(language) {
 }
 
 // ---------------------------------------------------------------------------
+// The app's own address (botolago://), for the return of a Google or Apple sign-in
+
+const URL_TYPE = (indent) => `${indent}<key>CFBundleURLTypes</key>
+${indent}<array>
+${indent}\t<dict>
+${indent}\t\t<key>CFBundleURLName</key>
+${indent}\t\t<string>${APP_URL_SCHEME}.auth</string>
+${indent}\t\t<key>CFBundleURLSchemes</key>
+${indent}\t\t<array>
+${indent}\t\t\t<string>${APP_URL_SCHEME}</string>
+${indent}\t\t</array>
+${indent}\t</dict>
+${indent}</array>`;
+
+/**
+ * `source` (Info.plist) declaring the URL scheme `botolago`, so the phone
+ * opens the app when the browser sheet is sent to `botolago://auth/callback`.
+ * Capacitor's template declares no URL type; if one is ever there without
+ * this scheme, it stops rather than guess how to merge the two.
+ */
+export function patchInfoPlistUrlScheme(source) {
+  const schemes = /<key>CFBundleURLSchemes<\/key>\s*<array>([\s\S]*?)<\/array>/g;
+  for (const match of source.matchAll(schemes)) {
+    if (match[1].includes(`<string>${APP_URL_SCHEME}</string>`)) {
+      return { text: source, changed: false };
+    }
+  }
+  if (source.includes("<key>CFBundleURLTypes</key>")) {
+    throw new Error(
+      `Info.plist already has CFBundleURLTypes without the ${APP_URL_SCHEME} scheme: add it by hand`,
+    );
+  }
+  const close = source.lastIndexOf("</dict>");
+  if (close === -1 || source.indexOf("</plist>", close) === -1) {
+    throw new Error("Info.plist is not the shape this expects (no top-level dict)");
+  }
+  const lineStart = source.lastIndexOf("\n", close - 1) + 1;
+  const text = `${source.slice(0, lineStart)}${URL_TYPE("\t")}\n${source.slice(lineStart)}`;
+  return { text, changed: true };
+}
+
+// ---------------------------------------------------------------------------
 // iPhone: privacy manifest
 
 const PRIVACY_PATH = "App/PrivacyInfo.xcprivacy";
@@ -290,7 +356,7 @@ const PRIVACY_PATH = "App/PrivacyInfo.xcprivacy";
 // picture to its own cache, so the reason is C617.1, "files inside the app
 // container", the one the plugin's README names. Capacitor's own frameworks
 // ship their manifests (with nothing to declare); @capacitor/app,
-// @capacitor/push-notifications, @capacitor/share and
+// @capacitor/browser, @capacitor/push-notifications, @capacitor/share and
 // @capacitor-community/media use none of these APIs (SDWebImage, which the
 // last one uses, ships its own manifest).
 // NSPrivacyCollectedDataTypes is left empty: what the app collects is what the
@@ -590,6 +656,62 @@ export function patchManifestPortrait(source) {
   return { text, changed: text !== source };
 }
 
+/** `source` with `filter` added to MainActivity, just before its closing tag. */
+function addToMainActivity(source, filter) {
+  const open = /<activity\b[^>]*android:name="\.MainActivity"[^>]*>/.exec(source);
+  if (!open) throw new Error("AndroidManifest.xml is not the shape this expects (no MainActivity)");
+  const close = source.indexOf("</activity>", open.index + open[0].length);
+  if (close === -1) throw new Error("AndroidManifest.xml is not the shape this expects");
+  const lineStart = source.lastIndexOf("\n", close - 1) + 1;
+  return `${source.slice(0, lineStart)}${filter}${source.slice(lineStart)}`;
+}
+
+const URL_SCHEME_FILTER = `
+            <!-- The return of a Google or Apple sign-in (src/lib/native-oauth.ts). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${APP_URL_SCHEME}" android:host="auth" />
+            </intent-filter>
+`;
+
+/**
+ * `source` (AndroidManifest.xml) letting `botolago://auth/…` open the app
+ * (MainActivity, which Capacitor already makes `singleTask`, so the app comes
+ * back to the front over the Custom Tab and the App plugin hands the address
+ * to the page).
+ */
+export function patchManifestUrlScheme(source) {
+  if (new RegExp(`android:scheme="${APP_URL_SCHEME}"`).test(source)) {
+    return { text: source, changed: false };
+  }
+  return { text: addToMainActivity(source, URL_SCHEME_FILTER), changed: true };
+}
+
+const APP_LINKS_MARKER = "botolago.com e-mail links (App Links)";
+const APP_LINKS_FILTER = `
+            <!-- ${APP_LINKS_MARKER}: src/lib/app-links.ts. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+${APP_LINK_HOSTS.map((host) => `                <data android:host="${host}" />\n`).join("")}${APP_LINK_PATHS.map((path) => `                <data android:path="${path}" />\n`).join("")}            </intent-filter>
+`;
+
+/**
+ * `source` (AndroidManifest.xml) letting botolago.com's e-mail links open the
+ * app, verified by Android against https://botolago.com/.well-known/assetlinks.json.
+ * Only once the signing fingerprints are set (src/lib/app-links.ts): before
+ * that the site serves no assetlinks.json, the filter could not be verified,
+ * and it is left out.
+ */
+export function patchManifestAppLinks(source, { enabled = false } = {}) {
+  if (!enabled || source.includes(APP_LINKS_MARKER)) return { text: source, changed: false };
+  return { text: addToMainActivity(source, APP_LINKS_FILTER), changed: true };
+}
+
 const SPLASH_ITEMS = [
   ["windowSplashScreenBackground", "@color/botolago_splash_background"],
   ["windowSplashScreenAnimatedIcon", "@mipmap/ic_launcher_foreground"],
@@ -650,7 +772,14 @@ const ASSET_GROUPS = [
  * Applies the patches under `root`. Returns what it found, one line each; with
  * `check` it writes nothing.
  */
-export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = {}) {
+export function prepareNative(
+  root,
+  {
+    check = false,
+    assets = NATIVE_ASSETS,
+    appLinks = { teamId: appleTeamId(), fingerprints: androidFingerprints() },
+  } = {},
+) {
   const report = [];
   let missing = 0;
   const ios = join(root, "ios/App");
@@ -710,7 +839,29 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
     patchInfoPlist,
     "languages, photo permissions (camera, read, add) and portrait only in Info.plist",
   );
+  apply(
+    infoPlist,
+    patchInfoPlistUrlScheme,
+    `the app's own address (${APP_URL_SCHEME}://) in Info.plist, for the sign-in's return`,
+  );
   apply(manifest, patchManifest, "POST_NOTIFICATIONS in AndroidManifest.xml");
+  apply(
+    manifest,
+    patchManifestUrlScheme,
+    `the app's own address (${APP_URL_SCHEME}://auth) in AndroidManifest.xml, for the sign-in's return`,
+  );
+  const appLinksOn = appLinks.fingerprints.length > 0;
+  if (appLinksOn) {
+    apply(
+      manifest,
+      (source) => patchManifestAppLinks(source, { enabled: true }),
+      "botolago.com e-mail links (App Links) in AndroidManifest.xml",
+    );
+  } else if (existsSync(manifest)) {
+    report.push(
+      "note: no Android signing fingerprint in src/lib/app-links.ts, so e-mail links open in the browser (docs/mobile/PHONE_APP.md)",
+    );
+  }
   apply(
     manifest,
     patchManifestNotificationIcon,
@@ -731,7 +882,19 @@ export function prepareNative(root, { check = false, assets = NATIVE_ASSETS } = 
   );
 
   if (existsSync(pbxproj)) {
-    ensureFile(join(ios, ENTITLEMENTS_PATH), ENTITLEMENTS, "App.entitlements (declares push)");
+    const associatedDomains = appLinks.teamId !== null;
+    ensureFile(
+      join(ios, ENTITLEMENTS_PATH),
+      entitlements({ associatedDomains }),
+      associatedDomains
+        ? "App.entitlements (declares push and the botolago.com e-mail links)"
+        : "App.entitlements (declares push)",
+    );
+    if (!associatedDomains) {
+      report.push(
+        "note: no Apple Team ID in src/lib/app-links.ts, so e-mail links open in Safari (docs/mobile/PHONE_APP.md)",
+      );
+    }
     ensureFile(
       join(ios, PRIVACY_PATH),
       PRIVACY_MANIFEST,

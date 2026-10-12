@@ -23,6 +23,7 @@ import { markSplashDone } from "@/lib/launch-sequence";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/auth/AuthProvider";
 import { NativePushBridge } from "@/components/native/NativePushBridge";
+import { NativeAuthBridge } from "@/components/native/NativeAuthBridge";
 import { NATIVE_APP_INIT_SCRIPT } from "@/lib/native-app";
 import { AuthPromptDialog } from "@/components/auth/AuthPromptDialog";
 import { AuthModeBadge } from "@/components/auth/AuthModeBadge";
@@ -358,6 +359,7 @@ function RootComponent() {
               <AuthModeBadge />
               <Toaster />
               <NativePushBridge />
+              <NativeAuthBridge />
               {ANALYTICS_ACTIVE && <AnalyticsPageviews />}
               <ManagerCardLiveMarker />
             </FantasyOwnedProvider>

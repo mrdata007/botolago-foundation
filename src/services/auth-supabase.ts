@@ -36,6 +36,7 @@ import {
 } from "./profiles-repo";
 import type { AuthError, Session, SupabaseClient, User } from "@supabase/supabase-js";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
+import { nativeOAuthAvailable } from "@/lib/native-oauth";
 
 const K_GUEST = "botolago.auth.guest";
 const K_LEGACY_PREFIX = "botolago.auth.";
@@ -481,6 +482,16 @@ export class SupabaseAuthService implements AuthService {
     next?: string,
   ): Promise<AuthResult<AuthUser>> {
     if (!hasWindow()) return { ok: false, errorCode: "generic" };
+    // Inside the phone app: in the phone's own browser sheet, coming back to
+    // the app with a PKCE code (`src/lib/native-oauth.ts`). Google refuses
+    // the app's web view, and the redirect below would leave the app for
+    // Safari or Chrome for good. Resolves with no session: it arrives when the
+    // phone reopens the app (`NativeAuthBridge`).
+    if (nativeOAuthAvailable()) {
+      const { startNativeOAuth } = await import("./native-oauth-runtime");
+      const started = await startNativeOAuth(provider, sanitizeAuthCallbackNext(next ?? null));
+      return started ? { ok: true } : { ok: false, errorCode: "generic" };
+    }
     const { error } = await this.auth.signInWithOAuth({
       provider,
       options: { redirectTo: getCallbackUrl(next) },

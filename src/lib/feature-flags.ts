@@ -137,9 +137,10 @@ export const DARK_MODE_ENABLED = true;
  *   - `src/routes/auth.login.tsx` — divider + provider buttons
  *   - `src/routes/auth.register.tsx` — divider + provider buttons
  *
- * Inside the phone app both are hidden whatever this says (`WebOnly`):
- * Google refuses sign-in in an embedded web view, and the provider's page
- * would open in the browser, which cannot hand the session back to the app.
+ * Inside the phone app they show only in a build with the Browser plugin
+ * (`nativeOAuthAvailable`): Google refuses sign-in in an embedded web view, so
+ * the app signs in in the phone's browser sheet and comes back with the
+ * session (`src/lib/native-oauth.ts`). An older build hides them.
  */
 export const OAUTH_PROVIDERS_ENABLED = true;
 

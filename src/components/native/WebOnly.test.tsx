@@ -73,10 +73,10 @@ describe("WebOnly", () => {
 
 describe("what is web-only", () => {
   test.each(["src/routes/auth.login.tsx", "src/routes/auth.register.tsx"])(
-    "%s: Google, Apple and their divider are inside one WebOnly",
+    "%s: Google, Apple and their divider are inside one WebOnly, shown in the app only with the Browser plugin",
     (file) => {
       const source = read(file);
-      const open = source.indexOf("<WebOnly>");
+      const open = source.indexOf("<WebOnly showInAppWhen={nativeOAuthAvailable}>");
       const close = source.indexOf("</WebOnly>");
       expect(open).toBeGreaterThan(source.indexOf("{OAUTH_PROVIDERS_ENABLED && ("));
       for (const part of ["<AuthDivider", 'onSocial("google")', 'onSocial("apple")']) {

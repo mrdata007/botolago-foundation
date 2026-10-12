@@ -14,6 +14,7 @@ import {
 import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/auth/auth-classes";
 import { ConsentLine } from "@/components/legal/ConsentLine";
 import { WebOnly } from "@/components/native/WebOnly";
+import { nativeOAuthAvailable } from "@/lib/native-oauth";
 import {
   noticeConsentSegments,
   registerConsentSegments,
@@ -166,8 +167,13 @@ function RegisterPage() {
       setErrors({ form: "auth.error.generic" });
       return;
     }
+    // No account in hand: the sign-in is on its way to Google or Apple (the
+    // page is leaving for the provider, or, inside the phone app, the phone's
+    // browser sheet is open) and comes back through /auth/callback, which
+    // lands it.
+    if (!res.data) return;
     markWelcomeDone();
-    if (res.data?.profileComplete) {
+    if (res.data.profileComplete) {
       navigate({ to: next });
       return;
     }
@@ -374,12 +380,13 @@ function RegisterPage() {
             divider goes with the buttons: an "ou continuer avec" rule with
             nothing under it reads as a broken screen. See
             `OAUTH_PROVIDERS_ENABLED`. Google is the white outline pill, Apple
-            its own navy one (`ink`), as on login. Never inside the phone app
-            (`WebOnly`): Google refuses sign-in in an embedded web view, and
-            the provider's page would open in the browser, which cannot hand
-            the session back to the app. E-mail sign-up is the app's way in. */}
+            its own navy one (`ink`), as on login. Inside the phone app only
+            in a build that can open the phone's browser sheet
+            (`nativeOAuthAvailable`, `src/lib/native-oauth.ts`): Google refuses
+            sign-in in an embedded web view, so the app signs in there and
+            comes back with the session. An older build hides them. */}
         {OAUTH_PROVIDERS_ENABLED && (
-          <WebOnly>
+          <WebOnly showInAppWhen={nativeOAuthAvailable}>
             <AuthDivider label={t("auth.or_continue_with")} />
 
             <div className="grid gap-2.5">
