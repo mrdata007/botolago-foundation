@@ -87,7 +87,9 @@ export async function fetchMyCard(
   const card = answer.card;
   if (card) {
     const acknowledged = new Set(readAckedMoments(scope));
-    const again = card.moments.map((moment) => moment.key).filter((key) => acknowledged.has(key));
+    const again = [...card.moments, ...(card.ovrChanges ?? [])]
+      .map((moment) => moment.key)
+      .filter((key) => acknowledged.has(key));
     if (again.length > 0) void service.ackMoments(again.slice(0, MAX_ACK_KEYS)).catch(() => {});
   }
   return card;
@@ -108,7 +110,13 @@ export async function acknowledgeMoments(
   rememberAckedMoments(unique, scope);
   queryClient.setQueryData<MyCardDto | null>(managerCardKeys.me(scope), (card) =>
     card
-      ? { ...card, moments: card.moments.filter((moment) => !unique.includes(moment.key)) }
+      ? {
+          ...card,
+          moments: card.moments.filter((moment) => !unique.includes(moment.key)),
+          ...(card.ovrChanges
+            ? { ovrChanges: card.ovrChanges.filter((change) => !unique.includes(change.key)) }
+            : {}),
+        }
       : card,
   );
   for (let from = 0; from < unique.length; from += MAX_ACK_KEYS) {
@@ -155,11 +163,17 @@ export function useMyManagerCard(): UseQueryResult<MyCardDto | null, ManagerCard
     retry: retryCardRead,
     queryFn: ({ signal }) => fetchMyCard(queryClient, scope, signal),
     select: (card) => {
-      if (!card || card.moments.length === 0) return card;
+      if (!card || (card.moments.length === 0 && !card.ovrChanges?.length)) return card;
       const acknowledged = new Set(readAckedMoments(scope));
       if (acknowledged.size === 0) return card;
       const moments = card.moments.filter((moment) => !acknowledged.has(moment.key));
-      return moments.length === card.moments.length ? card : { ...card, moments };
+      const changes = card.ovrChanges?.filter((change) => !acknowledged.has(change.key));
+      if (
+        moments.length === card.moments.length &&
+        (changes?.length ?? 0) === (card.ovrChanges?.length ?? 0)
+      )
+        return card;
+      return { ...card, moments, ...(changes ? { ovrChanges: changes } : {}) };
     },
   });
 }

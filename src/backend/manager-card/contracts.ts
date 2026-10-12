@@ -124,6 +124,27 @@ export const momentSchema = z.discriminatedUnion("kind", [
   }),
 ]);
 
+/**
+ * A rating change the manager has not seen yet (migration 20261012200100): the card's OVR moved
+ * from `fromOvr` to `toOvr` at a finished journée. Served beside `moments`, not in it, so a server
+ * that sends it never breaks a front end that does not know it. Acknowledged through the same
+ * call as a moment, by its `key`.
+ */
+export const ovrChangeSchema = z.object({
+  kind: z.literal("ovr_changed"),
+  key: z
+    .string()
+    .regex(/^ovr_(up|down):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/),
+  direction: z.enum(["up", "down"]),
+  occurredAt: iso,
+  gameweekSeq: z.number().int(),
+  fromOvr: ovr,
+  toOvr: ovr,
+  delta: z.number().int(),
+  fromTier: tier.nullable(),
+  toTier: tier.nullable(),
+});
+
 export const seasonSummarySchema = z.object({
   seasonId: uuid,
   label: z.string(),
@@ -172,6 +193,11 @@ export const myCardSchema = z.object({
   seasons: z.array(seasonSummarySchema),
   createdAt: iso.nullable(),
   moments: z.array(momentSchema),
+  /**
+   * Absent from a server without migration 20261012200100, and read as absent when its shape is
+   * not the one above: the card never fails to load because of it.
+   */
+  ovrChanges: z.array(ovrChangeSchema).optional().catch(undefined),
 });
 
 export const memberCardSchema = z.object({
@@ -242,6 +268,7 @@ export type ManagerCardStatus = z.infer<typeof managerCardStatusSchema>;
 export type CardClubDto = z.infer<typeof cardClubSchema>;
 export type MomentDto = z.infer<typeof momentSchema>;
 export type MomentKind = MomentDto["kind"];
+export type OvrChangeDto = z.infer<typeof ovrChangeSchema>;
 export type SeasonSummaryDto = z.infer<typeof seasonSummarySchema>;
 export type MyCardDto = z.infer<typeof myCardSchema>;
 export type MemberCardDto = z.infer<typeof memberCardSchema>;

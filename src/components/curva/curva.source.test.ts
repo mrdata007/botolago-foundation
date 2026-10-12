@@ -46,6 +46,8 @@ describe("the Curva screens' imports", () => {
       .filter((file) => !/curva[^/]*\.tsx$/.test(file) || !file.includes("routes"))
       // the development-only sample route (not found outside a dev server, invented data)
       .filter((file) => !file.endsWith(join("routes", "dev.manager-card-sample.tsx")))
+      // and the rating change's sample route (the same guard, invented data)
+      .filter((file) => !file.endsWith(join("routes", "dev.manager-card-ovr-change-sample.tsx")))
       .filter((file) => /components\/curva\//.test(readFileSync(file, "utf8")))
       .map((file) => file.slice(root.length + 1))
       .filter((file) => !allowed.some((prefix) => file.startsWith(prefix)));

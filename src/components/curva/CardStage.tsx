@@ -121,6 +121,8 @@ export function CardStage({
   waiting = null,
   flippable = false,
   entrance,
+  glow = null,
+  countOvr = null,
 }: {
   profile: CardProfile;
   beat?: BeatName;
@@ -139,6 +141,18 @@ export function CardStage({
   flippable?: boolean;
   /** Play the card's arrival once per visit; `heroDue` says whether a hero will carry the card. */
   entrance?: { heroDue: () => boolean };
+  /**
+   * A rating change is counting (`useOvrChangeBeat`): a soft halo behind the card, positive for a
+   * rise, negative for a fall. A layer of its own behind the card (opacity only), never a filter on
+   * the card, so the card's 3D tilt is untouched.
+   */
+  glow?: "up" | "down" | null;
+  /**
+   * The number the card's print shows while a rating change counts. The renderer drew the card's
+   * own number; only the print's text runs (`.mc-numtxt`) change, and they go back to it when the
+   * count ends. Null leaves the drawing alone.
+   */
+  countOvr?: number | null;
 }) {
   const motion = useMotionCopy();
   const [back, setBack] = useState(false);
@@ -173,6 +187,26 @@ export function CardStage({
   const { dir } = useI18n();
   const rtl = dir === "rtl";
   const palette = useCardPalette(profile.ovr === null ? null : profile.tier);
+
+  // The count of a rating change on the card's print: its text runs take the counted number, and
+  // the last value of the count is the card's own number, so the drawing ends as the renderer drew it.
+  const sectionRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    const section = sectionRef.current;
+    if (countOvr === null || profile.ovr === null || !section) return;
+    const text = String(countOvr);
+    const apply = () => {
+      section.querySelectorAll<SVGTextElement>("[data-stage-lift] .mc-numtxt").forEach((run) => {
+        if (run.textContent !== text) run.textContent = text;
+      });
+    };
+    apply();
+    if (countOvr === profile.ovr || typeof MutationObserver === "undefined") return;
+    // The drawing can arrive (or be drawn again) while the count waits: it takes the number too.
+    const observer = new MutationObserver(apply);
+    observer.observe(section, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [countOvr, profile.ovr]);
 
   const flip = () => {
     const next = !back;
@@ -249,6 +283,7 @@ export function CardStage({
 
   return (
     <section
+      ref={sectionRef}
       className={cn(
         "relative overflow-x-clip px-2 pb-[18px] pt-5 md:pt-6",
         // Arabic's line boxes are taller (leading 1.95 on the title, the rating and the identity
@@ -274,6 +309,17 @@ export function CardStage({
                 : FIT_HEIGHT_WIDTH,
         )}
       >
+        <span
+          aria-hidden
+          data-stage-glow={glow ?? "off"}
+          className={cn(
+            "mc-stage-glow pointer-events-none absolute -inset-x-[12%] -inset-y-[7%] z-0",
+            glow === "down"
+              ? "bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--ui-negative)_45%,transparent),transparent)]"
+              : "bg-[radial-gradient(closest-side,color-mix(in_oklab,var(--ui-positive)_55%,transparent),transparent)]",
+            glow ? "opacity-100" : "opacity-0",
+          )}
+        />
         <span
           aria-hidden
           data-stage-shadow=""
@@ -563,7 +609,7 @@ export function RatingLine({
       className="flex flex-wrap items-baseline justify-center gap-x-2 gap-y-1"
       data-testid="curva-rating-line"
     >
-      <span className={cn(ui.score.md, ui.tone.default)}>
+      <span className={cn(ui.score.md, ui.tone.default)} data-testid="curva-rating-ovr">
         <Figure>{ovr}</Figure>
       </span>
       <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]", ui.tone.muted)}>
