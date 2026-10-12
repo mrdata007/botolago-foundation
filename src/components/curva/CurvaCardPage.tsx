@@ -23,6 +23,7 @@ import { STICKY_COLUMN_CLASS } from "./figures";
 import { cardView } from "./curva-state";
 import { RevoirList } from "./RevoirList";
 import { CurvaError, CurvaLoading, CurvaUnavailable } from "./StateBlocks";
+import { waitContext } from "./pending-card";
 import { StatTile } from "./StatTiles";
 import { TierLadder } from "./TierLadder";
 import { deriveReplayItems, stageReplayBeat } from "./replay-items";
@@ -148,6 +149,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
                   code={code}
                   stat={card.stats[code]}
                   minRated={card.minRated}
+                  wait={waitContext(card)}
                   className={cn(
                     index % 2 === 0 && "border-e border-[color:var(--ui-rule)]",
                     index < 2 && "border-b border-[color:var(--ui-rule)]",

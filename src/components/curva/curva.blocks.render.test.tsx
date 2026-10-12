@@ -86,19 +86,21 @@ describe("« Votre palier »", () => {
 });
 
 describe("the statistics", () => {
-  it("shows a dash and the server's reason for a statistic that is missing, never a zero", async () => {
+  it("shows the short reason and the server's reason for a statistic that is missing, never a dash or a zero", async () => {
     const html = await render(<StatTiles card={card("ratedTrfNull")} />);
     const trf = html.match(/data-stat="trf"[\s\S]*?<\/li>/)![0];
-    expect(text(trf)).toContain("—");
+    expect(text(trf)).not.toContain("—");
+    expect(text(trf)).toContain(fr["card.wait.no_transfers"]);
     expect(text(trf)).toContain(fr["card.reason.no_transfers"]);
     const cap = html.match(/data-stat="cap"[\s\S]*?<\/li>/)![0];
     expect(text(cap)).toContain("91");
     expect(html).toContain('href="/curva/carte"');
   });
 
-  it("shows four dashes with their reason for a card that is still forming", async () => {
+  it("shows four short reasons (no dash) for a card that is still forming", async () => {
     const html = await render(<StatTiles card={card("born0")} />);
-    expect(html.match(/—/g)!.length).toBeGreaterThanOrEqual(4);
+    expect(html).not.toContain("—");
+    expect(html.match(/curva-stat-wait/g)).toHaveLength(4);
     expect(text(html)).toContain(fr["card.reason.pending_minimum"]);
   });
 });
