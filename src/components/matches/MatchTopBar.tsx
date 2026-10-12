@@ -3,6 +3,7 @@ import { ClubCrest } from "@/components/common/ClubCrest";
 import { ui, UiBackButton, UiHeader, UiIconButton, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
+import { liveMinuteLabel } from "@/lib/live-minute";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
 
@@ -147,7 +148,15 @@ function CompactBar({
                 <bdi>{match.awayScore ?? 0}</bdi>
               </span>
             ) : null}
-            {isLive ? <UiLivePill minute={match.minute} /> : null}
+            {isLive ? (
+              <UiLivePill
+                minute={liveMinuteLabel({
+                  minute: match.minute,
+                  period: match.period,
+                  addedTime: match.addedTime,
+                })}
+              />
+            ) : null}
           </div>
           <ClubCrest
             club={away}

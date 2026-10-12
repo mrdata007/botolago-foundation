@@ -234,9 +234,32 @@ describe("sofascore details on the live tick", () => {
     const dbRecent = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
     const recentRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [recent] } });
     await tick("sofascore", "fixtures", dbRecent, recentRun.fetch);
-    expect(detailPaths(recentRun.paths)).toHaveLength(3);
+    // in play: the incidents only (1 request); lineups and statistics wait for full time
+    expect(detailPaths(recentRun.paths)).toEqual(["matches/get-incidents?matchId=1"]);
     expect(named(dbRecent, "ingest_football_fixture")).toHaveLength(0);
-    expect(named(dbRecent, "ingest_football_match_details")).toHaveLength(1);
+    const sent = named(dbRecent, "ingest_football_match_details");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].args.p_details).toMatchObject({ lineups: [], statistics: [] });
+
+    // changed 120 seconds ago: older than one polling interval, so not fetched again
+    const stale = event(1, LIVE, START + 3480);
+    const dbStale = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
+    const staleRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [stale] } });
+    await tick("sofascore", "fixtures", dbStale, staleRun.fetch);
+    expect(detailPaths(staleRun.paths)).toEqual([]);
+  });
+
+  test("a fixture that just finished reads all three replies", async () => {
+    const db = fakeDb({ mappings: mappings([1]), fixtures: [state(1)] });
+    const { fetch, paths } = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, FINISHED)] },
+    });
+    await tick("sofascore", "fixtures", db, fetch);
+    expect(detailPaths(paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+      "matches/get-statistics?matchId=1",
+    ]);
   });
 
   test("an unmapped fixture is never fetched", async () => {

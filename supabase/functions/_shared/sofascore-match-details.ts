@@ -511,6 +511,19 @@ export interface SofascoreDetailsTarget {
    * the match is on, from these same replies.
    */
   readonly liveFixtureId?: string;
+  /**
+   * A match in play: read `matches/get-incidents` only (1 request instead of 3).
+   * Lineups and statistics are read at full time, where the Fantasy step needs
+   * them. The payload then carries empty lineups and statistics, which the RPC
+   * does not treat as a deletion (it keeps what is stored).
+   */
+  readonly incidentsOnly?: boolean;
+  /**
+   * With `incidentsOnly`: also read `matches/get-lineups` (2 requests, no
+   * statistics). Set once per match, on the tick that sees it start, so the
+   * player matching can offer unknown names to the staff before full time.
+   */
+  readonly withLineups?: boolean;
 }
 
 export interface SofascoreDetailsSummary {
@@ -604,6 +617,8 @@ export async function fetchSofascoreMatchReplies(
   rapid: SofascoreShadowClient,
   eventId: string,
   requests: SofascoreDetailsRequestLog[],
+  incidentsOnly = false,
+  withLineups = false,
 ): Promise<{ incidents: unknown; lineups: unknown; statistics: unknown }> {
   if (!/^[1-9][0-9]{0,11}$/.test(eventId)) throw new SofascoreDetailsPayloadError();
   const read = async (endpoint: string, optional: boolean): Promise<unknown> => {
@@ -622,6 +637,13 @@ export async function fetchSofascoreMatchReplies(
     }
   };
   const incidents = await read("get-incidents", false);
+  if (incidentsOnly) {
+    return {
+      incidents,
+      lineups: withLineups ? await read("get-lineups", true) : null,
+      statistics: null,
+    };
+  }
   const lineups = await read("get-lineups", true);
   const statistics = await read("get-statistics", true);
   return { incidents, lineups, statistics };
@@ -698,7 +720,13 @@ export async function runSofascoreMatchDetails(
     let normalized: SofascoreMatchDetails;
     let replies: { incidents: unknown; lineups: unknown; statistics: unknown };
     try {
-      replies = await fetchSofascoreMatchReplies(rapid, target.eventId, requests);
+      replies = await fetchSofascoreMatchReplies(
+        rapid,
+        target.eventId,
+        requests,
+        target.incidentsOnly === true,
+        target.withLineups === true,
+      );
       normalized = normalizeSofascoreMatchDetails(replies, target.teams, now.toISOString());
     } catch (error) {
       const code = failureCode(error);

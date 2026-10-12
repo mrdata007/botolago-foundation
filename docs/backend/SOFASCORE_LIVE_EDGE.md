@@ -32,10 +32,11 @@ set). Read from `app_private.football_live_refresh_tick()` and
 
 - off: both return `disabled` and never call the function. Leave it ON.
 - the live tick additionally calls the function only when a current-season
-  fixture is in play or about to start (every 2 min), kicks off within 10
-  minutes (every 5), or was finalized within 2 hours (every 15). Otherwise it
-  is `idle`. The statuses it reads are those in `app.fixtures`, which the
-  SofaScore path keeps up to date.
+  fixture is in play (every 60 s, see "Live polling every 60 seconds" below),
+  is delayed/suspended or past kickoff without the feed saying so (every 2
+  min), kicks off within 10 minutes (every 5), or was finalized within 2 hours
+  (every 15). Otherwise it is `idle`. The statuses it reads are those in
+  `app.fixtures`, which the SofaScore path keeps up to date.
 - the season tick calls it once an hour regardless of matches.
 
 `app_private.football_data_source_configure` does not change either tick.
@@ -57,8 +58,8 @@ set). Read from `app_private.football_live_refresh_tick()` and
 
 ## Requests per tick
 
-- live job: 1 (`tournaments/get-live-events?sport=football`), up to 12 more for
-  match details (see below), plus 1
+- live job: 1 (`tournaments/get-live-events?sport=football`), more for match
+  details (see below: 1 per changed match in play, 3 per match at full time), plus 1
   (`get-last-matches` page 0) only when a mapped fixture that production shows
   in play, or that kicked off in the last 3 hours without a status, is missing
   from the live list (the final whistle).
@@ -89,8 +90,9 @@ Code: `supabase/functions/_shared/sofascore-match-details.ts`, wired in
 (`api.ingest_football_match_details`, provider `sofascore`), so the match page
 reads them the same way.
 
-Requests: 3 per fixture, in this order, all read before anything is written for
-that fixture: `matches/get-incidents`, `matches/get-lineups`,
+Requests: 3 per fixture at full time and in the post-match refresh, in this order,
+all read before anything is written for that fixture (a match in play reads fewer,
+see "Live polling every 60 seconds"): `matches/get-incidents`, `matches/get-lineups`,
 `matches/get-statistics` (`?matchId=<event id>`). A provider failure, or a quota
 refusal, on any of them leaves that fixture unwritten. A quota refusal also ends
 the run (the remaining fixtures keep their quota) and is not recorded as a
@@ -100,10 +102,11 @@ rejection against the fixture. Lineups or statistics the provider does not have
 When:
 
 - Live tick (`fixtures` job), after the scores are written: at most
-  `SOFASCORE_DETAILS_PER_TICK` fixtures (default 4, max 8, `0` = off), so at most
-  12 more requests. Order: a mapped fixture written as finished this tick, then
-  mapped fixtures in play whose score or status was written or whose
-  `changeTimestamp` is under 150 s old, newest change first. The season job
+  `SOFASCORE_DETAILS_PER_TICK` fixtures (default 4, max 8, `0` = off). Order: a
+  mapped fixture written as finished this tick (3 requests), then mapped fixtures
+  in play whose score or status was written or whose `changeTimestamp` is under
+  90 s old, newest change first (1 request: incidents only; 2 on the tick that
+  sees the match start). The season job
   fetches none. Details never hold a score back; the outcome is in
   `matchDetails` of the response and the log line.
 - `{"job":"match_details_backfill"}`: asks
@@ -154,6 +157,159 @@ Known limit: events are keyed `sofascore:event:<incident id>`, the SportsMonks
 ones `sportsmonks:event:<id>`. A match whose details were stored by SportsMonks
 and are then fetched from SofaScore shows both. The backfill skips marked
 fixtures, so this can only happen to a match that was live across the switch.
+
+## Live polling every 60 seconds
+
+Migration `20261013110100_football_live_refresh_60s.sql` replaces
+`app_private.football_live_refresh_tick()`. pg_cron already wakes it every minute
+(`* * * * *`, 20260924200500), so only the cadence changed, not the schedule.
+
+| When (current season, kickoff confirmed)                                                         | Calls the function   |
+| ------------------------------------------------------------------------------------------------ | -------------------- |
+| a fixture is `live_first_half`, `half_time`, `live_second_half`, `extra_time` or `penalties`     | every 60 s           |
+| `delayed` / `suspended`, or past kickoff while the feed still says scheduled / not started (3 h) | every 2 min          |
+| kickoff within the next 10 minutes                                                               | every 5 min          |
+| finalized within the last 2 hours (post-match refresh, unchanged)                                | every 15 min         |
+| otherwise                                                                                        | idle: nothing called |
+
+Start: the first minute tick after a fixture shows an in-play status (or, for a
+match the feed has not announced, within 2 minutes of kickoff). Stop: when the
+fixture turns `finished` it leaves the 60 s class; the 15-minute post-match
+refresh then takes over, exactly as before. Outside windows the tick is `idle`
+and forgets its last call, so the next match starts at once. The 20 s slack on
+the heartbeat is kept: a tick pg_cron starts a few seconds late still calls.
+
+The decision as a pure function, with tests that also read the migration and fail
+if its status lists or windows drift:
+`supabase/functions/_shared/football-live-cadence.ts` (`liveRefreshCadenceSeconds`,
+`shouldInvokeLiveRefresh`). Not guarded against: an Edge call that outlives a
+minute can overlap the next one of the same job (the `busy` answer only separates
+the live and season jobs). Every write is idempotent and the stale guards hold,
+so an overlap costs requests, not correctness; the call normally takes a few
+seconds.
+
+**Details while a match is in play (what the 60 s cadence costs).** Live scores
+and the minute come from the one `tournaments/get-live-events` request per tick,
+shared by every match in play. The old rule fetched all three detail replies
+(incidents, lineups, statistics) for a changed match in play; at 60 s that would
+triple the cost for data that does not move between goals. Now:
+
+- a match in play whose score or status was written, or whose provider
+  `changeTimestamp` moved in the last 90 s (one polling interval plus a late tick;
+  it was 150 s), reads **`matches/get-incidents` only**: 1 request. The payload
+  carries empty lineups and statistics, and the RPC keeps what is stored for those
+  (an empty list is not a deletion; events are replaced by the incidents list, as
+  before).
+- the tick that sees the match start (stored status not yet in play) also reads
+  `matches/get-lineups`: 2 requests, once, so unknown players still reach the
+  staff matching list before full time (the live matching of 20261012120000 keeps
+  working; it needs the lineups once, not every minute).
+- statistics are read at full time only, with the lineups and incidents again
+  (3 requests, written as finished this tick), then in the 2-hour post-match
+  refresh, unchanged.
+
+`changeTimestamp` is assumed to move when an incident is added; this is how the
+150 s rule already worked, and a goal always moves the score. If a card or
+substitution does not move it, it shows at the next score/status write or at full
+time at the latest.
+
+## Request cost model for live polling
+
+Assumptions (estimates, not measurements): a Botola round is 8 matches over about
+5 kickoff slots; a match is on for about 110 minutes (45 + 15 + 45 + stoppage);
+about 15 incidents move per match (2.7 goals, 4 cards, 8 substitutions) and each
+is fetched 1 to 2 times (the write tick, then the 90 s window), about 1.7 times; 4
+rounds a month; the hourly season job (2 requests) runs all month.
+
+Shared by all matches of one slot (live-events requests are per tick, not per match):
+
+| Part                                        | Arithmetic       | Requests |
+| ------------------------------------------- | ---------------- | -------- |
+| before kickoff (5 min cadence, 10 min)      | 2 ticks x 1      | 2        |
+| start not yet announced (2 min)             | about 1 tick x 1 | 1        |
+| in play, 60 s                               | 110 ticks x 1    | 110      |
+| final whistle fallback (`get-last-matches`) | 1                | 1        |
+| post-match 2 h at 15 min                    | 8 ticks x 1      | 8        |
+| **slot total**                              |                  | **122**  |
+
+Per match:
+
+| Part                                                                               | Arithmetic | Requests |
+| ---------------------------------------------------------------------------------- | ---------- | -------- |
+| incidents in play: 15 x 1.7 = 25.5, + 3 status writes, + 1 lineups at start, about | -          | 29       |
+| full time: incidents + lineups + statistics                                        | 3          | 3        |
+| post-match refresh, 8 ticks x 3 replies                                            | 8 x 3      | 24       |
+| **match total**                                                                    |            | **56**   |
+
+Round: 5 slots x 122 + 8 matches x 56 = 610 + 448 = **1,058 requests**.
+Month: 4 rounds x 1,058 = 4,232, plus the season job 2 x 24 x 30 = 1,440, so about
+**5,670 of 10,000**. That leaves about 4,300 for the other SofaScore lanes
+(standings, clubs and players, images, ID mapping) and for backfills, before the
+8,000 warning.
+
+For comparison, the same model with the previous rules (2 min in play, all three
+replies for a changed match, 150 s window) is 5 x 67 + 8 x 102 = 335 + 816 = 1,151
+per round, so the 60 s cadence with incidents-only is slightly cheaper than the 2
+minute one, while twice as fresh.
+
+The largest single part is the post-match refresh (24 per match, 192 per round
+of 8, about 770 a month), kept as it was. Refreshing every 30 minutes instead
+would save about 380 a month; that is the owner's call. Live-events cost scales
+with slots, not matches: a round played in 3 slots instead of 5 saves about
+2 x 122 = 244 requests.
+
+## RapidAPI call counter and budget
+
+Migration `20261013110000_rapidapi_call_budget.sql`; code in
+`supabase/functions/_shared/rapidapi-client.ts` (`onRequest` hook, one event per
+HTTP attempt, retries included, status 0 when there was no answer) and
+`rapidapi-call-counter.ts`.
+
+- Table `app_private.rapidapi_call_counts`: one row per UTC day, job
+  (`fixtures`, `season_fixtures`, `match_details_backfill`), endpoint and HTTP
+  status, with a `calls` counter. The endpoint is the path without any query
+  (`matches/get-incidents`), so no event id, key or payload is stored.
+- Counting never breaks or delays a refresh: the client only calls a cheap hook
+  (a throw is swallowed); the totals are written with **one** call to
+  `api.service_record_rapidapi_calls` after the refresh's own work, waiting at most
+  2 s; a failure or timeout is logged as `rapidapi_count_failed` (with the number
+  of calls lost) and the refresh's answer is unchanged. Before the migration is
+  applied the same log line appears and nothing else happens. A counted run in
+  `shadow` mode counts too (it spends quota); a client injected by a test does not.
+- Only the Edge Function path is counted. Scripts that build their own client
+  (`scripts/backend/*`, `src/backend/football/provider/`) call SofaScore too and
+  are not counted here; run them knowing that.
+- Health: the `rapidapi_budget` check of `app_private.ops_health_checks()` (added
+  through a wrapper, like `manager_card`) is `ok` below 8,000 calls in the current
+  UTC calendar month, `warn` from 8,000, `fail` (which pages the owner through
+  `ops-alert-tick`) from 9,500. The detail states the count only. The watchdog's
+  `REQUIRED_DATABASE_CHECKS` does not list it until production has the migration.
+- Staff read: `api.admin_rapidapi_calls_this_month()` (permission
+  `football.read_operations`) returns `{month, monthlyLimit, warnAt, failAt, total,
+items: [{job, endpoint, calls}]}` for the current month. Read only.
+
+```sql
+-- the same numbers from SQL, by job and endpoint
+select job, endpoint, sum(calls) calls
+  from app_private.rapidapi_call_counts
+ where day >= date_trunc('month', now() at time zone 'utc')::date
+ group by 1, 2 order by calls desc;
+```
+
+The count is our own tally, not the provider's: RapidAPI's dashboard stays the
+authority (the client also logs `quotaRemaining` and refuses below the floor).
+
+## The minute in stoppage time
+
+SofaScore's clock stops at 45 and 90 (120 in extra time) while time is added. The
+app writes that as **45+**, **90+** and **120+**, from the period and the minute
+alone: `src/lib/live-minute.ts` (`liveMinuteLabel`), used by the match card, the
+match header, the top bar and the live strip. The added minutes ("45+2") appear
+only if the provider gave `addedTime`; they are never worked out. No minute, no
+label; half-time and penalties have none. Extra time has one period in the data,
+so only its end (120+) is told apart; the first extra half's stoppage shows as the
+number. The SofaScore path writes `minute: null` today (`sofascore-fixtures.ts`),
+so the label appears once the minute is filled in; see "Open points".
 
 ## Fantasy observations (automatic)
 
@@ -266,6 +422,11 @@ If the migration is not applied, the function is missing and the step logs
 
 ## Open points
 
+- The SofaScore ingest writes `minute` and `addedTime` as null, so the live minute
+  (and the "45+" / "90+" label) has nothing to show for a SofaScore match yet.
+  SofaScore's live event may carry `time.currentPeriodStartTimestamp` (not in the
+  committed samples, so not relied on here); with it the minute could be computed
+  on the server per tick. Owner decision.
 - Finished status codes 100/110/120 are an assumption (see `sofascore-fixtures.ts`).
 - After the switch, a fixture last written by SportsMonks keeps its
   `provider_updated_at`; SofaScore updates older than that are skipped as stale

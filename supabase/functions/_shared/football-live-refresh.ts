@@ -31,6 +31,7 @@
 import { handleSportsMonksFixtureRequest, type FixtureRpcClient } from "./sportsmonks-fixtures.ts";
 import { runMatchDetailsRefresh } from "./sportsmonks-match-details.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
+import { createRapidApiCallCounter, type RapidApiCallCounter } from "./rapidapi-call-counter.ts";
 import { createRapidApiClient, RapidApiError } from "./rapidapi-client.ts";
 import type { SofascoreShadowClient } from "./sofascore-fixtures.ts";
 import { runSofascoreDetailsBackfill, runSofascoreRefresh } from "./sofascore-live-refresh.ts";
@@ -140,10 +141,16 @@ export async function handleFootballLiveRefreshRequest(
   if (source === "invalid") return json(503, { error: "football_data_source_invalid" });
   if (source !== "sportsmonks") {
     let rapid = dependencies.rapidApi;
+    // Every request this client sends is counted per job, endpoint and status
+    // (api.service_record_rapidapi_calls) and written once, after the work below.
+    // An injected client (tests) is not counted. Counting never throws or waits long.
+    let counter: RapidApiCallCounter | null = null;
     if (!rapid) {
       try {
+        counter = createRapidApiCallCounter({ client: dependencies.client, job });
         rapid = createRapidApiClient("sofascore", dependencies.environment, {
           fetch: dependencies.fetch,
+          onRequest: counter.record,
         });
       } catch (error) {
         const code = error instanceof RapidApiError ? error.code : "provider_unavailable";
@@ -160,25 +167,29 @@ export async function handleFootballLiveRefreshRequest(
       }
     }
     const now = (dependencies.now ?? (() => new Date()))();
-    if (job === "match_details_backfill") {
-      const backfill = await runSofascoreDetailsBackfill({
+    try {
+      if (job === "match_details_backfill") {
+        const backfill = await runSofascoreDetailsBackfill({
+          mode: source,
+          client: dependencies.client,
+          rapid,
+          environment: dependencies.environment,
+          now,
+        });
+        return json(backfill.status, backfill.body);
+      }
+      const outcome = await runSofascoreRefresh({
         mode: source,
+        job,
         client: dependencies.client,
         rapid,
         environment: dependencies.environment,
         now,
       });
-      return json(backfill.status, backfill.body);
+      return json(outcome.status, outcome.body);
+    } finally {
+      await counter?.flush();
     }
-    const outcome = await runSofascoreRefresh({
-      mode: source,
-      job,
-      client: dependencies.client,
-      rapid,
-      environment: dependencies.environment,
-      now,
-    });
-    return json(outcome.status, outcome.body);
   }
 
   // The fixture handler insists on a one-off trigger secret of its own; it

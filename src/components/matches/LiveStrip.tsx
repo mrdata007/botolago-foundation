@@ -6,6 +6,7 @@ import { ui } from "@/components/ui-kit";
 import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
+import { liveMinuteLabel } from "@/lib/live-minute";
 import { cn } from "@/lib/utils";
 import { FlipScore, TickingMinute } from "./FlipScore";
 import { useLiveMatches } from "./use-live-matches";
@@ -76,7 +77,12 @@ export function LiveStrip() {
             if (!home || !away) return null;
             const hs = match.homeScore ?? 0;
             const as = match.awayScore ?? 0;
-            const minute = match.minute ? `${match.minute}′` : "";
+            const minuteText = liveMinuteLabel({
+              minute: match.minute,
+              period: match.period,
+              addedTime: match.addedTime,
+            });
+            const minute = match.minute && minuteText ? `${minuteText}′` : "";
             const label = `${scoreTemplate
               .replace("{home}", tr(home.shortName))
               .replace("{hs}", String(hs))
@@ -127,6 +133,8 @@ export function LiveStrip() {
                     <TickingMinute
                       minute={match.minute}
                       running={match.status === "live"}
+                      period={match.period}
+                      addedTime={match.addedTime}
                       className={ui.text.tabular}
                     />
                   ) : null}
