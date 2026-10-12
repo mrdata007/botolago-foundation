@@ -1702,7 +1702,7 @@ export const fr = {
   "profile.delete_confirm_body":
     "Vous êtes déconnecté partout et votre nom disparaît des classements. Sous 7 jours, le compte et ses données sont effacés, sans retour possible.",
   "profile.delete_confirm_kept":
-    "Seuls les justificatifs des prix déjà remis (5 ans) et les journaux de sécurité (12 mois) sont conservés, détachés du compte.",
+    "La trace des prix déjà remis (5 ans) et les journaux de sécurité (12 mois) sont conservés, détachés du compte.",
   "profile.delete_learn_more": "Tout savoir sur la suppression",
   "profile.delete_confirm_checkbox": "Je comprends que la suppression est définitive.",
   "profile.delete_confirm_cta": "Supprimer définitivement",
