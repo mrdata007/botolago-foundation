@@ -216,7 +216,7 @@ function Owner({ card }: { card: MyCardDto }) {
           card={card}
           facts={
             showsPendingPanel(card, roundBlock(card, { gameweek: null, now: Date.now() }))
-              ? pendingFacts(card, SAMPLE_ROWS)
+              ? pendingFacts(card, SAMPLE_ROWS, SAMPLE_ROWS.length)
               : null
           }
         />

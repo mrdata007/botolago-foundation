@@ -57,18 +57,30 @@ export function ownStanding(rows: readonly PeopleRow[]): LeagueStanding | null {
   return rows.find((row) => row.own)?.standing ?? null;
 }
 
+/**
+ * `leagueMembers` is the selected league's own member count (`League.members`). The standings are
+ * a page of at most 100 rows, so `rows.length` is never the league's size: a rank is shown only
+ * when the reader's own row is in the page and the league's size is known (and not smaller than
+ * the rank); otherwise the rank fact is left out, never a wrong « 3/100 ».
+ */
 export function pendingFacts(
   card: Pick<MyCardDto, "gameweeksCounted" | "minRated">,
   rows: readonly PeopleRow[],
+  leagueMembers: number | null | undefined,
 ): PendingFacts {
   const own = ownStanding(rows);
   const finite = (n: number | undefined): n is number =>
     typeof n === "number" && Number.isFinite(n);
   const waitsForStats = card.gameweeksCounted >= card.minRated;
+  const total =
+    typeof leagueMembers === "number" && Number.isInteger(leagueMembers) && leagueMembers > 0
+      ? leagueMembers
+      : null;
+  const rankKnown = own !== null && finite(own.rank) && own.rank > 0 && total !== null;
   return {
     points: own && finite(own.totalScore) ? own.totalScore : null,
-    rank: own && finite(own.rank) && own.rank > 0 ? own.rank : null,
-    of: own && rows.length > 0 ? rows.length : null,
+    rank: rankKnown && own.rank <= total ? own.rank : null,
+    of: rankKnown && own.rank <= total ? total : null,
     counted: waitsForStats && card.gameweeksCounted > 0 ? card.gameweeksCounted : null,
   };
 }

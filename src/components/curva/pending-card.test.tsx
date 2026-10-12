@@ -122,20 +122,36 @@ describe("facts", () => {
   it("are taken from the reader's own standing and nothing else", () => {
     const rows = [row(1, 300, false), row(2, 214, true), row(3, 100, false)];
     expect(ownStanding(rows)?.rank).toBe(2);
-    expect(pendingFacts(two, rows)).toEqual({ points: 214, rank: 2, of: 3, counted: 3 });
+    expect(pendingFacts(two, rows, 3)).toEqual({ points: 214, rank: 2, of: 3, counted: 3 });
+  });
+  it("take the league's size from its member count, not from the 100-row page", () => {
+    const page = Array.from({ length: 100 }, (_, i) => row(i + 1, 900 - i, i === 2));
+    expect(pendingFacts(two, page, 500)).toEqual({ points: 898, rank: 3, of: 500, counted: 3 });
+  });
+  it("leave the rank out when the reader is not in the page of 100, or the size is unknown", () => {
+    const page = Array.from({ length: 100 }, (_, i) => row(i + 1, 900 - i, false));
+    const absent = pendingFacts(two, page, 500);
+    expect(absent.rank).toBeNull();
+    expect(absent.of).toBeNull();
+    const mine = Array.from({ length: 100 }, (_, i) => row(i + 1, 900 - i, i === 2));
+    for (const unknown of [null, undefined, 0, 2]) {
+      const facts = pendingFacts(two, mine, unknown);
+      expect(facts.rank, String(unknown)).toBeNull();
+      expect(facts.of, String(unknown)).toBeNull();
+    }
   });
   it("leave out what is not known: no standings, no points and no rank", () => {
-    const facts = pendingFacts(zero, []);
+    const facts = pendingFacts(zero, [], null);
     expect(facts).toEqual({ points: null, rank: null, of: null, counted: null });
     expect(hasFacts(facts)).toBe(false);
   });
   it("do not repeat the journée counter while the card is still forming", () => {
-    expect(pendingFacts(FIXTURES.forming1.card!, [row(1, 5, true)]).counted).toBeNull();
+    expect(pendingFacts(FIXTURES.forming1.card!, [row(1, 5, true)], 1).counted).toBeNull();
   });
 });
 
 describe("the statistics panel (StatTiles) while the card has no number", () => {
-  const facts = pendingFacts(two, [row(3, 214, true), row(1, 300, false)]);
+  const facts = pendingFacts(two, [row(3, 214, true), row(1, 300, false)], 12);
   const cell = (html: string, code: string) =>
     html.match(new RegExp(`data-stat="${code}"[\\s\\S]*?</li>`))![0];
 
@@ -163,7 +179,7 @@ describe("the statistics panel (StatTiles) while the card has no number", () => 
     expect(t).toContain("Points Fantasy");
     expect(t).toContain("214");
     expect(t).toContain("Rang en ligue");
-    expect(t).toContain("3/12".replace("12", "2"));
+    expect(t).toContain("3/12");
     expect(t).toContain("Journées comptées");
     expect(t).toContain("Voir le détail");
   });
@@ -181,7 +197,7 @@ describe("the statistics panel (StatTiles) while the card has no number", () => 
 
   it("a new manager: four short reasons, no facts row, no dash", async () => {
     language = "fr";
-    const html = await render(<StatTiles card={zero} facts={pendingFacts(zero, [])} />);
+    const html = await render(<StatTiles card={zero} facts={pendingFacts(zero, [], null)} />);
     expect(html).not.toContain("curva-pending-facts");
     const waits = [...html.matchAll(/data-testid="curva-stat-wait"[^>]*>([^<]*)</g)].map(
       (m) => m[1],

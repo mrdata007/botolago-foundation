@@ -310,6 +310,7 @@ export function OwnerHome({
                     people.leaguesPending || people.standingsPending || people.standingsError
                       ? []
                       : people.rows,
+                    people.league?.members,
                   )
                 : null
             }
