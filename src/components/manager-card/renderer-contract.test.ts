@@ -196,7 +196,8 @@ function describeRendererContract(name: string, renderer: CardRenderer) {
       // prints it (Éclat, the plain renderer) has.
       const spoken = art.texts.map((run) => run.text);
       expect(spoken.some((text) => text === "84" || text === "91")).toBe(true);
-      expect(spoken).toContain("BOT #482913");
+      // the serial is data and is not drawn, so it is not a run
+      expect(spoken.some((text) => text.includes("BOT #"))).toBe(false);
       for (const run of art.texts) {
         expect(run.size).toBeGreaterThan(0);
         expect(["start", "middle", "end"]).toContain(run.anchor);

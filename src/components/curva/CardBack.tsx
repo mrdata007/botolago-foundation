@@ -1,7 +1,7 @@
 import { useId, type CSSProperties } from "react";
 
 import { WORDMARK_HEIGHT, WORDMARK_PATHS, WORDMARK_WIDTH } from "@/assets/brand/wordmark-paths";
-import { useCardCopy, useCardStrings } from "@/components/manager-card/copy";
+import { useCardCopy } from "@/components/manager-card/copy";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import { STAT_CODES, type CardProfile } from "@/components/manager-card/types";
@@ -36,7 +36,7 @@ const HONEYCOMB = [hex(4.33, 5), hex(0, 12.5), hex(8.66, 12.5)].join("");
  * The back of the card, plain DOM (the stage's « Retourner »), made of the front's own parts: the
  * cut-cornered outline and its rim stroke, the lacquer with the backlight and the honeycomb, the
  * club's disc and the season as on the front's tab, the name in the front's serif, the tier in its
- * pointed chip, the four statistics with a bar each, the logo (the BotolaGO wordmark, from its path data) and the serial. The colours are
+ * pointed chip, the four statistics with a bar each, and the logo (the BotolaGO wordmark, from its path data), centred at the foot. The serial is data and is not shown. The colours are
  * the tier's material from the active renderer (`useCardPalette`), so the back is the same object
  * as the front. Everything is sized in the back's own container units, like the card, so it scales
  * with the stage's 296 to 336 px. The lower start corner stays empty: the stage's flip button sits
@@ -49,7 +49,6 @@ const HONEYCOMB = [hex(4.33, 5), hex(0, 12.5), hex(8.66, 12.5)].join("");
 export function CardBack({ profile }: { profile: CardProfile }) {
   const copy = useCardCopy();
   const motion = useMotionCopy();
-  const strings = useCardStrings();
   const { dir } = useI18n();
   const rtl = dir === "rtl";
   const palette = useCardPalette(profile.ovr === null ? null : profile.tier);
@@ -185,7 +184,7 @@ export function CardBack({ profile }: { profile: CardProfile }) {
             </dl>
 
             <div
-              className="flex items-baseline justify-between gap-[3cqw] ps-[15cqw] text-[4cqw] leading-none"
+              className="flex items-center justify-center text-[4cqw] leading-none"
               style={label}
             >
               <span dir="ltr" className="block" data-back-logo="">
@@ -202,11 +201,6 @@ export function CardBack({ profile }: { profile: CardProfile }) {
                   ))}
                 </svg>
               </span>
-              {profile.serial !== null ? (
-                <bdi dir="ltr" className="[font-weight:var(--ui-weight-heavy)]">
-                  {strings.serial(profile.serial)}
-                </bdi>
-              ) : null}
             </div>
           </div>
         </div>

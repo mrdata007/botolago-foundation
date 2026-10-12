@@ -83,14 +83,14 @@ describe("the stage's flip", () => {
 describe("the back of the card", () => {
   const html = render(<CardBack profile={profile} />);
 
-  it("shows the four statistics with their codes and names, the season and the serial", () => {
+  it("shows the four statistics with their codes and names, the season and no serial", () => {
     for (const code of ["CAP", "SEL", "TRF", "CON"]) expect(html).toContain(`>${code}<`);
     for (const key of ["cap", "sel", "trf", "con"] as const) {
       expect(html).toContain(fr[`card.stat_long.${key}`]);
     }
     for (const value of [91, 82, 86, 78]) expect(html).toContain(`>${value}<`);
     expect(html).toContain("2026/27");
-    expect(html).toContain("BOT #482913");
+    expect(html).not.toContain("BOT #");
   });
 
   it("is named, as a group, so a screen reader can say which face it is on", () => {

@@ -112,3 +112,12 @@ Functional:
   `spring.test.ts`, `ceremony.test.ts`, the flip's frames, the tilt's drag and spring.
 - Not done: phone drag tilt is the existing 9 degree range (modest by design); the beat of the card
   itself is unchanged and plays at the impact.
+
+## Serial not shown, logo for the wordmark
+
+- The card's serial (« BOT #482913 ») is no longer drawn or read anywhere a user sees: not on the front
+  (Éclat plate), the back, the plain renderer, the share picture, the born panel, the card page, the
+  deletion request line, nor in the card's accessible name. It stays in the data (types, profile
+  mapping, backend) and still seeds the honeycomb's phase. Pins that asserted it was shown now assert it is
+  absent (`render.test.ts`, `copy.test.ts`, `card-share-image.draw.test.ts`, `moment-text.test.tsx`, ...).
+- The rail's typed « BOTOLAGO » and the back's letter-spaced one are the logo (`wordmark-paths.ts`).

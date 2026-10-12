@@ -1,6 +1,6 @@
 /**
  * The plate's furniture and text (plan 3.3, revision 3), centred under the shield: the tier word in
- * its plaque (or the forming marks), the name, the rule, the four stats, the serial; on the tab the
+ * its plaque (or the forming marks), the name, the rule, the four stats; on the tab the
  * season and the club's initials; the sample pill, the founder's mark along the cut corner and the
  * rail's wordmark. Shapes (rules, dividers, marks, the pill, the star) come back as markup with x
  * already mirrored; every text comes back as a `TextSpec`, to be drawn as `<text>` or as a canvas
@@ -15,7 +15,7 @@ import { CREST, DISC, RULE_Y, STAT_DIV, STAT_X, mx, n2, star } from "./geometry"
 import { fitLabel, layoutName } from "./name";
 import type { Plaque } from "./plaque";
 import type { TextSpec } from "./text";
-import { esc, serialLine } from "./view";
+import { esc } from "./view";
 
 /** The rail logo's height across the rail, in card units (the text it replaced was 34 units tall). */
 export const RAIL_LOGO_HEIGHT = 44;
@@ -204,23 +204,7 @@ export function plate(c: Ctx, plaque: Plaque): Plate {
       : `<rect x="${n2(X(x) - 0.7)}" y="1436" width="1.4" height="${valY + 6 - 1436}" fill="#fff" fill-opacity=".14"/>`;
   }
 
-  // the serial (not on the face-à-face card)
-  if (!compact) {
-    texts.push({
-      text: serialLine(s, p.serial),
-      x: 500,
-      y: 1584,
-      size: 30,
-      face: "b",
-      weight: 600,
-      fill: "#fff",
-      fillOpacity: 0.8,
-      tabular: true,
-      tracking: 0.04,
-      dir: "ltr",
-      data: { meta: "serial" },
-    });
-  }
+  // (the card's serial is data, not shown: it is not drawn on the card, its label or its picture)
 
   // the founder's mark along the cut corner: a drawn star, and the last two digits of the year
   if (p.founder) {

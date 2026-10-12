@@ -24,16 +24,8 @@ export function CardDeletionNotice({
   const moments = useMomentCopy();
   const cardCopy = useCardCopy();
   if (!card) return null;
-  const line = card.serial
-    ? fill(moments.state.deletion, {
-        // One unit: the number never breaks away from « BOT » and never reorders in Arabic.
-        serial: (
-          <bdi dir="ltr" className="whitespace-nowrap">
-            {fillText(cardCopy.serial, { serial: card.serial })}
-          </bdi>
-        ),
-      })
-    : moments.state.deletionNoserial;
+  // the serial is not shown anywhere, so the sentence is the one without it
+  const line = moments.state.deletionNoserial;
   return (
     <p
       data-testid="deletion-card-line"

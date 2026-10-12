@@ -13,7 +13,7 @@ import { appliedBeat } from "./full";
 import { tierWord, TIER_KEYS } from "./foil";
 import { AR, FR, MOCK_ARABIC, MOCK_CARDS, MOCK_NAMES, PROFILES } from "./test-data";
 import { elementsByClass, layer, texts, textsWith, trackingOf } from "./test-markup";
-import { makeView, serialLine } from "./view";
+import { makeView } from "./view";
 import type { BeatName, CardProfile } from "../types";
 
 const tFor =
@@ -57,13 +57,17 @@ describe("every fixture, language and theme (plan 12.4)", () => {
     }
   });
 
-  it("carries the serial, with a dash when there is none, in the frame", () => {
+  it("does not show the serial: no text, no label and no run carries it, with one or without", () => {
     for (const [id, p] of ALL) {
       const html = draw(p);
-      const [serial] = textsWith(html, "meta").filter((t) => t.attrs["data-meta"] === "serial");
-      expect(serial?.text, id).toBe(serialLine(FR, p.serial));
+      expect(
+        textsWith(html, "meta").some((t) => t.attrs["data-meta"] === "serial"),
+        id,
+      ).toBe(false);
+      expect(html.includes("BOT #"), id).toBe(false);
+      expect(html.includes("BOT —"), id).toBe(false);
+      if (p.serial) expect(html.includes(p.serial), id).toBe(false);
     }
-    expect(serialLine(FR, null)).toBe("BOT —");
   });
 
   it("has the founder's capsule and mark for a founder and neither for anyone else", () => {
@@ -120,8 +124,6 @@ describe("every fixture, language and theme (plan 12.4)", () => {
       expect(word.attrs.style, lang).toBe("letter-spacing:0.22em");
       const label = all.find((t) => "data-ovrlabel" in t.attrs)!;
       expect(trackingOf(label), `${lang} OVR`).toBe("0.2em");
-      const serial = all.find((t) => "data-meta" in t.attrs && t.attrs["data-meta"] === "serial");
-      expect(serial && trackingOf(serial), `${lang} serial`).toBe("0.04em");
       // the rail's wordmark is the logo (shapes, `data-meta="wordmark"`), no longer typed text
       expect(
         all.some((t) => t.text === "BOTOLAGO"),
@@ -432,17 +434,7 @@ describe("the detail and the share art (plan 7)", () => {
       expect(art.height / art.width).toBeCloseTo(1.618, 2);
       const spoken = art.texts.map((r) => r.text);
       const tier = tierWord("legend", lang === "ar" ? AR : FR);
-      for (const expected of [
-        "99",
-        "OVR",
-        "26",
-        "BOT #5508",
-        "2026/27",
-        tier,
-        "YASMINE",
-        "ALAOUI",
-        "FAR",
-      ]) {
+      for (const expected of ["99", "OVR", "26", "2026/27", tier, "YASMINE", "ALAOUI", "FAR"]) {
         expect(spoken, `${lang} ${expected}`).toContain(expected);
       }
       // no stylesheet in an SVG drawn as an image: the moving parts carry their rest transforms

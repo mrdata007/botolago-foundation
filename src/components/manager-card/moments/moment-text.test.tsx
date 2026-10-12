@@ -182,25 +182,23 @@ describe("the born panel's sentences", () => {
   const future = new Date(Date.now() + 38 * 3_600_000).toISOString();
   const past = new Date(Date.now() - 3_600_000).toISOString();
 
-  it("leads with the serial when it exists, then when the rating comes, then what it measures", () => {
+  it("leads with when the rating comes, then what it measures: the serial is not a sentence", () => {
     const born = bornText(card("born0Serial"), words("fr"), future);
     expect(born.lines.map((line) => text(line.text))).toEqual([
-      "Son numéro, BOT #482913, ne changera jamais.",
       "Sa note arrive après 3 journées terminées : J14, J15, J16.",
       "Elle mesurera vos choix : capitaine, titulaires, transferts, régularité.",
     ]);
-    // Belonging is the one strong line; the rules are quiet.
-    expect(born.lines.map((line) => line.strong)).toEqual([true, false, false]);
-    expect(born.lines.map((line) => line.kind)).toEqual(["serial", "timing", "measure"]);
+    // The timing is the one strong line; the rules are quiet.
+    expect(born.lines.map((line) => line.strong)).toEqual([true, false]);
+    expect(born.lines.map((line) => line.kind)).toEqual(["timing", "measure"]);
     expect(text(born.invite)).toBe(
       "Invitez vos amis avant la date limite de la J14 : leurs journées compteront en même temps que les vôtres.",
     );
   });
 
-  it("the team page's panel keeps the serial and the timing and drops what the rating measures", () => {
+  it("the team page's panel keeps the timing and drops what the rating measures", () => {
     const withSerial = compactBornLines(bornText(card("born0Serial"), words("fr"), future));
     expect(withSerial.map((line) => text(line.text))).toEqual([
-      "Son numéro, BOT #482913, ne changera jamais.",
       "Sa note arrive après 3 journées terminées : J14, J15, J16.",
     ]);
     const without = compactBornLines(bornText(card("born0"), words("fr"), future));
@@ -245,10 +243,10 @@ describe("the born panel's sentences", () => {
     expect(html(ar.lines[0]!.text)).toContain('<bdi dir="ltr">1/3</bdi>');
   });
 
-  it("Arabic: the serial is isolated, the rounds are the plural family's", () => {
+  it("Arabic: no serial anywhere, the rounds are the plural family's", () => {
     const born = bornText(card("born0Serial"), words("ar"), future);
-    expect(html(born.lines[0]!.text)).toContain('<bdi dir="ltr">BOT #482913</bdi>');
-    expect(text(born.lines[1]!.text)).toContain("جولات");
+    expect(born.lines.map((line) => html(line.text)).join(" ")).not.toContain("BOT #482913");
+    expect(text(born.lines[0]!.text)).toContain("جولات");
   });
 });
 

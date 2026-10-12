@@ -319,16 +319,9 @@ export function bornText(
       ? fill(moment.m2.line1From, { final, gw: first })
       : fill(moment.m1.introBody, { final });
   // Belonging leads: the number that is theirs (when it is assigned), then when the rating
-  // arrives and what it will measure, quietly. With no serial yet the timing leads instead.
+  // arrives and what it will measure, quietly. (The serial is not shown anywhere.)
   const lines: BornText["lines"] = [];
-  if (card.serial) {
-    lines.push({
-      text: fill(moment.m2.serial, { serial: serialNode(words, card.serial) }),
-      strong: true,
-      kind: "serial",
-    });
-  }
-  lines.push({ text: timing, strong: !card.serial, kind: "timing" });
+  lines.push({ text: timing, strong: true, kind: "timing" });
   lines.push({ text: moment.m2.line2, strong: false, kind: "measure" });
   const deadlineAhead = nextDeadline !== null && Date.parse(nextDeadline) > now;
   return {
