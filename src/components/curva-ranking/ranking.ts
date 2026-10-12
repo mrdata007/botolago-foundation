@@ -165,3 +165,20 @@ export function rankingTeamIds(
   }
   return head;
 }
+
+/** What the screen shows, from what the reads say. A card error with no rows at all is a full error. */
+export function rankingStatus(read: {
+  off: boolean;
+  listError: boolean;
+  cardsFailedEmpty: boolean;
+  noLeague: boolean;
+  leaguesPending: boolean;
+  listPending: boolean;
+  cardsPending: boolean;
+}): "off" | "error" | "no_league" | "loading" | "ready" {
+  if (read.off) return "off";
+  if (read.listError || read.cardsFailedEmpty) return "error";
+  if (read.noLeague) return "no_league";
+  if (read.leaguesPending || read.listPending || read.cardsPending) return "loading";
+  return "ready";
+}

@@ -7,7 +7,7 @@ import { FantasyFrame } from "@/components/fpl/FantasyFrame";
 import { rememberLeague } from "@/components/manager-card/storage";
 import { UiHeader } from "@/components/ui-kit";
 
-import { RANKING_LIMIT } from "./ranking";
+import { RANKING_LIMIT, rankingStatus } from "./ranking";
 import { useRankingCopy } from "./ranking-copy";
 import { RankingView, type RankingStatus } from "./RankingView";
 import { useCurvaRanking } from "./use-curva-ranking";
@@ -42,15 +42,7 @@ function RankingBody(): JSX.Element {
   const scope = search.vue === "tous" ? "all" : "league";
   const data = useCurvaRanking(true, scope, search.ligue);
 
-  const status: RankingStatus = data.off
-    ? "off"
-    : data.listError
-      ? "error"
-      : data.noLeague
-        ? "no_league"
-        : data.leaguesPending || data.listPending || data.cardsPending
-          ? "loading"
-          : "ready";
+  const status: RankingStatus = rankingStatus(data);
 
   return (
     <RankingView

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { buildRanking, RANKING_LIMIT, rankingTeamIds, toEntry } from "./ranking";
+import { buildRanking, RANKING_LIMIT, rankingStatus, rankingTeamIds, toEntry } from "./ranking";
 import { SAMPLE_CARDS, SAMPLE_OWN_ID } from "./sample-data";
 
 const ranking = buildRanking(SAMPLE_CARDS, SAMPLE_OWN_ID);
@@ -171,5 +171,52 @@ describe("buildRanking: the reader's team is not in the ranked list", () => {
   it("has nothing outside when no list is given or they have no card", () => {
     expect(buildRanking(SAMPLE_CARDS, SAMPLE_OWN_ID).ownOutside).toBeNull();
     expect(buildRanking(SAMPLE_CARDS, "someone-else", listed).ownOutside).toBeNull();
+  });
+});
+
+describe("rankingStatus", () => {
+  const base = {
+    off: false,
+    listError: false,
+    cardsFailedEmpty: false,
+    noLeague: false,
+    leaguesPending: false,
+    listPending: false,
+    cardsPending: false,
+  };
+
+  it("is a full error, with retry, when the card read failed and no rows exist", () => {
+    expect(rankingStatus({ ...base, cardsFailedEmpty: true })).toBe("error");
+  });
+
+  it("stays ready (partial warning) when the card read failed but stale rows exist", () => {
+    // cardsFailedEmpty is false when the query still holds data
+    expect(rankingStatus(base)).toBe("ready");
+  });
+
+  it("puts « off » before an error, and an error before loading", () => {
+    expect(rankingStatus({ ...base, off: true, listError: true })).toBe("off");
+    expect(rankingStatus({ ...base, listError: true, listPending: true })).toBe("error");
+    expect(rankingStatus({ ...base, cardsPending: true })).toBe("loading");
+    expect(rankingStatus({ ...base, noLeague: true })).toBe("no_league");
+  });
+});
+
+describe("Tous reads only the top of the overall board", () => {
+  it("uses the one-page read, never the call that loads every page", async () => {
+    const { readFileSync } = await import("node:fs");
+    const hook = readFileSync(new URL("./use-curva-ranking.ts", import.meta.url), "utf8");
+    expect(hook).toContain("getTopOverallStandings(RANKING_LIMIT)");
+    expect(hook).not.toContain("getGlobalRankings");
+  });
+
+  it("the service read answers at most the limit, best first (mock data)", async () => {
+    const { fantasyService } = await import("@/services/fantasy-runtime");
+    const rows = await fantasyService.getTopOverallStandings(25);
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.length).toBeLessThanOrEqual(25);
+    const ranks = rows.map((row) => row.rank);
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+    expect((await fantasyService.getTopOverallStandings(1000)).length).toBeLessThanOrEqual(100);
   });
 });

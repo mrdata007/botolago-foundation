@@ -32,6 +32,8 @@ export interface CurvaRankingData {
   listError: boolean;
   /** The card read failed for a reason other than being switched off. */
   cardsError: boolean;
+  /** The card read failed and there are no cards to show, not even stale ones. */
+  cardsFailedEmpty: boolean;
   /** The card read answered that the Manager Card is switched off. */
   off: boolean;
   noLeague: boolean;
@@ -72,19 +74,13 @@ export function useCurvaRanking(
   });
   const board = useQuery({
     queryKey: key("rankings", "curva-ranking", RANKING_LIMIT),
-    queryFn: () =>
-      fantasyService.getGlobalRankings({
-        page: 1,
-        pageSize: RANKING_LIMIT,
-        sort: "overall",
-        query: "",
-      }),
+    queryFn: () => fantasyService.getTopOverallStandings(RANKING_LIMIT),
     enabled: enabled && scope === "all" && status === "authenticated",
   });
 
   const listed = useMemo(
     () =>
-      (scope === "league" ? (standings.data ?? []) : (board.data?.rows ?? [])).map(
+      (scope === "league" ? (standings.data ?? []) : (board.data ?? [])).map(
         (row) => row.managerId,
       ),
     [scope, standings.data, board.data],
@@ -121,6 +117,7 @@ export function useCurvaRanking(
     cardsPending: ids.length > 0 && cards.isPending && cards.fetchStatus !== "idle",
     listError: (scope === "league" && leagues.isError) || list.isError,
     cardsError: cards.isError && !off,
+    cardsFailedEmpty: cards.isError && !off && (cards.data?.length ?? 0) === 0,
     off,
     noLeague:
       scope === "league" && !leagues.isPending && !leagues.isError && leagues.data?.length === 0,

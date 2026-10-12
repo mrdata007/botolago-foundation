@@ -543,6 +543,28 @@ export const fantasyService = {
     // fetched board at all.
     return { ...page, myRank: page.myRank ?? myRank };
   },
+  /**
+   * The first `limit` (at most 100) managers of the overall board, from ONE read of its first page.
+   * `getGlobalRankings` loads every page (up to 20) to page and search; a screen that only needs the
+   * top of the board (the Curva ranking) must not pay for that.
+   */
+  async getTopOverallStandings(limit = 100): Promise<LeagueStanding[]> {
+    const size = Math.max(1, Math.min(100, Math.floor(limit)));
+    if (mode() === "mock") {
+      return selectRankingsPage(buildGlobalRankings(), {
+        page: 1,
+        pageSize: size,
+        sort: "overall",
+        query: "",
+      }).rows;
+    }
+    const current = await hub();
+    const result = await cloud.getOverallStandings(
+      { seasonId: current.season.id, cursor: null, limit: size },
+      context(),
+    );
+    return result.items.map(overallStandingDto);
+  },
   async getGameweekResult(sequence: number): Promise<GameweekResult | undefined> {
     if (mode() === "mock") return mockFantasyService.getGameweekResult(sequence);
     const current = await cloudTeam();
