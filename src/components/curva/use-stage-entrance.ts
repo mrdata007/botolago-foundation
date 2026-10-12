@@ -4,7 +4,17 @@ import { entranceShownThisSession, markEntranceShown } from "@/components/manage
 import { useI18n } from "@/i18n/provider";
 import { prefersReducedMotion, tokenMs } from "@/lib/motion";
 
-import { entranceDecision, entranceFrames, entranceMs, groundFrames } from "./entrance";
+import type { GlintHandle } from "@/components/manager-card/motion/CardGlint";
+
+import {
+  ENTRANCE_SPRING_MS,
+  ENTRANCE_SWEEP_AT,
+  ENTRANCE_SWEEP_MS,
+  entranceDecision,
+  entranceFrames,
+  entranceMs,
+  groundFrames,
+} from "./entrance";
 import { whenQuiet } from "./quiet";
 import { useLaunchGate } from "./use-launch-gate";
 
@@ -22,6 +32,8 @@ export interface StageEntrance {
   liftRef: RefObject<HTMLDivElement | null>;
   /** The shadow on the ground that grows under it. */
   groundRef: RefObject<HTMLSpanElement | null>;
+  /** The band of light that crosses the card as it lands (`CardGlint`). */
+  glintRef: RefObject<GlintHandle | null>;
   /** The entrance is playing: the card's tilt and float stay off until it has landed. */
   entering: boolean;
 }
@@ -44,6 +56,7 @@ export function useStageEntrance(input: {
   const gateOpen = useLaunchGate();
   const liftRef = useRef<HTMLDivElement | null>(null);
   const groundRef = useRef<HTMLSpanElement | null>(null);
+  const glintRef = useRef<GlintHandle | null>(null);
   const [entering, setEntering] = useState(false);
   // What the mount saw: a stage that rendered before hydration finished was in the server's HTML.
   const first = useRef({ presentAtFirstPaint: !isHydrated, gateOpen });
@@ -81,12 +94,25 @@ export function useStageEntrance(input: {
     void whenQuiet().done.then(() => {
       if (!mounted.current || !lift.isConnected) return;
       try {
-        const duration = entranceMs(tokenMs("--duration-hero", 420));
-        const easing = tokenEasing("--ease-emphasized", "cubic-bezier(0.2, 0.9, 0.1, 1)");
+        // the card is a spring sampled into its keyframes (linear between them); its shadow and
+        // the light sweep are timed to it
+        const duration = ENTRANCE_SPRING_MS;
+        const groundEasing = tokenEasing("--ease-emphasized", "cubic-bezier(0.2, 0.9, 0.1, 1)");
         const dir = document.documentElement.dir === "rtl" ? -1 : 1;
-        const animations = [lift.animate(entranceFrames(dir), { duration, easing })];
+        const animations = [lift.animate(entranceFrames(dir), { duration, easing: "linear" })];
         const ground = groundRef.current;
-        if (ground) animations.push(ground.animate(groundFrames(), { duration, easing }));
+        if (ground) {
+          animations.push(
+            ground.animate(groundFrames(), {
+              duration: Math.max(duration, entranceMs(tokenMs("--duration-hero", 420))),
+              easing: groundEasing,
+            }),
+          );
+        }
+        glintRef.current?.play({
+          delay: Math.round(duration * ENTRANCE_SWEEP_AT),
+          duration: ENTRANCE_SWEEP_MS,
+        });
         Promise.all(animations.map((animation) => animation.finished)).then(done, done);
       } catch {
         // Whatever failed, the card is shown at rest and its tilt comes back.
@@ -99,5 +125,5 @@ export function useStageEntrance(input: {
     // The entrance is a one-off of the mount: nothing here is re-run.
   }, []);
 
-  return { liftRef, groundRef, entering };
+  return { liftRef, groundRef, glintRef, entering };
 }

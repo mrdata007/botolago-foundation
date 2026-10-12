@@ -81,6 +81,7 @@ import { FantasyRuleChips } from "@/components/home/FantasyRuleChips";
 import { NextMatchPick } from "@/components/home/NextMatchPick";
 import { HomeMatchCarousel, type BandCard } from "@/components/home/HomeMatchCarousel";
 import { bandMatches, voteMayOpen } from "@/components/home/band-matches";
+import { RevealOnArrive } from "@/components/common/RevealOnArrive";
 import { DeadlineStrip } from "@/components/fantasy/DeadlineStrip";
 import { useDeadlineCountdown } from "@/components/fpl/deadline";
 import { useAuth } from "@/auth/AuthProvider";
@@ -104,7 +105,6 @@ import stadiumBandSmall from "@/assets/brand/home-band-stadium-800.webp";
 import liveBand from "@/assets/photos/home-band-live.webp";
 import liveBandSmall from "@/assets/photos/home-band-live-800.webp";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
-import { staggerStyle } from "@/lib/motion";
 import { useDarkStatusBand } from "@/lib/system-bars";
 
 const HOME_TITLE = "BotolaGO — Actualité, matchs et Fantasy du football marocain";
@@ -534,9 +534,19 @@ function HomeContent() {
           crawlers and screen-reader users a descriptive title. It is read in
           the reader's language; `HOME_TITLE`, the <title>, is French for all. */}
       <h1 className="sr-only">{t("home.sr_title")}</h1>
-      {stripTime && gwQ.data ? (
-        <DeadlineStrip gameweek={gwQ.data.number} deadline={gwQ.data.deadline} time={stripTime} />
-      ) : null}
+      <RevealOnArrive
+        show={Boolean(stripTime && gwQ.data)}
+        className="-mx-[var(--ui-gutter)] -mt-4 sm:mx-0 sm:mt-0 sm:overflow-hidden sm:rounded-[var(--ui-radius-card)]"
+      >
+        {stripTime && gwQ.data ? (
+          <DeadlineStrip
+            gameweek={gwQ.data.number}
+            deadline={gwQ.data.deadline}
+            time={stripTime}
+            flush={false}
+          />
+        ) : null}
+      </RevealOnArrive>
       <HomeStories />
       {/* Phone: one column, in the order the order-N classes give. From 768px
           the three columns below are real columns (`contents` on a phone lets
@@ -606,11 +616,7 @@ function HomeContent() {
                   <EmptyState compact>{t("state.empty")}</EmptyState>
                 ) : (
                   newsPreview.map((a, index) => (
-                    <div
-                      key={a.id}
-                      className="enter-rise stagger min-w-0"
-                      style={staggerStyle(index)}
-                    >
+                    <div key={a.id} className="min-w-0">
                       <ArticleCard article={a} variant="compact" clubs={clubsQ.data ?? []} />
                     </div>
                   ))
@@ -630,13 +636,15 @@ function HomeContent() {
                 title={t("matches.section.upcoming")}
                 action={<ViewAllLink to="/matches" />}
               />
-              <MyClubsRow
-                tiles={myClubs}
-                season={currentSeason}
-                seasonReady={seasonsQ.isSuccess}
-                standings={standingsQ.data?.overall ?? []}
-                clubById={clubById}
-              />
+              <RevealOnArrive show={myClubs.length > 0}>
+                <MyClubsRow
+                  tiles={myClubs}
+                  season={currentSeason}
+                  seasonReady={seasonsQ.isSuccess}
+                  standings={standingsQ.data?.overall ?? []}
+                  clubById={clubById}
+                />
+              </RevealOnArrive>
               {matchesQ.isPending ? (
                 <UiCard
                   padding="none"

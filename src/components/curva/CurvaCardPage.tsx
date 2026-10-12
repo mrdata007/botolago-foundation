@@ -172,17 +172,6 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
           </UiCard>
         </section>
 
-        {card.serial ? (
-          <p
-            className={cn("text-pretty px-1", ui.text.secondary, ui.tone.muted)}
-            data-testid="curva-serial"
-          >
-            {fill(copy.cardSerial, {
-              serial: ltr(fillText(cardCopy.serial, { serial: card.serial })),
-            })}
-          </p>
-        ) : null}
-
         <FounderBlock card={card} profile={profile} />
 
         {items.length > 0 ? (

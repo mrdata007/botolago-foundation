@@ -373,14 +373,13 @@ function ClubPage() {
         }
       />
 
-      {/* Keyed on the tab, so each switch replays a quick fade, as the match
-          page's panel does. */}
+      {/* Keyed on the tab so each panel starts fresh. The swap is instant and
+          fully drawn; only the tab underline moves. */}
       <div
         key={tab}
         id={CLUB_PANEL_ID}
         role="tabpanel"
         aria-labelledby={`${CLUB_TAB_ID_BASE}-tab-${tab}`}
-        className="tab-panel-in"
       >
         {tab === "overview" && (
           <ClubOverview

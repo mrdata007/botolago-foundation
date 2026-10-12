@@ -22,28 +22,28 @@ nothing here carries a third party's name, mark or artwork.
 
 ## Files
 
-| File                                                      | What                                                                                                                                                          |
-| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `index.ts`                                                | `eclatRenderer`, `ready()`, `mountTilt`, `estimateAspect`. Imports `eclat.css`.                                                                               |
-| `curva-renderer.ts`                                       | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`curva-*`).                                          |
-| `estimate.ts`                                             | `estimateAspect()` = 1.618, `ASPECT`. The only module meant for the main bundle: it imports nothing but a type.                                               |
-| `geometry.ts`                                             | Every coordinate: outline, shield window, tab, shirt, chest box, tokens, honeycomb helpers, mirror helpers. Pure numbers and strings.                         |
-| `foil.ts`                                                 | The six-step ladder (plan 5.4), the tier word (LASTREET), colour helpers over `src/lib/colour.ts`, the shirt's colours and the number's fill and twill.       |
-| `view.ts`                                                 | The cleaned profile, the escape, the label, `serialLine`, a token's label.                                                                                    |
-| `metrics.ts`, `measure.ts`                                | The committed face metrics (generated), and the measure: canvas in a browser, the table elsewhere. `ready()` loads the faces.                                 |
-| `name.ts`                                                 | Name cleaning, the split, the fit to 790 units, the placement by ink, the Arabic stat label's fit. Pure.                                                      |
-| `field.ts`                                                | The backboard: honeycomb (phase from the serial), fence, brushing, grain, pitch lines, backlight, floodlights, pool, vignette, aura, cast shadow.             |
-| `shirt.ts`, `number.ts`                                   | The shirt in 3D, and the number: its fit on the ink, the print, « OVR », and the runs the share picture draws.                                                |
-| `ornament.ts`, `plaque.ts`, `plate.ts`                    | The frame's materials and shapes, the tier plaque or forming marks, and the plate's text and furniture.                                                       |
-| `text.ts`, `ctx.ts`                                       | A text described once (`<text>` or a share-picture run), and what one card's parts share.                                                                     |
-| `full.ts`                                                 | `fullCard`, `cardImage` (share art), `founderDetail`, `appliedBeat`, `buildParts`.                                                                            |
-| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts` | The layer stack and rims, the holographic layer, tokens and minis, the beats' timeline, the tilt (WP2's).                                                     |
-| `pose.ts`, `lift.ts`                                      | The tilt's numbers and transform strings (pure), and the one-time rebuild of a tilting card's DOM so the parts that follow the light are layers of their own. |
-| `ids.ts`                                                  | Unique SVG ids (`mc-<n>-…`); `../scope-ids.ts` makes the cached markup unique per mounted card.                                                               |
-| `eclat.css`                                               | Fonts (Instrument Serif), text faces, the layer stack; then the 3D, foil and beats sections.                                                                  |
-| `scripts/measure-faces.ts`                                | Regenerates `metrics.ts` (Playwright, Chromium).                                                                                                              |
-| `../../../../scripts/qa/manager-card-gallery.ts`          | Writes a static gallery of every fixture, tier and size, and the mock's own cards for a side-by-side.                                                         |
-| `test-data.ts`, `test-markup.ts`                          | Test support: the card words of both languages, a profile per case, the mock's cards; a strict reader for the markup. Not imported by the app.                |
+| File                                                      | What                                                                                                                                                                                |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `index.ts`                                                | `eclatRenderer`, `ready()`, `mountTilt`, `estimateAspect`. Imports `eclat.css`.                                                                                                     |
+| `curva-renderer.ts`                                       | The entry the section loads lazily; its file name is the chunk's name, which the off-bundle gate allows (`curva-*`).                                                                |
+| `estimate.ts`                                             | `estimateAspect()` = 1.618, `ASPECT`. The only module meant for the main bundle: it imports nothing but a type.                                                                     |
+| `geometry.ts`                                             | Every coordinate: outline, shield window, tab, shirt, chest box, tokens, honeycomb helpers, mirror helpers. Pure numbers and strings.                                               |
+| `foil.ts`                                                 | The six-step ladder (plan 5.4), the tier word (LASTREET), colour helpers over `src/lib/colour.ts`, the shirt's colours and the number's fill and twill.                             |
+| `view.ts`                                                 | The cleaned profile, the escape, the label, a token's label.                                                                                                                        |
+| `metrics.ts`, `measure.ts`                                | The committed face metrics (generated), and the measure: canvas in a browser, the table elsewhere. `ready()` loads the faces.                                                       |
+| `name.ts`                                                 | Name cleaning, the split, the fit to 790 units, the placement by ink, the Arabic stat label's fit. Pure.                                                                            |
+| `field.ts`                                                | The backboard: honeycomb (phase from the serial, which is data and is never drawn), fence, brushing, grain, pitch lines, backlight, floodlights, pool, vignette, aura, cast shadow. |
+| `shirt.ts`, `number.ts`                                   | The shirt in 3D, and the number: its fit on the ink, the print, « OVR », and the runs the share picture draws.                                                                      |
+| `ornament.ts`, `plaque.ts`, `plate.ts`                    | The frame's materials and shapes, the tier plaque or forming marks, and the plate's text and furniture.                                                                             |
+| `text.ts`, `ctx.ts`                                       | A text described once (`<text>` or a share-picture run), and what one card's parts share.                                                                                           |
+| `full.ts`                                                 | `fullCard`, `cardImage` (share art), `founderDetail`, `appliedBeat`, `buildParts`.                                                                                                  |
+| `layers.ts`, `holo.ts`, `token.ts`, `beats.ts`, `tilt.ts` | The layer stack and rims, the holographic layer, tokens and minis, the beats' timeline, the tilt (WP2's).                                                                           |
+| `pose.ts`, `lift.ts`                                      | The tilt's numbers and transform strings (pure), and the one-time rebuild of a tilting card's DOM so the parts that follow the light are layers of their own.                       |
+| `ids.ts`                                                  | Unique SVG ids (`mc-<n>-…`); `../scope-ids.ts` makes the cached markup unique per mounted card.                                                                                     |
+| `eclat.css`                                               | Fonts (Instrument Serif), text faces, the layer stack; then the 3D, foil and beats sections.                                                                                        |
+| `scripts/measure-faces.ts`                                | Regenerates `metrics.ts` (Playwright, Chromium).                                                                                                                                    |
+| `../../../../scripts/qa/manager-card-gallery.ts`          | Writes a static gallery of every fixture, tier and size, and the mock's own cards for a side-by-side.                                                                               |
+| `test-data.ts`, `test-markup.ts`                          | Test support: the card words of both languages, a profile per case, the mock's cards; a strict reader for the markup. Not imported by the app.                                      |
 
 ## How a card is built
 
@@ -125,7 +125,7 @@ app's (`src/fonts.css`); Noto Sans Arabic carries the Arabic stat labels and the
 The lowest tier (key `homa`) is displayed LASTREET in French and in Arabic (a Latin word, set left to
 right and tracked in both: the tracking is an inline `style` on the `<text>` (`text.ts`,
 `trackingStyle`), because the app's `html[dir="rtl"] * { letter-spacing: normal }` outranks a
-presentation attribute and would strip LASTREET, « OVR », the serial and the wordmark of their
+presentation attribute and would strip LASTREET and « OVR » of their
 tracking in the Arabic interface; `tests/e2e/curva.e2e.ts` reads the computed value under the
 app's stylesheet). The renderer owns the word (`foil.ts`, `tierWord`, and `withTierNames` for
 the label), so a card and its label say LASTREET whatever a dictionary holds. The dictionaries say
@@ -134,7 +134,7 @@ run in Arabic (`../tier-word.tsx`).
 
 ## Interface additions (all optional, `../renderer.ts`)
 
-- `RenderOptions.compact`: the face-à-face sheet's card (136 to 200 px): no serial, wordmark, « OVR »,
+- `RenderOptions.compact`: the face-à-face sheet's card (136 to 200 px): no wordmark, « OVR »,
   season, club initials or stat labels; every remaining text is 58 units or more, so 8 CSS px at
   136 px. `ManagerCard` takes a `compact` prop (it is part of the render-cache key); the face-à-face
   sheet's card passes it, no other card does. Below 136 px the plate's text is under 8 CSS px, so a
@@ -175,7 +175,7 @@ picture allows), with no `<text>` and no stylesheet: the travelling parts carry 
 (`translate(12 -19.2)` for the foil, `(38.4 -64)` for the specular streak, `(-3.36 6.4)` for the
 cast shadow). Every text is a run: season, club initials, sample, the number (an outline and a
 twill made of eight offset copies, then the fill), « OVR » with its halo, the four labels and values,
-the tier word, the two name lines, the serial and the founder's « 26 » (rotated 45 degrees along the
+the tier word, the two name lines and the founder's « 26 » (rotated 45 degrees along the
 cut corner). The rail's wordmark is not drawn. The sheen and the foil overlay are HTML and are not
 in it.
 
@@ -442,3 +442,8 @@ the same start and length, say in `appliedBeat` (`full.ts`) when it has nothing 
 add it to the beat tests. A beat may move only the floodlights, the field group, the foil overlay's
 `::after`, the foil shift, the marks, the capsule and the seal line, never the number, the serial, a
 text or the shirt, and each of its keyframes must end where the card rests.
+
+**The serial is not shown** (owner's decision, collectible-motion branch). It stays in the profile and the
+backend as data and still seeds the honeycomb's phase, but no face of the card, its label, the share
+picture, the plain renderer, the born panel or the deletion line prints it, and the card's accessible
+name no longer reads it. The rail carries the BotolaGO logo (`assets/brand/wordmark-paths.ts`).

@@ -30,13 +30,13 @@ describe("the plain renderer", () => {
     expect(html).toContain(`fill="${rated.club!.primary}"`);
   });
 
-  it("prints the sample label on a sample, and a serial in the format", () => {
+  it("prints the sample label on a sample, and no serial", () => {
     const html = plainRenderer.full(
       { ...rated, sample: true },
       { strings: STRINGS.ar, theme: "light" },
     );
     expect(html).toContain("مثال");
-    expect(html).toContain("BOT #482913");
+    expect(html).not.toContain("BOT #");
   });
 
   it("draws a league member's mini and token", () => {

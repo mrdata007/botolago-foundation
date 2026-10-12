@@ -7,6 +7,8 @@
  * owns that), and it ends in the rest state (no transform left on anything).
  */
 
+import { mix, round, springFrames } from "@/components/manager-card/motion/spring";
+
 /** What the decision reads. */
 export interface EntranceGate {
   /** The screen asked for it (Curva' home only). */
@@ -44,14 +46,14 @@ export function entranceDecision(gate: EntranceGate): EntranceDecision {
   return { play: true, remember: true };
 }
 
-/** The card's entrance: the hero token's length, never under 420 ms nor over 600 ms. */
+/** The hero token's length, never under 420 ms nor over 600 ms (the sheets and heroes still use it). */
 export const ENTRANCE_MIN_MS = 420;
 export const ENTRANCE_MAX_MS = 600;
 
 /**
- * The entrance's length from the page's `--duration-hero` (ms), clamped to 420-600 ms. It was the
- * token stretched by a quarter (525 ms); it is the token itself now (420 ms), because a card that
- * has been waited for should not also take over half a second to land.
+ * The entrance's length from the page's `--duration-hero` (ms), clamped to 420-600 ms. The card's
+ * own entrance is a spring and takes `ENTRANCE_SPRING_MS`; this clamp now sets the ground shadow's
+ * easing token only.
  */
 export function entranceMs(heroToken: number): number {
   if (!Number.isFinite(heroToken)) return ENTRANCE_MIN_MS;
@@ -59,25 +61,39 @@ export function entranceMs(heroToken: number): number {
 }
 
 /**
- * The card's keyframes (the lift wrapper). `dir` is +1 reading left to right and -1 right to
- * left, so the settling turn leans the way the card's own light does in Arabic. The transform list
- * is the same in every frame, so it interpolates; the last frame is the rest state.
+ * How long the card takes to come in and settle: a spring (`ENTRANCE_ZETA`), so it rises, passes
+ * its place by a little and comes back down. The card is on screen and readable from the first
+ * quarter of this; the rest is the settle, which is what gives it weight.
+ */
+export const ENTRANCE_SPRING_MS = 780;
+export const ENTRANCE_ZETA = 0.52;
+/** When the light sweep crosses the card, as a share of the entrance: as the card lands. */
+export const ENTRANCE_SWEEP_AT = 0.34;
+export const ENTRANCE_SWEEP_MS = 620;
+
+/**
+ * The card's keyframes (the lift wrapper): sampled from the spring, so the card rises from below
+ * and a little small, tipped back, turns slightly and settles flat with one small overshoot. `dir`
+ * is +1 reading left to right and -1 right to left, so the turn leans the way the card's own light
+ * does in Arabic. The transform list is the same in every frame, so it interpolates; the first
+ * frame is invisible and the last is the rest state.
  */
 export function entranceFrames(dir: 1 | -1): Keyframe[] {
   const at = (y: number, rx: number, ry: number, scale: number): string =>
-    `perspective(1100px) translateY(${y}px) rotateX(${rx}deg) rotateY(${ry * dir}deg) scale(${scale})`;
-  return [
-    { opacity: 0, transform: at(30, 16, -9, 0.95), offset: 0 },
-    { opacity: 1, transform: at(-5, -3, 2.5, 1.012), offset: 0.62 },
-    { opacity: 1, transform: at(0, 0, 0, 1), offset: 1 },
-  ];
+    `perspective(1100px) translateY(${round(y, 2)}px) rotateX(${round(rx, 2)}deg) rotateY(${round(ry * dir, 2)}deg) scale(${round(scale, 4)})`;
+  return springFrames(ENTRANCE_ZETA, 26, (p, time) => ({
+    // visible from the first tenth: a card that is still invisible while it rises reads as a fade
+    opacity: time === 0 ? 0 : Math.min(1, time * 9),
+    transform: at(mix(56, 0, p), mix(26, 0, p), mix(-9, 0, p), mix(0.86, 1, p)),
+  }));
 }
 
 /** The shadow on the ground: it grows as the card comes down and is gone once the card's own shows. */
 export function groundFrames(): Keyframe[] {
   return [
     { opacity: 0, transform: "scale(0.55, 0.7)", offset: 0 },
-    { opacity: 0.85, transform: "scale(1, 1)", offset: 0.62 },
+    { opacity: 0.9, transform: "scale(1.08, 1.15)", offset: 0.42 },
+    { opacity: 0.9, transform: "scale(1, 1)", offset: 0.62 },
     { opacity: 0, transform: "scale(1.04, 1)", offset: 1 },
   ];
 }

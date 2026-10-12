@@ -27,7 +27,7 @@ import type { CardLang, CardProfile, CardStrings } from "../types";
  * URL, and the text runs it left out, drawn here with `fillText` once the share fonts are loaded
  * (an SVG drawn as an image cannot use the page's web fonts). Around it: the wordmark, the
  * provisional note when the number is provisional, the caption, the name in Changa 800, the
- * number with its tier, the serial when there is one, the season, the club as a colour disc with
+ * number with its tier, the season, the club as a colour disc with
  * its initials and the address. When the club has a crest (owner request 2026-10-10, which
  * supersedes plan 2.6's "no crest") and it loads with CORS, the crest is drawn on a light plate on
  * the card's tab and on the disc beside the name instead of the initials; a crest that cannot be
@@ -63,8 +63,6 @@ export interface CardShareImageModel {
   rating: { number: string; unit: string; tier: string | null };
   /** « Note provisoire · J7 », present only when the number is provisional. */
   provisional: string | null;
-  /** « BOT #482913 », present only when the card has a serial. */
-  serial: string | null;
   season: string;
   club: { initials: string; primary: string } | null;
   footer: string;
@@ -109,7 +107,6 @@ export function cardShareImageModel(
         ? fillText(t("card.onboarding.m6.image.provisional"), { gw: throughGameweekSeq })
         : t("card.provisional")
       : null,
-    serial: profile.serial ? strings.serial(profile.serial) : null,
     season: profile.season,
     club: profile.club ? { initials: profile.club.initials, primary: profile.club.primary } : null,
     footer: SHARE_FOOTER,
@@ -125,7 +122,6 @@ function sampleOf(model: CardShareImageModel): string {
     model.rating.unit,
     model.rating.tier ?? "",
     model.provisional ?? "",
-    model.serial ?? "",
     model.season,
     model.club?.initials ?? "",
     model.footer,
@@ -526,25 +522,14 @@ function draw(
     rtl,
   );
 
-  // The serial (only when there is one) and the season: Latin codes, each its own run.
+  // The season: a Latin code (the card's serial is data and is not drawn).
   const meta = (text: string, fill: string): Run => ({
     text,
     font: shareFont(body, 700, L.meta.size),
     fill,
     dir: "ltr",
   });
-  drawRuns(
-    ctx,
-    [
-      ...(model.serial
-        ? [meta(model.serial, SHARE_PALETTE.muted), meta("  ·  ", SHARE_PALETTE.muted)]
-        : []),
-      meta(model.season, SHARE_PALETTE.muted),
-    ],
-    start,
-    L.meta.baseline,
-    rtl,
-  );
+  drawRuns(ctx, [meta(model.season, SHARE_PALETTE.muted)], start, L.meta.baseline, rtl);
 
   // The address, at the inline start of the foot.
   ctx.save();

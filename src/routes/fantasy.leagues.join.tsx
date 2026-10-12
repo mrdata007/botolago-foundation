@@ -248,7 +248,7 @@ function JoinLeagueBody() {
           role="tabpanel"
           id={`join-panel-${tab}`}
           aria-labelledby={`join-tab-${tab}`}
-          className={cn("tab-panel-in px-4 pb-8 pt-6", ui.surface.page)}
+          className={cn("px-4 pb-8 pt-6", ui.surface.page)}
         >
           {tab === "private" ? (
             <form

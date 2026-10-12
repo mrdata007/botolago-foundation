@@ -3,7 +3,7 @@ import type { ReactNode, Ref } from "react";
 
 import { ManagerCard } from "../ManagerCard";
 import type { BeatName, CardProfile, TierCode } from "../types";
-import { TierBurst } from "./TierBurst";
+import { TierCeremonyCard } from "./TierCeremony";
 
 import { ui, UiIconButton } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
@@ -125,15 +125,18 @@ export function HeroCard({
   profile,
   beat,
   burst = null,
+  back,
 }: {
   profile: CardProfile;
   beat: BeatName | undefined;
   burst?: TierCode | null;
+  /** The card's back for the ceremony's spin (see `TierCeremonyCard`). */
+  back?: ReactNode;
 }) {
+  if (burst) return <TierCeremonyCard profile={profile} beat={beat} tier={burst} back={back} />;
   return (
     <div className="flex justify-center px-4 pb-[18px] pt-2" data-hero-card="">
       <div className="relative isolate max-w-full">
-        {burst ? <TierBurst tier={burst} beat={beat} /> : null}
         <ManagerCard
           profile={profile}
           width={296}

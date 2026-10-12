@@ -1,12 +1,13 @@
 /**
  * The plate's furniture and text (plan 3.3, revision 3), centred under the shield: the tier word in
- * its plaque (or the forming marks), the name, the rule, the four stats, the serial; on the tab the
+ * its plaque (or the forming marks), the name, the rule, the four stats; on the tab the
  * season and the club's initials; the sample pill, the founder's mark along the cut corner and the
  * rail's wordmark. Shapes (rules, dividers, marks, the pill, the star) come back as markup with x
  * already mirrored; every text comes back as a `TextSpec`, to be drawn as `<text>` or as a canvas
  * run. Nothing smaller than 30 units is drawn on the full card and nothing under 58 on the
  * face-à-face card.
  */
+import { WORDMARK_HEIGHT, WORDMARK_PATHS, WORDMARK_WIDTH } from "@/assets/brand/wordmark-paths";
 import { STAT_CODES } from "../types";
 import type { Ctx } from "./ctx";
 import { inkOn, mix } from "./foil";
@@ -14,7 +15,10 @@ import { CREST, DISC, RULE_Y, STAT_DIV, STAT_X, mx, n2, star } from "./geometry"
 import { fitLabel, layoutName } from "./name";
 import type { Plaque } from "./plaque";
 import type { TextSpec } from "./text";
-import { esc, serialLine } from "./view";
+import { esc } from "./view";
+
+/** The rail logo's height across the rail, in card units (the text it replaced was 34 units tall). */
+export const RAIL_LOGO_HEIGHT = 44;
 
 export interface Plate {
   /** Shapes, in card coordinates (not mirrored again). */
@@ -200,23 +204,7 @@ export function plate(c: Ctx, plaque: Plaque): Plate {
       : `<rect x="${n2(X(x) - 0.7)}" y="1436" width="1.4" height="${valY + 6 - 1436}" fill="#fff" fill-opacity=".14"/>`;
   }
 
-  // the serial (not on the face-à-face card)
-  if (!compact) {
-    texts.push({
-      text: serialLine(s, p.serial),
-      x: 500,
-      y: 1584,
-      size: 30,
-      face: "b",
-      weight: 600,
-      fill: "#fff",
-      fillOpacity: 0.8,
-      tabular: true,
-      tracking: 0.04,
-      dir: "ltr",
-      data: { meta: "serial" },
-    });
-  }
+  // (the card's serial is data, not shown: it is not drawn on the card, its label or its picture)
 
   // the founder's mark along the cut corner: a drawn star, and the last two digits of the year
   if (p.founder) {
@@ -239,23 +227,21 @@ export function plate(c: Ctx, plaque: Plaque): Plate {
     }
   }
 
-  // the rail's wordmark: debossed, the card's one brand signature (not in the share picture)
-  if (!compact) {
-    const place = { tx: X(32), ty: 600, rotate: -90 };
-    const wm = {
-      text: "BOTOLAGO",
-      x: 2.4,
-      y: 0,
-      size: 34,
-      face: "d" as const,
-      central: true,
-      tracking: 0.14,
-      dir: "ltr" as const,
-      place,
-      noImage: true as const,
-    };
-    texts.push({ ...wm, fill: "#000", fillOpacity: 0.5, dy: 1.5 });
-    texts.push({ ...wm, fill: "#fff", fillOpacity: 0.78, data: { meta: "wordmark" } });
+  // the rail's wordmark, the BotolaGO logo itself (the ball and the letters, drawn from its path data,
+  // not typed): debossed, the card's one brand signature, read from the bottom up along the rail. It
+  // is shapes, so the share picture (`c.runs`), which has no use for it, leaves it out as it left out
+  // the text. Never mirrored: the logo reads left to right in Arabic too.
+  if (!compact && !c.runs) {
+    const h = RAIL_LOGO_HEIGHT;
+    const k = h / WORDMARK_HEIGHT;
+    const w = WORDMARK_WIDTH * k;
+    // the path data once, in the layer's defs, and the two copies (the dark offset one and the light
+    // one) refer to it: the logo is 6.7 kB of paths and the card's markup has a budget
+    shapes += `<defs><g id="${c.id}-logo">${WORDMARK_PATHS.map((d) => `<path d="${d}"/>`).join("")}</g></defs>`;
+    const copy = (fill: string, opacity: number, dy: number, meta: string): string =>
+      `<use href="#${c.id}-logo" transform="translate(${n2(X(32))} 600) rotate(-90) translate(${n2(-w / 2)} ${n2(-h / 2 + dy)}) scale(${k.toFixed(5)})" fill="${fill}" fill-opacity="${opacity}"${meta}/>`;
+    shapes += copy("#000", 0.5, 1.5, "");
+    shapes += copy("#fff", 0.78, 0, ' data-meta="wordmark"');
   }
 
   return { shapes, texts, name };

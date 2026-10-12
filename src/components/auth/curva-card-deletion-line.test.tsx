@@ -19,12 +19,11 @@ const render = (node: React.ReactNode) =>
   renderToString(<I18nProvider>{node}</I18nProvider>).replace(/<!-- -->/g, "");
 
 describe("the card's line in the deletion request", () => {
-  it("names the number, as one unit that never breaks or reorders, when the card has one", () => {
+  it("does not print the number (the serial is data, not shown), even when the card has one", () => {
     const html = render(<CardDeletionNotice card={FIXTURES.rated.card} />);
     expect(html).toContain('data-testid="deletion-card-line"');
-    expect(html).toContain(
-      'Votre carte de manager et son numéro <bdi dir="ltr" class="whitespace-nowrap">BOT #482913</bdi> seront supprimés. Ce numéro ne sera jamais réattribué.',
-    );
+    expect(html).toContain("Votre carte de manager sera supprimée.");
+    expect(html).not.toContain("BOT #");
   });
 
   it("says only that the card goes while it has no number yet", () => {
@@ -46,12 +45,11 @@ describe("the card's line in the deletion request", () => {
     expect(render(<CardDeletionNotice card={undefined} />)).toBe("");
   });
 
-  it("prints a serial the way the card does and never with a leading zero", () => {
+  it("never prints any card's serial", () => {
     for (const fixture of Object.values(FIXTURES)) {
       const serial = fixture.card?.serial;
       if (!serial) continue;
-      expect(serial).not.toMatch(/^0/);
-      expect(render(<CardDeletionNotice card={fixture.card} />)).toContain(`BOT #${serial}`);
+      expect(render(<CardDeletionNotice card={fixture.card} />)).not.toContain(serial);
     }
   });
 
