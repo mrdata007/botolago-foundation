@@ -25,7 +25,8 @@ describe("ManagerCard on the server", () => {
     expect(html).toContain("width:240px");
     // The box has the card's shape before its renderer has loaded: the active renderer's estimate.
     expect(html).toContain(`aspect-ratio:1 / ${activeRenderer.estimateAspect(profile, "fr")}`);
-    expect(html).toContain("Carte de manager, Ali, 84 OVR, PRO, Raja CA, BOT #482913");
+    expect(html).toContain("Carte de manager, Ali, 84 OVR, PRO, Raja CA");
+    expect(html).not.toContain("BOT #");
     expect(html).toContain("sr-only");
     expect(html).not.toContain("<svg");
     expect(html).not.toContain("data-mc-ready");

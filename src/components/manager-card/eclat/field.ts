@@ -19,6 +19,7 @@ export const REST = {
   spec: "translate(38.4 -64)",
   light: "translate(62.4 -140.8)",
   cast: "translate(-3.36 6.4)",
+  hex: "translate(1.44 -2.56)",
 } as const;
 
 /** `class="…"`, plus its rest transform when the markup is drawn without the stylesheet. */
@@ -30,7 +31,9 @@ export const moving = (cls: keyof typeof REST, flat: boolean): string =>
         ? "spec-shift"
         : cls === "light"
           ? "light-follow"
-          : "shirt-cast"
+          : cls === "hex"
+            ? "hex-shift"
+            : "shirt-cast"
   }"${flat ? ` transform="${REST[cls]}"` : ""}`;
 
 /** The card's fingerprint: a serial, else name and season, picks the honeycomb's phase. */
@@ -73,10 +76,12 @@ export function fieldDefs(F: Foil, id: string, seed: string, flat = false): stri
     <linearGradient id="${id}-beam" x1="0" y1="22" x2="0" y2="980" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${beamCol}" stop-opacity="1"/><stop offset=".55" stop-color="${beamCol}" stop-opacity=".35"/><stop offset="1" stop-color="${beamCol}" stop-opacity="0"/></linearGradient>
     <radialGradient id="${id}-lamp"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".35" stop-color="${beamCol}" stop-opacity=".6"/><stop offset="1" stop-color="${beamCol}" stop-opacity="0"/></radialGradient>
     <radialGradient id="${id}-pool" cx="500" cy="930" r="320" gradientTransform="translate(0 698) scale(1 .25)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${F.light}" stop-opacity=".55"/><stop offset="1" stop-color="${F.light}" stop-opacity="0"/></radialGradient>
-    <radialGradient id="${id}-hexfadeG" cx="500" cy="560" r="640" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".12"/><stop offset=".42" stop-color="#fff" stop-opacity=".3"/><stop offset=".75" stop-color="#fff" stop-opacity=".72"/><stop offset="1" stop-color="#fff" stop-opacity=".5"/></radialGradient>
+    <radialGradient id="${id}-hexfadeG" cx="500" cy="560" r="640" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".42" stop-color="#fff" stop-opacity=".55"/><stop offset=".75" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity=".65"/></radialGradient>
     <mask id="${id}-hexfade" ${MASK_BOX}><rect width="1000" height="1618" fill="url(#${id}-hexfadeG)"/></mask>
-    <pattern id="${id}-hexD" ${pat} ${phase(1.6, 2.2)}><path d="${hexTile(HEX_R)}" fill="none" stroke="#000" stroke-opacity=".55" stroke-width="2.6"/></pattern>
-    <pattern id="${id}-hexL" ${pat} ${phase(-1, -1.2)}><path d="${hexTile(HEX_R)}" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="1.4"/></pattern>
+    <pattern id="${id}-hexD" ${pat} ${phase(2, 2.6)}><path d="${hexTile(HEX_R)}" fill="none" stroke="#000" stroke-opacity=".85" stroke-width="3.4"/></pattern>
+    <linearGradient id="${id}-hexBG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".36"/></linearGradient>
+    <pattern id="${id}-hexB" ${pat} ${phase(0, 0)}><path d="${hexTile(HEX_R)}" fill="url(#${id}-hexBG)"/></pattern>
+    <pattern id="${id}-hexL" ${pat} ${phase(-1.6, -1.8)}><path d="${hexTile(HEX_R)}" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2.2"/></pattern>
     <pattern id="${id}-hexM" ${pat} ${phase(0, 0)}><path d="${hexTile(HEX_R)}" fill="none" stroke="${hexTint}" stroke-opacity="${hexTintOp}" stroke-width="1.3"/></pattern>
     <linearGradient id="${id}-cell" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".16"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></linearGradient>
     <pattern id="${id}-hexC" ${pat} ${phase(0, 0)}><path d="${hexTile(27)}" fill="${F.deep}" fill-opacity=".75"/><path d="${hexTile(27)}" fill="url(#${id}-cell)"/></pattern>
@@ -100,15 +105,21 @@ export interface FieldOpts {
 function honeycomb(F: Foil, id: string, o: FieldOpts): string {
   const R = (fill: string, extra = ""): string =>
     `<rect width="1000" height="${POINT_Y}" fill="url(#${id}-${fill})" ${extra}/>`;
+  // The cells read as embossed: a soft gradient in each cell (light upper left, shade lower right, the
+  // card's own light), a light edge offset up and left and a dark one down and right. The edges are
+  // one group that follows the tilt a few units (`mc-hex-shift`), so the honeycomb sits against the
+  // surface and shifts a little when the card turns; in the holographic tiers only the edges move,
+  // since the foil's cells are cut by a mask that stays.
+  const edges = (inner: string): string => `<g ${moving("hex", o.flat)}>${inner}</g>`;
   let hex: string;
-  if (F.hex.mode === "line") hex = R("hexD") + R("hexL") + R("hexM");
-  else if (F.hex.mode === "cells") hex = R("hexC") + R("hexL");
+  if (F.hex.mode === "line") hex = edges(R("hexB") + R("hexD") + R("hexL") + R("hexM"));
+  else if (F.hex.mode === "cells") hex = R("hexC") + edges(R("hexB") + R("hexL"));
   else {
     const foilRect = `<rect ${moving("foil", o.flat)} x="-50" y="-30" width="1050" height="1130" fill="url(#${id}-foil)"/>`;
     hex =
-      R("hexD", `opacity=".45"`) +
+      edges(R("hexB") + R("hexD", `opacity=".45"`)) +
       `<g mask="url(#${id}-cells)" opacity="${F.hex.op}">${F.hex.follow ? `<g mask="url(#${id}-lightm)">${foilRect}</g>` : foilRect}</g>` +
-      R("hexL");
+      edges(R("hexL"));
   }
   if (F.cage) hex = `<g mask="url(#${id}-cageinv)">${hex}</g>`;
   return `<g mask="url(#${id}-hexfade)"${F.hex.mode === "holo" ? "" : ` opacity="${F.hex.op}"`}>${hex}</g>`;

@@ -232,10 +232,10 @@ describe("cardStrings and cardLabel", () => {
   it("names a rated card in one sentence", () => {
     const profile = fromMyCard(FIXTURES.founder.card!, { sample: true });
     expect(cardLabel(profile, cardStrings(fr, "fr"))).toBe(
-      "Carte de manager, Ali, 84 OVR, PRO, Raja CA, Fondateur 2026, BOT #482913, Exemple",
+      "Carte de manager, Ali, 84 OVR, PRO, Raja CA, Fondateur 2026, Exemple",
     );
     expect(cardLabel(profile, cardStrings(ar, "ar"))).toBe(
-      "بطاقة المدرّب، Ali، 84 OVR، محترف، الرجاء الرياضي، عضو مؤسس 2026، BOT #482913، مثال",
+      "بطاقة المدرّب، Ali، 84 OVR، محترف، الرجاء الرياضي، عضو مؤسس 2026، مثال",
     );
   });
 
@@ -243,7 +243,7 @@ describe("cardStrings and cardLabel", () => {
     const strings = cardStrings(fr, "fr");
     const forming = fromMyCard(FIXTURES.forming1.card!, { sample: false });
     expect(cardLabel(forming, strings)).toBe(
-      "Carte de manager, Ali, pas encore de note, 1 journée comptée sur 3, Raja CA, BOT #482913",
+      "Carte de manager, Ali, pas encore de note, 1 journée comptée sur 3, Raja CA",
     );
     expect(cardLabel(forming, cardStrings(ar, "ar"))).toContain("لا تقييم بعد");
     const unnamed = { ...forming, name: "  ", club: null, serial: null, counted: null };
@@ -254,7 +254,7 @@ describe("cardStrings and cardLabel", () => {
   it("says how many statistics are filled once every journée is counted, never « 3 sur 3 »", () => {
     const waiting = fromMyCard(FIXTURES.insufficient3.card!, { sample: false });
     expect(cardLabel(waiting, cardStrings(fr, "fr"))).toBe(
-      "Carte de manager, Ali, pas encore de note, Statistiques remplies : 2 sur 4, Raja CA, BOT #482913",
+      "Carte de manager, Ali, pas encore de note, Statistiques remplies : 2 sur 4, Raja CA",
     );
     const arLabel = cardLabel(waiting, cardStrings(ar, "ar"));
     expect(arLabel).toContain("الإحصاءات المكتملة: 2 من 4");

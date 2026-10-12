@@ -20,6 +20,13 @@ export type Light = readonly [ax: number, ay: number];
 /** Degrees the card turns about the horizontal axis for ay = 1 and the vertical axis for ax = 1. */
 export const ROT_X = 7;
 export const ROT_Y = 9;
+/**
+ * The turn for a finger dragging across the card on a phone (`tilt.ts`): a drag covers the card's
+ * whole width in a thumb's reach and is the only way a phone tilts it, so it turns further than a
+ * hover does (about 15 and 12 degrees against 9 and 7). The shared hover pose above is unchanged.
+ */
+export const DRAG_ROT_X = 12;
+export const DRAG_ROT_Y = 15;
 /** The perspective, in card widths (`.mc-eclat__persp`), and so the divisor of the shrink. */
 export const PERSPECTIVE = 300;
 
@@ -53,6 +60,8 @@ export const FOLLOW = {
   hi: { x: 4, y: -4, y0: -2 },
   sh: { x: -6, y: 6, y0: 5 },
   foil: { x: 50, y: -30 },
+  /** The honeycomb's edges against the card's surface: a few units (about 2 px at most) of depth. */
+  hex: { x: 6, y: -4 },
   spec: { x: 160, y: -100 },
   light: { x: 260, y: -220 },
 } as const;
@@ -76,6 +85,10 @@ const rad = (deg: number): number => (deg * Math.PI) / 180;
 /** The card's turn toward the light, at depth factor `t` (1 while a pointer is over it, 0 at rest). */
 export const tilt = ([ax, ay]: Light, t = 1): string =>
   `rotateX(${num(ay * ROT_X * t)}deg) rotateY(${num(ax * ROT_Y * t)}deg)`;
+
+/** The card's turn toward a finger that drags (`DRAG_ROT_X`, `DRAG_ROT_Y`). */
+export const tiltDrag = ([ax, ay]: Light, t = 1): string =>
+  `rotateX(${num(ay * DRAG_ROT_X * t)}deg) rotateY(${num(ax * DRAG_ROT_Y * t)}deg)`;
 
 /** A layer at height `z`: lifted by it and shrunk by it, so it lines up with the others face-on. */
 export const depth = (z: number, t = 1): string =>
@@ -128,7 +141,7 @@ export function castDelta(light: Light, rest: Light): string {
  * the foil, the streak and the pool of light are (`rtl` flips their x, as the group's mirror does).
  */
 export function follow(
-  part: "hi" | "sh" | "foil" | "spec" | "light" | "cast",
+  part: "hi" | "sh" | "foil" | "spec" | "light" | "cast" | "hex",
   [ax, ay]: Light,
   rtl: boolean,
 ): string {

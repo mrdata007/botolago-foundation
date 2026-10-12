@@ -1,0 +1,79 @@
+/* The tier-up ceremony (TierCeremony.tsx): the page's dim, the card's ground shadow and its badge.
+   The motion is Web Animations (ceremony.ts); this file is what each piece looks like at rest, and
+   they are all absent (not drawn) unless the ceremony is running, which never happens under reduced
+   motion. */
+
+/* the dim covers the window (fixed, inside the hero card's own stacking context, which is raised
+   above the page while the ceremony runs) and leaves a spotlight round the card, so the light reads
+   on the white page. It catches a tap: that ends the ceremony. */
+.mc-cer-dim {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  opacity: 0;
+  background:
+    radial-gradient(
+      ellipse 62% 40% at 50% var(--cer-y, 45%),
+      color-mix(in oklab, black 8%, transparent) 0%,
+      color-mix(in oklab, black 34%, transparent) 55%,
+      color-mix(in oklab, black 78%, transparent) 100%
+    ),
+    color-mix(in oklab, black 22%, transparent);
+  touch-action: manipulation;
+}
+
+/* the ground shadow: a dark pool under the card that the impact flashes */
+.mc-cer-ground {
+  position: absolute;
+  left: 7%;
+  bottom: -14px;
+  width: 86%;
+  height: 22px;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, black 70%, transparent),
+    transparent
+  );
+}
+
+/* the badge on the card's lower edge: pointed like the card's own tier chip */
+.mc-cer-stamp {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -10px;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  opacity: 0;
+}
+.mc-cer-stamp__chip {
+  display: inline-grid;
+  min-width: 132px;
+  height: 38px;
+  place-items: center;
+  padding-inline: 22px;
+  font-family: var(--ui-font-display);
+  font-size: 17px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  clip-path: polygon(7% 0, 93% 0, 100% 50%, 93% 100%, 7% 100%, 0 50%);
+}
+.mc-cer-stamp__glow {
+  display: inline-block;
+  filter: drop-shadow(0 4px 10px color-mix(in oklab, black 55%, transparent));
+}
+
+/* over the dim the burst is the show: it reaches past the card to the window's edges and its light
+   adds to the dark instead of sitting on it */
+[data-ceremony] .mc-burst {
+  width: 100vw;
+  height: 190%;
+}
+[data-ceremony] .mc-burst__rays,
+[data-ceremony] .mc-burst__glow {
+  mix-blend-mode: screen;
+}

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useManagerCardStatus } from "@/services/manager-card-status";
 import type { Club, Gameweek } from "@/types/domain";
 
+import { CardBack } from "./CardBack";
 import { CardStage, RatingLine } from "./CardStage";
 import { useRatingBadge } from "./use-rating-change";
 import { useStageBeat } from "./use-stage-beat";
@@ -230,6 +231,7 @@ export function OwnerHome({
           profile={profile}
           onDetail={() => void navigate({ to: "/curva/carte" })}
           onShare={() => setShareOpen(true)}
+          cardBack={<CardBack profile={profile} />}
         />
         <CardBornPanel
           surface="curva"

@@ -108,19 +108,6 @@ function fullText(profile: CardProfile, strings: CardStrings): TextRun[] {
       colour,
     });
   }
-  if (profile.serial !== null) {
-    runs.push({
-      text: strings.serial(profile.serial),
-      x: mid,
-      y: 328,
-      size: 13,
-      weight: 600,
-      face: "body",
-      anchor: "middle",
-      dir: "ltr",
-      colour,
-    });
-  }
   if (profile.founder !== null) {
     runs.push({
       text: `·${String(profile.founder).slice(-2)}`,

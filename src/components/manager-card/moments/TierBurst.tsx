@@ -5,7 +5,8 @@ import { prefersReducedMotion } from "@/lib/motion";
 import { useCardPalette } from "../use-card-palette";
 import { useCardRenderer } from "../use-card-renderer";
 import type { BeatName, TierCode } from "../types";
-import { BURST_MS, burstShouldStart, burstSpec } from "./burst";
+import type { CardPalette } from "../renderer";
+import { BURST_MS, burstShouldStart, burstSpec, type BurstSpec } from "./burst";
 import "./tier-burst.css";
 
 /**
@@ -41,13 +42,30 @@ export function TierBurst({ tier, beat }: { tier: TierCode | null; beat: BeatNam
     window.setTimeout(() => setRunning(false), BURST_MS + 60);
   }, [spec, beat, ready]);
   if (!spec || !running) return null;
+  return <BurstLayer spec={spec} palette={palette} ms={BURST_MS} />;
+}
+
+/**
+ * The beams and the glow themselves: one DOM layer behind the card (`tier-burst.css`), for the
+ * hero's own burst (`TierBurst`) and for the tier-up ceremony, which opens it over the dimmed page at
+ * the card's impact and runs it a little shorter (`ms`).
+ */
+export function BurstLayer({
+  spec,
+  palette,
+  ms,
+}: {
+  spec: BurstSpec;
+  palette: CardPalette;
+  ms: number;
+}) {
   const period = 360 / spec.rays;
   const fill =
     spec.prism && palette.prism
       ? `conic-gradient(from 0deg, ${[...palette.prism, palette.prism[0]].join(", ")})`
       : palette.beam;
   const style = {
-    "--burst-ms": `${BURST_MS}ms`,
+    "--burst-ms": `${ms}ms`,
     "--burst-peak": spec.peak,
     "--burst-reach": spec.reach,
     "--burst-period": `${period}deg`,
