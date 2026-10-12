@@ -48,6 +48,10 @@ const PLAYERS = parseSofascoreLineups(REPLIES.lineups).players.map((p) => p.exte
 const STARTERS = parseSofascoreLineups(REPLIES.lineups)
   .players.filter((p) => p.starter)
   .map((p) => p.externalId);
+// Starters who scored (895127 a penalty for the home side, 1939981 for the away side): an
+// unmapped scorer can never be left out of the request, so he always holds the match.
+const HOME_SCORER = "895127";
+const AWAY_SCORER = "1939981";
 
 interface World {
   mapped: Set<string>;
@@ -399,13 +403,49 @@ describe("automatic Fantasy: unknown substitutes (no app player)", () => {
     expect(records(db)).toHaveLength(0);
   });
 
-  test("an unmapped starter still holds the match", async () => {
+  test("an unmapped starter with no scoring trace is left out as an anonymous starter of his club", async () => {
     const world = newWorld();
     world.mapped.delete(STARTERS[3]);
     const db = fakeDb({ world });
     const { run, lines } = makeRun(db);
     await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0]).toMatchObject({ outcome: "recorded", excludedUnmapped: [STARTERS[3]] });
+    const payload = (
+      records(db)[0].args as {
+        p_request: {
+          payload: {
+            anonymousStarters: number;
+            anonymousByTeam: Record<string, number>;
+            excludedUnmappedPlayers: { sofascoreId: string; started?: boolean }[];
+          };
+        };
+      }
+    ).p_request.payload;
+    expect(payload.anonymousStarters).toBe(1);
+    expect(payload.anonymousByTeam).toEqual({ [HOME]: 1 });
+    expect(payload.excludedUnmappedPlayers).toEqual([
+      expect.objectContaining({ sofascoreId: STARTERS[3], started: true }),
+    ]);
+  });
+
+  test("an unmapped starter who scored still holds the match", async () => {
+    const world = newWorld();
+    world.mapped.delete(HOME_SCORER);
+    const db = fakeDb({ world });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
     expect(lines[0]).toMatchObject({ outcome: "held:unmapped_players" });
+    expect(records(db)).toHaveLength(0);
+  });
+
+  test("three unmapped starters on one side hold the match", async () => {
+    const world = newWorld();
+    // Three home starters with no goal, assist or card.
+    for (const id of ["1004523", "1004426", "970766"]) world.mapped.delete(id);
+    const db = fakeDb({ world });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, REPLIES);
+    expect(lines[0]).toMatchObject({ outcome: "held:unmapped_players", unmapped: 3 });
     expect(records(db)).toHaveLength(0);
   });
 
@@ -424,8 +464,8 @@ describe("automatic Fantasy: unknown substitutes (no app player)", () => {
 describe("automatic Fantasy: a match held back is retried without a request", () => {
   test("unmapped players hold it, then a later tick records it from the stored replies", async () => {
     const world = newWorld();
-    world.mapped.delete(STARTERS[3]);
-    world.mapped.delete(STARTERS[15]);
+    world.mapped.delete(HOME_SCORER);
+    world.mapped.delete(AWAY_SCORER);
     const db = fakeDb({ world });
     const first = makeRun(db);
     await first.run.fromReplies(FIXTURE, EVENT, REPLIES);
@@ -445,8 +485,8 @@ describe("automatic Fantasy: a match held back is retried without a request", ()
     expect(note.args.p_next_retry_at).toBe(new Date(NOW.getTime() + 15 * 60_000).toISOString());
 
     // Later: the two players are mapped (a person reviewed them). A new tick sweeps.
-    world.mapped.add(STARTERS[3]);
-    world.mapped.add(STARTERS[15]);
+    world.mapped.add(HOME_SCORER);
+    world.mapped.add(AWAY_SCORER);
     const second = makeRun(db);
     await second.run.sweep();
     expect(second.net.paths).toEqual([]);
@@ -463,7 +503,7 @@ describe("automatic Fantasy: a match held back is retried without a request", ()
 
   test("still unmapped on the retry: held again, attempts counted, no request", async () => {
     const world = newWorld();
-    world.mapped.delete(STARTERS[0]);
+    world.mapped.delete(HOME_SCORER);
     const db = fakeDb({ world });
     await makeRun(db).run.fromReplies(FIXTURE, EVENT, REPLIES);
     const retry = makeRun(db);
@@ -475,7 +515,7 @@ describe("automatic Fantasy: a match held back is retried without a request", ()
 
   test("it stops after the maximum number of attempts", async () => {
     const world = newWorld();
-    world.mapped.delete(STARTERS[0]);
+    world.mapped.delete(HOME_SCORER);
     const db = fakeDb({ world });
     await makeRun(db).run.fromReplies(FIXTURE, EVENT, REPLIES);
     db.attempts.get(FIXTURE)!.attempts = FANTASY_MAX_ATTEMPTS_DEFAULT - 1;
@@ -524,7 +564,7 @@ describe("automatic Fantasy: a match held back is retried without a request", ()
 describe("automatic Fantasy: the player auto-mapping", () => {
   test("is skipped, and the run continues, when the function does not exist", async () => {
     const world = newWorld();
-    world.mapped.delete(STARTERS[2]);
+    world.mapped.delete(HOME_SCORER);
     const db = fakeDb({ world, autoMap: "missing" });
     const { run, lines } = makeRun(db);
     await run.fromReplies(FIXTURE, EVENT, REPLIES);
@@ -593,8 +633,8 @@ describe("automatic Fantasy: the player auto-mapping", () => {
 
   test("a mapping that is not reviewed does not count as mapped", async () => {
     const world = newWorld();
-    world.unreviewed.add(STARTERS[1]);
-    world.mapped.delete(STARTERS[1]);
+    world.unreviewed.add(HOME_SCORER);
+    world.mapped.delete(HOME_SCORER);
     const db = fakeDb({ world });
     const { run, lines } = makeRun(db);
     await run.fromReplies(FIXTURE, EVENT, REPLIES);
@@ -620,7 +660,7 @@ describe("automatic Fantasy: shadow", () => {
 
   test("a held match is logged and nothing is stored", async () => {
     const world = newWorld();
-    world.mapped.delete(STARTERS[0]);
+    world.mapped.delete(HOME_SCORER);
     const db = fakeDb({ world });
     const { run, lines } = makeRun(db, "shadow");
     await run.fromReplies(FIXTURE, EVENT, REPLIES);
@@ -920,6 +960,54 @@ describe("automatic Fantasy: through the live tick", () => {
     });
   }
 
+  test("a match in play: its lineup players are offered to the matching, nothing is recorded", async () => {
+    const db = tickDb(false);
+    db.world.mapped.delete(STARTERS[2]);
+    const net = tickFetch();
+    const lines: string[] = [];
+    const live = {
+      ...fixtureEvent,
+      status: { code: 7, type: "inprogress", description: "2nd half" },
+    };
+    const fetch = async (input: string) => {
+      const url = new URL(input);
+      const path = url.pathname.slice(1) + url.search;
+      if (path.startsWith(SOFASCORE_LIVE_EVENTS_PATH)) {
+        net.paths.push(path);
+        return Response.json(
+          { events: [live] },
+          {
+            headers: {
+              "x-ratelimit-requests-limit": "10000",
+              "x-ratelimit-requests-remaining": "5000",
+            },
+          },
+        );
+      }
+      return net.fetch(input);
+    };
+    const outcome = await runSofascoreRefresh({
+      mode: "sofascore",
+      job: "fixtures",
+      client: db.client,
+      rapid: createRapidApiClient("sofascore", { RAPIDAPI_KEY: "k" }, { fetch, maxRetries: 0 }),
+      environment: {},
+      now: NOW,
+      log: (line) => lines.push(line),
+    });
+    expect(outcome.status).toBe(200);
+    const called = db.calls.map((c) => c.name);
+    expect(called).toContain("ingest_football_match_details");
+    // The live list and the three replies of the match: the matching adds no request.
+    expect(net.paths).toHaveLength(4);
+    const parsed = lines.map((l) => JSON.parse(l) as Record<string, unknown>);
+    expect(parsed.filter((l) => l.event === "football_live_refresh_live_matching")).toEqual([
+      expect.objectContaining({ fixtureId: FIXTURE, eventId: EVENT, outcome: "offered" }),
+    ]);
+    expect(parsed.filter((l) => l.event === "football_live_refresh_fantasy")).toHaveLength(0);
+    expect(called).not.toContain("service_record_sofascore_fantasy_observation");
+  });
+
   test("the backfill feeds the Fantasy step with the same replies", async () => {
     const db = tickDb(false, {
       status: "finished",
@@ -1171,5 +1259,114 @@ describe("automatic Fantasy: Pépites performances", () => {
     await b.run.fromReplies(FIXTURE, EVENT, REPLIES);
     await b.run.sweep();
     expect(disabled.calls).toHaveLength(0);
+  });
+});
+
+describe("automatic Fantasy: players matched while the match is on", () => {
+  const liveLines = (lines: string[]) =>
+    lines
+      .map((l) => JSON.parse(l) as Record<string, unknown>)
+      .filter((l) => l.event === "football_live_refresh_live_matching");
+
+  function liveRun(db: ReturnType<typeof fakeDb>, mode: SofascoreFantasyMode = "sofascore") {
+    const raw: string[] = [];
+    const run = new SofascoreFantasyRun({
+      mode,
+      client: db.client,
+      rapid: fakeRapid().rapid,
+      environment: {},
+      now: NOW,
+      log: (line) => raw.push(line),
+    });
+    return { run, raw };
+  }
+
+  test("an unmapped player in a live lineup is offered to the auto-mapping; nothing is recorded", async () => {
+    const world = newWorld({ status: "live", finalized: false });
+    world.mapped.delete(STARTERS[2]);
+    const db = fakeDb({ world, autoMap: () => ({ mapped: [], queued: 1, conflicts: 0 }) });
+    const { run, raw } = liveRun(db);
+    await run.fromLiveReplies(FIXTURE, EVENT, REPLIES);
+    const sent = db.calls.find((c) => c.name === "service_sofascore_auto_map_players")!.args as {
+      p_fixture_id: string;
+      p_players: { sofascorePlayerId: string; appeared: boolean }[];
+    };
+    expect(sent.p_fixture_id).toBe(FIXTURE);
+    expect(sent.p_players.map((p) => p.sofascorePlayerId)).toEqual([STARTERS[2]]);
+    expect(sent.p_players[0].appeared).toBe(true);
+    expect(records(db)).toHaveLength(0);
+    expect(names(db)).not.toContain("service_sofascore_fantasy_note");
+    expect(liveLines(raw)).toEqual([
+      expect.objectContaining({ outcome: "offered", autoMap: "mapped=0,queued=1,conflicts=0" }),
+    ]);
+    // Once per fixture per tick.
+    await run.fromLiveReplies(FIXTURE, EVENT, REPLIES);
+    expect(names(db).filter((n) => n === "service_sofascore_auto_map_players")).toHaveLength(1);
+    // It counts as nothing in the Fantasy summary.
+    expect(run.summary()).toMatchObject({ recorded: 0, held: 0, skipped: 0, errors: 0 });
+  });
+
+  test("nothing to offer when every appearing player is mapped, and nothing at all in shadow", async () => {
+    const db = fakeDb({ world: newWorld({ status: "live", finalized: false }) });
+    const a = liveRun(db);
+    await a.run.fromLiveReplies(FIXTURE, EVENT, REPLIES);
+    expect(names(db)).not.toContain("service_sofascore_auto_map_players");
+    expect(liveLines(a.raw)).toEqual([expect.objectContaining({ outcome: "not_needed" })]);
+
+    const world = newWorld({ status: "live", finalized: false });
+    world.mapped.delete(STARTERS[2]);
+    const shadowDb = fakeDb({ world });
+    const b = liveRun(shadowDb, "shadow");
+    await b.run.fromLiveReplies(FIXTURE, EVENT, REPLIES);
+    expect(shadowDb.calls).toHaveLength(0);
+  });
+
+  test("unreadable lineups or a database without the function never throw", async () => {
+    const world = newWorld({ status: "live", finalized: false });
+    world.mapped.delete(STARTERS[2]);
+    const db = fakeDb({ world, autoMap: "missing" });
+    const { run, raw } = liveRun(db);
+    await run.fromLiveReplies(FIXTURE, EVENT, { ...REPLIES, lineups: { nonsense: true } });
+    expect(liveLines(raw)[0]).toMatchObject({ outcome: "skipped:lineups_unreadable" });
+    await run.fromLiveReplies(uuid("f", 3), EVENT, REPLIES);
+    expect(liveLines(raw)[1]).toMatchObject({ outcome: "offered", autoMap: "missing" });
+    // Not asked again once it is known to be missing.
+    await run.fromLiveReplies(uuid("f", 4), EVENT, REPLIES);
+    expect(names(db).filter((n) => n === "service_sofascore_auto_map_players")).toHaveLength(1);
+  });
+});
+
+describe("automatic Fantasy: stoppage time is kept with the stored replies", () => {
+  test("a held match stores the announced stoppage time, and the retry builds with it", async () => {
+    const incidents = JSON.parse(JSON.stringify(REPLIES.incidents)) as {
+      incidents: Record<string, unknown>[];
+    };
+    incidents.incidents.push({ incidentType: "injuryTime", time: 45, addedTime: 0, length: 6 });
+    const world = newWorld();
+    world.mapped.delete(HOME_SCORER);
+    const db = fakeDb({ world });
+    await makeRun(db).run.fromReplies(FIXTURE, EVENT, { ...REPLIES, incidents });
+    expect(db.attempts.get(FIXTURE)?.matchData).toMatchObject({
+      version: 1,
+      stoppage: { firstHalf: 6, secondHalf: null },
+    });
+    world.mapped.add(HOME_SCORER);
+    const retry = makeRun(db);
+    await retry.run.sweep();
+    expect(retry.lines[0]).toMatchObject({ outcome: "recorded", source: "stored" });
+  });
+
+  test("replies stored before stoppage time was kept still retry", async () => {
+    const world = newWorld();
+    world.mapped.delete(HOME_SCORER);
+    const db = fakeDb({ world });
+    await makeRun(db).run.fromReplies(FIXTURE, EVENT, REPLIES);
+    const stored = db.attempts.get(FIXTURE)!;
+    const { stoppage: _dropped, ...older } = stored.matchData as Record<string, unknown>;
+    stored.matchData = older;
+    world.mapped.add(HOME_SCORER);
+    const retry = makeRun(db);
+    await retry.run.sweep();
+    expect(retry.lines[0]).toMatchObject({ outcome: "recorded", source: "stored" });
   });
 });

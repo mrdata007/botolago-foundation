@@ -320,6 +320,48 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
   return out;
 }
 
+/** Stoppage time announced for each half, in minutes; null when SofaScore announced none. */
+export interface SofascoreStoppage {
+  readonly firstHalf: number | null;
+  readonly secondHalf: number | null;
+}
+
+/** Longer than any real announcement: a value above it is not trusted. */
+const MAX_ANNOUNCED_STOPPAGE = 20;
+
+/**
+ * The stoppage time the fourth official announced, read from the `injuryTime`
+ * incidents (`time` 45 or 90, `length` in minutes). Never throws: a missing or
+ * odd value is null, and null means "not known", never zero. Two announcements
+ * for one half that disagree are not known either.
+ */
+export function parseSofascoreStoppage(raw: unknown): SofascoreStoppage {
+  const list =
+    typeof raw === "object" &&
+    raw !== null &&
+    Array.isArray((raw as { incidents?: unknown }).incidents)
+      ? (raw as { incidents: unknown[] }).incidents
+      : [];
+  const seen: Record<45 | 90, Set<number>> = { 45: new Set(), 90: new Set() };
+  for (const item of list) {
+    if (typeof item !== "object" || item === null) continue;
+    const o = item as Record<string, unknown>;
+    if (o.incidentType !== "injuryTime" || o.rescinded === true) continue;
+    const { time, length } = o;
+    if (time !== 45 && time !== 90) continue;
+    if (
+      typeof length !== "number" ||
+      !Number.isInteger(length) ||
+      length < 0 ||
+      length > MAX_ANNOUNCED_STOPPAGE
+    )
+      continue;
+    seen[time].add(length);
+  }
+  const one = (values: Set<number>) => (values.size === 1 ? [...values][0] : null);
+  return { firstHalf: one(seen[45]), secondHalf: one(seen[90]) };
+}
+
 /** Team statistic lines, whole match and per half as the provider sends them. */
 export function parseSofascoreStatistics(raw: unknown): PerformanceStatisticLine[] {
   const check = new Check("statistics");

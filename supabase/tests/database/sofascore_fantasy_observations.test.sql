@@ -7,7 +7,7 @@ select set_config('app.environment', 'test', true);
 -- Real functions, synthetic world:
 --   1 who may call it   2 dry run   3 record, then retry   4 identities and fixture are reviewed
 --   5 one SofaScore match per fixture   6 coverage and evidence rules   7 recorder guards
---   8 a reviewed correction still wins
+--   8 a reviewed correction still wins   7c unknown starters   9 the automatic path's state
 
 create temporary table stash (k text primary key, v text);
 create function pg_temp.put(p_key text, p_value text) returns void language sql as
@@ -318,6 +318,69 @@ select extensions.is((select count(*)::int from app_private.fantasy_fixture_obse
   '7b.22 a second observation for the fixture (its facts differ by the exclusion)');
 
 -- ===========================================================================
+-- 7c. Unknown starters (migration 20261012120000): a starter left out says
+--     started: true and counts as an anonymous starter of his club, at most two a
+--     club; the request's counts must say exactly that; goals must still add up.
+--     Home starter 5 is replaced in these requests by an unknown starter.
+-- ===========================================================================
+insert into app_private.sofascore_player_match_queue (sofascore_player_id, fixture_id, team_id, side, name, shirt_number, position, reason)
+values ('S903', pg_temp.id('f0', 1), pg_temp.id('c1', 1), 'home', 'Unknown Home Starter', 43, 'defender', 'no_candidate'),
+  ('S904', pg_temp.id('f0', 1), pg_temp.id('c1', 1), 'home', 'Unknown Home Starter Two', 44, 'midfielder', 'no_candidate'),
+  ('S905', pg_temp.id('f0', 1), pg_temp.id('c1', 1), 'home', 'Unknown Home Starter Three', 45, 'forward', 'no_candidate');
+create function pg_temp.streq(p_without integer[], p_arr jsonb, p_anon integer, p_by jsonb) returns jsonb language sql as $$
+  select jsonb_set(pg_temp.request((select jsonb_agg(pg_temp.row(i) order by i) from generate_series(1, 22) i
+                                     where not i = any (p_without))),
+    '{payload}', ((pg_temp.request() -> 'payload') - 'squadComplete' - 'players')
+      || jsonb_build_object('players', (select jsonb_agg(pg_temp.row(i) order by i) from generate_series(1, 22) i
+                                         where not i = any (p_without)),
+           'squadCompleteExceptExcluded', true, 'excludedUnmappedPlayers', p_arr,
+           'anonymousStarters', p_anon, 'anonymousByTeam', p_by))
+$$;
+select pg_temp.put('n7c', pg_temp.observations()::text);
+select extensions.is((api.service_record_sofascore_fantasy_observation(pg_temp.id('f0', 1),
+  pg_temp.streq(array[5], jsonb_build_array(pg_temp.ex('S903', 'home', 43, 'D') || '{"started":true}'), 1,
+    jsonb_build_object(pg_temp.id('c1', 1)::text, 1)), true) ->> 'excludedUnmapped')::int, 1,
+  '7c.1 an unknown starter is accepted as one anonymous starter of his club (dry run)');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1),
+  pg_temp.streq(array[5], jsonb_build_array(pg_temp.ex('S903', 'home', 43, 'D') || '{"started":true}'), 0, '{}'::jsonb), true),
+  'sofascore_request_invalid', '7c.2 the request must count him as an anonymous starter');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1),
+  pg_temp.streq(array[5], jsonb_build_array(pg_temp.ex('S903', 'home', 43, 'D') || '{"started":true}'), 1,
+    jsonb_build_object(pg_temp.id('c1', 2)::text, 1)), true),
+  'sofascore_request_invalid', '7c.3 for his own club');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1),
+  pg_temp.streq(array[]::integer[], jsonb_build_array(pg_temp.ex('S900')), 1,
+    jsonb_build_object(pg_temp.id('c1', 1)::text, 1)), true),
+  'sofascore_request_invalid', '7c.4 anonymous starters with no starter left out are refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1),
+  pg_temp.streq(array[5], jsonb_build_array(pg_temp.ex('S903', 'home', 43, 'D') || '{"started":"yes"}'), 1,
+    jsonb_build_object(pg_temp.id('c1', 1)::text, 1)), true),
+  'sofascore_request_invalid', '7c.5 started is a boolean');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1),
+  pg_temp.streq(array[5, 6, 7], jsonb_build_array(
+      pg_temp.ex('S903', 'home', 43, 'D') || '{"started":true}',
+      pg_temp.ex('S904', 'home', 44, 'M') || '{"started":true}',
+      pg_temp.ex('S905', 'home', 45, 'F') || '{"started":true}'), 3,
+    jsonb_build_object(pg_temp.id('c1', 1)::text, 3)), true),
+  'sofascore_request_invalid', '7c.6 more than two unknown starters of one club are refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1),
+  pg_temp.streq(array[10], jsonb_build_array(pg_temp.ex('S903', 'home', 43, 'D') || '{"started":true}'), 1,
+    jsonb_build_object(pg_temp.id('c1', 1)::text, 1)), true),
+  'sofascore_unmapped_exclusion_refused', '7c.7 leaving out the scorer is refused: the goals in the rows must add up');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1),
+  pg_temp.streq(array[5], jsonb_build_array(pg_temp.ex('S903', 'home', 43, 'D')), 0, '{}'::jsonb), true),
+  'adaptive_starters_incomplete', '7c.8 a starter left out without started: true leaves ten starters: the recorder refuses');
+select extensions.is((api.service_record_sofascore_fantasy_observation(pg_temp.id('f0', 1),
+  pg_temp.streq(array[5, 6], jsonb_build_array(
+      pg_temp.ex('S903', 'home', 43, 'D') || '{"started":true}',
+      pg_temp.ex('S904', 'home', 44, 'M') || '{"started":true}'), 2,
+    jsonb_build_object(pg_temp.id('c1', 1)::text, 2)), true) ->> 'excludedUnmapped')::int, 2,
+  '7c.9 two unknown starters of one club are accepted');
+select extensions.is(pg_temp.observations()::text, pg_temp.get('n7c'), '7c.10 the dry runs stored nothing');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), jsonb_set(pg_temp.request(), '{payload,anonymousStarters}', '1')),
+  'sofascore_request_invalid', '7c.11 a request with no exclusions still has no anonymous starters');
+
+-- ===========================================================================
 -- 8. A reviewed correction still wins
 -- ===========================================================================
 select api.service_record_fantasy_observation(pg_temp.id('f0', 1),
@@ -377,6 +440,32 @@ select extensions.is(api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '90
   '[]', null, null, null) ->> 'status', 'gave_up', '9.25 giving up is stored');
 select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' ->> 'matchData') is null, true,
   '9.26 and drops the stored replies');
+-- Reopening (migration 20261012120000). Fixture 2 was just given up for 'needs_review'.
+select pg_temp.act('svc');
+select extensions.is(app_private.sofascore_fantasy_reopen(pg_temp.id('c1', 2), null), 0,
+  '9.26a a club''s matches are reopened only when they wait on a player identity');
+select api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'gave_up', 'unmapped_players',
+  '[{"code":"unmapped_players"}]', null, null, null);
+select pg_temp.act('op');
+select pg_temp.put('res', api.admin_resolve_sofascore_player_match('S902', pg_temp.id('a1', 24))::text);
+select pg_temp.act('svc');
+select extensions.is((pg_temp.get('res')::jsonb ->> 'reopened')::int, 1,
+  '9.26b staff matching a player reopens his club''s match that waits on a player identity');
+select extensions.is((select status || '/' || attempts from app_private.sofascore_fantasy_attempts where fixture_id = pg_temp.id('f0', 2)),
+  'held/0', '9.26c held again, attempts reset');
+select extensions.ok((select next_retry_at <= statement_timestamp() from app_private.sofascore_fantasy_attempts where fixture_id = pg_temp.id('f0', 2)),
+  '9.26d and due on the next tick');
+select extensions.is(app_private.sofascore_fantasy_reopen(null, null), 0, '9.26e no club and no fixture reopens nothing');
+select api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'gave_up', 'needs_review', '[]', null, null, null);
+select extensions.is(app_private.sofascore_fantasy_reopen(null, pg_temp.id('f0', 2)), 1,
+  '9.26f a named match is reopened whatever held it');
+select api.service_sofascore_fantasy_note(pg_temp.id('f0', 1), '9001', 'gave_up', 'unmapped_players',
+  '[{"code":"unmapped_players"}]', null, null, null);
+select extensions.is(app_private.sofascore_fantasy_reopen(null, pg_temp.id('f0', 1)), 0,
+  '9.26g a match with an observation is never reopened');
+select extensions.ok(not has_function_privilege('service_role', 'app_private.sofascore_fantasy_reopen(uuid,uuid)', 'execute')
+  and not has_function_privilege('authenticated', 'app_private.sofascore_fantasy_reopen(uuid,uuid)', 'execute'),
+  '9.26h the reopening helper is internal');
 select extensions.is(api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'recorded', 'recorded',
   '[]', null, repeat('ef', 32), null) ->> 'status', 'recorded', '9.27 a recorded fixture is stored');
 select extensions.is((api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'held', 'late',

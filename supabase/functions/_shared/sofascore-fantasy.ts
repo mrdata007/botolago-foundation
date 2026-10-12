@@ -12,12 +12,14 @@
  * What is established, and how:
  * - Identity: only a reviewed SofaScore player mapping. Never a name or a shirt.
  *   An appearing player without one holds the whole match back, with ONE
- *   exception (decision of 2026-10-11, "unknown players"): a substitute who came
- *   on and left no trace in the scoring facts (see `untouchedSubstitute`) is
- *   listed in `excludedUnmapped` instead of holding the match. The database
+ *   exception (decisions of 2026-10-11 and 2026-10-12, "unknown players"): a
+ *   player with nothing the score depends on (see `excludable`) is listed in
+ *   `excludedUnmapped` instead of holding the match; a starter among them counts
+ *   as an anonymous starter of his club, at most two a side. The database
  *   accepts that only for a player the auto-mapping queued as `no_candidate`
  *   and whom no squad member of that club can be (see
- *   api.service_record_sofascore_fantasy_observation, migration 20261011190000);
+ *   api.service_record_sofascore_fantasy_observation, migrations 20261011190000
+ *   and 20261012120000);
  *   otherwise it refuses and the match stays held. A player the app does not
  *   know cannot be in a Fantasy team and cannot earn points, and the club-level
  *   facts (goals conceded, clean sheet) are computed from the incidents, not
@@ -27,7 +29,11 @@
  * - Cards: from the incident list.
  * - Minutes, goals conceded, clean sheet: from substitution and dismissal
  *   incidents (deriveParticipation), checked against SofaScore's own
- *   `minutesPlayed` with the documented tolerance (-2 / +6 minutes).
+ *   `minutesPlayed` with the documented tolerance (-2 / +6 minutes). SofaScore
+ *   counts stoppage time in `minutesPlayed`, so a player still on the pitch at
+ *   half time may be over by the first half's stoppage time: for him the upper
+ *   limit is that stoppage time plus 2 when it is longer than 4 minutes (see
+ *   `firstHalfStoppage`).
  * - Assists, saves, penalties saved, penalties missed (decision M8, switched by
  *   SOFASCORE_DETAIL_FIELDS_ENABLED): count only on a FULL-coverage match
  *   (player statistics carry `totalPass`). On a limited-coverage match they are
@@ -39,7 +45,11 @@
  * goal it cannot attribute, a player whose times do not fit.
  */
 import { canonicalJson, sha256Hex } from "./canonical-json.ts";
-import { SCORE_RELEVANT_LABEL, incidentLabel } from "./sofascore-performance-parse.ts";
+import {
+  SCORE_RELEVANT_LABEL,
+  incidentLabel,
+  type SofascoreStoppage,
+} from "./sofascore-performance-parse.ts";
 import type {
   LineupPosition,
   MatchSide,
@@ -73,6 +83,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** Sofascore `minutesPlayed` counts the clock: up to this many minutes over the substitution time. */
 const MAX_STOPPAGE_MINUTES = 6;
 const MIN_UNDER_MINUTES = 2;
+/** Slack over the first half's stoppage time, for the same reasons as MIN_UNDER_MINUTES. */
+const STOPPAGE_SLACK_MINUTES = 2;
+/** Longer than any real first-half stoppage: beyond it the fixed limit stays. */
+const MAX_FIRST_HALF_STOPPAGE = 20;
+/** At most this many unmapped starters a side may be left out; more holds the match. */
+const MAX_EXCLUDED_STARTERS_PER_SIDE = 2;
 const SCORE_RELEVANT = SCORE_RELEVANT_LABEL;
 const GOAL_KINDS = new Set(["goal", "penalty_goal"]);
 const APP_POSITION: Record<LineupPosition, FantasyPosition> = {
@@ -87,6 +103,11 @@ export interface SofascoreMatchData {
   readonly lineups: PerformanceLineups;
   readonly incidents: readonly PerformanceIncident[];
   readonly statistics: readonly PerformanceStatisticLine[];
+  /**
+   * The stoppage time announced for each half (parseSofascoreStoppage). Optional:
+   * replies stored before it existed have none, and then only the fixed limit applies.
+   */
+  readonly stoppage?: SofascoreStoppage;
 }
 
 export interface FixtureBinding {
@@ -140,6 +161,13 @@ export interface ExcludedUnmappedPlayer {
   readonly position: LineupPosition | null;
   /** The only reason the database accepts: the auto-mapping found no squad candidate. */
   readonly reason: "no_candidate";
+  /**
+   * Present (and true) only for a starter. The database counts him as an anonymous
+   * starter of his club (`anonymousStarters`, `anonymousByTeam`) and checks those counts.
+   * Absent for a substitute, so a database without migration 20261012120000 accepts the
+   * request exactly as before and refuses one that leaves out a starter.
+   */
+  readonly started?: true;
 }
 
 export interface ObservationRow {
@@ -158,8 +186,10 @@ export interface SofascoreObservationRequest {
   readonly payload: {
     readonly homeScore: number;
     readonly awayScore: number;
-    readonly anonymousStarters: 0;
-    readonly anonymousByTeam: Record<string, never>;
+    /** The starters among `excludedUnmappedPlayers`; 0 when none. */
+    readonly anonymousStarters: number;
+    /** The same, by club id; empty when none. */
+    readonly anonymousByTeam: Readonly<Record<string, number>>;
     readonly references: readonly string[];
     readonly participationComplete: true;
     readonly disciplineComplete: true;
@@ -206,17 +236,41 @@ export interface PrepareInput {
   readonly detailFields?: boolean;
 }
 
-const minutesAgree = (observed: number, computed: number) =>
-  observed - computed >= -MIN_UNDER_MINUTES && observed - computed <= MAX_STOPPAGE_MINUTES;
+const minutesAgree = (observed: number, computed: number, over = MAX_STOPPAGE_MINUTES) =>
+  observed - computed >= -MIN_UNDER_MINUTES && observed - computed <= over;
+
+/**
+ * The first half's stoppage time, in minutes, when it is known: the longer of the
+ * announced time and the latest first-half incident SofaScore placed in it (a
+ * card at 45+7 proves the half lasted at least seven minutes more). Null when
+ * neither is known; then only the fixed limit applies.
+ */
+function firstHalfStoppage(match: SofascoreMatchData): number | null {
+  const announced = match.stoppage?.firstHalf ?? null;
+  let observed: number | null = null;
+  for (const i of match.incidents) {
+    if (i.minute !== 45 || i.addedMinutes === null) continue;
+    if (!Number.isInteger(i.addedMinutes) || i.addedMinutes < 0) continue;
+    if (i.addedMinutes > MAX_FIRST_HALF_STOPPAGE) continue; // period markers carry 999
+    observed = Math.max(observed ?? 0, i.addedMinutes);
+  }
+  if (announced === null && observed === null) return null;
+  return Math.max(announced ?? 0, observed ?? 0);
+}
 
 /**
  * May this unmapped, appearing player be left out of the request?
  *
- * Only a substitute who came on and has NOTHING that scores or is scored for
- * him: no goal, own goal, penalty, assist (named by an incident or counted in the
- * lineup statistics) and no card, and who is named by no incident except the
- * substitutions that brought him on and, maybe, took him off. A starter never
- * qualifies: the database needs eleven starters a side and refuses to invent one.
+ * Only one who has nothing the score depends on: no goal, own goal or penalty
+ * (scored or missed) named by an incident or counted in the lineup statistics,
+ * and no incident naming him except a substitution, a card or an assist. A card
+ * or an assist only ever scores for him, and he is in nobody's team (the database
+ * confirms that no squad member of his club could be him). A goal must stay: each
+ * club's goals in the rows have to add up to the score.
+ *
+ * A starter may be left out too, at most MAX_EXCLUDED_STARTERS_PER_SIDE a side
+ * (decided by the caller): the database counts him as an anonymous starter of his
+ * club, so the eleven a side still add up.
  *
  * Why this is enough for every other player: a known player's minutes come from
  * his own substitution incidents and are checked against SofaScore's own
@@ -226,24 +280,24 @@ const minutesAgree = (observed: number, computed: number) =>
  * timeline; each side's goal incidents still have to equal the score; assists and
  * cards are read per player from incidents naming that player.
  */
-function untouchedSubstitute(
+function excludable(
   p: PerformanceLineupPlayer,
   incidents: readonly PerformanceIncident[],
 ): boolean {
-  if (p.starter) return false;
   const stats = p.stats;
-  if (
-    (stats?.goals ?? 0) > 0 ||
-    (stats?.assists ?? 0) > 0 ||
-    (stats?.ownGoals ?? 0) > 0 ||
-    (stats?.penaltyMissed ?? 0) > 0
-  )
+  if ((stats?.goals ?? 0) > 0 || (stats?.ownGoals ?? 0) > 0 || (stats?.penaltyMissed ?? 0) > 0)
     return false;
+  const harmless: ReadonlySet<string> = new Set([
+    "substitution",
+    "yellow_card",
+    "red_card",
+    "second_yellow",
+  ]);
   for (const i of incidents) {
-    const named = i.player?.externalId === p.externalId || i.assist?.externalId === p.externalId;
-    const inSubstitution =
-      i.playerIn?.externalId === p.externalId || i.playerOut?.externalId === p.externalId;
-    if (named) return false;
+    const id = p.externalId;
+    if (i.player?.externalId === id && !harmless.has(i.kind)) return false;
+    if (i.assist?.externalId === id && !GOAL_KINDS.has(i.kind)) return false;
+    const inSubstitution = i.playerIn?.externalId === id || i.playerOut?.externalId === id;
     if (inSubstitution && i.kind !== "substitution") return false;
   }
   return true;
@@ -375,13 +429,14 @@ export async function prepareSofascoreObservation(
         started: p.starter,
         position: p.position,
       });
-      if (untouchedSubstitute(p, match.incidents))
+      if (excludable(p, match.incidents))
         excludedUnmapped.push({
           sofascoreId: p.externalId,
           side: p.side,
           shirtNumber: p.shirtNumber,
           position: p.position,
           reason: "no_candidate",
+          ...(p.starter ? { started: true as const } : {}),
         });
       continue;
     }
@@ -394,6 +449,13 @@ export async function prepareSofascoreObservation(
       });
     seenApp.add(lower);
     appOf.set(p.externalId, lower);
+  }
+  // More unknown starters than this on one side is not a stray newcomer: hold the
+  // match for a person instead of leaving any of that side's starters out.
+  for (const side of ["home", "away"] as const) {
+    const left = excludedUnmapped.filter((x) => x.side === side && x.started);
+    if (left.length > MAX_EXCLUDED_STARTERS_PER_SIDE)
+      for (const x of left) excludedUnmapped.splice(excludedUnmapped.indexOf(x), 1);
   }
   const holding = unmapped.length - excludedUnmapped.length;
   if (holding > 0)
@@ -433,6 +495,7 @@ export async function prepareSofascoreObservation(
     references: [...references],
   });
   const opposite = (s: MatchSide): MatchSide => (s === "home" ? "away" : "home");
+  const firstStoppage = firstHalfStoppage(match);
   const rows: ObservationRow[] = [];
   const unknownFields: Record<string, number> = {};
   let allFull = true;
@@ -473,7 +536,14 @@ export async function prepareSofascoreObservation(
     }
     const start = started ? 0 : (entered ?? 0);
     const played = p.stats?.minutesPlayed ?? null;
-    if (played === null || !minutesAgree(Math.min(played, 90 - start), part.minutes)) {
+    // On the pitch when the first half ended: his minutesPlayed may include its stoppage time.
+    const exit = exits.length > 0 ? Math.min(...exits) : null;
+    const throughHalfTime = start < 45 && (exit === null || exit >= 45);
+    const over =
+      throughHalfTime && firstStoppage !== null && firstStoppage <= MAX_FIRST_HALF_STOPPAGE
+        ? Math.max(MAX_STOPPAGE_MINUTES, firstStoppage + STOPPAGE_SLACK_MINUTES)
+        : MAX_STOPPAGE_MINUTES;
+    if (played === null || !minutesAgree(Math.min(played, 90 - start), part.minutes, over)) {
       block({
         code: "minutes_mismatch",
         message:
@@ -580,6 +650,13 @@ export async function prepareSofascoreObservation(
       request: null,
       requestDigest: null,
     };
+  // Starters left out count as anonymous starters of their club; the database checks the counts.
+  const anonymous = { total: 0, byTeam: {} as Record<string, number> };
+  for (const x of base.excludedUnmapped) {
+    if (!x.started) continue;
+    anonymous.total += 1;
+    anonymous.byTeam[teamOf[x.side]] = (anonymous.byTeam[teamOf[x.side]] ?? 0) + 1;
+  }
   const request: SofascoreObservationRequest = {
     sofascoreEventId: eventId,
     mappingSnapshotDigest: snapshot.digest,
@@ -587,8 +664,8 @@ export async function prepareSofascoreObservation(
     payload: {
       homeScore: homeScore as number,
       awayScore: awayScore as number,
-      anonymousStarters: 0,
-      anonymousByTeam: {},
+      anonymousStarters: anonymous.total,
+      anonymousByTeam: anonymous.byTeam,
       references,
       participationComplete: true,
       disciplineComplete: true,

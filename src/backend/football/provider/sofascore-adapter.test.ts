@@ -7,6 +7,7 @@ import {
   parseSofascoreLineups,
   parseSofascoreStatistics,
 } from "./sofascore-adapter";
+import { parseSofascoreStoppage } from "../../../../supabase/functions/_shared/sofascore-performance-parse.ts";
 
 const sofa = (name: string) => providerFixture("sofascore", name);
 const LIMITED = "16958239"; // Touarga 2-1 FUS: limited coverage
@@ -128,6 +129,36 @@ describe("Sofascore adapter, from the Phase 0 fixtures", () => {
       ],
     });
     expect(incidents.map((i) => i.kind)).toEqual(["substitution", "penalty_goal"]);
+  });
+
+  test("the announced stoppage time is read per half, and anything odd is not known", () => {
+    expect(
+      parseSofascoreStoppage({
+        incidents: [
+          { incidentType: "period", time: 45, addedTime: 999 },
+          { incidentType: "injuryTime", time: 45, addedTime: 0, length: 7 },
+          { incidentType: "injuryTime", time: 90, addedTime: 0, length: 4, isHome: true },
+        ],
+      }),
+    ).toEqual({ firstHalf: 7, secondHalf: 4 });
+    // Two announcements that disagree, a length out of range, a rescinded one, garbage.
+    expect(
+      parseSofascoreStoppage({
+        incidents: [
+          { incidentType: "injuryTime", time: 45, length: 3 },
+          { incidentType: "injuryTime", time: 45, length: 5 },
+          { incidentType: "injuryTime", time: 90, length: 45 },
+          { incidentType: "injuryTime", time: 90, length: 2, rescinded: true },
+          null,
+          "x",
+        ],
+      }),
+    ).toEqual({ firstHalf: null, secondHalf: null });
+    expect(parseSofascoreStoppage(null)).toEqual({ firstHalf: null, secondHalf: null });
+    expect(parseSofascoreStoppage({ incidents: "no" })).toEqual({
+      firstHalf: null,
+      secondHalf: null,
+    });
   });
 
   test("a score-relevant or known incident with no side still fails the match", () => {

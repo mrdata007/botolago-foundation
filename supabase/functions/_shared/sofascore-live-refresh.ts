@@ -284,13 +284,16 @@ export function selectLiveDetailTargets(
     if (rank === null) continue;
     const teams = detailsTeams(state, teamIds, event);
     if (!teams) continue;
-    // A finished match also feeds the Fantasy step with the same replies.
+    // A finished match also feeds the Fantasy step with the same replies; a match
+    // in play feeds the player matching, so unknown names surface before full time.
     const fantasyFixtureId = event.status === "finished" ? state.id : undefined;
+    const liveFixtureId = DETAILS_LIVE_STATUSES.has(event.status) ? state.id : undefined;
     ranked.push({
       target: {
         eventId: event.sofascoreEventId,
         teams,
         ...(fantasyFixtureId ? { fantasyFixtureId } : {}),
+        ...(liveFixtureId ? { liveFixtureId } : {}),
       },
       rank,
       changed,
@@ -500,6 +503,10 @@ export async function runSofascoreRefresh(
       onReplies: (target, replies) =>
         target.fantasyFixtureId
           ? fantasy.fromReplies(target.fantasyFixtureId, target.eventId, replies)
+          : Promise.resolve(),
+      onLiveReplies: (target, replies) =>
+        target.liveFixtureId
+          ? fantasy.fromLiveReplies(target.liveFixtureId, target.eventId, replies)
           : Promise.resolve(),
     });
   };
