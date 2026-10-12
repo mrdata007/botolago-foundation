@@ -1,0 +1,1851 @@
+<!doctype html>
+<html lang="fr" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>BotolaGO+ Sketch</title>
+    <meta
+      name="description"
+      content="Visual sketch of the BotolaGO+ premium page, the career screen and a premium card design, for the owner's approval. Example data only."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Changa:wght@600;700;800&family=Instrument+Serif&family=Manrope:wght@600;700;800&family=Noto+Sans+Arabic:wght@500;600;700;800&display=swap"
+    />
+    <!-- Motion (vanilla build, exact version pinned). The app itself already ships motion 13.4.4. -->
+    <script src="https://cdn.jsdelivr.net/npm/motion@11.11.17/dist/motion.js"></script>
+    <style>
+      /* ------------------------------------------------------------------
+   Tokens. Values are the app's dark theme (src/styles.css, .dark),
+   so the sketch reads as BotolaGO. Dark is the default here.
+   ------------------------------------------------------------------ */
+      :root {
+        color-scheme: dark;
+        --ui-page: oklch(0.15 0.03 260);
+        --ui-surface: oklch(0.22 0.03 260);
+        --ui-surface-sunken: oklch(0.26 0.03 260);
+        --ui-rule: color-mix(in srgb, white 14%, transparent);
+        --ui-rule-strong: oklch(0.52 0.02 258);
+        --ui-on-surface: oklch(0.97 0.01 250);
+        --ui-on-surface-muted: oklch(0.76 0.02 258);
+        --ui-on-surface-faint: oklch(0.64 0.02 258);
+        --ui-ink: oklch(0.3 0.08 260);
+        --ui-ink-deep: oklch(0.22 0.07 260);
+        --ui-ink-fg: oklch(0.86 0.08 232);
+        --ui-on-ink: oklch(0.88 0.11 205);
+        --ui-accent-spring: oklch(0.82 0.18 152);
+        --ui-accent-sky: oklch(0.82 0.11 205);
+        --ui-positive: oklch(0.78 0.17 150);
+        --ui-negative: oklch(0.75 0.19 355);
+        --ui-grad-action: linear-gradient(to bottom, var(--ui-accent-spring), var(--ui-accent-sky));
+        --ui-mesh-glass: color-mix(in srgb, white 10%, transparent);
+        --ui-mesh-rule: color-mix(in srgb, white 20%, transparent);
+        /* Tier metal used by both cards (PRO red, from eclat/foil.ts) — a design never changes it. */
+        --tier-pro-a: #9e1c24;
+        --tier-pro-b: #e0424a;
+        --tier-pro-c: #4a080e;
+        /* Premium accent for the + mark: the action gradient's two stops. */
+        --plus-a: var(--ui-accent-spring);
+        --plus-b: var(--ui-accent-sky);
+        --radius-card: 14px;
+        --radius-sheet: 16px;
+        --tap: 2.75rem;
+        --font-display: "Changa", "Manrope", ui-sans-serif, system-ui, sans-serif;
+        --font-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
+        --font-card: "Instrument Serif", Georgia, serif;
+        --lead: 1.45;
+      }
+      :root:lang(ar) {
+        --font-display: "Changa", "Noto Sans Arabic", sans-serif;
+        --font-body: "Noto Sans Arabic", "Segoe UI Arabic", Tahoma, sans-serif;
+        --lead: 1.9;
+      }
+      /* A light variant exists in the app; the premium page is designed on the dark register. */
+      :root[data-theme="light"] {
+        color-scheme: light;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+      }
+      body {
+        background: var(--ui-page);
+        color: var(--ui-on-surface);
+        font-family: var(--font-body);
+        font-weight: 600;
+        line-height: var(--lead);
+        -webkit-font-smoothing: antialiased;
+      }
+      button {
+        font: inherit;
+        color: inherit;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+      bdi {
+        unicode-bidi: isolate;
+      }
+      :lang(fr) .track {
+        letter-spacing: 0.06em;
+      } /* tracking is Latin-only, never Arabic */
+
+      /* ---------- Sketch chrome ---------- */
+      .sk-bar {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        justify-content: space-between;
+        padding: 10px 16px;
+        background: color-mix(in srgb, var(--ui-page) 88%, transparent);
+        backdrop-filter: blur(8px);
+        border-block-end: 1px solid var(--ui-rule);
+      }
+      .sk-bar p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--ui-on-surface-muted);
+      }
+      .sk-bar strong {
+        color: var(--ui-on-surface);
+        font-family: var(--font-display);
+        font-size: 16px;
+      }
+      .lang-btn {
+        min-height: var(--tap);
+        padding-inline: 16px;
+        border-radius: 999px;
+        border: 1px solid var(--ui-rule-strong);
+        background: var(--ui-surface);
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 14px;
+      }
+      .lang-btn:focus-visible,
+      .chip:focus-visible,
+      .cta:focus-visible,
+      .plan:focus-visible {
+        outline: 2px solid var(--ui-ink-fg);
+        outline-offset: 2px;
+      }
+
+      .boards {
+        display: grid;
+        gap: 28px;
+        padding: 20px 16px 48px;
+        grid-template-columns: minmax(0, 1fr);
+        max-width: 1240px;
+        margin-inline: auto;
+      }
+      @media (min-width: 1100px) {
+        .boards {
+          grid-template-columns: repeat(3, minmax(0, 390px));
+          justify-content: center;
+          align-items: start;
+        }
+      }
+      .board-label {
+        margin: 0 0 8px;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--ui-on-surface-muted);
+      }
+      .board-label b {
+        color: var(--ui-ink-fg);
+      }
+      .phone {
+        position: relative;
+        width: 100%;
+        max-width: 390px;
+        margin-inline: auto;
+        border-radius: 28px;
+        overflow: hidden;
+        background: var(--ui-page);
+        box-shadow:
+          0 0 0 1px var(--ui-rule),
+          0 24px 48px -24px black;
+      }
+      .example-tag {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: var(--ui-mesh-glass);
+        border: 1px solid var(--ui-mesh-rule);
+        color: var(--ui-on-surface-muted);
+      }
+
+      /* ---------- (a) Premium page ---------- */
+      .hero {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        padding: 28px 20px 24px;
+        text-align: center;
+        background: oklch(0.13 0.04 262);
+      }
+      /* Mimics React Bits <Aurora />: soft colour fields drifting behind the hero.
+   React Bits draws it with an `ogl` shader; here it is three blurred radial blobs moved by Motion. */
+      .aurora {
+        position: absolute;
+        inset: -20% -10% 30%;
+        z-index: -1;
+        pointer-events: none;
+      }
+      .aurora span {
+        position: absolute;
+        width: 70%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        filter: blur(38px);
+        opacity: 0.55;
+      }
+      .aurora span:nth-child(1) {
+        inset-block-start: 0;
+        inset-inline-start: -10%;
+        background: radial-gradient(circle, var(--ui-accent-spring), transparent 65%);
+      }
+      .aurora span:nth-child(2) {
+        inset-block-start: 8%;
+        inset-inline-end: -12%;
+        background: radial-gradient(circle, var(--ui-accent-sky), transparent 65%);
+      }
+      .aurora span:nth-child(3) {
+        inset-block-start: 30%;
+        inset-inline-start: 25%;
+        background: radial-gradient(circle, oklch(0.6 0.18 262), transparent 65%);
+      }
+      .hero::after {
+        /* fade the aurora into the page */
+        content: "";
+        position: absolute;
+        inset: auto 0 0;
+        height: 45%;
+        z-index: -1;
+        background: linear-gradient(to bottom, transparent, oklch(0.13 0.04 262));
+      }
+      .kicker {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: var(--ui-on-ink);
+      }
+      .wordmark {
+        margin: 6px 0 0;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 40px;
+        line-height: 1.2;
+      }
+      .wordmark .go {
+        color: var(--ui-on-surface);
+      }
+      /* Mimics React Bits <ShinyText />: a light band travelling across clipped text. */
+      .shiny {
+        background-image: linear-gradient(
+          to right,
+          var(--plus-a) 0%,
+          var(--plus-b) 40%,
+          white 50%,
+          var(--plus-b) 60%,
+          var(--plus-a) 100%
+        );
+        background-size: 250% 100%;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+      .hero h1 {
+        margin: 10px 0 6px;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 26px;
+        line-height: 1.3;
+      }
+      .hero .sub {
+        margin: 0 auto;
+        max-width: 32ch;
+        font-size: 15px;
+        color: var(--ui-on-surface-muted);
+      }
+      .hero .card-wrap {
+        margin: 20px auto 6px;
+      }
+      .honesty {
+        margin: 6px 0 16px;
+        font-size: 13px;
+        color: var(--ui-on-surface-muted);
+      }
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 3rem;
+        width: 100%;
+        max-width: 320px;
+        border: 0;
+        border-radius: 999px;
+        cursor: pointer;
+        background: var(--ui-grad-action);
+        color: var(--ui-ink-deep);
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 17px;
+        box-shadow: 0 10px 24px -12px var(--ui-accent-spring);
+      }
+
+      .section {
+        padding: 22px 16px 4px;
+      }
+      .section h2 {
+        margin: 0 0 12px;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 22px;
+        line-height: 1.3;
+      }
+      .benefits {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      /* Mimics React Bits <SpotlightCard />: a radial light that follows the pointer. */
+      .spot {
+        position: relative;
+        overflow: hidden;
+        padding: 14px;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule);
+        --mx: 50%;
+        --my: 0%;
+      }
+      .spot::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: var(--spot-o, 0);
+        background: radial-gradient(
+          180px circle at var(--mx) var(--my),
+          color-mix(in srgb, var(--ui-accent-sky) 22%, transparent),
+          transparent 70%
+        );
+        transition: opacity 200ms;
+      }
+      .spot:hover {
+        --spot-o: 1;
+      }
+      .spot .ico {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        background: var(--ui-ink);
+        color: var(--ui-on-ink);
+        margin-block-end: 8px;
+      }
+      .spot h3 {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 16px;
+        line-height: 1.3;
+      }
+      .spot p {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: var(--ui-on-surface-muted);
+      }
+
+      .stats-preview {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+      .tile {
+        padding: 12px 8px;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        text-align: center;
+        border: 1px solid var(--ui-rule);
+      }
+      .tile .v {
+        display: block;
+        font-size: 24px;
+        font-weight: 800;
+      }
+      .tile .l {
+        display: block;
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+      }
+      .tile.locked .v {
+        filter: blur(6px);
+      }
+
+      .compare {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        background: var(--ui-surface);
+        border-radius: var(--radius-card);
+        overflow: hidden;
+      }
+      .compare th,
+      .compare td {
+        padding: 10px 10px;
+        text-align: start;
+        border-block-end: 1px solid var(--ui-rule);
+        vertical-align: top;
+      }
+      .compare th {
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+        background: var(--ui-surface-sunken);
+      }
+      .compare td:nth-child(2),
+      .compare th:nth-child(2) {
+        color: var(--ui-on-surface-muted);
+      }
+      .compare td:nth-child(3) {
+        color: var(--ui-on-surface);
+      }
+      .yes {
+        color: var(--ui-positive);
+        font-weight: 800;
+      }
+
+      .plans {
+        display: grid;
+        gap: 10px;
+      }
+      .plan {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        width: 100%;
+        min-height: 64px;
+        padding: 12px 16px;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule-strong);
+        cursor: pointer;
+        text-align: start;
+      }
+      .plan[aria-pressed="true"] {
+        border-color: transparent;
+      }
+      /* Mimics React Bits <StarBorder />: a light travelling around the selected plan's edge. */
+      .plan[aria-pressed="true"]::before {
+        content: "";
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        padding: 2px;
+        pointer-events: none;
+        background:
+          radial-gradient(
+            60% 120% at var(--sx, 0%) 50%,
+            white,
+            var(--plus-a) 30%,
+            var(--plus-b) 60%,
+            transparent 80%
+          ),
+          var(--ui-grad-action);
+        -webkit-mask:
+          linear-gradient(black, black) content-box,
+          linear-gradient(black, black);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+      }
+      .plan .name {
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 16px;
+        display: block;
+      }
+      .plan .note {
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+        display: block;
+      }
+      .plan .price {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+        white-space: nowrap;
+      }
+      .plan .price bdi {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 24px;
+      }
+      .plan .price span {
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+      }
+      .badge {
+        position: absolute;
+        inset-block-start: -9px;
+        inset-inline-end: 12px;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: var(--ui-grad-action);
+        color: var(--ui-ink-deep);
+      }
+      .fine {
+        margin: 10px 0 0;
+        font-size: 12px;
+        color: var(--ui-on-surface-faint);
+        text-align: center;
+      }
+      .foot {
+        padding: 18px 16px 24px;
+        text-align: center;
+      }
+
+      /* ---------- The card (simplified stand-in for the Éclat renderer) ---------- */
+      .card-wrap {
+        width: 200px;
+        perspective: 900px;
+      }
+      .card-wrap.sm {
+        width: 158px;
+      }
+      .card {
+        position: relative;
+        aspect-ratio: 1 / 1.4;
+        transform-style: preserve-3d;
+        will-change: transform;
+        --px: 50%;
+        --py: 30%;
+      }
+      .card .shell {
+        position: absolute;
+        inset: 0;
+        clip-path: polygon(0 4%, 4% 0, 96% 0, 100% 4%, 100% 82%, 50% 100%, 0 82%);
+        background: linear-gradient(
+          to bottom,
+          var(--tier-pro-b),
+          var(--tier-pro-a) 40%,
+          var(--tier-pro-c)
+        );
+        box-shadow: 0 18px 30px -18px black;
+      }
+      .card .plate {
+        position: absolute;
+        inset: 3.5%;
+        clip-path: polygon(0 3%, 3% 0, 97% 0, 100% 3%, 100% 82%, 50% 100%, 0 82%);
+        background: radial-gradient(90% 60% at 50% 18%, #3a3f48, #1d2026 70%);
+        overflow: hidden;
+      }
+      .card .pattern {
+        position: absolute;
+        inset: 0;
+        opacity: 0.35;
+      }
+      .card .ovr {
+        position: absolute;
+        inset-block-start: 9%;
+        inset-inline: 0;
+        text-align: center;
+        font-family: var(--font-card);
+        font-size: 64px;
+        line-height: 1;
+        color: #f4f1ea;
+      }
+      .card .ovr small {
+        display: block;
+        font-family: var(--font-body);
+        font-weight: 800;
+        font-size: 10px;
+        color: #c9c4b8;
+        margin-block-start: 2px;
+      }
+      .card .tier {
+        position: absolute;
+        inset-block-start: 47%;
+        inset-inline: 22%;
+        padding: 3px 0;
+        text-align: center;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 13px;
+        color: white;
+        border-radius: 4px;
+        background: linear-gradient(to bottom, var(--tier-pro-b), var(--tier-pro-a));
+      }
+      .card .who {
+        position: absolute;
+        inset-block-start: 58%;
+        inset-inline: 6%;
+        text-align: center;
+        font-family: var(--font-card);
+        font-size: 18px;
+        color: #f4f1ea;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .card .st {
+        position: absolute;
+        inset-block-start: 69%;
+        inset-inline: 10%;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        text-align: center;
+      }
+      .card .st b {
+        display: block;
+        font-size: 14px;
+        font-weight: 800;
+        color: #f4f1ea;
+        font-variant-numeric: tabular-nums;
+      }
+      .card .st i {
+        display: block;
+        font-style: normal;
+        font-size: 8px;
+        font-weight: 800;
+        color: #b9b3a6;
+      }
+      .card .serial {
+        position: absolute;
+        inset-block-end: 9%;
+        inset-inline: 0;
+        text-align: center;
+        font-size: 8px;
+        font-weight: 800;
+        color: #b9b3a6;
+        font-variant-numeric: tabular-nums;
+      }
+      /* Premium design « Zellige »: new backboard + frame light only. Tier plaque, number and stats are untouched. */
+      .card.zellige .plate {
+        background: radial-gradient(90% 60% at 50% 18%, #20324a, #0d1622 72%);
+      }
+      .card.zellige .pattern {
+        opacity: 0.6;
+      }
+      .card .pat-z {
+        display: none;
+      }
+      .card.zellige .pat-z {
+        display: inline;
+      }
+      .card.zellige .pat-h {
+        display: none;
+      }
+      /* Mimics React Bits <ProfileCard /> / <GlareHover />: a holographic film and glare that follow the light. */
+      .card .holo,
+      .card .glare {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        clip-path: polygon(0 4%, 4% 0, 96% 0, 100% 4%, 100% 82%, 50% 100%, 0 82%);
+      }
+      .card.zellige .holo {
+        mix-blend-mode: color-dodge;
+        opacity: 0.45;
+        background:
+          radial-gradient(
+            circle at var(--px) var(--py),
+            oklch(0.85 0.15 150 / 0.9),
+            transparent 30%
+          ),
+          radial-gradient(
+            circle at calc(100% - var(--px)) calc(100% - var(--py)),
+            oklch(0.8 0.14 220 / 0.9),
+            transparent 35%
+          ),
+          radial-gradient(
+            circle at 50% calc(var(--py) + 30%),
+            oklch(0.75 0.16 300 / 0.7),
+            transparent 40%
+          );
+      }
+      .card .glare {
+        background: radial-gradient(
+          circle at var(--px) var(--py),
+          rgba(255, 255, 255, 0.35),
+          transparent 40%
+        );
+        opacity: 0;
+      }
+      .card.zellige .glare {
+        opacity: 1;
+        mix-blend-mode: overlay;
+      }
+
+      /* ---------- (b) Career screen ---------- */
+      .appbar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 14px 16px;
+        border-block-end: 1px solid var(--ui-rule);
+      }
+      .back {
+        width: var(--tap);
+        height: var(--tap);
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule);
+      }
+      :root[dir="rtl"] .back svg {
+        transform: scaleX(-1);
+      }
+      .appbar .t {
+        margin: 0;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 19px;
+        line-height: 1.25;
+      }
+      .appbar .k {
+        margin: 0;
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+      }
+      .plus-chip {
+        margin-inline-start: auto;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 13px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--ui-grad-action);
+        color: var(--ui-ink-deep);
+      }
+      .headline {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 16px 6px;
+      }
+      .headline .big {
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: 52px;
+        line-height: 1.1;
+      }
+      .headline .delta {
+        color: var(--ui-positive);
+        font-weight: 800;
+        font-size: 15px;
+      }
+      .headline .meta {
+        font-size: 13px;
+        color: var(--ui-on-surface-muted);
+        text-align: end;
+      }
+      .chips {
+        display: flex;
+        gap: 8px;
+        padding: 6px 16px 10px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        min-height: var(--tap);
+        padding-inline: 14px;
+        border-radius: 999px;
+        border: 1px solid var(--ui-rule-strong);
+        background: transparent;
+        cursor: pointer;
+        font-weight: 800;
+        font-size: 13px;
+      }
+      .chip[aria-pressed="true"] {
+        background: var(--ui-ink-fg);
+        color: var(--ui-ink-deep);
+        border-color: transparent;
+      }
+      .chart-card {
+        margin: 0 16px;
+        padding: 12px 12px 8px;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule);
+      }
+      .chart-card svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+        padding: 4px 4px 0;
+        flex-wrap: wrap;
+      }
+      .legend span::before {
+        content: "";
+        display: inline-block;
+        width: 14px;
+        height: 3px;
+        border-radius: 2px;
+        vertical-align: middle;
+        margin-inline-end: 6px;
+        background: var(--c);
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 12px 16px 0;
+      }
+      .mini {
+        padding: 12px;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule);
+      }
+      .mini .l {
+        margin: 0;
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+      }
+      .mini .v {
+        margin: 2px 0 0;
+        font-size: 22px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .mini .s {
+        margin: 2px 0 0;
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+      }
+      .list {
+        margin: 12px 16px 0;
+        padding: 0;
+        list-style: none;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule);
+        overflow: hidden;
+      }
+      .list li {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-block-end: 1px solid var(--ui-rule);
+        min-height: 52px;
+      }
+      .list li:last-child {
+        border-block-end: 0;
+      }
+      .list .gw {
+        width: 44px;
+        font-size: 12px;
+        font-weight: 800;
+        color: var(--ui-on-surface-muted);
+      }
+      .list .txt {
+        flex: 1;
+        min-width: 0;
+        font-size: 13px;
+      }
+      .list .txt small {
+        display: block;
+        color: var(--ui-on-surface-muted);
+      }
+      .list .pts {
+        font-size: 17px;
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+      }
+      .up {
+        color: var(--ui-positive);
+      }
+      .down {
+        color: var(--ui-negative);
+      }
+      .duel {
+        margin: 12px 16px 18px;
+        padding: 12px;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule);
+      }
+      .duel h3 {
+        margin: 0 0 8px;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 16px;
+      }
+      .strip {
+        display: grid;
+        grid-template-columns: repeat(11, 1fr);
+        gap: 3px;
+      }
+      .strip i {
+        height: 22px;
+        border-radius: 4px;
+        background: var(--ui-surface-sunken);
+      }
+      .strip i.w {
+        background: var(--ui-positive);
+      }
+      .strip i.l {
+        background: var(--ui-negative);
+        opacity: 0.8;
+      }
+      .duel p {
+        margin: 8px 0 0;
+        font-size: 13px;
+        color: var(--ui-on-surface-muted);
+      }
+
+      /* ---------- (c) Free vs premium card ---------- */
+      .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        padding: 18px 12px 8px;
+        justify-items: center;
+      }
+      .pair figure {
+        margin: 0;
+        text-align: center;
+      }
+      .pair figcaption {
+        margin-block-start: 10px;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 15px;
+      }
+      .pair figcaption small {
+        display: block;
+        font-family: var(--font-body);
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--ui-on-surface-muted);
+      }
+      .rules {
+        margin: 8px 16px 20px;
+        padding: 12px 14px;
+        border-radius: var(--radius-card);
+        background: var(--ui-surface);
+        border: 1px solid var(--ui-rule);
+        font-size: 13px;
+      }
+      .rules ul {
+        margin: 6px 0 0;
+        padding-inline-start: 18px;
+        color: var(--ui-on-surface-muted);
+      }
+      .designs {
+        display: flex;
+        gap: 8px;
+        padding: 0 16px 20px;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+      }
+      .designs .chip {
+        flex: none;
+        scroll-snap-align: start;
+      }
+      .lock {
+        display: inline-block;
+        margin-inline-start: 4px;
+        opacity: 0.8;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .spot::before {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="sk-bar">
+      <p>
+        <bdi dir="ltr"><strong>BotolaGO+</strong></bdi> ·
+        <span data-i18n="sk.note">Esquisse à valider — données d'exemple</span>
+      </p>
+      <button class="lang-btn" id="langBtn" type="button" lang="ar">العربية</button>
+    </header>
+
+    <main class="boards">
+      <!-- (a) Premium page -->
+      <section aria-labelledby="la">
+        <p class="board-label" id="la">
+          <b>A</b> · <span data-i18n="sk.a">Page BotolaGO+ (/plus)</span>
+        </p>
+        <div class="phone">
+          <div class="hero">
+            <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+            <p class="kicker track" data-i18n="a.kicker">Abonnement</p>
+            <p class="wordmark" dir="ltr">
+              <span class="go">BotolaGO</span><span class="shiny" id="shiny">+</span>
+            </p>
+            <h1 data-i18n="a.title">Votre saison, en entier.</h1>
+            <p class="sub" data-i18n="a.sub">
+              L'historique de votre carte, vos duels entre amis, des éditions de collection. Le jeu
+              reste gratuit pour tous.
+            </p>
+            <div class="card-wrap" data-tilt>
+              <div class="card zellige" data-card></div>
+            </div>
+            <p class="honesty" data-i18n="a.honest">
+              Cosmétique uniquement : votre note ne change pas.
+            </p>
+            <button class="cta" type="button" data-i18n="a.cta">Rejoindre BotolaGO+</button>
+          </div>
+
+          <div class="section">
+            <h2 data-i18n="a.benefits">Ce que vous obtenez</h2>
+            <div class="benefits">
+              <article class="spot">
+                <div class="ico" aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M3 17l5-5 4 3 8-8" />
+                  </svg>
+                </div>
+                <h3 data-i18n="b1.t">Votre carrière</h3>
+                <p data-i18n="b1.d">Chaque stat, journée par journée.</p>
+              </article>
+              <article class="spot">
+                <div class="ico" aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                  >
+                    <path d="M7 4v16M17 4v16M3 12h18" />
+                  </svg>
+                </div>
+                <h3 data-i18n="b2.t">Face-à-face+</h3>
+                <p data-i18n="b2.d">Vos duels avec vos amis de ligue.</p>
+              </article>
+              <article class="spot">
+                <div class="ico" aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M12 2l3 6 6 1-4.5 4 1 6.5L12 16l-5.5 3.5 1-6.5L3 9l6-1z" />
+                  </svg>
+                </div>
+                <h3 data-i18n="b3.t">Éditions</h3>
+                <p data-i18n="b3.d">Designs de carte à collectionner.</p>
+              </article>
+              <article class="spot">
+                <div class="ico" aria-hidden="true">
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.4"
+                    stroke-linecap="round"
+                  >
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M5.5 5.5l13 13" />
+                  </svg>
+                </div>
+                <h3 data-i18n="b4.t">Sans publicité</h3>
+                <p data-i18n="b4.d">Jamais de publicité pour les membres.</p>
+              </article>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2 data-i18n="a.numbers">Vos chiffres, débloqués</h2>
+            <div class="stats-preview">
+              <div class="tile">
+                <bdi class="v num" data-count="6" data-suffix="/11">0</bdi
+                ><span class="l" data-i18n="t1">Capitaine juste</span>
+              </div>
+              <div class="tile">
+                <bdi class="v num" data-count="18" data-prefix="+">0</bdi
+                ><span class="l" data-i18n="t2">Pts transferts</span>
+              </div>
+              <div class="tile locked">
+                <bdi class="v num">71</bdi><span class="l" data-i18n="t3">Meilleure J.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2 data-i18n="a.compare">Gratuit ou BotolaGO+</h2>
+            <table class="compare">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th data-i18n="c.free">Gratuit</th>
+                  <th><bdi dir="ltr">BotolaGO+</bdi></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td data-i18n="c.r1">Fantasy, Pronostics</td>
+                  <td data-i18n="c.all">Tout</td>
+                  <td data-i18n="c.same">Identique</td>
+                </tr>
+                <tr>
+                  <td data-i18n="c.r2">Historique</td>
+                  <td data-i18n="c.r2f">Note par journée</td>
+                  <td class="yes" data-i18n="c.r2p">Chaque stat</td>
+                </tr>
+                <tr>
+                  <td data-i18n="c.r3">Amis</td>
+                  <td data-i18n="c.r3f">Face-à-face du jour</td>
+                  <td class="yes" data-i18n="c.r3p">Duel complet</td>
+                </tr>
+                <tr>
+                  <td data-i18n="c.r4">Carte</td>
+                  <td data-i18n="c.r4f">Design standard</td>
+                  <td class="yes" data-i18n="c.r4p">Éditions</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h2 data-i18n="a.price">Choisissez</h2>
+            <div class="plans" role="group">
+              <button class="plan" type="button" aria-pressed="true" data-plan>
+                <span class="badge" data-i18n="p.best">Recommandé</span>
+                <span
+                  ><span class="name" data-i18n="p.season">Pass saison</span
+                  ><span class="note" data-i18n="p.seasonN"
+                    >Jusqu'à la fin de la saison 2026/27</span
+                  ></span
+                >
+                <span class="price"><bdi>199</bdi><span data-i18n="p.mad">MAD TTC</span></span>
+              </button>
+              <button class="plan" type="button" aria-pressed="false" data-plan>
+                <span
+                  ><span class="name" data-i18n="p.month">Mensuel</span
+                  ><span class="note" data-i18n="p.monthN">Sans engagement</span></span
+                >
+                <span class="price"><bdi>29</bdi><span data-i18n="p.madm">MAD / mois</span></span>
+              </button>
+            </div>
+            <p class="fine" data-i18n="p.fine">
+              Prix d'exemple, à valider. Résiliable à tout moment depuis Profil.
+            </p>
+          </div>
+          <div class="foot">
+            <button class="cta" type="button" data-i18n="a.cta">Rejoindre BotolaGO+</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- (b) Premium feature: career -->
+      <section aria-labelledby="lb">
+        <p class="board-label" id="lb">
+          <b>B</b> · <span data-i18n="sk.b">Écran membre : Votre carrière</span>
+        </p>
+        <div class="phone">
+          <div class="appbar">
+            <span class="back" aria-hidden="true"
+              ><svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 5l-7 7 7 7" /></svg
+            ></span>
+            <div>
+              <p class="k">Curva</p>
+              <p class="t" data-i18n="b.title">Votre carrière</p>
+            </div>
+            <span class="plus-chip" dir="ltr">+</span>
+          </div>
+          <div class="headline">
+            <div>
+              <bdi class="big" data-count="73">0</bdi>
+              <div class="delta"><bdi>+9</bdi> <span data-i18n="b.since">depuis la J3</span></div>
+            </div>
+            <div class="meta">
+              <span data-i18n="b.tier">Palier PRO</span><br /><span
+                class="example-tag"
+                data-i18n="ex"
+                >Exemple</span
+              >
+            </div>
+          </div>
+          <div class="chips" role="group" aria-label="stat">
+            <button class="chip" type="button" aria-pressed="true" data-stat="ovr">OVR</button>
+            <button class="chip" type="button" aria-pressed="false" data-stat="cap">CAP</button>
+            <button class="chip" type="button" aria-pressed="false" data-stat="sel">SEL</button>
+            <button class="chip" type="button" aria-pressed="false" data-stat="trf">TRF</button>
+            <button class="chip" type="button" aria-pressed="false" data-stat="con">CON</button>
+          </div>
+          <div class="chart-card">
+            <svg viewBox="0 0 340 150" role="img" id="chart" aria-label="OVR">
+              <g id="gridlines" stroke="var(--ui-rule)" stroke-width="1"></g>
+              <path
+                id="lastSeason"
+                fill="none"
+                stroke="var(--ui-on-surface-faint)"
+                stroke-width="2"
+                stroke-dasharray="4 4"
+              ></path>
+              <path id="area" fill="url(#fillGrad)" opacity="0.5"></path>
+              <path
+                id="line"
+                fill="none"
+                stroke="var(--ui-ink-fg)"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></path>
+              <g id="dots"></g>
+              <g
+                id="xlabels"
+                font-size="10"
+                fill="var(--ui-on-surface-muted)"
+                font-family="Manrope, sans-serif"
+                font-weight="700"
+              ></g>
+              <defs>
+                <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="var(--ui-ink-fg)" stop-opacity="0.5" />
+                  <stop offset="1" stop-color="var(--ui-ink-fg)" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="legend">
+              <span style="--c: var(--ui-ink-fg)" data-i18n="b.this">2026/27</span
+              ><span style="--c: var(--ui-on-surface-faint)" data-i18n="b.last">2025/26</span
+              ><span data-i18n="b.hollow" style="--c: transparent">○ provisoire</span>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="mini">
+              <p class="l" data-i18n="b.cap">Capitaine juste</p>
+              <p class="v">
+                <bdi data-count="6">0</bdi
+                ><span style="font-size: 14px; color: var(--ui-on-surface-muted)"> / 11</span>
+              </p>
+              <p class="s" data-i18n="b.capS">Meilleur de vos titulaires</p>
+            </div>
+            <div class="mini">
+              <p class="l" data-i18n="b.trf">Gains transferts</p>
+              <p class="v up"><bdi data-count="18" data-prefix="+">0</bdi></p>
+              <p class="s" data-i18n="b.trfS">Sur 3 journées, après pénalités</p>
+            </div>
+          </div>
+          <ul class="list" aria-label="best and worst">
+            <li>
+              <span class="gw"><bdi>J.7</bdi></span
+              ><span class="txt" data-i18n="b.best"
+                >Meilleure journée<small>Capitaine : 14 pts</small></span
+              ><bdi class="pts up">71</bdi>
+            </li>
+            <li>
+              <span class="gw"><bdi>J.9</bdi></span
+              ><span class="txt" data-i18n="b.trfBest"
+                >Meilleur transfert<small>+12 pts sur 3 journées</small></span
+              ><bdi class="pts up">+12</bdi>
+            </li>
+            <li>
+              <span class="gw"><bdi>J.4</bdi></span
+              ><span class="txt" data-i18n="b.worst"
+                >Pire journée<small>Capitaine : 2 pts</small></span
+              ><bdi class="pts down">29</bdi>
+            </li>
+          </ul>
+          <div class="duel">
+            <h3 data-i18n="b.duel">Face-à-face+ · Ligue des potes</h3>
+            <div class="strip" aria-hidden="true">
+              <i class="w"></i><i class="l"></i><i class="w"></i><i class="w"></i><i class="l"></i
+              ><i class="w"></i><i class="w"></i><i class="l"></i><i class="w"></i><i class="l"></i
+              ><i class="w"></i>
+            </div>
+            <p data-i18n="b.duelL">Vous menez 7–4 contre Sami (même ligue privée).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- (c) Free vs premium card -->
+      <section aria-labelledby="lc">
+        <p class="board-label" id="lc">
+          <b>C</b> · <span data-i18n="sk.c">Carte gratuite et édition premium</span>
+        </p>
+        <div class="phone">
+          <div class="appbar">
+            <span class="back" aria-hidden="true"
+              ><svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 5l-7 7 7 7" /></svg
+            ></span>
+            <div>
+              <p class="k">Curva</p>
+              <p class="t" data-i18n="c.title">Votre carte</p>
+            </div>
+          </div>
+          <div class="pair">
+            <figure>
+              <div class="card-wrap sm" data-tilt><div class="card" data-card></div></div>
+              <figcaption data-i18n="c.std">Standard<small>Gratuit</small></figcaption>
+            </figure>
+            <figure>
+              <div class="card-wrap sm" data-tilt><div class="card zellige" data-card></div></div>
+              <figcaption data-i18n="c.zel">Zellige<small>BotolaGO+</small></figcaption>
+            </figure>
+          </div>
+          <div class="designs" role="group">
+            <button class="chip" type="button" aria-pressed="false" data-i18n="d1">Standard</button>
+            <button class="chip" type="button" aria-pressed="true" data-i18n="d2">Zellige</button>
+            <button class="chip" type="button" aria-pressed="false">
+              <span data-i18n="d3">Nuit de match</span
+              ><span class="lock" aria-hidden="true">+</span>
+            </button>
+            <button class="chip" type="button" aria-pressed="false">
+              <span data-i18n="d4">Atlas</span><span class="lock" aria-hidden="true">+</span>
+            </button>
+          </div>
+          <div class="rules">
+            <strong data-i18n="r.t">Même note, même palier.</strong>
+            <ul>
+              <li data-i18n="r.1">Le design change le fond, le cadre et la lumière.</li>
+              <li data-i18n="r.2">
+                La note, le palier et les quatre stats restent ceux du serveur.
+              </li>
+              <li data-i18n="r.3">Un design n'imite jamais la couleur d'un palier supérieur.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <template id="cardTpl">
+      <div class="shell"></div>
+      <div class="plate">
+        <svg
+          class="pattern"
+          viewBox="0 0 60 60"
+          preserveAspectRatio="xMidYMid slice"
+          width="100%"
+          height="100%"
+          aria-hidden="true"
+        >
+          <defs>
+            <!-- Eight-point star lattice (zellige). The standard card uses the plain honeycomb-like grid. -->
+            <pattern id="PID-z" width="12" height="12" patternUnits="userSpaceOnUse">
+              <path
+                d="M6 1l1.5 3.5L11 6 7.5 7.5 6 11 4.5 7.5 1 6l3.5-1.5z"
+                fill="none"
+                stroke="#9fb8d6"
+                stroke-width="0.45"
+              />
+              <circle cx="6" cy="6" r="0.8" fill="#9fb8d6" />
+            </pattern>
+            <!-- Standard backboard: the plain honeycomb the Éclat card already draws (simplified). -->
+            <pattern id="PID-h" width="6" height="10.4" patternUnits="userSpaceOnUse">
+              <path
+                d="M3 0l3 1.73v3.47L3 6.93 0 5.2V1.73z M3 6.93v3.47"
+                fill="none"
+                stroke="#8b8f98"
+                stroke-width="0.3"
+              />
+            </pattern>
+          </defs>
+          <rect class="pat-h" width="60" height="60" fill="url(#PID-h)" />
+          <rect class="pat-z" width="60" height="60" fill="url(#PID-z)" />
+        </svg>
+        <div class="ovr"><bdi>73</bdi><small>OVR</small></div>
+        <div class="tier">PRO</div>
+        <div class="who" dir="auto" data-i18n="card.name">Votre nom</div>
+        <div class="st">
+          <span><b>76</b><i>CAP</i></span
+          ><span><b>72</b><i>SEL</i></span
+          ><span><b>68</b><i>TRF</i></span
+          ><span><b>74</b><i>CON</i></span>
+        </div>
+        <div class="serial" dir="ltr">BOT #004821 · 2026/27</div>
+      </div>
+      <div class="holo"></div>
+      <div class="glare"></div>
+    </template>
+
+    <script>
+      (function () {
+        "use strict";
+        var M = window.Motion || null;
+        var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+        /* ---------- i18n (FR default, AR with RTL) ---------- */
+        var AR = {
+          "sk.note": "مسودة للموافقة — بيانات توضيحية",
+          "sk.a": 'صفحة <bdi dir="ltr">BotolaGO+</bdi> ‏(/plus)',
+          "sk.b": "شاشة العضو: مسيرتك",
+          "sk.c": "البطاقة المجانية والإصدار المميز",
+          "a.kicker": "اشتراك",
+          "a.title": "موسمك، كاملًا.",
+          "a.sub":
+            "سجلّ بطاقتك، مواجهاتك مع أصدقائك، وإصدارات للمجموعة. اللعب يبقى مجانيًا للجميع.",
+          "a.honest": "تصاميم شكلية فقط: تقييمك لا يتغيّر.",
+          "a.cta": 'انضمّ إلى <bdi dir="ltr">BotolaGO+</bdi>',
+          "a.benefits": "ما تحصل عليه",
+          "b1.t": "مسيرتك",
+          "b1.d": "كل إحصائية، جولة بجولة.",
+          "b2.t": "مواجهة+",
+          "b2.d": "مواجهاتك مع أصدقاء الدوري.",
+          "b3.t": "إصدارات",
+          "b3.d": "تصاميم بطاقات للمجموعة.",
+          "b4.t": "بدون إعلانات",
+          "b4.d": "بدون إعلانات للأعضاء، دائمًا.",
+          "a.numbers": "أرقامك، مفتوحة",
+          t1: "قائد موفَّق",
+          t2: "نقاط الانتقالات",
+          t3: "أفضل جولة",
+          "a.compare": 'مجاني أو <bdi dir="ltr">BotolaGO+</bdi>',
+          "c.free": "مجاني",
+          "c.r1": "فانتازي، التوقعات",
+          "c.all": "كل شيء",
+          "c.same": "مطابق",
+          "c.r2": "السجلّ",
+          "c.r2f": "التقييم في كل جولة",
+          "c.r2p": "كل إحصائية",
+          "c.r3": "الأصدقاء",
+          "c.r3f": "مواجهة اليوم",
+          "c.r3p": "المواجهة الكاملة",
+          "c.r4": "البطاقة",
+          "c.r4f": "التصميم العادي",
+          "c.r4p": "إصدارات",
+          "a.price": "اختر",
+          "p.best": "موصى به",
+          "p.season": "بطاقة الموسم",
+          "p.seasonN": "حتى نهاية موسم 2026/27",
+          "p.mad": "درهم شامل الضريبة",
+          "p.month": "شهري",
+          "p.monthN": "بدون التزام",
+          "p.madm": "درهم / شهر",
+          "p.fine": "أسعار توضيحية، للموافقة. يمكن الإلغاء في أي وقت من الملف الشخصي.",
+          "b.title": "مسيرتك",
+          "b.since": "منذ الجولة 3",
+          "b.tier": "مستوى PRO",
+          ex: "مثال",
+          "b.this": "2026/27",
+          "b.last": "2025/26",
+          "b.hollow": "○ مؤقت",
+          "b.cap": "قائد موفَّق",
+          "b.capS": "الأفضل بين أساسييك",
+          "b.trf": "مكاسب الانتقالات",
+          "b.trfS": "على 3 جولات، بعد الخصم",
+          "b.best": "أفضل جولة<small>القائد: 14 نقطة</small>",
+          "b.trfBest": "أفضل انتقال<small>‎+12 نقطة على 3 جولات</small>",
+          "b.worst": "أسوأ جولة<small>القائد: 2 نقطة</small>",
+          "b.duel": "مواجهة+ · دوري الأصحاب",
+          "b.duelL": "أنت متقدّم 7–4 على سامي (نفس الدوري الخاص).",
+          "c.title": "بطاقتك",
+          "c.std": "عادي<small>مجاني</small>",
+          "c.zel": 'زليج<small><bdi dir="ltr">BotolaGO+</bdi></small>',
+          d1: "عادي",
+          d2: "زليج",
+          d3: "ليلة المباراة",
+          d4: "الأطلس",
+          "r.t": "نفس التقييم، نفس المستوى.",
+          "r.1": "التصميم يغيّر الخلفية والإطار والضوء.",
+          "r.2": "التقييم والمستوى والإحصائيات الأربع تبقى كما يحسبها الخادم.",
+          "r.3": "لا يقلّد أي تصميم لون مستوى أعلى.",
+          "card.name": "اسمك",
+        };
+        var FR = {};
+        var lang = "fr";
+
+        function fillCards() {
+          var tpl = document.getElementById("cardTpl");
+          document.querySelectorAll("[data-card]").forEach(function (el, i) {
+            el.innerHTML = tpl.innerHTML.replace(/PID/g, "pat" + i);
+          });
+        }
+        function applyLang(next) {
+          var nodes = document.querySelectorAll("[data-i18n]");
+          nodes.forEach(function (n) {
+            var k = n.getAttribute("data-i18n");
+            if (!(k in FR)) FR[k] = n.innerHTML;
+            n.innerHTML = next === "ar" ? AR[k] || FR[k] : FR[k];
+          });
+          document.documentElement.lang = next;
+          document.documentElement.dir = next === "ar" ? "rtl" : "ltr";
+          var btn = document.getElementById("langBtn");
+          btn.textContent = next === "ar" ? "Français" : "العربية";
+          btn.lang = next === "ar" ? "fr" : "ar";
+          lang = next;
+          drawChart(current, false);
+        }
+
+        /* ---------- Count-up (mimics React Bits <CountUp />) ---------- */
+        function countUp(el) {
+          var to = +el.getAttribute("data-count");
+          var pre = el.getAttribute("data-prefix") || "";
+          var suf = el.getAttribute("data-suffix") || "";
+          var write = function (v) {
+            el.textContent = pre + Math.round(v) + suf;
+          };
+          if (reduce || !M) {
+            write(to);
+            return;
+          }
+          M.animate(0, to, { duration: 0.9, ease: [0.16, 1, 0.3, 1], onUpdate: write });
+        }
+        function initCounts() {
+          document.querySelectorAll("[data-count]").forEach(function (el) {
+            if (reduce || !M || !M.inView) {
+              countUp(el);
+              return;
+            }
+            M.inView(
+              el,
+              function () {
+                countUp(el);
+              },
+              { amount: 0.6 },
+            );
+          });
+        }
+
+        /* ---------- Aurora + shiny text + star border ---------- */
+        function initAmbient() {
+          if (reduce || !M) return;
+          var blobs = document.querySelectorAll(".aurora span");
+          var paths = [
+            [
+              [0, 0],
+              [30, 20],
+              [-10, 30],
+              [0, 0],
+            ],
+            [
+              [0, 0],
+              [-25, 15],
+              [10, -10],
+              [0, 0],
+            ],
+            [
+              [0, 0],
+              [15, -20],
+              [-20, 10],
+              [0, 0],
+            ],
+          ];
+          blobs.forEach(function (b, i) {
+            M.animate(
+              b,
+              {
+                x: paths[i].map(function (p) {
+                  return p[0] + "%";
+                }),
+                y: paths[i].map(function (p) {
+                  return p[1] + "%";
+                }),
+                scale: [1, 1.15, 0.95, 1],
+              },
+              { duration: 14 + i * 3, repeat: Infinity, ease: "easeInOut" },
+            );
+          });
+          var rtl = function () {
+            return document.documentElement.dir === "rtl";
+          };
+          var shiny = document.getElementById("shiny");
+          M.animate(
+            shiny,
+            { backgroundPosition: ["100% 0", "0% 0"] },
+            { duration: 1.6, delay: 1, repeat: Infinity, repeatDelay: 4.4, ease: "easeInOut" },
+          );
+          // Star border: move the light around the selected plan.
+          M.animate(0, 100, {
+            duration: 3.2,
+            repeat: Infinity,
+            ease: "linear",
+            onUpdate: function (v) {
+              var p = document.querySelector('.plan[aria-pressed="true"]');
+              if (p) p.style.setProperty("--sx", (rtl() ? 100 - v : v) + "%");
+            },
+          });
+          // Hero entrance: rise and fade, staggered (mimics React Bits <BlurText /> without animating blur).
+          var hero = document.querySelectorAll(
+            ".hero > p, .hero > h1, .hero > .card-wrap, .hero > .cta",
+          );
+          M.animate(
+            hero,
+            { opacity: [0, 1], y: [12, 0] },
+            { duration: 0.6, delay: M.stagger(0.06), ease: [0.16, 1, 0.3, 1] },
+          );
+        }
+
+        /* ---------- Spotlight cards ---------- */
+        function initSpot() {
+          document.querySelectorAll(".spot").forEach(function (c) {
+            c.addEventListener("pointermove", function (e) {
+              if (reduce) return;
+              var r = c.getBoundingClientRect();
+              c.style.setProperty("--mx", e.clientX - r.left + "px");
+              c.style.setProperty("--my", e.clientY - r.top + "px");
+            });
+          });
+        }
+
+        /* ---------- Holographic tilt (mimics React Bits <ProfileCard /> / <TiltedCard />) ---------- */
+        function initTilt() {
+          document.querySelectorAll("[data-tilt]").forEach(function (wrap) {
+            var card = wrap.querySelector(".card");
+            if (reduce || !M) return;
+            var set = function (rx, ry, px, py) {
+              M.animate(
+                card,
+                { rotateX: rx, rotateY: ry },
+                { type: "spring", stiffness: 180, damping: 18 },
+              );
+              card.style.setProperty("--px", px + "%");
+              card.style.setProperty("--py", py + "%");
+            };
+            var move = function (x, y) {
+              var r = wrap.getBoundingClientRect();
+              var nx = Math.min(1, Math.max(0, (x - r.left) / r.width));
+              var ny = Math.min(1, Math.max(0, (y - r.top) / r.height));
+              set((0.5 - ny) * 18, (nx - 0.5) * 22, nx * 100, ny * 100);
+            };
+            wrap.addEventListener("pointermove", function (e) {
+              move(e.clientX, e.clientY);
+            });
+            wrap.addEventListener("pointerleave", function () {
+              set(0, 0, 50, 30);
+            });
+            // Phones: a horizontal drag tilts; vertical still scrolls (touch-action pan-y).
+            wrap.style.touchAction = "pan-y";
+            // Idle sway so the holo is visible in a still screenshot and without a pointer.
+            M.animate(0, 1, {
+              duration: 6,
+              repeat: Infinity,
+              repeatType: "mirror",
+              ease: "easeInOut",
+              onUpdate: function (v) {
+                if (wrap.matches(":hover")) return;
+                card.style.transform =
+                  "rotateY(" + (v - 0.5) * 14 + "deg) rotateX(" + (0.5 - v) * 5 + "deg)";
+                card.style.setProperty("--px", 20 + v * 60 + "%");
+              },
+            });
+          });
+        }
+
+        /* ---------- Chart (example data; nulls would be gaps, provisional points hollow) ---------- */
+        var DATA = {
+          ovr: [64, 66, 65, 68, 70, 69, 72, 71, 73, 72, 73],
+          cap: [58, 70, 40, 66, 74, 61, 88, 69, 80, 63, 76],
+          sel: [70, 66, 69, 71, 72, 70, 75, 73, 72, 71, 72],
+          trf: [50, 50, 55, 58, 61, 60, 63, 66, 70, 67, 68],
+          con: [60, 63, 62, 66, 68, 69, 71, 72, 73, 73, 74],
+        };
+        var LAST = [55, 57, 60, 58, 61, 63, 62, 64, 66, 65, 67];
+        var current = "ovr";
+        var W = 340,
+          H = 150,
+          PADX = 14,
+          TOP = 12,
+          BOT = 128,
+          LO = 30,
+          HI = 100;
+        function xy(i, v) {
+          var x = PADX + i * ((W - PADX * 2) / 10);
+          if (lang === "ar") x = W - x; // time runs in the reading direction
+          var y = BOT - ((v - LO) / (HI - LO)) * (BOT - TOP);
+          return [x, y];
+        }
+        function pathOf(arr) {
+          return arr
+            .map(function (v, i) {
+              var p = xy(i, v);
+              return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1);
+            })
+            .join(" ");
+        }
+        function drawChart(key, animate) {
+          var svg = document.getElementById("chart");
+          if (!svg) return;
+          var arr = DATA[key];
+          var all = key === "ovr" ? arr.concat(LAST) : arr;
+          LO = Math.floor((Math.min.apply(null, all) - 5) / 10) * 10;
+          HI = Math.ceil((Math.max.apply(null, all) + 5) / 10) * 10;
+          var d = pathOf(arr);
+          var g = document.getElementById("gridlines");
+          g.innerHTML = "";
+          for (var gv = LO + 10; gv < HI; gv += 10) {
+            var gy = xy(0, gv)[1];
+            g.insertAdjacentHTML(
+              "beforeend",
+              '<line x1="0" x2="' +
+                W +
+                '" y1="' +
+                gy +
+                '" y2="' +
+                gy +
+                '"/><text x="' +
+                (lang === "ar" ? W - 2 : 2) +
+                '" y="' +
+                (gy - 3) +
+                '" font-size="9" fill="var(--ui-on-surface-faint)" stroke="none" text-anchor="' +
+                (lang === "ar" ? "end" : "start") +
+                '">' +
+                gv +
+                "</text>",
+            );
+          }
+          var line = document.getElementById("line");
+          line.setAttribute("d", d);
+          var first = xy(0, arr[0]),
+            last = xy(arr.length - 1, arr[arr.length - 1]);
+          document
+            .getElementById("area")
+            .setAttribute("d", d + " L" + last[0] + " " + BOT + " L" + first[0] + " " + BOT + " Z");
+          document
+            .getElementById("lastSeason")
+            .setAttribute("d", key === "ovr" ? pathOf(LAST) : "");
+          var dots = document.getElementById("dots");
+          dots.innerHTML = "";
+          arr.forEach(function (v, i) {
+            var p = xy(i, v),
+              prov = i >= arr.length - 2; // last two journées provisional (hollow)
+            dots.insertAdjacentHTML(
+              "beforeend",
+              '<circle cx="' +
+                p[0] +
+                '" cy="' +
+                p[1] +
+                '" r="3.6" fill="' +
+                (prov ? "var(--ui-surface)" : "var(--ui-ink-fg)") +
+                '" stroke="var(--ui-ink-fg)" stroke-width="2"/>',
+            );
+          });
+          var xl = document.getElementById("xlabels");
+          xl.innerHTML = "";
+          [0, 5, 10].forEach(function (i) {
+            var p = xy(i, LO);
+            xl.insertAdjacentHTML(
+              "beforeend",
+              '<text x="' + p[0] + '" y="146" text-anchor="middle">J.' + (i + 3) + "</text>",
+            );
+          });
+          svg.setAttribute("aria-label", key.toUpperCase());
+          if (animate && !reduce && M) {
+            var len = line.getTotalLength();
+            line.style.strokeDasharray = len;
+            line.style.strokeDashoffset = len;
+            M.animate(
+              line,
+              { strokeDashoffset: [len, 0] },
+              { duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+            );
+            M.animate(
+              "#dots circle",
+              { opacity: [0, 1], scale: [0.4, 1] },
+              { delay: M.stagger(0.04, { startDelay: 0.3 }), duration: 0.3 },
+            );
+          } else {
+            line.style.strokeDasharray = "";
+            line.style.strokeDashoffset = "";
+          }
+        }
+        function initChips() {
+          document.querySelectorAll("[data-stat]").forEach(function (b) {
+            b.addEventListener("click", function () {
+              document.querySelectorAll("[data-stat]").forEach(function (o) {
+                o.setAttribute("aria-pressed", String(o === b));
+              });
+              current = b.getAttribute("data-stat");
+              drawChart(current, true);
+            });
+          });
+          document.querySelectorAll("[data-plan]").forEach(function (b) {
+            b.addEventListener("click", function () {
+              document.querySelectorAll("[data-plan]").forEach(function (o) {
+                o.setAttribute("aria-pressed", String(o === b));
+              });
+            });
+          });
+        }
+
+        fillCards();
+        document.querySelectorAll("[data-i18n]").forEach(function (n) {
+          FR[n.getAttribute("data-i18n")] = n.innerHTML;
+        });
+        document.getElementById("langBtn").addEventListener("click", function () {
+          applyLang(lang === "fr" ? "ar" : "fr");
+        });
+        drawChart("ovr", false);
+        if (!reduce && M && M.inView)
+          M.inView(
+            "#chart",
+            function () {
+              drawChart(current, true);
+            },
+            { amount: 0.5 },
+          );
+        initChips();
+        initCounts();
+        initAmbient();
+        initSpot();
+        initTilt();
+        if (/[?&]lang=ar\b/.test(location.search)) applyLang("ar");
+      })();
+    </script>
+  </body>
+</html>
