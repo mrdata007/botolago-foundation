@@ -22,6 +22,7 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/pepites",
   "/admin/pepites/donnees",
   "/admin/football/player-mappings",
+  "/admin/football/sofascore-players",
 ]);
 
 /**
@@ -48,6 +49,7 @@ const SCREEN_ROUTE_FILES: Record<AdminConsoleRoute, string> = {
   "/admin/pepites": "../../routes/admin.pepites.index.tsx",
   "/admin/pepites/donnees": "../../routes/admin.pepites.donnees.tsx",
   "/admin/football/player-mappings": "../../routes/admin.football.player-mappings.tsx",
+  "/admin/football/sofascore-players": "../../routes/admin.football.sofascore-players.tsx",
 };
 
 /** Route sources only. `admin-console-contracts.ts` is deliberately NOT read

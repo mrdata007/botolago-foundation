@@ -71,3 +71,15 @@ export const loadAdminPlayerMappingsRouteAccess = createServerFn({ method: "POST
     );
   },
 );
+
+// Same rule as the player-mappings page: reading the list needs
+// football.read_operations; confirming a player needs football.manage_mappings,
+// which the database checks again on every call.
+export const loadAdminSofascorePlayersRouteAccess = createServerFn({ method: "POST" }).handler(
+  async () => {
+    const { loadAdminRouteAccessForPermission } = await import("./route-access.server");
+    return adminRouteStateSchema.parse(
+      await loadAdminRouteAccessForPermission("football.read_operations"),
+    );
+  },
+);
