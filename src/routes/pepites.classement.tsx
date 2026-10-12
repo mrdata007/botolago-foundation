@@ -37,6 +37,7 @@ export const Route = createFileRoute("/pepites/classement")({
             maxAge: deps.maxAge,
             teamId: deps.teamId,
             minMinutes: deps.minMinutes,
+            followed: deps.followed,
             sort: deps.sort,
             limit: 20,
           }),

@@ -749,7 +749,10 @@ export const fantasyService = {
     const current = await hub();
     return cloud.getRules(current.season.id, context());
   },
-  async getTopPlayersOfWeek(gameweek: number): Promise<TopPlayerOfWeek[]> {
+  async getTopPlayersOfWeek(
+    gameweek: number,
+    loadedPlayers?: FantasyPlayer[],
+  ): Promise<TopPlayerOfWeek[]> {
     if (mode() === "mock") return mockFantasyService.getTopPlayersOfWeek(gameweek);
     const current = await hub();
     const gameweeks = await gameweeksOf(current.season.id);
@@ -761,7 +764,7 @@ export const fantasyService = {
     // price/ownership 0 and form `null` ("unknown"), never a fabricated 0.0.
     const [top, players] = await Promise.all([
       cloud.getTopPlayers(target.id, context()),
-      allPlayers(),
+      loadedPlayers ?? allPlayers(),
     ]);
     const byId = new Map(players.map((player) => [player.id, player]));
     return top.map((player, index) => {

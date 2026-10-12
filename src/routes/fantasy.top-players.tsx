@@ -1,3 +1,6 @@
+import type { Gameweek } from "@/types/domain";
+import { prefetchForSsr, ssrAvailability } from "@/lib/ssr-prefetch";
+import { unavailableHeaders } from "@/lib/page-availability";
 import podiumSoonArt from "@/assets/illustrations/podium-soon.webp";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -35,6 +38,29 @@ import type { Club } from "@/types/domain";
 import type { FantasyPlayer, TopPlayerOfWeek } from "@/types/fantasy";
 
 export const Route = createFileRoute("/fantasy/top-players")({
+  loader: async ({ context }) => {
+    const { queryClient } = context;
+    await prefetchForSsr(queryClient, [
+      { queryKey: ["gameweek"], queryFn: () => fantasyService.getCurrentGameweek() },
+      { queryKey: ["top-gws"], queryFn: () => fantasyService.getAvailableTopGameweeks() },
+      { queryKey: ["fantasy-players"], queryFn: () => fantasyService.getPlayers() },
+      {
+        queryKey: ["football", "clubs", "fr"],
+        queryFn: ({ signal }) => footballService.getClubs("fr", signal),
+      },
+    ]);
+    const gameweek = queryClient.getQueryData<Gameweek>(["gameweek"]);
+    const players = queryClient.getQueryData<FantasyPlayer[]>(["fantasy-players"]);
+    if (gameweek && players)
+      await prefetchForSsr(queryClient, [
+        {
+          queryKey: ["top-players", gameweek.number],
+          queryFn: () => fantasyService.getTopPlayersOfWeek(gameweek.number, players),
+        },
+      ]);
+    return ssrAvailability(queryClient);
+  },
+  headers: ({ loaderData }) => unavailableHeaders(loaderData),
   head: () => fantasyHead("topPlayers"),
   component: TopPlayersFramed,
 });

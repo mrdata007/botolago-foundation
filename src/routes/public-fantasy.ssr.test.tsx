@@ -125,3 +125,26 @@ test("unknown player is notFound; an unavailable player read is not a 404", asyn
   spy.mockRejectedValue(new Error("offline"));
   expect(await load(Player, client(), "/fantasy/players/missing", "missing")).toEqual(UNAVAILABLE);
 });
+
+test("rankings SSR shows public rows while auth resolves and never transfers myRank", async () => {
+  const c = client();
+  await load(Rankings, c, "/fantasy/rankings");
+  const page = c.getQueryData<{ rows: unknown[]; myRank?: unknown }>(["fantasy-public-rankings"])!;
+  expect(page.rows.length).toBeGreaterThan(0);
+  expect(page).not.toHaveProperty("myRank");
+  const html = await render(Rankings, "/fantasy/rankings", c);
+  expect(html).toContain("<table");
+  // The private position card may still load; the public table must not.
+  expect(html.match(/<tbody[\s\S]*?<\/tbody>/)?.[0]).not.toContain("Chargement…");
+  expect(dehydrate(c, SSR_DEHYDRATE_OPTIONS).queries.map((q) => q.queryKey)).toEqual([
+    ["fantasy-public-rankings"],
+  ]);
+});
+
+test("help answers are in native disclosures before any JavaScript executes", async () => {
+  const html = await render(Help, "/fantasy/help", client());
+  expect(html.match(/<details /g)).toHaveLength(10);
+  expect(html).toContain("<summary");
+  expect(html).toContain("100");
+  expect(html).not.toContain("<details open");
+});

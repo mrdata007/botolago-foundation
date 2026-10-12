@@ -1,7 +1,6 @@
 import helpArt from "@/assets/illustrations/help-hero.webp";
 import { createFileRoute } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
-import { useId, useState } from "react";
 
 import { SectionHeader } from "@/components/common/SectionHeader";
 import { FantasyFrame } from "@/components/fpl/FantasyFrame";
@@ -56,11 +55,10 @@ const SECTIONS: Array<{
  * the answer out under the question in the same card. The section folder tabs
  * (ink pills with square bases) are display section headings now, and the
  * expanded row no longer floods with the action gradient — the open state is
- * the answer itself, the rotated chevron and `aria-expanded`.
+ * the answer itself, the rotated chevron and the native disclosure state.
  */
 function HelpPage() {
   const { t } = useI18n();
-  const [open, setOpen] = useState<string | null>(null);
   return (
     <FantasyFrame bottomNav>
       <UiHeader kicker={t("nav.fantasy")} title={t("fpl.help_title")} backTo="/fantasy" />
@@ -80,13 +78,7 @@ function HelpPage() {
             <SectionHeader title={t(section.title)} as="h2" />
             <ul className="space-y-2">
               {section.items.map((item) => (
-                <HelpItem
-                  key={item.q}
-                  question={t(item.q)}
-                  answer={t(item.a)}
-                  expanded={open === item.q}
-                  onToggle={() => setOpen(open === item.q ? null : item.q)}
-                />
+                <HelpItem key={item.q} question={t(item.q)} answer={t(item.a)} />
               ))}
             </ul>
           </section>
@@ -96,71 +88,46 @@ function HelpPage() {
   );
 }
 
-function HelpItem({
-  question,
-  answer,
-  expanded,
-  onToggle,
-}: {
-  question: string;
-  answer: string;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const answerId = useId();
+/** Native disclosure keeps every answer in HTML and works without JavaScript. */
+function HelpItem({ question, answer }: { question: string; answer: string }) {
   return (
     <li className={cn("overflow-hidden", ui.surface.card)}>
-      <button
-        type="button"
-        aria-expanded={expanded}
-        aria-controls={expanded ? answerId : undefined}
-        onClick={onToggle}
-        className={cn(
-          "flex w-full items-center gap-3 py-2 pe-2 ps-4 text-start",
-          ui.space.row,
-          ui.focus,
-          "focus-visible:ring-inset focus-visible:ring-offset-0",
-        )}
-      >
-        {/* A collapsed question is a list-row label, not a heading: body size
-            at the strong weight, so a page made of questions does not shout. */}
-        <span
+      <details name="fantasy-help" className="group">
+        <summary
           className={cn(
-            "min-w-0 flex-1",
-            ui.text.body,
-            "[font-weight:var(--ui-weight-strong)]",
-            ui.tone.default,
+            "flex w-full cursor-pointer list-none items-center gap-3 py-2 pe-2 ps-4 text-start [&::-webkit-details-marker]:hidden",
+            ui.space.row,
+            ui.focus,
+            "focus-visible:ring-inset focus-visible:ring-offset-0",
           )}
         >
-          {question}
-        </span>
-        <span
-          aria-hidden
-          className={cn(
-            "grid h-9 w-9 shrink-0 place-items-center",
-            ui.radius.full,
-            expanded ? ui.surface.selected : cn(ui.surface.sunken, ui.tone.ink),
-          )}
-        >
-          <ChevronDown
+          <span
             className={cn(
-              "h-5 w-5 transition-transform duration-[var(--duration-quick)]",
-              expanded && "rotate-180",
+              "min-w-0 flex-1",
+              ui.text.body,
+              "[font-weight:var(--ui-weight-strong)]",
+              ui.tone.default,
             )}
-          />
-        </span>
-      </button>
-      {expanded ? (
-        /* `prose`: an answer is the longest continuous copy on any Fantasy
-           screen, and it is the step built for that — with an Arabic line box
-           that does not have to be remembered at the call site. */
-        <div
-          id={answerId}
-          className={cn("whitespace-pre-line px-4 pb-4 pt-1", ui.text.prose, ui.tone.default)}
-        >
+          >
+            {question}
+          </span>
+          <span
+            aria-hidden
+            className={cn(
+              "grid h-9 w-9 shrink-0 place-items-center",
+              ui.radius.full,
+              ui.surface.sunken,
+              ui.tone.ink,
+              "group-open:bg-[color:var(--ui-selected)] group-open:text-[color:var(--ui-on-selected)]",
+            )}
+          >
+            <ChevronDown className="h-5 w-5 transition-transform duration-[var(--duration-quick)] group-open:rotate-180" />
+          </span>
+        </summary>
+        <div className={cn("whitespace-pre-line px-4 pb-4 pt-1", ui.text.prose, ui.tone.default)}>
           {answer}
         </div>
-      ) : null}
+      </details>
     </li>
   );
 }
