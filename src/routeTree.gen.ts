@@ -53,6 +53,7 @@ import { Route as CurvaCarteRouteImport } from './routes/curva.carte'
 import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
 import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
+import { Route as DevSofascorePlayersSampleRouteImport } from './routes/dev.sofascore-players-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
 import { Route as FantasyFixturesRouteImport } from './routes/fantasy.fixtures'
@@ -83,6 +84,7 @@ import { Route as PronosticsIndexRouteImport } from './routes/pronostics.index'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as AdminFootballPlayerMappingsRouteImport } from './routes/admin.football.player-mappings'
+import { Route as AdminFootballSofascorePlayersRouteImport } from './routes/admin.football.sofascore-players'
 import { Route as AdminNewsArticleEditionIdRouteImport } from './routes/admin.news.$articleEditionId'
 import { Route as AdminNewsNewRouteImport } from './routes/admin.news.new'
 import { Route as AdminPepitesIndexRouteImport } from './routes/admin.pepites.index'
@@ -320,6 +322,12 @@ const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
   path: '/dev/player-mappings-sample',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevSofascorePlayersSampleRoute =
+  DevSofascorePlayersSampleRouteImport.update({
+    id: '/dev/sofascore-players-sample',
+    path: '/dev/sofascore-players-sample',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const FantasyIndexRoute = FantasyIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -472,6 +480,12 @@ const AdminFootballPlayerMappingsRoute =
     path: '/football/player-mappings',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminFootballSofascorePlayersRoute =
+  AdminFootballSofascorePlayersRouteImport.update({
+    id: '/football/sofascore-players',
+    path: '/football/sofascore-players',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminNewsArticleEditionIdRoute =
   AdminNewsArticleEditionIdRouteImport.update({
     id: '/$articleEditionId',
@@ -589,6 +603,7 @@ export interface FileRoutesByFullPath {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -621,6 +636,7 @@ export interface FileRoutesByFullPath {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
+  '/admin/football/sofascore-players': typeof AdminFootballSofascorePlayersRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
@@ -674,6 +690,7 @@ export interface FileRoutesByTo {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -706,6 +723,7 @@ export interface FileRoutesByTo {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
+  '/admin/football/sofascore-players': typeof AdminFootballSofascorePlayersRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
@@ -765,6 +783,7 @@ export interface FileRoutesById {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
   '/fantasy/help': typeof FantasyHelpRoute
@@ -797,6 +816,7 @@ export interface FileRoutesById {
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/football/player-mappings': typeof AdminFootballPlayerMappingsRoute
+  '/admin/football/sofascore-players': typeof AdminFootballSofascorePlayersRoute
   '/admin/news/$articleEditionId': typeof AdminNewsArticleEditionIdRoute
   '/admin/news/new': typeof AdminNewsNewRoute
   '/admin/pepites/donnees': typeof AdminPepitesDonneesRoute
@@ -857,6 +877,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/player-mappings-sample'
+    | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -889,6 +910,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/football/player-mappings'
+    | '/admin/football/sofascore-players'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/pepites/donnees'
@@ -942,6 +964,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/player-mappings-sample'
+    | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -974,6 +997,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/football/player-mappings'
+    | '/admin/football/sofascore-players'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/pepites/donnees'
@@ -1032,6 +1056,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/player-mappings-sample'
+    | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
     | '/fantasy/help'
@@ -1064,6 +1089,7 @@ export interface FileRouteTypes {
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/football/player-mappings'
+    | '/admin/football/sofascore-players'
     | '/admin/news/$articleEditionId'
     | '/admin/news/new'
     | '/admin/pepites/donnees'
@@ -1103,6 +1129,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
+  DevSofascorePlayersSampleRoute: typeof DevSofascorePlayersSampleRoute
   JourneePublicIdRoute: typeof JourneePublicIdRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
   MatchesStandingsRoute: typeof MatchesStandingsRoute
@@ -1424,6 +1451,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevPlayerMappingsSampleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dev/sofascore-players-sample': {
+      id: '/dev/sofascore-players-sample'
+      path: '/dev/sofascore-players-sample'
+      fullPath: '/dev/sofascore-players-sample'
+      preLoaderRoute: typeof DevSofascorePlayersSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/fantasy/': {
       id: '/fantasy/'
       path: '/'
@@ -1634,6 +1668,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFootballPlayerMappingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/football/sofascore-players': {
+      id: '/admin/football/sofascore-players'
+      path: '/football/sofascore-players'
+      fullPath: '/admin/football/sofascore-players'
+      preLoaderRoute: typeof AdminFootballSofascorePlayersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/news/$articleEditionId': {
       id: '/admin/news/$articleEditionId'
       path: '/$articleEditionId'
@@ -1798,6 +1839,7 @@ interface AdminRouteChildren {
   AdminStoriesRoute: typeof AdminStoriesRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminFootballPlayerMappingsRoute: typeof AdminFootballPlayerMappingsRoute
+  AdminFootballSofascorePlayersRoute: typeof AdminFootballSofascorePlayersRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1811,6 +1853,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminStoriesRoute: AdminStoriesRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminFootballPlayerMappingsRoute: AdminFootballPlayerMappingsRoute,
+  AdminFootballSofascorePlayersRoute: AdminFootballSofascorePlayersRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -2002,6 +2045,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
+  DevSofascorePlayersSampleRoute: DevSofascorePlayersSampleRoute,
   JourneePublicIdRoute: JourneePublicIdRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
   MatchesStandingsRoute: MatchesStandingsRoute,

@@ -16,7 +16,8 @@ export type AdminConsoleRoute =
   | "/admin/users/$userId"
   | "/admin/pepites"
   | "/admin/pepites/donnees"
-  | "/admin/football/player-mappings";
+  | "/admin/football/player-mappings"
+  | "/admin/football/sofascore-players";
 
 export type AdminConsoleSurface = "route" | "state" | "dialog";
 
@@ -411,6 +412,15 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     permission: "football.read_operations",
     testId: "admin-nav-player-mappings",
     labels: { fr: "Rapprochement joueurs", ar: "مطابقة اللاعبين" },
+  },
+  // SofaScore players the automatic matcher held: confirm the right player.
+  // Same rule as above: reading needs football.read_operations, confirming
+  // needs football.manage_mappings, both checked again by the database.
+  {
+    route: "/admin/football/sofascore-players",
+    permission: "football.read_operations",
+    testId: "admin-nav-sofascore-players",
+    labels: { fr: "Joueurs SofaScore à confirmer", ar: "لاعبو SofaScore بانتظار التأكيد" },
   },
 ] as const satisfies readonly {
   readonly route: Exclude<
