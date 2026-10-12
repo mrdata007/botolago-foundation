@@ -424,3 +424,60 @@ Next verification: after the genuine blockers are resolved and retries record
 the fixtures, confirm the hourly orchestrator scores them, public player J.3
 points and top players update, and Pépites receives SofaScore appearances.
 The twelve-hour scoring-mode selection delay remains unchanged.
+
+### 12 October follow-up: stoppage-time evidence and held identities
+
+The owner requested an evidence-based allowance only if the first-half
+`injuryTime.length` for 17256968 was at least seven. Production's saved data
+contains normalized incidents with no announcement. Fresh read-only provider
+probe [38228134975](https://github.com/mrdata007/botolago-foundation/actions/runs/38228134975)
+at 09:10 UTC returned 22 raw incidents and no `injuryTime` at all. The period
+marker at 45 has no `length`. Missing evidence is not zero stoppage time: the
+match stays held, with the existing −2/+6 check unchanged. No Edge deployment.
+
+[PR #439](https://github.com/mrdata007/botolago-foundation/pull/439) records the
+linked external identity sources and a guarded four-player repair. Exact DOB,
+current membership, fixture club and match-day shirt support Rhabra/Ghabra
+(1004247), Najari/Najjari (1186787), Moussadak/Moussaddaq (1140815) and
+El Wasti/Elowasti (880101). Existing positions and prices are preserved. The
+read-only guard preflight passed all four; deliberate DOB, shirt, club and
+identity mismatches were each refused, without any production mutation.
+
+Haitam Hamani (2637442) is born 2007-07-12, confirmed by SofaScore and Foot
+Mercato; Foot Mercato also confirms Wydad and shirt 7. His partial-name candidate
+Salaheddine El Hamani is born 1997-06-29 and must not be selected. A missing
+catalog identity and a current shirt-7 claim by Hakim Ziyech remain to review.
+El Hassouni (880105) remains unresolved: SofaScore DOB 1995-02-20 conflicts with
+the app/FotMob DOB 1995-02-22. WAC–CODM additionally lacks Ayoub Lakhlifi's
+provider minutes. Neither conflict is papered over by a guessed link or minutes.
+
+PR #439 passed both checks in run **38228670648** (database-quality 4m28s,
+application-quality 13m23s), and merged normally as
+`9945fab9db56f0b2c49b33a15d08278d07a1a938`. The reviewed repair was applied to
+production at **09:30:28 UTC (13:30 Dubai)** after a successful rollback rehearsal.
+Only this operator wrote production: both GitHub writer workflows were disabled;
+21 cron jobs and writer switches were paused through the reviewed maintenance
+script, with rollback rehearsal/readback; pending HTTP, active cron, generating
+home stories and other active client queries were zero. The latest football
+Edge dispatch had completed HTTP 200. Concurrent Backend quality jobs were
+inspected and use disposable CI databases, not production.
+
+Independent full-row fingerprints across 16 domain tables matched exactly after
+the repair rehearsal. After commit, exactly four mappings and four staff-review
+logs were added, and the four queue rows were resolved. Each supporting-state
+proof independently returned active/reviewed with `staff_resolution` provenance.
+The other 13 tables were unchanged, including players, memberships, Fantasy
+pool/prices, fixtures, performances and scoring. All 21 jobs, writer switches
+and both GitHub workflows were restored and independently verified against the
+baseline; the SQL pause lasted approximately one minute.
+
+A read-only local replay using the saved data and the four committed review
+proofs now prepares **Kawkab–Tanger with no blockers or excluded players**.
+Six matches pass observation preparation; this is not a claim that the database
+has accepted or scored them. Zemamra still refuses the two minutes discrepancies;
+WAC still needs El Hassouni and Hamani review and Lakhlifi's missing minutes.
+The local builder's proposed untouched-substitute exclusion for Hamani does not
+override the database's partial-name queue guard and is not accepted proof.
+The independent production read after the repair still shows zero observations;
+existing next-retry times remain unchanged (Kawkab earliest 11:00 UTC / 15:00
+Dubai). Public launch readiness is not established.
