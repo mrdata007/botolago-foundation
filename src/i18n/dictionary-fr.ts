@@ -6,6 +6,8 @@
 export const fr = {
   "fantasy.scoring.incrementalPolicy":
     "Les points et le classement sont actualisés après chaque match admissible. Ils restent provisoires pendant la journée. Les remplacements automatiques et le relais du capitaine attendent que la participation soit établie.",
+  "fantasy.scoring.closedProvisional":
+    "Points provisoires : les statistiques détaillées des matchs peuvent encore être publiées et les points peuvent changer jusqu'au verrouillage de la journée.",
   "fantasy.scoring.simpleEstimated": "Barème simplifié · données estimées",
   "fantasy.scoring.estimatesPolicy":
     "Les estimations examinées à partir des meilleures données disponibles peuvent être définitives et compter au classement. Les hypothèses sont conservées et les points restent soumis à la procédure de correction de 72 heures. Une identité ambiguë reste en attente.",

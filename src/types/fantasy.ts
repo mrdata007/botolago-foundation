@@ -171,6 +171,11 @@ export interface GameweekResult {
     chipType: "wildcard" | "free_hit" | "bench_boost" | "triple_captain" | null;
     incremental: boolean;
     finalized: boolean;
+    /**
+     * The gameweek closed on provisional points (the next one is open) and is not
+     * locked yet: SofaScore's detailed statistics may still change these points.
+     */
+    closedProvisional?: boolean;
     /** Starters' points as the server counted them (substitutions applied, no captain bonus). */
     startingPoints: number;
     /** The final score once finalized, else null; `totalPoints` falls back to the provisional one. */
