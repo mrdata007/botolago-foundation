@@ -175,7 +175,14 @@ that, so the pass also ages the gameweek:
   window end, 6 h by default) the pass escalates, and so does a gameweek whose
   window end is unreadable. Windows that could not be read at all
   (`scoring.error`) leave the pass `waiting`, named: the next pass reads them
-  again, and the watchdog's `fantasy_points` reads them on its own schedule.
+  again, and the watchdog's `fantasy_points` reads them on its own schedule;
+- one exception, since the two-stage statistics rule (migration
+  `20261013140000`, [ALERTS.md](../operations/ALERTS.md#two-stage-statistics)):
+  a gameweek the worker published provisional core points for in this pass
+  (`outcome: points_published`) is listed with `provisional: true` and is not
+  overdue until `FULL_STATS_WINDOW_DAYS` (21) after its window ended. It is
+  waiting for SofaScore's full statistics, which never block it. A match with
+  no core data is the database's `fantasy_fixture_coverage` failure instead.
 
 `endsAt` does not follow a counting match moved after the deadline, so such a
 gameweek escalates here `FANTASY_COVERAGE_ESCALATE_HOURS` (6 h) after its

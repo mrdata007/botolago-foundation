@@ -317,6 +317,35 @@ Nothing below has been run. Production writes are owner-run only.
 
 A write run takes at most 12 fixtures and needs a round.
 
+## Two stages and the alerts
+
+SofaScore publishes Botola statistics in two stages: right after a match some
+matches only have **core** data (minutes, goals, cards: the `limited` coverage,
+an observation with `simple_ready`), and the **full** statistics (rating,
+passes, saves, assists: `full_ready`) arrive 5 to 16 days later. Since
+migrations `20261013140000` and `20261013140100` the production alerts treat
+them apart (thresholds are named constants in the database, mirrored in
+`scripts/backend/fantasy-season-orchestrator.ts`; the table and the reasoning
+are in [ALERTS.md](../operations/ALERTS.md#two-stage-statistics)):
+
+- `fantasy_fixture_coverage` fails only when a counted match has no core data
+  12 h after full time, or is still not full coverage 21 days after kickoff
+  (_final limited_). A match with core data waiting for full statistics inside
+  those 21 days is information in the detail text.
+- `fantasy_scoring` warns only when core points are missing (13 h after full
+  time: the 12 h mode cutoff plus an hour for the hourly worker run).
+  Provisional points count as points.
+- `fantasy_progression` does not warn or fail because the previous gameweek is
+  provisional and waiting; it still does when a counted match of it has no
+  core data, because the lifecycle cannot finalize it
+  ([FANTASY_DURABLE_PROGRESSION_RUNBOOK.md](FANTASY_DURABLE_PROGRESSION_RUNBOOK.md#provisional-predecessors-two-stage-statistics)).
+
+Not built yet, and a Fantasy scoring decision for the owner: re-pulling a match
+after its full statistics appear and letting them refine points. Today the
+automatic path records one observation per match and leaves it alone ("Retries"
+above), and the scoring mode is selected once, at the 12 h cutoff. The
+progression runbook lists what that would involve.
+
 ## Risks
 
 - Fixtures with unmapped appearing players are held back entirely until mapped;

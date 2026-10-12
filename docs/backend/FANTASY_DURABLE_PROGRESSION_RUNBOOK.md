@@ -29,6 +29,77 @@ Migration `20261009091728_fantasy_durable_progression.sql` changes that boundary
   ticks cannot clear this check; actual gameweek state must recover. The existing
   ops alert path receives this check automatically. These are intervention
   thresholds, not a guarantee of external scheduler or alert delivery availability.
+  Since migration `20261013140100` (two-stage statistics, below) the check does
+  not warn or fail merely because the previous gameweek is provisional and
+  waiting: see "Provisional predecessors".
+
+## Provisional predecessors (two-stage statistics)
+
+SofaScore publishes core data (minutes, goals, cards) at once and full
+statistics 5 to 16 days later. The owner's rule of 2026-10-12: a gameweek may
+close and the next one open on provisional points; later re-pulls refine points
+without blocking progression.
+
+What the code requires today (nothing here was changed by the alert lane):
+
+- A successor opens only through `api.service_prepare_next_fantasy_gameweek`,
+  which refuses unless the previous gameweek is `finalized` with its postwork
+  complete (`fantasy_previous_postwork_incomplete`,
+  `20261009091728_fantasy_durable_progression.sql` lines 197-199), and the
+  successor's deadline is still ahead (`fantasy_next_gameweek_not_openable`, line
+  203). The five-minute tick only calls it for a `finalized` predecessor with
+  complete postwork (same file, lines 345-359); it never finalizes anything.
+- The lifecycle worker finalizes (`scripts/backend/fantasy-lifecycle-runner.ts`,
+  `service_begin_fantasy_finalization` at line 700) only when no counted match
+  is pending. A match is pending unless its scoring mode is selected and its
+  latest observation is ready in that mode (`adaptiveReady`, set in
+  `20260927120659_adaptive_reviewed_estimates.sql` lines 219-222 from the mode
+  row; tested at runner lines 611-613). Otherwise the worker publishes the points it
+  has and returns `points_published` / `remaining_fixtures_pending` (lines
+  686-696) without finalizing.
+- The mode is selected 12 h after the final whistle by
+  `api.service_select_fantasy_scoring_modes`
+  (`20260927094823_adaptive_fantasy_scoring.sql`, the 12 h cutoff at line 200):
+  `full` when the latest observation is `full_ready`,
+  otherwise `simple`. A match with core data is therefore ready in `simple`
+  mode from its cutoff, and its full statistics never block finalization or the
+  next gameweek.
+- What does block: a counted match with no ready observation. It is selected as
+  `simple` but `simple_ready` is false (no observation), so `adaptiveReady` stays
+  false until an observation arrives, and the gameweek stays provisional and the
+  next one scheduled. This is a missing-core-data problem, reported by
+  `fantasy_fixture_coverage` (fails 12 h after full time) and, through this
+  check, as `previous_core_data_missing`.
+
+So the alert rule is: information only while the previous gameweek is
+provisional with core data for every counted match and its last whistle is under
+13 h old (12 h cutoff plus one hour for the hourly worker run); the usual
+warn/fail thresholds otherwise (a match without core data, a predecessor that
+should have finalized and has not, a match not finished, a passed deadline).
+
+### Decision for the owner: what the code does not do
+
+The owner's sentence also says that later re-pulls update points. The code does
+not do that yet, and doing it changes Fantasy scoring and lifecycle logic, which
+the alert lane must not:
+
+- The automatic SofaScore path records one observation per match and then leaves
+  it alone (SOFASCORE_FANTASY_SIMPLE.md, "Retries"); a full-statistics re-pull is
+  the manual runner (`--include-observed`).
+- `service_select_fantasy_scoring_modes` fills a mode once (the update is
+  `... and mode is null`, adaptive migration line 218). A later `full_ready`
+  observation does not change a `simple` match of a gameweek that is not
+  finalized, and once the gameweek is `finalizing` or later the recorder
+  refuses it (`adaptive_reviewed_correction_required`, `20260927120659` line 71;
+  the reviewed correction path).
+- Making full statistics refine finalized points would need: a periodic
+  re-fetch of finished matches' SofaScore data for up to 21 days (the Edge
+  Function's post-final window is 2 hours today), an observation per fetch with
+  the recorder's digest dedupe, a rule for upgrading a `simple` mode to `full`
+  (a new mode-selection function or a reviewed-correction batch), and the
+  correction flow for already finalized gameweeks (points events are versioned
+  by `scoring_version`; rankings and prizes read final points). That is a
+  Fantasy scoring decision, so it is not in this lane.
 
 ## Validation and review
 
