@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type {
   ParsedQueue,
   QueueCandidate,
@@ -67,6 +67,9 @@ export function SofascorePlayerQueueView({
   initial,
 }: SofascorePlayerQueueViewProps) {
   const copy = getSofascoreQueueCopy(lang);
+  // The reply to a confirmation can come after the language changed: word it in the current one.
+  const latestCopy = useRef(copy);
+  latestCopy.current = copy;
   const [confirming, setConfirming] = useState<Confirming | null>(initial?.confirming ?? null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(initial?.notice ?? null);
@@ -84,6 +87,13 @@ export function SofascorePlayerQueueView({
     setDone(new Set());
     setEntryErrors({});
     setConfirming(null);
+  }
+  // Sentences already shown were written in the language of their moment: drop them on a switch.
+  const [seenLang, setSeenLang] = useState(lang);
+  if (seenLang !== lang) {
+    setSeenLang(lang);
+    setNotice(null);
+    setEntryErrors({});
   }
 
   const entries = useMemo(
@@ -104,19 +114,20 @@ export function SofascorePlayerQueueView({
     });
     try {
       const result = await resolve(entry.sofascorePlayerId, candidate.playerId);
+      const words = latestCopy.current;
       setDone((current) => new Set(current).add(entry.sofascorePlayerId));
       setConfirming(null);
       setNotice(
         result.alreadyResolved
-          ? copy.alreadyDone(entry.name)
-          : copy.done(entry.name, candidateLabel(candidate, copy)),
+          ? words.alreadyDone(entry.name)
+          : words.done(entry.name, candidateLabel(candidate, words)),
       );
     } catch (error) {
       setConfirming(null);
       setEntryErrors((current) => ({
         ...current,
         [entry.sofascorePlayerId]: sofascoreQueueErrorMessage(
-          copy,
+          latestCopy.current,
           mapSofascoreQueueError(error).code,
         ),
       }));
