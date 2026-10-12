@@ -29,6 +29,7 @@ import { TierLadder } from "./TierLadder";
 import { deriveReplayItems, stageReplayBeat } from "./replay-items";
 import { useAllHistory } from "./use-all-history";
 import { useCurvaScreen } from "./use-curva-screen";
+import { useOvrChangeBeat } from "./use-ovr-change";
 import { useRatingBadge } from "./use-rating-change";
 import { useBeatPlayback, useMotionAllowed } from "./use-replay-beat";
 import { useViewEvent } from "./use-view-event";
@@ -78,6 +79,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
     newSeason: view.newSeason,
     seasonId: card.season.id,
   });
+  const change = useOvrChangeBeat({ card, ovr: view.ovr });
   useViewEvent("curva_card_view");
 
   const items = useMemo(() => deriveReplayItems(card, history.rows), [card, history.rows]);
@@ -90,9 +92,15 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
       data-testid="curva-card-page"
     >
       <div className="md:sticky md:top-[calc(var(--topbar-h)+16px)] md:self-start">
-        <CardStage profile={profile} beat={beat} flippable>
+        <CardStage
+          profile={profile}
+          beat={beat}
+          flippable
+          glow={change.glow}
+          countOvr={change.shownOvr}
+        >
           <RatingLine
-            ovr={view.ovr}
+            ovr={change.shownOvr}
             tier={view.tier}
             provisional={card.provisional && !view.newSeason}
             counted={card.gameweeksCounted}
@@ -101,7 +109,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
             season={view.newSeason ? view.numberSeason : null}
             formingLabel={moments.m3.label}
             closedSeason={card.seasonClosed ? card.season.label : null}
-            change={badge}
+            change={change.badge ?? badge}
           />
           {motion ? (
             <UiButton

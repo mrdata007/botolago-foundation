@@ -54,6 +54,7 @@ import { Route as CurvaClassementRouteImport } from './routes/curva.classement'
 import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
 import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
 import { Route as DevCurvaRankingSampleRouteImport } from './routes/dev.curva-ranking-sample'
+import { Route as DevManagerCardOvrChangeSampleRouteImport } from './routes/dev.manager-card-ovr-change-sample'
 import { Route as DevManagerCardSampleRouteImport } from './routes/dev.manager-card-sample'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
 import { Route as DevSofascorePlayersSampleRouteImport } from './routes/dev.sofascore-players-sample'
@@ -330,6 +331,12 @@ const DevCurvaRankingSampleRoute = DevCurvaRankingSampleRouteImport.update({
   path: '/dev/curva-ranking-sample',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DevManagerCardOvrChangeSampleRoute =
+  DevManagerCardOvrChangeSampleRouteImport.update({
+    id: '/dev/manager-card-ovr-change-sample',
+    path: '/dev/manager-card-ovr-change-sample',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const DevManagerCardSampleRoute = DevManagerCardSampleRouteImport.update({
   id: '/dev/manager-card-sample',
   path: '/dev/manager-card-sample',
@@ -622,6 +629,7 @@ export interface FileRoutesByFullPath {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
@@ -712,6 +720,7 @@ export interface FileRoutesByTo {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
@@ -808,6 +817,7 @@ export interface FileRoutesById {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
+  '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
@@ -905,6 +915,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
@@ -995,6 +1006,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
@@ -1090,6 +1102,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
+    | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
     | '/dev/sofascore-players-sample'
@@ -1165,6 +1178,7 @@ export interface RootRouteChildren {
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
   DevCurvaRankingSampleRoute: typeof DevCurvaRankingSampleRoute
+  DevManagerCardOvrChangeSampleRoute: typeof DevManagerCardOvrChangeSampleRoute
   DevManagerCardSampleRoute: typeof DevManagerCardSampleRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
   DevSofascorePlayersSampleRoute: typeof DevSofascorePlayersSampleRoute
@@ -1494,6 +1508,13 @@ declare module '@tanstack/react-router' {
       path: '/dev/curva-ranking-sample'
       fullPath: '/dev/curva-ranking-sample'
       preLoaderRoute: typeof DevCurvaRankingSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/manager-card-ovr-change-sample': {
+      id: '/dev/manager-card-ovr-change-sample'
+      path: '/dev/manager-card-ovr-change-sample'
+      fullPath: '/dev/manager-card-ovr-change-sample'
+      preLoaderRoute: typeof DevManagerCardOvrChangeSampleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/manager-card-sample': {
@@ -2106,6 +2127,7 @@ const rootRouteChildren: RootRouteChildren = {
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
   DevCurvaRankingSampleRoute: DevCurvaRankingSampleRoute,
+  DevManagerCardOvrChangeSampleRoute: DevManagerCardOvrChangeSampleRoute,
   DevManagerCardSampleRoute: DevManagerCardSampleRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
   DevSofascorePlayersSampleRoute: DevSofascorePlayersSampleRoute,

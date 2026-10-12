@@ -1,0 +1,305 @@
+{
+  "before": [
+    {
+      "file": "before-390-fr.jpg",
+      "width": 390,
+      "lang": "fr",
+      "dir": "ltr",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 77,
+        "right": 313,
+        "height": 33
+      },
+      "ratingText": "84OVR·PROProvisoire",
+      "chip": null,
+      "shownOvr": null,
+      "glow": null,
+      "acked": null
+    },
+    {
+      "file": "before-390-ar.jpg",
+      "width": 390,
+      "lang": "ar",
+      "dir": "rtl",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 86,
+        "right": 304,
+        "height": 39
+      },
+      "ratingText": "84OVR·محترفمبدئي",
+      "chip": null,
+      "shownOvr": null,
+      "glow": null,
+      "acked": null
+    },
+    {
+      "file": "before-1280-fr.jpg",
+      "width": 1280,
+      "lang": "fr",
+      "dir": "ltr",
+      "viewport": 1280,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 210,
+        "right": 446,
+        "height": 33
+      },
+      "ratingText": "84OVR·PROProvisoire",
+      "chip": null,
+      "shownOvr": null,
+      "glow": null,
+      "acked": null
+    },
+    {
+      "file": "before-1280-ar.jpg",
+      "width": 1280,
+      "lang": "ar",
+      "dir": "rtl",
+      "viewport": 1280,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 843,
+        "right": 1061,
+        "height": 39
+      },
+      "ratingText": "84OVR·محترفمبدئي",
+      "chip": null,
+      "shownOvr": null,
+      "glow": null,
+      "acked": null
+    }
+  ],
+  "after-up": [
+    {
+      "file": "after-up-390-fr.jpg",
+      "width": 390,
+      "lang": "fr",
+      "dir": "ltr",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 37,
+        "right": 353,
+        "height": 33
+      },
+      "ratingText": "62OVR·STADE+4 ▲note en hausse de 4Provisoire",
+      "chip": "+4 ▲note en hausse de 4",
+      "shownOvr": "62",
+      "glow": "up",
+      "acked": "not acknowledged yet"
+    },
+    {
+      "file": "after-up-390-ar.jpg",
+      "width": 390,
+      "lang": "ar",
+      "dir": "rtl",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 60,
+        "right": 330,
+        "height": 39
+      },
+      "ratingText": "62OVR·ملعب+4 ▲ارتفع التقييم بمقدار ⁨4⁩مبدئي",
+      "chip": "+4 ▲ارتفع التقييم بمقدار ⁨4⁩",
+      "shownOvr": "62",
+      "glow": "up",
+      "acked": "not acknowledged yet"
+    },
+    {
+      "file": "after-up-1280-fr.jpg",
+      "width": 1280,
+      "lang": "fr",
+      "dir": "ltr",
+      "viewport": 1280,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 488,
+        "right": 792,
+        "height": 64
+      },
+      "ratingText": "62OVR·STADE+4 ▲note en hausse de 4Provisoire",
+      "chip": "+4 ▲note en hausse de 4",
+      "shownOvr": "62",
+      "glow": "up",
+      "acked": "not acknowledged yet"
+    },
+    {
+      "file": "after-up-1280-ar.jpg",
+      "width": 1280,
+      "lang": "ar",
+      "dir": "rtl",
+      "viewport": 1280,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 505,
+        "right": 775,
+        "height": 39
+      },
+      "ratingText": "62OVR·ملعب+4 ▲ارتفع التقييم بمقدار ⁨4⁩مبدئي",
+      "chip": "+4 ▲ارتفع التقييم بمقدار ⁨4⁩",
+      "shownOvr": "62",
+      "glow": "up",
+      "acked": "not acknowledged yet"
+    }
+  ],
+  "after-down": [
+    {
+      "file": "after-down-390-fr.jpg",
+      "width": 390,
+      "lang": "fr",
+      "dir": "ltr",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 92,
+        "right": 298,
+        "height": 33
+      },
+      "ratingText": "63OVR·STADE−3 ▼note en baisse de 3",
+      "chip": "−3 ▼note en baisse de 3",
+      "shownOvr": "63",
+      "glow": "down",
+      "acked": "not acknowledged yet"
+    },
+    {
+      "file": "after-down-390-ar.jpg",
+      "width": 390,
+      "lang": "ar",
+      "dir": "rtl",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 95,
+        "right": 295,
+        "height": 39
+      },
+      "ratingText": "63OVR·ملعب−3 ▼انخفض التقييم بمقدار ⁨3⁩",
+      "chip": "−3 ▼انخفض التقييم بمقدار ⁨3⁩",
+      "shownOvr": "63",
+      "glow": "down",
+      "acked": "not acknowledged yet"
+    },
+    {
+      "file": "after-down-1280-fr.jpg",
+      "width": 1280,
+      "lang": "fr",
+      "dir": "ltr",
+      "viewport": 1280,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 537,
+        "right": 743,
+        "height": 33
+      },
+      "ratingText": "63OVR·STADE−3 ▼note en baisse de 3",
+      "chip": "−3 ▼note en baisse de 3",
+      "shownOvr": "63",
+      "glow": "down",
+      "acked": "not acknowledged yet"
+    },
+    {
+      "file": "after-down-1280-ar.jpg",
+      "width": 1280,
+      "lang": "ar",
+      "dir": "rtl",
+      "viewport": 1280,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 540,
+        "right": 740,
+        "height": 39
+      },
+      "ratingText": "63OVR·ملعب−3 ▼انخفض التقييم بمقدار ⁨3⁩",
+      "chip": "−3 ▼انخفض التقييم بمقدار ⁨3⁩",
+      "shownOvr": "63",
+      "glow": "down",
+      "acked": "not acknowledged yet"
+    }
+  ],
+  "reduced-up": [
+    {
+      "file": "reduced-up-390-fr.jpg",
+      "width": 390,
+      "lang": "fr",
+      "dir": "ltr",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 37,
+        "right": 353,
+        "height": 33
+      },
+      "ratingText": "62OVR·STADE+4 ▲note en hausse de 4Provisoire",
+      "chip": "+4 ▲note en hausse de 4",
+      "shownOvr": "62",
+      "glow": "off",
+      "acked": "acknowledged: ovr_up:3c000004-0000-4000-8000-000000000003"
+    },
+    {
+      "file": "reduced-up-390-ar.jpg",
+      "width": 390,
+      "lang": "ar",
+      "dir": "rtl",
+      "viewport": 390,
+      "maxOverflowPx": 0,
+      "worstElement": null,
+      "ratingLine": {
+        "left": 60,
+        "right": 330,
+        "height": 39
+      },
+      "ratingText": "62OVR·ملعب+4 ▲ارتفع التقييم بمقدار ⁨4⁩مبدئي",
+      "chip": "+4 ▲ارتفع التقييم بمقدار ⁨4⁩",
+      "shownOvr": "62",
+      "glow": "off",
+      "acked": "acknowledged: ovr_up:3c000004-0000-4000-8000-000000000003"
+    }
+  ],
+  "count_sequences": {
+    "up": [
+      "0 {\"line\":null,\"print\":\"\",\"chip\":null,\"pop\":null,\"acked\":null}",
+      "1140 {\"line\":\"58\",\"print\":\"\",\"glow\":\"off\",\"chip\":null,\"pop\":null,\"acked\":\"not acknowledged yet\"}",
+      "1260 {\"line\":\"58\",\"print\":\"58\",\"glow\":\"off\",\"chip\":null,\"pop\":null,\"acked\":\"not acknowledged yet\"}",
+      "2700 {\"line\":\"58\",\"print\":\"58\",\"glow\":\"up\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "2760 {\"line\":\"59\",\"print\":\"59\",\"glow\":\"up\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "2820 {\"line\":\"60\",\"print\":\"60\",\"glow\":\"up\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "2880 {\"line\":\"61\",\"print\":\"61\",\"glow\":\"up\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "3060 {\"line\":\"62\",\"print\":\"62\",\"glow\":\"up\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "4080 {\"line\":\"62\",\"print\":\"62\",\"glow\":\"off\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":null,\"acked\":\"acknowledged: ovr_up:3c000004-0000-4000-8000-000000000003\"}"
+    ],
+    "down": [
+      "0 {\"line\":null,\"print\":\"\",\"chip\":null,\"pop\":null,\"acked\":null}",
+      "1200 {\"line\":\"66\",\"print\":\"\",\"glow\":\"off\",\"chip\":null,\"pop\":null,\"acked\":\"not acknowledged yet\"}",
+      "1320 {\"line\":\"66\",\"print\":\"66\",\"glow\":\"off\",\"chip\":null,\"pop\":null,\"acked\":\"not acknowledged yet\"}",
+      "2700 {\"line\":\"66\",\"print\":\"66\",\"glow\":\"down\",\"chip\":\"−3 ▼note en baisse de 3\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "2760 {\"line\":\"65\",\"print\":\"65\",\"glow\":\"down\",\"chip\":\"−3 ▼note en baisse de 3\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "2880 {\"line\":\"64\",\"print\":\"64\",\"glow\":\"down\",\"chip\":\"−3 ▼note en baisse de 3\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "3000 {\"line\":\"63\",\"print\":\"63\",\"glow\":\"down\",\"chip\":\"−3 ▼note en baisse de 3\",\"pop\":\"1\",\"acked\":\"not acknowledged yet\"}",
+      "4020 {\"line\":\"63\",\"print\":\"63\",\"glow\":\"off\",\"chip\":\"−3 ▼note en baisse de 3\",\"pop\":null,\"acked\":\"acknowledged: ovr_down:3c000004-0000-4000-8000-000000000006\"}"
+    ],
+    "reduced": [
+      "0 {\"line\":null,\"print\":\"\",\"chip\":null,\"pop\":null,\"acked\":null}",
+      "900 {\"line\":\"62\",\"print\":\"\",\"glow\":\"off\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":null,\"acked\":\"acknowledged: ovr_up:3c000004-0000-4000-8000-000000000003\"}",
+      "1020 {\"line\":\"62\",\"print\":\"62\",\"glow\":\"off\",\"chip\":\"+4 ▲note en hausse de 4\",\"pop\":null,\"acked\":\"acknowledged: ovr_up:3c000004-0000-4000-8000-000000000003\"}"
+    ]
+  },
+  "method": "Playwright (Chromium) against a dev server on its own port (127.0.0.1:5799) serving this worktree. maxOverflowPx = the largest distance any element's getBoundingClientRect() goes past the viewport's left or right edge (fixed elements excluded), not scrollWidth. after-* shots are taken 820 ms after the glow lights; count_sequences sample the rating line's number, the card print's number, the glow, the chip and the acknowledgement every 60 ms from page load (390 x 844, French)."
+}
