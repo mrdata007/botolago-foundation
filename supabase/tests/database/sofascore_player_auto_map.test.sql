@@ -220,6 +220,22 @@ update app_private.football_provider_mappings set internal_entity_id = pg_temp.i
 select extensions.is((app_private.football_mapping_supporting_state(pg_temp.map_id('S3')) ->> 'reviewed')::boolean, false,
   '7.8 a mapping moved to another player after the fact is no longer reviewed');
 
+-- The automatic ingestion context must agree with the writer's review proof.
+create function pg_temp.context_reviewed(p_sid text) returns boolean language sql as $context$
+  select (e ->> 'reviewed')::boolean
+    from jsonb_array_elements(api.service_sofascore_fantasy_context(
+      pg_temp.id('f0', 1), array[p_sid]) -> 'players') e where e ->> 'externalId' = p_sid $context$;
+select extensions.is(pg_temp.context_reviewed('S1'), true,
+  '7.9 automatic context accepts an exact-name proof');
+select extensions.is(pg_temp.context_reviewed('S7'), true,
+  '7.10 automatic context accepts a name-and-shirt proof');
+select extensions.is(pg_temp.context_reviewed('S10'), false,
+  '7.11 automatic context rejects an unreviewed legacy row');
+select extensions.is(pg_temp.context_reviewed('S2'), false,
+  '7.12 automatic context rejects a missing proof log');
+select extensions.is(pg_temp.context_reviewed('S3'), false,
+  '7.13 automatic context rejects a mapping moved after review');
+
 -- 8 staff ----------------------------------------------------------------------------------------------------
 select pg_temp.act('svc');
 select extensions.isnt(pg_temp.code('select api.admin_sofascore_player_match_queue()'), 'ok',
@@ -254,6 +270,9 @@ select pg_temp.act('svc');
 select extensions.is((select jsonb_array_length(
   api.service_sofascore_auto_map_players(pg_temp.id('f0', 1), jsonb_build_array(pg_temp.pl('S12', 'Bilal Khannouss', 'home', null, 'M'))) -> 'mapped')),
   1, '8.14 the matcher now returns the staff-made mapping unchanged');
+
+select extensions.is(pg_temp.context_reviewed('S12'), true,
+  '8.15 automatic context accepts the staff-resolution proof');
 
 select * from extensions.finish();
 rollback;

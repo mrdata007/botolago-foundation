@@ -700,3 +700,7 @@ table for the moment of the recorder change and, only when one of them is to be
 installed, wants the Fantasy automatic updates off (step "Before you start" 2), as the single-purpose
 script for it always did. The script never changes any switch itself, so there is
 nothing to forget to restore except the Fantasy one you chose to turn off.
+
+## Follow-up: current mapping review proofs
+
+Migration `20261011191737_sofascore_fantasy_context_review_proofs` makes the automatic context reader use the same current review-proof helper as the strict observation recorder. It changes no mapping or scoring rule. Apply it after its PR passes database-quality and merges, using `scripts/backend/apply-sofascore-context-review-proofs.sql`: pause and drain production writers, rehearse, independently confirm the original function and absent history row, commit, and independently confirm the exact new body and service-only grants. Restore the measured switches with `sofascore-held-maintenance-resume.sql` immediately after maintenance. Existing automatic exact-name and name-and-shirt proofs become visible to the builder; legacy or tampered rows remain unreviewed.
