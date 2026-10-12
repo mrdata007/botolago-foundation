@@ -388,8 +388,9 @@ were unchanged by these repairs.
 were active and the Football/Fantasy/Manager switches were on, but there were
 still zero Fantasy observations, zero SofaScore performance rows and no
 nonzero or final J.3 points. Public rankings show only the three real managers,
-including ak47 FC; the four confirmed QA accounts stay hidden. The French
-article correction is visible publicly, and `/fantasy/top-players` still shows
+including ak47 FC; the four confirmed QA accounts stay hidden. Both corrected
+article editions were verified publicly in their French and Arabic reader
+languages, and `/fantasy/top-players` still shows
 zero-point placeholders for J.3. Mounir El Gouje's public player page explicitly
 shows J.3 as provisional and waiting for data, with zero points and minutes.
 Football live/season and Fantasy lifecycle cron runs succeeded after the
