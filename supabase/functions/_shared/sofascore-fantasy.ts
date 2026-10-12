@@ -36,7 +36,7 @@
  *   `firstHalfStoppage`).
  * - Assists, saves, penalties saved, penalties missed (decision M8, switched by
  *   SOFASCORE_DETAIL_FIELDS_ENABLED): count only on a FULL-coverage match
- *   (player statistics carry `totalPass`). On a limited-coverage match they are
+ *   (every player with minutes carries `rating` and `totalPass`). On a limited-coverage match they are
  *   unknown, never zero; an assist is known there only when an incident names
  *   the assister. A value two SofaScore sources disagree about is unknown.
  *

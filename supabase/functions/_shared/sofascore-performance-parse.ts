@@ -174,9 +174,22 @@ function readLineupSide(check: Check, value: unknown, path: string): RawLineupPl
   return out;
 }
 
+/** Full coverage: every player who played has both a rating and a pass count. */
+function hasFullCoverage(entries: readonly RawLineupPlayer[]): boolean {
+  const played = entries.filter((entry) => (entry.stats?.minutesPlayed ?? 0) > 0);
+  return (
+    played.length > 0 &&
+    played.every(
+      (entry) => entry.stats?.rating !== undefined && entry.stats?.totalPass !== undefined,
+    )
+  );
+}
+
 /**
- * Lineups with per-player statistics. `fullCoverage` is true when any player
- * carries `totalPass`. On a limited match `goalAssist` is 0 for everyone and
+ * Lineups with per-player statistics. `fullCoverage` is true when EVERY player
+ * with `minutesPlayed > 0` carries both `rating` and `totalPass` (the owner's
+ * definition of full coverage, 2026-10-12; it used to be "any player has
+ * `totalPass`"). A lineup with nobody on the pitch is not full. On a limited match `goalAssist` is 0 for everyone and
  * there is no `saves`, so `assists` is returned as null there (unknown), and
  * `saves` is null whenever the provider did not send it. A goalkeeper with no
  * `saves` value is never read as zero saves.
@@ -188,7 +201,7 @@ export function parseSofascoreLineups(raw: unknown): PerformanceLineups {
   const away = readLineupSide(check, root?.away, "away");
   check.done();
   const all = [...home, ...away];
-  const fullCoverage = all.some((entry) => entry.stats?.totalPass !== undefined);
+  const fullCoverage = hasFullCoverage(all);
   const build = (side: MatchSide, entries: RawLineupPlayer[]): PerformanceLineupPlayer[] =>
     entries.map((entry) => {
       const stats = entry.stats;
