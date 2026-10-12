@@ -213,6 +213,106 @@ shipped to production** (the Lovable publish, not the merge). If #376 has not
 shipped when rules v1 is ready, wait or ship v1 without it and plan a v2; do not
 guess a date.
 
+## Rules v2 (calm scores)
+
+Owner decision 2026-10-12. After two finished weeks a card swung by tens of
+points, and Selection credited the points the automatic substitutions earned.
+Rules v2 changes the **calculation only** (no Fantasy point, rule or lineup):
+
+| Key / scale         | v1                   | v2                                                      |
+| ------------------- | -------------------- | ------------------------------------------------------- |
+| `provisional_below` | 2                    | 5 (provisional until 5 finished weeks; minimum stays 2) |
+| `scales.sel`        | `[[0.5,1],[1,99]]`   | `[[0.5,1],[0.8,50],[1,99]]`                             |
+| `shrinkage`         | absent (none)        | `{"cap": 4, "sel": 4, "con": 4, "trf": 4}`              |
+| `sel_numerator`     | absent (substituted) | `"picked_starters"`                                     |
+
+Everything else (minimum, window, batch size, tiers, CAP start date, the other
+three scales) is v1's. The two new keys are optional in the code: **a rules row
+without them behaves exactly as before**, so v1 keeps producing today's numbers
+until v2 is activated.
+
+**Shrinkage.** After a stat is mapped onto 1 to 99 with its scale it is pulled
+toward 50 by the number of samples n it rests on:
+
+```
+shrunk = round(50 + (scaled - 50) * n / (n + k))      kept in 1..99
+```
+
+k is `shrinkage.<stat>` (k = 0 or the key absent means no pull). n is, per team:
+CAP the weeks with a CAP ratio (not skipped), SEL the weeks with a SEL ratio
+(not Bench Boost, best eleven above 0), CON the weeks counted, TRF the
+**transfers** counted (not the batches). Worked example, k = 4:
+
+| samples n | two perfect weeks (scaled 99)          | scaled 1                               |
+| --------- | -------------------------------------- | -------------------------------------- |
+| 2         | 50 + 49 x 2 / 6 = 66.33, shows **66**  | 50 - 49 x 2 / 6 = 33.67, shows **34**  |
+| 8         | 50 + 49 x 8 / 12 = 82.67, shows **83** | 50 - 49 x 8 / 12 = 17.33, shows **17** |
+| 30        | 50 + 49 x 30 / 34 = 93.2, shows **93** | 50 - 49 x 30 / 34 = 6.8, shows **7**   |
+
+The pull fades as the season fills. OVR keeps its rule (the rounded mean of the
+stats that exist, at least three of four) but over the pulled stats, and the
+tier comes from that OVR. The stored raw figures (`cap_raw` and the others) stay
+the plain averages; the sample counts are internal and no read function changed.
+
+**Selection.** With `sel_numerator` `"picked_starters"` the ratio is the points
+of the eleven the manager **picked** (`app.fantasy_lineup_players.slot =
+'starter'` of the result's locked lineup, each player's `final_points`, a
+starter who did not play contributing his own 0, no captain bonus) over the best
+legal eleven of the fifteen, as before. v1's numerator is
+`fantasy_team_gameweek_results.starting_points`, which includes what the
+automatic substitutions brought on. Bench Boost weeks and a best eleven of 0 or
+less are still skipped; the ratio is still kept between 0 and 1. A malformed
+`shrinkage` or `sel_numerator` makes the tick log `manager_card_rules_invalid`
+for that gameweek (it carries on and writes nothing for it).
+
+### Installing v2
+
+The migration (`20261012170000_manager_card_shrinkage_and_selection.sql`)
+replaces the single function `app_private.manager_card_evaluate_gameweek`; the
+guarded script `scripts/backend/apply-manager-card-rules-v2-calm.sql` records
+and applies it with the exact reviewed bytes and then inserts and activates
+rules v2, in one transaction, ending in `rollback;`. It is the owner's call: an
+agent does not run it, and the authorisation covers this run and not the next.
+
+1. Merge the pull request once its `database-quality` job has passed.
+2. **Pause the card's writers** (AGENTS.md, "One writer at a time"). Read the
+   switches first, then:
+   ```sql
+   select compute_enabled, read_enabled from app_private.manager_card_settings;
+   select app_private.manager_card_configure(false, null);
+   select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := false);
+   ```
+   Wait for any `manager-card-tick` run to finish. Leave the read switch alone:
+   the cards stay as they were.
+3. **Rehearse.** Paste the whole script in the SQL Editor and run it. It checks
+   the writers are paused and drained, the function it replaces is the reviewed
+   one (md5 of its body), the migration text is the reviewed bytes (sha256),
+   exactly one rules row exists (v1, active) and v2 differs from it only in the
+   four intended keys, then applies and verifies the new body (md5), the owner,
+   `security definer`, the empty `search_path` and the grants, inserts v2
+   active, checks every key and that the tick still answers `off` and wrote
+   nothing, and rolls back. Confirm independently that
+   `schema_migrations` has no `20261012170000` row and that only v1 is active.
+4. **Commit.** Change only the last line `rollback;` to `commit;` and run it
+   once. Read it back: one `20261012170000` row, two rules rows, v2 the only
+   active one.
+5. **Resume,** right away and exactly as they were:
+   ```sql
+   select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := true);
+   select app_private.manager_card_configure(true, null);   -- only if compute was on before
+   ```
+6. **Recalculation.** v2 has no evaluations, so the next tick re-evaluates every
+   finished gameweek from the first, in order, up to `batch_size` teams per tick
+   (see "Load"); cards, season rows and history move to the v2 figures as it
+   catches up (the history keeps `rules_version`). Watch the job log until it
+   reports `evaluated` with `morePending: false`, then check a few cards by
+   hand against the formulas above. Do this outside match days.
+
+To go back, insert a new version with the v1 numbers (rows are never edited),
+activate it the same way (`update ... set active = false where active`, insert,
+`commit`), and the next tick recomputes again. The function change itself needs
+no rollback: without the new keys it is the old calculation.
+
 ## The founder grant
 
 FOUNDER marks the early 2026/27 managers. It is granted **once, by the owner,
