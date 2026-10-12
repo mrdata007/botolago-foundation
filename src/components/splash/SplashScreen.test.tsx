@@ -92,4 +92,101 @@ describe("premium splash: the rings", () => {
     } as unknown as HTMLCanvasElement;
     expect(() => startMagicRings(throws, 0)()).not.toThrow();
   });
+
+  it("still draw on the second setup of StrictMode's setup, cleanup, setup", () => {
+    // One canvas, one context: a second getContext returns the same object, as
+    // in a browser, and a context that cleanup lost stays lost.
+    let lost = false;
+    let draws = 0;
+    const gl = new Proxy({} as Record<string, unknown>, {
+      get: (_t, key: string) => {
+        if (key === "isContextLost") return () => lost;
+        if (key === "getExtension") return () => ({ loseContext: () => void (lost = true) });
+        if (key === "getShaderParameter" || key === "getProgramParameter") return () => true;
+        if (key === "drawArrays") return () => void draws++;
+        if (key === "createShader" || key === "createProgram" || key === "createVertexArray") {
+          return () => ({});
+        }
+        return () => ({});
+      },
+    });
+    const listeners = new Map<string, EventListener>();
+    const canvas = {
+      getContext: () => gl,
+      addEventListener: (type: string, fn: EventListener) => void listeners.set(type, fn),
+      removeEventListener: (type: string) => void listeners.delete(type),
+      getBoundingClientRect: () => ({ left: 0, top: 0, width: 100, height: 100 }),
+      clientWidth: 100,
+      clientHeight: 100,
+      width: 0,
+      height: 0,
+    } as unknown as HTMLCanvasElement;
+    const ball = {
+      getBoundingClientRect: () => ({ left: 30, top: 30, width: 40, height: 40 }),
+    } as unknown as Element;
+
+    const realNow0 = performance.now;
+    const queue: FrameRequestCallback[] = [];
+    const scope = globalThis as Record<string, unknown>;
+    const saved = ["document", "window", "requestAnimationFrame", "cancelAnimationFrame"].map(
+      (k) => [k, scope[k]] as const,
+    );
+    scope.document = { hidden: false, addEventListener() {}, removeEventListener() {} };
+    scope.window = { devicePixelRatio: 1 };
+    scope.requestAnimationFrame = (fn: FrameRequestCallback) => queue.push(fn);
+    scope.cancelAnimationFrame = () => {};
+    try {
+      const realNow = performance.now.bind(performance);
+      const shownAt = realNow() - 500;
+      startMagicRings(canvas, shownAt, ball)();
+      expect(lost).toBe(false);
+      queue.length = 0;
+      const stop = startMagicRings(canvas, shownAt, ball);
+      // 400ms on: the rings are fading in and not yet fading out.
+      performance.now = () => realNow() + 400;
+      queue.shift()?.(0);
+      expect(draws).toBeGreaterThan(0);
+      stop();
+    } finally {
+      performance.now = realNow0;
+      for (const [k, v] of saved) scope[k] = v;
+    }
+  });
+
+  it("stop, without throwing, when the browser takes the context away", () => {
+    const listeners = new Map<string, (e: Event) => void>();
+    const gl = new Proxy({} as Record<string, unknown>, {
+      get: (_t, key: string) =>
+        key === "getShaderParameter" || key === "getProgramParameter"
+          ? () => true
+          : key === "isContextLost"
+            ? () => false
+            : () => ({}),
+    });
+    const canvas = {
+      getContext: () => gl,
+      addEventListener: (type: string, fn: (e: Event) => void) => void listeners.set(type, fn),
+      removeEventListener: () => {},
+    } as unknown as HTMLCanvasElement;
+    const scope = globalThis as Record<string, unknown>;
+    const saved = ["document", "requestAnimationFrame", "cancelAnimationFrame"].map(
+      (k) => [k, scope[k]] as const,
+    );
+    scope.document = { hidden: false, addEventListener() {}, removeEventListener() {} };
+    scope.requestAnimationFrame = () => 1;
+    scope.cancelAnimationFrame = () => {};
+    try {
+      const stop = startMagicRings(canvas, 0, null);
+      let prevented = false;
+      expect(() =>
+        listeners.get("webglcontextlost")?.({
+          preventDefault: () => void (prevented = true),
+        } as Event),
+      ).not.toThrow();
+      expect(prevented).toBe(true);
+      expect(() => stop()).not.toThrow();
+    } finally {
+      for (const [k, v] of saved) scope[k] = v;
+    }
+  });
 });

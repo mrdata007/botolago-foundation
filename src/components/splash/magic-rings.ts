@@ -266,6 +266,16 @@ export function startMagicRings(
       frame = requestAnimationFrame(draw);
     }
   };
+  // A context the browser takes away (memory pressure, a GPU reset): stop, and
+  // leave the splash without rings. Nothing is restored: it is a two-second
+  // splash. `preventDefault` is only what allows a restore, which is not wanted.
+  const onLost = (event: Event) => {
+    event.preventDefault();
+    running = false;
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+  };
+  canvas.addEventListener("webglcontextlost", onLost);
   document.addEventListener("visibilitychange", onVisibility);
   frame = requestAnimationFrame(draw);
 
@@ -273,10 +283,13 @@ export function startMagicRings(
     running = false;
     if (frame) cancelAnimationFrame(frame);
     document.removeEventListener("visibilitychange", onVisibility);
+    canvas.removeEventListener("webglcontextlost", onLost);
+    // Free the resources, but do not lose the context: React's StrictMode runs
+    // setup, cleanup, setup on the same canvas, and `getContext` hands the
+    // second setup the same context, which a lost one would leave dead.
     context.deleteProgram(program);
     context.deleteShader(vertex);
     context.deleteShader(fragment);
     context.deleteVertexArray(vao);
-    context.getExtension("WEBGL_lose_context")?.loseContext();
   };
 }
