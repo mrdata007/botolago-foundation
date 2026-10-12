@@ -111,6 +111,8 @@ export function FantasyHubTeamArea({
       <div role="status" aria-label={t("state.loading")} className="space-y-3">
         <UiSkeleton className={cn("h-44", ui.radius.sheet)} />
         <UiSkeleton className={cn("h-12", ui.radius.full)} />
+        <UiSkeleton className={cn("h-[63px]", ui.radius.card)} />
+        <UiSkeleton className={cn("h-28", ui.radius.card)} />
       </div>
     );
   }

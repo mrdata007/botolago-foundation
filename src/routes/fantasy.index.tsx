@@ -198,7 +198,8 @@ function FantasyHub() {
           freeTransfers={hasTeam && team ? team.freeTransfers : undefined}
         />
       ) : screen.phase === "loading" ? (
-        <UiSkeleton className="h-24 rounded-none" />
+        // The deadline card is 317px: hold it so nothing below drops on arrival.
+        <UiSkeleton className="h-[317px] rounded-none" />
       ) : null}
 
       <div className={cn("pt-3.5", ui.space.gutter)}>
