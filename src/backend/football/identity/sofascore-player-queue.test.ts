@@ -5,6 +5,7 @@ import {
 } from "./sofascore-player-queue-sample";
 import {
   SOFASCORE_QUEUE_ERROR_CODES,
+  SOFASCORE_QUEUE_REASONS,
   SofascoreQueueError,
   SupabaseSofascorePlayerQueueRepository,
   mapSofascoreQueueError,
@@ -142,8 +143,43 @@ describe("parseSofascoreQueue", () => {
 
   test("the sample queue is well-formed and counts its one malformed row", () => {
     const sample = buildSampleSofascoreQueue();
-    expect(sample.entries.length).toBe(7);
+    expect(sample.entries.length).toBe(11);
     expect(sample.skipped).toBe(1);
+  });
+});
+
+describe("shirt-based reasons (migration 20261013150000)", () => {
+  test("the new reasons are known and the name-based ones stay valid", () => {
+    for (const reason of [
+      "awaiting_second_match",
+      "ambiguous_shirt",
+      "no_shirt",
+      "shirt_conflict",
+      "no_candidate",
+      "ambiguous_name",
+      "partial_name",
+      "duplicate_name_in_squad",
+    ]) {
+      expect((SOFASCORE_QUEUE_REASONS as readonly string[]).includes(reason)).toBe(true);
+    }
+  });
+
+  test("a queued first sighting arrives with its candidate pre-filled and is confirmed in one call", async () => {
+    const repo = new InMemorySofascorePlayerQueueRepository();
+    const entry = (await repo.listQueue()).entries.find(
+      (e) => e.reason === "awaiting_second_match",
+    )!;
+    expect(entry.candidates).toHaveLength(1);
+    // The candidate's name differs from the SofaScore name; the pairing is by shirt, not name.
+    expect(entry.candidates[0]!.fullName).not.toBe(entry.name);
+    expect(entry.candidates[0]!.shirtNumber).toBe(entry.shirtNumber);
+    await repo.resolve(entry.sofascorePlayerId, entry.candidates[0]!.playerId);
+    expect(repo.resolved).toHaveLength(1);
+  });
+
+  test("a row with a reason this build does not know is kept, not dropped", () => {
+    const parsed = parseSofascoreQueue([goodRow({ reason: "shirt_conflict_v2" })]);
+    expect(parsed.entries[0]?.reason).toBe("shirt_conflict_v2");
   });
 });
 
