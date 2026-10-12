@@ -267,7 +267,13 @@ function AdminStaffRoute() {
                         principal" below depends on. */}
                     <UiBadge tone={result.mfaVerified ? "positive" : "caution"}>
                       <AdminDatum mono={false}>
-                        {result.mfaVerified ? (rtl ? "مؤهّل AAL2" : "Éligible AAL2") : (rtl ? "مطلوبة" : "Requise")}
+                        {result.mfaVerified
+                          ? rtl
+                            ? "مؤهّل AAL2"
+                            : "Éligible AAL2"
+                          : rtl
+                            ? "مطلوبة"
+                            : "Requise"}
                       </AdminDatum>
                     </UiBadge>
                   </AdminField>
@@ -304,7 +310,9 @@ function AdminStaffRoute() {
                       confirmLabel={rtl ? "تأكيد الإنشاء" : "Confirmer la création"}
                       confirmPrompt={
                         <>
-                          {rtl ? "إنشاء هوية الطاقم لـ " : "Créer l’identité du membre du personnel pour "}
+                          {rtl
+                            ? "إنشاء هوية الطاقم لـ "
+                            : "Créer l’identité du membre du personnel pour "}
                           {/* The emphasis inside every confirm prompt on this
                               page is the same 600 it always was --
                               `--ui-weight-body` IS `font-semibold`. Only its

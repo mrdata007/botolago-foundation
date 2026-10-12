@@ -182,7 +182,13 @@ function AdminStaffDetailRoute() {
                   <AdminField label={rtl ? "سياسة المصادقة" : "Politique AAL"}>
                     <UiBadge tone={principal.mfaRequired ? "positive" : "negative"}>
                       <AdminDatum mono={false}>
-                        {principal.mfaRequired ? (rtl ? "المصادقة الثنائية مطلوبة" : "MFA requise") : (rtl ? "سياسة غير صالحة" : "Politique invalide")}
+                        {principal.mfaRequired
+                          ? rtl
+                            ? "المصادقة الثنائية مطلوبة"
+                            : "MFA requise"
+                          : rtl
+                            ? "سياسة غير صالحة"
+                            : "Politique invalide"}
                       </AdminDatum>
                     </UiBadge>
                   </AdminField>

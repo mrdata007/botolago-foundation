@@ -122,10 +122,23 @@ function AdminSecurityRoute() {
                 className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
                 data-testid="admin-worker-health"
               >
-                <QueueStat label={rtl ? "قيد الانتظار" : "En attente"} value={health.queue.pending} />
-                <QueueStat label={rtl ? "قيد المعالجة" : "En traitement"} value={health.queue.processing} />
-                <QueueStat label={rtl ? "إعادة محاولة" : "Nouvel essai"} value={health.queue.retrying} />
-                <QueueStat label={rtl ? "فشل نهائي" : "Échec définitif"} value={health.queue.deadLetter} alarming />
+                <QueueStat
+                  label={rtl ? "قيد الانتظار" : "En attente"}
+                  value={health.queue.pending}
+                />
+                <QueueStat
+                  label={rtl ? "قيد المعالجة" : "En traitement"}
+                  value={health.queue.processing}
+                />
+                <QueueStat
+                  label={rtl ? "إعادة محاولة" : "Nouvel essai"}
+                  value={health.queue.retrying}
+                />
+                <QueueStat
+                  label={rtl ? "فشل نهائي" : "Échec définitif"}
+                  value={health.queue.deadLetter}
+                  alarming
+                />
               </dl>
             ) : (
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-hidden>
@@ -181,7 +194,9 @@ function AdminSecurityRoute() {
                     // and a pending count is a state token rather than a
                     // sentence, which is what the badge is for.
                     <UiBadge tone="caution">
-                      <AdminDatum mono={false}>{`${revocation.pendingCount} ${rtl ? "قيد الانتظار" : "en attente"}`}</AdminDatum>
+                      <AdminDatum
+                        mono={false}
+                      >{`${revocation.pendingCount} ${rtl ? "قيد الانتظار" : "en attente"}`}</AdminDatum>
                     </UiBadge>
                   )}
                 </AdminField>

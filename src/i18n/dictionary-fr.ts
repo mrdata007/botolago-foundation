@@ -802,7 +802,8 @@ export const fr = {
   "fantasy.onboarding.step1_body":
     "Choisissez 15 joueurs pour 100 M et alignez 11 titulaires chaque journée.",
   "fantasy.onboarding.step2_title": "Marquez des points",
-  "fantasy.onboarding.step2_body": "Buts, passes décisives, cages inviolées, bonus… vos joueurs vous rapportent des points.",
+  "fantasy.onboarding.step2_body":
+    "Buts, passes décisives, cages inviolées, bonus… vos joueurs vous rapportent des points.",
   "fantasy.onboarding.step3_title": "Défiez vos amis",
   "fantasy.onboarding.step3_body": "Créez une ligue privée avec un code et grimpez au classement.",
   "fantasy.onboarding.skip": "Passer",
@@ -1444,7 +1445,8 @@ export const fr = {
   "auth.login.suspended_contact": "Une erreur ? Écrivez-nous à {email}.",
 
   "auth.register.title": "Créer votre compte",
-  "auth.register.subtitle": "Créez un compte pour enregistrer votre équipe Fantasy et suivre vos clubs.",
+  "auth.register.subtitle":
+    "Créez un compte pour enregistrer votre équipe Fantasy et suivre vos clubs.",
   "auth.register.cta": "Créer mon compte",
   "auth.register.full_name": "Nom complet",
   "auth.register.full_name_placeholder": "Votre nom complet",
@@ -1612,7 +1614,8 @@ export const fr = {
   "auth.error.email_invalid": "Adresse e-mail invalide.",
   "auth.error.password_required": "Mot de passe requis.",
   "auth.error.password_short": "Au moins 8 caractères.",
-  "auth.error.password_weak": "Ajoutez des chiffres et des majuscules pour renforcer votre mot de passe.",
+  "auth.error.password_weak":
+    "Ajoutez des chiffres et des majuscules pour renforcer votre mot de passe.",
   "auth.error.password_mismatch": "Les mots de passe ne correspondent pas.",
   "auth.error.name_required": "Nom complet requis.",
   "auth.error.username_required": "Nom d'utilisateur requis.",

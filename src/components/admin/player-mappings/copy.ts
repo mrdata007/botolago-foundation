@@ -286,7 +286,8 @@ const fr: PlayerMappingCopy = {
     evidence: "Preuves disponibles",
     flag: "Signalement",
     search: "Recherche",
-    searchHint: "Nom ou identifiant du fournisseur. La recherche filtre la liste, sans modifier le classement.",
+    searchHint:
+      "Nom ou identifiant du fournisseur. La recherche filtre la liste, sans modifier le classement.",
     all: "Tous",
     clear: "Réinitialiser les filtres",
     results: (shown, total) => `${shown} sur ${total} candidats`,
