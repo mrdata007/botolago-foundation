@@ -79,7 +79,7 @@ function AdminSecurityRoute() {
       .then(setHealth)
       .catch((error) =>
         setMessage(
-          `${rtl ? "تعذّر تحميل حالة العامل" : "État du worker indisponible"}: ${mapAdminError(error).code}`,
+          `${rtl ? "تعذّر تحميل حالة العامل" : "État du traitement indisponible"}: ${mapAdminError(error).code}`,
         ),
       );
   }, [access, repository, rtl]);
@@ -107,7 +107,7 @@ function AdminSecurityRoute() {
       description={
         rtl
           ? "رفض صلاحيات Admin فوري. إبطال جلسات المزود مطلوب فقط حيثما كان مدعوماً."
-          : "Le refus d’accès Admin est immédiat. L’invalidation fournisseur est seulement demandée lorsqu’elle est supportée."
+          : "Le refus d’accès Admin est immédiat. L’invalidation des sessions auprès du fournisseur est demandée seulement lorsqu’elle est prise en charge."
       }
       testId="admin-security-status"
     >
@@ -122,10 +122,23 @@ function AdminSecurityRoute() {
                 className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"
                 data-testid="admin-worker-health"
               >
-                <QueueStat label="Queued" value={health.queue.pending} />
-                <QueueStat label="Processing" value={health.queue.processing} />
-                <QueueStat label="Retry" value={health.queue.retrying} />
-                <QueueStat label="Dead-letter" value={health.queue.deadLetter} alarming />
+                <QueueStat
+                  label={rtl ? "قيد الانتظار" : "En attente"}
+                  value={health.queue.pending}
+                />
+                <QueueStat
+                  label={rtl ? "قيد المعالجة" : "En traitement"}
+                  value={health.queue.processing}
+                />
+                <QueueStat
+                  label={rtl ? "إعادة محاولة" : "Nouvel essai"}
+                  value={health.queue.retrying}
+                />
+                <QueueStat
+                  label={rtl ? "فشل نهائي" : "Échec définitif"}
+                  value={health.queue.deadLetter}
+                  alarming
+                />
               </dl>
             ) : (
               <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4" aria-hidden>
@@ -181,7 +194,9 @@ function AdminSecurityRoute() {
                     // and a pending count is a state token rather than a
                     // sentence, which is what the badge is for.
                     <UiBadge tone="caution">
-                      <AdminDatum mono={false}>{`${revocation.pendingCount} pending`}</AdminDatum>
+                      <AdminDatum
+                        mono={false}
+                      >{`${revocation.pendingCount} ${rtl ? "قيد الانتظار" : "en attente"}`}</AdminDatum>
                     </UiBadge>
                   )}
                 </AdminField>
@@ -201,7 +216,7 @@ function AdminSecurityRoute() {
             <p className={`min-w-0 flex-1 ${ui.text.secondary} ${ui.tone.muted}`}>
               {rtl
                 ? "لا يوجد زر متصفح لتشغيل عامل service-role. الاستدعاء اليدوي محمي وخارج واجهة المستخدم."
-                : "Aucun bouton navigateur ne peut lancer le worker service-role. L’invocation manuelle reste protégée et hors UI."}
+                : "Le traitement service-role ne peut pas être lancé depuis le navigateur. Son lancement manuel reste protégé et hors de l’interface."}
             </p>
           </section>
 

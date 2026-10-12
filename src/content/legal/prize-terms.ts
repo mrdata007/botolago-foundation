@@ -29,6 +29,10 @@
 // `scripts/qa/legal-placeholder-gate.ts` still reads this file while
 // PRIZES_ENABLED is on and refuses a production build if a `[…]` span appears.
 
+// Owner-requested terminology-only revision (2026-10-12): French reward
+// lot/lots → prix, including titles and headings. No other legal wording, rights,
+// eligibility, retention, operator identity, deadlines, versions/dates or Arabic changed.
+
 import type { Language } from "@/types/domain";
 import type { LegalDocument } from "./documents";
 
@@ -36,7 +40,7 @@ export const PRIZE_ORGANISER = "Abdelali Sarhane";
 
 export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
   fr: {
-    title: "Règlement des lots — BotolaGO Fantasy",
+    title: "Règlement des prix — BotolaGO Fantasy",
     blocks: [
       {
         type: "paragraph",
@@ -47,17 +51,17 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
         type: "paragraph",
         text: `L'organisateur du concours doté de BotolaGO Fantasy est ${PRIZE_ORGANISER}, personne physique domiciliée à Agadir (Maroc), éditeur de l'application sur l'App Store et sur Google Play, agissant pour le compte de Go Sports Technologies (société en cours de constitution). Une fois immatriculée, Go Sports Technologies deviendra l'organisateur et le présent règlement sera mis à jour. Contact : support@botolago.com.`,
       },
-      { type: "heading", text: "2. Fourniture des lots" },
+      { type: "heading", text: "2. Fourniture des prix" },
       {
         type: "paragraph",
-        text: `Les lots sont fournis et remis par ${PRIZE_ORGANISER}, organisateur du concours.`,
+        text: `Les prix sont fournis et remis par ${PRIZE_ORGANISER}, organisateur du concours.`,
       },
       { type: "heading", text: "3. Durée et territoire" },
       {
         type: "list",
         items: [
           "Le concours couvre la saison 2026-2027 de la Botola Pro : il commence à la première journée Fantasy de cette saison et prend fin après sa dernière journée.",
-          "Seules les personnes résidant au Maroc peuvent gagner un lot. Les lots sont remis au Maroc, et un justificatif de résidence peut être demandé lors de la vérification du gagnant.",
+          "Seules les personnes résidant au Maroc peuvent gagner un prix. Les prix sont remis au Maroc, et un justificatif de résidence peut être demandé lors de la vérification du gagnant.",
         ],
       },
       { type: "heading", text: "4. Participation et éligibilité" },
@@ -66,39 +70,39 @@ export const PRIZE_TERMS: Readonly<Record<Language, LegalDocument>> = {
         items: [
           "La participation est gratuite : aucun achat, pari ou dépôt n'est demandé.",
           "Un seul compte par personne physique.",
-          "Aucune condition d'âge n'est propre aux lots : seules s'appliquent les conditions d'inscription prévues par les Conditions Générales d'Utilisation.",
+          "Aucune condition d'âge n'est propre aux prix : seules s'appliquent les conditions d'inscription prévues par les Conditions Générales d'Utilisation.",
         ],
       },
-      { type: "heading", text: "5. Lots et désignation des gagnants" },
+      { type: "heading", text: "5. Prix et désignation des gagnants" },
       {
         type: "list",
         items: [
-          "La nature et la valeur indicative de chaque lot sont celles affichées sur la page des lots de BotolaGO pour la période concernée. Une période pour laquelle aucun lot n'y est affiché n'est pas dotée.",
-          "Lot de la journée : le meilleur score de la journée, une fois ses points définitifs.",
-          "Lot mensuel : le meilleur total sur un bloc de 4 journées consécutives (J1–J4, J5–J8…). Si le nombre de journées n'est pas un multiple de 4, les 2 ou 3 journées restantes forment le dernier bloc ; une journée restante seule rejoint le bloc précédent.",
-          "Lot de la saison : le meilleur total de la saison après la dernière journée.",
-          "Un même compte ne peut pas gagner le lot de la journée plus de deux fois par saison.",
+          "La nature et la valeur indicative de chaque prix sont celles affichées sur la page des prix de BotolaGO pour la période concernée. Une période pour laquelle aucun prix n'y est affiché n'est pas dotée.",
+          "Prix de la journée : le meilleur score de la journée, une fois ses points définitifs.",
+          "Prix mensuel : le meilleur total sur un bloc de 4 journées consécutives (J1–J4, J5–J8…). Si le nombre de journées n'est pas un multiple de 4, les 2 ou 3 journées restantes forment le dernier bloc ; une journée restante seule rejoint le bloc précédent.",
+          "Prix de la saison : le meilleur total de la saison après la dernière journée.",
+          "Un même compte ne peut pas gagner le prix de la journée plus de deux fois par saison.",
           "En cas d'égalité de points : le moins de transferts effectués sur la période (hors Wildcard et Free Hit), puis l'équipe créée le plus tôt.",
-          "Les comptes du personnel et les comptes signalés pour fraude présumée ne peuvent pas gagner : le lot revient au participant éligible suivant.",
+          "Les comptes du personnel et les comptes signalés pour fraude présumée ne peuvent pas gagner : le prix revient au participant éligible suivant.",
         ],
       },
-      { type: "heading", text: "6. Vérification et remise des lots" },
+      { type: "heading", text: "6. Vérification et remise des prix" },
       {
         type: "list",
         items: [
-          "Chaque gagnant est vérifié manuellement, pièce d'identité à l'appui, avant la remise de son lot.",
-          "L'équipe BotolaGO contacte chaque gagnant pour organiser la remise de son lot. Un gagnant qui ne répond pas dans les 15 jours suivant ce contact perd son lot, comme le prévoient les Conditions Générales d'Utilisation.",
+          "Chaque gagnant est vérifié manuellement, pièce d'identité à l'appui, avant la remise de son prix.",
+          "L'équipe BotolaGO contacte chaque gagnant pour organiser la remise de son prix. Un gagnant qui ne répond pas dans les 15 jours suivant ce contact perd son prix, comme le prévoient les Conditions Générales d'Utilisation.",
         ],
       },
       { type: "heading", text: "7. Absence de contrepartie en espèces" },
       {
         type: "paragraph",
-        text: "Les lots ne sont ni échangeables, ni cessibles, ni convertibles en espèces.",
+        text: "Les prix ne sont ni échangeables, ni cessibles, ni convertibles en espèces.",
       },
       { type: "heading", text: "8. Publication des gagnants" },
       {
         type: "paragraph",
-        text: "La page des lots affiche le nom d'équipe, un pseudonyme masqué et les points de chaque gagnant vérifié. Aucun nom réel ni adresse e-mail n'y est publié.",
+        text: "La page des prix affiche le nom d'équipe, un pseudonyme masqué et les points de chaque gagnant vérifié. Aucun nom réel ni adresse e-mail n'y est publié.",
       },
       { type: "heading", text: "9. Apple et Google" },
       {

@@ -32,7 +32,7 @@ describe("prize labels", () => {
   });
 
   it("calls the block tier 'Monthly' in the interface", () => {
-    expect(tierLabel(fr, "monthly")).toBe("Lot du mois");
+    expect(tierLabel(fr, "monthly")).toBe("Prix du mois");
     expect(tierLabel(ar, "monthly")).toBe("الجائزة الشهرية");
   });
 

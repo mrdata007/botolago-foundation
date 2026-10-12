@@ -112,7 +112,7 @@ function AdminStaffDetailRoute() {
       setMessage(
         rtl
           ? "تم تحديث الوصول الإداري فوراً، وطُلب إبطال الجلسة حيثما كان مدعوماً."
-          : "Accès Admin mis à jour immédiatement; invalidation de session demandée si supportée.",
+          : "Accès Admin mis à jour immédiatement ; invalidation de session demandée si elle est prise en charge.",
       );
       await reload();
     } catch (error) {
@@ -133,7 +133,7 @@ function AdminStaffDetailRoute() {
       setMessage(
         rtl
           ? "أُلغي الوصول المميّز فوراً وطُلب إبطال الجلسة."
-          : "Accès privilégié révoqué immédiatement; invalidation de session demandée.",
+          : "Accès privilégié révoqué immédiatement ; invalidation de session demandée.",
       );
       await reload();
     } catch (error) {
@@ -182,7 +182,13 @@ function AdminStaffDetailRoute() {
                   <AdminField label={rtl ? "سياسة المصادقة" : "Politique AAL"}>
                     <UiBadge tone={principal.mfaRequired ? "positive" : "negative"}>
                       <AdminDatum mono={false}>
-                        {principal.mfaRequired ? "MFA required" : "invalid policy"}
+                        {principal.mfaRequired
+                          ? rtl
+                            ? "المصادقة الثنائية مطلوبة"
+                            : "MFA requise"
+                          : rtl
+                            ? "سياسة غير صالحة"
+                            : "Politique invalide"}
                       </AdminDatum>
                     </UiBadge>
                   </AdminField>
@@ -248,7 +254,7 @@ function AdminStaffDetailRoute() {
                                 mono={false}
                                 className={`${ui.text.meta} ${ui.tone.faint}`}
                               >
-                                no expiry
+                                {rtl ? "بلا انتهاء" : "Sans expiration"}
                               </AdminDatum>
                             )}
                           </AdminField>

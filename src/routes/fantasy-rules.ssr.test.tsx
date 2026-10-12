@@ -129,7 +129,7 @@ describe("the rules page with the v1 ruleset", () => {
   test("says under the table that a clean sheet and goals conceded count only from 60 minutes", async () => {
     const page = text(await render(await fantasyService.getRules()));
     expect(page).toContain(
-      "Cage inviolée et buts encaissés : comptent seulement à partir de 60 min jouées.",
+      "Cage inviolée et buts encaissés : ces points comptent seulement à partir de 60 min jouées.",
     );
   });
 

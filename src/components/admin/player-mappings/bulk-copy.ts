@@ -133,7 +133,7 @@ const frFlashscore: FlashscoreBulkCopy = {
   heldBack: {
     heading: (heldBack, reviewSet) =>
       `${heldBack} ligne(s) sur ${reviewSet} du lot revu sont RETENUES : elles ne font pas partie de ce lot.`,
-    note: "Elles ne seront ni proposées, ni approuvées, ni exécutées ici. Leur sort se règle à part.",
+    note: "Elles ne seront ni proposées, ni approuvées, ni exécutées ici. Elles doivent être examinées séparément.",
     listHeading: "Voir les lignes retenues",
   },
   classShort: {
@@ -223,7 +223,7 @@ const fr: BulkCopy = {
     },
     execute: {
       heading: "3. Exécuter le lot approuvé",
-      what: "Exécute une proposition approuvée à la fois, chacune dans sa propre transaction gardée. Un échec n'annule aucune autre ligne et n'est jamais relancé.",
+      what: "Exécute une proposition approuvée à la fois, chacune dans sa propre transaction protégée. Un échec n'annule aucune autre ligne et n'est jamais relancé.",
       button: "EXÉCUTER LE LOT APPROUVÉ",
       running: "Exécution en cours…",
       typeLabel: "Saisissez la phrase pour confirmer",

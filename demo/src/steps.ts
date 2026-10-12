@@ -29,9 +29,9 @@ export const DEMO_STEPS: DemoStep[] = [
   {
     id: "hub",
     path: "/fantasy",
-    title: { fr: "Le hub Fantasy", en: "Fantasy hub" },
+    title: { fr: "L’accueil Fantasy", en: "Fantasy hub" },
     lead: {
-      fr: "La journée en cours, sa date limite et le compte à rebours. La journée porte le nom d’un partenaire, et un nouveau manager crée son équipe en un geste.",
+      fr: "La journée en cours, sa date limite et le compte à rebours. La journée porte le nom d’un partenaire, et un nouveau manager peut créer son équipe.",
       en: "The current gameweek, its deadline and a live countdown. The gameweek carries a partner’s name, and a new manager builds a team in one tap.",
     },
     tip: {
@@ -57,7 +57,7 @@ export const DEMO_STEPS: DemoStep[] = [
     path: "/fantasy/points",
     title: { fr: "Vos points", en: "Your points" },
     lead: {
-      fr: "La journée 12 est jouée. Chaque but, passe décisive, clean sheet ou carton devient des points, calculés par le moteur de score de BotolaGO.",
+      fr: "La journée 12 est jouée. Les buts, passes décisives, cages inviolées et cartons déterminent les points calculés par BotolaGO.",
       en: "Gameweek 12 has been played. Every goal, assist, clean sheet or card becomes points, worked out by BotolaGO’s own scoring engine.",
     },
     tip: {
@@ -70,7 +70,7 @@ export const DEMO_STEPS: DemoStep[] = [
     path: "/matches/standings",
     title: { fr: "Classement Botola", en: "League table" },
     lead: {
-      fr: "Le classement de la Botola Pro, recalculé à chaque résultat, avec les places continentales et la relégation, à domicile, à l’extérieur et la forme.",
+      fr: "Le classement de la Botola Pro, recalculé après chaque résultat : places continentales, relégation, bilans à domicile et à l’extérieur, forme récente.",
       en: "The Botola Pro table, recalculated after every result, with the continental and relegation places, home, away and form.",
     },
     tip: {
@@ -83,7 +83,7 @@ export const DEMO_STEPS: DemoStep[] = [
     path: "/fantasy/rankings",
     title: { fr: "Classement des managers", en: "Leaderboard" },
     lead: {
-      fr: "Le rang du manager dans la journée et sur la saison, face à tous les autres. C’est ce qui fait revenir les fans chaque semaine.",
+      fr: "Le classement du manager pour la journée et sur la saison, parmi les autres participants.",
       en: "The manager’s rank this gameweek and over the season, against everyone else. It is what brings fans back every week.",
     },
     tip: {
@@ -96,7 +96,7 @@ export const DEMO_STEPS: DemoStep[] = [
     path: "/prizes",
     title: { fr: "Partenaire", en: "Sponsor" },
     lead: {
-      fr: "Une marque s’installe dans le jeu : la journée présentée par, le classement présenté par, les lots offerts par.",
+      fr: "La marque du partenaire apparaît avec les mentions « Journée présentée par », « Classement présenté par » et « Prix offerts par ».",
       en: "A brand lives inside the game: the gameweek presented by, the leaderboard presented by, the prizes offered by.",
     },
     tip: {

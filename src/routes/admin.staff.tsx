@@ -119,10 +119,10 @@ function AdminStaffRoute() {
         created.created
           ? rtl
             ? "تم إنشاء هوية الطاقم دون منح أي دور."
-            : "Identité staff créée sans rôle implicite."
+            : "Identité du membre du personnel créée sans rôle implicite."
           : rtl
             ? "هوية الطاقم موجودة بالفعل؛ لم يُمنح أي دور."
-            : "L’identité staff existe déjà; aucun rôle n’a été accordé.",
+            : "L’identité du membre du personnel existe déjà ; aucun rôle n’a été accordé.",
       );
       setResult({
         ...result,
@@ -156,7 +156,7 @@ function AdminStaffRoute() {
         `${rtl ? "تم منح الدور" : "Rôle accordé"}: ${assignment.role}. ${
           rtl
             ? "طُلب إبطال الجلسة حيثما كان مدعوماً."
-            : "Invalidation de session demandée si supportée."
+            : "Invalidation de session demandée si elle est prise en charge."
         }`,
       );
     } catch (error) {
@@ -226,7 +226,7 @@ function AdminStaffRoute() {
                   under an armed confirm step would leave that step naming one
                   person and acting on another. */}
               <UiButton className="sm:w-auto" disabled={busy || isBusy(action)} type="submit">
-                {rtl ? "بحث آمن" : "Résoudre"}
+                {rtl ? "بحث آمن" : "Rechercher"}
               </UiButton>
             </form>
           </section>
@@ -267,7 +267,13 @@ function AdminStaffRoute() {
                         principal" below depends on. */}
                     <UiBadge tone={result.mfaVerified ? "positive" : "caution"}>
                       <AdminDatum mono={false}>
-                        {result.mfaVerified ? "AAL2 eligible" : "required"}
+                        {result.mfaVerified
+                          ? rtl
+                            ? "مؤهّل AAL2"
+                            : "Éligible AAL2"
+                          : rtl
+                            ? "مطلوبة"
+                            : "Requise"}
                       </AdminDatum>
                     </UiBadge>
                   </AdminField>
@@ -304,7 +310,9 @@ function AdminStaffRoute() {
                       confirmLabel={rtl ? "تأكيد الإنشاء" : "Confirmer la création"}
                       confirmPrompt={
                         <>
-                          {rtl ? "إنشاء هوية الطاقم لـ " : "Créer l’identité staff de "}
+                          {rtl
+                            ? "إنشاء هوية الطاقم لـ "
+                            : "Créer l’identité du membre du personnel pour "}
                           {/* The emphasis inside every confirm prompt on this
                               page is the same 600 it always was --
                               `--ui-weight-body` IS `font-semibold`. Only its
@@ -315,7 +323,7 @@ function AdminStaffRoute() {
                           </AdminDatum>
                           {rtl
                             ? "؟ لا تمنح هذه العملية أي دور، ويبقى الوصول إلى وحدة الإدارة مرفوضاً إلى أن يُسنَد دور صراحةً."
-                            : " ? Cette opération n’accorde aucun rôle: l’accès à la console reste refusé tant qu’un rôle n’a pas été affecté explicitement."}
+                            : " ? Cette opération n’accorde aucun rôle : l’accès à la console reste refusé tant qu’un rôle n’a pas été affecté explicitement."}
                         </>
                       }
                       onConfirm={(reason) => createPrincipal(reason)}

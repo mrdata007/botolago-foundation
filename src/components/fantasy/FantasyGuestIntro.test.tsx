@@ -93,7 +93,7 @@ describe("FantasyGuestIntro — what the game is, before anything personal", () 
     const plain = text(list![2]);
     expect(plain).toContain("Un effectif de 15 joueurs");
     expect(plain).toContain("Un budget de 100 M");
-    expect(plain).toContain("3 joueurs au maximum par club");
+    expect(plain).toContain("au maximum 3 joueurs par club");
     expect(plain).toContain(escapeHtml(fr["fantasy.intro.captain_title"]));
     expect(plain).toContain(escapeHtml(fr["fantasy.intro.deadline_title"]));
     // No placeholder survives into the page.
