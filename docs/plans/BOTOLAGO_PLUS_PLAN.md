@@ -325,14 +325,14 @@ What makes them clear and premium, and the rule we keep for each:
 
 ### 3.0b The six steps (drawn in `botolago-plus-sketch.html`)
 
-| Step | Purpose         | French headline (copy)                             | Arabic headline                          | Button                        |
-| ---- | --------------- | -------------------------------------------------- | ---------------------------------------- | ----------------------------- |
-| 1    | Hook            | Votre carte a une histoire. Vivez-la en entier.    | لبطاقتك قصة. عِشها كاملة.                | Découvrir BotolaGO+           |
-| 2    | Career          | Comprenez enfin pourquoi votre note bouge.         | افهم أخيرًا لماذا يتغيّر تقييمك.         | Continuer                     |
-| 3    | Duel            | Vos potes disent qu'ils sont meilleurs ? Vérifiez. | أصدقاؤك يقولون إنهم الأفضل؟ تحقّق بنفسك. | Continuer                     |
-| 4    | Designs         | Une carte à votre image.                           | بطاقة تشبهك.                             | Voir les formules             |
-| 5    | Plan + timeline | Toute la saison pour 199 MAD.                      | الموسم كله بـ199 درهمًا.                 | Rejoindre BotolaGO+ · 199 MAD |
-| 6    | Welcome         | Bienvenue dans BotolaGO+.                          | مرحبًا بك في BotolaGO+.                  | Voir ma carrière              |
+| Step | Purpose         | French headline (copy)                            | Arabic headline                          | Button                        |
+| ---- | --------------- | ------------------------------------------------- | ---------------------------------------- | ----------------------------- |
+| 1    | Hook            | Votre carte a une histoire. Vivez-la en entier.   | لبطاقتك قصة. عِشها كاملة.                | Découvrir BotolaGO+           |
+| 2    | Career          | Comprenez enfin pourquoi votre note bouge.        | افهم أخيرًا لماذا يتغيّر تقييمك.         | Continuer                     |
+| 3    | Duel            | Vos amis disent qu'ils sont meilleurs ? Vérifiez. | أصدقاؤك يقولون إنهم الأفضل؟ تحقّق بنفسك. | Continuer                     |
+| 4    | Designs         | Une carte à votre image.                          | بطاقة تشبهك.                             | Voir les formules             |
+| 5    | Plan + timeline | Toute la saison pour 199 MAD.                     | الموسم كله بـ199 درهمًا.                 | Rejoindre BotolaGO+ · 199 MAD |
+| 6    | Welcome         | Bienvenue dans BotolaGO+.                         | مرحبًا بك في BotolaGO+.                  | Voir ma carrière              |
 
 Supporting lines (FR; the Arabic is in the sketch):
 
@@ -356,9 +356,22 @@ Supporting lines (FR; the Arabic is in the sketch):
 
 Copy rules applied: outcome over feature, specific numbers, short sentences, `vous`, one verb family
 for buttons, reassurance under the button, no hype words, no invented proof. The 91 MAD saving is
-29 × 10 months − 199 and must be recomputed if prices change. The monthly reminder promise needs a
-working in-app reminder before launch (email is off today); if it is not built, remove that line.
-« Potes » is deliberately familiar for the duel step only; the owner may prefer « amis ».
+29 × 10 months − 199 and must be recomputed if prices change. The owner decided (2026-10-12) that the
+monthly renewal reminder is built: an in-app notice 3 days before each monthly renewal (see
+"Renewal reminder" below). It is a launch requirement for the monthly plan, so the line stays.
+The owner chose « vos amis » over « vos potes » for the duel step.
+
+**Renewal reminder (owner-approved, required before the monthly plan launches).**
+
+- When: 3 days before each monthly renewal date, from the store or payment provider's renewal date.
+- Where: an in-app notice on the next app open (a banner on Curva and an entry in the
+  notifications list), plus push where the member allowed it. Email stays optional, as email is off.
+- Copy (FR): « Votre abonnement BotolaGO+ se renouvelle le {date} pour 29 MAD. Rien à faire
+  pour continuer. Pour arrêter, Profil → Abonnement. » Arabic to be written alongside.
+- One notice per renewal; never sent for the season pass, which does not renew.
+- Tapping it opens Profil → Abonnement, with cancel reachable in two taps.
+- Built with the BotolaGO+ subscription work (it needs the renewal date, which exists only once
+  payments are built), shipped switched off and tested before the monthly plan goes on sale.
 
 ### 3.1 Sections (mobile first, 390 px; one 672 px column from 768 px)
 
