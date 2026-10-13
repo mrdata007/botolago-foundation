@@ -95,7 +95,25 @@ jobs:
           args=(--mode report --out "$RUNNER_TEMP/sofascore-fantasy-report.json")
           if [[ -n "${ROUND:-}" ]]; then args+=(--round "$ROUND"); fi
           if [[ "${INCLUDE_OBSERVED:-}" == "true" ]]; then args+=(--include-observed); fi
-          bun scripts/backend/sofascore-fantasy-simple-ingest.ts "${args[@]}" > "$RUNNER_TEMP/run.log"
+          set +e
+          bun scripts/backend/sofascore-fantasy-simple-ingest.ts "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/run.log"
+          report_status=("${PIPESTATUS[@]}")
+          set -e
+          if [[ "${report_status[0]}" -ne 0 || "${report_status[1]}" -ne 0 ]]; then
+            {
+              echo "## SofaScore report failed (read only; no writes)"
+              echo
+              echo "Runner exit: ${report_status[0]}; log capture exit: ${report_status[1]}."
+              echo
+              echo '```text'
+              # The runner redacts credentials before emitting this single line.
+              # Never copy arbitrary provider payloads or stderr into the summary.
+              sed -n '/^SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE:/p' "$RUNNER_TEMP/run.log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            if [[ "${report_status[0]}" -ne 0 ]]; then exit "${report_status[0]}"; fi
+            exit "${report_status[1]}"
+          fi
           {
             echo "## SofaScore Fantasy simple report (production, read only)"
             echo
