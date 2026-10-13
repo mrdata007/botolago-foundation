@@ -270,6 +270,12 @@ Route: `/plus` (French and Arabic share the URL, as everywhere today; `/ar/plus`
 exist). Linked from Profil, from locked premium entry points (a lock chip, never a modal that blocks
 the free content), and from Curva. Not indexed while the offer is off.
 
+**Placement (owner decision, 2026-10-13): BotolaGO+ lives in Curva**, with no tab of its own.
+Card styles on « Votre carte », the detailed career history on « Vos saisons », the detailed
+head-to-head on « Les vôtres »; a locked extra opens the four-screen offer. Members manage it in
+Profil › BotolaGO+. The logo's « + » is drawn in 3D (lit face, extruded side, soft shadow), as in
+the sketch.
+
 **Revised 2026-10-12 after the owner's feedback on the first sketch:** the first contact with
 BotolaGO+ is now a **six-step onboarding** (3.0b below, drawn in the sketch). The long scrolling
 page of 3.1 stays as `/plus` for people who come back to compare plans or read the questions.
