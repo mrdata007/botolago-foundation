@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { BrandedText } from "@/components/brand/BrandedText";
 import { Logo } from "@/components/brand/Logo";
 import { authOutlineClass } from "@/components/auth/auth-classes";
@@ -387,6 +388,12 @@ function AuthenticatedProfile({
         </Section>
       ) : null}
 
+      {PlusProfileSection ? (
+        <Suspense fallback={null}>
+          <PlusProfileSection />
+        </Suspense>
+      ) : null}
+
       <Group title={t("profile.section.preferences")}>
         <LanguageRow />
         {/* One row for the three switches, with how many are on. They are
@@ -697,6 +704,21 @@ function HelpGroup() {
     </Group>
   );
 }
+
+/* ------------------------------- BotolaGO+ -------------------------------- */
+
+/**
+ * Profil › BotolaGO+ (plan, renewal date, cancel, restore, receipts). Declared only when the
+ * build lets the screens exist, so with `PREMIUM_BUILD` off its code is not in the build at all
+ * (the constant folds to `null` and the dynamic import goes with it).
+ */
+const PlusProfileSection = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("@/components/plus/PlusProfileSection").then((module) => ({
+        default: module.PlusProfileSection,
+      })),
+    )
+  : null;
 
 /* ---------------------------- danger zone / delete ------------------------ */
 
