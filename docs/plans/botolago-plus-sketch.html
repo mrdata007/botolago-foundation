@@ -631,7 +631,7 @@
       }
 
       /* ==================================================================
-   THE MANAGER CARD. Hierarchy:
+   THE MANAGER CARD (large sizes: collector shield, see "Collector card, shield format"). Hierarchy:
    1 manager name + club identity (primary)
    2 earned rating + tier, in its own box, labelled « Note gagnée »
    3 captain photo, labelled as supporting
@@ -1321,6 +1321,337 @@
         20% { opacity: 1; filter: drop-shadow(0 0 0.35em #7dffbd); }
         55% { opacity: 0.9; filter: drop-shadow(0 0 0.2em #3ee08a); }
       }
+
+      /* ================= Collector card, shield format =================
+         The large manager card is a collector shield: rating and tier stacked on the
+         side with the club crest, the captain's photo as the art, the manager's name
+         in capitals across the middle, the four stats in two columns. The frame is
+         the style's material; the face sits inside it. Our own design: no third-party
+         marks or names. The rating and tier never change with the style. */
+      .mc.fut {
+        --shield: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20141'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0%208%20Q0%204%204%204%20L28%204%20Q32%204%2035%202%20L38%200.6%20Q39.5%200%2041%200%20L59%200%20Q60.5%200%2062%200.6%20L65%202%20Q68%204%2072%204%20L96%204%20Q100%204%20100%208%20L100%20118%20Q100%20124%2094%20127%20L55%20139%20Q50%20140.6%2045%20139%20L6%20127%20Q0%20124%200%20118%20Z'/%3E%3C/svg%3E");
+        aspect-ratio: 100 / 141;
+        border-radius: 0;
+      }
+      .mc.fut .fc-frame,
+      .mc.fut .fc-face,
+      .mc.fut .fx:not(.fx-electric) {
+        -webkit-mask: var(--shield) center / 100% 100% no-repeat;
+        mask: var(--shield) center / 100% 100% no-repeat;
+        border-radius: 0;
+      }
+      .mc.fut .fc-frame {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(160deg, #6b7380, #2a2f38 45%, #8a929e 70%, #2a2f38);
+      }
+      .mc.fut .fc-face,
+      .mc.fut .fx:not(.fx-electric) {
+        inset: 0.42em;
+      }
+      .mc.fut .fc-face {
+        position: absolute;
+        overflow: hidden;
+        color: #f6f3ec;
+        background:
+          repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 0.08em, transparent 0.08em 0.9em),
+          radial-gradient(120% 70% at 70% 18%, color-mix(in srgb, var(--club) 30%, #17202f), transparent 70%),
+          linear-gradient(180deg, #121a28, #0b1019 70%);
+      }
+      /* the art: captain's photo, faded into the face */
+      .fc-photo {
+        position: absolute;
+        top: 5%;
+        inset-inline-end: 0;
+        width: 70%;
+        height: 52%;
+        object-fit: cover;
+        object-position: 50% 12%;
+        -webkit-mask: linear-gradient(to bottom, #000 62%, transparent 98%), linear-gradient(to var(--fade-to, right), transparent 0%, #000 34%);
+        -webkit-mask-composite: source-in;
+        mask: linear-gradient(to bottom, #000 62%, transparent 98%) intersect, linear-gradient(to var(--fade-to, right), transparent 0%, #000 34%);
+        z-index: 4;
+      }
+      :root[dir="rtl"] .fc-photo {
+        --fade-to: left;
+      }
+      .fc-photo-tag {
+        position: absolute;
+        top: 46%;
+        inset-inline-end: 6%;
+        z-index: 5;
+        max-width: 60%;
+        padding: 0.18em 0.6em;
+        border-radius: 999px;
+        background: rgba(7, 10, 18, 0.78);
+        font-size: 0.62em;
+        font-weight: 700;
+        line-height: 1.35;
+        color: #ece8dd;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      /* rating column */
+      .fc-side {
+        position: absolute;
+        top: 9%;
+        inset-inline-start: 7%;
+        z-index: 5;
+        width: 26%;
+        display: grid;
+        justify-items: center;
+        gap: 0.15em;
+        text-align: center;
+      }
+      .fc-ovr {
+        font-family: var(--font-card);
+        font-weight: 800;
+        font-size: 3.1em;
+        line-height: 0.95;
+        color: #fff;
+        font-variant-numeric: tabular-nums;
+      }
+      .fc-ovrl {
+        font-size: 0.66em;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        color: #e8e4da;
+        margin-block-start: -0.1em;
+      }
+      :root:lang(ar) .fc-ovrl {
+        letter-spacing: 0;
+      }
+      .fc-tier {
+        font-family: var(--font-card);
+        font-size: 0.9em;
+        font-weight: 800;
+        line-height: 1.2;
+        color: color-mix(in srgb, var(--tier-b) 45%, #fff);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      :root:lang(ar) .fc-tier {
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      .fc-rule {
+        width: 70%;
+        height: 1px;
+        margin-block: 0.25em;
+        background: rgba(255, 255, 255, 0.28);
+      }
+      .fc-crest {
+        width: 2.9em;
+        height: 2.9em;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        border: 0.12em solid var(--club);
+        background: color-mix(in srgb, var(--club) 26%, #0d1220);
+        font-size: 1em;
+      }
+      .fc-crest bdi {
+        font-size: 0.5em;
+        font-weight: 800;
+        color: #fff;
+      }
+      .fc-club {
+        font-size: 0.6em;
+        font-weight: 700;
+        line-height: 1.25;
+        color: #e4dfd2;
+      }
+      /* name band */
+      .fc-name {
+        position: absolute;
+        top: 55.5%;
+        inset-inline: 6%;
+        z-index: 5;
+        text-align: center;
+        font-family: var(--font-card);
+        font-weight: 800;
+        font-size: 1.75em;
+        line-height: 1.1;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #fff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-shadow: 0 0.06em 0.4em rgba(7, 10, 18, 0.9);
+      }
+      :root:lang(ar) .fc-name {
+        letter-spacing: 0;
+        line-height: 1.35;
+      }
+      .fc-name::after {
+        content: "";
+        display: block;
+        width: 72%;
+        height: 1px;
+        margin: 0.22em auto 0;
+        background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.5), transparent);
+      }
+      /* stats: two columns, number then word */
+      .fc-stats {
+        position: absolute;
+        top: 68%;
+        inset-inline: 11%;
+        z-index: 5;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.2em 0;
+      }
+      .fc-stats > span {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35em;
+        min-width: 0;
+        padding-inline: 0.5em;
+      }
+      .fc-stats > span {
+        justify-content: center;
+      }
+      .fc-stats > span:nth-child(odd) {
+        border-inline-end: 1px solid rgba(255, 255, 255, 0.22);
+      }
+      .fc-stats b {
+        flex: none;
+        font-family: var(--font-card);
+        font-size: 1.3em;
+        font-weight: 800;
+        line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+        color: #fff;
+      }
+      .fc-stats i {
+        min-width: 0;
+        font-style: normal;
+        letter-spacing: 0.06em;
+        font-size: 0.8em;
+        font-weight: 700;
+        color: #ece8dd;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      /* bottom: the BotolaGO+ mark once bought, otherwise the serial */
+      .fc-foot {
+        position: absolute;
+        bottom: 6.5%;
+        inset-inline: 0;
+        z-index: 5;
+        display: grid;
+        justify-items: center;
+        gap: 0.15em;
+        font-size: 0.58em;
+        font-weight: 800;
+        color: #cfc9bb;
+        font-variant-numeric: tabular-nums;
+      }
+      .fc-foot .plus-logo {
+        height: 1.9em;
+        vertical-align: middle;
+      }
+      .fc-ex {
+        position: absolute;
+        top: 7%;
+        inset-inline-end: 9%;
+        z-index: 6;
+        padding: 0.1em 0.7em;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+        font-size: 0.6em;
+        font-weight: 800;
+      }
+      /* the old rectangle-only layers are replaced by the shield frame */
+      .mc.fut .fx-rim,
+      .mc.fut .fx-chrome {
+        display: none !important;
+      }
+      .mc.fut .fx-mark svg {
+        top: 44%;
+        opacity: 0.06;
+      }
+      .mc.fut .fx-sheen {
+        z-index: 6;
+      }
+      .mc.fut .fx.fx-electric {
+        inset: -0.1em;
+        width: calc(100% + 0.2em);
+        height: calc(100% + 0.2em);
+        z-index: 7;
+      }
+      .mc-wrap.lg .mc.fut::before,
+      .mc-wrap.md .mc.fut::before {
+        inset: 10% 8% 6%;
+      }
+      /* ---------- special editions: each style is a frame material + a face ---------- */
+      .mc.fut.st-free .fc-frame {
+        background: linear-gradient(160deg, color-mix(in srgb, var(--club) 60%, #fff), color-mix(in srgb, var(--club) 50%, #111) 50%, color-mix(in srgb, var(--club) 70%, #fff));
+      }
+      .mc.fut.st-holo .fc-frame {
+        background: conic-gradient(from var(--hue) at 50% 45%, #5ef0a8, #4fd8ff, #8a7bff, #4fd8ff, #5ef0a8, #d6ffe9, #5ef0a8);
+      }
+      .mc.fut.st-holo .fc-face {
+        background:
+          repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 0.08em, transparent 0.08em 0.9em),
+          radial-gradient(120% 70% at 70% 18%, #1b4b52, transparent 70%),
+          linear-gradient(180deg, #102a33, #0a161d 70%);
+      }
+      .mc.fut.st-holo .fx-holo {
+        opacity: 0.32;
+      }
+      .mc.fut.st-electric .fc-frame {
+        background: linear-gradient(160deg, #0d1a12, #050807 50%, #0f2418);
+      }
+      .mc.fut.st-electric .fc-face {
+        background:
+          repeating-linear-gradient(135deg, rgba(95, 227, 161, 0.05) 0 0.08em, transparent 0.08em 0.9em),
+          radial-gradient(120% 70% at 70% 18%, #12402a, transparent 70%),
+          linear-gradient(180deg, #08130d, #030605 70%);
+      }
+      .mc.fut.st-electric .fc-ovr,
+      .mc.fut.st-electric .fc-tier {
+        color: #b6ffd7;
+      }
+      .mc.fut.st-pixel .fc-frame {
+        background: repeating-conic-gradient(#7dd3fc 0 25%, #86efac 0 50%) 0 0 / 0.6em 0.6em;
+      }
+      .mc.fut.st-pixel .fc-face {
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 100% 0.3em,
+          radial-gradient(120% 70% at 70% 18%, #183a5c, transparent 70%),
+          linear-gradient(180deg, #0f1a2e, #0a111e 70%);
+      }
+      .mc.fut.st-chrome .fc-frame {
+        background:
+          linear-gradient(105deg, transparent calc(var(--sw) - 10%), rgba(255, 255, 255, 0.9) var(--sw), transparent calc(var(--sw) + 10%)),
+          linear-gradient(180deg, #f2f4f7 0%, #8b929b 18%, #2a2e35 40%, #c9ced4 55%, #3b4049 75%, #e3e6ea 100%);
+      }
+      .mc.fut.st-chrome .fc-face {
+        background:
+          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px),
+          radial-gradient(120% 70% at 70% 18%, #343a44, transparent 70%),
+          linear-gradient(180deg, #1a1d23, #0c0e12 70%);
+      }
+      .mc.fut:not(.st-free) .fc-ovr {
+        background: var(--foil);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0.04em 0.1em rgba(0, 0, 0, 0.7));
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .mc.fut.st-pixel .fc-frame {
+          animation: mc-pixel-rim 1.6s steps(4) infinite;
+        }
+        .mc.fut.st-chrome .fc-frame {
+          animation: mc-chrome 5s ease-in-out infinite;
+        }
+      }
+
       /* small sizes (thumbnails, banner) keep the frame and foil, not the motion-heavy layers */
       .mc-wrap.sm .fx-mark,
       .mc-wrap.xs .fx-mark,
@@ -1477,7 +1808,7 @@
 .s4 .s4-sub { margin: 0; text-align: center; text-wrap: balance; }
 .s4 .s4-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; padding-block: 2px; }
 .s4 .s4-card { width: 100%; transform-origin: 50% 60%; }
-.s4 .mc-wrap.lg { width: 264px; font-size: 16.5px; }
+.s4 .mc-wrap.lg { width: 270px; font-size: 18px; }
 /* the BotolaGO+ badge takes a line, so the captain photo gives it back */
 .s4 .mc-capphoto { width: 3em; height: 3.1em; }
 /* concise access summary: plan and date on the left, the way out on the right */
@@ -1894,6 +2225,11 @@
             "card.sel": "Titulaires",
             "card.trf": "Transferts",
             "card.con": "Régularité",
+            "card.capS": "CAP",
+            "card.selS": "TIT",
+            "card.trfS": "TRF",
+            "card.conS": "RÉG",
+            "card.captainShort": "Capitaine",
             "card.tierRule": "Ta note ne change jamais, seul le style change.",
             "sty.label": "Style de ta carte",
             "sty.holo": "Holo",
@@ -1936,6 +2272,11 @@
             "card.sel": "الأساسيون",
             "card.trf": "الانتقالات",
             "card.con": "الانتظام",
+            "card.capS": "قائد",
+            "card.selS": "أساسي",
+            "card.trfS": "انتقال",
+            "card.conS": "انتظام",
+            "card.captainShort": "القائد",
             "card.tierRule": "تقييمك لا يتغيّر أبدًا، الأسلوب وحده يتغيّر.",
             "sty.label": "أسلوب بطاقتك",
             "sty.holo": "هولو",
@@ -1998,6 +2339,37 @@
         function tierName(k) {
           return t("card.tier." + k);
         }
+        var SHIELD_PATH = "M0 8 Q0 4 4 4 L28 4 Q32 4 35 2 L38 0.6 Q39.5 0 41 0 L59 0 Q60.5 0 62 0.6 L65 2 Q68 4 72 4 L96 4 Q100 4 100 8 L100 118 Q100 124 94 127 L55 139 Q50 140.6 45 139 L6 127 Q0 124 0 118 Z";
+        /* The collector shield (large sizes). Reads like the card hierarchy elsewhere:
+           rating + tier earned, the manager's name, the stats; the photo is the captain's. */
+        function shieldHTML(d, o) {
+          var codes = ["cap", "sel", "trf", "con"];
+          var foot = o.plus ? LOGO : '<bdi dir="ltr">BOT #' + esc(d.serial) + " · 2026/27</bdi>";
+          return (
+            '<div class="fc-frame"></div>' +
+            '<div class="fc-face">' +
+            '<img class="fc-photo" alt="" src="' + PHOTO[d.photo] + '">' +
+            '<span class="fc-photo-tag">' + esc(t("card.captainShort")) + ' · <bdi>' + esc(nm(d, "captain")) + "</bdi></span>" +
+            (o.example ? '<span class="fc-ex">' + esc(t("sh.example")) + "</span>" : "") +
+            '<div class="fc-side" role="group" aria-label="' + esc(t("card.earnedAria", { ovr: d.ovr, tier: tierName(d.tier) })) + '">' +
+            '<bdi class="fc-ovr">' + d.ovr + '</bdi><span class="fc-ovrl"><bdi dir="ltr">OVR</bdi></span>' +
+            '<span class="fc-tier">' + esc(tierName(d.tier)) + "</span>" +
+            '<span class="fc-rule"></span>' +
+            '<span class="fc-crest" aria-hidden="true"><bdi dir="ltr">' + esc(d.clubShort) + "</bdi></span>" +
+            '<span class="sr-only">' + esc(nm(d, "club")) + "</span></div>" +
+            '<div class="fc-name"><bdi>' + esc(nm(d, "name")) + "</bdi></div>" +
+            '<div class="fc-stats">' +
+            codes.map(function (c) { return '<span><b>' + d.stats[c] + '</b><i aria-hidden="true">' + esc(t("card." + c + "S")) + '</i><span class="sr-only">' + esc(t("card." + c)) + "</span></span>"; }).join("") +
+            "</div>" +
+            '<div class="fc-foot">' + foot + "</div>" +
+            "</div>" +
+            '<div class="fx fx-mark" aria-hidden="true"><svg viewBox="0 0 1860 288"><use href="#bgPlusLogo" /></svg></div>' +
+            '<div class="fx fx-holo"></div><div class="fx fx-spark"></div><div class="fx fx-glare"></div>' +
+            '<canvas class="fx fx-pixel"></canvas>' +
+            '<svg class="fx fx-electric" viewBox="0 0 100 141" preserveAspectRatio="none" aria-hidden="true"><path d="' + SHIELD_PATH + '" fill="none" stroke="#5fe3a1" stroke-width="1.1" vector-effect="non-scaling-stroke" filter="url(#electricFx)"/><path d="' + SHIELD_PATH + '" fill="none" stroke="rgba(150,240,190,0.55)" stroke-width="2.4" filter="url(#electricFx)" style="opacity:.6"/></svg>' +
+            '<div class="fx fx-sheen"></div>'
+          );
+        }
         function cardHTML(d, o) {
           var codes = ["cap", "sel", "trf", "con"];
           var plusTxt = o.plus ? '<div class="mc-plus">' + LOGO + '<span aria-hidden="true">·</span><span data-style-name>' + esc(t("sty." + state.style)) + "</span></div>" : "";
@@ -2051,7 +2423,8 @@
           });
           host.classList.add("mc-wrap", size);
           host.setAttribute("data-follow", who === "me" && !pinned && !o.style ? "1" : "0");
-          host.innerHTML = '<div class="mc st-' + style + '" style="--club:' + d.accent + '">' + cardHTML(d, { plus: plus, example: example }) + "</div>";
+          var fut = size === "lg" || size === "md";
+          host.innerHTML = '<div class="mc st-' + style + (fut ? " fut" : "") + '" style="--club:' + d.accent + '">' + (fut ? shieldHTML : cardHTML)(d, { plus: plus, example: example }) + "</div>";
           var mc = host.firstChild;
           if (style === "pixel") requestAnimationFrame(function () { paintPixels(mc, false); });
           if (o.animate) popCard(mc);
@@ -2183,7 +2556,7 @@
             if (h.getAttribute("data-follow") !== "1") return;
             var mc = h.querySelector(".mc");
             if (!mc) return;
-            mc.className = "mc st-" + s;
+            mc.className = "mc st-" + s + (mc.classList.contains("fut") ? " fut" : "");
             if (s === "pixel") paintPixels(mc, !!animate);
             if (animate) popCard(mc);
           });
