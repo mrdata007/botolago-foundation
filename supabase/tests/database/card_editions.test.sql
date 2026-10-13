@@ -13,7 +13,7 @@
 -- Accounts: 1 M member (monthly), 2 N nobody, 3 V verified MFA factor and a membership,
 -- 4 L lapsed member, 5 G grant holder, 6 C closing account, 7 W another reader.
 begin;
-select extensions.plan(46);
+select extensions.plan(47);
 
 create function pg_temp.u(n integer) returns uuid language sql immutable as $$
   select ('bc5e0000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -172,14 +172,17 @@ select pg_temp.choose(pg_temp.u(5), 'holo');
 select extensions.is(pg_temp.choice(5), 'holo', 'preview: a grant holder can choose');
 select extensions.is(pg_temp.shown(5, 5) || '/' || pg_temp.shown(5, 7) || '/' || pg_temp.shown(5), 'holo/standard/standard',
   'preview: only the owner of the card sees the edition; other readers see standard');
-select extensions.is(pg_temp.shown(1, 1), 'standard', 'preview: a paying member without a grant shows standard');
-select extensions.is(pg_temp.choose(pg_temp.u(1), 'holo') ->> '__error', 'PT403 premium_required',
-  'and cannot choose a paid edition (preview is for grant holders)');
+select extensions.is(pg_temp.shown(1, 1) || '/' || pg_temp.shown(1, 7), 'chrome/standard',
+  'preview: a paying member counts as in on, but only they see their edition');
+select extensions.is(pg_temp.choose(pg_temp.u(1), 'holo') ->> 'edition', 'holo',
+  'and can choose a paid edition');
+select extensions.is(pg_temp.choose(pg_temp.u(2), 'holo') ->> '__error', 'PT403 premium_required',
+  'while someone with neither grant nor entitlement cannot');
 select app_private.premium_configure('off');
 select extensions.is(pg_temp.shown(1, 7) || '/' || pg_temp.shown(5, 5), 'standard/standard', 'off: every card is standard');
-select extensions.is(pg_temp.choice(1) || '/' || pg_temp.choice(5), 'chrome/holo', 'while the choices are kept');
+select extensions.is(pg_temp.choice(1) || '/' || pg_temp.choice(5), 'holo/holo', 'while the choices are kept');
 select app_private.premium_configure('on');
-select extensions.is(pg_temp.shown(1, 7), 'chrome', 'and come back when the mode is on');
+select extensions.is(pg_temp.shown(1, 7), 'holo', 'and come back when the mode is on');
 
 -- ---------------------------------------------------------------------------
 -- The table is not writable by a client; the edition never feeds a computation

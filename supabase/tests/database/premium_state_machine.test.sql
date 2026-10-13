@@ -126,8 +126,8 @@ create function pg_temp.entitlement_row(p_mode text) returns text language sql a
 $$;
 select extensions.is(pg_temp.entitlement_row('off'), 'ffffffffffff',
   'mode off: nobody is a member, whatever they hold');
-select extensions.is(pg_temp.entitlement_row('preview'), 'ffffffffffff',
-  'mode preview: an entitlement does not count (only a grant does)');
+select extensions.is(pg_temp.entitlement_row('preview'), 'ftftftffffff',
+  'mode preview: the same truth table as on for entitlements (a staff test-mode purchase counts, owner decision 2026-10-13)');
 select extensions.is(pg_temp.entitlement_row('on'), 'ftftftffffff',
   'mode on: none f, active valid t, active lapsed f, cancelling valid t, cancelling lapsed f, grace valid t, then f for an ended grace (web and store), on hold, expired, refunded and revoked');
 

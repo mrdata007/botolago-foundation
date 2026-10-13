@@ -229,6 +229,10 @@ values (
 -- public, anon, authenticated and service_role, no policy, an index on every
 -- foreign-key column. Reads go through api functions.
 --
+-- RETENTION. Billing records are kept 5 years (owner decision, 2026-10-13); see
+-- docs/backend/PREMIUM_OPERATIONS_RUNBOOK.md. No purge ships: nothing deletes
+-- billing_events, and no job is scheduled.
+--
 -- DELETION. Entitlements, grants and customer ids hang off app.profiles by
 -- cascade. billing_events are accounting records: their user_id is set null
 -- when the profile goes and 20261013100300 pseudonymises them first.
@@ -251,7 +255,7 @@ alter table app_private.premium_settings enable row level security;
 alter table app_private.premium_settings force row level security;
 revoke all on app_private.premium_settings from public, anon, authenticated, service_role;
 comment on table app_private.premium_settings is
-  'The BotolaGO+ switches, one row, off by default. mode: off (nobody is a member, every read answers unavailable), preview (only holders of a live grant, for the owner and staff) or on. checkout_enabled lets the web checkout start (never while mode is off). billing_paused makes api.service_apply_billing_event refuse (retryable) so a database write can run with no billing writer. Changed only by app_private.premium_configure.';
+  'The BotolaGO+ switches, one row, off by default. mode: off (nobody is a member, every read answers unavailable), preview (the owner and staff: membership counts as in on, but nothing is public) or on. checkout_enabled lets the web checkout start (never while mode is off). billing_paused makes api.service_apply_billing_event refuse (retryable) so a database write can run with no billing writer. Changed only by app_private.premium_configure.';
 
 create function app_private.premium_configure(
   p_mode text default null,
@@ -442,7 +446,7 @@ alter table app_private.billing_events enable row level security;
 alter table app_private.billing_events force row level security;
 revoke all on app_private.billing_events from public, anon, authenticated, service_role;
 comment on table app_private.billing_events is
-  'Every billing provider event, stored once (provider_event_id is unique: a replay is a no-op) with the outcome it had. Accounting record: when the account is erased user_id is set null, the payload is emptied and subject_pseudonym keeps the events of one erased member together (20261013100300). Written only by api.service_apply_billing_event.';
+  'Every billing provider event, stored once (provider_event_id is unique: a replay is a no-op) with the outcome it had. Accounting record, kept 5 years (owner decision 2026-10-13; no purge ships). When the account is erased user_id is set null, the payload is emptied and subject_pseudonym keeps the events of one erased member together (20261013100300). Written only by api.service_apply_billing_event.';
 
 -- ---------------------------------------------------------------------------
 -- Grants: complimentary memberships given by staff
@@ -563,7 +567,9 @@ comment on function app_private.premium_effective_state(text, text, timestamptz,
 -- has_premium: the ONE check every premium feature calls
 --
 --   mode off      nobody
---   mode preview  only a live grant (the owner and staff)
+--   mode preview  the same truth table as on (a live grant, or a valid entitlement,
+--                 e.g. a staff test-mode purchase); owner decision 2026-10-13. What
+--                 differs from on is only what is shown publicly (20261013100100).
 --   mode on       a live grant, or an entitlement whose effective state is
 --                 active, cancelling or grace
 --
@@ -584,7 +590,7 @@ as $$
           and g.starts_at <= coalesce(p_at, statement_timestamp())
           and g.ends_at > coalesce(p_at, statement_timestamp()))
       or (
-        (select s.mode from app_private.premium_settings s where s.id) = 'on'
+        (select s.mode from app_private.premium_settings s where s.id) in ('preview', 'on')
         and exists (
           select 1 from app.premium_entitlements e
           where e.user_id = p_user
@@ -596,7 +602,7 @@ $$;
 revoke all on function app_private.has_premium(uuid, timestamptz)
   from public, anon, authenticated, service_role;
 comment on function app_private.has_premium(uuid, timestamptz) is
-  'Is this person a BotolaGO+ member right now? The one check every premium read calls. False for everyone while mode is off; in preview only a live grant counts; on, a live grant or an entitlement that is active, cancelling or in grace. No grant.';
+  'Is this person a BotolaGO+ member right now? The one check every premium read calls. False for everyone while mode is off; in preview and on, a live grant or an entitlement that is active, cancelling or in grace (same truth table). No grant.';
 $bg_20261013100000_file$]
 );
 
@@ -778,7 +784,7 @@ begin
     raise exception using errcode = 'PT404', message = 'card_edition_not_found';
   end if;
   -- The free edition is always allowed, so a lapsed member can go back to it;
-  -- a paid edition needs BotolaGO+ now (in preview: a live grant).
+  -- a paid edition needs BotolaGO+ now (in preview: a live grant or a valid entitlement).
   if edition.premium and not app_private.has_premium(actor) then
     raise exception using errcode = 'PT403', message = 'premium_required';
   end if;
@@ -1033,7 +1039,7 @@ begin
     raise exception using errcode = 'PT401', message = 'authentication_required';
   end if;
   v_member := app_private.has_premium(actor);
-  -- In preview only holders of a grant (the owner, staff) see anything.
+  -- In preview only members (a grant or a valid entitlement: the owner, staff) see anything.
   if mode = 'preview' and not v_member then
     return jsonb_build_object('available', false);
   end if;
@@ -1088,7 +1094,7 @@ $$;
 revoke all on function api.get_my_premium() from public, anon, authenticated, service_role;
 grant execute on function api.get_my_premium() to authenticated, service_role;
 comment on function api.get_my_premium() is
-  'The caller''s BotolaGO+ membership: {available, isMember, state, productCode, source, currentPeriodEnd, cancelAtPeriodEnd, graceUntil, chosenEdition, edition, editions}. state is the effective state (none, active, cancelling, grace, on_hold, expired, refunded, revoked); a complimentary grant reads as active with source grant. {available:false} while off (and in preview for anyone without a grant). Signed-in, step-up.';
+  'The caller''s BotolaGO+ membership: {available, isMember, state, productCode, source, currentPeriodEnd, cancelAtPeriodEnd, graceUntil, chosenEdition, edition, editions}. state is the effective state (none, active, cancelling, grace, on_hold, expired, refunded, revoked); a complimentary grant reads as active with source grant. {available:false} while off (and in preview for anyone who is not a member). Signed-in, step-up.';
 
 -- ---------------------------------------------------------------------------
 -- api.service_apply_billing_event
@@ -1606,7 +1612,9 @@ values (
 -- (app.card_edition_choices). What must NOT simply go is the accounting
 -- record: app_private.billing_events keeps its rows (amounts, dates, products,
 -- provider event ids) for the legal retention period, pseudonymised
--- (plan 5.8; the period is to be confirmed with the accountant).
+-- (plan 5.8). The retention period is 5 years (owner decision, 2026-10-13); no
+-- purge ships and no job is scheduled, so the pseudonymised rows stay until a
+-- reviewed purge is added.
 --
 -- This migration adds three things to the erasure, in the same style as
 -- 20261008123100 (the function is patched in place: each exact text is
@@ -1723,19 +1731,19 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261013100000, 'UTF8')), 'hex')
-    is distinct from '1d9e013fca6b35d8e778d13093b0bc5c6b45e8075d6ff03a434ada554870955e' then
+    is distinct from '155b5c0375254adf39f4ed32dd637edb89b2c347c959a9c0b9e86cefb6e20da2' then
     raise exception 'stop: 20261013100000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20261013100100, 'UTF8')), 'hex')
-    is distinct from '3e5bc578c39a0302c215c64a9659033713d83c821414f46ebb1af5af9ccdd448' then
+    is distinct from '711c497627a591b3ad833a433dded2472504a27c793e543d4503d4ff9f0348a2' then
     raise exception 'stop: 20261013100100 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20261013100200, 'UTF8')), 'hex')
-    is distinct from '4eb2ae72f7a7dec6cb97cb04f49cf423adeb349ce4d3025bc3bbec8589a26fe4' then
+    is distinct from '03d877f5b99b8d3ae9b79a323e59b5bef2cb78b13f4f613ac5f7bee0e9faee05' then
     raise exception 'stop: 20261013100200 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
   if encode(sha256(convert_to(part_20261013100300, 'UTF8')), 'hex')
-    is distinct from '85586975a7e8bda6d3fb6cd084aa9c9488f93c1b8b90daa2e2ae506b3f840fbd' then
+    is distinct from '5adcb80864de61772e5aaf39ffbec1c75955fdbe65c5b473988e35ae50606a38' then
     raise exception 'stop: 20261013100300 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

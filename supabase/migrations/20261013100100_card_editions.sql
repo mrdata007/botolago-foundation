@@ -172,7 +172,7 @@ begin
     raise exception using errcode = 'PT404', message = 'card_edition_not_found';
   end if;
   -- The free edition is always allowed, so a lapsed member can go back to it;
-  -- a paid edition needs BotolaGO+ now (in preview: a live grant).
+  -- a paid edition needs BotolaGO+ now (in preview: a live grant or a valid entitlement).
   if edition.premium and not app_private.has_premium(actor) then
     raise exception using errcode = 'PT403', message = 'premium_required';
   end if;

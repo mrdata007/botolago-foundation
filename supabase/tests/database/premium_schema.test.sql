@@ -10,7 +10,7 @@
 -- holo, electric, pixel and chrome (paid); a provider event id can be stored
 -- once; the helpers are not callable by any API role.
 begin;
-select extensions.plan(31);
+select extensions.plan(32);
 
 -- The eight tables.
 create function pg_temp.tables() returns text[] language sql immutable as $$
@@ -178,6 +178,12 @@ select extensions.throws_ok(
     'web', now(), now() - interval '1 day', now())$$,
   '23514', 'new row for relation "premium_entitlements" violates check constraint "premium_entitlements_period_check"',
   'a period ends after it starts');
+
+-- Retention is a decision, pinned: billing records are kept 5 years and nothing purges them.
+select extensions.ok(
+  obj_description('app_private.billing_events'::regclass, 'pg_class') like '%kept 5 years%'
+  and not exists (select 1 from cron.job where jobname like '%billing%' or jobname like '%premium%'),
+  'billing events are documented as kept 5 years (owner decision 2026-10-13) and no job purges them');
 
 -- The helpers belong to no API role.
 select extensions.is(

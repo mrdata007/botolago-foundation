@@ -36,6 +36,10 @@
 -- public, anon, authenticated and service_role, no policy, an index on every
 -- foreign-key column. Reads go through api functions.
 --
+-- RETENTION. Billing records are kept 5 years (owner decision, 2026-10-13); see
+-- docs/backend/PREMIUM_OPERATIONS_RUNBOOK.md. No purge ships: nothing deletes
+-- billing_events, and no job is scheduled.
+--
 -- DELETION. Entitlements, grants and customer ids hang off app.profiles by
 -- cascade. billing_events are accounting records: their user_id is set null
 -- when the profile goes and 20261013100300 pseudonymises them first.
@@ -58,7 +62,7 @@ alter table app_private.premium_settings enable row level security;
 alter table app_private.premium_settings force row level security;
 revoke all on app_private.premium_settings from public, anon, authenticated, service_role;
 comment on table app_private.premium_settings is
-  'The BotolaGO+ switches, one row, off by default. mode: off (nobody is a member, every read answers unavailable), preview (only holders of a live grant, for the owner and staff) or on. checkout_enabled lets the web checkout start (never while mode is off). billing_paused makes api.service_apply_billing_event refuse (retryable) so a database write can run with no billing writer. Changed only by app_private.premium_configure.';
+  'The BotolaGO+ switches, one row, off by default. mode: off (nobody is a member, every read answers unavailable), preview (the owner and staff: membership counts as in on, but nothing is public) or on. checkout_enabled lets the web checkout start (never while mode is off). billing_paused makes api.service_apply_billing_event refuse (retryable) so a database write can run with no billing writer. Changed only by app_private.premium_configure.';
 
 create function app_private.premium_configure(
   p_mode text default null,
@@ -249,7 +253,7 @@ alter table app_private.billing_events enable row level security;
 alter table app_private.billing_events force row level security;
 revoke all on app_private.billing_events from public, anon, authenticated, service_role;
 comment on table app_private.billing_events is
-  'Every billing provider event, stored once (provider_event_id is unique: a replay is a no-op) with the outcome it had. Accounting record: when the account is erased user_id is set null, the payload is emptied and subject_pseudonym keeps the events of one erased member together (20261013100300). Written only by api.service_apply_billing_event.';
+  'Every billing provider event, stored once (provider_event_id is unique: a replay is a no-op) with the outcome it had. Accounting record, kept 5 years (owner decision 2026-10-13; no purge ships). When the account is erased user_id is set null, the payload is emptied and subject_pseudonym keeps the events of one erased member together (20261013100300). Written only by api.service_apply_billing_event.';
 
 -- ---------------------------------------------------------------------------
 -- Grants: complimentary memberships given by staff
@@ -370,7 +374,9 @@ comment on function app_private.premium_effective_state(text, text, timestamptz,
 -- has_premium: the ONE check every premium feature calls
 --
 --   mode off      nobody
---   mode preview  only a live grant (the owner and staff)
+--   mode preview  the same truth table as on (a live grant, or a valid entitlement,
+--                 e.g. a staff test-mode purchase); owner decision 2026-10-13. What
+--                 differs from on is only what is shown publicly (20261013100100).
 --   mode on       a live grant, or an entitlement whose effective state is
 --                 active, cancelling or grace
 --
@@ -391,7 +397,7 @@ as $$
           and g.starts_at <= coalesce(p_at, statement_timestamp())
           and g.ends_at > coalesce(p_at, statement_timestamp()))
       or (
-        (select s.mode from app_private.premium_settings s where s.id) = 'on'
+        (select s.mode from app_private.premium_settings s where s.id) in ('preview', 'on')
         and exists (
           select 1 from app.premium_entitlements e
           where e.user_id = p_user
@@ -403,4 +409,4 @@ $$;
 revoke all on function app_private.has_premium(uuid, timestamptz)
   from public, anon, authenticated, service_role;
 comment on function app_private.has_premium(uuid, timestamptz) is
-  'Is this person a BotolaGO+ member right now? The one check every premium read calls. False for everyone while mode is off; in preview only a live grant counts; on, a live grant or an entitlement that is active, cancelling or in grace. No grant.';
+  'Is this person a BotolaGO+ member right now? The one check every premium read calls. False for everyone while mode is off; in preview and on, a live grant or an entitlement that is active, cancelling or in grace (same truth table). No grant.';

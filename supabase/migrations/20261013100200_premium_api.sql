@@ -133,7 +133,7 @@ begin
     raise exception using errcode = 'PT401', message = 'authentication_required';
   end if;
   v_member := app_private.has_premium(actor);
-  -- In preview only holders of a grant (the owner, staff) see anything.
+  -- In preview only members (a grant or a valid entitlement: the owner, staff) see anything.
   if mode = 'preview' and not v_member then
     return jsonb_build_object('available', false);
   end if;
@@ -188,7 +188,7 @@ $$;
 revoke all on function api.get_my_premium() from public, anon, authenticated, service_role;
 grant execute on function api.get_my_premium() to authenticated, service_role;
 comment on function api.get_my_premium() is
-  'The caller''s BotolaGO+ membership: {available, isMember, state, productCode, source, currentPeriodEnd, cancelAtPeriodEnd, graceUntil, chosenEdition, edition, editions}. state is the effective state (none, active, cancelling, grace, on_hold, expired, refunded, revoked); a complimentary grant reads as active with source grant. {available:false} while off (and in preview for anyone without a grant). Signed-in, step-up.';
+  'The caller''s BotolaGO+ membership: {available, isMember, state, productCode, source, currentPeriodEnd, cancelAtPeriodEnd, graceUntil, chosenEdition, edition, editions}. state is the effective state (none, active, cancelling, grace, on_hold, expired, refunded, revoked); a complimentary grant reads as active with source grant. {available:false} while off (and in preview for anyone who is not a member). Signed-in, step-up.';
 
 -- ---------------------------------------------------------------------------
 -- api.service_apply_billing_event

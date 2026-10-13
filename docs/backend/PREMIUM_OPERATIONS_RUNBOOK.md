@@ -57,11 +57,11 @@ it is.** Always read the row first and write the previous values down:
 select mode, checkout_enabled, billing_paused from app_private.premium_settings;
 ```
 
-| Mode      | Who is a member                                                                   | What the public sees                                                      |
-| --------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `off`     | Nobody (a grant or an entitlement does not count)                                 | Nothing. Every card is `standard`.                                        |
-| `preview` | Only holders of a live grant (the owner and staff). Entitlements are not counted. | Nothing public. A grant holder's own card shows the edition to them only. |
-| `on`      | A live grant, or an entitlement that is active, cancelling or in grace            | `premium_status` enabled; editions are public on cards.                   |
+| Mode      | Who is a member                                                                | What the public sees                                                |
+| --------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `off`     | Nobody (a grant or an entitlement does not count)                              | Nothing. Every card is `standard`.                                  |
+| `preview` | The same as `on`: a live grant, or a valid entitlement (a staff test purchase) | Nothing public. A member's own card shows the edition to them only. |
+| `on`      | A live grant, or an entitlement that is active, cancelling or in grace         | `premium_status` enabled; editions are public on cards.             |
 
 ```sql
 select app_private.premium_configure('preview', null, null);  -- launch step 1
@@ -75,8 +75,8 @@ select app_private.premium_configure(null, null, false);     -- resume billing w
 
 Switching `off` hides everything and keeps all data: entitlements, events,
 grants and each member's remembered edition. Switching back on restores it. The
-launch steps (delivery plan, section 5) are: `preview` and grants for the owner
-and staff, then an invited group with complimentary grants, then `on` with
+launch steps (delivery plan, section 5) are: `preview` with grants and test-mode
+purchases for the owner and staff, then an invited group with complimentary grants, then `on` with
 checkout enabled on the web. Each step is the owner's decision, run by the owner.
 
 `api.premium_status()` reports `enabled: true` only in mode `on`.
@@ -178,9 +178,9 @@ preview) are `app_private.premium_grants` rows made by staff with
 authentication, a reason of 8 to 500 characters, at most 400 days, audited, and
 repeating the same key answers the first grant. `api.admin_revoke_premium`
 ends one at once. A grant counts in modes `preview` and `on`, independently of
-any paid entitlement. Dual control for grants (the matrix in
-`ADMIN_DUAL_CONTROL_MATRIX.md` covers `platform_admin` only today) is a decision
-for the admin lane (see "Open questions").
+any paid entitlement. **One admin is enough** (owner decision, 2026-10-13): single operator, recent
+authentication, reason, audit. Do not add dual control for grants in the admin
+lane.
 
 ## Prices and products
 
@@ -228,8 +228,9 @@ card of `api.get_manager_cards`; nothing else about those answers changed.
 - pseudonymises `app_private.billing_events` before the account goes (user id
   cleared, raw payload emptied, a stable `erased-<hash>` pseudonym, `erased_at`);
   amounts, currency, dates, product and provider event ids are kept as
-  accounting records. **The retention period is to be confirmed with the
-  accountant** (plan 5.8);
+  accounting records kept for **5 years** (owner decision, 2026-10-13). No purge
+  ships and no job is scheduled: the rows stay until a reviewed, switch-gated
+  purge is added in a later migration;
 - everything else (entitlement, grants, customer ids, edition choice) goes by
   cascade with the profile.
 
@@ -300,10 +301,10 @@ null);`. Nobody is a member, every card is `standard`, the paywall answers
 
 ## Open questions
 
-See the report of lane B; the ones that need the owner or the accountant are:
-preview and test-mode purchases, dual control for grants, the retention period
-for billing events, whether to refuse deletion for a store subscription, and the
-Arabic labels of the editions.
+Decided by the owner on 2026-10-13: preview counts entitlements, grants need one
+admin, billing records are kept 5 years. Still open: whether to refuse deletion
+for a store subscription, and the Arabic labels of the editions (the owner will
+review them).
 
 ---
 

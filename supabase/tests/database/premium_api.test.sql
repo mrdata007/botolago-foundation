@@ -10,7 +10,7 @@
 -- Accounts: M member (monthly), Y member (yearly), N nobody, V verified MFA factor,
 -- G complimentary grant, S platform admin (aal2 session), X signed in, not staff.
 begin;
-select extensions.plan(56);
+select extensions.plan(57);
 select set_config('app.environment', 'test', true);
 
 create function pg_temp.u(n integer) returns uuid language sql immutable as $$
@@ -110,8 +110,10 @@ select extensions.is(pg_temp.run(null, null, 'api.premium_status()', 'anon') ->>
 select app_private.premium_configure('preview');
 select extensions.is(api.premium_status() ->> 'enabled', 'false',
   'preview: the public status still says disabled');
-select extensions.is(pg_temp.mine(pg_temp.u(1)), '{"available": false}'::jsonb,
-  'preview: a paying member without a grant sees nothing (entitlements do not count)');
+select extensions.is(pg_temp.mine(pg_temp.u(1)) ->> 'isMember', 'true',
+  'preview: a paying member (a staff test-mode purchase) is a member, as in on');
+select extensions.is(pg_temp.mine(pg_temp.u(3)), '{"available": false}'::jsonb,
+  'preview: someone with neither a grant nor an entitlement sees nothing');
 insert into app_private.premium_grants (user_id, ends_at, reason, granted_by_principal_id)
 select pg_temp.u(5), statement_timestamp() + interval '30 days', 'Preview for the owner and staff',
   (select id from app_private.staff_principals limit 1);

@@ -8,7 +8,9 @@
 -- (app.card_edition_choices). What must NOT simply go is the accounting
 -- record: app_private.billing_events keeps its rows (amounts, dates, products,
 -- provider event ids) for the legal retention period, pseudonymised
--- (plan 5.8; the period is to be confirmed with the accountant).
+-- (plan 5.8). The retention period is 5 years (owner decision, 2026-10-13); no
+-- purge ships and no job is scheduled, so the pseudonymised rows stay until a
+-- reviewed purge is added.
 --
 -- This migration adds three things to the erasure, in the same style as
 -- 20261008123100 (the function is patched in place: each exact text is
