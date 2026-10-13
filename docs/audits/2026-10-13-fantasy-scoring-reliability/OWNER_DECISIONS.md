@@ -124,8 +124,7 @@ discrepancy does not block the award.
 - **A yellow followed by a direct red stays −1 and −3**, as the published table implies.
 - **Own goals:** the event `goal/ownGoal` is read as an own goal by the named player. It
   counts for the other team's score.
-  - It is **−2** for the scorer (`ownGoal: −2` in the rule fixtures; confirm against the
-    published table).
+  - It is **−2** for the scorer (published table, `FANTASY_RULES_V1.md:50`).
   - It also counts as a goal conceded by his own team.
   - If the event names no player, or the goals still do not add up to the final score, only
     the affected goal facts wait (P2).
