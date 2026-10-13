@@ -2,7 +2,8 @@
 
 **Status:** plan for the owner's approval, 2026-10-12. Nothing is built. No app code, database,
 migration or deployment was touched to write it. The visual sketch to approve is
-[`botolago-plus-sketch.html`](botolago-plus-sketch.html) in this folder (open it in a browser).
+[`botolago-plus-sketch.html`](botolago-plus-sketch.html) in this folder (open it in a browser). Since
+2026-10-13 it shows the four-screen flow of section 3.0c.
 
 **Working name:** BotolaGO+ (French « BotolaGO+ », Arabic « BotolaGO+ » — the name stays in Latin
 script in both languages, like `app.name`).
@@ -302,7 +303,7 @@ What makes them clear and premium, and the rule we keep for each:
 6. **Close and back always visible**; Escape and the arrow keys work; swiping moves between value
    steps (not past the price, so nobody pays by swiping).
 
-### 3.0b The six steps (drawn in `botolago-plus-sketch.html`)
+### 3.0b The six steps (superseded by 3.0c; kept for the reasoning)
 
 **Revised 2026-10-12 (owner): headlines only.** Each step is one short headline, the visual and
 one button. The only other words kept are the honest minimum: « Jeu gratuit pour tous. Aucun point
@@ -344,6 +345,110 @@ The owner chose « vos amis » over « vos potes » for the duel step.
 - Tapping it opens Profil → Abonnement, with cancel reachable in two taps.
 - Built with the BotolaGO+ subscription work (it needs the renewal date, which exists only once
   payments are built), shipped switched off and tested before the monthly plan goes on sale.
+
+### 3.0c The four-screen flow and two routes (supersedes 3.0b; sketch rebuilt 2026-10-13)
+
+**Owner direction: « my manager, my club, my season ».** The six-step sketch of 3.0b is replaced by
+four screens with one visual job each. The sketch (`botolago-plus-sketch.html`) is a design
+prototype for approval, not app code; every price, date and name in it is example data.
+
+| #   | Screen            | Visual job                                                                                                                                                                                                                       | Primary button                              |
+| --- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| 1   | Personal preview  | The member's manager card as the hero, with an inline style selector (Holo, Électrique, Pixels, Chrome noir). One benefit sentence and the free-play line « Le jeu reste gratuit. BotolaGO+ ne donne aucun point supplémentaire. » | Voir les avantages                          |
+| 2   | Premium value     | One football story, « Ta meilleure journée de la saison » (points per journée, best one highlighted), and one rivalry (two manager identities, « Toi 7–4 Sami »). The CAP/SEL/TRF/CON comparison sits behind « Voir le détail ». Then exactly three benefits. | Choisir mon pass                            |
+| 3   | Choose your plan  | Two readable options, the chosen-style thumbnail, the three-benefit recap, total due today, renewal terms and the cancel path. Stands alone for people who tapped « Voir les prix ». Headline: « Ta carte. Tes rivalités. Toute ta saison. » (never a price). | Activer mon pass, 199 MAD / M'abonner, 29 MAD/mois |
+| 4   | Unlocked          | A brief reveal of the chosen card, optional share, « Gérer mon abonnement ». The close button (X) leaves the offer (the sketch shows the toast « Retour à l'app ») and never loops back to screen 1.                              | Ouvrir ma saison                            |
+
+Navigation: « Voir les prix » jumps to screen 3 from screens 1 and 2; swipe and arrow keys cannot
+move past screen 3; screen 4 is reached only through the purchase button.
+
+**Two routes**, switched in the desktop storyboard (« Parcours »):
+
+- **Joueur existant**: personal-looking data, starts at screen 1.
+- **Nouveau fan**: all data clearly labelled « Exemple », with the note « après ton inscription
+  gratuite ». Both routes reach the same plan screen.
+
+**Card hierarchy** (all four screens): manager name and club identity first; the captain photo is
+supporting and labelled « Capitaine cette semaine · K. Boutaïb »; OVR and tier sit in their own
+quiet box labelled « Note gagnée », visually separate from the BotolaGO+ badge (shown only once the
+member holds a pass); stats are secondary, in plain words (CAP = Capitaine, SEL = Titulaires,
+TRF = Transferts, CON = Régularité). Rule line: « Ton palier se gagne sur le terrain. BotolaGO+
+change le style, jamais la note. » The tier is a plain text label (« Palier Pro »), not a coloured
+chip, so it cannot be mistaken for a paid badge.
+
+**Visual system.** Quiet deep-navy background (no aurora, no ambient motion); the card is the only
+expressive element; one mint primary button; the club colour is a thin accent on the card. Motion
+only on style change (main card) and the unlock reveal; pricing and terms sit on stable
+high-contrast surfaces with no motion. Changa for display headlines (28 to 32 px), Manrope 16 px for
+body (Noto Sans Arabic in Arabic; Changa for Arabic display), billing text at least 14 px, buttons at
+least 48 px tall. French uses « tu » throughout (this overrides the `vous` table of 3.2 for the
+sketch; confirm before the build); Arabic is Modern Standard Arabic, second person singular.
+Reduced motion is honoured and can change while the page is open.
+
+#### Free vs BotolaGO+ (proposal, pending owner approval)
+
+This is a **proposal — pending owner approval**. It replaces the table of 1.3 for the four-screen
+sketch only once approved.
+
+| Area                                                                                                     | Free             | BotolaGO+ |
+| -------------------------------------------------------------------------------------------------------- | ---------------- | --------- |
+| Fantasy, points, leagues, Pronostics, Pépites                                                            | Everything       | Nothing extra |
+| Manager card, OVR and earned tier                                                                        | Yes              | Same, never changed |
+| Playing with friends, standings, basic results                                                           | Yes              | Same |
+| Premium card styles (Holo, Électrique, Pixels, Chrome noir)                                              | Preview only     | Yes |
+| Full season history                                                                                      | Basic            | Yes |
+| Detailed head-to-head history with friends                                                               | Today's duel     | Yes |
+| Personal weekly recap and season summary                                                                 | No               | Yes |
+| No ads                                                                                                   | None today       | Guaranteed |
+
+History and card stay the member's after cancelling. The three benefits shown on screens 2 and 3 are
+the styles, the full season history and the detailed duels with friends. **Open point:** the sketch
+says « Le style premium revient au style de base » after cancelling; the owner may prefer the
+opposite (the last style stays). The three benefits and this line must follow the final table.
+
+#### Pricing rules shown in the sketch
+
+- **Two options, both labelled « Exemple »:** Pass saison 199 MAD, « jusqu'au 31 mai 2027 », one
+  payment, no automatic renewal; Mensuel 29 MAD/mois, with the real next billing date (today plus
+  one month).
+- **Dates come from the calendar, never typed.** The season end is the next 31 May on or after
+  today. The next monthly billing date is today plus one month. The reminder is 3 days before each
+  renewal; the option shows « Rappel 3 jours avant chaque renouvellement » and the terms repeat it.
+- **Saving only with its basis, and the basis must match the pass period.** The sketch counts the
+  monthly payments needed to cover the same period (today to 31 May 2027 is 8 payments, so
+  « Économie de 33 MAD vs 29 MAD × 8 mois »), not a fixed 10 months. The first draft showed 91 MAD
+  against 10 months, which overstated the saving because the pass starts today, not in August. If
+  the owner wants the 10-month comparison, the pass must start at the season start and say so. The
+  saving is hidden when it is zero or negative. Recompute it if prices change.
+- **Total due today** is stated on its own, with the renewal terms, the cancel path
+  (« Profil › BotolaGO+ › Gérer mon abonnement ») and « Restaurer un achat » on the same screen.
+- **The headline never carries a price**; prices appear in the options and the buttons.
+- **Terms invented for the sketch, to be decided by the owner:** no automatic renewal for the pass;
+  monthly access stays active to the end of the paid period after cancelling; cancel before the
+  billing date to avoid the next charge; refund and early stop for the pass (the sketch says the
+  rule is to be confirmed). The terms block is labelled « Exemple, à valider » on the screen.
+- **Dummy actions:** « Restaurer un achat », « Gérer mon abonnement » and the share button only
+  show a message. The manage and cancel screen is not drawn; draw it before approval if the cancel
+  path is a concern.
+
+#### Validation plan
+
+1. **Moderated sessions, 5 to 6 per group, in French and in Arabic.** Groups: existing players (their
+   own card) and new fans (after the free sign-up). Tasks: choose a style, say what BotolaGO+ adds,
+   say what they would pay and when, find how to cancel, say whether the rating can be bought.
+   Pass criteria: nobody believes paying changes points; everyone finds the cancel path; the saving
+   basis is understood; Arabic reads naturally.
+2. **Funnel events**, named once the build starts, in this order: offer viewed, preview interaction
+   (a style tried), plan selected, checkout started, payment succeeded (taken from the billing
+   events, not from the button), first premium feature used (a premium style applied, the full
+   history opened or a detailed duel opened). Split every step by route (existing or new) and
+   language. No event is sent from the sketch.
+3. **Experiments, in priority order**, each after the previous one has a stable baseline:
+   1. Style preview on screen 1 versus a static card (does trying a style lift plan selection?).
+   2. Season pass shown first versus monthly first.
+   3. The saving line with its basis versus no saving line (trust and conversion).
+   4. Screen 2 story (best journée and rivalry) versus the three benefits alone.
+   5. The « Voir les prix » shortcut visible on screen 1 versus from screen 2 only.
 
 ### 3.1 Sections (mobile first, 390 px; one 672 px column from 768 px)
 
@@ -723,3 +828,11 @@ Start from `origin/main`, read this file and the sketch, then:
    (lawyer to advise; recommendation: off until the CNDP point is answered)?
 7. **Q7 Designs.** Which three designs first? Any club you could approach for a club edition?
 8. **Q8 Company.** Is Go Sports Technologies registered (needed for any payment contract)?
+9. **Q9 Free vs paid (3.0c).** Approve the proposed table? After cancelling, does the premium style
+   revert to the base style (as the sketch says) or stay?
+10. **Q10 Terms.** Confirm: the pass does not renew; monthly access runs to the end of the paid
+    period; cancel before the billing date; refund and early-stop rule for the pass.
+11. **Q11 Saving.** Compare against the months actually covered (8 today) or start the pass at the
+    season start so a 10-month comparison is honest?
+12. **Q12 Tier and rating names in Arabic.** The sketch shows « محترف » for the tier and keeps OVR in
+    Latin letters as a brand token; confirm.
