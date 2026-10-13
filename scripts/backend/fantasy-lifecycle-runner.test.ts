@@ -948,3 +948,105 @@ describe("season transition reliability", () => {
     });
   }
 });
+
+describe("RPC cost of one gameweek (docs/backend/FANTASY_WORKER_SCHEDULE.md)", () => {
+  const BATCH = 100;
+  const pages = (n: number) => Math.max(1, Math.ceil(n / BATCH));
+
+  /**
+   * The harness, with every cursor paged like a season of `teams` fantasy teams,
+   * `leagues` leagues and `players` priced players, so the worker's RPC count can
+   * be measured from the code instead of estimated.
+   */
+  function paged(teams: number, leagues: number, players: number) {
+    const { gateway, calls, state } = harness("provisional");
+    state.nextGameweekId = id(99);
+    const seen: Record<string, number> = {};
+    const nth = (name: string) => (seen[name] = (seen[name] ?? 0) + 1);
+    const paged: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        const n = nth(name);
+        switch (name) {
+          case "service_get_fantasy_scoring_snapshot": {
+            const last = n >= pages(teams);
+            return { ...snapshot(), hasMore: !last, afterTeamId: last ? null : id(1000 + n) };
+          }
+          case "service_finalize_fantasy_team_results": {
+            const last = n >= pages(teams);
+            return { finalized: 1, afterTeamId: last ? null : id(1000 + n), hasMore: !last };
+          }
+          case "service_enqueue_gameweek_finalized_notifications": {
+            const last = n >= pages(teams);
+            return {
+              scanned: 1,
+              enqueued: 1,
+              skipped: 0,
+              nextCursor: id(1000 + n),
+              hasMore: !last,
+            };
+          }
+          case "service_roll_fantasy_free_transfers":
+            return { updated: n <= pages(teams) ? 1 : 0 };
+          case "service_run_fantasy_price_batch": {
+            const last = n >= pages(players);
+            return { updatedMemberships: 0, afterPlayerId: id(2000 + n), hasMore: !last };
+          }
+          case "service_prepare_next_fantasy_gameweek": {
+            const last = n >= pages(teams);
+            return {
+              prepared: 1,
+              hasMore: !last,
+              nextGameweekId: id(99),
+              status: "open",
+              alreadyAdvanced: false,
+            };
+          }
+          case "service_fantasy_scoring_league_page": {
+            const last = n >= pages(leagues);
+            const inPage = Math.min(BATCH, leagues - (n - 1) * BATCH);
+            return {
+              leagueIds: Array.from({ length: Math.max(inPage, 0) }, (_, i) => id(3000 + i)),
+              afterLeagueId: id(3000 + n),
+              hasMore: !last,
+            };
+          }
+          default:
+            return gateway.rpc(name, args);
+        }
+      },
+    };
+    return { gateway: paged, calls };
+  }
+
+  // 1 state + 2 per score page (snapshot, persist) + begin finalization + 1 per page
+  // of: team results, free-transfer roll (plus its closing empty call), notifications,
+  // next-gameweek opening; restore Free Hit; 2 per ranking (overall, then one per
+  // league); league pages; price pages; complete gameweek, postwork and the prize pass.
+  const expected = (teams: number, leagues: number, players: number) =>
+    9 + 6 * pages(teams) + pages(leagues) + 2 * leagues + pages(players);
+
+  for (const [teams, leagues, players] of [
+    [300, 20, 450],
+    [1000, 100, 450],
+    [5000, 500, 450],
+    [20000, 2000, 450],
+  ] as const) {
+    it(`finalizes ${teams} teams, ${leagues} leagues in ${expected(teams, leagues, players)} RPCs`, async () => {
+      const { gateway } = paged(teams, leagues, players);
+      const result = await runFantasyLifecycle(gateway, {
+        gameweekId,
+        calculationVersion: 1,
+        maxBatches: 10_000,
+      });
+      expect(result.outcome).toBe("finalized");
+      expect(result.calls).toBe(expected(teams, leagues, players));
+    });
+  }
+
+  it("runs out of its RPC allowance with a code the Edge pass treats as 'continue next tick'", async () => {
+    const { gateway } = paged(5000, 500, 450);
+    await expect(
+      runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1, maxBatches: 600 }),
+    ).rejects.toThrow("fantasy_worker_batch_limit");
+  });
+});

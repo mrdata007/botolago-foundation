@@ -217,6 +217,31 @@ null, false);` before a write that touches fixtures or notifications, and
    fixture is written as finished, and once a day in the season job, the same
    function also rewrites `app.standings`
    ([SOFASCORE_CATALOG_AND_STANDINGS.md](docs/backend/SOFASCORE_CATALOG_AND_STANDINGS.md)).
+   Where migration 20261013170000 is applied, pg_cron also runs
+   `fantasy-worker-tick` every 10 minutes. It wakes the Edge Function
+   `fantasy-lifecycle-worker`, which runs the Fantasy lifecycle worker: it scores
+   the live and provisional gameweeks, selects the scoring modes, closes and
+   locks them, finalizes, rolls free transfers, prices, publishes rankings,
+   enqueues the finalized notifications, evaluates prizes and opens the next
+   gameweek. It calls the function only while a gameweek has work, and writes
+   the Fantasy tables (results, rankings, lineups, transfers, prices,
+   gameweeks), `app.notifications` and `app_private.fantasy_worker_runs`, under
+   one lease (`app_private.fantasy_worker_lease`) that the hourly GitHub
+   orchestrator and the manual worker workflow take too
+   ([FANTASY_WORKER_SCHEDULE.md](docs/backend/FANTASY_WORKER_SCHEDULE.md)). It
+   runs only while both `fantasy_automation_configure` and
+   `app_private.fantasy_worker_configure` are on (it ships off), so
+   `select app_private.fantasy_automation_configure(false);`, the pause command
+   above, stops the tick; restore with `true`. Pausing does not stop a pass that
+   has already started: it keeps its lease for at most about eight minutes, so
+   before a write to those tables wait until the lease row
+   (`select holder, expires_at, released_at from app_private.fantasy_worker_lease;`)
+   shows `released_at` set or `expires_at` in the past. To stop only this worker
+   and leave the Fantasy tick running:
+   `select app_private.fantasy_worker_configure(false);` (a second argument sets
+   the minutes between passes; restore the previous value afterwards). It adds
+   no second cron job to pause: its log rows are pruned by the write that adds
+   them.
 4. **Serialise, do not overlap.** If something else is writing, wait for it.
    Splitting a write into "small enough to be safe" is not a mitigation.
 

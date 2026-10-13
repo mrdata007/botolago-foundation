@@ -591,3 +591,7 @@ history row's SHA-256 equals the repository file). Evidence in
   count (gameweeks, fixtures, assignments, points, results, rankings,
   notifications, prices, lineups, audit rows) is identical before and after;
 - verdict `ok`, sanitized evidence scan `PASS rule=ALL count=0`.
+
+## Database-scheduled worker (migration 20261013170000)
+
+The lifecycle step of this pass can also run in the Edge Function `fantasy-lifecycle-worker`, woken every 10 minutes by pg_cron once the owner switches it on. Both take one lease, so they never run at the same time; a scheduled run of this workflow stands aside from the lifecycle (the summary shows `lifecycle.owner = database_worker`) while the database job is keeping up, and does the work itself when it is not. Everything else this pass does stays. See [FANTASY_WORKER_SCHEDULE.md](FANTASY_WORKER_SCHEDULE.md).

@@ -1,0 +1,87 @@
+// Automatic substitutions for one Fantasy lineup. Moved here from
+// src/backend/fantasy/substitutions.ts (which re-exports it unchanged) so the
+// Edge Function `fantasy-lifecycle-worker` runs the very code the scripts run.
+// Dependency free, so it runs under Bun (tests) and Deno (the Edge Function).
+
+import type { FantasyPosition } from "./fantasy-adaptive-core.ts";
+
+export interface SubstitutionPlayer {
+  readonly id: string;
+  readonly position: FantasyPosition;
+  readonly starter: boolean;
+  readonly benchOrder: number | null;
+  readonly didPlay: boolean;
+  readonly captain: boolean;
+  readonly viceCaptain: boolean;
+}
+
+export interface FormationLimit {
+  readonly position: FantasyPosition;
+  readonly minimum: number;
+  readonly maximum: number;
+}
+export interface AutomaticSubstitution {
+  readonly playerOutId: string;
+  readonly playerInId: string;
+  readonly reason: string;
+}
+
+export function calculateAutomaticSubstitutions(
+  players: readonly SubstitutionPlayer[],
+  formation: readonly FormationLimit[],
+  benchBoost: boolean,
+): {
+  readonly substitutions: readonly AutomaticSubstitution[];
+  readonly effectiveCaptainId: string | null;
+} {
+  const originalCaptain = players.find((player) => player.captain);
+  const vice = players.find((player) => player.viceCaptain);
+  const effectiveCaptainId = originalCaptain?.didPlay
+    ? originalCaptain.id
+    : vice?.didPlay
+      ? vice.id
+      : null;
+  if (benchBoost) return { substitutions: [], effectiveCaptainId };
+
+  // Keep unfilled starting slots in the formation. Their zero minutes do not
+  // prevent another eligible substitution, and each replacement must leave a
+  // legal XI even when some absent starters have no available replacement.
+  const effectiveStarters = players.filter((player) => player.starter);
+  const missing = players.filter((player) => player.starter && !player.didPlay);
+  const bench = players
+    .filter((player) => !player.starter && player.didPlay)
+    .sort((a, b) => (a.benchOrder ?? 99) - (b.benchOrder ?? 99));
+  const substitutions: AutomaticSubstitution[] = [];
+
+  for (const absent of missing) {
+    const candidateIndex = bench.findIndex((candidate) => {
+      if (candidate.position === "GK" || absent.position === "GK")
+        return candidate.position === absent.position;
+      return isValidFormation(
+        effectiveStarters.map((starter) => (starter.id === absent.id ? candidate : starter)),
+        formation,
+      );
+    });
+    if (candidateIndex < 0) continue;
+    const [candidate] = bench.splice(candidateIndex, 1);
+    if (!candidate) continue;
+    effectiveStarters[effectiveStarters.findIndex((starter) => starter.id === absent.id)] =
+      candidate;
+    substitutions.push({
+      playerOutId: absent.id,
+      playerInId: candidate.id,
+      reason: absent.position === "GK" ? "goalkeeper_did_not_play" : "outfield_did_not_play",
+    });
+  }
+  return { substitutions, effectiveCaptainId };
+}
+
+function isValidFormation(
+  players: readonly SubstitutionPlayer[],
+  limits: readonly FormationLimit[],
+): boolean {
+  return limits.every((limit) => {
+    const count = players.filter((player) => player.position === limit.position).length;
+    return count >= limit.minimum && count <= limit.maximum;
+  });
+}

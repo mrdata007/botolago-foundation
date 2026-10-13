@@ -37,8 +37,8 @@ select extensions.is(
    from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') with ordinality as t(c, ordinality)),
   array['fantasy_lifecycle_tick', 'fantasy_gameweek_lock', 'fantasy_gameweek_clubs', 'fantasy_fixture_coverage',
     'fantasy_scoring', 'cron_jobs', 'news_publication', 'news_sitemap', 'news_import', 'live_scores',
-    'provider_refresh', 'email_delivery', 'browser_errors', 'account_deletion', 'fantasy_progression', 'manager_card', 'rapidapi_budget', 'fantasy_staged_stats'],
-  'health lists the three new checks after the Fantasy ones, and every earlier check (no season yet, so no deadline watch; account_deletion, 20261006143700, then fantasy_progression, 20261009091728, then manager_card, 20261010120300, then rapidapi_budget, 20261013110000, then fantasy_staged_stats, 20261013160300, last)');
+    'provider_refresh', 'email_delivery', 'browser_errors', 'account_deletion', 'fantasy_progression', 'manager_card', 'rapidapi_budget', 'fantasy_staged_stats', 'fantasy_worker'],
+  'health lists the three new checks after the Fantasy ones, and every earlier check (no season yet, so no deadline watch; account_deletion, 20261006143700, then fantasy_progression, 20261009091728, then manager_card, 20261010120300, then rapidapi_budget, 20261013110000, then fantasy_staged_stats, 20261013160300, then fantasy_worker, 20261013170100, last)');
 select extensions.ok(
   'fantasy_gameweek_clubs' ~ '^[a-z][a-z0-9_]{1,60}$' and 'fantasy_fixture_coverage' ~ '^[a-z][a-z0-9_]{1,60}$'
     and 'fantasy_scoring' ~ '^[a-z][a-z0-9_]{1,60}$',

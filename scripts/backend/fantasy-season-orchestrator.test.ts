@@ -1762,3 +1762,166 @@ describe("two-stage statistics: provisional points are not late", () => {
     expect(gap).toMatchObject({ hoursSinceWindowEnd: null, overdue: true });
   });
 });
+
+describe("one writer at a time: the lifecycle lease (docs/backend/FANTASY_WORKER_SCHEDULE.md)", () => {
+  const locked = () => calendar([{ sequence: 1, status: "locked", scoringInputVersion: 1 }]);
+
+  /** The lifecycle RPCs of one locked gameweek, plus an in-memory lease and status. */
+  function leased(
+    options: {
+      held?: string;
+      status?: unknown;
+      noLeaseFunction?: boolean;
+    } = {},
+  ) {
+    const lease = { held: options.held ?? (null as string | null), released: false };
+    const lifecycle = (name: string, args: Record<string, unknown>): unknown => {
+      switch (name) {
+        case "service_fantasy_worker_status": {
+          if (options.status instanceof Error) throw options.status;
+          return options.status;
+        }
+        case "service_fantasy_worker_lease_acquire":
+          if (options.noLeaseFunction)
+            throw rpcFailure("fantasy_orchestrator_rpc_failed", "PGRST202");
+          if (lease.held) return { acquired: false, reason: "held", holder: lease.held };
+          lease.held = String(args.p_holder);
+          return { acquired: true, token: id(990), holder: lease.held };
+        case "service_fantasy_worker_lease_release":
+          lease.released = true;
+          lease.held = null;
+          return { released: true };
+        case "service_fantasy_lifecycle_state":
+          return {
+            gameweekId: args.p_gameweek_id,
+            seasonId: id(1),
+            status: "locked",
+            lockVersion: 5,
+            sequenceNumber: 1,
+            scoringInputVersion: 1,
+          };
+        case "service_advance_fantasy_lifecycle":
+          return {
+            gameweekId: args.p_gameweek_id,
+            seasonId: id(1),
+            status: "locked",
+            lockVersion: 5,
+            sequenceNumber: 1,
+            scoringInputVersion: 1,
+            changed: false,
+            hasMore: false,
+            waitingReason: "football_not_final",
+          };
+        default:
+          throw new Error(`unexpected_rpc_${name}`);
+      }
+    };
+    return { lease, ...gateway(locked(), { lifecycle }) };
+  }
+
+  const activeStatus = {
+    enabled: true,
+    databaseWorkerActive: true,
+    workPending: true,
+    lastOkAt: "2026-09-24T21:55:00Z",
+    leaseHeld: false,
+  };
+  const ran = (calls: Array<{ name: string }>) =>
+    calls.some((call) => call.name === "service_advance_fantasy_lifecycle");
+
+  test("takes the lease around the lifecycle and frees it afterwards", async () => {
+    const { gateway: g, calls, lease } = leased();
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: false },
+    });
+    expect(ran(calls)).toBe(true);
+    expect(summary.lifecycle).toEqual({ owner: "github" });
+    expect(summary.workers).toHaveLength(1);
+    const names = calls.map((call) => call.name);
+    expect(names.indexOf("service_fantasy_worker_lease_acquire")).toBeLessThan(
+      names.indexOf("service_fantasy_lifecycle_state"),
+    );
+    expect(lease.released).toBe(true);
+    expect(
+      calls.find((call) => call.name === "service_fantasy_worker_lease_acquire")?.args,
+    ).toEqual({
+      p_holder: "github:42",
+      p_ttl_seconds: 420,
+    });
+  });
+
+  test("does not run the lifecycle while another holder (the database job) has the lease", async () => {
+    const { gateway: g, calls, lease } = leased({ held: "edge:abc123" });
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: false },
+    });
+    expect(ran(calls)).toBe(false);
+    expect(calls.some((call) => call.name === "service_fantasy_lifecycle_state")).toBe(false);
+    expect(summary.lifecycle).toEqual({ owner: "lease_held", heldBy: "edge:abc123" });
+    expect(summary.workers).toEqual([]);
+    expect(summary.verdict).toBe("waiting");
+    // The other holder's lease is not touched.
+    expect(lease.held).toBe("edge:abc123");
+    expect(lease.released).toBe(false);
+  });
+
+  test("a scheduled run leaves the lifecycle to the database job while it is on and keeping up", async () => {
+    const { gateway: g, calls } = leased({ status: activeStatus });
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: true },
+    });
+    expect(ran(calls)).toBe(false);
+    expect(calls.some((call) => call.name === "service_fantasy_worker_lease_acquire")).toBe(false);
+    expect(summary.lifecycle).toEqual({ owner: "database_worker" });
+    expect(summary.deferredGameweeks).toEqual([]);
+    // It still watches: the read-only deadline watch ran.
+    expect(calls.some((call) => call.name === "service_fantasy_deadline_watch")).toBe(true);
+    expect(summary.verdict).toBe("ok");
+  });
+
+  test("a scheduled run takes over when the database job is off or behind", async () => {
+    for (const status of [
+      { ...activeStatus, enabled: false, databaseWorkerActive: false },
+      { ...activeStatus, databaseWorkerActive: false, lastOkAt: "2026-09-24T19:00:00Z" },
+      new Error("fantasy_worker_rpc_failed"),
+    ]) {
+      const { gateway: g, calls } = leased({ status });
+      const summary = await orchestrateFantasySeason(g, {
+        now,
+        workerLease: { holder: "github:42", deferToDatabase: true },
+      });
+      expect(ran(calls)).toBe(true);
+      expect(summary.lifecycle).toEqual({ owner: "github" });
+    }
+  });
+
+  test("a manual dispatch never defers: it is the owner asking, and the lease still applies", async () => {
+    const { gateway: g, calls } = leased({ status: activeStatus });
+    await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: false },
+    });
+    expect(ran(calls)).toBe(true);
+    expect(calls.some((call) => call.name === "service_fantasy_worker_status")).toBe(false);
+  });
+
+  test("runs unmanaged, as it always did, on a database without the lease function", async () => {
+    const { gateway: g, calls } = leased({ noLeaseFunction: true });
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: true },
+    });
+    expect(ran(calls)).toBe(true);
+    expect(summary.lifecycle).toEqual({ owner: "github" });
+  });
+
+  test("without the option nothing about the lease is called", async () => {
+    const { gateway: g, calls } = leased();
+    const summary = await orchestrateFantasySeason(g, { now });
+    expect(calls.some((call) => call.name.includes("worker_lease"))).toBe(false);
+    expect(summary).not.toHaveProperty("lifecycle");
+  });
+});
