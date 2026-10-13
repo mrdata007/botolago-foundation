@@ -334,6 +334,15 @@ select extensions.is(pg_temp.save_outcome(false,current_setting('test.scoring_pl
 -- (prosrc md5 measured read-only on 2026-10-12), or the comparisons prove nothing.
 select extensions.is(md5((select prosrc from pg_proc where proname='persist_before' and pronamespace=pg_my_temp_schema())),
  '4a38b43093a540caf127f4348311a772','reference function is byte-identical to the reviewed incremental body');
+-- Migration 20261013180100 changes ONE rule on purpose: clean_sheet depends on minutes and
+-- cleanSheet (not goalsConceded). Everything below still compares the new body to the reference,
+-- so the reference takes that rule here, after its identity was proven. Rows in this file have
+-- 90 or more minutes, so the under-60 clause of the new rule never applies.
+do $$ declare d text; begin
+  d:=pg_get_functiondef('pg_temp.persist_before(uuid,bigint,text,jsonb,jsonb)'::regprocedure);
+  if position($q$('clean_sheet',array['minutes','cleanSheet','goalsConceded'])$q$ in d)=0 then raise exception 'reference rule not found'; end if;
+  execute replace(d,$q$('clean_sheet',array['minutes','cleanSheet','goalsConceded'])$q$,$q$('clean_sheet',array['minutes','cleanSheet'])$q$);
+end $$;
 
 -- Helpers for ordering probes: position in the submitted array of the result
 -- that belongs to the n-th snapshot row (snapshot order decides which error wins).
@@ -470,7 +479,7 @@ select extensions.lives_ok($$select api.service_persist_fantasy_scoring_results(
 -- through the old and the new body. Rows rotate through four shapes:
 --   n%4=0 full mode, every field verified            -> 12 categories
 --   n%4=1 simple mode, every field verified          ->  8 categories
---   n%4=2 full mode, goalsConceded unknown           -> 10 categories
+--   n%4=2 full mode, goalsConceded unknown           -> 11 categories (clean_sheet needs minutes and cleanSheet only)
 --   n%4=3 simple mode, minutes only a reviewed estimate ->  8 categories
 create function pg_temp.adaptive_row(v jsonb, n integer) returns jsonb language plpgsql as $$
 declare verified jsonb:='{"state":"verified","source":"fixture-stats","observedAt":"2026-08-10T14:00:00Z","references":["ref-1"]}';
@@ -486,7 +495,7 @@ end $$;
 create function pg_temp.adaptive_categories(n integer) returns text[] language sql immutable as $$
   select case n%4
     when 0 then array['appearance','goal','assist','clean_sheet','goals_conceded','saves','penalty_save','penalty_miss','yellow_card','red_card','second_yellow_dismissal','own_goal']
-    when 2 then array['appearance','goal','assist','saves','penalty_save','penalty_miss','yellow_card','red_card','second_yellow_dismissal','own_goal']
+    when 2 then array['appearance','goal','assist','clean_sheet','saves','penalty_save','penalty_miss','yellow_card','red_card','second_yellow_dismissal','own_goal']
     else array['appearance','goal','clean_sheet','goals_conceded','yellow_card','red_card','second_yellow_dismissal','own_goal'] end;
 $$;
 create or replace function app_private.fantasy_assert_scoring_snapshot(p_gameweek_id uuid,p_calculation_version bigint,p_input_digest text default null)
@@ -536,11 +545,11 @@ select extensions.is(pg_temp.save_outcome(false,pg_temp.adaptive_mutate(current_
  pg_temp.save_outcome(true,pg_temp.adaptive_mutate(current_setting('test.adaptive_players')::jsonb,1,array['events'],
    (select jsonb_agg(e) from jsonb_array_elements(current_setting('test.adaptive_players')::jsonb->pg_temp.adaptive_snapshot_row(1)->'events') e)||'{"category":"assist","points":0,"sourceKey":"x"}'::jsonb),'[]'),
  'adaptive: extra category, same error as before');
--- Same cardinality, wrong category (an unknown-goalsConceded row swaps clean_sheet in for own_goal).
-select extensions.is(pg_temp.save_outcome(false,pg_temp.adaptive_mutate(current_setting('test.adaptive_players')::jsonb,2,array['events','3','category'],'"clean_sheet"'),'[]')->>'reason',
+-- Same cardinality, wrong category (an unknown-goalsConceded row swaps goals_conceded in for own_goal).
+select extensions.is(pg_temp.save_outcome(false,pg_temp.adaptive_mutate(current_setting('test.adaptive_players')::jsonb,2,array['events','3','category'],'"goals_conceded"'),'[]')->>'reason',
  'fantasy_point_event_invalid','expect: a category outside the row''s expected set is an invalid event');
-select extensions.is(pg_temp.save_outcome(false,pg_temp.adaptive_mutate(current_setting('test.adaptive_players')::jsonb,2,array['events','3','category'],'"clean_sheet"'),'[]'),
- pg_temp.save_outcome(true,pg_temp.adaptive_mutate(current_setting('test.adaptive_players')::jsonb,2,array['events','3','category'],'"clean_sheet"'),'[]'),
+select extensions.is(pg_temp.save_outcome(false,pg_temp.adaptive_mutate(current_setting('test.adaptive_players')::jsonb,2,array['events','3','category'],'"goals_conceded"'),'[]'),
+ pg_temp.save_outcome(true,pg_temp.adaptive_mutate(current_setting('test.adaptive_players')::jsonb,2,array['events','3','category'],'"goals_conceded"'),'[]'),
  'adaptive: wrong category, same error as before');
 -- A row with an unscorable field must not need that field's categories (full snapshot rows would be rejected).
 select extensions.is(pg_temp.save_outcome(false,current_setting('test.scoring_players')::jsonb,'[]')->>'reason',
