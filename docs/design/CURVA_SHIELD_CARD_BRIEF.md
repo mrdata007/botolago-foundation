@@ -27,8 +27,8 @@ reference sketch of the shield (the owner's `botolago-plus-sketch.html`).
   `mount`) and passes `renderer-contract.test.ts` unchanged in what it requires. Switching back to
   Éclat stays a change to `active-renderer.ts` alone; the `eclat/` folder and its tests stay.
 - **The same accessible name.** The root's `aria-label` is the same sentence as today (Éclat's
-  `label`: name, rating or « pas encore de note », tier with LASTREET for `homa`, club, founder,
-  serial).
+  `label`: name, rating or « pas encore de note », tier with LASTREET for `homa`, club, founder;
+  no serial).
 - **Safety.** Every manager-supplied string goes through one escape; only the allow-listed tags; a
   club colour reaches an attribute only as a checked hex; a crest only through `crestHref`.
 - **Empty states draw as their own empty part.** No rating is a dash, never 0; no club, no serial,
@@ -82,3 +82,19 @@ reference sketch of the shield (the owner's `botolago-plus-sketch.html`).
   tests pass; the existing Manager Card, Curva, moments, inline, auth and routes tests pass, with
   tests that asserted Éclat internals updated to the shield's equivalent behaviour (none skipped);
   lint, typecheck and build pass.
+
+## Decisions made during the work
+
+- **The serial on the face.** The owner's layout (2026-10-13) puts « BOT #… · season » under the
+  crest, while an earlier decision (2026-10-12) stopped showing the serial anywhere a user sees it.
+  The face follows the newer layout; the label, the share picture and every other screen still do
+  not show it. One constant (`SERIAL_ON_FACE` in `shield/full.ts`) takes it off the face. For the
+  owner to confirm.
+- **Tracking in Arabic.** The card's text is HTML now, so the app's rule that nothing is tracked in
+  the Arabic interface (BG-0069) reaches its Latin runs too: LASTREET, « OVR » and the serial are
+  tracked in French and set without tracking in Arabic (Éclat drew them in SVG, out of the rule's
+  reach).
+- **The stage's widths stay** (232 to 296 px on a phone, 336 px from 768 px): the height budget was
+  set for the taller Éclat card, so the shorter shield only clears more.
+- **The emblem hangs 2.3 % off the side**, not the sketch's 6 %: the stage clips anything past its
+  8 px of padding (`overflow-x: clip`, so a phone never scrolls sideways).
