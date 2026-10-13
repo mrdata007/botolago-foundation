@@ -1,6 +1,7 @@
 /**
- * The card renderer interface (plan section 6.3). A card direction (today Éclat) implements it, so
- * the card's design can change without touching the screens.
+ * The card renderer interface (plan section 6.3). A card direction (today the collector shield,
+ * `./shield`; before it Éclat, `./eclat`) implements it, so the card's design can change without
+ * touching the screens.
  */
 import type {
   BeatName,
@@ -38,9 +39,11 @@ export interface TextRun {
   weight: 300 | 400 | 600 | 700 | 800;
   /**
    * `display` Changa, `body` Manrope, `arabic` Noto Sans Arabic; `serif` Instrument Serif (the
-   * second name line) and `displayLight` Changa 300 (the Arabic second name line).
+   * second name line) and `displayLight` Changa 300 (the Arabic second name line); `signature` the
+   * shield's autograph: Mr Dafoe for a Latin run, Aref Ruqaa 700 for an Arabic one (the drawer picks
+   * by the run's script).
    */
-  face: "display" | "body" | "arabic" | "serif" | "displayLight";
+  face: "display" | "body" | "arabic" | "serif" | "displayLight" | "signature";
   anchor: "start" | "middle" | "end";
   dir: "ltr" | "rtl";
   colour: string;
@@ -121,7 +124,7 @@ export interface BeatRoot {
 }
 
 export interface CardRenderer {
-  readonly id: string; // "eclat-v1"
+  readonly id: string; // "shield-v1"
   readonly beats: readonly BeatName[];
   /** One root element: role="img", aria-label from `label`, dir from strings.lang. */
   full(profile: CardProfile, options: RenderOptions): string;
@@ -162,4 +165,11 @@ export interface CardRenderer {
    * changes, when a beat starts or ends on the card, or when the card unmounts.
    */
   mount?(el: HTMLElement): () => void;
+  /**
+   * Optional. The full card's silhouette as a CSS `clip-path` value in percentages of its box, for
+   * the faces a screen draws in DOM over or behind the card (its back, the turn's edge and shade,
+   * the glint, the ceremony's back): they take the card's own shape. Without it they use the
+   * cut-cornered outline (`motion/outline.ts`).
+   */
+  outline?(rtl: boolean): string;
 }
