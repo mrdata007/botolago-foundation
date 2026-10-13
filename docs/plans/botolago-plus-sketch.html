@@ -1663,6 +1663,14 @@
       .fc-hw {
         display: block;
       }
+      /* italic, leaning like the BotolaGO wordmark; Arabic leans the other way */
+      .fc-hero {
+        transform: skewX(-13deg);
+        padding-inline: 0.22em;
+      }
+      :root:lang(ar) .fc-hero {
+        transform: skewX(11deg);
+      }
       /* gold: embossed */
       .mc.shd.st-free .fc-hero {
         color: #4a3510;
