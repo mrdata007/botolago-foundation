@@ -315,6 +315,9 @@
   filter: drop-shadow(0 0.35cqw 0 rgb(255 255 255 / 0.65));
 }
 
+/* Tracking is French only: in the Arabic interface the app's `html[dir="rtl"] * { letter-spacing:
+   normal }` (src/styles.css, BG-0069) takes it off every run of the card, Latin ones included, as on
+   every other screen; the card's text is HTML, so the house rule reaches it. */
 .mc-shield__ovrl {
   position: absolute;
   top: 2.6cqw;
