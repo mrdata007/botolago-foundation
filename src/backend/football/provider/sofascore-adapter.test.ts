@@ -7,7 +7,12 @@ import {
   parseSofascoreLineups,
   parseSofascoreStatistics,
 } from "./sofascore-adapter";
-import { parseSofascoreStoppage } from "../../../../supabase/functions/_shared/sofascore-performance-parse.ts";
+import {
+  isOwnGoalIncident,
+  parseSofascoreIncidentsDetailed,
+  parseSofascoreLineupsDetailed,
+  parseSofascoreStoppage,
+} from "../../../../supabase/functions/_shared/sofascore-performance-parse.ts";
 
 const sofa = (name: string) => providerFixture("sofascore", name);
 const LIMITED = "16958239"; // Touarga 2-1 FUS: limited coverage
@@ -177,18 +182,150 @@ describe("Sofascore adapter, from the Phase 0 fixtures", () => {
       }
   });
 
-  test("unplaced unknown incidents and attributed added time still fail closed", () => {
+  test("unplaced incidents that could matter, or name a player, still fail closed", () => {
     for (const incident of [
       { incidentType: "substitution", incidentClass: "newClass", time: 70 },
-      { incidentType: "varDecision", incidentClass: "regular", time: 70 },
-      { incidentType: "newIncident", time: 70 },
-      { incidentType: "injuryTime", incidentClass: "newClass", time: 45 },
+      { incidentType: "varDecision", incidentClass: "goalAwarded", time: 70 },
       { incidentType: "injuryTime", time: 45, player: { id: 1, name: "Player" } },
       { incidentType: "injuryTime", time: 45, playerOut: { id: 1, name: "Player" } },
+      { incidentType: "newIncident", time: 70, assist1: { id: 1, name: "Player" } },
+    ])
+      expect(() => parseSofascoreIncidents({ incidents: [incident] })).toThrow(FootballError);
+  });
+});
+
+describe("Sofascore adapter: fields that are never scored are tolerated (contract C1, F2)", () => {
+  const detailed = (raw: unknown) => parseSofascoreIncidentsDetailed(raw);
+  const lineupsDetailed = (raw: unknown) => parseSofascoreLineupsDetailed(raw);
+  const lineupsRaw = () =>
+    structuredClone(sofa("17132481.lineups")) as {
+      home: {
+        players: {
+          player: Record<string, unknown>;
+          statistics: Record<string, unknown>;
+          [key: string]: unknown;
+        }[];
+      };
+    };
+
+  test("an unplaced incident that cannot be score-relevant is dropped with a diagnostic", () => {
+    for (const incident of [
+      { incidentType: "varDecision", incidentClass: "regular", time: 70 },
+      { incidentType: "newIncident", time: 70 },
+      { incidentType: "varDecision" },
+    ]) {
+      const result = detailed({ incidents: [incident] });
+      expect(result.incidents).toEqual([]);
+      expect(result.diagnostics).toEqual([
+        `incidents.0: dropped (${incident.incidentType} without minute or side)`,
+      ]);
+    }
+  });
+
+  test("a null or wrongly typed incidentClass on an incident that is not score-relevant reads as absent", () => {
+    for (const incidentClass of [null, 7, { a: 1 }]) {
+      const result = detailed({
+        incidents: [{ incidentType: "varDecision", incidentClass, time: 30, isHome: true }],
+      });
+      expect(result.incidents).toHaveLength(1);
+      expect(result.incidents[0]).toMatchObject({
+        kind: "unknown",
+        rawType: "varDecision",
+        rawClass: null,
+      });
+      expect(result.diagnostics).toEqual([
+        "incidents.0.incidentClass: not used (" + typeName(incidentClass) + ")",
+      ]);
+    }
+    // The diagnostics carry paths and JSON types, never values.
+    const secret = detailed({
+      incidents: [{ incidentType: "varDecision", incidentClass: 12345, time: 30, isHome: true }],
+    });
+    expect(JSON.stringify(secret.diagnostics)).not.toContain("12345");
+  });
+
+  test("a score-relevant incident is still strict: a null incidentClass or a string minute fails", () => {
+    for (const incident of [
+      { incidentType: "goal", incidentClass: null, time: 30, isHome: true },
+      { incidentType: "card", incidentClass: 3, time: 30, isHome: true },
+      { incidentType: "goal", incidentClass: "regular", time: "30", isHome: true },
+      { incidentType: "substitution", incidentClass: "regular", time: 30, isHome: "yes" },
+      { incidentType: "inGamePenalty", incidentClass: "missed", time: 30.5, isHome: true },
     ])
       expect(() => parseSofascoreIncidents({ incidents: [incident] })).toThrow(FootballError);
   });
 
+  test("a null rating reads as absent for that player only, with a diagnostic", () => {
+    const raw = lineupsRaw();
+    raw.home.players[0]!.statistics.rating = null;
+    const { lineups, diagnostics } = lineupsDetailed(raw);
+    expect(lineups.players[0]!.stats!.rating).toBeNull();
+    expect(lineups.players[1]!.stats!.rating).not.toBeNull();
+    expect(diagnostics).toEqual(["home.players.0.statistics.rating: not used (null)"]);
+    expect(() => parseSofascoreLineups(raw)).not.toThrow();
+  });
+
+  test("a null position or a null name reads as absent; the id still identifies him", () => {
+    const raw = lineupsRaw();
+    const before = parseSofascoreLineups(sofa("17132481.lineups")).players[3]!;
+    raw.home.players[3]!.player.position = null;
+    raw.home.players[3]!.position = 42;
+    raw.home.players[3]!.player.name = null;
+    const { lineups, diagnostics } = lineupsDetailed(raw);
+    const after = lineups.players[3]!;
+    expect(after.externalId).toBe(before.externalId);
+    expect(after.position).toBeNull();
+    expect(after.name).toBe("");
+    expect([...diagnostics].sort()).toEqual([
+      "home.players.3.player.name: not used (null)",
+      "home.players.3.player.position: not used (null)",
+      "home.players.3.position: not used (number)",
+    ]);
+  });
+
+  test("a scored field of the wrong type still fails the lineups (negative control)", () => {
+    for (const patch of [
+      { minutesPlayed: "90" },
+      { goals: "1" },
+      { ownGoals: null },
+      { saves: "3" },
+      { totalPass: "40" },
+      { penaltyMiss: true },
+    ]) {
+      const raw = lineupsRaw();
+      Object.assign(raw.home.players[0]!.statistics, patch);
+      expect(() => parseSofascoreLineups(raw)).toThrow(FootballError);
+    }
+    const raw = lineupsRaw();
+    raw.home.players[0]!.player.id = "1140820";
+    expect(() => parseSofascoreLineups(raw)).toThrow(FootballError);
+    const sub = lineupsRaw();
+    sub.home.players[0]!.substitute = "false";
+    expect(() => parseSofascoreLineups(sub)).toThrow(FootballError);
+  });
+
+  test("a goal/ownGoal is still unknown to the parser and recognised by isOwnGoalIncident", () => {
+    const [incident] = parseSofascoreIncidents({
+      incidents: [
+        {
+          incidentType: "goal",
+          incidentClass: "ownGoal",
+          time: 10,
+          isHome: true,
+          player: { id: 1, name: "x" },
+        },
+      ],
+    });
+    expect(incident!.kind).toBe("unknown");
+    expect(isOwnGoalIncident(incident!)).toBe(true);
+    expect(isOwnGoalIncident({ rawType: "goal", rawClass: "regular" })).toBe(false);
+  });
+});
+
+const typeName = (value: unknown): string =>
+  value === null ? "null" : Array.isArray(value) ? "array" : typeof value;
+
+describe("Sofascore adapter (continued)", () => {
   test("statistics lines keep the shots-on-goal and keeper-save keys", () => {
     const lines = parseSofascoreStatistics(sofa(`${FULL}.statistics`));
     const keys = new Set(lines.map((line) => line.key));

@@ -16,11 +16,16 @@ export {
   DETAIL_FIELDS,
   SIMPLE_FIELDS,
   certified,
+  compareMoments,
+  deriveOrderedParticipation,
   deriveParticipation,
   readiness,
   type CertifiedStats,
+  type ClockMoment,
   type EvidenceState,
   type FieldEvidence,
+  type OrderedParticipation,
+  type OrderedParticipationTimeline,
   type ParticipationTimeline,
   type ScoringField,
   type StatisticEvidence,
@@ -33,11 +38,22 @@ export const EXCLUDED_SIMPLE_CATEGORIES = [
   "penalty_save",
   "penalty_miss",
 ] as const;
-const categoryFields: Record<string, readonly ScoringField[]> = {
+/** A scoring item the observation row itself marks as awaiting confirmation (C1). */
+export interface RowPendingItem {
+  readonly category: string;
+  readonly reason?: string | null;
+}
+
+/**
+ * The fields each category depends on. `clean_sheet` and `goals_conceded` also
+ * stand in for their fields below the full-appearance minutes (see
+ * `scorableCategories`); SQL: app_private.fantasy_category_fields.
+ */
+export const categoryFields: Record<string, readonly ScoringField[]> = {
   appearance: ["minutes"],
   goal: ["goals"],
   assist: ["assists"],
-  clean_sheet: ["minutes", "cleanSheet", "goalsConceded"],
+  clean_sheet: ["minutes", "cleanSheet"],
   goals_conceded: ["minutes", "goalsConceded"],
   saves: ["saves"],
   penalty_save: ["penaltiesSaved"],
@@ -47,7 +63,72 @@ const categoryFields: Record<string, readonly ScoringField[]> = {
   second_yellow_dismissal: ["secondYellowDismissals"],
   own_goal: ["ownGoals"],
 };
-/** Excluded/unknown categories are absent, never manufactured zero facts. */
+const ALL_CATEGORIES = Object.keys(categoryFields);
+
+/** The categories a mode counts: simple mode leaves four out (they are not pending, just not counted). */
+export function scopedCategories(mode: ScoringMode | null): string[] {
+  return ALL_CATEGORIES.filter(
+    (category) =>
+      !(mode === "simple" && (EXCLUDED_SIMPLE_CATEGORIES as readonly string[]).includes(category)),
+  ).sort();
+}
+
+/**
+ * The categories of one player-fixture whose facts allow a score, sorted. The
+ * rule is the same as SQL app_private.fantasy_row_scorable_categories:
+ *   appearance      minutes scorable
+ *   clean_sheet     minutes scorable and (cleanSheet scorable, or minutes under the
+ *                   full-appearance minutes with no appearance pending item)
+ *   goals_conceded  minutes scorable and (goalsConceded scorable, or the same)
+ *   the others      their own field
+ * "Scorable" is certified evidence (simple mode also accepts reviewed estimates).
+ */
+export function scorableCategories(
+  stats: CertifiedStats,
+  evidence: FieldEvidence,
+  fullAppearanceMinutes: number,
+  mode: ScoringMode | null,
+  pendingItems: readonly RowPendingItem[] = [],
+): string[] {
+  const ok = (field: ScoringField) => certified(field, stats, evidence, mode === "simple");
+  const minutes = ok("minutes");
+  const appearancePending = pendingItems.some((item) => item.category === "appearance");
+  const underFull = minutes && (stats.minutes as number) < fullAppearanceMinutes;
+  const scorable = (category: string): boolean => {
+    switch (category) {
+      case "clean_sheet":
+        return minutes && (ok("cleanSheet") || (underFull && !appearancePending));
+      case "goals_conceded":
+        return minutes && (ok("goalsConceded") || (underFull && !appearancePending));
+      default:
+        return categoryFields[category]!.every(ok);
+    }
+  };
+  return scopedCategories(mode).filter(scorable);
+}
+
+/**
+ * The categories that wait: in the mode's scope but not scorable, plus the
+ * categories the row's pending items name. Sorted. An `appearance` pending item
+ * still scores its confirmed value (it is scorable) and is listed here too.
+ */
+export function pendingCategories(
+  stats: CertifiedStats,
+  evidence: FieldEvidence,
+  fullAppearanceMinutes: number,
+  mode: ScoringMode | null,
+  pendingItems: readonly RowPendingItem[] = [],
+): string[] {
+  const scorable = new Set(
+    scorableCategories(stats, evidence, fullAppearanceMinutes, mode, pendingItems),
+  );
+  const waiting = new Set(scopedCategories(mode).filter((category) => !scorable.has(category)));
+  for (const item of pendingItems)
+    if (ALL_CATEGORIES.includes(item.category)) waiting.add(item.category);
+  return [...waiting].sort();
+}
+
+/** Pending categories emit no event; unknown is never turned into a zero fact. */
 export function scoreCertifiedPlayerFixture(
   playerId: string,
   fixtureId: string,
@@ -56,8 +137,9 @@ export function scoreCertifiedPlayerFixture(
   evidence: FieldEvidence,
   rules: ScoringRules,
   mode: ScoringMode | null,
+  pendingItems: readonly RowPendingItem[] = [],
 ): readonly PointEvent[] {
-  // Defaults only satisfy the arithmetic interface; the evidence filter below
+  // Defaults only satisfy the arithmetic interface; the category filter below
   // prevents any category with a defaulted input from escaping this function.
   const numeric = Object.fromEntries(
     [...SIMPLE_FIELDS, ...DETAIL_FIELDS].map((field) => [field, stats[field] ?? 0]),
@@ -68,18 +150,12 @@ export function scoreCertifiedPlayerFixture(
     bonus: 0,
     playerOfMatchPoints: 0,
   } as PlayerFixtureStats;
-  return scorePlayerFixture(playerId, fixtureId, position, complete, rules).filter((event) => {
-    if (
-      mode === "simple" &&
-      (EXCLUDED_SIMPLE_CATEGORIES as readonly string[]).includes(event.category)
-    )
-      return false;
-    const fields = categoryFields[event.category];
-    return (
-      fields !== undefined &&
-      fields.every((field) => certified(field, stats, evidence, mode === "simple"))
-    );
-  });
+  const allowed = new Set(
+    scorableCategories(stats, evidence, rules.fullAppearanceMinutes, mode, pendingItems),
+  );
+  return scorePlayerFixture(playerId, fixtureId, position, complete, rules).filter((event) =>
+    allowed.has(event.category),
+  );
 }
 
 export function chooseFixtureMode(input: {

@@ -372,7 +372,9 @@ function LeagueDetailBody() {
                               </div>
                             </UiTD>
                             <UiTD numeric className={cn(STANDINGS_FIGURE_CELL, ui.tone.muted)}>
-                              {nf.format(row.gameweekScore)}
+                              {row.gameweekScore === null
+                                ? t("fantasy.stat.none")
+                                : nf.format(row.gameweekScore)}
                             </UiTD>
                             <UiTD
                               numeric

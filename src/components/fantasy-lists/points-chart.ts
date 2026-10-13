@@ -9,6 +9,8 @@ export interface PointsBar {
   provisional: boolean;
   opponents: FantasyPlayerGameweekHistoryEntryDto["opponents"];
   fixtureScoring?: FantasyPlayerGameweekHistoryEntryDto["fixtureScoring"];
+  /** C4: items of this gameweek still waiting for confirmation; 0 when none or unreported. */
+  pendingItemCount: number;
   /**
    * Bar height as a share of the plot, 0–100. The best week of the window is
    * 100; a week that scored nothing — or lost points — is 0 and is drawn as
@@ -45,6 +47,7 @@ export function recentPointsBars(
     provisional: entry.state === "provisional",
     opponents: entry.opponents,
     ...(entry.fixtureScoring ? { fixtureScoring: entry.fixtureScoring } : {}),
+    pendingItemCount: entry.pendingItems?.length ?? 0,
     heightPct:
       entry.points <= 0 || best <= 0
         ? 0

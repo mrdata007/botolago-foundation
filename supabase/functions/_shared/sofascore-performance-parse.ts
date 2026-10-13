@@ -35,34 +35,57 @@ export class SofascoreParseError extends Error {
 }
 
 type Json = Record<string, unknown>;
+const describeType = (value: unknown): string =>
+  value === null ? "null" : Array.isArray(value) ? "array" : typeof value;
 const isObject = (value: unknown): value is Json =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
-/** Collects the places where a reply is not what was read in Phase 0. */
+/**
+ * Collects the places where a reply is not what was read in Phase 0.
+ *
+ * A strict check fails the whole reply for any path. A lenient view of it
+ * (`lenient()`) is for fields that are never scored: a wrong type there is
+ * recorded as a diagnostic (path and JSON type, never the value) and the field
+ * is read as absent. Any field that is scored is read through the strict check.
+ */
 class Check {
   readonly paths: string[] = [];
-  constructor(private readonly what: string) {}
-  bad(path: string) {
-    this.paths.push(path);
+  readonly diagnostics: string[];
+  private readonly soft: boolean;
+  constructor(
+    private readonly what: string,
+    diagnostics: string[] = [],
+    soft = false,
+  ) {
+    this.diagnostics = diagnostics;
+    this.soft = soft;
+  }
+  /** The same check, but a bad value is a diagnostic and reads as absent. */
+  lenient(): Check {
+    return new Check(this.what, this.diagnostics, true);
+  }
+  bad(path: string, value?: unknown) {
+    if (this.soft) this.diagnostics.push(`${path}: not used (${describeType(value)})`);
+    else this.paths.push(path);
   }
   object(value: unknown, path: string): Json | null {
     if (isObject(value)) return value;
-    this.bad(path);
+    this.bad(path, value);
     return null;
   }
   array(value: unknown, path: string): unknown[] | null {
     if (Array.isArray(value)) return value;
-    this.bad(path);
+    this.bad(path, value);
     return null;
   }
   int(value: unknown, path: string): number | null {
     if (typeof value === "number" && Number.isInteger(value)) return value;
-    this.bad(path);
+    this.bad(path, value);
     return null;
   }
   string(value: unknown, path: string): string | null {
     if (typeof value === "string") return value;
-    this.bad(path);
+    this.bad(path, value);
     return null;
   }
   optional<T>(
@@ -77,14 +100,14 @@ class Check {
   optionalNumber(value: unknown, path: string): number | undefined {
     return this.optional(value, path, (v, p) => {
       if (typeof v === "number" && Number.isFinite(v)) return v;
-      this.bad(p);
+      this.bad(p, v);
       return null;
     });
   }
   optionalBoolean(value: unknown, path: string): boolean | undefined {
     return this.optional(value, path, (v, p) => {
       if (typeof v === "boolean") return v;
-      this.bad(p);
+      this.bad(p, v);
       return null;
     });
   }
@@ -99,8 +122,9 @@ class Check {
       const o = this.object(v, p);
       if (!o) return null;
       const id = this.int(o.id, `${p}.id`);
-      const name = this.string(o.name, `${p}.name`);
-      return id === null || name === null ? null : { id, name };
+      // A name is display text, never identity: a missing or odd one reads as empty.
+      const name = this.lenient().string(o.name, `${p}.name`) ?? "";
+      return id === null ? null : { id, name };
     });
   }
   done(): void {
@@ -144,12 +168,15 @@ function readLineupSide(check: Check, value: unknown, path: string): RawLineupPl
     if (!e) return;
     const person = check.object(e.player, `${at}.player`);
     const id = person ? check.int(person.id, `${at}.player.id`) : null;
-    const name = person ? check.string(person.name, `${at}.player.name`) : null;
+    // Never scored: the name, the positions and the rating read as absent when they are
+    // null or of the wrong type (a diagnostic, not a failure). Identity is the id.
+    const soft = check.lenient();
+    const name = person ? (soft.string(person.name, `${at}.player.name`) ?? "") : null;
     const playerPosition = person
-      ? check.optionalString(person.position, `${at}.player.position`)
+      ? soft.optionalString(person.position, `${at}.player.position`)
       : undefined;
     const shirtNumber = check.optionalInt(e.shirtNumber, `${at}.shirtNumber`);
-    const pos = check.optionalString(e.position, `${at}.position`);
+    const pos = soft.optionalString(e.position, `${at}.position`);
     const substitute = check.optionalBoolean(e.substitute, `${at}.substitute`);
     let stats: RawLineupPlayer["stats"];
     if (e.statistics !== undefined) {
@@ -162,7 +189,7 @@ function readLineupSide(check: Check, value: unknown, path: string): RawLineupPl
           goalAssist: num("goalAssist"),
           ownGoals: num("ownGoals"),
           saves: num("saves"),
-          rating: num("rating"),
+          rating: soft.optionalNumber(s.rating, `${at}.statistics.rating`),
           totalPass: num("totalPass"),
           penaltyMiss: num("penaltyMiss"),
         };
@@ -182,6 +209,16 @@ function readLineupSide(check: Check, value: unknown, path: string): RawLineupPl
  * `saves` value is never read as zero saves.
  */
 export function parseSofascoreLineups(raw: unknown): PerformanceLineups {
+  return parseSofascoreLineupsDetailed(raw).lineups;
+}
+
+/** A parse result with the places where an unscored field was not used (paths and JSON types only). */
+export interface ParsedLineups {
+  readonly lineups: PerformanceLineups;
+  readonly diagnostics: readonly string[];
+}
+
+export function parseSofascoreLineupsDetailed(raw: unknown): ParsedLineups {
   const check = new Check("lineups");
   const root = check.object(raw, "");
   const home = readLineupSide(check, root?.home, "home");
@@ -215,9 +252,12 @@ export function parseSofascoreLineups(raw: unknown): PerformanceLineups {
       };
     });
   return {
-    provider: "sofascore",
-    players: [...build("home", home), ...build("away", away)],
-    fullCoverage,
+    lineups: {
+      provider: "sofascore",
+      players: [...build("home", home), ...build("away", away)],
+      fullCoverage,
+    },
+    diagnostics: check.diagnostics,
   };
 }
 
@@ -228,15 +268,47 @@ export const incidentLabel = (rawType: string, rawClass: string | null): string 
   `${rawType}${rawClass ? `/${rawClass}` : ""}`;
 
 /**
+ * Is this the SofaScore label of an own goal (`goal` with class `ownGoal`)? The
+ * parser keeps such an incident as `unknown` with its raw labels, as stored
+ * replies and the two-provider reconciler expect; the Fantasy builder reads it
+ * through this function. The named player is the one who put it into his own net.
+ */
+export const isOwnGoalIncident = (incident: {
+  readonly rawType: string;
+  readonly rawClass: string | null;
+}): boolean => incident.rawType === "goal" && incident.rawClass === "ownGoal";
+
+/** Types whose fields all matter to a score: strict, as before. Everything else is metadata. */
+const SCORING_TYPES: ReadonlySet<string> = new Set(["substitution"]);
+const scoringType = (rawType: string): boolean =>
+  SCORING_TYPES.has(rawType) || SCORE_RELEVANT_LABEL.test(rawType);
+
+/**
  * Incident type and class pairs seen in Phase 0: goal/regular, goal/penalty,
  * inGamePenalty/missed, card/yellow, card/yellowRed, card/red, substitution/
- * regular, and `period` markers (skipped). Anything else, including an own
- * goal (not seen in any of the ten matches), is `unknown` with its raw labels.
+ * regular, and `period` markers (skipped). Anything else is `unknown` with its
+ * raw labels; goal/ownGoal is one of those (see `isOwnGoalIncident`).
  * Rescinded incidents (VAR) are dropped.
+ *
+ * Strictness: an incident whose type can change a score (goal, card, penalty,
+ * substitution...) must be well formed in every field, or the whole reply fails.
+ * Any other incident (a VAR note, a period marker...) is metadata: a null or
+ * wrongly typed class, minute or side reads as absent with a diagnostic, and
+ * one that cannot be placed is dropped with a diagnostic, unless its label
+ * (type and class) or a named player says it could matter.
  * Only the explicitly understood `injuryTime` announcement without a class or
- * player attribution may be dropped when its minute or side is absent.
+ * player attribution may be dropped silently when its minute or side is absent.
  */
 export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
+  return parseSofascoreIncidentsDetailed(raw).incidents;
+}
+
+export interface ParsedIncidents {
+  readonly incidents: PerformanceIncident[];
+  readonly diagnostics: readonly string[];
+}
+
+export function parseSofascoreIncidentsDetailed(raw: unknown): ParsedIncidents {
   const check = new Check("incidents");
   const root = check.object(raw, "");
   const list = root ? check.array(root.incidents, "incidents") : null;
@@ -251,6 +323,7 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
     assist1?: { id: number; name: string };
     playerIn?: { id: number; name: string };
     playerOut?: { id: number; name: string };
+    path: string;
   }
   const read: Read[] = [];
   (list ?? []).forEach((item, index) => {
@@ -258,18 +331,21 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
     const o = check.object(item, at);
     if (!o) return;
     const rawType = check.string(o.incidentType, `${at}.incidentType`);
-    const rawClass = check.optionalString(o.incidentClass, `${at}.incidentClass`);
+    // A scored incident is read strictly; any other is metadata and read leniently.
+    const field = rawType !== null && scoringType(rawType) ? check : check.lenient();
+    const rawClass = field.optionalString(o.incidentClass, `${at}.incidentClass`);
     const entry: Read = {
       rawType: rawType ?? "",
       rawClass: rawClass ?? null,
-      time: check.optionalInt(o.time, `${at}.time`),
-      addedTime: check.optionalInt(o.addedTime, `${at}.addedTime`),
-      isHome: check.optionalBoolean(o.isHome, `${at}.isHome`),
-      rescinded: check.optionalBoolean(o.rescinded, `${at}.rescinded`),
+      time: field.optionalInt(o.time, `${at}.time`),
+      addedTime: field.optionalInt(o.addedTime, `${at}.addedTime`),
+      isHome: field.optionalBoolean(o.isHome, `${at}.isHome`),
+      rescinded: field.optionalBoolean(o.rescinded, `${at}.rescinded`),
       player: check.playerRef(o.player, `${at}.player`),
       assist1: check.playerRef(o.assist1, `${at}.assist1`),
       playerIn: check.playerRef(o.playerIn, `${at}.playerIn`),
       playerOut: check.playerRef(o.playerOut, `${at}.playerOut`),
+      path: at,
     };
     if (rawType !== null) read.push(entry);
   });
@@ -288,20 +364,24 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
     else if (rawType === "card" && rawClass === "red") kind = "red_card";
     else if (rawType === "substitution" && rawClass === "regular") kind = "substitution";
     if (incident.time === undefined || incident.isHome === undefined) {
+      const named =
+        incident.player !== undefined ||
+        incident.assist1 !== undefined ||
+        incident.playerIn !== undefined ||
+        incident.playerOut !== undefined;
       // Only the reviewed added-time announcement is harmless metadata.
-      // Unknown substitutions, VAR decisions and other unplaced labels fail closed.
+      if (rawType === "injuryTime" && rawClass === null && !named) continue;
+      // Unknown substitutions, goals and cards that cannot be placed must not be guessed at:
+      // fail the whole match so it goes to review instead of scoring on partial data.
       if (
-        rawType === "injuryTime" &&
-        rawClass === null &&
-        incident.player === undefined &&
-        incident.assist1 === undefined &&
-        incident.playerIn === undefined &&
-        incident.playerOut === undefined
+        scoringType(rawType) ||
+        SCORE_RELEVANT_LABEL.test(incidentLabel(rawType, rawClass)) ||
+        named
       )
-        continue;
-      // An incident that cannot be placed must not be guessed at: fail the whole
-      // match so it goes to review instead of scoring on partial data.
-      throw new SofascoreParseError("incidents", [`${rawType}: no minute or side`]);
+        throw new SofascoreParseError("incidents", [`${rawType}: no minute or side`]);
+      // Not score-relevant and not placed: nothing to score, nothing to guess.
+      check.diagnostics.push(`${incident.path}: dropped (${rawType} without minute or side)`);
+      continue;
     }
     out.push({
       provider: "sofascore",
@@ -317,7 +397,7 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
       rawClass,
     });
   }
-  return out;
+  return { incidents: out, diagnostics: check.diagnostics };
 }
 
 /** Stoppage time announced for each half, in minutes; null when SofaScore announced none. */

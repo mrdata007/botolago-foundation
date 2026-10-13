@@ -1,4 +1,5 @@
 import {
+  pendingCategories,
   scoreCertifiedPlayerFixture,
   type FieldEvidence,
 } from "../../src/backend/fantasy/adaptive-scoring";
@@ -120,6 +121,11 @@ export const scoringSnapshotSchema = z.object({
         evidence: z.record(z.string(), z.unknown()).optional(),
         scoringMode: z.enum(["full", "simple"]).nullable().optional(),
         participationKnown: z.boolean().optional(),
+        // Present only on rows with something pending (SQL: fantasy_scoring_document_pending).
+        pendingItems: z
+          .array(z.object({ category: z.string(), reason: z.string().nullable().optional() }))
+          .optional(),
+        pendingCategories: z.array(z.string()).optional(),
       }),
     )
     .max(128000),
@@ -226,6 +232,21 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
     const total = totals.get(player.fantasyPlayerId);
     if (!total) throw new Error("fantasy_scoring_player_missing");
     // Explicit zero events retract corrected statistics; never filter them.
+    if (snapshot.adaptive) {
+      // The database lists what is pending; this computes the same list from the same
+      // rule (adaptive-scoring.ts, SQL app_private.fantasy_row_pending_categories). A
+      // difference means the two drifted apart, and no points are saved on a guess.
+      const computed = pendingCategories(
+        player.stats,
+        (player.evidence ?? {}) as FieldEvidence,
+        rules.fullAppearanceMinutes,
+        player.scoringMode ?? null,
+        player.pendingItems ?? [],
+      );
+      const stated = [...(player.pendingCategories ?? [])].sort();
+      if (computed.join(",") !== stated.join(","))
+        throw new Error("fantasy_pending_categories_mismatch");
+    }
     const events = snapshot.adaptive
       ? scoreCertifiedPlayerFixture(
           player.playerId,
@@ -235,6 +256,7 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
           (player.evidence ?? {}) as FieldEvidence,
           rules,
           player.scoringMode ?? null,
+          player.pendingItems ?? [],
         )
       : scorePlayerFixture(
           player.playerId,
@@ -585,6 +607,7 @@ export async function runFantasyLifecycle(
     calculationVersion = prepared.calculationVersion;
   }
   let incrementalPending = false;
+  let pendingItemsOutstanding = false;
   let adaptivePending = false;
   let afterTeamId: string | null = null;
   let digest: string | null = null;
@@ -608,6 +631,12 @@ export async function runFantasyLifecycle(
     digest = snapshot.inputDigest;
     incrementalPending =
       (snapshot.pendingFixtures?.length ?? 0) > 0 || (snapshot.pendingPlayerIds?.length ?? 0) > 0;
+    // Scoring items that wait for confirmation keep the gameweek from finalizing (the
+    // database refuses with fantasy_pending_items_unresolved); the confirmed points are
+    // published meanwhile.
+    pendingItemsOutstanding = snapshot.playerFixtures.some(
+      (row) => (row.pendingCategories?.length ?? 0) > 0,
+    );
     adaptivePending =
       snapshot.adaptive === true &&
       (snapshot.fixtures ?? []).some((fixture) => fixture.adaptiveReady !== true);
@@ -683,7 +712,9 @@ export async function runFantasyLifecycle(
     } while (calls <= maxBatches);
   };
   if (!digest) throw new Error("fantasy_scoring_snapshot_missing");
-  if (adaptivePending || incrementalPending || state.status === "live") {
+  if (adaptivePending || incrementalPending || pendingItemsOutstanding || state.status === "live") {
+    const onlyPendingItems =
+      pendingItemsOutstanding && !adaptivePending && !incrementalPending && state.status !== "live";
     if (incrementalEnabled) {
       await publishRankings();
       return {
@@ -691,11 +722,16 @@ export async function runFantasyLifecycle(
         gameweekId,
         calculationVersion,
         processedTeams,
-        reason: "remaining_fixtures_pending",
+        reason: onlyPendingItems ? "pending_items" : "remaining_fixtures_pending",
         calls,
       };
     }
-    return { outcome: "waiting", gameweekId, reason: "adaptive_scoring_pending", calls };
+    return {
+      outcome: "waiting",
+      gameweekId,
+      reason: onlyPendingItems ? "fantasy_pending_items" : "adaptive_scoring_pending",
+      calls,
+    };
   }
   await call("service_begin_fantasy_finalization", {
     p_gameweek_id: gameweekId,

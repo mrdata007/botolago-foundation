@@ -1,6 +1,8 @@
 import { describe, expect, it } from "bun:test";
 import {
   chooseFixtureMode,
+  compareMoments,
+  deriveOrderedParticipation,
   deriveParticipation,
   readiness,
   scoreCertifiedPlayerFixture,
@@ -203,4 +205,84 @@ it("malformed service evidence remains pending instead of crashing scoring", () 
       ),
     ).not.toContain("appearance");
   }
+});
+
+describe("ordered participation (added minutes; contract C1)", () => {
+  const at = (minute: number, added: number | null = null) => ({ minute, added });
+  const starter = {
+    started: true,
+    enteredAt: null,
+    exitedAt: null,
+    concededAt: [] as ReturnType<typeof at>[],
+  };
+
+  it("orders by (minute, added) and cannot order equal numbers", () => {
+    expect(compareMoments(at(44), at(45))).toBe(-1);
+    expect(compareMoments(at(90, 5), at(90, 2))).toBe(1);
+    expect(compareMoments(at(90, 2), at(90, 5))).toBe(-1);
+    expect(compareMoments(at(77), at(77))).toBe(0);
+    expect(compareMoments(at(90, 2), at(90, 2))).toBe(0);
+    // No added time is the same as 0 added minutes...
+    expect(compareMoments(at(77, null), at(77, 0))).toBe(0);
+    // ...but against some added time on the same minute the clock cannot say (stricter).
+    expect(compareMoments(at(45), at(45, 3))).toBe(0);
+    expect(compareMoments(at(45, 3), at(45))).toBe(0);
+  });
+
+  it("agrees with deriveParticipation when no two moments share a minute", () => {
+    const timeline = { ...starter, exitedAt: at(59), concededAt: [at(10), at(80)] };
+    expect(deriveOrderedParticipation(timeline)).toEqual({
+      minutes: 59,
+      goalsConceded: 1,
+      ambiguousGoals: 0,
+    });
+    expect(
+      deriveParticipation({
+        complete: true,
+        orderingVerified: true,
+        appeared: true,
+        started: true,
+        enteredAt: null,
+        exitedAt: 59,
+        concededAt: [10, 80],
+      }).goalsConceded,
+    ).toBe(1);
+  });
+
+  it("puts a stoppage-time goal after a stoppage-time change, or leaves it ambiguous", () => {
+    // Came on at 90+2: a goal at 90+5 is his, one at 90+1 is not, one at 90+2 cannot be ordered.
+    const sub = { started: false, enteredAt: at(90, 2), exitedAt: null };
+    expect(deriveOrderedParticipation({ ...sub, concededAt: [at(90, 5)] }).goalsConceded).toBe(1);
+    expect(deriveOrderedParticipation({ ...sub, concededAt: [at(90, 1)] }).goalsConceded).toBe(0);
+    expect(deriveOrderedParticipation({ ...sub, concededAt: [at(90, 2)] })).toMatchObject({
+      goalsConceded: 0,
+      ambiguousGoals: 1,
+    });
+    // Went off at 90+2: the same goals the other way round.
+    const off = { started: true, enteredAt: null, exitedAt: at(90, 2) };
+    expect(deriveOrderedParticipation({ ...off, concededAt: [at(90, 5)] }).goalsConceded).toBe(0);
+    expect(deriveOrderedParticipation({ ...off, concededAt: [at(90, 1)] }).goalsConceded).toBe(1);
+  });
+
+  it("still refuses times that cannot be true", () => {
+    expect(() =>
+      deriveOrderedParticipation({
+        ...starter,
+        exitedAt: at(70),
+        enteredAt: at(77),
+        started: false,
+      }),
+    ).toThrow("participation_inconsistent");
+    expect(() => deriveOrderedParticipation({ ...starter, concededAt: [at(95)] })).toThrow(
+      "participation_inconsistent",
+    );
+    expect(() =>
+      deriveOrderedParticipation({
+        started: false,
+        enteredAt: null,
+        exitedAt: null,
+        concededAt: [],
+      }),
+    ).toThrow("participation_inconsistent");
+  });
 });

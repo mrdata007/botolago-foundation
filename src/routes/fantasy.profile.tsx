@@ -95,7 +95,7 @@ function TeamProfileBody() {
       : fantasyStateStore.read().chips;
   const summary = summaryQ.data ?? null;
   const gwPoints =
-    historyQ.data?.find((h) => h.gameweek === gw)?.totalPoints ?? summary?.gameweekPoints ?? 0;
+    historyQ.data?.find((h) => h.gameweek === gw)?.totalPoints ?? summary?.gameweekPoints ?? null;
   const displayName = user?.displayName?.trim() ?? "";
 
   return (
@@ -138,7 +138,11 @@ function TeamProfileBody() {
                 <div>
                   <UiKeyValueRow
                     label={t("fpl.gw_points").replace("{n}", String(gw ?? ""))}
-                    value={<Figure>{intNf.format(gwPoints)}</Figure>}
+                    value={
+                      <Figure>
+                        {gwPoints === null ? t("fantasy.stat.none") : intNf.format(gwPoints)}
+                      </Figure>
+                    }
                   />
                   <UiKeyValueRow
                     label={t("fpl.overall_points")}

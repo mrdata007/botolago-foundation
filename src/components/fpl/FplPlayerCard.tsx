@@ -87,6 +87,7 @@ export function FplPlayerCard({
   removeLabel,
   className,
   size = "md",
+  note,
 }: {
   player: FantasyPlayer;
   club?: Club;
@@ -112,6 +113,11 @@ export function FplPlayerCard({
   removeLabel?: string;
   className?: string;
   size?: "md" | "sm";
+  /**
+   * A state the figure on the plate cannot say on its own (a dash standing
+   * for "waiting for confirmation"); spoken after the name, not drawn.
+   */
+  note?: string;
 }) {
   const { tr, t } = useI18n();
   // The armband just passed to this player (not on first show): a gold ring
@@ -155,7 +161,7 @@ export function FplPlayerCard({
       sub={sub ?? " "}
       state={highlighted ? "selected" : doubtful ? "doubtful" : "default"}
       onClick={onClick}
-      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}${noMatch ? `, ${noMatchText}` : ""}`}
+      ariaLabel={`${fullName}${club ? `, ${tr(club.shortName)}` : ""}${role}${noMatch ? `, ${noMatchText}` : ""}${note ? `, ${note}` : ""}`}
       className={cn(dimmed && "opacity-45", (arrived || replacing) && "swap-in", className)}
       visual={
         // The marker rides inside the visual so it is placed against the

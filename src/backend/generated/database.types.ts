@@ -998,6 +998,10 @@ export type Database = {
         Args: { p_fantasy_player_id: string }
         Returns: Json
       }
+      fantasy_player_gameweek_history_before_pending: {
+        Args: { p_fantasy_player_id: string }
+        Returns: Json
+      }
       fantasy_player_gameweek_history_v1: {
         Args: { p_fantasy_player_id: string }
         Returns: Json
@@ -1221,6 +1225,10 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_points_before_live: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_my_fantasy_points_before_pending: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
@@ -1790,6 +1798,14 @@ export type Database = {
         Returns: Json
       }
       service_begin_fantasy_finalization_before_live: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+        }
+        Returns: Json
+      }
+      service_begin_fantasy_finalization_before_pending: {
         Args: {
           p_calculation_version: number
           p_gameweek_id: string

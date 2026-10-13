@@ -549,17 +549,83 @@ describe("automatic Fantasy: a match held back is retried without a request", ()
     expect(after.lines).toHaveLength(0);
   });
 
-  test("a data problem the same replies cannot fix is not retried", async () => {
-    const lineups = JSON.parse(JSON.stringify(REPLIES.lineups)) as {
-      home: { players: { substitute: boolean }[] };
+  test("a data problem the same replies cannot fix is not retried, and keeps the replies it was sent", async () => {
+    // A goal missing from the incidents: the goals no longer add up to the score, a real
+    // contradiction that stays a hold.
+    const incidents = JSON.parse(JSON.stringify(REPLIES.incidents)) as {
+      incidents: { incidentType: string; time?: number }[];
     };
-    lineups.home.players.find((p) => p.substitute === false)!.substitute = true;
+    incidents.incidents = incidents.incidents.filter(
+      (i) => !(i.incidentType === "goal" && i.time === 48),
+    );
     const db = fakeDb();
     const { run, lines } = makeRun(db);
-    await run.fromReplies(FIXTURE, EVENT, { ...REPLIES, lineups });
-    expect(lines[0].outcome).toBe("held:appearance_unexplained");
+    await run.fromReplies(FIXTURE, EVENT, { ...REPLIES, incidents });
+    expect(lines[0].outcome).toBe("held:goals_do_not_add_up");
     expect(lines[0].retry).toBe(false);
-    expect(db.attempts.get(FIXTURE)).toMatchObject({ status: "gave_up", matchData: null });
+    expect(db.attempts.get(FIXTURE)).toMatchObject({ status: "gave_up" });
+    // The trimmed replies and their digest go with the give-up, so a later reopen or
+    // diagnosis has the data. (Whether the database keeps them for a `gave_up` row is up to
+    // api.service_sofascore_fantasy_note: migration 20261011140000 stores them for `held` only.)
+    const note = db.calls.filter((c) => c.name === "service_sofascore_fantasy_note").at(-1)!;
+    expect(note.args.p_status).toBe("gave_up");
+    const kept = note.args.p_match_data as { version: number; lineups: { players: unknown[] } };
+    expect(kept.version).toBe(1);
+    expect(kept.lineups.players.length).toBeGreaterThan(22);
+    expect(note.args.p_data_digest).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  test("a match with a player's unknown field is recorded, not held, and says why", async () => {
+    const db2 = fakeDb();
+    const second = makeRun(db2);
+    const incidents = JSON.parse(JSON.stringify(REPLIES.incidents)) as {
+      incidents: { incidentType: string; incidentClass?: string; time: number; isHome: boolean }[];
+    };
+    // Two plain yellows for one player and no yellowRed: his card fields are unknown.
+    const yellow = (incidents.incidents as unknown as Record<string, unknown>[]).find(
+      (i) => i.incidentType === "card" && i.incidentClass === "yellow",
+    )!;
+    incidents.incidents.push(JSON.parse(JSON.stringify(yellow)));
+    await second.run.fromReplies(FIXTURE, EVENT, { ...REPLIES, incidents });
+    expect(second.lines[0]).toMatchObject({ outcome: "recorded" });
+    expect(second.lines[0].unknownReasons).toEqual({ card_conflict: 3 });
+    expect(records(db2)).toHaveLength(1);
+    expect(db2.attempts.get(FIXTURE)).toMatchObject({ status: "recorded" });
+  });
+
+  test("a substitute with minutes and no substitution incident is recorded with his minutes unknown, and is offered to the auto-mapping", async () => {
+    // Was a match-wide appearance_unexplained hold; now only his own minutes are unknown.
+    const lineups = JSON.parse(JSON.stringify(REPLIES.lineups)) as {
+      home: { players: { player: { id: number }; statistics?: Record<string, number> }[] };
+    };
+    lineups.home.players.find((p) => p.player.id === 1095729)!.statistics = { minutesPlayed: 4 };
+    const world = newWorld();
+    world.mapped.delete("1095729");
+    const db = fakeDb({ world, autoMap: "missing" });
+    const { run, lines } = makeRun(db);
+    await run.fromReplies(FIXTURE, EVENT, { ...REPLIES, lineups });
+    // He appears, so he needs a mapping like any starter or substitute: the auto-mapping was asked.
+    expect(names(db)).toContain("service_sofascore_auto_map_players");
+    const asked = db.calls.find((c) => c.name === "service_sofascore_auto_map_players")!.args as {
+      p_players: { sofascorePlayerId: string; appeared: boolean }[];
+    };
+    expect(asked.p_players.find((p) => p.sofascorePlayerId === "1095729")!.appeared).toBe(true);
+    // Unmapped and with no scoring trace he is left out of the request, so it is recorded.
+    expect(lines[0]).toMatchObject({ outcome: "recorded" });
+    // Mapped, his row carries the unknown minutes and the match is still recorded.
+    const db2 = fakeDb();
+    const second = makeRun(db2);
+    await second.run.fromReplies(FIXTURE, EVENT, { ...REPLIES, lineups });
+    expect(second.lines[0]).toMatchObject({
+      outcome: "recorded",
+      unknownReasons: { participation_unexplained: 3 },
+    });
+    const row = (
+      records(db2)[0]!.args.p_request as {
+        payload: { players: { identity: { sofascoreId: string }; stats: object }[] };
+      }
+    ).payload.players.find((r) => r.identity.sofascoreId === "1095729")!;
+    expect(row.stats).not.toHaveProperty("minutes");
   });
 
   test("the database refusing an identity keeps the replies for a retry", async () => {

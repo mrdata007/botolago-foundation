@@ -114,13 +114,13 @@ describe("getSummary names the round its points belong to", () => {
     expect(summary?.pointsGameweek).toBe(13);
   });
 
-  it("an empty history: no round, and the 0 it carries is not a score", async () => {
+  it("an empty history: no round and no figure (null, not a 0 that reads as a score)", async () => {
     history = [];
     const summary = await fantasyService.getSummary();
     expect(summary?.pointsGameweek).toBeNull();
-    // Unchanged for the screens that read it (Home's card), which is why the
-    // hub checks `pointsGameweek` before it prints the figure.
-    expect(summary?.gameweekPoints).toBe(0);
+    // Home's card prints a dash for null; before C5 this was a 0 that only
+    // the hub's `pointsGameweek` check kept off the screen.
+    expect(summary?.gameweekPoints).toBeNull();
     expect(summary?.gameweekRank).toBeNull();
   });
 });

@@ -5,6 +5,7 @@ import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import type { PointsBar } from "./points-chart";
 import { pointsUnit } from "@/lib/points-unit";
+import { pendingCountLabel } from "@/services/points-pending";
 
 /** The tallest bar, in px: the best week of the window. */
 const PLOT_PX = 64;
@@ -60,6 +61,7 @@ export function PointsChart({
             : t("fantasy.scoring.full"),
       ),
       bar.provisional ? t("fantasy.points.status.provisional") : null,
+      bar.pendingItemCount > 0 ? pendingCountLabel(bar.pendingItemCount, lang, t) : null,
     ]
       .filter(Boolean)
       .join(", ");
@@ -117,6 +119,11 @@ export function PointsChart({
                         : t("fantasy.scoring.full")}
                   </span>
                 ))}
+                {bar.pendingItemCount > 0 ? (
+                  <span className="block whitespace-normal">
+                    {pendingCountLabel(bar.pendingItemCount, lang, t)}
+                  </span>
+                ) : null}
               </span>
             </li>
           );
