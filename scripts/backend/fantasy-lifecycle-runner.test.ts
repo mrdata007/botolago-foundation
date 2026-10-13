@@ -808,6 +808,53 @@ describe("adaptive fixture integration", () => {
       expect(result.substitutions.length).toBe(chipType === "bench_boost" ? 0 : 1);
     }
   });
+  function withPendingCleanSheet() {
+    const doc = adaptive();
+    const row = doc.playerFixtures[7]!;
+    delete row.stats.cleanSheet;
+    row.evidence = {
+      ...row.evidence,
+      cleanSheet: {
+        state: "unknown",
+        source: "sofascore",
+        observedAt: "2026-10-13T00:00:00Z",
+        references: [],
+        reason: "timeline_same_moment",
+      },
+    };
+    row.pendingCategories = ["clean_sheet"];
+    return { doc, row };
+  }
+  it("a pending category emits no event and is never turned into a zero", () => {
+    const { doc, row } = withPendingCleanSheet();
+    const results = calculateSnapshotResults(doc);
+    const mine = results.playerResults.find((p) => p.fantasyPlayerId === row.fantasyPlayerId)!;
+    expect(mine.events.map((e) => e.category)).not.toContain("clean_sheet");
+    expect(mine.events.map((e) => e.category)).toContain("goals_conceded");
+    const base = calculateSnapshotResults(adaptive()).playerResults.find(
+      (p) => p.fantasyPlayerId === row.fantasyPlayerId,
+    )!;
+    expect(mine.events).toHaveLength(base.events.length - 1);
+  });
+  it("refuses a snapshot whose pendingCategories differ from the rule (SQL and TypeScript drifted)", () => {
+    const { doc, row } = withPendingCleanSheet();
+    row.pendingCategories = [];
+    expect(() => calculateSnapshotResults(doc)).toThrow("fantasy_pending_categories_mismatch");
+    row.pendingCategories = ["clean_sheet", "goals_conceded"];
+    expect(() => calculateSnapshotResults(doc)).toThrow("fantasy_pending_categories_mismatch");
+  });
+  it("an appearance pending item still scores its confirmed short value", () => {
+    const doc = adaptive();
+    const row = doc.playerFixtures[7]!;
+    row.stats.minutes = 45;
+    row.stats.cleanSheet = false;
+    row.pendingItems = [{ category: "appearance", reason: "minutes_conflict" }];
+    row.pendingCategories = ["appearance"];
+    const mine = calculateSnapshotResults(doc).playerResults.find(
+      (p) => p.fantasyPlayerId === row.fantasyPlayerId,
+    )!;
+    expect(mine.events.find((e) => e.category === "appearance")!.points).toBe(1);
+  });
   it("saves provisional player facts while unknown participation blocks lineup finalization", async () => {
     const calls: Call[] = [];
     const doc = adaptive();
@@ -876,6 +923,61 @@ describe("fixture-ready publication", () => {
         }>
       )[0],
     ).toMatchObject({ effectiveCaptainId: null, substitutions: [] });
+  });
+  it("publishes rankings and does not try to finalize while a scoring item is pending", async () => {
+    const base = harness("provisional");
+    const doc = snapshot();
+    doc.adaptive = true;
+    doc.incremental = true;
+    doc.scoringVersion = 2;
+    doc.ruleset.version = 2;
+    doc.playerFixtures = doc.playerFixtures.map((p) => ({
+      ...p,
+      scoringMode: "full" as const,
+      participationKnown: true,
+      evidence: Object.fromEntries(
+        Object.keys(p.stats).map((field) => [
+          field,
+          {
+            state: "verified",
+            source: "test",
+            observedAt: "2026-10-13T00:00:00Z",
+            references: ["t"],
+          },
+        ]),
+      ),
+    }));
+    const row = doc.playerFixtures[7]!;
+    delete row.stats.cleanSheet;
+    row.evidence = {
+      ...row.evidence,
+      cleanSheet: {
+        state: "unknown",
+        source: "sofascore",
+        observedAt: "2026-10-13T00:00:00Z",
+        references: [],
+      },
+    };
+    row.pendingCategories = ["clean_sheet"];
+    const gateway: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        if (name === "service_fantasy_lifecycle_state")
+          return { ...base.state, incrementalScoringEnabled: true };
+        if (name === "service_prepare_fantasy_live_scoring") return { calculationVersion: 1 };
+        if (name === "service_get_fantasy_scoring_snapshot") return doc;
+        return base.gateway.rpc(name, args);
+      },
+    };
+    const result = (await runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1 })) as {
+      outcome: string;
+      reason?: string;
+    };
+    expect(result).toMatchObject({ outcome: "points_published", reason: "pending_items" });
+    expect(base.calls.some((c) => c.name === "service_begin_fantasy_finalization")).toBe(false);
+    expect(base.calls.some((c) => c.name === "service_persist_fantasy_scoring_results")).toBe(true);
+    expect(
+      base.calls.filter((c) => c.name === "service_recalculate_fantasy_rankings"),
+    ).toHaveLength(4);
   });
   it("keeps the original captain and bench pending until participation settles", () => {
     const live = snapshot();

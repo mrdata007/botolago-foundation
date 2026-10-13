@@ -1,6 +1,6 @@
 # Fantasy: pending scoring items and the set-based points save
 
-**Status:** in development on branch `claude/fantasy-pending-items-fast-save`. Nothing is
+**Status:** in development on branch `claude/fantasy-pending-items-fast-save` (database and scorer: `wp3/pending-items`). Nothing is
 applied or deployed.
 
 **Owner decisions** (2026-10-13; recorded in
@@ -190,6 +190,53 @@ Everything below is additive. Rows without the new keys mean exactly what they m
 - **The team result** gains `pendingItemCount`.
 - **`api.fantasy_player_gameweek_history`:** per gameweek, the same `pendingItems` for that
   player.
+
+### Implementation notes for C2 to C4 (migration 20261013180100)
+
+- **Deploy order:** apply `20261013180100_fantasy_pending_items.sql` **before** the Edge Function
+  with the new builder. The old function against the new database is safe. The new builder
+  against the old database is refused by the old wrapper and the match stays held.
+- **Category rule** (TypeScript `scorableCategories` / `pendingCategories` in
+  `src/backend/fantasy/adaptive-scoring.ts`; SQL `app_private.fantasy_row_scorable_categories` /
+  `fantasy_row_pending_categories`). "Scorable" is `fantasy_field_scorable` in simple mode and
+  `fantasy_field_certified` otherwise.
+  - `clean_sheet` no longer depends on `goalsConceded`: minutes scorable, and (`cleanSheet`
+    scorable, or minutes under the ruleset's full-appearance minutes with no appearance pending
+    item).
+  - `goals_conceded`: minutes scorable, and (`goalsConceded` scorable, or the same under-minutes
+    clause).
+  - Below the full-appearance minutes neither category can score, so an unknown fact there is
+    not pending. A minutes straddle (an appearance pending item) turns that clause off.
+  - The runner compares the snapshot's `pendingCategories` with its own computation and stops
+    with `fantasy_pending_categories_mismatch` if they differ, so the two cannot drift silently.
+- **Recorder:** a core field is a pending item only when its evidence says `unknown`. Evidence that
+  is bad (a verified state with no valid value) still holds the fixture. `goals` unknown keeps
+  `simple_ready` false, because the goals cannot be added up. An unknown `ownGoals` makes the
+  club's goals a lower bound (they must not exceed the score); equality is required when none is
+  unknown. `pending_items` counts the unknown core fields plus the rows' `pendingItems`.
+- **Snapshot:** `pendingCategories` (sorted) and the row's `pendingItems` appear **only on rows
+  that have something pending**. A document with nothing pending is byte for byte what it was,
+  so no existing snapshot digest changes.
+- **Persist** also records what is pending per player in
+  `app_private.fantasy_player_gameweek_pending` (items with their reason, and whether the player's
+  participation or fixture is pending). It is replaced as a whole on every save and is what the read
+  RPCs use, so a points request does not read the snapshot.
+- **Read contract:** `pointsStatus` is `pending` when the player has no points row, or his
+  participation or fixture is pending and he has no appearance event; `provisional` when points
+  exist and the gameweek is not final or items wait; otherwise `final`. A reason is the row's
+  pending-item reason, else the `evidence.reason` of an unknown field the category depends on, else
+  `data_pending`. `pendingItemCount` counts the items of the team's lineup players.
+- **Finalization** refuses with `fantasy_pending_items_unresolved` while a ready counted fixture's
+  player has pending categories. Fixtures that are not ready keep their own refusals. The runner
+  treats pending items like a pending fixture: it publishes points and rankings and reports
+  `points_published` with reason `pending_items`; it does not call finalization.
+- **Adaptive participation:** the legacy "anonymous starter rows and no performance row" rule for
+  `pendingPlayerIds` now applies to legacy documents only. For an adaptive document participation
+  comes from the effective observation alone (`participationKnown`, and unknown minutes).
+- **Pépites:** `sofascore_sync_fixture_performances` still requires every core field verified
+  (`sofascore_performances_core_unverified`), so a fixture with pending items writes no performance
+  rows until the doubt is resolved. Unknown never becomes a stored zero.
+- **A given-up attempt** keeps its stored replies; retry selection still reads held attempts only.
 
 ### C5. App
 

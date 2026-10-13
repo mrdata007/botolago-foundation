@@ -438,8 +438,8 @@ select extensions.is((api.service_sofascore_fantasy_due(6, 1, 72, 2, 4) -> 'retr
   '9.24 a fixture that reached the attempt limit is no longer due');
 select extensions.is(api.service_sofascore_fantasy_note(pg_temp.id('f0', 2), '9002', 'gave_up', 'needs_review',
   '[]', null, null, null) ->> 'status', 'gave_up', '9.25 giving up is stored');
-select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' ->> 'matchData') is null, true,
-  '9.26 and drops the stored replies');
+select extensions.is((api.service_sofascore_fantasy_context(pg_temp.id('f0', 2)) -> 'attempt' ->> 'matchData') is null, false,
+  '9.26 and keeps the stored replies (20261013180100: a reopened match needs no new request)');
 -- Reopening (migration 20261012120000). Fixture 2 was just given up for 'needs_review'.
 select pg_temp.act('svc');
 select extensions.is(app_private.sofascore_fantasy_reopen(pg_temp.id('c1', 2), null), 0,
