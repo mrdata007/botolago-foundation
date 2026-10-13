@@ -363,8 +363,9 @@ select extensions.is(pg_temp.check('fantasy_scoring'),
 -- (fantasy_resolve_postponed_after_lock.test.sql).
 create function pg_temp.frozen_ago(p_status text, p_age interval) returns text language plpgsql as $$
 begin
+  -- A match that is not over has no final whistle (finalized_at >= kickoff_at).
   update app.fixtures set status = p_status::app.fixture_status, home_score = null, away_score = null,
-    kickoff_at = statement_timestamp() - p_age
+    kickoff_at = statement_timestamp() - p_age, finalized_at = null
   where id = 'e9000000-0000-4000-8000-000000000012';
   update app.fantasy_fixture_assignments set assigned_kickoff_at = statement_timestamp() - p_age
   where fixture_id = 'e9000000-0000-4000-8000-000000000012' and superseded_at is null;
@@ -617,7 +618,8 @@ select extensions.is(pg_temp.detail('fantasy_scoring'),
 
 select pg_temp.publish('e9000000-0000-4000-8000-000000000011');
 select pg_temp.publish('e9000000-0000-4000-8000-000000000012');
-update app.fixtures set finalized_at = statement_timestamp() - interval '12 hours 59 minutes'
+update app.fixtures set kickoff_at = statement_timestamp() - interval '15 hours',
+  finalized_at = statement_timestamp() - interval '12 hours 59 minutes'
 where id = 'e9000000-0000-4000-8000-000000000013';
 select extensions.is(pg_temp.status('fantasy_scoring'), 'ok', 'at 12 h 59 min the last match is still due');
 update app.fixtures set kickoff_at = statement_timestamp() - interval '15 hours',

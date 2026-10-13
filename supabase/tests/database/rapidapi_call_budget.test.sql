@@ -79,7 +79,7 @@ select extensions.is(pg_temp.status_with(8000), 'warn', '4.3 8000 warns');
 select extensions.is(pg_temp.status_with(9499), 'warn', '4.4 9499 still warns');
 select extensions.is(pg_temp.status_with(9500), 'fail', '4.5 9500 fails');
 select extensions.is(app_private.rapidapi_budget_health() ->> 'name', 'rapidapi_budget', '4.6 the check name');
-select extensions.like(app_private.rapidapi_budget_health() ->> 'detail', '9500 of 10000%',
+select extensions.alike(app_private.rapidapi_budget_health() ->> 'detail', '9500 of 10000%',
   '4.7 the detail states the count only');
 select extensions.is(
   (select c ->> 'status' from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c

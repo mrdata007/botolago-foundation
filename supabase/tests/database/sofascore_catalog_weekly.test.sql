@@ -45,7 +45,9 @@ select extensions.ok(not has_function_privilege('authenticated', 'api.service_so
 select extensions.ok(not has_function_privilege('authenticated', 'api.service_sofascore_catalog_record_image(text,text,text,text,text,text,integer)', 'execute'), '1.3 record image: not callable by signed-in users');
 select extensions.ok(has_function_privilege('service_role', 'api.service_sofascore_catalog_apply(jsonb,boolean)', 'execute'), '1.4 apply: callable by the service role');
 
-set local role service_role;
+-- The calls run as the test owner with service-role claims: service_role has
+-- no read on schema app, so the reads that follow could not run as it. Its
+-- execute grant is asserted in section 1.
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 
@@ -108,7 +110,6 @@ reset role;
 insert into app.media_assets (id, kind, storage_path, attribution, validation_status, validated_at, mime_type)
 values (pg_temp.id('a0', 1), 'team_crest', 'football/teams/7002/crest-curated.png', 'BotolaGO', 'validated', now(), 'image/png');
 update app.teams set crest_asset_id = pg_temp.id('a0', 1) where id = pg_temp.id('c1', 2);
-set local role service_role;
 select set_config('request.jwt.claim.role', 'service_role', true);
 
 select extensions.is(

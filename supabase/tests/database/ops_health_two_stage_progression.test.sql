@@ -89,7 +89,10 @@ create function pg_temp.whistle(p_ago interval) returns void language sql as $$
     kickoff_at = statement_timestamp() - p_ago - interval '2 hours'
   where season_id = 'ed200000-0000-4000-8000-000000000001'
 $$;
+-- A deadline moves only in a service request (fantasy_guard_deadline_change).
 create function pg_temp.deadline(p_in interval) returns void language sql as $$
+  select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+  select set_config('request.jwt.claim.role', 'service_role', true);
   update app.fantasy_gameweeks set deadline_at = statement_timestamp() + p_in,
     starts_at = greatest(statement_timestamp() + p_in, starts_at)
   where id = 'ed700000-0000-4000-8000-000000000002'

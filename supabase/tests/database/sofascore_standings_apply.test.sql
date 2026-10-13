@@ -42,7 +42,9 @@ select extensions.ok(not has_function_privilege('anon', 'api.service_apply_sofas
 select extensions.ok(not has_function_privilege('authenticated', 'api.service_apply_sofascore_standings(text,jsonb,timestamptz)', 'execute'), '1.2 not callable by signed-in users');
 select extensions.ok(has_function_privilege('service_role', 'api.service_apply_sofascore_standings(text,jsonb,timestamptz)', 'execute'), '1.3 callable by the service role');
 
-set local role service_role;
+-- The calls run as the test owner with service-role claims: service_role has
+-- no read on schema app, so the reads that follow could not run as it. Its
+-- execute grant is asserted in section 1.
 select set_config('request.jwt.claim.role', 'service_role', true);
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 

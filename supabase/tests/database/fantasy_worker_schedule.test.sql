@@ -94,8 +94,8 @@ begin
     scoring_input_version)
   values ('c9700000-0000-4000-8000-000000000001', 'c9630000-0000-4000-8000-000000000001',
     'c9300000-0000-4000-8000-000000000001', 1, 'Round 1', statement_timestamp() + p_deadline,
-    statement_timestamp() + p_deadline, statement_timestamp() + p_deadline + interval '3 days', p_status,
-    case when p_status = 'finalized' then 'final' else 'provisional' end,
+    statement_timestamp() + p_deadline, statement_timestamp() + p_deadline + interval '3 days', p_status::app.fantasy_gameweek_status,
+    (case when p_status = 'finalized' then 'final' else 'provisional' end)::app.fantasy_points_state,
     case when p_status = 'finalized' then statement_timestamp() else null end,
     case when p_closed then statement_timestamp() else null end, case when p_closed then 1 end, 1);
   if p_successor then
@@ -201,8 +201,9 @@ values ('c9700000-0000-4000-8000-000000000001', 'c9700000-0000-4000-8000-0000000
 select extensions.is(app_private.fantasy_worker_work_pending(), false, '3.7 successor opened: no');
 select pg_temp.gameweek('finalized', interval '-5 days', false, true);
 select extensions.is(app_private.fantasy_worker_work_pending(), true, '3.8 closed early, postwork still owed: yes');
-insert into app_private.fantasy_gameweek_postwork (gameweek_id, calculation_version, completed_at)
-values ('c9700000-0000-4000-8000-000000000001', 1, statement_timestamp());
+insert into app_private.fantasy_gameweek_postwork (gameweek_id, calculation_version, price_source_version,
+  price_player_ids, prices_completed_at, completed_at)
+values ('c9700000-0000-4000-8000-000000000001', 1, 1, '{}', statement_timestamp(), statement_timestamp());
 select extensions.is(app_private.fantasy_worker_work_pending(), false, '3.9 postwork done: no');
 update app.fantasy_seasons set status = 'planned' where id = 'c9630000-0000-4000-8000-000000000001';
 select pg_temp.gameweek('live');

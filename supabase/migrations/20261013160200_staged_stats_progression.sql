@@ -424,6 +424,8 @@ create function api.get_my_fantasy_points(p_team_id uuid, p_gameweek_id uuid)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare d jsonb;
 begin
+  perform app_private.assert_mfa_step_up();
+  -- Ownership, authentication and the same step-up also remain in the wrapped RPC.
   d := api.get_my_fantasy_points_before_staged(p_team_id, p_gameweek_id);
   return d || jsonb_build_object('closedAt', (select g.closed_at from app.fantasy_gameweeks g where g.id = p_gameweek_id));
 end $$;
