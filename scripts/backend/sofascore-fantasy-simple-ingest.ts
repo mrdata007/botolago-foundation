@@ -189,11 +189,29 @@ async function post(token: string, sql: string, readOnly: boolean) {
   return { status: response.status, body: await response.text() };
 }
 
+/**
+ * The database's own error text from a refused Management API call, so a failed
+ * read says why. It is Postgres or API wording (no data, no credentials), cut
+ * to 300 characters on one line.
+ */
+export function errorText(body: string): string {
+  let text = body;
+  try {
+    const parsed = JSON.parse(body) as { message?: unknown; error?: unknown };
+    const message = parsed.message ?? parsed.error;
+    if (typeof message === "string") text = message;
+  } catch {
+    // Not JSON: keep the raw body.
+  }
+  return text.replace(/\s+/g, " ").trim().slice(0, 300) || "(empty body)";
+}
+
 /** Every read goes through here: one SELECT, sent read-only. */
 async function readJson<T>(token: string, sql: string, column: string): Promise<T> {
   if (!/^select\b/i.test(sql.trim())) throw new Refused("read_not_select");
   const { status, body } = await post(token, sql, true);
-  if (status !== 200 && status !== 201) throw new Refused(`read_failed: HTTP ${status}`);
+  if (status !== 200 && status !== 201)
+    throw new Refused(`read_failed: HTTP ${status}: ${errorText(body)}`);
   const value = (JSON.parse(body) as Array<Record<string, unknown>>)[0]?.[column];
   return (typeof value === "string" ? JSON.parse(value) : value) as T;
 }
@@ -392,7 +410,7 @@ if (import.meta.main) {
   try {
     process.exitCode = await main();
   } catch (error) {
-    console.log(
+    console.error(
       `SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE: ${error instanceof Error ? error.message : error}`,
     );
     process.exitCode = 2;

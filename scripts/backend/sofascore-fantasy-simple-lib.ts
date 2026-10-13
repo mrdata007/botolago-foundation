@@ -101,7 +101,11 @@ export interface Candidate {
 
 export interface Selection {
   readonly selected: readonly Candidate[];
-  readonly skipped: readonly { fixtureId: string; sofascoreEventId: string; reason: string }[];
+  readonly skipped: readonly {
+    fixtureId: string;
+    sofascoreEventId: string;
+    reason: string;
+  }[];
 }
 
 export interface SelectOptions {
@@ -117,7 +121,11 @@ export function selectFixtures(
   options: SelectOptions,
 ): Selection {
   const selected: Candidate[] = [];
-  const skipped: { fixtureId: string; sofascoreEventId: string; reason: string }[] = [];
+  const skipped: {
+    fixtureId: string;
+    sofascoreEventId: string;
+    reason: string;
+  }[] = [];
   for (const c of candidates) {
     if (options.round !== undefined && c.round !== options.round) continue;
     if (options.fixtureIds && !options.fixtureIds.includes(c.fixtureId)) continue;
@@ -138,7 +146,11 @@ export function selectFixtures(
                     ? "already_has_observation"
                     : null;
     if (why)
-      skipped.push({ fixtureId: c.fixtureId, sofascoreEventId: c.sofascoreEventId, reason: why });
+      skipped.push({
+        fixtureId: c.fixtureId,
+        sofascoreEventId: c.sofascoreEventId,
+        reason: why,
+      });
     else selected.push(c);
   }
   return { selected, skipped };
@@ -178,7 +190,10 @@ export interface UnmappedLine {
 
 export function buildReport(
   selection: Selection,
-  prepared: readonly { candidate: Candidate; result: PreparedSofascoreObservation }[],
+  prepared: readonly {
+    candidate: Candidate;
+    result: PreparedSofascoreObservation;
+  }[],
 ) {
   const lines: FixtureReportLine[] = prepared.map(({ candidate, result }) => ({
     fixtureId: candidate.fixtureId,
@@ -312,7 +327,7 @@ export function stateSql(fixtureIds: readonly string[]): string {
   'otherDigest', (select md5(coalesce(string_agg(o.id::text || o.digest, '|' order by o.id), '')) from app_private.fantasy_fixture_observations o where o.fixture_id not in (${ids})),
   'links', (select count(*) from app_private.football_provider_fixture_links),
   'forFixtures', (select coalesce(jsonb_agg(jsonb_build_object(
-      'fixtureId', o.fixture_id, 'digest', o.digest, 'source', o.source,
+      'id', o.id, 'fixtureId', o.fixture_id, 'digest', o.digest, 'source', o.source,
       'fullReady', o.full_ready, 'simpleReady', o.simple_ready) order by o.fixture_id, o.id), '[]'::jsonb)
     from app_private.fantasy_fixture_observations o where o.fixture_id in (${ids})),
   'emailMode', (select mode from app_private.notification_email_settings where id),
@@ -328,6 +343,7 @@ export interface WriteState {
   otherDigest: string;
   links: number;
   forFixtures: {
+    id: number;
     fixtureId: string;
     digest: string;
     source: string;
@@ -431,10 +447,24 @@ export function appliedProblems(
   if (after.observations !== before.observations + created)
     problems.push(`observations: ${before.observations} before, ${after.observations} after`);
   for (const item of items) {
+    const previous = before.forFixtures.filter((r) => r.fixtureId === item.fixtureId);
     const rows = after.forFixtures.filter((r) => r.fixtureId === item.fixtureId);
-    if (rows.length === 0)
-      problems.push(`fixture ${item.fixtureId}: no observation after the apply`);
-    for (const r of rows) {
+    for (const old of previous) {
+      const kept = rows.find((r) => r.id === old.id);
+      if (
+        !kept ||
+        kept.digest !== old.digest ||
+        kept.source !== old.source ||
+        kept.fullReady !== old.fullReady ||
+        kept.simpleReady !== old.simpleReady
+      )
+        problems.push(`fixture ${item.fixtureId}: historical observation ${old.id} changed`);
+    }
+    const previousIds = new Set(previous.map((r) => r.id));
+    const added = rows.filter((r) => !previousIds.has(r.id));
+    if (added.length !== 1)
+      problems.push(`fixture ${item.fixtureId}: expected one new observation, got ${added.length}`);
+    for (const r of added) {
       if (r.source !== "provider-reconciled")
         problems.push(`fixture ${item.fixtureId}: unexpected source ${r.source}`);
       if (!r.simpleReady)
