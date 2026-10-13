@@ -403,6 +403,27 @@ describe("automatic Fantasy: unknown substitutes (no app player)", () => {
     expect(records(db)).toHaveLength(0);
   });
 
+  test("minute overrides are logged even when an unmapped scorer holds the match", async () => {
+    const world = newWorld();
+    world.mapped.delete(UNKNOWN_SCORER);
+    const db = fakeDb({ world });
+    const { run, lines } = makeRun(db);
+    const lineups = part("lineups") as {
+      home: { players: { player: { id: number }; statistics: { minutesPlayed: number } }[] };
+    };
+    // This mapped goalkeeper played the full match; the provider's 30 minutes
+    // therefore override his timeline while the unrelated scorer stays unmapped.
+    lineups.home.players.find((p) => p.player.id === 1140820)!.statistics.minutesPlayed = 30;
+    await run.fromReplies(FIXTURE, EVENT, { ...REPLIES, lineups });
+    expect(lines[0]).toMatchObject({
+      outcome: "held:unmapped_players",
+      unmapped: 1,
+      minutesFromSofascore: 1,
+    });
+    expect(records(db)).toHaveLength(0);
+    expect(world.observations).toBe(0);
+  });
+
   test("an unmapped starter with no scoring trace is left out as an anonymous starter of his club", async () => {
     const world = newWorld();
     world.mapped.delete(STARTERS[3]);
