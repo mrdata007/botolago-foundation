@@ -181,6 +181,18 @@ select extensions.is((api.service_record_sofascore_fantasy_observation(pg_temp.i
   '2.4 the two squad members who are not in the rows (23, 24) are the derived non-participants');
 select extensions.is(pg_temp.observations(), 0, '2.5 the dry runs stored nothing');
 select extensions.is((select count(*)::int from app_private.football_provider_fixture_links), 0, '2.6 and linked nothing');
+-- The SofaScore rating rides along in each row (top-level `rating`, outside `stats`): a number
+-- 0..10 with two decimals at most, or null (docs/backend/FANTASY_RATING_POINTS.md, 20261014090000).
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.request((select jsonb_agg(pg_temp.row(i, true,
+    jsonb_build_object('rating', case when i = 3 then null else 6.5 + i / 10.0 end)) order by i) from generate_series(1, 22) i)), true),
+  'ok', '2.7 rows carrying a SofaScore rating (and a null one) are accepted');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.request((select jsonb_agg(pg_temp.row(i, true,
+    jsonb_build_object('rating', 7.555)) order by i) from generate_series(1, 22) i)), true),
+  'fantasy_observation_rating_invalid', '2.8 a rating with more than two decimals is refused');
+select extensions.is(pg_temp.code(pg_temp.id('f0', 1), pg_temp.request((select jsonb_agg(pg_temp.row(i, true,
+    jsonb_build_object('rating', 12)) order by i) from generate_series(1, 22) i)), true),
+  'fantasy_observation_rating_invalid', '2.9 a rating above 10 is refused');
+select extensions.is(pg_temp.observations(), 0, '2.10 the dry runs with ratings stored nothing');
 
 -- ===========================================================================
 -- 3. Record, then retry
