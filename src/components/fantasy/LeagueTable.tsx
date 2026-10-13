@@ -186,7 +186,11 @@ export function LeagueTable({
                     </UiTD>
                     {compact ? null : (
                       <UiTD numeric className={ui.tone.muted}>
-                        <AnimatedNumber value={s.gameweekScore} format={nf.format} />
+                        {s.gameweekScore === null ? (
+                          t("fantasy.stat.none")
+                        ) : (
+                          <AnimatedNumber value={s.gameweekScore} format={nf.format} />
+                        )}
                       </UiTD>
                     )}
                     <UiTD numeric strong>

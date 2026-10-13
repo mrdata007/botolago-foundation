@@ -56,7 +56,8 @@ export function FantasySummaryCard({
 }) {
   const { t, lang } = useI18n();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR");
-  const points = nf.format(summary.gameweekPoints);
+  const points =
+    summary.gameweekPoints === null ? t("fantasy.stat.none") : nf.format(summary.gameweekPoints);
   const rank = summary.overallRank === null ? null : nf.format(summary.overallRank);
   // Pending and retry have no destination of their own: the team page it is.
   const next = action && "to" in action ? action : null;
@@ -106,11 +107,17 @@ export function FantasySummaryCard({
       </span>
       <span aria-hidden className="flex shrink-0 items-baseline gap-1">
         <bdi className={ui.score.hero}>
-          <AnimatedNumber value={summary.gameweekPoints} format={nf.format} />
+          {summary.gameweekPoints === null ? (
+            t("fantasy.stat.none")
+          ) : (
+            <AnimatedNumber value={summary.gameweekPoints} format={nf.format} />
+          )}
         </bdi>
-        <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
-          {pointsUnit(summary.gameweekPoints, t)}
-        </span>
+        {summary.gameweekPoints === null ? null : (
+          <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-heavy)]")}>
+            {pointsUnit(summary.gameweekPoints, t)}
+          </span>
+        )}
       </span>
     </Link>
   );

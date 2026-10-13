@@ -90,8 +90,11 @@ export function buildGameweekRecap(
   if (reconciled) {
     const counted = result.breakdown
       // The server sets every row's multiplier: 0 for a player who did not count.
-      .filter((row) => (row.multiplier ?? 0) > 0)
-      .map((row) => ({ playerId: row.playerId, counted: row.totalPoints * (row.multiplier ?? 0) }))
+      .filter((row) => (row.multiplier ?? 0) > 0 && row.totalPoints !== null)
+      .map((row) => ({
+        playerId: row.playerId,
+        counted: (row.totalPoints ?? 0) * (row.multiplier ?? 0),
+      }))
       .sort((x, y) => y.counted - x.counted);
     const [first, second] = counted;
     if (first && first.counted > 0 && (!second || second.counted < first.counted)) {

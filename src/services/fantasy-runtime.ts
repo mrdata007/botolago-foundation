@@ -40,6 +40,7 @@ import type {
 } from "@/types/fantasy";
 import type { FantasyAlert, FantasySummary, Gameweek, Player } from "@/types/domain";
 import { resolveMediaUrl } from "@/lib/media";
+import { resolvePlayerPoints, teamPendingItemCount } from "./points-pending";
 
 const cloud = new SupabaseFantasyRepository();
 const context = (): RepositoryContext => ({ actorId: null, requestId: crypto.randomUUID() });
@@ -122,13 +123,17 @@ function teamDto(dto: FantasyTeamDto): FantasyTeam {
  * `summary` carries the gameweek-wide Average / Highest figures, which are
  * `null` — not 0 — until some team has been scored.
  */
-function pointsDto(
+export function pointsDto(
   sequence: number,
   dto: FantasyPointsDto,
   summary: FantasyGameweekSummaryDto | null,
 ): GameweekResult | undefined {
   if (!dto.result) return undefined;
   const captain = dto.players.find((player) => player.captain);
+  const gameweekIsFinal = dto.pointsState === "final";
+  // C4: resolved once per player so the breakdown and the team count agree.
+  // A player with no confirmed points row is `null` ("pending"), not 0.
+  const resolved = dto.players.map((player) => resolvePlayerPoints(player, gameweekIsFinal));
   return {
     authoritative: {
       startingIds: dto.players
@@ -155,6 +160,7 @@ function pointsDto(
       gameweekStatus: dto.gameweekStatus,
       calculationVersion: dto.result.calculationVersion,
       finalizedAt: dto.result.finalizedAt,
+      pendingItemCount: teamPendingItemCount(dto.result.pendingItemCount, dto.players),
     },
     gameweek: sequence,
     totalPoints: dto.result.finalScore ?? dto.result.provisionalScore,
@@ -167,15 +173,19 @@ function pointsDto(
       inId: substitution.playerInId,
       reasonKey: substitution.reason,
     })),
-    breakdown: dto.players.map((player) => ({
+    breakdown: dto.players.map((player, index) => ({
       playerId: player.fantasyPlayerId,
       multiplier: player.multiplier,
-      totalPoints: player.finalPoints ?? player.provisionalPoints ?? 0,
-      minutesPlayed: player.minutesPlayed ?? 0,
+      totalPoints: resolved[index]!.points,
+      minutesPlayed: player.minutesPlayed,
       isCaptain: player.captain || undefined,
       isViceCaptain: player.viceCaptain || undefined,
       isBench: player.slot === "bench" || undefined,
-      status: dto.pointsState === "final" ? "final" : "provisional",
+      // Provisional is never shown as final: a player with an item still
+      // waiting stays provisional even when the gameweek says final.
+      status: resolved[index]!.status === "final" ? "final" : "provisional",
+      pointsStatus: resolved[index]!.status,
+      pendingItems: resolved[index]!.pendingItems,
       fixtureScoring:
         player.fixtureScoring ??
         dto.fixtureScoring?.filter((fixture) =>
@@ -216,7 +226,7 @@ function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
     teamName: dto.teamName,
     rank: dto.rank,
     previousRank: dto.previousRank ?? dto.rank,
-    gameweekScore: dto.gameweekPoints ?? 0,
+    gameweekScore: dto.gameweekPoints,
     totalScore: dto.totalPoints,
   };
 }
@@ -402,7 +412,7 @@ export const fantasyService = {
       managerName: current.team.name,
       teamName: current.team.name,
       totalPoints: history.items.reduce((sum, item) => sum + item.score, 0),
-      gameweekPoints: currentResult?.score ?? 0,
+      gameweekPoints: currentResult?.score ?? null,
       // BG-0157 (2): the round that figure is for, from the same row, so the
       // hub can name it and never print last round's score under this one's.
       pointsGameweek: currentResult?.sequence ?? null,
@@ -504,7 +514,7 @@ export const fantasyService = {
       teamName: standing.teamName,
       rank: standing.rank,
       previousRank: standing.previousRank ?? standing.rank,
-      gameweekScore: standing.gameweekPoints ?? 0,
+      gameweekScore: standing.gameweekPoints,
       totalScore: standing.totalPoints,
     }));
   },

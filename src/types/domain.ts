@@ -160,7 +160,8 @@ export interface FantasySummary {
   managerName: string;
   teamName: string;
   totalPoints: number;
-  gameweekPoints: number;
+  /** `null` while this team has no result for any gameweek; never a stand-in 0. */
+  gameweekPoints: number | null;
   /**
    * BG-0157 (2) — the gameweek `gameweekPoints` belongs to: the `sequence`
    * of the history row the figure is read from (the current gameweek's, or

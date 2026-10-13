@@ -367,7 +367,10 @@ export function computeGameweekResult(input: ScoringInput): ScoringResult {
   const rawById = new Map<string, number>();
   input.breakdown.forEach((b) => {
     const isCap = !!b.isCaptain;
-    const raw = isCap ? Math.round(b.totalPoints / 2) : b.totalPoints;
+    // The engine only recomputes the client-side mock game, whose rows always
+    // carry a figure; a server row without one never reaches it.
+    const points = b.totalPoints ?? 0;
+    const raw = isCap ? Math.round(points / 2) : points;
     rawById.set(b.playerId, raw);
   });
   const raw = (id: string) => rawById.get(id) ?? 0;

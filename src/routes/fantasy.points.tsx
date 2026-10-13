@@ -21,6 +21,7 @@ import {
   UiCard,
   UiEmptyState,
   UiErrorState,
+  UiBadge,
   UiHeader,
   UiKeyValueRow,
   UiSegmented,
@@ -32,6 +33,12 @@ import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { buildGameweekRecap } from "@/services/gameweek-recap";
+import {
+  mayRiseToTwo,
+  pendingCountLabel,
+  pendingItemsOfFixture,
+  pointsCell,
+} from "@/services/points-pending";
 import {
   buildPointsViewModel,
   buildServerPointsViewModel,
@@ -265,9 +272,10 @@ function PointsBody() {
   const formationKey = `${count("DEF")}-${count("MID")}-${count("FWD")}` as FormationKey;
   const cfg = FORMATIONS[formationKey] ?? FORMATIONS[team.formation];
 
+  /** `null` for a player with no row, and for one whose points are not confirmed yet. */
   const pointsFor = (id: string) => {
     const b = breakdown.get(id);
-    if (!b) return null;
+    if (!b || b.totalPoints === null) return null;
     if (vm?.source === "server") return b.totalPoints * Math.max(1, b.multiplier ?? 1);
     if (vm && id === captainId) {
       const raw = b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints;
@@ -275,16 +283,35 @@ function PointsBody() {
     }
     return b.totalPoints;
   };
+  const cellOf = (id: string) => pointsCell(breakdown.get(id), pointsFor(id));
   const card = (id: string, size?: "md" | "sm") => {
     const p = playerOf(id);
     if (!p) return <div key={id} />;
-    const pts = pointsFor(id);
+    const cell = cellOf(id);
     return (
       <FplPlayerCard
         key={id}
         player={p}
         club={clubOf(p.clubId)}
-        sub={pts === null ? none : <PopOnChange value={pts}>{String(pts)}</PopOnChange>}
+        // A dash for "not confirmed yet" (never 0); a confirmed figure that
+        // still has an item waiting carries a star, explained under the pitch.
+        sub={
+          cell.kind === "points" ? (
+            <>
+              <PopOnChange value={cell.value}>{String(cell.value)}</PopOnChange>
+              {cell.waiting ? <span aria-hidden>*</span> : null}
+            </>
+          ) : (
+            none
+          )
+        }
+        note={
+          cell.kind === "pending"
+            ? t("fantasy.points.pending_label")
+            : cell.kind === "points" && cell.waiting
+              ? t("fantasy.points.item_pending")
+              : undefined
+        }
         captain={id === captainId}
         vice={id === viceId && id !== captainId}
         size={size}
@@ -327,6 +354,14 @@ function PointsBody() {
       : rowStates.has("final")
         ? "final"
         : null;
+  const pendingCount = resultQ.data?.authoritative?.pendingItemCount ?? 0;
+  // The key under the pitch and the list: only the marks actually on screen.
+  const shownIds = [...startingIds, ...benchIds];
+  const anyPendingCell = shownIds.some((id) => cellOf(id).kind === "pending");
+  const anyWaitingCell = shownIds.some((id) => {
+    const cell = cellOf(id);
+    return cell.kind === "points" && cell.waiting;
+  });
   const statusLabel =
     gwStatus === "live"
       ? t("fantasy.points.status.live")
@@ -354,6 +389,8 @@ function PointsBody() {
   // client-side engine can only guess at for a gameweek it did not compute.
   // `vm.autoSubs` stays the fallback for mock mode, where there is no server.
   const autoSubs = resultQ.data ? resultQ.data.autoSubs : (vm?.autoSubs ?? []);
+  /** One call site for every scoring category's name (the i18n gate counts them). */
+  const categoryName = (category: string) => t(`fantasy.points.event.${category}` as never);
   const nameOf = (id: string) => {
     const player = playerOf(id);
     return player ? tr(player.name) : id;
@@ -404,17 +441,25 @@ function PointsBody() {
             value: total === null ? none : <AnimatedNumber value={total} format={String} />,
             unit: total === null ? undefined : pointsUnit(total, t),
             sub: statusLabel ? (
-              <span className={cn("inline-flex items-center gap-1.5", ui.text.label)}>
-                {gwStatus === "live" ? (
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "live-breathe h-1.5 w-1.5 shrink-0 bg-[color:var(--ui-live)]",
-                      ui.radius.full,
-                    )}
-                  />
+              <span className="flex flex-col gap-0.5">
+                <span className={cn("inline-flex items-center gap-1.5", ui.text.label)}>
+                  {gwStatus === "live" ? (
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "live-breathe h-1.5 w-1.5 shrink-0 bg-[color:var(--ui-live)]",
+                        ui.radius.full,
+                      )}
+                    />
+                  ) : null}
+                  {statusLabel}
+                </span>
+                {/* "Provisoire" says the total may still move; this says why. */}
+                {pendingCount > 0 ? (
+                  <span className={cn(ui.text.meta, "[font-weight:var(--ui-weight-strong)]")}>
+                    {pendingCountLabel(pendingCount, lang, t)}
+                  </span>
                 ) : null}
-                {statusLabel}
               </span>
             ) : undefined,
           },
@@ -436,6 +481,23 @@ function PointsBody() {
         />
       </div>
 
+      {!resultQ.isPending && (anyPendingCell || anyWaitingCell) ? (
+        // What the dash and the star on the squad mean, in the words the
+        // breakdown uses. Plain meta text: nothing here is an alert.
+        <ul className={cn("mx-[var(--ui-gutter)] mt-3 space-y-0.5", ui.text.meta, ui.tone.muted)}>
+          {anyPendingCell ? (
+            <li>
+              <bdi>{none}</bdi> {t("fantasy.points.pending_label")}
+            </li>
+          ) : null}
+          {anyWaitingCell ? (
+            <li>
+              <bdi>*</bdi> {t("fantasy.points.item_pending")}
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+
       {resultQ.isPending ? (
         <div role="status" aria-label={t("state.loading")} className={cn("pt-3", ui.space.gutter)}>
           <UiSkeleton className={cn("h-[420px] w-full", ui.radius.sheet)} />
@@ -454,18 +516,32 @@ function PointsBody() {
           players={players}
           clubs={clubs}
           renderDetail={(player) => {
-            const events = breakdown.get(player.id)?.events ?? [];
-            if (events.length === 0 && !breakdown.get(player.id)?.fixtureScoring?.length)
+            const row = breakdown.get(player.id);
+            const events = row?.events ?? [];
+            const pendingItems = row?.pendingItems ?? [];
+            // No confirmed figure at all: the row says so in words, since the
+            // points column can only hold a dash.
+            const notConfirmed = cellOf(player.id).kind === "pending";
+            if (
+              events.length === 0 &&
+              !row?.fixtureScoring?.length &&
+              pendingItems.length === 0 &&
+              !notConfirmed
+            )
               return null;
-            const modes = breakdown.get(player.id)?.fixtureScoring ?? [];
+            const modes = row?.fixtureScoring ?? [];
             const fixtureIds = [
               ...new Set([
                 ...modes.map((fixture) => fixture.fixtureId),
                 ...events.map((event) => event.fixtureId),
+                ...pendingItems.map((item) => item.fixtureId),
               ]),
             ];
             return (
               <ul className={cn("pb-2", ui.text.meta, ui.tone.muted)}>
+                {notConfirmed ? (
+                  <li className="font-semibold">{t("fantasy.points.pending_label")}</li>
+                ) : null}
                 {fixtureIds.map((fixtureId, groupIndex) => {
                   const fixture = modes.find((item) => item.fixtureId === fixtureId);
                   const matchName = fixture?.teamIds
@@ -498,7 +574,7 @@ function PointsBody() {
                               className="flex items-baseline justify-between gap-2"
                             >
                               <span className="min-w-0 truncate">
-                                {t(`fantasy.points.event.${event.category}` as never)}
+                                {categoryName(event.category)}
                               </span>
                               <span
                                 dir="ltr"
@@ -508,6 +584,22 @@ function PointsBody() {
                               </span>
                             </li>
                           ))}
+                        {pendingItemsOfFixture(pendingItems, fixtureId).map((item, index) => (
+                          <li
+                            key={`pending-${item.category}-${index}`}
+                            className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5"
+                          >
+                            <span className="min-w-0 truncate">{categoryName(item.category)}</span>
+                            <UiBadge tone="caution" className="shrink-0 px-2 py-0.5 normal-case">
+                              {t("fantasy.points.item_pending")}
+                            </UiBadge>
+                            {mayRiseToTwo(item) ? (
+                              <span className="basis-full">
+                                {t("fantasy.points.appearance_may_rise")}
+                              </span>
+                            ) : null}
+                          </li>
+                        ))}
                       </ul>
                     </li>
                   );
@@ -530,8 +622,10 @@ function PointsBody() {
               key: "pts",
               label: `GW${gw}`,
               render: (p) => {
-                const pts = pointsFor(p.id);
-                return pts === null ? none : `${pts}${pointsUnit(pts, t)}`;
+                const cell = cellOf(p.id);
+                return cell.kind === "points"
+                  ? `${cell.value}${pointsUnit(cell.value, t)}${cell.waiting ? "*" : ""}`
+                  : none;
               },
               // The column a reader came for: the heavy step of the ramp,
               // not the off-token `font-extrabold` it used to carry.

@@ -71,7 +71,7 @@ export interface BuildInputs {
 export function buildPointsViewModel(input: BuildInputs): PointsViewModel {
   const minutesById: Record<string, number> = {};
   input.breakdown.forEach((b) => {
-    minutesById[b.playerId] = b.minutesPlayed;
+    minutesById[b.playerId] = b.minutesPlayed ?? 0;
   });
 
   const engine = computeGameweekResult({
@@ -87,7 +87,9 @@ export function buildPointsViewModel(input: BuildInputs): PointsViewModel {
   // Recover raw (pre-captain) totals per player.
   const rawById = new Map<string, number>();
   input.breakdown.forEach((b) => {
-    const raw = b.isCaptain ? Math.round(b.totalPoints / 2) : b.totalPoints;
+    // Mock/engine rows always carry a figure; the server path does not come here.
+    const points = b.totalPoints ?? 0;
+    const raw = b.isCaptain ? Math.round(points / 2) : points;
     rawById.set(b.playerId, raw);
   });
   const raw = (id: string) => rawById.get(id) ?? 0;

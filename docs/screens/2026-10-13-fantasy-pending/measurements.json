@@ -1,0 +1,274 @@
+[
+  {
+    "side": "before",
+    "size": "mobile-390",
+    "lang": "fr",
+    "view": "pitch",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "before",
+    "size": "mobile-390",
+    "lang": "fr",
+    "view": "list",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "before",
+    "size": "mobile-390",
+    "lang": "ar",
+    "view": "pitch",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "before",
+    "size": "mobile-390",
+    "lang": "ar",
+    "view": "list",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "before",
+    "size": "desktop-1280",
+    "lang": "fr",
+    "view": "pitch",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "before",
+    "size": "desktop-1280",
+    "lang": "fr",
+    "view": "list",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "before",
+    "size": "desktop-1280",
+    "lang": "ar",
+    "view": "pitch",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "before",
+    "size": "desktop-1280",
+    "lang": "ar",
+    "view": "list",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": false,
+    "hasItemPending": false,
+    "hasMayRise": false,
+    "hasCount": false,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "mobile-390",
+    "lang": "fr",
+    "view": "pitch",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": false,
+    "hasCount": true,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "mobile-390",
+    "lang": "fr",
+    "view": "list",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": true,
+    "hasCount": true,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "mobile-390",
+    "lang": "ar",
+    "view": "pitch",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": false,
+    "hasCount": true,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "mobile-390",
+    "lang": "ar",
+    "view": "list",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 390,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": true,
+    "hasCount": true,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "desktop-1280",
+    "lang": "fr",
+    "view": "pitch",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": false,
+    "hasCount": true,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "desktop-1280",
+    "lang": "fr",
+    "view": "list",
+    "dir": "ltr",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": true,
+    "hasCount": true,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "desktop-1280",
+    "lang": "ar",
+    "view": "pitch",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": false,
+    "hasCount": true,
+    "hasProvisional": true
+  },
+  {
+    "side": "after",
+    "size": "desktop-1280",
+    "lang": "ar",
+    "view": "list",
+    "dir": "rtl",
+    "overflow": {
+      "vw": 1280,
+      "count": 0,
+      "sample": []
+    },
+    "hasPending": true,
+    "hasItemPending": true,
+    "hasMayRise": true,
+    "hasCount": true,
+    "hasProvisional": true
+  }
+]
