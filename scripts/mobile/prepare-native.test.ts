@@ -11,16 +11,20 @@ import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 
 import {
+  entitlements,
   infoPlistStrings,
   NATIVE_ASSETS,
   patchAppDelegate,
   patchBuildGradle,
   patchFilePaths,
   patchInfoPlist,
+  patchInfoPlistUrlScheme,
   patchManifest,
+  patchManifestAppLinks,
   patchManifestFileProvider,
   patchManifestNotificationIcon,
   patchManifestPortrait,
+  patchManifestUrlScheme,
   patchPbxproj,
   patchPbxprojIphoneOnly,
   patchPbxprojResources,
@@ -1013,14 +1017,15 @@ describe("prepareNative", () => {
     "android/app/src/main/res/drawable/splash.png": "Capacitor's logo",
     "android/app/build.gradle": BUILD_GRADLE,
   };
-  // 10 patched files, 4 written ones (entitlements, privacy manifest, 2 translations), 3 sets of images
-  const STEPS = 17;
+  // 12 patches, 4 written files (entitlements, privacy manifest, 2 translations), 3 sets of images
+  const STEPS = 19;
+  const NO_APP_LINKS = { teamId: null, fingerprints: [] };
   // Checked, and already right in Capacitor's template: the file provider and its cache path.
   const TEMPLATE_HAS = 2;
 
   test("finishes both projects, then reports them as already done", () => {
     const root = project(FILES);
-    const first = prepareNative(root);
+    const first = prepareNative(root, { appLinks: NO_APP_LINKS });
     expect(first.report.filter((line) => line.startsWith("added:"))).toHaveLength(STEPS);
     // The file provider and its cache path are in Capacitor's template already.
     expect(first.report.filter((line) => line.startsWith("ok:"))).toHaveLength(TEMPLATE_HAS);
@@ -1037,7 +1042,21 @@ describe("prepareNative", () => {
     expect(readFileSync(join(root, "ios/App/App/Info.plist"), "utf8")).toContain(
       "NSCameraUsageDescription",
     );
-    const second = prepareNative(root);
+    expect(readFileSync(join(root, "ios/App/App/Info.plist"), "utf8")).toContain(
+      "<string>botolago</string>",
+    );
+    expect(readFileSync(join(root, "android/app/src/main/AndroidManifest.xml"), "utf8")).toContain(
+      'android:scheme="botolago"',
+    );
+    // Without the Apple Team ID and the Android fingerprints: no link claims.
+    expect(readFileSync(join(root, "ios/App/App/App.entitlements"), "utf8")).not.toContain(
+      "associated-domains",
+    );
+    expect(
+      readFileSync(join(root, "android/app/src/main/AndroidManifest.xml"), "utf8"),
+    ).not.toContain("autoVerify");
+    expect(first.report.filter((line) => line.startsWith("note:"))).toHaveLength(2);
+    const second = prepareNative(root, { appLinks: NO_APP_LINKS });
     expect(second.report.filter((line) => line.startsWith("ok:"))).toHaveLength(
       STEPS + TEMPLATE_HAS,
     );
@@ -1046,7 +1065,7 @@ describe("prepareNative", () => {
 
   test("writes the privacy manifest Apple asks for", () => {
     const root = project(FILES);
-    prepareNative(root);
+    prepareNative(root, { appLinks: NO_APP_LINKS });
     const manifest = readFileSync(join(root, "ios/App/App/PrivacyInfo.xcprivacy"), "utf8");
     expect(plistValue(manifest, "NSPrivacyTracking")).toBe("<false/>");
     expect(manifest).toMatch(/<key>NSPrivacyTrackingDomains<\/key>\s*<array\/>/);
@@ -1067,7 +1086,7 @@ describe("prepareNative", () => {
 
   test("puts the committed icons and launch screens in place, byte for byte", () => {
     const root = project(FILES);
-    prepareNative(root);
+    prepareNative(root, { appLinks: NO_APP_LINKS });
     const pairs = [
       [
         "ios/AppIcon.appiconset/AppIcon-512@2x.png",
@@ -1104,19 +1123,19 @@ describe("prepareNative", () => {
   });
 
   test("tells you about the one thing only a person can supply", () => {
-    const { report, missing } = prepareNative(project(FILES));
+    const { report, missing } = prepareNative(project(FILES), { appLinks: NO_APP_LINKS });
     expect(missing).toBe(1);
     expect(report.join("\n")).toContain("google-services.json");
   });
 
   test("is satisfied once that file is there", () => {
     const root = project({ ...FILES, "android/app/google-services.json": "{}" });
-    expect(prepareNative(root).missing).toBe(0);
+    expect(prepareNative(root, { appLinks: NO_APP_LINKS }).missing).toBe(0);
   });
 
   test("--check changes nothing and counts what is missing", () => {
     const root = project(FILES);
-    const { report, missing } = prepareNative(root, { check: true });
+    const { report, missing } = prepareNative(root, { check: true, appLinks: NO_APP_LINKS });
     expect(report.filter((line) => line.startsWith("MISSING:")).length).toBe(missing);
     expect(missing).toBe(STEPS + 1);
     for (const [path, content] of Object.entries(FILES)) {
@@ -1130,13 +1149,13 @@ describe("prepareNative", () => {
 
   test("--check notices an icon that is not the committed one", () => {
     const root = project({ ...FILES, "android/app/google-services.json": "{}" });
-    prepareNative(root);
-    expect(prepareNative(root, { check: true }).missing).toBe(0);
+    prepareNative(root, { appLinks: NO_APP_LINKS });
+    expect(prepareNative(root, { check: true, appLinks: NO_APP_LINKS }).missing).toBe(0);
     writeFileSync(
       join(root, "android/app/src/main/res/mipmap-hdpi/ic_launcher.png"),
       "Capacitor's X",
     );
-    const { report, missing } = prepareNative(root, { check: true });
+    const { report, missing } = prepareNative(root, { check: true, appLinks: NO_APP_LINKS });
     expect(missing).toBe(1);
     expect(report.join("\n")).toContain("MISSING: Android icons");
   });
@@ -1147,16 +1166,94 @@ describe("prepareNative", () => {
       "android/app/google-services.json": "{}",
       "android/app/src/main/res/drawable-port-ldpi/splash.png": "Capacitor's logo",
     });
-    prepareNative(root);
-    const { report, missing } = prepareNative(root, { check: true });
+    prepareNative(root, { appLinks: NO_APP_LINKS });
+    const { report, missing } = prepareNative(root, { check: true, appLinks: NO_APP_LINKS });
     expect(missing).toBe(1);
     expect(report.join("\n")).toContain("res/drawable-port-ldpi/splash.png");
   });
 
+  test("with the Apple Team ID and the Android fingerprints, claims the e-mail links", () => {
+    const root = project({ ...FILES, "android/app/google-services.json": "{}" });
+    const appLinks = { teamId: "ABCDE12345", fingerprints: ["AA:BB"] };
+    const first = prepareNative(root, { appLinks });
+    expect(first.report.filter((line) => line.startsWith("added:"))).toHaveLength(STEPS + 1);
+    expect(first.report.some((line) => line.startsWith("note:"))).toBe(false);
+    expect(readFileSync(join(root, "ios/App/App/App.entitlements"), "utf8")).toBe(
+      entitlements({ associatedDomains: true }),
+    );
+    expect(readFileSync(join(root, "android/app/src/main/AndroidManifest.xml"), "utf8")).toContain(
+      'android:autoVerify="true"',
+    );
+    expect(prepareNative(root, { appLinks, check: true }).missing).toBe(0);
+    // Taking the Team ID away again rewrites the entitlements without the claim.
+    expect(prepareNative(root, { check: true, appLinks: NO_APP_LINKS }).missing).toBe(1);
+  });
+
   test("a project that was never created is skipped, not an error", () => {
-    const { report, missing } = prepareNative(project({}));
+    const { report, missing } = prepareNative(project({}), { appLinks: NO_APP_LINKS });
     expect(missing).toBe(0);
     expect(report.length).toBeGreaterThan(0);
     expect(report.every((line) => line.startsWith("skipped:"))).toBe(true);
+  });
+});
+
+describe("the app's own address (botolago://)", () => {
+  test("Info.plist declares the scheme once, and the file stays one top-level dict", () => {
+    const { text, changed } = patchInfoPlistUrlScheme(INFO_PLIST);
+    expect(changed).toBe(true);
+    expect(text).toMatch(
+      /<key>CFBundleURLTypes<\/key>\s*<array>\s*<dict>\s*<key>CFBundleURLName<\/key>\s*<string>botolago\.auth<\/string>\s*<key>CFBundleURLSchemes<\/key>\s*<array>\s*<string>botolago<\/string>\s*<\/array>\s*<\/dict>\s*<\/array>/,
+    );
+    expect(text.split("<dict>").length).toBe(text.split("</dict>").length);
+    expect(text.split("<array>").length).toBe(text.split("</array>").length);
+    expect(text.trimEnd().endsWith("</dict>\n</plist>")).toBe(true);
+    expect(patchInfoPlistUrlScheme(text)).toEqual({ text, changed: false });
+    // The other Info.plist patch still finds the top-level dict afterwards.
+    const both = patchInfoPlist(text).text;
+    expect(patchInfoPlist(both).changed).toBe(false);
+    expect(both).toContain("<string>botolago</string>");
+  });
+
+  test("Info.plist with another URL type is left to a person, not merged by guesswork", () => {
+    const other = INFO_PLIST.replace(
+      "</dict>\n</plist>",
+      "\t<key>CFBundleURLTypes</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>fb123</string>\n\t\t\t</array>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>",
+    );
+    expect(() => patchInfoPlistUrlScheme(other)).toThrow(/CFBundleURLTypes/);
+  });
+
+  test("the Android manifest opens MainActivity for botolago://auth, inside the activity", () => {
+    const { text, changed } = patchManifestUrlScheme(MANIFEST);
+    expect(changed).toBe(true);
+    const activity = text.slice(text.indexOf("<activity"), text.indexOf("</activity>"));
+    expect(activity).toContain('<data android:scheme="botolago" android:host="auth" />');
+    expect(activity).toContain('<action android:name="android.intent.action.VIEW" />');
+    expect(activity).toContain('<category android:name="android.intent.category.BROWSABLE" />');
+    // The launcher filter is kept.
+    expect(activity).toContain("android.intent.category.LAUNCHER");
+    expect(text.split("<intent-filter").length).toBe(text.split("</intent-filter>").length);
+    expect(patchManifestUrlScheme(text)).toEqual({ text, changed: false });
+  });
+
+  test("the verified link filter is added only when asked, for botolago.com/auth/callback", () => {
+    expect(patchManifestAppLinks(MANIFEST)).toEqual({ text: MANIFEST, changed: false });
+    const { text, changed } = patchManifestAppLinks(MANIFEST, { enabled: true });
+    expect(changed).toBe(true);
+    const activity = text.slice(text.indexOf("<activity"), text.indexOf("</activity>"));
+    expect(activity).toContain('<intent-filter android:autoVerify="true">');
+    expect(activity).toContain('<data android:host="botolago.com" />');
+    expect(activity).toContain('<data android:path="/auth/callback" />');
+    expect(activity).not.toContain("www.");
+    expect(patchManifestAppLinks(text, { enabled: true })).toEqual({ text, changed: false });
+  });
+
+  test("the entitlements claim applinks:botolago.com only when asked", () => {
+    expect(entitlements()).not.toContain("associated-domains");
+    expect(entitlements()).toContain("<key>aps-environment</key>");
+    const on = entitlements({ associatedDomains: true });
+    expect(on).toMatch(
+      /<key>com\.apple\.developer\.associated-domains<\/key>\s*<array>\s*<string>applinks:botolago\.com<\/string>\s*<\/array>/,
+    );
+    expect(on.split("<dict>").length).toBe(on.split("</dict>").length);
   });
 });

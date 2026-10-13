@@ -33,6 +33,8 @@ is deployed at botolago.com**. Deploy the branch before testing an app build.
 | Opening an alert's page, refreshing the inbox, keeping the phone registered | `src/components/native/NativePushBridge.tsx`, `src/lib/push-payload.ts`                                 |
 | Android alert channels (so a goal appears on screen)                        | `src/lib/push-channels.ts`, and the sender's `supabase/functions/_shared/notification-push-types.ts`    |
 | Saving a share picture to the photos, and sharing it as a file (app only)   | `src/lib/native-share-image.ts`, `src/components/common/ShareImageSheet.tsx`                            |
+| Google and Apple sign-in in the phone's browser sheet, back into the app    | `src/lib/native-oauth.ts` (rules, tested), `src/services/native-oauth-runtime.ts`, `NativeAuthBridge`   |
+| E-mail links opening the app (Universal Links, App Links), once configured  | `src/lib/app-links.ts`, `src/routes/[.well-known]/`                                                     |
 | Finishing the native projects after `cap add`                               | `scripts/mobile/prepare-native.mjs` (`bun run mobile:prepare`, `bun run mobile:check`)                  |
 | The app's icons, launch screens and Android notification icon               | `store-assets/app-icon/native/`, made by `scripts/brand/make-app-icons.py`                              |
 | Numbering each build for the stores                                         | `scripts/mobile/set-build-number.mjs`                                                                   |
@@ -449,11 +451,175 @@ To check on a phone after Publish: close the app fully and open it again, then
 tap the sign-in email field and the search on `/fantasy/players`; the page must
 not zoom, and two quick taps must not zoom either.
 
+## Signing in inside the app
+
+Status (2026-10-12, branch `claude/app-native-sign-in`): **the code is written
+and unit-tested; nothing has been tried on a phone.** Google and Apple sign-in
+need an app build made after this branch (it adds a plugin), and two settings
+only the owner can change (below). E-mail links opening the app need two more
+values from the owner and are optional: without them there is a clean fallback.
+
+### What happened before this change
+
+- **E-mail and password**: works inside the app. The form signs in inside the
+  web view, and the session stays there.
+- **Creating an account**: works inside the app, through the six-digit code in
+  the confirmation e-mail (the `/auth/verify` screen). The e-mail's _link_ opens
+  in Safari or Chrome, not the app, so tapping it confirms the account and signs
+  the person in **in the browser**; the app is still signed out, and they then
+  sign in there with their password.
+- **Forgotten password**: the reset link opens in Safari or Chrome, so the new
+  password is chosen in the browser. It then works in the app with e-mail and
+  password, but the app itself is not signed in by the link.
+- **Google and Apple**: hidden inside the app since 2026-10-06 (`WebOnly`).
+  Before that, tapping them sent the web view to Supabase's authorize page,
+  which the shell hands to Safari or Chrome (it is not botolago.com). Google
+  also refuses to sign in inside an embedded web view at all
+  (`disallowed_useragent`). Either way the session ended up in the browser,
+  never in the app. Apple's page has the same problem: it opens in the browser
+  and the session stays there.
+
+### What happens now
+
+**Google and Apple** (an app build with the Browser plugin):
+
+1. Tapping "Continuer avec Google" or "Continuer avec Apple" makes a one-time
+   secret in the app (PKCE: a verifier kept in the app, and its fingerprint sent
+   to Supabase) and opens Supabase's sign-in page in the phone's own browser
+   sheet (`@capacitor/browser`: Safari's sheet on iPhone, a Chrome Custom Tab on
+   Android). Google accepts that sheet.
+2. When the person has chosen their account, Supabase sends the sheet to
+   `botolago://auth/callback?code=…`, the app's own address. The phone brings
+   the app back (on iPhone it may first ask "Ouvrir dans BotolaGO ?"), and the
+   sheet closes.
+3. The app trades the code and its secret for a session with Supabase, inside
+   the web view, then goes through `/auth/callback` exactly as on the website:
+   the second-factor code for an account that has one, profile setup for a new
+   account, then the page the person started from.
+
+The code is useless to anyone without the secret, which never leaves the app.
+A sign-in that is cancelled, refused or older than 15 minutes ends on the
+callback page's error, with a button back to the login screen. An app built
+before this change does not have the plugin: there the buttons stay hidden, as
+they were. **On the website nothing changes**: the buttons go to Google or
+Apple as before.
+
+**E-mail links** (confirmation, password reset), once the owner has given the
+two values in "Owner steps" 4 and 5: a link to `https://botolago.com/auth/callback`
+tapped in Mail or Gmail opens the app instead of the browser, and the app loads
+that same address, so the person is signed in (or chooses their new password)
+inside the app. Only that one path is claimed; every other botolago.com link
+keeps opening in the browser. Until then, or on a phone without the app, the
+links open in the browser as before, and the fallback above stays: the six-digit
+code for a new account, and the new password then used in the app.
+
+### What is in code, and what the owner must click
+
+| Done in this repository                                                                         | Where                                                              |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| PKCE pair, Supabase's authorize address, the code exchange, the 15-minute limit                 | `src/lib/native-oauth.ts`, `src/services/native-oauth-runtime.ts`  |
+| The app's address `botolago://` reaching the page, and e-mail links loaded in the web view      | `src/components/native/NativeAuthBridge.tsx` (mounted in the root) |
+| Google and Apple buttons shown in the app only with the Browser plugin                          | `WebOnly showInAppWhen`, `auth.login.tsx`, `auth.register.tsx`     |
+| The Browser plugin, pinned                                                                      | `package.json` (`@capacitor/browser` 8.0.4)                        |
+| `botolago://` declared in the iPhone app (`Info.plist`) and the Android app (`AndroidManifest`) | `scripts/mobile/prepare-native.mjs`, run by every cloud build      |
+| `/.well-known/apple-app-site-association` and `/.well-known/assetlinks.json` (404 until set)    | `src/routes/[.well-known]/`, values in `src/lib/app-links.ts`      |
+| The iPhone's Associated Domains entitlement and Android's verified link filter, once values set | `scripts/mobile/prepare-native.mjs`                                |
+
+### Owner steps
+
+Nothing here was changed by this work: no Supabase, Google, Apple or Codemagic
+setting, and no database.
+
+**For Google and Apple sign-in in the app (needed):**
+
+1. **Supabase** (supabase.com, the BotolaGO Production project), Authentication,
+   URL Configuration, **Redirect URLs**: add `botolago://auth/callback` (keep
+   `https://botolago.com/**`). Without it Supabase sends the phone's browser to
+   the website instead, and the app never hears back.
+2. **Supabase**, Authentication, Sign In / Providers: check that **Google** and
+   **Apple** are both enabled with their keys. Nothing changes at Google or
+   Apple: their redirect address stays Supabase's own
+   (`https://<project>.supabase.co/auth/v1/callback`), which the app also uses.
+   If Apple is not enabled, either enable it (Apple Developer, a Services ID with
+   Sign in with Apple, its return URL set to that Supabase address, and a key)
+   or remove the Apple button (`OAUTH_PROVIDERS_ENABLED` in
+   `src/lib/feature-flags.ts` says how). Apple's review asks for Sign in with
+   Apple whenever Google sign-in is offered in an iPhone app.
+3. **Build**: merge (or build this branch), Publish the website in Lovable, then
+   run both Codemagic workflows (`ios` and `android`). The new plugin and the
+   `botolago://` address are native, so only a build made after this branch has
+   them.
+
+**For e-mail links opening the app (optional, recommended):**
+
+4. **iPhone**: give the Apple **Team ID** (developer.apple.com, Account,
+   Membership details: ten letters and digits). First tick **Associated
+   Domains** on the App ID `botolago.com` (Certificates, Identifiers & Profiles,
+   Identifiers, `botolago.com`, then Save). Then it is written into
+   `APPLE_TEAM_ID` in `src/lib/app-links.ts` (a one-line change), the website
+   is published, and the iPhone app is built again. Do the Apple tick before
+   that build: the entitlement without the capability fails the build's
+   signing. If the signing still fails, delete the old App Store profile for
+   `botolago.com` at Apple and build again, so Codemagic makes a fresh one.
+5. **Android**: give the two **SHA-256 certificate fingerprints** from Google
+   Play Console, Test and release, App integrity, App signing: the "App signing
+   key certificate" one (what phones installing from Google Play get) and the
+   "Upload key certificate" one (what the Codemagic `.apk` is signed with). They
+   go into `ANDROID_CERT_SHA256` in `src/lib/app-links.ts`; then Publish and a
+   new Android build.
+6. **Supabase**, Authentication, **Email Templates** (only with 4 or 5 done):
+   the e-mail links today point at Supabase's own address, which then sends the
+   browser on to botolago.com. iPhones do not reliably open an app for a link
+   reached that way, so point the links at botolago.com directly (the callback
+   page already handles this form). In **Confirm signup**, keep `{{ .Token }}`
+   (the six-digit code) and make the link
+   `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=signup`.
+   In **Reset Password**, make the link
+   `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`.
+   The Site URL must be `https://botolago.com`. This also works in any browser
+   (the link no longer depends on the browser that asked for it), so the
+   website keeps working, but try one of each on a test account before relying
+   on it.
+
+### What still needs a real phone
+
+None of this has run on a phone or against the real Supabase project. In a
+build made after this branch, on iPhone and Android, in French and Arabic:
+
+- Google: the sheet opens, Google accepts it (no `disallowed_useragent`), the
+  app comes back signed in on the page it started from; the same for a new
+  account (profile setup) and for an account with a second factor (the code).
+- Apple: the same, on an iPhone and on Android (Apple's web page).
+- Cancelling in the sheet, and closing it: the app shows the login screen again,
+  with nothing stuck.
+- Leaving the sheet open for a while, the app killed by the phone meanwhile
+  (Android): finishing the sign-in starts the app and it still signs in.
+- An older build (before this branch) on the new website: no Google or Apple
+  button in the app.
+- With steps 4 to 6 done: a confirmation link and a reset link tapped in Mail
+  and in Gmail open the app, sign in there, and the reset leads to the new
+  password screen. `https://botolago.com/.well-known/apple-app-site-association`
+  and `/.well-known/assetlinks.json` answer JSON (Lovable's hosting must serve
+  them as the app returns them; check with `curl -i`), and Google's checker
+  (developers.google.com/digital-asset-links/tools/generator) accepts the
+  Android one.
+
+What was checked without a phone: unit tests for the rules (native detection
+and the plugin check, the PKCE pair against Node's own SHA-256, the authorize
+and token requests, the 15-minute record, which addresses the app accepts, the
+landing and error addresses, handling an address only once), the two
+association files, and every native patch (the URL scheme in `Info.plist` and
+the manifest, the entitlement and the verified link filter only with their
+values, a second run changing nothing). Typecheck and lint pass. Not checked:
+Apple's and Google's sign-in pages, Supabase's answer to a real code, the
+Browser plugin itself, `cap sync`, an Xcode or Gradle build, and how Lovable's
+hosting serves `/.well-known/`.
+
 ## Still open before a store submission
 
-Not part of the push work, and not done here: Google's sign-in is refused inside a
-web view and sign-in links open in the system browser, so the app needs its own
-sign-in redirect handling; real account deletion with a stated timeline and
+Not part of the push work, and not done here: sign-in inside the app (now in
+code, see "Signing in inside the app": it needs the owner's Supabase setting
+and a new build, and has not been tried on a phone); real account deletion with a stated timeline and
 confirmation; the prize terms; removing test clubs and Gameweek state from
 production data; the share-link origin; checking the screen edges on real phones
 (see "Screen edges" above, which includes the status bar following the app's

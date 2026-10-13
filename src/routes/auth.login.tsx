@@ -15,6 +15,7 @@ import {
 import { authFieldClass, authFieldIconClass, authLinkClass } from "@/components/auth/auth-classes";
 import { ConsentLine } from "@/components/legal/ConsentLine";
 import { WebOnly } from "@/components/native/WebOnly";
+import { nativeOAuthAvailable } from "@/lib/native-oauth";
 import { OAUTH_PROVIDERS_ENABLED } from "@/lib/feature-flags";
 import { noticeConsentSegments } from "@/components/legal/consent-segments";
 import { ui, UiAlert, UiButton, UiInput } from "@/components/ui-kit";
@@ -333,12 +334,13 @@ function LoginPage() {
             divider goes with the buttons: an "ou continuer avec" rule with
             nothing under it reads as a broken screen. See
             `OAUTH_PROVIDERS_ENABLED`. Google is the white outline pill, Apple
-            its own navy one (`ink`), as the board draws them. Never inside
-            the phone app (`WebOnly`): Google refuses sign-in in an embedded
-            web view, and the provider's page would open in the browser, which
-            cannot hand the session back to the app. */}
+            its own navy one (`ink`), as the board draws them. Inside the
+            phone app only in a build that can open the phone's browser sheet
+            (`nativeOAuthAvailable`, `src/lib/native-oauth.ts`): Google refuses
+            sign-in in an embedded web view, so the app signs in there and
+            comes back with the session. An older build hides them. */}
           {OAUTH_PROVIDERS_ENABLED && (
-            <WebOnly>
+            <WebOnly showInAppWhen={nativeOAuthAvailable}>
               <AuthDivider label={t("auth.or_continue_with")} />
 
               <div className="grid gap-2.5">
