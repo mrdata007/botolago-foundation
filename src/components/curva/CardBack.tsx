@@ -121,7 +121,14 @@ export function CardBack({ profile }: { profile: CardProfile }) {
             <rect width="100" height="161.8" fill={`url(#${pattern})`} />
           </svg>
 
-          <div className="relative flex h-full w-full flex-col px-[8cqw] pb-[7cqw] pt-[8cqw]">
+          <div
+            className={
+              cut
+                ? "relative flex h-full w-full flex-col px-[8cqw] pb-[7cqw] pt-[8cqw]"
+                : // the shield: clear of its shoulders at the top and of its point at the foot
+                  "relative flex h-full w-full flex-col px-[9cqw] pb-[13cqw] pt-[15cqw]"
+            }
+          >
             <div className="flex items-center gap-[3cqw]">
               {profile.club ? (
                 <span
@@ -144,11 +151,17 @@ export function CardBack({ profile }: { profile: CardProfile }) {
               ) : null}
             </div>
 
-            <div className="mt-[7cqw] flex flex-col items-start gap-[3.5cqw]">
+            <div
+              className={
+                cut
+                  ? "mt-[7cqw] flex flex-col items-start gap-[3.5cqw]"
+                  : "mt-[4cqw] flex flex-col items-start gap-[2.5cqw]"
+              }
+            >
               {name ? (
                 <bdi
                   dir="auto"
-                  className="max-w-full truncate text-[11cqw] leading-none"
+                  className={`max-w-full truncate leading-none ${cut ? "text-[11cqw]" : "text-[9cqw]"}`}
                   style={{ fontFamily: '"Instrument Serif", "Times New Roman", serif' }}
                 >
                   {name}
@@ -170,7 +183,13 @@ export function CardBack({ profile }: { profile: CardProfile }) {
               ) : null}
             </div>
 
-            <dl className="my-auto grid grid-cols-2 gap-x-[6cqw] gap-y-[9cqw] pt-[6cqw]">
+            <dl
+              className={
+                cut
+                  ? "my-auto grid grid-cols-2 gap-x-[6cqw] gap-y-[9cqw] pt-[6cqw]"
+                  : "my-auto grid grid-cols-2 gap-x-[6cqw] gap-y-[4.5cqw] pt-[3cqw]"
+              }
+            >
               {STAT_CODES.map((code) => {
                 const value = profile.stats[code];
                 return (
@@ -185,7 +204,7 @@ export function CardBack({ profile }: { profile: CardProfile }) {
                       </span>
                     </dt>
                     <dd
-                      className="text-[14cqw] leading-none"
+                      className={`leading-none ${cut ? "text-[14cqw]" : "text-[11cqw]"}`}
                       style={{ ...display, color: palette.light }}
                     >
                       {value === null ? DASH : <Figure>{value}</Figure>}

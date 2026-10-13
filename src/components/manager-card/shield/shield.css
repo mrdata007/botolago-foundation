@@ -115,17 +115,36 @@
 
 .mc-sl--face {
   overflow: hidden;
-  background:
-    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px),
-    var(--sh-face);
   -webkit-mask: var(--sh-in) center / 100% 100% no-repeat;
   mask: var(--sh-in) center / 100% 100% no-repeat;
 }
 
-.mc-shield--on-metal .mc-sl--face {
+/* the face's ground: its lights, a fine pinstripe, the ribbon and the wedge, drawn for the French
+   card and mirrored for the Arabic one (the face is symmetric and this part holds no text) */
+.mc-shield__ground {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px),
+    var(--sh-face);
+}
+
+/* a shade under the rating column on the dark faces, so its small « OVR » reads on the lit corner */
+.mc-shield--on-dark .mc-shield__ground {
+  background:
+    radial-gradient(34% 20% at 16% 13%, rgb(0 0 0 / 0.3), transparent),
+    repeating-linear-gradient(45deg, rgb(255 255 255 / 0.05) 0 1px, transparent 1px 3px),
+    var(--sh-face);
+}
+
+.mc-shield--on-metal .mc-shield__ground {
   background:
     repeating-linear-gradient(45deg, rgb(255 255 255 / 0.12) 0 1px, transparent 1px 3px),
     var(--sh-face);
+}
+
+.mc-shield[dir="rtl"] .mc-shield__ground {
+  transform: scaleX(-1);
 }
 
 /* faceted planes: a ribbon from the lower start to the upper end, a wedge in the upper end corner */
@@ -148,11 +167,6 @@
 .mc-shield--homa .mc-shield__wedge {
   clip-path: polygon(46% 0, 100% 0, 100% 56%);
   opacity: 0.55;
-}
-
-.mc-shield[dir="rtl"] .mc-shield__rib,
-.mc-shield[dir="rtl"] .mc-shield__wedge {
-  transform: scaleX(-1);
 }
 
 /* the band under the art, with its light line on top */
@@ -325,7 +339,7 @@
   margin-inline-start: 0.6cqw;
   font-size: 3.7cqw;
   letter-spacing: 0.04em;
-  color: var(--sh-ink2);
+  color: var(--sh-ink);
 }
 
 .mc-shield__tier {

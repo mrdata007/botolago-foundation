@@ -232,7 +232,7 @@ export function body(v: ShieldView, o: BodyOptions = {}): string {
     `<div class="mc-shield__persp"><div class="mc-shield__tilt">` +
     `<span class="mc-shield__edge" aria-hidden="true"></span>` +
     `<span class="mc-sl mc-sl--frame" aria-hidden="true"></span>` +
-    `<span class="mc-sl mc-sl--face" aria-hidden="true"><span class="mc-shield__rib"></span><span class="mc-shield__wedge"></span><span class="mc-shield__band"></span></span>` +
+    `<span class="mc-sl mc-sl--face" aria-hidden="true"><span class="mc-shield__ground"><span class="mc-shield__rib"></span><span class="mc-shield__wedge"></span></span><span class="mc-shield__band"></span></span>` +
     span("mc-sl mc-sl--art", artBlock(v, measure)) +
     span("mc-sl mc-sl--text", textBlock(v)) +
     span("mc-sl mc-sl--num", rateBlock(v)) +
