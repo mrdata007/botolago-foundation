@@ -101,8 +101,9 @@ plan est donc traité ici seulement sous l'angle du fair-play.
 
 ## L8 — Comptabilité
 
-28. Durée de conservation des factures et événements de paiement (le plan cite 10 ans « à
-    confirmer ») ; conservation pseudonymisée après suppression du compte : acceptable ?
+28. Durée de conservation des factures et événements de paiement : l'éditeur a retenu **5 ans**
+    (13 octobre 2026). Est-ce conforme aux règles comptables et fiscales marocaines ? Conservation
+    pseudonymisée après suppression du compte : acceptable ?
 29. Numérotation et contenu des factures ; reconnaissance du chiffre d'affaires d'une formule
     annuelle ; traitement des ventes via les magasins.
 
