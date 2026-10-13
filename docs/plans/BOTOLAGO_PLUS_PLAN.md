@@ -564,6 +564,15 @@ Every string goes through `src/i18n/dictionary-fr.ts` / `dictionary-ar.ts` with 
 a sibling span, not inside the score-ramp figure (DESIGN_SYSTEM_V2 §2.2). The no-AI-notice rule
 (`AGENTS.md`, Public editorial rule) applies to all of it.
 
+**Logo rule (owner, 2026-10-13).** BotolaGO+ is never typed on screen. Every visible
+« BotolaGO+ » — the bar at the top of every screen, headings, sentences, the badge on the card,
+button labels — is the official BotolaGO wordmark (`src/assets/brand/botolago-wordmark-*.svg`, via
+`Logo`) followed by a « + » drawn as part of the logo, in the BotolaGO+ accent. Inside a sentence
+it sits at text height. Screen readers still read « BotolaGO+ » (`role="img"` with that label).
+The strings in the copy table above show where the logo goes; they are not the rendering. Plain
+text is kept only where an image cannot go: the browser tab title, store listings, push
+notifications, emails' subject lines and shared text.
+
 ### 3.3 Motion choreography
 
 The app already ships Motion (`"motion": "13.4.4"` in `package.json`), loaded lazily through
