@@ -23,6 +23,15 @@ on:
         description: Round number to write (for example 3)
         required: true
         type: string
+      fixture_ids:
+        description: Optional. Only these fixtures (comma-separated app fixture uuids), inside the round
+        required: false
+        type: string
+      include_observed:
+        description: Also redo fixtures that already have an observation (a correction with fresh SofaScore data)
+        required: false
+        type: boolean
+        default: false
       plan_sha256:
         description: Optional. If given, must equal the computed plan hash
         required: false
@@ -53,6 +62,8 @@ jobs:
       EXPECTED_COMMIT: ${{ inputs.expected_commit }}
       PLAN_SHA256: ${{ inputs.plan_sha256 }}
       ROUND: ${{ inputs.round }}
+      FIXTURE_IDS: ${{ inputs.fixture_ids }}
+      INCLUDE_OBSERVED: ${{ inputs.include_observed }}
 
     steps:
       - name: Enforce dispatch guards
@@ -69,6 +80,8 @@ jobs:
             [[ "$PLAN_SHA256" =~ ^[0-9a-f]{64}$ ]] || { echo "plan_sha256 must be 64 hex characters."; exit 2; }
           fi
           [[ "${ROUND:-}" =~ ^[0-9]{1,2}$ ]] || { echo "round must be a number."; exit 2; }
+          uuid='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+          [[ -z "${FIXTURE_IDS:-}" || "${FIXTURE_IDS}" =~ ^${uuid}(,${uuid}){0,11}$ ]] || { echo "fixture_ids must be up to 12 comma-separated uuids."; exit 2; }
           echo "Dispatch guards: PASS"
 
       - name: Refuse if another workflow run is active (one writer at a time)
@@ -128,6 +141,8 @@ jobs:
           [[ "${SUPABASE_PRODUCTION_PROJECT_REF:-}" == "tkewgajrljbwgwedqsxn" ]] || { echo "Production project-ref guard failed."; exit 2; }
           install -d -m 0700 "$EVIDENCE_DIR"
           args=(--mode rehearse --round "$ROUND")
+          if [[ -n "${FIXTURE_IDS:-}" ]]; then args+=(--fixtures "$FIXTURE_IDS"); fi
+          if [[ "${INCLUDE_OBSERVED:-}" == "true" ]]; then args+=(--include-observed); fi
           if [[ -n "${PLAN_SHA256:-}" ]]; then args+=(--plan-sha256 "$PLAN_SHA256"); fi
           set +e
           bun scripts/backend/sofascore-fantasy-simple-ingest.ts "${args[@]}" | tee "$RUNNER_TEMP/run.log"

@@ -108,7 +108,9 @@ describe("selection", () => {
       "8": "no_gameweek_assignment",
     });
     expect(
-      selectFixtures([candidate(6, "6", { observations: 2 })], { includeObserved: true }).selected,
+      selectFixtures([candidate(6, "6", { observations: 2 })], {
+        includeObserved: true,
+      }).selected,
     ).toHaveLength(1);
   });
 });
@@ -156,7 +158,12 @@ describe("report and plan", () => {
 });
 
 describe("SQL", () => {
-  const schema = { adaptiveSchema: true, linksTable: true, wrapper: true, observationsTable: true };
+  const schema = {
+    adaptiveSchema: true,
+    linksTable: true,
+    wrapper: true,
+    observationsTable: true,
+  };
 
   test("the reads are single SELECTs and mention no other provider", () => {
     for (const sql of [SCHEMA_SQL, candidatesSql(SEASON, schema), stateSql([uuid(1)])]) {
@@ -256,7 +263,8 @@ describe("one writer, and the apply check", () => {
     const after = state({
       observations: 5 + items.length,
       links: 1 + items.length,
-      forFixtures: items.map((i) => ({
+      forFixtures: items.map((i, index) => ({
+        id: 100 + index,
         fixtureId: i.fixtureId,
         digest: "d",
         source: "provider-reconciled",
@@ -268,6 +276,81 @@ describe("one writer, and the apply check", () => {
     expect(appliedProblems(state(), { ...after, otherDigest: "y" }, items, null)).toContain(
       "observations of other fixtures changed",
     );
+  });
+  test("a correction verifies the added row and preserves older provider observations", async () => {
+    const { cands, fetched, snapshot } = await world();
+    const items = planItems(
+      await prepareAll(cands, fetched, snapshot, "2026-10-11T12:00:00.000Z"),
+    ).slice(0, 1);
+    const historical = {
+      id: 10,
+      fixtureId: items[0]!.fixtureId,
+      digest: "historical",
+      source: "sportsmonks",
+      fullReady: false,
+      simpleReady: false,
+    };
+    const corrected = {
+      ...historical,
+      id: 11,
+      digest: "correction",
+      source: "provider-reconciled",
+      fullReady: items[0]!.expectedMode === "full",
+      simpleReady: true,
+    };
+    const before = state({ forFixtures: [historical] });
+    const after = state({
+      observations: 6,
+      forFixtures: [historical, corrected],
+    });
+    expect(appliedProblems(before, after, items, null)).toEqual([]);
+    expect(
+      appliedProblems(
+        before,
+        {
+          ...after,
+          forFixtures: [historical, { ...corrected, simpleReady: false }],
+        },
+        items,
+        null,
+      ),
+    ).toContain(`fixture ${items[0]!.fixtureId}: observation is not simple-ready`);
+    expect(
+      appliedProblems(
+        before,
+        {
+          ...after,
+          forFixtures: [historical, { ...corrected, source: "sportsmonks" }],
+        },
+        items,
+        null,
+      ),
+    ).toContain(`fixture ${items[0]!.fixtureId}: unexpected source sportsmonks`);
+    expect(
+      appliedProblems(
+        before,
+        {
+          ...after,
+          forFixtures: [{ ...historical, digest: "changed" }, corrected],
+        },
+        items,
+        null,
+      ),
+    ).toContain(`fixture ${items[0]!.fixtureId}: historical observation 10 changed`);
+    expect(appliedProblems(before, { ...after, forFixtures: [historical] }, items, null)).toContain(
+      `fixture ${items[0]!.fixtureId}: expected one new observation, got 0`,
+    );
+    expect(
+      appliedProblems(
+        before,
+        {
+          ...after,
+          forFixtures: [historical, corrected, { ...corrected, id: 12 }],
+        },
+        items,
+        null,
+      ),
+    ).toContain(`fixture ${items[0]!.fixtureId}: expected one new observation, got 2`);
   });
 });
 
