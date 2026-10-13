@@ -683,7 +683,10 @@ export async function prepareSofascoreObservation(
       if (conflict === "none") {
         if (tPart.ambiguousGoals > 0) {
           unknown("goalsConceded", "timeline_same_moment");
-          unknown("cleanSheet", "timeline_same_moment");
+          // Under 60 minutes he cannot have kept a clean sheet, whatever the ambiguous goal
+          // was: certain, so certified (a pending item must be able to change points).
+          if (tMinutes < CLEAN_SHEET_MIN_MINUTES) fact("cleanSheet", false);
+          else unknown("cleanSheet", "timeline_same_moment");
         } else {
           fact("goalsConceded", tPart.goalsConceded);
           fact("cleanSheet", tMinutes >= CLEAN_SHEET_MIN_MINUTES && tPart.goalsConceded === 0);
@@ -707,11 +710,19 @@ export async function prepareSofascoreObservation(
         }
         const ambiguous = tPart.ambiguousGoals > 0 || sPart === null || sPart.ambiguousGoals > 0;
         const reason: UnknownReason = ambiguous ? "timeline_same_moment" : "minutes_conflict";
-        const csT = tPart.ambiguousGoals > 0 ? null : tMinutes >= 60 && tPart.goalsConceded === 0;
+        // A version under 60 minutes is false whatever the goals; otherwise it needs its goals.
+        const csT =
+          tMinutes < CLEAN_SHEET_MIN_MINUTES
+            ? false
+            : tPart.ambiguousGoals > 0
+              ? null
+              : tPart.goalsConceded === 0;
         const csS =
-          sPart === null || sPart.ambiguousGoals > 0
-            ? null
-            : sValue >= 60 && sPart.goalsConceded === 0;
+          sValue < CLEAN_SHEET_MIN_MINUTES
+            ? false
+            : sPart === null || sPart.ambiguousGoals > 0
+              ? null
+              : sPart.goalsConceded === 0;
         if (csT !== null && csT === csS) fact("cleanSheet", csT);
         else unknown("cleanSheet", reason);
         // Goals conceded: the same count in both windows, and the minutes agree (same side of

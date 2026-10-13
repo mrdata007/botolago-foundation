@@ -717,9 +717,9 @@ describe("C1: the digest of a match with none of the new situations is unchanged
       expect(p.expectedMode).toBe("simple");
     }
     const p = await prepare(load("16438990"));
-    expect(p.unknownReasons).toEqual({ timeline_same_moment: 4 });
+    expect(p.unknownReasons).toEqual({ timeline_same_moment: 3 });
     expect(p.unknownFields.goalsConceded).toBe(2);
-    expect(p.unknownFields.cleanSheet).toBe(2);
+    expect(p.unknownFields.cleanSheet).toBe(1); // the other is a sub under 60 minutes: false
   });
 });
 
@@ -737,18 +737,27 @@ describe("C1: event order uses added minutes (audit: stoppage time, same-minute 
     const changed = ["919329", "1096751", "1140935", "1140961"];
     for (const id of changed) {
       const r = rowFor(p, id);
-      expect(unknownOf(r)).toEqual(["cleanSheet", "goalsConceded"]);
+      const sub = id === "1140935" || id === "1140961"; // on at 77: 13 minutes
+      // Off at 77 (60 or more): both unknown. On at 77 (under 60 in every version): no clean
+      // sheet is certain, so it is verified false; only the goals conceded stay unknown.
+      expect(unknownOf(r)).toEqual(sub ? ["goalsConceded"] : ["cleanSheet", "goalsConceded"]);
       expect(r.evidence.goalsConceded!.reason).toBe("timeline_same_moment");
-      expect(r.evidence.cleanSheet!.reason).toBe("timeline_same_moment");
       expect(r.stats).not.toHaveProperty("goalsConceded");
-      expect(r.stats).not.toHaveProperty("cleanSheet");
+      if (sub) {
+        expect(r.stats.cleanSheet).toBe(false);
+        expect(r.evidence.cleanSheet!.state).toBe("verified");
+        expect(r.evidence.cleanSheet!.reason).toBeUndefined();
+      } else {
+        expect(r.evidence.cleanSheet!.reason).toBe("timeline_same_moment");
+        expect(r.stats).not.toHaveProperty("cleanSheet");
+      }
       // Everything else about them still counts.
       expect(r.evidence.minutes!.state).toBe("verified");
       expect(r.evidence.minutes!.reason).toBeUndefined();
       expect(r.stats.minutes).toBe(rowFor(base, id).stats.minutes);
     }
-    expect(p.unknownFields).toEqual({ cleanSheet: 4, goalsConceded: 4 });
-    expect(p.unknownReasons).toEqual({ timeline_same_moment: 8 });
+    expect(p.unknownFields).toEqual({ cleanSheet: 2, goalsConceded: 4 });
+    expect(p.unknownReasons).toEqual({ timeline_same_moment: 6 });
     expect(p.expectedMode).toBe("simple");
     // Nobody else is unknown.
     for (const r of p.request!.payload.players)
@@ -785,9 +794,12 @@ describe("C1: event order uses added minutes (audit: stoppage time, same-minute 
       incidents: [...match.incidents, same],
     });
     expect(p.blockers).toEqual([]);
-    for (const id of ["895127", "1182110"])
-      expect(scoredUnknown(rowFor(p, id))).toEqual(["cleanSheet", "goalsConceded"]);
-    expect(unknownTotals(p)).toEqual({ cleanSheet: 2, goalsConceded: 2 });
+    // 895127 went off at 90+2 after 90 minutes: both unknown. 1182110 came on then (1 minute):
+    // no clean sheet is certain, only his goals conceded are unknown.
+    expect(scoredUnknown(rowFor(p, "895127"))).toEqual(["cleanSheet", "goalsConceded"]);
+    expect(scoredUnknown(rowFor(p, "1182110"))).toEqual(["goalsConceded"]);
+    expect(rowFor(p, "1182110").stats.cleanSheet).toBe(false);
+    expect(unknownTotals(p)).toEqual({ cleanSheet: 1, goalsConceded: 2 });
   });
 
   test("a change with no added time against a goal with added time on the same minute is not ordered by guessing", async () => {

@@ -59,6 +59,9 @@ Everything below is additive. Rows without the new keys mean exactly what they m
 - A goal and a substitution or sending-off are ambiguous only when **both** numbers are equal.
 - An ambiguous goal makes `goalsConceded` and `cleanSheet` `unknown` for the players changed
   at that moment. It does not hold the match.
+- Exception: a player whose minutes are under 60 in every version cannot have kept a clean
+  sheet, so his `cleanSheet` is verified `false` (no reason); only `goalsConceded` stays
+  `unknown`. A pending item must exist only when resolving it could change points.
 
 #### Minutes: two versions
 
@@ -66,6 +69,8 @@ Everything below is additive. Rows without the new keys mean exactly what they m
 - **Version T:** the substitution and sending-off timeline.
 - **Agree:** S and T are on the same side of 60 (both under 60, or both 60 or more).
   - `stats.minutes` = S, verified. This is the owner decision of 2026-10-13.
+  - Within the existing −2/+6 tolerance the timeline value is used; beyond it S, as decided
+    2026-10-13.
 - **Straddle:** one is under 60 and the other is 60 or more.
   - `stats.minutes` = the lower value, verified.
   - The row carries `pendingItems: [{ "category": "appearance", "reason": "minutes_conflict" }]`.
@@ -73,6 +78,7 @@ Everything below is additive. Rows without the new keys mean exactly what they m
     pending a possible upgrade.
 - **`cleanSheet`:** work it out under both versions: at least 60 minutes, and no goal
   conceded while on the pitch during that version's window.
+  - A version under 60 minutes is `false` whatever the goals.
   - Same answer under both → verified.
   - Different answers → `unknown`.
 - **`goalsConceded`:** verified only when both windows give the same count **and** the minutes
