@@ -854,6 +854,11 @@ export class SofascoreFantasyRun {
       expectedMode: prepared.expectedMode,
       rows: prepared.rows,
       unknownFields: prepared.unknownFields,
+      // Players whose minutes are SofaScore's minutesPlayed because it disagreed
+      // with the substitution times (owner decision 2026-10-13).
+      ...(prepared.minutesFromSofascore > 0
+        ? { minutesFromSofascore: prepared.minutesFromSofascore }
+        : {}),
       // Auditable: the unmapped substitutes left out of the request (SofaScore ids, never names).
       ...(prepared.excludedUnmapped.length > 0
         ? { excludedUnmapped: prepared.excludedUnmapped.map((p) => p.sofascoreId) }

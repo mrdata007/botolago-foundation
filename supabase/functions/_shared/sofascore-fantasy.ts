@@ -83,6 +83,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** Sofascore `minutesPlayed` counts the clock: up to this many minutes over the substitution time. */
 const MAX_STOPPAGE_MINUTES = 6;
 const MIN_UNDER_MINUTES = 2;
+/** A clean sheet needs this many minutes on the pitch (as deriveParticipation). */
+const CLEAN_SHEET_MIN_MINUTES = 60;
 /** Slack over the first half's stoppage time, for the same reasons as MIN_UNDER_MINUTES. */
 const STOPPAGE_SLACK_MINUTES = 2;
 /** Longer than any real first-half stoppage: beyond it the fixed limit stays. */
@@ -223,6 +225,8 @@ export interface PreparedSofascoreObservation {
   readonly rows: number;
   /** Fields left unknown, by name, over all rows (never written as zero). */
   readonly unknownFields: Readonly<Record<string, number>>;
+  /** Players whose minutes are SofaScore's minutesPlayed because it disagreed with the substitution times. */
+  readonly minutesFromSofascore: number;
   readonly request: SofascoreObservationRequest | null;
   readonly requestDigest: string | null;
 }
@@ -504,6 +508,9 @@ export async function prepareSofascoreObservation(
   const rows: ObservationRow[] = [];
   const unknownFields: Record<string, number> = {};
   let allFull = true;
+  // Players whose minutes were taken from SofaScore's minutesPlayed because it
+  // disagreed with the substitution times (reported, never a hold).
+  let minutesFromSofascore = 0;
 
   for (const p of appearing) {
     const appId = appOf.get(p.externalId);
@@ -548,17 +555,17 @@ export async function prepareSofascoreObservation(
       throughHalfTime && firstStoppage !== null && firstStoppage <= MAX_FIRST_HALF_STOPPAGE
         ? Math.max(MAX_STOPPAGE_MINUTES, firstStoppage + STOPPAGE_SLACK_MINUTES)
         : MAX_STOPPAGE_MINUTES;
-    if (played === null || !minutesAgree(Math.min(played, 90 - start), part.minutes, over)) {
-      block({
-        code: "minutes_mismatch",
-        message:
-          played === null
-            ? "SofaScore gives no minutes to check the substitution times against."
-            : "SofaScore minutes disagree with the substitution times.",
-        ...where,
-      });
-      continue;
+    // Owner decision 2026-10-13: SofaScore is the single source and its numbers are
+    // final. When its minutesPlayed disagrees with its own substitution times, the
+    // minutesPlayed figure is used (capped at 90, at least 1) instead of holding the
+    // match, and the clean sheet follows those minutes. With no minutesPlayed, the
+    // minutes come from SofaScore's substitution and dismissal times.
+    let minutes = part.minutes;
+    if (played !== null && !minutesAgree(Math.min(played, 90 - start), part.minutes, over)) {
+      minutes = Math.max(1, Math.min(Math.round(played), 90));
+      minutesFromSofascore += 1;
     }
+    const cleanSheet = minutes >= CLEAN_SHEET_MIN_MINUTES && part.goalsConceded === 0;
 
     const stats: { -readonly [K in ScoringField]?: CertifiedStats[K] } = {};
     const evidence: { -readonly [K in ScoringField]?: StatisticEvidence } = {};
@@ -570,9 +577,9 @@ export async function prepareSofascoreObservation(
       evidence[field] = proof("unknown");
       unknownFields[field] = (unknownFields[field] ?? 0) + 1;
     };
-    fact("minutes", part.minutes);
+    fact("minutes", minutes);
     fact("goalsConceded", part.goalsConceded);
-    fact("cleanSheet", part.cleanSheet);
+    fact("cleanSheet", cleanSheet);
     fact("goals", mine("goal").length + mine("penalty_goal").length);
     fact("ownGoals", 0); // any label that could hide an own goal already held the match back
     fact("yellowCards", mine("yellow_card").length);
@@ -646,6 +653,7 @@ export async function prepareSofascoreObservation(
     ),
     rows: rows.length,
     unknownFields,
+    minutesFromSofascore,
   };
   if (blockers.length > 0)
     return {

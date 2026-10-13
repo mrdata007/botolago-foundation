@@ -132,9 +132,14 @@ overridden, retries dedupe by digest):
   side's goal incidents must equal the final score.
 - **Minutes, clean sheet, goals conceded**: from substitution and dismissal
   incidents (`deriveParticipation`), checked against `minutesPlayed` with the
-  documented tolerance (SofaScore may run up to 6 over and 2 under). A player
-  who does not fit holds the match back (`minutes_mismatch`,
-  `timeline_unresolved`).
+  documented tolerance (SofaScore may run up to 6 over and 2 under). Owner
+  decision 2026-10-13: SofaScore's numbers are final, so a player who does not
+  fit no longer holds the match; his minutes are SofaScore's `minutesPlayed`
+  (capped at 90, at least 1), his clean sheet follows those minutes (60 or more,
+  nothing conceded), and the case is counted as `minutesFromSofascore` in the
+  `football_live_refresh_fantasy` log line. Goals conceded still come from the
+  substitution times. Times that cannot be ordered still hold it
+  (`timeline_unresolved`).
 - **Held for review, never guessed**: an unknown score-relevant incident label
   (an own goal has never been seen), a lineup `ownGoals` no incident explains, a
   second yellow card (whether the first yellow is also listed is unestablished,
@@ -224,7 +229,7 @@ request.
 - Only a match held for `unmapped_players`, or for a database condition that can
   change (policy not enabled, identity not reviewed, score mismatch, membership
   missing), is kept for retries. A data problem the same replies cannot fix (an
-  unknown incident, goals that do not add up, a second yellow, minutes that do
+  unknown incident, goals that do not add up, a second yellow, (before 2026-10-13) minutes that do
   not fit) is given up at once; the 2-hour refresh window after the final
   whistle fetches fresh replies and can reopen it.
 - A gameweek that is finalizing or sealed ends the attempts.
