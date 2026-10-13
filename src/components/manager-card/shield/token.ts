@@ -66,9 +66,9 @@ export function tokenMarkup(
     const fill = m.num ? `url(#${id}-num)` : m.ink;
     // a dark rim under the digits on the light metals, a light one under them on the dark faces
     const halo = mix(m.faceStops[1]!, m.dark ? "#000000" : "#ffffff", 0.35);
-    const t = (extra: string) =>
+    const digits = (extra: string) =>
       `<text x="50" y="${(76 + fontSize * 0.35).toFixed(1)}" font-family="Changa, sans-serif" font-weight="800" font-size="${fontSize}" text-anchor="middle" direction="ltr" ${extra}>${esc(text)}</text>`;
-    art += `<g data-mc="ovr">${t(`fill="none" stroke="${halo}" stroke-width="${(1.6 * u).toFixed(2)}" stroke-linejoin="round"`)}${t(`fill="${fill}"`)}</g>`;
+    art += `<g data-mc="ovr">${digits(`fill="none" stroke="${halo}" stroke-width="${(1.6 * u).toFixed(2)}" stroke-linejoin="round"`)}${digits(`fill="${fill}"`)}</g>`;
   }
   return (
     `<span class="mc-tok mc-tok--${size} mc-tok--${v.key}" role="img" aria-label="${esc(tokenLabel(eclatView(profile, strings)))}" dir="${v.ar ? "rtl" : "ltr"}" style="width:${tokenWidth(size)}px;height:${size}px">` +
