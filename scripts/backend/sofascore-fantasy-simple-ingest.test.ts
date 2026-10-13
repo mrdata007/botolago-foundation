@@ -371,3 +371,17 @@ describe("no other provider anywhere in the new code", () => {
     }
   });
 });
+
+describe("errorText", () => {
+  test("a refused read says why, on one line, at most 300 characters", async () => {
+    const { errorText } = await import("./sofascore-fantasy-simple-ingest");
+    expect(
+      errorText(
+        '{"message":"Failed to run sql query: ERROR:  42703: column \\"x\\" does not exist"}',
+      ),
+    ).toBe('Failed to run sql query: ERROR: 42703: column "x" does not exist');
+    expect(errorText("plain\n  text")).toBe("plain text");
+    expect(errorText("")).toBe("(empty body)");
+    expect(errorText(`{"message":"${"a".repeat(400)}"}`).length).toBe(300);
+  });
+});
