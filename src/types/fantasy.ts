@@ -129,6 +129,9 @@ export const POINTS_EVENT_CATEGORIES = [
   "own_goal",
   "bonus",
   "player_of_match",
+  // The rating rule (docs/backend/FANTASY_RATING_POINTS.md): the only line of a
+  // rating gameweek, the SofaScore rating rounded (5 without one).
+  "rating",
 ] as const;
 
 export type PointsEventCategory = (typeof POINTS_EVENT_CATEGORIES)[number];

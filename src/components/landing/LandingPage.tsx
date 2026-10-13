@@ -159,10 +159,12 @@ export function LandingPage({
   }, []);
   const showSticky = heroOut && !finalIn && cta.kind !== "pending";
 
+  // The rating rule (docs/backend/FANTASY_RATING_POINTS.md): the SofaScore rating
+  // rounded half up, 5 for an appearance without one.
   const scoring: Array<{ label: string; points: number }> = [
-    { label: t("landing.scoring_goal_mid"), points: 5 },
-    { label: t("landing.scoring_assist"), points: 3 },
-    { label: t("landing.scoring_clean_sheet"), points: 4 },
+    { label: t("landing.scoring_rating_high"), points: 8 },
+    { label: t("landing.scoring_rating_low"), points: 6 },
+    { label: t("landing.scoring_no_rating"), points: 5 },
   ];
 
   return (
