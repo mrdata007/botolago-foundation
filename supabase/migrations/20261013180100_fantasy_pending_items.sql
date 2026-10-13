@@ -108,7 +108,7 @@ revoke all on function app_private.fantasy_category_fields(text) from public, an
 -- The categories in the row's scope: all twelve, less the four simple mode does not count.
 create function app_private.fantasy_row_scoped_categories(p_row jsonb)
 returns text[] language sql immutable set search_path = '' as $$
-  select array_agg(c order by c) from unnest(array['appearance', 'goal', 'assist', 'clean_sheet',
+  select array_agg(c order by c collate "C") from unnest(array['appearance', 'goal', 'assist', 'clean_sheet',
     'goals_conceded', 'saves', 'penalty_save', 'penalty_miss', 'yellow_card', 'red_card',
     'second_yellow_dismissal', 'own_goal']) c
   where not (coalesce(p_row->>'scoringMode', '') = 'simple' and c in ('assist', 'saves', 'penalty_save', 'penalty_miss'))
@@ -133,7 +133,7 @@ begin
   v_under := v_min and (p_row#>>'{stats,minutes}')::integer < p_full_minutes;
   v_appearance_pending := jsonb_typeof(p_row->'pendingItems') = 'array' and exists(
     select 1 from jsonb_array_elements(p_row->'pendingItems') i where i->>'category' = 'appearance');
-  select coalesce(array_agg(c.category order by c.category), array[]::text[]) into v_result
+  select coalesce(array_agg(c.category order by c.category collate "C"), array[]::text[]) into v_result
   from (values
     ('appearance', v_min),
     ('goal', (v_ok->>'goals')::boolean),
@@ -155,7 +155,7 @@ revoke all on function app_private.fantasy_row_scorable_categories(jsonb, intege
 -- In scope but not scorable, plus the categories the row's pendingItems name; sorted.
 create function app_private.fantasy_row_pending_categories(p_row jsonb, p_full_minutes integer)
 returns text[] language sql stable set search_path = '' as $$
-  select coalesce(array_agg(distinct c order by c), array[]::text[]) from (
+  select coalesce(array_agg(distinct c collate "C" order by c collate "C"), array[]::text[]) from (
     select c from unnest(app_private.fantasy_row_scoped_categories(p_row)) c
     where c <> all (app_private.fantasy_row_scorable_categories(p_row, p_full_minutes))
     union
@@ -179,7 +179,7 @@ returns jsonb language sql stable set search_path = '' as $$
       (select p_row#>>array['evidence', fld, 'reason'] from unnest(app_private.fantasy_category_fields(c)) with ordinality u(fld, o)
         where p_row#>>array['evidence', fld, 'state'] = 'unknown' and p_row#>>array['evidence', fld, 'reason'] is not null
         order by o limit 1),
-      'data_pending')) order by c), '[]'::jsonb)
+      'data_pending')) order by c collate "C"), '[]'::jsonb)
   from unnest(app_private.fantasy_row_pending_categories(p_row, p_full_minutes)) c $$;
 revoke all on function app_private.fantasy_row_pending_items(jsonb, integer) from public, anon, authenticated, service_role;
 
@@ -843,7 +843,8 @@ begin
      'pendingItems',coalesce(pp.items,'[]'::jsonb),
      'pointsStatus',case
        when x.player->>'provisionalPoints' is null
-         or (coalesce(pp.participation_pending,false) and jsonb_array_length(coalesce(x.player->'events','[]'::jsonb))=0) then 'pending'
+         or (coalesce(pp.participation_pending,false) and not exists(
+           select 1 from jsonb_array_elements(coalesce(x.player->'events','[]'::jsonb)) ev where ev->>'category'='appearance')) then 'pending'
        when not is_final or jsonb_array_length(coalesce(pp.items,'[]'::jsonb))>0 then 'provisional'
        else 'final' end) order by x.ord),'[]'::jsonb),
    coalesce(sum(jsonb_array_length(coalesce(pp.items,'[]'::jsonb))),0)

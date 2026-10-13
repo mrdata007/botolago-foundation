@@ -1,4 +1,5 @@
 import {
+  pendingCategories,
   scoreCertifiedPlayerFixture,
   type FieldEvidence,
 } from "../../src/backend/fantasy/adaptive-scoring";
@@ -120,6 +121,11 @@ export const scoringSnapshotSchema = z.object({
         evidence: z.record(z.string(), z.unknown()).optional(),
         scoringMode: z.enum(["full", "simple"]).nullable().optional(),
         participationKnown: z.boolean().optional(),
+        // Present only on rows with something pending (SQL: fantasy_scoring_document_pending).
+        pendingItems: z
+          .array(z.object({ category: z.string(), reason: z.string().nullable().optional() }))
+          .optional(),
+        pendingCategories: z.array(z.string()).optional(),
       }),
     )
     .max(128000),
@@ -226,6 +232,21 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
     const total = totals.get(player.fantasyPlayerId);
     if (!total) throw new Error("fantasy_scoring_player_missing");
     // Explicit zero events retract corrected statistics; never filter them.
+    if (snapshot.adaptive) {
+      // The database lists what is pending; this computes the same list from the same
+      // rule (adaptive-scoring.ts, SQL app_private.fantasy_row_pending_categories). A
+      // difference means the two drifted apart, and no points are saved on a guess.
+      const computed = pendingCategories(
+        player.stats,
+        (player.evidence ?? {}) as FieldEvidence,
+        rules.fullAppearanceMinutes,
+        player.scoringMode ?? null,
+        player.pendingItems ?? [],
+      );
+      const stated = [...(player.pendingCategories ?? [])].sort();
+      if (computed.join(",") !== stated.join(","))
+        throw new Error("fantasy_pending_categories_mismatch");
+    }
     const events = snapshot.adaptive
       ? scoreCertifiedPlayerFixture(
           player.playerId,
@@ -235,6 +256,7 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
           (player.evidence ?? {}) as FieldEvidence,
           rules,
           player.scoringMode ?? null,
+          player.pendingItems ?? [],
         )
       : scorePlayerFixture(
           player.playerId,
