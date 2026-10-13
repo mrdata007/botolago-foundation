@@ -327,9 +327,10 @@ journée · mise à jour → Fin de saison · fin, sans prélèvement; monthly: 
 rappel → Jour 30 · renouvellement) and the line under the button (« Sans renouvellement
 automatique. » / « Renouvelé chaque mois. Annulable à tout moment. »).
 
-Copy rules applied: outcome over feature, specific numbers, short sentences, `vous`, one verb family
-for buttons, reassurance under the button, no hype words, no invented proof. The 91 MAD saving is
-29 × 10 months − 199 and must be recomputed if prices change. The owner decided (2026-10-12) that the
+Copy rules applied: outcome over feature, specific numbers, short sentences, the « tu » voice (the
+sketch overrides the `vous` table of 3.2), one verb family for buttons, reassurance under the button,
+no hype words, no invented proof. The saving is computed from the calendar, against the monthly
+payments needed to cover the same period (3.0d), and must be recomputed if prices change. The owner decided (2026-10-12) that the
 monthly renewal reminder is built: an in-app notice 3 days before each monthly renewal (see
 "Renewal reminder" below). It is a launch requirement for the monthly plan, so the line stays.
 The owner chose « vos amis » over « vos potes » for the duel step.
@@ -354,10 +355,10 @@ prototype for approval, not app code; every price, date and name in it is exampl
 
 | #   | Screen            | Visual job                                                                                                                                                                                                                       | Primary button                              |
 | --- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| 1   | Personal preview  | The member's manager card as the hero, with an inline style selector (Holo, Électrique, Pixels, Chrome noir). One benefit sentence and the free-play line « Le jeu reste gratuit. BotolaGO+ ne donne aucun point supplémentaire. » | Voir les avantages                          |
+| 1   | Personal preview  | The member's manager card as the hero, with an inline style selector (Holo, Électrique, Pixels, Chrome noir). The single reassurance « Ta note ne change jamais, seul le style change. » sits above the button (pass 2, 3.0d) | Voir les avantages                          |
 | 2   | Premium value     | One football story, « Ta meilleure journée de la saison » (points per journée, best one highlighted), and one rivalry (two manager identities, « Toi 7–4 Sami »). The CAP/SEL/TRF/CON comparison sits behind « Voir le détail ». Then exactly three benefits. | Choisir mon pass                            |
-| 3   | Choose your plan  | Two readable options, the chosen-style thumbnail, the three-benefit recap, total due today, renewal terms and the cancel path. Stands alone for people who tapped « Voir les prix ». Headline: « Ta carte. Tes rivalités. Toute ta saison. » (never a price). | Activer mon pass, 199 MAD / M'abonner, 29 MAD/mois |
-| 4   | Unlocked          | A brief reveal of the chosen card, optional share, « Gérer mon abonnement ». The close button (X) leaves the offer (the sketch shows the toast « Retour à l'app ») and never loops back to screen 1.                              | Ouvrir ma saison                            |
+| 3   | Choose your plan  | Two plans side by side, a banner crop of the fan's own card (finish, manager name, earned rating), the billing line next to the button, the terms behind « Voir les conditions ». Stands alone for people who tapped « Voir les prix ». Headline: « Ta carte. Tes rivalités. Toute ta saison. » (never a price). | Activer mon pass / M'abonner (the price sits in the billing line above the button) |
+| 4   | Unlocked          | A brief reveal of the chosen card, optional share, one access line with « Gérer dans Profil ». The close button (X) leaves the offer (the sketch shows the toast « Retour à l'app ») and never loops back to screen 1.                              | Ouvrir ma saison                            |
 
 Navigation: « Voir les prix » jumps to screen 3 from screens 1 and 2; swipe and arrow keys cannot
 move past screen 3; screen 4 is reached only through the purchase button.
@@ -408,18 +409,19 @@ opposite (the last style stays). The three benefits and this line must follow th
 
 #### Pricing rules shown in the sketch
 
-- **Two options, both labelled « Exemple »:** Pass saison 199 MAD, « jusqu'au 31 mai 2027 », one
-  payment, no automatic renewal; Mensuel 29 MAD/mois, with the real next billing date (today plus
-  one month).
+- **Two options:** Pass saison 199 MAD, « jusqu'au 31 mai 2027 », one payment, no automatic
+  renewal; Mensuel 29 MAD / mois, with the real next billing date (today plus one month). The
+  route note and the credits mark the data as example data; the plan cards carry no « Exemple » tag.
 - **Dates come from the calendar, never typed.** The season end is the next 31 May on or after
   today. The next monthly billing date is today plus one month. The reminder is 3 days before each
   renewal; the option shows « Rappel 3 jours avant chaque renouvellement » and the terms repeat it.
 - **Saving only with its basis, and the basis must match the pass period.** The sketch counts the
   monthly payments needed to cover the same period (today to 31 May 2027 is 8 payments, so
-  « Économie de 33 MAD vs 29 MAD × 8 mois »), not a fixed 10 months. The first draft showed 91 MAD
-  against 10 months, which overstated the saving because the pass starts today, not in August. If
-  the owner wants the 10-month comparison, the pass must start at the season start and say so. The
-  saving is hidden when it is zero or negative. Recompute it if prices change.
+  « Économie de 33 MAD par rapport à 8 paiements mensuels »). The terms show the sum
+  (« 8 paiements mensuels, soit 29 MAD × 8 = 232 MAD ») and say the payments run past 31 May, so
+  it is not an identical access. A comparison over a longer period would need the pass to start at
+  the season start and say so. The saving is hidden when it is zero or negative, with no promise of
+  an offer in its place. Recompute it if prices change.
 - **Total due today** is stated on its own, with the renewal terms, the cancel path
   (« Profil › BotolaGO+ › Gérer mon abonnement ») and « Restaurer un achat » on the same screen.
 - **The headline never carries a price**; prices appear in the options and the buttons.
@@ -449,6 +451,83 @@ opposite (the last style stays). The three benefits and this line must follow th
    3. The saving line with its basis versus no saving line (trust and conversion).
    4. Screen 2 story (best journée and rivalry) versus the three benefits alone.
    5. The « Voir les prix » shortcut visible on screen 1 versus from screen 2 only.
+
+### 3.0d Pass 2 (2026-10-13): hierarchy and commercial decisions
+
+Owner review of the rebuilt sketch. The visual direction stays. The remaining problem is hierarchy:
+reassurance, statistics and subscription details compete with the emotional appeal of owning the
+card. This section supersedes the terms in 3.0c where they differ.
+
+#### Hierarchy principles
+
+1. **The card is the hero on every screen.** Anything that is not the card, the benefit it unlocks
+   or the one button must earn its space.
+2. **One reassurance, said twice at most.** « Ta note ne change jamais, seul le style change. »
+   (AR « تقييمك لا يتغيّر أبدًا، الأسلوب وحده يتغيّر ») appears once on screen 1, above the button,
+   and once at the purchase decision on screen 3, with the same wording.
+   Not below the card, the style selector and the button together; not on the celebration screen.
+3. **Details sit behind the decision, not in front of it.** Full terms are collapsed behind
+   « Voir les conditions »; only the essential billing line sits next to the button.
+4. **Readability before decoration.** The finish pattern is quieter behind text; captain and
+   statistic labels are larger.
+5. **Show the thing they chose.** The paywall shows a purpose-built banner crop of the fan's own
+   card (finish, manager name, club, earned rating), not a scaled-down card and not the club tile.
+   The selector label « Chrome noir » is shortened to « Chrome » so all four labels fit one line.
+6. **Celebrate first.** Screen 4 is the card plus one access line: plan, until or next date,
+   « Gérer dans Profil ». Expiry and cancellation explanations live in subscription management.
+7. **Screens 2 and 3.** A shorter chart and a compact rivalry preview so the rivalry and benefits
+   show without scrolling at 390 x 844; both plans visible side by side or as two compact rows above
+   the fixed purchase area.
+8. **Arabic scores never share one string.** Each participant gets a column with crest, name, role
+   tag and score, so « أنت 7 ، سامي 4 » cannot read as the scores belonging to the opposite people.
+   Names are localised (« سامي », « كريم ب. »); the Latin « VS » becomes « ضد ». Mixed strings
+   (matchweek, « 29 MAD × 8 », dates) are isolated with `bdi`; the matchweek label is spelled out in
+   Arabic (« الجولة 9 ») and resolves its own direction.
+9. **Counted nouns agree with the number.** Arabic uses singular for 1, dual for 2, plural for 3 to
+   10 and singular accusative from 11 (« جولة واحدة », « جولتين », « 3 جولات », « 11 جولة »), so the
+   saving line stays correct as the monthly-payment count falls from 8 to 1.
+10. **Time axis.** The points chart and the won/lost strip follow the reading direction: in Arabic the
+    first matchweek is on the right. Deliberate; confirm with the Arabic reviewer.
+11. **Prototype notes stay out of the product.** The test price and the late-season rule appear in a
+    note under the phone, not in the buyer-facing terms; the terms say what the buyer is promised.
+
+#### Commercial decisions (owner-approved recommendations)
+
+| Topic | Decision |
+|---|---|
+| Season pass price | **199 MAD is a test price.** No automatic daily reduction. |
+| Late-season rule | When the full pass stops beating monthly payments for the time left, offer a **« Reste de la saison »** price instead of cutting the price daily. The sketch shows this as a note, not a third plan. The threshold and the remaining-season price are set before launch and tested. |
+| Saving wording | « **par rapport à 8 paiements mensuels** ». 13 October to 31 May is about 7 months and 18 days; 8 monthly charges would cover it and also run past 31 May. Never imply identical 8-month access. Recompute from the calendar; hide when zero or negative. |
+| Monthly plan | Cancel at any time. Cancelling stops the next renewal; access stays until the end of the paid billing period, which is the **billing anniversary** (13 November for a purchase on 13 October), not the end of the calendar month. |
+| Season pass | **Does not renew.** Access ends on 31 May of the season. |
+| After expiry or cancellation | Stays viewable: the card and the earned history (ratings, tier, finished gameweeks). Becomes unavailable: premium analysis, meaning the detailed history views, the detailed duels (Face-à-face+) and the premium styles (the card returns to the base style). The sketch must say exactly this, in subscription management, not on the celebration screen. |
+| Refunds | **« À confirmer ».** Left open until the payment platform and the actual policy exist. The sketch keeps the label; nothing is promised. |
+
+Billing line next to the purchase button (essential only, at least 14 px):
+season « 199 MAD aujourd'hui · sans renouvellement »; monthly « 29 MAD aujourd'hui · renouvelé le
+13 novembre 2026 · annulable à tout moment ». The rest sits behind « Voir les conditions ».
+
+#### Open items for a native Arabic reviewer
+
+- [ ] Rivalry columns: name and score read in the right pairing in RTL, with the free-text name of a
+      friend of either script (a Latin name in an Arabic column is isolated with `bdi`).
+- [ ] Plural forms (« تتقدّم بفارق جولة واحدة / جولتين / 3 جولات », « دفعة شهرية واحدة », « دفعتين
+      شهريتين », « 8 دفعات شهرية »), the saving line « توفير 33 MAD مقارنة بـ 8 دفعات شهرية » and the
+      terms sentence « تغطي هذه الفترة لكنها تمتد إلى ما بعد … ».
+- [ ] « MAD » versus « د.م. » or « درهم » in Arabic prices (the sketch keeps MAD on purpose, with the
+      number and currency isolated), the per-month suffix « / شهريًا », and the masculine imperatives
+      « فعّل باقتي » and « اشترك ».
+- [ ] Terms wording: « في اليوم نفسه من الشهر » for the billing anniversary, « تاريخ التجديد » used
+      for the same date in both sentences, « عند الانتهاء تعود بطاقتك إلى الأسلوب الأساسي ».
+- [ ] Chart and strip direction (first matchweek on the right) and the label « جولات الفوز ».
+- [ ] Matchweek labels (« الجولة 9 » versus « J.9 ») and their order next to numbers.
+- [ ] « MAD × 8 » and « 29 MAD × 8 »: currency, multiplication sign and digit order, Western versus
+      Arabic-Indic digits (the sketch uses Western digits).
+- [ ] Dates (« 13 نوفمبر 2026 », « 31 مايو 2027 »): month names, order, and the Maghreb spelling.
+- [ ] Access line on screen 4 (« شهري · يتجدد في … », « باقة الموسم · حتى … ») and the label
+      « إدارة في الملف الشخصي ».
+- [ ] The remaining-season offer name and the billing-line wording.
+- [ ] Tier « محترف » and OVR kept in Latin letters (still Q12).
 
 ### 3.1 Sections (mobile first, 390 px; one 672 px column from 768 px)
 
@@ -833,6 +912,8 @@ Start from `origin/main`, read this file and the sketch, then:
 10. **Q10 Terms.** Confirm: the pass does not renew; monthly access runs to the end of the paid
     period; cancel before the billing date; refund and early-stop rule for the pass.
 11. **Q11 Saving.** Compare against the months actually covered (8 today) or start the pass at the
-    season start so a 10-month comparison is honest?
+    season start so a 10-month comparison is honest? (Pass 2, 3.0d: use « par rapport à 8 paiements
+    mensuels », never identical-access wording; the late-season « Reste de la saison » price and the
+    refund terms stay open.)
 12. **Q12 Tier and rating names in Arabic.** The sketch shows « محترف » for the tier and keeps OVR in
     Latin letters as a brand token; confirm.

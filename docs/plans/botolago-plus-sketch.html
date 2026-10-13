@@ -608,11 +608,11 @@
         font-size: 18px;
       }
       .mc-wrap.lg {
-        width: 272px;
-        font-size: 17px;
+        width: 288px;
+        font-size: 18px;
       }
       .mc-wrap.lg .mc {
-        aspect-ratio: 1 / 1.26;
+        aspect-ratio: 1 / 1.4;
       }
       .mc-wrap.md {
         width: 232px;
@@ -642,8 +642,8 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        gap: 0.5em;
-        padding: 1em 0.95em 0.75em;
+        gap: 0.35em;
+        padding: 1em 0.95em 0.7em;
         background: linear-gradient(165deg, color-mix(in srgb, var(--club) 16%, #101727), #0d1220 62%);
         box-shadow:
           inset 0 0 0 0.1em rgba(255, 255, 255, 0.16),
@@ -714,7 +714,7 @@
         border: 1px solid rgba(255, 255, 255, 0.12);
       }
       .mc-earned-l {
-        font-size: 0.56em;
+        font-size: 0.68em;
         font-weight: 800;
         line-height: 1.3;
         color: #cfc9bb;
@@ -733,14 +733,14 @@
         color: #e6e1d6;
       }
       .mc-ovrl {
-        font-size: 0.55em;
+        font-size: 0.64em;
         font-weight: 800;
         color: #e8e4da;
       }
       .mc-tier {
         font-family: var(--font-body);
         font-weight: 800;
-        font-size: 0.6em;
+        font-size: 0.72em;
         line-height: 1.4;
         white-space: nowrap;
         color: color-mix(in srgb, var(--tier-b) 40%, #ece7da);
@@ -748,7 +748,7 @@
       .mc-name {
         font-family: var(--font-card);
         font-weight: 800;
-        font-size: 2em;
+        font-size: 2.2em;
         line-height: 1.15;
         color: #fff;
         white-space: nowrap;
@@ -756,13 +756,16 @@
         text-overflow: ellipsis;
         text-align: start;
       }
+      :root:lang(ar) .mc-name {
+        line-height: 1.3;
+      }
       .mc-detail {
         flex: 1;
         min-height: 0;
         display: flex;
         flex-direction: column;
         justify-content: flex-end;
-        gap: 0.55em;
+        gap: 0.35em;
       }
       .mc-cap {
         display: flex;
@@ -770,48 +773,66 @@
         gap: 0.65em;
         padding: 0.45em;
         border-radius: 0.7em;
-        background: rgba(255, 255, 255, 0.05);
+        background: rgba(7, 10, 18, 0.82);
       }
       .mc-capphoto {
         flex: none;
-        width: 3.6em;
-        height: 4.2em;
+        width: 3.4em;
+        height: 3.9em;
         border-radius: 0.5em;
         object-fit: cover;
         object-position: 50% 15%;
         display: block;
       }
       .mc-captext {
-        font-size: 0.7em;
-        line-height: 1.35;
-        color: #d8d3c6;
+        display: grid;
+        gap: 0.1em;
+        min-width: 0;
+        line-height: 1.25;
       }
-      .mc-captext bdi {
-        color: #fff;
+      .mc-capl {
+        font-size: 0.8em;
+        font-weight: 700;
+        color: #e8e4da;
+      }
+      .mc-capn {
+        font-size: 1.05em;
         font-weight: 800;
+        color: #fff;
       }
+      /* 2 x 2: number then label, labels at 13px+ so they read at a glance */
       .mc-stats {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        text-align: center;
-        padding-block-start: 0.5em;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.35em 0.5em;
+        padding: 0.5em 0.65em;
+        border-radius: 0.7em;
+        background: rgba(7, 10, 18, 0.82);
         border-block-start: 1px solid rgba(255, 255, 255, 0.14);
       }
+      .mc-stats span {
+        display: flex;
+        align-items: baseline;
+        gap: 0.4em;
+        min-width: 0;
+      }
       .mc-stats b {
-        display: block;
-        font-size: 1em;
-        font-weight: 700;
-        color: #d8d3c6;
+        flex: none;
+        min-width: 1.5em;
+        font-size: 1.2em;
+        font-weight: 800;
+        color: #fff;
         line-height: 1.2;
         font-variant-numeric: tabular-nums;
       }
       .mc-stats i {
-        display: block;
+        min-width: 0;
         font-style: normal;
-        font-size: 0.62em;
+        font-size: 0.74em;
         font-weight: 700;
-        line-height: 1.25;
-        color: #b9b3a3;
+        line-height: 1.2;
+        color: #ece8dd;
+        white-space: nowrap;
       }
       .mc-plus {
         align-self: flex-start;
@@ -822,7 +843,7 @@
         border-radius: 999px;
         border: 1px solid var(--mint);
         color: var(--mint);
-        font-size: 0.62em;
+        font-size: 0.72em;
         font-weight: 800;
       }
       .mc-foot {
@@ -830,7 +851,7 @@
         justify-content: space-between;
         align-items: center;
         gap: 0.5em;
-        font-size: 0.5em;
+        font-size: 0.66em;
         font-weight: 800;
         color: #aaa496;
         font-variant-numeric: tabular-nums;
@@ -875,6 +896,132 @@
         padding: 0.2em 0.5em;
       }
 
+      /* Legibility: text zones sit above the finish layers, on a dark scrim. */
+      .mc-head,
+      .mc-name,
+      .mc-detail {
+        position: relative;
+        z-index: 4;
+      }
+      .mc-name {
+        text-shadow: 0 0.06em 0.5em rgba(7, 10, 18, 0.9), 0 0 0.12em rgba(7, 10, 18, 0.7);
+      }
+      .mc-earned {
+        background: rgba(7, 10, 18, 0.82);
+      }
+      .mc-plus {
+        background: rgba(7, 10, 18, 0.82);
+      }
+      .mc-foot {
+        color: #cfc9bb;
+      }
+      .mc.st-pixel .fx-pixel {
+        opacity: 0.7;
+      }
+      .mc-wrap.sm .mc.st-pixel .fx-pixel {
+        opacity: 0.85;
+      }
+      .mc.st-holo .fx-holo {
+        opacity: 0.2;
+      }
+      .mc.st-holo .fx-glare {
+        opacity: 0.4;
+      }
+      /* Scrim: finish stays visible in the open band between name and captain, and is
+         pushed back behind every text zone (head, name, captain, stats). */
+      .mc-face::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+        pointer-events: none;
+        background: linear-gradient(to bottom, rgba(8, 12, 22, 0.56) 0%, rgba(8, 12, 22, 0.46) 22%, rgba(8, 12, 22, 0.3) 38%, rgba(8, 12, 22, 0.12) 46%, rgba(8, 12, 22, 0.55) 56%, rgba(8, 12, 22, 0.7) 100%);
+      }
+      /* Miniature (paywall): name, OVR and the finish; the photo is a small inset, not a fill. */
+      .mc-wrap.sm .mc-detail {
+        justify-content: flex-start;
+      }
+      .mc-wrap.sm .mc-cap {
+        flex: none;
+        height: 0;
+        overflow: visible;
+      }
+      .mc-wrap.sm .mc-capphoto {
+        display: none;
+      }
+      .mc-wrap.sm .mc-name {
+        font-size: 2.1em;
+      }
+      .mc-wrap.sm .mc-ovr {
+        font-size: 2.4em;
+      }
+      .mc-wrap.sm .mc-crest {
+        font-size: 0.6em;
+      }
+      .mc-wrap.sm .mc-head {
+        align-items: center;
+      }
+      .mc-wrap.sm .mc {
+        aspect-ratio: 1 / 1.1;
+      }
+      .mc-wrap.sm .mc-earned-l {
+        display: none;
+      }
+      /* Banner (paywall): not a scaled-down card but a crop of it. Finish, manager name,
+         club and earned rating at readable sizes; captain, stats and serial dropped. */
+      .mc-wrap.bn {
+        width: 100%;
+        font-size: 16px;
+      }
+      .mc-wrap.bn .mc {
+        aspect-ratio: auto;
+        height: 6.9em;
+      }
+      .mc-wrap.bn .mc-face {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-content: center;
+        align-items: center;
+        column-gap: 0.8em;
+        row-gap: 0.3em;
+        padding: 0.7em 1em;
+      }
+      .mc-wrap.bn .mc-head {
+        display: contents;
+      }
+      .mc-wrap.bn .mc-name {
+        grid-column: 1;
+        grid-row: 1;
+        font-size: 2.1em;
+      }
+      .mc-wrap.bn .mc-club {
+        grid-column: 1;
+        grid-row: 2;
+        position: relative;
+        z-index: 4;
+      }
+      .mc-wrap.bn .mc-earned {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        position: relative;
+        z-index: 4;
+      }
+      .mc-wrap.bn .mc-detail {
+        display: none;
+      }
+      .mc-wrap.bn .mc-face::before {
+        background: linear-gradient(to right, rgba(8, 12, 22, 0.5), rgba(8, 12, 22, 0.14));
+      }
+      :root[dir="rtl"] .mc-wrap.bn .mc-face::before {
+        background: linear-gradient(to left, rgba(8, 12, 22, 0.5), rgba(8, 12, 22, 0.14));
+      }
+      .mc-wrap.bn .mc.st-holo .fx-holo {
+        opacity: 0.4;
+      }
+      .mc-wrap.bn .mc.st-pixel .fx-pixel {
+        opacity: 1;
+      }
+
       /* effect layers */
       .fx {
         position: absolute;
@@ -891,7 +1038,7 @@
       .mc.st-holo .fx-holo {
         display: block;
         mix-blend-mode: color-dodge;
-        opacity: 0.26;
+        opacity: 0.2;
         background:
           radial-gradient(circle at var(--px) var(--py), oklch(0.86 0.16 152 / 0.95), transparent 32%),
           radial-gradient(circle at calc(100% - var(--px)) calc(100% - var(--py)), oklch(0.84 0.12 205 / 0.9), transparent 38%),
@@ -908,6 +1055,8 @@
       .mc.st-electric .fx-electric {
         display: block;
         inset: -0.25em;
+        width: calc(100% + 0.5em);
+        height: calc(100% + 0.5em);
         overflow: visible;
       }
       .mc.st-electric .mc-face {
@@ -991,51 +1140,51 @@
    .sN (the section root), use only tokens above.
    ================================================================== */
       /* CSS:SCREEN-1:BEGIN */
-.s1 .body { gap: 5px; padding-block-end: 6px; }
+.s1 .body { gap: 10px; padding-block-end: 6px; }
 .s1 h1.h { margin-block-start: 0; }
 .s1 .s1-hero { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; }
 .s1 .s1-picker { display: grid; gap: 6px; }
-.s1 .s1-pick-l { margin: 0; text-align: center; font-size: var(--fs-small); color: var(--text-muted); }
-.s1 .s1-pick-l b { color: var(--text); }
 .s1 .s1-sel .swatch { min-height: var(--tap); padding: 4px 2px; gap: 2px; font-size: var(--fs-small); }
 .s1 .s1-sel .swatch i { width: 22px; height: 22px; }
 .s1 .s1-sel .swatch:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
-.s1 .s1-benefit { text-wrap: balance; }
-.s1 .s1-free { text-align: center; text-wrap: balance; }
-
-.s1 .s1-free { color: var(--text); }
-.s1 .s1-rule { margin-block-start: -2px; }
-
+.s1 .mc-wrap.lg { width: 312px; font-size: 19.5px; }
+.s1 .foot { gap: 8px; }
+.s1 .s1-rule { color: var(--text); font-weight: 600; }
 /* CSS:SCREEN-1:END */
       /* CSS:SCREEN-2:BEGIN */
-.s2 { --s2-bar-h: 116px; --s2-gap: 14px; }
-.s2 .body { gap: var(--s2-gap); }
-.s2 .panel { display: grid; gap: 10px; }
+.s2 { --s2-bar-h: 40px; }
+.s2 .body { gap: 8px; }
+.s2 .panel { display: grid; gap: 8px; padding: 10px 14px; }
+.s2 h1.s2-h1 { margin-block: 0; font-size: 22px; line-height: 1.25; }
 .s2 .s2-best { margin: 0; font-size: var(--fs-body); color: var(--text-muted); }
 .s2 .s2-best b { color: var(--text); }
-.s2 .s2-bars { display: flex; align-items: flex-end; gap: 4px; height: calc(var(--s2-bar-h) + 52px); padding-block-start: 4px; border-block-end: 1px solid var(--rule-strong); }
+.s2 .s2-bars { display: flex; align-items: flex-end; gap: 4px; height: calc(var(--s2-bar-h) + 44px); padding-block-start: 2px; border-block-end: 1px solid var(--rule-strong); }
 .s2 .s2-col { flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; position: relative; padding-block-end: 22px; }
 .s2 .s2-bar { width: 100%; border-radius: 4px 4px 0 0; background: oklch(0.62 0.03 258); min-height: 4px; }
 .s2 .s2-col.is-best .s2-bar { background: var(--mint); }
 .s2 .s2-val { font-size: var(--fs-title); font-weight: 800; line-height: 1.2; color: var(--mint); margin-block-end: 3px; white-space: nowrap; }
 .s2 .s2-jl { position: absolute; inset-block-end: 0; font-size: var(--fs-small); font-weight: 800; color: var(--text); white-space: nowrap; line-height: 1.4; }
-.s2 .s2-axis { display: flex; justify-content: space-between; font-size: var(--fs-small); font-weight: 700; color: var(--text); }
-.s2 .s2-vs { display: flex; align-items: stretch; justify-content: center; gap: 8px; }
-.s2 .s2-id { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 12px; background: var(--bg-deep); border: 1px solid var(--rule); }
-.s2 .s2-crest { flex: none; letter-spacing: -0.5px; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--club); font-size: var(--fs-small); font-weight: 800; color: var(--text); }
-.s2 .s2-idt { min-width: 0; display: grid; line-height: 1.25; }
-.s2 .s2-idt b { font-family: var(--font-display); font-size: var(--fs-body); font-weight: 800; overflow-wrap: anywhere; }
-.s2 .s2-idt span { font-size: var(--fs-small); color: var(--text-muted); }
-.s2 .s2-vsmark { align-self: center; font-family: var(--font-display); font-weight: 800; font-size: var(--fs-small); color: var(--text-muted); }
-.s2 .s2-result { margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: var(--fs-display); line-height: 1.2; }
+.s2 .s2-result { margin: 0; text-align: center; font-family: var(--font-display); font-weight: 800; font-size: var(--fs-title); line-height: 1.3; }
 .s2 .s2-result bdi { color: var(--mint); }
+.s2 .s2-vs { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 6px; }
+.s2 .s2-col2 { display: grid; gap: 4px; padding: 8px 10px; border-radius: 12px; background: var(--bg-deep); border: 1px solid var(--rule); min-width: 0; }
+.s2 .s2-id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.s2 .s2-crest { flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--club); font-size: 10.5px; letter-spacing: -0.4px; overflow: hidden; font-weight: 800; color: var(--text); }
+.s2 .s2-idt { min-width: 0; display: grid; line-height: 1.25; }
+.s2 .s2-idt b { white-space: nowrap; font-family: var(--font-display); font-size: var(--fs-body); font-weight: 800; overflow-wrap: anywhere; }
+.s2 .s2-idt span { font-size: var(--fs-small); color: var(--text-muted); }
+.s2 .s2-score { margin: 0; display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.s2 .s2-score b { font-family: var(--font-display); font-size: 28px; font-weight: 800; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+.s2 .s2-score span { font-size: var(--fs-small); color: var(--text-muted); line-height: 1.3; }
+.s2 .s2-vsmark { align-self: center; font-family: var(--font-display); font-weight: 800; font-size: var(--fs-small); color: var(--text-muted); }
 .s2 .s2-strip { display: flex; gap: 4px; }
 .s2 .s2-strip i { flex: 1 1 0; height: 12px; border-radius: 3px; }
-.s2 .s2-key { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-inline-end: 6px; vertical-align: -1px; }
-.s2 .s2-key--w, .s2 .s2-strip i.w { background: var(--mint); }
-.s2 .s2-key--l, .s2 .s2-strip i.l { background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--rule-strong); }
-.s2 .s2-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; }
-.s2 .s2-more { display: grid; gap: 10px; }
+.s2 .s2-strip i.w { background: var(--mint); }
+.s2 .s2-strip i.l { background: var(--surface-2); box-shadow: inset 0 0 0 1.5px var(--rule-strong); }
+.s2 .s2-stripcap { margin: 0; text-align: center; }
+.s2 .s2-more { display: grid; gap: 8px; justify-items: center; }
+.s2 .s2-more-btn { width: auto; min-height: 48px; padding-inline: 16px; color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.s2 .s2-detail { width: 100%; }
 .s2 .s2-table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 .s2 .s2-table th, .s2 .s2-table td { padding: 8px 4px; text-align: center; border-block-end: 1px solid var(--rule); }
 .s2 .s2-table thead th { font-size: var(--fs-small); color: var(--text-muted); font-weight: 800; }
@@ -1043,76 +1192,74 @@
 .s2 .s2-table tbody tr:last-child > * { border-block-end: 0; }
 .s2 .s2-table td { font-weight: 800; font-variant-numeric: tabular-nums; }
 .s2 .s2-table td.is-lead { color: var(--mint); }
-.s2 .s2-ben { display: grid; gap: 10px; }
-
-.s2 .s2-free { color: var(--text); }
-@media (max-width: 300px) { .s2 .s2-vs { flex-direction: column; } .s2 .s2-vsmark { display: none; } }
-
+.s2 .s2-ben { display: grid; gap: 8px; }
+.s2 .s2-ben .benefits { gap: 8px; }
 /* CSS:SCREEN-2:END */
       /* CSS:SCREEN-3:BEGIN */
 .s3 .body { gap: 10px; }
-.s3 h1.h { margin-block-start: 0; }
-.s3 .s3-card { display: flex; align-items: center; gap: 14px; }
-.s3 .s3-thumb { flex: none; position: relative; width: 56px; height: 56px; border-radius: 12px; display: grid; place-items: center; border: 2px solid var(--club, var(--rule-strong)); font-size: var(--fs-small); font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); }
-.s3 .s3-thumb.sw-holo, .s3 .s3-thumb.sw-electric, .s3 .s3-thumb.sw-pixel, .s3 .s3-thumb.sw-chrome { background-size: auto; }
-.s3 .s3-card-t { min-width: 0; display: grid; gap: 4px; }
-.s3 .s3-card-l { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-title); line-height: 1.3; }
-.s3 .s3-ben { display: grid; gap: 10px; }
-.s3 .s3-plans { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 10px; }
-.s3 .s3-plans legend { padding: 0; margin-block-end: 10px; }
-.s3 .s3-opt { position: relative; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px; padding: 14px; min-height: var(--tap); border-radius: var(--radius-panel); background: var(--surface); border: 1.5px solid var(--rule-strong); cursor: pointer; }
+.s3 h1.h { margin-block-start: 0; font-size: 24px; line-height: 1.2; }
+.s3 .s3-mini { margin: 0; }
+.s3 .s3-card-l { margin: 0; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-body); line-height: 1.3; }
+.s3 .s3-plans { margin: 0; padding: 0; border: 0; min-width: 0; display: grid; gap: 8px; }
+.s3 .s3-plans legend { padding: 0; margin-block-end: 8px; }
+.s3 .s3-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 10px; row-gap: 4px; }
+.s3 .s3-opt { position: relative; grid-row: span 4; display: grid; grid-template-rows: subgrid; padding: 12px; border-radius: var(--radius-panel); background: var(--surface); border: 1.5px solid var(--rule-strong); cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+@supports not (grid-template-rows: subgrid) { .s3 .s3-opt { grid-row: auto; grid-template-rows: none; align-content: start; gap: 4px; } }
 .s3 .s3-opt:has(.s3-radio:checked) { border-color: var(--mint); background: var(--bg-deep); }
 .s3 .s3-opt:has(.s3-radio:focus-visible) { outline: 2px solid var(--sky); outline-offset: 2px; }
-.s3 .s3-radio:focus-visible ~ .s3-dot { outline: 2px solid var(--sky); outline-offset: 3px; }
 .s3 .s3-radio { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
-.s3 .s3-dot { flex: none; width: 22px; height: 22px; margin-block-start: 2px; border-radius: 50%; border: 2px solid var(--rule-strong); display: grid; place-items: center; }
-.s3 .s3-radio:checked ~ .s3-dot { border-color: var(--mint); }
-.s3 .s3-radio:checked ~ .s3-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--mint); }
-.s3 .s3-opt-main { flex: 1 1 8rem; min-width: 0; display: grid; gap: 4px; overflow-wrap: anywhere; }
-.s3 .s3-opt-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.s3 .s3-opt-name { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-title); line-height: 1.3; }
-.s3 .s3-opt-sub { font-size: var(--fs-small); color: var(--text-muted); line-height: 1.45; }
-.s3 .s3-opt-save { font-size: var(--fs-small); font-weight: 700; color: var(--text); line-height: 1.45; }
-.s3 .s3-opt-end { flex: 0 0 auto; margin-inline-start: auto; display: grid; justify-items: end; gap: 4px; }
-.s3 .s3-opt-price { flex: 0 0 auto; font-family: var(--font-display); font-weight: 800; font-size: var(--fs-title); line-height: 1.3; text-align: end; }
-.s3 .s3-opt-price small { display: block; font-family: var(--font-body); font-weight: 600; font-size: var(--fs-small); color: var(--text-muted); }
-.s3 .s3-sum { padding: 14px; border-radius: var(--radius-panel); background: var(--bg-deep); border: 1px solid var(--rule-strong); display: grid; gap: 8px; }
-.s3 .s3-due { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
-.s3 .s3-due-l { font-size: var(--fs-body); font-weight: 700; }
-.s3 .s3-due-v { font-family: var(--font-display); font-weight: 800; font-size: var(--fs-display); line-height: 1.1; }
-.s3 .s3-due-n { margin: 0; font-size: var(--fs-small); color: var(--text-muted); }
-.s3 .s3-terms { list-style: none; margin: 4px 0 0; padding: 10px 0 0; border-block-start: 1px solid var(--rule); display: grid; gap: 8px; }
+.s3 .s3-opt-top { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.s3 .s3-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--rule-strong); display: grid; place-items: center; }
+.s3 .s3-radio:checked ~ .s3-opt-top .s3-dot { border-color: var(--mint); }
+.s3 .s3-radio:checked ~ .s3-opt-top .s3-dot::after { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--mint); }
+.s3 .s3-opt-name { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-body); line-height: 1.3; }
+.s3 .s3-opt-price { font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.2; }
+.s3 .s3-opt-price small { font-family: var(--font-body); font-weight: 600; font-size: var(--fs-small); color: var(--text-muted); }
+.s3 .s3-opt-sub { font-size: var(--fs-small); font-weight: 600; color: var(--text); line-height: 1.35; }
+.s3 .s3-opt-save { font-size: var(--fs-small); font-weight: 500; color: var(--text-muted); line-height: 1.35; }
+.s3 .s3-opt-save[hidden] { display: none; }
+:root:lang(ar) .s3 .s3-opt-sub, :root:lang(ar) .s3 .s3-opt-save { line-height: 1.55; }
+.s3 .s3-more { display: grid; justify-items: center; }
+.s3 .s3-terms-d { width: 100%; border-radius: var(--radius-panel); }
+.s3 .s3-terms-d[open] { border: 1px solid var(--rule-strong); background: var(--bg-deep); }
+.s3 .s3-terms-s { min-height: var(--tap); display: flex; align-items: center; justify-content: center; gap: 8px; list-style: none; cursor: pointer; font-size: var(--fs-small); font-weight: 800; text-decoration: underline; text-underline-offset: 3px; }
+.s3 .s3-terms-s::-webkit-details-marker { display: none; }
+.s3 .s3-terms-s::after { content: ""; width: 8px; height: 8px; border-inline-end: 2px solid currentColor; border-block-end: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform 150ms ease; }
+.s3 .s3-terms-d[open] .s3-terms-s::after { transform: rotate(-135deg) translateY(-2px); }
+@media (prefers-reduced-motion: reduce) { .s3 .s3-terms-s::after { transition: none; } }
+.s3 .s3-terms-s:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; border-radius: var(--radius-panel); }
+.s3 .s3-terms { list-style: none; margin: 0; padding: 4px 14px 14px; display: grid; gap: 8px; }
 .s3 .s3-terms li { font-size: var(--fs-small); line-height: 1.5; color: var(--text); padding-inline-start: 14px; position: relative; }
 .s3 .s3-terms li::before { content: ""; position: absolute; inset-inline-start: 0; top: .65em; width: 5px; height: 5px; border-radius: 50%; background: var(--text-faint); }
 :root:lang(ar) .s3 .s3-terms li { line-height: 1.75; }
-.s3 .s3-free { text-align: center; text-wrap: balance; }
-.s3 .foot { gap: 0; }
-.s3 .foot .btn--text { text-decoration: underline; text-underline-offset: 3px; color: var(--text); }
-.s3 .foot .btn--text:focus-visible, .s3 .btn--primary:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
+.s3 .s3-restore { text-decoration: underline; text-underline-offset: 3px; color: var(--text); justify-self: center; width: auto; padding-inline: 16px; }
+.s3 .foot { gap: 6px; padding-block-start: 10px; }
+.s3 .s3-bill { margin: 0; font-size: var(--fs-small); font-weight: 500; line-height: 1.4; text-align: center; text-wrap: balance; color: var(--text); }
+.s3 .s3-bill b { font-weight: 800; }
+:root:lang(ar) .s3 .s3-bill { line-height: 1.6; }
+.s3 .s3-free { margin: 0; color: var(--text-muted); text-align: center; text-wrap: balance; }
+.s3 .btn--primary:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
 .s3 bdi[dir="ltr"] { white-space: nowrap; }
-.s3 .s3-opt .tag { font-size: var(--fs-small); }
-.s3 .s3-free { color: var(--text); text-align: center; text-wrap: balance; margin-block: 6px 0; }
-.s3 .s3-terms-h { margin: 6px 0 0; font-size: var(--fs-small); font-weight: 800; color: var(--text-muted); }
-.s3 .s3-due-l .tag { font-size: var(--fs-small); margin-inline-start: 6px; }
-.s3 .s3-basis { white-space: nowrap; }
-
 /* CSS:SCREEN-3:END */
       /* CSS:SCREEN-4:BEGIN */
-.s4 .body { gap: 10px; }
+.s4 .body { gap: 8px; }
 .s4 .s4-sub { margin: 0; text-align: center; text-wrap: balance; }
 .s4 .s4-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; padding-block: 2px; }
 .s4 .s4-card { width: 100%; transform-origin: 50% 60%; }
-.s4 .s4-recap { display: grid; gap: 6px; background: var(--surface); }
-.s4 .s4-recap p { margin: 0; font-size: var(--fs-small); line-height: 1.45; color: var(--text); text-align: start; }
-.s4 .s4-keep { color: var(--text-muted) !important; }
+.s4 .mc-wrap.lg { width: 264px; font-size: 16.5px; }
+/* the BotolaGO+ badge takes a line, so the captain photo gives it back */
+.s4 .mc-capphoto { width: 3em; height: 3.1em; }
+/* concise access summary: plan and date on the left, the way out on the right */
+.s4 .s4-recap { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 0 6px 0 14px; background: var(--surface); }
+:root[dir="rtl"] .s4 .s4-recap { padding: 0 14px 0 6px; }
+.s4 .s4-plan { margin: 0; display: grid; line-height: 1.35; font-size: var(--fs-small); color: var(--text-muted); min-width: 0; }
+.s4 .s4-plan b { color: var(--text); font-weight: 800; }
+:root:lang(ar) .s4 .s4-plan { line-height: 1.6; }
+.s4 .s4-recap .s4-link { width: auto; min-height: var(--tap); padding-inline: 10px; }
 .s4 .foot { gap: 6px; }
-.s4 .btn--secondary { min-height: var(--tap); }
 .s4 .btn:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
-.s4 .s4-links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.s4 .s4-links { display: grid; grid-template-columns: minmax(0, 1fr); }
 .s4 .s4-link { text-decoration: underline; text-underline-offset: 3px; color: var(--text); }
-.s4 .body { gap: 8px; }
-@media (max-width: 260px) { .s4 .s4-links { grid-template-columns: minmax(0, 1fr); } }
-
 /* CSS:SCREEN-4:END */
     </style>
   </head>
@@ -1179,60 +1326,52 @@
   <div class="s1-hero">
     <div data-card data-who="me" data-size="lg"></div>
   </div>
-  <p class="rule-line s1-rule" data-i18n="card.tierRule">Ton palier se gagne sur le terrain. BotolaGO+ change le style, jamais la note.</p>
   <div class="s1-picker">
     <div class="s1-sel" id="s1-selector"></div>
   </div>
-  <p class="lede s1-benefit" data-i18n="s1.benefit">Essaie les styles premium sur ta carte. Ta note reste celle que tu gagnes.</p>
   <p class="sr-only" id="s1-live" role="status" aria-live="polite"></p>
 </div>
 <div class="foot">
+  <p class="rule-line s1-rule" data-i18n="card.tierRule">Ta note ne change jamais, seul le style change.</p>
   <button class="btn btn--primary" type="button" data-go-step="2" data-i18n="s1.cta">Voir les avantages</button>
-  <p class="small s1-free" data-i18n="sh.freeLine">Le jeu reste gratuit. BotolaGO+ ne donne aucun point supplémentaire.</p>
 </div>
-
 <!-- /SCREEN 1 -->
           </section>
           <section class="step s2" id="screen-2" data-step="2" aria-labelledby="s2-title" hidden>
             <!-- SCREEN 2 -->
 <div class="body">
-  <h1 class="h" id="s2-title" tabindex="-1" data-i18n="s2.title">Ta meilleure journée de la saison</h1>
+  <h1 class="h s2-h1" id="s2-title" tabindex="-1" data-i18n="s2.title">Ta meilleure journée de la saison</h1>
 
   <section class="panel s2-chart" aria-labelledby="s2-chart-h">
-    <h2 class="h2" id="s2-chart-h" data-i18n="s2.chartTitle">Tes points par journée</h2>
+    <h2 class="h2 sr-only" id="s2-chart-h" data-i18n="s2.chartTitle">Tes points par journée</h2>
     <p class="s2-best" id="s2-best"></p>
     <div class="s2-bars" id="s2-bars" role="img"></div>
     <ul class="sr-only" id="s2-list"></ul>
-    <div class="s2-axis" id="s2-axis" aria-hidden="true"></div>
   </section>
 
   <section class="panel s2-duel" aria-labelledby="s2-duel-h">
-    <h2 class="h2" id="s2-duel-h" data-i18n="s2.duelTitle">Ta rivalité</h2>
+    <h2 class="h2 sr-only" id="s2-duel-h" data-i18n="s2.duelTitle">Ta rivalité</h2>
     <p class="s2-result" id="s2-result"></p>
     <div class="s2-vs" id="s2-vs"></div>
     <div class="s2-strip" id="s2-strip" role="img"></div>
-    <p class="s2-legend small">
-      <span><i class="s2-key s2-key--w" aria-hidden="true"></i><span data-i18n="s2.legendW">Journée gagnée</span></span>
-      <span><i class="s2-key s2-key--l" aria-hidden="true"></i><span data-i18n="s2.legendL">Journée perdue</span></span>
-    </p>
-  </section>
-
-  <section class="s2-more">
-    <button class="btn btn--secondary s2-more-btn" id="s2-more-btn" type="button" aria-expanded="false" aria-controls="s2-detail">
-      <span data-i18n="s2.detailOpen">Voir le détail</span>
-    </button>
-    <div class="panel s2-detail" id="s2-detail" hidden>
-      <table class="s2-table">
-        <caption class="sr-only" id="s2-caption">Ta carte face à celle de Sami</caption>
-        <thead>
-          <tr>
-            <th scope="col"><span class="sr-only" data-i18n="s2.colStat">Statistique</span></th>
-            <th scope="col" id="s2-th-me"></th>
-            <th scope="col" id="s2-th-rival"></th>
-          </tr>
-        </thead>
-        <tbody id="s2-tbody"></tbody>
-      </table>
+    <p class="small s2-stripcap" data-i18n="s2.stripCap">Une case par journée. Vert : gagnée.</p>
+    <div class="s2-more">
+      <button class="btn btn--text s2-more-btn" id="s2-more-btn" type="button" aria-expanded="false" aria-controls="s2-detail">
+        <span data-i18n="s2.detailOpen">Voir le détail</span>
+      </button>
+      <div class="s2-detail" id="s2-detail" hidden>
+        <table class="s2-table">
+          <caption class="sr-only" id="s2-caption"></caption>
+          <thead>
+            <tr>
+              <th scope="col"><span class="sr-only" data-i18n="s2.colStat">Statistique</span></th>
+              <th scope="col" id="s2-th-me"></th>
+              <th scope="col" id="s2-th-rival"></th>
+            </tr>
+          </thead>
+          <tbody id="s2-tbody"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -1243,9 +1382,7 @@
 </div>
 <div class="foot">
   <button class="btn btn--primary" type="button" data-go-step="3" data-i18n="s2.cta">Choisir mon pass</button>
-  <p class="rule-line s2-free" data-i18n="sh.freeLine">Le jeu reste gratuit. BotolaGO+ ne donne aucun point supplémentaire.</p>
 </div>
-
 <!-- /SCREEN 2 -->
           </section>
           <section class="step s3" id="screen-3" data-step="3" aria-labelledby="s3-title" hidden>
@@ -1253,60 +1390,44 @@
 <div class="body">
   <h1 class="h" id="s3-title" data-i18n="s3.title" tabindex="-1">Ta carte. Tes rivalités. Toute ta saison.</h1>
 
-  <div class="s3-card">
-    <div class="s3-thumb" id="s3-thumb" aria-hidden="true"></div>
-    <div class="s3-card-t">
-      <p class="s3-card-l" id="s3-cardline"></p>
-    </div>
-  </div>
-
-  <section class="s3-ben" aria-labelledby="s3-ben-t">
-    <h2 class="h2" id="s3-ben-t" data-i18n="s3.benefitsTitle">Avec <bdi dir="ltr">BotolaGO+</bdi></h2>
-    <div id="s3-benefits"></div>
-  </section>
+  <div class="s3-mini" data-card data-who="me" data-size="bn"></div>
+  <p class="s3-card-l" id="s3-cardline"></p>
 
   <fieldset class="s3-plans">
     <legend class="h2" data-i18n="s3.plansLegend">Choisis ton pass</legend>
-    <label class="s3-opt" data-plan="season">
-      <input class="s3-radio" type="radio" name="s3-plan" value="season" aria-labelledby="s3-season-n s3-season-price" aria-describedby="s3-season-ex s3-season-until s3-season-save" />
-      <span class="s3-dot" aria-hidden="true"></span>
-      <span class="s3-opt-main">
-        <span class="s3-opt-top"><span class="s3-opt-name" id="s3-season-n" data-i18n="s3.season.name">Pass saison</span></span>
+    <div class="s3-grid">
+      <label class="s3-opt" data-plan="season">
+        <input class="s3-radio" type="radio" name="s3-plan" value="season" aria-labelledby="s3-season-n s3-season-price" aria-describedby="s3-season-until s3-season-save" />
+        <span class="s3-opt-top"><span class="s3-dot" aria-hidden="true"></span><span class="s3-opt-name" id="s3-season-n" data-i18n="s3.season.name">Pass saison</span></span>
+        <span class="s3-opt-price" id="s3-season-price"></span>
         <span class="s3-opt-sub" id="s3-season-until"></span>
         <span class="s3-opt-save" id="s3-season-save"></span>
-      </span>
-      <span class="s3-opt-end"><span class="s3-opt-price" id="s3-season-price"></span><span class="tag" id="s3-season-ex" data-i18n="sh.example">Exemple</span></span>
-    </label>
-    <label class="s3-opt" data-plan="month">
-      <input class="s3-radio" type="radio" name="s3-plan" value="month" aria-labelledby="s3-month-n s3-month-price" aria-describedby="s3-month-ex s3-month-next s3-month-rem" />
-      <span class="s3-dot" aria-hidden="true"></span>
-      <span class="s3-opt-main">
-        <span class="s3-opt-top"><span class="s3-opt-name" id="s3-month-n" data-i18n="s3.month.name">Mensuel</span></span>
+      </label>
+      <label class="s3-opt" data-plan="month">
+        <input class="s3-radio" type="radio" name="s3-plan" value="month" aria-labelledby="s3-month-n s3-month-price" aria-describedby="s3-month-next s3-month-rem" />
+        <span class="s3-opt-top"><span class="s3-dot" aria-hidden="true"></span><span class="s3-opt-name" id="s3-month-n" data-i18n="s3.month.name">Mensuel</span></span>
+        <span class="s3-opt-price" id="s3-month-price"></span>
         <span class="s3-opt-sub" id="s3-month-next"></span>
-        <span class="s3-opt-sub" id="s3-month-rem"></span>
-      </span>
-      <span class="s3-opt-end"><span class="s3-opt-price" id="s3-month-price"></span><span class="tag" id="s3-month-ex" data-i18n="sh.example">Exemple</span></span>
-    </label>
+        <span class="s3-opt-save" id="s3-month-rem"></span>
+      </label>
+    </div>
   </fieldset>
 
-  <section class="s3-sum" aria-labelledby="s3-due-l">
-    <div class="s3-due">
-      <span class="s3-due-l" id="s3-due-l"><span data-i18n="s3.due">Total à payer aujourd'hui</span> <span class="tag" data-i18n="sh.example">Exemple</span></span>
-      <span class="s3-due-v" id="s3-due-v"></span>
-    </div>
-    <p class="s3-due-n" id="s3-due-n"></p>
-    <p class="s3-terms-h" data-i18n="s3.termsTitle">Conditions (exemple, à valider)</p>
-    <ul class="s3-terms" id="s3-terms"></ul>
-  </section>
+  <div class="s3-more">
+    <details class="s3-terms-d" id="s3-terms-d">
+      <summary class="s3-terms-s" data-i18n="s3.termsLink">Voir les conditions</summary>
+      <ul class="s3-terms" id="s3-terms"></ul>
+    </details>
+    <button class="btn btn--text s3-restore" type="button" id="s3-restore" data-i18n="s3.restore">Restaurer un achat</button>
+  </div>
 
   <p class="sr-only" id="s3-live" role="status"></p>
 </div>
 <div class="foot">
+  <p class="s3-bill" id="s3-bill"></p>
   <button class="btn btn--primary" type="button" id="s3-buy"></button>
-  <p class="small s3-free" data-i18n="sh.freeLine">Le jeu reste gratuit. BotolaGO+ ne donne aucun point supplémentaire.</p>
-  <button class="btn btn--text" type="button" id="s3-restore" data-i18n="s3.restore">Restaurer un achat</button>
+  <p class="small s3-free" data-i18n="card.tierRule">Ta note ne change jamais, seul le style change.</p>
 </div>
-
 <!-- /SCREEN 3 -->
           </section>
           <section class="step s4" id="screen-4" data-step="4" aria-labelledby="s4-title" hidden>
@@ -1317,17 +1438,15 @@
   <div class="s4-stage">
     <div class="s4-card" id="s4-card"><div data-card data-who="me" data-size="lg" data-plus></div></div>
   </div>
-  <p class="rule-line" data-i18n="card.tierRule">Ton palier se gagne sur le terrain. BotolaGO+ change le style, jamais la note.</p>
   <div class="panel s4-recap">
     <p class="s4-plan" id="s4-plan"></p>
-    <p class="s4-keep" data-i18n="s4.keep">Si tu arrêtes, ton historique et ta carte restent à toi.</p>
+    <button class="btn btn--text s4-link" type="button" id="s4-manage" data-i18n="s4.manage">Gérer dans Profil</button>
   </div>
 </div>
 <div class="foot">
   <button class="btn btn--primary" type="button" id="s4-open" data-i18n="s4.cta">Ouvrir ma saison</button>
   <div class="s4-links">
     <button class="btn btn--text s4-link" type="button" id="s4-share" data-i18n="s4.share">Partager ma carte</button>
-    <button class="btn btn--text s4-link" type="button" id="s4-manage" data-i18n="s4.manage">Gérer mon abonnement</button>
   </div>
 </div>
 
@@ -1341,6 +1460,8 @@
       Photos : <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">Khalid Boutaïb</a> par <bdi dir="ltr">Антон Зайцев</bdi>, <bdi dir="ltr">CC BY-SA 3.0</bdi> ·
       <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">Badr Benoun</a> par <bdi dir="ltr">Oussama 499</bdi>, <bdi dir="ltr">CC BY-SA 4.0</bdi> · Wikimedia Commons, recadrées. Esquisse interne, données d'exemple.
     </p>
+
+    <p class="credits" id="pricingNote"></p>
 
     <script>
       (function () {
@@ -1364,8 +1485,8 @@
         var DATA = {
           existing: {
             example: false,
-            me: { name: "Karim B.", club: "Kawkab Marrakech", clubShort: "KACM", accent: "#f2c230", ovr: 73, tier: "PRO", stats: { cap: 76, sel: 72, trf: 68, con: 74 }, captain: "K. Boutaïb", photo: "boutaib", serial: "004821" },
-            rival: { name: "Sami", club: "Raja Casablanca", clubShort: "RCA", accent: "#2fae6a", ovr: 70, tier: "PRO", stats: { cap: 69, sel: 74, trf: 61, con: 70 }, captain: "B. Benoun", photo: "benoun", serial: "011207" },
+            me: { name: "Karim B.", nameAr: "كريم ب.", club: "Kawkab Marrakech", clubAr: "الكوكب المراكشي", clubShort: "KACM", accent: "#f2c230", ovr: 73, tier: "PRO", stats: { cap: 76, sel: 72, trf: 68, con: 74 }, captain: "K. Boutaïb", captainAr: "خالد بوطيب", photo: "boutaib", serial: "004821" },
+            rival: { name: "Sami", nameAr: "سامي", club: "Raja Casablanca", clubAr: "الرجاء البيضاوي", clubShort: "RCA", accent: "#2fae6a", ovr: 70, tier: "PRO", stats: { cap: 69, sel: 74, trf: 61, con: 70 }, captain: "B. Benoun", captainAr: "بدر بانون", photo: "benoun", serial: "011207" },
             /* points per journée, J.3 to J.13 (11 values); best = highest */
             weeks: { from: 3, pts: [48, 55, 39, 52, 60, 44, 71, 50, 63, 46, 58] },
             /* head-to-head, same 11 journées: w = you won it, l = Sami did. 7 w, 4 l. */
@@ -1373,8 +1494,8 @@
           },
           new: {
             example: true,
-            me: { name: "Youssef A.", club: "Renaissance Berkane", clubShort: "RSB", accent: "#f28c28", ovr: 64, tier: "PRO", stats: { cap: 66, sel: 63, trf: 60, con: 65 }, captain: "K. Boutaïb", photo: "boutaib", serial: "000000" },
-            rival: { name: "Sami", club: "Raja Casablanca", clubShort: "RCA", accent: "#2fae6a", ovr: 61, tier: "PRO", stats: { cap: 60, sel: 64, trf: 55, con: 62 }, captain: "B. Benoun", photo: "benoun", serial: "000000" },
+            me: { name: "Youssef A.", nameAr: "يوسف أ.", club: "Renaissance Berkane", clubAr: "نهضة بركان", clubShort: "RSB", accent: "#f28c28", ovr: 64, tier: "PRO", stats: { cap: 66, sel: 63, trf: 60, con: 65 }, captain: "K. Boutaïb", captainAr: "خالد بوطيب", photo: "boutaib", serial: "000000" },
+            rival: { name: "Sami", nameAr: "سامي", club: "Raja Casablanca", clubAr: "الرجاء البيضاوي", clubShort: "RCA", accent: "#2fae6a", ovr: 61, tier: "PRO", stats: { cap: 60, sel: 64, trf: 55, con: 62 }, captain: "B. Benoun", captainAr: "بدر بانون", photo: "benoun", serial: "000000" },
             weeks: { from: 3, pts: [41, 49, 35, 46, 55, 40, 62, 45, 57, 42, 51] },
             duel: { you: 6, them: 5, strip: "wlwlwwlwlwl" },
           },
@@ -1407,6 +1528,31 @@
           if (vars)
             for (var v in vars) s = s.split("{" + v + "}").join(vars[v]);
           return s;
+        }
+        /* Per-language field of a person or club: nm(d, "name") reads d.nameAr in Arabic. */
+        function nm(d, k) {
+          return (state.lang === "ar" && d[k + "Ar"]) || d[k];
+        }
+        /* Counted noun with the right number agreement. Arabic: 1 singular, 2 dual,
+           3 to 10 plural, 11 and above singular accusative. plain = no <bdi>, for aria text. */
+        var NOUNS = {
+          fr: { round: ["journée", "journées"], payment: ["paiement mensuel", "paiements mensuels"], point: ["point", "points"] },
+          ar: {
+            round: ["جولة واحدة", "جولتين", "جولات", "جولة"],
+            payment: ["دفعة شهرية واحدة", "دفعتين شهريتين", "دفعات شهرية", "دفعة شهرية"],
+            point: ["نقطة واحدة", "نقطتين", "نقاط", "نقطة"],
+          },
+        };
+        function cnt(n, kind, plain) {
+          var num = plain ? String(n) : "<bdi>" + n + "</bdi>";
+          if (state.lang === "ar") {
+            var f = NOUNS.ar[kind];
+            if (n === 1) return f[0];
+            if (n === 2) return f[1];
+            return num + " " + (n >= 3 && n <= 10 ? f[2] : f[3]);
+          }
+          var g = NOUNS.fr[kind];
+          return num + " " + (n > 1 ? g[1] : g[0]);
         }
         function esc(s) {
           return String(s).replace(/[&<>"]/g, function (c) {
@@ -1444,6 +1590,7 @@
             "sh.credits":
               'Photos : <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">Khalid Boutaïb</a> par <bdi dir="ltr">Антон Зайцев</bdi>, <bdi dir="ltr">CC BY-SA 3.0</bdi> · <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">Badr Benoun</a> par <bdi dir="ltr">Oussama 499</bdi>, <bdi dir="ltr">CC BY-SA 4.0</bdi> · Wikimedia Commons, recadrées. Esquisse interne, données d\'exemple.',
             "sb.note": "Esquisse. Données et prix d'exemple.",
+            "sb.pricingNote": "Note de prototype, hors produit : {price} est un prix de test, sans baisse quotidienne. Quand le pass saison cesse d'être plus avantageux que le mensuel, une offre « Reste de la saison » est proposée.",
             "sb.route": "Parcours",
             "sb.route.existing": "Joueur existant",
             "sb.route.new": "Nouveau fan",
@@ -1463,12 +1610,12 @@
             "card.sel": "Titulaires",
             "card.trf": "Transferts",
             "card.con": "Régularité",
-            "card.tierRule": "Ton palier se gagne sur le terrain. <bdi dir=\"ltr\">BotolaGO+</bdi> change le style, jamais la note.",
+            "card.tierRule": "Ta note ne change jamais, seul le style change.",
             "sty.label": "Style de ta carte",
             "sty.holo": "Holo",
             "sty.electric": "Électrique",
             "sty.pixel": "Pixels",
-            "sty.chrome": "Chrome noir",
+            "sty.chrome": "Chrome",
           },
           ar: {
             "sh.back": "رجوع",
@@ -1485,6 +1632,7 @@
             "sh.credits":
               'الصور: <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">خالد بوطيب</a> بعدسة <bdi dir="ltr">Антон Зайцев</bdi>، <bdi dir="ltr">CC BY-SA 3.0</bdi> · <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">بدر بانون</a> بعدسة <bdi dir="ltr">Oussama 499</bdi>، <bdi dir="ltr">CC BY-SA 4.0</bdi> · ويكيميديا كومنز، مقصوصة. نموذج أولي داخلي، بيانات توضيحية.',
             "sb.note": "نموذج أولي. بيانات وأسعار توضيحية.",
+            "sb.pricingNote": "ملاحظة للنموذج الأولي، خارج المنتج: {price} سعر تجريبي بلا تخفيض يومي. حين لا تعود باقة الموسم أوفر من الاشتراك الشهري، تُعرض باقة «بقية الموسم».",
             "sb.route": "المسار",
             "sb.route.existing": "لاعب حالي",
             "sb.route.new": "مشجّع جديد",
@@ -1504,12 +1652,12 @@
             "card.sel": "الأساسيون",
             "card.trf": "الانتقالات",
             "card.con": "الانتظام",
-            "card.tierRule": "مستواك تكسبه في الملعب. <bdi dir=\"ltr\">BotolaGO+</bdi> يغيّر الأسلوب، لا التقييم أبدًا.",
+            "card.tierRule": "تقييمك لا يتغيّر أبدًا، الأسلوب وحده يتغيّر.",
             "sty.label": "أسلوب بطاقتك",
             "sty.holo": "هولو",
             "sty.electric": "كهربائي",
             "sty.pixel": "بكسل",
-            "sty.chrome": "كروم أسود",
+            "sty.chrome": "كروم",
           },
         });
 
@@ -1575,15 +1723,15 @@
             '<span class="mc-stripe"></span>' +
             '<div class="mc-head">' +
             '<div class="mc-club"><span class="mc-crest" aria-hidden="true"><bdi dir="ltr">' + esc(d.clubShort) + "</bdi></span>" +
-            '<span class="mc-clubname">' + esc(d.club) + "</span></div>" +
+            '<span class="mc-clubname">' + esc(nm(d, "club")) + "</span></div>" +
             '<div class="mc-earned" role="group" aria-label="' + esc(t("card.earnedAria", { ovr: d.ovr, tier: tierName(d.tier) })) + '">' +
             '<span class="mc-earned-l">' + esc(t("card.earned")) + "</span>" +
             '<span class="mc-ovr-row"><bdi class="mc-ovr">' + d.ovr + '</bdi><span class="mc-ovrl"><bdi dir="ltr">OVR</bdi></span></span>' +
             '<span class="mc-tier">' + esc(t("card.tierWord", { tier: tierName(d.tier) })) + "</span></div></div>" +
-            '<div class="mc-name"><bdi>' + esc(d.name) + "</bdi></div>" +
+            '<div class="mc-name"><bdi>' + esc(nm(d, "name")) + "</bdi></div>" +
             '<div class="mc-detail">' +
             '<div class="mc-cap"><img class="mc-capphoto" alt="" src="' + PHOTO[d.photo] + '">' +
-            '<div class="mc-captext">' + esc(t("card.captainWeek")) + ' · <bdi dir="ltr">' + esc(d.captain) + "</bdi></div></div>" +
+            '<div class="mc-captext"><span class="mc-capl">' + esc(t("card.captainWeek")) + '</span><bdi class="mc-capn">' + esc(nm(d, "captain")) + "</bdi></div></div>" +
             '<div class="mc-stats">' +
             codes
               .map(function (c) {
@@ -1612,7 +1760,7 @@
           var style = who === "rival" ? "free" : o.style || pinned || state.style;
           var plus = o.plus != null ? o.plus : host.hasAttribute("data-plus");
           var example = o.example != null ? o.example : DATA[route].example;
-          ["lg", "md", "sm", "xs"].forEach(function (c) {
+          ["lg", "md", "sm", "xs", "bn"].forEach(function (c) {
             host.classList.remove(c);
           });
           host.classList.add("mc-wrap", size);
@@ -1925,6 +2073,8 @@
           STYLES: STYLES,
           t: t,
           esc: esc,
+          nm: nm,
+          cnt: cnt,
           registerI18n: registerI18n,
           applyI18n: applyI18n,
           on: on,
@@ -1958,16 +2108,16 @@
    window.PLUS only, and registers its i18n and hooks here.
    ================================================================== */
         // I18N:SCREEN-1:BEGIN
-window.PLUS.registerI18n({"fr":{"s1.title":"Ta carte, à ton style","s1.benefit":"Essaie les styles premium sur ta carte. Ta note reste celle que tu gagnes.","s1.cta":"Voir les avantages","s1.live":"Style : {style}"},"ar":{"s1.title":"بطاقتك، بأسلوبك","s1.benefit":"جرّب الأساليب المميّزة على بطاقتك. تقييمك تكسبه في الملعب ولا يتغيّر.","s1.cta":"اكتشف المزايا","s1.live":"الأسلوب: {style}"}});
+window.PLUS.registerI18n({"fr": {"s1.title": "Ta carte, à ton style", "s1.cta": "Voir les avantages", "s1.live": "Style : {style}"}, "ar": {"s1.title": "بطاقتك، بأسلوبك", "s1.cta": "اكتشف المزايا", "s1.live": "الأسلوب: {style}"}});
 // I18N:SCREEN-1:END
         // I18N:SCREEN-2:BEGIN
-window.PLUS.registerI18n({"fr":{"s2.title":"Ta meilleure journée de la saison","s2.chartTitle":"Tes points par journée","s2.bestLine":"Ton record : {j}, <b>{pts} points</b>.","s2.chartAria":"Points par journée de {from} à {to}. Ta meilleure journée : {j}, {pts} points.","s2.jShort":"J.{n}","s2.duelTitle":"Ta rivalité","s2.result":"Toi {score} {name}","s2.stripAria":"Tu as gagné {you} journées, {name} en a gagné {them}.","s2.legendW":"Journée gagnée","s2.legendL":"Journée perdue","s2.detailOpen":"Voir le détail","s2.detailClose":"Masquer le détail","s2.detailCaption":"Ta carte face à celle de {name}","s2.colStat":"Statistique","s2.you":"Toi","s2.benTitle":"Avec <bdi dir=\"ltr\">BotolaGO+</bdi>","s2.cta":"Choisir mon pass","s2.listItem":"{j} : {pts} points","s2.ovrLine":"Note {ovr}"},"ar":{"s2.title":"أفضل جولة لك في الموسم","s2.chartTitle":"نقاطك في كل جولة","s2.bestLine":"رقمك القياسي: {j}، <b>{pts} نقطة</b>.","s2.chartAria":"النقاط في كل جولة من {from} إلى {to}. أفضل جولة لك: {j}، {pts} نقطة.","s2.jShort":"ج.{n}","s2.duelTitle":"غريمك","s2.result":"أنت {score} {name}","s2.stripAria":"فزت بـ {you} جولات، وفاز {name} بـ {them}.","s2.legendW":"جولة فزت بها","s2.legendL":"جولة خسرتها","s2.detailOpen":"عرض التفاصيل","s2.detailClose":"إخفاء التفاصيل","s2.detailCaption":"مقارنة بين بطاقتك وبطاقة منافسك","s2.colStat":"الإحصائية","s2.you":"أنت","s2.benTitle":"مع <bdi dir=\"ltr\">BotolaGO+</bdi>","s2.cta":"اختر باقتك","s2.listItem":"{j}: {pts} نقطة","s2.ovrLine":"التقييم {ovr}"}});
+window.PLUS.registerI18n({"fr": {"s2.title": "Ta meilleure journée de la saison", "s2.chartTitle": "Tes points par journée", "s2.bestLine": "Ton record : {j}, <b>{pts}</b>.", "s2.chartAria": "Points par journée de {from} à {to}. Ta meilleure journée : {j}, {pts}.", "s2.jShort": "J.{n}", "s2.duelTitle": "Ta rivalité", "s2.leadW": "Tu mènes de {n}", "s2.leadL": "Tu es derrière de {n}", "s2.tie": "Égalité parfaite", "s2.wonLabel": "journées gagnées", "s2.rival": "Rival", "s2.vs": "VS", "s2.stripCap": "Une case par journée. Vert : gagnée.", "s2.stripAria": "Tu as gagné {you}, {name} {them}.", "s2.detailOpen": "Voir le détail", "s2.detailClose": "Masquer le détail", "s2.detailCaption": "Ta carte face à celle de {name}", "s2.colStat": "Statistique", "s2.you": "Toi", "s2.benTitle": "Avec <bdi dir=\"ltr\">BotolaGO+</bdi>", "s2.cta": "Choisir mon pass", "s2.listItem": "{j} : {pts}", "s2.ovrLine": "Note {ovr}"}, "ar": {"s2.title": "أفضل جولة لك في الموسم", "s2.chartTitle": "نقاطك في كل جولة", "s2.bestLine": "أفضل جولة: {j}، <b>{pts}</b>.", "s2.chartAria": "النقاط في كل جولة من {from} إلى {to}. أفضل جولة: {j}، {pts}.", "s2.jShort": "الجولة {n}", "s2.duelTitle": "مواجهتك", "s2.leadW": "تتقدّم بفارق {n}", "s2.leadL": "تتأخّر بفارق {n}", "s2.tie": "تعادل تام", "s2.wonLabel": "جولات الفوز", "s2.rival": "منافسك", "s2.vs": "ضد", "s2.stripCap": "مربع لكل جولة. الأخضر: فزت بها.", "s2.stripAria": "فزت بـ {you}، وفاز {name} بـ {them}.", "s2.detailOpen": "عرض التفاصيل", "s2.detailClose": "إخفاء التفاصيل", "s2.detailCaption": "مقارنة بين بطاقتك وبطاقة {name}", "s2.colStat": "الإحصائية", "s2.you": "أنت", "s2.benTitle": "مع <bdi dir=\"ltr\">BotolaGO+</bdi>", "s2.cta": "اختر باقتك", "s2.listItem": "{j}: {pts}", "s2.ovrLine": "التقييم {ovr}"}});
 // I18N:SCREEN-2:END
         // I18N:SCREEN-3:BEGIN
-window.PLUS.registerI18n({"fr":{"s3.title":"Ta carte. Tes rivalités. Toute ta saison.","s3.cardLine":"Ta carte, style {style}","s3.cardSub":"Ta note reste celle que tu gagnes sur le terrain.","s3.benefitsTitle":"Avec <bdi dir=\"ltr\">BotolaGO+</bdi>","s3.plansLegend":"Choisis ton pass","s3.season.name":"Pass saison","s3.season.until":"Jusqu'au {date}","s3.season.saving":"Économie de {saving} {basis}","s3.month.name":"Mensuel","s3.month.next":"Prochain prélèvement le {date}","s3.perMonth":"mois","s3.due":"Total à payer aujourd'hui","s3.dueNote.season":"Paiement unique, sans renouvellement automatique.","s3.dueNote.month":"Premier mois, puis {price}.","s3.terms.season1":"Ton accès à <bdi dir=\"ltr\">BotolaGO+</bdi> court jusqu'au {date}.","s3.terms.season2":"Pas de renouvellement automatique : à cette date, rien n'est débité.","s3.terms.month1":"Renouvelé chaque mois au même prix. Prochain prélèvement le {date}.","s3.cancel.season":"Pour gérer ton pass : Profil › <bdi dir=\"ltr\">BotolaGO+</bdi> › Gérer mon abonnement.","s3.cancel.month":"Annule quand tu veux dans Profil › <bdi dir=\"ltr\">BotolaGO+</bdi> › Gérer mon abonnement, avant le {date} pour éviter le prélèvement suivant. Ton accès reste actif jusqu'à la fin de la période payée.","s3.keep":"Après l'annulation, ton historique et ta carte restent à toi. Le style premium revient au style de base.","s3.cta.season":"Activer mon pass — {price}","s3.cta.month":"M'abonner — {price}","s3.restore":"Restaurer un achat","s3.restoreToast":"Exemple : aucun achat à restaurer dans cette maquette.","s3.season.basis":"vs {calc} mois","s3.terms.rem":"Rappel 3 jours avant chaque renouvellement","s3.terms.refund":"Remboursement et arrêt anticipé : règle à confirmer avant le lancement.","s3.termsTitle":"Conditions (exemple, à valider)","s3.live":"Total à payer aujourd'hui : {price}"},"ar":{"s3.title":"بطاقتك. مواجهاتك. موسمك كله.","s3.cardLine":"بطاقتك بأسلوب {style}","s3.cardSub":"تقييمك يبقى ثمرة أدائك في الملعب.","s3.benefitsTitle":"مع <bdi dir=\"ltr\">BotolaGO+</bdi>","s3.plansLegend":"اختر باقتك","s3.season.name":"باقة الموسم","s3.season.until":"حتى {date}","s3.season.saving":"توفير {saving} {basis}","s3.month.name":"شهري","s3.month.next":"الخصم القادم في {date}","s3.perMonth":"شهر","s3.due":"المبلغ المستحق اليوم","s3.dueNote.season":"دفعة واحدة، دون تجديد تلقائي.","s3.dueNote.month":"الشهر الأول، ثم {price}.","s3.terms.season1":"اشتراكك في <bdi dir=\"ltr\">BotolaGO+</bdi> ساري حتى {date}.","s3.terms.season2":"لا يوجد تجديد تلقائي: في هذا التاريخ لن يُخصم منك أي مبلغ.","s3.terms.month1":"يتجدد كل شهر بالسعر نفسه. الخصم القادم في {date}.","s3.cancel.season":"لإدارة باقتك: الملف الشخصي › <bdi dir=\"ltr\">BotolaGO+</bdi> › إدارة اشتراكي.","s3.cancel.month":"ألغِ متى شئت من الملف الشخصي › <bdi dir=\"ltr\">BotolaGO+</bdi> › إدارة اشتراكي، قبل {date} لتفادي الخصم التالي. يبقى اشتراكك فعّالًا حتى نهاية الفترة المدفوعة.","s3.keep":"بعد الإلغاء يبقى سجلّك وبطاقتك ملكًا لك. يعود الأسلوب المميّز إلى الأسلوب الأساسي.","s3.cta.season":"فعّل باقتي — {price}","s3.cta.month":"اشترك — {price}","s3.restore":"استعادة عملية شراء","s3.restoreToast":"مثال: لا توجد عملية شراء لاستعادتها في هذا النموذج.","s3.season.basis":"مقابل {calc} أشهر","s3.terms.rem":"تذكير قبل 3 أيام من كل تجديد","s3.terms.refund":"الاسترداد والإيقاف المبكر: القاعدة ستُؤكَّد قبل الإطلاق.","s3.termsTitle":"الشروط (مثال، تحتاج إلى اعتماد)","s3.live":"المبلغ المستحق اليوم: {price}"}});
+window.PLUS.registerI18n({"fr": {"s3.title": "Ta carte. Tes rivalités. Toute ta saison.", "s3.cardLine": "Ta carte, style {style}", "s3.plansLegend": "Choisis ton pass", "s3.season.name": "Pass saison", "s3.season.until": "Jusqu'au {date}", "s3.season.saving": "Économie de {saving} par rapport à {n}", "s3.month.name": "Mensuel", "s3.month.next": "Renouvelé le {date}", "s3.month.cancel": "Annulable à tout moment", "s3.perMonth": "mois", "s3.bill.season": "<b>{price} aujourd'hui</b> · sans renouvellement", "s3.bill.month": "<b>{price} aujourd'hui</b> · renouvelé le {date} · annulable à tout moment", "s3.termsLink": "Voir les conditions", "s3.terms.season1": "Ton accès à <bdi dir=\"ltr\">BotolaGO+</bdi> court jusqu'au {date}.", "s3.terms.season2": "Pas de renouvellement automatique : à cette date, rien n'est débité, et il n'y a rien à annuler.", "s3.terms.basis": "Comparaison : {n}, soit {calc} = {total}. Ils couvriraient la période mais courraient au-delà du {date} : ce n'est pas un accès identique.", "s3.terms.month1": "Renouvelé chaque mois au même prix, à la date anniversaire : prochain prélèvement le {date}.", "s3.terms.month2": "Tu peux annuler à tout moment : cela arrête le prochain renouvellement. Ton accès reste actif jusqu'à la fin de la période payée, soit la date anniversaire ({date}) et non la fin du mois.", "s3.terms.rem": "Rappel 3 jours avant chaque renouvellement.", "s3.terms.afterSeason": "À l'expiration, ta carte repasse au style de base.", "s3.terms.afterMonth": "Après l'annulation ou l'expiration, ta carte repasse au style de base.", "s3.terms.keep": "Ta carte et l'historique que tu as gagné restent visibles. L'analyse premium (vues détaillées de l'historique, duels détaillés, styles premium) n'est plus disponible.", "s3.terms.refund": "Remboursement : à confirmer.", "s3.cta.season": "Activer mon pass", "s3.cta.month": "M'abonner", "s3.restore": "Restaurer un achat", "s3.restoreToast": "Exemple : aucun achat à restaurer dans cette maquette."}, "ar": {"s3.title": "بطاقتك. مواجهاتك. موسمك كله.", "s3.cardLine": "بطاقتك بأسلوب {style}", "s3.plansLegend": "اختر باقتك", "s3.season.name": "باقة الموسم", "s3.season.until": "حتى {date}", "s3.season.saving": "توفير {saving} مقارنة بـ {n}", "s3.month.name": "شهري", "s3.month.next": "يتجدد في {date}", "s3.month.cancel": "يمكن الإلغاء في أي وقت", "s3.perMonth": "شهريًا", "s3.bill.season": "<b>{price} اليوم</b> · بدون تجديد", "s3.bill.month": "<b>{price} اليوم</b> · يتجدد في {date} · يمكن الإلغاء في أي وقت", "s3.termsLink": "عرض الشروط", "s3.terms.season1": "اشتراكك في <bdi dir=\"ltr\">BotolaGO+</bdi> ساري حتى {date}.", "s3.terms.season2": "لا يوجد تجديد تلقائي: في هذا التاريخ لن يُخصم أي مبلغ، ولا شيء يحتاج إلى إلغاء.", "s3.terms.basis": "للمقارنة: {n}، أي {calc} = {total}. تغطي هذه الفترة لكنها تمتد إلى ما بعد {date}، فالوصول ليس متطابقًا.", "s3.terms.month1": "يتجدد كل شهر بالسعر نفسه وفي اليوم نفسه من الشهر: الخصم القادم في {date}.", "s3.terms.month2": "يمكنك الإلغاء في أي وقت، فيتوقف التجديد القادم. يبقى اشتراكك فعّالًا حتى نهاية الفترة المدفوعة، أي تاريخ التجديد ({date}) وليس نهاية الشهر.", "s3.terms.rem": "تذكير قبل 3 أيام من كل تجديد.", "s3.terms.afterSeason": "عند الانتهاء تعود بطاقتك إلى الأسلوب الأساسي.", "s3.terms.afterMonth": "بعد الإلغاء أو الانتهاء تعود بطاقتك إلى الأسلوب الأساسي.", "s3.terms.keep": "تبقى بطاقتك وسجلّك الذي كسبته ظاهرين. أما التحليل المميّز (عروض السجل التفصيلية، المواجهات المفصّلة، الأساليب المميّزة) فلا يعود متاحًا.", "s3.terms.refund": "الاسترداد: سيُؤكَّد لاحقًا.", "s3.cta.season": "فعّل باقتي", "s3.cta.month": "اشترك", "s3.restore": "استعادة عملية شراء", "s3.restoreToast": "مثال: لا توجد عملية شراء لاستعادتها في هذا النموذج."}});
 // I18N:SCREEN-3:END
         // I18N:SCREEN-4:BEGIN
-window.PLUS.registerI18n({"fr":{"s4.title":"Ta saison est ouverte","s4.sub":"Ta carte passe au style {style}.","s4.cta":"Ouvrir ma saison","s4.share":"Partager ma carte","s4.manage":"Gérer mon abonnement","s4.keep":"Si tu arrêtes, ton historique et ta carte restent à toi. Le style premium revient au style de base.","s4.planSeason":"Pass saison, jusqu'au {date}","s4.planMonth":"Abonnement mensuel, prochain renouvellement le {date}","s4.shareText":"Voilà ma carte BotolaGO.","s4.shared":"Partage prêt","s4.manageToast":"Gestion de l'abonnement (aperçu)"},"ar":{"s4.title":"موسمك مفتوح","s4.sub":"بطاقتك صارت بأسلوب {style}.","s4.cta":"افتح موسمي","s4.share":"شارك بطاقتي","s4.manage":"إدارة اشتراكي","s4.keep":"إذا توقفت، يبقى سجلّك وبطاقتك ملكًا لك. يعود الأسلوب المميّز إلى الأسلوب الأساسي.","s4.planSeason":"باقة الموسم، حتى {date}","s4.planMonth":"اشتراك شهري، التجديد القادم في {date}","s4.shareText":"هذه بطاقتي في BotolaGO.","s4.shared":"المشاركة جاهزة","s4.manageToast":"إدارة الاشتراك (معاينة)"}});
+window.PLUS.registerI18n({"fr": {"s4.title": "Ta saison est ouverte", "s4.sub": "Ta carte passe au style {style}.", "s4.cta": "Ouvrir ma saison", "s4.share": "Partager ma carte", "s4.manage": "Gérer dans Profil", "s4.accessSeason": "jusqu'au {date}", "s4.accessMonth": "renouvelé le {date}", "s4.shareText": "Voilà ma carte BotolaGO.", "s4.shared": "Partage prêt", "s4.manageToast": "Gestion de l'abonnement (aperçu)"}, "ar": {"s4.title": "موسمك مفتوح", "s4.sub": "بطاقتك صارت بأسلوب {style}.", "s4.cta": "افتح موسمي", "s4.share": "شارك بطاقتي", "s4.manage": "إدارة في الملف الشخصي", "s4.accessSeason": "حتى {date}", "s4.accessMonth": "يتجدد في {date}", "s4.shareText": "هذه بطاقتي في BotolaGO.", "s4.shared": "المشاركة جاهزة", "s4.manageToast": "إدارة الاشتراك (معاينة)"}});
 // I18N:SCREEN-4:END
         // JS:SCREEN-1:BEGIN
 (function () {
@@ -2004,13 +2154,16 @@ window.PLUS.registerI18n({"fr":{"s4.title":"Ta saison est ouverte","s4.sub":"Ta 
   if (!root) return;
   var $ = function (id) { return document.getElementById(id); };
 
-  function jl(n) { return "<bdi dir=\"ltr\">" + P.t("s2.jShort", { n: n }) + "</bdi>"; }
+  /* Matchweek label: a plain <bdi> resolves its own direction (J.9 left-to-right, الجولة 9 right-to-left). */
+  function jl(n) { return "<bdi>" + P.t("s2.jShort", { n: n }) + "</bdi>"; }
 
+  /* Time axis: chart and strip follow the reading direction, so in Arabic the first
+     matchweek is on the right and the latest on the left (mirrored on purpose). */
   function renderChart() {
     var d = P.DATA[P.state.route], pts = d.weeks.pts, from = d.weeks.from, best = P.weekBest();
-    var max = Math.max.apply(null, pts), H = 116;
-    $("s2-list").innerHTML = pts.map(function (v, i) { return "<li>" + P.t("s2.listItem", { j: P.t("s2.jShort", { n: from + i }), pts: v }) + "</li>"; }).join("");
-    $("s2-best").innerHTML = P.t("s2.bestLine", { j: jl(best.journee), pts: "<b><bdi>" + best.pts + "</bdi></b>" });
+    var max = Math.max.apply(null, pts), H = 40;
+    $("s2-list").innerHTML = pts.map(function (v, i) { return "<li>" + P.t("s2.listItem", { j: jl(from + i), pts: P.cnt(v, "point") }) + "</li>"; }).join("");
+    $("s2-best").innerHTML = P.t("s2.bestLine", { j: jl(best.journee), pts: P.cnt(best.pts, "point") });
     var html = pts.map(function (v, i) {
       var isBest = i === best.index;
       return '<div class="s2-col' + (isBest ? " is-best" : "") + '">' +
@@ -2020,28 +2173,31 @@ window.PLUS.registerI18n({"fr":{"s4.title":"Ta saison est ouverte","s4.sub":"Ta 
     }).join("");
     var el = $("s2-bars");
     el.innerHTML = html;
-    el.setAttribute("aria-label", P.t("s2.chartAria", { from: P.t("s2.jShort", { n: from }), to: P.t("s2.jShort", { n: from + pts.length - 1 }), j: P.t("s2.jShort", { n: best.journee }), pts: best.pts }));
-    $("s2-axis").innerHTML = "<span>" + jl(from) + "</span><span>" + jl(from + pts.length - 1) + "</span>";
+    el.setAttribute("aria-label", P.t("s2.chartAria", { from: P.t("s2.jShort", { n: from }), to: P.t("s2.jShort", { n: from + pts.length - 1 }), j: P.t("s2.jShort", { n: best.journee }), pts: P.cnt(best.pts, "point", true) }));
   }
 
-  function idChip(d) {
-    return '<div class="s2-id" style="--club:' + d.accent + '"><span class="s2-crest" aria-hidden="true"><bdi dir="ltr">' + P.esc(d.clubShort) + '</bdi></span>' +
-      '<span class="s2-idt"><b dir="auto"><bdi>' + P.esc(d.name) + '</bdi></b><span>' + (d.tag ? P.esc(d.tag) + " · " : "") + P.t("s2.ovrLine", { ovr: "<bdi>" + d.ovr + "</bdi>" }) + "</span></span></div>";
+  /* One column per participant: crest, name, role tag and that person's score together,
+     so the pairing survives right-to-left layout. */
+  function col(d, tag, score) {
+    return '<div class="s2-col2" style="--club:' + d.accent + '"><div class="s2-id"><span class="s2-crest" aria-hidden="true"><bdi dir="ltr">' + P.esc(d.clubShort) + '</bdi></span>' +
+      '<span class="s2-idt"><b><bdi>' + P.esc(P.nm(d, "name")) + '</bdi></b><span>' + P.esc(tag) + '</span></span></div>' +
+      '<p class="s2-score"><b><bdi dir="ltr">' + score + '</bdi></b><span>' + P.esc(P.t("s2.wonLabel")) + '</span></p></div>';
   }
   function renderDuel() {
-    var d = P.DATA[P.state.route], du = d.duel;
-    $("s2-result").innerHTML = P.t("s2.result", { score: "<bdi dir=\"ltr\">" + du.you + "–" + du.them + "</bdi>", name: "<bdi>" + P.esc(d.rival.name) + "</bdi>" });
-    $("s2-vs").innerHTML = idChip(Object.assign({}, d.me, { tag: P.t("s2.you") })) + '<span class="s2-vsmark" aria-hidden="true">VS</span>' + idChip(d.rival);
+    var d = P.DATA[P.state.route], du = d.duel, diff = du.you - du.them;
+    var key = diff > 0 ? "s2.leadW" : diff < 0 ? "s2.leadL" : "s2.tie";
+    $("s2-result").innerHTML = P.t(key, { n: P.cnt(Math.abs(diff), "round") });
+    $("s2-vs").innerHTML = col(d.me, P.t("s2.you"), du.you) + '<span class="s2-vsmark" aria-hidden="true">' + P.esc(P.t("s2.vs")) + '</span>' + col(d.rival, P.t("s2.rival"), du.them);
     var strip = $("s2-strip");
     strip.innerHTML = du.strip.split("").map(function (c) { return "<i class=\"" + c + "\"></i>"; }).join("");
-    strip.setAttribute("aria-label", P.t("s2.stripAria", { you: du.you, them: du.them, name: d.rival.name }));
+    strip.setAttribute("aria-label", P.t("s2.stripAria", { you: P.cnt(du.you, "round", true), them: P.cnt(du.them, "round", true), name: P.nm(d.rival, "name") }));
   }
 
   function renderDetail() {
-    var d = P.DATA[P.state.route];
-    $("s2-caption").textContent = P.t("s2.detailCaption", { name: d.rival.name });
+    var d = P.DATA[P.state.route], rn = P.nm(d.rival, "name");
+    $("s2-caption").textContent = P.t("s2.detailCaption", { name: rn });
     $("s2-th-me").textContent = P.t("s2.you");
-    $("s2-th-rival").textContent = d.rival.name;
+    $("s2-th-rival").textContent = rn;
     $("s2-tbody").innerHTML = ["cap", "sel", "trf", "con"].map(function (k) {
       var a = d.me.stats[k], b = d.rival.stats[k];
       return "<tr><th scope=\"row\">" + P.esc(P.t("card." + k)) + "</th>" +
@@ -2073,7 +2229,6 @@ window.PLUS.registerI18n({"fr":{"s4.title":"Ta saison est ouverte","s4.sub":"Ta 
   P.on("lang", function () { renderAll(); });
   P.hooks.onLeaveScreen2 = function () { setMore(false); };
 })();
-
 // JS:SCREEN-2:END
         // JS:SCREEN-3:BEGIN
 (function () {
@@ -2083,55 +2238,44 @@ window.PLUS.registerI18n({"fr":{"s4.title":"Ta saison est ouverte","s4.sub":"Ta 
   if (!root) return;
   var $ = function (id) { return document.getElementById(id); };
 
-  function money(n, per) {
-    var cur = P.DATA.pricing.currency;
-    return '<bdi dir="ltr">' + n + " " + cur + (per ? "/" + per : "") + "</bdi>";
-  }
-  function date(d) { return "<bdi>" + P.fmtDate(d) + "</bdi>"; }
-
-  function thumb() {
-    var d = P.DATA[P.state.route].me, el = $("s3-thumb");
-    el.className = "s3-thumb sw-" + P.state.style;
-    el.style.setProperty("--club", d.accent);
-    el.innerHTML = "<bdi dir=\"ltr\">" + P.esc(d.clubShort) + "</bdi>";
-  }
-  function renderStatic() {
-    $("s3-benefits").innerHTML = P.benefitsHTML();
-    P.applyI18n($("s3-benefits"));
-  }
+  /* Number and currency are one left-to-right unit; the unit of time stays outside it. */
+  function money(n) { return '<bdi dir="ltr">' + n + "\u00a0" + P.DATA.pricing.currency + "</bdi>"; }
+  function per() { return " <small>\u00a0/\u00a0" + P.esc(P.t("s3.perMonth")) + "</small>"; }
+  function date(d, short) { return "<bdi>" + P.fmtDate(d, short ? { day: "numeric", month: "short", year: "numeric" } : undefined) + "</bdi>"; }
 
   function render() {
     var pr = P.DATA.pricing, b = P.billing(), plan = P.state.plan, season = plan === "season";
-    thumb();
+    P.renderCard(root.querySelector("[data-card]"));
     $("s3-cardline").innerHTML = P.t("s3.cardLine", { style: "<bdi>" + P.esc(P.t("sty." + P.state.style)) + "</bdi>" });
-    $("s3-season-until").innerHTML = P.t("s3.season.until", { date: date(b.seasonUntil) });
     var bs = P.basis();
     var saveEl = $("s3-season-save");
     saveEl.hidden = !bs.show;
-    saveEl.innerHTML = bs.show ? P.t("s3.season.saving", {
-      saving: money(bs.saving),
-      basis: "<bdi>" + P.t("s3.season.basis", { calc: '<bdi dir="ltr" class="s3-basis">' + pr.month.price + " " + pr.currency + " × " + bs.months + "</bdi>" }) + "</bdi>"
-    }) : "";
+    saveEl.innerHTML = bs.show ? P.t("s3.season.saving", { saving: money(bs.saving), n: P.cnt(bs.months, "payment") }) : "";
     $("s3-season-price").innerHTML = money(pr.season.price);
+    $("s3-season-until").innerHTML = P.t("s3.season.until", { date: date(b.seasonUntil) });
+    $("s3-month-price").innerHTML = money(pr.month.price) + per();
     $("s3-month-next").innerHTML = P.t("s3.month.next", { date: date(b.next) });
-    $("s3-month-rem").innerHTML = P.t("s3.terms.rem");
-    $("s3-month-price").innerHTML = money(pr.month.price, P.t("s3.perMonth"));
+    $("s3-month-rem").innerHTML = P.t("s3.month.cancel");
 
     root.querySelectorAll(".s3-radio").forEach(function (r) { r.checked = r.value === plan; });
 
-    $("s3-due-v").innerHTML = money(season ? pr.season.price : pr.month.price);
-    $("s3-due-n").innerHTML = season
-      ? P.t("s3.dueNote.season")
-      : P.t("s3.dueNote.month", { price: money(pr.month.price, P.t("s3.perMonth")) });
+    $("s3-bill").innerHTML = season
+      ? P.t("s3.bill.season", { price: money(pr.season.price) })
+      : P.t("s3.bill.month", { price: money(pr.month.price), date: date(b.next, true) });
 
+    var calc = '<bdi dir="ltr">' + pr.month.price + "\u00a0" + pr.currency + " \u00d7 " + bs.months + "</bdi>";
     var terms = season
-      ? [P.t("s3.terms.season1", { date: date(b.seasonUntil) }), P.t("s3.terms.season2"), P.t("s3.terms.refund"), P.t("s3.cancel.season"), P.t("s3.keep")]
-      : [P.t("s3.terms.month1", { date: date(b.next) }), P.t("s3.terms.rem"), P.t("s3.cancel.month", { date: date(b.next) }), P.t("s3.keep")];
+      ? [P.t("s3.terms.season1", { date: date(b.seasonUntil) }), P.t("s3.terms.season2")]
+          .concat(bs.show ? [P.t("s3.terms.basis", { n: P.cnt(bs.months, "payment"), calc: calc, total: money(pr.month.price * bs.months), date: date(b.seasonUntil) })] : [])
+          .concat([P.t("s3.terms.afterSeason"), P.t("s3.terms.keep"), P.t("s3.terms.refund")])
+      : [P.t("s3.terms.month1", { date: date(b.next) }), P.t("s3.terms.month2", { date: date(b.next) }), P.t("s3.terms.rem"), P.t("s3.terms.afterMonth"), P.t("s3.terms.keep"), P.t("s3.terms.refund")];
     $("s3-terms").innerHTML = terms.map(function (x) { return "<li>" + x + "</li>"; }).join("");
 
-    $("s3-buy").innerHTML = season
-      ? P.t("s3.cta.season", { price: money(pr.season.price) })
-      : P.t("s3.cta.month", { price: money(pr.month.price, P.t("s3.perMonth")) });
+    $("s3-buy").innerHTML = P.t(season ? "s3.cta.season" : "s3.cta.month");
+
+    /* Prototype note, outside the product layout: test price and late-season rule. */
+    var pn = document.getElementById("pricingNote");
+    if (pn) pn.innerHTML = P.t("sb.pricingNote", { price: money(pr.season.price) });
   }
 
   root.querySelectorAll(".s3-radio").forEach(function (r) {
@@ -2139,38 +2283,38 @@ window.PLUS.registerI18n({"fr":{"s4.title":"Ta saison est ouverte","s4.sub":"Ta 
   });
   $("s3-buy").addEventListener("click", function () { P.go(4); });
   $("s3-restore").addEventListener("click", function () { P.toast("s3.restoreToast"); });
+  /* Opening the conditions brings them to the top of the scrolling body. */
+  $("s3-terms-d").addEventListener("toggle", function () {
+    if (!this.open) return;
+    var body = root.querySelector(".body");
+    body.scrollTop += this.getBoundingClientRect().top - body.getBoundingClientRect().top - 8;
+  });
 
-  renderStatic();
   render();
-  P.on("lang", function () { renderStatic(); render(); });
+  P.on("lang", function () { render(); $("s3-live").textContent = ""; });
   P.on("route", render);
   P.on("style", render);
   P.on("plan", function () {
     render();
-    var pr = P.DATA.pricing, p = P.state.plan === "season" ? pr.season.price : pr.month.price;
-    $("s3-live").textContent = P.t("s3.live", { price: p + " " + pr.currency });
+    /* the announcement carries the billing terms of the plan just chosen, not only the total */
+    $("s3-live").textContent = $("s3-bill").textContent;
   });
   P.hooks.onEnterScreen3 = function () { render(); };
 })();
-
 // JS:SCREEN-3:END
         // JS:SCREEN-4:BEGIN
 (function () {
   "use strict";
   var P = window.PLUS;
-  function bdi(s) { return "<bdi dir=\"ltr\">" + P.esc(s) + "</bdi>"; }
   function render() {
     var sub = document.getElementById("s4-sub");
     var plan = document.getElementById("s4-plan");
     if (!sub || !plan) return;
     sub.textContent = P.t("s4.sub", { style: P.t("sty." + P.state.style) });
-    var b = P.billing();
-    var key = P.state.plan === "month" ? "s4.planMonth" : "s4.planSeason";
-    var d = P.state.plan === "month" ? b.next : b.seasonUntil;
-    var html = P.t(key, { date: "\u0001" }).split("\u0001");
-    var txt = P.esc(html[0]) + bdi(P.fmtDate(d)) + P.esc(html[1] || "");
-    txt += " · " + P.esc(P.t("sh.example"));
-    plan.innerHTML = txt;
+    var b = P.billing(), month = P.state.plan === "month";
+    var d = "<bdi>" + P.esc(P.fmtDate(month ? b.next : b.seasonUntil)) + "</bdi>";
+    /* one concise summary: plan, then the date; the full terms live in subscription management */
+    plan.innerHTML = "<b>" + P.esc(P.t(month ? "s3.month.name" : "s3.season.name")) + "</b><span>" + P.t(month ? "s4.accessMonth" : "s4.accessSeason", { date: d }) + "</span>";
   }
   render();
   P.on("lang", render);
