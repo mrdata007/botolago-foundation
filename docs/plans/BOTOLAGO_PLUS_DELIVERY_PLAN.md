@@ -24,6 +24,13 @@ that item (`AGENTS.md`, Screen work rule 7; `CLAUDE.md`, Production database wri
 | Renewal reminder | J-3 reminder before each monthly renewal. |
 | Wording | No "just for fun", no prize mention, no AI-authorship notice on public content. |
 
+## 1b. Owner answers (2026-10-13)
+
+- G1 security clean-up: **not finished yet**, so nothing is merged until the owner says it is done.
+- G3 web payment provider: **not decided yet**; lane F waits.
+- G4 app stores: **RevenueCat**.
+- Lanes **B, D and I start now** (no database writes, nothing merged).
+
 ## 2. What must be true before money is taken
 
 These are the conditions that, if unmet, stop the launch. They do not stop the building.
