@@ -4766,6 +4766,9 @@ begin
          'admin_sofascore_player_match_queue', 'admin_resolve_sofascore_player_match',
          -- Public ranking exclusions (20261011160000).
          'admin_set_public_ranking_exclusion', 'admin_list_public_ranking_exclusions',
+         -- RapidAPI calls this month (20261013110000) and the SofaScore
+         -- matches settled with limited statistics (20261013160100).
+         'admin_rapidapi_calls_this_month', 'admin_sofascore_final_limited',
            'editorial_convert_imported_story', 'editorial_create_draft', 'editorial_get_article',
            'editorial_list_revisions', 'editorial_list_stories', 'editorial_register_media',
            'editorial_schedule_health', 'editorial_set_placement', 'editorial_soft_delete_story',
