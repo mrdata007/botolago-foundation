@@ -30,6 +30,12 @@ that item (`AGENTS.md`, Screen work rule 7; `CLAUDE.md`, Production database wri
 - G3 web payment provider: **not decided yet**; lane F waits.
 - G4 app stores: **RevenueCat**.
 - Lanes **B, D and I start now** (no database writes, nothing merged).
+- Preview stage: staff test purchases count as membership; grants need one admin (reason + audit);
+  payment records kept **5 years**.
+- French register on BotolaGO+ screens: **« vous »**, like the rest of the app.
+- Monthly **renews automatically** (the web provider chosen at G3 must support recurring card
+  payments); yearly stays 12 months, non-renewing.
+- Arabic edition names approved: عادية, هولو, كهربائية, بكسل, كروم.
 
 ## 2. What must be true before money is taken
 
