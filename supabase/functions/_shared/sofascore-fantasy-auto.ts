@@ -837,6 +837,9 @@ export class SofascoreFantasyRun {
           autoMap,
           unmapped: prepared.unmapped.length,
           coverage: prepared.coverage,
+          ...(prepared.minutesFromSofascore > 0
+            ? { minutesFromSofascore: prepared.minutesFromSofascore }
+            : {}),
         },
       );
       return;
