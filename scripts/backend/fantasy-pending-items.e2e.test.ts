@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- rows and RPC results of the local database are untyped JSON in this contract test */
 /**
  * End-to-end contract test for Fantasy pending items (docs/backend/FANTASY_PENDING_ITEMS.md).
  *
