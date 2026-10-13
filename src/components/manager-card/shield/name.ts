@@ -89,9 +89,17 @@ export const FACE_SPEC: Readonly<Record<Script, string>> = {
 };
 
 let context: CanvasRenderingContext2D | null | undefined;
+/** The document the canvas came from: a test that puts a stand-in `document` in place gets its own. */
+let contextOf: unknown;
 const cache = new Map<string, number>();
 
 function canvasEm(text: string, script: Script): number | null {
+  const doc = typeof document === "undefined" ? undefined : document;
+  if (doc !== contextOf) {
+    context = undefined;
+    contextOf = doc;
+    cache.clear();
+  }
   if (context === undefined) {
     context = null;
     try {
@@ -129,6 +137,7 @@ export const measureEm: MeasureEm = (text, script) =>
 export function resetMeasure(): void {
   cache.clear();
   context = undefined;
+  contextOf = undefined;
 }
 
 /* ---------------------------------------------------------------------------------------------
