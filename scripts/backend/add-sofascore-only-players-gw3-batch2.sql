@@ -131,6 +131,45 @@ select pg_advisory_xact_lock(hashtextextended('fantasy:catalog:d03223b0-8f4a-430
 select pg_advisory_xact_lock(hashtextextended('fantasy:squads:5ada3e98-2929-405a-a3f1-a26de8e51933',0));
 lock table app.team_memberships,app.fantasy_players,app.fantasy_squad_memberships in share row exclusive mode;
 
+-- Stale shirt claim, cleared before the free-shirt guard (as in
+-- repair-sofascore-held-identities.sql). The first rehearsal (2026-10-13)
+-- stopped: "shirt 24 is already worn at that club this season (Mohamed Amine
+-- Amraoui)". Owner read of 2026-10-13: Ayo Cha (8806c336-…) holds shirt 24 at
+-- Moghreb Tétouan for 2026/27 (2026-09-24 to 2027-06-30) and held it in 2024/25,
+-- with no lineup in either season and only a SportsMonks link; SofaScore's
+-- stored MAT lineup gives 24 to Amraoui, who appeared. Only Ayo Cha's
+-- current-season shirt number is cleared to unknown: his membership, club and
+-- every other row stay as they are, and no replacement shirt is invented.
+do $stale_shirt$
+declare v_membership uuid; v_count integer;
+begin
+  if exists(select 1 from cron.job where active)
+    or exists(select 1 from net.http_request_queue)
+    or exists(select 1 from app_private.notification_email_settings where football_live_refresh_enabled)
+    or exists(select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled)
+    or exists(select 1 from app_private.pepites_settings where mode<>'off')
+  then raise exception 'stop: production writers must be paused and drained'; end if;
+  select count(*), min(m.id::text)::uuid into v_count, v_membership
+    from app.team_memberships m
+    join app.teams t on t.id = m.team_id
+   where m.player_id = '8806c336-e8d2-4977-9d9c-764e73fe3f50'
+     and m.season_id = 'd03223b0-8f4a-4309-93e1-2a708d7c3584'
+     and m.active and m.shirt_number = 24
+     and m.valid_from = '2026-09-24' and m.valid_to = '2027-06-30'
+     and t.name = 'Moghreb Tétouan';
+  if v_count <> 1
+    or exists(select 1 from app.lineup_players lp join app.lineups l on l.id = lp.lineup_id
+      join app.fixtures f on f.id = l.fixture_id
+      where lp.player_id = '8806c336-e8d2-4977-9d9c-764e73fe3f50')
+    or exists(select 1 from app.player_fixture_performances p
+      where p.player_id = '8806c336-e8d2-4977-9d9c-764e73fe3f50')
+    or exists(select 1 from app_private.football_provider_mappings mp
+      where mp.provider_name = 'sofascore' and mp.entity_type = 'player'
+        and mp.internal_entity_id = '8806c336-e8d2-4977-9d9c-764e73fe3f50')
+  then raise exception 'stop: Ayo Cha''s stale shirt evidence changed (membership, a lineup, an appearance or a SofaScore link)'; end if;
+  update app.team_memberships set shirt_number = null where id = v_membership;
+end $stale_shirt$;
+
 -- ---------------------------------------------------------------------------
 -- Preflight: the world is as this script expects
 -- ---------------------------------------------------------------------------
