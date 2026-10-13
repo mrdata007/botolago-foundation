@@ -1226,7 +1226,7 @@
       }
       .mc.st-holo .fx-rim {
         display: block;
-        background: conic-gradient(from var(--hue), #5ef0a8, #4fd8ff, #7b8cff, #4fd8ff, #5ef0a8, #c8ffe3, #5ef0a8);
+        background: conic-gradient(from var(--hue), #5ef0a8, #4fd8ff, #4f9bff, #4fd8ff, #5ef0a8, #c8ffe3, #5ef0a8);
       }
       /* Pixels: an 8-bit frame, two-tone blocks, square corners stepped like pixel art */
       .mc.st-pixel .fx-rim {
@@ -1240,7 +1240,7 @@
       .mc.st-holo .fx-holo {
         opacity: 0.42;
         background:
-          conic-gradient(from calc(var(--hue) + 40deg) at var(--px) var(--py), #5ef0a8, #4fd8ff, #7b8cff, #4fd8ff, #5ef0a8);
+          conic-gradient(from calc(var(--hue) + 40deg) at var(--px) var(--py), #5ef0a8, #4fd8ff, #4f9bff, #4fd8ff, #5ef0a8);
         -webkit-mask: repeating-linear-gradient(118deg, #000 0 0.35em, rgba(0, 0, 0, 0.25) 0.35em 0.9em);
         mask: repeating-linear-gradient(118deg, #000 0 0.35em, rgba(0, 0, 0, 0.25) 0.35em 0.9em);
       }
@@ -1323,332 +1323,629 @@
       }
 
       /* ================= Collector card, shield format =================
-         The large manager card is a collector shield: rating and tier stacked on the
-         side with the club crest, the captain's photo as the art, the manager's name
-         in capitals across the middle, the four stats in two columns. The frame is
-         the style's material; the face sits inside it. Our own design: no third-party
-         marks or names. The rating and tier never change with the style. */
-      .mc.fut {
-        --shield: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20141'%20preserveAspectRatio='none'%3E%3Cpath%20d='M0%208%20Q0%204%204%204%20L28%204%20Q32%204%2035%202%20L38%200.6%20Q39.5%200%2041%200%20L59%200%20Q60.5%200%2062%200.6%20L65%202%20Q68%204%2072%204%20L96%204%20Q100%204%20100%208%20L100%20118%20Q100%20124%2094%20127%20L55%20139%20Q50%20140.6%2045%20139%20L6%20127%20Q0%20124%200%20118%20Z'/%3E%3C/svg%3E");
-        aspect-ratio: 100 / 141;
-        border-radius: 0;
+         The large manager card follows the proportions of a modern collectible player
+         card (our own artwork, no third-party marks). Silhouette: 100 x 136.6, a crown
+         tip, rounded shoulders, vertical sides to 87 %, a shallow point. Anatomy, as
+         % of the card: rating top-left (5.8 %, 14 %), the tier word under it, a rhombus
+         emblem hanging off the left edge (52 to 61 %), the captain photo (hard-cut or
+         feathered into the name band at 64.6 %), a hanging caption chip off the right
+         edge, the manager's name centred (67 to 73 %), four stats in one row (label over
+         value, 76 to 85 %), and a badge row (crest + serial or logo, 87 to 95 %). The
+         frame is layered: outer rim, bevel highlight, thin inner line. Rating and tier
+         never change with the style; the style changes the material. */
+      .mc {
+        --sh-out-plain: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20136.6'%20preserveAspectRatio='none'%3E%3Cpath%20d='M46%200%20L54%200%20C60%200%2070%202.5%2075.7%205.8%20L91.8%2014.1%20L94.2%2015%20L98.1%2016%20L100%2016.9%20V118.5%20C99.6%20123.5%2097%20125.8%2091.1%20127.6%20C86%20129%2076%20129.9%2070.4%20130.4%20L63.7%20131.7%20L54.8%20134.5%20L50%20136.6%20L45.2%20134.5%20L36.3%20131.7%20L29.6%20130.4%20C24%20129.9%2014%20129%208.9%20127.6%20C3%20125.8%200.4%20123.5%200%20118.5%20V16.9%20L1.9%2016%20L5.8%2015%20L8.2%2014.1%20L24.3%205.8%20C30%202.5%2040%200%2046%200%20Z'/%3E%3C/svg%3E");
+        --sh-out-crown: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20136.6'%20preserveAspectRatio='none'%3E%3Cpath%20d='M50%200%20L50.5%200.7%20C52.4%203.2%2054.6%204.9%2057.6%205.5%20L62.6%202.2%20Q69.2%202.6%2075.7%205.8%20L91.8%2014.1%20L94.2%2015%20L98.1%2016%20L100%2016.9%20V118.5%20C99.6%20123.5%2097%20125.8%2091.1%20127.6%20C86%20129%2076%20129.9%2070.4%20130.4%20L63.7%20131.7%20L54.8%20134.5%20L50%20136.6%20L45.2%20134.5%20L36.3%20131.7%20L29.6%20130.4%20C24%20129.9%2014%20129%208.9%20127.6%20C3%20125.8%200.4%20123.5%200%20118.5%20V16.9%20L1.9%2016%20L5.8%2015%20L8.2%2014.1%20L24.3%205.8%20Q30.8%202.6%2037.4%202.2%20L42.4%205.5%20C45.4%204.9%2047.6%203.2%2049.5%200.7%20Z'/%3E%3C/svg%3E");
+        --sh-in-thin: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20136.6'%20preserveAspectRatio='none'%3E%3Cpath%20transform='translate%2850%2068.3%29%20scale%280.976%200.983%29%20translate%28-50%20-68.3%29'%20d='M46%200%20L54%200%20C60%200%2070%202.5%2075.7%205.8%20L91.8%2014.1%20L94.2%2015%20L98.1%2016%20L100%2016.9%20V118.5%20C99.6%20123.5%2097%20125.8%2091.1%20127.6%20C86%20129%2076%20129.9%2070.4%20130.4%20L63.7%20131.7%20L54.8%20134.5%20L50%20136.6%20L45.2%20134.5%20L36.3%20131.7%20L29.6%20130.4%20C24%20129.9%2014%20129%208.9%20127.6%20C3%20125.8%200.4%20123.5%200%20118.5%20V16.9%20L1.9%2016%20L5.8%2015%20L8.2%2014.1%20L24.3%205.8%20C30%202.5%2040%200%2046%200%20Z'/%3E%3C/svg%3E");
+        --sh-in-mid: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20136.6'%20preserveAspectRatio='none'%3E%3Cpath%20transform='translate%2850%2068.3%29%20scale%280.958%200.97%29%20translate%28-50%20-68.3%29'%20d='M50%200%20L50.5%200.7%20C52.4%203.2%2054.6%204.9%2057.6%205.5%20L62.6%202.2%20Q69.2%202.6%2075.7%205.8%20L91.8%2014.1%20L94.2%2015%20L98.1%2016%20L100%2016.9%20V118.5%20C99.6%20123.5%2097%20125.8%2091.1%20127.6%20C86%20129%2076%20129.9%2070.4%20130.4%20L63.7%20131.7%20L54.8%20134.5%20L50%20136.6%20L45.2%20134.5%20L36.3%20131.7%20L29.6%20130.4%20C24%20129.9%2014%20129%208.9%20127.6%20C3%20125.8%200.4%20123.5%200%20118.5%20V16.9%20L1.9%2016%20L5.8%2015%20L8.2%2014.1%20L24.3%205.8%20Q30.8%202.6%2037.4%202.2%20L42.4%205.5%20C45.4%204.9%2047.6%203.2%2049.5%200.7%20Z'/%3E%3C/svg%3E");
+        --sh-in-thick: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20136.6'%20preserveAspectRatio='none'%3E%3Cpath%20transform='translate%2850%2068.3%29%20scale%280.944%200.962%29%20translate%28-50%20-68.3%29'%20d='M50%200%20L50.5%200.7%20C52.4%203.2%2054.6%204.9%2057.6%205.5%20L62.6%202.2%20Q69.2%202.6%2075.7%205.8%20L91.8%2014.1%20L94.2%2015%20L98.1%2016%20L100%2016.9%20V118.5%20C99.6%20123.5%2097%20125.8%2091.1%20127.6%20C86%20129%2076%20129.9%2070.4%20130.4%20L63.7%20131.7%20L54.8%20134.5%20L50%20136.6%20L45.2%20134.5%20L36.3%20131.7%20L29.6%20130.4%20C24%20129.9%2014%20129%208.9%20127.6%20C3%20125.8%200.4%20123.5%200%20118.5%20V16.9%20L1.9%2016%20L5.8%2015%20L8.2%2014.1%20L24.3%205.8%20Q30.8%202.6%2037.4%202.2%20L42.4%205.5%20C45.4%204.9%2047.6%203.2%2049.5%200.7%20Z'/%3E%3C/svg%3E");
       }
-      .mc.fut .fc-frame,
-      .mc.fut .fc-face,
-      .mc.fut .fx:not(.fx-electric) {
-        -webkit-mask: var(--shield) center / 100% 100% no-repeat;
-        mask: var(--shield) center / 100% 100% no-repeat;
+      .mc-wrap .mc.shd {
+        aspect-ratio: 100 / 136.6;
         border-radius: 0;
+        --sh-out: var(--sh-out-crown);
+        --sh-in: var(--sh-in-mid);
+        --ink: #f6f3ec;
+        --ink2: #d9d5ca;
+        --line: #d9c27a;
+        --chip: rgba(8, 12, 22, 0.86);
+        --chip-line: #e9e4d6;
+        --emb: #12202c;
+        --emb-line: #e9e4d6;
+        --band: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.02) 60%, transparent);
+        --bandline: rgba(255, 255, 255, 0.35);
+        --rib: transparent;
+        --wedge: transparent;
+        --pin: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 3px);
       }
-      .mc.fut .fc-frame {
-        position: absolute;
+      .mc.shd .fc-frame,
+      .mc.shd .fc-face,
+      .mc.shd .fx:not(.fx-electric) {
+        -webkit-mask: var(--sh-in) center / 100% 100% no-repeat;
+        mask: var(--sh-in) center / 100% 100% no-repeat;
+        border-radius: 0;
         inset: 0;
+      }
+      .mc.shd .fc-frame {
+        position: absolute;
+        -webkit-mask-image: var(--sh-out);
+        mask-image: var(--sh-out);
         background: linear-gradient(160deg, #6b7380, #2a2f38 45%, #8a929e 70%, #2a2f38);
       }
-      .mc.fut .fc-face,
-      .mc.fut .fx:not(.fx-electric) {
-        inset: 0.42em;
-      }
-      .mc.fut .fc-face {
+      .mc.shd .fc-face {
         position: absolute;
         overflow: hidden;
-        color: #f6f3ec;
-        background:
-          repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.035) 0 0.08em, transparent 0.08em 0.9em),
-          radial-gradient(120% 70% at 70% 18%, color-mix(in srgb, var(--club) 30%, #17202f), transparent 70%),
-          linear-gradient(180deg, #121a28, #0b1019 70%);
+        color: var(--ink);
+        background: var(--pin), var(--face);
       }
-      /* the art: captain's photo, faded into the face */
+      /* faceted planes: a ribbon from lower left to upper right, a wedge in the upper right */
+      .mc.shd .fc-face::before,
+      .mc.shd .fc-face::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+      }
+      .mc.shd .fc-face::before {
+        background: var(--rib);
+        clip-path: polygon(0 66%, 0 80%, 100% 24%, 100% 10%);
+      }
+      .mc.shd .fc-face::after {
+        background: var(--wedge);
+        clip-path: polygon(52% 0, 100% 0, 100% 52%, 86% 30%);
+      }
+      /* layered frame lines: dark outer rim, light bevel just inside, thin inner line */
+      .fc-lines {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 5;
+        pointer-events: none;
+        overflow: visible;
+      }
+      .fc-lines path {
+        fill: none;
+        vector-effect: non-scaling-stroke;
+      }
+      .fc-lines .l-rim {
+        stroke: rgba(0, 0, 0, 0.55);
+        stroke-width: 1.2;
+      }
+      .fc-lines .l-hi {
+        stroke: rgba(255, 255, 255, 0.55);
+        stroke-width: 1;
+      }
+      .fc-lines .l-in {
+        stroke: var(--line);
+        stroke-width: 1.4;
+      }
+      .fc-lines .l-sh {
+        stroke: rgba(0, 0, 0, 0.35);
+        stroke-width: 1;
+      }
+      /* the art: the captain's photo faked as a cut-out. Two layers: a dim, desaturated
+         copy of the whole photo fading out wide (the background falls away into the card art),
+         and a sharp copy masked to an ellipse on head and torso. The head stays inside the outline. */
       .fc-photo {
         position: absolute;
-        top: 5%;
-        inset-inline-end: 0;
-        width: 70%;
-        height: 52%;
+        top: 8.5%;
+        inset-inline: 11%;
+        width: 78%;
+        height: 57%;
         object-fit: cover;
-        object-position: 50% 12%;
-        -webkit-mask: linear-gradient(to bottom, #000 62%, transparent 98%), linear-gradient(to var(--fade-to, right), transparent 0%, #000 34%);
+        object-position: 74% 14%;
+        z-index: 2;
+      }
+      .fc-photo.p-bg {
+        filter: saturate(0.4) brightness(0.5) contrast(1.05);
+        opacity: 0.42;
+        -webkit-mask: radial-gradient(ellipse 50% 62% at 50% 34%, #000 0%, rgba(0, 0, 0, 0.5) 55%, transparent 100%), linear-gradient(to bottom, transparent 0%, #000 22%);
         -webkit-mask-composite: source-in;
-        mask: linear-gradient(to bottom, #000 62%, transparent 98%) intersect, linear-gradient(to var(--fade-to, right), transparent 0%, #000 34%);
-        z-index: 4;
+        mask: radial-gradient(ellipse 50% 62% at 50% 34%, #000 0%, rgba(0, 0, 0, 0.5) 55%, transparent 100%) intersect, linear-gradient(to bottom, transparent 0%, #000 22%) intersect;
       }
-      :root[dir="rtl"] .fc-photo {
-        --fade-to: left;
+      .fc-photo.p-fg {
+        z-index: 3;
+        filter: saturate(0.92);
+        -webkit-mask: radial-gradient(ellipse 42% 70% at 52% 30%, #000 52%, rgba(0, 0, 0, 0.5) 76%, transparent 100%), linear-gradient(to bottom, #000 0%, #000 74%, transparent 100%);
+        -webkit-mask-composite: source-in;
+        mask: radial-gradient(ellipse 42% 70% at 52% 30%, #000 52%, rgba(0, 0, 0, 0.5) 76%, transparent 100%) intersect, linear-gradient(to bottom, #000 0%, #000 74%, transparent 100%) intersect;
       }
+      .mc.shd.st-free .fc-photo.p-fg {
+        -webkit-mask: radial-gradient(ellipse 46% 120% at 50% 36%, #000 58%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+        mask: radial-gradient(ellipse 46% 120% at 50% 36%, #000 58%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+      }
+      /* name band: begins where the photo ends, with a highlight line on top */
+      .fc-band {
+        position: absolute;
+        inset-inline: 0;
+        top: 64.6%;
+        bottom: 0;
+        background: var(--band);
+        border-top: 1px solid var(--bandline);
+        z-index: 3;
+      }
+      /* the caption chip hangs off the right edge (rarity-chip position) */
       .fc-photo-tag {
         position: absolute;
-        top: 46%;
-        inset-inline-end: 6%;
-        z-index: 5;
-        max-width: 60%;
-        padding: 0.18em 0.6em;
-        border-radius: 999px;
-        background: rgba(7, 10, 18, 0.78);
-        font-size: 0.62em;
-        font-weight: 700;
-        line-height: 1.35;
-        color: #ece8dd;
+        top: 57.6%;
+        inset-inline-end: -6%;
+        z-index: 8;
+        max-width: 74%;
+        height: 6.6%;
+        padding-inline: 0.55em;
+        display: flex;
+        align-items: center;
+        border-radius: 0.5em;
+        border: 0.1em solid var(--chip-line);
+        background: var(--chip);
+        font-size: 0.72em;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--ink);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        box-shadow: 0 0.1em 0.35em rgba(0, 0, 0, 0.35);
       }
-      /* rating column */
+      .fc-photo-tag > span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .fc-emblem g g {
+        display: none;
+      }
+      .mc.st-free .fc-emblem .g-free,
+      .mc.st-holo .fc-emblem .g-holo,
+      .mc.st-electric .fc-emblem .g-electric,
+      .mc.st-pixel .fc-emblem .g-pixel,
+      .mc.st-chrome .fc-emblem .g-chrome {
+        display: inline;
+      }
+      .fc-lines .l-thick {
+        display: none;
+      }
+      .mc.st-chrome .fc-lines .l-thick {
+        display: inline;
+      }
+      .mc.st-chrome .fc-lines .l-mid {
+        display: none;
+      }
+      /* the rhombus emblem hangs off the left edge */
+      .fc-emblem {
+        position: absolute;
+        top: 51.8%;
+        inset-inline-start: -6%;
+        width: 13%;
+        height: auto;
+        aspect-ratio: 1;
+        z-index: 8;
+        filter: drop-shadow(0 0.1em 0.2em rgba(0, 0, 0, 0.4));
+      }
+      .fc-emblem .e-bg {
+        fill: var(--emb);
+        stroke: var(--emb-line);
+        stroke-width: 3;
+        stroke-linejoin: round;
+      }
+      .fc-emblem .e-gl {
+        fill: var(--emb-line);
+      }
+      /* rating column: the rating, then the tier word where a position label sits (24.5 to 29.2 %
+         of the card). A small OVR label is set beside the number. */
       .fc-side {
         position: absolute;
-        top: 9%;
-        inset-inline-start: 7%;
-        z-index: 5;
-        width: 26%;
-        display: grid;
-        justify-items: center;
-        gap: 0.15em;
+        inset: 0;
+        z-index: 6;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .fc-rate {
+        position: absolute;
+        top: 12.8%;
+        inset-inline-start: 1.5%;
+        width: 21.6%;
         text-align: center;
       }
       .fc-ovr {
+        display: block;
         font-family: var(--font-card);
         font-weight: 800;
-        font-size: 3.1em;
-        line-height: 0.95;
-        color: #fff;
-        font-variant-numeric: tabular-nums;
+        font-size: 2.5em;
+        line-height: 1;
+        letter-spacing: -0.03em;
+        color: var(--ink);
+        font-variant-numeric: lining-nums;
       }
       .fc-ovrl {
-        font-size: 0.66em;
+        position: absolute;
+        top: 0.55em;
+        inset-inline-start: 100%;
+        margin-inline-start: -0.3em;
+        font-family: var(--font-card);
+        font-size: max(12px, 0.7em);
         font-weight: 800;
-        letter-spacing: 0.08em;
-        color: #e8e4da;
-        margin-block-start: -0.1em;
+        line-height: 1;
+        letter-spacing: 0.04em;
+        color: var(--ink2);
+        text-shadow: 0 0 0.4em var(--ovr-halo, rgba(0, 0, 0, 0.55));
       }
       :root:lang(ar) .fc-ovrl {
         letter-spacing: 0;
       }
       .fc-tier {
+        position: absolute;
+        top: 23.9%;
+        inset-inline-start: 1.5%;
+        width: 21.6%;
+        text-align: center;
         font-family: var(--font-card);
-        font-size: 0.9em;
+        font-size: 1.32em;
         font-weight: 800;
-        line-height: 1.2;
-        color: color-mix(in srgb, var(--tier-b) 45%, #fff);
+        line-height: 1.1;
+        color: var(--ink);
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.02em;
       }
       :root:lang(ar) .fc-tier {
+        font-size: 1.05em;
         text-transform: none;
         letter-spacing: 0;
       }
-      .fc-rule {
-        width: 70%;
-        height: 1px;
-        margin-block: 0.25em;
-        background: rgba(255, 255, 255, 0.28);
-      }
-      .fc-crest {
-        width: 2.9em;
-        height: 2.9em;
-        border-radius: 50%;
-        display: grid;
-        place-items: center;
-        border: 0.12em solid var(--club);
-        background: color-mix(in srgb, var(--club) 26%, #0d1220);
-        font-size: 1em;
-      }
-      .fc-crest bdi {
-        font-size: 0.5em;
-        font-weight: 800;
-        color: #fff;
-      }
-      .fc-club {
-        font-size: 0.6em;
-        font-weight: 700;
-        line-height: 1.25;
-        color: #e4dfd2;
-      }
-      /* name band */
+      /* name: bold, title case, centred on the axis */
       .fc-name {
         position: absolute;
-        top: 55.5%;
-        inset-inline: 6%;
-        z-index: 5;
+        top: 64.1%;
+        inset-inline: 7%;
+        z-index: 6;
         text-align: center;
         font-family: var(--font-card);
         font-weight: 800;
-        font-size: 1.75em;
-        line-height: 1.1;
-        letter-spacing: 0.03em;
-        text-transform: uppercase;
-        color: #fff;
+        font-size: 1.5em;
+        line-height: 1.02;
+        color: var(--ink);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
-        text-shadow: 0 0.06em 0.4em rgba(7, 10, 18, 0.9);
       }
       :root:lang(ar) .fc-name {
-        letter-spacing: 0;
+        font-size: 1.25em;
         line-height: 1.35;
       }
-      .fc-name::after {
-        content: "";
-        display: block;
-        width: 72%;
-        height: 1px;
-        margin: 0.22em auto 0;
-        background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.5), transparent);
+      :root:lang(ar) .fc-stats {
+        top: 72.7%;
       }
-      /* stats: two columns, number then word */
+      :root:lang(ar) .fc-stats b {
+        font-size: 1.12em;
+        line-height: 1;
+      }
+      /* stats: one row of four, label over value, no dividers */
       .fc-stats {
         position: absolute;
-        top: 68%;
-        inset-inline: 11%;
-        z-index: 5;
+        top: 72%;
+        inset-inline: 7%;
+        z-index: 6;
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 0.2em 0;
+        grid-template-columns: repeat(4, 1fr);
       }
       .fc-stats > span {
-        display: flex;
-        align-items: baseline;
-        gap: 0.35em;
-        min-width: 0;
-        padding-inline: 0.5em;
-      }
-      .fc-stats > span {
-        justify-content: center;
-      }
-      .fc-stats > span:nth-child(odd) {
-        border-inline-end: 1px solid rgba(255, 255, 255, 0.22);
-      }
-      .fc-stats b {
-        flex: none;
-        font-family: var(--font-card);
-        font-size: 1.3em;
-        font-weight: 800;
-        line-height: 1.2;
-        font-variant-numeric: tabular-nums;
-        color: #fff;
-      }
-      .fc-stats i {
-        min-width: 0;
-        font-style: normal;
-        letter-spacing: 0.06em;
-        font-size: 0.8em;
-        font-weight: 700;
-        color: #ece8dd;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      /* bottom: the BotolaGO+ mark once bought, otherwise the serial */
-      .fc-foot {
-        position: absolute;
-        bottom: 6.5%;
-        inset-inline: 0;
-        z-index: 5;
         display: grid;
         justify-items: center;
-        gap: 0.15em;
-        font-size: 0.58em;
+        gap: 0.12em;
+        min-width: 0;
+        text-align: center;
+      }
+      .fc-stats i {
+        order: 1;
+        font-style: normal;
+        font-family: var(--font-card);
+        font-size: max(12px, 0.8em);
         font-weight: 800;
-        color: #cfc9bb;
-        font-variant-numeric: tabular-nums;
+        line-height: 1.1;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--ink);
+        white-space: nowrap;
+      }
+      :root:lang(ar) .fc-stats i {
+        letter-spacing: 0;
+        text-transform: none;
+        font-size: max(12px, 0.72em);
+        line-height: 1.25;
+      }
+      :root:lang(ar) .fc-stats > span {
+        align-content: start;
+      }
+      .fc-stats b {
+        order: 2;
+        font-family: var(--font-card);
+        font-size: 1.2em;
+        font-weight: 800;
+        line-height: 1.05;
+        font-variant-numeric: lining-nums tabular-nums;
+        color: var(--ink);
+      }
+      /* icon row: club crest, then the BotolaGO+ logo once bought. The serial is tiny text under it. */
+      .fc-foot {
+        position: absolute;
+        top: 83%;
+        inset-inline: 0;
+        z-index: 6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.85em;
+        font-size: max(12px, 0.75em);
+        font-weight: 800;
+        color: var(--ink);
       }
       .fc-foot .plus-logo {
-        height: 1.9em;
-        vertical-align: middle;
+        display: block;
+        height: 1.2em;
+        width: auto;
+        color: var(--ink);
+        --logo-plus: var(--logo-plus-c, var(--mint));
+      }
+      .fc-crest {
+        flex: none;
+        min-width: 3em;
+        height: 1.75em;
+        padding-inline: 0.5em;
+        border-radius: 0.45em 0.45em 1.1em 1.1em / 0.45em 0.45em 1.3em 1.3em;
+        display: grid;
+        place-items: center;
+        border: 0.14em solid var(--club);
+        background: color-mix(in srgb, var(--club) 30%, #0d1220);
+        box-shadow: 0 0 0 0.07em rgba(0, 0, 0, 0.4);
+      }
+      .fc-crest bdi {
+        font-size: 1em;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: 0.02em;
+        color: #fff;
+        margin-block-end: 0.12em;
+      }
+      .fc-serial {
+        position: absolute;
+        top: 89.8%;
+        inset-inline: 0;
+        z-index: 6;
+        text-align: center;
+        font-size: max(11px, 0.64em);
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: 0.03em;
+        color: var(--ink2);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
       }
       .fc-ex {
         position: absolute;
-        top: 7%;
-        inset-inline-end: 9%;
-        z-index: 6;
+        top: 9.5%;
+        inset-inline-end: 13%;
+        z-index: 7;
         padding: 0.1em 0.7em;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.18);
-        font-size: 0.6em;
+        background: var(--chip);
+        border: 0.08em solid var(--chip-line);
+        font-size: 0.72em;
         font-weight: 800;
+        color: var(--ink);
       }
-      /* the old rectangle-only layers are replaced by the shield frame */
-      .mc.fut .fx-rim,
-      .mc.fut .fx-chrome {
+      /* floor glow under the point */
+      .mc.shd:not(.st-free)::after {
+        content: "";
+        position: absolute;
+        left: 22%;
+        right: 22%;
+        bottom: -3%;
+        height: 5%;
+        background: radial-gradient(closest-side, rgba(255, 255, 255, 0.55), transparent);
+        filter: blur(0.5em);
+        pointer-events: none;
+      }
+      .mc.shd .fx-rim,
+      .mc.shd .fx-chrome {
         display: none !important;
       }
-      .mc.fut .fx-mark svg {
+      .mc.shd .fx-mark svg {
         top: 44%;
         opacity: 0.06;
       }
-      .mc.fut .fx-sheen {
-        z-index: 6;
+      .mc.shd .fx-sheen {
+        z-index: 7;
       }
-      .mc.fut .fx.fx-electric {
+      .mc.shd .fx.fx-electric {
         inset: -0.1em;
         width: calc(100% + 0.2em);
         height: calc(100% + 0.2em);
-        z-index: 7;
+        z-index: 9;
       }
-      .mc-wrap.lg .mc.fut::before,
-      .mc-wrap.md .mc.fut::before {
+      .mc-wrap.lg .mc.shd::before,
+      .mc-wrap.md .mc.shd::before {
         inset: 10% 8% 6%;
       }
       /* ---------- special editions: each style is a frame material + a face ---------- */
-      .mc.fut.st-free .fc-frame {
-        background: linear-gradient(160deg, color-mix(in srgb, var(--club) 60%, #fff), color-mix(in srgb, var(--club) 50%, #111) 50%, color-mix(in srgb, var(--club) 70%, #fff));
+      /* Free: a plain gold card. Thin rim, flat gold, dark brown type, plain tip. */
+      .mc.shd.st-free {
+        --sh-out: var(--sh-out-plain);
+        --sh-in: var(--sh-in-thin);
+        --ink: #2c240f;
+        --ink2: #4a3c18;
+        --line: #f3e3a0;
+        --chip: #e3bf50;
+        --chip-line: #2c240f;
+        --emb: #e3bf50;
+        --emb-line: #2c240f;
+        --band: linear-gradient(180deg, rgba(255, 246, 190, 0.5), rgba(255, 246, 190, 0.1));
+        --bandline: rgba(255, 252, 225, 0.85);
+        --rib: linear-gradient(100deg, transparent 20%, rgba(255, 248, 200, 0.38) 45%, rgba(255, 248, 200, 0.05) 60%, transparent 80%);
+        --wedge: linear-gradient(135deg, transparent 30%, rgba(255, 244, 190, 0.28));
+        --pin: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 3px);
+        --face: linear-gradient(135deg, #a58b40 0%, #e5c155 42%, #f4e39a 68%, #d6b448 100%);
       }
-      .mc.fut.st-holo .fc-frame {
-        background: conic-gradient(from var(--hue) at 50% 45%, #5ef0a8, #4fd8ff, #8a7bff, #4fd8ff, #5ef0a8, #d6ffe9, #5ef0a8);
+      .mc.shd.st-free .fc-frame {
+        background: linear-gradient(160deg, #5c4a1d, #b8993a 40%, #f0dc86 62%, #6b5722);
       }
-      .mc.fut.st-holo .fc-face {
-        background:
-          repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0 0.08em, transparent 0.08em 0.9em),
-          radial-gradient(120% 70% at 70% 18%, #1b4b52, transparent 70%),
-          linear-gradient(180deg, #102a33, #0a161d 70%);
+      .mc.shd.st-free {
+        --ovr-halo: rgba(255, 244, 190, 0.85);
       }
-      .mc.fut.st-holo .fx-holo {
+      .mc.shd.st-free .fc-lines .l-hi {
+        stroke: rgba(255, 250, 215, 0.7);
+      }
+      .mc.shd.st-free .fc-crest {
+        background: color-mix(in srgb, var(--club) 45%, #231d0b);
+      }
+      /* Holo: the holographic edition, green to cyan to blue only. Deep teal ocean body, an
+         iridescent wedge in the upper right, a chrome bezel that shifts hue through green, cyan
+         and blue. Pale aqua type. No violet or pink anywhere. */
+      .mc.shd.st-holo {
+        --ink: #effffb;
+        --ink2: #bff5ec;
+        --line: #9ff5e6;
+        --chip: #05303a;
+        --chip-line: #a9f7ee;
+        --emb: #06404a;
+        --emb-line: #a9f7ee;
+        --band: linear-gradient(180deg, rgba(110, 240, 220, 0.18), rgba(110, 240, 220, 0.03) 70%, transparent);
+        --bandline: rgba(150, 250, 232, 0.55);
+        --rib: linear-gradient(100deg, transparent 22%, rgba(80, 232, 170, 0.22) 44%, rgba(80, 200, 255, 0.3) 54%, transparent 74%);
+        --wedge: linear-gradient(140deg, rgba(110, 250, 190, 0.62), rgba(90, 228, 255, 0.55) 36%, rgba(60, 140, 255, 0.6) 66%, rgba(220, 255, 250, 0.45));
+        --face: radial-gradient(70% 40% at 78% 14%, rgba(30, 200, 200, 0.5), transparent), radial-gradient(60% 30% at 15% 60%, rgba(20, 140, 150, 0.35), transparent), linear-gradient(165deg, #0e5f66, #08394a 48%, #031c2b);
+      }
+      .mc.shd.st-holo .fc-frame {
+        background: conic-gradient(from var(--hue) at 50% 45%, #5ef0a8, #4fe3ee, #3a8dff, #4fe0d0, #4fd8ff, #d6fff4, #5ef0a8);
+      }
+      .mc.shd.st-holo .fx-holo {
         opacity: 0.32;
       }
-      .mc.fut.st-electric .fc-frame {
-        background: linear-gradient(160deg, #0d1a12, #050807 50%, #0f2418);
+      /* The photo is a real person and keeps its natural colours: the colour-dodge foil and the
+         glare are cut away from the player ellipse (same footprint as the sharp photo layer), so
+         they only play over the wedge, the background and the frame. */
+      .mc.shd.st-holo .fx-holo,
+      .mc.shd.st-holo .fx-glare {
+        -webkit-mask: radial-gradient(ellipse 32.8% 32% at 51.6% 25.6%, #000 52%, rgba(0, 0, 0, 0.5) 76%, transparent 100%), var(--sh-in) center / 100% 100% no-repeat;
+        -webkit-mask-composite: xor;
+        mask: radial-gradient(ellipse 32.8% 32% at 51.6% 25.6%, #000 52%, rgba(0, 0, 0, 0.5) 76%, transparent 100%), var(--sh-in) center / 100% 100% no-repeat;
+        mask-composite: exclude;
       }
-      .mc.fut.st-electric .fc-face {
-        background:
-          repeating-linear-gradient(135deg, rgba(95, 227, 161, 0.05) 0 0.08em, transparent 0.08em 0.9em),
-          radial-gradient(120% 70% at 70% 18%, #12402a, transparent 70%),
-          linear-gradient(180deg, #08130d, #030605 70%);
+      /* Electric: black body, bright green bars, a bright wedge, pale mint type, crackling edge */
+      .mc.shd.st-electric {
+        --ink: #c4ffe0;
+        --ink2: #8fe9b9;
+        --line: #7dffbd;
+        --chip: #06100a;
+        --chip-line: #7dffbd;
+        --emb: #06100a;
+        --emb-line: #7dffbd;
+        --band: linear-gradient(180deg, rgba(95, 227, 161, 0.14), rgba(95, 227, 161, 0.02) 70%, transparent);
+        --bandline: rgba(125, 255, 189, 0.5);
+        --rib: linear-gradient(100deg, transparent 24%, rgba(62, 224, 138, 0.14) 40%, rgba(62, 224, 138, 0.34) 47%, rgba(62, 224, 138, 0.06) 53%, transparent 62%, rgba(62, 224, 138, 0.2) 68%, transparent 74%);
+        --wedge: linear-gradient(135deg, rgba(190, 255, 220, 0.55), rgba(62, 224, 138, 0.5) 45%, rgba(10, 60, 36, 0.4));
+        --pin: repeating-linear-gradient(45deg, rgba(95, 227, 161, 0.07) 0 1px, transparent 1px 3px);
+        --face: radial-gradient(60% 36% at 80% 12%, rgba(40, 150, 90, 0.5), transparent), linear-gradient(165deg, #050a07, #0b1710 60%, #14261c);
       }
-      .mc.fut.st-electric .fc-ovr,
-      .mc.fut.st-electric .fc-tier {
-        color: #b6ffd7;
+      .mc.shd.st-electric .fc-frame {
+        background: linear-gradient(160deg, #0d1a12, #3a7a58 25%, #050807 50%, #7dffbd 75%, #0f2418);
       }
-      .mc.fut.st-pixel .fc-frame {
+      .mc.shd.st-electric .fx-spark {
+        display: block;
+      }
+      /* Pixel: a retro promo. Navy body with a pixel grid, stair-step wedge, two-tone checker frame. */
+      .mc.shd.st-pixel {
+        --line: #86efac;
+        --chip: #0a1426;
+        --chip-line: #7dd3fc;
+        --emb: #0a1426;
+        --emb-line: #86efac;
+        --band: linear-gradient(180deg, rgba(125, 211, 252, 0.14), rgba(125, 211, 252, 0.02) 70%, transparent);
+        --bandline: rgba(134, 239, 172, 0.55);
+        --rib: linear-gradient(100deg, transparent 30%, rgba(125, 211, 252, 0.16) 46%, rgba(134, 239, 172, 0.14) 56%, transparent 70%);
+        --wedge: linear-gradient(135deg, rgba(224, 242, 254, 0.5), rgba(125, 211, 252, 0.42) 50%, rgba(134, 239, 172, 0.4));
+        --pin: linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px) 0 0 / 100% 0.3em, linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 0.3em 100%;
+        --face: radial-gradient(60% 36% at 78% 14%, rgba(40, 110, 170, 0.5), transparent), linear-gradient(180deg, #14264a, #0a111e 72%);
+      }
+      .mc.shd.st-pixel .fc-face::after {
+        clip-path: polygon(52% 0, 100% 0, 100% 52%, 94% 52%, 94% 42%, 86% 42%, 86% 34%, 78% 34%, 78% 26%, 70% 26%, 70% 18%, 62% 18%, 62% 10%, 52% 10%);
+      }
+      .mc.shd.st-pixel .fc-frame {
         background: repeating-conic-gradient(#7dd3fc 0 25%, #86efac 0 50%) 0 0 / 0.6em 0.6em;
       }
-      .mc.fut.st-pixel .fc-face {
-        background:
-          linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 100% 0.3em,
-          radial-gradient(120% 70% at 70% 18%, #183a5c, transparent 70%),
-          linear-gradient(180deg, #0f1a2e, #0a111e 70%);
+      .mc.shd.st-pixel .fc-name {
+        text-shadow: 0.06em 0.06em 0 rgba(0, 0, 0, 0.55);
       }
-      .mc.fut.st-chrome .fc-frame {
+      /* Chrome: an icon-style premium. White marble with silver veins and an inset silver triangle,
+         a thick polished bezel, dark type, archive-toned photo. */
+      .mc.shd.st-chrome {
+        --sh-in: var(--sh-in-thick);
+        --logo-plus-c: #14864f;
+        --ink: #2b2f36;
+        --ink2: #4a505a;
+        --line: #9aa3ad;
+        --chip: #eceef0;
+        --chip-line: #2b2f36;
+        --emb: #eceef0;
+        --emb-line: #2b2f36;
+        --foil: linear-gradient(180deg, #4a505a 0%, #2b2f36 50%, #5a616c 100%);
+        --band: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0.15) 70%, transparent);
+        --bandline: rgba(255, 255, 255, 0.95);
+        --rib: transparent;
+        --wedge: linear-gradient(135deg, #f7f8fa 0%, #aab1ba 34%, #eef0f3 52%, #7d858f 100%);
+        --pin: linear-gradient(112deg, transparent 31.6%, rgba(110, 118, 130, 0.38) 31.8%, transparent 32.3%), linear-gradient(64deg, transparent 58.4%, rgba(110, 118, 130, 0.3) 58.6%, transparent 59.1%), linear-gradient(98deg, transparent 12.6%, rgba(110, 118, 130, 0.26) 12.8%, transparent 13.2%), linear-gradient(150deg, transparent 74.6%, rgba(110, 118, 130, 0.3) 74.8%, transparent 75.3%);
+        --face: linear-gradient(135deg, #f6f7f8, #dde0e5 40%, #f1f2f4 70%, #cdd2d8);
+      }
+      .mc.shd.st-chrome .fc-frame {
         background:
           linear-gradient(105deg, transparent calc(var(--sw) - 10%), rgba(255, 255, 255, 0.9) var(--sw), transparent calc(var(--sw) + 10%)),
           linear-gradient(180deg, #f2f4f7 0%, #8b929b 18%, #2a2e35 40%, #c9ced4 55%, #3b4049 75%, #e3e6ea 100%);
       }
-      .mc.fut.st-chrome .fc-face {
-        background:
-          repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0 1px, transparent 1px 3px),
-          radial-gradient(120% 70% at 70% 18%, #343a44, transparent 70%),
-          linear-gradient(180deg, #1a1d23, #0c0e12 70%);
+      .mc.shd.st-chrome .fc-face::after {
+        clip-path: polygon(46% 0, 100% 0, 100% 56%);
+        top: 0;
+        opacity: 0.8;
       }
-      .mc.fut:not(.st-free) .fc-ovr {
+      .mc.shd.st-chrome .fc-photo.p-fg {
+        filter: grayscale(1) sepia(0.35) contrast(1.05);
+      }
+      .mc.shd.st-chrome .fc-photo.p-bg {
+        filter: grayscale(1) sepia(0.3) brightness(0.9);
+        opacity: 0.35;
+      }
+      .mc.shd.st-free .fc-photo.p-bg {
+        filter: saturate(0.5) sepia(0.4) brightness(0.7);
+        opacity: 0.5;
+      }
+      .mc.shd.st-chrome .fc-crest {
+        background: color-mix(in srgb, var(--club) 40%, #1b1e23);
+      }
+      .mc.shd.st-chrome .fc-lines .l-hi {
+        stroke: rgba(255, 255, 255, 0.85);
+      }
+      .mc.shd:not(.st-free) .fc-ovr {
         background: var(--foil);
         -webkit-background-clip: text;
         background-clip: text;
         color: transparent;
-        filter: drop-shadow(0 0.04em 0.1em rgba(0, 0, 0, 0.7));
+        filter: drop-shadow(0 0.04em 0.1em rgba(0, 0, 0, 0.55));
+      }
+      .mc.shd.st-chrome {
+        --ovr-halo: rgba(255, 255, 255, 0.9);
+      }
+      .mc.shd.st-chrome .fc-ovr {
+        filter: none;
       }
       @media (prefers-reduced-motion: no-preference) {
-        .mc.fut.st-pixel .fc-frame {
+        .mc.shd.st-pixel .fc-frame {
           animation: mc-pixel-rim 1.6s steps(4) infinite;
         }
-        .mc.fut.st-chrome .fc-frame {
+        .mc.shd.st-chrome .fc-frame {
           animation: mc-chrome 5s ease-in-out infinite;
+        }
+        .mc.shd.st-electric .fx-spark {
+          animation: mc-twinkle 2.6s steps(1) infinite;
         }
       }
 
@@ -1808,7 +2105,7 @@
 .s4 .s4-sub { margin: 0; text-align: center; text-wrap: balance; }
 .s4 .s4-stage { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; padding-block: 2px; }
 .s4 .s4-card { width: 100%; transform-origin: 50% 60%; }
-.s4 .mc-wrap.lg { width: 270px; font-size: 18px; }
+.s4 .mc-wrap.lg { width: 270px; font-size: 16.875px; }
 /* the BotolaGO+ badge takes a line, so the captain photo gives it back */
 .s4 .mc-capphoto { width: 3em; height: 3.1em; }
 /* concise access summary: plan and date on the left, the way out on the right */
@@ -2339,34 +2636,56 @@
         function tierName(k) {
           return t("card.tier." + k);
         }
-        var SHIELD_PATH = "M0 8 Q0 4 4 4 L28 4 Q32 4 35 2 L38 0.6 Q39.5 0 41 0 L59 0 Q60.5 0 62 0.6 L65 2 Q68 4 72 4 L96 4 Q100 4 100 8 L100 118 Q100 124 94 127 L55 139 Q50 140.6 45 139 L6 127 Q0 124 0 118 Z";
+        /* Silhouette: 100 x 136.6, crown tip, shoulders, vertical sides to 87 %, shallow point.
+           PLAIN is the plain tip (free card); CROWN adds the small notches of the special editions. */
+        var SH_PLAIN = "M46 0 L54 0 C60 0 70 2.5 75.7 5.8 L91.8 14.1 L94.2 15 L98.1 16 L100 16.9 V118.5 C99.6 123.5 97 125.8 91.1 127.6 C86 129 76 129.9 70.4 130.4 L63.7 131.7 L54.8 134.5 L50 136.6 L45.2 134.5 L36.3 131.7 L29.6 130.4 C24 129.9 14 129 8.9 127.6 C3 125.8 0.4 123.5 0 118.5 V16.9 L1.9 16 L5.8 15 L8.2 14.1 L24.3 5.8 C30 2.5 40 0 46 0 Z";
+        var SH_CROWN = "M50 0 L50.5 0.7 C52.4 3.2 54.6 4.9 57.6 5.5 L62.6 2.2 Q69.2 2.6 75.7 5.8 L91.8 14.1 L94.2 15 L98.1 16 L100 16.9 V118.5 C99.6 123.5 97 125.8 91.1 127.6 C86 129 76 129.9 70.4 130.4 L63.7 131.7 L54.8 134.5 L50 136.6 L45.2 134.5 L36.3 131.7 L29.6 130.4 C24 129.9 14 129 8.9 127.6 C3 125.8 0.4 123.5 0 118.5 V16.9 L1.9 16 L5.8 15 L8.2 14.1 L24.3 5.8 Q30.8 2.6 37.4 2.2 L42.4 5.5 C45.4 4.9 47.6 3.2 49.5 0.7 Z";
+        function shScale(a, b) {
+          return ' transform="translate(50 68.3) scale(' + a + " " + b + ') translate(-50 -68.3)"';
+        }
+        /* the emblem glyph (original artwork, 40 x 40 box) per style */
+        var EMBLEM = {
+          free: '<circle cx="20" cy="20" r="6.5"/>',
+          holo: '<path d="M20 9 L23.2 16.8 L31 20 L23.2 23.2 L20 31 L16.8 23.2 L9 20 L16.8 16.8Z"/>',
+          electric: '<path d="M22.5 8.5 L13.5 22 H19.5 L17.5 31.5 L27 17.5 H21Z"/>',
+          pixel: '<path d="M17 11h6v6h6v6h-6v6h-6v-6h-6v-6h6z"/>',
+          chrome: '<path d="M11.5 26 L13.5 14 L17.5 19 L20 11.5 L22.5 19 L26.5 14 L28.5 26Z"/>'
+        };
         /* The collector shield (large sizes). Reads like the card hierarchy elsewhere:
            rating + tier earned, the manager's name, the stats; the photo is the captain's. */
         function shieldHTML(d, o) {
           var codes = ["cap", "sel", "trf", "con"];
-          var foot = o.plus ? LOGO : '<bdi dir="ltr">BOT #' + esc(d.serial) + " · 2026/27</bdi>";
+          var st = o.style || "free";
+          var foot = o.plus ? LOGO : "";
+          var path = st === "free" ? SH_PLAIN : SH_CROWN;
+          /* setStyle only swaps the class on a live card, so everything style-specific is in the markup and chosen by CSS */
+          var inner = st === "free" ? '<path class="l-in" d="' + path + '"' + shScale(0.976, 0.983) + "/>" : '<path class="l-in l-mid" d="' + path + '"' + shScale(0.958, 0.97) + '/><path class="l-in l-thick" d="' + path + '"' + shScale(0.944, 0.962) + "/>";
+          var glyphs = Object.keys(EMBLEM).map(function (k) { return '<g class="g-' + k + '">' + EMBLEM[k] + "</g>"; }).join("");
           return (
             '<div class="fc-frame"></div>' +
             '<div class="fc-face">' +
-            '<img class="fc-photo" alt="" src="' + PHOTO[d.photo] + '">' +
-            '<span class="fc-photo-tag">' + esc(t("card.captainShort")) + ' · <bdi>' + esc(nm(d, "captain")) + "</bdi></span>" +
+            '<img class="fc-photo p-bg" alt="" src="' + PHOTO[d.photo] + '"><img class="fc-photo p-fg" alt="" src="' + PHOTO[d.photo] + '">' +
+            '<span class="fc-band"></span>' +
             (o.example ? '<span class="fc-ex">' + esc(t("sh.example")) + "</span>" : "") +
             '<div class="fc-side" role="group" aria-label="' + esc(t("card.earnedAria", { ovr: d.ovr, tier: tierName(d.tier) })) + '">' +
-            '<bdi class="fc-ovr">' + d.ovr + '</bdi><span class="fc-ovrl"><bdi dir="ltr">OVR</bdi></span>' +
-            '<span class="fc-tier">' + esc(tierName(d.tier)) + "</span>" +
-            '<span class="fc-rule"></span>' +
-            '<span class="fc-crest" aria-hidden="true"><bdi dir="ltr">' + esc(d.clubShort) + "</bdi></span>" +
-            '<span class="sr-only">' + esc(nm(d, "club")) + "</span></div>" +
+            '<div class="fc-rate"><bdi class="fc-ovr">' + d.ovr + '</bdi><span class="fc-ovrl" aria-hidden="true"><bdi dir="ltr">OVR</bdi></span></div>' +
+            '<span class="fc-tier">' + esc(tierName(d.tier)) + "</span></div>" +
             '<div class="fc-name"><bdi>' + esc(nm(d, "name")) + "</bdi></div>" +
             '<div class="fc-stats">' +
-            codes.map(function (c) { return '<span><b>' + d.stats[c] + '</b><i aria-hidden="true">' + esc(t("card." + c + "S")) + '</i><span class="sr-only">' + esc(t("card." + c)) + "</span></span>"; }).join("") +
+            codes.map(function (c) { return '<span><i aria-hidden="true">' + esc(t("card." + c + "S")) + "</i><b>" + d.stats[c] + '</b><span class="sr-only">' + esc(t("card." + c)) + "</span></span>"; }).join("") +
             "</div>" +
-            '<div class="fc-foot">' + foot + "</div>" +
+            '<div class="fc-foot"><span class="fc-crest" aria-hidden="true"><bdi dir="ltr">' + esc(d.clubShort) + "</bdi></span>" + foot + '<span class="sr-only">' + esc(nm(d, "club")) + "</span></div>" +
+            '<div class="fc-serial"><bdi dir="ltr">BOT #' + esc(d.serial) + " · 2026/27</bdi></div>" +
             "</div>" +
+            '<svg class="fc-lines" viewBox="0 0 100 136.6" preserveAspectRatio="none" aria-hidden="true">' +
+            '<path class="l-rim" d="' + path + '"/><path class="l-hi" d="' + path + '"' + shScale(0.993, 0.996) + '/>' +
+            inner + "</svg>" +
+            '<svg class="fc-emblem" viewBox="0 0 40 40" aria-hidden="true"><path class="e-bg" d="M20 2 L38 20 L20 38 L2 20Z"/><g class="e-gl">' + glyphs + "</g></svg>" +
+            '<span class="fc-photo-tag"><span>' + esc(t("card.captainShort")) + " · <bdi>" + esc(nm(d, "captain")) + "</bdi></span></span>" +
             '<div class="fx fx-mark" aria-hidden="true"><svg viewBox="0 0 1860 288"><use href="#bgPlusLogo" /></svg></div>' +
             '<div class="fx fx-holo"></div><div class="fx fx-spark"></div><div class="fx fx-glare"></div>' +
             '<canvas class="fx fx-pixel"></canvas>' +
-            '<svg class="fx fx-electric" viewBox="0 0 100 141" preserveAspectRatio="none" aria-hidden="true"><path d="' + SHIELD_PATH + '" fill="none" stroke="#5fe3a1" stroke-width="1.1" vector-effect="non-scaling-stroke" filter="url(#electricFx)"/><path d="' + SHIELD_PATH + '" fill="none" stroke="rgba(150,240,190,0.55)" stroke-width="2.4" filter="url(#electricFx)" style="opacity:.6"/></svg>' +
+            '<svg class="fx fx-electric" viewBox="0 0 100 136.6" preserveAspectRatio="none" aria-hidden="true"><path d="' + SH_CROWN + '" fill="none" stroke="#5fe3a1" stroke-width="1.1" vector-effect="non-scaling-stroke" filter="url(#electricFx)"/><path d="' + SH_CROWN + '" fill="none" stroke="rgba(150,240,190,0.55)" stroke-width="2.4" filter="url(#electricFx)" style="opacity:.6"/></svg>' +
             '<div class="fx fx-sheen"></div>'
           );
         }
@@ -2423,8 +2742,8 @@
           });
           host.classList.add("mc-wrap", size);
           host.setAttribute("data-follow", who === "me" && !pinned && !o.style ? "1" : "0");
-          var fut = size === "lg" || size === "md";
-          host.innerHTML = '<div class="mc st-' + style + (fut ? " fut" : "") + '" style="--club:' + d.accent + '">' + (fut ? shieldHTML : cardHTML)(d, { plus: plus, example: example }) + "</div>";
+          var shd = size === "lg" || size === "md";
+          host.innerHTML = '<div class="mc st-' + style + (shd ? " shd" : "") + '" style="--club:' + d.accent + '">' + (shd ? shieldHTML : cardHTML)(d, { plus: plus, example: example, style: style }) + "</div>";
           var mc = host.firstChild;
           if (style === "pixel") requestAnimationFrame(function () { paintPixels(mc, false); });
           if (o.animate) popCard(mc);
@@ -2556,7 +2875,7 @@
             if (h.getAttribute("data-follow") !== "1") return;
             var mc = h.querySelector(".mc");
             if (!mc) return;
-            mc.className = "mc st-" + s + (mc.classList.contains("fut") ? " fut" : "");
+            mc.className = "mc st-" + s + (mc.classList.contains("shd") ? " shd" : "");
             if (s === "pixel") paintPixels(mc, !!animate);
             if (animate) popCard(mc);
           });
