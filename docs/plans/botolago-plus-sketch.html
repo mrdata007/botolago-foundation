@@ -12,7 +12,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Changa:wght@600;700;800&family=Manrope:wght@500;600;700;800&family=Noto+Sans+Arabic:wght@500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Changa:wght@600;700;800&family=Manrope:wght@500;600;700;800&family=Noto+Sans+Arabic:wght@500;600;700;800&family=Mr+Dafoe&family=Aref+Ruqaa:wght@700&display=swap"
     />
     <!-- Motion, vanilla build, exact version pinned (the app itself ships motion 13.4.4). Used only for the style change and the unlock reveal. -->
     <script src="https://cdn.jsdelivr.net/npm/motion@11.11.17/dist/motion.js"></script>
@@ -1713,6 +1713,130 @@
       @keyframes hero-foil {
         to { background-position: 100% 0; }
       }
+      /* ---------- the name as a holographic signature ----------
+         Written like a player's autograph on a premium card: a signature script for Latin,
+         Ruq'ah for Arabic, on one line, rising slightly, underlined by a pen swash.
+         The ink is a holographic foil whose colours slide as the card tilts or sways. */
+      @property --px { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+      @property --py { syntax: "<percentage>"; inherits: true; initial-value: 30%; }
+      .fc-art {
+        grid-template-rows: 1fr auto;
+        row-gap: 0;
+        align-content: center;
+      }
+      .mc.shd .fc-hero.fc-sig {
+        align-self: end;
+        display: block;
+        font-family: "Mr Dafoe", "Segoe Script", cursive;
+        font-weight: 400;
+        font-size: 5.2em;
+        line-height: 1.3;
+        letter-spacing: 0;
+        text-transform: none;
+        white-space: nowrap;
+        padding: 0.05em 0.3em 0.12em;
+        transform: rotate(-7deg);
+        animation: none;
+        opacity: 1;
+        -webkit-text-stroke: 0;
+        text-shadow: none;
+        color: transparent;
+        background: var(--sig) var(--px) 50% / 320% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        filter: var(--sig-shadow, drop-shadow(0 0.03em 0.04em rgba(0, 0, 0, 0.45)));
+      }
+      :root:lang(ar) .mc.shd .fc-hero.fc-sig {
+        font-family: "Aref Ruqaa", "Noto Sans Arabic", serif;
+        font-weight: 700;
+        line-height: 1.6;
+        transform: rotate(6deg);
+      }
+      .fc-hw {
+        display: inline;
+      }
+      .fc-swash {
+        align-self: start;
+        justify-self: center;
+        width: 82%;
+        height: 0.9em;
+        margin-block-start: -0.35em;
+        transform: rotate(-5deg);
+        background: var(--sig) var(--px) 50% / 320% 100%;
+        -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M4%2017%20C%2040%206,%2090%204,%20130%209%20S%20186%2019,%20196%206'%20fill='none'%20stroke='black'%20stroke-width='3.2'%20stroke-linecap='round'/%3E%3Cpath%20d='M60%2020%20C%20100%2014,%20140%2013,%20170%2016'%20fill='none'%20stroke='black'%20stroke-width='1.6'%20stroke-linecap='round'%20opacity='0.8'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+        mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20200%2024'%20preserveAspectRatio='none'%3E%3Cpath%20d='M4%2017%20C%2040%206,%2090%204,%20130%209%20S%20186%2019,%20196%206'%20fill='none'%20stroke='black'%20stroke-width='3.2'%20stroke-linecap='round'/%3E%3Cpath%20d='M60%2020%20C%20100%2014,%20140%2013,%20170%2016'%20fill='none'%20stroke='black'%20stroke-width='1.6'%20stroke-linecap='round'%20opacity='0.8'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+        filter: var(--sig-shadow, drop-shadow(0 0.03em 0.04em rgba(0, 0, 0, 0.45)));
+      }
+      :root[dir="rtl"] .fc-swash {
+        transform: rotate(5deg) scaleX(-1);
+      }
+      /* layout like an icon card: the autograph runs the full width under the rating,
+         the initials stand as a large foil monogram where a photo would be */
+      .mc.shd .fc-art {
+        top: 30%;
+        bottom: 43%;
+        inset-inline: 5%;
+      }
+      .fc-mono {
+        position: absolute;
+        top: 6%;
+        inset-inline-end: 4%;
+        width: 66%;
+        height: 30%;
+        z-index: 4;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-card);
+        font-weight: 800;
+        font-size: 5.6em;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        transform: skewX(-12deg);
+        color: transparent;
+        background: var(--sig) var(--px) 50% / 320% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        opacity: 0.32;
+        filter: var(--sig-shadow);
+        pointer-events: none;
+      }
+      :root:lang(ar) .fc-mono {
+        letter-spacing: 0;
+        transform: skewX(10deg);
+        font-size: 5em;
+      }
+      .mc.shd.st-chrome .fc-mono,
+      .mc.shd.st-free .fc-mono {
+        opacity: 0.4;
+      }
+      /* the foil per edition: always holographic, tuned to the card it sits on */
+      .mc.shd.st-free {
+        --sig: linear-gradient(100deg, #3b2a08 0%, #7a5a12 18%, #2f6f78 32%, #5b4310 46%, #8a6a1c 60%, #2b5f8a 74%, #4a3510 88%, #7a5a12 100%);
+        --sig-shadow: drop-shadow(0 0.03em 0 rgba(255, 246, 200, 0.8));
+      }
+      .mc.shd.st-holo {
+        --sig: linear-gradient(100deg, #ffffff 0%, #b8fff0 12%, #7ff5c1 24%, #4fd8ff 38%, #4f9bff 50%, #e9fbff 60%, #7ff5c1 72%, #4fd8ff 86%, #ffffff 100%);
+        --sig-shadow: drop-shadow(0 0.03em 0.05em rgba(0, 25, 35, 0.6)) drop-shadow(0 0 0.12em rgba(79, 216, 255, 0.35));
+      }
+      .mc.shd.st-electric {
+        --sig: linear-gradient(100deg, #f3fff8 0%, #9dffcb 16%, #3ee08a 30%, #c8fff0 44%, #5fe3d1 58%, #f3fff8 70%, #7dffbd 84%, #effff6 100%);
+        --sig-shadow: drop-shadow(0 0 0.06em rgba(125, 255, 189, 0.9)) drop-shadow(0 0 0.22em rgba(62, 224, 138, 0.6));
+      }
+      .mc.shd.st-pixel {
+        --sig: linear-gradient(100deg, #f0f9ff 0%, #7dd3fc 16%, #86efac 32%, #e0f2fe 46%, #38bdf8 60%, #bbf7d0 74%, #f0f9ff 88%, #7dd3fc 100%);
+        --sig-shadow: drop-shadow(0.05em 0.05em 0 #0b111e) drop-shadow(0 0 0.1em rgba(125, 211, 252, 0.45));
+      }
+      /* chrome: gold-foil autograph on white marble, with a holographic flash */
+      .mc.shd.st-chrome {
+        --sig: linear-gradient(100deg, #5a3e0e 0%, #a67f2c 14%, #e2c574 24%, #7a5718 36%, #2f7f8c 46%, #b8913c 56%, #e8cf86 66%, #7a5718 80%, #3f6fb0 90%, #6b4c14 100%);
+        --sig-shadow: drop-shadow(0 0.025em 0 rgba(255, 255, 255, 0.9)) drop-shadow(0 0.04em 0.05em rgba(60, 40, 0, 0.35));
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .mc.shd .fc-hero.fc-sig,
+        .mc.shd .fc-swash {
+          transition: background-position 0.3s ease-out;
+        }
+      }
       @keyframes hero-neon {
         0%, 100% { opacity: 1; }
         62% { opacity: 1; }
@@ -2757,7 +2881,10 @@
            rating + tier earned, the manager's name, the stats; the photo is the captain's. */
         /* The manager's name is the card's art: one word per line, sized to fill the art box. */
         function heroName(n) {
-          return String(n).trim().split(/\s+/).map(function (w) { return '<bdi class="fc-hw">' + esc(w) + "</bdi>"; }).join("");
+          return String(n).trim().split(/\s+/).map(function (w) { return '<bdi class="fc-hw">' + esc(w) + "</bdi>"; }).join(" ");
+        }
+        function initials(n) {
+          return String(n).trim().split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join("");
         }
         function fitHero(mc) {
           var box = mc.querySelector(".fc-art"), h = mc.querySelector(".fc-hero");
@@ -2780,7 +2907,8 @@
           return (
             '<div class="fc-frame"></div>' +
             '<div class="fc-face">' +
-            '<div class="fc-art"><span class="fc-hero">' + heroName(nm(d, "name")) + "</span></div>" +
+            '<span class="fc-mono" aria-hidden="true">' + esc(initials(nm(d, "name"))) + "</span>" +
+            '<div class="fc-art"><span class="fc-hero fc-sig">' + heroName(nm(d, "name")) + '</span><span class="fc-swash" aria-hidden="true"></span></div>' +
             '<span class="fc-band"></span>' +
             (o.example ? '<span class="fc-ex">' + esc(t("sh.example")) + "</span>" : "") +
             '<div class="fc-side" role="group" aria-label="' + esc(t("card.earnedAria", { ovr: d.ovr, tier: tierName(d.tier) })) + '">' +
