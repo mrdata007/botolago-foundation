@@ -114,7 +114,7 @@ describe("the other screens", () => {
       />,
     );
     const visible = text(html);
-    expect(visible).toContain("Ta carte, à ton style");
+    expect(visible).toContain("Votre carte, à votre style");
     for (const style of ["Holo", "Électrique", "Pixels", "Chrome"])
       expect(visible).toContain(style);
     expect(html).toContain('role="radiogroup"');
@@ -126,9 +126,9 @@ describe("the other screens", () => {
   it("screen 2: the best journée, the rivalry with one column per person, three benefits", () => {
     const html = render(<PlusSeasonScreen onNext={noop} titleRef={null} />);
     const visible = text(html);
-    expect(visible).toContain("Ta meilleure journée de la saison");
-    expect(visible).toContain("Ton record : J.9, 71 points.");
-    expect(visible).toContain("Tu mènes de 3 journées");
+    expect(visible).toContain("Votre meilleure journée de la saison");
+    expect(visible).toContain("Votre record : J.9, 71 points.");
+    expect(visible).toContain("Vous menez de 3 journées");
     expect(html.match(/class="plus-col2"/g)).toHaveLength(2);
     expect(html.match(/data-won="true"/g)).toHaveLength(7);
     expect(html.match(/data-won="false"/g)).toHaveLength(4);
@@ -149,8 +149,8 @@ describe("the other screens", () => {
       />,
     );
     const visible = text(html);
-    expect(visible).toContain("Ta saison est ouverte");
-    expect(visible).toContain("Ta carte passe au style Chrome.");
+    expect(visible).toContain("Votre saison est ouverte");
+    expect(visible).toContain("Votre carte passe au style Chrome.");
     expect(visible).toContain("Mensuel");
     expect(visible).toContain("renouvelé le 13 novembre 2026");
     expect(visible).toContain("Gérer dans Profil");
@@ -236,6 +236,33 @@ describe("the plus.* dictionary", () => {
         expect(dict[key as keyof typeof dict], key).not.toMatch(banned);
       }
     }
+  });
+  it("speaks « vous » in French, with no « tu » forms left", () => {
+    const tu = /(?<![\p{L}])(tu|toi|ton|ta|tes|choisis|peux|mènes)(?![\p{L}])/iu;
+    for (const key of keys) {
+      if (key === "plus.s2.rival_name" || key === "plus.s2.me_name") continue;
+      expect(fr[key as keyof typeof fr], key).not.toMatch(tu);
+    }
+  });
+  it("never hedges the monthly renewal in either language", () => {
+    const hedge =
+      /ne se renouvelle pas|sans renouvellement automatique|ne renouvelle pas de lui|لا يتجدد/;
+    for (const key of [
+      "plus.monthly.l2",
+      "plus.terms.monthly1",
+      "plus.terms.monthly2",
+      "plus.s4.access_monthly",
+      "plus.reminder.title",
+    ]) {
+      expect(fr[key as keyof typeof fr], key).not.toMatch(hedge);
+      expect(ar[key as keyof typeof ar], key).not.toMatch(hedge);
+    }
+    expect(fr["plus.monthly.l2"]).toContain("Renouvelé");
+  });
+  it("names the electric edition in the feminine in Arabic (كهربائية)", () => {
+    expect(ar["plus.style.electric"]).toBe("كهربائية");
+    expect(ar["plus.s3.f1.d"]).toContain("كهربائية");
+    expect(ar["plus.s3.f1.d"]).not.toMatch(/كهربائي(?!ة)/);
   });
   it("says « Sans publicité » as a promise about the future, not as a claim about today", () => {
     expect(fr["plus.s3.f0.d"]).toContain("ne verront jamais");
