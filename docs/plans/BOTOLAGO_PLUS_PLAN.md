@@ -65,6 +65,14 @@ is "financée par le sponsoring") will need a paid-services section (section 6).
 
 ### 1.2 Price idea (MAD, monthly)
 
+> **Decided by the owner, 2026-10-13: 20 MAD per month or 200 MAD per year.** The yearly plan
+> covers 12 months from the day of purchase and does not renew automatically (the earlier
+> non-renewing rule stays); monthly renews each month on the purchase date and can be cancelled at
+> any time, with access until that date. The saving is shown against 12 monthly payments
+> (20 × 12 = 240 MAD, so 40 MAD saved). This replaces the season-pass and late-season rules below,
+> which are kept only as the reasoning that led here. Store price points for Morocco still need
+> checking in App Store Connect and Play Console.
+
 No market research is in the repository, so these are reasoned starting points, not measured ones.
 App-store prices must also land on the stores' fixed price points for Morocco (**to confirm** in
 App Store Connect and Play Console).
