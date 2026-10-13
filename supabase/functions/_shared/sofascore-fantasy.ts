@@ -40,14 +40,27 @@
  *   unknown, never zero; an assist is known there only when an incident names
  *   the assister. A value two SofaScore sources disagree about is unknown.
  *
- * Anything it cannot establish holds the match back instead of being guessed:
- * an own goal (no incident label for it has been seen), a second yellow card, a
- * goal it cannot attribute, a player whose times do not fit.
+ * What it cannot establish about ONE player becomes `unknown` on that player's row
+ * (docs/backend/FANTASY_PENDING_ITEMS.md, contract C1), with `evidence.reason`, and
+ * every other fact still counts: goals and substitutions are ordered by (minute,
+ * added minutes), so only a goal on exactly the same moment as a player's entry or
+ * exit leaves his goals conceded and clean sheet unknown; a second yellow
+ * (card/yellowRed) is one dismissal; an own goal (goal/ownGoal) counts for the
+ * other side of the named player's lineup side; minutes are SofaScore's
+ * `minutesPlayed` against the substitution timeline, and a disagreement across 60
+ * minutes scores the lower figure and marks the appearance pending.
+ *
+ * What stays a hold for the whole match, because it is a real contradiction:
+ * goals that do not add up to the score, a score the database disagrees with, a
+ * goal or own goal it cannot attribute (no player, a player not in the lineup), an
+ * unmapped scorer, too many unknown starters, and a player whose times cannot be
+ * true.
  */
 import { canonicalJson, sha256Hex } from "./canonical-json.ts";
 import {
   SCORE_RELEVANT_LABEL,
   incidentLabel,
+  isOwnGoalIncident,
   type SofascoreStoppage,
 } from "./sofascore-performance-parse.ts";
 import type {
@@ -60,9 +73,11 @@ import type {
   PerformanceStatisticLine,
 } from "./performance-contracts.ts";
 import {
-  deriveParticipation,
+  compareMoments,
+  deriveOrderedParticipation,
   readiness,
   type CertifiedStats,
+  type ClockMoment,
   type FieldEvidence,
   type ScoringField,
   type StatisticEvidence,
@@ -95,6 +110,7 @@ const MAX_EXCLUDED_STARTERS_PER_SIDE = 2;
 const MAX_EXCLUDED_PER_MATCH = 6;
 const SCORE_RELEVANT = SCORE_RELEVANT_LABEL;
 const GOAL_KINDS = new Set(["goal", "penalty_goal"]);
+const opposite = (s: MatchSide): MatchSide => (s === "home" ? "away" : "home");
 const APP_POSITION: Record<LineupPosition, FantasyPosition> = {
   G: "GK",
   D: "DEF",
@@ -112,6 +128,11 @@ export interface SofascoreMatchData {
    * replies stored before it existed have none, and then only the fixed limit applies.
    */
   readonly stoppage?: SofascoreStoppage;
+  /**
+   * Where an unscored field of the replies was not used (parseSofascore*Detailed):
+   * paths and JSON types only. Carried to `PreparedSofascoreObservation.diagnostics`.
+   */
+  readonly diagnostics?: readonly string[];
 }
 
 export interface FixtureBinding {
@@ -127,9 +148,7 @@ export type BlockerCode =
   | "goals_do_not_add_up"
   | "unknown_incident"
   | "own_goal_unexplained"
-  | "second_yellow_review"
   | "incident_player_not_in_lineup"
-  | "appearance_unexplained"
   | "unmapped_players"
   | "duplicate_app_player"
   | "timeline_unresolved"
@@ -174,6 +193,24 @@ export interface ExcludedUnmappedPlayer {
   readonly started?: true;
 }
 
+/**
+ * Why a field is `unknown` (carried in `evidence[field].reason`). Only the
+ * situations of contract C1; a field unknown for another reason has none.
+ */
+export type UnknownReason =
+  | "timeline_same_moment"
+  | "minutes_conflict"
+  | "card_conflict"
+  | "own_goal_conflict"
+  | "participation_unexplained"
+  | "provider_absent";
+
+/** A scoring item that waits on a possible change while a confirmed value is already scored. */
+export interface PendingItem {
+  readonly category: "appearance";
+  readonly reason: "minutes_conflict";
+}
+
 export interface ObservationRow {
   readonly playerId: string;
   readonly teamId: string;
@@ -181,6 +218,8 @@ export interface ObservationRow {
   readonly identity: { readonly sofascoreId: string };
   readonly stats: Readonly<Record<string, number | boolean>>;
   readonly evidence: Readonly<Record<string, StatisticEvidence>>;
+  /** Present only when there is one: the minutes conflict across 60 (contract C1). */
+  readonly pendingItems?: readonly PendingItem[];
 }
 
 export interface SofascoreObservationRequest {
@@ -227,6 +266,12 @@ export interface PreparedSofascoreObservation {
   readonly unknownFields: Readonly<Record<string, number>>;
   /** Players whose minutes are SofaScore's minutesPlayed because it disagreed with the substitution times. */
   readonly minutesFromSofascore: number;
+  /** Unknown fields by `evidence.reason` (only those that carry one), over all rows. */
+  readonly unknownReasons: Readonly<Record<string, number>>;
+  /** Rows' `pendingItems`, counted. */
+  readonly pendingItems: number;
+  /** Unscored fields of the replies that were not used (paths and types, never values). */
+  readonly diagnostics: readonly string[];
   readonly request: SofascoreObservationRequest | null;
   readonly requestDigest: string | null;
 }
@@ -334,8 +379,13 @@ export async function prepareSofascoreObservation(
     block({ code: "score_missing", message: "SofaScore gives no final score." });
 
   // ---- incidents ---------------------------------------------------------------
+  const lineupById = new Map<string, PerformanceLineupPlayer>();
+  for (const p of match.lineups.players) lineupById.set(p.externalId, p);
+  const ownGoalIncidents = match.incidents.filter(
+    (i) => i.kind === "unknown" && isOwnGoalIncident(i),
+  );
   for (const i of match.incidents) {
-    if (i.kind !== "unknown") continue;
+    if (i.kind !== "unknown" || isOwnGoalIncident(i)) continue;
     const label = incidentLabel(i.rawType, i.rawClass);
     if (SCORE_RELEVANT.test(label))
       block({
@@ -344,25 +394,42 @@ export async function prepareSofascoreObservation(
         side: i.side,
       });
   }
-  if (
-    match.lineups.players.some((p) => (p.stats?.ownGoals ?? 0) > 0) &&
-    !blockers.some((b) => b.code === "unknown_incident")
-  )
-    block({
-      code: "own_goal_unexplained",
-      message: "SofaScore credits an own goal that no incident explains.",
-    });
-  if (match.incidents.some((i) => i.kind === "second_yellow"))
-    block({
-      code: "second_yellow_review",
-      message:
-        "A second yellow card: whether the first yellow is also listed is not established, so it is held for review.",
-    });
-  const goals = match.incidents.filter((i) => GOAL_KINDS.has(i.kind));
+  // An own goal (goal/ownGoal) is by the named player: it counts for the OTHER side of his
+  // lineup side (`isHome` is not relied on). One that names no player, or a player who is not
+  // in the lineup or did not appear, cannot be placed: the match is held.
+  interface GoalEvent {
+    /** The side the goal counts for. */
+    readonly side: MatchSide;
+    readonly at: ClockMoment;
+  }
+  const momentOf = (i: PerformanceIncident): ClockMoment => ({
+    minute: i.minute,
+    added: i.addedMinutes,
+  });
+  const goalEvents: GoalEvent[] = match.incidents
+    .filter((i) => GOAL_KINDS.has(i.kind))
+    .map((g) => ({ side: g.side, at: momentOf(g) }));
+  const ownGoalsBy = new Map<string, number>();
+  for (const i of ownGoalIncidents) {
+    const who = i.player?.externalId ? lineupById.get(i.player.externalId) : undefined;
+    if (!who) {
+      block({
+        code: "own_goal_unexplained",
+        message: i.player?.externalId
+          ? "An own goal names a player who is not in the lineup."
+          : "An own goal names no player.",
+        side: i.side,
+        ...(i.player?.externalId ? { sofascoreId: i.player.externalId } : {}),
+      });
+      continue;
+    }
+    ownGoalsBy.set(who.externalId, (ownGoalsBy.get(who.externalId) ?? 0) + 1);
+    goalEvents.push({ side: opposite(who.side), at: momentOf(i) });
+  }
   if (homeScore !== null && awayScore !== null) {
     for (const side of ["home", "away"] as const) {
       const expected = side === "home" ? homeScore : awayScore;
-      if (goals.filter((g) => g.side === side).length !== expected)
+      if (goalEvents.filter((g) => g.side === side).length !== expected)
         block({
           code: "goals_do_not_add_up",
           message: `The ${side} goal incidents do not add up to the final score.`,
@@ -372,18 +439,17 @@ export async function prepareSofascoreObservation(
   }
 
   // ---- lineup -------------------------------------------------------------------
-  const lineupById = new Map<string, PerformanceLineupPlayer>();
-  for (const p of match.lineups.players) lineupById.set(p.externalId, p);
-  const subIn = new Map<string, number>();
-  const subOut = new Map<string, number>();
+  // Times as clock moments: (minute, added minutes).
+  const subIn = new Map<string, ClockMoment>();
+  const subOut = new Map<string, ClockMoment>();
   for (const i of match.incidents) {
     if (i.kind !== "substitution") continue;
-    if (i.playerIn?.externalId) subIn.set(i.playerIn.externalId, i.minute);
-    if (i.playerOut?.externalId) subOut.set(i.playerOut.externalId, i.minute);
+    if (i.playerIn?.externalId) subIn.set(i.playerIn.externalId, momentOf(i));
+    if (i.playerOut?.externalId) subOut.set(i.playerOut.externalId, momentOf(i));
   }
   const referenced = new Set<string>();
   for (const i of match.incidents) {
-    if (i.kind === "unknown") continue;
+    if (i.kind === "unknown" && !isOwnGoalIncident(i)) continue;
     for (const r of [i.player, i.playerIn, i.playerOut, i.assist])
       if (r?.externalId) referenced.add(r.externalId);
   }
@@ -398,20 +464,27 @@ export async function prepareSofascoreObservation(
 
   const starters: Record<MatchSide, number> = { home: 0, away: 0 };
   const appearing: PerformanceLineupPlayer[] = [];
+  // A substitute with minutes but no substitution incident: his participation is unknown.
+  // He gets a row with unknown minutes (and so unknown goals conceded and clean sheet); no
+  // other player is affected.
+  const unexplained = new Set<string>();
   for (const p of match.lineups.players) {
     const cameOn = subIn.has(p.externalId);
     if (p.starter) starters[p.side] += 1;
     if (!p.starter && !cameOn && (p.stats?.minutesPlayed ?? 0) > 0) {
-      block({
-        code: "appearance_unexplained",
-        message: "A substitute has minutes but no substitution incident.",
-        side: p.side,
-        shirtNumber: p.shirtNumber,
-        sofascoreId: p.externalId,
-      });
+      unexplained.add(p.externalId);
+      appearing.push(p);
       continue;
     }
     if (p.starter || cameOn) appearing.push(p);
+  }
+  for (const [id] of ownGoalsBy) {
+    if (!appearing.some((p) => p.externalId === id))
+      block({
+        code: "own_goal_unexplained",
+        message: "An own goal names a player who did not appear.",
+        sofascoreId: id,
+      });
   }
   for (const side of ["home", "away"] as const)
     if (starters[side] !== 11)
@@ -503,10 +576,12 @@ export async function prepareSofascoreObservation(
     observedAt,
     references: [...references],
   });
-  const opposite = (s: MatchSide): MatchSide => (s === "home" ? "away" : "home");
   const firstStoppage = firstHalfStoppage(match);
+  const goals = match.incidents.filter((i) => GOAL_KINDS.has(i.kind));
   const rows: ObservationRow[] = [];
   const unknownFields: Record<string, number> = {};
+  const unknownReasons: Record<string, number> = {};
+  let pendingItems = 0;
   let allFull = true;
   // Players whose minutes were taken from SofaScore's minutesPlayed because it
   // disagreed with the substitution times (reported, never a hold).
@@ -519,53 +594,17 @@ export async function prepareSofascoreObservation(
     const mine = (kind: string) =>
       match.incidents.filter((i) => i.kind === kind && i.player?.externalId === p.externalId);
     const started = p.starter;
+    const participationUnknown = unexplained.has(p.externalId);
     const entered = subIn.get(p.externalId) ?? null;
     const left = subOut.get(p.externalId) ?? null;
-    const dismissal = [...mine("red_card"), ...mine("second_yellow")]
-      .map((i) => i.minute)
-      .sort((a, b) => a - b)[0];
-    const exits = [left, dismissal ?? null].filter((m): m is number => m !== null);
-
-    let part: ReturnType<typeof deriveParticipation>;
-    try {
-      part = deriveParticipation({
-        complete: true,
-        orderingVerified: true,
-        appeared: true,
-        started,
-        enteredAt: started ? null : entered,
-        exitedAt: exits.length > 0 ? Math.min(...exits) : null,
-        concededAt: goals.filter((g) => g.side === opposite(p.side)).map((g) => g.minute),
-      });
-    } catch {
-      block({
-        code: "timeline_unresolved",
-        message:
-          "His times are ambiguous (a goal on the minute of a substitution or dismissal, or times that do not fit).",
-        ...where,
-      });
-      continue;
-    }
-    const start = started ? 0 : (entered ?? 0);
-    const played = p.stats?.minutesPlayed ?? null;
-    // On the pitch when the first half ended: his minutesPlayed may include its stoppage time.
-    const exit = exits.length > 0 ? Math.min(...exits) : null;
-    const throughHalfTime = start < 45 && (exit === null || exit >= 45);
-    const over =
-      throughHalfTime && firstStoppage !== null && firstStoppage <= MAX_FIRST_HALF_STOPPAGE
-        ? Math.max(MAX_STOPPAGE_MINUTES, firstStoppage + STOPPAGE_SLACK_MINUTES)
-        : MAX_STOPPAGE_MINUTES;
-    // Owner decision 2026-10-13: SofaScore is the single source and its numbers are
-    // final. When its minutesPlayed disagrees with its own substitution times, the
-    // minutesPlayed figure is used (capped at 90, at least 1) instead of holding the
-    // match, and the clean sheet follows those minutes. With no minutesPlayed, the
-    // minutes come from SofaScore's substitution and dismissal times.
-    let minutes = part.minutes;
-    if (played !== null && !minutesAgree(Math.min(played, 90 - start), part.minutes, over)) {
-      minutes = Math.max(1, Math.min(Math.round(played), 90));
-      minutesFromSofascore += 1;
-    }
-    const cleanSheet = minutes >= CLEAN_SHEET_MIN_MINUTES && part.goalsConceded === 0;
+    // He leaves the pitch at the earliest of his substitution and his dismissal.
+    const exitMoments = [
+      left,
+      ...[...mine("red_card"), ...mine("second_yellow")].map(momentOf),
+    ].filter((m): m is ClockMoment => m !== null);
+    exitMoments.sort((x, y) => compareMoments(x, y) || x.minute - y.minute);
+    const exit = exitMoments[0] ?? null;
+    const concededAt = goalEvents.filter((g) => g.side === opposite(p.side)).map((g) => g.at);
 
     const stats: { -readonly [K in ScoringField]?: CertifiedStats[K] } = {};
     const evidence: { -readonly [K in ScoringField]?: StatisticEvidence } = {};
@@ -573,18 +612,153 @@ export async function prepareSofascoreObservation(
       stats[field] = value;
       evidence[field] = proof("verified");
     };
-    const unknown = (field: ScoringField) => {
-      evidence[field] = proof("unknown");
+    const unknown = (field: ScoringField, reason?: UnknownReason) => {
+      evidence[field] = { ...proof("unknown"), ...(reason ? { reason } : {}) };
       unknownFields[field] = (unknownFields[field] ?? 0) + 1;
+      if (reason) unknownReasons[reason] = (unknownReasons[reason] ?? 0) + 1;
     };
-    fact("minutes", minutes);
-    fact("goalsConceded", part.goalsConceded);
-    fact("cleanSheet", cleanSheet);
+    const pending: PendingItem[] = [];
+
+    if (participationUnknown) {
+      // No substitution incident explains his minutes: nothing about his time on the pitch is
+      // established. Everything that depends on it is unknown for him alone.
+      unknown("minutes", "participation_unexplained");
+      unknown("goalsConceded", "participation_unexplained");
+      unknown("cleanSheet", "participation_unexplained");
+    } else {
+      // Version T: the substitution and sending-off timeline (ordered by minute, then added time).
+      let tPart: ReturnType<typeof deriveOrderedParticipation>;
+      try {
+        tPart = deriveOrderedParticipation({
+          started,
+          enteredAt: started ? null : entered,
+          exitedAt: exit,
+          concededAt,
+        });
+      } catch {
+        block({
+          code: "timeline_unresolved",
+          message: "His times do not fit (an exit before his entry, or a minute outside 0 to 90).",
+          ...where,
+        });
+        continue;
+      }
+      const tMinutes = tPart.minutes;
+      const start = started ? 0 : (entered?.minute ?? 0);
+      const played = p.stats?.minutesPlayed ?? null;
+      // On the pitch when the first half ended: his minutesPlayed may include its stoppage time.
+      const throughHalfTime = start < 45 && (exit === null || exit.minute >= 45);
+      const over =
+        throughHalfTime && firstStoppage !== null && firstStoppage <= MAX_FIRST_HALF_STOPPAGE
+          ? Math.max(MAX_STOPPAGE_MINUTES, firstStoppage + STOPPAGE_SLACK_MINUTES)
+          : MAX_STOPPAGE_MINUTES;
+      // Version S: SofaScore's own minutesPlayed, capped to 1..90. Owner decisions of
+      // 2026-10-13 (P4, Q1): the two versions decide eligibility only when they agree.
+      //   - No minutesPlayed: only T exists, nothing conflicts.
+      //   - They agree (within the documented tolerance and on the same side of 60): T, as
+      //     before. (S and T differ by a few minutes of stoppage time; nothing is scored on it.)
+      //   - They disagree beyond the tolerance but on the same side of 60: S, as before.
+      //   - One is under 60 and the other 60 or more (a straddle): the LOWER value, verified, and
+      //     the appearance is pending a possible upgrade.
+      let minutes = tMinutes;
+      let sMinutes: number | null = null;
+      let conflict: "none" | "same_side" | "straddle" = "none";
+      if (played !== null) {
+        const sValue = Math.max(1, Math.min(Math.round(played), 90));
+        const beyondTolerance = !minutesAgree(Math.min(played, 90 - start), tMinutes, over);
+        if (sValue < CLEAN_SHEET_MIN_MINUTES !== tMinutes < CLEAN_SHEET_MIN_MINUTES) {
+          conflict = "straddle";
+          sMinutes = sValue;
+          minutes = Math.min(sValue, tMinutes);
+          pending.push({ category: "appearance", reason: "minutes_conflict" });
+        } else if (beyondTolerance) {
+          conflict = "same_side";
+          sMinutes = sValue;
+          minutes = sValue;
+        }
+      }
+      if (minutes !== tMinutes) minutesFromSofascore += 1;
+      fact("minutes", minutes);
+
+      if (conflict === "none") {
+        if (tPart.ambiguousGoals > 0) {
+          unknown("goalsConceded", "timeline_same_moment");
+          unknown("cleanSheet", "timeline_same_moment");
+        } else {
+          fact("goalsConceded", tPart.goalsConceded);
+          fact("cleanSheet", tMinutes >= CLEAN_SHEET_MIN_MINUTES && tPart.goalsConceded === 0);
+        }
+      } else {
+        // Work both versions out and certify only what they agree on. Version S is the window
+        // from his entry to start + minutesPlayed (no added time exists in that version, so a
+        // goal on its last minute cannot be ordered).
+        const sValue = sMinutes as number;
+        const sEnd = Math.min(90, start + sValue);
+        let sPart: ReturnType<typeof deriveOrderedParticipation> | null = null;
+        try {
+          sPart = deriveOrderedParticipation({
+            started,
+            enteredAt: started ? null : entered,
+            exitedAt: sEnd < 90 ? { minute: sEnd, added: null } : null,
+            concededAt,
+          });
+        } catch {
+          sPart = null;
+        }
+        const ambiguous = tPart.ambiguousGoals > 0 || sPart === null || sPart.ambiguousGoals > 0;
+        const reason: UnknownReason = ambiguous ? "timeline_same_moment" : "minutes_conflict";
+        const csT = tPart.ambiguousGoals > 0 ? null : tMinutes >= 60 && tPart.goalsConceded === 0;
+        const csS =
+          sPart === null || sPart.ambiguousGoals > 0
+            ? null
+            : sValue >= 60 && sPart.goalsConceded === 0;
+        if (csT !== null && csT === csS) fact("cleanSheet", csT);
+        else unknown("cleanSheet", reason);
+        // Goals conceded: the same count in both windows, and the minutes agree (same side of
+        // 60) or the count is 0.
+        if (
+          !ambiguous &&
+          sPart !== null &&
+          sPart.goalsConceded === tPart.goalsConceded &&
+          (conflict === "same_side" || tPart.goalsConceded === 0)
+        )
+          fact("goalsConceded", tPart.goalsConceded);
+        else unknown("goalsConceded", reason);
+      }
+    }
+
     fact("goals", mine("goal").length + mine("penalty_goal").length);
-    fact("ownGoals", 0); // any label that could hide an own goal already held the match back
-    fact("yellowCards", mine("yellow_card").length);
-    fact("redCards", mine("red_card").length);
-    fact("secondYellowDismissals", 0); // a second yellow holds the match back above
+    // Own goals: this player's own-goal incidents. A lineup figure that disagrees with them
+    // leaves the count unknown (it is never read as zero).
+    const ownGoalEvents = ownGoalsBy.get(p.externalId) ?? 0;
+    const ownGoalStat = p.stats?.ownGoals ?? null;
+    if (ownGoalStat !== null && ownGoalStat !== ownGoalEvents)
+      unknown("ownGoals", "own_goal_conflict");
+    else fact("ownGoals", ownGoalEvents);
+    // Cards, from this player's incidents. A second yellow (card/yellowRed) is one dismissal worth
+    // its own points: yellowCards and redCards stay 0 whether or not his first yellow is also
+    // listed. A combination that cannot be true leaves his three card fields unknown.
+    const yellows = mine("yellow_card").length;
+    const secondYellows = mine("second_yellow").length;
+    const reds = mine("red_card").length;
+    const cardConflict =
+      reds > 1 ||
+      secondYellows > 1 ||
+      (secondYellows === 1 && (reds > 0 || yellows > 1)) ||
+      (secondYellows === 0 && yellows > 1);
+    if (cardConflict) {
+      unknown("yellowCards", "card_conflict");
+      unknown("redCards", "card_conflict");
+      unknown("secondYellowDismissals", "card_conflict");
+    } else if (secondYellows === 1) {
+      fact("yellowCards", 0);
+      fact("redCards", 0);
+      fact("secondYellowDismissals", 1);
+    } else {
+      fact("yellowCards", yellows);
+      fact("redCards", reds);
+      fact("secondYellowDismissals", 0);
+    }
 
     if (detailOn) {
       const keeper = p.position === "G";
@@ -628,7 +802,9 @@ export async function prepareSofascoreObservation(
       evidence as FieldEvidence,
       p.position ? APP_POSITION[p.position] : "MID",
     );
-    if (!state.full) allFull = false;
+    // A row with a pending item is not "everything verified": the fixture scores in simple mode.
+    if (!state.full || pending.length > 0) allFull = false;
+    pendingItems += pending.length;
     const cleanStats: Record<string, number | boolean> = {};
     for (const [k, v] of Object.entries(stats)) if (v !== undefined) cleanStats[k] = v;
     rows.push({
@@ -640,6 +816,7 @@ export async function prepareSofascoreObservation(
       evidence: Object.fromEntries(
         Object.entries(evidence).map(([k, v]) => [k, v as StatisticEvidence]),
       ),
+      ...(pending.length > 0 ? { pendingItems: pending } : {}),
     });
   }
 
@@ -654,6 +831,9 @@ export async function prepareSofascoreObservation(
     rows: rows.length,
     unknownFields,
     minutesFromSofascore,
+    unknownReasons,
+    pendingItems,
+    diagnostics: match.diagnostics ?? [],
   };
   if (blockers.length > 0)
     return {

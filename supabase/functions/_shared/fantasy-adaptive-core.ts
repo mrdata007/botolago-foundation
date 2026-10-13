@@ -163,3 +163,96 @@ export function deriveParticipation(input: ParticipationTimeline) {
   const goalsConceded = input.concededAt.filter((at) => at >= start && at <= end).length;
   return { minutes, goalsConceded, cleanSheet: minutes >= 60 && goalsConceded === 0 };
 }
+
+/**
+ * A point on the match clock: the minute and the added minutes (`45+3` is
+ * minute 45, added 3). `added` is null when the provider gives none.
+ */
+export interface ClockMoment {
+  readonly minute: number;
+  readonly added: number | null;
+}
+
+/**
+ * Which of two moments came first: -1 (a before b), 1 (a after b), or 0 when the
+ * clock cannot say. Events are ordered by (minute, added ?? 0). Two moments are
+ * undecidable when both numbers are equal, and, to stay on the safe side, also
+ * when the minute is equal and one has no added time while the other has some
+ * (a half-time change recorded as minute 45 against a goal at 45+3 is not
+ * ordered by guessing).
+ */
+export function compareMoments(a: ClockMoment, b: ClockMoment): -1 | 0 | 1 {
+  if (a.minute !== b.minute) return a.minute < b.minute ? -1 : 1;
+  const addedA = a.added ?? 0;
+  const addedB = b.added ?? 0;
+  if (addedA === addedB) return 0;
+  if ((a.added === null && addedB > 0) || (b.added === null && addedA > 0)) return 0;
+  return addedA < addedB ? -1 : 1;
+}
+
+export interface OrderedParticipationTimeline {
+  readonly started: boolean;
+  readonly enteredAt: ClockMoment | null;
+  readonly exitedAt: ClockMoment | null;
+  /** The goals his side conceded, with their clock moments. */
+  readonly concededAt: readonly ClockMoment[];
+}
+
+export interface OrderedParticipation {
+  /** Whole minutes between coming on and going off (at least 1), as deriveParticipation. */
+  readonly minutes: number;
+  /** Goals conceded while he was on the pitch, not counting the ambiguous ones. */
+  readonly goalsConceded: number;
+  /**
+   * Goals whose order against his coming on or going off the clock cannot give.
+   * When there are any, `goalsConceded` is a lower bound and the clean sheet is not known.
+   */
+  readonly ambiguousGoals: number;
+}
+
+/**
+ * Participation with added time taken into account (the owner decision of
+ * 2026-10-13, contract C1). Unlike `deriveParticipation`, a goal on the same
+ * minute as a substitution or sending-off is not an error: it is counted when
+ * the clock puts it inside his time on the pitch, left out when it puts it
+ * outside, and reported as ambiguous when it cannot say. It still throws
+ * `participation_inconsistent` for times that cannot be true.
+ */
+export function deriveOrderedParticipation(
+  input: OrderedParticipationTimeline,
+): OrderedParticipation {
+  const start = input.started ? 0 : (input.enteredAt?.minute ?? null);
+  const end = input.exitedAt?.minute ?? 90;
+  if (
+    start === null ||
+    !Number.isInteger(start) ||
+    !Number.isInteger(end) ||
+    start < 0 ||
+    end < start ||
+    end > 90
+  )
+    throw new Error("participation_inconsistent");
+  if (
+    input.enteredAt !== null &&
+    input.exitedAt !== null &&
+    compareMoments(input.exitedAt, input.enteredAt) < 0
+  )
+    throw new Error("participation_inconsistent");
+  let goalsConceded = 0;
+  let ambiguousGoals = 0;
+  for (const goal of input.concededAt) {
+    if (!Number.isFinite(goal.minute) || goal.minute < 0 || goal.minute > 90)
+      throw new Error("participation_inconsistent");
+    // After coming on (a starter is on from the start)?
+    let afterEntry: -1 | 0 | 1 = 1;
+    if (!input.started && input.enteredAt) afterEntry = compareMoments(goal, input.enteredAt);
+    if (afterEntry < 0) continue; // before he came on
+    // Before going off (he may never go off)?
+    let beforeExit: -1 | 0 | 1 = -1;
+    if (input.exitedAt) beforeExit = compareMoments(goal, input.exitedAt);
+    if (beforeExit > 0) continue; // after he went off
+    if (afterEntry === 0 || beforeExit === 0) ambiguousGoals += 1;
+    else goalsConceded += 1;
+  }
+  return { minutes: Math.max(1, end - start), goalsConceded, ambiguousGoals };
+}

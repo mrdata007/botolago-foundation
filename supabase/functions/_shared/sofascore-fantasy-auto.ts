@@ -41,6 +41,12 @@
 //     (migration 20261011140000) and re-read. Stored match details cannot
 //     rebuild an observation (no per-player minutes, assists, saves or coverage
 //     marker), so that table is the source for a retry.
+//   * A builder outcome that is a request, even with unknown fields or pending items on
+//     some players' rows (docs/backend/FANTASY_PENDING_ITEMS.md), is RECORDED, not held: the
+//     database scores what is known. Holds are real contradictions only. The trimmed replies
+//     are sent with every hold and every give-up so that a later reopen or diagnosis has the
+//     data (the note function keeps them for `held` rows; see the report on migration
+//     20261011140000, which drops them for `gave_up`).
 //   * Bounded: a retry waits 15 minutes (3 tries), then an hour (to 12), then six
 //     hours, and stops after SOFASCORE_FANTASY_MAX_ATTEMPTS. A data problem that
 //     the same replies cannot fix (an unknown incident, goals that do not add
@@ -77,7 +83,9 @@ import {
 import {
   SofascoreParseError,
   parseSofascoreIncidents,
+  parseSofascoreIncidentsDetailed,
   parseSofascoreLineups,
+  parseSofascoreLineupsDetailed,
   parseSofascoreStatistics,
   parseSofascoreStoppage,
   type SofascoreStoppage,
@@ -192,6 +200,8 @@ interface MatchParts {
   readonly incidents: readonly PerformanceIncident[];
   readonly statistics: readonly PerformanceStatisticLine[];
   readonly stoppage?: SofascoreStoppage;
+  /** Unscored fields of the fresh replies that were not used. Not stored: a retry has none. */
+  readonly diagnostics?: readonly string[];
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -206,6 +216,15 @@ function trim(parts: MatchParts): StoredMatch {
     statistics: parts.statistics.filter((line) => line.period === "ALL"),
     ...(parts.stoppage ? { stoppage: parts.stoppage } : {}),
   };
+}
+
+/**
+ * The trimmed replies and their digest, kept with an attempt on every hold and every
+ * give-up, so that a later reopen or diagnosis has the data and needs no new request.
+ */
+async function keep(parts: MatchParts): Promise<{ matchData: StoredMatch; digest: string }> {
+  const matchData = trim(parts);
+  return { matchData, digest: await sha256Hex(canonicalJson(matchData)) };
 }
 
 const stoppageMinutes = (value: unknown): number | null =>
@@ -592,11 +611,15 @@ export class SofascoreFantasyRun {
     try {
       if (replies.lineups === null)
         throw new SofascoreParseError("lineups", ["lineups: not provided"]);
+      const lineups = parseSofascoreLineupsDetailed(replies.lineups);
+      const incidents = parseSofascoreIncidentsDetailed(replies.incidents);
+      const diagnostics = [...lineups.diagnostics, ...incidents.diagnostics];
       parts = {
-        lineups: parseSofascoreLineups(replies.lineups),
-        incidents: parseSofascoreIncidents(replies.incidents),
+        lineups: lineups.lineups,
+        incidents: incidents.incidents,
         statistics: replies.statistics === null ? [] : parseSofascoreStatistics(replies.statistics),
         stoppage: parseSofascoreStoppage(replies.incidents),
+        ...(diagnostics.length > 0 ? { diagnostics } : {}),
       };
     } catch (error) {
       const code =
@@ -715,14 +738,15 @@ export class SofascoreFantasyRun {
       return;
     }
     if (SEALED_GAMEWEEKS.has(ctx.gameweekStatus)) {
+      const kept = await keep(parts);
       await this.note(
         fixtureId,
         eventId,
         "gave_up",
         `gameweek_${ctx.gameweekStatus}`,
         [],
-        null,
-        null,
+        kept.matchData,
+        kept.digest,
       );
       this.finish({ ...base, outcome: `skipped:gameweek_${ctx.gameweekStatus}` });
       return;
@@ -801,6 +825,7 @@ export class SofascoreFantasyRun {
         incidents: parts.incidents,
         statistics: parts.statistics,
         ...(parts.stoppage ? { stoppage: parts.stoppage } : {}),
+        ...(parts.diagnostics ? { diagnostics: parts.diagnostics } : {}),
       };
       prepared = await prepareSofascoreObservation({
         observedAt: now.toISOString(),
@@ -858,6 +883,15 @@ export class SofascoreFantasyRun {
       expectedMode: prepared.expectedMode,
       rows: prepared.rows,
       unknownFields: prepared.unknownFields,
+      // A request with unknown fields or pending items is recorded, not held: the database
+      // scores what is known and the rest waits (docs/backend/FANTASY_PENDING_ITEMS.md).
+      ...(Object.keys(prepared.unknownReasons).length > 0
+        ? { unknownReasons: prepared.unknownReasons }
+        : {}),
+      ...(prepared.pendingItems > 0 ? { pendingItems: prepared.pendingItems } : {}),
+      ...(prepared.diagnostics.length > 0
+        ? { parseDiagnostics: prepared.diagnostics.slice(0, 20) }
+        : {}),
       // Players whose minutes are SofaScore's minutesPlayed because it disagreed
       // with the substitution times (owner decision 2026-10-13).
       ...(prepared.minutesFromSofascore > 0
@@ -875,7 +909,16 @@ export class SofascoreFantasyRun {
         return;
       }
       if (SEALED_REFUSALS.has(label)) {
-        await this.note(fixtureId, eventId, "gave_up", label, [], null, prepared.requestDigest);
+        const kept = await keep(parts);
+        await this.note(
+          fixtureId,
+          eventId,
+          "gave_up",
+          label,
+          [],
+          kept.matchData,
+          prepared.requestDigest,
+        );
         this.finish({ ...base, outcome: `held:${label}`, ...detail });
         return;
       }
@@ -885,8 +928,18 @@ export class SofascoreFantasyRun {
         await this.hold(fixtureId, eventId, source, ctx, parts, [label], true, detail);
         return;
       }
-      // A refusal that fresh replies or a mapping cannot clear: stop, for a person.
-      await this.note(fixtureId, eventId, "gave_up", label, [], null, prepared.requestDigest);
+      // A refusal that fresh replies or a mapping cannot clear: stop, for a person. The trimmed
+      // replies stay with the attempt so a later reopen or diagnosis has the data.
+      const kept = await keep(parts);
+      await this.note(
+        fixtureId,
+        eventId,
+        "gave_up",
+        label,
+        [],
+        kept.matchData,
+        prepared.requestDigest,
+      );
       this.finish({ ...base, outcome: `held:${label}`, ...detail });
       return;
     }
@@ -1035,12 +1088,20 @@ export class SofascoreFantasyRun {
     const attemptsBefore = ctx.attempt?.attempts ?? 0;
     const next = attemptsBefore + 1;
     const limit = this.config.maxAttempts;
+    const { matchData: trimmed, digest } = await keep(parts);
     if (!retriable || next >= limit) {
-      // Needs a person (or fresh replies from the refresh window): stop retrying.
-      await this.note(fixtureId, eventId, "gave_up", ordered[0] ?? "unknown", ordered, null, null);
+      // Needs a person (or fresh replies from the refresh window): stop retrying, but keep the
+      // trimmed replies with the attempt so a later reopen or diagnosis has the data.
+      await this.note(
+        fixtureId,
+        eventId,
+        "gave_up",
+        ordered[0] ?? "unknown",
+        ordered,
+        trimmed,
+        digest,
+      );
     } else {
-      const trimmed = trim(parts);
-      const digest = await sha256Hex(canonicalJson(trimmed));
       const retryAt = new Date(this.deps.now.getTime() + retryDelayMinutes(next) * 60_000);
       await this.note(
         fixtureId,
@@ -1156,7 +1217,24 @@ export class SofascoreFantasyRun {
       p_data_digest: digest,
       p_next_retry_at: retryAt ? retryAt.toISOString() : null,
     });
-    if (result.error && isMissingFunction(result.error)) this.stateMissing = true;
+    if (result.error && isMissingFunction(result.error)) {
+      this.stateMissing = true;
+      return;
+    }
+    // The stored replies are bounded by the database (512 KiB): if it refused them, the attempt
+    // is still recorded without them rather than lost.
+    if (result.error && matchData !== null && status !== "recorded") {
+      await this.call("service_sofascore_fantasy_note", {
+        p_fixture_id: fixtureId,
+        p_event_id: eventId,
+        p_status: status,
+        p_outcome: outcome.slice(0, 200),
+        p_blockers: blockers.map((code) => ({ code })),
+        p_match_data: null,
+        p_data_digest: digest,
+        p_next_retry_at: retryAt ? retryAt.toISOString() : null,
+      });
+    }
   }
 
   private async autoMapPlayers(
@@ -1235,11 +1313,17 @@ function ratingsOf(parts: MatchParts): Record<string, number> {
   return ratings;
 }
 
-/** Players who started or came on: the ones the builder needs an identity for. */
+/**
+ * Players who started or came on: the ones the builder needs an identity for. A substitute
+ * with minutes but no substitution incident is one too: the builder gives him a row (with
+ * unknown minutes), so he needs a mapping like anyone else.
+ */
 function appearingIds(parts: MatchParts): Set<string> {
   const ids = new Set<string>();
   for (const p of parts.lineups.players) if (p.starter) ids.add(p.externalId);
   for (const i of parts.incidents)
     if (i.kind === "substitution" && i.playerIn?.externalId) ids.add(i.playerIn.externalId);
+  for (const p of parts.lineups.players)
+    if (!p.starter && (p.stats?.minutesPlayed ?? 0) > 0) ids.add(p.externalId);
   return ids;
 }
