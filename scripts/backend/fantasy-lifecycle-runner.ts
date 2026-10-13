@@ -607,6 +607,7 @@ export async function runFantasyLifecycle(
     calculationVersion = prepared.calculationVersion;
   }
   let incrementalPending = false;
+  let pendingItemsOutstanding = false;
   let adaptivePending = false;
   let afterTeamId: string | null = null;
   let digest: string | null = null;
@@ -630,6 +631,12 @@ export async function runFantasyLifecycle(
     digest = snapshot.inputDigest;
     incrementalPending =
       (snapshot.pendingFixtures?.length ?? 0) > 0 || (snapshot.pendingPlayerIds?.length ?? 0) > 0;
+    // Scoring items that wait for confirmation keep the gameweek from finalizing (the
+    // database refuses with fantasy_pending_items_unresolved); the confirmed points are
+    // published meanwhile.
+    pendingItemsOutstanding = snapshot.playerFixtures.some(
+      (row) => (row.pendingCategories?.length ?? 0) > 0,
+    );
     adaptivePending =
       snapshot.adaptive === true &&
       (snapshot.fixtures ?? []).some((fixture) => fixture.adaptiveReady !== true);
@@ -705,7 +712,9 @@ export async function runFantasyLifecycle(
     } while (calls <= maxBatches);
   };
   if (!digest) throw new Error("fantasy_scoring_snapshot_missing");
-  if (adaptivePending || incrementalPending || state.status === "live") {
+  if (adaptivePending || incrementalPending || pendingItemsOutstanding || state.status === "live") {
+    const onlyPendingItems =
+      pendingItemsOutstanding && !adaptivePending && !incrementalPending && state.status !== "live";
     if (incrementalEnabled) {
       await publishRankings();
       return {
@@ -713,11 +722,16 @@ export async function runFantasyLifecycle(
         gameweekId,
         calculationVersion,
         processedTeams,
-        reason: "remaining_fixtures_pending",
+        reason: onlyPendingItems ? "pending_items" : "remaining_fixtures_pending",
         calls,
       };
     }
-    return { outcome: "waiting", gameweekId, reason: "adaptive_scoring_pending", calls };
+    return {
+      outcome: "waiting",
+      gameweekId,
+      reason: onlyPendingItems ? "fantasy_pending_items" : "adaptive_scoring_pending",
+      calls,
+    };
   }
   await call("service_begin_fantasy_finalization", {
     p_gameweek_id: gameweekId,
