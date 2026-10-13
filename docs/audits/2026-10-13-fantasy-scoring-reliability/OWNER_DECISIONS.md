@@ -180,3 +180,17 @@ discrepancy does not block the award.
 - **Recommendation:** yes, within the 72-hour correction window after finalization that is
   already published (`FANTASY_RULES_V1.md:93-94`). Corrections can raise or lower points.
 - After that window closes, results are final.
+
+## Answers to the open questions (owner, 2026-10-13)
+
+- **Q1:** yes. The 60-minute appearance step and the goals-conceded deduction follow the same
+  "both versions must agree" rule. When the two minute figures straddle 60, the player keeps
+  the agreed appearance point and only the extra point waits.
+- **Q2:** 72 hours after the 12-hour lock.
+- **Q3:** a player whose participation is still unknown at the review deadline is treated as
+  not having played. The normal automatic-substitution and captaincy rules apply, and managers
+  are told "participation could not be verified".
+- **Q4:** no answer was needed. The published 72-hour post-finalization correction window
+  applies (`FANTASY_RULES_V1.md:93-94`).
+- **Build order:** first, the set-based points save and per-item pending handling, on a new
+  branch with a draft pull request. Nothing is deployed to production.
