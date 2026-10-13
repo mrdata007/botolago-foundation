@@ -12,7 +12,12 @@
 
 import { z } from "zod";
 import { scoreCertifiedPlayerFixture } from "./fantasy-adaptive-scoring.ts";
-import type { FieldEvidence } from "./fantasy-adaptive-core.ts";
+import { certified, type FieldEvidence } from "./fantasy-adaptive-core.ts";
+import {
+  RATING_RULESET_VERSION,
+  RATING_SCORING_VERSION,
+  scoreRatingPlayerFixture,
+} from "./fantasy-rating-scoring.ts";
 import { scorePlayerFixture, type ScoringRules } from "./fantasy-scoring-core.ts";
 import { calculateAutomaticSubstitutions } from "./fantasy-substitutions-core.ts";
 
@@ -137,6 +142,9 @@ export const scoringSnapshotSchema = z.object({
         evidence: z.record(z.string(), z.unknown()).optional(),
         scoringMode: z.enum(["full", "simple"]).nullable().optional(),
         participationKnown: z.boolean().optional(),
+        // The SofaScore match rating, carried only in a rating gameweek
+        // (migration 20261014090000): two decimals at most, null without one.
+        rating: z.number().min(0).max(10).nullable().optional(),
       }),
     )
     .max(128000),
@@ -229,8 +237,26 @@ function scoringRules(snapshot: ScoringSnapshot): ScoringRules {
   };
 }
 
+/**
+ * The rating rule (docs/backend/FANTASY_RATING_POINTS.md) is a reviewed ruleset
+ * of its own: ruleset version 3.0, scoring version 3, on the adaptive document
+ * only (appearance comes from its certified minutes). Anything else claiming
+ * version 3 is refused like any unknown ruleset.
+ */
+function isRatingSnapshot(snapshot: ScoringSnapshot): boolean {
+  if (snapshot.ruleset.version !== RATING_RULESET_VERSION) return false;
+  if (
+    snapshot.scoringVersion !== RATING_SCORING_VERSION ||
+    snapshot.ruleset.minor_version !== 0 ||
+    snapshot.adaptive !== true
+  )
+    throw new Error("fantasy_scoring_rules_unsupported");
+  return true;
+}
+
 export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
-  const rules = scoringRules(snapshot);
+  const rating = isRatingSnapshot(snapshot);
+  const rules = rating ? null : scoringRules(snapshot);
   const totals = new Map(
     snapshot.players.map((player) => [player.fantasyPlayerId, { points: 0, minutes: 0 }]),
   );
@@ -243,23 +269,37 @@ export function calculateSnapshotResults(snapshot: ScoringSnapshot) {
     const total = totals.get(player.fantasyPlayerId);
     if (!total) throw new Error("fantasy_scoring_player_missing");
     // Explicit zero events retract corrected statistics; never filter them.
-    const events = snapshot.adaptive
-      ? scoreCertifiedPlayerFixture(
+    const events = rating
+      ? scoreRatingPlayerFixture(
           player.playerId,
           player.fixtureId,
-          player.position,
-          player.stats,
-          (player.evidence ?? {}) as FieldEvidence,
-          rules,
-          player.scoringMode ?? null,
+          // He appeared when his minutes are established (as the adaptive
+          // scorer requires for `appearance`) and above zero.
+          certified(
+            "minutes",
+            player.stats,
+            (player.evidence ?? {}) as FieldEvidence,
+            player.scoringMode === "simple",
+          ) && (player.stats.minutes ?? 0) > 0,
+          player.rating ?? null,
         )
-      : scorePlayerFixture(
-          player.playerId,
-          player.fixtureId,
-          player.position,
-          statsSchema.parse(player.stats),
-          rules,
-        );
+      : snapshot.adaptive
+        ? scoreCertifiedPlayerFixture(
+            player.playerId,
+            player.fixtureId,
+            player.position,
+            player.stats,
+            (player.evidence ?? {}) as FieldEvidence,
+            rules!,
+            player.scoringMode ?? null,
+          )
+        : scorePlayerFixture(
+            player.playerId,
+            player.fixtureId,
+            player.position,
+            statsSchema.parse(player.stats),
+            rules!,
+          );
     total.points += events.reduce((sum, event) => sum + event.points, 0);
     total.minutes += player.stats.minutes ?? 0;
     return { fantasyPlayerId: player.fantasyPlayerId, fixtureId: player.fixtureId, events };
