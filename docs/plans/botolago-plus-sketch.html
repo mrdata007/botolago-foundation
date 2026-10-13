@@ -328,6 +328,22 @@
         --logo-plus: var(--mint);
         overflow: visible;
       }
+      /* The + of the logo tilts gently, like a coin catching the light; still when motion is reduced. */
+      .bg-plus-tilt {
+        transform-box: fill-box;
+        transform-origin: 50% 50%;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .bg-plus-tilt {
+          animation: bg-plus-tilt 3.6s ease-in-out infinite;
+        }
+      }
+      @keyframes bg-plus-tilt {
+        0%, 100% { transform: rotate(-7deg) scaleX(1); }
+        25% { transform: rotate(0deg) scaleX(0.9) translateY(-3%); }
+        50% { transform: rotate(7deg) scaleX(1); }
+        75% { transform: rotate(0deg) scaleX(0.94) translateY(-2%); }
+      }
       .brand .plus-logo {
         height: 22px;
         vertical-align: middle;
@@ -1312,6 +1328,7 @@
         </linearGradient>
         <path id="bgPlusShape" d="M1732.0,87.0 L1792.0,87.0 L1781.0,142.0 L1836.0,142.0 L1824.0,202.0 L1769.0,202.0 L1758.0,257.0 L1698.0,257.0 L1709.0,202.0 L1654.0,202.0 L1666.0,142.0 L1721.0,142.0 Z" />
         <clipPath id="bgPlusClip"><use href="#bgPlusShape" /></clipPath>
+        <g class="bg-plus-tilt">
         <use href="#bgPlusShape" transform="translate(24 30)" fill="#000" opacity="0.35" />
         <g fill="url(#bgPlusSide)">
           <use href="#bgPlusShape" transform="translate(15.6 20.4)" />
@@ -1331,6 +1348,7 @@
         <g clip-path="url(#bgPlusClip)">
           <use href="#bgPlusShape" fill="none" stroke="#ffffff" stroke-opacity="0.55" stroke-width="10" transform="translate(-3 -4)" />
           <path d="M1600,60 L1900,60 L1900,150 Q1750,185 1600,170 Z" fill="#ffffff" opacity="0.22" />
+        </g>
         </g>
       </symbol>
         <!-- Électrique: a fixed noise field displaces the border (no animation). -->
