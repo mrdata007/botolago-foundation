@@ -270,6 +270,17 @@ export const fixtureScoringSchema = z.object({
   excludedCategories: z.array(z.string()),
 });
 
+/**
+ * C4 — a scoring item that waits for confirmation. Optional everywhere it is
+ * used: an older API response carries none, and then nothing waits.
+ */
+export const pendingPointsItemSchema = z.object({
+  fixtureId: postgresUuidSchema,
+  category: z.string().min(1),
+  reason: z.string().nullable().optional(),
+});
+export type PendingPointsItemDto = z.infer<typeof pendingPointsItemSchema>;
+
 export const fantasyPointsSchema = z.object({
   incrementalScoring: z.boolean().optional(),
   fixtureScoring: z.array(fixtureScoringSchema).optional(),
@@ -291,6 +302,8 @@ export const fantasyPointsSchema = z.object({
       overallRank: z.coerce.number().int().positive().nullable(),
       calculationVersion: z.coerce.number().int().positive(),
       finalizedAt: z.string().nullable(),
+      /** C4: scoring items still waiting across the team's players. */
+      pendingItemCount: z.coerce.number().int().nonnegative().optional(),
     })
     .nullable(),
   players: z.array(
@@ -309,6 +322,10 @@ export const fantasyPointsSchema = z.object({
       finalPoints: z.number().int().nullable(),
       didPlay: z.boolean().nullable(),
       minutesPlayed: z.number().int().nonnegative().nullable(),
+      /** C4: items of this player that wait for confirmation (absent on older responses). */
+      pendingItems: z.array(pendingPointsItemSchema).optional(),
+      /** C4: `pending` = no confirmed points row yet (absent on older responses). */
+      pointsStatus: z.enum(["final", "provisional", "pending"]).optional(),
       /**
        * BG-0075 — the per-category lines behind this player's total, live
        * ledger rows only (`superseded_at is null`). `category` is free text in
@@ -444,6 +461,8 @@ export const fantasyPlayerGameweekHistoryEntrySchema = z.object({
   minutesPlayed: z.coerce.number().int().nonnegative(),
   didPlay: z.boolean(),
   state: z.enum(["provisional", "final"]),
+  /** C4: this player's items that wait for confirmation in this gameweek. */
+  pendingItems: z.array(pendingPointsItemSchema).optional(),
   opponents: z.array(
     z.object({
       teamId: postgresUuidSchema,

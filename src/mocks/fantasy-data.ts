@@ -662,10 +662,10 @@ export const gameweekResults: GameweekResult[] = [
     gameweek: 14,
     totalPoints: currentGameweekBreakdown
       .filter((b) => !b.isBench)
-      .reduce((s, b) => s + b.totalPoints, 0),
+      .reduce((s, b) => s + (b.totalPoints ?? 0), 0),
     benchPoints: currentGameweekBreakdown
       .filter((b) => b.isBench)
-      .reduce((s, b) => s + b.totalPoints, 0),
+      .reduce((s, b) => s + (b.totalPoints ?? 0), 0),
     captainId,
     averagePoints: 46,
     highestPoints: 92,
@@ -676,10 +676,10 @@ export const gameweekResults: GameweekResult[] = [
     gameweek: 13,
     totalPoints: previousGameweekBreakdown
       .filter((b) => !b.isBench)
-      .reduce((s, b) => s + b.totalPoints, 0),
+      .reduce((s, b) => s + (b.totalPoints ?? 0), 0),
     benchPoints: previousGameweekBreakdown
       .filter((b) => b.isBench)
-      .reduce((s, b) => s + b.totalPoints, 0),
+      .reduce((s, b) => s + (b.totalPoints ?? 0), 0),
     captainId,
     averagePoints: 44,
     highestPoints: 88,

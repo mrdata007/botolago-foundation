@@ -87,7 +87,9 @@ function seedRows(count: number): LeagueStanding[] {
 
 function ranked(rows: LeagueStanding[]): LeagueStanding[] {
   return [...rows]
-    .sort((a, b) => b.totalScore - a.totalScore || b.gameweekScore - a.gameweekScore)
+    .sort(
+      (a, b) => b.totalScore - a.totalScore || (b.gameweekScore ?? -1) - (a.gameweekScore ?? -1),
+    )
     .map((r, i) => ({ ...r, previousRank: r.rank, rank: i + 1 }));
 }
 

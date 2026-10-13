@@ -98,7 +98,8 @@ export interface LeagueStanding {
   clubId?: string;
   rank: number;
   previousRank: number;
-  gameweekScore: number;
+  /** `null` while no score exists for the gameweek: shown as a dash, never as 0. */
+  gameweekScore: number | null;
   totalScore: number;
 }
 
@@ -141,15 +142,47 @@ export interface PointsEvent {
   fixtureId?: string;
 }
 
+/**
+ * C4 — one scoring item that is waiting for confirmation: a category of one
+ * fixture whose facts are not all known yet. It is neither absent nor zero.
+ */
+export interface PendingPointsItem {
+  fixtureId?: string;
+  /** A `POINTS_EVENT_CATEGORIES` member, or a newer server-minted code. */
+  category: string;
+  /**
+   * Why it waits. `minutes_conflict` on `appearance` means the confirmed
+   * value is the short one (1 pt) and may rise to 2 pts.
+   */
+  reason: string | null;
+}
+
+/**
+ * C4 — how settled one player's points are.
+ * - `pending`: no confirmed points row yet; the figure is unknown, not 0.
+ * - `provisional`: points exist, but the gameweek is not final or items wait.
+ * - `final`: nothing waits and the gameweek is final.
+ */
+export type PlayerPointsStatus = "final" | "provisional" | "pending";
+
 export interface PlayerPointsBreakdown {
   multiplier?: number;
   playerId: string;
-  totalPoints: number;
-  minutesPlayed: number;
+  /**
+   * `null` means "no confirmed points yet", never 0. A number is a real
+   * figure: the Fantasy engine's mock path, or a final gameweek's genuine 0.
+   */
+  totalPoints: number | null;
+  /** `null` when the server does not know the minutes yet. */
+  minutesPlayed: number | null;
   isCaptain?: boolean;
   isViceCaptain?: boolean;
   isBench?: boolean;
   status: "provisional" | "live" | "final";
+  /** C4; absent on older API responses (the row then reads as it did before). */
+  pointsStatus?: PlayerPointsStatus;
+  /** C4; absent or empty when nothing waits. */
+  pendingItems?: PendingPointsItem[];
   fixtureScoring?: Array<{
     estimated?: boolean;
     fixtureId: string;
@@ -181,6 +214,8 @@ export interface GameweekResult {
     calculationVersion: number;
     /** When the server finalized this result (ISO), or null while it is not final. */
     finalizedAt: string | null;
+    /** C4: scoring items still waiting across the team's players; 0 on older responses. */
+    pendingItemCount: number;
   };
   gameweek: number;
   totalPoints: number; // includes captain multiplier

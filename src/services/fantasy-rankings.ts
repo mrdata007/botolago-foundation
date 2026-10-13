@@ -124,7 +124,9 @@ export function buildGlobalRankings(size = GLOBAL_RANKINGS_SIZE): LeagueStanding
 function sortRows(rows: LeagueStanding[], sort: RankingsSort): LeagueStanding[] {
   if (sort === "overall") return rows;
   return [...rows]
-    .sort((a, b) => b.gameweekScore - a.gameweekScore || a.totalScore - b.totalScore)
+    .sort(
+      (a, b) => (b.gameweekScore ?? -1) - (a.gameweekScore ?? -1) || a.totalScore - b.totalScore,
+    )
     .map((row, index) => ({ ...row, rank: index + 1, previousRank: row.rank }));
 }
 
