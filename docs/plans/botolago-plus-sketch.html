@@ -1614,6 +1614,105 @@
         font-size: 1.25em;
         line-height: 1.35;
       }
+      .fc-name.fc-clubline {
+        font-size: 0.95em;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        top: 65.5%;
+      }
+      :root:lang(ar) .fc-name.fc-clubline {
+        font-size: 1.05em;
+        letter-spacing: 0;
+        text-transform: none;
+        top: 64.6%;
+      }
+      /* ---------- the name is the art ----------
+         No photo on the card. The manager's name fills the art box (beside the rating),
+         one word per line, sized by fitHero(), and each edition letters it its own way. */
+      .fc-art {
+        position: absolute;
+        top: 11%;
+        bottom: 39%;
+        inset-inline-start: 29%;
+        inset-inline-end: 7%;
+        z-index: 5;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+      }
+      .fc-hero {
+        display: grid;
+        justify-items: center;
+        max-width: 100%;
+        font-family: var(--font-card);
+        font-weight: 800;
+        font-size: 5.2em;
+        line-height: 0.92;
+        text-transform: uppercase;
+        letter-spacing: -0.01em;
+        text-align: center;
+        white-space: nowrap;
+        color: var(--ink);
+        padding: 0.06em 0.12em 0.1em;
+      }
+      :root:lang(ar) .fc-hero {
+        text-transform: none;
+        letter-spacing: 0;
+        line-height: 1.15;
+      }
+      .fc-hw {
+        display: block;
+      }
+      /* gold: embossed */
+      .mc.shd.st-free .fc-hero {
+        color: #4a3510;
+        text-shadow: 0 0.03em 0 rgba(255, 246, 200, 0.85), 0 -0.02em 0 rgba(60, 40, 0, 0.35);
+      }
+      /* holo: prism foil that drifts */
+      .mc.shd.st-holo .fc-hero {
+        background: linear-gradient(115deg, #eafff5 0%, #7ff5c1 22%, #4fd8ff 42%, #4f9bff 58%, #7ff5c1 76%, #eafff5 100%) 0 0 / 220% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 0.04em 0.06em rgba(0, 20, 30, 0.55)) drop-shadow(0 0 0.18em rgba(79, 216, 255, 0.35));
+      }
+      /* electric: neon tube */
+      .mc.shd.st-electric .fc-hero {
+        color: #effff6;
+        text-shadow: 0 0 0.04em #fff, 0 0 0.12em #7dffbd, 0 0 0.3em #3ee08a, 0 0 0.6em rgba(62, 224, 138, 0.55);
+      }
+      /* pixel: stepped 8-bit extrusion */
+      .mc.shd.st-pixel .fc-hero {
+        color: #e0f2fe;
+        text-shadow: 0.04em 0.04em 0 #38bdf8, 0.08em 0.08em 0 #38bdf8, 0.12em 0.12em 0 #86efac, 0.16em 0.16em 0 #86efac, 0.2em 0.2em 0 #0b111e;
+      }
+      /* chrome: polished metal letters with a dark edge */
+      .mc.shd.st-chrome .fc-hero {
+        background: linear-gradient(180deg, #7d8692 0%, #4a525d 30%, #232830 62%, #3c434d 82%, #6b7480 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        filter: drop-shadow(0 -0.025em 0 rgba(255, 255, 255, 0.95)) drop-shadow(0 0.05em 0.06em rgba(0, 0, 0, 0.35));
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .mc.shd.st-holo .fc-hero {
+          animation: hero-foil 6s ease-in-out infinite alternate;
+        }
+        .mc.shd.st-electric .fc-hero {
+          animation: hero-neon 5s steps(1) infinite;
+        }
+      }
+      @keyframes hero-foil {
+        to { background-position: 100% 0; }
+      }
+      @keyframes hero-neon {
+        0%, 100% { opacity: 1; }
+        62% { opacity: 1; }
+        63% { opacity: 0.55; }
+        64% { opacity: 1; }
+        66% { opacity: 0.7; }
+        67% { opacity: 1; }
+      }
       :root:lang(ar) .fc-stats {
         top: 72.7%;
       }
@@ -2366,10 +2465,7 @@
         <div class="toast" id="toast" role="status" aria-live="polite"></div>
       </main>
     </div>
-    <p class="credits" data-i18n="sh.credits">
-      Photos : <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">Khalid Boutaïb</a> par <bdi dir="ltr">Антон Зайцев</bdi>, <bdi dir="ltr">CC BY-SA 3.0</bdi> ·
-      <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">Badr Benoun</a> par <bdi dir="ltr">Oussama 499</bdi>, <bdi dir="ltr">CC BY-SA 4.0</bdi> · Wikimedia Commons, recadrées. Esquisse interne, données d'exemple.
-    </p>
+    <p class="credits" data-i18n="sh.credits">Esquisse interne, données d'exemple.</p>
 
     <p class="credits" id="pricingNote"></p>
 
@@ -2499,8 +2595,7 @@
             "sh.benefit1": "Les styles premium pour ta carte",
             "sh.benefit2": "L'historique complet de ta saison",
             "sh.benefit3": "Tes duels détaillés avec tes amis",
-            "sh.credits":
-              'Photos : <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">Khalid Boutaïb</a> par <bdi dir="ltr">Антон Зайцев</bdi>, <bdi dir="ltr">CC BY-SA 3.0</bdi> · <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">Badr Benoun</a> par <bdi dir="ltr">Oussama 499</bdi>, <bdi dir="ltr">CC BY-SA 4.0</bdi> · Wikimedia Commons, recadrées. Esquisse interne, données d\'exemple.',
+            "sh.credits": "Esquisse interne, données d'exemple.",
             "sb.note": "Esquisse. Données et prix d'exemple.",
             "sb.pricingNote": "Note de prototype, hors produit : {price} est un prix de test, sans baisse quotidienne. Quand le pass saison cesse d'être plus avantageux que le mensuel, une offre « Reste de la saison » est proposée.",
             "sb.route": "Parcours",
@@ -2546,8 +2641,7 @@
             "sh.benefit1": "أساليب مميّزة لبطاقتك",
             "sh.benefit2": "السجل الكامل لموسمك",
             "sh.benefit3": "مواجهاتك المفصّلة مع أصدقائك",
-            "sh.credits":
-              'الصور: <a href="https://commons.wikimedia.org/wiki/File:Khalid_Bouta%C3%AFb.jpg">خالد بوطيب</a> بعدسة <bdi dir="ltr">Антон Зайцев</bdi>، <bdi dir="ltr">CC BY-SA 3.0</bdi> · <a href="https://commons.wikimedia.org/wiki/File:Badr_Benoun_2019.jpg">بدر بانون</a> بعدسة <bdi dir="ltr">Oussama 499</bdi>، <bdi dir="ltr">CC BY-SA 4.0</bdi> · ويكيميديا كومنز، مقصوصة. نموذج أولي داخلي، بيانات توضيحية.',
+            "sh.credits": "نموذج أولي داخلي، بيانات توضيحية.",
             "sb.note": "نموذج أولي. بيانات وأسعار توضيحية.",
             "sb.pricingNote": "ملاحظة للنموذج الأولي، خارج المنتج: {price} سعر تجريبي بلا تخفيض يومي. حين لا تعود باقة الموسم أوفر من الاشتراك الشهري، تُعرض باقة «بقية الموسم».",
             "sb.route": "المسار",
@@ -2653,6 +2747,20 @@
         };
         /* The collector shield (large sizes). Reads like the card hierarchy elsewhere:
            rating + tier earned, the manager's name, the stats; the photo is the captain's. */
+        /* The manager's name is the card's art: one word per line, sized to fill the art box. */
+        function heroName(n) {
+          return String(n).trim().split(/\s+/).map(function (w) { return '<bdi class="fc-hw">' + esc(w) + "</bdi>"; }).join("");
+        }
+        function fitHero(mc) {
+          var box = mc.querySelector(".fc-art"), h = mc.querySelector(".fc-hero");
+          if (!box || !h || !box.clientWidth) return;
+          var size = 5.2;
+          h.style.fontSize = size + "em";
+          while (size > 1.4 && (h.scrollWidth > box.clientWidth || h.scrollHeight > box.clientHeight)) {
+            size -= 0.1;
+            h.style.fontSize = size.toFixed(2) + "em";
+          }
+        }
         function shieldHTML(d, o) {
           var codes = ["cap", "sel", "trf", "con"];
           var st = o.style || "free";
@@ -2664,13 +2772,13 @@
           return (
             '<div class="fc-frame"></div>' +
             '<div class="fc-face">' +
-            '<img class="fc-photo p-bg" alt="" src="' + PHOTO[d.photo] + '"><img class="fc-photo p-fg" alt="" src="' + PHOTO[d.photo] + '">' +
+            '<div class="fc-art"><span class="fc-hero">' + heroName(nm(d, "name")) + "</span></div>" +
             '<span class="fc-band"></span>' +
             (o.example ? '<span class="fc-ex">' + esc(t("sh.example")) + "</span>" : "") +
             '<div class="fc-side" role="group" aria-label="' + esc(t("card.earnedAria", { ovr: d.ovr, tier: tierName(d.tier) })) + '">' +
             '<div class="fc-rate"><bdi class="fc-ovr">' + d.ovr + '</bdi><span class="fc-ovrl" aria-hidden="true"><bdi dir="ltr">OVR</bdi></span></div>' +
             '<span class="fc-tier">' + esc(tierName(d.tier)) + "</span></div>" +
-            '<div class="fc-name"><bdi>' + esc(nm(d, "name")) + "</bdi></div>" +
+            '<div class="fc-name fc-clubline"><bdi>' + esc(nm(d, "club")) + "</bdi></div>" +
             '<div class="fc-stats">' +
             codes.map(function (c) { return '<span><i aria-hidden="true">' + esc(t("card." + c + "S")) + "</i><b>" + d.stats[c] + '</b><span class="sr-only">' + esc(t("card." + c)) + "</span></span>"; }).join("") +
             "</div>" +
@@ -2745,6 +2853,11 @@
           var shd = size === "lg" || size === "md";
           host.innerHTML = '<div class="mc st-' + style + (shd ? " shd" : "") + '" style="--club:' + d.accent + '">' + (shd ? shieldHTML : cardHTML)(d, { plus: plus, example: example, style: style }) + "</div>";
           var mc = host.firstChild;
+          if (shd) {
+            fitHero(mc);
+            requestAnimationFrame(function () { fitHero(mc); });
+            if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitHero(mc); });
+          }
           if (style === "pixel") requestAnimationFrame(function () { paintPixels(mc, false); });
           if (o.animate) popCard(mc);
           return mc;
