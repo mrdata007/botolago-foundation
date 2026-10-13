@@ -219,11 +219,36 @@ describe("SofaScore-only Fantasy observation", () => {
     expect(
       (await prepare(withStats(match, off, { minutesPlayed: baseMinutes - 2 }))).blockers,
     ).toEqual([]);
+    // Inside the tolerance the substitution times decide the minutes.
+    expect(
+      (await prepare(withStats(match, off, { minutesPlayed: baseMinutes + 6 })))
+        .minutesFromSofascore,
+    ).toBe(0);
+    // Outside it (owner decision 2026-10-13) SofaScore's minutesPlayed is final: the
+    // match is recorded with those minutes, never held, and the case is counted.
+    const minutesOf = (p: Awaited<ReturnType<typeof prepare>>) =>
+      p.request!.payload.players.find((r) => r.identity.sofascoreId === off)!.stats.minutes;
     const over = await prepare(withStats(match, off, { minutesPlayed: baseMinutes + 7 }));
-    expect(over.blockers.map((b) => b.code)).toContain("minutes_mismatch");
-    expect(over.request).toBeNull();
+    expect(over.blockers).toEqual([]);
+    expect(over.minutesFromSofascore).toBe(1);
+    expect(minutesOf(over)).toBe(Math.min(baseMinutes + 7, 90));
     const under = await prepare(withStats(match, off, { minutesPlayed: baseMinutes - 3 }));
-    expect(under.blockers.map((b) => b.code)).toContain("minutes_mismatch");
+    expect(under.blockers).toEqual([]);
+    expect(under.minutesFromSofascore).toBe(1);
+    expect(minutesOf(under)).toBe(baseMinutes - 3);
+  });
+
+  test("SofaScore minutes over 90 are capped, and the clean sheet follows the minutes used", async () => {
+    const match = load("17132481");
+    const off = match.incidents.find((i) => i.kind === "substitution" && i.minute < 80)!.playerOut!
+      .externalId!;
+    const long = await prepare(withStats(match, off, { minutesPlayed: 120 }));
+    const row = long.request!.payload.players.find((r) => r.identity.sofascoreId === off)!;
+    expect(row.stats.minutes).toBe(90);
+    const short = await prepare(withStats(match, off, { minutesPlayed: 30 }));
+    const shortRow = short.request!.payload.players.find((r) => r.identity.sofascoreId === off)!;
+    expect(shortRow.stats.minutes).toBe(30);
+    expect(shortRow.stats.cleanSheet).toBe(false);
   });
 
   test("a player on the pitch at half time may be over by the first half's stoppage time plus 2", async () => {
@@ -240,31 +265,36 @@ describe("SofaScore-only Fantasy observation", () => {
       ...withStats(match, off, { minutesPlayed: minutes + 7 }),
       stoppage: { firstHalf, secondHalf: null },
     });
-    // Seven over: refused with no stoppage known, or with 4 announced (limit stays 6) ...
-    expect((await prepare(announced(null))).blockers.map((b) => b.code)).toContain(
-      "minutes_mismatch",
-    );
-    expect((await prepare(announced(4))).blockers.map((b) => b.code)).toContain("minutes_mismatch");
-    // ... accepted with 5 announced (limit 7), and 8 over is still refused then.
-    expect((await prepare(announced(5))).blockers).toEqual([]);
+    // The tolerance decides whether the substitution times or SofaScore's
+    // minutesPlayed give the minutes; the match is recorded either way.
+    const fromSofascore = async (m: SofascoreMatchData) => {
+      const p = await prepare(m);
+      expect(p.blockers).toEqual([]);
+      return p.minutesFromSofascore;
+    };
+    // Seven over: outside with no stoppage known, or with 4 announced (limit stays 6) ...
+    expect(await fromSofascore(announced(null))).toBe(1);
+    expect(await fromSofascore(announced(4))).toBe(1);
+    // ... inside with 5 announced (limit 7), and 8 over is outside again then.
+    expect(await fromSofascore(announced(5))).toBe(0);
     const eight = {
       ...withStats(match, off, { minutesPlayed: minutes + 8 }),
       stoppage: { firstHalf: 5, secondHalf: null },
     };
-    expect((await prepare(eight)).blockers.map((b) => b.code)).toContain("minutes_mismatch");
+    expect(await fromSofascore(eight)).toBe(1);
     // A first-half incident at 45+6 proves at least six minutes were played: limit 8.
     const card = match.incidents.find((i) => i.kind === "yellow_card")!;
     const late = {
       ...withStats(match, off, { minutesPlayed: minutes + 8 }),
       incidents: [...match.incidents, { ...card, minute: 45, addedMinutes: 6 }],
     };
-    expect((await prepare(late)).blockers).toEqual([]);
+    expect(await fromSofascore(late)).toBe(0);
     // Period markers carry 999 added minutes: never read as stoppage time.
     const marker = {
       ...withStats(match, off, { minutesPlayed: minutes + 7 }),
       incidents: [...match.incidents, { ...card, minute: 45, addedMinutes: 999 }],
     };
-    expect((await prepare(marker)).blockers.map((b) => b.code)).toContain("minutes_mismatch");
+    expect(await fromSofascore(marker)).toBe(1);
   });
 
   test("goal incidents that do not add up to the score hold the match back", async () => {
@@ -537,7 +567,7 @@ describe("unknown (unmapped, no candidate) substitutes", () => {
     expect(p.blockers.map((b) => b.code)).toContain("unmapped_players");
   });
 
-  test("a replaced player whose exit the incidents do not carry still fails the minutes check", async () => {
+  test("a replaced player whose exit the incidents do not carry gets SofaScore's minutes", async () => {
     const match = load("17132481");
     const m: SofascoreMatchData = {
       ...match,
@@ -547,10 +577,15 @@ describe("unknown (unmapped, no candidate) substitutes", () => {
           : i,
       ),
     };
-    // 1213241 came on at 73' for 1894253, whose SofaScore minutes (73) no longer fit a full match.
+    // 1213241 came on at 73' for 1894253, whose SofaScore minutes (73) no longer fit a
+    // full match. SofaScore's minutes are final (owner decision 2026-10-13): recorded
+    // with SofaScore's figure, and the case counted.
     const p = await prepare(m, {}, ["1213241"]);
-    expect(p.request).toBeNull();
-    expect(p.blockers.map((b) => b.code)).toContain("minutes_mismatch");
+    expect(p.blockers).toEqual([]);
+    expect(p.minutesFromSofascore).toBe(1);
+    const replaced = p.request!.payload.players.find((r) => r.identity.sofascoreId === "1894253")!;
+    // SofaScore's own minutesPlayed for him, 76 (it counts stoppage time).
+    expect(replaced.stats.minutes).toBe(76);
   });
 
   test("an unknown substitute with minutes but no substitution incident is still unexplained", async () => {
