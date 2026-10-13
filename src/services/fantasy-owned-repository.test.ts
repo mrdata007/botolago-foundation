@@ -14,7 +14,8 @@ import { FantasyRepoError, toRepoError } from "./fantasy-errors";
 import { FantasyCloudError } from "./fantasy-cloud-repo";
 import { MissingIdMappingError } from "./fantasy-id-map";
 import { removeKey, STORAGE_KEYS } from "@/lib/storage";
-import type { FantasyTeamDto } from "@/backend/fantasy/contracts";
+import type { FantasyPointsDto, FantasyTeamDto } from "@/backend/fantasy/contracts";
+import { FantasyError } from "@/backend/fantasy/errors";
 
 describe("buildV2CloudSnapshot", () => {
   it("uses the authoritative hub sequence for an empty cloud team", () => {
@@ -59,10 +60,34 @@ describe("buildV2CloudSnapshot", () => {
       chips: { active: null, activeCancellable: false, used: [] },
     };
 
-    const snapshot = buildV2CloudSnapshot(team, gameweek);
+    const points: FantasyPointsDto = {
+      teamId: team.id,
+      gameweekId: gameweek.id,
+      gameweekStatus: "finalized",
+      pointsState: "final",
+      result: {
+        startingPoints: 55,
+        benchPoints: 4,
+        captainPoints: 8,
+        transferHit: 4,
+        chipType: null,
+        provisionalScore: 59,
+        finalScore: 59,
+        state: "final",
+        rank: 12,
+        overallRank: 34,
+        calculationVersion: 1,
+        finalizedAt: "2026-08-21T22:00:00.000Z",
+      },
+      autoSubs: [],
+      players: [],
+    };
+    const snapshot = buildV2CloudSnapshot(team, gameweek, points);
 
     expect(snapshot.currentGameweekId).toBe(gameweek.id);
     expect(snapshot.lifecycle.currentGameweek).toBe(1);
+    expect(snapshot.lifecycle.results[gameweek.sequence]?.totalPoints).toBe(59);
+    expect(snapshot.finalizedResults[gameweek.sequence]?.source).toBe("authoritative");
   });
 
   it("falls back to gameweek 1 when the provider has not published a gameweek", () => {
@@ -180,6 +205,26 @@ describe("toRepoError", () => {
   it("maps FantasyCloudError version_conflict through unchanged", () => {
     const mapped = toRepoError(new FantasyCloudError("version_conflict", "stale"));
     expect(mapped.code).toBe("version_conflict");
+  });
+  it("preserves exact backend FantasyError codes alongside stable UI categories", () => {
+    const cases = [
+      ["version_conflict", "version_conflict"],
+      ["budget_exceeded", "validation"],
+      ["league_access_denied", "permission_denied"],
+      ["fantasy_team_not_found", "not_found"],
+      ["data_unavailable", "unknown"],
+    ] as const;
+
+    for (const [domainCode, code] of cases) {
+      const mapped = toRepoError(new FantasyError(domainCode, domainCode));
+      expect(mapped.code).toBe(code);
+      expect(mapped.domainCode).toBe(domainCode);
+    }
+  });
+  it("preserves symbolic domain codes returned as PostgREST-like objects", () => {
+    const mapped = toRepoError({ code: "fantasy_gameweek_locked", message: "locked" });
+    expect(mapped.code).toBe("validation");
+    expect(mapped.domainCode).toBe("fantasy_gameweek_locked");
   });
   it("passes through an existing FantasyRepoError", () => {
     const e = new FantasyRepoError("permission_denied", "rls");

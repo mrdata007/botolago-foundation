@@ -39,7 +39,7 @@ function AtlasIdentityPage() {
     setSubmitted(true);
     setProfileError(false);
     if (!identityValid || saving) return;
-    if (draft.favoriteClubId && draft.favoriteClubId !== user?.favoriteClubId) {
+    if (user && draft.favoriteClubId && draft.favoriteClubId !== user.favoriteClubId) {
       setSaving(true);
       const result = await authService.completeProfile({ favoriteClubId: draft.favoriteClubId });
       setSaving(false);

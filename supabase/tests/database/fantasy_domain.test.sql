@@ -20,6 +20,21 @@ select ('f4' || lpad(i::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid,
   'f0000000-0000-4000-8000-000000000001'
 from generate_series(1, 5) i;
 
+insert into app.fixtures (
+  id, competition_id, season_id, home_team_id, away_team_id, kickoff_at,
+  status, period, home_score, away_score, winner_team_id,
+  provider_updated_at, source_sequence, finalized_at
+) values (
+  'fa000000-0000-4000-8000-000000000001',
+  'f1000000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000001',
+  'f4000001-0000-4000-8000-000000000001',
+  'f4000002-0000-4000-8000-000000000001',
+  '2090-01-01T12:00:00Z', 'finished', 'post_match', 1, 0,
+  'f4000001-0000-4000-8000-000000000001',
+  '2090-01-01T14:00:00Z', 1, '2090-01-01T14:00:00Z'
+);
+
 insert into app.players (id, slug, full_name, display_name, position)
 select ('f5' || lpad(i::text, 6, '0') || '-0000-4000-8000-000000000001')::uuid,
   'fantasy-player-' || i, 'Fantasy Player ' || i, 'Player ' || i,
@@ -93,6 +108,52 @@ select set_config('test.fantasy_team_response', api.create_fantasy_team(
 select extensions.is(
   jsonb_array_length(current_setting('test.fantasy_team_response')::jsonb -> 'squad'), 15,
   'atomic team creation persists the complete squad'
+);
+select set_config(
+  'test.pre_match_points',
+  api.get_my_fantasy_points(
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    'f6400000-0000-4000-8000-000000000001'
+  )::text,
+  true
+);
+select extensions.is(
+  current_setting('test.pre_match_points')::jsonb -> 'result',
+  'null'::jsonb,
+  'pre-match points honestly expose no materialized team result'
+);
+select extensions.is(
+  jsonb_array_length(current_setting('test.pre_match_points')::jsonb -> 'players'),
+  15,
+  'pre-match points include the complete owned lineup'
+);
+select extensions.is(
+  current_setting('test.pre_match_points')::jsonb -> 'autoSubs',
+  '[]'::jsonb,
+  'pre-match points expose an empty auto-substitution list'
+);
+select extensions.ok(
+  (
+    select bool_and(jsonb_typeof(player -> 'events') = 'array')
+    from jsonb_array_elements(
+      current_setting('test.pre_match_points')::jsonb -> 'players'
+    ) player
+  ),
+  'every points player exposes an event array before scoring'
+);
+select extensions.ok(
+  (
+    select bool_and(
+      jsonb_typeof(player -> 'provisionalPoints') = 'number'
+      and jsonb_typeof(player -> 'finalPoints') = 'null'
+      and jsonb_typeof(player -> 'didPlay') = 'boolean'
+      and jsonb_typeof(player -> 'minutesPlayed') = 'number'
+    )
+    from jsonb_array_elements(
+      current_setting('test.pre_match_points')::jsonb -> 'players'
+    ) player
+  ),
+  'pre-match point fields use stable numeric, boolean, and nullable JSON types'
 );
 select extensions.is(
   api.create_fantasy_team(
@@ -216,6 +277,213 @@ select extensions.is((select count(*)::integer from app_private.fantasy_mutation
   where operation in ('create_team','activate_chip','confirm_transfers')), 4,
   'accepted sensitive mutations append audit entries');
 
+insert into app.fantasy_player_gameweek_points (
+  fantasy_player_id, gameweek_id, provisional_points, final_points,
+  minutes_played, did_play, calculation_version, football_input_version
+) values
+  (
+    'f7000003-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    1, null, 90, true, 1, 2
+  ),
+  (
+    'f7000002-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    3, null, 45, true, 1, 2
+  );
+
+insert into app.fantasy_player_point_events (
+  fantasy_player_id, gameweek_id, fixture_id, category, points, state,
+  scoring_version, source_sequence, source_key
+) values
+  (
+    'f7000003-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    'fa000000-0000-4000-8000-000000000001',
+    'appearance', 2, 'provisional', 1, 1, 'gw1:appearance:player3'
+  ),
+  (
+    'f7000003-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    'fa000000-0000-4000-8000-000000000001',
+    'yellow_card', -1, 'provisional', 1, 2, 'gw1:yellow:player3'
+  );
+
+insert into app.fantasy_team_gameweek_results (
+  fantasy_team_id, gameweek_id, starting_points, bench_points, captain_points,
+  transfer_hit, provisional_score, state, calculation_version
+) values (
+  (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+  'f6400000-0000-4000-8000-000000000001',
+  1, 0, 0, 0, 1, 'provisional', 1
+);
+
+insert into app.fantasy_auto_substitutions (
+  lineup_id, player_out_id, player_in_id, sequence_number, reason,
+  calculation_version
+)
+select lineup.id,
+  'f7000004-0000-4000-8000-000000000001',
+  'f7000002-0000-4000-8000-000000000001',
+  1, 'outfield_did_not_play', 1
+from app.fantasy_lineups lineup
+where lineup.fantasy_team_id =
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid
+  and lineup.gameweek_id = 'f6400000-0000-4000-8000-000000000001';
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated"}',
+  true
+);
+select set_config(
+  'test.materialized_points',
+  api.get_my_fantasy_points(
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+    'f6400000-0000-4000-8000-000000000001'
+  )::text,
+  true
+);
+select extensions.is(
+  jsonb_array_length(current_setting('test.materialized_points')::jsonb -> 'autoSubs'),
+  1,
+  'materialized points include applied auto-substitutions'
+);
+select extensions.is(
+  current_setting('test.materialized_points')::jsonb
+    -> 'autoSubs' -> 0 ->> 'reason',
+  'outfield_did_not_play',
+  'auto-substitution reasons remain explainable'
+);
+select extensions.results_eq(
+  $$select event ->> 'category'
+    from jsonb_array_elements(
+      (
+        select player -> 'events'
+        from jsonb_array_elements(
+          current_setting('test.materialized_points')::jsonb -> 'players'
+        ) player
+        where player ->> 'fantasyPlayerId' =
+          'f7000003-0000-4000-8000-000000000001'
+      )
+    ) event$$,
+  $$values ('appearance'::text), ('yellow_card'::text)$$,
+  'points expose the scoring worker canonical event categories'
+);
+select extensions.is(
+  (
+    select player ->> 'multiplier'
+    from jsonb_array_elements(
+      current_setting('test.materialized_points')::jsonb -> 'players'
+    ) player
+    where player ->> 'fantasyPlayerId' =
+      'f7000004-0000-4000-8000-000000000001'
+  ),
+  '0',
+  'an automatically substituted starter has a zero effective multiplier'
+);
+select extensions.is(
+  (
+    select player ->> 'multiplier'
+    from jsonb_array_elements(
+      current_setting('test.materialized_points')::jsonb -> 'players'
+    ) player
+    where player ->> 'fantasyPlayerId' =
+      'f7000002-0000-4000-8000-000000000001'
+  ),
+  '1',
+  'an automatically substituted bench player has an effective multiplier'
+);
+
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+
+select set_config(
+  'test.private_league_first',
+  api.create_fantasy_league(
+    'f6300000-0000-4000-8000-000000000001',
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    'Atlas Private League', 'private',
+    'f9000000-0000-4000-8000-000000000099'
+  )::text,
+  true
+);
+select set_config(
+  'test.private_league_replay',
+  api.create_fantasy_league(
+    'f6300000-0000-4000-8000-000000000001',
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    'Atlas Private League', 'private',
+    'f9000000-0000-4000-8000-000000000099'
+  )::text,
+  true
+);
+select extensions.is(
+  current_setting('test.private_league_replay')::jsonb ->> 'inviteCode',
+  current_setting('test.private_league_first')::jsonb ->> 'inviteCode',
+  'idempotent league creation replays the one-time invite code'
+);
+select extensions.throws_ok(
+  $$select api.create_fantasy_league(
+      'f6300000-0000-4000-8000-000000000001',
+      (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+      'Different Private League', 'private',
+      'f9000000-0000-4000-8000-000000000099'
+    )$$,
+  'PT409', 'idempotency_conflict',
+  'league idempotency keys cannot replay an invite for a different request'
+);
+select set_config(
+  'test.private_league_rotated',
+  api.rotate_fantasy_league_invite(
+    (current_setting('test.private_league_first')::jsonb ->> 'leagueId')::uuid
+  )::text,
+  true
+);
+select extensions.isnt(
+  current_setting('test.private_league_rotated')::jsonb ->> 'inviteCode',
+  current_setting('test.private_league_first')::jsonb ->> 'inviteCode',
+  'invite recovery rotates rather than re-exposing the stored digest'
+);
+select extensions.is(
+  api.fantasy_league_detail(
+    (current_setting('test.private_league_first')::jsonb ->> 'leagueId')::uuid
+  ) ->> 'role',
+  'owner',
+  'direct league detail lookup preserves the caller role'
+);
+select extensions.is(
+  api.fantasy_league_detail(
+    (current_setting('test.private_league_first')::jsonb ->> 'leagueId')::uuid
+  ) ->> 'inviteCodeHint',
+  current_setting('test.private_league_rotated')::jsonb ->> 'inviteCodeHint',
+  'direct league detail exposes only the rotated last-four hint'
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f8000000-0000-4000-8000-000000000002","role":"authenticated"}',
+  true
+);
+select extensions.throws_ok(
+  $$select api.fantasy_league_detail(
+      (current_setting('test.private_league_first')::jsonb ->> 'leagueId')::uuid
+    )$$,
+  'PT403', 'league_access_denied',
+  'private league detail remains hidden from non-members'
+);
+select extensions.throws_ok(
+  $$select api.rotate_fantasy_league_invite(
+      (current_setting('test.private_league_first')::jsonb ->> 'leagueId')::uuid
+    )$$,
+  'PT403', 'league_invite_rotation_denied',
+  'only the private league owner can rotate its invite'
+);
+reset role;
+
 insert into app.fantasy_leagues (
   id, fantasy_season_id, owner_user_id, name, visibility, member_count
 ) values (
@@ -261,7 +529,40 @@ insert into app.fantasy_rankings (
     2, null, 100, 50, 1, '2090-01-09T12:00:00Z'
   );
 
+insert into app.fantasy_rankings (
+  id, fantasy_season_id, gameweek_id, league_id, fantasy_team_id,
+  rank, previous_rank, total_points, gameweek_points,
+  calculation_version, calculated_at
+) values
+  (
+    'f9300000-0000-4000-8000-000000000001',
+    'f6300000-0000-4000-8000-000000000001', null, null,
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    1, 2, 100, 50, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9300000-0000-4000-8000-000000000002',
+    'f6300000-0000-4000-8000-000000000001', null, null,
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+    2, 1, 90, 40, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9300000-0000-4000-8000-000000000003',
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001', null,
+    (current_setting('test.fantasy_team_response')::jsonb ->> 'id')::uuid,
+    2, 1, 100, 50, 1, '2090-01-09T12:00:00Z'
+  ),
+  (
+    'f9300000-0000-4000-8000-000000000004',
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001', null,
+    (current_setting('test.fantasy_second_team_response')::jsonb ->> 'id')::uuid,
+    1, 2, 90, 60, 1, '2090-01-09T12:00:00Z'
+  );
+
 set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
 select extensions.is(
   jsonb_array_length(api.fantasy_league_standings(
     'f9100000-0000-4000-8000-000000000001', null, null, null, 1
@@ -288,6 +589,96 @@ select extensions.results_eq(
     ) -> 'items') item$$,
   $$values ('1'::text), ('2'::text)$$,
   'gameweek standings preserve deterministic rank ordering'
+);
+
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001', null, 'overall', null, 1, 1
+  ) ->> 'total',
+  '2',
+  'global rankings report the complete filtered count'
+);
+select extensions.is(
+  jsonb_array_length(api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001', null, 'overall', null, 1, 1
+  ) -> 'items'),
+  1,
+  'global rankings enforce the requested page size'
+);
+select extensions.results_eq(
+  $$select item ->> 'teamName'
+    from jsonb_array_elements(api.fantasy_global_rankings(
+      'f6300000-0000-4000-8000-000000000001',
+      null, 'overall', null, 1, 25
+    ) -> 'items') item$$,
+  $$values ('Atlas Eleven'::text), ('Rif Eleven'::text)$$,
+  'overall rankings preserve authoritative rank ordering'
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', 'rif', 1, 25
+  ) ->> 'total',
+  '1',
+  'global rankings filter by public team name'
+);
+select extensions.is(
+  jsonb_array_length(api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', 'rif', 1, 25
+  ) -> 'podium'),
+  2,
+  'search does not alter the overall podium'
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', null, 1, 25
+  ) -> 'myRank',
+  'null'::jsonb,
+  'anonymous rankings do not infer a manager identity'
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    'gameweek', null, 1, 25
+  ) -> 'items' -> 0 ->> 'teamName',
+  'Rif Eleven',
+  'gameweek rankings use the authoritative gameweek rank scope'
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    'f6400000-0000-4000-8000-000000000001',
+    'gameweek', null, 1, 25
+  ) -> 'podium' -> 0 ->> 'teamName',
+  'Rif Eleven',
+  'gameweek rankings use the gameweek podium rather than the overall podium'
+);
+select extensions.throws_ok(
+  $$select api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', repeat('x', 81), 1, 25
+  )$$,
+  'PT400', 'validation_failed',
+  'global ranking search input remains bounded'
+);
+reset role;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"f8000000-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+select extensions.is(
+  api.fantasy_global_rankings(
+    'f6300000-0000-4000-8000-000000000001',
+    null, 'overall', null, 1, 25
+  ) -> 'myRank' ->> 'teamName',
+  'Atlas Eleven',
+  'authenticated rankings include the caller-owned team rank'
 );
 reset role;
 

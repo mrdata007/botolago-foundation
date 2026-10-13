@@ -1,7 +1,6 @@
 import { createFileRoute, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 
-import { useAuth } from "@/auth/AuthProvider";
 import { AtlasCreateProvider, useAtlasCreate } from "@/components/fantasy/AtlasCreateProvider";
 import { LoadingState } from "@/components/common/States";
 import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
@@ -12,14 +11,9 @@ export const Route = createFileRoute("/fantasy/create")({
 });
 
 function AtlasCreateLayout() {
-  const { status, user } = useAuth();
   const owned = useFantasyOwned();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
-  if (status === "loading") return <LoadingState />;
-  if (status !== "authenticated" || !user) {
-    return <Navigate to="/auth/login" search={{ next: "/fantasy/create" }} replace />;
-  }
   if (owned.source === "cloud" && owned.isLoading) return <LoadingState />;
   if (owned.source === "cloud" && owned.snapshot?.teamId && pathname !== "/fantasy/create/review") {
     return <Navigate to="/fantasy/team" replace />;

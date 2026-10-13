@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { footballService } from "@/services/football";
@@ -36,7 +36,13 @@ import { adaptFantasyRules } from "@/services/fantasy-create-service";
 import { FantasyCatalogUnavailable } from "@/components/fantasy/FantasyCatalogUnavailable";
 import { hasSquadCatalogCoverage } from "@/lib/team-validation";
 
+const RECRUIT_PLAYER_ID = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
+
 export const Route = createFileRoute("/fantasy/transfers")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const player = typeof search.player === "string" ? search.player : "";
+    return { player: RECRUIT_PLAYER_ID.test(player) ? player : undefined };
+  },
   component: TransfersPage,
 });
 
@@ -46,40 +52,46 @@ type TransfersDraftPayload = TransfersDraftSelection;
 function TransfersPage() {
   const { t, tr, lang } = useI18n();
   const qc = useQueryClient();
+  const navigate = useNavigate();
+  const { player: requestedRecruitId } = Route.useSearch();
   const nf = new Intl.NumberFormat(lang === "ar" ? "ar-MA" : "fr-FR", { maximumFractionDigits: 1 });
 
   const { key: ownedKey } = useFantasyDataSource();
   const owned = useFantasyOwned();
   const isCloud = owned.source === "cloud";
+  const hasCloudTeam = !isCloud || Boolean(owned.snapshot?.teamId);
 
-  // One authoritative owned snapshot for cloud and deterministic local mode.
-  // Creation, Team, and Transfers now observe the same state immediately.
-  const team = owned.snapshot?.team ?? null;
+  // A cloud snapshot without a team id is the first-time-user state, not an empty team.
+  const team = isCloud
+    ? owned.snapshot?.teamId
+      ? owned.snapshot.team
+      : null
+    : (owned.snapshot?.team ?? null);
 
   const playersQ = useQuery({
     queryKey: ["fantasy-players"],
     queryFn: () => fantasyService.getPlayers(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const clubsQ = useQuery({
     queryKey: ["football", "clubs", lang],
     queryFn: () => footballService.getClubs(lang),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const gwQ = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const rulesQ = useQuery({
     queryKey: ["fantasy-create", "rules"],
     queryFn: () => fantasyService.getRules(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
   });
   const fixturesQ = useQuery({
     queryKey: ["fantasy-create", "fixtures"],
     queryFn: () => fantasyService.getFixtureDifficulty(),
-    enabled: owned.source !== "guest",
+    enabled: owned.source !== "guest" && hasCloudTeam,
     retry: 1,
   });
   const activeRules = useMemo(
@@ -302,6 +314,14 @@ function TransfersPage() {
     if (idx >= 0 && inIds[i]) currentSquadIdsAfter[idx] = inIds[i];
   });
 
+  const requestedRecruit = requestedRecruitId
+    ? players.find((player) => player.id === requestedRecruitId)
+    : undefined;
+  const recruitTarget =
+    requestedRecruit && !currentSquadIdsAfter.includes(requestedRecruit.id)
+      ? requestedRecruit
+      : undefined;
+
   const outPlayers = outIds.map(playerOf);
   const inPlayers = inIds.map(playerOf).filter(Boolean) as FantasyPlayer[];
 
@@ -338,8 +358,50 @@ function TransfersPage() {
     !locked &&
     (!isCloud || (!!serverPreviewQ.data && !serverPreviewQ.isError));
 
+  const applyPick = (outId: string, playerIn: FantasyPlayer) => {
+    const playerOut = playerOf(outId);
+    if (playerIn.position !== playerOut.position) {
+      toast.error(t("fantasy.team.hint.position_incompatible"));
+      return false;
+    }
+    if (playerIn.price > maxAffordableReplacement(playerOut.price, team.bank)) {
+      toast.error(t("fantasy.transfers.error.over_budget"));
+      return false;
+    }
+    const nextIds = currentSquadIdsAfter.map((id) => (id === outId ? playerIn.id : id));
+    const clubCount = nextIds.filter((id) => playerOf(id).clubId === playerIn.clubId).length;
+    if (clubCount > activeRules.maxPerClub) {
+      toast.error(t("fantasy.validation.club_limit"));
+      return false;
+    }
+    let nextOut = outIds;
+    let nextIn = inIds;
+    if (!outIds.includes(outId)) {
+      nextOut = [...outIds, outId];
+      nextIn = [...inIds, playerIn.id];
+    } else {
+      const idx = outIds.indexOf(outId);
+      nextIn = inIds.slice();
+      nextIn[idx] = playerIn.id;
+    }
+    setOutIds(nextOut);
+    setInIds(nextIn);
+    persistDraft(nextOut, nextIn);
+    setPickerFor(null);
+    return true;
+  };
   const startReplace = (playerId: string) => {
     if (locked) return;
+    if (recruitTarget) {
+      if (applyPick(playerId, recruitTarget)) {
+        void navigate({
+          to: "/fantasy/transfers",
+          search: { player: undefined },
+          replace: true,
+        });
+      }
+      return;
+    }
     setPickerFor(playerId);
   };
   const removeFromOut = (playerId: string) => {
@@ -351,33 +413,9 @@ function TransfersPage() {
     setInIds(nextIn);
     persistDraft(nextOut, nextIn);
   };
-  const onPick = (p: FantasyPlayer) => {
+  const onPick = (playerIn: FantasyPlayer) => {
     if (!pickerFor) return;
-    const outP = playerOf(pickerFor);
-    if (p.position !== outP.position) {
-      toast.error(t("fantasy.team.hint.position_incompatible"));
-      return;
-    }
-    const nextIds = currentSquadIdsAfter.map((id) => (id === pickerFor ? p.id : id));
-    const clubCount = nextIds.filter((id) => playerOf(id).clubId === p.clubId).length;
-    if (clubCount > activeRules.maxPerClub) {
-      toast.error(t("fantasy.validation.club_limit"));
-      return;
-    }
-    let nextOut = outIds;
-    let nextIn = inIds;
-    if (!outIds.includes(pickerFor)) {
-      nextOut = [...outIds, pickerFor];
-      nextIn = [...inIds, p.id];
-    } else {
-      const idx = outIds.indexOf(pickerFor);
-      nextIn = inIds.slice();
-      nextIn[idx] = p.id;
-    }
-    setOutIds(nextOut);
-    setInIds(nextIn);
-    persistDraft(nextOut, nextIn);
-    setPickerFor(null);
+    applyPick(pickerFor, playerIn);
   };
 
   const resetAll = () => {
@@ -572,6 +610,20 @@ function TransfersPage() {
         </div>
       </div>
 
+      {requestedRecruit && (
+        <div
+          data-testid="transfer-recruit-target"
+          role="status"
+          className="mt-3 rounded-xl border border-[color:var(--brand-accent)]/40 bg-[color:var(--brand-accent)]/10 px-3 py-2 text-sm font-semibold text-foreground"
+        >
+          {t(
+            recruitTarget
+              ? "fantasy.transfers.recruit_target"
+              : "fantasy.transfers.recruit_already_owned",
+          ).replace("{player}", tr(requestedRecruit.name))}
+        </div>
+      )}
+
       {locked && (
         <div
           role="status"
@@ -706,7 +758,10 @@ function TransfersPage() {
                       ) : (
                         <button
                           onClick={() => startReplace(p.id)}
-                          disabled={locked}
+                          disabled={
+                            locked ||
+                            Boolean(recruitTarget && recruitTarget.position !== p.position)
+                          }
                           className="inline-flex min-h-11 items-center gap-1 rounded-lg cta-brand px-3 py-2 text-[11px] font-semibold disabled:opacity-40"
                         >
                           <ArrowRightLeft className="h-3 w-3" aria-hidden />{" "}

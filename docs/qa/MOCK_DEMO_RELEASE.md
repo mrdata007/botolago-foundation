@@ -33,6 +33,8 @@ Use a dedicated Preview environment scoped only to
 
 - `VITE_APP_MODE=demo`
 - `VITE_AUTH_MODE=mock`
+- `VITE_AUTH_GOOGLE_ENABLED=false`
+- `VITE_AUTH_APPLE_ENABLED=false`
 - `VITE_FOOTBALL_DATA_MODE=mock`
 - `VITE_NEWS_DATA_MODE=mock`
 - `VITE_NOTIFICATIONS_DATA_MODE=mock`
@@ -61,9 +63,10 @@ Require all of the following on the exact deployed commit:
    fictional managers;
 6. `robots=noindex,nofollow,noarchive` is present;
 7. no browser request reaches Supabase, SportsMonks, or the inert demo host;
-8. Admin routes and server functions, OAuth consent, `/mcp`, MCP metadata, list,
+8. Google/Apple actions and the orphan social divider are absent from login and registration;
+9. Admin routes and server functions, OAuth consent, `/mcp`, MCP metadata, list,
    and invoke endpoints cannot execute in demo mode;
-9. the Vercel deployment Git SHA equals the reviewed PR head.
+10. the Vercel deployment Git SHA equals the reviewed PR head.
 
 Never promote this artifact, alias it to the production domain, enable schedules,
 or describe it as a live-data launch.

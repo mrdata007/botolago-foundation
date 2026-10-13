@@ -57,9 +57,10 @@ export function PlayerShirt({
     <button
       type="button"
       onClick={onClick}
+      disabled={!onClick}
       className={cn(
-        "group relative flex w-full flex-col items-center gap-1 rounded-xl px-1 py-1 text-center transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)] motion-safe:hover:-translate-y-0.5",
-        onClick && "cursor-pointer",
+        "group relative flex w-full flex-col items-center gap-1 rounded-xl px-1 py-1 text-center transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
+        onClick ? "cursor-pointer motion-safe:hover:-translate-y-0.5" : "cursor-default",
         className,
       )}
       aria-label={fullAria}

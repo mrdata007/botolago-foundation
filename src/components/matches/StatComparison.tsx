@@ -8,10 +8,12 @@ export function StatComparison({
   stats,
   homeName,
   awayName,
+  isFinished,
 }: {
   stats: readonly MatchStatisticComparisonDto[];
   homeName: string;
   awayName: string;
+  isFinished: boolean;
 }) {
   const { t, lang } = useI18n();
   const nf = useMemo(
@@ -25,7 +27,7 @@ export function StatComparison({
   if (stats.length === 0) {
     return (
       <div className="rounded-[var(--radius-card-lg)] border border-dashed border-[var(--border-subtle)] bg-[color:var(--surface)]/40 px-4 py-8 text-center text-sm text-[color:var(--text-secondary)]">
-        {t("matches.detail.no_stats")}
+        {t(isFinished ? "matches.detail.no_stats_finished" : "matches.detail.no_stats")}
       </div>
     );
   }

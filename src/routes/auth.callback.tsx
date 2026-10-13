@@ -94,7 +94,10 @@ function CallbackPage() {
         }
 
         const session = await authService.refreshSession();
-        if (!cancelled && session.ok && session.data && !session.data.profileComplete) {
+        if (!session.ok || !session.data) {
+          throw new Error("callback_session_unavailable");
+        }
+        if (!cancelled && !session.data.profileComplete) {
           navigate({ to: "/auth/profile-setup", search: { next } });
           return;
         }

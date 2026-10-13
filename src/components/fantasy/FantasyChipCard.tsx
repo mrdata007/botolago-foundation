@@ -61,7 +61,8 @@ export function FantasyChipCard({ chip, onClick, className }: CardProps) {
   const state = chip.state;
   const accent = CHIP_ACCENTS[chip.key];
   const isActive = state === "active";
-  const disabled = state === "unavailable" || state === "used";
+  const stateDisabled = state === "unavailable" || state === "used";
+  const disabled = !onClick || stateDisabled;
 
   return (
     <button
@@ -73,7 +74,7 @@ export function FantasyChipCard({ chip, onClick, className }: CardProps) {
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-accent)]",
         !isActive && "surface-3",
         isActive && "text-white ring-1 ring-white/25",
-        disabled && "opacity-55",
+        stateDisabled && "opacity-55",
         onClick && state === "available" && "motion-safe:hover:-translate-y-0.5",
         className,
       )}
@@ -89,7 +90,7 @@ export function FantasyChipCard({ chip, onClick, className }: CardProps) {
       aria-label={`${label} — ${t(`fantasy.chip.state.${state}` as TranslationKey)}`}
     >
       {/* Ambient top glow for available chips — gives each chip a distinct hue. */}
-      {!isActive && !disabled && (
+      {!isActive && !stateDisabled && (
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-8 opacity-70"

@@ -96,7 +96,8 @@ export function AtlasCreateProvider({ children }: { children: ReactNode }) {
   // this key at new/0 prevents the authoritative post-save snapshot from
   // re-keying the provider and unmounting the success confirmation.
   const draftKey = useMemo<FantasyDraftKey | null>(() => {
-    if (authStatus !== "authenticated" || !user?.id) return null;
+    if (authStatus === "loading") return null;
+    if (authStatus !== "authenticated" || !user?.id) return LEGACY_GUEST_KEY;
     return {
       uid: user.id,
       teamId: "new",

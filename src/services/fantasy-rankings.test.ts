@@ -47,7 +47,7 @@ describe("fantasy global rankings", () => {
     expect(overflow.rows).toEqual(last.rows);
   });
 
-  it("filters by manager or team name", () => {
+  it("filters by public team name without searching manager profile fields", () => {
     const all = buildGlobalRankings(200);
     const target = all[42];
     const result = selectRankingsPage(all, {
@@ -59,6 +59,14 @@ describe("fantasy global rankings", () => {
     });
     expect(result.total).toBeGreaterThan(0);
     expect(result.rows.every((r) => r.teamName === target.teamName)).toBe(true);
+    expect(
+      selectRankingsPage(all, {
+        page: 1,
+        pageSize: 50,
+        sort: "overall",
+        query: target.managerName,
+      }).total,
+    ).toBe(0);
     // Podium and myRank ignore the search filter.
     expect(result.podium).toHaveLength(3);
     expect(result.myRank?.managerId).toBe(target.managerId);
@@ -94,7 +102,7 @@ describe("fantasy global rankings", () => {
     expect(result.rows.slice(0, 2).map((row) => row.totalScore)).toEqual([200, 100]);
   });
 
-  it("keeps the podium on the overall board while viewing gameweek rank", () => {
+  it("uses the active gameweek board for the podium", () => {
     const all = buildGlobalRankings(4).map((row, index) => ({
       ...row,
       gameweekScore: index === 3 ? 999 : index,
@@ -108,7 +116,7 @@ describe("fantasy global rankings", () => {
 
     expect(result.rows[0].managerId).toBe(all[3].managerId);
     expect(result.podium.map((row) => row.managerId)).toEqual(
-      all.slice(0, 3).map((row) => row.managerId),
+      result.rows.slice(0, 3).map((row) => row.managerId),
     );
   });
 

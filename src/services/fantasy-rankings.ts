@@ -21,7 +21,7 @@ export interface RankingsQuery {
 export interface RankingsPage {
   rows: LeagueStanding[];
   total: number;
-  /** Top 3 of the *overall* board, independent of paging/search. */
+  /** Top 3 for the active sort, independent of paging/search. */
   podium: LeagueStanding[];
   myRank?: LeagueStanding;
 }
@@ -131,7 +131,7 @@ function sortRows(rows: LeagueStanding[], sort: RankingsSort): LeagueStanding[] 
 export function matchesQuery(row: LeagueStanding, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-  return row.managerName.toLowerCase().includes(q) || row.teamName.toLowerCase().includes(q);
+  return row.teamName.toLowerCase().includes(q);
 }
 
 /**
@@ -162,7 +162,7 @@ export function selectRankingsPage(
   return {
     rows: filtered.slice(start, start + pageSize),
     total,
-    podium: board.slice(0, 3),
+    podium: sorted.slice(0, 3),
     myRank: id ? sorted.find((row) => row.managerId === id) : undefined,
   };
 }

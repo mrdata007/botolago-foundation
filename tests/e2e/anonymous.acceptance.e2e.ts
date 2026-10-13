@@ -10,14 +10,61 @@ const viewports = [
   { name: "desktop", width: 1440, height: 900 },
 ] as const;
 
-const routes = ["/", "/news", "/matches", "/fantasy/rules", "/profile"] as const;
+const criticalRoutes = [
+  "/",
+  "/news",
+  "/matches",
+  "/fantasy",
+  "/fantasy/rules",
+  "/profile",
+  "/terms",
+  "/privacy",
+] as const;
+
+const fullRouteMatrix = [
+  ...criticalRoutes,
+  "/news/preview-a1",
+  "/news/does-not-exist",
+  "/matches/does-not-exist",
+  "/fantasy/create",
+  "/fantasy/create/squad",
+  "/fantasy/create/review",
+  "/fantasy/team",
+  "/fantasy/points",
+  "/fantasy/transfers",
+  "/fantasy/leagues",
+  "/fantasy/leagues/lg1",
+  "/fantasy/fixtures",
+  "/fantasy/players",
+  "/fantasy/players/fp_war_1",
+  "/fantasy/top-players",
+  "/fantasy/rankings",
+  "/auth",
+  "/auth/login",
+  "/auth/callback",
+  "/auth/mfa?next=%2Fadmin",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/auth/verify",
+  "/auth/profile-setup",
+  "/auth/update-password",
+  "/admin",
+  "/admin/approvals",
+  "/admin/audit",
+  "/admin/security",
+  "/admin/staff",
+  "/admin/staff/demo",
+] as const;
 
 for (const language of ["fr", "ar"] as const) {
   for (const viewport of viewports) {
     test(`${language} ${viewport.name}: anonymous critical routes`, async ({ page }, testInfo) => {
+      const usesFullMatrix = viewport.name === "mobile-390" || viewport.name === "desktop";
+      test.setTimeout(usesFullMatrix ? 240_000 : 120_000);
       const diagnostics = observePage(page);
       await page.setViewportSize(viewport);
       await initializeLanguage(page, language);
+      const routes = usesFullMatrix ? fullRouteMatrix : criticalRoutes;
 
       for (const route of routes) {
         await page.goto(route, { waitUntil: "networkidle" });

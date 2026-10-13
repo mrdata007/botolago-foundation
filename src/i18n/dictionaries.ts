@@ -24,6 +24,72 @@ export const dictionaries = {
     "nav.matches": "Matches",
     "nav.profile": "Profil",
 
+    "legal.links.navigation": "Liens juridiques",
+    "legal.links.terms": "Conditions d'utilisation",
+    "legal.links.privacy": "Politique de confidentialité",
+    "legal.links.and": "et la",
+    "legal.consent.accept_prefix": "J'accepte les",
+    "legal.consent.continue_prefix": "En continuant, vous acceptez les",
+    "legal.placeholder.badge": "BROUILLON JURIDIQUE — À REMPLACER AVANT LE LANCEMENT",
+    "legal.placeholder.notice":
+      "Les valeurs entre crochets sont des espaces réservés. Elles doivent être validées et remplacées avant toute mise en production publique.",
+    "legal.meta.effective_date": "Date d'entrée en vigueur",
+    "legal.meta.entity": "Entité juridique",
+    "legal.meta.contact": "Contact juridique et confidentialité",
+    "legal.meta.minimum_age": "Âge minimum",
+    "legal.meta.governing_law": "Droit applicable et juridiction",
+    "legal.value.effective_date": "[À REMPLACER — DATE D'ENTRÉE EN VIGUEUR]",
+    "legal.value.entity": "[À REMPLACER — NOM LÉGAL DE L'ENTITÉ]",
+    "legal.value.contact": "[À REMPLACER — E-MAIL ET ADRESSE DE CONTACT]",
+    "legal.value.minimum_age": "[À REMPLACER — ÂGE MINIMUM]",
+    "legal.value.governing_law": "[À REMPLACER — DROIT APPLICABLE ET JURIDICTION]",
+    "legal.back_home": "Retour à l'accueil",
+    "legal.terms.title": "Conditions d'utilisation",
+    "legal.terms.summary":
+      "Ces conditions encadrent l'accès à BotolaGO, à ses contenus football et à ses fonctionnalités Fantasy.",
+    "legal.terms.eligibility.title": "1. Éligibilité et âge minimum",
+    "legal.terms.eligibility.body":
+      "Vous ne pouvez utiliser BotolaGO que si vous respectez l'âge minimum indiqué ci-dessus et si la loi applicable vous autorise à accepter ces conditions. Une autorisation parentale peut être requise.",
+    "legal.terms.accounts.title": "2. Comptes et sécurité",
+    "legal.terms.accounts.body":
+      "Vous devez fournir des informations exactes, protéger vos identifiants et nous signaler tout accès non autorisé. Vous êtes responsable de l'activité réalisée depuis votre compte.",
+    "legal.terms.fantasy.title": "3. Fantasy et règles du jeu",
+    "legal.terms.fantasy.body":
+      "La Fantasy BotolaGO est proposée à des fins de divertissement. Les budgets, délais, points, classements et règles affichés dans l'application s'appliquent à chaque journée. BotolaGO ne constitue pas un service de pari.",
+    "legal.terms.content.title": "4. Contenus et comportement",
+    "legal.terms.content.body":
+      "Les textes, marques, interfaces et données protégées restent la propriété de leurs titulaires. Vous ne devez pas détourner le service, perturber son fonctionnement, automatiser un accès abusif ni publier de contenu illicite.",
+    "legal.terms.availability.title": "5. Disponibilité et modifications",
+    "legal.terms.availability.body":
+      "Nous pouvons corriger, suspendre ou faire évoluer des fonctionnalités, des données, des règles Fantasy ou des contenus. Nous cherchons à fournir un service fiable sans garantir une disponibilité ininterrompue.",
+    "legal.terms.termination.title": "6. Suspension, responsabilité et contact",
+    "legal.terms.termination.body":
+      "Un compte peut être limité ou fermé en cas de violation de ces conditions. Les limites de responsabilité et recours dépendent du droit applicable indiqué ci-dessus. Pour toute question, utilisez le contact juridique réservé ci-dessus.",
+    "legal.privacy.title": "Politique de confidentialité",
+    "legal.privacy.summary":
+      "Cette politique explique quelles données BotolaGO traite, pourquoi elles sont utilisées et quels choix sont disponibles.",
+    "legal.privacy.collection.title": "1. Données collectées",
+    "legal.privacy.collection.body":
+      "Nous pouvons traiter les données de compte, préférences linguistiques et clubs suivis, équipes Fantasy, ligues, interactions avec les articles, informations techniques, journaux de sécurité et communications adressées au support.",
+    "legal.privacy.use.title": "2. Utilisation des données",
+    "legal.privacy.use.body":
+      "Ces données servent à créer et sécuriser les comptes, fournir les actualités et la Fantasy, enregistrer vos choix, prévenir les abus, améliorer les performances et répondre à vos demandes.",
+    "legal.privacy.sharing.title": "3. Prestataires et partage",
+    "legal.privacy.sharing.body":
+      "Les données peuvent être confiées à des prestataires indispensables à l'hébergement, l'authentification, l'analyse, la sécurité et la communication. Elles peuvent aussi être communiquées lorsque la loi l'exige. Nous ne les vendons pas comme une liste de contacts.",
+    "legal.privacy.retention.title": "4. Conservation et sécurité",
+    "legal.privacy.retention.body":
+      "Les données sont conservées pendant la durée nécessaire aux finalités décrites, aux obligations légales et à la résolution des litiges. Des mesures techniques et organisationnelles adaptées visent à réduire les risques d'accès, de perte ou d'altération.",
+    "legal.privacy.rights.title": "5. Vos droits et choix",
+    "legal.privacy.rights.body":
+      "Selon le droit applicable, vous pouvez demander l'accès, la correction, la suppression, la limitation, l'opposition ou la portabilité de certaines données, et retirer un consentement lorsque celui-ci fonde le traitement.",
+    "legal.privacy.children.title": "6. Mineurs",
+    "legal.privacy.children.body":
+      "BotolaGO n'est pas destiné aux personnes qui n'atteignent pas l'âge minimum réservé ci-dessus. Si des données d'un mineur ont été fournies contrairement à cette règle, contactez-nous afin que nous puissions les examiner et les supprimer lorsque nécessaire.",
+    "legal.privacy.changes.title": "7. Modifications et contact",
+    "legal.privacy.changes.body":
+      "Nous pouvons mettre à jour cette politique et afficherons une nouvelle date d'entrée en vigueur. Pour exercer un droit ou poser une question, utilisez le contact confidentialité réservé ci-dessus.",
+
     "home.greeting_morning": "Bonjour",
     "home.greeting_afternoon": "Bon après-midi",
     "home.greeting_evening": "Bonsoir",
@@ -75,6 +141,8 @@ export const dictionaries = {
     "article.updated": "Mis à jour",
     "article.not_found_title": "Article introuvable",
     "article.not_found_desc": "Cet article a peut-être été retiré ou déplacé.",
+    "article.translation_unavailable":
+      "Cette traduction n’est pas encore disponible. L’article original est affiché.",
 
     "matches.title": "Matchs",
     "matches.tab.all": "Tous",
@@ -145,7 +213,9 @@ export const dictionaries = {
     "matches.detail.tab.h2h": "Face à face",
     "matches.detail.tabs_label": "Sections du match",
     "matches.detail.no_events": "Aucun fait marquant pour le moment.",
+    "matches.detail.no_events_finished": "Aucun événement détaillé n’est disponible pour ce match.",
     "matches.detail.no_stats": "Les statistiques seront disponibles au coup d'envoi.",
+    "matches.detail.no_stats_finished": "Aucune statistique n'est disponible pour ce match.",
     "matches.detail.stats_title": "Statistiques de l'équipe",
     "matches.detail.momentum_title": "Momentum du match",
     "matches.detail.momentum_desc": "Quelle équipe met le plus de pression, minute par minute.",
@@ -382,7 +452,7 @@ export const dictionaries = {
     "fantasy.rankings.create_team": "Créer mon équipe",
     "fantasy.rankings.sort_overall": "Général",
     "fantasy.rankings.sort_gameweek": "Journée",
-    "fantasy.rankings.search": "Rechercher un manager ou une équipe",
+    "fantasy.rankings.search": "Rechercher une équipe",
     "fantasy.rankings.manager": "Manager",
     "fantasy.rankings.empty": "Aucun manager ne correspond à votre recherche.",
     "fantasy.rankings.count": "managers classés",
@@ -444,6 +514,9 @@ export const dictionaries = {
     "fantasy.transfers.free_hit_snapshot_taken":
       "Sauvegarde de l'équipe Free Hit effectuée. Elle sera restaurée à la fin de la journée.",
     "fantasy.transfers.error.over_budget": "Budget insuffisant pour ces transferts.",
+    "fantasy.transfers.recruit_target":
+      "{player} est présélectionné. Choisissez un joueur du même poste à remplacer.",
+    "fantasy.transfers.recruit_already_owned": "{player} est déjà dans votre effectif.",
     "fantasy.transfers.error.deadline": "La deadline est dépassée — impossible de confirmer.",
     "fantasy.transfers.error.no_changes": "Aucun transfert à confirmer.",
     "fantasy.picker.title": "Choisir un joueur",
@@ -454,6 +527,9 @@ export const dictionaries = {
     "fantasy.picker.filter_status": "Disponibilité",
     "fantasy.picker.sort": "Trier par",
     "fantasy.picker.sort.price": "Prix",
+    "fantasy.picker.sort.fixture": "Prochain match",
+    "fantasy.picker.sort.availability": "Disponibilité",
+    "fantasy.picker.sort.name": "Nom",
     "fantasy.picker.sort.form": "Forme",
     "fantasy.picker.sort.points": "Points",
     "fantasy.picker.sort.ownership": "Sélection",
@@ -524,6 +600,12 @@ export const dictionaries = {
     "fantasy.leagues.search_manager": "Rechercher un manager",
     "fantasy.leagues.me": "Moi",
     "fantasy.players.title": "Joueurs",
+    "fantasy.players.decision_intro":
+      "Comparez les joueurs avec leur disponibilité, leur prix et leur prochain match vérifié.",
+    "fantasy.players.open_profile": "Voir le profil du joueur",
+    "fantasy.players.no_fixture": "Aucun match programmé",
+    "fantasy.players.fixture_loading": "Chargement du prochain match…",
+    "fantasy.players.fixture_error": "Prochain match indisponible",
     "fantasy.players.watchlist": "Liste de suivi",
     "fantasy.players.add_watch": "Ajouter à ma liste",
     "fantasy.players.remove_watch": "Retirer",
@@ -607,7 +689,7 @@ export const dictionaries = {
     "common.away": "Extérieur",
     "common.vs": "vs",
 
-    "profile.title": "Profile\n\n",
+    "profile.title": "Profil",
     "profile.coming_soon": "Votre profil personnalisé arrive bientôt.",
     "profile.language": "Langue de l'application",
     "profile.followed_clubs": "Clubs suivis",
@@ -704,6 +786,9 @@ export const dictionaries = {
     "fantasy.leagues.role.creator": "Admin",
     "fantasy.leagues.role.member": "Membre",
     "fantasy.leagues.copied": "Code copié",
+    "fantasy.leagues.copy_failed": "Impossible de copier le code.",
+    "fantasy.leagues.recover_invite": "Générer un nouveau code d’invitation",
+    "fantasy.leagues.invite_recovered": "Nouveau code généré. L’ancien code est désactivé.",
     "fantasy.leagues.created": "Ligue créée",
     "fantasy.leagues.joined": "Ligue rejointe",
     "fantasy.leagues.error.invalid_code": "Code d'invitation invalide.",
@@ -1035,6 +1120,71 @@ export const dictionaries = {
     "nav.matches": "المباريات",
     "nav.profile": "الملف الشخصي",
 
+    "legal.links.navigation": "روابط قانونية",
+    "legal.links.terms": "شروط الاستخدام",
+    "legal.links.privacy": "سياسة الخصوصية",
+    "legal.links.and": "و",
+    "legal.consent.accept_prefix": "أوافق على",
+    "legal.consent.continue_prefix": "بمتابعتك، فإنك توافق على",
+    "legal.placeholder.badge": "مسودة قانونية — يجب استبدال العناصر النائبة قبل الإطلاق",
+    "legal.placeholder.notice":
+      "القيم بين معقوفين عناصر نائبة، ويجب مراجعتها واعتمادها واستبدالها قبل أي إطلاق عام.",
+    "legal.meta.effective_date": "تاريخ السريان",
+    "legal.meta.entity": "الجهة القانونية",
+    "legal.meta.contact": "جهة الاتصال القانونية والخصوصية",
+    "legal.meta.minimum_age": "الحد الأدنى للعمر",
+    "legal.meta.governing_law": "القانون الحاكم والاختصاص القضائي",
+    "legal.value.effective_date": "[عنصر نائب — تاريخ السريان]",
+    "legal.value.entity": "[عنصر نائب — الاسم القانوني للجهة]",
+    "legal.value.contact": "[عنصر نائب — البريد الإلكتروني وعنوان الاتصال]",
+    "legal.value.minimum_age": "[عنصر نائب — الحد الأدنى للعمر]",
+    "legal.value.governing_law": "[عنصر نائب — القانون الحاكم والاختصاص القضائي]",
+    "legal.back_home": "العودة إلى الرئيسية",
+    "legal.terms.title": "شروط الاستخدام",
+    "legal.terms.summary": "تنظم هذه الشروط الوصول إلى BotolaGO ومحتوى كرة القدم وميزات الفانتازي.",
+    "legal.terms.eligibility.title": "1. الأهلية والحد الأدنى للعمر",
+    "legal.terms.eligibility.body":
+      "لا يجوز لك استخدام BotolaGO إلا إذا استوفيت الحد الأدنى للعمر الموضح أعلاه وكان القانون المعمول به يسمح لك بقبول هذه الشروط. وقد تكون موافقة ولي الأمر مطلوبة.",
+    "legal.terms.accounts.title": "2. الحسابات والأمان",
+    "legal.terms.accounts.body":
+      "يجب تقديم معلومات صحيحة وحماية بيانات الدخول وإبلاغنا عن أي وصول غير مصرح به. وتتحمل مسؤولية النشاط الذي يتم عبر حسابك.",
+    "legal.terms.fantasy.title": "3. الفانتازي وقواعد اللعبة",
+    "legal.terms.fantasy.body":
+      "تقدم فانتازي BotolaGO لأغراض ترفيهية. وتطبق الميزانيات والمواعيد والنقاط والتصنيفات والقواعد المعروضة في التطبيق على كل جولة. ولا تمثل BotolaGO خدمة مراهنات.",
+    "legal.terms.content.title": "4. المحتوى والسلوك",
+    "legal.terms.content.body":
+      "تبقى النصوص والعلامات والواجهات والبيانات المحمية ملكًا لأصحابها. ولا يجوز إساءة استخدام الخدمة أو تعطيلها أو أتمتة وصول مسيء أو نشر محتوى غير قانوني.",
+    "legal.terms.availability.title": "5. التوفر والتعديلات",
+    "legal.terms.availability.body":
+      "يجوز لنا تصحيح الميزات أو البيانات أو قواعد الفانتازي أو المحتوى أو تعليقها أو تطويرها. ونسعى إلى تقديم خدمة موثوقة دون ضمان التوفر المتواصل.",
+    "legal.terms.termination.title": "6. التعليق والمسؤولية والتواصل",
+    "legal.terms.termination.body":
+      "قد يتم تقييد الحساب أو إغلاقه عند مخالفة هذه الشروط. وتخضع حدود المسؤولية ووسائل الانتصاف للقانون الحاكم الموضح أعلاه. ولأي استفسار استخدم جهة الاتصال القانونية النائبة أعلاه.",
+    "legal.privacy.title": "سياسة الخصوصية",
+    "legal.privacy.summary":
+      "توضح هذه السياسة البيانات التي تعالجها BotolaGO وأسباب استخدامها والخيارات المتاحة لك.",
+    "legal.privacy.collection.title": "1. البيانات التي نجمعها",
+    "legal.privacy.collection.body":
+      "قد نعالج بيانات الحساب وتفضيلات اللغة والأندية المتابعة وفرق الفانتازي والدوريات والتفاعل مع المقالات والمعلومات التقنية وسجلات الأمان والرسائل المرسلة إلى الدعم.",
+    "legal.privacy.use.title": "2. استخدام البيانات",
+    "legal.privacy.use.body":
+      "نستخدم هذه البيانات لإنشاء الحسابات وتأمينها وتقديم الأخبار والفانتازي وحفظ اختياراتك ومنع إساءة الاستخدام وتحسين الأداء والرد على طلباتك.",
+    "legal.privacy.sharing.title": "3. مقدمو الخدمة والمشاركة",
+    "legal.privacy.sharing.body":
+      "قد نعهد بالبيانات إلى مقدمي الخدمات الضروريين للاستضافة والمصادقة والتحليل والأمان والتواصل، وقد نكشف عنها إذا تطلب القانون ذلك. ولا نبيعها كقائمة جهات اتصال.",
+    "legal.privacy.retention.title": "4. الاحتفاظ والأمان",
+    "legal.privacy.retention.body":
+      "نحتفظ بالبيانات للمدة اللازمة للأغراض الموضحة والالتزامات القانونية وتسوية النزاعات. وتهدف تدابير تقنية وتنظيمية مناسبة إلى تقليل مخاطر الوصول أو الفقد أو التغيير.",
+    "legal.privacy.rights.title": "5. حقوقك وخياراتك",
+    "legal.privacy.rights.body":
+      "بحسب القانون المعمول به، قد يحق لك طلب الوصول إلى بعض البيانات أو تصحيحها أو حذفها أو تقييدها أو الاعتراض على معالجتها أو نقلها، وسحب الموافقة عندما تكون أساس المعالجة.",
+    "legal.privacy.children.title": "6. القاصرون",
+    "legal.privacy.children.body":
+      "BotolaGO غير موجه لمن هم دون الحد الأدنى للعمر النائب أعلاه. وإذا قُدمت بيانات قاصر خلافًا لهذه القاعدة، فتواصل معنا لمراجعتها وحذفها عند الحاجة.",
+    "legal.privacy.changes.title": "7. التعديلات والتواصل",
+    "legal.privacy.changes.body":
+      "قد نحدّث هذه السياسة وسنعرض تاريخ سريان جديدًا. ولممارسة حق أو طرح سؤال، استخدم جهة اتصال الخصوصية النائبة أعلاه.",
+
     "home.greeting_morning": "صباح الخير",
     "home.greeting_afternoon": "مساء الخير",
     "home.greeting_evening": "مساء الخير",
@@ -1085,6 +1235,7 @@ export const dictionaries = {
     "article.updated": "حُدِّث",
     "article.not_found_title": "المقال غير موجود",
     "article.not_found_desc": "قد يكون هذا المقال قد أُزيل أو نُقل.",
+    "article.translation_unavailable": "هذه الترجمة غير متاحة بعد. يتم عرض المقال بلغته الأصلية.",
 
     "matches.title": "المباريات",
     "matches.tab.all": "الكل",
@@ -1155,7 +1306,9 @@ export const dictionaries = {
     "matches.detail.tab.h2h": "المواجهات",
     "matches.detail.tabs_label": "أقسام المباراة",
     "matches.detail.no_events": "لا توجد أحداث بارزة حتى الآن.",
+    "matches.detail.no_events_finished": "لا تتوفر أحداث تفصيلية لهذه المباراة.",
     "matches.detail.no_stats": "ستتوفر الإحصائيات عند انطلاق المباراة.",
+    "matches.detail.no_stats_finished": "لا تتوفر إحصائيات لهذه المباراة.",
     "matches.detail.stats_title": "إحصائيات الفريقين",
     "matches.detail.momentum_title": "أفضلية المباراة",
     "matches.detail.momentum_desc": "أي فريق يضغط أكثر، دقيقة بدقيقة.",
@@ -1384,7 +1537,7 @@ export const dictionaries = {
     "fantasy.rankings.create_team": "إنشاء فريقي",
     "fantasy.rankings.sort_overall": "عام",
     "fantasy.rankings.sort_gameweek": "الجولة",
-    "fantasy.rankings.search": "ابحث عن مدرب أو فريق",
+    "fantasy.rankings.search": "ابحث عن فريق",
     "fantasy.rankings.manager": "المدرب",
     "fantasy.rankings.empty": "لا يوجد مدرب مطابق لبحثك.",
     "fantasy.rankings.count": "مدرب في الترتيب",
@@ -1446,6 +1599,8 @@ export const dictionaries = {
     "fantasy.transfers.free_hit_snapshot_taken":
       "تم حفظ فريقك قبل الضربة الحرة وسيُستعاد بعد الجولة.",
     "fantasy.transfers.error.over_budget": "الرصيد لا يكفي لإتمام الانتقالات.",
+    "fantasy.transfers.recruit_target": "تم تحديد {player}. اختر لاعباً من المركز نفسه لاستبداله.",
+    "fantasy.transfers.recruit_already_owned": "{player} موجود بالفعل في تشكيلتك.",
     "fantasy.transfers.error.deadline": "انتهى الموعد النهائي — لا يمكن التأكيد.",
     "fantasy.transfers.error.no_changes": "لا توجد انتقالات للتأكيد.",
     "fantasy.picker.title": "اختيار لاعب",
@@ -1456,6 +1611,9 @@ export const dictionaries = {
     "fantasy.picker.filter_status": "الجاهزية",
     "fantasy.picker.sort": "ترتيب حسب",
     "fantasy.picker.sort.price": "السعر",
+    "fantasy.picker.sort.fixture": "المباراة القادمة",
+    "fantasy.picker.sort.availability": "الجاهزية",
+    "fantasy.picker.sort.name": "الاسم",
     "fantasy.picker.sort.form": "الحالة",
     "fantasy.picker.sort.points": "النقاط",
     "fantasy.picker.sort.ownership": "الاختيار",
@@ -1526,6 +1684,12 @@ export const dictionaries = {
     "fantasy.leagues.search_manager": "ابحث عن مدير",
     "fantasy.leagues.me": "أنا",
     "fantasy.players.title": "اللاعبون",
+    "fantasy.players.decision_intro":
+      "قارن اللاعبين حسب الجاهزية والسعر والمباراة القادمة المؤكدة.",
+    "fantasy.players.open_profile": "عرض ملف اللاعب",
+    "fantasy.players.no_fixture": "لا توجد مباراة مبرمجة",
+    "fantasy.players.fixture_loading": "جارٍ تحميل المباراة القادمة…",
+    "fantasy.players.fixture_error": "تعذّر تحميل المباراة القادمة",
     "fantasy.players.watchlist": "قائمة المتابعة",
     "fantasy.players.add_watch": "أضف إلى قائمتي",
     "fantasy.players.remove_watch": "إزالة",
@@ -1605,7 +1769,7 @@ export const dictionaries = {
     "common.away": "خارج أرضه",
     "common.vs": "ضد",
 
-    "profile.title": "Profile\n\n",
+    "profile.title": "الملف الشخصي",
     "profile.coming_soon": "ملفك الشخصي قريباً.",
     "profile.language": "لغة التطبيق",
     "profile.followed_clubs": "الأندية المتابَعة",
@@ -1699,6 +1863,9 @@ export const dictionaries = {
     "fantasy.leagues.role.creator": "مسؤول",
     "fantasy.leagues.role.member": "عضو",
     "fantasy.leagues.copied": "تم نسخ الرمز",
+    "fantasy.leagues.copy_failed": "تعذر نسخ الرمز.",
+    "fantasy.leagues.recover_invite": "إنشاء رمز دعوة جديد",
+    "fantasy.leagues.invite_recovered": "تم إنشاء رمز جديد وتعطيل الرمز السابق.",
     "fantasy.leagues.created": "تم إنشاء الدوري",
     "fantasy.leagues.joined": "تم الانضمام إلى الدوري",
     "fantasy.leagues.error.invalid_code": "رمز الدعوة غير صالح.",

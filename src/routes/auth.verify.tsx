@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -15,9 +15,18 @@ export const Route = createFileRoute("/auth/verify")({
   validateSearch: (s: Record<string, unknown>) => {
     const next = typeof s.next === "string" ? sanitizeAuthCallbackNext(s.next) : undefined;
     return {
-      email: typeof s.email === "string" ? s.email : "",
+      email: typeof s.email === "string" ? s.email.trim() : "",
       ...(next && next !== "/" ? { next } : {}),
     };
+  },
+  beforeLoad: ({ search }) => {
+    if (!search.email) {
+      throw redirect({
+        to: "/auth/register",
+        search: { next: search.next ?? "/" },
+        replace: true,
+      });
+    }
   },
   component: VerifyPage,
 });

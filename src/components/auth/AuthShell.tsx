@@ -5,6 +5,7 @@ import { Logo } from "@/components/brand/Logo";
 import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { PageBackground } from "@/components/shell/PageBackground";
 import { useI18n } from "@/i18n/provider";
+import { LegalLinks } from "@/components/legal/LegalLinks";
 
 interface Props {
   title: string;
@@ -80,6 +81,7 @@ export function AuthShell({ title, subtitle, children, footer, showBack = true }
         </div>
 
         {footer && <div className="mt-5 text-center text-sm text-white/85">{footer}</div>}
+        <LegalLinks tone="inverse" className="mt-5" />
       </div>
     </div>
   );

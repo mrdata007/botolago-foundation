@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildArticleHead } from "./article-meta";
+import { buildArticleHead, resolveAppOrigin } from "./article-meta";
 import type { Article } from "@/types/domain";
 
 const article: Article = {
@@ -16,11 +16,16 @@ const article: Article = {
 };
 
 describe("article metadata", () => {
+  it("uses the reviewed production origin and rejects malformed configuration", () => {
+    expect(resolveAppOrigin("https://botolago.com/path")).toBe("https://botolago.com");
+    expect(resolveAppOrigin("not a URL")).toBe("https://botolago.com");
+  });
+
   it("emits article-specific social, canonical, image, and publication metadata", () => {
     const head = buildArticleHead(article, "article 1");
 
     expect(head.links).toEqual([
-      { rel: "canonical", href: "https://www.botolago.app/news/article%201" },
+      { rel: "canonical", href: "https://botolago.com/news/article%201" },
     ]);
     expect(head.meta).toContainEqual({ title: "Titre officiel — BotolaGO" });
     expect(head.meta).toContainEqual({ property: "og:type", content: "article" });

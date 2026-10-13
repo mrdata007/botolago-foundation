@@ -19,7 +19,6 @@ import { primaryNavItems } from "@/components/shell/primary-nav";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 import { fantasyService } from "@/services/fantasy-runtime";
-import { useAuth } from "@/auth/AuthProvider";
 
 type Step = {
   titleKey:
@@ -53,7 +52,6 @@ const steps: Step[] = [
 
 export function AtlasMatchdayLanding() {
   const { t, lang, dir } = useI18n();
-  const { status: authStatus } = useAuth();
   const gameweek = useQuery({
     queryKey: ["gameweek"],
     queryFn: () => fantasyService.getCurrentGameweek(),
@@ -215,24 +213,13 @@ export function AtlasMatchdayLanding() {
         </section>
 
         <div className="absolute inset-x-[13px] top-[680px] grid justify-items-center">
-          {authStatus === "authenticated" ? (
-            <Link
-              to="/fantasy/create"
-              className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              {t("fantasy.atlas.create")}
-              <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
-            </Link>
-          ) : (
-            <Link
-              to="/auth/login"
-              search={{ next: "/fantasy/create" }}
-              className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
-            >
-              {t("fantasy.atlas.create")}
-              <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
-            </Link>
-          )}
+          <Link
+            to="/fantasy/create"
+            className="flex min-h-11 w-full items-center justify-center gap-2.5 rounded-full border border-[#63b0ff]/90 bg-[linear-gradient(100deg,#216ee3,#2688ff)] px-4 text-[13px] font-extrabold shadow-[0_12px_25px_rgb(0_48_138/0.35),inset_0_1px_0_rgb(255_255_255/0.22)] transition-[filter,transform] hover:brightness-110 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+          >
+            {t("fantasy.atlas.create")}
+            <ChevronRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
+          </Link>
           <Link
             to="/fantasy/rules"
             className="mt-2.5 text-xs font-semibold text-[#2481f7] transition-colors hover:text-[#62a5ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"

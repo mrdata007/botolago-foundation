@@ -1,8 +1,9 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Clock, Share2 } from "lucide-react";
 import { newsService } from "@/services/news";
+import { NewsError } from "@/backend/news/errors";
 import { AppShell } from "@/components/shell/AppShell";
 import { ArticleCard } from "@/components/common/ArticleCard";
 import { Section } from "@/components/common/Section";
@@ -33,7 +34,6 @@ export const Route = createFileRoute("/news/$articleId")({
 function ArticlePage() {
   const { articleId } = Route.useParams();
   const { t, tr, lang, dir } = useI18n();
-  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const initialArticle = Route.useLoaderData();
 
@@ -41,11 +41,14 @@ function ArticlePage() {
     queryKey: ["news", "article", lang, articleId],
     queryFn: () => newsService.getArticle(articleId, lang),
     initialData: lang === "fr" ? (initialArticle ?? undefined) : undefined,
+    retry: (failureCount, error) =>
+      !(error instanceof NewsError && error.code === "article_not_found") && failureCount < 2,
   });
+  const relatedArticleId = articleQ.data?.id;
   const relatedQ = useQuery({
-    queryKey: ["news", "related", lang, articleId],
-    queryFn: () => newsService.getRelated(articleId, lang),
-    enabled: !!articleQ.data,
+    queryKey: ["news", "related", lang, relatedArticleId],
+    queryFn: () => newsService.getRelated(relatedArticleId!, lang),
+    enabled: !!relatedArticleId,
   });
   const clubsQ = useQuery({
     queryKey: ["news", "team-filters", lang],
@@ -53,6 +56,8 @@ function ArticlePage() {
   });
   const article = articleQ.data;
   const related = relatedQ.data ?? [];
+  const articleNotFound =
+    articleQ.error instanceof NewsError && articleQ.error.code === "article_not_found";
 
   if (articleQ.isLoading) {
     return (
@@ -62,7 +67,7 @@ function ArticlePage() {
     );
   }
 
-  if (articleQ.isError) {
+  if (articleQ.isError && !articleNotFound) {
     return (
       <AppShell backgroundVariant="news">
         <div className="mt-8">
@@ -72,7 +77,7 @@ function ArticlePage() {
     );
   }
 
-  if (!article) {
+  if (articleNotFound || !article) {
     return (
       <AppShell backgroundVariant="news">
         <div className="mt-8 rounded-[var(--radius-card-lg)] border border-[var(--border-subtle)] bg-[color:var(--surface)] p-6 text-center">
@@ -125,9 +130,8 @@ function ArticlePage() {
     <AppShell backgroundVariant="news">
       {/* Reading actions row */}
       <div className="mt-1 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => router.history.back()}
+        <Link
+          to="/news"
           aria-label={t("article.back")}
           className={cn(
             "inline-flex h-11 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-foreground",
@@ -138,7 +142,7 @@ function ArticlePage() {
         >
           <BackArrow className="h-4 w-4" aria-hidden />
           <span>{t("article.back")}</span>
-        </button>
+        </Link>
         <div className="flex items-center gap-1">
           <SavedButton articleId={article.id} variant="icon" />
           <button
@@ -159,6 +163,15 @@ function ArticlePage() {
           className="mt-2 rounded-full bg-[color:var(--brand-accent)]/10 px-3 py-1 text-center text-xs font-semibold text-[color:var(--brand-accent)]"
         >
           {t("article.share_copied")}
+        </div>
+      )}
+
+      {article.contentLanguage && article.contentLanguage !== lang && (
+        <div
+          role="status"
+          className="mt-3 rounded-xl border border-[var(--border-subtle)] bg-[color:var(--surface)] px-4 py-3 text-sm text-[color:var(--text-secondary)]"
+        >
+          {t("article.translation_unavailable")}
         </div>
       )}
 

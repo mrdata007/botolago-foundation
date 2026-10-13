@@ -78,8 +78,6 @@ test.describe("staging-backed critical journeys", () => {
     await initializeLanguage(page, "fr");
     await gotoHydrated(page, "/fantasy", "fr");
     await page.getByRole("link", { name: "Créer mon équipe" }).click();
-    await expect(page).toHaveURL(/\/auth\/login\?next=%2Ffantasy%2Fcreate/);
-    await login(page, firstEmail!, firstPassword!, "fr", false);
     await expect(page).toHaveURL(/\/fantasy\/create\/?$/);
     const welcome = page.getByRole("dialog", { name: "Bienvenue sur Fantasy BotolaGO" });
     if (await welcome.isVisible()) {
@@ -113,6 +111,11 @@ test.describe("staging-backed critical journeys", () => {
     await expect(review).toBeEnabled();
     await review.click();
     await page.waitForURL(/\/fantasy\/create\/review$/);
+    const signIn = page.getByRole("link", { name: "Se connecter" });
+    await expect(signIn).toBeVisible();
+    await signIn.click();
+    await login(page, firstEmail!, firstPassword!, "fr", false);
+    await expect(page).toHaveURL(/\/fantasy\/create\/review$/);
     const save = page.getByRole("button", { name: "Créer mon équipe" });
     await expect(save).toBeEnabled();
     await save.click();
@@ -143,6 +146,38 @@ test.describe("staging-backed critical journeys", () => {
     await gotoHydrated(page, "/fantasy/team", "ar");
     await expect(page.getByText("QA Acceptance FC")).toHaveCount(0);
     await expectNoHorizontalOverflow(page);
+    await diagnostics.verify(testInfo);
+  });
+
+  test("cloud league owner can rotate an invite and delete the league", async ({
+    page,
+  }, testInfo) => {
+    const diagnostics = observePage(page);
+    await initializeLanguage(page, "fr");
+    await login(page, firstEmail!, firstPassword!, "fr");
+    await gotoHydrated(page, "/fantasy/leagues", "fr");
+
+    const name = `QA Rotation ${Date.now()}`;
+    const nameInput = page.getByPlaceholder("Nom de la ligue");
+    await expect(nameInput).toBeEnabled();
+    await nameInput.fill(name);
+    await page.getByRole("button", { name: "Créer une ligue", exact: true }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Ligue créée" })).toBeVisible();
+    await page.getByRole("link", { name: new RegExp(name) }).click();
+    await expect(page.getByText(name, { exact: true })).toBeVisible();
+
+    const rotate = page.getByRole("button", {
+      name: "Générer un nouveau code d’invitation",
+      exact: true,
+    });
+    await expect(rotate).toBeVisible();
+    await rotate.click();
+    await expect(page.getByRole("status").filter({ hasText: "Nouveau code généré" })).toBeVisible();
+    await expect(page.locator(".font-mono.font-black")).toHaveText(/^[A-F0-9]{32}$/);
+    await page.getByRole("button", { name: "Supprimer la ligue", exact: true }).click();
+    await page.getByRole("button", { name: "Confirmer", exact: true }).click();
+    await expect(page).toHaveURL(/\/fantasy\/leagues$/);
+    await expect(page.getByText(name, { exact: true })).toHaveCount(0);
     await diagnostics.verify(testInfo);
   });
 });

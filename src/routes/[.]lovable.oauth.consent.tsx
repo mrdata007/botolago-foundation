@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { IS_DEMO_MODE } from "@/config/app-mode";
+import { useI18n } from "@/i18n/provider";
+import { OAUTH_CONSENT_COPY } from "@/lib/oauth-consent-copy";
 
 interface AuthorizationDetails {
   client?: { name?: string; client_id?: string; redirect_uri?: string };
@@ -55,17 +57,23 @@ export const Route = createFileRoute("/.lovable/oauth/consent")({
     return data;
   },
   component: Consent,
-  errorComponent: ({ error }) => (
-    <main className="mx-auto max-w-md p-6">
-      <h1 className="text-lg font-semibold">Authorization error</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {(error as Error)?.message ?? String(error)}
-      </p>
-    </main>
-  ),
+  errorComponent: ConsentError,
 });
 
+function ConsentError() {
+  const { lang, dir } = useI18n();
+  const copy = OAUTH_CONSENT_COPY[lang];
+  return (
+    <main dir={dir} className="mx-auto max-w-md p-6" data-testid="oauth-consent-error">
+      <h1 className="text-lg font-semibold">{copy.errorTitle}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{copy.errorBody}</p>
+    </main>
+  );
+}
+
 function Consent() {
+  const { lang, dir } = useI18n();
+  const copy = OAUTH_CONSENT_COPY[lang];
   const details = Route.useLoaderData();
   const { authorization_id } = Route.useSearch();
   const [busy, setBusy] = useState(false);
@@ -80,38 +88,44 @@ function Consent() {
       : await api.denyAuthorization(authorization_id);
     if (error) {
       setBusy(false);
-      setError(error.message);
+      setError(copy.errorBody);
       return;
     }
     const target = data?.redirect_url ?? data?.redirect_to;
     if (!target) {
       setBusy(false);
-      setError("No redirect returned by the authorization server.");
+      setError(copy.noRedirect);
       return;
     }
     window.location.href = target;
   }
 
-  const clientName = details?.client?.name ?? "an app";
+  const clientName = details?.client?.name ?? copy.clientFallback;
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6">
+    <main
+      dir={dir}
+      className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-6 p-6"
+      data-testid="oauth-consent"
+    >
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Connect {clientName} to BotolaGO</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This lets {clientName} use BotolaGO as you — reading your profile, fantasy team, and
-          fixtures through the app's MCP tools. Your data still follows BotolaGO's access rules.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight">{copy.title(clientName)}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{copy.description(clientName)}</p>
       </div>
 
       {details?.scopes && details.scopes.length > 0 && (
-        <ul className="rounded-xl border border-input bg-background/50 p-4 text-sm">
-          {details.scopes.map((s: string) => (
-            <li key={s} className="text-muted-foreground">
-              • {s}
-            </li>
-          ))}
-        </ul>
+        <section className="rounded-xl border border-input bg-background/50 p-4 text-sm">
+          <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-foreground">
+            {copy.scopes}
+          </h2>
+          <ul>
+            {details.scopes.map((s: string) => (
+              <li key={s} className="text-muted-foreground">
+                • {s}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {error && (
@@ -130,14 +144,14 @@ function Consent() {
           className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl cta-brand px-4 py-2 text-sm font-semibold disabled:opacity-60"
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-          Approve
+          {copy.approve}
         </button>
         <button
           disabled={busy}
           onClick={() => decide(false)}
           className="inline-flex min-h-11 items-center justify-center rounded-xl border border-input bg-background px-4 py-2 text-sm font-semibold hover:bg-accent disabled:opacity-60"
         >
-          Deny
+          {copy.deny}
         </button>
       </div>
     </main>

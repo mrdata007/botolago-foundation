@@ -155,6 +155,8 @@ export interface FixtureDifficulty {
   clubId: string;
   gameweek: number;
   opponentClubId: string;
+  /** Authoritative fixture kickoff returned by the difficulty API. */
+  kickoffAt?: string;
   isHome: boolean;
   difficulty: 1 | 2 | 3 | 4 | 5;
   isDouble?: boolean;
@@ -167,11 +169,11 @@ export interface TopPlayerOfWeek {
   rank: 1 | 2 | 3 | 4 | 5;
   gameweek: number;
   weeklyPoints: number;
-  goals: number;
-  assists: number;
-  cleanSheets: number;
+  goals?: number;
+  assists?: number;
+  cleanSheets?: number;
   minutes: number;
-  price: number;
-  ownershipPercent: number;
-  form: number;
+  price?: number;
+  ownershipPercent?: number;
+  form?: number;
 }

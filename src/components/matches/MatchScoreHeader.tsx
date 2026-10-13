@@ -2,6 +2,7 @@ import { CalendarClock, MapPin, Trophy } from "lucide-react";
 import { ClubCrest } from "@/components/common/ClubCrest";
 import { LiveIndicator } from "@/components/matches/LiveIndicator";
 import { useI18n } from "@/i18n/provider";
+import { presentGameweek, presentMatchScore } from "@/lib/match-score-presentation";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
 
@@ -38,14 +39,19 @@ export function MatchScoreHeader({
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled";
   const isPostponed = match.status === "postponed";
-
-  const hs = match.homeScore ?? 0;
-  const as = match.awayScore ?? 0;
-  const scoreA11y = t("matches.a11y.score")
-    .replace("{home}", tr(home.shortName))
-    .replace("{hs}", String(hs))
-    .replace("{away}", tr(away.shortName))
-    .replace("{as}", String(as));
+  const venue = tr(match.venue).trim();
+  const score = presentMatchScore(match);
+  const gameweek = presentGameweek(match.gameweek);
+  const unavailable = t("matches.season.unavailable");
+  const fixtureA11y = `${tr(home.shortName)} – ${tr(away.shortName)}`;
+  const scoreA11y = score.available
+    ? t("matches.a11y.score")
+        .replace("{home}", tr(home.shortName))
+        .replace("{hs}", String(score.home))
+        .replace("{away}", tr(away.shortName))
+        .replace("{as}", String(score.away))
+    : `${fixtureA11y} · ${unavailable}`;
+  const headerA11y = isLive || isFinished ? scoreA11y : `${fixtureA11y} · ${timeFmt}`;
 
   return (
     <header
@@ -67,7 +73,13 @@ export function MatchScoreHeader({
       <div className="relative flex items-center justify-between gap-2">
         <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[color:var(--brand-accent)]">
           <Trophy className="h-3.5 w-3.5" aria-hidden />
-          {t("matches.competition.botola")} · {t("matches.gameweek")} {match.gameweek}
+          {t("matches.competition.botola")}
+          {gameweek !== null ? (
+            <>
+              {" · "}
+              {t("matches.gameweek")} {gameweek}
+            </>
+          ) : null}
         </div>
         {isLive ? (
           <LiveIndicator minute={match.minute} size="md" />
@@ -95,19 +107,30 @@ export function MatchScoreHeader({
       <div
         className="relative mt-5 grid grid-cols-[1fr_auto_1fr] items-center gap-3 sm:gap-5"
         role="group"
-        aria-label={scoreA11y}
+        aria-label={headerA11y}
       >
         <TeamColumn club={home} />
         <div className="flex flex-col items-center px-1">
           {isLive || isFinished ? (
-            <div
-              className="flex items-baseline gap-2 font-mono text-5xl font-black tabular-nums tracking-tight text-foreground sm:text-6xl"
-              aria-live={isLive ? "polite" : "off"}
-            >
-              <span>{hs}</span>
-              <span className="text-[color:var(--text-muted)]">–</span>
-              <span>{as}</span>
-            </div>
+            score.available ? (
+              <div
+                className="flex items-baseline gap-2 font-mono text-5xl font-black tabular-nums tracking-tight text-foreground sm:text-6xl"
+                aria-live={isLive ? "polite" : "off"}
+              >
+                <span>{score.home}</span>
+                <span className="text-[color:var(--text-muted)]">–</span>
+                <span>{score.away}</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center" aria-live={isLive ? "polite" : "off"}>
+                <span className="font-mono text-5xl font-black text-[color:var(--text-muted)] sm:text-6xl">
+                  —
+                </span>
+                <span className="mt-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">
+                  {unavailable}
+                </span>
+              </div>
+            )
           ) : (
             <div className="flex flex-col items-center">
               <div className="font-mono text-3xl font-black tabular-nums text-foreground sm:text-4xl">
@@ -143,7 +166,12 @@ export function MatchScoreHeader({
         </p>
       )}
 
-      <div className="relative mt-5 grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-3 sm:grid-cols-3">
+      <div
+        className={cn(
+          "relative mt-5 grid grid-cols-1 gap-2 border-t border-[var(--border-subtle)] pt-3",
+          venue ? "sm:grid-cols-3" : "sm:grid-cols-2",
+        )}
+      >
         <MetaCell
           icon={<CalendarClock className="h-3.5 w-3.5" aria-hidden />}
           label={t("matches.detail.kickoff")}
@@ -154,11 +182,13 @@ export function MatchScoreHeader({
           label={t("matches.detail.competition")}
           value={t("matches.competition.botola")}
         />
-        <MetaCell
-          icon={<MapPin className="h-3.5 w-3.5" aria-hidden />}
-          label={t("matches.detail.venue")}
-          value={tr(match.venue)}
-        />
+        {venue && (
+          <MetaCell
+            icon={<MapPin className="h-3.5 w-3.5" aria-hidden />}
+            label={t("matches.detail.venue")}
+            value={venue}
+          />
+        )}
       </div>
     </header>
   );

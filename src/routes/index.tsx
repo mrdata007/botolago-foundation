@@ -303,6 +303,8 @@ function HomeContent() {
           <ErrorState onRetry={() => void leadQ.refetch()} />
         ) : leadQ.data ? (
           <ArticleCard article={leadQ.data} variant="lead" clubs={clubsQ.data ?? []} />
+        ) : leadQ.isSuccess ? (
+          <EmptyState compact>{t("state.empty")}</EmptyState>
         ) : (
           <ArticleCardSkeleton variant="lead" />
         )}
@@ -324,6 +326,8 @@ function HomeContent() {
             <ErrorState onRetry={() => void followedNewsQ.refetch()} />
           ) : !followedNewsQ.data ? (
             <SkeletonList count={3}>{() => <ArticleCardSkeleton />}</SkeletonList>
+          ) : followedNewsQ.data.length === 0 ? (
+            <EmptyState compact>{t("state.empty")}</EmptyState>
           ) : null}
           {followedNewsQ.data?.slice(0, 3).map((a) => (
             <ArticleCard key={a.id} article={a} clubs={clubsQ.data ?? []} />

@@ -10,7 +10,7 @@ import {
   AuthFieldLabel,
 } from "@/components/auth/AuthShell";
 import { useI18n } from "@/i18n/provider";
-import { authService } from "@/services/auth";
+import { authService, IS_MOCK_AUTH } from "@/services/auth";
 import {
   validateEmail,
   validateName,
@@ -20,9 +20,11 @@ import {
   normalizeUsername,
 } from "@/lib/validation";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import { HAS_SOCIAL_AUTH_PROVIDER, SOCIAL_AUTH_PROVIDERS } from "@/config/auth-providers";
 import { markWelcomeDone } from "@/lib/welcome";
 import { sanitizeAuthCallbackNext } from "@/lib/auth-callback";
 import { toast } from "sonner";
+import { LegalConsentNotice } from "@/components/legal/LegalLinks";
 
 export const Route = createFileRoute("/auth/register")({
   head: () => ({ meta: [{ title: "Créer un compte — BotolaGO" }] }),
@@ -117,6 +119,11 @@ function RegisterPage() {
   };
 
   const onSocial = async (provider: "google" | "apple") => {
+    if (!SOCIAL_AUTH_PROVIDERS[provider]) return;
+    if (!terms) {
+      setErrors({ terms: "auth.error.terms_required" });
+      return;
+    }
     setSubmitting(true);
     const res =
       provider === "google"
@@ -124,15 +131,21 @@ function RegisterPage() {
         : await authService.signInWithApple(next);
     setSubmitting(false);
     if (!res.ok) {
-      setErrors({ form: "auth.error.generic" });
+      setErrors({
+        form:
+          res.errorCode === "provider_unavailable"
+            ? "auth.error.provider_unavailable"
+            : "auth.error.generic",
+      });
       return;
     }
-    markWelcomeDone();
-    if (res.data?.profileComplete) {
-      navigate({ to: next });
-      return;
+    // Live OAuth completes only through /auth/callback. Mock mode has no
+    // provider redirect and may continue synchronously.
+    if (IS_MOCK_AUTH) {
+      markWelcomeDone();
+      if (res.data?.profileComplete) navigate({ to: next });
+      else navigate({ to: "/auth/profile-setup", search: { next } });
     }
-    navigate({ to: "/auth/profile-setup", search: { next } });
   };
 
   return (
@@ -277,7 +290,7 @@ function RegisterPage() {
             className="mt-0.5 h-4 w-4 rounded border-input"
             aria-invalid={!!errors.terms}
           />
-          <span>{t("auth.register.accept_terms")}</span>
+          <LegalConsentNotice mode="accept" />
         </label>
         {errors.terms && (
           <p role="alert" className="text-xs font-semibold text-destructive">
@@ -300,34 +313,35 @@ function RegisterPage() {
           {submitting ? t("auth.submitting") : t("auth.register.cta")}
         </AuthPrimaryButton>
 
-        <AuthDivider label={t("auth.or_continue_with")} />
+        {HAS_SOCIAL_AUTH_PROVIDER ? (
+          <>
+            <AuthDivider label={t("auth.or_continue_with")} />
 
-        <div className="grid gap-2">
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("google")}
-            disabled={submitting}
-          >
-            <span>Google</span>
-          </AuthSecondaryButton>
-          <AuthSecondaryButton
-            type="button"
-            onClick={() => onSocial("apple")}
-            disabled={submitting}
-          >
-            <span>Apple</span>
-          </AuthSecondaryButton>
-        </div>
+            <div className="grid gap-2">
+              {SOCIAL_AUTH_PROVIDERS.google ? (
+                <AuthSecondaryButton
+                  type="button"
+                  onClick={() => onSocial("google")}
+                  disabled={submitting}
+                >
+                  <span>Google</span>
+                </AuthSecondaryButton>
+              ) : null}
+              {SOCIAL_AUTH_PROVIDERS.apple ? (
+                <AuthSecondaryButton
+                  type="button"
+                  onClick={() => onSocial("apple")}
+                  disabled={submitting}
+                >
+                  <span>Apple</span>
+                </AuthSecondaryButton>
+              ) : null}
+            </div>
+          </>
+        ) : null}
 
         <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
-          {t("auth.terms_notice")}{" "}
-          <Link
-            to="/auth/login"
-            search={{ next }}
-            className="font-semibold text-[color:var(--brand-primary)] hover:underline"
-          >
-            {t("auth.register.login_link")}
-          </Link>
+          <LegalConsentNotice />
         </p>
       </form>
     </AuthShell>
