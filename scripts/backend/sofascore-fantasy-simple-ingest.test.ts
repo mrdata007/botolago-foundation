@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { providerFixture } from "../../src/backend/football/provider/performance-fixtures";
 import {
   parseSofascoreIncidents,
@@ -370,4 +371,31 @@ describe("no other provider anywhere in the new code", () => {
       expect(readFileSync(file, "utf8").toLowerCase()).not.toContain("flashscore");
     }
   });
+});
+
+describe("errorText", () => {
+  test("a refused read says why, on one line, at most 300 characters", async () => {
+    const { errorText } = await import("./sofascore-fantasy-simple-ingest");
+    expect(
+      errorText(
+        '{"message":"Failed to run sql query: ERROR:  42703: column \\"x\\" does not exist"}',
+      ),
+    ).toBe('Failed to run sql query: ERROR: 42703: column "x" does not exist');
+    expect(errorText("plain\n  text")).toBe("plain text");
+    expect(errorText("")).toBe("(empty body)");
+    expect(errorText(`{"message":"${"a".repeat(400)}"}`).length).toBe(300);
+  });
+});
+
+test("CLI failures stay visible when the report workflow redirects stdout", () => {
+  const run = spawnSync(
+    process.execPath,
+    ["scripts/backend/sofascore-fantasy-simple-ingest.ts", "--mode", "invalid-mode"],
+    { env: {}, encoding: "utf8", timeout: 10000 },
+  );
+  expect(run.status).toBe(2);
+  expect(run.stderr).toContain(
+    "SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE: --mode must be report, rehearse or apply",
+  );
+  expect(run.stdout).not.toContain("SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE");
 });
