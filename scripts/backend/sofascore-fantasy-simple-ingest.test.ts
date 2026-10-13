@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { providerFixture } from "../../src/backend/football/provider/performance-fixtures";
 import {
   parseSofascoreIncidents,
@@ -384,4 +385,17 @@ describe("errorText", () => {
     expect(errorText("")).toBe("(empty body)");
     expect(errorText(`{"message":"${"a".repeat(400)}"}`).length).toBe(300);
   });
+});
+
+test("CLI failures stay visible when the report workflow redirects stdout", () => {
+  const run = spawnSync(
+    process.execPath,
+    ["scripts/backend/sofascore-fantasy-simple-ingest.ts", "--mode", "invalid-mode"],
+    { env: {}, encoding: "utf8", timeout: 10000 },
+  );
+  expect(run.status).toBe(2);
+  expect(run.stderr).toContain(
+    "SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE: --mode must be report, rehearse or apply",
+  );
+  expect(run.stdout).not.toContain("SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE");
 });

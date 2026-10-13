@@ -410,7 +410,7 @@ if (import.meta.main) {
   try {
     process.exitCode = await main();
   } catch (error) {
-    console.log(
+    console.error(
       `SOFASCORE_FANTASY_REFUSED_BEFORE_WRITE: ${error instanceof Error ? error.message : error}`,
     );
     process.exitCode = 2;
