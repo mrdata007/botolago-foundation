@@ -709,8 +709,9 @@ function HelpGroup() {
 
 /**
  * Profil › BotolaGO+ (plan, renewal date, cancel, restore, receipts). Declared only when the
- * build lets the screens exist, so with `PREMIUM_BUILD` off its code is not in the build at all
- * (the constant folds to `null` and the dynamic import goes with it).
+ * build lets the screens exist: with `PREMIUM_BUILD` off the section never renders and nothing
+ * requests its chunk (the bundler still emits the file, like any lazy route, but no page asks
+ * for it).
  */
 const PlusProfileSection = PREMIUM_SURFACES
   ? lazy(() =>

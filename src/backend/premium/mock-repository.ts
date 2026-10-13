@@ -17,13 +17,14 @@ import {
  *
  * The scenario comes from `?plus=<scenario>` (development only), so every state of the Profil
  * section and of the offer can be looked at without a database:
- * `none` (the default), `monthly`, `yearly`, `cancelling`, `grace`, `expired`.
+ * `none` (the default), `monthly`, `renewing` (renews in 2 days: the J-3 reminder), `yearly`, `cancelling`, `grace`, `expired`.
  *
  * Dates are relative to `now`, so the same scenario always reads « renews in 12 days ».
  */
 export const PLUS_SCENARIOS = [
   "none",
   "monthly",
+  "renewing",
   "yearly",
   "cancelling",
   "grace",
@@ -57,6 +58,14 @@ export function mockMine(scenario: PlusScenario, now: Date): MyPremium {
         state: "active",
         productCode: "plus_monthly",
         currentPeriodEnd: inDays(now, 12),
+        cancelAtPeriodEnd: false,
+      };
+    case "renewing":
+      return {
+        ...base,
+        state: "active",
+        productCode: "plus_monthly",
+        currentPeriodEnd: inDays(now, 2),
         cancelAtPeriodEnd: false,
       };
     case "yearly":

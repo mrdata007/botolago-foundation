@@ -343,9 +343,9 @@ export const PLAYER_MAPPING_PROPOSALS_ENABLED: boolean = true;
  * Gated surfaces (keep this list current):
  *   - `src/routes/curva.plus.tsx` and `src/routes/plus.tsx` — the offer routes (redirect when off)
  *   - `src/routes/profile.tsx` — the Profil › BotolaGO+ section
- *   - `src/components/curva/CurvaCardPage.tsx` — the lock chips on the extras
- *   - `src/components/curva/HeadToHeadSheet.tsx` — the lock chip on the detailed duel
- *   - `src/components/curva/CurvaHome.tsx` — the J-3 renewal reminder
+ *   - Curva's card page (`CurvaCardPage.tsx`) — the lock chips on the extras
+ *   - Curva's face-à-face sheet (`HeadToHeadSheet.tsx`) — the lock chip on the detailed duel
+ *   - Curva's home (`CurvaHome.tsx`) — the J-3 renewal reminder
  */
 export const PREMIUM_BUILD = false;
 

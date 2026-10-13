@@ -1107,13 +1107,13 @@ button.plus-feat {
   line-height: 1.2;
   white-space: nowrap;
 }
-.plus-lock svg {
+.plus-lock svg:not(.plus-logo) {
   inline-size: 12px;
   block-size: 12px;
   flex: none;
   color: #4be895;
 }
 .plus-lock .plus-logo {
-  block-size: 13px;
+  block-size: 15px;
   vertical-align: middle;
 }

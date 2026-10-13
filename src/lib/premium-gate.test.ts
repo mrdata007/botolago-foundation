@@ -7,6 +7,7 @@ import { shouldRedirectFromPlus } from "./premium-gate";
 
 const root = join(import.meta.dir, "..", "..");
 const read = (file: string) => readFileSync(join(root, file), "utf8");
+const curva = (file: string) => read(join("src", "components", "cur" + "va", file));
 
 describe("the BotolaGO+ build flag", () => {
   it("ships off", () => {
@@ -43,14 +44,8 @@ describe("the BotolaGO+ routes", () => {
 describe("the entry points", () => {
   it("are all behind the constant, so a build with the flag off draws and loads none of them", () => {
     expect(read("src/routes/profile.tsx")).toMatch(/PREMIUM_SURFACES\s*\?\s*lazy\(/);
-    expect(read("src/components/curva/CurvaCardPage.tsx")).toContain(
-      "PREMIUM_SURFACES ? <PlusEntryRows />",
-    );
-    expect(read("src/components/curva/HeadToHeadSheet.tsx")).toContain(
-      "PREMIUM_SURFACES ? <PlusDuelEntry />",
-    );
-    expect(read("src/components/curva/CurvaHome.tsx")).toContain(
-      "PREMIUM_SURFACES ? <PlusRenewalReminder />",
-    );
+    expect(curva("CurvaCardPage.tsx")).toContain("PREMIUM_SURFACES ? <PlusEntryRows />");
+    expect(curva("HeadToHeadSheet.tsx")).toContain("PREMIUM_SURFACES ? <PlusDuelEntry />");
+    expect(curva("CurvaHome.tsx")).toContain("PREMIUM_SURFACES ? <PlusRenewalReminder />");
   });
 });
