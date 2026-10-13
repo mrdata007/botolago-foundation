@@ -276,6 +276,22 @@ head-to-head on « Les vôtres »; a locked extra opens the four-screen offer. M
 Profil › BotolaGO+. The logo's « + » is drawn in 3D (lit face, extruded side, soft shadow), as in
 the sketch.
 
+**Card format and visibility (owner decisions, 2026-10-13).**
+
+- **Everybody gets the gold card.** The collector shield in gold replaces the current Curva card for
+  every manager, free or not (its own approved screen work, separate from BotolaGO+).
+- **No photos on the card.** The manager's name is the art: written as a holographic autograph
+  (signature script for Latin, Ruq'ah for Arabic), with the initials as a faint foil monogram. No
+  player photos, so no image rights to clear.
+- **Members' editions are public.** A member's chosen edition (Holo, Électrique, Pixels, Chrome)
+  shows wherever their card is drawn: the public Curva ranking, league tables, their profile, share
+  images. Lists show a still miniature; opening a card shows the full card with tilt and foil.
+- **Ranking order is points only.** The style never changes the order, the rating, the tier or the
+  stats, and no badge suggests a member plays better.
+- **Expiry.** When membership ends the card returns to gold everywhere; rating and history stay.
+- **Privacy.** The existing switch to hide card history from league mates stays; the style itself is
+  public, like a profile picture.
+
 **Revised 2026-10-12 after the owner's feedback on the first sketch:** the first contact with
 BotolaGO+ is now a **six-step onboarding** (3.0b below, drawn in the sketch). The long scrolling
 page of 3.1 stays as `/plus` for people who come back to compare plans or read the questions.
