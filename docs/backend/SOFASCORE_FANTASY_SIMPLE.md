@@ -128,13 +128,22 @@ overridden, retries dedupe by digest):
   (capped at 90, at least 1), his clean sheet follows those minutes (60 or more,
   nothing conceded), and the case is counted as `minutesFromSofascore` in the
   `football_live_refresh_fantasy` log line. Goals conceded still come from the
-  substitution times. Times that cannot be ordered still hold it
+  substitution times. Since 2026-10-13 (contract C1 of
+  `FANTASY_PENDING_ITEMS.md`) events are ordered by minute and added minutes, a
+  goal on exactly the same moment as a player's entry or exit makes only that
+  player's goals conceded and clean sheet `unknown`, and minutes across the
+  60-minute line are scored at the lower figure with the appearance pending.
+  Times that cannot be true (an exit before the entry) still hold the match
   (`timeline_unresolved`).
-- **Held for review, never guessed**: an unknown score-relevant incident label
-  (an own goal has never been seen), a lineup `ownGoals` no incident explains, a
-  second yellow card (whether the first yellow is also listed is unestablished,
-  and the recorder refuses an overlap), an incident naming a player not in the
-  lineup.
+- **Cards and own goals (C1)**: a `card/yellowRed` is one dismissal
+  (`secondYellowDismissals` 1, yellow and red 0); card combinations that cannot
+  be true make that player's three card fields `unknown`. A `goal/ownGoal` is an
+  own goal by the named player, counted for the other side of his lineup side;
+  a lineup `ownGoals` that disagrees with his events makes his `ownGoals`
+  `unknown`.
+- **Held for review, never guessed**: an unknown score-relevant incident label,
+  an own goal naming no player or a player not in the lineup, goals that do not
+  add up to the score, an incident naming a player not in the lineup.
 - **Detail fields (M8)**, full coverage: assists when the lineup statistic and
   the incidents agree (else unknown); penalties missed when the incidents and
   the lineup statistic agree; a goalkeeper's saves from SofaScore's count when
@@ -216,8 +225,7 @@ request.
 - Only a match held for `unmapped_players`, or for a database condition that can
   change (policy not enabled, identity not reviewed, score mismatch, membership
   missing), is kept for retries. A data problem the same replies cannot fix (an
-  unknown incident, goals that do not add up, a second yellow, (before 2026-10-13) minutes that do
-  not fit) is given up at once; the 2-hour refresh window after the final
+  unknown incident, goals that do not add up, an own goal naming no player) is given up at once; the 2-hour refresh window after the final
   whistle fetches fresh replies and can reopen it.
 - A gameweek that is finalizing or sealed ends the attempts.
 - A finished match that was never attempted (the migration or the function was
@@ -327,8 +335,9 @@ A write run takes at most 12 fixtures and needs a round.
 - Fixtures with unmapped appearing players are held back entirely until mapped;
   with ~191 reviewed player mappings many fixtures will be blocked at first.
   The worklist is the review queue.
-- Fixtures with an own goal or a second yellow are held for review: no incident
-  label for an own goal has been observed, so it is not guessed.
+- An own goal naming no player is held for review. An own goal that names a
+  player (`goal/ownGoal`) and a second yellow (`card/yellowRed`) are scored since
+  2026-10-13, with the conflicts above left `unknown` for that player only.
 - Penalty saves are unknown whenever a penalty was missed against a team, so
   such fixtures score in simple mode.
 - Observation source label is `provider-reconciled` (the recorder's existing
