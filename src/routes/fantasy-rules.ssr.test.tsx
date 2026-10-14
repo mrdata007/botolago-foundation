@@ -229,6 +229,7 @@ describe("the policy card names the rounds each explanation governs (audit LOC-0
     expect(card).toContain(fr["fantasy.scoring.policy"]);
     expect(card).not.toContain("Jusqu’à la journée");
     expect(card).not.toContain("À partir de la journée");
+    expect(card).not.toContain(fr["fantasy.scoring.ratingSafeguards"]);
     expect(card).toContain(fr["fantasy.rules.provisional_desc"]);
   });
 
@@ -248,6 +249,22 @@ describe("the policy card names the rounds each explanation governs (audit LOC-0
     // The provisional and correction safeguards stay visible, ahead of both.
     expect(card.indexOf(fr["fantasy.rules.provisional_desc"])).toBeLessThan(card.indexOf(from));
     expect(card.indexOf(from)).toBeLessThan(card.indexOf(until));
+    // Missing participation data and late ratings still delay or move points.
+    expect(card).toContain(`${from}${fr["fantasy.scoring.ratingSafeguards"]}`);
+  });
+
+  test("adaptive and rating both from round 5: the rounds before are named, the 12-hour paragraph is not", async () => {
+    const rules = await fantasyService.getRules();
+    const card = policyCard(
+      await render({
+        ...rules,
+        adaptiveScoring: { ...adaptiveScoring, fromGameweek: 5 },
+        ratingScoring: { fromGameweek: 5, noRatingPoints: 5 },
+      }),
+    );
+    expect(card).toContain("Jusqu’à la journée 4 : barème par actions.");
+    expect(card).not.toContain(fr["fantasy.scoring.policy"]);
+    expect(card).toContain(fr["fantasy.scoring.ratingSafeguards"]);
   });
 
   test("rating from round 1: no earlier round, so no action-based paragraph", async () => {
@@ -262,6 +279,7 @@ describe("the policy card names the rounds each explanation governs (audit LOC-0
     expect(card).toContain("À partir de la journée 1 : points selon la note SofaScore.");
     expect(card).not.toContain("Jusqu’à la journée");
     expect(card).not.toContain(fr["fantasy.scoring.policy"]);
+    expect(card).toContain(fr["fantasy.scoring.ratingSafeguards"]);
     expect(card).toContain(fr["fantasy.rules.provisional_desc"]);
   });
 
@@ -281,6 +299,7 @@ describe("the policy card names the rounds each explanation governs (audit LOC-0
     expect(ar["fantasy.scoring.eventUntil"]).toContain("{n}");
     expect(ar["fantasy.scoring.ratingFrom"]).toContain("{n}");
     expect(ar["fantasy.scoring.ratingFrom"]).toContain("SofaScore");
+    expect(ar["fantasy.scoring.ratingSafeguards"]).toBeDefined();
   });
 });
 

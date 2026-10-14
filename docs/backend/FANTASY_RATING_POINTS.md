@@ -107,13 +107,16 @@ state truthfully. Text only; no layout, component or style change.
 
 - **Preserved:** the rules page structure, every card and its order, the category
   scale table (unchanged, still drawn from `api.fantasy_rules`), the points screen,
-  the landing page layout and its three-row "Extrait du barème" list, brand and
-  business rules.
+  the landing page layout, brand and business rules.
 - **Changed:** the rules page's scoring card states the rating rule (FR and AR)
   while `ratingScoring` is present, with the category scale below it labelled
-  "until GW4"; the points line label `rating`; the landing step 3, its three scale
-  examples and the "how do you score" answer, and the Fantasy onboarding step 2, now
-  describe the rating rule instead of goals, assists and clean sheets.
+  "until GW4"; the points line label `rating`; the rules page's "how points are
+  validated" card, which names the rounds each policy governs and the participation
+  and late-rating safeguards (audit LOC-01). The landing step 3 and its "how do you
+  score" answer, and the Fantasy onboarding step 2, quote no scale: they say points
+  follow match performance and point to the rules page. The landing page's
+  three-row "Extrait du barème" list is gone (audit FANT-06): with the rule off by
+  default it could promise points the server does not give.
 - **Acceptance:** with the rule off the rules page renders exactly as before; with it
   on it shows the rating sentence with the first gameweek and the earlier table
   below; the same keys and slots exist in French and Arabic

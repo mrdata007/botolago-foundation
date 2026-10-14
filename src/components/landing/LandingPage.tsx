@@ -367,7 +367,7 @@ export function LandingPage({
             body={t("landing.step3_body")}
           >
             {/* No scale is quoted here (audit FANT-06): which scoring rule is in
-                force, and from which round, is the rules page's to say. */}
+                force is the rules page's to say. */}
             <Link
               to="/fantasy/rules"
               onClick={onLeave}

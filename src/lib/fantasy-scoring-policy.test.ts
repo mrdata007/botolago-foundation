@@ -45,6 +45,34 @@ describe("scoringPolicyView (audit LOC-01)", () => {
     });
   });
 
+  test("adaptive and rating starting in the same round: no earlier round used the old paragraph", () => {
+    // The server allows it (migration 20261014090000: adaptive from_gameweek <= rating's).
+    expect(
+      scoringPolicyView({
+        adaptiveScoring: { ...adaptive, fromGameweek: 5 },
+        ratingScoring: rating(5),
+      }),
+    ).toEqual({ ratingFromGameweek: 5, showEventPolicy: false, eventPolicyUntilGameweek: 4 });
+  });
+
+  test("adaptive starting before the rating: the old paragraph stays, scoped to the rounds before", () => {
+    expect(
+      scoringPolicyView({
+        adaptiveScoring: { ...adaptive, fromGameweek: 3 },
+        ratingScoring: rating(5),
+      }),
+    ).toEqual({ ratingFromGameweek: 5, showEventPolicy: true, eventPolicyUntilGameweek: 4 });
+  });
+
+  test("adaptive starting after the rating (the server refuses it): the old paragraph is not shown", () => {
+    expect(
+      scoringPolicyView({
+        adaptiveScoring: { ...adaptive, fromGameweek: 7 },
+        ratingScoring: rating(5),
+      }).showEventPolicy,
+    ).toBe(false);
+  });
+
   test("rating without the adaptive object: no action-based paragraph is invented", () => {
     const view = scoringPolicyView({ ratingScoring: rating(5) });
     expect(view.showEventPolicy).toBe(false);

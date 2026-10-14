@@ -248,9 +248,14 @@ function RulesPage() {
             (audit LOC-01): the rating from its first round, the action-based
             paragraph only for the rounds before it. */}
         {policy.ratingFromGameweek !== null && (
-          <p className={cn("mt-2", ui.text.secondary, ui.tone.ink)}>
-            {t("fantasy.scoring.ratingFrom").replace("{n}", nf.format(policy.ratingFromGameweek))}
-          </p>
+          <>
+            <p className={cn("mt-2", ui.text.secondary, ui.tone.ink)}>
+              {t("fantasy.scoring.ratingFrom").replace("{n}", nf.format(policy.ratingFromGameweek))}
+            </p>
+            <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
+              {t("fantasy.scoring.ratingSafeguards")}
+            </p>
+          </>
         )}
         {policy.eventPolicyUntilGameweek !== null && (
           <p className={cn("mt-2", ui.text.secondary, ui.tone.ink)}>

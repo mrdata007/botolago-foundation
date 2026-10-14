@@ -15,6 +15,8 @@ export const fr = {
   // rule exists beside the action-based scale ({n} is a round number).
   "fantasy.scoring.eventUntil": "Jusqu’à la journée {n} : barème par actions.",
   "fantasy.scoring.ratingFrom": "À partir de la journée {n} : points selon la note SofaScore.",
+  "fantasy.scoring.ratingSafeguards":
+    "Quand les points suivent la note, des données de participation essentielles manquantes retardent la validation, et une note publiée ou corrigée plus tard met à jour les points tant que la journée n’est pas validée.",
   "fantasy.scoring.full": "Barème complet",
   "fantasy.scoring.simple": "Barème simplifié",
   "fantasy.scoring.pending": "En attente des données",
@@ -821,7 +823,7 @@ export const fr = {
     "Choisissez 15 joueurs pour 100 M et alignez 11 titulaires chaque journée.",
   "fantasy.onboarding.step2_title": "Marquez des points",
   "fantasy.onboarding.step2_body":
-    "Chaque joueur marque des points selon son match. Le barème en vigueur est détaillé dans le règlement.",
+    "Chaque joueur marque des points selon sa performance en match. Le barème en vigueur est détaillé dans le règlement.",
   "fantasy.onboarding.step3_title": "Défiez vos amis",
   "fantasy.onboarding.step3_body": "Créez une ligue privée avec un code et grimpez au classement.",
   "fantasy.onboarding.skip": "Passer",
@@ -2688,7 +2690,7 @@ export const fr = {
     "Exemple : votre capitaine marque {n} pts, il vous en rapporte {double}.",
   "landing.step3_title": "Marquez des points, grimpez au classement",
   "landing.step3_body":
-    "Vos joueurs marquent des points selon leurs performances en match. Le barème en vigueur, et la journée à partir de laquelle il s’applique, sont publiés dans le règlement.",
+    "Vos joueurs marquent des points selon leurs performances en match. Le barème en vigueur est publié dans le règlement.",
   "landing.scoring_link": "Voir le barème en vigueur",
   "landing.points_value": "{n} pts",
   "landing.why_title": "Pourquoi vous allez revenir",
@@ -2728,7 +2730,7 @@ export const fr = {
     "Oui. Une équipe créée maintenant entre dans la prochaine journée ouverte et marque des points à partir de celle-ci.",
   "landing.faq_points_q": "Comment marque-t-on des points ?",
   "landing.faq_points_a":
-    "Chaque joueur marque des points selon ses performances en match, et votre capitaine compte double. Le barème en vigueur, la journée à partir de laquelle il s’applique et la façon dont les points sont validés sont détaillés dans le règlement.",
+    "Chaque joueur marque des points selon ses performances en match, et votre capitaine compte double. Le barème en vigueur et la façon dont les points sont validés sont détaillés dans le règlement.",
   "landing.faq_account_q": "Faut-il un compte ?",
   "landing.faq_account_a":
     "Pour composer votre équipe, non. Pour l’enregistrer et entrer au classement, oui : un compte gratuit, avec une adresse e-mail à confirmer.",
