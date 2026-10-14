@@ -1154,21 +1154,21 @@ select extensions.is(
   'A reads her card: display name, handle, serial, season, OVR 81, stats as {value, nullReason}, "v1", club with slug and names (Arabic falls back to the Latin name)');
 select extensions.is(
   (select array_agg(k order by k) from jsonb_object_keys(pg_temp.card_of(pg_temp.usr('A'))) k),
-  array['bestTier', 'calculatedAt', 'club', 'createdAt', 'firstCountedGameweekSeq',
+  array['bestTier', 'calculatedAt', 'club', 'createdAt', 'edition', 'firstCountedGameweekSeq',
     'firstRatedGameweekSeq', 'founder', 'gameweeksCounted', 'handle', 'minConfirmed', 'minRated',
     'moments', 'name', 'nextTier', 'ovr', 'ovrChanges', 'ovrNullReason', 'previousSeason', 'provisional',
     'ratingGameweeks', 'ratingGameweeksComplete', 'ratingState', 'rulesVersion', 'season',
     'seasonClosed', 'seasons', 'serial', 'stats', 'teamId', 'throughGameweekSeq', 'tier'],
-  'a card has exactly those thirty-one fields (ovrChanges added by 20261012200100)');
+  'a card has exactly those thirty-two fields (ovrChanges added by 20261012200100, edition by 20261013100100)');
 select extensions.ok(
   position(pg_temp.usr('A')::text in pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))::text) = 0
   and position('example.test' in pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))::text) = 0,
   'a member card carries neither a user id nor an e-mail address');
 select extensions.is(
   (select array_agg(k order by k) from jsonb_object_keys(pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A'))) k),
-  array['club', 'firstRatedGameweekSeq', 'founderCohort', 'gameweeksCounted', 'minRated', 'name',
+  array['club', 'edition', 'firstRatedGameweekSeq', 'founderCohort', 'gameweeksCounted', 'minRated', 'name',
     'ovr', 'provisional', 'ratingState', 'seasonLabel', 'serial', 'stats', 'teamId', 'tier'],
-  'and has exactly those fourteen fields (no handle, no moments)');
+  'and has exactly those fifteen fields (the fourteen of memberCardSchema plus edition; no handle, no moments)');
 select extensions.is(
   pg_temp.member_of(pg_temp.usr('B'), pg_temp.tm('A')),
   jsonb_build_object(
@@ -1178,8 +1178,9 @@ select extensions.is(
     'ratingState', 'provisional', 'ovr', 81, 'tier', 'champion', 'provisional', true,
     'stats', jsonb_build_object('cap', 84, 'sel', 85, 'trf', 55, 'con', 99),
     'gameweeksCounted', 4, 'minRated', 3,
-    'firstRatedGameweekSeq', pg_temp.card_of(pg_temp.usr('A')) -> 'firstRatedGameweekSeq'),
-  'another signed-in manager reads A''s member card by her Fantasy team: the same figures');
+    'firstRatedGameweekSeq', pg_temp.card_of(pg_temp.usr('A')) -> 'firstRatedGameweekSeq',
+    'edition', 'standard'),
+  'another signed-in manager reads A''s member card by her Fantasy team: the same figures, drawn in the standard edition');
 select extensions.is(
   pg_temp.mine_core(pg_temp.usr('B')),
   jsonb_build_object(
@@ -1233,7 +1234,7 @@ select extensions.is(
     'founderCohort', null, 'seasonLabel', '2089/90', 'ratingState', 'forming', 'ovr', null,
     'tier', null, 'provisional', false,
     'stats', jsonb_build_object('cap', null, 'sel', null, 'trf', null, 'con', null),
-    'gameweeksCounted', 2, 'minRated', 3, 'firstRatedGameweekSeq', null),
+    'gameweeksCounted', 2, 'minRated', 3, 'firstRatedGameweekSeq', null, 'edition', 'standard'),
   'another manager reading F''s team sees this season''s forming card, never another season''s figures');
 select extensions.is(
   (select jsonb_agg(e -> 'teamId') from jsonb_array_elements(pg_temp.run(pg_temp.usr('A'), 'aal1',
