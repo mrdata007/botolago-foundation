@@ -152,6 +152,12 @@ interface MappedFixtureState {
    * 20261013190000 is applied, and then the stored minute is unknown.
    */
   readonly minute?: number | null;
+  /**
+   * Whether a lineup is stored for the fixture; absent until migration
+   * 20261014120000 is applied (then the lineups are read on the kickoff tick
+   * only, as before).
+   */
+  readonly hasLineups?: boolean;
 }
 
 interface Snapshot {
@@ -317,7 +323,13 @@ export function selectLiveDetailTargets(
     // list before full time, as they did when every tick read all three.
     const fantasyFixtureId = event.status === "finished" ? state.id : undefined;
     const starting = rank === 1 && !DETAILS_LIVE_STATUSES.has(state.status);
-    const liveFixtureId = starting ? state.id : undefined;
+    // Lineups the provider had not published on the kickoff tick are read
+    // again with the incidents, on a tick that wrote the score or status (not
+    // on a changeTimestamp move alone), until one is stored: at most a few
+    // more requests per match, none once a lineup is stored.
+    const lineupsMissing = rank === 1 && isWritten && state.hasLineups === false;
+    const withLineups = starting || lineupsMissing;
+    const liveFixtureId = withLineups ? state.id : undefined;
     ranked.push({
       target: {
         eventId: event.sofascoreEventId,
@@ -325,7 +337,7 @@ export function selectLiveDetailTargets(
         ...(fantasyFixtureId ? { fantasyFixtureId } : {}),
         ...(liveFixtureId ? { liveFixtureId } : {}),
         ...(rank === 1 ? { incidentsOnly: true } : {}),
-        ...(starting ? { withLineups: true } : {}),
+        ...(withLineups ? { withLineups: true } : {}),
       },
       rank,
       changed,
@@ -580,7 +592,9 @@ export async function runSofascoreRefresh(
     now,
     log: (line) => log(line),
   });
-  const runFantasy = async (): Promise<SofascoreFantasySummary & { staged?: StagedSummary }> => {
+  const runFantasy = async (): Promise<
+    SofascoreFantasySummary & { staged?: StagedSummary; stagedDetails?: SofascoreDetailsSummary }
+  > => {
     try {
       await fantasy.sweep();
     } catch {
@@ -589,6 +603,9 @@ export async function runSofascoreRefresh(
     // The later pulls of finished matches (staged statistics), after the first
     // pulls above. Its own requests go through the same counted client.
     let staged: StagedSummary | undefined;
+    const pulled: SofascoreDetailsTarget[] = [];
+    const stagedTeams = teamExternalIds(liveSnapshot.mappings);
+    const stagedStates = new Map(liveSnapshot.fixtures.map((f) => [f.externalId, f]));
     try {
       // SOFASCORE_FANTASY_ENABLED=false switches the whole Fantasy step off, this too.
       if (fantasy.config.enabled)
@@ -599,11 +616,37 @@ export async function runSofascoreRefresh(
           environment,
           now,
           log: (line) => log(line),
+          onPulled: ({ eventId }, replies) => {
+            const teams = detailsTeams(stagedStates.get(eventId), stagedTeams, undefined);
+            if (teams) pulled.push({ eventId, teams, replies });
+          },
         }).sweep();
     } catch {
       // Reported through the summary; nothing else depends on it.
     }
-    return { ...fantasy.summary(), ...(staged ? { staged } : {}) };
+    // The same replies refresh the match details: SofaScore publishes some
+    // team statistics only after the 2-hour post-match refresh has ended, and
+    // nothing else reads them again. No request: the replies are the pull's.
+    let stagedDetails: SofascoreDetailsSummary | undefined;
+    if (pulled.length > 0) {
+      try {
+        stagedDetails = await runSofascoreMatchDetails(pulled, {
+          mode,
+          scope: "staged",
+          client,
+          rapid,
+          now,
+          log: emit,
+        });
+      } catch {
+        // runSofascoreMatchDetails never throws; belt and braces.
+      }
+    }
+    return {
+      ...fantasy.summary(),
+      ...(staged ? { staged } : {}),
+      ...(stagedDetails ? { stagedDetails } : {}),
+    };
   };
   const runDetails = async (): Promise<SofascoreDetailsSummary | { status: "skipped" }> => {
     if (job !== "fixtures") return { status: "skipped" };

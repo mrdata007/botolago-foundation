@@ -111,13 +111,23 @@ export const SOFASCORE_SPEC = {
   },
 } as const satisfies Record<string, KeepSpec>;
 
-/** Team statistic lines worth keeping: shots on target and keeper saves, plus cards. */
+/**
+ * Team statistic lines worth keeping: shots on target and keeper saves, plus
+ * cards, and the lines the match-details path maps to app.statistic_definitions
+ * (sofascore-match-details.ts STATISTIC_KEYS).
+ */
 export const SOFASCORE_TEAM_STAT_KEYS = [
   "shotsOnGoal",
   "totalShotsOnGoal",
   "goalkeeperSaves",
   "yellowCards",
   "redCards",
+  "ballPossession",
+  "cornerKicks",
+  "fouls",
+  "offsides",
+  "passes",
+  "expectedGoals",
 ] as const;
 
 type SofascoreStatistics = {

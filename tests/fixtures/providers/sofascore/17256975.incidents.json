@@ -1,0 +1,210 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 1,
+      "awayScore": 1
+    },
+    {
+      "id": 127097721,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 85,
+      "isHome": true,
+      "playerIn": {
+        "id": 1931577,
+        "name": "Hamza Bouhaddi",
+        "shortName": "H. Bouhadi "
+      },
+      "playerOut": {
+        "id": 1020959,
+        "name": "Amine Souane",
+        "shortName": "A. Souane"
+      }
+    },
+    {
+      "id": 127097713,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 79,
+      "isHome": false,
+      "playerIn": {
+        "id": 960007,
+        "name": "Mounaim El Idrissy",
+        "shortName": "M. El Idrissy"
+      },
+      "playerOut": {
+        "id": 960403,
+        "name": "Mathias Oyewusi Kehinde",
+        "shortName": "M. O. Kehinde"
+      }
+    },
+    {
+      "id": 127097712,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 79,
+      "isHome": true,
+      "playerIn": {
+        "id": 1140870,
+        "name": "Ismail Moutaraji",
+        "shortName": "I. Moutaraji"
+      },
+      "playerOut": {
+        "id": 1464148,
+        "name": "Déo Bassinga",
+        "shortName": "D. Bassinga"
+      }
+    },
+    {
+      "id": 127097704,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 70,
+      "isHome": false,
+      "playerIn": {
+        "id": 970835,
+        "name": "Mohamed Al Makahasi",
+        "shortName": "M. Makaazi"
+      },
+      "playerOut": {
+        "id": 1634077,
+        "name": "Felipinho",
+        "shortName": "Felipinho"
+      }
+    },
+    {
+      "id": 127097703,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 70,
+      "isHome": false,
+      "playerIn": {
+        "id": 2050110,
+        "name": "Azzedine Laftah",
+        "shortName": "A. Laftah"
+      },
+      "playerOut": {
+        "id": 980149,
+        "name": "Younes Bakiz",
+        "shortName": "Y. Bakiz"
+      }
+    },
+    {
+      "id": 365259902,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 69,
+      "isHome": true,
+      "from": "regular",
+      "homeScore": 1,
+      "awayScore": 1,
+      "player": {
+        "id": 1182630,
+        "name": "Mohamed Bakhkhach",
+        "shortName": "M. Bakhkhach"
+      },
+      "assist1": {
+        "id": 1020959,
+        "name": "Amine Souane",
+        "shortName": "A. Souane"
+      }
+    },
+    {
+      "id": 127097673,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 68,
+      "isHome": true,
+      "playerIn": {
+        "id": 1182630,
+        "name": "Mohamed Bakhkhach",
+        "shortName": "M. Bakhkhach"
+      },
+      "playerOut": {
+        "id": 2238809,
+        "name": "Issam Naji",
+        "shortName": "I. Naji"
+      }
+    },
+    {
+      "id": 127097648,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 61,
+      "isHome": false,
+      "playerIn": {
+        "id": 2837528,
+        "name": "Shararh",
+        "shortName": "Shararh"
+      },
+      "playerOut": {
+        "id": 1957278,
+        "name": "Ishak Zidani",
+        "shortName": "I. Zidani"
+      }
+    },
+    {
+      "id": 127097546,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": false,
+      "playerIn": {
+        "id": 2033935,
+        "name": "Youness Dahmani",
+        "shortName": "Y. Dahmani"
+      },
+      "playerOut": {
+        "id": 987832,
+        "name": "Adel Bettaieb",
+        "shortName": "A. Bettaieb"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 0,
+      "awayScore": 1
+    },
+    {
+      "id": 125769134,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 45,
+      "addedTime": 1,
+      "isHome": true,
+      "rescinded": false,
+      "player": {
+        "id": 2238809,
+        "name": "Issam Naji",
+        "shortName": "I. Naji"
+      }
+    },
+    {
+      "id": 365256388,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 20,
+      "isHome": false,
+      "from": "regular",
+      "homeScore": 0,
+      "awayScore": 1,
+      "player": {
+        "id": 987832,
+        "name": "Adel Bettaieb",
+        "shortName": "A. Bettaieb"
+      },
+      "assist1": {
+        "id": 1168799,
+        "name": "Bouchaib Arrassi",
+        "shortName": "B. Arrassi"
+      }
+    }
+  ]
+}
