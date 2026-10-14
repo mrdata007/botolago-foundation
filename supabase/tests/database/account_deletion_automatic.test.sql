@@ -187,6 +187,8 @@ values (pg_temp.id(21), 'active', 'plus_monthly', 'web', now() - interval '10 da
 insert into app_private.premium_grants (user_id, ends_at, reason, granted_by_principal_id)
 values (pg_temp.id(21), now() + interval '30 days', 'Press partner goodwill', pg_temp.id(31));
 insert into app.card_edition_choices (user_id, edition_code) values (pg_temp.id(21), 'holo');
+-- 20261013100400: A shows their card history to league mates.
+insert into app.card_history_visibility (user_id, visible_to_league_mates) values (pg_temp.id(21), true);
 insert into app_private.billing_customers (user_id, provider, provider_customer_ref)
 values (pg_temp.id(21), 'cmi', 'cust-amina-1');
 insert into app_private.billing_events (provider_event_id, provider, source, event_type, user_id,
@@ -431,8 +433,9 @@ select extensions.is(
     (select count(*) from app.premium_entitlements where user_id = pg_temp.id(21)),
     (select count(*) from app_private.premium_grants where user_id = pg_temp.id(21)),
     (select count(*) from app.card_edition_choices where user_id = pg_temp.id(21)),
-    (select count(*) from app_private.billing_customers where user_id = pg_temp.id(21)))),
-  '0/0/0/0', 'A''s membership, grant, card edition and customer id went with the account');
+    (select count(*) from app_private.billing_customers where user_id = pg_temp.id(21)),
+    (select count(*) from app.card_history_visibility where user_id = pg_temp.id(21)))),
+  '0/0/0/0/0', 'A''s membership, grant, card edition, customer id and card-history switch went with the account');
 select extensions.is(
   (select concat_ws('/', count(*), bool_and(user_id is null), bool_and(payload = '{}'::jsonb),
       bool_and(erased_at is not null), count(distinct subject_pseudonym), bool_and(subject_pseudonym ~ '^erased-[0-9a-f]{16}$'),

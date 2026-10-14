@@ -13,8 +13,10 @@ import { pickHero } from "@/components/manager-card/moments/moments";
 import { momentStore, useMomentGate } from "@/components/manager-card/moments/use-moment-gate";
 import { heroShownThisSession } from "@/components/manager-card/storage";
 import { fromMyCard } from "@/components/manager-card/to-profile";
+import { PlusRenewalReminder } from "@/components/plus/PlusRenewal";
 import { ui, UiLinkButton, UiButton, UiPageTitle } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
+import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 import { useManagerCardStatus } from "@/services/manager-card-status";
 import type { Club, Gameweek } from "@/types/domain";
@@ -279,6 +281,8 @@ export function OwnerHome({
           "md:px-0",
         )}
       >
+        {/* The J-3 renewal reminder of a monthly BotolaGO+ membership (behind PREMIUM_BUILD). */}
+        {PREMIUM_SURFACES ? <PlusRenewalReminder /> : null}
         <PeopleBlock
           league={people.league}
           rows={people.rows}
