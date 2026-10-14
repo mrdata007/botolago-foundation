@@ -20,6 +20,8 @@ export const STATUS_TIMEOUT_MS = 2_000;
  */
 export const STATUS_TTL_MS = 60_000;
 export const STATUS_FAILURE_TTL_MS = 10_000;
+/** How long the last good answer may stand in for failed reads before the section reads off. */
+export const STATUS_GRACE_MS = 5 * 60_000;
 
 interface StatusReaderDeps {
   /** The database read. It is aborted when it outlasts `timeoutMs`. */
@@ -35,7 +37,7 @@ interface StatusReaderDeps {
 export function createStatusReader(deps: StatusReaderDeps): () => Promise<ManagerCardStatus> {
   let memo: { at: number; ttl: number; value: ManagerCardStatus } | null = null;
   let inflight: Promise<ManagerCardStatus> | null = null;
-  let lastGood: ManagerCardStatus | null = null;
+  let lastGood: { at: number; value: ManagerCardStatus } | null = null;
 
   async function fetchOnce(): Promise<ManagerCardStatus> {
     const controller = new AbortController();
@@ -52,7 +54,7 @@ export function createStatusReader(deps: StatusReaderDeps): () => Promise<Manage
       ]);
       if (answer !== null && isStatus(answer)) {
         memo = { at: deps.now(), ttl: STATUS_TTL_MS, value: answer };
-        lastGood = answer;
+        lastGood = { at: deps.now(), value: answer };
         return answer;
       }
     } catch {
@@ -60,7 +62,8 @@ export function createStatusReader(deps: StatusReaderDeps): () => Promise<Manage
     } finally {
       clearTimeout(timer);
     }
-    const fallback = lastGood ?? STATUS_OFF;
+    const fallback =
+      lastGood && deps.now() - lastGood.at < STATUS_GRACE_MS ? lastGood.value : STATUS_OFF;
     memo = { at: deps.now(), ttl: STATUS_FAILURE_TTL_MS, value: fallback };
     return fallback;
   }
