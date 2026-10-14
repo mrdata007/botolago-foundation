@@ -167,7 +167,11 @@ digest in the references.
   recorder's existing de-duplication, unchanged here.
 - **The Manager Card** scales (`MANAGER_CARD_OPERATIONS_RUNBOOK.md`) were
   calibrated on v1 point sizes (a typical player 2-6 points a match, now 5-8).
-  Its figures will shift from GW5. Recalibrating is a follow-up, not done here.
+  Under rules v3 its figures would shift from GW5. The follow-up is rules v4
+  (owner decision 2026-10-14): CAP, SEL and TRF are ranked among the managers
+  of each week, so the card no longer depends on point sizes. Card compute is
+  paused from GW4 until v4 is installed; see the runbook's "Rules v4" section
+  and `MANAGER_CARD_RATING_POINTS_PROPOSAL.md`.
 - **Emergency off** before GW5 finalizes rescoring under the category scale is a
   visible change of every GW5 total; use it only if the ratings are wrong.
 

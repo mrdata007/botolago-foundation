@@ -451,6 +451,176 @@ To go back: insert a new version with the v2 numbers and activate it (rows are
 never edited); switch the notification off with
 `manager_card_notify_configure(false)`.
 
+## Rules v4 (each week ranked among managers)
+
+Owner decision 2026-10-14 (option A of
+`MANAGER_CARD_RATING_POINTS_PROPOSAL.md`). From Fantasy gameweek 5 a player's
+points are his SofaScore rating (`FANTASY_RATING_POINTS.md`). Under rules v3
+that inflates CAP and SEL (raw point ratios whose floor moved from about 1-2 to
+about 6), and the inflation grows all season. Under v4, CAP, SEL and TRF say
+**how the manager ranked against the other managers that week** (50 = the
+middle manager), whatever the size of the points. The owner accepted that
+change of meaning; it replaces the fixed "by meaning" scales of 2026-10-08.
+
+Migration `20261014150000_manager_card_gameweek_percentile` replaces
+`app_private.manager_card_evaluate_gameweek` (nothing else). It adds one
+optional rules key, `normalize`:
+
+- absent or `"none"`: exactly the figures of v1, v2 and v3 (the pgTAP file
+  `manager_card_gameweek_percentile.test.sql` checks it, and
+  `manager_card_week_one.test.sql` and `manager_card_calm_scores.test.sql`
+  still pass on the new body);
+- `"gameweek_percentile"`: before averaging, each weekly figure becomes the
+  manager's **mid-rank percentile** in its cohort, `(teams below + (teams level
+  - 1. / 2) / (cohort - 1)`, and 0.5 when the cohort is one. Ties share their
+       mid-rank (with rating points many captains are the best starter).
+  - CAP: among the teams of that gameweek whose CAP week counts (a week with
+    no captain who played stays skipped and outside the cohort);
+  - SEL: among the teams of that gameweek with a SEL week (Bench Boost weeks
+    stay out);
+  - TRF: per transfer, among the judged transfers made for the same gameweek
+    (they share one window, so one mix of point scales);
+  - CON: the top-half figure gets a tie rule: 1 when the team's whole tie
+    group is in the top half, 0 when it is wholly in the bottom half, 0.5 when
+    it straddles the middle (the middle team of an odd field included). v3
+    counted a tie across the middle as top half, which with close rating-point
+    totals creeps CON up.
+  - anything else is `manager_card_rules_invalid`.
+
+The cohort is the teams the run rates (active teams of the season with a final
+result in the gameweek evaluated), the base every stat already used. A past
+week's cohort can differ from that week's full field only by teams that have
+since left or been deactivated. `cap_raw`, `sel_raw` and `trf_raw` then hold the
+average percentile (0 to 1) and `con_raw` the average CON figure. The premium
+career read (`api.get_my_card_career`) returns them as `raw`; under v4 they
+are percentiles, so its captain `averageShare` and transfer `averageGain` (its
+own point-based figures) no longer equal `raw.cap` and `raw.trf`. Nothing on
+screen shows `raw` today.
+
+| Key          | v3                          | v4                        |
+| ------------ | --------------------------- | ------------------------- |
+| `normalize`  | absent                      | `"gameweek_percentile"`   |
+| `scales.cap` | `[[0,1],[1,99]]`            | `[[0,1],[0.5,50],[1,99]]` |
+| `scales.sel` | `[[0.5,1],[0.8,50],[1,99]]` | `[[0,1],[0.5,50],[1,99]]` |
+| `scales.trf` | `[[-10,1],[0,50],[10,99]]`  | `[[0,1],[0.5,50],[1,99]]` |
+
+Everything else is v3's: `scales.con`, the tiers (STADE 50, PRO 65, CHAMPION
+80, LEGEND 90), the shrinkage k = 4, minimum 1 week, provisional below 5,
+Selection on the picked eleven, OVR from every stat, a stat with no sample
+reads 50.
+
+**What does not depend on point sizes any more.** A weekly percentile depends
+only on the order of the managers' figures that week. Multiplying every point
+(players, team totals, hits) by a constant changes no card (pgTAP checks every
+history row). Adding a constant to every player's points changes no TRF gain
+and no CON order, and changes no CAP or SEL order between teams whose best
+starter and best eleven score the same (pgTAP checks that case too); between
+teams whose best differ it can reorder some ratios, but every week's cohort
+still averages exactly 0.5, so cards cannot climb as a group. That is the fix:
+under v3 the same shift lifts every CAP and SEL ratio. GW1-4 (category points)
+and GW5 onward (rating points) are comparable inside one average, and a future
+change of scoring needs no recalibration.
+
+**What changes for managers.** Activating v4 recomputes every finished
+gameweek **silently** (the history rows are still under v3, so no rating change
+is recorded and nothing is notified; the rehearsal below confirms it). In the
+simulation of the proposal the mean change at GW4 is -0.2 (95th percentile 2),
+and about 5.6% of cards change tier, almost all at the LASTREET/STADE line. From
+then on, about as many cards go up as down each week, GW5 included.
+
+**Calibration.** `manager-card-calibration-dry-run.sql` is the pre-v1 tool: it
+refuses once any rules row or card exists, so it is not used for v4. Under v4
+only the tier cut-offs are left to calibrate (the stat scales follow from their
+meaning); placing them at the domain plan's target shares from real data is a
+later rules version and the owner's call.
+
+### Installing v4
+
+`scripts/backend/apply-manager-card-rules-v4-percentile.sql` (bun test
+`apply-manager-card-rules-v4-percentile-script.test.ts`). It refuses unless v3
+is installed (its migrations recorded, its function body byte for byte, exactly
+three rules rows with v3 the active one). It applies the migration (sha256 of
+its text), checks the new body (md5), owner, `security definer`, empty
+`search_path` and that no API role can run it, inserts v4 active (v3 goes
+inactive; rows are never edited), checks every key and value, that the switches
+are as they were, that the tick answers `off` and that nothing was written to
+the card or the notifications, and rolls back as shipped.
+
+**Since GW4's cards are done, compute is off** (the owner's pause, until v4
+ships): `select app_private.manager_card_configure(false, null);`. Cards keep
+GW4's figures meanwhile; the health check `manager_card` reports warn ("reads on
+and compute off"), which does not page.
+
+Order (AGENTS.md, "One writer at a time"). The script writes only the card's
+function, its rules table and the migration ledger, and the only writer of
+those is the card's own tick, so pausing the card is enough. Choose one of the
+two ways below.
+
+**A. The card alone (simplest).**
+
+1. Note the switches:
+   `select compute_enabled, read_enabled, notify_ovr_changes from app_private.manager_card_settings;`
+   Compute must read `false` (the pause since GW4); if it is `true`, switch it
+   off first with `select app_private.manager_card_configure(false, null);`.
+2. Pause the tick by name and wait until no run is in progress:
+   `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := false);`
+3. Rehearse the script as shipped (it ends in `rollback;`). Read the last row
+   ("All checks passed"). Confirm separately that nothing was kept:
+   `select count(*) from supabase_migrations.schema_migrations where version = '20261014150000';` (0) and
+   `select version, active from app_private.manager_card_rules order by version;` (v3 active).
+4. Change only the last line to `commit;` and run it once. Read back: one
+   `20261014150000` row, four rules rows, v4 the only active one. A second run
+   refuses ("already recorded").
+5. Resume: the tick
+   `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := true);`
+   then compute `select app_private.manager_card_configure(true, null);`.
+
+**B. With the maintenance pause** (`scripts/backend/sofascore-rating-release-pause.sql`,
+on PR #473's branch until it merges, and `sofascore-rating-release-resume.sql`
+on `main`), when the owner pauses every background writer anyway. The pause
+script refuses unless compute is **on** and every one of the 23 jobs is
+active ("maintenance baseline changed"); do not edit it. So:
+
+1. Check that GW5 is not yet evaluable, so that switching compute on for a
+   moment can only re-evaluate GW1-4 under v3 (which it already did):
+   `select sequence_number, status, points_state from app.fantasy_gameweeks g join app.fantasy_seasons s on s.id = g.fantasy_season_id where s.status = 'active' and g.sequence_number = 5;`
+   It must not read `finalized`/`corrected` with `final`. If it does, use way
+   A instead: never switch compute on under v3 once GW5 is evaluable (most
+   managers would get a misleading "monte").
+2. `select app_private.manager_card_configure(true, null);` and right after it
+   run the pause script (rehearse, then `commit;`). It switches compute off
+   again and pauses every job, `manager-card-tick` included.
+3. Run the v4 script as in A.3 and A.4.
+4. Run `sofascore-rating-release-resume.sql` (rehearse, then `commit;`). It
+   switches compute back on (`manager_card_configure(true, null)`) with the
+   other writers and resumes every job.
+
+After either way:
+
+- Watch the job log until the tick reports `evaluated` with
+  `morePending: false` and `rulesVersion: 4`
+  (`select started_at, outcome, detail from app_private.manager_card_job_log order by id desc limit 5;`).
+- Compare the tier counts with the value before:
+  `select tier, provisional, count(*) from app.manager_card_seasons group by 1, 2;`
+  (owner-authorised aggregate read). A silent shift of about ±1 OVR is
+  expected.
+- `notify_ovr_changes` is left as it was; nothing is notified for the
+  recalculation. If GW5 locked meanwhile, GW5 is evaluated under v4 and its
+  change is recorded and notified like any ordinary week.
+
+To go back: insert a v5 with v3's JSON and activate it (rows are never edited).
+The function without `normalize` is v3's calculation.
+
+**Local rehearsal (2026-10-14).** On a local database at `main`'s state with
+the production v1-v3 rules rows and six seeded managers evaluated under v3 over
+three gameweeks: the shipped script passed and kept nothing (no migration row,
+v3 active, old body); it refused with compute on, with the tick active and with
+a v4 config whose tiers differed from v3; with `commit;` it installed (one
+migration row, v4 the only active row, the new body), and a second run refused
+("already recorded"). With the tick and compute resumed, one tick recomputed
+the three gameweeks under v4 (18 history rows, the figures the pgTAP file
+computes by hand), recorded no rating change and created no notification.
+
 ## The founder grant
 
 FOUNDER marks the early 2026/27 managers. It is granted **once, by the owner,

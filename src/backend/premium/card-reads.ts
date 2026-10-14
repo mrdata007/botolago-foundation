@@ -77,6 +77,7 @@ export const careerWeekSchema = z.object({
   provisional: z.boolean(),
   gameweeksCounted: nonNegativeInt,
   stats: statValues,
+  /** The card's raw figures; under rules v4 CAP, SEL and TRF are average weekly ranks (0-1). */
   raw: rawValues,
   captain: careerWeekCaptainSchema.nullable(),
 });
@@ -105,7 +106,11 @@ export const careerCaptainSchema = z.object({
   weeksCounted: nonNegativeInt,
   /** Of those, how many times the captain scored at least as much as the best starter. */
   hits: nonNegativeInt,
-  /** The mean share of the best starter's points: the card's raw CAP figure. */
+  /**
+   * The mean share of the best starter's points: the card's raw CAP figure under rules without
+   * `normalize`. Under rules v4 (`gameweek_percentile`) the raw CAP is an average weekly rank
+   * instead, and this stays the share.
+   */
   averageShare: z.number().nullable(),
 });
 
@@ -130,7 +135,10 @@ export const careerTransfersSchema = z.object({
     }),
   ),
   seasonGain: z.number().nullable(),
-  /** The mean of the counted gains: the card's raw TRF figure. */
+  /**
+   * The mean of the counted gains: the card's raw TRF figure under rules without `normalize`.
+   * Under rules v4 the raw TRF is an average weekly rank instead, and this stays the gain.
+   */
   averageGain: z.number().nullable(),
   hitsPaid: nonNegativeInt,
   best: careerTransferSchema.nullable(),
