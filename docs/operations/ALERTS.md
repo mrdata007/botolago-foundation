@@ -219,15 +219,20 @@ has a placeholder kickoff) is left alone by the worker and is not held against i
   the allowance can be raised with the secret `FANTASY_WORKER_MAX_CALLS`.
   `not_configured` means no `functions_base_url` or scheduler token. A lease held
   for long means a GitHub run is working.
-- A `failed` pass with `fantasy_worker_rpc_timeout` and `detail.ambiguous` means a
-  write timed out and may have committed anyway. Its `rpc` names the call, `settled`
-  says whether it answered afterwards and `leaseReleased` whether the lease was freed.
+- A `failed` pass with `fantasy_worker_rpc_timeout` (or `fantasy_worker_rpc_unconfirmed`,
+  a write that failed without a database reply) and `detail.ambiguous` means a
+  write may have committed anyway. Its `rpc` names the call, `leaseExtended` whether
+  the lease was pushed out, `settled` whether the database answered afterwards and
+  `leaseReleased` whether the lease was freed.
   When it is `false` the lease is left to expire (up to about seven minutes); wait for
   it before any write (AGENTS.md) and check that gameweek's state before re-running.
   A `failed` pass with `fantasy_worker_lease_function_missing` means the Edge function
-  is deployed ahead of migration `20261013170000`. A `partial` pass whose code is a
-  prize one (`fantasy_prizes_blocked`, or the prize RPC's own code) did its core work
-  but prize evaluation needs attention; the next pass retries it.
+  is deployed ahead of migration `20261013170000`. A prize problem does **not** make a
+  pass `partial` (an `ok` pass is what this check and the GitHub fallback look for):
+  an `ok` pass whose `detail.prizeAttention` is set (`fantasy_prizes_blocked`, or the
+  prize RPC's own code) did its core work but prize evaluation needs attention, like
+  the orchestrator's `waiting` verdict, which never alerts. Look at `detail.prizes`;
+  a blocked season needs an admin.
 - To stop the worker for a write: `fantasy_automation_configure(false)` (AGENTS.md).
 
 ### Progression: `fantasy_progression`

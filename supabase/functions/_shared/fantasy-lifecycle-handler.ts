@@ -19,9 +19,11 @@
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import {
   ambiguousRpcTimeout,
+  replyShowsStatementOver,
   rpcFailure,
   rpcMayWrite,
   runFantasyWorkerPass,
+  unconfirmedWrite,
   type FantasyWorkerGateway,
   type WorkerPassResult,
 } from "./fantasy-lifecycle-worker.ts";
@@ -154,13 +156,25 @@ function gatewayFor(client: FantasyWorkerRpcClient, timeoutMs: number): FantasyW
           });
           const winner = await Promise.race([answer, waited]);
           if (grace) clearTimeout(grace);
-          // Only a reply from the database over HTTP shows the statement is over.
-          // A client-side failure (status 0: network, abort) shows nothing.
-          if (winner !== "grace" && winner.kind === "answered" && winner.result.status !== 0)
+          // Only a reply from the database shows the statement is over. A failure
+          // on the client's side (status 0: network, abort) or a gateway 5xx with no
+          // database error code shows nothing (replyShowsStatementOver).
+          if (
+            winner !== "grace" &&
+            winner.kind === "answered" &&
+            replyShowsStatementOver(winner.result)
+          )
             return "answered";
           controller.abort();
           return "unsettled";
         });
+      }
+      // A write that failed before the timer without a conclusive reply (an
+      // exception, status 0, a bare gateway 5xx) is no more settled than a timeout.
+      const unconfirmed = unconfirmedWrite(name, first.kind === "threw" ? null : first.result);
+      if (unconfirmed) {
+        controller.abort();
+        throw unconfirmed;
       }
       if (first.kind === "threw") throw first.error;
       const result = first.result;
@@ -194,6 +208,7 @@ export function runRecord(holder: string, result: WorkerPassResult) {
       deferred: result.deferred,
       ...(result.heldBy ? { heldBy: result.heldBy } : {}),
       ...(result.prizes ? { prizes: result.prizes } : {}),
+      ...(result.prizeAttention ? { prizeAttention: result.prizeAttention } : {}),
       // A write that timed out and may still be running: which one, whether it
       // answered afterwards, and whether the lease was freed or left to expire.
       ...(result.ambiguous ? { ambiguous: result.ambiguous } : {}),
@@ -283,6 +298,7 @@ export async function handleFantasyWorkerRequest(
       recorded,
       ...(result.ambiguous ? { ambiguous: true, rpc: result.ambiguous.rpc } : {}),
       ...(result.missingFunction ? { missingFunction: result.missingFunction } : {}),
+      ...(result.prizeAttention ? { prizeAttention: result.prizeAttention } : {}),
     }),
   );
   return json(result.outcome === "failed" ? 500 : 200, {
@@ -296,12 +312,15 @@ export async function handleFantasyWorkerRequest(
     recorded,
     // The same status-only summary the run record stores; never a winner or an id.
     ...(result.prizes ? { prizes: result.prizes } : {}),
+    // A prize problem: non-blocking, and not a reason to call the pass anything but ok.
+    ...(result.prizeAttention ? { prizeAttention: result.prizeAttention } : {}),
     // A write that timed out and may still be running: the pass stopped, and the
     // lease was kept unless the original request had answered.
     ...(result.ambiguous
       ? {
           ambiguous: true,
           rpc: result.ambiguous.rpc,
+          leaseExtended: result.ambiguous.leaseExtended,
           settled: result.ambiguous.settled,
           leaseReleased: result.ambiguous.leaseReleased,
         }

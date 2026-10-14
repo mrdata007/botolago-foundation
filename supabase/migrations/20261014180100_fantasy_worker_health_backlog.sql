@@ -15,10 +15,15 @@
 -- an `open` gameweek past its deadline whose deadline is unconfirmed (a counting
 -- fixture still has a placeholder kickoff) is left alone by the worker
 -- (`deadline_unconfirmed`, selectWorkerTargets) and so is not held against it
--- here. Everything else is unchanged: the switched-off exception, the thresholds
--- (30 and 90 minutes, or twice and four times a longer interval), the clock that
+-- here. Unchanged: the switched-off exception, the thresholds (30 and 90 minutes,
+-- or twice and four times a longer interval; none is relaxed), the clock that
 -- starts at the latest of the last ok pass, the switch-on instant and the instant
--- the work appeared, and the detail text. The thresholds are not relaxed.
+-- the work appeared, and which passes count (only `ok`). Changed in the detail
+-- text, because the check now talks about more states: the idle message reads
+-- "no gameweek has work for the worker" (was "no gameweek is live, provisional or
+-- finalizing"), and an open or finalized round is named "open past its deadline" /
+-- "finalized with work still owed" where a live, provisional, finalizing or
+-- locked one still shows its status.
 --
 -- The latest definition before this one is 20261013170100 (no later migration
 -- redefines the function); the signature, the return shape and the privileges

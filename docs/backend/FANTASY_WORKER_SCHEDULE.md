@@ -134,25 +134,55 @@ transaction rolled back), which is resumable.
 - A timeout on a **write** throws an ambiguous timeout (`ambiguousRpcTimeout`, same code). The pass **stops**: no other
   gameweek, no prize catch-up. In `finally` it first extends the lease a full 420 s from now (so the window holds even
   if this instance is cut off), then waits up to `ambiguousGraceMs` (10 s) for the original request to answer. Only a
-  real HTTP answer (data or an error, status other than 0) releases the lease. If it did not answer, the request is
-  aborted as a courtesy to the client and the lease is **left to expire**. An abort is never read as a cancellation.
-- The record and the HTTP 500 name it: `workerCode: fantasy_worker_rpc_timeout`, `ambiguous: true`, `rpc`, `settled`,
-  `leaseReleased`; the same object is under `detail.ambiguous` in `app_private.fantasy_worker_runs`. The outcome stays
-  `failed` (the table only allows ok, partial, failed, lease_held).
+  reply from the database releases the lease: a 2xx or 4xx, or a 5xx that carries a PostgREST (`PGRST…`) or SQLSTATE
+  error code. A status 0 (network error, the client's own abort) or a bare gateway 5xx (502, 504, 52x) shows nothing
+  and does not. If it did not answer, the request is aborted as a courtesy to the client and the lease is **left to
+  expire**. An abort is never read as a cancellation. The grace is also cut to what is left of the Edge function's
+  140 s (of 150 s) wall clock.
+- A write that fails **before** the timer without such a reply (the call throws, or comes back with status 0 or a bare
+  gateway 5xx) is just as unconfirmed: it takes the same path at once (nothing to wait for), with
+  `workerCode: fantasy_worker_rpc_unconfirmed`. Reads and lease/log calls that fail this way stay plain failures.
+- The record and the HTTP 500 name it: `workerCode` (`fantasy_worker_rpc_timeout` or `fantasy_worker_rpc_unconfirmed`),
+  `ambiguous: true`, `rpc`, `leaseExtended` (the extension succeeded), `settled`, `leaseReleased`; the same object is
+  under `detail.ambiguous` in `app_private.fantasy_worker_runs`. The outcome stays `failed` (the table only allows ok,
+  partial, failed, lease_held).
 - Liveness: a crashed or cut-off worker frees the lease by expiry alone (at most 420 s after the last extension), as
   before. The cost of an ambiguous timeout is that no pass can run for up to seven minutes, which is the point.
-- What this does not do: the lease is still not a database fence. A statement that outlives 420 s could still overlap a
-  later pass (the RPCs' own row locks and `lock_version` remain the guard). Whether PostgREST cancels a statement when
-  the client disconnects, and the role's `statement_timeout`, are properties of the project that were not measured here.
+- What this does not do: the lease is still not a database fence. A statement that outlives the extension could still
+  overlap a later pass (the RPCs' own row locks and `lock_version` remain the guard). The extension is the named
+  constant `AMBIGUOUS_LEASE_EXTENSION_SECONDS` (420; the SQL accepts up to 900). **Owner check (read only)**, because
+  the extension only protects if the database cannot keep a statement running longer than it:
+  `select rolname, rolconfig from pg_roles where rolname in ('service_role','authenticator');` If the service role's
+  `statement_timeout` is above about 390 s (the release runbook mentions a raised service-role timeout as a stopgap for
+  the heavy finalization RPCs), raise the constant, and `WORKER_LEASE_SECONDS` with it. Whether PostgREST cancels a
+  statement when the client disconnects was not measured here.
+
+#### Open: the GitHub orchestrator and the manual runner still have the race (SEC-01 residual)
+
+`scripts/backend/fantasy-season-orchestrator.ts` and `scripts/backend/fantasy-lifecycle-runner.ts` abort each RPC at
+60 s (`AbortSignal.timeout`), treat the abort as an ordinary failure and release the shared lease. **They do not use the
+rule above**, so a slow write there can still outlive the lease and meet a second pass. Left unchanged on purpose: (1)
+their gateways are built inside `import.meta.main` blocks with no test seam, and the orchestrator's lease only covers
+its lifecycle loop (the calendar syncs, the performance ingestion and the prize call run outside it); (2) the rule
+classifies an RPC by name and treats an unknown name as a write, and the orchestrator calls many reads under names not
+on the list, so applying it there would change error handling across a 1000-line verdict function and make its prize
+call rethrow; (3) a scheduled GitHub run stands aside while the database worker is healthy, so these are the fallback
+and the owner's manual paths, not the primary writer. The small, safe fix needs its own change: export the gateway
+builders so they can be tested, pass them the read/write lists explicitly, and let the lifecycle loop stop and keep the
+lease on an ambiguous error. Until then: do not start a manual worker or a manual orchestrator dispatch while the Edge
+worker is on and a pass has just reported `ambiguous`, and treat a 60 s timeout in those logs as unconfirmed.
 
 ### Prize evaluation never stops the game, but is not hidden
 
 The pass-level prize catch-up is a follow-on: a failure (or a blocked season) does not stop the game and the next pass
-retries it (the RPC is idempotent; it is asked once per pass). It is no longer silent: the pass outcome is `partial`
-(HTTP 200) with `workerCode` the prize error code (or `fantasy_prizes_blocked`), the status-only summary is in the HTTP
-body under `prizes` and in `detail.prizes`. This is the Edge counterpart of the orchestrator's `waiting` verdict for
-the same two conditions. `skipped: prizes_not_installed` (the window before the prize migration) stays `ok`. A worse
-outcome (a failed gameweek) is never replaced by the prize code.
+retries it (the RPC is idempotent; it is asked once per pass). It is no longer silent, but it does **not** change the
+pass outcome: the pass stays `ok` (HTTP 200). Only an `ok` pass counts for the `fantasy_worker` health check and for
+`databaseWorkerActive` (which makes the GitHub orchestrator stand aside), and a blocked season needs an admin, not a
+restart; calling the pass `partial` would page ops at 90 minutes and hand the lifecycle to GitHub while the game is
+keeping up. It is the Edge counterpart of the orchestrator's `waiting` verdict, which never alerts. Instead the HTTP body
+and `detail` of the run record carry `prizeAttention` (the prize error code, or `fantasy_prizes_blocked`) beside the
+status-only summary under `prizes`, and the Edge log line carries `prizeAttention` too. `skipped: prizes_not_installed`
+(the window before the prize migration) says nothing. A failed gameweek is unaffected.
 
 ## Bounded pass, resumable next tick
 
@@ -265,7 +295,9 @@ A pass already running keeps its lease for up to about eight minutes. To remove 
   second gameweek starts; the prize write too); the abort signal reaches the request but is not read as a stop; reads
   and settled failures keep today's behaviour; the lease is extended and expires for a crashed holder; a missing lease
   function is refused (pass and handler) unless `allowUnmanaged`, which keeps the time budget; prize failure and blocked
-  prizes make the pass `partial` and show in the body and the record.
+  prizes keep the pass `ok` and show as `prizeAttention` in the body, the record and the log; a write that fails before
+  the timer (exception, status 0, bare 502/504) is unconfirmed; a 5xx counts as an answer only with a database error
+  code; `leaseExtended` is recorded; the grace is cut to the wall clock.
 - `scripts/backend/fantasy-season-orchestrator.test.ts` ("one writer at a time"): lease taken and freed; another holder
   holds it; defers to a healthy database job (still watches); takes over when it is off or behind; manual dispatch
   never defers; runs unmanaged on a database without the functions.
@@ -292,7 +324,6 @@ the lane report): the two migrations apply, and all 97 assertions of the pgTAP f
   statement that really runs longer than that could still overlap the next pass.
 - The run record is written by one more RPC after the pass; after a stuck database the extension, the grace (10 s) and
   the record can add up past the Edge wall-clock limit, in which case there is no row and the lease simply expires.
-- A transport failure that comes back as an error (status 0) on a write before the timeout is still reported as an
-  ordinary failure, as it always was; only the timeout is treated as ambiguous.
+- The GitHub orchestrator and the manual runner do not use the ambiguity rule (see "Open" above).
 - A pass in flight survives a pause until its lease ends (about eight minutes).
 - The Edge function is a second deploy target: it must be deployed from the same commit as the migration.

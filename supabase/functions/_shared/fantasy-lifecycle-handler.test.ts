@@ -7,10 +7,15 @@ import {
   type FantasyWorkerRpcClient,
 } from "./fantasy-lifecycle-handler.ts";
 import {
+  AMBIGUOUS_LEASE_EXTENSION_SECONDS,
+  WORKER_LEASE_SECONDS,
   acquireWorkerLease,
+  ambiguousRpcTimeout,
   databaseWorkerStatus,
   leasedGateway,
+  replyShowsStatementOver,
   runFantasyWorkerPass,
+  unconfirmedWrite,
   type FantasyWorkerGateway,
 } from "./fantasy-lifecycle-worker.ts";
 import { SCHEDULER_TOKEN_HEADER } from "./scheduler-token.ts";
@@ -851,31 +856,42 @@ describe("a write that timed out is ambiguous, not failed (SEC-01)", () => {
   });
 });
 
-describe("a prize failure is visible without stopping the game (ASTRA-03)", () => {
-  it("reports a failed prize evaluation as partial, in the response and in the run record", async () => {
+describe("a prize failure is visible without stopping the game or spoiling the pass (ASTRA-03)", () => {
+  it("keeps the pass ok, and shows a failed prize evaluation in the response, the record and the log", async () => {
     const w = world({ prizeFailure: "fantasy_prize_rpc_failed" });
-    const response = await handleFantasyWorkerRequest(request(), {
-      environment,
-      client: clientFor(w),
-    });
-    // Not an outage: 200, like a pass that ran out of budget.
+    const logged: string[] = [];
+    const log = console.log;
+    console.log = (line: unknown) => void logged.push(String(line));
+    const response = await (async () => {
+      try {
+        return await handleFantasyWorkerRequest(request(), { environment, client: clientFor(w) });
+      } finally {
+        console.log = log;
+      }
+    })();
     expect(response.status).toBe(200);
     const body = (await response.json()) as Record<string, unknown>;
-    expect(body.status).toBe("partial");
-    expect(body.workerCode).toBe("fantasy_prize_rpc_failed");
+    // An ok pass is what the health check and the GitHub fallback look for: the
+    // game kept up, so a prize problem must not turn it into something else.
+    expect(body.status).toBe("ok");
+    expect(body.workerCode).toBe("football_not_final");
+    expect(body.prizeAttention).toBe("fantasy_prize_rpc_failed");
     expect(body.prizes).toEqual({ error: "fantasy_prize_rpc_failed" });
     expect(w.recorded[0]).toMatchObject({
-      outcome: "partial",
-      workerCode: "fantasy_prize_rpc_failed",
-      detail: { prizes: { error: "fantasy_prize_rpc_failed" } },
+      outcome: "ok",
+      detail: {
+        prizeAttention: "fantasy_prize_rpc_failed",
+        prizes: { error: "fantasy_prize_rpc_failed" },
+      },
     });
+    expect(logged.join("\n")).toContain('"prizeAttention":"fantasy_prize_rpc_failed"');
     // The core game ran, the lease was freed, and prizes were asked once (no second award attempt).
     expect(body.gameweeks).toMatchObject([{ outcome: "waiting" }]);
     expect(w.lease?.released).toBe(true);
     expect(names(w).filter((n) => n === "service_evaluate_fantasy_prizes")).toHaveLength(1);
   });
 
-  it("reports a blocked prize season as partial too, as the orchestrator waits on it", async () => {
+  it("keeps the pass ok for a blocked prize season too, and names it", async () => {
     const w = world({
       prizes: {
         evaluatedCount: 0,
@@ -890,18 +906,24 @@ describe("a prize failure is visible without stopping the game (ASTRA-03)", () =
     });
     const body = (await response.json()) as Record<string, unknown>;
     expect(response.status).toBe(200);
-    expect(body.status).toBe("partial");
-    expect(body.workerCode).toBe("fantasy_prizes_blocked");
+    expect(body.status).toBe("ok");
+    expect(body.prizeAttention).toBe("fantasy_prizes_blocked");
     expect(body.prizes).toMatchObject({ blocked: ["fantasy_prize_season_unresolved"] });
+    expect(w.recorded[0]).toMatchObject({
+      outcome: "ok",
+      detail: { prizeAttention: "fantasy_prizes_blocked" },
+    });
   });
 
-  it("keeps a clean prize pass, and a database without prizes yet, as ok", async () => {
+  it("says nothing about prizes on a clean pass, or on a database without prizes yet", async () => {
     const clean = world();
     const cleanResponse = await handleFantasyWorkerRequest(request(), {
       environment,
       client: clientFor(clean),
     });
-    expect(((await cleanResponse.json()) as { status: string }).status).toBe("ok");
+    const cleanBody = (await cleanResponse.json()) as Record<string, unknown>;
+    expect(cleanBody.status).toBe("ok");
+    expect(cleanBody.prizeAttention).toBeUndefined();
 
     const missing = world();
     const base = clientFor(missing);
@@ -916,6 +938,7 @@ describe("a prize failure is visible without stopping the game (ASTRA-03)", () =
     const missingResponse = await handleFantasyWorkerRequest(request(), { environment, client });
     const body = (await missingResponse.json()) as Record<string, unknown>;
     expect(body.status).toBe("ok");
+    expect(body.prizeAttention).toBeUndefined();
     expect(body.prizes).toEqual({ skipped: "prizes_not_installed" });
   });
 
@@ -928,6 +951,237 @@ describe("a prize failure is visible without stopping the game (ASTRA-03)", () =
     // A failed gameweek skips the prize catch-up altogether; the pass stays failed.
     expect(response.status).toBe(500);
     expect(((await response.json()) as { status: string }).status).toBe("failed");
+  });
+});
+
+/** A client that answers one RPC with something of its own and leaves the rest to the fake database. */
+function clientWith(
+  w: World,
+  name: string,
+  reply: () => PromiseLike<{
+    data?: unknown;
+    error?: { message?: string; code?: string } | null;
+    status?: number;
+  }>,
+  times = 1,
+): FantasyWorkerRpcClient {
+  const base = clientFor(w);
+  let used = 0;
+  return {
+    schema: () => ({
+      rpc: (rpcName: string, args: Record<string, unknown>) =>
+        rpcName === name && used++ < times ? reply() : base.schema("api").rpc(rpcName, args),
+    }),
+  };
+}
+
+describe("a write that failed before the timer, without a conclusive reply, is ambiguous too", () => {
+  it("treats a status-0 reply (no answer from the database) to a write as unconfirmed", async () => {
+    const w = world();
+    const client = clientWith(w, SYNC, () =>
+      Promise.resolve({
+        data: null,
+        error: { message: "TypeError: fetch failed", code: "" },
+        status: 0,
+      }),
+    );
+    const response = await handleFantasyWorkerRequest(request(), { environment, client });
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({
+      status: "failed",
+      workerCode: "fantasy_worker_rpc_unconfirmed",
+      ambiguous: true,
+      rpc: SYNC,
+      settled: false,
+      leaseReleased: false,
+    });
+    expect(w.lease?.released).toBe(false);
+    expect(names(w)).not.toContain("service_fantasy_worker_lease_release");
+    expect(names(w)).not.toContain("service_fantasy_lifecycle_state");
+    expect(w.recorded[0]).toMatchObject({
+      outcome: "failed",
+      detail: {
+        ambiguous: { rpc: SYNC, settled: false, leaseReleased: false, leaseExtended: true },
+      },
+    });
+  });
+
+  it("treats an exception from a write the same way, and starts no other gameweek", async () => {
+    const w = world({
+      gameweeks: [
+        { id: id(1), sequence: 1, status: "live" },
+        { id: id(2), sequence: 2, status: "live" },
+      ],
+    });
+    const client = clientWith(w, ADVANCE, () => Promise.reject(new Error("socket hang up")));
+    const response = await handleFantasyWorkerRequest(request(), { environment, client });
+    expect(await response.json()).toMatchObject({
+      workerCode: "fantasy_worker_rpc_unconfirmed",
+      ambiguous: true,
+      rpc: ADVANCE,
+      leaseReleased: false,
+    });
+    expect(w.calls.some((call) => call.args.p_gameweek_id === id(2))).toBe(false);
+    expect(w.lease?.released).toBe(false);
+  });
+
+  it("leaves a read, and a lease call, that fail the same way as the plain failures they were", async () => {
+    const read = world();
+    const readResponse = await handleFantasyWorkerRequest(request(), {
+      environment,
+      client: clientWith(read, "service_fantasy_lifecycle_state", () =>
+        Promise.resolve({ data: null, error: { message: "fetch failed", code: "" }, status: 0 }),
+      ),
+    });
+    const readBody = (await readResponse.json()) as Record<string, unknown>;
+    expect(readBody.ambiguous).toBeUndefined();
+    expect(readBody.workerCode).toBe("fantasy_worker_rpc_failed");
+    expect(read.lease?.released).toBe(true);
+  });
+
+  it("keeps a settled database error, with or without a status, resumable", async () => {
+    const w = world();
+    const client = clientWith(w, ADVANCE, () =>
+      Promise.resolve({ error: { message: "stale_update", code: "PT409" }, status: 409 }),
+    );
+    const response = await handleFantasyWorkerRequest(request(), { environment, client });
+    const body = (await response.json()) as Record<string, unknown>;
+    expect(body.ambiguous).toBeUndefined();
+    expect(w.lease?.released).toBe(true);
+  });
+});
+
+describe("what counts as the database having answered (a write that timed out)", () => {
+  const slowReply =
+    (status: number, code: string | undefined, ms = 40) =>
+    () =>
+      wait(ms).then(() => ({
+        data: null,
+        error: { message: "upstream", ...(code === undefined ? {} : { code }) },
+        status,
+      }));
+  const run = async (reply: ReturnType<typeof slowReply>) => {
+    const w = world();
+    const response = await handleFantasyWorkerRequest(request(), {
+      environment,
+      client: clientWith(w, SYNC, reply),
+      rpcTimeoutMs: 10,
+      ambiguousGraceMs: 1_000,
+    });
+    return { w, body: (await response.json()) as Record<string, unknown> };
+  };
+
+  it("does not read a bare gateway 502/504/522 as an answer: the lease is kept", async () => {
+    for (const status of [502, 504, 522]) {
+      const { w, body } = await run(slowReply(status, undefined));
+      expect(body).toMatchObject({ ambiguous: true, settled: false, leaseReleased: false });
+      expect(w.lease?.released).toBe(false);
+    }
+  });
+
+  it("does not read a 5xx with a non-database error code as an answer either", async () => {
+    const { body } = await run(slowReply(502, ""));
+    expect(body).toMatchObject({ settled: false, leaseReleased: false });
+  });
+
+  it("does read a 5xx that carries a PostgREST or SQLSTATE code as an answer", async () => {
+    for (const code of ["PGRST000", "XX000", "57014"]) {
+      const { w, body } = await run(slowReply(500, code));
+      expect(body).toMatchObject({ ambiguous: true, settled: true, leaseReleased: true });
+      expect(w.lease?.released).toBe(true);
+    }
+  });
+
+  it("reads a 2xx and a 4xx reply as an answer", async () => {
+    const ok = await run(() => wait(40).then(() => ({ data: { x: 1 }, error: null, status: 200 })));
+    expect(ok.body).toMatchObject({ settled: true, leaseReleased: true });
+    const refused = await run(slowReply(409, "PT409"));
+    expect(refused.body).toMatchObject({ settled: true, leaseReleased: true });
+  });
+
+  it("does not read a status-0 reply, the client's own abort or network error, as an answer", async () => {
+    const { w, body } = await run(slowReply(0, ""));
+    expect(body).toMatchObject({ settled: false, leaseReleased: false });
+    expect(w.lease?.released).toBe(false);
+  });
+});
+
+describe("the record says whether the lease was really extended, and the grace is bounded", () => {
+  it("records leaseExtended: false when the extension itself fails", async () => {
+    const w = world({ slow: { name: SYNC, ms: 60, times: 1 } });
+    const base = clientFor(w);
+    const client: FantasyWorkerRpcClient = {
+      schema: () => ({
+        rpc: (name: string, args: Record<string, unknown>) =>
+          name === "service_fantasy_worker_lease_extend"
+            ? Promise.reject(new Error("socket hang up"))
+            : base.schema("api").rpc(name, args),
+      }),
+    };
+    const response = await handleFantasyWorkerRequest(request(), {
+      environment,
+      client,
+      rpcTimeoutMs: 10,
+      ambiguousGraceMs: 10,
+    });
+    expect(await response.json()).toMatchObject({ ambiguous: true, leaseExtended: false });
+    expect(w.recorded[0]).toMatchObject({ detail: { ambiguous: { leaseExtended: false } } });
+    await wait(80);
+  });
+
+  it("extends by the named constant, and does not wait past the Edge wall clock", async () => {
+    expect(AMBIGUOUS_LEASE_EXTENSION_SECONDS).toBeGreaterThanOrEqual(WORKER_LEASE_SECONDS);
+    expect(AMBIGUOUS_LEASE_EXTENSION_SECONDS).toBeLessThanOrEqual(900);
+    const w = world();
+    const base = rpcFor(w);
+    const asked: number[] = [];
+    const gateway: FantasyWorkerGateway = {
+      rpc: async (name, args) => {
+        if (name !== SYNC) return base(name, args);
+        throw ambiguousRpcTimeout(SYNC, async (graceMs) => {
+          asked.push(graceMs);
+          return "unsettled";
+        });
+      },
+    };
+    // The clock is already at the wall: no grace is left to wait.
+    const result = await runFantasyWorkerPass(gateway, {
+      holder: "edge:wall",
+      now: () => w.clock.now,
+      ambiguousGraceMs: 5_000,
+      wallClockMs: 0,
+    });
+    expect(asked).toEqual([0]);
+    expect(result.ambiguous).toMatchObject({ rpc: SYNC, settled: false, leaseExtended: true });
+    const extend = w.calls.find((call) => call.name === "service_fantasy_worker_lease_extend");
+    expect(extend!.args.p_ttl_seconds).toBe(AMBIGUOUS_LEASE_EXTENSION_SECONDS);
+    // And with the wall far away the configured grace is what is asked (the first
+    // pass's lease is left to expire, so let it).
+    w.clock.now += 421_000;
+    const far = await runFantasyWorkerPass(gateway, {
+      holder: "edge:wall2",
+      now: () => w.clock.now,
+      ambiguousGraceMs: 5_000,
+    });
+    expect(asked).toEqual([0, 5_000]);
+    expect(far.ambiguous?.settled).toBe(false);
+  });
+});
+
+describe("replyShowsStatementOver", () => {
+  it("is the rule the gateway uses", () => {
+    expect(replyShowsStatementOver({})).toBe(true);
+    expect(replyShowsStatementOver({ status: 200 })).toBe(true);
+    expect(replyShowsStatementOver({ status: 409, error: { code: "PT409" } })).toBe(true);
+    expect(replyShowsStatementOver({ status: 0 })).toBe(false);
+    expect(replyShowsStatementOver({ status: 504 })).toBe(false);
+    expect(replyShowsStatementOver({ status: 503, error: { code: "" } })).toBe(false);
+    expect(replyShowsStatementOver({ status: 500, error: { code: "PGRST001" } })).toBe(true);
+    expect(replyShowsStatementOver({ status: 500, error: { code: "XX000" } })).toBe(true);
+    expect(unconfirmedWrite("service_fantasy_lifecycle_state", null)).toBeNull();
+    expect(unconfirmedWrite("service_sync_fantasy_calendar", null)).not.toBeNull();
+    expect(unconfirmedWrite("service_sync_fantasy_calendar", { status: 200 })).toBeNull();
+    expect(unconfirmedWrite("some_new_rpc", { status: 0 })).not.toBeNull();
   });
 });
 
