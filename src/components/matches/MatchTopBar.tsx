@@ -44,6 +44,11 @@ export function MatchTopBar({
     palettes: { home: ClubPalette; away: ClubPalette };
     /** Minutes played, for the elapsed-time bar along the compact bar's foot. */
     elapsed: number;
+    /**
+     * The read says live but is too old to trust (`liveFreshness` "expired"):
+     * the neutral "Score à confirmer" pill instead of the live one, no bar.
+     */
+    liveUnconfirmed?: boolean;
   };
 }) {
   const { t } = useI18n();
@@ -78,6 +83,7 @@ function CompactBar({
   away,
   palettes,
   elapsed,
+  liveUnconfirmed,
   shown,
   onBack,
   onShare,
@@ -87,14 +93,16 @@ function CompactBar({
   away: Club;
   palettes: { home: ClubPalette; away: ClubPalette };
   elapsed: number;
+  liveUnconfirmed?: boolean;
   shown: boolean;
   onBack: () => void;
   onShare?: () => void;
 }) {
   const { t } = useI18n();
   const stages = useLiveStageLabels();
-  const isLive = match.status === "live";
-  const showScore = isLive || match.status === "finished";
+  const showScore = match.status === "live" || match.status === "finished";
+  const isLive = match.status === "live" && !liveUnconfirmed;
+  const unconfirmed = match.status === "live" && liveUnconfirmed === true;
   const clock = liveClock({
     stages,
     minute: match.minute,
@@ -157,6 +165,19 @@ function CompactBar({
               </span>
             ) : null}
             {isLive ? <UiLivePill minute={clock.minute} label={clock.stage} /> : null}
+            {unconfirmed ? (
+              <span
+                className={cn(
+                  "inline-flex items-center whitespace-nowrap px-2 py-0.5",
+                  ui.radius.full,
+                  ui.surface.inkPlain,
+                  ui.text.micro,
+                  "[font-weight:var(--ui-weight-heavy)] uppercase ltr:tracking-wide",
+                )}
+              >
+                {t("matches.status.unconfirmed")}
+              </span>
+            ) : null}
           </div>
           <ClubCrest
             club={away}

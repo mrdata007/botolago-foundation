@@ -169,7 +169,9 @@ select pg_temp.store(jsonb_build_object(
 select extensions.is((select result from first_result),
   jsonb_build_object('outcome', 'stored', 'fixtureId', 'f7500000-0000-4000-8000-000000000001',
     'events', 5, 'eventsRemoved', 0, 'statistics', 6, 'lineups', 2, 'lineupPlayers', 5,
-    'unmappedPlayers', 2, 'pressure', 3, 'absences', 2, 'absencesRemoved', 0),
+    'unmappedPlayers', 2, 'pressure', 3, 'absences', 2, 'absencesRemoved', 0,
+    'eventsRejected', 0, 'statisticsRejected', 0, 'lineupPlayersRejected', 0,
+    'rejectedSections', '[]'::jsonb),
   'the first delivery is stored whole; the unknown statistic and the two unknown players are left out');
 
 select extensions.is(jsonb_array_length(pg_temp.timeline()), 5, 'the Résumé reads five events');
@@ -340,41 +342,14 @@ select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
   'providerUpdatedAt', now(), 'sourceSequence', 4000,
   'statistics', jsonb_build_array(jsonb_build_object('code', 'shots', 'value', 1)))) $$,
   '22023', 'INVALID_PROVIDER_PAYLOAD', 'a statistic without a club is refused');
-select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
-  'providerUpdatedAt', now(), 'sourceSequence', 4000,
-  'events', jsonb_build_array(jsonb_build_object('key', '7', 'type', 'header', 'minute', 1,
-    'period', 'first_half', 'sequence', 1)))) $$,
-  '22023', 'INVALID_PROVIDER_PAYLOAD', 'an event type the page does not know is refused');
-select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
-  'providerUpdatedAt', now(), 'sourceSequence', 4000,
-  'events', jsonb_build_array(
-    jsonb_build_object('key', '7', 'type', 'goal', 'minute', 1, 'period', 'first_half', 'sequence', 1),
-    jsonb_build_object('key', '7', 'type', 'goal', 'minute', 2, 'period', 'first_half', 'sequence', 2)))) $$,
-  '22023', 'INVALID_PROVIDER_PAYLOAD', 'two events with one key are refused');
-select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
-  'providerUpdatedAt', now(), 'sourceSequence', 4000,
-  'events', jsonb_build_array(
-    jsonb_build_object('key', '7', 'type', 'goal', 'minute', 181, 'period', 'first_half', 'sequence', 1)))) $$,
-  '22023', 'INVALID_PROVIDER_PAYLOAD', 'a minute out of range is refused');
+-- An unknown event type, a minute out of range, two events with one key, two
+-- pressure values for one minute and an absence with an unknown category or
+-- date no longer refuse the whole delivery (20261014120000): the row or the
+-- section is left out and the rest stored. See
+-- football_match_details_partial_sections.test.sql.
 select extensions.throws_ok($$ select api.ingest_football_match_details('sportsmonks', '9907999',
   jsonb_build_object('providerUpdatedAt', now(), 'sourceSequence', 1)) $$,
   'P0002', 'MAPPING_NOT_FOUND', 'a fixture BotolaGO does not know is refused');
-select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
-  'providerUpdatedAt', now(), 'sourceSequence', 4000,
-  'pressure', jsonb_build_array(
-    jsonb_build_object('teamExternalId', '9901001', 'minute', 5, 'value', 1),
-    jsonb_build_object('teamExternalId', '9901001', 'minute', 5, 'value', 2)))) $$,
-  '22023', 'INVALID_PROVIDER_PAYLOAD', 'two pressure values for one club and minute are refused');
-select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
-  'providerUpdatedAt', now(), 'sourceSequence', 4000,
-  'absences', jsonb_build_array(jsonb_build_object('key', '90', 'teamExternalId', '9901001',
-    'playerName', 'Someone', 'category', 'holiday')))) $$,
-  '22023', 'INVALID_PROVIDER_PAYLOAD', 'an absence that is neither an injury nor a suspension is refused');
-select extensions.throws_ok($$ select pg_temp.store(jsonb_build_object(
-  'providerUpdatedAt', now(), 'sourceSequence', 4000,
-  'absences', jsonb_build_array(jsonb_build_object('key', '90', 'teamExternalId', '9901001',
-    'playerName', 'Someone', 'category', 'injury', 'expectedReturnOn', 'soon')))) $$,
-  '22023', 'INVALID_PROVIDER_PAYLOAD', 'as is a return date that is not a date');
 select extensions.throws_ok($$ select pg_temp.store('[]'::jsonb) $$,
   '22023', 'INVALID_PROVIDER_PAYLOAD', 'a payload that is not an object is refused');
 select extensions.is(

@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 17256975,
+    "startTimestamp": 1791921600,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 4
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 55027,
+      "name": "Fath Union Sport",
+      "shortName": "FUS Rabat"
+    },
+    "awayTeam": {
+      "id": 41757,
+      "name": "Raja Club Athletic",
+      "shortName": "Raja CA"
+    },
+    "homeScore": {
+      "current": 1,
+      "period1": 0,
+      "period2": 1
+    },
+    "awayScore": {
+      "current": 1,
+      "period1": 1,
+      "period2": 0
+    }
+  }
+}

@@ -307,13 +307,13 @@ describe("SofaScore-only Fantasy observation", () => {
     expect(p.request).toBeNull();
   });
 
-  test("an own goal (unknown label) and a second yellow are held for review", async () => {
+  test("an unknown goal label and a second yellow are held for review", async () => {
     const match = load("17132481");
     const own = {
       ...match.incidents[1]!,
       kind: "unknown" as const,
       rawType: "goal",
-      rawClass: "ownGoal",
+      rawClass: "scissorKick",
     };
     const p = await prepare({ ...match, incidents: [...match.incidents, own] });
     expect(p.blockers.map((b) => b.code)).toContain("unknown_incident");
@@ -667,5 +667,69 @@ describe("unknown (unmapped, no candidate) substitutes", () => {
     const b = await prepare(match, {}, [subHome]);
     expect(a.requestDigest).toBe(b.requestDigest);
     expect(a.requestDigest).not.toBe((await prepare(match)).requestDigest);
+  });
+});
+
+// RS Berkane 2-2 Renaissance Zemamra, 2026-10-13 (17256978): gave up after 58
+// attempts with `unknown_incident` and `goals_do_not_add_up`, because its
+// first goal is an own goal (goal/ownGoal: a Berkane player, counted for
+// Zemamra, `isHome: false`, 0-1 after it) and the builder did not know the label.
+describe("own goals (17256978)", () => {
+  const HARKASS = "970761"; // Berkane: own goal at 5', goal at 56'
+
+  test("the real match is no longer held: the own goal counts for Zemamra", async () => {
+    const match = load("17256978");
+    const own = match.incidents.filter((i) => i.kind === "own_goal");
+    expect(own.map((i) => [i.minute, i.side, i.player?.externalId])).toEqual([
+      [5, "away", HARKASS],
+    ]);
+    expect(match.incidents.some((i) => i.kind === "unknown" && i.rawType === "goal")).toBe(false);
+    const p = await prepare(match);
+    const codes = p.blockers.map((b) => b.code);
+    expect(codes).not.toContain("unknown_incident");
+    expect(codes).not.toContain("goals_do_not_add_up");
+    expect(codes).not.toContain("own_goal_unexplained");
+    expect(p.blockers).toEqual([]);
+    expect(p.request).not.toBeNull();
+  });
+
+  test("the scorer gets one own goal and only his real goal; no one is credited the own goal", async () => {
+    const p = await prepare(load("17256978"));
+    const rows = p.request!.payload.players;
+    const harkass = rows.find((r) => r.identity.sofascoreId === HARKASS)!;
+    expect(harkass.stats.ownGoals).toBe(1);
+    expect(harkass.stats.goals).toBe(1);
+    expect(rows.reduce((n, r) => n + (r.stats.ownGoals as number), 0)).toBe(1);
+    // Goals in the rows, own goals on the side they count for, give the 2-2.
+    const home = rows.filter((r) => r.teamId === binding.homeTeamId);
+    const away = rows.filter((r) => r.teamId === binding.awayTeamId);
+    const sum = (xs: typeof rows, k: "goals" | "ownGoals") =>
+      xs.reduce((n, r) => n + (r.stats[k] as number), 0);
+    expect(sum(home, "goals") + sum(away, "ownGoals")).toBe(2);
+    expect(sum(away, "goals") + sum(home, "ownGoals")).toBe(2);
+  });
+
+  test("Berkane concedes the own goal: a home starter on from the start has 2 conceded", async () => {
+    const match = load("17256978");
+    const keeperId = match.lineups.players.find(
+      (pl) => pl.side === "home" && pl.starter && pl.position === "G",
+    )!.externalId;
+    const p = await prepare(match);
+    const keeper = p.request!.payload.players.find((r) => r.identity.sofascoreId === keeperId);
+    expect(keeper?.stats.goalsConceded).toBe(2);
+    expect(keeper?.stats.cleanSheet).toBe(false);
+  });
+
+  test("an own goal put on the scorer's own side, or that SofaScore's figures disagree with, is held", async () => {
+    const match = load("17256978");
+    const flipped = {
+      ...match,
+      incidents: match.incidents.map((i) =>
+        i.kind === "own_goal" ? { ...i, side: "home" as const } : i,
+      ),
+    };
+    expect((await prepare(flipped)).blockers.map((b) => b.code)).toContain("own_goal_unexplained");
+    const disagree = withStats(match, HARKASS, { ownGoals: 0 });
+    expect((await prepare(disagree)).blockers.map((b) => b.code)).toContain("own_goal_unexplained");
   });
 });
