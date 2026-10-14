@@ -278,9 +278,9 @@ export interface PremiumCardReadsRepository {
 // The Supabase repository
 // ---------------------------------------------------------------------------
 
-type CardApi = ReturnType<typeof getManagerCardApi>;
-type RpcResult = { data: unknown; error: PostgrestError | null };
-type RpcRequest = PromiseLike<RpcResult> & {
+export type CardApi = ReturnType<typeof getManagerCardApi>;
+export type RpcResult = { data: unknown; error: PostgrestError | null };
+export type RpcRequest = PromiseLike<RpcResult> & {
   abortSignal(signal: AbortSignal): PromiseLike<RpcResult>;
 };
 
@@ -288,10 +288,10 @@ type RpcRequest = PromiseLike<RpcResult> & {
  * The one typed cast: `src/backend/generated/database.types.ts` is a CI artifact and does not know
  * these functions until the backend PR regenerates it. Remove the cast once the types exist.
  */
-interface UntypedApi {
+export interface UntypedApi {
   rpc(name: string, args?: Record<string, unknown>): RpcRequest;
 }
-const untyped = (api: CardApi): UntypedApi => api as unknown as UntypedApi;
+export const untyped = (api: CardApi): UntypedApi => api as unknown as UntypedApi;
 
 const OFF = { available: false } as const;
 
@@ -308,7 +308,7 @@ function parse<T>(schema: { parse(value: unknown): T }, value: unknown): T {
 }
 
 /** A read. A database the migration has not reached answers like the feature switched off. */
-async function read<T>(
+export async function read<T>(
   request: RpcRequest,
   schema: { parse(value: unknown): T },
   context: RepositoryContext,

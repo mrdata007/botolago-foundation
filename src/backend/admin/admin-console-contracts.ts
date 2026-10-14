@@ -12,6 +12,7 @@ export type AdminConsoleRoute =
   | "/admin/news"
   | "/admin/stories"
   | "/admin/prizes"
+  | "/admin/plus"
   | "/admin/users"
   | "/admin/users/$userId"
   | "/admin/pepites"
@@ -385,6 +386,14 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
       // admin-console-contracts.test.ts checks it against the dictionary.
       ar: "الجوائز",
     },
+  },
+  // BotolaGO+ memberships: counts, the audited member read, grants. Reading needs premium.read;
+  // grant and revoke need premium.grant (recent authentication). The database checks both again.
+  {
+    route: "/admin/plus",
+    permission: "premium.read",
+    testId: "admin-nav-plus",
+    labels: { fr: "Abonnements", ar: "الاشتراكات" },
   },
   // Pépites: only in a build where Pépites is on (`PEPITES_ENABLED`), like
   // its public pages.

@@ -73,7 +73,8 @@ select extensions.is(
   )) - 'fixtureId',
   jsonb_build_object('outcome', 'stored', 'events', 0, 'eventsRemoved', 0, 'statistics', 0,
     'lineups', 2, 'lineupPlayers', 5, 'unmappedPlayers', 6, 'pressure', 0, 'absences', 0,
-    'absencesRemoved', 0),
+    'absencesRemoved', 0, 'eventsRejected', 0, 'statisticsRejected', 0,
+    'lineupPlayersRejected', 0, 'rejectedSections', '[]'::jsonb),
   'unknown players are stored by name; one sent twice once; one with neither id nor name left out');
 
 create temporary table read as

@@ -250,14 +250,37 @@ export function parseSofascoreLineups(raw: unknown): PerformanceLineups {
 /** Labels that may change the score or a card count; shared with the Fantasy builder. */
 export const SCORE_RELEVANT_LABEL = /goal|card|penalt|red|yellow|own/i;
 
+/**
+ * The kind of a SofaScore incident from its type and class; `unknown` for any
+ * pair not reviewed. Also used to re-read replies stored before a pair was
+ * known (sofascore-fantasy-auto.ts, `readStored`).
+ */
+export function sofascoreIncidentKind(
+  rawType: string,
+  rawClass: string | null,
+): PerformanceIncidentKind {
+  if (rawType === "goal" && rawClass === "regular") return "goal";
+  if (rawType === "goal" && rawClass === "penalty") return "penalty_goal";
+  // First seen on RS Berkane - Renaissance Zemamra (17256978, 2026-10-13): a
+  // home player's own goal at 5', `isHome: false`, score 0-1 after it, so
+  // `isHome` is the side the goal counts for.
+  if (rawType === "goal" && rawClass === "ownGoal") return "own_goal";
+  if (rawType === "inGamePenalty" && rawClass === "missed") return "penalty_missed";
+  if (rawType === "card" && rawClass === "yellow") return "yellow_card";
+  if (rawType === "card" && rawClass === "yellowRed") return "second_yellow";
+  if (rawType === "card" && rawClass === "red") return "red_card";
+  if (rawType === "substitution" && rawClass === "regular") return "substitution";
+  return "unknown";
+}
+
 export const incidentLabel = (rawType: string, rawClass: string | null): string =>
   `${rawType}${rawClass ? `/${rawClass}` : ""}`;
 
 /**
  * Incident type and class pairs seen in Phase 0: goal/regular, goal/penalty,
  * inGamePenalty/missed, card/yellow, card/yellowRed, card/red, substitution/
- * regular, and `period` markers (skipped). Anything else, including an own
- * goal (not seen in any of the ten matches), is `unknown` with its raw labels.
+ * regular, and `period` markers (skipped); goal/ownGoal since 2026-10-14
+ * (17256978). Anything else is `unknown` with its raw labels.
  * Rescinded incidents (VAR) are dropped.
  * Only the explicitly understood `injuryTime` announcement without a class or
  * player attribution may be dropped when its minute or side is absent.
@@ -305,14 +328,7 @@ export function parseSofascoreIncidents(raw: unknown): PerformanceIncident[] {
     if (incident.rawType === "period") continue;
     if (incident.rescinded === true) continue;
     const { rawType, rawClass } = incident;
-    let kind: PerformanceIncidentKind = "unknown";
-    if (rawType === "goal" && rawClass === "regular") kind = "goal";
-    else if (rawType === "goal" && rawClass === "penalty") kind = "penalty_goal";
-    else if (rawType === "inGamePenalty" && rawClass === "missed") kind = "penalty_missed";
-    else if (rawType === "card" && rawClass === "yellow") kind = "yellow_card";
-    else if (rawType === "card" && rawClass === "yellowRed") kind = "second_yellow";
-    else if (rawType === "card" && rawClass === "red") kind = "red_card";
-    else if (rawType === "substitution" && rawClass === "regular") kind = "substitution";
+    const kind = sofascoreIncidentKind(rawType, rawClass);
     if (incident.time === undefined || incident.isHome === undefined) {
       // Only the reviewed added-time announcement is harmless metadata.
       // Unknown substitutions, VAR decisions and other unplaced labels fail closed.

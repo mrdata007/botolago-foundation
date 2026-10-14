@@ -1,0 +1,280 @@
+{
+  "incidents": [
+    {
+      "incidentType": "period",
+      "time": 90,
+      "addedTime": 999,
+      "text": "FT",
+      "homeScore": 2,
+      "awayScore": 2
+    },
+    {
+      "id": 365277405,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 87,
+      "isHome": true,
+      "homeScore": 2,
+      "awayScore": 2,
+      "player": {
+        "id": 2203635,
+        "name": "Youness El Kaabi",
+        "shortName": "Y. E. Kaabi"
+      },
+      "assist1": {
+        "id": 1095727,
+        "name": "Haytam Manaout",
+        "shortName": "H. Manaout"
+      }
+    },
+    {
+      "id": 127099258,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 87,
+      "isHome": true,
+      "playerIn": {
+        "id": 1823726,
+        "name": "Mohammed Ouyahya",
+        "shortName": "M. Ouyahya"
+      },
+      "playerOut": {
+        "id": 782542,
+        "name": "Hamza El Moussaoui",
+        "shortName": "H. E. Moussaoui"
+      }
+    },
+    {
+      "id": 125770448,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 85,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1525284,
+        "name": "Abdelaziz El Hamzaoui",
+        "shortName": "A. E. Hamzaoui"
+      }
+    },
+    {
+      "id": 127099263,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 80,
+      "isHome": false,
+      "playerIn": {
+        "id": 2776292,
+        "name": "Mouad Rahni",
+        "shortName": "M. Rahni"
+      },
+      "playerOut": {
+        "id": 1894253,
+        "name": "Zakaria Ajoughlal",
+        "shortName": "Z. Ajoughlal"
+      }
+    },
+    {
+      "id": 127099262,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 80,
+      "isHome": false,
+      "playerIn": {
+        "id": 1140922,
+        "name": "Bilal Soufi",
+        "shortName": "B. Soufi"
+      },
+      "playerOut": {
+        "id": 1525325,
+        "name": "Youness Moukhlis",
+        "shortName": "Y. Moukhlis"
+      }
+    },
+    {
+      "id": 127099261,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 71,
+      "isHome": false,
+      "playerIn": {
+        "id": 1874703,
+        "name": "Amine El Moutaouakil",
+        "shortName": "A. E. Moutaouakil"
+      },
+      "playerOut": {
+        "id": 1525294,
+        "name": "Anass El Ghannouj",
+        "shortName": "A. E. Ghannouj"
+      }
+    },
+    {
+      "id": 127099257,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 70,
+      "isHome": true,
+      "playerIn": {
+        "id": 978956,
+        "name": "Ayoub Khairi",
+        "shortName": "A. Khairi"
+      },
+      "playerOut": {
+        "id": 802850,
+        "name": "Youssef Aït Bennasser",
+        "shortName": "A. Bennasser"
+      }
+    },
+    {
+      "id": 127099256,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 66,
+      "isHome": true,
+      "playerIn": {
+        "id": 1893999,
+        "name": "Omar El Manssouri",
+        "shortName": "O. E. Manssouri"
+      },
+      "playerOut": {
+        "id": 52797,
+        "name": "Ryan Mendes",
+        "shortName": "R. Mendes"
+      }
+    },
+    {
+      "id": 127099255,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 66,
+      "isHome": true,
+      "playerIn": {
+        "id": 2203635,
+        "name": "Youness El Kaabi",
+        "shortName": "Y. E. Kaabi"
+      },
+      "playerOut": {
+        "id": 1182584,
+        "name": "Youssef Mehri",
+        "shortName": "Y. Mehri"
+      }
+    },
+    {
+      "id": 127099260,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 65,
+      "isHome": false,
+      "playerIn": {
+        "id": 1525284,
+        "name": "Abdelaziz El Hamzaoui",
+        "shortName": "A. E. Hamzaoui"
+      },
+      "playerOut": {
+        "id": 2837202,
+        "name": "Ousama El Attar",
+        "shortName": "O. E. Attar"
+      }
+    },
+    {
+      "id": 127099259,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 65,
+      "isHome": false,
+      "playerIn": {
+        "id": 2776291,
+        "name": "Mouad Mouzalim",
+        "shortName": "M. Mouzalim"
+      },
+      "playerOut": {
+        "id": 1866448,
+        "name": "Aymen el Aatga",
+        "shortName": "A. e. Aatga"
+      }
+    },
+    {
+      "id": 365277404,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 56,
+      "isHome": true,
+      "homeScore": 1,
+      "awayScore": 2,
+      "player": {
+        "id": 970761,
+        "name": "Jamal Harkass",
+        "shortName": "J. Harkass"
+      }
+    },
+    {
+      "id": 127099254,
+      "incidentType": "substitution",
+      "incidentClass": "regular",
+      "time": 46,
+      "isHome": true,
+      "playerIn": {
+        "id": 1095727,
+        "name": "Haytam Manaout",
+        "shortName": "H. Manaout"
+      },
+      "playerOut": {
+        "id": 867180,
+        "name": "Oussama Haddadi",
+        "shortName": "O. Haddadi"
+      }
+    },
+    {
+      "incidentType": "period",
+      "time": 45,
+      "addedTime": 999,
+      "text": "HT",
+      "homeScore": 0,
+      "awayScore": 2
+    },
+    {
+      "id": 125770447,
+      "incidentType": "card",
+      "incidentClass": "yellow",
+      "time": 44,
+      "isHome": false,
+      "reason": "Foul",
+      "rescinded": false,
+      "player": {
+        "id": 1525294,
+        "name": "Anass El Ghannouj",
+        "shortName": "A. E. Ghannouj"
+      }
+    },
+    {
+      "id": 365277403,
+      "incidentType": "goal",
+      "incidentClass": "regular",
+      "time": 8,
+      "isHome": false,
+      "homeScore": 0,
+      "awayScore": 2,
+      "player": {
+        "id": 1525325,
+        "name": "Youness Moukhlis",
+        "shortName": "Y. Moukhlis"
+      }
+    },
+    {
+      "id": 365277402,
+      "incidentType": "goal",
+      "incidentClass": "ownGoal",
+      "time": 5,
+      "isHome": false,
+      "from": "owngoal",
+      "homeScore": 0,
+      "awayScore": 1,
+      "player": {
+        "id": 970761,
+        "name": "Jamal Harkass",
+        "shortName": "J. Harkass"
+      }
+    }
+  ]
+}

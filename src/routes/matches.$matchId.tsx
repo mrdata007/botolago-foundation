@@ -25,6 +25,7 @@ import { EventTimeline } from "@/components/matches/EventTimeline";
 import { GoalMoment } from "@/components/matches/GoalMoment";
 import { HeadToHead } from "@/components/matches/HeadToHead";
 import { LineupsView } from "@/components/matches/LineupsView";
+import { LiveFreshnessNote } from "@/components/matches/LiveFreshnessNote";
 import { MatchScoreHeader } from "@/components/matches/MatchScoreHeader";
 import {
   MATCH_PANEL_ID,
@@ -41,6 +42,7 @@ import {
   useGoalMoment,
 } from "@/components/matches/goal-moment";
 import { useScrolledPast } from "@/components/matches/use-scrolled-past";
+import { useLiveFreshness } from "@/components/matches/use-live-freshness";
 import { ui, UiCard, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { matchDayKey } from "@/lib/match-kickoff";
@@ -211,6 +213,16 @@ function MatchDetailPage() {
   const match = detailQ.data?.match;
   const season = detailQ.data?.season;
 
+  // How old the read of a live match is, and the reads that heal a page left
+  // open: back to the tab, restored from the back/forward cache, focus, the
+  // network back. A failed refetch keeps the last read on screen (said to be
+  // stale after two minutes) instead of replacing the page with an error.
+  const { freshness } = useLiveFreshness({
+    match,
+    updatedAt: detailQ.dataUpdatedAt,
+    refetch: () => void detailQ.refetch({ cancelRefetch: false }),
+  });
+
   // Articles and matches are the pages most often opened from a shared link,
   // where there is no in-app entry to go back to. There, Retour goes to the
   // calendar on this match's own day and season, not to today. From inside
@@ -273,7 +285,9 @@ function MatchDetailPage() {
     );
   }
 
-  if (detailQ.isError) {
+  // Only when there is nothing to show: a refetch that fails keeps the last
+  // read, and the freshness note says how old it is.
+  if (detailQ.isError && !detailQ.data) {
     return (
       <AppShell hideBottomNav backgroundVariant="matches" topBar={plainBar}>
         <div className="mt-8">
@@ -368,7 +382,14 @@ function MatchDetailPage() {
           onBack={goBack}
           onShare={share}
           compact={scrolledPast}
-          fixture={{ match, home, away, palettes, elapsed: live.elapsed }}
+          fixture={{
+            match,
+            home,
+            away,
+            palettes,
+            elapsed: live.elapsed,
+            liveUnconfirmed: freshness === "expired",
+          }}
         />
       }
     >
@@ -403,6 +424,14 @@ function MatchDetailPage() {
         elapsed={live.elapsed}
         events={live.events}
         lineups={lineups}
+        liveUnconfirmed={freshness === "expired"}
+      />
+
+      <LiveFreshnessNote
+        freshness={freshness}
+        updatedAt={detailQ.dataUpdatedAt}
+        refreshing={detailQ.isFetching}
+        onRefresh={() => void detailQ.refetch()}
       />
 
       {/* Tabs straight after the match's identity, on every width. Desktop
