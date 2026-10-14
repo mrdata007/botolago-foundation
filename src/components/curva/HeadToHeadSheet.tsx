@@ -6,10 +6,12 @@ import { useCardCopy, useCurvaCopy, useMomentCopy } from "@/components/manager-c
 import { fill } from "@/components/manager-card/interpolate";
 import { fromMember, fromMyCard } from "@/components/manager-card/to-profile";
 import { STAT_CODES, type StatCode } from "@/components/manager-card/types";
+import { PlusDuelEntry } from "@/components/plus/PlusEntry";
 import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { ui, UiButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
+import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 import { CODE_CLASS, DASH, Figure, PersonName, ProvisionalBadge } from "./figures";
@@ -83,6 +85,8 @@ export function HeadToHeadSheet({
               <StatRow key={code} code={code} a={mine.stats[code].value} b={theirs.stats[code]} />
             ))}
           </ul>
+          {/* The detailed duel is a BotolaGO+ extra (behind PREMIUM_BUILD). */}
+          {PREMIUM_SURFACES ? <PlusDuelEntry /> : null}
           <UiButton variant="ghost" onClick={() => onOpenChange(false)}>
             {t("fpl.close")}
           </UiButton>
