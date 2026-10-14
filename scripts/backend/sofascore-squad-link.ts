@@ -89,10 +89,15 @@ export const membersSql = (seasonId: string, showNames: boolean) => {
   where mem.season_id = '${seasonId}' and mem.active`;
 };
 
-/** Every SofaScore player id that has a mapping row (active or not: either blocks an insert). */
-export const mappedIdsSql = () => `select jsonb_agg(external_id) as data
-  from app_private.football_provider_mappings
-  where provider_name = 'sofascore' and entity_type = 'player'`;
+/**
+ * Every SofaScore player id that is linked already: a mapping row (active or not: either blocks an
+ * insert) or a second id of a player (migration 20261014170000), which is the same player.
+ */
+export const mappedIdsSql = () => `select jsonb_agg(id) as data from (
+  select external_id as id from app_private.football_provider_mappings
+  where provider_name = 'sofascore' and entity_type = 'player'
+  union
+  select sofascore_player_id from app_private.sofascore_player_aliases) ids`;
 
 type Rows = Array<Record<string, unknown>>;
 const data = (rows: Rows): unknown[] => {

@@ -497,7 +497,7 @@ export function renderApplySql(report: SquadLinkReport, opts: ApplyOptions = {})
 -- raises DRY_RUN_ROLLBACK with the computed counts, and the whole DO block is rolled back. Read the
 -- message, re-read the tables to confirm nothing changed, then set c_commit to true, run it once,
 -- and resume the writers. It never loosens a guard: a guard that fires means production moved
--- since the report. Requires migration 20261013150000.
+-- since the report. Requires migrations 20261013150000 and 20261014170000 (second SofaScore ids).
 
 do $squad_link$
 declare
@@ -538,6 +538,9 @@ begin
     or to_regprocedure('app_private.sofascore_position_compatible(text,text)') is null then
     raise exception 'GUARD: migration 20261013150000 (matching without names) is not applied';
   end if;
+  if to_regclass('app_private.sofascore_player_aliases') is null then
+    raise exception 'GUARD: migration 20261014170000 (second SofaScore ids) is not applied';
+  end if;
   select count(*) into v_n from app_private.football_provider_mappings
    where provider_name = 'sofascore' and entity_type = 'player';
   if v_n <> c_expected_sofa_player_mappings then
@@ -548,7 +551,9 @@ begin
   for r in select * from jsonb_to_recordset(c_confirmed) as x(sofa_id text, player_id uuid, team_id uuid) loop
     if exists (select 1 from app_private.football_provider_mappings m
         where m.provider_name = 'sofascore' and m.entity_type = 'player'
-          and (m.external_id = r.sofa_id or m.internal_entity_id = r.player_id)) then
+          and (m.external_id = r.sofa_id or m.internal_entity_id = r.player_id))
+      or exists (select 1 from app_private.sofascore_player_aliases a
+        where a.sofascore_player_id = r.sofa_id or a.player_id = r.player_id) then
       raise exception 'GUARD: a SofaScore player mapping already exists for player % or id %', r.player_id, r.sofa_id;
     end if;
     if not exists (select 1 from app.team_memberships mem
@@ -580,8 +585,9 @@ begin
   for r in select * from jsonb_to_recordset(c_suggestions)
       as x(sofa_id text, team_id uuid, reason text, shirt integer, position text, name text, candidates uuid[]) loop
     if exists (select 1 from app_private.football_provider_mappings m
-        where m.provider_name = 'sofascore' and m.entity_type = 'player' and m.external_id = r.sofa_id) then
-      v_skipped := v_skipped + 1;   -- linked meanwhile (by the matcher or step 1): nothing to ask
+        where m.provider_name = 'sofascore' and m.entity_type = 'player' and m.external_id = r.sofa_id)
+      or exists (select 1 from app_private.sofascore_player_aliases a where a.sofascore_player_id = r.sofa_id) then
+      v_skipped := v_skipped + 1;   -- linked meanwhile (by the matcher, step 1 or as a second id): nothing to ask
       continue;
     end if;
     perform app_private.sofascore_player_match_enqueue(r.sofa_id, null, r.team_id, null, r.name, null,
