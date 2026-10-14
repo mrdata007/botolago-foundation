@@ -3,7 +3,7 @@
 Status: **approved, implemented on branch `claude/manager-card-percentile`.**
 Written 2026-10-14 against `origin/main` `45e99f4` as a proposal. The owner
 chose option A on 2026-10-14 (decisions in section 6). Built as migration
-`20261014150000_manager_card_gameweek_percentile`, rules v4 and the guarded
+`20261014160000_manager_card_gameweek_percentile`, rules v4 and the guarded
 script `scripts/backend/apply-manager-card-rules-v4-percentile.sql`; how to
 install it is in `MANAGER_CARD_OPERATIONS_RUNBOOK.md`, "Rules v4". Section 7
 says where the build differs from the text below.
@@ -465,7 +465,8 @@ without `normalize` is v3's calculation.
 
 ## 7. As built (differences from the text above)
 
-- **Timestamp**: `20261014150000` (after every migration on `main` and PR
+- **Timestamp**: `20261014160000` (moved from `20261014150000`, which PR #474
+  took on `main` first; after every migration on `main` and PR
   #473's `20261014120000`).
 - **Scale invariance, stated exactly.** Section 5 says "multiplying every point
   by k and adding c leaves the v4 card unchanged". Multiplying holds for every

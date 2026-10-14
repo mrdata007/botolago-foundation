@@ -38,7 +38,7 @@ const code = (sql: string) =>
 
 const SIGNATURE = "create or replace function app_private.manager_card_evaluate_gameweek(";
 const script = read("scripts/backend/apply-manager-card-rules-v4-percentile.sql");
-const migration = read("supabase/migrations/20261014150000_manager_card_gameweek_percentile.sql");
+const migration = read("supabase/migrations/20261014160000_manager_card_gameweek_percentile.sql");
 const v3Migration = read("supabase/migrations/20261012200100_manager_card_week_one.sql");
 const v3Script = read("scripts/backend/apply-manager-card-rules-v3-week-one.sql");
 
@@ -55,7 +55,7 @@ describe("production install of rules v4 (each week ranked among managers)", () 
     expect(script.indexOf("migration differs from reviewed repository bytes")).toBeLessThan(
       script.indexOf("execute source;"),
     );
-    expect(script).toContain("values ('20261014150000', 'manager_card_gameweek_percentile'");
+    expect(script).toContain("values ('20261014160000', 'manager_card_gameweek_percentile'");
   });
 
   test("checks the replaced body is rules v3's before, and the new body after", () => {
@@ -141,7 +141,7 @@ describe("production install of rules v4 (each week ranked among managers)", () 
       "a statement mentioning the Manager Card is running",
       "pg_try_advisory_xact_lock(pg_catalog.hashtextextended('botolago:manager-card', 0))",
       "are not all recorded -- run apply-manager-card-rules-v3-week-one.sql first",
-      "migration 20261014150000 is already recorded",
+      "migration 20261014160000 is already recorded",
       "expected exactly three rules rows, versions 1 and 2 inactive and version 3 active",
     ]) {
       expect({ guard, beforeApply: preflight.includes(guard) }).toEqual({

@@ -1,4 +1,4 @@
--- Manager Card: each week ranked among managers (migration 20261014150000,
+-- Manager Card: each week ranked among managers (migration 20261014160000,
 -- rules key "normalize": "gameweek_percentile", rules v4).
 --
 -- What this proves, on a small fixture of its own:

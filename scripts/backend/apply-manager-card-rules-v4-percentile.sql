@@ -4,7 +4,7 @@
 -- decision 2026-10-14 (option A of docs/backend/MANAGER_CARD_RATING_POINTS_PROPOSAL.md).
 --
 -- WHAT IT DOES, in one transaction
---   1. Records and applies migration 20261014150000
+--   1. Records and applies migration 20261014160000
 --      (manager_card_gameweek_percentile) with the exact reviewed text. It
 --      replaces app_private.manager_card_evaluate_gameweek only: one optional
 --      rules key, normalize, which with "gameweek_percentile" turns each
@@ -43,10 +43,10 @@
 --      New query. Paste this WHOLE file and press Run. As shipped it ends in
 --      ROLLBACK. Read the last result row. Confirm independently that nothing
 --      was kept:
---        select count(*) from supabase_migrations.schema_migrations where version = '20261014150000';   -- 0
+--        select count(*) from supabase_migrations.schema_migrations where version = '20261014160000';   -- 0
 --        select version, active from app_private.manager_card_rules order by version;                  -- v3 active
 --   2. Change ONLY the final `rollback;` to `commit;` and run it once.
---   3. Read it back: one 20261014150000 row, four rules rows, v4 the only active one.
+--   3. Read it back: one 20261014160000 row, four rules rows, v4 the only active one.
 --   4. Restore the writers, exactly as they were (or run
 --      scripts/backend/sofascore-rating-release-resume.sql if the pause script
 --      was used):
@@ -56,7 +56,7 @@
 --   not edit a check to make it pass.
 --
 -- WHAT IT CHECKS
---   Before: 20261014150000 is absent and the card's migrations up to
+--   Before: 20261014160000 is absent and the card's migrations up to
 --   20261012200100 (rules v3) are recorded; the function it replaces is byte
 --   for byte the reviewed 20261012200100 body (md5); exactly three rules rows,
 --   v1 and v2 inactive and v3 active, and the pasted v4 differs from v3 only in
@@ -93,8 +93,8 @@ begin
   if to_regclass('supabase_migrations.schema_migrations') is null then
     raise exception 'stop: supabase_migrations.schema_migrations does not exist -- is this the BotolaGO database?';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261014150000') then
-    raise exception 'stop: migration 20261014150000 is already recorded -- was this script already applied?';
+  if exists (select 1 from supabase_migrations.schema_migrations where version = '20261014160000') then
+    raise exception 'stop: migration 20261014160000 is already recorded -- was this script already applied?';
   end if;
   if (select count(*) from supabase_migrations.schema_migrations
       where version in ('20261008123000', '20261008123100', '20261008123200', '20261008123300', '20261008123400',
@@ -188,7 +188,7 @@ $preflight$;
 -- The migration: recorded with the exact reviewed text, then executed
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
-values ('20261014150000', 'manager_card_gameweek_percentile', array[$migration$-- Manager Card: rank each week among managers (rules key "normalize").
+values ('20261014160000', 'manager_card_gameweek_percentile', array[$migration$-- Manager Card: rank each week among managers (rules key "normalize").
 -- Owner decision 2026-10-14 (option A of
 -- docs/backend/MANAGER_CARD_RATING_POINTS_PROPOSAL.md): from Fantasy gameweek 5
 -- a player's points are his SofaScore rating, so raw point ratios no longer
@@ -1006,7 +1006,7 @@ $migration$]);
 do $apply$
 declare source text;
 begin
-  select statements[1] into source from supabase_migrations.schema_migrations where version = '20261014150000';
+  select statements[1] into source from supabase_migrations.schema_migrations where version = '20261014160000';
   if encode(sha256(convert_to(source, 'UTF8')), 'hex')
     is distinct from '44ae5d150902ee75ad87a7a3ddb11e9cf53d366c5e3e2f5080c5dc860ebe26f6'
   then raise exception 'stop: migration differs from reviewed repository bytes'; end if;
@@ -1127,9 +1127,9 @@ end
 $postflight$;
 
 -- What was verified (read this row; the transaction is rolled back below unless you changed it).
-select 'All checks passed: migration 20261014150000 applied with the reviewed bytes, body and grants as reviewed, rules v4 inserted and active (v1 to v3 inactive, unchanged), compute still off and the other switches as they were. If the last line of this script says rollback; nothing was saved; if it says commit; this is now installed -- restore the writers (see the header), the tick then recalculates every finished gameweek under v4.' as result,
+select 'All checks passed: migration 20261014160000 applied with the reviewed bytes, body and grants as reviewed, rules v4 inserted and active (v1 to v3 inactive, unchanged), compute still off and the other switches as they were. If the last line of this script says rollback; nothing was saved; if it says commit; this is now installed -- restore the writers (see the header), the tick then recalculates every finished gameweek under v4.' as result,
   (select string_agg(version::text || case when active then ' (active)' else '' end, ', ' order by version) from app_private.manager_card_rules) as rules_rows,
-  (select count(*) from supabase_migrations.schema_migrations where version = '20261014150000') as migration_rows_in_this_transaction;
+  (select count(*) from supabase_migrations.schema_migrations where version = '20261014160000') as migration_rows_in_this_transaction;
 
 -- ---------------------------------------------------------------------------
 -- REHEARSAL: nothing is saved. To install for real, change ONLY the next line to:

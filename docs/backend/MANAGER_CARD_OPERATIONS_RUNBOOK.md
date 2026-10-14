@@ -462,7 +462,7 @@ about 6), and the inflation grows all season. Under v4, CAP, SEL and TRF say
 middle manager), whatever the size of the points. The owner accepted that
 change of meaning; it replaces the fixed "by meaning" scales of 2026-10-08.
 
-Migration `20261014150000_manager_card_gameweek_percentile` replaces
+Migration `20261014160000_manager_card_gameweek_percentile` replaces
 `app_private.manager_card_evaluate_gameweek` (nothing else). It adds one
 optional rules key, `normalize`:
 
@@ -566,10 +566,10 @@ two ways below.
    `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := false);`
 3. Rehearse the script as shipped (it ends in `rollback;`). Read the last row
    ("All checks passed"). Confirm separately that nothing was kept:
-   `select count(*) from supabase_migrations.schema_migrations where version = '20261014150000';` (0) and
+   `select count(*) from supabase_migrations.schema_migrations where version = '20261014160000';` (0) and
    `select version, active from app_private.manager_card_rules order by version;` (v3 active).
 4. Change only the last line to `commit;` and run it once. Read back: one
-   `20261014150000` row, four rules rows, v4 the only active one. A second run
+   `20261014160000` row, four rules rows, v4 the only active one. A second run
    refuses ("already recorded").
 5. Resume: the tick
    `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := true);`
