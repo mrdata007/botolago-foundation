@@ -1,6 +1,7 @@
 // Protected details are source pixels, never model output. This module uses
 // Web APIs only so the same checks run in Supabase's Deno worker and in tests.
 export const MATCH_VISUAL_RENDERER = "botolago-protected-pixels-v1";
+export const MATCH_VISUAL_INPUT_BUCKET = "match-visual-inputs";
 export const MATCH_VISUAL_SIZES = {
   story: { width: 1024, height: 1536 },
   article: { width: 1536, height: 1024 },

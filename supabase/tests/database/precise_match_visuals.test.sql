@@ -7,6 +7,7 @@ declare
   fixture uuid; scorer uuid; goal uuid; source uuid; fr uuid; ar uuid; spec jsonb; frame jsonb; job jsonb; result jsonb;
   asset uuid; portrait uuid; manual_asset uuid; variant text; role text; path text; scenario integer;
 begin
+  if (select public from storage.buckets where id='match-visual-inputs') then raise exception 'original artwork bucket is public'; end if;
   if has_function_privilege('anon','api.service_complete_precise_home_story(uuid,text,integer,integer)','execute')
     or has_function_privilege('authenticated','app_private.register_precise_match_visual(uuid,jsonb)','execute')
     or has_table_privilege('service_role','app_private.precise_match_visual_briefs','select') then raise exception 'browser or worker can approve source pixels'; end if;
@@ -44,7 +45,7 @@ begin
       frame:='{}'::jsonb;
       foreach role in array array['source','protection','branding'] loop
         path:='news/match-visual-inputs/'||source::text||'/'||variant||'-'||role||'.png';
-        insert into storage.objects(bucket_id,name) values('news-media',path);
+        insert into storage.objects(bucket_id,name) values('match-visual-inputs',path);
         frame:=frame||jsonb_build_object(role,jsonb_build_object('path',path,'sha256',repeat('a',64)));
       end loop;
       spec:=spec||jsonb_build_object(variant,frame);

@@ -9,6 +9,11 @@ begin
   end if;
 end $guard$;
 
+-- Original artwork and masks are private. Only the approved final derivatives
+-- go into public news-media; no browser policies are granted for these inputs.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+  values('match-visual-inputs','match-visual-inputs',false,10485760,array['image/png']);
+
 create table app_private.precise_match_visual_briefs (
   story_id uuid primary key references app.stories(id) on delete cascade,
   fixture_id uuid not null references app.fixtures(id),
@@ -67,7 +72,7 @@ begin
       asset:=p_manifest->variant->role;
       if asset->>'path' is null or asset->>'path' !~ '^news/match-visual-inputs/[0-9a-f-]{36}/[a-z0-9_-]+\.png$'
         or asset->>'sha256' is null or asset->>'sha256' !~ '^[0-9a-f]{64}$'
-        or not exists(select 1 from storage.objects o where o.bucket_id='news-media' and o.name=asset->>'path') then
+        or not exists(select 1 from storage.objects o where o.bucket_id='match-visual-inputs' and o.name=asset->>'path') then
         raise exception 'precise_visual_asset_missing_or_invalid'; end if;
     end loop;
   end loop;
@@ -93,7 +98,7 @@ returns boolean language sql stable security invoker set search_path='' as $$
       and b.manifest->'facts'=app_private.precise_match_facts(b.fixture_id)
       and not exists(select 1 from unnest(array['story','article']) variant
         cross join unnest(array['source','protection','branding']) role
-        where not exists(select 1 from storage.objects o where o.bucket_id='news-media' and o.name=b.manifest->variant->role->>'path')))
+        where not exists(select 1 from storage.objects o where o.bucket_id='match-visual-inputs' and o.name=b.manifest->variant->role->>'path')))
 $$;
 revoke all on function app_private.precise_match_visual_ready(uuid,uuid) from public,anon,authenticated,service_role;
 

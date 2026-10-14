@@ -80,7 +80,8 @@ bun scripts/editorial/prepare-precise-match-visual.ts /path/to/approved-inputs /
 This local command validates and renders both sizes, then writes previews,
 content-addressed source assets and `manifest.json`. It makes no network or
 database call and does not upload or approve anything. Review the previews,
-upload the six immutable assets at the manifest's exact `news-media` paths,
+upload the six immutable assets to the private `match-visual-inputs` bucket at
+the manifest's exact paths,
 then register the manifest through the guarded owner-only function. Files must
 not be overwritten; a new image needs a new hash/path and approval.
 

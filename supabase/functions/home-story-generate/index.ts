@@ -3,7 +3,11 @@ import { createClient } from "npm:@supabase/supabase-js@2.110.7";
 import { handleImageStoryRequest } from "../_shared/home-story-generate.ts";
 import type { EmailRpcClient } from "../_shared/notification-email-dispatch.ts";
 import type { StorageClient } from "../_shared/news-media-upload.ts";
-import { MatchVisualError, MAX_VISUAL_BYTES } from "../_shared/precise-match-visual.ts";
+import {
+  MatchVisualError,
+  MATCH_VISUAL_INPUT_BUCKET,
+  MAX_VISUAL_BYTES,
+} from "../_shared/precise-match-visual.ts";
 
 const environment = Deno.env.toObject();
 if (!environment.SUPABASE_URL || !environment.SUPABASE_SERVICE_ROLE_KEY)
@@ -23,7 +27,7 @@ Deno.serve((request) =>
     readVisualAsset: async (path) => {
       // Storage-only approved paths; no fetching arbitrary Instagram URLs or
       // forwarding credentials to a third-party image host.
-      const { data, error } = await client.storage.from("news-media").download(path);
+      const { data, error } = await client.storage.from(MATCH_VISUAL_INPUT_BUCKET).download(path);
       if (error || !data) throw new MatchVisualError("visual_asset_unavailable");
       if (data.size > MAX_VISUAL_BYTES) throw new MatchVisualError("visual_too_large");
       return new Uint8Array(await data.arrayBuffer());
