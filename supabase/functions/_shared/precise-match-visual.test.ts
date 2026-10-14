@@ -1,262 +1,328 @@
 import { describe, expect, test } from "bun:test";
 import sharp from "sharp";
-import { createHash } from "node:crypto";
+import { decodeVisualPng, encodeVisualPng } from "./precise-match-visual";
 import {
-  decodeVisualPng,
-  encodeVisualPng,
-  MATCH_VISUAL_SIZES,
-  parsePreciseMatchVisual,
-  renderProtectedFrame,
-  type PreciseMatchVisual,
-  type VisualAsset,
-} from "./precise-match-visual";
-import { handleImageStoryRequest, type ImageStoryDependencies } from "./home-story-generate";
-
-const ID = "10000000-0000-4000-8000-000000000001";
-const fixtures = new Map<string, Uint8Array>();
-const original = new Map<string, Uint8Array>();
-const digest = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
-async function asset(name: string, bytes: Uint8Array): Promise<VisualAsset> {
-  const path = `news/match-visual-inputs/${ID}/${name}.png`;
-  fixtures.set(path, new Uint8Array(bytes));
-  return { path, sha256: digest(bytes) };
+  composeDraftEdit,
+  validateDraftBrand,
+  runDraftEdit,
+  handleDraftRequest,
+  DRAFT_BUCKET,
+  type DraftDependencies,
+  type DraftJob,
+} from "./match-visual-drafts";
+const ID = "10000000-0000-4000-8000-000000000001",
+  ATTEMPT = "20000000-0000-4000-8000-000000000001";
+const w = 120,
+  h = 100,
+  r = { x: 0, y: 0, width: 20, height: 10 };
+function raster(width: number, height: number, color: number[]) {
+  const result = new Uint8Array(width * height * 4);
+  for (let i = 0; i < result.length; i += 4) result.set(color, i);
+  return result;
 }
-const visual: PreciseMatchVisual = {
-  version: 1,
-  fixtureId: ID,
-  referenceUrl: "https://www.instagram.com/p/reference/",
-  approvedAt: "2026-01-01T00:00:00Z",
-  rightsUntil: "2099-01-01T00:00:00Z",
-  credit: "Photographe autorisé",
-  approval: {
-    faces: true,
-    kits: true,
-    crests: true,
-    scores: true,
-    lettering: true,
-    derivatives: true,
-    branding: true,
-  },
-  facts: {
-    fixtureId: ID,
-    status: "finished",
-    home: "FUS",
-    away: "RCA",
-    homeScore: 1,
-    awayScore: 1,
-  },
-  story: null!,
-  article: null!,
+const source = raster(w, h, [25, 50, 75, 255]),
+  brand = raster(w, h, [0, 0, 0, 0]);
+brand.set([255, 255, 255, 255], 0);
+const generated = raster(1536, 1024, [200, 100, 150, 255]);
+const job: DraftJob = {
+  id: ID,
+  attemptId: ATTEMPT,
+  width: w,
+  height: h,
+  rectangle: r,
+  sourcePath: `${ID}/source.png`,
+  brandingPath: `${ID}/${ATTEMPT}/branding.png`,
 };
-for (const variant of ["story", "article"] as const) {
-  const { width, height } = MATCH_VISUAL_SIZES[variant];
-  const source = new Uint8Array(width * height * 4),
-    mask = new Uint8Array(source.length),
-    brand = new Uint8Array(source.length);
-  for (let y = 0; y < height; y++)
-    for (let x = 0; x < width; x++) {
-      const i = (y * width + x) * 4;
-      source[i] = x % 251;
-      source[i + 1] = y % 239;
-      source[i + 2] = (x + y) % 233;
-      source[i + 3] = 255;
-      if (y < height - 100) mask[i + 3] = 255;
-      else {
-        brand[i] = 31;
-        brand[i + 1] = 85;
-        brand[i + 2] = 121;
-        brand[i + 3] = 255;
-      }
-    }
-  original.set(variant, source);
-  const png = (pixels: Uint8Array) =>
-    sharp(pixels, { raw: { width, height, channels: 4 } })
-      .png({ adaptiveFiltering: true, palette: false })
-      .toBuffer();
-  visual[variant] = {
-    source: await asset(`${variant}-source`, await png(source)),
-    protection: await asset(`${variant}-protection`, await png(mask)),
-    branding: await asset(`${variant}-branding`, await png(brand)),
+function fixture(completion: unknown = true, completionError: unknown = null) {
+  const objects = new Map<string, Uint8Array>();
+  const calls: { name: string; args: Record<string, unknown> }[] = [],
+    removed: string[] = [],
+    buckets: string[] = [];
+  let requests = 0;
+  const deps: DraftDependencies = {
+    environment: { OpenAI_Image_Gen: "test-key-is-not-a-real-secret" },
+    createUserClient: () => ({
+      auth: { getUser: async () => ({ data: { user: { id: ID } }, error: null }) },
+      schema: () => ({
+        rpc: async (name) => ({
+          data:
+            name === "get_my_staff_context"
+              ? { accessAllowed: true, permissions: ["editorial.read", "editorial.write"] }
+              : null,
+          error: null,
+        }),
+      }),
+    }),
+    storage: {
+      from: (bucket) => {
+        buckets.push(bucket);
+        return {
+          upload: async (path, body) => {
+            objects.set(path, new Uint8Array(body));
+            return { error: null };
+          },
+          remove: async (paths) => {
+            for (const path of paths) {
+              removed.push(path);
+              objects.delete(path);
+            }
+            return { error: null };
+          },
+          download: async (path) => ({
+            data: objects.has(path) ? new Blob([objects.get(path)! as BlobPart]) : null,
+            error: null,
+          }),
+          createSignedUrl: async () => ({
+            data: { signedUrl: "https://example.com/private-preview" },
+            error: null,
+          }),
+        };
+      },
+    },
+    serviceRpc: async (name, args) => {
+      calls.push({ name, args });
+      return { data: completion, error: completionError };
+    },
+    fetchImpl: async (input, init) => {
+      requests++;
+      expect(String(input)).toBe("https://api.openai.com/v1/images/edits");
+      const form = init!.body as FormData;
+      expect(form.get("image")).toBeInstanceOf(File);
+      expect(form.get("mask")).toBeInstanceOf(File);
+      const mask = await decodeVisualPng(
+        new Uint8Array(await (form.get("mask") as File).arrayBuffer()),
+        w,
+        h,
+      );
+      expect(mask[3]).toBe(0);
+      expect(mask[(h * w - 1) * 4 + 3]).toBe(255);
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              b64_json: Buffer.from(await encodeVisualPng(generated, 1536, 1024)).toString(
+                "base64",
+              ),
+            },
+          ],
+        }),
+      );
+    },
   };
+  async function prepare() {
+    objects.set(job.sourcePath, await encodeVisualPng(source, w, h));
+    objects.set(job.brandingPath, await encodeVisualPng(brand, w, h));
+  }
+  return { deps, objects, calls, removed, buckets, prepare, requests: () => requests };
 }
-const read = async (path: string) => fixtures.get(path)!;
-
-describe("protected match details", () => {
-  for (const variant of ["story", "article"] as const)
-    test(`${variant} preserves every protected channel exactly in a PNG decoded independently by Sharp`, async () => {
-      const output = await renderProtectedFrame(visual[variant], variant, read);
-      const { data, info } = await sharp(output).raw().toBuffer({ resolveWithObject: true });
-      const { width, height } = MATCH_VISUAL_SIZES[variant];
-      expect(info).toMatchObject({ width, height, channels: 4 });
-      const protectedLength = width * (height - 100) * 4;
-      expect(
-        Buffer.compare(
-          data.subarray(0, protectedLength),
-          Buffer.from(original.get(variant)!.subarray(0, protectedLength)),
-        ),
-      ).toBe(0);
-      expect([...data.subarray(protectedLength, protectedLength + 4)]).toEqual([31, 85, 121, 255]);
+describe("private match draft pixels", () => {
+  test("copies every protected RGBA channel exactly even if AI redraws the whole image", async () => {
+    const output = composeDraftEdit(source, generated, brand, w, h, 1536, 1024, r);
+    const png = await encodeVisualPng(output, w, h);
+    const independentlyDecoded = await sharp(png).ensureAlpha().raw().toBuffer();
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        if (x >= 20 || y >= 10)
+          expect([...independentlyDecoded.subarray(i, i + 4)]).toEqual([
+            ...source.subarray(i, i + 4),
+          ]);
+      }
+    expect([...independentlyDecoded.subarray(0, 4)]).toEqual([255, 255, 255, 255]);
+    expect([...independentlyDecoded.subarray(4, 8)]).toEqual([200, 100, 150, 255]);
+  });
+  test("rejects branding that touches a protected player, score, crest or text pixel", () => {
+    const bad = new Uint8Array(brand);
+    bad[bad.length - 1] = 255;
+    expect(() => validateDraftBrand(source, bad, w, h, r)).toThrow("draft_brand_outside_rectangle");
+  });
+  test("rejects oversized, fractional and out-of-bounds editing areas", () => {
+    for (const bad of [
+      { ...r, x: -1 },
+      { ...r, width: w, height: h },
+      { ...r, x: 0.5 },
+      { ...r, x: w },
+    ])
+      expect(() => validateDraftBrand(source, brand, w, h, bad)).toThrow("draft_invalid_rectangle");
+  });
+  test("lossless PNG decoder rejects wrong dimensions and corrupted payloads", async () => {
+    const png = await encodeVisualPng(source, w, h);
+    await expect(decodeVisualPng(png, w + 1, h)).rejects.toThrow("invalid_visual_dimensions");
+    const bad = new Uint8Array(png);
+    bad[40] ^= 1;
+    await expect(decodeVisualPng(bad, w, h)).rejects.toThrow("invalid_visual_png");
+  });
+});
+describe("private edit workflow", () => {
+  test("uses existing image key, edits originals and completes only to held private storage", async () => {
+    const f = fixture();
+    await f.prepare();
+    expect(await runDraftEdit(job, f.deps)).toEqual({ status: "held" });
+    expect(f.requests()).toBe(1);
+    expect(f.buckets.every((b) => b === DRAFT_BUCKET)).toBe(true);
+    expect(f.calls).toEqual([
+      {
+        name: "service_finish_match_visual_edit",
+        args: { p_id: ID, p_attempt: ATTEMPT, p_error: null },
+      },
+    ]);
+    expect(f.objects.has(`${ID}/${ATTEMPT}/result.png`)).toBe(true);
+  });
+  test("provider failure records retryable failure and retains original", async () => {
+    const f = fixture();
+    await f.prepare();
+    f.deps.fetchImpl = async () => new Response("", { status: 500 });
+    expect(await runDraftEdit(job, f.deps)).toEqual({ status: "failed" });
+    expect(f.objects.has(job.sourcePath)).toBe(true);
+    expect(f.calls[0].args.p_error).toBe("draft_edit_failed");
+  });
+  test("discarded draft cannot complete; cancelled output is removed privately", async () => {
+    const f = fixture(false);
+    await f.prepare();
+    expect(await runDraftEdit(job, f.deps)).toEqual({ status: "cancelled" });
+    expect(f.removed).toEqual([`${ID}/${ATTEMPT}/result.png`]);
+  });
+  test("ambiguous completion preserves private output and does not override possible success", async () => {
+    const f = fixture(null, { message: "network" });
+    await f.prepare();
+    expect(await runDraftEdit(job, f.deps)).toEqual({ status: "unknown" });
+    expect(f.calls).toHaveLength(1);
+    expect(f.removed).toEqual([]);
+  });
+  test("refuses unauthenticated and non-staff requests before any storage/provider calls", async () => {
+    const f = fixture();
+    expect(
+      (await handleDraftRequest(new Request("https://example.com", { method: "POST" }), f.deps))
+        .status,
+    ).toBe(401);
+    f.deps.createUserClient = () => ({
+      auth: { getUser: async () => ({ data: { user: { id: ID } }, error: null }) },
+      schema: () => ({ rpc: async () => ({ data: { accessAllowed: false }, error: null }) }),
     });
-  test("wrong hashes cannot turn a replaced source into approved media", async () => {
-    await expect(
-      renderProtectedFrame(visual.story, "story", async (path) => {
-        const bytes = new Uint8Array(fixtures.get(path)!);
-        bytes[40] ^= 1;
-        return bytes;
+    expect(
+      (
+        await handleDraftRequest(
+          new Request("https://example.com", {
+            method: "POST",
+            headers: { authorization: "Bearer test" },
+          }),
+          f.deps,
+        )
+      ).status,
+    ).toBe(403);
+    expect(f.buckets).toEqual([]);
+    expect(f.requests()).toBe(0);
+  });
+  test("read-only editor cannot import or edit", async () => {
+    const f = fixture();
+    f.deps.createUserClient = () => ({
+      auth: { getUser: async () => ({ data: { user: { id: ID } }, error: null }) },
+      schema: () => ({
+        rpc: async () => ({
+          data: { accessAllowed: true, permissions: ["editorial.read"] },
+          error: null,
+        }),
       }),
-    ).rejects.toThrow("visual_asset_changed");
-  });
-  test("branding that touches one protected pixel blocks publication", async () => {
-    const { width, height } = MATCH_VISUAL_SIZES.story;
-    const raster = await decodeVisualPng(fixtures.get(visual.story.branding.path)!, width, height);
-    raster[3] = 1;
-    const bytes = await encodeVisualPng(raster, width, height);
-    const frame = {
-      ...visual.story,
-      branding: { ...visual.story.branding, sha256: digest(bytes) },
-    };
-    await expect(
-      renderProtectedFrame(frame, "story", async (path) =>
-        path === frame.branding.path ? bytes : read(path),
-      ),
-    ).rejects.toThrow("branding_overlaps_protected_pixels");
-  });
-  test("expired rights, incomplete approvals, wrong fixture identities and unsafe paths fail before asset reads", () => {
-    expect(() => parsePreciseMatchVisual({ ...visual, rightsUntil: "2020-01-01" })).toThrow(
-      "visual_approval_expired",
-    );
-    expect(() =>
-      parsePreciseMatchVisual({ ...visual, approval: { ...visual.approval, lettering: false } }),
-    ).toThrow("invalid_precise_visual");
-    expect(() =>
-      parsePreciseMatchVisual({ ...visual, fixtureId: "20000000-0000-4000-8000-000000000002" }),
-    ).toThrow("invalid_precise_visual");
-    expect(() =>
-      parsePreciseMatchVisual({
-        ...visual,
-        story: { ...visual.story, source: { ...visual.story.source, path: "news/../secret.png" } },
-      }),
-    ).toThrow("invalid_precise_visual");
-  });
-  test("wrong canvas sizes and corrupt PNG chunks fail closed", async () => {
-    const bytes = fixtures.get(visual.story.source.path)!;
-    await expect(decodeVisualPng(bytes, 1536, 1024)).rejects.toThrow("invalid_visual_dimensions");
-    const corrupt = bytes.slice();
-    corrupt[40] ^= 1;
-    await expect(decodeVisualPng(corrupt, 1024, 1536)).rejects.toThrow("invalid_visual_png");
-    await expect(decodeVisualPng(bytes.subarray(0, -1), 1024, 1536)).rejects.toThrow(
-      "invalid_visual_png",
-    );
+    });
+    const form = new FormData();
+    form.set("action", "import");
+    expect(
+      (
+        await handleDraftRequest(
+          new Request("https://example.com", {
+            method: "POST",
+            headers: { authorization: "Bearer test" },
+            body: form,
+          }),
+          f.deps,
+        )
+      ).status,
+    ).toBe(403);
+    expect(f.buckets).toEqual([]);
   });
 });
 
-function worker(
-  options: {
-    manifest?: unknown;
-    absent?: boolean;
-    completion?: "cancelled" | "lost";
-    failArticleUpload?: boolean;
-  } = {},
-) {
-  const calls: string[] = [],
-    uploads: string[] = [],
-    removals: string[] = [];
-  let providerCalls = 0;
-  const deps: ImageStoryDependencies = {
-    environment: {
-      BOTOLAGO_SCHEDULER_TOKEN: "a".repeat(64),
-      OpenAI_Image_Gen: "existing-test-key-not-a-real-secret",
-    },
-    client: {
+describe("staff HTTP draft boundaries", () => {
+  test("imports an original as a private held record, retaining canonical source link and natural size", async () => {
+    const f = fixture();
+    f.deps.randomId = () => ID;
+    const names: string[] = [];
+    f.deps.createUserClient = () => ({
+      auth: { getUser: async () => ({ data: { user: { id: ID } }, error: null }) },
       schema: () => ({
-        rpc: async (name) => {
-          calls.push(name);
-          if (name === "service_claim_ai_home_story")
-            return {
-              data: {
-                id: ID,
-                titleFr: "FUS — RCA",
-                titleAr: "الفتح — الرجاء",
-                summaryFr: "Match nul, un but partout.",
-                visualContext: {
-                  match: { home: "FUS", away: "RCA" },
-                  ...(options.absent ? {} : { preciseMatchVisual: options.manifest ?? visual }),
-                },
-              },
-              error: null,
-            };
-          if (name === "service_complete_precise_home_story")
-            return {
-              data: { status: options.completion === "cancelled" ? "failed" : "published" },
-              error: options.completion === "lost" ? { message: "lost response" } : null,
-            };
-          return { data: null, error: null };
+        rpc: async (name, args) => {
+          names.push(name);
+          return {
+            data:
+              name === "get_my_staff_context"
+                ? { accessAllowed: true, permissions: ["editorial.read", "editorial.write"] }
+                : { ...(args.p_data as object), status: "held", rightsStatus: "unverified" },
+            error: null,
+          };
         },
       }),
-    },
-    storage: {
-      from: () => ({
-        upload: async (path) => {
-          uploads.push(path);
-          return { error: options.failArticleUpload && path.includes("match-covers") ? {} : null };
-        },
-        remove: async (paths) => {
-          removals.push(...paths);
-          return { error: null };
-        },
+    });
+    const form = new FormData();
+    form.set("action", "import");
+    form.set(
+      "source",
+      new File([(await encodeVisualPng(source, w, h)) as BlobPart], "photo.png", {
+        type: "image/png",
       }),
-    },
-    readVisualAsset: read,
-    fetchImpl: (async () => {
-      providerCalls++;
-      throw new Error("protected content must not reach a model");
-    }) as typeof fetch,
-  };
-  return {
-    calls,
-    uploads,
-    removals,
-    providerCalls: () => providerCalls,
-    run: async () => {
-      const response = await handleImageStoryRequest(
-        new Request("https://local.invalid", {
-          method: "POST",
-          headers: { "x-botolago-scheduler-token": "a".repeat(64) },
-        }),
-        deps,
-      );
-      return response.json();
-    },
-  };
-}
-describe("precise story and article publication", () => {
-  test("uploads both dimensions before the single publication RPC, without sending protected content to OpenAI", async () => {
-    const f = worker();
-    expect(await f.run()).toEqual({ status: "published" });
-    expect(f.uploads).toEqual([`news/ai-stories/${ID}.png`, `news/match-covers/${ID}.png`]);
-    expect(f.calls.at(-1)).toBe("service_complete_precise_home_story");
-    expect(f.providerCalls()).toBe(0);
+    );
+    form.set("width", String(w));
+    form.set("height", String(h));
+    form.set("label", "FUS – Raja");
+    form.set("sourceUrl", "https://www.instagram.com/p/test/?igsh=tracking");
+    const response = await handleDraftRequest(
+      new Request("https://example.com", {
+        method: "POST",
+        headers: { authorization: "Bearer test" },
+        body: form,
+      }),
+      f.deps,
+    );
+    const data = await response.json();
+    expect(response.status).toBe(201);
+    expect(data).toMatchObject({
+      id: ID,
+      width: w,
+      height: h,
+      sourceUrl: "https://instagram.com/p/test/",
+      status: "held",
+      rightsStatus: "unverified",
+    });
+    expect(f.objects.has(`${ID}/source.png`)).toBe(true);
+    expect(f.requests()).toBe(0);
+    expect(names).toEqual(["get_my_staff_context", "admin_import_match_visual_draft"]);
+    expect(f.buckets.every((bucket) => bucket === DRAFT_BUCKET)).toBe(true);
   });
-  test("missing match assets never fall back to generic generation", async () => {
-    const f = worker({ absent: true });
-    expect(await f.run()).toMatchObject({ error: "precise_assets_required" });
-    expect(f.providerCalls()).toBe(0);
-    expect(f.uploads).toHaveLength(0);
+  test("bounds multipart bodies even when Content-Length is absent", async () => {
+    const f = fixture();
+    const body = new Uint8Array(10 * 1024 * 1024 + 65537);
+    const response = await handleDraftRequest(
+      new Request("https://example.com", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer test",
+          "content-type": "multipart/form-data; boundary=test",
+        },
+        body,
+      }),
+      f.deps,
+    );
+    expect(response.status).toBe(413);
+    expect(f.buckets).toEqual([]);
+    expect(f.requests()).toBe(0);
   });
-  test("failed article upload removes the unused story and publishes neither", async () => {
-    const f = worker({ failArticleUpload: true });
-    expect(await f.run()).toMatchObject({ error: "storage_failed" });
-    expect(f.removals).toEqual([`news/ai-stories/${ID}.png`]);
-    expect(f.calls).not.toContain("service_complete_precise_home_story");
-  });
-  test("explicit cancellation removes both artifacts", async () => {
-    const f = worker({ completion: "cancelled" });
-    expect(await f.run()).toEqual({ status: "failed" });
-    expect(f.removals).toEqual(f.uploads);
-  });
-  test("an ambiguous database response retains both possibly published artifacts", async () => {
-    const f = worker({ completion: "lost" });
-    expect(await f.run()).toMatchObject({ error: "database_unavailable" });
-    expect(f.removals).toHaveLength(0);
+  test("preview accepts only a draft ID and known variant, never a user-supplied storage path", async () => {
+    const f = fixture();
+    const request = new Request("https://example.com", {
+      method: "POST",
+      headers: { authorization: "Bearer test", "content-type": "application/json" },
+      body: JSON.stringify({ action: "preview", id: ID, variant: "../../other-private-image" }),
+    });
+    expect((await handleDraftRequest(request, f.deps)).status).toBe(400);
+    expect(f.buckets).toEqual([]);
   });
 });

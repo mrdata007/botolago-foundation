@@ -1,110 +1,6 @@
-// Protected details are source pixels, never model output. This module uses
-// Web APIs only so the same checks run in Supabase's Deno worker and in tests.
-export const MATCH_VISUAL_RENDERER = "botolago-protected-pixels-v1";
-export const MATCH_VISUAL_INPUT_BUCKET = "match-visual-inputs";
-export const MATCH_VISUAL_SIZES = {
-  story: { width: 1024, height: 1536 },
-  article: { width: 1536, height: 1024 },
-} as const;
+// Lossless PNG codec shared by the private draft editor and its tests.
 export const MAX_VISUAL_BYTES = 10 * 1024 * 1024;
-
 export class MatchVisualError extends Error {}
-export interface VisualAsset {
-  path: string;
-  sha256: string;
-}
-export interface ProtectedFrame {
-  source: VisualAsset;
-  protection: VisualAsset;
-  branding: VisualAsset;
-}
-export interface PreciseMatchVisual {
-  version: 1;
-  fixtureId: string;
-  referenceUrl: string;
-  approvedAt: string;
-  rightsUntil: string;
-  credit: string;
-  // Recorded by the owner after checking both canvases against the real
-  // match/photo, including fonts, scorer names, minutes and own goals.
-  approval: {
-    faces: true;
-    kits: true;
-    crests: true;
-    scores: true;
-    lettering: true;
-    derivatives: true;
-    branding: true;
-  };
-  facts: Record<string, unknown>;
-  story: ProtectedFrame;
-  article: ProtectedFrame;
-}
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const ASSET_PATH = /^news\/match-visual-inputs\/[0-9a-f-]{36}\/[a-z0-9_-]+\.png$/;
-const HEX = /^[0-9a-f]{64}$/;
-function record(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-export function parsePreciseMatchVisual(value: unknown, now = Date.now()): PreciseMatchVisual {
-  const fail = () => {
-    throw new MatchVisualError("invalid_precise_visual");
-  };
-  if (
-    !record(value) ||
-    value.version !== 1 ||
-    typeof value.fixtureId !== "string" ||
-    !UUID.test(value.fixtureId) ||
-    !record(value.facts) ||
-    !record(value.approval)
-  )
-    fail();
-  const v = value as Record<string, unknown>;
-  const facts = v.facts as Record<string, unknown>;
-  if (
-    facts.fixtureId !== v.fixtureId ||
-    !["finished", "scheduled", "not_started"].includes(String(facts.status))
-  )
-    fail();
-  if (
-    facts.status === "finished" &&
-    [facts.homeScore, facts.awayScore].some(
-      (score) => typeof score !== "number" || !Number.isInteger(score) || score < 0,
-    )
-  )
-    fail();
-  for (const key of ["faces", "kits", "crests", "scores", "lettering", "derivatives", "branding"])
-    if ((v.approval as Record<string, unknown>)[key] !== true) fail();
-  if (typeof v.referenceUrl !== "string" || v.referenceUrl.length > 2000) fail();
-  try {
-    const url = new URL(v.referenceUrl as string);
-    if (url.protocol !== "https:" || url.username || url.password) fail();
-  } catch {
-    fail();
-  }
-  const approved = typeof v.approvedAt === "string" ? Date.parse(v.approvedAt) : NaN;
-  const expires = typeof v.rightsUntil === "string" ? Date.parse(v.rightsUntil) : NaN;
-  if (!Number.isFinite(approved) || approved > now || !Number.isFinite(expires) || expires <= now)
-    throw new MatchVisualError("visual_approval_expired");
-  if (typeof v.credit !== "string" || !v.credit.trim() || v.credit.length > 200) fail();
-  for (const variant of ["story", "article"]) {
-    const frame = v[variant];
-    if (!record(frame)) fail();
-    for (const role of ["source", "protection", "branding"]) {
-      const asset = (frame as Record<string, unknown>)[role];
-      if (
-        !record(asset) ||
-        typeof asset.path !== "string" ||
-        !ASSET_PATH.test(asset.path) ||
-        typeof asset.sha256 !== "string" ||
-        !HEX.test(asset.sha256)
-      )
-        fail();
-    }
-  }
-  return value as unknown as PreciseMatchVisual;
-}
-
 const CRC_TABLE = Uint32Array.from({ length: 256 }, (_, n) => {
   for (let bit = 0; bit < 8; bit++) n = n & 1 ? 0xedb88320 ^ (n >>> 1) : n >>> 1;
   return n >>> 0;
@@ -288,49 +184,20 @@ export async function encodeVisualPng(
   if (bytes.length > MAX_VISUAL_BYTES) throw new MatchVisualError("visual_too_large");
   return bytes;
 }
-export type ReadVisualAsset = (path: string) => Promise<Uint8Array>;
-async function readChecked(asset: VisualAsset, read: ReadVisualAsset): Promise<Uint8Array> {
-  const bytes = await read(asset.path);
-  if (bytes.length > MAX_VISUAL_BYTES) throw new MatchVisualError("visual_too_large");
-  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes as BufferSource));
-  const hash = Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
-  if (hash !== asset.sha256) throw new MatchVisualError("visual_asset_changed");
-  return bytes;
-}
-export async function renderProtectedFrame(
-  frame: ProtectedFrame,
-  variant: keyof typeof MATCH_VISUAL_SIZES,
-  read: ReadVisualAsset,
-): Promise<Uint8Array> {
-  const { width, height } = MATCH_VISUAL_SIZES[variant];
-  // Read sequentially to keep the Edge worker's peak memory bounded.
-  const source = await decodeVisualPng(await readChecked(frame.source, read), width, height);
-  const protection = await decodeVisualPng(
-    await readChecked(frame.protection, read),
-    width,
-    height,
-  );
-  const branding = await decodeVisualPng(await readChecked(frame.branding, read), width, height);
-  let protectedPixels = 0,
-    brandedPixels = 0;
-  for (let i = 0; i < source.length; i += 4) {
-    if (source[i + 3] !== 255) throw new MatchVisualError("source_must_be_opaque");
-    const mask = protection[i + 3],
-      alpha = branding[i + 3];
-    if (mask !== 0 && mask !== 255) throw new MatchVisualError("protection_must_be_binary");
-    if (mask) {
-      protectedPixels++;
-      if (alpha) throw new MatchVisualError("branding_overlaps_protected_pixels");
-      continue; // No filtering, resizing, typography or model touches these bytes.
-    }
-    if (!alpha) continue;
-    brandedPixels++;
-    for (let channel = 0; channel < 3; channel++)
-      source[i + channel] = Math.round(
-        (branding[i + channel] * alpha + source[i + channel] * (255 - alpha)) / 255,
-      );
-  }
-  if (!protectedPixels || !brandedPixels)
-    throw new MatchVisualError("empty_visual_protection_or_branding");
-  return encodeVisualPng(source, width, height);
+
+// Hash decoded pixels and their dimensions, independent of PNG metadata or
+// compression, so manual imports and feed retries identify the same original.
+export async function visualSourceHash(
+  rgba: Uint8Array,
+  width: number,
+  height: number,
+): Promise<string> {
+  if (rgba.length !== width * height * 4) throw new MatchVisualError("invalid_visual_raster");
+  const input = new Uint8Array(8 + rgba.length),
+    view = new DataView(input.buffer);
+  view.setUint32(0, width);
+  view.setUint32(4, height);
+  input.set(rgba, 8);
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", input));
+  return Array.from(digest, (b) => b.toString(16).padStart(2, "0")).join("");
 }

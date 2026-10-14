@@ -1,178 +1,173 @@
-# Precise match artwork
+# Private match visual workflow
 
-The owner supplied three `thebotolapro` references: two real action photographs
-with a full-time score panel, and a dramatic match-preview poster. The requested
-destinations are Home Stories and match-article covers. Faces, kits, crests,
-scores **and lettering** must be the same. BotolaGO's branding may change.
+Owner scope: import original match photos, edit selected watermark areas, add
+BotolaGO branding, and **hold everything in Admin**. Do not post the results.
 
-The owner clarified that the desired workflow reuses the original photo, removes
-the publisher's watermark where authorized, and adds BotolaGO branding. It does
-not recreate the photograph with an image model. Public posting or the absence
-of a visible copyright notice is not evidence of that authorization. The current
-ElBotola permission record covers remote hero-image display, not downloading,
-rebranding or watermark removal on Instagram artwork. The scope of any separate
-photo-reuse agreement still needs to be confirmed before approving those inputs.
+## What is implemented
 
-Watermark cleanup must be limited to an explicitly reviewed unprotected region.
-If a watermark covers a face, kit, crest, score or required lettering, obtain a
-clean original: inpainting covered pixels cannot guarantee the identical details
-required here. The current implementation preserves protected pixels and accepts
-a prepared branding/cleanup layer; automatic watermark removal is not connected.
+Admin → Stories has a separate private queue. An editor imports a PNG/JPG/WebP
+photo, its original Instagram/Elbotola post link, a review title, and optional
+canonical fixture/story IDs. Each imported image starts `held` with
+`rightsStatus = unverified`. Source association is private metadata; it never
+assigns an article hero or public story.
 
-## What the implementation guarantees
+Admin previews are signed URLs valid for 60 seconds, renewed while the reviewer
+is present. Original and result files live in the **private**
+`match-visual-drafts` bucket. There are no browser Storage policies. Ordinary
+accounts cannot list drafts or obtain previews. Editorial read/write permission
+and the existing MFA staff context protect the API and every database operation.
+Discarding hides the record and prevents outstanding callbacks from completing;
+it does not immediately erase the private audit/source archive. A previously
+issued preview link can remain usable for its remaining lifetime.
 
-Match artwork has a separate protected-pixel path. It never asks an image model
-to reconstruct a player, shirt, crest, score or font. At each final canvas size
-the operator supplies an approved opaque source PNG, an RGBA protection mask,
-and an RGBA BotolaGO branding layer. Every pixel with mask alpha 255 is copied
-unchanged. Branding with any nonzero alpha on a protected pixel is rejected.
-The mask is binary (alpha 0 or 255) and must protect something; branding must
-change something. There is no resizing, cropping, lossy encoding or filtering
-of protected areas inside the worker. Output is lossless sRGB PNG.
+An editor selects one small rectangle covering the publisher watermark and
+uses the existing official BotolaGO logo, or uploads an exact transparent PNG
+logo as an override. The brand is rendered deterministically from the app’s
+vector paths; the image model never draws its lettering. Rectangle coordinates are in source
+pixels, from the upper-left corner, including in Arabic RTL. The rectangle is
+limited to 25% of the image. Faces, kits, club crests, scores and lettering must
+remain outside that area. There is no claim that text or faces **inside the
+editable rectangle** can stay identical while that area is being reconstructed.
 
-The source canvas must already contain the correct real photograph, kits,
-official crests, score/scorer panel and lettering at its final size. The mask
-must include their entire regions, including antialiased text edges. This
-preserves exact typography without guessing the publisher's font. The two
-canvases require separately reviewed compositions; a portrait is not simply
-cropped into a landscape. The worker verifies dimensions and source hashes.
+The server sends the original PNG and transparent edit mask to OpenAI's image
+**edit** endpoint, using the existing `OpenAI_Image_Gen` server secret. It does
+not generate a replacement photograph. The model defaults to the existing
+image worker's `gpt-image-2.5-flare`, with optional server-only
+`MATCH_VISUAL_EDIT_MODEL` override. Model availability and a real paid edit must
+be checked in the deployment environment; no live provider call was run here.
 
-This guarantee is relative to the reviewed source and mask. The software cannot
-prove that a mask actually covers every face or that a photograph depicts the
-named player. An owner must verify both source canvases and masks first. Approval
-records include faces, kits, crests, scores, lettering, derivative-use rights
-and BotolaGO branding. Public visibility alone does not establish reuse rights.
-The existing ElBotola remote hero-image permission does not by itself authorize
-copying or rebranding social-media artwork.
+After the provider responds, the compositor copies every source RGBA pixel
+outside the selected area back **byte for byte**, even if the provider ignored
+its mask and redrew the whole photo. Inside the selected area, it blends the
+exact branding logo over the returned background. Logo pixels outside the
+rectangle are rejected. The final file is lossless PNG at the original natural
+size. Source images are never resized or cropped during import. JPG/WebP are
+decoded in the browser and pinned as PNG; exactness refers to that decoded,
+normalized source raster, rather than the original compressed file bytes.
+Images are capped at 10 MiB and 1536 px per side.
 
-The existing `OpenAI_Image_Gen` secret and provider setup remain in use for
-non-match illustrations. Protected match rendering makes no OpenAI request and
-spends no image-generation credits. Generated effects can be prepared for
-unprotected areas, but must pass the same branding/mask overlap check.
+States: `held → processing → held` or `failed`. Failures allow retry, up to three
+attempts per draft and six starts per UTC day globally. Edit starts are serialized
+for that budget. Each attempt has a UUID and ten-minute lease. Stale, expired,
+discarded and duplicate callbacks cannot overwrite a result. A lost completion
+response preserves the possibly committed private result for inspection. Retrying
+starts from the immutable original, rather than editing a previous result.
 
-## Preparing real assets
+There is **no publication state, publish RPC, Publish control, social publishing
+credential, public media asset, or public story/article write** in this workflow.
+Existing Home Stories editing and automation remain a separate feature. This
+branch restores the previously proposed public match-publication path to the
+upstream implementation; the new workflow does not use that path.
 
-Obtain approved original-resolution photographs/artwork and actual crest/font
-assets. Instagram screenshots establish the visual benchmark; the phone UI,
-compression, cropped source and uncertain match date make them unsuitable as
-automatically approved production assets.
+## Optional scheduled source collector
 
-Prepare six non-interlaced, 8-bit sRGB PNGs (RGB or RGBA; no palette, animation,
-ICC profile or non-sRGB gamma):
+`match-visual-collect` verifies the existing `BOTOLAGO_SCHEDULER_TOKEN` before
+any database call, reads a configured HTTPS feed, and imports at most six
+originals per pass. Its database switch is **off by default**. A ten-minute cron
+tick exists but does nothing until an owner explicitly enables that switch.
+The collector rechecks it before each import; the database enforces the switch,
+36 new collected sources per UTC day, and lifetime URL/pixel-hash deduplication,
+including previously discarded posts. It does not create any image edits or
+public content automatically. Set `MATCH_VISUAL_FEED_URL` on the Edge worker
+and, if the feed requires a bearer credential, `MATCH_VISUAL_FEED_TOKEN`. Neither
+is configured here. After the reviewed deployment and feed check, the database
+owner can enable or pause collection with:
 
-| Variant    | Dimensions  | Files                                                                  |
-| ---------- | ----------- | ---------------------------------------------------------------------- |
-| Home Story | 1024 × 1536 | `story-source.png`, `story-protection.png`, `story-branding.png`       |
-| Article    | 1536 × 1024 | `article-source.png`, `article-protection.png`, `article-branding.png` |
-
-Each file must be at most 10 MiB. The source is opaque; the other layers use
-transparency. Changing/replacing source-publisher branding needs an unprotected
-region and an approved replacement layer; team crests and required lettering
-remain protected. No face, shirt, crest or text may be painted over.
-
-The existing Home viewer hides metadata credits on generated stories. Include
-any required photographic attribution in an approved unprotected part of the
-artwork; the article also receives the factual credit as media metadata. This
-change does not alter the viewer or disclose private provider/model records.
-
-Export the fixture facts with the owner-only
-`app_private.precise_match_facts(fixture_id)`. It contains home/away identities,
-scores, status, kickoff, venue and ordered goal events, including scorer names,
-minutes, added time and own-goal/penalty classifications. The owner compares
-those facts with the source lettering. Finished results require an exact
-score; upcoming previews must match the scheduled fixture.
-
-Put `approval.json` beside the six files. It contains `version: 1`, `fixtureId`,
-the canonical `facts` object, `referenceUrl`, `approvedAt`, `rightsUntil`,
-the factual photo `credit`, and `approval` with all seven reviewed flags above
-set to true. Do not mark approval flags based on model confidence alone.
-
-```sh
-bun scripts/editorial/prepare-precise-match-visual.ts /path/to/approved-inputs /path/to/new-review-output
+```sql
+select app_private.match_visual_collection_configure(true); -- collect into holds
+select app_private.match_visual_collection_configure(false); -- pause imports
 ```
 
-This local command validates and renders both sizes, then writes previews,
-content-addressed source assets and `manifest.json`. It makes no network or
-database call and does not upload or approve anything. Review the previews,
-upload the six immutable assets to the private `match-visual-inputs` bucket at
-the manifest's exact paths,
-then register the manifest through the guarded owner-only function. Files must
-not be overwritten; a new image needs a new hash/path and approval.
+Its scheduler uses the existing configured functions base URL and scheduler
+secret. No production cron or switch was changed in this task.
 
-## Publication and freshness
+## Optional manual source-feed adapter
 
-Migration `20261014044713_precise_match_visuals.sql` adds a private approval
-registry. Browsers and service workers cannot approve or directly edit it.
-`register_precise_match_visual(story_id, manifest)` requires paused, drained
-image automation and checks the fixture snapshot, rights dates, flags and
-presence of all six Storage objects. Registration must follow the repository's
-one-writer rule and owner-run production-write policy.
+`collect-match-visual-drafts.ts` supports importing batches from a configured
+feed for `elbotola` and `thebotolapro`. It does not scrape Instagram from just
+an account name. Feed/API access is not configured in this checkout; monitoring
+is disabled. Manual Admin import is independent of the collector.
 
-Claims skip unapproved, expired, revoked or outdated match sources before
-reserving an attempt. Other news keeps its current path. A stale/old worker
-cannot publish a generic model image for a precise match job.
+Configure server/job environment (never browser variables):
 
-A changed owner-approved manifest queues replacement of an active published
-predecessor. An identical registration queues nothing; a manually unpublished
-predecessor remains suppressed. Match retries are capped at two per approved
-manifest, with the existing global daily attempt cap still enforced. This lets
-an explicitly reviewed correction replace an older image without granting
-unlimited automatic retries or changing the non-match budget.
+- `MATCH_VISUAL_FEED_URL`: HTTPS endpoint producing the JSON below.
+- `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`: deployment connection.
+- `MATCH_VISUAL_EDITOR_TOKEN`: current MFA-authenticated staff access token
+  with editorial read/write access. Expired/revoked tokens fail closed.
 
-The updated worker uploads both validated artifacts, then calls
-`service_complete_precise_home_story`. The transaction rechecks the approval,
-fixture facts, lease, publication switch, bilingual source visibility and manual
-suppression. It publishes the portrait Home Story and assigns the landscape
-hero to the exact French/Arabic source editions atomically. A manually changed
-hero after the claim cancels publication rather than overwriting that edit.
-Completions are idempotent. Failure before publication cleans up successfully
-uploaded partial artifacts; an ambiguous publication response retains both
-possibly live objects for operator review.
+A batch contains at most six records. The configured feed is a trusted source
+adapter, and must return original PNGs with their actual post links, preserving
+provenance; the script never fetches arbitrary image URLs supplied by posts.
+It does not analyze or obey captions as instructions.
 
-Corrected facts, changed/revoked approval or expired rights hide the generated
-landscape media on subsequent News reads, allowing the existing article fallback
-to render. Home has its existing 72-hour limit. Article covers remain available
-in the archive beyond 72 hours while their facts, rights and source editions
-remain valid. Existing reader/CDN caching determines when a new read is observed.
-Manual hero replacements have no generated-job binding and are unaffected.
+```json
+[
+  {
+    "account": "thebotolapro",
+    "sourceUrl": "https://www.instagram.com/p/POST_ID/",
+    "label": "FUS – Raja · Full time",
+    "pngBase64": "BASE64_PNG_BYTES",
+    "fixtureId": "OPTIONAL_CANONICAL_UUID",
+    "storyId": "OPTIONAL_CANONICAL_UUID"
+  }
+]
+```
 
-## Rollout and current limitations
+Remove optional fields when unknown. Run:
 
-No production assets, data, secrets or switches are changed by this code change.
-Before applying the migration, record the current image switch/cap, pause image
-automation and drain the dispatched workers using `AGENTS.md`. Rehearse the
-reviewed migration through the existing migration runbook, then deploy the
-worker with its new shared dependency while automation remains paused. Supply
-and register the approved assets before restoring the recorded switch/cap.
-Existing unverified match illustrations are excluded by the new visibility
-guard; their rows and objects remain intact for review. The public UI and app
-branding files are unchanged. Public AI/provider notices are not added; factual
-photo credits and private renderer/source provenance are retained.
+```sh
+bun scripts/editorial/collect-match-visual-drafts.ts
+```
 
-This change is the precise rendering/publication foundation. It does **not**
-claim to monitor Instagram accounts, automatically obtain original assets,
-create reviewed masks, or prove photographic identity. Automatic collection
-from `thebotolapro`/ElBotola still needs a supported authorized feed/API and
-source-use permissions; these are separate from the existing OpenAI key.
-Until those inputs exist, unapproved match sources stay out of the pipeline.
+The adapter normalizes PNG encoding, deduplicates URL/pixel-hash pairs against the
+latest 100 private records, imports new sources as held originals, and prints
+only aggregate results. Database uniqueness is the final duplicate guard.
+Scheduling this command requires arranging the source feed and a suitable staff
+session; nothing is scheduled or activated automatically. Cleanup/branding
+requires an editor to choose the region and review the branding. Public
+availability is recorded as source provenance, not as verified reuse rights.
 
-## Verification
+## Deployment and checks
 
-`precise-match-visual.test.ts` independently decodes both outputs with Sharp and
-compares every protected channel with the source. It covers overlap, hashes,
-malformed PNGs, rights expiry, missing approvals and no model fallback; worker
-tests cover dual uploads, cancellation, partial failure and ambiguous commit.
-`precise_match_visuals.test.sql` exercises actual private approval, fixture
-checks, claim eligibility, atomic bilingual publication, correction/revocation,
-manual covers, idempotency and pause in an isolated transaction. Existing Home
-Story tests verify that the non-match path retains its guards.
+Migration: `20261014044713_precise_match_visuals.sql`; Edge Functions:
+`match-visual-drafts` and `match-visual-collect`. The migration was confirmed absent from production and
+staging history before replacing the earlier unapplied publication proposal.
+No remote database/storage changes or Edge deployment were performed.
+Deploy through the repository's reviewed migration/Edge release process. Reuse
+the existing `OpenAI_Image_Gen` secret; never copy it into client code or commit
+it. `verify_jwt=false` lets opaque Supabase API keys pass the gateway; the handler
+validates the user's JWT via `getUser`, MFA staff context and user-scoped RPCs
+before writing or spending credits.
 
-Local verification on the prepared branch: 30 image/worker tests passed,
-TypeScript and targeted ESLint checks passed, and the migration/configuration
-integrity checks passed. The actual new migration and SQL scenarios also passed
-in an embedded PostgreSQL harness with minimal supporting schemas. This does
-not replace the full Supabase database suite: the local Docker image could not
-load because its storage ran out of space. Full database tests and generated
-schema parity remain required in repository CI. The new RPC type signature was
-derived from the compiled PostgreSQL function metadata; full-schema type parity
-must still be checked there. No production calls or OpenAI requests were made.
+Validation:
+
+```sh
+bun test supabase/functions/_shared/precise-match-visual.test.ts \
+  supabase/functions/_shared/home-story-generate.test.ts \
+  src/backend/match-visual-drafts/repository.test.ts \
+  supabase/functions/_shared/match-visual-collect.test.ts
+bun run typecheck
+bun run backend:migrations:check
+bun run backend:secrets:check
+bun run config:integrity:check
+```
+
+`supabase/tests/database/precise_match_visuals.test.sql` checks private access
+and held completion, failures, stale/expired/duplicate callbacks, cancellation,
+and unchanged public stories/media/heroes. It must run in full Supabase CI.
+Local supplementary validation compiled the real migration and executed those
+scenarios in embedded PostgreSQL with a minimal supporting schema and stubbed
+staff authorization; this does not replace full database-quality CI or a live
+provider/storage smoke test. RPC type additions use compiled PostgreSQL metadata;
+full generated-schema parity also awaits Supabase CI.
+
+The Admin screenshot harness uses fixture data and real components/CSS. Browser
+checks cover French/Arabic RTL, 390px/1440px, import/edit/hold/discard flows,
+read-only access, and absence of public controls in the new queue. It is not a
+live authenticated Supabase end-to-end test.
+
+Reproduce the fixture browser checks with
+`E2E_CHROMIUM_PATH=/path/to/chromium node tests/visual-drafts/run.mjs` (omit the
+variable to use Playwright’s installed browser). This starts an isolated server
+on port 4390 and writes screenshots and results under
+`test-results/match-visual-drafts/`.

@@ -2,14 +2,6 @@ import { sniffImageMimeType, type StorageClient } from "./news-media-upload.ts";
 import type { EmailRpcClient } from "./notification-email-dispatch.ts";
 import { PUBLIC_EDITORIAL_RULE } from "./public-editorial-policy.ts";
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
-import {
-  MatchVisualError,
-  MATCH_VISUAL_RENDERER,
-  MATCH_VISUAL_SIZES,
-  parsePreciseMatchVisual,
-  renderProtectedFrame,
-  type ReadVisualAsset,
-} from "./precise-match-visual.ts";
 
 export const STORY_IMAGE_MODEL = "gpt-image-2.5-flare";
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -26,7 +18,6 @@ export interface ImageStoryDependencies {
   storage: StorageClient;
   fetchImpl?: typeof fetch;
   waitUntil?: (task: Promise<unknown>) => void;
-  readVisualAsset?: ReadVisualAsset;
 }
 class StoryGenerationError extends Error {}
 function json(status: number, body: Record<string, unknown>) {
@@ -154,9 +145,6 @@ export async function decodeStoryImage(base64: unknown): Promise<Uint8Array> {
   return bytes;
 }
 async function generate(job: ImageStoryJob, deps: ImageStoryDependencies) {
-  // A known match never falls back to invented players, shirts or crests.
-  if (job.visualContext?.match || job.visualContext?.preciseMatchVisual)
-    return generatePreciseMatch(job, deps);
   const model = deps.environment.AI_STORY_IMAGE_MODEL?.trim() || STORY_IMAGE_MODEL;
   const key = deps.environment.OpenAI_Image_Gen!.trim();
   const path = `news/ai-stories/${job.id}.png`;
@@ -205,56 +193,6 @@ async function generate(job: ImageStoryJob, deps: ImageStoryDependencies) {
     } catch {
       /* Expired leases are recovered by the next claim. No secrets in logs. */
     }
-    console.error(JSON.stringify({ worker: "home-story-generate", jobId: job.id, error: code }));
-    return { status: "failed", error: code };
-  }
-}
-async function generatePreciseMatch(job: ImageStoryJob, deps: ImageStoryDependencies) {
-  const uploaded: string[] = [];
-  let publicationAttempted = false;
-  try {
-    if (!job.visualContext?.preciseMatchVisual)
-      throw new MatchVisualError("precise_assets_required");
-    const visual = parsePreciseMatchVisual(job.visualContext.preciseMatchVisual);
-    if (!deps.readVisualAsset) throw new MatchVisualError("visual_reader_not_configured");
-    for (const variant of ["story", "article"] as const) {
-      const bytes = await renderProtectedFrame(visual[variant], variant, deps.readVisualAsset);
-      const path =
-        variant === "story" ? `news/ai-stories/${job.id}.png` : `news/match-covers/${job.id}.png`;
-      const upload = await deps.storage
-        .from("news-media")
-        .upload(path, bytes.buffer as ArrayBuffer, {
-          contentType: "image/png",
-          cacheControl: "31536000",
-          upsert: false,
-        });
-      if (upload.error) throw new MatchVisualError("storage_failed");
-      uploaded.push(path);
-    }
-    publicationAttempted = true;
-    const completed = (await rpc(deps, "service_complete_precise_home_story", {
-      p_job_id: job.id,
-      p_renderer: MATCH_VISUAL_RENDERER,
-      p_article_width: MATCH_VISUAL_SIZES.article.width,
-      p_article_height: MATCH_VISUAL_SIZES.article.height,
-    })) as { status?: string };
-    if (completed?.status === "failed") await deps.storage.from("news-media").remove(uploaded);
-    return { status: completed?.status ?? "failed" };
-  } catch (error) {
-    // A failed upload/render cannot have published. A lost publication response
-    // may have committed both artifacts, so preserve them on that path.
-    if (!publicationAttempted && uploaded.length)
-      await deps.storage
-        .from("news-media")
-        .remove(uploaded)
-        .catch(() => {});
-    const code =
-      error instanceof MatchVisualError || error instanceof StoryGenerationError
-        ? error.message
-        : "precise_generation_failed";
-    await rpc(deps, "service_fail_ai_home_story", { p_job_id: job.id, p_error_code: code }).catch(
-      () => {},
-    );
     console.error(JSON.stringify({ worker: "home-story-generate", jobId: job.id, error: code }));
     return { status: "failed", error: code };
   }

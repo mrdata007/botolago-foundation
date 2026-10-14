@@ -15,7 +15,8 @@ or article hero, and cannot post to social accounts.
 Add a separate private match-visual queue above existing stories. Import a photo
 with its original post link, descriptive title, and optional fixture/story IDs.
 Preview originals and held edits privately. Let editors select a small cleanup
-rectangle and upload an exact transparent branding layer. AI changes only that
+rectangle and use the existing official BotolaGO logo or an exact transparent
+PNG branding override. AI changes only that
 rectangle; copy every other source pixel back before branding. Keep failure and
 processing states visible and support retry/discard. Keep source provenance and
 rights status unverified in the private record.
