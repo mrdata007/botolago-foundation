@@ -20,7 +20,7 @@ import { PLUS_NAME, usePlusCopy } from "./plus-copy";
 export function CurvaPlusPage({ step, via }: { step?: PlusStep; via?: PlusContext }) {
   const premium = usePremium();
   const navigate = useNavigate();
-  const { within, back, leave, href } = useOfferHistory("/curva");
+  const { within, back, leave, carry, href } = useOfferHistory("/curva");
   const manage = useCallback(() => void navigate({ to: "/profile" }), [navigate]);
   const goStep = useCallback(
     (next: PlusStep) =>
@@ -40,6 +40,7 @@ export function CurvaPlusPage({ step, via }: { step?: PlusStep; via?: PlusContex
       onBack={back}
       onClose={leave}
       onManage={manage}
+      onCarry={carry}
     />
   );
 }
@@ -51,11 +52,15 @@ export function CurvaPlusPage({ step, via }: { step?: PlusStep; via?: PlusContex
 export function PlusPage() {
   const premium = usePremium();
   const navigate = useNavigate();
-  const { leave, href } = useOfferHistory("/");
+  const { leave, carry, href } = useOfferHistory("/");
   const manage = useCallback(() => void navigate({ to: "/profile" }), [navigate]);
   const goStep = useCallback(
-    (next: PlusStep) => void navigate({ to: "/curva/plus", search: { step: next } }),
-    [navigate],
+    (next: PlusStep) => {
+      // The story is the same offer on another page: Close there still leaves from here.
+      carry();
+      void navigate({ to: "/curva/plus", search: { step: next } });
+    },
+    [navigate, carry],
   );
   if (premium.ready && premium.isMember) return <MemberNote onClose={leave} />;
   return (
@@ -67,6 +72,7 @@ export function PlusPage() {
       onBack={leave}
       onClose={leave}
       onManage={manage}
+      onCarry={carry}
     />
   );
 }
