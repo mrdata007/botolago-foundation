@@ -26,6 +26,8 @@ export const inset = (sx: number, sy: number): string =>
 
 /** The face sits inside the frame: the outline at this scale (the same as `shield.css`'s mask). */
 export const FACE_SCALE = [0.958, 0.97] as const;
+/** The chrome edition's thick bezel: the face is cut smaller (`shield.css` has the same mask). */
+export const FACE_SCALE_THICK = [0.944, 0.962] as const;
 
 /* ---------------------------------------------------------------------------------------------
    The outline as points: a CSS polygon for faces drawn in DOM (the back, the turn's edge)
