@@ -24,7 +24,8 @@
 // sofascore-match-details.ts: 3 requests per fixture, at most
 // SOFASCORE_DETAILS_PER_TICK (default 4) fixtures per live tick, so at most 12
 // more requests. Chosen fixtures: a mapped fixture written as finished this
-// tick, then mapped fixtures in play whose score or status was written or whose
+// tick, then mapped fixtures in play whose score or status was written (a write
+// that only moves the live minute does not count) or whose
 // changeTimestamp moved in the last 90 seconds (incidents only: 1 request, plus the
 // lineups on the tick that sees the match start; statistics are read at full time), then fixtures finalized in the
 // last two hours so post-match corrections are refreshed. The
@@ -146,6 +147,11 @@ interface MappedFixtureState {
   /** Internal club ids; absent until migration 20261011110000 is applied. */
   readonly homeTeamId?: string;
   readonly awayTeamId?: string;
+  /**
+   * The stored live minute (null when none is stored); absent until migration
+   * 20261013190000 is applied, and then the stored minute is unknown.
+   */
+  readonly minute?: number | null;
 }
 
 interface Snapshot {
@@ -281,6 +287,7 @@ function detailsTeams(
  */
 export function selectLiveDetailTargets(
   events: readonly SofascoreFixtureEvent[],
+  /** Calls written this tick for more than the clock (score, status, period, kickoff, finalization). */
   toWrite: readonly SofascoreIngestCall[],
   snapshot: Snapshot,
   now: Date,
@@ -351,11 +358,22 @@ export function selectLiveDetailTargets(
   return ranked.slice(0, limit).map((item) => item.target);
 }
 
-/** Why a call must not be sent, or null when it should be. */
-export function skipReason(
+/** The stored minute when the snapshot carries it (null included), else undefined. */
+function storedMinute(fixture: MappedFixtureState): number | null | undefined {
+  if (!Object.prototype.hasOwnProperty.call(fixture, "minute")) return undefined;
+  const value = fixture.minute;
+  return typeof value === "number" && Number.isInteger(value) ? value : null;
+}
+
+/**
+ * How a call compares with the stored fixture: a reason not to send it, or
+ * `clock` when the only change is the live minute (written, but not a reason
+ * to fetch match details), or `content` for any other change.
+ */
+export function classifyCall(
   call: SofascoreIngestCall,
   fixture: MappedFixtureState | undefined,
-): SkipReason | null {
+): SkipReason | "clock" | "content" {
   if (!fixture) return "no_fixture_state";
   const next = call.p_fixture;
   const dbUpdated = Date.parse(fixture.providerUpdatedAt);
@@ -373,24 +391,34 @@ export function skipReason(
   if (FINAL_STATUSES.has(fixture.status) && next.status !== fixture.status) {
     return "protected_final_state";
   }
-  // A running clock is a change in itself: the minute moves while nothing else does.
-  // (The snapshot does not carry the stored minute, so a computed one is always written.)
-  const minuteMoves =
-    next.minute !== null && (fixture as { minute?: number | null }).minute !== next.minute;
+  // A running clock is a change in itself: the minute moves while nothing else
+  // does. When the snapshot carries the stored minute (20261013190000), any
+  // difference counts, null included: a clock the provider stopped sending is
+  // cleared rather than left frozen on the page. Without it (an older
+  // database), a computed minute is always written and a null one never is.
+  const stored = storedMinute(fixture);
+  const nextMinute = next.minute ?? null;
+  const minuteMoves = stored === undefined ? nextMinute !== null : nextMinute !== stored;
   const sameKickoff = Date.parse(fixture.kickoffAt) === Date.parse(next.kickoffAt);
   const gainsFinalization = next.finalizedAt !== null && fixture.finalizedAt === null;
-  if (
+  const restUnchanged =
     sameKickoff &&
     fixture.status === next.status &&
     fixture.period === next.period &&
     fixture.homeScore === next.homeScore &&
     fixture.awayScore === next.awayScore &&
-    !minuteMoves &&
-    !gainsFinalization
-  ) {
-    return "unchanged";
-  }
-  return null;
+    !gainsFinalization;
+  if (!restUnchanged) return "content";
+  return minuteMoves ? "clock" : "unchanged";
+}
+
+/** Why a call must not be sent, or null when it should be. */
+export function skipReason(
+  call: SofascoreIngestCall,
+  fixture: MappedFixtureState | undefined,
+): SkipReason | null {
+  const kind = classifyCall(call, fixture);
+  return kind === "clock" || kind === "content" ? null : kind;
 }
 
 export async function runSofascoreRefresh(
@@ -498,6 +526,8 @@ export async function runSofascoreRefresh(
     }));
   const stateByExternalId = new Map(snapshot.fixtures.map((f) => [f.externalId, f]));
   const toWrite: SofascoreIngestCall[] = [];
+  /** Written for the minute alone: no reason to spend a details request. */
+  const clockOnly = new Set<string>();
   const skipped: Record<SkipReason, string[]> = {
     unchanged: [],
     stale: [],
@@ -508,12 +538,14 @@ export async function runSofascoreRefresh(
   for (const call of plan.calls) {
     // Ingestion replaces round_id: never detach a fixture from its gameweek
     // when the provider omitted the round. Leave it for a complete payload.
-    const reason =
+    const kind =
       call.p_fixture.roundId === null
         ? "unresolved_round"
-        : skipReason(call, stateByExternalId.get(call.p_external_id));
-    if (reason) skipped[reason].push(call.p_external_id);
-    else toWrite.push(call);
+        : classifyCall(call, stateByExternalId.get(call.p_external_id));
+    if (kind === "clock" || kind === "content") {
+      toWrite.push(call);
+      if (kind === "clock") clockOnly.add(call.p_external_id);
+    } else skipped[kind].push(call.p_external_id);
   }
   const unknownStatus = parsedLists.flatMap((list) => list.unknownStatus);
   const summary = {
@@ -580,7 +612,11 @@ export async function runSofascoreRefresh(
       SOFASCORE_DETAILS_PER_TICK_DEFAULT,
       SOFASCORE_DETAILS_PER_TICK_MAX,
     );
-    const targets = selectLiveDetailTargets(collapsed.events, toWrite, liveSnapshot, now, cap);
+    // A write that only moves the clock does not make a fixture worth a details
+    // request (that would be one request per match in play per minute); its
+    // provider changeTimestamp moving still does, inside selectLiveDetailTargets.
+    const changed = toWrite.filter((call) => !clockOnly.has(call.p_external_id));
+    const targets = selectLiveDetailTargets(collapsed.events, changed, liveSnapshot, now, cap);
     return runSofascoreMatchDetails(targets, {
       mode,
       scope: "live",

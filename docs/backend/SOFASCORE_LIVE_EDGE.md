@@ -75,8 +75,8 @@ write).
 Only events whose fixture, competition, season, round and both teams have an
 active SofaScore mapping. Unmapped events are logged, never ingested (the RPC
 would create a fixture). Unknown SofaScore statuses are never written. A call is
-sent only if it changes something: kickoff, status, period, score, or a new
-`finalizedAt`. Skipped, and logged: unchanged, stale (older than the stored
+sent only if it changes something: kickoff, status, period, score, a new
+`finalizedAt`, or the live minute (see "The live minute"). Skipped, and logged: unchanged, stale (older than the stored
 `provider_updated_at`, which the database trigger would reject), and a
 finished/cancelled/abandoned fixture asked to change status. `finalizedAt` is set
 for finished codes 100/110/120 only. Each write tick records a `fixtures`
@@ -104,7 +104,8 @@ When:
 - Live tick (`fixtures` job), after the scores are written: at most
   `SOFASCORE_DETAILS_PER_TICK` fixtures (default 4, max 8, `0` = off). Order: a
   mapped fixture written as finished this tick (3 requests), then mapped fixtures
-  in play whose score or status was written or whose `changeTimestamp` is under
+  in play whose score or status was written (a write that only moves the minute
+  does not count) or whose `changeTimestamp` is under
   90 s old, newest change first (1 request: incidents only; 2 on the tick that
   sees the match start). The season job
   fetches none. Details never hold a score back; the outcome is in
@@ -197,7 +198,11 @@ triple the cost for data that does not move between goals. Now:
 
 - a match in play whose score or status was written, or whose provider
   `changeTimestamp` moved in the last 90 s (one polling interval plus a late tick;
-  it was 150 s), reads **`matches/get-incidents` only**: 1 request. The payload
+  it was 150 s), reads **`matches/get-incidents` only**: 1 request. A write that
+  changes only the minute (kickoff, status, period, score and finalization as
+  stored) is not a reason: the clock moves every tick, and counting it would cost
+  one incidents request per match in play per minute (about 110 per match instead
+  of the 29 below). The payload
   carries empty lineups and statistics, and the RPC keeps what is stored for those
   (an empty list is not a deletion; events are replaced by the incidents list, as
   before).
@@ -313,8 +318,15 @@ minute is written** (and none at half-time, penalties or outside play); a start
 more than 2 minutes in the future is treated as a bad clock. `addedTime` stays
 null: added minutes are never computed. While a clock runs the fixture is written
 every tick even if the score did not change (the minute moved), at no SofaScore
-cost; the stored minute is not in the live snapshot, so a computed minute is always
-written.
+cost: a clock-only write never asks for match details. From migration
+`20261013190000_football_sofascore_snapshot_minute` the live snapshot carries the
+stored minute, and the computed one is compared with it, null included: a minute
+equal to the stored one is not written, and when the half start disappears the
+null is written (`api.ingest_football_fixture` sets `minute` from the payload, so
+a JSON null clears it) and the app shows the match stage instead of a frozen
+minute. On a database without that migration the snapshot has no `minute`; then a
+computed minute is always written and a null one never is (the minute can stay
+frozen until the next status change).
 
 **App.** `src/lib/live-minute.ts`: `liveMinuteLabel` / `liveClock`. A capped
 minute reads **45+ / 90+ / 105+ / 120+** (the clock stopped, time is being
