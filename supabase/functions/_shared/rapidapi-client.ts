@@ -47,6 +47,14 @@ export interface RapidApiResult {
   readonly requestsSent: number;
 }
 
+/** One request that left for the provider (a retry is another one). */
+export interface RapidApiRequestEvent {
+  /** The path without its query string, e.g. `matches/get-incidents`. */
+  readonly endpoint: string;
+  /** HTTP status of the answer, or 0 when there was none (network error, timeout). */
+  readonly statusCode: number;
+}
+
 type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
 export interface RapidApiRuntime {
@@ -65,6 +73,12 @@ export interface RapidApiClientConfig {
   readonly maxRetries?: number;
   readonly fetch?: FetchLike;
   readonly runtime?: RapidApiRuntime;
+  /**
+   * Called once per request sent, retries included, for the call counter. It
+   * must be cheap and is isolated: a throw is swallowed, so counting can never
+   * break or delay a request.
+   */
+  readonly onRequest?: (event: RapidApiRequestEvent) => void;
 }
 
 const defaultRuntime: RapidApiRuntime = {
@@ -83,6 +97,7 @@ export class RapidApiClient {
   private readonly maxRetries: number;
   private readonly fetchImpl: FetchLike;
   private readonly runtime: RapidApiRuntime;
+  private readonly onRequest: ((event: RapidApiRequestEvent) => void) | undefined;
   private lastQuota: RapidApiQuota = { limit: null, remaining: null };
   private requestCount = 0;
 
@@ -103,6 +118,16 @@ export class RapidApiClient {
     this.maxRetries = config.maxRetries ?? RAPIDAPI_MAX_RETRIES;
     this.fetchImpl = fetchImpl;
     this.runtime = config.runtime ?? defaultRuntime;
+    this.onRequest = config.onRequest;
+  }
+
+  private count(path: string, statusCode: number): void {
+    if (!this.onRequest) return;
+    try {
+      this.onRequest({ endpoint: endpointOf(path), statusCode });
+    } catch {
+      // Counting must never break a request.
+    }
   }
 
   /** Quota from the last response. Both null until a response has been read. */
@@ -167,12 +192,15 @@ export class RapidApiClient {
       }
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), this.timeoutMs);
+      let counted = false;
       try {
         this.requestCount += 1;
         const result = await this.fetchImpl(url, {
           headers: { "x-rapidapi-key": this.key, "x-rapidapi-host": this.host },
           signal: controller.signal,
         });
+        counted = true;
+        this.count(path, result.status);
         this.lastQuota = readQuota(result.headers, this.lastQuota);
         if (result.status === 429) {
           throw new RapidApiError("provider_rate_limited", `Rate limited on ${path}.`);
@@ -182,6 +210,8 @@ export class RapidApiClient {
         }
         return result;
       } catch (error) {
+        // No answer at all (network error, timeout): counted with status 0.
+        if (!counted) this.count(path, 0);
         // A network error or abort is wrapped without copying its message:
         // it could echo the URL or headers.
         lastError =
@@ -205,6 +235,11 @@ export class RapidApiClient {
   }
 }
 
+/** The request path without its query string or leading slash. */
+export function endpointOf(pathAndQuery: string): string {
+  return pathAndQuery.replace(/^\//, "").split("?")[0].split("#")[0];
+}
+
 export function readQuota(headers: Headers, previous: RapidApiQuota): RapidApiQuota {
   const read = (name: string): number | null => {
     const raw = headers.get(name);
@@ -221,7 +256,7 @@ export function readQuota(headers: Headers, previous: RapidApiQuota): RapidApiQu
 type Environment = Readonly<Record<string, string | undefined>>;
 type ClientOverrides = Pick<
   RapidApiClientConfig,
-  "fetch" | "runtime" | "timeoutMs" | "maxRetries" | "minRemaining"
+  "fetch" | "runtime" | "timeoutMs" | "maxRetries" | "minRemaining" | "onRequest"
 >;
 
 /**

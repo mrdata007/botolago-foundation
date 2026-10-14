@@ -81,6 +81,20 @@ export interface Match {
   kickoff: string; // ISO
   status: MatchStatus;
   minute?: number;
+  /**
+   * The provider's period and the stoppage minutes it gave, when it gave them.
+   * With the minute they decide how the live clock is written ("45+", "90+",
+   * `liveMinuteLabel`); the added minutes are never worked out here.
+   */
+  period?:
+    | "pre_match"
+    | "first_half"
+    | "half_time"
+    | "second_half"
+    | "extra_time"
+    | "penalties"
+    | "post_match";
+  addedTime?: number;
   homeScore?: number;
   awayScore?: number;
   /** The score at half-time, once the provider has recorded it. */

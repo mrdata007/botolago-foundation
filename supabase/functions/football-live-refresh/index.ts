@@ -4,6 +4,7 @@ import {
   handleFootballLiveRefreshRequest,
   type LiveRefreshRpcClient,
 } from "../_shared/football-live-refresh.ts";
+import type { CatalogStorage } from "../_shared/sofascore-catalog.ts";
 
 // Woken by pg_cron through pg_net (app_private.football_live_refresh_tick)
 // while a match is on. Authenticated with the scheduler token, not a JWT, so
@@ -28,5 +29,7 @@ Deno.serve((request) =>
   handleFootballLiveRefreshRequest(request, {
     environment,
     client: client as unknown as LiveRefreshRpcClient,
+    // Supabase Storage on the same service client (catalog_weekly images).
+    storage: client.storage as unknown as CatalogStorage,
   }),
 );

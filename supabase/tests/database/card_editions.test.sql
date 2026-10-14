@@ -199,11 +199,12 @@ select extensions.is(
    where n.nspname in ('api', 'app', 'app_private')
      and p.prosrc ~* 'premium_entitlements|premium_grants|premium_settings|premium_products|billing_events|billing_customers|card_edition|has_premium'),
   'api.admin_get_premium_member,api.admin_grant_premium,api.admin_premium_overview,api.admin_revoke_premium,'
-  || 'api.choose_card_design,api.get_manager_cards,api.get_my_manager_card,api.get_my_premium,'
-  || 'api.premium_status,api.service_apply_billing_event,app_private.account_deletion_erase,'
-  || 'app_private.card_edition_effective,app_private.has_premium,app_private.premium_configure,'
-  || 'app_private.premium_erase_user',
-  'the only functions that name the membership or edition tables: the membership API, the two card reads (display) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
+  || 'api.choose_card_design,api.get_card_duel,api.get_manager_cards,api.get_my_card_career,'
+  || 'api.get_my_card_history_visibility,api.get_my_manager_card,api.get_my_premium,'
+  || 'api.premium_status,api.service_apply_billing_event,api.set_card_history_visibility,'
+  || 'app_private.account_deletion_erase,app_private.card_edition_effective,app_private.card_premium_mode,'
+  || 'app_private.has_premium,app_private.premium_configure,app_private.premium_erase_user',
+  'the only functions that name the membership or edition tables: the membership API, the two card reads (display), the premium career and duel reads with their privacy switch (20261013100400, read-only over data the card already computed) and the account erasure; no ranking, league, Fantasy, Pronostics or Manager Card calculation function does');
 select extensions.is(
   (select count(*)::integer from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where n.nspname in ('api', 'app', 'app_private')

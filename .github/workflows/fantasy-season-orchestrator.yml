@@ -41,6 +41,16 @@ name: Fantasy season orchestrator
 # match stayed without points behind green runs that closed the alert
 # (docs/backend/CURRENT_FINISHED_FIXTURE_PERFORMANCES.md).
 
+# One writer at a time (docs/backend/FANTASY_WORKER_SCHEDULE.md). Since migration
+# 20261013170000 the lifecycle worker can also run in the database-scheduled Edge
+# Function `fantasy-lifecycle-worker`. This workflow is its fallback: the
+# lifecycle step takes the shared lease (api.service_fantasy_worker_lease_acquire),
+# and a SCHEDULED run leaves the lifecycle to the database job, still doing the
+# calendar sync, the coverage/points checks and the deadline watch, while that job
+# is switched on and has had an ok pass in the last 30 minutes. A manual dispatch
+# always runs the lifecycle (it is the owner asking) but still takes the lease and
+# waits (`lifecycle.owner = lease_held`) while the other holder is mid-pass.
+
 on:
   schedule:
     - cron: "12 * * * *"
