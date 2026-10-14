@@ -112,6 +112,9 @@ jobs:
     timeout-minutes: 30
     env:
       SUPABASE_TELEMETRY_DISABLED: "1"
+      # Pull the local stack's images from GitHub's registry: public.ecr.aws
+      # refused runners on 2026-10-14 ("toomanyrequests: Data limit exceeded").
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
