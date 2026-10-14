@@ -14,6 +14,7 @@ import {
 } from "./manager-card-status";
 import {
   STATUS_FAILURE_TTL_MS,
+  STATUS_GRACE_MS,
   STATUS_TIMEOUT_MS,
   STATUS_TTL_MS,
   createStatusReader,
@@ -91,8 +92,8 @@ describe("the server status read", () => {
     expect(calls).toHaveLength(1);
   });
 
-  it("reads off, silently, when the database is slower than 800 ms", async () => {
-    expect(STATUS_TIMEOUT_MS).toBe(800);
+  it("reads off, silently, when the database is slower than 2 s", async () => {
+    expect(STATUS_TIMEOUT_MS).toBe(2_000);
     let aborted = false;
     const { reader } = harness(
       (signal) =>
@@ -130,6 +131,43 @@ describe("the server status read", () => {
     advance(2);
     expect(await reader()).toEqual(ON);
     expect(calls).toHaveLength(2);
+  });
+
+  it("keeps the last good answer when a later read fails or is slow", async () => {
+    let healthy = true;
+    const { reader, calls, advance } = harness(async () => {
+      if (!healthy) throw new Error("down");
+      return ON;
+    });
+    expect(await reader()).toEqual(ON);
+    healthy = false;
+    advance(STATUS_TTL_MS + 1);
+    expect(await reader()).toEqual(ON);
+    expect(calls).toHaveLength(2);
+    advance(STATUS_FAILURE_TTL_MS - 1);
+    expect(await reader()).toEqual(ON);
+    expect(calls).toHaveLength(2);
+  });
+
+  it("reads off once failures outlast the grace period", async () => {
+    let healthy = true;
+    const { reader, advance } = harness(async () => {
+      if (!healthy) throw new Error("down");
+      return ON;
+    });
+    expect(await reader()).toEqual(ON);
+    healthy = false;
+    advance(STATUS_GRACE_MS + 1);
+    expect(await reader()).toEqual(STATUS_OFF);
+  });
+
+  it("follows the database when it answers 'switched off'", async () => {
+    let answer: ManagerCardStatus = ON;
+    const { reader, advance } = harness(async () => answer);
+    expect(await reader()).toEqual(ON);
+    answer = STATUS_OFF;
+    advance(STATUS_TTL_MS + 1);
+    expect(await reader()).toEqual(STATUS_OFF);
   });
 
   it("the app's own reader is off when no database answers, and says nothing", async () => {
