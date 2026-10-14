@@ -19,11 +19,12 @@ const fr = dictionaries.fr;
 const escapeHtml = (text: string) =>
   text.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;");
 
-function bar(state: PredictionsSaveState): string {
+function bar(state: PredictionsSaveState, doneKnown = true): string {
   return renderToString(
     <I18nProvider>
       <PredictionsStickyBar
         done={3}
+        doneKnown={doneKnown}
         total={8}
         state={state}
         onRetry={() => {}}
@@ -53,5 +54,12 @@ describe("PredictionsStickyBar", () => {
     const status =
       /<div role="status"[^>]*data-testid="predictions-bar"[^>]*>([\s\S]*)<\/div>/.exec(html);
     expect(status?.[1]).toContain(escapeHtml(fr["predictions.save.step_up"]));
+  });
+
+  it("shows a dash, not a count, while the reader's saved picks are unread (QA-01)", () => {
+    const html = bar("idle", false);
+    expect(html).toContain("–/8");
+    expect(html).not.toContain("3/8");
+    expect(bar("idle", true)).toContain("3/8");
   });
 });

@@ -13,7 +13,12 @@ import { MatchVoteCard } from "./MatchVoteCard";
 import { questionView, voteCardWorthShowing } from "./match-votes";
 import { SwipeDeck, type SwipeSlide } from "./SwipeDeck";
 import { useMatchVotes } from "./use-match-votes";
-import { isFixtureOpen, nextPick, usePredictionsRound } from "./use-predictions-round";
+import {
+  isFixtureOpen,
+  pickIsUnknown,
+  stepPick,
+  usePredictionsRound,
+} from "./use-predictions-round";
 
 /**
  * "Votre pronostic" on a match page (plan §9, entry point 2), then the fan
@@ -52,7 +57,10 @@ export function MatchPredictionCard({
   // Closed, and nothing was predicted: what is left to say is that, and a way
   // to the round. One line instead of a deck of cards built for picking,
   // which on a finished match filled a screen with "Pas de pronostic".
-  if (placement === "inline" && !open && !pick) {
+  // A pick the reader's account holds but the page has not read is not "no
+  // prediction": that line is only for a pick known to be absent.
+  const unknownPick = pickIsUnknown(model.personal.state, pick);
+  if (placement === "inline" && !open && !pick && !unknownPick) {
     return (
       <Link
         to="/pronostics"
@@ -98,9 +106,11 @@ export function MatchPredictionCard({
           scored={scored}
           saved={model.uid ? (saved ?? null) : undefined}
           savedReady={!model.uid || model.mineQuery.isSuccess}
+          personal={model.personal.state}
+          onRetryPersonal={model.personal.retry}
           className="justify-center"
           onStep={(side, delta) => {
-            const next = nextPick(pick, side, delta);
+            const next = stepPick(model.personal.state, pick, side, delta);
             if (next) model.setPick(fixture, next);
           }}
         />

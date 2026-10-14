@@ -157,6 +157,56 @@ export function nextPick(current: Pick | null, side: "home" | "away", delta: 1 |
   return { ...base, [side]: value };
 }
 
+/**
+ * Whether the signed-in reader's own picks have been read.
+ *
+ * The journée (public) and the reader's picks (personal) are two requests. A
+ * pick the page has not read yet is UNKNOWN, not absent: a screen that treats
+ * it as empty lets one tap start from 0-0 and replace a saved 2-2 the reader
+ * never saw.
+ *
+ * - `not_needed`: a visitor (picks live on the phone), or no journée yet.
+ * - `loading`: signed in, nothing read yet.
+ * - `failed`: signed in, the read failed and nothing was read before.
+ * - `ready`: the picks are known. Values already read stay `ready` while they
+ *   are read again, and when that second read fails.
+ */
+export type PersonalReadState = "not_needed" | "loading" | "ready" | "failed";
+
+export function personalReadState(input: {
+  signedIn: boolean;
+  roundResolved: boolean;
+  hasData: boolean;
+  hasError: boolean;
+}): PersonalReadState {
+  if (!input.signedIn || !input.roundResolved) return "not_needed";
+  if (input.hasData) return "ready";
+  return input.hasError ? "failed" : "loading";
+}
+
+/** Editing waits for the reader's own picks: never over a value that is unknown. */
+export function canEditPicks(state: PersonalReadState): boolean {
+  return state === "not_needed" || state === "ready";
+}
+
+/** A missing pick that cannot be called absent while the read is open or failed. */
+export function pickIsUnknown(state: PersonalReadState, pick: Pick | null): boolean {
+  return pick === null && (state === "loading" || state === "failed");
+}
+
+/**
+ * One tap on a stepper: the next pick, or null when nothing should change --
+ * always null while the reader's saved picks are not known.
+ */
+export function stepPick(
+  state: PersonalReadState,
+  current: Pick | null,
+  side: "home" | "away",
+  delta: 1 | -1,
+): Pick | null {
+  return canEditPicks(state) ? nextPick(current, side, delta) : null;
+}
+
 function draftKey(uid: string): string {
   return `botolago.predictions.pending.${uid}`;
 }
@@ -237,6 +287,8 @@ export interface PredictionsRoundModel {
   readonly uid: string | null;
   readonly mine: ReadonlyMap<string, MyPredictionDto>;
   readonly mineQuery: ReturnType<typeof useQuery<MyPredictionsDto, PredictionsError>>;
+  /** Whether the reader's own picks are known yet, and a way to read them again. */
+  readonly personal: { readonly state: PersonalReadState; retry(): void };
   readonly now: number | null;
   readonly saveState: PredictionsSaveState;
   readonly guestPersistent: boolean;
@@ -450,6 +502,17 @@ export function usePredictionsRound(
     [mineQuery.data],
   );
   awaitingScoringRef.current = Boolean(uid) && awaitingScoring(round?.fixtures ?? [], mine);
+  const personalState = personalReadState({
+    signedIn: Boolean(uid),
+    roundResolved: resolvedNumber !== null,
+    hasData: mineQuery.data !== undefined,
+    hasError: mineQuery.isError,
+  });
+  const personalCanEdit = canEditPicks(personalState);
+  const refetchMine = mineQuery.refetch;
+  const retryPersonal = useCallback(() => {
+    void refetchMine();
+  }, [refetchMine]);
 
   // A match was scored (or scored again) while the page was open: the round
   // says so through scoringVersion, and the points come with the player's own
@@ -547,6 +610,9 @@ export function usePredictionsRound(
 
   const setPick = useCallback(
     (fixture: PredictionFixtureDto, pick: Pick) => {
+      // The reader's saved picks are not known: whatever is typed would be
+      // written over a value never seen. The controls are disabled as well.
+      if (!personalCanEdit) return;
       if (!isFixtureOpen(fixture, serverNow())) {
         toast.error(t("predictions.save.locked"));
         return;
@@ -579,7 +645,7 @@ export function usePredictionsRound(
         .map((candidate) => candidate.id);
       for (const event of guestRoundEvents(guest.store, seasonId, roundNo, open)) track(event);
     },
-    [uid, round, guest.store, t],
+    [uid, round, guest.store, t, personalCanEdit],
   );
 
   const retrySave = useCallback(() => {
@@ -593,6 +659,7 @@ export function usePredictionsRound(
     uid,
     mine,
     mineQuery,
+    personal: { state: personalState, retry: retryPersonal },
     now,
     saveState: uid ? barFor(save, uid) : "guest",
     guestPersistent: guest.persistent,

@@ -15,21 +15,24 @@ import type { PredictionsSaveState } from "./use-predictions-round";
  */
 export function PredictionsStickyBar({
   done,
+  doneKnown = true,
   total,
   state,
   onRetry,
   onSignUp,
 }: {
   done: number;
+  /** False while the reader's saved picks are unread: the count is then a dash, not a 0. */
+  doneKnown?: boolean;
   total: number;
   state: PredictionsSaveState;
   onRetry: () => void;
   onSignUp: () => void;
 }) {
   const { t, lang } = useI18n();
-  const complete = total > 0 && done >= total;
+  const complete = doneKnown && total > 0 && done >= total;
   const justCompleted = useJustTurnedOn(complete);
-  const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+  const percent = doneKnown && total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
   return (
     <>
       {/* Room for the bar, so the last match can scroll clear of it. */}
@@ -62,7 +65,7 @@ export function PredictionsStickyBar({
               />
             ) : null}
             {t("predictions.progress")
-              .replace("{done}", formatNumber(done, lang))
+              .replace("{done}", doneKnown ? formatNumber(done, lang) : "–")
               .replace("{total}", formatNumber(total, lang))}
           </span>
           <SaveIndicator state={state} onRetry={onRetry} onSignUp={onSignUp} />

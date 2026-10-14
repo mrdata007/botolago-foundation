@@ -3,7 +3,21 @@ import { QueryClient } from "@tanstack/react-query";
 
 import type { MatchVoteInput, MatchVotesDto } from "@/backend/predictions/contracts";
 import type { GuestVotesState } from "@/backend/predictions/guest-votes";
-import { sendGuestVotesOnSignIn, type GuestVoteImportServices } from "./guest-claim";
+import type { ClaimGuestPredictionsDto, ClaimStatus } from "@/backend/predictions/contracts";
+import {
+  GuestPredictionStore,
+  type GuestPrediction,
+  type KeyValueStorage,
+} from "@/backend/predictions/guest-store";
+import {
+  claimRetryable,
+  claimStatusFor,
+  createGuestClaimController,
+  sendGuestVotesOnSignIn,
+  type GuestClaimServices,
+  type GuestClaimSummary,
+  type GuestVoteImportServices,
+} from "./guest-claim";
 
 const FIRST = "00000020-0000-4000-8000-000000000001";
 const SECOND = "00000020-0000-4000-8000-000000000002";
@@ -83,5 +97,265 @@ describe("guest vote import belongs to the account that began it", () => {
     expect(device.sent).toEqual([]);
     expect(Object.keys(device.remaining)).toEqual([FIRST, SECOND]);
     client.clear();
+  });
+});
+
+const SEASON = "00000030-0000-4000-8000-000000000001";
+const fx = (n: number) => `00000031-0000-4000-8000-00000000000${n}`;
+const team = (n: number) => `00000032-0000-4000-8000-00000000000${n}`;
+
+function guestPick(n: number): GuestPrediction {
+  return {
+    fixtureId: fx(n),
+    home: 2,
+    away: 2,
+    homeTeamId: team(1),
+    awayTeamId: team(2),
+    roundNumber: 1,
+    kickoffAt: `2026-11-0${n}T18:00:00.000Z`,
+    savedAt: "2026-10-30T10:00:00.000Z",
+  };
+}
+
+const answer = (statuses: Record<string, ClaimStatus>): ClaimGuestPredictionsDto => ({
+  serverTime: "2026-11-01T10:00:00.000Z",
+  imported: Object.values(statuses).filter((status) => status === "imported").length,
+  keptExisting: Object.values(statuses).filter((status) => status === "kept").length,
+  started: Object.values(statuses).filter((status) => status === "started").length,
+  invalid: 0,
+  results: Object.entries(statuses).map(([fixtureId, status]) => ({ fixtureId, status })),
+});
+
+type Reply = ClaimGuestPredictionsDto | Error;
+
+/** A phone with two guest picks, a scripted server, and timers that wait to be fired by hand. */
+function claimPhone(replies: Reply[], initialAccount: string | null = "A") {
+  let account = initialAccount;
+  const memory = new Map<string, string>();
+  const storage: KeyValueStorage = {
+    getItem: (key) => memory.get(key) ?? null,
+    setItem: (key, value) => void memory.set(key, value),
+    removeItem: (key) => void memory.delete(key),
+  };
+  const store = new GuestPredictionStore(storage);
+  store.upsert(SEASON, guestPick(1));
+  store.upsert(SEASON, guestPick(2));
+  const sent: { account: string | null; ids: string[] }[] = [];
+  const reports: GuestClaimSummary[] = [];
+  const waits: { ms: number; fire: () => void; cancelled: boolean }[] = [];
+  let release: (() => void) | null = null;
+  let hold = false;
+  const services: GuestClaimServices = {
+    enabled: true,
+    accountId: () => account,
+    pending: () => store.forClaim(SEASON),
+    send: async (items) => {
+      sent.push({ account, ids: items.map((item) => item.fixtureId) });
+      if (hold) {
+        hold = false;
+        await new Promise<void>((resolve) => (release = resolve));
+      }
+      const reply = replies.shift();
+      if (!reply) throw new Error("no scripted reply");
+      if (reply instanceof Error) throw reply;
+      return reply;
+    },
+    apply: (result) => void store.applyClaim(result.results),
+    report: (summary) => void reports.push(summary),
+    schedule: (run, ms) => {
+      const wait = { ms, fire: run, cancelled: false };
+      waits.push(wait);
+      return () => {
+        wait.cancelled = true;
+      };
+    },
+  };
+  return {
+    services,
+    store,
+    sent,
+    reports,
+    waits,
+    becomes: (next: string | null) => {
+      account = next;
+    },
+    holdNextSend: () => {
+      hold = true;
+    },
+    releaseSend: () => release?.(),
+    stored: () => Object.keys(store.read().predictions).sort(),
+    fireLastWait: () => waits.at(-1)?.fire(),
+  };
+}
+
+const offline = () => new TypeError("Failed to fetch");
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+describe("a failed guest import is visible, bounded and retryable (QA-05)", () => {
+  test("a network failure is reported with how many picks remain, and nothing leaves the phone", async () => {
+    const phone = claimPhone([offline()]);
+    const claim = createGuestClaimController(phone.services, [1_000, 4_000]);
+    await claim.start();
+    expect(claim.getStatus()).toMatchObject({
+      phase: "failed",
+      owner: "A",
+      remaining: 2,
+      code: "network",
+    });
+    // The phone still holds both picks: nothing is dropped before the server confirms.
+    expect(phone.stored()).toEqual([fx(1), fx(2)]);
+    expect(phone.reports).toEqual([]);
+  });
+
+  test("it tries again by itself after a wait, and the retry imports and clears the phone", async () => {
+    const phone = claimPhone([offline(), answer({ [fx(1)]: "imported", [fx(2)]: "imported" })]);
+    const claim = createGuestClaimController(phone.services, [1_000, 4_000]);
+    await claim.start();
+    expect(claim.getStatus()).toMatchObject({ phase: "failed", retrying: true });
+    expect(phone.waits.map((wait) => wait.ms)).toEqual([1_000]);
+    phone.fireLastWait();
+    await settle();
+    expect(claim.getStatus()).toMatchObject({ phase: "done", imported: 2, started: 0 });
+    expect(phone.stored()).toEqual([]);
+    expect(phone.reports).toEqual([{ imported: 2, keptExisting: 0, started: 0 }]);
+  });
+
+  test("automatic attempts are bounded; after them only the reader's retry sends again", async () => {
+    const phone = claimPhone([
+      offline(),
+      offline(),
+      offline(),
+      answer({ [fx(1)]: "imported", [fx(2)]: "imported" }),
+    ]);
+    const claim = createGuestClaimController(phone.services, [1_000, 4_000]);
+    await claim.start();
+    phone.fireLastWait();
+    await settle();
+    phone.fireLastWait();
+    await settle();
+    // Three requests, a 1s then a 4s wait, and then it stops by itself.
+    expect(phone.sent).toHaveLength(3);
+    expect(phone.waits.map((wait) => wait.ms)).toEqual([1_000, 4_000]);
+    expect(claim.getStatus()).toMatchObject({ phase: "failed", remaining: 2, retrying: false });
+    expect(phone.stored()).toEqual([fx(1), fx(2)]);
+    // The reader's "Réessayer".
+    await claim.start();
+    expect(phone.sent).toHaveLength(4);
+    expect(claim.getStatus()).toMatchObject({ phase: "done", imported: 2 });
+    expect(phone.stored()).toEqual([]);
+  });
+
+  test("a refusal that asking again cannot change is not retried by itself", async () => {
+    for (const message of ["account_banned", "predictions_unavailable", "validation_failed"]) {
+      const phone = claimPhone([new Error(message)]);
+      const claim = createGuestClaimController(phone.services, [1_000, 4_000]);
+      await claim.start();
+      expect(claim.getStatus()).toMatchObject({ phase: "failed", code: message, retrying: false });
+      expect(phone.waits).toEqual([]);
+      expect(phone.stored()).toEqual([fx(1), fx(2)]);
+    }
+    expect(claimRetryable("network")).toBe(true);
+    expect(claimRetryable("data_unavailable")).toBe(true);
+    expect(claimRetryable("account_banned")).toBe(false);
+    expect(claimRetryable("mfa_required")).toBe(false);
+  });
+
+  test("a match that had started is reported and never imported late; the others are saved", async () => {
+    const phone = claimPhone([answer({ [fx(1)]: "imported", [fx(2)]: "started" })]);
+    const claim = createGuestClaimController(phone.services);
+    await claim.start();
+    expect(claim.getStatus()).toMatchObject({ phase: "done", imported: 1, started: 1 });
+    expect(phone.reports).toEqual([{ imported: 1, keptExisting: 0, started: 1 }]);
+    // The started pick stays on the phone, marked, and is not sent again.
+    expect(phone.stored()).toEqual([fx(2)]);
+    expect(phone.store.read().notCounted).toEqual([fx(2)]);
+    await claim.start();
+    expect(phone.sent).toHaveLength(1);
+  });
+
+  test("an existing account pick is kept by the server; the guest copy goes, nothing else is sent", async () => {
+    const phone = claimPhone([answer({ [fx(1)]: "kept", [fx(2)]: "imported" })]);
+    const claim = createGuestClaimController(phone.services);
+    await claim.start();
+    expect(phone.reports).toEqual([{ imported: 1, keptExisting: 1, started: 0 }]);
+    // Only the guest picks go out (latest match first), under the signed-in account.
+    expect(phone.sent).toEqual([{ account: "A", ids: [fx(2), fx(1)] }]);
+    expect(phone.stored()).toEqual([]);
+  });
+
+  test("asking twice while an import is under way sends once", async () => {
+    const phone = claimPhone([answer({ [fx(1)]: "imported", [fx(2)]: "imported" })]);
+    phone.holdNextSend();
+    const claim = createGuestClaimController(phone.services);
+    const first = claim.start();
+    const second = claim.start();
+    expect(second).toBe(first);
+    phone.releaseSend();
+    await first;
+    expect(phone.sent).toHaveLength(1);
+  });
+
+  test("a retry the reader asks for replaces a waiting automatic one", async () => {
+    const phone = claimPhone([offline(), answer({ [fx(1)]: "imported", [fx(2)]: "imported" })]);
+    const claim = createGuestClaimController(phone.services, [1_000, 4_000]);
+    await claim.start();
+    const waiting = phone.waits[0]!;
+    await claim.start();
+    expect(waiting.cancelled).toBe(true);
+    expect(phone.sent).toHaveLength(2);
+    expect(claim.getStatus()).toMatchObject({ phase: "done" });
+  });
+
+  test("a waiting attempt for an account that has left is dropped, never sent to the next one", async () => {
+    const phone = claimPhone([offline(), answer({ [fx(1)]: "imported", [fx(2)]: "imported" })]);
+    const claim = createGuestClaimController(phone.services, [1_000, 4_000]);
+    await claim.start();
+    phone.becomes("B");
+    phone.fireLastWait();
+    await settle();
+    expect(phone.sent).toHaveLength(1);
+    expect(claim.getStatus()).toEqual({ phase: "idle" });
+    expect(phone.stored()).toEqual([fx(1), fx(2)]);
+    // B's own sign-in starts B's import.
+    await claim.start();
+    expect(phone.sent.map((entry) => entry.account)).toEqual(["A", "B"]);
+  });
+
+  test("the account that signs in while another's import is under way gets its own afterwards", async () => {
+    const phone = claimPhone([answer({ [fx(1)]: "imported" }), answer({ [fx(2)]: "imported" })]);
+    phone.holdNextSend();
+    const claim = createGuestClaimController(phone.services);
+    const first = claim.start();
+    phone.becomes("B");
+    const second = claim.start();
+    expect(second).not.toBe(first);
+    phone.releaseSend();
+    await first;
+    await second;
+    expect(phone.sent.map((entry) => entry.account)).toEqual(["A", "B"]);
+    expect(phone.stored()).toEqual([]);
+  });
+
+  test("signed out, or with nothing on the phone, it sends nothing", async () => {
+    const signedOut = claimPhone([], null);
+    await createGuestClaimController(signedOut.services).start();
+    expect(signedOut.sent).toEqual([]);
+    const empty = claimPhone([]);
+    empty.store.clear();
+    await createGuestClaimController(empty.services).start();
+    expect(empty.sent).toEqual([]);
+  });
+
+  test("the screen only reads a status about the account that is signed in", () => {
+    const failed = {
+      phase: "failed",
+      owner: "A",
+      remaining: 2,
+      code: "network",
+      retrying: false,
+    } as const;
+    expect(claimStatusFor(failed, "A")).toBe(failed);
+    expect(claimStatusFor(failed, "B")).toEqual({ phase: "idle" });
+    expect(claimStatusFor(failed, null)).toEqual({ phase: "idle" });
   });
 });

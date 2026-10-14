@@ -814,6 +814,10 @@ export const ar = {
   "fantasy.intro.sign_in_note": "كوّن فريقك الآن: لا يُطلب حساب مجاني إلا عند الحفظ.",
   "fantasy.create.sign_in_reason": "أنشئ حسابًا مجانيًا أو سجّل الدخول لحفظ فريقك.",
   "fantasy.create.guest_note": "مسودتك محفوظة على هذا الجهاز. يُطلب حساب مجاني عند الحفظ.",
+  "fantasy.create.guest_unsaved":
+    "لا يستطيع هذا الجهاز حفظ مسودتك: يبقى فريقك ما دامت هذه الصفحة مفتوحة. إن أُعيد تحميلها أو أُغلقت ضاعت التشكيلة.",
+  "fantasy.create.sign_in_reason_unsaved":
+    "أنشئ حسابًا مجانيًا أو سجّل الدخول لحفظ فريقك. هذا الجهاز لا يحفظ مسودتك: لا تُعد تحميل الصفحة أثناء التسجيل، وتجنّب الدخول عبر Google لأنه يغادر الصفحة.",
   "fantasy.validation.squad_size": "يجب أن يضم الفريق 15 لاعباً.",
   "fantasy.validation.position_count": "تشكيلة المراكز غير صحيحة.",
   "fantasy.validation.club_limit": "عدد لاعبي النادي الواحد أكثر من المسموح (3).",
@@ -2075,6 +2079,18 @@ export const ar = {
   "predictions.claim.started_two": "مباراتان انطلقتا ولم يُضف توقعهما",
   "predictions.claim.started_few": "{n} مباريات انطلقت ولم تُضف توقعاتها",
   "predictions.claim.started_other": "{n} مباراة انطلقت ولم تُضف توقعاتها",
+  "predictions.claim.pending": "جارٍ إضافة توقعاتك كزائر إلى حسابك…",
+  "predictions.claim.unsaved_one": "توقع واحد قبل تسجيل الدخول لم يُضف إلى حسابك بعد",
+  "predictions.claim.unsaved_two": "توقعان قبل تسجيل الدخول لم يُضافا إلى حسابك بعد",
+  "predictions.claim.unsaved_few": "{n} توقعات قبل تسجيل الدخول لم تُضف إلى حسابك بعد",
+  "predictions.claim.unsaved_other": "{n} توقعًا قبل تسجيل الدخول لم تُضف إلى حسابك بعد",
+  "predictions.claim.failed_body":
+    "ما زالت محفوظة على هذا الهاتف. أعد المحاولة قبل انطلاق المباراة: لا يمكن إضافة توقع مباراة بدأت.",
+  "predictions.claim.retrying": "تُعاد المحاولة تلقائيًا…",
+  "predictions.personal.loading": "جارٍ تحميل توقعاتك المحفوظة…",
+  "predictions.personal.failed":
+    "تعذّر تحميل توقعاتك المحفوظة. عُلّق التعديل حتى لا تُستبدل نتائجك.",
+  "predictions.personal.unknown_pick": "لم يُحمَّل التوقع بعد",
 
   /* Pronostics (BG-0146): leagues and invitations */
   "predictions.tab.leagues": "الدوريات",

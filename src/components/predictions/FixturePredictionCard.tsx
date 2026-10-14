@@ -4,12 +4,17 @@ import type { ReactNode } from "react";
 import type { PredictionFixtureDto, ResultKind, ScorePair } from "@/backend/predictions/contracts";
 import { matchOutcome } from "@/backend/predictions/scoring";
 import { ClubCrest } from "@/components/common/ClubCrest";
-import { ui, UiBadge, UiCard, UiLivePill } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiCard, UiLivePill } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { useJustTurnedOn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { presentFootballClub } from "@/services/football";
-import type { Pick } from "./use-predictions-round";
+import {
+  canEditPicks,
+  pickIsUnknown,
+  type PersonalReadState,
+  type Pick,
+} from "./use-predictions-round";
 import { formatKickoffTime } from "./predictions-copy";
 import { ScoreStepper } from "./ScoreStepper";
 
@@ -45,6 +50,8 @@ export function FixturePredictionCard({
   notCounted = false,
   saved,
   savedReady = true,
+  personal = "not_needed",
+  onRetryPersonal,
   className,
   onStep,
 }: {
@@ -67,6 +74,14 @@ export function FixturePredictionCard({
    * arrives after the page opens is not taken for one the reader just made.
    */
   savedReady?: boolean;
+  /**
+   * Whether the signed-in reader's own picks have been read. While they have
+   * not (or the read failed) a missing pick is unknown, not "no prediction",
+   * and the steppers are off so nothing is written over a value never seen.
+   */
+  personal?: PersonalReadState;
+  /** A way to read the reader's picks again, offered on the card when the read failed. */
+  onRetryPersonal?: () => void;
   /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
@@ -77,6 +92,8 @@ export function FixturePredictionCard({
   const homeName = fixture.home.shortName || fixture.home.name;
   const awayName = fixture.away.shortName || fixture.away.name;
 
+  const editable = canEditPicks(personal);
+  const unknown = pickIsUnknown(personal, pick);
   // A signed-in pick is "locked in" once the server holds exactly it.
   const confirmed = Boolean(saved && pick && saved.home === pick.home && saved.away === pick.away);
   const justSaved = useJustTurnedOn(confirmed, 900, savedReady);
@@ -137,7 +154,7 @@ export function FixturePredictionCard({
               {" · "}
             </>
           ) : null}
-          {resultReason(fixture, pick, scored, notCounted, t)}
+          {resultReason(fixture, pick, scored, notCounted, unknown, t)}
           {fixture.corrected ? ` · ${t("predictions.result.corrected")}` : null}
         </p>
       </UiCard>
@@ -189,6 +206,7 @@ export function FixturePredictionCard({
               team={homeName}
               value={pick?.home ?? null}
               onStep={(delta) => onStep("home", delta)}
+              disabled={!editable}
               testId={`prediction-${fixture.id}-home`}
             />
           </div>
@@ -200,6 +218,7 @@ export function FixturePredictionCard({
               team={awayName}
               value={pick?.away ?? null}
               onStep={(delta) => onStep("away", delta)}
+              disabled={!editable}
               testId={`prediction-${fixture.id}-away`}
             />
           </div>
@@ -213,7 +232,11 @@ export function FixturePredictionCard({
                 <ScoreLine score={pick} className={ui.text.bodyStrong} />
               </>
             ) : (
-              <span className={ui.tone.muted}>{t("predictions.fixture.no_prediction")}</span>
+              <span className={ui.tone.muted}>
+                {unknown
+                  ? t("predictions.personal.unknown_pick")
+                  : t("predictions.fixture.no_prediction")}
+              </span>
             )}
           </span>
           <span className={cn("inline-flex items-center gap-1.5", ui.text.meta, ui.tone.muted)}>
@@ -221,6 +244,21 @@ export function FixturePredictionCard({
           </span>
         </div>
       )}
+      {open && unknown ? (
+        <div
+          className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1"
+          data-testid={`prediction-${fixture.id}-unknown`}
+        >
+          <span className={cn(ui.text.micro, ui.tone.muted)}>
+            {t("predictions.personal.unknown_pick")}
+          </span>
+          {personal === "failed" && onRetryPersonal ? (
+            <UiButton size="sm" variant="soft" onClick={onRetryPersonal}>
+              {t("state.retry")}
+            </UiButton>
+          ) : null}
+        </div>
+      ) : null}
       {open && pick ? (
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <UiBadge tone="positive" className="gap-1 !px-2 !py-0.5">
@@ -273,10 +311,15 @@ function resultReason(
   pick: Pick | null,
   scored: FixtureScore | null,
   notCounted: boolean,
+  unknown: boolean,
   t: Translate,
 ): string {
   if (notCounted) return t("predictions.result.not_counted");
-  if (!pick) return t("predictions.fixture.no_prediction");
+  if (!pick) {
+    return unknown
+      ? t("predictions.personal.unknown_pick")
+      : t("predictions.fixture.no_prediction");
+  }
   switch (scored?.kind) {
     case "exact":
       return t("predictions.result.exact");

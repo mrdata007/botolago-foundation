@@ -21,10 +21,15 @@ import {
   predictionsKeys,
   awaitingScoring,
   barFor,
+  canEditPicks,
+  nextPick,
   nextSaveBar,
+  personalReadState,
+  pickIsUnknown,
   scoringMoved,
   seedUpdatedAt,
   shownSaveState,
+  stepPick,
   type SaveQueueServices,
 } from "./use-predictions-round";
 
@@ -402,5 +407,73 @@ describe("save responses after navigating to another round", () => {
     expect(client.getQueryData(predictionsKeys.mine("A", 1))).toBeUndefined();
     expect(items(client, "B", 1)).toEqual([]);
     client.clear();
+  });
+});
+
+describe("the reader's own picks are read apart from the journée (QA-01)", () => {
+  const read = (over: Partial<Parameters<typeof personalReadState>[0]> = {}) =>
+    personalReadState({
+      signedIn: true,
+      roundResolved: true,
+      hasData: false,
+      hasError: false,
+      ...over,
+    });
+
+  test("a signed-in reader is loading until their picks arrive, not 'ready with none'", () => {
+    expect(read()).toBe("loading");
+    expect(read({ hasData: true })).toBe("ready");
+  });
+
+  test("a failed first read is 'failed', never 'ready' or 'absent'", () => {
+    expect(read({ hasError: true })).toBe("failed");
+  });
+
+  test("picks already read stay known while read again, and when that second read fails", () => {
+    expect(read({ hasData: true, hasError: true })).toBe("ready");
+  });
+
+  test("an account switch starts unknown again: the new account has no data yet", () => {
+    // The query key carries the account, so B starts with hasData false.
+    expect(read({ hasData: true })).toBe("ready");
+    expect(read({ hasData: false })).toBe("loading");
+  });
+
+  test("a visitor, or a screen with no journée yet, has nothing to wait for", () => {
+    expect(read({ signedIn: false })).toBe("not_needed");
+    expect(read({ roundResolved: false })).toBe("not_needed");
+  });
+
+  test("editing waits for loading and failed, and only those", () => {
+    expect(canEditPicks("loading")).toBe(false);
+    expect(canEditPicks("failed")).toBe(false);
+    expect(canEditPicks("ready")).toBe(true);
+    expect(canEditPicks("not_needed")).toBe(true);
+  });
+
+  test("a missing pick is unknown while the read is open or failed, absent once it is ready", () => {
+    expect(pickIsUnknown("loading", null)).toBe(true);
+    expect(pickIsUnknown("failed", null)).toBe(true);
+    expect(pickIsUnknown("ready", null)).toBe(false);
+    expect(pickIsUnknown("not_needed", null)).toBe(false);
+    // A draft the reader already typed is a pick, not an unknown.
+    expect(pickIsUnknown("failed", { home: 1, away: 0 })).toBe(false);
+  });
+
+  test("one tap from an unseen 2-2 cannot become 1-0 while the read is unresolved", () => {
+    // The old behaviour: with the saved 2-2 unread, the missing pick starts at 0-0.
+    expect(nextPick(null, "home", 1)).toEqual({ home: 1, away: 0 });
+    for (const state of ["loading", "failed"] as const) {
+      expect(stepPick(state, null, "home", 1)).toBeNull();
+      expect(stepPick(state, null, "away", -1)).toBeNull();
+      // Not even a pending draft the reader typed is stepped over unseen picks.
+      expect(stepPick(state, { home: 1, away: 0 }, "home", 1)).toBeNull();
+    }
+  });
+
+  test("once the read has resolved, a tap steps from the real saved score", () => {
+    expect(stepPick("ready", { home: 2, away: 2 }, "home", 1)).toEqual({ home: 3, away: 2 });
+    expect(stepPick("ready", null, "home", 1)).toEqual({ home: 1, away: 0 });
+    expect(stepPick("not_needed", null, "away", 1)).toEqual({ home: 0, away: 1 });
   });
 });

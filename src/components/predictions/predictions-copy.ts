@@ -90,6 +90,20 @@ export function claimKeptLabel(n: number, lang: Language, t: Translate): string 
   return template.replace("{n}", formatNumber(n, lang));
 }
 
+/** How many of the visitor's picks are not on the account yet. */
+export function claimUnsavedLabel(n: number, lang: Language, t: Translate): string {
+  const rule = plural(n, lang);
+  const template =
+    rule === "one"
+      ? t("predictions.claim.unsaved_one")
+      : rule === "two"
+        ? t("predictions.claim.unsaved_two")
+        : rule === "few"
+          ? t("predictions.claim.unsaved_few")
+          : t("predictions.claim.unsaved_other");
+  return template.replace("{n}", formatNumber(n, lang));
+}
+
 export function claimStartedLabel(n: number, lang: Language, t: Translate): string {
   const rule = plural(n, lang);
   const template =

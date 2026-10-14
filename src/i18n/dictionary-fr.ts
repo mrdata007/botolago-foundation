@@ -850,6 +850,10 @@ export const fr = {
     "Créez un compte gratuit ou connectez-vous pour enregistrer votre équipe.",
   "fantasy.create.guest_note":
     "Votre brouillon est gardé sur cet appareil. Un compte gratuit est demandé à l’enregistrement.",
+  "fantasy.create.guest_unsaved":
+    "Cet appareil ne peut pas garder votre brouillon : votre équipe n’existe que tant que cette page reste ouverte. Rechargée ou fermée, la composition serait perdue.",
+  "fantasy.create.sign_in_reason_unsaved":
+    "Créez un compte gratuit ou connectez-vous pour enregistrer votre équipe. Cet appareil ne garde pas votre brouillon : ne rechargez pas la page pendant l’inscription, et évitez la connexion Google, qui quitte la page.",
   "fantasy.validation.squad_size": "L'équipe doit compter 15 joueurs.",
   "fantasy.validation.position_count": "Composition invalide par poste.",
   "fantasy.validation.club_limit": "Trop de joueurs d'un même club (max 3).",
@@ -2207,6 +2211,22 @@ export const fr = {
   "predictions.claim.started_two": "2 matchs déjà commencés n'ont pas pu être ajoutés",
   "predictions.claim.started_few": "{n} matchs déjà commencés n'ont pas pu être ajoutés",
   "predictions.claim.started_other": "{n} matchs déjà commencés n'ont pas pu être ajoutés",
+  "predictions.claim.pending": "Ajout de vos pronostics de visiteur à votre compte…",
+  "predictions.claim.unsaved_one":
+    "1 pronostic fait avant la connexion n'est pas encore sur votre compte",
+  "predictions.claim.unsaved_two":
+    "2 pronostics faits avant la connexion ne sont pas encore sur votre compte",
+  "predictions.claim.unsaved_few":
+    "{n} pronostics faits avant la connexion ne sont pas encore sur votre compte",
+  "predictions.claim.unsaved_other":
+    "{n} pronostics faits avant la connexion ne sont pas encore sur votre compte",
+  "predictions.claim.failed_body":
+    "Ils restent sur ce téléphone. Réessayez avant le coup d'envoi : un match commencé ne peut plus être ajouté.",
+  "predictions.claim.retrying": "Nouvel essai automatique en cours…",
+  "predictions.personal.loading": "Chargement de vos pronostics enregistrés…",
+  "predictions.personal.failed":
+    "Vos pronostics enregistrés n'ont pas pu être chargés. La modification est suspendue pour ne pas écraser vos scores.",
+  "predictions.personal.unknown_pick": "Pronostic pas encore chargé",
 
   /* Pronostics (BG-0146): leagues and invitations */
   "predictions.tab.leagues": "Ligues",
