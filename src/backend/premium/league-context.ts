@@ -233,6 +233,14 @@ export interface LeagueSeries {
     LeagueRatingCode,
     Array<{ value: number | null; leagueAverage: number | null; rank: number | null }>
   >;
+  /** The caller's own season figures: the captain's points and the transfers' gross and net. */
+  youSeason: {
+    captain: number | null;
+    netTransfers: number | null;
+    grossTransfers: number | null;
+    hitsPaid: number | null;
+    transfers: number | null;
+  };
   /** The rival's figures for the season; null while they hide their history. */
   rivalSeason: {
     total: number | null;
@@ -286,6 +294,13 @@ export function toLeagueSeries(answer: LeagueContextMember): LeagueSeries {
         rank: week.ratings[key].rank,
       })),
     ),
+    youSeason: {
+      captain: answer.me.captain?.points ?? null,
+      netTransfers: answer.me.transfers?.net ?? null,
+      grossTransfers: answer.me.transfers?.gross ?? null,
+      hitsPaid: answer.me.transfers?.hitsPaid ?? null,
+      transfers: answer.me.transfers?.transfers ?? null,
+    },
     rivalSeason: shown
       ? {
           total: rival.total,

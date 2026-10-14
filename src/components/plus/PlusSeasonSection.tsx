@@ -1,6 +1,7 @@
 import { useEffect, useMemo, type ReactNode } from "react";
 
 import { useMyCareer } from "@/services/use-premium-card-reads";
+import { useLeagueContext } from "@/services/use-premium-league-context";
 
 import { PlusEmbed, PlusLockedSection } from "./PlusLockedSection";
 import type { PlusAccess } from "./plus-access";
@@ -33,12 +34,22 @@ export interface Standing {
 export function PlusSeasonSection({
   access,
   standing = null,
+  leagueId = null,
+  leaguePending = false,
 }: {
   access: PlusAccess;
   standing?: Standing | null;
+  /** The private league the Curva screen is showing: the league figures are read for it. */
+  leagueId?: string | null;
+  /** The screen does not know its league yet; the league figures wait for it. */
+  leaguePending?: boolean;
 }) {
   if (access === "off") return null;
-  return access === "locked" ? <LockedSeason standing={standing} /> : <MemberSeason />;
+  return access === "locked" ? (
+    <LockedSeason standing={standing} />
+  ) : (
+    <MemberSeason leagueId={leagueId} leaguePending={leaguePending} />
+  );
 }
 
 /** When the address names the section (`#votre-saison`, after the paywall), bring it into view. */
@@ -102,13 +113,26 @@ export function StandingHead({
   );
 }
 
-function MemberSeason() {
+function MemberSeason({
+  leagueId,
+  leaguePending,
+}: {
+  leagueId: string | null;
+  leaguePending: boolean;
+}) {
   const { t } = usePlusCopy();
   const career = useMyCareer(true);
-  const view = useMemo(() => (career.data ? careerToSeasonView(career.data) : null), [career.data]);
+  // Members only (this component is rendered for no one else). A league that fails to read leaves
+  // the career and its « — » for the league's figures, rather than an error panel.
+  const league = useLeagueContext(!leaguePending, leagueId);
+  const leagueLoading = leaguePending || (league.isPending && league.fetchStatus !== "idle");
+  const view = useMemo(
+    () => (career.data ? careerToSeasonView(career.data, league.data ?? null) : null),
+    [career.data, league.data],
+  );
   useScrollToSection(view !== null);
   let body: ReactNode;
-  if (career.isPending) {
+  if (career.isPending || (career.data && leagueLoading)) {
     body = (
       <>
         <div className="pl-skeleton" aria-hidden />

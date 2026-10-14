@@ -19,10 +19,13 @@ export function PlusDuelSlot({
   mineRow,
   row,
   size,
+  leagueId = null,
 }: {
   mineRow: PeopleRow | null;
   row: PeopleRow;
   size: number;
+  /** The league the sheet's rows belong to: the league figures are read for it. */
+  leagueId?: string | null;
 }) {
   const access = usePlusAccess();
   if (access === "off") return null;
@@ -33,6 +36,7 @@ export function PlusDuelSlot({
       other={sideOf(row)}
       otherTeamId={row.standing.managerId}
       size={size}
+      leagueId={leagueId}
     />
   );
 }

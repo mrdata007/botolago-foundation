@@ -139,18 +139,18 @@ function CourseTab() {
     {
       label: t("plus.s2.t_win"),
       value: <Num value={S.bestLead} sign />,
-      sub: j(S.bestLeadWeek + 1),
+      sub: j(S.seq[S.bestLeadWeek] ?? Number.NaN),
     },
     {
       label: t("plus.s2.t_loss"),
       value: <Num value={S.worstLead} sign />,
-      sub: j(S.worstLeadWeek + 1),
+      sub: j(S.seq[S.worstLeadWeek] ?? Number.NaN),
       sky: true,
     },
     {
       label: t("plus.s2.t_peak"),
       value: <Num value={S.peakLead} sign />,
-      sub: j(S.peakLeadWeek + 1),
+      sub: j(S.seq[S.peakLeadWeek] ?? Number.NaN),
     },
     {
       label: t("plus.s2.t_streak"),
@@ -195,7 +195,7 @@ function CourseTab() {
         />
         <SignedBars
           vals={S.lead}
-          labels={S.lead.map((_, i) => (i === 0 ? jAxis(1) : String(i + 1)))}
+          labels={S.seq.map((n, i) => (i === 0 ? jAxis(n) : String(n)))}
           min={-8}
           max={9}
           ticks={[-5, 0, 5]}
@@ -207,7 +207,7 @@ function CourseTab() {
       <section className="ps-card" aria-labelledby="ps-c-turn">
         <h2 className="ps-hl" id="ps-c-turn">
           {f("plus.s2.c_turn_h", {
-            j: <bdi>{j(firstLead < 0 ? Number.NaN : firstLead + 1)}</bdi>,
+            j: <bdi>{j(firstLead < 0 ? Number.NaN : (S.seq[firstLead] ?? Number.NaN))}</bdi>,
             p: <Fig>{num(S.peakLead, 0, true)}</Fig>,
           })}
         </h2>
@@ -304,13 +304,19 @@ function CompareTab() {
             label={t("plus.s2.tile_best")}
             a={youBest}
             b={sBest}
-            o={{ sa: j(S.bestWeek + 1), sb: j(S.rivalBestWeek + 1) }}
+            o={{
+              sa: j(S.seq[S.bestWeek] ?? Number.NaN),
+              sb: j(S.seq[S.rivalBestWeek] ?? Number.NaN),
+            }}
           />
           <MRow
             label={t("plus.s2.b_worst")}
             a={youWorst}
             b={sWorst}
-            o={{ sa: j(S.worstWeek + 1), sb: j(S.rivalWorstWeek + 1) }}
+            o={{
+              sa: j(S.seq[S.worstWeek] ?? Number.NaN),
+              sb: j(S.seq[S.rivalWorstWeek] ?? Number.NaN),
+            }}
           />
           <MRow
             label={t("plus.s2.th_rank")}
