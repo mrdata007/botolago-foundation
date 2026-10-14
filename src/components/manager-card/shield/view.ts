@@ -15,7 +15,7 @@ import {
   tokenLabel,
 } from "../eclat/view";
 import type { CardProfile, CardStrings } from "../types";
-import { METAL, type Metal, type MetalKey } from "./metal";
+import { metalFor, paidEdition, type Metal, type MetalKey, type PaidEdition } from "./metal";
 
 export {
   contrast,
@@ -36,13 +36,18 @@ export interface ShieldView {
   /** The strings with the tier names the card prints. */
   s: CardStrings;
   ar: boolean;
+  /** The earned tier's key (the emblem's glyph, `data-mc-tier`), whatever the edition. */
   key: MetalKey;
+  /** The paid edition, or null for the free card. */
+  edition: PaidEdition | null;
+  /** What the card is drawn in: the edition's finish if paid, else the tier's metal. */
   m: Metal;
 }
 
 export function makeView(profile: CardProfile, strings: CardStrings): ShieldView {
   const v = makeEclatView(profile, strings);
-  return { p: v.p, s: v.s, ar: v.ar, key: v.tierKey, m: METAL[v.tierKey] };
+  const edition = paidEdition(profile.edition);
+  return { p: v.p, s: v.s, ar: v.ar, key: v.tierKey, edition, m: metalFor(v.tierKey, edition) };
 }
 
 /** The Éclat view of the same profile, for the helpers that take one (the token's label). */

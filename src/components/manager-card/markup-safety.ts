@@ -36,6 +36,9 @@ export const ALLOWED_CARD_TAGS = [
   "feTurbulence",
   "feColorMatrix",
   "feGaussianBlur",
+  // The crackling border of the electric edition: inert noise displacing a still outline.
+  "feComposite",
+  "feDisplacementMap",
   "mask",
 ] as const;
 

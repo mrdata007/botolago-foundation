@@ -178,7 +178,9 @@ preview) are `app_private.premium_grants` rows made by staff with
 `premium.grant` (held by `platform_admin`), second factor and a recent
 authentication, a reason of 8 to 500 characters, at most 400 days, audited, and
 repeating the same key answers the first grant. `api.admin_revoke_premium`
-ends one at once. A grant counts in modes `preview` and `on`, independently of
+ends one at once. The `/admin/plus` screen (permissions `premium.read` and
+`premium.grant`) shows the counts, the audited member read and these two actions; settings, products and
+prices there are read-only. A grant counts in modes `preview` and `on`, independently of
 any paid entitlement. **One admin is enough** (owner decision, 2026-10-13): single operator, recent
 authentication, reason, audit. Do not add dual control for grants in the admin
 lane.
@@ -366,6 +368,19 @@ function, so it needs no pause of automatic account deletion; it still follows
 `select to_regclass('app.card_history_visibility') is null;` must say `true`.
 It is rebuilt by `bun scripts/backend/build-apply-premium-card-reads.ts` and
 `apply-premium-card-reads-script.test.ts` fails if they drift.
+
+**Then the admin overview by product** (optional, for the `/admin/plus` screen's
+by-product counts; the screen works without it and says the counts are
+unavailable): paste
+`scripts/backend/apply-20261013100500-premium-admin-overview.sql`, same two steps
+(rehearsal, then `'apply'` in the `bg.premium_overview_mode` line). It replaces
+one function, `api.admin_premium_overview()`, with the same gate and grants plus
+the key `membersByProduct` (counts only); no table, job or row changes and it
+needs no pause. Re-read after the rehearsal:
+`select pg_get_functiondef('api.admin_premium_overview()'::regprocedure) like '%membersByProduct%';`
+must say `false`. It is rebuilt by
+`bun scripts/backend/build-apply-premium-admin-overview.ts` and
+`apply-premium-admin-overview-script.test.ts` fails if they drift.
 
 ## Rolling back
 
