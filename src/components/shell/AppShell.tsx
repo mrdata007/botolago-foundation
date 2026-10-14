@@ -15,11 +15,12 @@
 //                 the content column: a hub's `UiPageTitle` ("Matches",
 //                 "Profil") with its chip row, or any other edge-to-edge band.
 
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import { UiScreen } from "@/components/ui-kit";
 import { MatchdayStrip } from "@/components/matches/MatchdayStrip";
 import { LiveStrip } from "@/components/matches/LiveStrip";
+import { playTabSlide } from "@/lib/tab-slide";
 import { cn } from "@/lib/utils";
 import { TopBar } from "./TopBar";
 import { BottomNav } from "./BottomNav";
@@ -68,21 +69,28 @@ export function AppShell({
   pageHeader?: ReactNode;
   className?: string;
 }) {
+  // Everything under the top bar, as one block, so a tab move can slide it in
+  // while the top and bottom bars stay still (src/lib/tab-slide.ts).
+  const pageRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => playTabSlide(pageRef.current), []);
+
   return (
     <div className={cn("relative min-h-dvh text-[color:var(--ui-on-surface)]", className)}>
       <PageBackground variant={backgroundVariant} />
       {topBar ?? <TopBar wide={contentWidth === "desktop"} />}
-      {pageHeader}
-      {matchdayStrip ? <MatchdayStrip /> : null}
-      {liveStrip && <LiveStrip />}
-      <UiScreen
-        width={
-          contentWidth === "wide" ? "wide" : contentWidth === "desktop" ? "desktop" : "content"
-        }
-        bottomNav={!hideBottomNav}
-      >
-        {children}
-      </UiScreen>
+      <div ref={pageRef} className="relative">
+        {pageHeader}
+        {matchdayStrip ? <MatchdayStrip /> : null}
+        {liveStrip && <LiveStrip />}
+        <UiScreen
+          width={
+            contentWidth === "wide" ? "wide" : contentWidth === "desktop" ? "desktop" : "content"
+          }
+          bottomNav={!hideBottomNav}
+        >
+          {children}
+        </UiScreen>
+      </div>
       {hideBottomNav ? null : (bottomNav ?? <BottomNav />)}
     </div>
   );

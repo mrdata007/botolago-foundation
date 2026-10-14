@@ -1,9 +1,10 @@
-import type { ReactNode } from "react";
+import { useLayoutEffect, useRef, type ReactNode } from "react";
 
 import { BottomNav } from "@/components/shell/BottomNav";
 import { StatusBarStrip } from "@/components/shell/StatusBarStrip";
 import { TopBar } from "@/components/shell/TopBar";
 import { ui } from "@/components/ui-kit";
+import { playTabSlide } from "@/lib/tab-slide";
 import { cn } from "@/lib/utils";
 
 /**
@@ -97,6 +98,12 @@ export function FantasyFrame({
   // foreground) with no radius or shadow of its own — what a full-bleed
   // column needs. `ui.surface.card` would bring the card radius and shadow.
   const surface = background === "white" ? ui.surface.bar : ui.surface.page;
+  // The column slides in on a move from another bar section; the top and
+  // bottom bars stay still (src/lib/tab-slide.ts). `main` is already
+  // `relative`, which the slide's `left` offset needs.
+  const pageRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => playTabSlide(pageRef.current), []);
+
   return (
     <div className={cn("fpl-root relative min-h-dvh", surface)}>
       {topBar === "always" ? (
@@ -116,6 +123,7 @@ export function FantasyFrame({
         </>
       )}
       <main
+        ref={pageRef}
         className={cn(
           // Same column as `UiScreen width="content"`, which is what every
           // migrated public route renders through `AppShell`. `fpl-column` is
