@@ -324,11 +324,13 @@ begin
   values (v_new, app_private.football_catalog_slug('player', left(v_name, 120), v_new),
     v_name, left(v_name, 120), p_position::app.football_position, 'unknown', true);
   -- A shirt number another active member of the club already wears is left blank, as the
-  -- player-list update does (the club may have a stale member; staff can correct it).
-  v_membership_shirt := p_shirt;
+  -- player-list update does (the club may have a stale member; staff can correct it). Shirt 0
+  -- (SofaScore sends it; staff send it to mean "no number") is stored as no number: memberships
+  -- allow 1 to 99 or none.
+  v_membership_shirt := nullif(p_shirt, 0);
   if exists (select 1 from app.team_memberships mem
               where mem.team_id = p_team_id and mem.season_id = s.id and mem.active
-                and mem.shirt_number = p_shirt) then
+                and mem.shirt_number = v_membership_shirt) then
     v_membership_shirt := null;
   end if;
   insert into app.team_memberships (player_id, team_id, season_id, shirt_number, squad_role,
@@ -561,7 +563,10 @@ begin
     select * into v_existing from app_private.football_provider_mappings
      where provider_name = 'sofascore' and entity_type = 'player' and external_id = v_id;
     if found then
-      if v_existing.active then
+      -- An id that is both a mapping and a second id is a conflict (sofascore_player_identity reads
+      -- it inactive and unreviewed): it stays on the staff list until the mapping is repaired.
+      if v_existing.active and not exists (select 1 from app_private.sofascore_player_aliases a
+                                            where a.sofascore_player_id = v_id) then
         update app_private.sofascore_player_match_queue
            set resolved_at = statement_timestamp(), resolved_player_id = v_existing.internal_entity_id
          where sofascore_player_id = v_id and resolved_at is null;
@@ -1392,7 +1397,8 @@ begin
     raise exception using errcode = 'PT409', message = 'sofascore_create_season_not_current'; end if;
   v_name := btrim(coalesce(p_name, q.name));
   v_position := coalesce(p_position, q.position);
-  v_shirt := coalesce(p_shirt_number, q.shirt_number);
+  -- p_shirt_number omitted keeps the list's number; 0 means staff cleared it (no number).
+  v_shirt := case when p_shirt_number = 0 then null else coalesce(p_shirt_number, q.shirt_number) end;
   if v_position is null or v_position not in ('goalkeeper', 'defender', 'midfielder', 'forward') then
     raise exception using errcode = 'PT400', message = 'sofascore_create_position_required'; end if;
 
@@ -1442,7 +1448,7 @@ declare source text;
 begin
   select statements[1] into source from supabase_migrations.schema_migrations where version='20261014170000';
   if encode(sha256(convert_to(source,'UTF8')),'hex')
-    is distinct from '95616d8c5ca2a507a7e98ae9aeeaccdc9e2eabb81328807b25f3a4aee16400ed'
+    is distinct from 'fb62eb2932f15f47e0c282e69b54ed19dc2854d6208c0aff2ef10d25db2d413b'
   then raise exception 'stop: migration differs from reviewed repository bytes'; end if;
   execute source;
 end $apply$;
@@ -1450,7 +1456,7 @@ do $verify$
 begin
   if
     md5((select prosrc from pg_proc where oid='api.service_sofascore_auto_map_players(uuid,jsonb)'::regprocedure))
-       is distinct from '9411c40881b6219116f5a60fb1187953'
+       is distinct from '1a241f1d5121b761c7ecd49734140f22'
     or md5((select prosrc from pg_proc where oid='api.service_sofascore_fantasy_context(uuid,text[])'::regprocedure))
        is distinct from 'cdc4f2199eaeeaf25b067570e7f17f03'
     or md5((select prosrc from pg_proc where oid='api.service_record_sofascore_fantasy_observation(uuid,jsonb,boolean)'::regprocedure))
@@ -1464,7 +1470,7 @@ begin
     or md5((select prosrc from pg_proc where oid='app_private.sofascore_player_identity(text)'::regprocedure))
        is distinct from '3b10dcc2be5d24399c1acf0784063dde'
     or md5((select prosrc from pg_proc where oid='app_private.sofascore_create_catalog_player(uuid,uuid,text,integer,text)'::regprocedure))
-       is distinct from 'b65053239c7578225b209007d149a447'
+       is distinct from 'bcf7a192ed8b8784d6f8dc922230dd29'
     or md5((select prosrc from pg_proc where oid='app_private.sofascore_link_alias(text,uuid,uuid,jsonb)'::regprocedure))
        is distinct from 'a1ace5437b4406e6daf2c81df044213b'
     or md5((select prosrc from pg_proc where oid='api.admin_sofascore_player_link_options(text,text)'::regprocedure))
@@ -1472,7 +1478,7 @@ begin
     or md5((select prosrc from pg_proc where oid='api.admin_sofascore_link_alias(text,uuid)'::regprocedure))
        is distinct from '164fe47bf88e1cdd2795323a6c9629f3'
     or md5((select prosrc from pg_proc where oid='api.admin_sofascore_create_player(text,text,integer,text)'::regprocedure))
-       is distinct from '56934be8fa71d7391fd70982067f836b'
+       is distinct from 'ea4fdb0c847694c96e5e8b619cceb77d'
   then raise exception 'stop: a function body differs from the reviewed migration'; end if;
   if
     has_function_privilege('anon','api.admin_sofascore_player_link_options(text,text)','execute')

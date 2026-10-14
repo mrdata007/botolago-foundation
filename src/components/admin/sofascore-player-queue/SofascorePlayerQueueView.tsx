@@ -1064,9 +1064,8 @@ function CreatePanel({
     if (busy || nameError || shirtError || position === "") return;
     onCreate({
       ...(trimmed !== entry.name ? { name: trimmed } : {}),
-      ...(shirtValue !== undefined && shirtValue !== entry.shirtNumber
-        ? { shirtNumber: shirtValue }
-        : {}),
+      // A cleared field sends 0, which the server stores as "no number".
+      ...((shirtValue ?? 0) !== (entry.shirtNumber ?? 0) ? { shirtNumber: shirtValue ?? 0 } : {}),
       ...(position !== entry.position ? { position } : {}),
     });
   };

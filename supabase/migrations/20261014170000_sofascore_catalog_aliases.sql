@@ -249,11 +249,13 @@ begin
   values (v_new, app_private.football_catalog_slug('player', left(v_name, 120), v_new),
     v_name, left(v_name, 120), p_position::app.football_position, 'unknown', true);
   -- A shirt number another active member of the club already wears is left blank, as the
-  -- player-list update does (the club may have a stale member; staff can correct it).
-  v_membership_shirt := p_shirt;
+  -- player-list update does (the club may have a stale member; staff can correct it). Shirt 0
+  -- (SofaScore sends it; staff send it to mean "no number") is stored as no number: memberships
+  -- allow 1 to 99 or none.
+  v_membership_shirt := nullif(p_shirt, 0);
   if exists (select 1 from app.team_memberships mem
               where mem.team_id = p_team_id and mem.season_id = s.id and mem.active
-                and mem.shirt_number = p_shirt) then
+                and mem.shirt_number = v_membership_shirt) then
     v_membership_shirt := null;
   end if;
   insert into app.team_memberships (player_id, team_id, season_id, shirt_number, squad_role,
@@ -486,7 +488,10 @@ begin
     select * into v_existing from app_private.football_provider_mappings
      where provider_name = 'sofascore' and entity_type = 'player' and external_id = v_id;
     if found then
-      if v_existing.active then
+      -- An id that is both a mapping and a second id is a conflict (sofascore_player_identity reads
+      -- it inactive and unreviewed): it stays on the staff list until the mapping is repaired.
+      if v_existing.active and not exists (select 1 from app_private.sofascore_player_aliases a
+                                            where a.sofascore_player_id = v_id) then
         update app_private.sofascore_player_match_queue
            set resolved_at = statement_timestamp(), resolved_player_id = v_existing.internal_entity_id
          where sofascore_player_id = v_id and resolved_at is null;
@@ -1317,7 +1322,8 @@ begin
     raise exception using errcode = 'PT409', message = 'sofascore_create_season_not_current'; end if;
   v_name := btrim(coalesce(p_name, q.name));
   v_position := coalesce(p_position, q.position);
-  v_shirt := coalesce(p_shirt_number, q.shirt_number);
+  -- p_shirt_number omitted keeps the list's number; 0 means staff cleared it (no number).
+  v_shirt := case when p_shirt_number = 0 then null else coalesce(p_shirt_number, q.shirt_number) end;
   if v_position is null or v_position not in ('goalkeeper', 'defender', 'midfielder', 'forward') then
     raise exception using errcode = 'PT400', message = 'sofascore_create_position_required'; end if;
 

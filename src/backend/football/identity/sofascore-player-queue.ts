@@ -402,6 +402,7 @@ export function parseAliasResult(
 /** What staff may correct before creating; anything left out is the list entry's own value. */
 export interface CreatePlayerInput {
   readonly name?: string;
+  /** Omitted keeps the list's number; 0 means no number. */
   readonly shirtNumber?: number;
   readonly position?: QueuePosition;
 }

@@ -549,12 +549,40 @@ select extensions.is(pg_temp.err($$select api.admin_sofascore_create_player('Q5'
 select pg_temp.put('cr', api.admin_sofascore_create_player('Q5', p_position => 'defender')::text);
 select extensions.is((select shirt_number from app.team_memberships where player_id = (pg_temp.get('cr')::jsonb ->> 'playerId')::uuid),
   null::integer, '8.14 a shirt another active member wears is left blank, as the matcher does');
+-- A cleared shirt, and SofaScore's shirt 0 (memberships allow 1 to 99 or none).
+select app_private.sofascore_player_match_enqueue('Q7', pg_temp.id('f0', 2), pg_temp.id('c1', 2), 'away', 'Cleared Shirt', null,
+  62, 'forward', 'no_candidate', '{}');
+select pg_temp.put('cr', api.admin_sofascore_create_player('Q7', p_shirt_number => 0)::text);
+select extensions.is((select shirt_number from app.team_memberships where player_id = (pg_temp.get('cr')::jsonb ->> 'playerId')::uuid),
+  null::integer, '8.16 staff clearing the shirt (0) creates him with no number, not the list''s 62');
+select app_private.sofascore_player_match_enqueue('Q8', pg_temp.id('f0', 2), pg_temp.id('c1', 2), 'away', 'Shirt Zero', null,
+  0, 'forward', 'no_candidate', '{}');
+select pg_temp.put('cr', api.admin_sofascore_create_player('Q8')::text);
+select extensions.is((select shirt_number from app.team_memberships where player_id = (pg_temp.get('cr')::jsonb ->> 'playerId')::uuid),
+  null::integer, '8.17 a SofaScore shirt 0 is stored as no number instead of failing');
 update app.seasons set is_current = false where id = pg_temp.id('c0', 3);
 select app_private.sofascore_player_match_enqueue('Q6', pg_temp.id('f0', 2), pg_temp.id('c1', 2), 'away', 'Old Season', null,
   60, 'forward', 'no_candidate', '{}');
 select extensions.is(pg_temp.err($$select api.admin_sofascore_create_player('Q6')$$), 'sofascore_create_season_not_current',
   '8.15 not in a past season');
 update app.seasons set is_current = true where id = pg_temp.id('c0', 3);
+
+
+-- ===========================================================================
+-- 9. A mapping written for an alias id around every check stays on the staff list
+-- ===========================================================================
+select pg_temp.put('ct', app_private.sofascore_create_catalog_player(pg_temp.id('c0', 3), pg_temp.id('c1', 3),
+  'Conflict Target', null, 'defender') ->> 'playerId');
+insert into app_private.football_provider_mappings (provider_name, entity_type, external_id,
+  internal_entity_id, source_version, last_seen_at) values ('sofascore', 'player', 'A5', pg_temp.get('ct')::uuid, 'test', now());
+select pg_temp.act('svc');
+select pg_temp.put('am', api.service_sofascore_auto_map_players(pg_temp.id('f0', 1),
+  jsonb_build_array(pg_temp.pl('A5', 'Second Profile Name', 'home', 77, 'D')))::text);
+select extensions.is((select count(*)::int from jsonb_array_elements(pg_temp.get('am')::jsonb -> 'mapped') m
+  where m ->> 'sofascorePlayerId' = 'A5'), 0, '9.1 the matcher does not accept an id that is both a mapping and an alias');
+select extensions.is((select row(reason, resolved_at is null)::text from app_private.sofascore_player_match_queue
+  where sofascore_player_id = 'A5'), row('inactive_mapping_exists', true)::text,
+  '9.2 it is open on the staff list, where the conflict can be repaired');
 
 select * from extensions.finish();
 rollback;
