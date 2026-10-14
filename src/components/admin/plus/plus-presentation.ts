@@ -93,8 +93,8 @@ export const MODE_BANNERS: Record<PremiumMode, { tone: "info" | "alert"; text: P
   preview: {
     tone: "info",
     text: {
-      fr: "Aperçu : seuls les comptes avec une offre le voient.",
-      ar: "معاينة: لا يراه إلا الحسابات التي لها هدية.",
+      fr: "Aperçu : seuls les abonnés le voient (offre du personnel ou achat de test). Rien n’est public.",
+      ar: "معاينة: لا يراه إلا المشتركون (هدية من الفريق أو شراء تجريبي). لا شيء علني.",
     },
   },
   on: {
