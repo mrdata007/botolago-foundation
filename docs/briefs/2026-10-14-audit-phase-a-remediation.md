@@ -22,14 +22,14 @@ database. No production data, job or setting is touched.
 
 ## Improvements (finding IDs from the audit register)
 
-| Lane | Findings | Change |
-|---|---|---|
-| A1 | FANT-06, LOC-01 | Landing and rules explain scoring from the active rule and say which rounds it covers. |
-| A2 | FANT-04 | Round rankings follow the server's order; no rank movement is shown unless a real earlier round rank exists. |
-| A3 | FANT-01, FANT-02 | Transfers show the real sale value of an owned player; a failed preview says why and offers a retry without losing the draft. |
-| A4 | QA-01, QA-05, UX-009 | Saved Pronostics are never shown as empty or editable while still loading or failed; failed guest imports are visible and retryable; a squad that could not be saved on the device is reported honestly. |
-| A5 | DATA-01, DATA-02, DATA-03, UX-010 | Match freshness reflects the data, not the last successful fetch; an optional section failing keeps the score page; an unknown score shows a dash; the league "last updated" time is real. |
-| A6 | SEC-01, ASTRA-04, ASTRA-02, ASTRA-03 | The Fantasy worker keeps its lease while a write may still be running, the missing-lease fallback is explicit, and monitoring and prize-error status are honest. |
+| Lane | Findings                             | Change                                                                                                                                                                                                   |
+| ---- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1   | FANT-06, LOC-01                      | Landing and rules explain scoring from the active rule and say which rounds it covers.                                                                                                                   |
+| A2   | FANT-04                              | Round rankings follow the server's order; no rank movement is shown unless a real earlier round rank exists.                                                                                             |
+| A3   | FANT-01, FANT-02                     | Transfers show the real sale value of an owned player; a failed preview says why and offers a retry without losing the draft.                                                                            |
+| A4   | QA-01, QA-05, UX-009                 | Saved Pronostics are never shown as empty or editable while still loading or failed; failed guest imports are visible and retryable; a squad that could not be saved on the device is reported honestly. |
+| A5   | DATA-01, DATA-02, DATA-03, UX-010    | Match freshness reflects the data, not the last successful fetch; an optional section failing keeps the score page; an unknown score shows a dash; the league "last updated" time is real.               |
+| A6   | SEC-01, ASTRA-04, ASTRA-02, ASTRA-03 | The Fantasy worker keeps its lease while a write may still be running, the missing-lease fallback is explicit, and monitoring and prize-error status are honest.                                         |
 
 Not in this work: A8 (capacity and release evidence, SEC-02, FANT-11) needs an
 isolated staging database and a single owner-approved writer. It stays a launch
