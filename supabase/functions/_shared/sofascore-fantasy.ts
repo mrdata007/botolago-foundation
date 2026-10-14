@@ -36,7 +36,7 @@
  *   `firstHalfStoppage`).
  * - Assists, saves, penalties saved, penalties missed (decision M8, switched by
  *   SOFASCORE_DETAIL_FIELDS_ENABLED): count only on a FULL-coverage match
- *   (player statistics carry `totalPass`). On a limited-coverage match they are
+ *   (every player with minutes carries `rating` and `totalPass`). On a limited-coverage match they are
  *   unknown, never zero; an assist is known there only when an incident names
  *   the assister. A value two SofaScore sources disagree about is unknown.
  *
@@ -68,6 +68,7 @@ import {
   type StatisticEvidence,
   type FantasyPosition,
 } from "./fantasy-adaptive-core.ts";
+import { storedRating } from "./fantasy-rating-scoring.ts";
 import { indexReviewedIdentities, type ReviewedIdentitySnapshot } from "./reviewed-identities.ts";
 
 /**
@@ -181,6 +182,14 @@ export interface ObservationRow {
   readonly identity: { readonly sofascoreId: string };
   readonly stats: Readonly<Record<string, number | boolean>>;
   readonly evidence: Readonly<Record<string, StatisticEvidence>>;
+  /**
+   * His SofaScore match rating from the same lineup reply, two decimals at most,
+   * or null when SofaScore gave none (yet). Outside `stats` on purpose: every
+   * statistic there is a whole number the adaptive checks certify. Fantasy
+   * scores it only in a rating gameweek (docs/backend/FANTASY_RATING_POINTS.md);
+   * it is part of the request, so a corrected rating is a new observation.
+   */
+  readonly rating: number | null;
 }
 
 export interface SofascoreObservationRequest {
@@ -640,6 +649,7 @@ export async function prepareSofascoreObservation(
       evidence: Object.fromEntries(
         Object.entries(evidence).map(([k, v]) => [k, v as StatisticEvidence]),
       ),
+      rating: storedRating(p.stats?.rating ?? null),
     });
   }
 

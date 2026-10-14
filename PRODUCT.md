@@ -170,6 +170,9 @@ the snapshot) was not checked against the live site.
   - The archive import runs only when someone starts it.
 - **Fantasy** (rules: `docs/backend/FANTASY_RULES_V1.md`):
   - a 100.0 budget for a 15-player squad (2 GK / 5 DEF / 5 MID / 3 FWD), at most 3 players per club;
+  - points: the category scale of `FANTASY_RULES_V1.md` up to GW4; from GW5, once the owner switches
+    it on, a player's SofaScore rating for the match rounded to a whole number, 5 when he played
+    without a rating, 0 when he did not play (`docs/backend/FANTASY_RATING_POINTS.md`);
   - the captain's points count twice; one free transfer per round, carried over up to 2, and −4 points
     for each extra;
   - Wildcard ×2, Free Hit, Bench Boost and Triple Captain;

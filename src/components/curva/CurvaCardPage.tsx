@@ -14,7 +14,9 @@ import { FORMULA_KEYS } from "@/components/manager-card/copy";
 import { fromMyCard } from "@/components/manager-card/to-profile";
 import { STAT_CODES, type LineSpec, type ReplayItem } from "@/components/manager-card/types";
 import { ui, UiButton, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
+import { PlusEntryRows } from "@/components/plus/PlusEntry";
 import { track } from "@/lib/analytics";
+import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
 import { CardStage, RatingLine } from "./CardStage";
@@ -199,6 +201,9 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
             </UiCard>
           </section>
         ) : null}
+
+        {/* BotolaGO+ extras with their lock chips (behind PREMIUM_BUILD). */}
+        {PREMIUM_SURFACES ? <PlusEntryRows /> : null}
 
         <div className="flex flex-col gap-3">
           {rated ? (

@@ -84,6 +84,54 @@ export function mapSofascoreStatus(type: string, code: number): SofascoreStatusM
   return { status: "scheduled", period: "pre_match", unknown: true };
 }
 
+/** Where each running period's clock starts, and where SofaScore's clock stops. */
+const PERIOD_CLOCK = {
+  first_half: { base: 0, cap: 45 },
+  second_half: { base: 45, cap: 90 },
+  extra_first: { base: 90, cap: 105 },
+  extra_second: { base: 105, cap: 120 },
+} as const;
+
+/** A half-start time this far ahead of our clock (seconds) is a bad clock, not a minute. */
+const PERIOD_START_SKEW_SECONDS = 120;
+
+/**
+ * The live minute from the current half's start time, never invented.
+ *
+ *   minute = base of the period + whole minutes since the half started + 1
+ *
+ * (the minute being played: 1 in the first 60 s of the first half), capped at the
+ * end of the period (45 / 90 / 105 / 120), where the app shows 45+ / 90+ / 105+ /
+ * 120+. Null, so no minute is written, when the event is not in a running period
+ * (half-time, penalties, not started, finished), when the half start time is
+ * missing, or when it is more than 2 minutes ahead of `nowMs`. The added minutes
+ * are never computed. Extra time: status code 41 is its first half, 42 its second.
+ */
+export function computeLiveMinute(
+  event: Pick<SofascoreFixtureEvent, "period" | "rawStatusCode" | "periodStartTimestamp">,
+  nowMs: number,
+): number | null {
+  const start = event.periodStartTimestamp;
+  if (start === null || !Number.isFinite(nowMs)) return null;
+  const clock =
+    event.period === "first_half"
+      ? PERIOD_CLOCK.first_half
+      : event.period === "second_half"
+        ? PERIOD_CLOCK.second_half
+        : event.period === "extra_time"
+          ? event.rawStatusCode === 41
+            ? PERIOD_CLOCK.extra_first
+            : event.rawStatusCode === 42
+              ? PERIOD_CLOCK.extra_second
+              : null
+          : null;
+  if (clock === null) return null;
+  const elapsedSeconds = nowMs / 1000 - start;
+  if (elapsedSeconds < -PERIOD_START_SKEW_SECONDS) return null;
+  const played = Math.floor(Math.max(0, elapsedSeconds) / 60) + 1;
+  return Math.min(clock.cap, clock.base + played);
+}
+
 /**
  * Status codes of a match played to its end: 100 ended, 110 after extra time,
  * 120 after penalties (the equivalents of SportsMonks FT / AET / FT_PEN, the
@@ -113,6 +161,11 @@ export interface SofascoreFixtureEvent {
   readonly awayScore: number | null;
   /** Seconds, as sent; null when absent. */
   readonly changeTimestamp: number | null;
+  /**
+   * `time.currentPeriodStartTimestamp` (seconds): when the current half started.
+   * Null when the event does not carry it (or it is not a valid number).
+   */
+  readonly periodStartTimestamp: number | null;
   readonly uniqueTournamentId: string;
   readonly seasonId: string;
 }
@@ -245,6 +298,9 @@ export function parseSofascoreEvents(
       malformedCount += 1;
       continue;
     }
+    const rawTime = candidate.time;
+    const rawPeriodStart = isRecord(rawTime) ? rawTime.currentPeriodStartTimestamp : undefined;
+    const periodStart = rawPeriodStart === undefined ? null : nonNegativeInt(rawPeriodStart);
     const mapped = mapSofascoreStatus(statusType, statusCode);
     if (mapped.unknown) {
       unknownStatus.push({
@@ -268,6 +324,7 @@ export function parseSofascoreEvents(
       homeScore,
       awayScore,
       changeTimestamp: changes,
+      periodStartTimestamp: periodStart,
       uniqueTournamentId: String(uniqueId),
       seasonId: String(season),
     });
@@ -374,7 +431,8 @@ export interface SofascoreFixtureBody {
   readonly kickoffAt: string;
   readonly status: SofascoreFixtureStatus;
   readonly period: SofascoreFixturePeriod;
-  readonly minute: null;
+  /** From the half's start time, capped at the end of the period; null when unknown. */
+  readonly minute: number | null;
   readonly addedTime: null;
   readonly homeScore: number | null;
   readonly awayScore: number | null;
@@ -488,7 +546,7 @@ export function buildFixtureIngestPlan(
         kickoffAt: event.startsAt,
         status: event.status,
         period: event.period,
-        minute: null,
+        minute: computeLiveMinute(event, observedMs),
         addedTime: null,
         homeScore: event.homeScore,
         awayScore: event.awayScore,

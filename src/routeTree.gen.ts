@@ -20,6 +20,7 @@ import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NewsRouteImport } from './routes/news'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PepitesRouteImport } from './routes/pepites'
+import { Route as PlusRouteImport } from './routes/plus'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as PronosticsRouteImport } from './routes/pronostics'
@@ -53,6 +54,7 @@ import { Route as CurvaIndexRouteImport } from './routes/curva.index'
 import { Route as CurvaCarteRouteImport } from './routes/curva.carte'
 import { Route as CurvaClassementRouteImport } from './routes/curva.classement'
 import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
+import { Route as CurvaPlusRouteImport } from './routes/curva.plus'
 import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
 import { Route as DevCurvaRankingSampleRouteImport } from './routes/dev.curva-ranking-sample'
 import { Route as DevManagerCardOvrChangeSampleRouteImport } from './routes/dev.manager-card-ovr-change-sample'
@@ -159,6 +161,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
 const PepitesRoute = PepitesRouteImport.update({
   id: '/pepites',
   path: '/pepites',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlusRoute = PlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -326,6 +333,11 @@ const CurvaClassementRoute = CurvaClassementRouteImport.update({
 const CurvaLesVotresRoute = CurvaLesVotresRouteImport.update({
   id: '/les-votres',
   path: '/les-votres',
+  getParentRoute: () => CurvaRoute,
+} as any)
+const CurvaPlusRoute = CurvaPlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
   getParentRoute: () => CurvaRoute,
 } as any)
 const CurvaSaisonsRoute = CurvaSaisonsRouteImport.update({
@@ -609,6 +621,7 @@ export interface FileRoutesByFullPath {
   '/news': typeof NewsRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/pepites': typeof PepitesRouteWithChildren
+  '/plus': typeof PlusRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -640,6 +653,7 @@ export interface FileRoutesByFullPath {
   '/curva/carte': typeof CurvaCarteRoute
   '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
@@ -704,6 +718,7 @@ export interface FileRoutesByTo {
   '/mcp': typeof McpRoute
   '/news': typeof NewsRouteWithChildren
   '/notifications': typeof NotificationsRoute
+  '/plus': typeof PlusRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -733,6 +748,7 @@ export interface FileRoutesByTo {
   '/curva/carte': typeof CurvaCarteRoute
   '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
@@ -801,6 +817,7 @@ export interface FileRoutesById {
   '/news': typeof NewsRouteWithChildren
   '/notifications': typeof NotificationsRoute
   '/pepites': typeof PepitesRouteWithChildren
+  '/plus': typeof PlusRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/pronostics': typeof PronosticsRouteWithChildren
@@ -832,6 +849,7 @@ export interface FileRoutesById {
   '/curva/carte': typeof CurvaCarteRoute
   '/curva/classement': typeof CurvaClassementRoute
   '/curva/les-votres': typeof CurvaLesVotresRoute
+  '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
@@ -901,6 +919,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/notifications'
     | '/pepites'
+    | '/plus'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -932,6 +951,7 @@ export interface FileRouteTypes {
     | '/curva/carte'
     | '/curva/classement'
     | '/curva/les-votres'
+    | '/curva/plus'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
     | '/dev/manager-card-ovr-change-sample'
@@ -996,6 +1016,7 @@ export interface FileRouteTypes {
     | '/mcp'
     | '/news'
     | '/notifications'
+    | '/plus'
     | '/privacy'
     | '/profile'
     | '/sitemap.xml'
@@ -1025,6 +1046,7 @@ export interface FileRouteTypes {
     | '/curva/carte'
     | '/curva/classement'
     | '/curva/les-votres'
+    | '/curva/plus'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
     | '/dev/manager-card-ovr-change-sample'
@@ -1092,6 +1114,7 @@ export interface FileRouteTypes {
     | '/news'
     | '/notifications'
     | '/pepites'
+    | '/plus'
     | '/privacy'
     | '/profile'
     | '/pronostics'
@@ -1123,6 +1146,7 @@ export interface FileRouteTypes {
     | '/curva/carte'
     | '/curva/classement'
     | '/curva/les-votres'
+    | '/curva/plus'
     | '/curva/saisons'
     | '/dev/curva-ranking-sample'
     | '/dev/manager-card-ovr-change-sample'
@@ -1191,6 +1215,7 @@ export interface RootRouteChildren {
   NewsRoute: typeof NewsRouteWithChildren
   NotificationsRoute: typeof NotificationsRoute
   PepitesRoute: typeof PepitesRouteWithChildren
+  PlusRoute: typeof PlusRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   PronosticsRoute: typeof PronosticsRouteWithChildren
@@ -1295,6 +1320,13 @@ declare module '@tanstack/react-router' {
       path: '/pepites'
       fullPath: '/pepites'
       preLoaderRoute: typeof PepitesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plus': {
+      id: '/plus'
+      path: '/plus'
+      fullPath: '/plus'
+      preLoaderRoute: typeof PlusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -1526,6 +1558,13 @@ declare module '@tanstack/react-router' {
       path: '/les-votres'
       fullPath: '/curva/les-votres'
       preLoaderRoute: typeof CurvaLesVotresRouteImport
+      parentRoute: typeof CurvaRoute
+    }
+    '/curva/plus': {
+      id: '/curva/plus'
+      path: '/plus'
+      fullPath: '/curva/plus'
+      preLoaderRoute: typeof CurvaPlusRouteImport
       parentRoute: typeof CurvaRoute
     }
     '/curva/saisons': {
@@ -2007,6 +2046,7 @@ interface CurvaRouteChildren {
   CurvaCarteRoute: typeof CurvaCarteRoute
   CurvaClassementRoute: typeof CurvaClassementRoute
   CurvaLesVotresRoute: typeof CurvaLesVotresRoute
+  CurvaPlusRoute: typeof CurvaPlusRoute
   CurvaSaisonsRoute: typeof CurvaSaisonsRoute
   CurvaIndexRoute: typeof CurvaIndexRoute
 }
@@ -2015,6 +2055,7 @@ const CurvaRouteChildren: CurvaRouteChildren = {
   CurvaCarteRoute: CurvaCarteRoute,
   CurvaClassementRoute: CurvaClassementRoute,
   CurvaLesVotresRoute: CurvaLesVotresRoute,
+  CurvaPlusRoute: CurvaPlusRoute,
   CurvaSaisonsRoute: CurvaSaisonsRoute,
   CurvaIndexRoute: CurvaIndexRoute,
 }
@@ -2156,6 +2197,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewsRoute: NewsRouteWithChildren,
   NotificationsRoute: NotificationsRoute,
   PepitesRoute: PepitesRouteWithChildren,
+  PlusRoute: PlusRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   PronosticsRoute: PronosticsRouteWithChildren,

@@ -122,7 +122,7 @@ function teamDto(dto: FantasyTeamDto): FantasyTeam {
  * `summary` carries the gameweek-wide Average / Highest figures, which are
  * `null` — not 0 — until some team has been scored.
  */
-function pointsDto(
+export function pointsDto(
   sequence: number,
   dto: FantasyPointsDto,
   summary: FantasyGameweekSummaryDto | null,
@@ -150,6 +150,7 @@ function pointsDto(
       chipType: dto.result.chipType,
       incremental: dto.incrementalScoring === true,
       finalized: dto.pointsState === "final",
+      closedProvisional: dto.closedAt != null && dto.pointsState !== "final",
       startingPoints: dto.result.startingPoints,
       finalScore: dto.result.finalScore,
       gameweekStatus: dto.gameweekStatus,

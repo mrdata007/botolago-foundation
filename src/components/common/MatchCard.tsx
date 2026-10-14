@@ -6,6 +6,8 @@ import { ClubCrest } from "./ClubCrest";
 import { FlipScore } from "@/components/matches/FlipScore";
 import { LiveProgress } from "@/components/matches/LiveProgress";
 import { useJustTurnedOn, useTickingMinute } from "@/lib/motion";
+import { liveClock } from "@/lib/live-minute";
+import { useLiveStageLabels } from "@/components/matches/live-stage";
 import { MatchReminderBell } from "./MatchReminderBell";
 import { cn } from "@/lib/utils";
 import { ui, UiBadge, UiLivePill } from "@/components/ui-kit";
@@ -137,6 +139,14 @@ export function MatchCard({
   const isHero = variant === "hero";
   // The minute keeps ticking between data refreshes (at most one ahead).
   const liveMinute = useTickingMinute(match.minute, status === "live");
+  // "45+" / "90+" once the clock reaches the end of a period; never a made-up minute.
+  const stages = useLiveStageLabels();
+  const clock = liveClock({
+    stages,
+    minute: liveMinute,
+    period: match.period,
+    addedTime: match.addedTime,
+  });
   // A match that ends while the list is open: its "FT" pops once.
   const justFinished = useJustTurnedOn(status === "finished");
 
@@ -182,9 +192,9 @@ export function MatchCard({
       .replace("{as}", String(as));
     if (isLive) {
       const state =
-        match.minute === undefined
+        clock.minute === undefined
           ? t("matches.status.live")
-          : t("matches.a11y.live_minute").replace("{minute}", String(match.minute));
+          : t("matches.a11y.live_minute").replace("{minute}", clock.minute);
       return `${score} — ${state}`;
     }
     if (isFinished) {
@@ -212,10 +222,12 @@ export function MatchCard({
     if (isLive) {
       return (
         <UiLivePill
-          minute={liveMinute}
+          minute={clock.minute}
           size={isHero ? "md" : "sm"}
           // Extra time names itself on the pill; the rest of play is "live".
-          label={status === "extra_time" ? t("matches.status.extra_time") : undefined}
+          label={
+            clock.stage ?? (status === "extra_time" ? t("matches.status.extra_time") : undefined)
+          }
         />
       );
     }

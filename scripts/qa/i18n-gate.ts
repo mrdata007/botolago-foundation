@@ -445,7 +445,11 @@ export const BASELINES: Baselines = {
   // `fantasy.create.cta_primary`, and `fpl.enter_squad`, which it replaces,
   // is deleted. Main's rules page is kept, so #376's own rules keys are not
   // added. 251 -> 250 (measured).
-  W3: 250,
+  //
+  // BotolaGO+ screens (lane D): the offer's back button is the first call site of
+  // `common.back`, which was unreferenced. Every `plus.*` key is referenced, so
+  // the new keys add nothing. 250 -> 249 (measured).
+  W3: 249,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
@@ -469,7 +473,13 @@ export const BASELINES: Baselines = {
   // Option A, Lane 4 (Fantasy core): FplChipsRow names each chip with a literal
   // `t("fantasy.chip.…")` branch instead of a `fantasy.chip.` template. 70 -> 69.
   // With Lanes 1, 2 and 5: 65 - 1 = 64.
-  W4: 64,
+  //
+  // BotolaGO+ screens (lane D): `usePlusCopy` (src/components/plus/plus-copy.ts) has four
+  // helpers that translate the key their caller passes (`f`, `text`, `count`, `countPlain`),
+  // the same shape as the Manager Card's `Translate` helpers. Every caller passes a literal
+  // key, and the screens' own lookups (style names, statuses, entries) are literal
+  // `switch` branches, not templates. 64 -> 68 (measured).
+  W4: 68,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
