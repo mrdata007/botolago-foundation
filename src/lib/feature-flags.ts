@@ -337,8 +337,8 @@ export const PLAYER_MAPPING_PROPOSALS_ENABLED: boolean = true;
  * (lane D); screen brief: docs/product/botolago-plus-screens-brief.md.
  *
  * The same two-layer idea as Curva: this build constant lets the screens exist, and the database's
- * own answer (`api.premium_status()`, lane B) decides whether they show. Until lane B lands the
- * answer is mocked (`src/services/use-premium.ts`), so flipping this alone must not be done.
+ * own answer (`api.premium_status()`) decides whether they show. A build with this on reads it
+ * through `SupabasePremiumRepository` (`src/services/premium.ts`); with it off nothing is requested.
  *
  * Gated surfaces (keep this list current):
  *   - `src/routes/curva.plus.tsx` and `src/routes/plus.tsx` — the offer routes (redirect when off)

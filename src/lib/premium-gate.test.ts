@@ -45,7 +45,16 @@ describe("the entry points", () => {
   it("are all behind the constant, so a build with the flag off draws and loads none of them", () => {
     expect(read("src/routes/profile.tsx")).toMatch(/PREMIUM_SURFACES\s*\?\s*lazy\(/);
     expect(curva("CurvaCardPage.tsx")).toContain("PREMIUM_SURFACES ? <PlusEntryRows />");
-    expect(curva("HeadToHeadSheet.tsx")).toContain("PREMIUM_SURFACES ? <PlusDuelEntry />");
+    expect(curva("HeadToHeadSheet.tsx")).toMatch(
+      /PlusDuelSlot\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/,
+    );
+    expect(curva("CurvaCardPage.tsx")).toMatch(
+      /PlusSeasonSlot\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/,
+    );
+    expect(curva("CurvaHome.tsx")).toMatch(/PlusHomePreview\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/);
+    expect(read("src/components/shell/TopBar.tsx")).toMatch(
+      /PlusHeaderLogo\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/,
+    );
     expect(curva("CurvaHome.tsx")).toContain("PREMIUM_SURFACES ? <PlusRenewalReminder />");
   });
 });

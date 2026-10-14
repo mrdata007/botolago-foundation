@@ -4,22 +4,21 @@ import {
   PREMIUM_STATUS_OFF,
   type PremiumRepository,
 } from "@/backend/premium/contracts";
+import { SupabasePremiumRepository } from "@/backend/premium/supabase-repository";
+import { PREMIUM_BUILD } from "@/lib/feature-flags";
 import { authService } from "@/services/auth";
 
 /**
  * BotolaGO+ service: the repository behind `usePremium()`.
  *
- * There is no database function yet (lane B ships `api.premium_status()` and
- * `api.get_my_premium()`), so:
  *   - a development server reaches the mock repository through the dynamic import below and
  *     nowhere else. Vite replaces `import.meta.env.DEV` with `false` in a production build, so
  *     the branch and its import are removed and no mock chunk is emitted;
- *   - every other build gets `OFF_REPOSITORY`: the feature reads as switched off, checkout and
- *     the rest answer « bientôt ». Flipping `PREMIUM_BUILD` on before lane B lands therefore shows
- *     nothing, rather than a made-up membership.
- *
- * TODO(lane B): replace `OFF_REPOSITORY` with a `SupabasePremiumRepository` that calls the two
- * functions and parses them with `premiumStatusWireSchema` / `myPremiumSchema`.
+ *   - a build with `PREMIUM_BUILD` on reads the database (`api.premium_status()`,
+ *     `api.get_my_premium()`): a database that does not have them yet answers like the feature
+ *     switched off;
+ *   - every other build gets `OFF_REPOSITORY`: the feature reads as switched off, with no request
+ *     at all. Checkout and the rest answer « bientôt » in both.
  */
 export const OFF_REPOSITORY: PremiumRepository = {
   status: async () => PREMIUM_STATUS_OFF,
@@ -30,7 +29,17 @@ export const OFF_REPOSITORY: PremiumRepository = {
   restore: async () => ({ status: "soon" }),
 };
 
+/** Which repository a build gets: the pure decision, so a test can walk it. */
+export function premiumRepositoryKind(input: {
+  dev: boolean;
+  build: boolean;
+}): "mock" | "supabase" | "off" {
+  if (input.dev) return "mock";
+  return input.build ? "supabase" : "off";
+}
+
 let mockRepository: PremiumRepository | null = null;
+let supabaseRepository: PremiumRepository | null = null;
 
 export async function getPremiumRepository(): Promise<PremiumRepository> {
   if (import.meta.env.DEV) {
@@ -39,6 +48,10 @@ export async function getPremiumRepository(): Promise<PremiumRepository> {
       mockRepository ??= new MockPremiumRepository();
     }
     return mockRepository;
+  }
+  if (premiumRepositoryKind({ dev: false, build: PREMIUM_BUILD }) === "supabase") {
+    supabaseRepository ??= new SupabasePremiumRepository();
+    return supabaseRepository;
   }
   return OFF_REPOSITORY;
 }

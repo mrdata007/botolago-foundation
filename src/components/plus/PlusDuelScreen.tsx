@@ -1,24 +1,14 @@
 import { useState, type ReactNode } from "react";
 
 import { CumChart, LeadChart, SignedBars } from "./plus-season-charts";
-import {
-  JOURNEES,
-  LEAGUE_SIZE,
-  RATING_CODES,
-  SEASON,
-  SEASON_PEOPLE,
-  SEASON_RAW,
-  type RatingCode,
-} from "./plus-season-data";
+import { isMissing, RATING_CODES, type RatingCode } from "./plus-season-data";
+import { useDuelPeople, useSeason } from "./plus-season-context";
 import { Fig, Key, Num, PlusPanel, PlusTabs, RatingIcon, type PlusTab } from "./plus-season-ui";
 import { usePlusCopy } from "./plus-copy";
 import { ratingName, useFill, useSeasonFmt } from "./plus-season-fmt";
 
 type DuelTab = "course" | "compare" | "decisions" | "notes";
 const ID = "plus-s2d";
-const S = SEASON;
-const R = SEASON_RAW;
-const J = JOURNEES;
 
 /**
  * « Détail du duel », opened from « Votre saison »: a header shared by its four tabs (the two
@@ -27,10 +17,31 @@ const J = JOURNEES;
  * (`plus-season-data.ts`); the rival's side beyond per-journée scores is made up until lane C.
  */
 export function PlusDuelScreen({ titleRef }: { titleRef: React.Ref<HTMLHeadingElement> }) {
+  const { t } = usePlusCopy();
+  return (
+    <>
+      <p className="ps-example">{t("plus.s2.example")}</p>
+      <h1 className="plus-h ps-h1" id="plus-s2-title" tabIndex={-1} ref={titleRef}>
+        {t("plus.s2.duel_title")}
+      </h1>
+      <PlusDuelBody />
+    </>
+  );
+}
+
+/**
+ * The duel's header (the two managers, journées won, the proportion bar, the lead) and its four
+ * tabs: the part the offer's step 2 and the in-app section share. It draws the season
+ * `useSeason()` gives it, with the two managers' names from its `people` (the example's, from the
+ * dictionary, by default).
+ */
+export function PlusDuelBody() {
   const { t, f } = usePlusCopy();
   const fill = useFill();
+  const { S } = useSeason();
   const [tab, setTab] = useState<DuelTab>("course");
-  const rivalName = t("plus.s2.rival_name");
+  const people = useDuelPeople({ you: t("plus.s2.me_name"), rival: t("plus.s2.rival_name") });
+  const rivalName = people.rival.name;
   const tabs: PlusTab<DuelTab>[] = [
     { key: "course", label: t("plus.s2.tab_course") },
     { key: "compare", label: t("plus.s2.tab_compare") },
@@ -39,22 +50,20 @@ export function PlusDuelScreen({ titleRef }: { titleRef: React.Ref<HTMLHeadingEl
   ];
   return (
     <>
-      <p className="ps-example">{t("plus.s2.example")}</p>
-      <h1 className="plus-h ps-h1" id="plus-s2-title" tabIndex={-1} ref={titleRef}>
-        {t("plus.s2.duel_title")}
-      </h1>
       <section className="ps-duel-head" aria-labelledby="ps-duel-hl">
         <div className="ps-vs">
           <div className="ps-side">
             <span className="ps-av" aria-hidden>
-              {SEASON_PEOPLE.you.initials}
+              {people.you.initials}
             </span>
             <b>
-              <bdi>{t("plus.s2.me_name")}</bdi>
+              <bdi>{people.you.name}</bdi>
             </b>
-            <small>
-              <bdi dir="ltr">{SEASON_PEOPLE.you.club}</bdi>
-            </small>
+            {people.you.club ? (
+              <small>
+                <bdi dir="ltr">{people.you.club}</bdi>
+              </small>
+            ) : null}
           </div>
           <div className="ps-head-label">
             <p
@@ -76,14 +85,16 @@ export function PlusDuelScreen({ titleRef }: { titleRef: React.Ref<HTMLHeadingEl
           </div>
           <div className="ps-side r">
             <span className="ps-av s" aria-hidden>
-              {SEASON_PEOPLE.rival.initials}
+              {people.rival.initials}
             </span>
             <b>
               <bdi>{rivalName}</bdi>
             </b>
-            <small>
-              <bdi dir="ltr">{SEASON_PEOPLE.rival.club}</bdi>
-            </small>
+            {people.rival.club ? (
+              <small>
+                <bdi dir="ltr">{people.rival.club}</bdi>
+              </small>
+            ) : null}
           </div>
         </div>
         <div className="ps-split" aria-hidden>
@@ -118,26 +129,28 @@ export function PlusDuelScreen({ titleRef }: { titleRef: React.Ref<HTMLHeadingEl
 
 function CourseTab() {
   const { t, f } = usePlusCopy();
+  const { S, J } = useSeason();
   const { num, j, jAxis } = useSeasonFmt();
   const fill = useFill();
-  const rivalName = t("plus.s2.rival_name");
+  const rivalName = useDuelPeople({ you: t("plus.s2.me_name"), rival: t("plus.s2.rival_name") })
+    .rival.name;
   const firstLead = S.cumLead.findIndex((v, i) => i > 0 && v > 0 && S.cumLead[i - 1]! <= 0);
   const tiles: { label: string; value: ReactNode; sub: string; sky?: boolean }[] = [
     {
       label: t("plus.s2.t_win"),
       value: <Num value={S.bestLead} sign />,
-      sub: j(S.bestLeadWeek + 1),
+      sub: j(S.seq[S.bestLeadWeek] ?? Number.NaN),
     },
     {
       label: t("plus.s2.t_loss"),
       value: <Num value={S.worstLead} sign />,
-      sub: j(S.worstLeadWeek + 1),
+      sub: j(S.seq[S.worstLeadWeek] ?? Number.NaN),
       sky: true,
     },
     {
       label: t("plus.s2.t_peak"),
       value: <Num value={S.peakLead} sign />,
-      sub: j(S.peakLeadWeek + 1),
+      sub: j(S.seq[S.peakLeadWeek] ?? Number.NaN),
     },
     {
       label: t("plus.s2.t_streak"),
@@ -182,7 +195,7 @@ function CourseTab() {
         />
         <SignedBars
           vals={S.lead}
-          labels={S.lead.map((_, i) => (i === 0 ? jAxis(1) : String(i + 1)))}
+          labels={S.seq.map((n, i) => (i === 0 ? jAxis(n) : String(n)))}
           min={-8}
           max={9}
           ticks={[-5, 0, 5]}
@@ -194,7 +207,7 @@ function CourseTab() {
       <section className="ps-card" aria-labelledby="ps-c-turn">
         <h2 className="ps-hl" id="ps-c-turn">
           {f("plus.s2.c_turn_h", {
-            j: <bdi>{j(firstLead + 1)}</bdi>,
+            j: <bdi>{j(firstLead < 0 ? Number.NaN : (S.seq[firstLead] ?? Number.NaN))}</bdi>,
             p: <Fig>{num(S.peakLead, 0, true)}</Fig>,
           })}
         </h2>
@@ -229,7 +242,8 @@ interface RowOpts {
 function MRow({ label, a, b, o = {} }: { label: string; a: number; b: number; o?: RowOpts }) {
   const { t } = usePlusCopy();
   let w = "";
-  if (a !== b && !o.neutral) w = (o.low ? a < b : a > b) ? "l" : "r";
+  if (!isMissing(a) && !isMissing(b) && a !== b && !o.neutral)
+    w = (o.low ? a < b : a > b) ? "l" : "r";
   const side = (v: number, sub: string | undefined, c: "l" | "r") => (
     <span className={`ps-mv${w === c ? " w" : ""}`}>
       <Fig>{o.fmt ? o.fmt(v) : v}</Fig>
@@ -248,9 +262,11 @@ function MRow({ label, a, b, o = {} }: { label: string; a: number; b: number; o?
 
 function CompareTab() {
   const { t } = usePlusCopy();
+  const { S, raw: R, J } = useSeason();
   const fill = useFill();
   const { num, ord, j } = useSeasonFmt();
-  const rivalName = t("plus.s2.rival_name");
+  const people = useDuelPeople({ you: t("plus.s2.me_name"), rival: t("plus.s2.rival_name") });
+  const rivalName = people.rival.name;
   const rv = R.rival_;
   const sBest = Math.max(...R.rival);
   const sWorst = Math.min(...R.rival);
@@ -267,7 +283,7 @@ function CompareTab() {
     <>
       <div className="ps-cmp-h" aria-hidden>
         <span>
-          <bdi>{t("plus.s2.me_name")}</bdi>
+          <bdi>{people.you.name}</bdi>
         </span>
         <span />
         <span>
@@ -288,13 +304,19 @@ function CompareTab() {
             label={t("plus.s2.tile_best")}
             a={youBest}
             b={sBest}
-            o={{ sa: j(S.bestWeek + 1), sb: j(S.rivalBestWeek + 1) }}
+            o={{
+              sa: j(S.seq[S.bestWeek] ?? Number.NaN),
+              sb: j(S.seq[S.rivalBestWeek] ?? Number.NaN),
+            }}
           />
           <MRow
             label={t("plus.s2.b_worst")}
             a={youWorst}
             b={sWorst}
-            o={{ sa: j(S.worstWeek + 1), sb: j(S.rivalWorstWeek + 1) }}
+            o={{
+              sa: j(S.seq[S.worstWeek] ?? Number.NaN),
+              sb: j(S.seq[S.rivalWorstWeek] ?? Number.NaN),
+            }}
           />
           <MRow
             label={t("plus.s2.th_rank")}
@@ -385,6 +407,7 @@ interface DualRow {
 }
 
 function dualWinner(r: DualRow): "l" | "r" | "t" {
+  if (isMissing(r.a) || isMissing(r.b)) return "t";
   return r.a === r.b ? "t" : (r.low ? r.a < r.b : r.a > r.b) ? "l" : "r";
 }
 
@@ -396,7 +419,10 @@ function Dual({ row, i }: { row: DualRow; i: number }) {
     <div className={`ps-trk ${c}`}>
       <b
         className={`ps-fx ${c === "r" ? "end" : ""} ${win === c ? "win" : "lose"}`}
-        style={{ width: `${(Math.abs(v) / row.max) * 100}%`, ["--i" as string]: i }}
+        style={{
+          width: `${isMissing(v) ? 0 : (Math.abs(v) / row.max) * 100}%`,
+          ["--i" as string]: i,
+        }}
       />
     </div>
   );
@@ -423,9 +449,11 @@ function Dual({ row, i }: { row: DualRow; i: number }) {
 
 function DecisionsTab() {
   const { t, f } = usePlusCopy();
+  const { S, raw: R, J } = useSeason();
   const { num } = useSeasonFmt();
   const rv = R.rival_;
-  const rivalName = t("plus.s2.rival_name");
+  const people = useDuelPeople({ you: t("plus.s2.me_name"), rival: t("plus.s2.rival_name") });
+  const rivalName = people.rival.name;
   const youBest = Math.max(...R.you);
   const sBest = Math.max(...R.rival);
   const points: DualRow[] = [
@@ -501,6 +529,7 @@ function DecisionsTab() {
 
 function NotesTab() {
   const { t, f } = usePlusCopy();
+  const { S, raw: R, leagueSize } = useSeason();
   const { rankOf } = useSeasonFmt();
   const rows: { code: RatingCode | "OVR"; a: number; b: number }[] = [
     { code: "OVR", a: S.ovr, b: S.rivalOvr },
@@ -522,7 +551,7 @@ function NotesTab() {
                   <span className="n">
                     <Num value={row.a} />
                   </span>
-                  <small>{rankOf(ra, LEAGUE_SIZE)}</small>
+                  <small>{rankOf(ra, leagueSize)}</small>
                 </div>
                 <div className="mid">
                   {row.code === "OVR" ? null : <RatingIcon code={row.code} size={24} />}
@@ -532,7 +561,7 @@ function NotesTab() {
                   <span className="n">
                     <Num value={row.b} />
                   </span>
-                  <small>{rankOf(rb, LEAGUE_SIZE)}</small>
+                  <small>{rankOf(rb, leagueSize)}</small>
                 </div>
               </li>
             );

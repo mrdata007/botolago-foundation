@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useCallback,
   useEffect,
   useLayoutEffect,
@@ -13,8 +14,8 @@ import {
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 
-import { shouldCountUp, useSeasonFmt } from "./plus-season-fmt";
-import { type RatingCode } from "./plus-season-data";
+import { DASH, shouldCountUp, useSeasonFmt } from "./plus-season-fmt";
+import { isMissing, type RatingCode } from "./plus-season-data";
 
 import "./plus-season.css";
 
@@ -67,6 +68,7 @@ export function Num({
   numRef.current = num;
   useIsoLayoutEffect(() => {
     if (
+      isMissing(value) ||
       !shouldCountUp({ hydrating: painted.current === true, reducedMotion: prefersReducedMotion() })
     ) {
       setText(final);
@@ -99,9 +101,18 @@ export function Num({
 export function Fig({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <bdi dir="ltr" className={`ps-num${className ? ` ${className}` : ""}`}>
-      {children}
+      {showable(children)}
     </bdi>
   );
+}
+
+/** A missing figure (`NaN`, alone or inside a built string) is written as a dash, never as "NaN". */
+function showable(node: ReactNode): ReactNode {
+  if (typeof node === "number") return isMissing(node) ? DASH : node;
+  if (typeof node === "string") return node.replace(/NaN/g, DASH);
+  if (Array.isArray(node))
+    return node.map((child, i) => <Fragment key={i}>{showable(child)}</Fragment>);
+  return node;
 }
 
 export interface PlusTab<K extends string> {

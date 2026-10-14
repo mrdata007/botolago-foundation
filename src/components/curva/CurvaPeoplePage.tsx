@@ -252,6 +252,9 @@ function PeopleBody({ card }: { card: MyCardDto }): JSX.Element {
         }}
         mine={card}
         row={open}
+        mineRow={rows.find((candidate) => candidate.own) ?? null}
+        leagueSize={rows.length}
+        leagueId={people.league?.id ?? null}
       />
     </div>
   );
