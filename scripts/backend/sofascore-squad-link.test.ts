@@ -28,6 +28,12 @@ describe("the queries", () => {
     expect(membersSql(SEASON, true)).toContain("p.display_name");
     expect(membersSql(SEASON, false)).not.toContain("p.display_name");
   });
+  test("an id that is a second SofaScore id of a player counts as linked", () => {
+    expect(mappedIdsSql()).toContain("from app_private.football_provider_mappings");
+    expect(mappedIdsSql()).toContain(
+      "select sofascore_player_id from app_private.sofascore_player_aliases",
+    );
+  });
   test("a season id that is not a uuid is refused", () => {
     expect(() => membersSql("x'; drop table y; --", false)).toThrow(/squad_link_invalid/);
   });
