@@ -296,9 +296,12 @@ app.card_history_visibility;`) and compare after. The account erasure removes
 Migration `20261014150000_premium_card_league_context.sql`, applied by
 `scripts/backend/apply-20261014150000-premium-card-league-context.sql` **after**
 the premium card reads. It adds one api function and two helpers, no table, no
-column, no job and no row, and replaces nothing. **It is not a writer**: it is
-`STABLE`, reads only, and needs no pause, no entry in `AGENTS.md` and no
-baseline read before it is applied or called.
+column, no job and no row, and replaces nothing. Calling the function writes
+nothing: it is `STABLE` and read-only, so it needs no entry in `AGENTS.md`.
+**Applying the migration is a database write**, the rollback-only rehearsal
+included: it creates functions, changes grants and records the migration. Follow
+`AGENTS.md`, "One writer at a time, per database": check that nothing else is
+writing, take a baseline read immediately before, and compare immediately after.
 
 | Function                                                                       | Who     | Answers                                                                                                                                                                                   |
 | ------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -526,6 +526,10 @@ begin
     order by l.member_count desc, l.id
     limit 1;
     if v_league is null then
+      -- A rival is a member of the chosen league; with no league there is none to name.
+      if p_rival_team is not null then
+        raise exception using errcode = 'PT404', message = 'card_duel_not_found';
+      end if;
       return jsonb_build_object(
         'available', true, 'locked', false,
         'season', case when v_season is not null then jsonb_build_object(
@@ -575,7 +579,7 @@ declare
   );
 begin
   if encode(sha256(convert_to(part_20261014150000, 'UTF8')), 'hex')
-    is distinct from 'ebbc6293a12eeb454a0413795794d8c1c820346b9af6d26998c79f04a4ab9763' then
+    is distinct from '2779e5900ed27c4c57c1d66295cebf75702d58867d2224c80acea9620a408ccb' then
     raise exception 'stop: 20261014150000 is not the repository file byte for byte -- was this script cut short or changed?';
   end if;
 

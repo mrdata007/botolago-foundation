@@ -381,6 +381,10 @@ begin
     order by l.member_count desc, l.id
     limit 1;
     if v_league is null then
+      -- A rival is a member of the chosen league; with no league there is none to name.
+      if p_rival_team is not null then
+        raise exception using errcode = 'PT404', message = 'card_duel_not_found';
+      end if;
       return jsonb_build_object(
         'available', true, 'locked', false,
         'season', case when v_season is not null then jsonb_build_object(

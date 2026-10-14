@@ -22,7 +22,7 @@
 --          L4 private S0 (A, F)  L5 private S1 (A, B, C, F, G), added here
 -- S2 and a league of 20 (managers 1 to 20, the caller is 7) are added at the end.
 begin;
-select extensions.plan(54);
+select extensions.plan(55);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('bc0e0000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -690,6 +690,10 @@ select extensions.is(pg_temp.ctx(pg_temp.usr('G'), null, '2088/89'),
   jsonb_build_object('available', true, 'locked', false,
     'season', jsonb_build_object('id', pg_temp.id(9), 'label', '2088/89'), 'league', null),
   'a member with no private league that season gets league null: an empty state, not an error');
+select extensions.is(
+  pg_temp.ctx(pg_temp.usr('G'), null, '2088/89', '00000000-0000-4000-8000-00000000beef'::uuid) ->> '__error',
+  'PT404 card_duel_not_found',
+  'with no league that season, any rival asked for is PT404 card_duel_not_found, not the empty state');
 select extensions.is(
   jsonb_build_array(pg_temp.ctx(pg_temp.usr('A'), null, '2077/78') ->> '__error', pg_temp.ctx(pg_temp.usr('G')) #>> '{league,id}'),
   jsonb_build_array('PT404 card_season_not_found', pg_temp.id(705)::text),
