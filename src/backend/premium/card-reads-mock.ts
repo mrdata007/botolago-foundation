@@ -1,9 +1,11 @@
 import type { RepositoryContext } from "@/backend/contracts/repository";
+import { CARD_EDITIONS } from "@/backend/manager-card/contracts";
 
 import type {
   CareerMember,
   CareerResponse,
   CareerWeek,
+  ChooseDesignResponse,
   DuelMember,
   DuelResponse,
   DuelWeek,
@@ -16,10 +18,12 @@ import type {
  * only through the dynamic import in `src/services/premium-card-reads.ts` behind
  * `import.meta.env.DEV`, so a production build carries none of it. Eleven journées of a made-up
  * manager; the league mate's side is a made-up rival with a visible history. The ids are made up.
+ * The duel's cards carry no name, so the screen writes the names of the two managers the sheet
+ * opened (the duel shown is the duel opened).
  */
 
-const SCORES = [52, 58, 44, 56, 63, 48, 60, 55, 71, 47, 62];
-const RIVAL = [49, 61, 40, 50, 66, 45, 57, 59, 64, 53, 58];
+const SCORES = [52, 58, 44, 56, 63, 44, 60, 55, 71, 47, 62];
+const RIVAL = [49, 61, 40, 50, 66, 41, 57, 59, 64, 53, 58];
 const CAPTAIN = [8, 10, 6, 12, 14, 5, 11, 9, 20, 4, 12];
 const BEST_STARTER = [12, 10, 13, 12, 14, 9, 15, 9, 20, 11, 12];
 const CAP = [62, 66, 64, 69, 71, 70, 73, 74, 76, 77, 78];
@@ -140,8 +144,8 @@ export function mockDuel(otherTeamId: string): DuelMember {
     locked: false,
     season: SEASON,
     seasons: [{ seasonId: SEASON.id, label: SEASON.label }],
-    me: { teamId: `${ZERO}01`, card: card("Karim B.", `${ZERO}01`) },
-    opponent: { teamId: otherTeamId, card: card("Sami", otherTeamId), historyVisible: true },
+    me: { teamId: `${ZERO}01`, card: card("", `${ZERO}01`) },
+    opponent: { teamId: otherTeamId, card: card("", otherTeamId), historyVisible: true },
     weeks: duelWeeks,
     summary: {
       played: duelWeeks.length,
@@ -174,5 +178,11 @@ export class MockPremiumCardReadsRepository implements PremiumCardReadsRepositor
   }
   async historyVisibility(_context: RepositoryContext): Promise<HistoryVisibilityResponse> {
     return { available: true, visible: true };
+  }
+  async chooseCardDesign(code: string, _context: RepositoryContext): Promise<ChooseDesignResponse> {
+    const edition = (CARD_EDITIONS as readonly string[]).includes(code)
+      ? (code as (typeof CARD_EDITIONS)[number])
+      : "standard";
+    return { available: true, chosenEdition: edition, edition };
   }
 }

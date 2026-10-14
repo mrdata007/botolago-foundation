@@ -72,11 +72,11 @@ describe("« Votre saison » for a member, with the league context", () => {
     expect(html).toContain("pl-skeleton");
   });
 
-  it("with no league to name, draws the career with dashes, not an error", async () => {
+  it("with no league to name, draws the career without the league, with no dash and no error", async () => {
     const html = await render(<PlusSeasonSection access="member" leagueId={null} />, seeded(false));
     expect(html).not.toContain("pl-skeleton");
     expect(html.match(/role="tab"/g)).toHaveLength(4);
-    expect(text(html)).toContain("—");
+    expect(text(html)).not.toContain("—");
     expect(html).not.toContain("NaN");
   });
 
