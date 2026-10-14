@@ -19,7 +19,7 @@ import { authService } from "@/services/auth";
  *     nothing, rather than a made-up membership.
  *
  * TODO(lane B): replace `OFF_REPOSITORY` with a `SupabasePremiumRepository` that calls the two
- * functions and parses them with `premiumStatusSchema` / `myPremiumSchema`.
+ * functions and parses them with `premiumStatusWireSchema` / `myPremiumSchema`.
  */
 export const OFF_REPOSITORY: PremiumRepository = {
   status: async () => PREMIUM_STATUS_OFF,

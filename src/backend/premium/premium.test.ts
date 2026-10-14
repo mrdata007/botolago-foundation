@@ -11,6 +11,7 @@ import {
   myPremiumSchema,
   premiumPriceSchema,
   premiumStatusSchema,
+  premiumStatusWireSchema,
 } from "./contracts";
 import {
   MockPremiumRepository,
@@ -30,6 +31,33 @@ describe("contracts", () => {
       ["plus_yearly", 200, 12, false],
     ]);
     for (const price of LAUNCH_PRICES) expect(premiumPriceSchema.parse(price)).toEqual(price);
+  });
+  it("convert the server's centimes to the dirhams the screens show", () => {
+    const wire = {
+      enabled: true,
+      checkoutEnabled: false,
+      prices: [
+        { code: "plus_monthly", periodMonths: 1, renews: true, priceMinor: 2000, currency: "MAD" },
+        {
+          code: "plus_yearly",
+          periodMonths: 12,
+          renews: false,
+          priceMinor: 20000,
+          currency: "MAD",
+        },
+      ],
+      savingMinor: 4000,
+      editions: [],
+    };
+    expect(premiumStatusWireSchema.parse(wire)).toEqual({
+      enabled: true,
+      checkoutEnabled: false,
+      prices: [...LAUNCH_PRICES],
+    });
+    const offWire = { ...PREMIUM_STATUS_OFF, savingMinor: null, editions: [] };
+    expect(premiumStatusWireSchema.parse(offWire)).toEqual(PREMIUM_STATUS_OFF);
+    const halfDirham = { ...wire, prices: [{ ...wire.prices[0], priceMinor: 2050 }] };
+    expect(() => premiumStatusWireSchema.parse(halfDirham)).toThrow();
   });
   it("read « switched off » as an answer, not an error", () => {
     expect(premiumStatusSchema.parse(PREMIUM_STATUS_OFF)).toEqual(PREMIUM_STATUS_OFF);

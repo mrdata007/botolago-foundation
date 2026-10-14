@@ -47,7 +47,8 @@ function statusText(t: (key: TranslationKey) => string, state: string): string {
 export function PlusProfileSection() {
   const premium = usePremium();
   const { t, f, text, lang } = usePlusCopy();
-  const receipts = usePremiumReceipts(premium.isMember);
+  // Former members keep their receipts, so the list does not wait on a live membership.
+  const receipts = usePremiumReceipts(premium.ready && premium.enabled);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   if (premium.ready && !premium.enabled) return null;

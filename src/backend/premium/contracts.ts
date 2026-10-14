@@ -60,6 +60,35 @@ export const premiumStatusSchema = z.object({
 });
 export type PremiumStatus = z.infer<typeof premiumStatusSchema>;
 
+/**
+ * One price as `api.premium_status()` sends it: centimes and a currency
+ * (`supabase/migrations/20261013100200_premium_api.sql`). Only whole dirhams convert; anything
+ * else fails to parse rather than showing a rounded price.
+ */
+const premiumPriceWireSchema = z
+  .object({
+    code: z.enum(PREMIUM_PRODUCT_CODES),
+    periodMonths: z.number().int().positive(),
+    renews: z.boolean(),
+    priceMinor: z.number().int().positive().multipleOf(100),
+    currency: z.literal("MAD"),
+  })
+  .transform(({ code, periodMonths, renews, priceMinor }) => ({
+    code,
+    amountMad: priceMinor / 100,
+    periodMonths,
+    renews,
+  }));
+
+/** The raw `api.premium_status()` answer, converted to `PremiumStatus`. */
+export const premiumStatusWireSchema = z
+  .object({
+    enabled: z.boolean(),
+    checkoutEnabled: z.boolean(),
+    prices: z.array(premiumPriceWireSchema),
+  })
+  .pipe(premiumStatusSchema);
+
 /** `api.get_my_premium()`: signed in. `{ available: false }` while the feature is off. */
 export const myPremiumSchema = z.discriminatedUnion("available", [
   z.object({ available: z.literal(false) }),
