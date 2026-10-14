@@ -12,7 +12,7 @@
  * rasterised pixels.
  */
 import type { CardPalette } from "../renderer";
-import type { TierCode } from "../types";
+import type { CardEdition, TierCode } from "../types";
 
 export type MetalKey = "base" | TierCode;
 export const METAL_KEYS = ["base", "homa", "stade", "pro", "champion", "legend"] as const;
@@ -57,6 +57,17 @@ export interface Metal {
   label: string;
   word: string;
   beam: string;
+  /* Paid editions only (see `EDITION_METAL`); a tier's metal sets none of these. */
+  /** The frame as CSS where it is not the linear sweep of `frame` (checker, gloss band). */
+  frameBg?: string;
+  /** The face's ground pattern, over the pinstripe's place (a grid, marble veins). */
+  pin?: string;
+  /** The glow behind the card, as a CSS background. */
+  aura?: string;
+  /** Two-tone checker bezel (pixel): the squares' colours. */
+  checker?: readonly [string, string];
+  /** A thick bezel: the face is cut smaller (chrome). */
+  thick?: true;
 }
 
 const linear = (deg: number, stops: readonly string[]): string =>
@@ -249,11 +260,146 @@ export const METAL: Readonly<Record<MetalKey, Metal>> = {
   },
 };
 
+/**
+ * The four paid finishes (BotolaGO+), after the owner's sketch. A paid edition replaces the tier's
+ * metal on the frame, the face and the autograph's ink; the rating, the tier word and the layout
+ * stay the card's. Same shape as a tier's metal, so every drawing (the card, the token, the share
+ * art) reads it the same way. The holo edition is green, cyan and blue only: violet and pink are
+ * LEGEND's.
+ */
+export type PaidEdition = Exclude<CardEdition, "standard">;
+export const PAID_EDITIONS = ["holo", "electric", "pixel", "chrome"] as const;
+
+export const EDITION_METAL: Readonly<Record<PaidEdition, Metal>> = {
+  // deep teal ocean body, an iridescent wedge, a hue-turning chrome bezel; the live prism is CSS
+  holo: {
+    ...METAL.champion,
+    aura: "conic-gradient(from var(--sh-hue, 0deg), #3ee08a, #36c9f0, #5b7cff, #36c9f0, #3ee08a)",
+  },
+  electric: {
+    dark: true,
+    faceStops: ["#050a07", "#0b1710", "#14261c"],
+    faceGlow:
+      "radial-gradient(60% 36% at 80% 12%, rgba(40, 150, 90, 0.5), transparent), radial-gradient(60% 30% at 15% 62%, rgba(62, 224, 138, 0.1), transparent)",
+    frame: ["#0d1a12", "#3a7a58", "#050807", "#7dffbd", "#0f2418", "#3a7a58", "#7dffbd"],
+    ink: "#c4ffe0",
+    ink2: "#a9f0c9",
+    line: "#7dffbd",
+    bandline: "rgba(125, 255, 189, 0.5)",
+    rib: "linear-gradient(100deg, transparent 24%, rgba(62, 224, 138, 0.14) 40%, rgba(62, 224, 138, 0.34) 47%, rgba(62, 224, 138, 0.06) 53%, transparent 62%, rgba(62, 224, 138, 0.2) 68%, transparent 74%)",
+    wedge:
+      "linear-gradient(135deg, rgba(190, 255, 220, 0.55), rgba(62, 224, 138, 0.5) 45%, rgba(10, 60, 36, 0.4))",
+    sig: ["#f3fff8", "#9dffcb", "#3ee08a", "#c8fff0", "#5fe3d1", "#f3fff8", "#7dffbd", "#effff6"],
+    sigSolid: "#9dffcb",
+    sigShadow:
+      "drop-shadow(0 0 0.06em rgba(125, 255, 189, 0.9)) drop-shadow(0 0 0.22em rgba(62, 224, 138, 0.6))",
+    num: ["#ffffff", "#d9ffea", "#7dffbd"],
+    emb: "#06100a",
+    embLine: "#7dffbd",
+    chip: "#06100a",
+    chipLine: "#7dffbd",
+    holo: null,
+    plate: "#050a07",
+    deep: "#0b1710",
+    glow: "#3ee08a",
+    light: "#9dffcb",
+    label: "#8fe9b9",
+    word: "#d7ffe9",
+    beam: "#7dffbd",
+    pin: "repeating-linear-gradient(45deg, rgba(95, 227, 161, 0.07) 0 1px, transparent 1px 3px)",
+    aura: "radial-gradient(closest-side, #3ee08a, transparent)",
+  },
+  pixel: {
+    dark: true,
+    faceStops: ["#14264a", "#0d1830", "#0a111e"],
+    faceGlow:
+      "radial-gradient(60% 36% at 78% 14%, rgba(40, 110, 170, 0.5), transparent), radial-gradient(60% 30% at 15% 62%, rgba(40, 90, 150, 0.2), transparent)",
+    frame: ["#7dd3fc", "#86efac", "#7dd3fc", "#86efac", "#7dd3fc", "#86efac", "#7dd3fc"],
+    ink: "#f2f9ff",
+    ink2: "#d3e6f6",
+    line: "#86efac",
+    bandline: "rgba(134, 239, 172, 0.55)",
+    rib: "linear-gradient(100deg, transparent 30%, rgba(125, 211, 252, 0.16) 46%, rgba(134, 239, 172, 0.14) 56%, transparent 70%)",
+    wedge:
+      "linear-gradient(135deg, rgba(224, 242, 254, 0.5), rgba(125, 211, 252, 0.42) 50%, rgba(134, 239, 172, 0.4))",
+    sig: ["#f0f9ff", "#7dd3fc", "#86efac", "#e0f2fe", "#38bdf8", "#bbf7d0", "#f0f9ff", "#7dd3fc"],
+    sigSolid: "#a5e1fb",
+    sigShadow:
+      "drop-shadow(0.05em 0.05em 0 #0b111e) drop-shadow(0 0 0.1em rgba(125, 211, 252, 0.45))",
+    num: ["#f0f9ff", "#bfe9fb", "#86efac"],
+    emb: "#0a1426",
+    embLine: "#86efac",
+    chip: "#0a1426",
+    chipLine: "#7dd3fc",
+    holo: null,
+    plate: "#0a111e",
+    deep: "#14264a",
+    glow: "#7dd3fc",
+    light: "#bfe9fb",
+    label: "#9fd4ef",
+    word: "#e0f2fe",
+    beam: "#7dd3fc",
+    checker: ["#7dd3fc", "#86efac"],
+    frameBg: "repeating-conic-gradient(#7dd3fc 0 25%, #86efac 0 50%) 0 0 / 3.4cqw 3.4cqw",
+    pin: "linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px) 0 0 / 100% 2cqw, linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px) 0 0 / 2cqw 100%",
+    aura: "linear-gradient(135deg, #7dd3fc, #86efac)",
+  },
+  chrome: {
+    dark: false,
+    faceStops: ["#f6f7f8", "#dde0e5", "#f1f2f4", "#cdd2d8"],
+    faceGlow:
+      "radial-gradient(60% 34% at 20% 64%, rgba(255, 255, 255, 0.5), transparent), radial-gradient(70% 40% at 80% 12%, rgba(255, 255, 255, 0.35), transparent)",
+    frame: ["#f2f4f7", "#8b929b", "#2a2e35", "#c9ced4", "#3b4049", "#e3e6ea", "#8b929b"],
+    ink: "#2b2f36",
+    ink2: "#3d434c",
+    line: "#9aa3ad",
+    bandline: "rgba(255, 255, 255, 0.95)",
+    rib: "transparent",
+    wedge: "linear-gradient(135deg, #f7f8fa 0%, #aab1ba 34%, #eef0f3 52%, #7d858f 100%)",
+    sig: ["#5a3e0e", "#a67f2c", "#e2c574", "#7a5718", "#2f7f8c", "#b8913c", "#e8cf86", "#3f6fb0"],
+    sigSolid: "#7a5718",
+    sigShadow:
+      "drop-shadow(0 0.025em 0 rgba(255, 255, 255, 0.9)) drop-shadow(0 0.04em 0.05em rgba(60, 40, 0, 0.35))",
+    num: ["#4a505a", "#2b2f36", "#5a616c"],
+    emb: "#eceef0",
+    embLine: "#2b2f36",
+    chip: "#eceef0",
+    chipLine: "#2b2f36",
+    holo: null,
+    plate: "#1b1f26",
+    deep: "#3a414b",
+    glow: "#c9ced4",
+    light: "#f2f4f7",
+    label: "#c2c9d2",
+    word: "#f4f6f8",
+    beam: "#e3e6ea",
+    thick: true,
+    // a gloss band (`--sh-sw`, swept by the stylesheet) over a polished gunmetal bezel
+    frameBg:
+      "linear-gradient(105deg, transparent calc(var(--sh-sw, -30%) - 10%), rgb(255 255 255 / 0.9) var(--sh-sw, -30%), transparent calc(var(--sh-sw, -30%) + 10%)), linear-gradient(180deg, #f2f4f7 0%, #8b929b 18%, #2a2e35 40%, #c9ced4 55%, #3b4049 75%, #e3e6ea 100%)",
+    pin: "linear-gradient(112deg, transparent 31.6%, rgb(110 118 130 / 0.38) 31.8%, transparent 32.3%), linear-gradient(64deg, transparent 58.4%, rgb(110 118 130 / 0.3) 58.6%, transparent 59.1%), linear-gradient(98deg, transparent 12.6%, rgb(110 118 130 / 0.26) 12.8%, transparent 13.2%), repeating-linear-gradient(45deg, rgb(255 255 255 / 0.12) 0 1px, transparent 1px 3px)",
+    aura: "linear-gradient(180deg, #9aa3ad, #2a2e35)",
+  },
+};
+
+/** The paid edition a profile asks for, or null: absent, `standard` or unknown draw the free card. */
+export function paidEdition(edition: unknown): PaidEdition | null {
+  return typeof edition === "string" && Object.hasOwn(EDITION_METAL, edition)
+    ? (edition as PaidEdition)
+    : null;
+}
+
+/** The metal a card is drawn in: its edition's if it is paid, else the earned tier's. */
+export const metalFor = (key: MetalKey, edition: PaidEdition | null): Metal =>
+  edition ? EDITION_METAL[edition] : METAL[key];
+
 /** The frame as CSS: a linear sweep of the metal, a turning prism on the holographic tiers. */
 export function frameCss(m: Metal): string {
+  if (m.frameBg) return m.frameBg;
   if (m.holo) {
-    // the prism turns with the light (`--mc-ax`, written by the tilt; 0 at rest)
-    return `conic-gradient(from calc(200deg + var(--mc-ax, 0) * 70deg) at 50% 45%, ${[...m.frame].join(", ")})`;
+    // the prism turns with the light (`--mc-ax`, written by the tilt; 0 at rest), and drifts on its own
+    // on a paid edition (`--sh-hue`, animated on the frame layer; 0 anywhere else)
+    return `conic-gradient(from calc(200deg + var(--mc-ax, 0) * 70deg + var(--sh-hue, 0deg)) at 50% 45%, ${[...m.frame].join(", ")})`;
   }
   return linear(160, m.frame);
 }
@@ -288,6 +434,8 @@ export function cssVars(m: Metal): string {
     ["--sh-chip-line", m.chipLine],
     ["--sh-glow", m.glow],
   ];
+  if (m.pin) vars.push(["--sh-pin", m.pin]);
+  if (m.aura) vars.push(["--sh-aura", m.aura]);
   if (m.holo) vars.push(["--sh-holo", linear(115, [...m.holo, ...m.holo.slice(1)])]);
   return vars.map(([k, val]) => `${k}:${val}`).join(";");
 }
