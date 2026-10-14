@@ -291,6 +291,104 @@ app.card_history_visibility;`) and compare after. The account erasure removes
 - Lanes that change `api.get_manager_cards`, the card tables or the Fantasy
   results contract should rerun `premium_card_reads.test.sql`.
 
+## Premium league context: the figures behind the member analytics
+
+Migration `20261014150000_premium_card_league_context.sql`, applied by
+`scripts/backend/apply-20261014150000-premium-card-league-context.sql` **after**
+the premium card reads. It adds one api function and two helpers, no table, no
+column, no job and no row, and replaces nothing. Calling the function writes
+nothing: it is `STABLE` and read-only, so it needs no entry in `AGENTS.md`.
+**Applying the migration is a database write**, the rollback-only rehearsal
+included: it creates functions, changes grants and records the migration. Follow
+`AGENTS.md`, "One writer at a time, per database": check that nothing else is
+writing, take a baseline read immediately before, and compare immediately after.
+
+| Function                                                                       | Who     | Answers                                                                                                                                                                                   |
+| ------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api.get_card_league_context(p_league uuid, p_season text, p_rival_team uuid)` | Members | The caller (and a rival) against one private league: per journée the league average and best score, the caller's rank and movement, captain and ratings averages; season totals and ranks |
+
+**Why a new function and not more keys on the career and the duel.** Those two
+are shipped, their key sets are asserted key for key by pgTAP and by the zod
+contracts, and an applied migration is never edited. Replacing them to add keys
+would make every career and duel read pay for league arithmetic over every member
+and would tie a league-less career to a league choice. The league figures have
+their own parameter, cost and failure, so they have their own function; the
+career and duel contracts did not change.
+
+**What it returns** (all computed from stored data, nothing is a second rating):
+
+- per played journée: how many scored, the league average and best score, the
+  caller's score, rank after the journée (competition rank on the cumulative final
+  score: tied managers share the rank) and movement (places gained, positive is
+  up), the effective captain's points (league average and the caller's), and for
+  CAP, SEL, TRF, CON and OVR the league average, how many are rated and the
+  caller's value and rank as of that journée;
+- the season: managers ranked, the league's average total, the leader's total, the
+  caller's total and rank; the league's average captain points over the season;
+  the league's average net transfer gain (`leagueAverage` over managers with a
+  counted transfer, `leagueAverageAll` over every ranked manager); today's ratings
+  (league average, rated count, the caller's value and rank);
+- `me`: the caller's own captain total, transfers (`net`, `gross`, `hitsPaid`,
+  `transfers`, `counted`) and ratings with ranks; `rival` the same for a rival.
+
+Captain points and transfer gains come from the card's own helpers
+(`card_captain_rows`, `card_transfer_rows`, `card_week_rows`), so they follow the
+card's CAP and TRF definitions and the active rules row; `premium_card_reads.test.sql`
+and `premium_card_league_context.test.sql` are the alarm if the card's rules
+change. The per-journée ratings history exists: `app.manager_card_gameweeks` keeps
+every manager's figures as of each evaluated gameweek (null before the rules'
+`minimum_gameweeks`).
+
+**Which league.** A manager can be in several private leagues. The screen passes
+`p_league` (the Curva page keeps the league on the device, which the database
+cannot see). It must be an active private league the caller is an active member
+of, else `PT404 card_league_not_found`, the same for an unknown, a public and a
+foreign league. Without `p_league`: the caller's active private league of the
+season (`p_season`, default the current one) with the most members, then the
+lowest id, which is the first league the leagues list shows
+(`api.fantasy_leagues` orders `member_count desc, id`). A member with no private
+league that season gets `{"league": null}`, an empty state and not an error.
+
+**Who is counted.** Active members whose team is active and whose profile is not
+deleted-pending, members of BotolaGO+ or not (membership never changes a rank).
+Only evaluable gameweeks (finalized or corrected, points final, post-work
+complete), as in the career and the duel.
+
+**The rival and privacy.** `p_rival_team` must be another active member of the
+chosen league, else `PT404 card_duel_not_found`. Always: their total, rank and
+today's ratings with ranks (the standings and the batch card read already show
+these to league mates). Only if **they** switched `app.card_history_visibility`
+on (`rival.historyVisible`): their week-by-week scores, ranks, captain points,
+transfers and rating history. Hidden, those keys are `null`.
+
+**Small leagues.** Captain averages, transfer averages and the per-journée
+ratings averages and ranks are `null` when fewer than three managers contribute
+(`minGroup`), because the standings do not already show those figures; scores and
+points ranks are not gated (the standings publish them). The counts
+(`contributors`, `rated`) are always given. **Open question for the owner and the
+lawyer (plan Q6):** the per-journée rating history averages include every league
+member whether or not they switched their own history on, since an average of
+three or more is not anyone's history. If that is not acceptable, the rule is one
+line in `app_private.card_league_context`; say so before this is switched on.
+
+**Cost.** One call runs the card's per-manager helpers once for each league
+member. A league of 20 over 11 journées measured in the pgTAP test (about 0.2 s on
+a local PGlite; the test fails above 5 s). Measure a large real league on staging
+before switching on, as for the card tick.
+
+**Applying.** Same two steps as the premium card reads (rehearsal, then `'apply'`
+in the `bg.league_context_mode` line). The script refuses unless 20261013100400
+is recorded, and checks that the career, duel, switch and card helpers are
+unchanged and that no table or job was added. Re-read after the rehearsal:
+`select to_regprocedure('api.get_card_league_context(uuid,text,uuid)') is null;`
+must say `true`. It is rebuilt by
+`bun scripts/backend/build-apply-premium-card-league-context.ts` and
+`apply-premium-card-league-context-script.test.ts` fails if they drift.
+
+**Rolling back.** Not expected: a forward migration that drops the function and
+the two helpers; nothing depends on them. Switching BotolaGO+ off already hides
+the read.
+
 ## Account deletion
 
 `app_private.account_deletion_erase` now:
