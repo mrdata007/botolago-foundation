@@ -5,6 +5,20 @@ with a full-time score panel, and a dramatic match-preview poster. The requested
 destinations are Home Stories and match-article covers. Faces, kits, crests,
 scores **and lettering** must be the same. BotolaGO's branding may change.
 
+The owner clarified that the desired workflow reuses the original photo, removes
+the publisher's watermark where authorized, and adds BotolaGO branding. It does
+not recreate the photograph with an image model. Public posting or the absence
+of a visible copyright notice is not evidence of that authorization. The current
+ElBotola permission record covers remote hero-image display, not downloading,
+rebranding or watermark removal on Instagram artwork. The scope of any separate
+photo-reuse agreement still needs to be confirmed before approving those inputs.
+
+Watermark cleanup must be limited to an explicitly reviewed unprotected region.
+If a watermark covers a face, kit, crest, score or required lettering, obtain a
+clean original: inpainting covered pixels cannot guarantee the identical details
+required here. The current implementation preserves protected pixels and accepts
+a prepared branding/cleanup layer; automatic watermark removal is not connected.
+
 ## What the implementation guarantees
 
 Match artwork has a separate protected-pixel path. It never asks an image model
