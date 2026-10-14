@@ -853,7 +853,7 @@ export const fr = {
   "fantasy.create.guest_unsaved":
     "Cet appareil ne peut pas garder votre brouillon : votre équipe n’existe que tant que cette page reste ouverte. Rechargée ou fermée, la composition serait perdue.",
   "fantasy.create.sign_in_reason_unsaved":
-    "Créez un compte gratuit ou connectez-vous pour enregistrer votre équipe. Cet appareil ne garde pas votre brouillon : ne rechargez pas la page pendant l’inscription, et évitez la connexion Google, qui quitte la page.",
+    "Créez un compte gratuit ou connectez-vous pour enregistrer votre équipe. Cet appareil ne garde pas votre brouillon : ne rechargez pas la page pendant l’inscription, n’ouvrez pas le lien de confirmation par e-mail dans un autre onglet, et évitez la connexion Google, qui quitte la page.",
   "fantasy.validation.squad_size": "L'équipe doit compter 15 joueurs.",
   "fantasy.validation.position_count": "Composition invalide par poste.",
   "fantasy.validation.club_limit": "Trop de joueurs d'un même club (max 3).",

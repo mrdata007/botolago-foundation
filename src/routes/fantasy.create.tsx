@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { track } from "@/lib/analytics";
+import { attachLeaveWarning } from "@/lib/leave-warning";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { showStepUpNotice } from "@/auth/step-up-notice";
@@ -205,12 +206,7 @@ function CreateTeamBody() {
     deviceKeepsDraft,
     filled: summary.filled,
   });
-  useEffect(() => {
-    if (!draftAtRisk) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [draftAtRisk]);
+  useEffect(() => attachLeaveWarning(window, draftAtRisk), [draftAtRisk]);
   const validation = useMemo(() => validateDraft(draft, players), [draft, players]);
   const formRef = useRef<HTMLFormElement>(null);
   const resumedOnName = useRef(false);

@@ -5,13 +5,16 @@ import type { MatchVoteInput, MatchVotesDto } from "@/backend/predictions/contra
 import type { GuestVotesState } from "@/backend/predictions/guest-votes";
 import type { ClaimGuestPredictionsDto, ClaimStatus } from "@/backend/predictions/contracts";
 import {
+  emptyGuestStore,
   GuestPredictionStore,
   type GuestPrediction,
   type KeyValueStorage,
 } from "@/backend/predictions/guest-store";
 import {
+  claimHeldFixtures,
   claimRetryable,
   claimStatusFor,
+  staleAfterImport,
   createGuestClaimController,
   sendGuestVotesOnSignIn,
   type GuestClaimServices,
@@ -161,6 +164,7 @@ function claimPhone(replies: Reply[], initialAccount: string | null = "A") {
       return reply;
     },
     apply: (result) => void store.applyClaim(result.results),
+    now: () => 1_000,
     report: (summary) => void reports.push(summary),
     schedule: (run, ms) => {
       const wait = { ms, fire: run, cancelled: false };
@@ -357,5 +361,80 @@ describe("a failed guest import is visible, bounded and retryable (QA-05)", () =
     expect(claimStatusFor(failed, "A")).toBe(failed);
     expect(claimStatusFor(failed, "B")).toEqual({ phase: "idle" });
     expect(claimStatusFor(failed, null)).toEqual({ phase: "idle" });
+  });
+});
+
+describe("what the guest import holds back on screen (review)", () => {
+  const guestState = (ids: string[], notCounted: string[] = []) => ({
+    ...emptyGuestStore(SEASON),
+    predictions: Object.fromEntries(ids.map((id, i) => [id, guestPick(i + 1)])),
+    notCounted,
+  });
+  const failed = {
+    phase: "failed",
+    owner: "A",
+    remaining: 2,
+    code: "network",
+    retrying: false,
+  } as const;
+  const pending = { phase: "pending", owner: "A", attempt: 1, remaining: 2 } as const;
+
+  test("while pending or failed, the phone's importable picks are held; started ones are not", () => {
+    const state = guestState([fx(1), fx(2)], [fx(2)]);
+    expect([...claimHeldFixtures(pending, state)]).toEqual([fx(1)]);
+    expect([...claimHeldFixtures(failed, state)]).toEqual([fx(1)]);
+  });
+
+  test("nothing is held when idle or done", () => {
+    const state = guestState([fx(1)]);
+    expect(claimHeldFixtures({ phase: "idle" }, state).size).toBe(0);
+    const done = {
+      phase: "done",
+      owner: "A",
+      imported: 1,
+      keptExisting: 0,
+      started: 0,
+      appliedAt: 5,
+    } as const;
+    expect(claimHeldFixtures(done, state).size).toBe(0);
+  });
+
+  test("reads older than the import's answer are stale only while being read again", () => {
+    const done = {
+      phase: "done",
+      owner: "A",
+      imported: 1,
+      keptExisting: 0,
+      started: 0,
+      appliedAt: 5_000,
+    } as const;
+    expect(staleAfterImport(done, 4_000, true)).toBe(true);
+    // Fresh read, or no read running (a failed one): back to normal, never stuck.
+    expect(staleAfterImport(done, 6_000, true)).toBe(false);
+    expect(staleAfterImport(done, 4_000, false)).toBe(false);
+    // Nothing changed on the account: nothing to wait for.
+    expect(staleAfterImport({ ...done, imported: 0, keptExisting: 0 }, 4_000, true)).toBe(false);
+    expect(staleAfterImport({ phase: "idle" }, 0, true)).toBe(false);
+  });
+
+  test("a partial answer that names none of the sent matches stops the run: one request, not five", async () => {
+    const phone = claimPhone([
+      answer({ [fx(9)]: "imported" }),
+      answer({ [fx(9)]: "imported" }),
+      answer({ [fx(9)]: "imported" }),
+    ]);
+    const claim = createGuestClaimController(phone.services);
+    await claim.start();
+    expect(phone.sent).toHaveLength(1);
+    expect(claim.getStatus()).toMatchObject({ phase: "failed", remaining: 2, retrying: false });
+    expect(phone.stored()).toEqual([fx(1), fx(2)]);
+  });
+
+  test("a partial answer that does name some of them goes on with the rest", async () => {
+    const phone = claimPhone([answer({ [fx(2)]: "imported" }), answer({ [fx(1)]: "imported" })]);
+    const claim = createGuestClaimController(phone.services);
+    await claim.start();
+    expect(phone.sent.map((entry) => entry.ids)).toEqual([[fx(2), fx(1)], [fx(1)]]);
+    expect(claim.getStatus()).toMatchObject({ phase: "done", imported: 2 });
   });
 });

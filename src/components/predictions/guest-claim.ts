@@ -14,6 +14,7 @@ import {
   readGuestVotes,
 } from "@/backend/predictions/guest-votes";
 import type { TranslationKey } from "@/i18n/dictionaries";
+import type { GuestStoreState } from "@/backend/predictions/guest-store";
 import { useI18n } from "@/i18n/provider";
 import { PRONOSTICS_ENABLED } from "@/lib/feature-flags";
 import { authService } from "@/services/auth";
@@ -38,7 +39,10 @@ export type GuestClaimStatus =
   | {
       readonly phase: "failed";
       readonly owner: string;
-      /** Picks still only on the phone and still importable. */
+      /**
+       * Picks still only on the phone that the server has not answered for. The
+       * phone's clock is not used: the server's kick-off check decides which count.
+       */
       readonly remaining: number;
       readonly code: PredictionsErrorCode;
       /** True while a further automatic attempt is scheduled. */
@@ -51,6 +55,8 @@ export type GuestClaimStatus =
       readonly keptExisting: number;
       /** Picks refused because their match had started: they stay marked, never backdated. */
       readonly started: number;
+      /** When the last answer was applied; reads of the account's picks older than this are stale. */
+      readonly appliedAt: number;
     };
 
 const IDLE_STATUS: GuestClaimStatus = { phase: "idle" };
@@ -86,12 +92,17 @@ export interface GuestClaimServices {
   readonly enabled: boolean;
   /** The signed-in account at this moment, or null. */
   accountId(): string | null;
-  /** The phone's picks that can still be imported (started ones excluded). */
+  /**
+   * The phone's picks the server has not answered for yet. A pick it answered
+   * `started` is marked and left out; no clock here decides what is late.
+   */
   pending(): readonly GuestClaimInput[];
   send(items: readonly GuestClaimInput[]): Promise<ClaimGuestPredictionsDto>;
   /** Takes what the server confirmed off the phone, and nothing else. */
   apply(result: ClaimGuestPredictionsDto): void;
   report(summary: GuestClaimSummary): void;
+  /** Milliseconds since the epoch; the tests set it. */
+  now(): number;
   /** Runs `run` after `ms`; returns the way to cancel it. */
   schedule(run: () => void, ms: number): () => void;
 }
@@ -143,6 +154,7 @@ export function createGuestClaimController(
 
   async function run(owner: string, firstAttempt: number): Promise<void> {
     const total = { imported: 0, keptExisting: 0, started: 0 };
+    let appliedAt = 0;
     let attempt = firstAttempt;
     for (let batch = 0; batch < MAX_BATCHES_PER_RUN; batch += 1) {
       // Another account is signed in now: the next batch is theirs to send.
@@ -171,14 +183,17 @@ export function createGuestClaimController(
         }
         return;
       }
+      appliedAt = services.now();
       services.apply(result);
       total.imported += result.imported;
       total.keptExisting += result.keptExisting;
       total.started += result.started;
       attempt = 1;
       if (services.pending().length === 0) break;
-      // Picks left and none answered: asking again as is would not move them.
-      if (result.results.length === 0) {
+      // Picks left and none of the ones just sent answered: asking again as is
+      // would not move them, so stop instead of repeating the same request.
+      const sentIds = new Set(items.map((item) => item.fixtureId));
+      if (!result.results.some((answered) => sentIds.has(answered.fixtureId))) {
         set({
           phase: "failed",
           owner,
@@ -194,7 +209,7 @@ export function createGuestClaimController(
       set({ phase: "failed", owner, remaining, code: "data_unavailable", retrying: false });
       return;
     }
-    set({ phase: "done", owner, ...total });
+    set({ phase: "done", owner, ...total, appliedAt });
     services.report(total);
   }
 
@@ -263,6 +278,7 @@ const appServices: GuestClaimServices = {
     getGuestStore().applyClaim(result.results);
     void appContext?.queryClient.invalidateQueries({ queryKey: ["predictions"] });
   },
+  now: () => Date.now(),
   report: (summary) => {
     if (!appContext) return;
     const { lang, t } = appContext;
@@ -296,6 +312,39 @@ export function useGuestClaim(): { status: GuestClaimStatus; retry: () => void }
     void guestClaim.start();
   }, [queryClient, lang, t]);
   return { status, retry };
+}
+
+/**
+ * The matches whose pick the account may not hold yet: the phone's picks while
+ * the import is under way or has failed. Their answer is unknown (the server
+ * keeps an existing account pick over the phone's), so the screen must not
+ * show them as empty or let a tap write over them.
+ */
+export function claimHeldFixtures(
+  status: GuestClaimStatus,
+  guest: GuestStoreState,
+): ReadonlySet<string> {
+  if (status.phase !== "pending" && status.phase !== "failed") return NO_FIXTURES;
+  return new Set(Object.keys(guest.predictions).filter((id) => !guest.notCounted.includes(id)));
+}
+const NO_FIXTURES: ReadonlySet<string> = new Set();
+
+/**
+ * True while the account's picks were read before the import's answer was
+ * applied and are being read again: picks imported or kept in between are not
+ * in them yet. Once that read ends (or fails), the screen goes back to normal.
+ */
+export function staleAfterImport(
+  status: GuestClaimStatus,
+  readAt: number,
+  fetching: boolean,
+): boolean {
+  return (
+    status.phase === "done" &&
+    status.imported + status.keptExisting > 0 &&
+    fetching &&
+    readAt < status.appliedAt
+  );
 }
 
 /**

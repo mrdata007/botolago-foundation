@@ -137,7 +137,7 @@ describe("fantasyDraftsStore — a device that will not keep the draft (UX-009)"
 
   it("says whether the browser kept the draft", () => {
     expect(fantasyDraftsStore.save(visitor, { teamName: "Atlas FC" })).toBe(true);
-    expect(fantasyDraftsStore.hasUnsaved()).toBe(false);
+    expect(fantasyDraftsStore.hasUnsaved(visitor)).toBe(false);
     deny();
     expect(fantasyDraftsStore.save(visitor, { teamName: "Atlas FC 2" })).toBe(false);
   });
@@ -145,7 +145,7 @@ describe("fantasyDraftsStore — a device that will not keep the draft (UX-009)"
   it("keeps the refused draft for this visit, so moving through sign-up inside the app loses nothing", () => {
     deny();
     fantasyDraftsStore.save(visitor, { teamName: "Atlas FC" });
-    expect(fantasyDraftsStore.hasUnsaved()).toBe(true);
+    expect(fantasyDraftsStore.hasUnsaved(visitor)).toBe(true);
     expect(fantasyDraftsStore.read<{ teamName: string }>(visitor)?.payload.teamName).toBe(
       "Atlas FC",
     );
@@ -165,7 +165,7 @@ describe("fantasyDraftsStore — a device that will not keep the draft (UX-009)"
     expect(fantasyDraftsStore.read(k({ uid: "user-2", kind: "create-team" }))).toBeNull();
     fantasyDraftsStore.clearForUid("user-1");
     expect(fantasyDraftsStore.read(account)).toBeNull();
-    expect(fantasyDraftsStore.hasUnsaved()).toBe(false);
+    expect(fantasyDraftsStore.hasUnsaved(account)).toBe(false);
   });
 
   it("goes back to saying yes once the browser takes the draft again", () => {
@@ -173,9 +173,41 @@ describe("fantasyDraftsStore — a device that will not keep the draft (UX-009)"
     expect(fantasyDraftsStore.save(visitor, { teamName: "Atlas FC" })).toBe(false);
     local().setItem = realSetItem;
     expect(fantasyDraftsStore.save(visitor, { teamName: "Atlas FC" })).toBe(true);
-    expect(fantasyDraftsStore.hasUnsaved()).toBe(false);
+    expect(fantasyDraftsStore.hasUnsaved(visitor)).toBe(false);
     expect(fantasyDraftsStore.read<{ teamName: string }>(visitor)?.payload.teamName).toBe(
       "Atlas FC",
     );
+  });
+});
+
+describe("fantasyDraftsStore — unsaved drafts are scoped and never filled on the server", () => {
+  const visitor = k({ uid: "__guest__", kind: "create-team" });
+  const account = k({ uid: "user-1", kind: "create-team" });
+  const local = () => (globalThis as any).window.localStorage;
+  const realSetItem = local().setItem;
+  afterEach(() => {
+    local().setItem = realSetItem;
+  });
+
+  it("hasUnsaved answers for the draft asked about, not for any draft", () => {
+    local().setItem = () => {
+      throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+    };
+    fantasyDraftsStore.save(account, { teamName: "Mine" });
+    expect(fantasyDraftsStore.hasUnsaved(account)).toBe(true);
+    expect(fantasyDraftsStore.hasUnsaved(visitor)).toBe(false);
+  });
+
+  it("a server render (no window) saves nothing and leaves the memory empty", () => {
+    const g = globalThis as any;
+    const realWindow = g.window;
+    delete g.window;
+    try {
+      expect(fantasyDraftsStore.save(visitor, { teamName: "Atlas FC" })).toBe(false);
+    } finally {
+      g.window = realWindow;
+    }
+    expect(fantasyDraftsStore.hasUnsaved(visitor)).toBe(false);
+    expect(fantasyDraftsStore.read(visitor)).toBeNull();
   });
 });

@@ -52,6 +52,7 @@ export function FixturePredictionCard({
   savedReady = true,
   personal = "not_needed",
   onRetryPersonal,
+  retryingPersonal = false,
   className,
   onStep,
 }: {
@@ -82,6 +83,8 @@ export function FixturePredictionCard({
   personal?: PersonalReadState;
   /** A way to read the reader's picks again, offered on the card when the read failed. */
   onRetryPersonal?: () => void;
+  /** The retry is running: its button waits for the answer. */
+  retryingPersonal?: boolean;
   /** Extra layout from the host, e.g. centring when a deck makes the card taller. */
   className?: string;
   onStep: (side: "home" | "away", delta: 1 | -1) => void;
@@ -253,7 +256,13 @@ export function FixturePredictionCard({
             {t("predictions.personal.unknown_pick")}
           </span>
           {personal === "failed" && onRetryPersonal ? (
-            <UiButton size="sm" variant="soft" onClick={onRetryPersonal}>
+            <UiButton
+              size="sm"
+              variant="soft"
+              onClick={onRetryPersonal}
+              disabled={retryingPersonal}
+              aria-busy={retryingPersonal}
+            >
               {t("state.retry")}
             </UiButton>
           ) : null}

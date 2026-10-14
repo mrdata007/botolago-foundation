@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
 import type { PredictionFixtureDto } from "@/backend/predictions/contracts";
@@ -222,7 +222,11 @@ export function PredictionsPage({
               </>
             ) : null}
           </p>
-          <PersonalReadNotice state={personal} onRetry={model.personal.retry} />
+          <PersonalReadNotice
+            state={personal}
+            fetching={model.personal.fetching}
+            onRetry={model.personal.retry}
+          />
           <GuestClaimNotice
             status={claimStatusFor(claim.status, model.uid)}
             onRetry={claim.retry}
@@ -247,9 +251,14 @@ export function PredictionsPage({
                   notCounted={!model.uid && guest.state.notCounted.includes(fixture.id)}
                   saved={model.uid ? (model.mine.get(fixture.id) ?? null) : undefined}
                   savedReady={!model.uid || model.mineQuery.isSuccess}
-                  personal={personal}
+                  personal={model.personalFor(fixture.id)}
                   onStep={(side, delta) => {
-                    const next = stepPick(personal, picks.get(fixture.id) ?? null, side, delta);
+                    const next = stepPick(
+                      model.personalFor(fixture.id),
+                      picks.get(fixture.id) ?? null,
+                      side,
+                      delta,
+                    );
                     if (next) model.setPick(fixture, next);
                   }}
                 />
@@ -317,7 +326,16 @@ function shareTally(
  * open or has failed, the cards say so (never "no prediction") and editing is
  * off; a failed read has its own retry.
  */
-function PersonalReadNotice({ state, onRetry }: { state: PersonalReadState; onRetry: () => void }) {
+export function PersonalReadNotice({
+  state,
+  fetching = false,
+  onRetry,
+}: {
+  state: PersonalReadState;
+  /** A retry is running: the button waits for its answer. */
+  fetching?: boolean;
+  onRetry: () => void;
+}) {
   const { t } = useI18n();
   if (state === "loading") {
     return (
@@ -336,7 +354,16 @@ function PersonalReadNotice({ state, onRetry }: { state: PersonalReadState; onRe
       tone="caution"
       testId="predictions-personal-failed"
       action={
-        <UiButton size="sm" variant="soft" onClick={onRetry}>
+        <UiButton
+          size="sm"
+          variant="soft"
+          onClick={onRetry}
+          disabled={fetching}
+          aria-busy={fetching}
+        >
+          {fetching ? (
+            <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
+          ) : null}
           {t("state.retry")}
         </UiButton>
       }
@@ -351,7 +378,13 @@ function PersonalReadNotice({ state, onRetry }: { state: PersonalReadState; onRe
  * the reader is told how many and can retry; a match that had started is said
  * to be left out. The server's kick-off deadline stays what decides.
  */
-function GuestClaimNotice({ status, onRetry }: { status: GuestClaimStatus; onRetry: () => void }) {
+export function GuestClaimNotice({
+  status,
+  onRetry,
+}: {
+  status: GuestClaimStatus;
+  onRetry: () => void;
+}) {
   const { t, lang } = useI18n();
   if (status.phase === "pending") {
     return (

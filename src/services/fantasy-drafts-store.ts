@@ -92,6 +92,9 @@ export const fantasyDraftsStore = {
    */
   save<T>(key: FantasyDraftKey, payload: T): boolean {
     if (!key.uid) return false;
+    // No device on the server: nothing to keep, and the module-level memory
+    // below must never hold one visitor's draft for the next request.
+    if (typeof window === "undefined") return false;
     const m = readMap();
     const flat = flattenDraftKey(key);
     const entry: FantasyDraftEntry = { key, payload, updatedAt: Date.now() };
@@ -136,9 +139,9 @@ export const fantasyDraftsStore = {
     if (mutated) writeMap(m);
   },
 
-  /** True while a draft exists only in memory because the browser would not keep it. */
-  hasUnsaved(): boolean {
-    return Object.keys(unsaved).length > 0;
+  /** True while this draft exists only in memory because the browser would not keep it. */
+  hasUnsaved(key: FantasyDraftKey): boolean {
+    return flattenDraftKey(key) in unsaved;
   },
 
   /** Dev/test only. */

@@ -36,6 +36,7 @@ import { track } from "@/lib/analytics";
 import { authService, type AuthSession } from "@/services/auth";
 import { predictionsService } from "@/services/predictions";
 import { guestRoundEvents } from "./guest-analytics";
+import { claimHeldFixtures, claimStatusFor, staleAfterImport, useGuestClaim } from "./guest-claim";
 import { getGuestStore, noteServerTime, serverNow } from "./predictions-runtime";
 
 export { getGuestStore, noteServerTime, serverNow };
@@ -178,8 +179,18 @@ export function personalReadState(input: {
   roundResolved: boolean;
   hasData: boolean;
   hasError: boolean;
+  /**
+   * The session is still being resolved (every page load, and while one
+   * account replaces another): the reader may well be signed in, so they are
+   * not a visitor yet and nothing is editable.
+   */
+  authLoading?: boolean;
+  /** The account's picks are being read again after the guest import changed them. */
+  staleAfterImport?: boolean;
 }): PersonalReadState {
+  if (input.authLoading) return "loading";
   if (!input.signedIn || !input.roundResolved) return "not_needed";
+  if (input.staleAfterImport) return "loading";
   if (input.hasData) return "ready";
   return input.hasError ? "failed" : "loading";
 }
@@ -187,6 +198,18 @@ export function personalReadState(input: {
 /** Editing waits for the reader's own picks: never over a value that is unknown. */
 export function canEditPicks(state: PersonalReadState): boolean {
   return state === "not_needed" || state === "ready";
+}
+
+/**
+ * One match's state: its pick is unknown while the import of the phone's picks
+ * may still change what the account holds for it, whatever the screen's state.
+ */
+export function fixturePersonalState(
+  state: PersonalReadState,
+  held: ReadonlySet<string>,
+  fixtureId: string,
+): PersonalReadState {
+  return held.has(fixtureId) && canEditPicks(state) ? "loading" : state;
 }
 
 /** A missing pick that cannot be called absent while the read is open or failed. */
@@ -288,7 +311,14 @@ export interface PredictionsRoundModel {
   readonly mine: ReadonlyMap<string, MyPredictionDto>;
   readonly mineQuery: ReturnType<typeof useQuery<MyPredictionsDto, PredictionsError>>;
   /** Whether the reader's own picks are known yet, and a way to read them again. */
-  readonly personal: { readonly state: PersonalReadState; retry(): void };
+  readonly personal: {
+    readonly state: PersonalReadState;
+    /** The read is running again right now (a retry is under way). */
+    readonly fetching: boolean;
+    retry(): void;
+  };
+  /** The state to show and edit by for one match (the guest import may still hold it). */
+  personalFor(fixtureId: string): PersonalReadState;
   readonly now: number | null;
   readonly saveState: PredictionsSaveState;
   readonly guestPersistent: boolean;
@@ -502,13 +532,16 @@ export function usePredictionsRound(
     [mineQuery.data],
   );
   awaitingScoringRef.current = Boolean(uid) && awaitingScoring(round?.fixtures ?? [], mine);
+  const claim = useGuestClaim();
+  const claimStatus = claimStatusFor(claim.status, uid);
   const personalState = personalReadState({
     signedIn: Boolean(uid),
     roundResolved: resolvedNumber !== null,
     hasData: mineQuery.data !== undefined,
     hasError: mineQuery.isError,
+    authLoading: status === "loading",
+    staleAfterImport: staleAfterImport(claimStatus, mineQuery.dataUpdatedAt, mineQuery.isFetching),
   });
-  const personalCanEdit = canEditPicks(personalState);
   const refetchMine = mineQuery.refetch;
   const retryPersonal = useCallback(() => {
     void refetchMine();
@@ -590,6 +623,14 @@ export function usePredictionsRound(
 
   // ---- guests --------------------------------------------------------------
   const guest = useGuestPredictions();
+  const held = useMemo(
+    () => claimHeldFixtures(claimStatus, guest.state),
+    [claimStatus, guest.state],
+  );
+  const personalFor = useCallback(
+    (fixtureId: string) => fixturePersonalState(personalState, held, fixtureId),
+    [personalState, held],
+  );
 
   const pickFor = useCallback(
     (fixtureId: string): Pick | null => {
@@ -612,7 +653,7 @@ export function usePredictionsRound(
     (fixture: PredictionFixtureDto, pick: Pick) => {
       // The reader's saved picks are not known: whatever is typed would be
       // written over a value never seen. The controls are disabled as well.
-      if (!personalCanEdit) return;
+      if (!canEditPicks(personalFor(fixture.id))) return;
       if (!isFixtureOpen(fixture, serverNow())) {
         toast.error(t("predictions.save.locked"));
         return;
@@ -645,7 +686,7 @@ export function usePredictionsRound(
         .map((candidate) => candidate.id);
       for (const event of guestRoundEvents(guest.store, seasonId, roundNo, open)) track(event);
     },
-    [uid, round, guest.store, t, personalCanEdit],
+    [uid, round, guest.store, t, personalFor],
   );
 
   const retrySave = useCallback(() => {
@@ -659,7 +700,8 @@ export function usePredictionsRound(
     uid,
     mine,
     mineQuery,
-    personal: { state: personalState, retry: retryPersonal },
+    personal: { state: personalState, fetching: mineQuery.isFetching, retry: retryPersonal },
+    personalFor,
     now,
     saveState: uid ? barFor(save, uid) : "guest",
     guestPersistent: guest.persistent,

@@ -22,6 +22,7 @@ import {
   awaitingScoring,
   barFor,
   canEditPicks,
+  fixturePersonalState,
   nextPick,
   nextSaveBar,
   personalReadState,
@@ -475,5 +476,57 @@ describe("the reader's own picks are read apart from the journée (QA-01)", () =
     expect(stepPick("ready", { home: 2, away: 2 }, "home", 1)).toEqual({ home: 3, away: 2 });
     expect(stepPick("ready", null, "home", 1)).toEqual({ home: 1, away: 0 });
     expect(stepPick("not_needed", null, "away", 1)).toEqual({ home: 0, away: 1 });
+  });
+});
+
+describe("a session still loading is not a visitor (QA-01 review)", () => {
+  const base = { signedIn: false, roundResolved: true, hasData: false, hasError: false };
+
+  test("while auth is loading, picks are unknown and editing is off, signed in or not yet", () => {
+    // Every page load, and while one account replaces another, uid is null.
+    expect(personalReadState({ ...base, authLoading: true })).toBe("loading");
+    expect(canEditPicks(personalReadState({ ...base, authLoading: true }))).toBe(false);
+    // Even with a previous account's data in hand.
+    expect(personalReadState({ ...base, signedIn: true, hasData: true, authLoading: true })).toBe(
+      "loading",
+    );
+  });
+
+  test("once the session has settled as signed out, the visitor edits their phone's picks", () => {
+    expect(personalReadState({ ...base, authLoading: false })).toBe("not_needed");
+    expect(canEditPicks(personalReadState({ ...base }))).toBe(true);
+  });
+
+  test("while the account's picks are read again after the guest import, editing waits", () => {
+    const signedIn = { ...base, signedIn: true, hasData: true };
+    expect(personalReadState({ ...signedIn, staleAfterImport: true })).toBe("loading");
+    expect(personalReadState({ ...signedIn, staleAfterImport: false })).toBe("ready");
+  });
+});
+
+describe("a match the guest import may still change is unknown (QA-01/QA-05 review)", () => {
+  const held = new Set(["fx-held"]);
+
+  test("a held match is loading even when the screen's picks are ready", () => {
+    expect(fixturePersonalState("ready", held, "fx-held")).toBe("loading");
+    expect(fixturePersonalState("ready", held, "fx-other")).toBe("ready");
+  });
+
+  test("it cannot be stepped, so one tap cannot write 1-0 over a guest 2-2 the server may keep", () => {
+    expect(stepPick(fixturePersonalState("ready", held, "fx-held"), null, "home", 1)).toBeNull();
+    expect(stepPick(fixturePersonalState("ready", held, "fx-other"), null, "home", 1)).toEqual({
+      home: 1,
+      away: 0,
+    });
+  });
+
+  test("the save guard in setPick is this same gate", () => {
+    const writable = (state: Parameters<typeof canEditPicks>[0], id: string) =>
+      canEditPicks(fixturePersonalState(state, held, id));
+    expect(writable("ready", "fx-held")).toBe(false);
+    expect(writable("failed", "fx-other")).toBe(false);
+    expect(writable("loading", "fx-other")).toBe(false);
+    expect(writable("ready", "fx-other")).toBe(true);
+    expect(writable("not_needed", "fx-other")).toBe(true);
   });
 });

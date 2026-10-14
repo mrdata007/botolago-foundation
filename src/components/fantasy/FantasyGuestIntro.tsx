@@ -16,6 +16,7 @@ import { formatDeadline, useDeadlineCountdown } from "@/components/fpl/deadline"
 import { ui, UiLinkButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
+import { GUEST_DRAFT_KEY } from "@/services/fantasy-create-draft";
 import { fantasyDraftsStore } from "@/services/fantasy-drafts-store";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import { SQUAD_RULES } from "@/types/fantasy";
@@ -415,7 +416,7 @@ export function FantasyResumeDraft({
           </h2>
           {audience === "signed_out" ? (
             <p className={cn("mt-0.5", ui.text.meta, ui.tone.muted)}>
-              {fantasyDraftsStore.hasUnsaved()
+              {fantasyDraftsStore.hasUnsaved(GUEST_DRAFT_KEY)
                 ? t("fantasy.create.guest_unsaved")
                 : t("fantasy.create.guest_note")}
             </p>

@@ -59,7 +59,8 @@ export function MatchPredictionCard({
   // which on a finished match filled a screen with "Pas de pronostic".
   // A pick the reader's account holds but the page has not read is not "no
   // prediction": that line is only for a pick known to be absent.
-  const unknownPick = pickIsUnknown(model.personal.state, pick);
+  const personal = model.personalFor(fixture.id);
+  const unknownPick = pickIsUnknown(personal, pick);
   if (placement === "inline" && !open && !pick && !unknownPick) {
     return (
       <Link
@@ -106,11 +107,12 @@ export function MatchPredictionCard({
           scored={scored}
           saved={model.uid ? (saved ?? null) : undefined}
           savedReady={!model.uid || model.mineQuery.isSuccess}
-          personal={model.personal.state}
+          personal={personal}
           onRetryPersonal={model.personal.retry}
+          retryingPersonal={model.personal.fetching}
           className="justify-center"
           onStep={(side, delta) => {
-            const next = stepPick(model.personal.state, pick, side, delta);
+            const next = stepPick(personal, pick, side, delta);
             if (next) model.setPick(fixture, next);
           }}
         />
