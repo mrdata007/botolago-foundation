@@ -1,6 +1,7 @@
 import { dehydrate, hydrate, type DehydratedState } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { viewTransitionOption } from "@/lib/page-transition";
+import { armTabSlide } from "@/lib/tab-slide";
 import { SSR_DEHYDRATE_OPTIONS } from "@/lib/ssr-prefetch";
 import { createAppQueryClient } from "@/services/query-client";
 import { routeTree } from "./routeTree.gen";
@@ -29,6 +30,14 @@ export const getRouter = () => {
       if (dehydrated?.queryClientState) hydrate(queryClient, dehydrated.queryClientState);
     },
   });
+
+  // Slide (src/lib/tab-slide.ts): a move between two bar sections arms the
+  // direction the next page frame slides in from. Browser only.
+  if (typeof window !== "undefined") {
+    router.subscribe("onBeforeNavigate", ({ fromLocation, toLocation }) =>
+      armTabSlide(fromLocation?.pathname, toLocation.pathname),
+    );
+  }
 
   return router;
 };

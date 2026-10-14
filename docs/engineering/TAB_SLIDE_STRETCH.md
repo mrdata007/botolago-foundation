@@ -47,3 +47,36 @@ with what the app already has.
 - With reduced motion, neither animation runs.
 - Checked at 390x844 and 1366x860, French and Arabic, with frames before and after.
 - Unit tests for the direction rules; existing tests, typecheck and lint pass.
+
+## Result
+
+Checked on the project's test build (`tests/e2e/built-output-build.ts`), sampling the page every
+frame while tapping through the bar.
+
+- **Slide.** The content's offset runs 40 px to 0 over about 300 ms: from the right on a tab
+  further along in French (News -> Fantasy, Fantasy -> Matches, Matches -> Calendrier ->
+  Classement -> Pronostics), from the left on an earlier one (Matches -> News); mirrored in
+  Arabic. The same on desktop (1366 wide) through the top bar's links.
+- **Still.** On every move the top bar, the bottom bar and any bar fixed inside the page kept
+  the same position in every sample. No `document.startViewTransition` call on any of these
+  moves.
+- **Stretch.** The pill's width runs 56 px -> up to 190 px -> 56 px over 460 ms, in both
+  directions, and settles on the new tab. The first version stopped after about three frames:
+  the old page's bar began the stretch and the new page's bar, drawn a moment later, started
+  already on the new tab. The new bar now carries on the old bar's stretch from where it was, as
+  the icon pop already did.
+- **Reduced motion.** Content offset stayed `0px` and the pill stayed 56 px wide throughout.
+- With section loading (#469, a separate branch; not yet run together): its loading screen is
+  drawn through `AppShell`, so it should be the frame that slides in, and the page that replaces
+  it should take no second slide, since the direction is taken once. To check once both are in.
+- The 40 px start offset sits inside `html, body { overflow-x: clip }`, so it cannot add a
+  horizontal scrollbar; not separately measured.
+
+Evidence in `docs/qa/tab-slide-stretch/`: the live site before (the page swaps with no motion),
+mid-slide frames at 390 and 1366 wide in French and Arabic, and two short recordings
+(`tab-motion-fr.mp4`, `tab-motion-ar.mp4`).
+
+Tests: `bun test` 8895 pass, 1 fail (the Ramadan 2027 clock test in
+`src/backend/news/editorial-session.test.ts`, which fails on main too); new unit tests for the
+direction rules, the arming window and the stretch keyframes; typecheck clean; lint has no
+errors and no warnings in the changed files.
