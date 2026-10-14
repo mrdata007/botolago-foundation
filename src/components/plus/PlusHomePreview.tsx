@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { LockedStage, PlusEmbed } from "./PlusLockedSection";
 import { SEASON_SECTION_ID } from "./PlusSeasonSection";
@@ -26,7 +26,7 @@ export function PlusHomePreviewView() {
   const { jAxis } = useSeasonFmt();
   const S = EXAMPLE_VIEW.S;
   return (
-    <PlusEmbed className="plus-embed--preview" data-testid="plus-home-preview">
+    <PlusEmbed className="plus-embed--preview plus-embed--night" data-testid="plus-home-preview">
       <Link
         to="/curva/carte"
         hash={SEASON_SECTION_ID}
@@ -37,10 +37,12 @@ export function PlusHomePreviewView() {
           compact
           lock={
             <>
-              <PlusLockChip />
-              <span className="pl-headline">{t("plus.in.season_title")}</span>
+              <span className="pl-htxt">
+                <PlusLockChip />
+                <span className="pl-headline">{t("plus.in.season_title")}</span>
+              </span>
               <span className="pl-go" aria-hidden>
-                <ChevronRight />
+                <ArrowRight />
               </span>
             </>
           }

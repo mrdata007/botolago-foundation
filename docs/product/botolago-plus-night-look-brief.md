@@ -43,12 +43,14 @@ action, no deploy.
 ## Acceptance criteria
 
 Visual
+
 - Card, duel and home tile match the approved mock in French and Arabic (390px) and French (1280px),
   as non-member; the member view is unchanged.
 - Arabic is mirrored; digits are Western.
 
 Functional
-- No horizontal overflow at 390 and 1280 (measured against a wide sentinel, not `clientWidth`).
+
+- No horizontal overflow at 390 and 1280 (measured element by element against the viewport, not `clientWidth`, which `overflow-x: clip` hides).
 - Smallest text 14px (22px and over on the home tile title); tap targets 44px or more.
 - Computed font-weight of every text node in the three sections is 700 or more.
 - With `prefers-reduced-motion: reduce` nothing moves.

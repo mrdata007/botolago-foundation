@@ -1,14 +1,43 @@
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { ArrowRight } from "lucide-react";
+import { useId, type ReactNode } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
 import { PlusLockChip } from "./PlusLockChip";
+import { PLUS_SHAPE } from "./PlusLogo";
 import { SeasonProvider, EXAMPLE_VIEW } from "./plus-season-context";
 import { usePlusCopy } from "./plus-copy";
 
 import "./plus-embed.css";
+
+/**
+ * The big mint « + » that glows through the blur, like a floodlight (the logo's own shape). Pure
+ * decoration: hidden from readers, drawn twice (a wide halo and a tighter core), breathing under
+ * `prefers-reduced-motion: no-preference` only.
+ */
+function PlusGlow() {
+  const id = `plusglow${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  return (
+    <div className="pl-plus" aria-hidden="true">
+      {["pl-plus__halo", "pl-plus__core"].map((cls) => (
+        <svg key={cls} className={cls} viewBox="1620 60 250 220" focusable="false">
+          {cls === "pl-plus__halo" ? (
+            <defs>
+              <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stopColor="#d6ffe6" />
+                <stop offset="0.5" stopColor="#5cf0a0" />
+                <stop offset="1" stopColor="#22b868" />
+              </linearGradient>
+            </defs>
+          ) : null}
+          <path d={PLUS_SHAPE} fill={`url(#${id})`} />
+        </svg>
+      ))}
+    </div>
+  );
+}
 
 /**
  * The layers of a locked preview: the EXAMPLE analysis underneath, blurred and inert, a dark veil
@@ -34,13 +63,17 @@ export function LockedStage({
       <div className="pl-under plus-body ps-body" aria-hidden="true" inert>
         <SeasonProvider view={EXAMPLE_VIEW}>{children}</SeasonProvider>
       </div>
+      <PlusGlow />
       <div className="pl-veil" aria-hidden="true" />
       <div className="pl-lock">{lock}</div>
     </div>
   );
 }
 
-/** The dark, always-dark surface the in-app BotolaGO+ sections live on (the offer's tokens). */
+/**
+ * The dark, always-dark surface the in-app BotolaGO+ sections live on (the offer's tokens).
+ * `plus-embed--night` is the « Nuit de match » look of the locked sections.
+ */
 export function PlusEmbed({
   children,
   className,
@@ -85,7 +118,7 @@ export function PlusLockedSection({
   const { t } = usePlusCopy();
   const titleId = `${testId}-title`;
   return (
-    <PlusEmbed id={id} data-testid={testId} aria-labelledby={titleId}>
+    <PlusEmbed id={id} className="plus-embed--night" data-testid={testId} aria-labelledby={titleId}>
       {head ? <div className="pl-head">{head}</div> : null}
       <LockedStage
         lock={
@@ -101,6 +134,7 @@ export function PlusLockedSection({
               data-testid={`${testId}-unlock`}
             >
               {t("plus.in.unlock")}
+              <ArrowRight aria-hidden />
             </Link>
           </>
         }

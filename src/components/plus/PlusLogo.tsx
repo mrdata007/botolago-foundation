@@ -20,7 +20,7 @@ import "./plus.css";
  */
 
 /** The "+" outline, in the sketch's coordinates. */
-const PLUS_SHAPE =
+export const PLUS_SHAPE =
   "M1732.0,87.0 L1792.0,87.0 L1781.0,142.0 L1836.0,142.0 L1824.0,202.0 L1769.0,202.0 L1758.0,257.0 L1698.0,257.0 L1709.0,202.0 L1654.0,202.0 L1666.0,142.0 L1721.0,142.0 Z";
 
 /** Twelve extrusion layers, 1.3 apart on x and 1.7 on y, from the back to the front. */
