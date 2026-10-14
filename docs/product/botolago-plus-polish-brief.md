@@ -46,6 +46,8 @@ Lovable action.
 | `2px` | `inline-size` / `block-size` of a rule or marker shape; the `- 2px` in the tab pill width | a 2px line is a hairline, not a box |
 | `-2px` | `margin-inline-start` centring a 4px marker on its x position | half of the marker width |
 
+Focus `outline-offset` values moved to 4px; `outline` widths are borders, not spacing.
+
 Everything else is on the 4px grid, or it fails the lint. Font sizes and line-heights are not
 spacing and are out of scope.
 
@@ -80,14 +82,13 @@ Added:
 | --- | --- |
 | press, buttons and tappable cards on `:active`: 120ms ease-out [transform scale 1->.97] | `.plus-btn`, `.plus-icon-btn`, `.plus-swatch`, `.plus-plan`, `.plus-feat`, `.plus-link-btn`, `.ps-seg button`, `.ps-linkbtn`, `.pl-cta`, `.pl-preview`, `.plus-entry` rows |
 | hover lift, `(hover: hover) and (pointer: fine)` only: 180ms ease-out [transform translateY 0->-2px, box-shadow -> shadow-2] | cards that are tappable (`.pl-preview`, `.plus-plan`, `.plus-feat`) |
-| success, step 4 card face: 600ms ease-out [transform scale .8->1.06->1, opacity 0->1] once | the celebration element of the welcome screen (the card), single run |
+| success, `.plus-offer[data-step="4"] .plus-brand`: 600ms ease-out [transform scale .8->1.06->1, opacity 0->1] once | the logo on the welcome screen, single run |
 | loading shimmer, `.pl-skeleton` (member sections while `isPending`): 1600ms ease-in-out, 3 cycles then static [background-position, opacity-free: transform of a sheen layer -100%->100%] | only where the loading branch exists today (`PlusSeasonSection`, `PlusDuelSection`) |
 | error shake, failed checkout / restore message: 300ms ease-out [transform translateX 0->-4px->4px->-4px->0] once | `.plus-toast[data-tone="error"]` |
 
 Notes on the added items:
 
-- The welcome screen has no separate logo or check mark; its celebration element is the card, so
-  the success keyframes run on the card face inside the existing reveal.
+- The welcome screen has no check mark; the success keyframes run on its logo (`.plus-brand`).
 - The Profil section's loading state uses the app's own `UiSkeleton`, which is outside the BotolaGO+
   stylesheets; it is left alone.
 - The toast is shared by « bientôt » / restore messages (errors) and the share confirmation
