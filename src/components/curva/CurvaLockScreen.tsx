@@ -31,6 +31,24 @@ export function lockTitleKey(pathname: string): TranslationKey {
   return "curva.lock.title.home";
 }
 
+/** The headline for that key, each spelled as a literal key (the i18n gate counts a computed key as W4). */
+function lockTitle(t: (key: TranslationKey) => string, key: TranslationKey): string {
+  switch (key) {
+    case "curva.lock.title.card":
+      return t("curva.lock.title.card");
+    case "curva.lock.title.people":
+      return t("curva.lock.title.people");
+    case "curva.lock.title.ranking":
+      return t("curva.lock.title.ranking");
+    case "curva.lock.title.seasons":
+      return t("curva.lock.title.seasons");
+    case "curva.lock.title.plus":
+      return t("curva.lock.title.plus");
+    default:
+      return t("curva.lock.title.home");
+  }
+}
+
 /** The example league the blurred preview draws: a made-up table, never anyone's data. */
 const EXAMPLE_ROWS: readonly { name: string; points: number; own?: true }[] = [
   { name: "Yassine", points: 655 },
@@ -131,7 +149,7 @@ export function CurvaLockScreen(): JSX.Element {
               id="curva-lock-title"
               className={cn("text-balance", ui.display.section, ui.tone.default)}
             >
-              {t(lockTitleKey(pathname))}
+              {lockTitle(t, lockTitleKey(pathname))}
             </h2>
             <p className={cn("text-pretty", ui.text.secondary, ui.tone.muted)}>
               {t("curva.lock.body")}
