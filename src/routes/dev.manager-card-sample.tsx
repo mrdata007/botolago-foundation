@@ -11,6 +11,7 @@ import { RoundGlance } from "@/components/curva/RoundGlance";
 import { StatTiles } from "@/components/curva/StatTiles";
 import { useMomentCopy } from "@/components/manager-card/copy";
 import { fromMyCard } from "@/components/manager-card/to-profile";
+import { CARD_EDITIONS } from "@/backend/manager-card/contracts";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
@@ -27,8 +28,17 @@ import { cn } from "@/lib/utils";
  *   ?case=full  four of four with a first rating
  *   ?case=zero  a new manager: nothing counted yet
  *   ?lang=fr|ar
+ *   ?edition=standard|holo|electric|pixel|chrome   draws the card in that edition (BotolaGO+)
+ *   ?tier=pro|legend   (with case=full) the earned tier of the card
  */
-type Search = { case?: "two" | "full" | "zero"; lang?: "fr" | "ar" };
+type Edition = (typeof CARD_EDITIONS)[number];
+type Search = {
+  case?: "two" | "full" | "zero";
+  lang?: "fr" | "ar";
+  edition?: Edition;
+  tier?: "pro" | "legend";
+  name?: string;
+};
 
 export const Route = createFileRoute("/dev/manager-card-sample")({
   ssr: false,
@@ -38,6 +48,13 @@ export const Route = createFileRoute("/dev/manager-card-sample")({
       ? { case: search.case }
       : {}),
     ...(search.lang === "ar" || search.lang === "fr" ? { lang: search.lang } : {}),
+    ...(CARD_EDITIONS.includes(search.edition as Edition)
+      ? { edition: search.edition as Edition }
+      : {}),
+    ...(search.tier === "pro" || search.tier === "legend" ? { tier: search.tier } : {}),
+    ...(typeof search.name === "string" && search.name.trim()
+      ? { name: search.name.trim().slice(0, 40) }
+      : {}),
   }),
   beforeLoad: () => {
     if (!import.meta.env.DEV) throw notFound();
@@ -126,15 +143,16 @@ function baseCard(over: Partial<MyCardDto>): MyCardDto {
   };
 }
 
-function sampleCard(which: "two" | "full" | "zero"): MyCardDto {
+function sampleCard(which: "two" | "full" | "zero", tier: "pro" | "legend" = "pro"): MyCardDto {
   if (which === "full") {
+    const legend = tier === "legend";
     return baseCard({
       ratingState: "provisional",
-      ovr: 84,
+      ovr: legend ? 97 : 84,
       ovrNullReason: null,
-      tier: "pro",
-      bestTier: "pro",
-      nextTier: { code: "champion", fromOvr: 88 },
+      tier,
+      bestTier: tier,
+      nextTier: legend ? null : { code: "champion", fromOvr: 88 },
       provisional: true,
       stats: { cap: stat(91), sel: stat(82), trf: stat(86), con: stat(78) },
       gameweeksCounted: 3,
@@ -166,7 +184,11 @@ function SampleHarness() {
   useEffect(() => {
     if (lang !== wanted) setLanguage(wanted);
   }, [lang, wanted, setLanguage]);
-  const card = sampleCard(search.case ?? "two");
+  const card = {
+    ...sampleCard(search.case ?? "two", search.tier),
+    ...(search.edition ? { edition: search.edition } : {}),
+    ...(search.name ? { name: search.name } : {}),
+  };
   return (
     <div className={cn("min-h-dvh", ui.surface.page)} dir={dir} data-testid="sample-root">
       <p className={cn("px-4 pt-2", ui.text.meta)} data-testid="sample-harness">

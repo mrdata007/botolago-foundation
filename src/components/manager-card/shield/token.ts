@@ -25,8 +25,13 @@ export const stops = (colours: readonly string[]): string =>
     .join("");
 
 /** The gradients a shield drawing needs, under `id`. */
-export function shieldDefs(id: string, m: Metal): string {
+export function shieldDefs(id: string, m: Metal, cell = 3.4): string {
+  const c = cell.toFixed(2);
+  const chk = m.checker
+    ? `<pattern id="${id}-chk" width="${(cell * 2).toFixed(2)}" height="${(cell * 2).toFixed(2)}" patternUnits="userSpaceOnUse"><rect width="${(cell * 2).toFixed(2)}" height="${(cell * 2).toFixed(2)}" fill="${m.checker[0]}"/><rect width="${c}" height="${c}" fill="${m.checker[1]}"/><rect x="${c}" y="${c}" width="${c}" height="${c}" fill="${m.checker[1]}"/></pattern>`
+    : "";
   return (
+    chk +
     `<linearGradient id="${id}-face" x1="0" y1="0" x2="0.35" y2="1">${stops(m.faceStops)}</linearGradient>` +
     `<linearGradient id="${id}-metal" x1="0" y1="0" x2="0.6" y2="1">${stops(m.frame)}</linearGradient>` +
     (m.holo
@@ -47,7 +52,7 @@ export function tokenMarkup(
   const v = makeView(profile, strings);
   const { m } = v;
   const id = uid("mc-t");
-  const frame = m.holo ? `url(#${id}-foil)` : `url(#${id}-metal)`;
+  const frame = m.checker ? `url(#${id}-chk)` : m.holo ? `url(#${id}-foil)` : `url(#${id}-metal)`;
   // the page edge: a hairline that keeps a light metal on a light page (and a dark one on a dark
   // page) from melting into it
   const edge =
@@ -71,8 +76,8 @@ export function tokenMarkup(
     art += `<g data-mc="ovr">${digits(`fill="none" stroke="${halo}" stroke-width="${(1.6 * u).toFixed(2)}" stroke-linejoin="round"`)}${digits(`fill="${fill}"`)}</g>`;
   }
   return (
-    `<span class="mc-tok mc-tok--${size} mc-tok--${v.key}" role="img" aria-label="${esc(tokenLabel(eclatView(profile, strings)))}" dir="${v.ar ? "rtl" : "ltr"}" style="width:${tokenWidth(size)}px;height:${size}px">` +
-    `<svg viewBox="0 0 100 136.6" aria-hidden="true" focusable="false" style="direction:ltr;display:block;width:100%;height:100%"><defs>${shieldDefs(id, m)}</defs>${art}</svg>` +
+    `<span class="mc-tok mc-tok--${size} mc-tok--${v.key}${v.edition ? ` mc-tok--ed-${v.edition}` : ""}" role="img" aria-label="${esc(tokenLabel(eclatView(profile, strings)))}" dir="${v.ar ? "rtl" : "ltr"}" style="width:${tokenWidth(size)}px;height:${size}px">` +
+    `<svg viewBox="0 0 100 136.6" aria-hidden="true" focusable="false" style="direction:ltr;display:block;width:100%;height:100%"><defs>${shieldDefs(id, m, Math.max(3.4, 2 * u))}</defs>${art}</svg>` +
     `</span>`
   );
 }
