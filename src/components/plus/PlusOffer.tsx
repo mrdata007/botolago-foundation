@@ -1,3 +1,4 @@
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
 
 import type { PremiumProductCode } from "@/backend/premium/contracts";
@@ -6,47 +7,61 @@ import { usePremium } from "@/services/use-premium";
 
 import { usePlusProfile } from "./use-plus-profile";
 import { PlusLogo } from "./PlusLogo";
-import { clampStep, type PlusStep } from "./plus-steps";
+import type { PlusContext, PlusStep } from "./plus-steps";
 import { PlusPaywallScreen } from "./PlusPaywallScreen";
 import { PlusSeasonScreen } from "./PlusSeasonScreen";
 import { PlusStyleScreen } from "./PlusStyleScreen";
 import { PlusWelcomeScreen } from "./PlusWelcomeScreen";
 import { PLUS_NAME, useNow, usePlusCopy, type PlusStyle } from "./plus-copy";
 
-const TOTAL = 4;
+/** The story's progress segments (style, season, subscription); the welcome screen has none. */
+const TOTAL = 3;
 /** Swipe and arrow keys cannot move past the plan screen; screen 4 comes only from a purchase. */
 const LAST_FREE_STEP: PlusStep = 3;
 const TOAST_MS = 2600;
 
 /**
- * The BotolaGO+ offer (sketch `#phone`): a quiet always-dark surface with a back button, four
- * progress segments and a close button, over four screens. `mode="flow"` is the four-screen path
- * (`/curva/plus`); `mode="standalone"` is the paywall alone for people who tapped « Voir les
- * prix » (`/plus`): no progress, no back.
+ * The BotolaGO+ offer (sketch `#phone`): a quiet always-dark surface over one short paywall
+ * (screen 3) that every entry point opens, with a small « Voir l'aperçu » link to a three-screen
+ * story (style, season, subscription). The step lives in the address, one history entry per step,
+ * so the phone's Back button is « previous step »; the close button leaves the offer.
+ * `mode="flow"` is `/curva/plus`; `mode="standalone"` is `/plus` (no swipe, no arrow keys).
  *
- * Nothing here takes money: « S'abonner » calls the checkout stub, which answers « bientôt ».
+ * Nothing here takes money: while checkout is not open the button says « Bientôt disponible ».
  */
 export function PlusOffer({
-  initialStep = 1,
+  step: requested,
+  via,
   mode = "flow",
+  within = 0,
+  href,
+  onStep,
+  onBack,
   onClose,
   onManage,
 }: {
-  initialStep?: PlusStep;
+  step: PlusStep;
+  via?: PlusContext;
   mode?: "flow" | "standalone";
+  /** Steps the reader has taken inside the offer: above 0, Back goes to the previous step. */
+  within?: number;
+  /** This screen's address, where sign-up sends the reader back to. */
+  href: string;
+  onStep: (step: PlusStep) => void;
+  onBack: () => void;
   onClose: () => void;
   onManage: () => void;
 }) {
   const { t, lang } = usePlusCopy();
   const { dir: pageDir } = useI18n();
   const premium = usePremium();
+  const navigate = useNavigate();
   const { profile, example } = usePlusProfile();
   const now = useNow();
   const standalone = mode === "standalone";
 
   const [style, setStyle] = useState<PlusStyle>("holo");
   const [plan, setPlan] = useState<PremiumProductCode>("plus_yearly");
-  const [requested, setStep] = useState<PlusStep>(standalone ? 3 : initialStep);
   const [duelOpen, setDuelOpen] = useState(false);
   const [toast, setToast] = useState<{ text: string; n: number; tone: "error" | "info" } | null>(
     null,
@@ -56,6 +71,10 @@ export function PlusOffer({
 
   // Screen 4 is only for a member, whatever the address says.
   const step: PlusStep = requested === 4 && !premium.isMember ? 3 : requested;
+  // The story (style, season, subscription) is on while the reader is inside it: on its first two
+  // screens, and on the paywall they reached through them. The paywall alone has no progress.
+  const inStory = !standalone && (step < 3 || (step === 3 && within > 0));
+  const checkoutOpen = premium.checkoutEnabled;
   const prices = premium.prices;
 
   // The database (mocked for now) says the feature is not on: leave, as Curva does.
@@ -76,13 +95,14 @@ export function PlusOffer({
   );
 
   const go = useCallback(
-    (to: number) => {
-      if (standalone) return;
+    (to: PlusStep) => {
       setDuelOpen(false);
-      setStep(clampStep(Math.max(1, Math.min(TOTAL, to))));
+      onStep(to);
     },
-    [standalone],
+    [onStep],
   );
+  // Phone Back (or the arrow) can land on a screen with the duel closed.
+  useEffect(() => setDuelOpen(false), [step]);
 
   // Focus the screen's title when the screen changes (not on first paint).
   const firstStep = useRef(true);
@@ -94,9 +114,8 @@ export function PlusOffer({
     titleRef.current?.focus({ preventScroll: true });
   }, [step]);
 
-  // Arrow keys move between screens (not past the plan screen); Escape leaves.
+  // Arrow keys move between the story's screens (not past the plan screen); Escape leaves.
   useEffect(() => {
-    if (standalone) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target as HTMLElement | null;
@@ -106,13 +125,14 @@ export function PlusOffer({
       const rtl = lang === "ar";
       const forward = rtl ? "ArrowLeft" : "ArrowRight";
       const backward = rtl ? "ArrowRight" : "ArrowLeft";
-      if (event.key === forward && step < LAST_FREE_STEP) go(step + 1);
-      else if (event.key === backward && step > 1 && step < TOTAL) go(step - 1);
-      else if (event.key === "Escape") onClose();
+      if (event.key === "Escape") onClose();
+      else if (!inStory) return;
+      else if (event.key === forward && step < LAST_FREE_STEP) go((step + 1) as PlusStep);
+      else if (event.key === backward && within > 0 && step < 4) onBack();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [standalone, lang, step, go, onClose]);
+  }, [inStory, lang, step, within, go, onBack, onClose]);
 
   // Swipe along the reading direction, never past the plan screen.
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -125,16 +145,21 @@ export function PlusOffer({
     const start = touch.current;
     touch.current = null;
     const p = event.changedTouches[0];
-    if (!start || !p || standalone) return;
+    if (!start || !p || !inStory) return;
     const dx = p.clientX - start.x;
     const dy = p.clientY - start.y;
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
     const forward = lang === "ar" ? dx > 0 : dx < 0;
-    if (forward && step < LAST_FREE_STEP) go(step + 1);
-    else if (!forward && step > 1 && step < TOTAL) go(step - 1);
+    if (forward && step < LAST_FREE_STEP) go((step + 1) as PlusStep);
+    else if (!forward && within > 0 && step < 4) onBack();
   };
 
   const onBuy = async () => {
+    // Not signed in: sign up first (a free account), then this same screen again.
+    if (!premium.signedIn) {
+      void navigate({ to: "/auth/register", search: { next: href } });
+      return;
+    }
     const result = await premium.startCheckout(plan);
     if (result.status === "ok") go(4);
     else showToast(t("plus.soon"), "error");
@@ -156,8 +181,9 @@ export function PlusOffer({
     showToast(t("plus.s4.shared"));
   };
 
+  // The example label of the style screen. For a guest it is also the way to the free sign-up.
   const note =
-    standalone || step === 3 || step === 2
+    step !== 1
       ? null
       : example && premium.signedIn
         ? t("plus.note.example")
@@ -170,6 +196,17 @@ export function PlusOffer({
   // frame of the offer before the effect above sends them away.
   if (!premium.ready || !premium.enabled) return null;
 
+  const hasBack = !standalone && within > 0 && step < 4;
+  // One small link in the corner: the preview from the paywall, the prices from inside the story.
+  const sideLink: { to: PlusStep; label: string } | null =
+    step === 3
+      ? within === 0
+        ? { to: 1, label: t("plus.s3.preview") }
+        : null
+      : step < 3
+        ? { to: 3, label: t("plus.prices") }
+        : null;
+
   return (
     <div className="plus-offer" data-step={step} dir={pageDir} lang={lang} data-testid="plus-offer">
       <div className="plus-stage">
@@ -178,11 +215,11 @@ export function PlusOffer({
             <button
               type="button"
               className="plus-icon-btn"
-              data-hidden={standalone || step === 1 || step === TOTAL}
-              aria-hidden={standalone || step === 1 || step === TOTAL ? true : undefined}
-              tabIndex={standalone || step === 1 || step === TOTAL ? -1 : undefined}
+              data-hidden={!hasBack}
+              aria-hidden={!hasBack ? true : undefined}
+              tabIndex={!hasBack ? -1 : undefined}
               aria-label={t("common.back")}
-              onClick={() => (step === 2 && duelOpen ? setDuelOpen(false) : go(step - 1))}
+              onClick={() => (step === 2 && duelOpen ? setDuelOpen(false) : onBack())}
             >
               <svg
                 className="plus-flip"
@@ -201,8 +238,8 @@ export function PlusOffer({
             </button>
             <div
               className="plus-progress"
-              role={standalone ? undefined : "progressbar"}
-              aria-hidden={standalone ? true : undefined}
+              role={inStory ? "progressbar" : undefined}
+              aria-hidden={inStory ? undefined : true}
               aria-label={t("plus.progress")}
               aria-valuemin={1}
               aria-valuemax={TOTAL}
@@ -210,9 +247,9 @@ export function PlusOffer({
               aria-valuetext={t("plus.step_of")
                 .replace("{n}", String(step))
                 .replace("{total}", String(TOTAL))}
-              style={standalone ? { visibility: "hidden" } : undefined}
+              style={inStory ? undefined : { visibility: "hidden" }}
             >
-              {[1, 2, 3, 4].map((n) => (
+              {[1, 2, 3].map((n) => (
                 <i key={n} style={{ ["--f" as string]: n <= step ? 1 : 0 }} />
               ))}
             </div>
@@ -243,15 +280,29 @@ export function PlusOffer({
             <button
               type="button"
               className="plus-link"
-              data-hidden={standalone || step >= 3}
-              aria-hidden={standalone || step >= 3 ? true : undefined}
-              tabIndex={standalone || step >= 3 ? -1 : undefined}
-              onClick={() => go(3)}
+              data-hidden={!sideLink}
+              aria-hidden={!sideLink ? true : undefined}
+              tabIndex={!sideLink ? -1 : undefined}
+              onClick={() => sideLink && go(sideLink.to)}
+              data-testid="plus-side-link"
             >
-              {t("plus.prices")}
+              {sideLink?.label ?? "\u00a0"}
             </button>
           </div>
-          {note ? <p className="plus-note">{note}</p> : null}
+          {note ? (
+            premium.signedIn ? (
+              <p className="plus-note">{note}</p>
+            ) : (
+              <Link
+                to="/auth/register"
+                search={{ next: href }}
+                className="plus-note plus-note--link"
+                data-testid="plus-note-signup"
+              >
+                {note}
+              </Link>
+            )
+          ) : null}
 
           <div className="plus-steps" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
             <section
@@ -283,7 +334,8 @@ export function PlusOffer({
                   plan={plan}
                   onPlan={setPlan}
                   profile={profile}
-                  onViewEditions={() => (standalone ? undefined : go(1))}
+                  context={via}
+                  checkoutOpen={checkoutOpen}
                   onBuy={() => void onBuy()}
                   onRestore={() => void onRestore()}
                   titleRef={titleRef}

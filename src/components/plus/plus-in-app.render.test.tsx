@@ -80,7 +80,7 @@ describe("« Votre saison » on the card page", () => {
       expect(visible).toContain("3e sur 5");
       expect(visible).toContain(fr["plus.in.season_title"]);
       expect(visible).toContain(fr["plus.in.unlock"]);
-      expect(html).toContain('href="/curva/plus?step=3"');
+      expect(html).toContain('href="/curva/plus?step=3&amp;via=season"');
       expect(html).toMatch(/class="pl-under[^"]*" aria-hidden="true" inert=""/);
       // The head is outside the blur.
       expect(html.indexOf("plus-real-points")).toBeLessThan(html.indexOf("pl-under"));
@@ -134,7 +134,7 @@ describe("« Détail du duel » in the face-à-face", () => {
     expect(visible).toContain("598");
     expect(visible).toContain("Yassine");
     expect(visible).toContain(fr["plus.in.duel_title"]);
-    expect(html).toContain('href="/curva/plus?step=3"');
+    expect(html).toContain('href="/curva/plus?step=3&amp;via=duel"');
     expect(html).toMatch(/aria-hidden="true" inert=""/);
   });
 

@@ -31,13 +31,9 @@ function useCardWidth(max: number, reserved: number, aspect: number): number {
 }
 
 /**
- * The existing `ManagerCard`, as it renders today, with a place for the edition.
- *
- * TODO(lane E, card editions): `edition` is the style the member picked (`holo`, `electric`,
- * `pixel`, `chrome`). Until the editions exist on the shield renderer the card does not change
- * with it; the choice is recorded in `data-edition` on the wrapper, which is the hook (a CSS
- * selector, or a prop to the renderer) lane E uses to draw the frame, foil and motion. The rating
- * and the tier never change with the edition.
+ * The existing `ManagerCard`. The finish is the profile's own `edition` (the caller sets it); the
+ * `edition` prop only records it in `data-edition` on the wrapper, for CSS and tests. The rating and
+ * the tier never change with the edition.
  */
 export function PlusCard({
   profile,
