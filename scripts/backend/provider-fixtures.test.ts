@@ -88,7 +88,7 @@ describe("trimSofascoreStatistics", () => {
             groupName: "Shots",
             statisticsItems: [
               { key: "shotsOnGoal", name: "Shots on target", homeValue: 3, awayValue: 4, extra: 1 },
-              { key: "ballPossession", name: "Ball possession", homeValue: 42, awayValue: 58 },
+              { key: "totalTackle", name: "Tackles", homeValue: 12, awayValue: 9 },
             ],
           },
         ],
@@ -150,7 +150,9 @@ describe("summaries print counts and labels, never names", () => {
       },
       incidents: { incidents: [{ incidentType: "goal", assist1: { name: "X" } }] },
       statistics: {
-        statistics: [{ groups: [{ statisticsItems: [{ key: "shotsOnGoal" }, { key: "fouls" }] }] }],
+        statistics: [
+          { groups: [{ statisticsItems: [{ key: "shotsOnGoal" }, { key: "totalTackle" }] }] },
+        ],
       },
     });
     expect(full.fullCoverage).toBe(true);

@@ -1,5 +1,5 @@
 -- BotolaGO+ (membership), the API (20261013100200): api.premium_status,
--- api.get_my_premium and the four staff functions.
+-- api.get_my_premium and the four staff functions (the overview also by product, 20261013100500).
 --
 -- Covered: grants and shape; "off is an answer" and the order (off answer, step-up,
 -- caller); the public status (prices 20 / 200 MAD, saving 40 MAD, the five editions);
@@ -10,7 +10,7 @@
 -- Accounts: M member (monthly), Y member (yearly), N nobody, V verified MFA factor,
 -- G complimentary grant, S platform admin (aal2 session), X signed in, not staff.
 begin;
-select extensions.plan(57);
+select extensions.plan(59);
 select set_config('app.environment', 'test', true);
 
 create function pg_temp.u(n integer) returns uuid language sql immutable as $$
@@ -212,7 +212,7 @@ select extensions.is(pg_temp.adm('aal1', 'api.admin_premium_overview()') ->> '__
   'the staff surface requires a second factor');
 select extensions.is(
   pg_temp.keys(pg_temp.adm('aal2', 'api.admin_premium_overview()')),
-  'lastEventAt,liveGrants,membersByState,products,settings',
+  'lastEventAt,liveGrants,membersByProduct,membersByState,products,settings',
   'the overview has counts and settings only');
 select extensions.is(
   (select concat_ws('/', o #>> '{settings,mode}', o ->> 'liveGrants', o -> 'membersByState' ->> 'active',
@@ -221,6 +221,16 @@ select extensions.is(
   'on/1/1/1/2', 'counted by effective state: one active, one refunded, one live grant');
 select extensions.is(jsonb_typeof(pg_temp.adm('aal2', 'api.admin_premium_overview()') -> 'membersByState'), 'object',
   'and no member is listed');
+-- 20261013100500: the same effective states, split by product; counts only.
+select extensions.is(
+  (select o -> 'membersByProduct' from (select pg_temp.adm('aal2', 'api.admin_premium_overview()') as o) x),
+  '{"plus_monthly": {"refunded": 1}, "plus_yearly": {"active": 1}}'::jsonb,
+  'counted by product and effective state: the monthly member was refunded, the yearly one is active');
+select extensions.is(
+  (select (select sum((s.value)::int) from jsonb_each_text(o -> 'membersByState') s)
+        = (select sum((s.value)::int) from jsonb_each(o -> 'membersByProduct') p, jsonb_each_text(p.value) s)
+   from (select pg_temp.adm('aal2', 'api.admin_premium_overview()') as o) x),
+  true, 'and the products add up to the states: nobody is counted twice or missed');
 
 select set_config('test.key', gen_random_uuid()::text, true);
 select extensions.is(pg_temp.adm('aal2', format('api.admin_grant_premium(%L, now() + interval ''30 days'', ''short'', gen_random_uuid())', pg_temp.u(3))) ->> '__error',

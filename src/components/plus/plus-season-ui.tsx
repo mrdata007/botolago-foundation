@@ -179,8 +179,9 @@ export function PlusTabs<K extends string>({
     if (next) choose(next.key, true);
   };
 
+  // A swipe on the tab bar moves the tabs, not the offer's steps.
   return (
-    <div className="ps-tabs" ref={bar}>
+    <div className="ps-tabs" ref={bar} data-no-swipe>
       <div
         className="ps-seg"
         role="tablist"

@@ -14,10 +14,10 @@ holds a field outside its keep-list or is large enough to be a full payload.
 
 `matches.json` lists the ten matches (provider IDs and labels only).
 
-| Source | Files per match | Matches |
-|---|---|---|
-| Sofascore (`sofascore/<matchId>.*.json`) | `detail`, `lineups`, `incidents`, `statistics` | all 10 |
-| Flashscore (`flashscore/<eventId>.*.json`) | `data`, `summary`, `lineups`, `statistics` | the 7 from 2026/27 round 1 |
+| Source                                     | Files per match                                | Matches                    |
+| ------------------------------------------ | ---------------------------------------------- | -------------------------- |
+| Sofascore (`sofascore/<matchId>.*.json`)   | `detail`, `lineups`, `incidents`, `statistics` | all 10                     |
+| Flashscore (`flashscore/<eventId>.*.json`) | `data`, `summary`, `lineups`, `statistics`     | the 7 from 2026/27 round 1 |
 
 Flashscore has no files for the three 2025/26 matches: its results list covers one season
 stage at a time and the earlier season's stage ID is not exposed by the endpoints verified
@@ -57,6 +57,21 @@ in Phase 0, so those event IDs could not be found.
   cross-provider match cannot rely on the name alone.
 - Sofascore lineup `goals` can undercount against its incidents (WAC–Temara: 3 against 4).
 - Flashscore `statistics` has "Shots on target" for every one of the 7 matches.
+
+## 2026-10-13 round 4: the live match-details fix
+
+`sofascore/17256975.*` (FUS Rabat 1-1 Raja Casablanca, limited coverage) and
+`sofascore/17256978.*` (RS Berkane 2-2 Renaissance Zemamra, full coverage, with
+an own goal) reproduce the refusal of 2026-10-13 (see
+`docs/backend/SOFASCORE_LIVE_EDGE.md`, "Match details"). They were read on
+2026-10-14 from SofaScore's public web API (`api.sofascore.com/api/v1/event/<id>`
+and `/incidents`, `/lineups`, `/statistics`: 8 requests, the RapidAPI key was not
+used), which serves the same JSON as the RapidAPI `matches/*` endpoints, and
+trimmed with the same keep-lists (`trim`, `SOFASCORE_SPEC`,
+`trimSofascoreStatistics`). `SOFASCORE_TEAM_STAT_KEYS` now also keeps the team
+statistic lines the match-details path maps (`ballPossession`, `cornerKicks`,
+`fouls`, `offsides`, `passes`, `expectedGoals`). They are not in `matches.json`
+(the Fantasy phase-0 plan) and have no Flashscore files.
 
 ## Regenerating
 

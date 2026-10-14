@@ -81,6 +81,13 @@
 .ps-seg button[aria-selected="true"] {
   color: var(--po-on-mint);
 }
+/* « Comparaison », the longest label, keeps a margin inside its quarter of a phone-wide bar. */
+@media (max-width: 400px) {
+  .ps-seg button {
+    font-size: 12px;
+    letter-spacing: -0.01em;
+  }
+}
 .ps-seg button:focus-visible {
   outline: 2px solid var(--po-sky);
   outline-offset: -3px;

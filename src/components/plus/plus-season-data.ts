@@ -174,13 +174,15 @@ export function deriveSeason(raw: SeasonRaw, leagueSize: number = LEAGUE_SIZE) {
   const worstWeek = argMin(raw.you);
   const rivalBestWeek = argMax(raw.rival);
   const rivalWorstWeek = argMin(raw.rival);
+  // Best and worst by the net gain (gain minus penalty), the figure the chart and headline use.
+  const netGain = (t: TransferWeek) => t[1] - t[2];
   const noWeek: TransferWeek = [MISSING, MISSING, 0, 0];
   const bestTransferWeek = raw.transfers.reduce(
-    (a, t) => (t[1] > a[1] ? t : a),
+    (a, t) => (netGain(t) > netGain(a) ? t : a),
     raw.transfers[0] ?? noWeek,
   );
   const worstTransferWeek = raw.transfers.reduce(
-    (a, t) => (t[1] < a[1] ? t : a),
+    (a, t) => (netGain(t) < netGain(a) ? t : a),
     raw.transfers[0] ?? noWeek,
   );
   const wins = lead.filter((x) => x > 0).length;

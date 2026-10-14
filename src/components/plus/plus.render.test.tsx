@@ -132,6 +132,9 @@ describe("the other screens", () => {
     expect(html.match(/role="tab"/g)).toHaveLength(4);
     expect(html.match(/role="tablist"/g)).toHaveLength(1);
     expect(html.match(/aria-selected="true"/g)).toHaveLength(1);
+    // only the tab bar stops the offer's step swipe; the rest of the screen still swipes
+    expect(html.match(/data-no-swipe/g)).toHaveLength(1);
+    expect(html).toMatch(/class="ps-tabs"[^>]*data-no-swipe/);
     for (const label of ["Résumé", "Points", "Décisions", "Note"]) expect(visible).toContain(label);
     // the first tab: the gap to the league and the duel in one line, every figure computed
     expect(visible).toContain("+41 points au-dessus de la ligue");

@@ -93,11 +93,71 @@ reads them the same way.
 Requests: 3 per fixture at full time and in the post-match refresh, in this order,
 all read before anything is written for that fixture (a match in play reads fewer,
 see "Live polling every 60 seconds"): `matches/get-incidents`, `matches/get-lineups`,
-`matches/get-statistics` (`?matchId=<event id>`). A provider failure, or a quota
-refusal, on any of them leaves that fixture unwritten. A quota refusal also ends
-the run (the remaining fixtures keep their quota) and is not recorded as a
-rejection against the fixture. Lineups or statistics the provider does not have
-(404) are stored as empty; incidents are required.
+`matches/get-statistics` (`?matchId=<event id>`). A quota refusal leaves that
+fixture unwritten and ends the run (the remaining fixtures keep their quota); it
+is not recorded as a rejection against the fixture.
+
+The three sections are independent (since 2026-10-14, migration
+`20261014120000` and this code; before it, one unreadable reply threw the whole
+fixture away):
+
+- **"No data" is not a failure.** For data SofaScore does not have (yet),
+  RapidAPI answers HTTP 200 with a body `{"error": {"code": 404, ...}}` (the
+  coverage audit of 2026-10-01 saw it; SofaScore itself answers 404). Both are
+  "no data": lineups and statistics are sent empty (the RPC keeps what is
+  stored), and incidents leave a match in play `unavailable` (counted, not a
+  rejection). A finished match without incidents is still a rejection, so the
+  backfill stops after two.
+- **A failing optional reply does not sink the events.** A lineups or
+  statistics request that fails (other than a quota refusal), or a reply that
+  cannot be read, is sent empty and reported in `matchDetails.partial`
+  (`leftOut`); the events are stored. Unreadable incidents are sent as
+  `events: null` (the stored timeline is kept) while the lineups and statistics
+  are stored. The Fantasy step is not handed a set with a failed reply (it reads
+  the match again itself).
+- **The database stores section by section.** `api.ingest_football_match_details`
+  still refuses the whole delivery when it cannot be this fixture's (not an
+  object, a section that is not a list, an unknown fixture, a club that is not one
+  of the match's two, a statistic/lineup/pressure/absence with no club). Otherwise
+  each section (events, statistics, each club's lineup, pressure, absences) is
+  stored on its own: one that fails (two events with one key, a doubled pressure
+  minute, an unknown absence category, an event Fantasy still references and the
+  provider dropped) is rolled back alone and named in `rejectedSections`; a bad
+  row (event type, period, minute, added time or order out of range, a negative or
+  non-numeric statistic, a lineup player with an unknown slot or position) is left
+  out and counted (`eventsRejected`, `statisticsRejected`,
+  `lineupPlayersRejected`). An event left out is not deleted: its stored version
+  stays.
+- **Reported.** A fixture stored without a section counts as stored; the run is
+  `partial` with `error_code = 'match_details_section_rejected'` and one
+  `football_ingestion_rejections` row per fixture (`details_section_left_out` or
+  `details_section_rejected`, the sections and the row count in
+  `validation_issues`). `match_details_item_rejected` still means a fixture was
+  not stored at all.
+
+Root cause this fixed (FUS Rabat 1-1 Raja, 2026-10-13, event 17256975): while
+the match was on, every details attempt read the incidents, the lineups and the
+statistics; SofaScore had no team statistics for this limited-coverage match
+until full time, the statistics reply was the `{"error": ...}` body, the
+statistics parser refused it, and with it the goals, the card, the
+substitutions and both lineups. The 9 `partial` runs of that evening match those
+attempts (each one alongside the post-match refresh of RS Berkane - Renaissance
+Zemamra, which stored); the 11 events appeared at 21:53:06, the full-time read,
+when the cards-only statistics reply was readable. Replies:
+`tests/fixtures/providers/sofascore/17256975.*`, test
+`supabase/functions/_shared/sofascore-match-details-sections.test.ts`. The
+fixture behind each of those 9 runs is inferred from the run counts, not read;
+this read-only query confirms it (expected: `17256975`,
+`invalid_provider_payload`, nine times, between kickoff and 21:52):
+
+```sql
+select rejection.external_id, rejection.error_code, rejection.created_at
+  from app_private.football_ingestion_rejections rejection
+  join app_private.football_ingestion_runs run on run.id = rejection.run_id
+ where run.provider_name = 'sofascore' and run.job_type = 'match_events'
+   and run.created_at between '2026-10-13 19:55Z' and '2026-10-13 22:30Z'
+ order by rejection.created_at;
+```
 
 When:
 
@@ -146,10 +206,18 @@ Rules that matter:
   named in the event's `detail`, as an unknown SportsMonks player is. No player
   mapping is created here.
 - Minutes played are not sent: the RPC has no field for them.
-- Statistic keys other than the first three above are SofaScore's published names,
-  not yet seen in the committed samples (those matches carry shots, shots on
-  target, saves and cards only). A key that does not match is simply not stored;
-  `accuratePasses` is not mapped (a count, `pass_accuracy` is a percentage).
+- Every statistic key above is seen in a real reply (RS Berkane - Renaissance
+  Zemamra, 17256978, read from SofaScore on 2026-10-14: 18 rows, 9 per club). A
+  key that does not match is simply not stored; `accuratePasses` is not mapped (a
+  count, `pass_accuracy` is a percentage). A limited-coverage match has only the
+  cards lines, none of which is shown, so it stores no team statistics at all.
+- Team statistics can appear after the 2-hour post-match refresh has ended (that
+  same Berkane match had none stored on the evening; its full statistics were at
+  SofaScore the next morning). The staged statistics pulls of finished matches
+  (`sofascore-staged-stats.ts`, docs/backend/SOFASCORE_STAGED_STATS.md) already
+  read the three replies again days later for Fantasy; the same replies now also
+  go through `api.ingest_football_match_details` (scope `staged`), so the late
+  statistics are stored. **No extra request.**
 
 Environment (all optional): `SOFASCORE_DETAILS_PER_TICK`,
 `SOFASCORE_DETAILS_BACKFILL_LIMIT`.
@@ -210,6 +278,14 @@ triple the cost for data that does not move between goals. Now:
   `matches/get-lineups`: 2 requests, once, so unknown players still reach the
   staff matching list before full time (the live matching of 20261012120000 keeps
   working; it needs the lineups once, not every minute).
+- lineups SofaScore had not published on that tick (no lineup stored: the snapshot's
+  `hasLineups`, migration 20261014120000) are read again with the incidents, but
+  only on a tick that wrote the score or the status (kickoff, a goal, half-time,
+  the second half), never on a `changeTimestamp` move alone, and no more once a
+  lineup is stored. Usually 0 extra requests (lineups are out before kickoff);
+  at most about 6 per match (3 status writes + 2.7 goals) for a match whose
+  lineups never come. Without the migration, `hasLineups` is absent and the old
+  rule (the kickoff tick only) applies.
 - statistics are read at full time only, with the lineups and incidents again
   (3 requests, written as finished this tick), then in the 2-hour post-match
   refresh, unchanged.

@@ -489,7 +489,8 @@ export function renderApplySql(report: SquadLinkReport, opts: ApplyOptions = {})
 --
 -- Before running (AGENTS.md "One writer at a time, per database"): list running agents and
 -- workflows, pause the cron writers that touch fixtures, players and Fantasy (AGENTS.md "Before
--- writing", item 3; sofascore-held-maintenance-pause.sql), then set c_one_writer_checked to true.
+-- writing", item 3; sofascore-rating-release-pause.sql, resumed with
+-- sofascore-rating-release-resume.sql), then set c_one_writer_checked to true.
 -- This script writes app_private.football_provider_mappings, app_private.sofascore_player_match_log
 -- and app_private.sofascore_player_match_queue, and sets held matches to be retried.
 --

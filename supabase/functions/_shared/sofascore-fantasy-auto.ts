@@ -77,6 +77,7 @@ import {
   type SofascoreDetailsRequestLog,
 } from "./sofascore-match-details.ts";
 import {
+  sofascoreIncidentKind,
   SofascoreParseError,
   parseSofascoreIncidents,
   parseSofascoreLineups,
@@ -219,7 +220,7 @@ function readStoppage(value: unknown): SofascoreStoppage | undefined {
   };
 }
 
-function readStored(value: unknown): MatchParts | null {
+export function readStored(value: unknown): MatchParts | null {
   if (!isRecord(value) || value.version !== STORED_VERSION) return null;
   const { lineups, incidents, statistics } = value;
   if (
@@ -232,9 +233,24 @@ function readStored(value: unknown): MatchParts | null {
   )
     return null;
   const stoppage = readStoppage(value.stoppage);
+  // Replies stored before a type/class pair was reviewed carry `unknown` for
+  // it; read the kind again from the raw labels kept with each incident, so a
+  // match held for a label now understood (goal/ownGoal, 17256978) can be
+  // recorded from what is stored, without a request.
+  const upgraded = (incidents as PerformanceIncident[]).map((i) =>
+    isRecord(i) && i.kind === "unknown" && typeof i.rawType === "string"
+      ? {
+          ...i,
+          kind: sofascoreIncidentKind(
+            i.rawType,
+            typeof i.rawClass === "string" ? i.rawClass : null,
+          ),
+        }
+      : i,
+  );
   return {
     lineups: lineups as unknown as PerformanceLineups,
-    incidents: incidents as PerformanceIncident[],
+    incidents: upgraded,
     statistics: statistics as PerformanceStatisticLine[],
     ...(stoppage ? { stoppage } : {}),
   };

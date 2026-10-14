@@ -125,6 +125,10 @@ describe("the example season adds up", () => {
     expect(S.bestTransferWeek[0]).toBe(8);
     expect(S.worstTransferWeek[0]).toBe(6);
     expect(S.netByWeek).toEqual([5, 3, -6, 11, -2]);
+    // best and worst are picked and shown by the net gain, like the chart
+    const netOf = (t: readonly number[]) => t[1]! - t[2]!;
+    expect(netOf(S.bestTransferWeek)).toBe(Math.max(...S.netByWeek));
+    expect(netOf(S.worstTransferWeek)).toBe(Math.min(...S.netByWeek));
     // the two journées that cost points net are J.6 and J.10
     expect(S.netByWeek.filter((n) => n < 0)).toHaveLength(2);
     expect(S.rivalNet).toBe(19);

@@ -25,6 +25,12 @@ export interface PerformancePlayerRef {
 export const PERFORMANCE_INCIDENT_KINDS = [
   "goal",
   "penalty_goal",
+  /**
+   * An own goal. `side` is the side it COUNTS FOR (SofaScore's `isHome` on a
+   * `goal/ownGoal` incident, confirmed by the score after it on event 17256978);
+   * `player` is the player who scored it, of the other side.
+   */
+  "own_goal",
   "penalty_missed",
   "yellow_card",
   "second_yellow",
