@@ -217,6 +217,16 @@ describe("report and apply script", () => {
     expect(sql).toContain("SofaScore player 12");
   });
 
+  test("the apply script treats a second SofaScore id as linked (20261014170000)", () => {
+    const sql = renderApplySql(report(false), { ownerAuthUserId: U(5) });
+    expect(sql).toContain("GUARD: migration 20261014170000 (second SofaScore ids) is not applied");
+    // A confirmed link is refused when either side is an alias; a suggestion for an alias is skipped.
+    expect(sql).toContain("where a.sofascore_player_id = r.sofa_id or a.player_id = r.player_id");
+    expect(sql).toContain(
+      "or exists (select 1 from app_private.sofascore_player_aliases a where a.sofascore_player_id = r.sofa_id) then\n      v_skipped",
+    );
+  });
+
   test("a name that is shown is quoted safely", () => {
     const named = classifySquads({
       clubs: CLUBS,
