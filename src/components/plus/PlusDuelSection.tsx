@@ -6,6 +6,7 @@ import { useLeagueContext } from "@/services/use-premium-league-context";
 
 import { PlusEmbed, PlusLockedSection } from "./PlusLockedSection";
 import { PlusDuelBody } from "./PlusDuelScreen";
+import { rememberDuelReturn } from "./plus-return";
 import type { PlusAccess } from "./plus-access";
 import { usePlusCopy } from "./plus-copy";
 import { duelToSeasonView } from "./plus-member-data";
@@ -50,7 +51,7 @@ export function PlusDuelSection({
 }) {
   if (access === "off") return null;
   return access === "locked" ? (
-    <LockedDuel mine={mine} other={other} size={size} />
+    <LockedDuel mine={mine} other={other} otherTeamId={otherTeamId} size={size} />
   ) : (
     <MemberDuel mine={mine} other={other} otherTeamId={otherTeamId} leagueId={leagueId} />
   );
@@ -79,16 +80,20 @@ function Side({ side, size, own = false }: { side: DuelSide; size: number; own?:
 function LockedDuel({
   mine,
   other,
+  otherTeamId,
   size,
 }: {
   mine: DuelSide | null;
   other: DuelSide;
+  otherTeamId: string;
   size: number;
 }) {
   const { t } = usePlusCopy();
   return (
     <PlusLockedSection
       testId="plus-duel-locked"
+      via="duel"
+      onOpen={() => rememberDuelReturn(otherTeamId)}
       headline={t("plus.in.duel_title")}
       head={
         <div className="pl-duel-head" data-testid="plus-real-duel-head">

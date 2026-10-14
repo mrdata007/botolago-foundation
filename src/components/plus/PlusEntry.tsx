@@ -10,20 +10,21 @@ import { cn } from "@/lib/utils";
 import { PlusLockChip } from "./PlusLockChip";
 import { usePlusLocksVisible } from "./use-plus-locks";
 import { usePlusCopy } from "./plus-copy";
+import type { PlusContext } from "./plus-steps";
 
 /**
  * Premium entry points in Curva. Each is a row that says what the extra is and carries the lock
- * chip; a tap opens the offer (the editions at screen 1, the other two at the paywall). Nothing
+ * chip; a tap opens the short paywall, with a headline for that extra. Nothing
  * renders while the build switch is off, the (mocked) status is off, or the reader already is a
  * member: for a member these rows will become the real features (TODO lane E: the edition picker;
  * TODO lane C: the career detail and the detailed duel), not offers.
  */
 export type PlusEntryKind = "editions" | "career" | "duels";
 
-const ENTRIES: Record<PlusEntryKind, { icon: ReactNode; step: 1 | 3 }> = {
-  editions: { icon: <Sparkles aria-hidden />, step: 1 },
-  career: { icon: <BarChart3 aria-hidden />, step: 3 },
-  duels: { icon: <Swords aria-hidden />, step: 3 },
+const ENTRIES: Record<PlusEntryKind, { icon: ReactNode; via: PlusContext }> = {
+  editions: { icon: <Sparkles aria-hidden />, via: "editions" },
+  career: { icon: <BarChart3 aria-hidden />, via: "career" },
+  duels: { icon: <Swords aria-hidden />, via: "duel" },
 };
 
 /** The entry's title and one line, from literal keys (the i18n gate reads them). */
@@ -48,7 +49,7 @@ export function PlusEntryRow({ kind, ruled = false }: { kind: PlusEntryKind; rul
   return (
     <Link
       to="/curva/plus"
-      search={{ step: entry.step }}
+      search={{ step: 3, via: entry.via }}
       data-testid={`plus-entry-${kind}`}
       className={cn(
         "flex w-full items-center gap-3 px-4 py-3 text-start",

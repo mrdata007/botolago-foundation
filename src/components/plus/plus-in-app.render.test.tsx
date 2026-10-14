@@ -80,7 +80,7 @@ describe("« Votre saison » on the card page", () => {
       expect(visible).toContain("3e sur 5");
       expect(visible).toContain(fr["plus.in.season_title"]);
       expect(visible).toContain(fr["plus.in.unlock"]);
-      expect(html).toContain('href="/curva/plus?step=3"');
+      expect(html).toContain('href="/curva/plus?step=3&amp;via=season"');
       expect(html).toMatch(/class="pl-under[^"]*" aria-hidden="true" inert=""/);
       // The head is outside the blur.
       expect(html.indexOf("plus-real-points")).toBeLessThan(html.indexOf("pl-under"));
@@ -100,7 +100,7 @@ describe("« Votre saison » on the card page", () => {
     expect(html).not.toContain("301");
   });
 
-  it("member: clear, no lock, four tabs, real figures with dashes for what the backend lacks", async () => {
+  it("member: clear, no lock, four tabs, real figures and no dash for what the backend lacks", async () => {
     const client = new QueryClient();
     const career = distinctCareer();
     client.setQueryData(premiumCardKeys.career(null), career);
@@ -111,7 +111,7 @@ describe("« Votre saison » on the card page", () => {
     expect(html).not.toContain("inert");
     expect(html.match(/role="tab"/g)).toHaveLength(4);
     expect(text(html)).toContain(String(total));
-    expect(text(html)).toContain("—");
+    expect(text(html)).not.toContain("—");
     expect(html).not.toContain("NaN");
   });
 
@@ -134,7 +134,7 @@ describe("« Détail du duel » in the face-à-face", () => {
     expect(visible).toContain("598");
     expect(visible).toContain("Yassine");
     expect(visible).toContain(fr["plus.in.duel_title"]);
-    expect(html).toContain('href="/curva/plus?step=3"');
+    expect(html).toContain('href="/curva/plus?step=3&amp;via=duel"');
     expect(html).toMatch(/aria-hidden="true" inert=""/);
   });
 
@@ -216,7 +216,7 @@ describe("the member mapper", () => {
     const d = mockDuel("t2");
     const view = duelToSeasonView(d, "fr", { you: "Moi", rival: "Yassine" })!;
     expect(view.raw.rival).toHaveLength(d.weeks.length);
-    expect(view.people?.rival.name).toBe("Sami");
+    expect(view.people?.rival.name).toBe("Yassine");
     expect(
       duelToSeasonView({ ...d, opponent: { ...d.opponent, historyVisible: false } }, "fr", {
         you: "a",

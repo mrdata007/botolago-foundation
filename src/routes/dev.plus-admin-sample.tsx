@@ -22,6 +22,8 @@ type Search = {
   reader?: "1";
   /** `error`: the overview fails. `refuse`: every grant and revoke is refused (recent sign-in). */
   state?: "error" | "refuse" | "old";
+  /** The mode the sample's overview reports. */
+  mode?: "off" | "preview" | "on";
 };
 
 export const Route = createFileRoute("/dev/plus-admin-sample")({
@@ -30,6 +32,9 @@ export const Route = createFileRoute("/dev/plus-admin-sample")({
   validateSearch: (search: Record<string, unknown>): Search => ({
     ...(search.lang === "ar" || search.lang === "fr" ? { lang: search.lang } : {}),
     ...(String(search.reader) === "1" ? { reader: "1" as const } : {}),
+    ...(search.mode === "off" || search.mode === "preview" || search.mode === "on"
+      ? { mode: search.mode }
+      : {}),
     ...(search.state === "error" || search.state === "refuse" || search.state === "old"
       ? { state: search.state }
       : {}),
@@ -52,6 +57,7 @@ function SampleHarness() {
       if (cancelled) return;
       setRepository(
         new InMemoryPremiumAdminRepository({
+          ...(search.mode ? { mode: search.mode } : {}),
           ...(search.state === "error" ? { failOverviewWith: "premium_admin_unavailable" } : {}),
           ...(search.state === "refuse" ? { failWriteWith: "recent_auth_required" } : {}),
           ...(search.state === "old" ? { withoutByProduct: true } : {}),
@@ -61,7 +67,7 @@ function SampleHarness() {
     return () => {
       cancelled = true;
     };
-  }, [search.state]);
+  }, [search.state, search.mode]);
 
   return (
     <div className={cn("min-h-dvh", ui.surface.page)} dir={lang === "ar" ? "rtl" : "ltr"}>

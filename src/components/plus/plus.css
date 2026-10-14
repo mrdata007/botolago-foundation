@@ -218,6 +218,14 @@
   text-align: center;
 }
 
+a.plus-note--link {
+  display: block;
+  color: var(--po-sky);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* ---------- The logo ---------- */
 .plus-logo {
   display: inline-block;
@@ -389,6 +397,16 @@
 .plus-btn--primary:active {
   background: var(--po-mint-press);
 }
+.plus-btn:disabled {
+  cursor: default;
+  background: var(--po-surface);
+  color: var(--po-text-muted);
+  border: 1px solid var(--po-rule-strong);
+}
+.plus-btn:disabled:active {
+  background: var(--po-surface);
+  transform: none;
+}
 .plus-btn--text {
   min-block-size: var(--po-tap);
   background: none;
@@ -509,6 +527,9 @@
 }
 .plus-s3-logo .plus-logo {
   block-size: 32px;
+}
+.plus-s3-h {
+  margin-block-start: 0;
 }
 .plus-plans {
   margin: 0;
@@ -663,9 +684,6 @@
   text-align: start;
   inline-size: 100%;
 }
-button.plus-feat {
-  cursor: pointer;
-}
 .plus-ic {
   flex: none;
   inline-size: 56px;
@@ -704,15 +722,6 @@ button.plus-feat {
 .plus-offer:lang(ar) .plus-ft span,
 .plus-offer[dir="rtl"] .plus-ft span {
   line-height: 1.6;
-}
-.plus-chev {
-  flex: none;
-  inline-size: 24px;
-  block-size: 24px;
-  color: var(--po-text);
-}
-[dir="rtl"] .plus-chev {
-  transform: scaleX(-1);
 }
 .plus-terms-d {
   border-radius: var(--po-radius-panel);
@@ -775,6 +784,41 @@ button.plus-feat {
 }
 .plus-s3 bdi[dir="ltr"] {
   white-space: nowrap;
+}
+.plus-s3 .plus-foot > .plus-btn {
+  justify-self: center;
+}
+/* A wide screen: the paywall is wider, the plans and the benefits side by side. */
+@media (min-width: 1024px) {
+  .plus-offer[data-step="3"] .plus-phone {
+    max-inline-size: 60rem;
+  }
+  .plus-s3 .plus-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto auto auto auto 1fr;
+    align-content: start;
+    align-items: start;
+    column-gap: var(--po-space-8);
+    row-gap: var(--po-space-3);
+  }
+  .plus-s3 .plus-s3-logo,
+  .plus-s3 .plus-s3-h {
+    grid-column: 1 / -1;
+  }
+  .plus-s3 .plus-plans,
+  .plus-s3 .plus-all,
+  .plus-s3 .plus-terms-d {
+    grid-column: 1;
+  }
+  .plus-s3 .plus-feats {
+    grid-column: 2;
+    grid-row: 3 / span 3;
+    margin-block-start: 0;
+  }
+  .plus-s3 .plus-foot > .plus-btn {
+    max-inline-size: 28rem;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .plus-all svg {
@@ -886,7 +930,6 @@ button.plus-feat {
   .plus-icon-btn,
   .plus-swatch,
   .plus-plan,
-  button.plus-feat,
   .plus-link-btn {
     transition:
       transform var(--po-dur-fast) var(--po-ease-out),
@@ -896,7 +939,6 @@ button.plus-feat {
   .plus-icon-btn:active,
   .plus-swatch:active,
   .plus-plan:active,
-  button.plus-feat:active,
   .plus-link-btn:active {
     transform: scale(0.97);
   }
@@ -910,13 +952,11 @@ button.plus-feat {
   }
 }
 @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
-  .plus-plan:not([data-selected="true"]):hover,
-  button.plus-feat:hover {
+  .plus-plan:not([data-selected="true"]):hover {
     transform: translateY(-2px);
     box-shadow: var(--po-shadow-2);
   }
-  .plus-plan:not([data-selected="true"]):active,
-  button.plus-feat:active {
+  .plus-plan:not([data-selected="true"]):active {
     transform: scale(0.97);
   }
 }
