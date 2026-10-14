@@ -117,3 +117,49 @@ describe("landing copy", () => {
     expect(source).not.toMatch(/20\d\d-\d\d-\d\d/);
   });
 });
+
+/**
+ * Audit FANT-06: the landing page must not promise a scoring rule the rules
+ * page may not be applying. The rating rule is off by default and starts at a
+ * round the owner chooses, so the page says only what is true under every
+ * state (points come from match performance, the captain counts double) and
+ * sends the visitor to the rules page for the scale in force and its start.
+ */
+describe("landing scoring copy (FANT-06)", () => {
+  const scoringKeys = Object.keys(fr).filter(
+    (key) => key.startsWith("landing.") && /step3|scoring|faq_points/.test(key),
+  );
+
+  it("promises no rating-based points, in French or Arabic, whatever the policy switch says", () => {
+    expect(scoringKeys.length).toBeGreaterThan(2);
+    for (const key of scoringKeys) {
+      for (const dictionary of [fr, ar] as Array<Record<string, string>>) {
+        const value = dictionary[key];
+        expect(value).not.toMatch(/SofaScore/i);
+        expect(value).not.toMatch(/arrondi|مقرّباً|مقربا/);
+        expect(value).not.toMatch(/\b[5-8]\s*(pts|points|نقاط)/);
+      }
+    }
+  });
+
+  it("hard-codes no scoring figure in the component", () => {
+    const source = readFileSync(join(ROOT, "src/components/landing/LandingPage.tsx"), "utf8");
+    expect(source).not.toMatch(/points:\s*\d/);
+    expect(source).not.toContain("scoring_rating_");
+    expect(source).not.toContain("scoring_no_rating");
+  });
+
+  it("renders no rating example and links step 3 to the rules page", async () => {
+    const html = await render();
+    expect(html).not.toContain("SofaScore");
+    expect(html).toContain(escapeHtml(fr["landing.step3_body"]));
+    expect(html).toContain(escapeHtml(fr["landing.scoring_link"]));
+    expect(html).toContain(escapeHtml(fr["landing.faq_points_a"]));
+  });
+
+  it("states no rating promise in the Fantasy onboarding either", () => {
+    for (const dictionary of [fr, ar] as Array<Record<string, string>>) {
+      expect(dictionary["fantasy.onboarding.step2_body"]).not.toMatch(/SofaScore/i);
+    }
+  });
+});

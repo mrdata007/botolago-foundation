@@ -94,8 +94,11 @@ display only") from the gameweek the rule starts.
    states in French and Arabic: points = SofaScore rating rounded to the nearest
    whole number, 5 when he played without a rating, 0 when he did not play, the
    captain doubles; the category scale stays below it, labelled "until GW4". The
-   landing page and the Fantasy onboarding no longer list goals, assists and clean
-   sheets as what scores.
+   landing page and the Fantasy onboarding quote no scale at all (audit FANT-06): they
+   say points follow match performance and point to the rules page, which names the
+   scale in force and its first round. With both policies present, the rules page's
+   "how points are validated" card names the rounds each explanation governs (audit
+   LOC-01, `src/lib/fantasy-scoring-policy.ts`).
 
 ## Screen change brief (AGENTS.md, "Screen work")
 

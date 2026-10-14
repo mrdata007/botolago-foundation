@@ -9,6 +9,10 @@ export const ar = {
   "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
   "fantasy.scoring.estimatesPolicy":
     "يمكن اعتماد التقديرات المراجعة استناداً إلى أفضل البيانات المتاحة نهائياً واحتسابها في الترتيب. تُحفظ الافتراضات وتبقى النقاط خاضعة لإجراء التصحيح خلال 72 ساعة. تظل هوية اللاعب غير المحسومة قيد الانتظار.",
+  // Audit LOC-01: names the rounds each explanation governs once the rating
+  // rule exists beside the action-based scale ({n} is a round number).
+  "fantasy.scoring.eventUntil": "حتى الجولة {n}: احتساب النقاط حسب أحداث المباراة.",
+  "fantasy.scoring.ratingFrom": "ابتداءً من الجولة {n}: النقاط حسب تقييم SofaScore.",
   "fantasy.scoring.full": "احتساب كامل",
   "fantasy.scoring.simple": "احتساب مبسط",
   "fantasy.scoring.pending": "في انتظار البيانات",
@@ -784,7 +788,7 @@ export const ar = {
     "اختر 15 لاعباً بميزانية 100 م وشكّل 11 لاعباً أساسياً في كل جولة.",
   "fantasy.onboarding.step2_title": "اجمع النقاط",
   "fantasy.onboarding.step2_body":
-    "كل لاعب يحصل على تقييمه على SofaScore في المباراة، مقرّباً إلى أقرب عدد صحيح.",
+    "يحصد كل لاعب نقاطاً بحسب أدائه في المباراة، ونظام النقاط المعتمد موضّح في صفحة القواعد.",
   "fantasy.onboarding.step3_title": "تحدَّ أصدقاءك",
   "fantasy.onboarding.step3_body": "أنشئ دوري خاصاً برمز وتنافس على الصدارة.",
   "fantasy.onboarding.skip": "تخطي",
@@ -2531,11 +2535,8 @@ export const ar = {
   "landing.step2_example": "مثال: يحصد قائدك {n} نقاط، فتحصل أنت على {double}.",
   "landing.step3_title": "اجمع النقاط وتقدّم في الترتيب",
   "landing.step3_body":
-    "يحصل لاعبوك على تقييمهم على SofaScore في كل مباراة، مقرّباً إلى أقرب عدد صحيح.",
-  "landing.scoring_label": "من نظام النقاط",
-  "landing.scoring_rating_high": "تقييم SofaScore 7.5",
-  "landing.scoring_rating_low": "تقييم SofaScore 6.4",
-  "landing.scoring_no_rating": "شارك دون تقييم SofaScore",
+    "يحصد لاعبوك نقاطاً بحسب أدائهم في المباريات. نظام النقاط المعتمد والجولة التي يبدأ منها تطبيقه منشوران في صفحة القواعد.",
+  "landing.scoring_link": "اطّلع على نظام النقاط المعتمد",
   "landing.points_value": "{n} نقاط",
   "landing.why_title": "لماذا ستعود في كل جولة",
   "landing.why1_title": "لاعبون تتابعهم أصلاً",
@@ -2571,7 +2572,7 @@ export const ar = {
     "نعم. الفريق الذي تنشئه الآن يدخل الجولة المفتوحة التالية ويجمع النقاط ابتداءً منها.",
   "landing.faq_points_q": "كيف تُحتسب النقاط؟",
   "landing.faq_points_a":
-    "كل لاعب يحصل على تقييمه على SofaScore في المباراة، مقرّباً إلى أقرب عدد صحيح (7.5 تصبح 8). اللاعب الذي شارك دون تقييم يحصل على 5 نقاط، ومن لم يشارك يحصل على 0، ونقاط قائدك تُحتسب مضاعفة.",
+    "يحصد كل لاعب نقاطاً بحسب أدائه في المباراة، ونقاط قائدك تُحتسب مضاعفة. تجد نظام النقاط المعتمد والجولة التي يبدأ منها تطبيقه وطريقة اعتماد النقاط في صفحة القواعد.",
   "landing.faq_account_q": "هل أحتاج إلى حساب؟",
   "landing.faq_account_a":
     "لتكوين فريقك، لا. لحفظه ودخول الترتيب، نعم: حساب مجاني مع تأكيد بريدك الإلكتروني.",
