@@ -23,29 +23,29 @@ import { useViewEvent } from "./use-view-event";
 
 /** What the guest wanted, from the address: the headline names it. */
 export function lockTitleKey(pathname: string): TranslationKey {
-  if (pathname.startsWith("/curva/carte")) return "curva.lock.title.card";
-  if (pathname.startsWith("/curva/les-votres")) return "curva.lock.title.people";
-  if (pathname.startsWith("/curva/classement")) return "curva.lock.title.ranking";
-  if (pathname.startsWith("/curva/saisons")) return "curva.lock.title.seasons";
-  if (pathname.startsWith("/curva/plus")) return "curva.lock.title.plus";
-  return "curva.lock.title.home";
+  if (pathname.startsWith("/curva/carte")) return "lock.curva.title.card";
+  if (pathname.startsWith("/curva/les-votres")) return "lock.curva.title.people";
+  if (pathname.startsWith("/curva/classement")) return "lock.curva.title.ranking";
+  if (pathname.startsWith("/curva/saisons")) return "lock.curva.title.seasons";
+  if (pathname.startsWith("/curva/plus")) return "lock.curva.title.plus";
+  return "lock.curva.title.home";
 }
 
 /** The headline for that key, each spelled as a literal key (the i18n gate counts a computed key as W4). */
 function lockTitle(t: (key: TranslationKey) => string, key: TranslationKey): string {
   switch (key) {
-    case "curva.lock.title.card":
-      return t("curva.lock.title.card");
-    case "curva.lock.title.people":
-      return t("curva.lock.title.people");
-    case "curva.lock.title.ranking":
-      return t("curva.lock.title.ranking");
-    case "curva.lock.title.seasons":
-      return t("curva.lock.title.seasons");
-    case "curva.lock.title.plus":
-      return t("curva.lock.title.plus");
+    case "lock.curva.title.card":
+      return t("lock.curva.title.card");
+    case "lock.curva.title.people":
+      return t("lock.curva.title.people");
+    case "lock.curva.title.ranking":
+      return t("lock.curva.title.ranking");
+    case "lock.curva.title.seasons":
+      return t("lock.curva.title.seasons");
+    case "lock.curva.title.plus":
+      return t("lock.curva.title.plus");
     default:
-      return t("curva.lock.title.home");
+      return t("lock.curva.title.home");
   }
 }
 
@@ -152,7 +152,7 @@ export function CurvaLockScreen(): JSX.Element {
               {lockTitle(t, lockTitleKey(pathname))}
             </h2>
             <p className={cn("text-pretty", ui.text.secondary, ui.tone.muted)}>
-              {t("curva.lock.body")}
+              {t("lock.curva.body")}
             </p>
             <div className="mt-2 flex w-full flex-col gap-3">
               <UiLinkButton
@@ -162,7 +162,7 @@ export function CurvaLockScreen(): JSX.Element {
                 onClick={() => track("curva_guest_cta")}
                 data-testid="curva-lock-register"
               >
-                {t("curva.lock.create")}
+                {t("lock.curva.create")}
               </UiLinkButton>
               <UiLinkButton
                 to="/auth/login"
@@ -171,7 +171,7 @@ export function CurvaLockScreen(): JSX.Element {
                 onClick={() => track("curva_guest_cta")}
                 data-testid="curva-lock-signin"
               >
-                {t("curva.lock.signin")}
+                {t("lock.curva.signin")}
               </UiLinkButton>
             </div>
           </UiCard>

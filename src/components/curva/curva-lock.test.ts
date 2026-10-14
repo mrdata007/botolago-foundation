@@ -38,23 +38,23 @@ describe("the lock sits in the layout, before any Curva page or read", () => {
 
 describe("the lock screen", () => {
   it("names what the visitor wanted", () => {
-    expect(lockTitleKey("/curva")).toBe("curva.lock.title.home");
-    expect(lockTitleKey("/curva/carte")).toBe("curva.lock.title.card");
-    expect(lockTitleKey("/curva/les-votres")).toBe("curva.lock.title.people");
-    expect(lockTitleKey("/curva/classement")).toBe("curva.lock.title.ranking");
-    expect(lockTitleKey("/curva/plus")).toBe("curva.lock.title.plus");
+    expect(lockTitleKey("/curva")).toBe("lock.curva.title.home");
+    expect(lockTitleKey("/curva/carte")).toBe("lock.curva.title.card");
+    expect(lockTitleKey("/curva/les-votres")).toBe("lock.curva.title.people");
+    expect(lockTitleKey("/curva/classement")).toBe("lock.curva.title.ranking");
+    expect(lockTitleKey("/curva/plus")).toBe("lock.curva.title.plus");
   });
   it("has French and Arabic text, with the free account said and no banned word", () => {
     for (const lang of ["fr", "ar"] as const) {
       const d = dictionaries[lang];
-      for (const key of Object.keys(d).filter((k) => k.startsWith("curva.lock."))) {
+      for (const key of Object.keys(d).filter((k) => k.startsWith("lock.curva."))) {
         const value = (d as Record<string, string>)[key]!;
         expect(value.length).toBeGreaterThan(0);
         expect(value).not.toMatch(/débloqu|premium|pass\b/i);
       }
     }
-    expect(dictionaries.fr["curva.lock.title.home"]).toContain("gratuit");
-    expect(dictionaries.ar["curva.lock.title.home"]).toContain("المجاني");
+    expect(dictionaries.fr["lock.curva.title.home"]).toContain("gratuit");
+    expect(dictionaries.ar["lock.curva.title.home"]).toContain("المجاني");
   });
   it("reads nothing: the preview is example data only", () => {
     const source = read("src/components/curva/CurvaLockScreen.tsx");

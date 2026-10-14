@@ -128,11 +128,11 @@ describe("G1 for a visitor", () => {
   it("is the lock screen: one headline, create an account first, sign in second", async () => {
     const html = await view({ kind: "guest", closed: false });
     expect(html).toContain('data-testid="curva-lock"');
-    expect(headings(html)).toEqual(["Curva", fr["curva.lock.title.home"]]);
+    expect(headings(html)).toEqual(["Curva", fr["lock.curva.title.home"]]);
     expect(html).toContain('href="/auth/register?next=%2Fcurva"');
     expect(html).toContain('href="/auth/login?next=%2Fcurva"');
-    expect(html.indexOf(fr["curva.lock.create"])).toBeLessThan(
-      html.indexOf(fr["curva.lock.signin"]),
+    expect(html.indexOf(fr["lock.curva.create"])).toBeLessThan(
+      html.indexOf(fr["lock.curva.signin"]),
     );
   });
 

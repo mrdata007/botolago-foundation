@@ -126,7 +126,7 @@ function MemberSeason({
         data-testid="plus-home-season-all"
       >
         {t("plus.home.season_all")}
-        <ArrowRight aria-hidden className="rtl:rotate-180" />
+        <ArrowRight aria-hidden />
       </Link>
     </PlusEmbed>
   );
@@ -276,7 +276,7 @@ function MemberDuel({
         data-testid="plus-home-duel-all"
       >
         {t("plus.s2.duel_open")}
-        <ArrowRight aria-hidden className="rtl:rotate-180" />
+        <ArrowRight aria-hidden />
       </Link>
     </PlusEmbed>
   );
@@ -334,10 +334,7 @@ export function PlusHomeMember() {
           <span className={cn("min-w-0 flex-1", ui.text.bodyStrong, ui.tone.default)}>
             {t("plus.hub.title")}
           </span>
-          <ChevronRight
-            className={cn("h-4.5 w-4.5 shrink-0 rtl:rotate-180", ui.tone.muted)}
-            aria-hidden
-          />
+          <ChevronRight className={cn("h-4.5 w-4.5 shrink-0", ui.tone.muted)} aria-hidden />
         </Link>
         {profile ? (
           <button
@@ -358,10 +355,7 @@ export function PlusHomeMember() {
                 {editionLabel(t, editionOf(profile))}
               </span>
             </span>
-            <ChevronRight
-              className={cn("h-4.5 w-4.5 shrink-0 rtl:rotate-180", ui.tone.muted)}
-              aria-hidden
-            />
+            <ChevronRight className={cn("h-4.5 w-4.5 shrink-0", ui.tone.muted)} aria-hidden />
           </button>
         ) : null}
       </UiCard>

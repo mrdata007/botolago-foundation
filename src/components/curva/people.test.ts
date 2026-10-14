@@ -148,19 +148,20 @@ describe("reporting a name another person chose", () => {
 });
 
 describe("closestRival: the duel on Curva's home", () => {
-  it("is the league mate nearest in points, with a card, never the reader", () => {
+  it("is the league mate nearest in points, never the reader", () => {
     const pair = closestRival(rows);
     expect(pair).not.toBeNull();
     expect(pair!.mine.own).toBe(true);
     expect(pair!.rival.own).toBe(false);
     const gap = (row: (typeof rows)[number]) =>
       Math.abs(row.standing.totalScore - pair!.mine.standing.totalScore);
-    for (const row of rows)
-      if (!row.own && row.card) expect(gap(pair!.rival)).toBeLessThanOrEqual(gap(row));
+    for (const row of rows) if (!row.own) expect(gap(pair!.rival)).toBeLessThanOrEqual(gap(row));
   });
-  it("ignores a row whose card has not been read, and is null alone", () => {
+  it("does not need the rival's card (a large league reads cards for its first rows only), and is null alone", () => {
     expect(closestRival(rows.filter((row) => row.own))).toBeNull();
     const bare = rows.map((row) => (row.own ? row : { ...row, card: null }));
-    expect(closestRival(bare)).toBeNull();
+    expect(closestRival(bare)?.rival.standing.managerId).toBe(
+      closestRival(rows)?.rival.standing.managerId,
+    );
   });
 });
