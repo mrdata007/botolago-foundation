@@ -54,6 +54,9 @@ export const adminPermissionSchema = z.enum([
   "analytics.read",
   "pepites.edit",
   "pepites.publish",
+  // BotolaGO+ (20261013100200): the overview and the audited member read; grant and revoke.
+  "premium.read",
+  "premium.grant",
 ]);
 
 export const staffPrincipalStatusSchema = z.enum(["active", "suspended", "revoked"]);

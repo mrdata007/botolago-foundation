@@ -8,7 +8,7 @@ import { clubPalette } from "@/lib/club-palette";
 import { isManagerCardSampleData } from "@/services/manager-card-mode";
 import type { Club } from "@/types/domain";
 
-import type { CardClub, CardProfile, StatCode, TierCode } from "./types";
+import type { CardClub, CardEdition, CardProfile, StatCode, TierCode } from "./types";
 
 /**
  * DTO to the profile a renderer draws (plan section 7.3). The browser never computes a rating: it
@@ -29,6 +29,11 @@ const EMPTY_STATS: Record<StatCode, number | null> = {
   trf: null,
   con: null,
 };
+
+/** The edition a profile carries: only a paid one is set, so a standard card's profile is unchanged. */
+function editionField(edition: CardEdition | null | undefined): { edition?: CardEdition } {
+  return edition && edition !== "standard" ? { edition } : {};
+}
 
 function sampleFlag(options?: ProfileOptions): { sample?: true } {
   return (options?.sample ?? isManagerCardSampleData()) ? { sample: true } : {};
@@ -132,6 +137,7 @@ export function fromMyCard(card: MyCardDto, options?: ProfileOptions): CardProfi
       con: card.stats.con.value,
     },
     statsKnown: true,
+    ...editionField(card.edition),
     ...sampleFlag(options),
   };
   if (card.ratingState === "forming" && card.previousSeason) {
@@ -164,6 +170,7 @@ export function fromMember(card: MemberCardDto, options?: ProfileOptions): CardP
     club: toCardClub(card.club),
     stats: { ...card.stats },
     statsKnown: true,
+    ...editionField(card.edition),
     ...sampleFlag(options),
   };
 }
@@ -190,6 +197,7 @@ export function fromHistoryRow(
     club: toCardClub(card.club),
     stats: { ...row.stats },
     statsKnown: true,
+    ...editionField(card.edition),
     ...sampleFlag(options),
   };
 }
@@ -205,8 +213,10 @@ export function withTier(profile: CardProfile, tier: TierCode): CardProfile {
  * tier's own material (a card with no rating is otherwise drawn as the base card whatever its tier).
  */
 export function ladderProfile(profile: CardProfile, tier: TierCode): CardProfile {
+  // the ladder shows the tiers' own metals, whatever edition the manager's card is drawn in
+  const { edition: _edition, ...plain } = profile;
   return {
-    ...profile,
+    ...plain,
     tier,
     ovr: null,
     provisional: false,

@@ -479,7 +479,12 @@ export const BASELINES: Baselines = {
   // the same shape as the Manager Card's `Translate` helpers. Every caller passes a literal
   // key, and the screens' own lookups (style names, statuses, entries) are literal
   // `switch` branches, not templates. 64 -> 68 (measured).
-  W4: 68,
+  //
+  // Section loading (docs/engineering/SECTION_LOADING.md): the loading screen
+  // titles itself with the tapped section's `t(section.labelKey)`, read from
+  // the bar's item table exactly as BottomNav reads it, so the key is a real
+  // `TranslationKey` the compiler checks. +1; with the BotolaGO+ screens above, 68 -> 69 (measured).
+  W4: 69,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
