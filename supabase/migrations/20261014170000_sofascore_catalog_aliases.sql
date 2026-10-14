@@ -13,8 +13,13 @@
 -- THE MODEL. The main link stays what it is: the one row of app_private.football_provider_mappings
 -- per player (its two unique constraints are NOT changed). A second id is a row of the new table
 -- app_private.sofascore_player_aliases, pointing at the player. One SofaScore id is either a mapping
--- or an alias, never both, and an alias belongs to one player only: the table's key and two triggers
--- (one on each table, under one advisory lock per id) make that a rule of the database.
+-- or an alias, never both, and an alias belongs to one player only. The alias table's key and its
+-- trigger refuse an alias for an id that is mapped or another player's alias. The mapping table gets
+-- NO trigger (its structure stays exactly what 20261001160000 fixed, see
+-- football_player_mapping_structure.test.sql); every writer of SofaScore player mappings that this
+-- repository runs checks the alias table first, and if a mapping were ever written for an alias id
+-- anyway (by the generic two-person mapping workflow), the identity below reports the id as a
+-- conflict, inactive and unreviewed, so neither reading of it can score: it fails closed.
 --   id -> player   readers that turn a SofaScore id into a player go through
 --                  app_private.sofascore_player_identity(id): the mapping's own state
 --                  (football_mapping_supporting_state, unchanged) or, for an alias, the player of the
@@ -28,7 +33,7 @@
 -- WHAT THIS MIGRATION CHANGES.
 --   1. app_private.sofascore_player_aliases (new): the second ids. Only `active` may change; a row is
 --      never deleted. Row level security forced, no grant.
---   2. Triggers: an alias cannot reuse a mapped id, a mapping cannot reuse an alias's id.
+--   2. Trigger on the alias table: an alias cannot reuse a mapped id; rows are never deleted or moved.
 --   3. sofascore_player_match_log: methods also allow 'staff-alias'; a staff method needs decided_by.
 --   4. app_private.sofascore_player_identity, sofascore_player_alias_ids (new, internal).
 --   5. app_private.sofascore_create_catalog_player (new, internal): the player, his membership for the
@@ -109,7 +114,6 @@ begin
     new.updated_at := statement_timestamp();
     return new;
   end if;
-  perform pg_advisory_xact_lock(hashtextextended('sofascore-player-id:' || new.sofascore_player_id, 0));
   if exists (select 1 from app_private.football_provider_mappings m
               where m.provider_name = 'sofascore' and m.entity_type = 'player'
                 and m.external_id = new.sofascore_player_id) then
@@ -121,23 +125,6 @@ revoke all on function app_private.sofascore_player_alias_guard() from public, a
 create trigger sofascore_player_aliases_guard
 before insert or update or delete on app_private.sofascore_player_aliases
 for each row execute function app_private.sofascore_player_alias_guard();
-
-create function app_private.sofascore_player_mapping_alias_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
-begin
-  perform pg_advisory_xact_lock(hashtextextended('sofascore-player-id:' || new.external_id, 0));
-  if exists (select 1 from app_private.sofascore_player_aliases a
-              where a.sofascore_player_id = new.external_id) then
-    raise exception using errcode = 'PT409', message = 'sofascore_alias_conflict',
-      detail = 'sofascore:' || new.external_id; end if;
-  return new;
-end $$;
-revoke all on function app_private.sofascore_player_mapping_alias_guard() from public, anon, authenticated, service_role;
-create trigger football_provider_mappings_sofascore_alias_guard
-before insert or update of provider_name, entity_type, external_id on app_private.football_provider_mappings
-for each row
-when (new.provider_name = 'sofascore' and new.entity_type = 'player')
-execute function app_private.sofascore_player_mapping_alias_guard();
 
 -- ===========================================================================
 -- 3. The log knows the staff alias
@@ -160,7 +147,8 @@ alter table app_private.sofascore_player_match_log add constraint sofascore_play
 --               same SofaScore id, same player, a staff user);
 --   mappingId = the main link's id (its provenance); aliasRowId = the alias row; sourceVersion =
 --               'sofascore-alias:<log id>'.
--- Null when the id is neither.
+-- Null when the id is neither. An id that is both a mapping and an alias (only possible if a mapping
+-- was written around the checks) is a conflict: inactive and unreviewed, whatever either row says.
 create function app_private.sofascore_player_identity(p_external_id text)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -174,6 +162,11 @@ begin
   select m.id into v_mapping from app_private.football_provider_mappings m
    where m.provider_name = 'sofascore' and m.entity_type = 'player' and m.external_id = p_external_id;
   if found then
+    if exists (select 1 from app_private.sofascore_player_aliases x where x.sofascore_player_id = p_external_id) then
+      return app_private.football_mapping_supporting_state(v_mapping)
+        || jsonb_build_object('alias', false, 'conflict', true, 'active', false, 'reviewed', false,
+                              'reviewProvenance', 'none');
+    end if;
     return app_private.football_mapping_supporting_state(v_mapping) || jsonb_build_object('alias', false);
   end if;
   select * into a from app_private.sofascore_player_aliases where sofascore_player_id = p_external_id;

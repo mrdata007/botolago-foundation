@@ -116,7 +116,10 @@ describe("the migration", () => {
   });
 
   test("the shared creation keeps the matcher's price path and locks, and never pauses crons", () => {
-    const create = bodyOf(migration, "create function app_private.sofascore_create_catalog_player(");
+    const create = bodyOf(
+      migration,
+      "create function app_private.sofascore_create_catalog_player(",
+    );
     expect(create).toContain("app_private.fantasy_initial_price_v1(v_pos_code, 6.0, 0.0)");
     expect(create).toContain("'fantasy:catalog:'");
     expect(create).toContain("'fantasy:squads:'");

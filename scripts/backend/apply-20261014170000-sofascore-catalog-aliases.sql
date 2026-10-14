@@ -88,8 +88,13 @@ values('20261014170000','sofascore_catalog_aliases',array[$migration$-- SofaScor
 -- THE MODEL. The main link stays what it is: the one row of app_private.football_provider_mappings
 -- per player (its two unique constraints are NOT changed). A second id is a row of the new table
 -- app_private.sofascore_player_aliases, pointing at the player. One SofaScore id is either a mapping
--- or an alias, never both, and an alias belongs to one player only: the table's key and two triggers
--- (one on each table, under one advisory lock per id) make that a rule of the database.
+-- or an alias, never both, and an alias belongs to one player only. The alias table's key and its
+-- trigger refuse an alias for an id that is mapped or another player's alias. The mapping table gets
+-- NO trigger (its structure stays exactly what 20261001160000 fixed, see
+-- football_player_mapping_structure.test.sql); every writer of SofaScore player mappings that this
+-- repository runs checks the alias table first, and if a mapping were ever written for an alias id
+-- anyway (by the generic two-person mapping workflow), the identity below reports the id as a
+-- conflict, inactive and unreviewed, so neither reading of it can score: it fails closed.
 --   id -> player   readers that turn a SofaScore id into a player go through
 --                  app_private.sofascore_player_identity(id): the mapping's own state
 --                  (football_mapping_supporting_state, unchanged) or, for an alias, the player of the
@@ -103,7 +108,7 @@ values('20261014170000','sofascore_catalog_aliases',array[$migration$-- SofaScor
 -- WHAT THIS MIGRATION CHANGES.
 --   1. app_private.sofascore_player_aliases (new): the second ids. Only `active` may change; a row is
 --      never deleted. Row level security forced, no grant.
---   2. Triggers: an alias cannot reuse a mapped id, a mapping cannot reuse an alias's id.
+--   2. Trigger on the alias table: an alias cannot reuse a mapped id; rows are never deleted or moved.
 --   3. sofascore_player_match_log: methods also allow 'staff-alias'; a staff method needs decided_by.
 --   4. app_private.sofascore_player_identity, sofascore_player_alias_ids (new, internal).
 --   5. app_private.sofascore_create_catalog_player (new, internal): the player, his membership for the
@@ -184,7 +189,6 @@ begin
     new.updated_at := statement_timestamp();
     return new;
   end if;
-  perform pg_advisory_xact_lock(hashtextextended('sofascore-player-id:' || new.sofascore_player_id, 0));
   if exists (select 1 from app_private.football_provider_mappings m
               where m.provider_name = 'sofascore' and m.entity_type = 'player'
                 and m.external_id = new.sofascore_player_id) then
@@ -196,23 +200,6 @@ revoke all on function app_private.sofascore_player_alias_guard() from public, a
 create trigger sofascore_player_aliases_guard
 before insert or update or delete on app_private.sofascore_player_aliases
 for each row execute function app_private.sofascore_player_alias_guard();
-
-create function app_private.sofascore_player_mapping_alias_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
-begin
-  perform pg_advisory_xact_lock(hashtextextended('sofascore-player-id:' || new.external_id, 0));
-  if exists (select 1 from app_private.sofascore_player_aliases a
-              where a.sofascore_player_id = new.external_id) then
-    raise exception using errcode = 'PT409', message = 'sofascore_alias_conflict',
-      detail = 'sofascore:' || new.external_id; end if;
-  return new;
-end $$;
-revoke all on function app_private.sofascore_player_mapping_alias_guard() from public, anon, authenticated, service_role;
-create trigger football_provider_mappings_sofascore_alias_guard
-before insert or update of provider_name, entity_type, external_id on app_private.football_provider_mappings
-for each row
-when (new.provider_name = 'sofascore' and new.entity_type = 'player')
-execute function app_private.sofascore_player_mapping_alias_guard();
 
 -- ===========================================================================
 -- 3. The log knows the staff alias
@@ -235,7 +222,8 @@ alter table app_private.sofascore_player_match_log add constraint sofascore_play
 --               same SofaScore id, same player, a staff user);
 --   mappingId = the main link's id (its provenance); aliasRowId = the alias row; sourceVersion =
 --               'sofascore-alias:<log id>'.
--- Null when the id is neither.
+-- Null when the id is neither. An id that is both a mapping and an alias (only possible if a mapping
+-- was written around the checks) is a conflict: inactive and unreviewed, whatever either row says.
 create function app_private.sofascore_player_identity(p_external_id text)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare
@@ -249,6 +237,11 @@ begin
   select m.id into v_mapping from app_private.football_provider_mappings m
    where m.provider_name = 'sofascore' and m.entity_type = 'player' and m.external_id = p_external_id;
   if found then
+    if exists (select 1 from app_private.sofascore_player_aliases x where x.sofascore_player_id = p_external_id) then
+      return app_private.football_mapping_supporting_state(v_mapping)
+        || jsonb_build_object('alias', false, 'conflict', true, 'active', false, 'reviewed', false,
+                              'reviewProvenance', 'none');
+    end if;
     return app_private.football_mapping_supporting_state(v_mapping) || jsonb_build_object('alias', false);
   end if;
   select * into a from app_private.sofascore_player_aliases where sofascore_player_id = p_external_id;
@@ -1450,7 +1443,7 @@ declare source text;
 begin
   select statements[1] into source from supabase_migrations.schema_migrations where version='20261014170000';
   if encode(sha256(convert_to(source,'UTF8')),'hex')
-    is distinct from 'bc040f50003f0b8eadbc27f61ff5cef0803e3572fbbd0f8b7a2e71461b543955'
+    is distinct from '5f8d9ba668ea76edb5dffdcfd8c918598c87bb1df1cf2db2b5a197e679077fd9'
   then raise exception 'stop: migration differs from reviewed repository bytes'; end if;
   execute source;
 end $apply$;
@@ -1470,7 +1463,7 @@ begin
     or md5((select prosrc from pg_proc where oid='api.admin_resolve_sofascore_player_match(text,uuid)'::regprocedure))
        is distinct from 'a5229469b142310f686e1b7c80cf913d'
     or md5((select prosrc from pg_proc where oid='app_private.sofascore_player_identity(text)'::regprocedure))
-       is distinct from '0e0b1305edba0377457029c85464ff24'
+       is distinct from '3b10dcc2be5d24399c1acf0784063dde'
     or md5((select prosrc from pg_proc where oid='app_private.sofascore_create_catalog_player(uuid,uuid,text,integer,text)'::regprocedure))
        is distinct from 'b65053239c7578225b209007d149a447'
     or md5((select prosrc from pg_proc where oid='app_private.sofascore_link_alias(text,uuid,uuid,jsonb)'::regprocedure))
@@ -1530,13 +1523,14 @@ begin
           from app_private.sofascore_fantasy_attempts a) is distinct from b.attempts_digest
     or exists(select 1 from app_private.sofascore_player_aliases))
   then raise exception 'stop: data changed in a way the migration does not do'; end if;
-  -- The rules: a staff-alias method, the triggers on both tables, row level security forced.
+  -- The rules: a staff-alias method, the alias table's trigger (the mapping table keeps its two), row
+  -- level security forced.
   if not exists(select 1 from pg_constraint where conname='sofascore_player_match_log_method_check'
                  and pg_get_constraintdef(oid) like '%staff-alias%' and pg_get_constraintdef(oid) like '%exact-name%')
     or not exists(select 1 from pg_constraint where conname='sofascore_player_match_log_staff_check'
                  and pg_get_constraintdef(oid) like '%staff-alias%')
-    or not exists(select 1 from pg_trigger where tgname='football_provider_mappings_sofascore_alias_guard'
-                 and tgrelid='app_private.football_provider_mappings'::regclass and tgenabled='O')
+    or (select count(*) from pg_trigger where tgrelid='app_private.football_provider_mappings'::regclass
+          and not tgisinternal) <> 2
     or not exists(select 1 from pg_trigger where tgname='sofascore_player_aliases_guard'
                  and tgrelid='app_private.sofascore_player_aliases'::regclass and tgenabled='O')
     or not (select relforcerowsecurity from pg_class where oid='app_private.sofascore_player_aliases'::regclass)

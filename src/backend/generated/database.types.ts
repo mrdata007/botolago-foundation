@@ -732,7 +732,24 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_sofascore_create_player: {
+        Args: {
+          p_name?: string
+          p_position?: string
+          p_shirt_number?: number
+          p_sofascore_player_id: string
+        }
+        Returns: Json
+      }
       admin_sofascore_final_limited: { Args: never; Returns: Json }
+      admin_sofascore_link_alias: {
+        Args: { p_player_id: string; p_sofascore_player_id: string }
+        Returns: Json
+      }
+      admin_sofascore_player_link_options: {
+        Args: { p_query?: string; p_sofascore_player_id: string }
+        Returns: Json
+      }
       admin_sofascore_player_match_queue: { Args: never; Returns: Json }
       admin_start_session_revocation_worker: {
         Args: { p_synthetic_test?: boolean; p_worker_id: string }

@@ -250,12 +250,21 @@ select extensions.is((app_private.sofascore_link_alias('A5', pg_temp.id('a1', 5)
   '1.11 linking it again changes nothing');
 select extensions.is(pg_temp.err(format($$select app_private.sofascore_link_alias('A5', %L, %L)$$, pg_temp.id('a1', 6), pg_temp.staff())),
   'sofascore_mapping_conflict', '1.12 an alias belongs to one player only');
-select extensions.is(pg_temp.err(format($$insert into app_private.football_provider_mappings (provider_name, entity_type, external_id,
-  internal_entity_id, source_version, last_seen_at) values ('sofascore', 'player', 'A5', %L, 'test', now())$$, pg_temp.id('a1', 24))),
-  'sofascore_alias_conflict', '1.13 a mapping cannot take an alias''s id');
-select extensions.is(pg_temp.err($$update app_private.football_provider_mappings set external_id = 'A5'
-  where provider_name = 'sofascore' and entity_type = 'player' and external_id = 'S23'$$),
-  'sofascore_alias_conflict', '1.14 nor be moved onto it');
+-- The mapping table gets no trigger (its structure is fixed): a mapping written for an alias id around
+-- every check makes the id a conflict, unusable either way, instead of a silent second reading.
+create function pg_temp.conflict_probe() returns void language plpgsql as $$
+begin
+  insert into app_private.football_provider_mappings (provider_name, entity_type, external_id,
+    internal_entity_id, source_version, last_seen_at) values ('sofascore', 'player', 'A5', pg_temp.id('a1', 24), 'test', now());
+  raise exception '%', (select row(s ->> 'conflict', s ->> 'active', s ->> 'reviewed')::text
+                          from (select app_private.sofascore_player_identity('A5') s) x);
+end $$;
+select extensions.is(pg_temp.err('select pg_temp.conflict_probe()'), '(true,false,false)',
+  '1.13 an id that is both a mapping and an alias resolves to nobody usable (fails closed)');
+select extensions.is(pg_temp.ident('A5') ->> 'active', 'true', '1.14 (the probe rolled back: A5 is the alias again)');
+select extensions.is((select count(*)::int from pg_trigger
+  where tgrelid = 'app_private.football_provider_mappings'::regclass and not tgisinternal), 2,
+  '1.14b the mapping table keeps its two original triggers');
 select extensions.is(pg_temp.err(format($$insert into app_private.sofascore_player_aliases (sofascore_player_id, player_id, log_id)
   values ('S7', %L, %L)$$, pg_temp.id('a1', 24), (pg_temp.get('link')::jsonb ->> 'logId'))),
   'sofascore_alias_conflict', '1.15 an alias cannot take a mapped id, even written directly');

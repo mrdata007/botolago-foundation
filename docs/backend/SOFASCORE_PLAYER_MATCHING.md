@@ -127,8 +127,69 @@ Pick the right BotolaGO player and call
 `api.admin_resolve_sofascore_player_match('<SofaScore player id>', '<BotolaGO player id>')`.
 It creates the link, counts it as reviewed (by you), and removes the line from the
 list. It refuses, and changes nothing, if either side is already linked
-elsewhere. In that case the existing link has to be fixed first through the normal
-mapping review.
+elsewhere (a second SofaScore id included). In that case the existing link has to be
+fixed first through the normal mapping review, or the id linked as a second id (below).
+
+## What staff can do on the list
+
+Since migration `20261014170000` the screen (`/admin/football/sofascore-players`) offers,
+for each entry, besides confirming an offered candidate:
+
+- **Find another player.** The club's squad this season, or the whole catalog searched by
+  name (two letters or more), each player with his club, shirt, position and SofaScore
+  state. `api.admin_sofascore_player_link_options('<SofaScore id>', '<query or null>')`.
+  A player with no SofaScore id can be linked the ordinary way (as above); a player whose
+  SofaScore link is active can take this id as a **second id** (next point); a player whose
+  link is switched off is shown but offers nothing.
+- **Link as second ID.** When SofaScore keeps two profiles of one person, the second id is
+  attached to the player, who keeps his main id.
+  `api.admin_sofascore_link_alias('<SofaScore id>', '<BotolaGO player id>')`. Refused, and
+  nothing changes, when the player has no active main link
+  (`sofascore_alias_needs_primary`), or the id is already linked to anyone.
+- **Create this player.** For a player the catalog does not have: the player, a membership
+  of the entry's club for the whole current season, his Fantasy pool entry at the opening
+  price, and the link, all in one go, made by the same function the automatic matcher uses
+  (`app_private.sofascore_create_catalog_player`). Name, shirt and position come from
+  SofaScore and can be corrected; the club is the entry's. A shirt another active member of
+  the club wears is left blank. `api.admin_sofascore_create_player('<SofaScore id>', name,
+shirt, position)`, each optional. Offered only when the entry has a club, a position and
+  a match of the current season (`canCreate` on the list).
+
+There is no "dismiss" action: an entry is on the list because a match is held for him, and
+hiding it would hide the hold, not lift it. Every action needs `football.manage_mappings`
+and a second factor (the reads also accept `football.read_operations`), closes the entry,
+is written to the match log with your account, and sets the club's held Fantasy matches to
+be tried again on the next tick.
+
+## Second SofaScore ids
+
+SofaScore sometimes keeps two profiles of one person, and a lineup can use either. A
+catalog player has one **main** SofaScore id (his row of `football_provider_mappings`, as
+before) and may have **second ids** (`app_private.sofascore_player_aliases`).
+
+- One SofaScore id is a main id or a second id, never both, and belongs to one player only.
+  The alias table refuses an id that is mapped or already someone's second id. The mapping
+  table is not changed (no trigger is added to it): every writer here checks the alias
+  table first, and an id that ended up as both anyway is read as a conflict, inactive and
+  unreviewed, so it cannot score for anyone until a person fixes it.
+- Everything that turns a SofaScore id into a player (the automatic matcher, the Fantasy
+  context and recorder, the player performances) reads it through
+  `app_private.sofascore_player_identity`: a second id is the player of the main link,
+  active only while the second id and the main link are both active, and reviewed only
+  while the main link is reviewed and the second id carries its staff proof (a log row of
+  method `staff-alias`, with the staff account, that agrees with it).
+- Everything that goes from a player to his SofaScore id (the weekly catalog's names,
+  shirts and photos, the squad link, the admin reads) uses the main id only.
+- The automatic matcher never matches or creates a player for an id that is a second id:
+  it returns the player. A switched-off second id is queued as `inactive_mapping_exists`.
+- A second id is never deleted or moved; it can only be switched off (`active = false`).
+- Not yet covered: the live match page's lineups and events
+  (`api.ingest_football_match_details`) still link main ids only, so a second id shows
+  there under its SofaScore name, without a link to the player. It costs no points. It goes
+  in once the open live-details pull request (#473) is merged.
+
+The owner's verified pairs of 2026-10-14 are attached once with
+`scripts/backend/attach-sofascore-verified-aliases.sql` (guarded, dry by default).
 
 If the list still shows a player after the next match, it is because no link
 exists yet. Once linked, the player is no longer asked about.
@@ -136,8 +197,10 @@ exists yet. Once linked, the player is no longer asked about.
 ## Who did it, and how to undo it
 
 Every link made here is recorded in `app_private.sofascore_player_match_log`: the
-method (`exact-name`, `name-and-shirt` or `staff-resolution`), the match it was
-seen in, and for staff links who made it. The link itself carries a marker in
+method (`exact-name`, `name-and-shirt`, `side-shirt-position`, `sofascore-created`,
+`staff-resolution` or `staff-alias`), the match it was seen in, and for staff links
+who made it. A player staff created is a `staff-resolution` whose evidence says
+`"action": "create"`. The link itself carries a marker in
 its `source_version`:
 
 - `sofascore-auto-map:exact-name:<id>` or `sofascore-auto-map:name-and-shirt:<id>`
