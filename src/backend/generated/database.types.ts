@@ -1232,8 +1232,14 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      get_card_duel: {
+        Args: { p_other_team: string; p_season?: string }
+        Returns: Json
+      }
       get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
+      get_my_card_career: { Args: { p_season?: string }; Returns: Json }
+      get_my_card_history_visibility: { Args: never; Returns: Json }
       get_my_fantasy_history: {
         Args: {
           p_before_gameweek_sequence?: number
@@ -2390,6 +2396,10 @@ export type Database = {
         Args: { p_token: string }
         Returns: boolean
       }
+      set_card_history_visibility: {
+        Args: { p_visible: boolean }
+        Returns: Json
+      }
       set_my_notification_subscription: {
         Args: {
           p_enabled?: boolean
@@ -2826,6 +2836,35 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      card_history_visibility: {
+        Row: {
+          created_at: string
+          updated_at: string
+          user_id: string
+          visible_to_league_mates: boolean
+        }
+        Insert: {
+          created_at?: string
+          updated_at?: string
+          user_id: string
+          visible_to_league_mates?: boolean
+        }
+        Update: {
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+          visible_to_league_mates?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_history_visibility_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competition_translations: {
         Row: {
