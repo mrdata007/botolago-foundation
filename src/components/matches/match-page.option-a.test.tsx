@@ -43,6 +43,7 @@ const FILES = [
   "src/routes/matches.$matchId.tsx",
   "src/components/matches/MatchScoreHeader.tsx",
   "src/components/matches/MatchTopBar.tsx",
+  "src/components/matches/LiveFreshnessNote.tsx",
   "src/components/matches/MatchTabs.tsx",
   "src/components/matches/EventTimeline.tsx",
   "src/components/matches/StatComparison.tsx",
