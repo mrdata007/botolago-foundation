@@ -270,13 +270,17 @@
 .pl-under .ps-pill {
   display: none;
 }
+/* the season's first block is figures; slide the charts up so bars and lines are what shows */
+[data-testid="plus-season-locked"] .pl-under > .ps-panel {
+  margin-block-start: calc(var(--po-space-12) * -4);
+}
 /* the example duel's own head would repeat the real one on the plate above */
 .pl-under .ps-duel-head {
   display: none;
 }
 /* Everything but the tab bar is blurred: shapes, bars and lines stay readable, digits do not. */
 .pl-under > :not(.ps-tabs) {
-  filter: blur(5px) saturate(1.1);
+  filter: blur(4px) saturate(1.5) brightness(1.35);
   -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 12%);
   mask-image: linear-gradient(180deg, transparent 0, #000 12%);
 }
@@ -301,10 +305,10 @@
   position: absolute;
   inset-inline-start: 50%;
   inset-block-start: 46%;
-  inline-size: 336px;
-  block-size: 296px;
-  margin-inline-start: -168px;
-  margin-block-start: -148px;
+  inline-size: 432px;
+  block-size: 380px;
+  margin-inline-start: -216px;
+  margin-block-start: -190px;
   z-index: 1;
   pointer-events: none;
   mix-blend-mode: screen;
@@ -317,19 +321,25 @@
   block-size: 100%;
 }
 .pl-plus__halo {
-  filter: blur(28px);
-  opacity: 0.8;
-  transform: scale(1.15);
+  filter: blur(56px);
+  opacity: 0.55;
+  transform: scale(1.1);
 }
 .pl-plus__core {
-  filter: blur(6px);
-  opacity: 0.62;
+  filter: blur(28px);
+  opacity: 0.3;
+}
+.pl-stage--compact .pl-plus__halo {
+  filter: blur(32px);
+}
+.pl-stage--compact .pl-plus__core {
+  filter: blur(16px);
 }
 .pl-stage--compact .pl-plus {
-  inline-size: 168px;
-  block-size: 144px;
-  margin-inline-start: -84px;
-  margin-block-start: -72px;
+  inline-size: 224px;
+  block-size: 192px;
+  margin-inline-start: -112px;
+  margin-block-start: -96px;
   inset-block-start: 40%;
 }
 /* the vignette: edges near black, the bottom sinks */
@@ -344,10 +354,10 @@
     radial-gradient(
       75% 65% at 50% 38%,
       transparent 40%,
-      oklch(0.1 0.025 262 / 0.55) 82%,
+      oklch(0.1 0.025 262 / 0.4) 82%,
       oklch(0.08 0.02 262 / 0.95) 100%
     ),
-    linear-gradient(180deg, transparent 55%, oklch(0.09 0.022 262 / 0.94) 92%);
+    linear-gradient(180deg, transparent 62%, oklch(0.09 0.022 262 / 0.9) 94%);
 }
 .pl-stage--compact .pl-veil {
   -webkit-mask-image: none;
@@ -613,7 +623,12 @@
   }
   .plus-embed--night .pl-under .ps-seg button {
     font-size: 14px;
-    padding-inline: var(--po-space-1);
+    padding-inline: 0;
+  }
+  .plus-embed--night .pl-under .ps-seg {
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 }
 
