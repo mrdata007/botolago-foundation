@@ -984,8 +984,8 @@ test.describe("G1 says what happens next", () => {
           expect(card.width, `${where}: the card`).toBeLessThanOrEqual(296.5);
           expect(card.height / card.width, `${where}: the card's shape`).toBeCloseTo(1.366, 1);
           if (mc === "rated") {
-            // the state with a number and the provisional pill on its line
-            await expect(page.getByTestId("curva-rating-line"), where).toContainText(
+            // the state with a number: its line carries no provisional pill
+            await expect(page.getByTestId("curva-rating-line"), where).not.toContainText(
               copy(lang, "card.provisional"),
             );
           }

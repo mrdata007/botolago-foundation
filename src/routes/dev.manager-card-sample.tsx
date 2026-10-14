@@ -215,7 +215,6 @@ function Owner({ card }: { card: MyCardDto }) {
           <RatingLine
             ovr={view.ovr}
             tier={view.tier}
-            provisional={card.provisional && !view.newSeason}
             counted={card.gameweeksCounted}
             min={card.minRated}
             statsFilled={view.statsFilled}

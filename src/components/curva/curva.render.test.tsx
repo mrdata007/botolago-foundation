@@ -185,7 +185,7 @@ describe("G1 for a manager", () => {
     expect(text(line)).toContain("84");
     expect(text(line)).toContain("OVR");
     expect(text(line)).toContain("PRO");
-    expect(text(line)).toContain(fr["card.provisional"]);
+    expect(text(line)).not.toContain(fr["card.provisional"]);
     expect(text(html.match(/data-testid="curva-identity-line"[\s\S]*?<\/p>/)![0])).toContain(
       "Depuis la J5",
     );
@@ -308,7 +308,6 @@ describe("G1 for a manager", () => {
         <RatingLine
           ovr={null}
           tier={null}
-          provisional={false}
           counted={2}
           min={2}
           statsFilled={2}
@@ -333,7 +332,7 @@ describe("G1 for a manager", () => {
     const html = await owner("rated");
     const line = html.match(/<p[^>]*data-testid="curva-rating-line"[\s\S]*?<\/p>/)![0];
     expect(line).not.toContain("data-waiting");
-    // The line itself is a bare row (the « Provisoire » pill keeps its own outline).
+    // The line itself is a bare row (a provisional number shows no pill).
     const open = line.match(/^<p[^>]*>/)![0];
     expect(open).not.toContain("border");
     expect(open).not.toContain("rounded-[var(--ui-radius-card)]");
@@ -474,6 +473,6 @@ describe("G3's table", () => {
     expect(text(html)).toContain("88 OVR · CHAMPION");
     expect(text(html)).toContain("63 OVR · LASTREET");
     expect(text(html)).toContain("en formation 2/3");
-    expect(html).toContain(fr["card.provisional"]);
+    expect(html).not.toContain(fr["card.provisional"]);
   });
 });

@@ -42,7 +42,7 @@ import {
   turnGroundFrames,
 } from "./flip-state";
 import "./card-motion.css";
-import { Figure, ProvisionalBadge } from "./figures";
+import { Figure } from "./figures";
 import { deltaArrow, signedDelta } from "./rating-change";
 import type { RatingBadge } from "./use-rating-change";
 import { useStageEntrance } from "./use-stage-entrance";
@@ -505,7 +505,7 @@ function FaceShade({ ref, rtl }: { ref: React.Ref<HTMLSpanElement>; rtl: boolean
 /* ------------------------------------------------------------------------------------------ */
 
 /**
- * Under the card, in text, always: « 84 OVR · PRO » and the « Provisoire » pill. A new season that
+ * Under the card, in text, always: « 84 OVR · PRO ». A new season that
  * has no number of its own yet shows last season's, with that season's label beside it.
  *
  * With no number the line is a text box (a bordered, filled, rounded callout), so the waiting is
@@ -523,7 +523,6 @@ function FaceShade({ ref, rtl }: { ref: React.Ref<HTMLSpanElement>; rtl: boolean
 export function RatingLine({
   ovr,
   tier,
-  provisional,
   counted,
   min,
   statsFilled,
@@ -534,7 +533,6 @@ export function RatingLine({
 }: {
   ovr: number | null;
   tier: TierCode | null;
-  provisional: boolean;
   counted: number;
   min: number;
   /** How many of the four statistics are filled (`filledStats`). */
@@ -636,7 +634,6 @@ export function RatingLine({
         </span>
       ) : null}
       {change ? <RatingChangeChip change={change} /> : null}
-      {provisional ? <ProvisionalBadge className="self-center" /> : null}
     </p>
   );
 }

@@ -116,7 +116,6 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
           <RatingLine
             ovr={change.shownOvr}
             tier={view.tier}
-            provisional={card.provisional && !view.newSeason}
             counted={card.gameweeksCounted}
             min={card.minRated}
             statsFilled={view.statsFilled}
