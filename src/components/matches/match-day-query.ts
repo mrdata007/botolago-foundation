@@ -163,6 +163,8 @@ export function withLiveReadings(
       ...match,
       status: reading.status,
       minute: reading.minute,
+      period: reading.period,
+      addedTime: reading.addedTime,
       homeScore: reading.homeScore,
       awayScore: reading.awayScore,
       halfTimeHomeScore: reading.halfTimeHomeScore,

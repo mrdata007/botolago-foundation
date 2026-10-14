@@ -4,7 +4,6 @@ import type { LiveRefreshRpcClient } from "./football-live-refresh.ts";
 import { createRapidApiClient } from "./rapidapi-client.ts";
 import { BOTOLA_UNIQUE_TOURNAMENT_ID, SOFASCORE_LIVE_EVENTS_PATH } from "./sofascore-fixtures.ts";
 import {
-  FANTASY_MAX_ATTEMPTS_DEFAULT,
   SofascoreFantasyRun,
   readFantasyConfig,
   retryDelayMinutes,
@@ -36,9 +35,22 @@ const part = (name: string) =>
       "utf8",
     ),
   );
+// The sample is real SofaScore data in which a few players who came on late have no
+// rating (SofaScore does not rate them). Full coverage now needs a rating and a pass
+// count for every player who played, so give those players a rating here.
+const completeRatings = (lineups: {
+  home: { players: { statistics?: { minutesPlayed?: number; rating?: number } }[] };
+  away: { players: { statistics?: { minutesPlayed?: number; rating?: number } }[] };
+}) => {
+  for (const side of [lineups.home, lineups.away])
+    for (const entry of side.players)
+      if ((entry.statistics?.minutesPlayed ?? 0) > 0 && entry.statistics?.rating === undefined)
+        entry.statistics = { ...entry.statistics, rating: 6.1 };
+  return lineups;
+};
 const REPLIES: SofascoreRawReplies = {
   incidents: part("incidents"),
-  lineups: part("lineups"),
+  lineups: completeRatings(part("lineups")),
   statistics: part("statistics"),
 };
 const DETAIL = part("detail") as {
@@ -534,19 +546,21 @@ describe("automatic Fantasy: a match held back is retried without a request", ()
     expect(db.attempts.get(FIXTURE)?.attempts).toBe(2);
   });
 
-  test("it stops after the maximum number of attempts", async () => {
+  test("a retriable hold is never ended by a count of attempts (the database ends it 21 days after kickoff)", async () => {
     const world = newWorld();
     world.mapped.delete(HOME_SCORER);
     const db = fakeDb({ world });
     await makeRun(db).run.fromReplies(FIXTURE, EVENT, REPLIES);
-    db.attempts.get(FIXTURE)!.attempts = FANTASY_MAX_ATTEMPTS_DEFAULT - 1;
-    const last = makeRun(db);
-    await last.run.sweep();
-    expect(last.lines[0]).toMatchObject({ outcome: "held:unmapped_players", retry: false });
-    expect(db.attempts.get(FIXTURE)).toMatchObject({ status: "gave_up", matchData: null });
-    const after = makeRun(db);
-    await after.run.sweep();
-    expect(after.lines).toHaveLength(0);
+    // Far more tries than the old limit of 24: still held, replies kept, retry promised.
+    db.attempts.get(FIXTURE)!.attempts = 200;
+    const later = makeRun(db);
+    await later.run.sweep();
+    expect(later.lines[0]).toMatchObject({ outcome: "held:unmapped_players", retry: true });
+    expect(db.attempts.get(FIXTURE)).toMatchObject({ status: "held" });
+    expect(db.attempts.get(FIXTURE)?.matchData).not.toBeNull();
+    // It does not tell the database to stop at a count: the (ignored) legacy argument is a constant.
+    const due = db.calls.filter((c) => c.name === "service_sofascore_fantasy_due").at(-1)!.args;
+    expect(due.p_hours).toBe(504);
   });
 
   test("a data problem the same replies cannot fix is not retried", async () => {
@@ -765,7 +779,7 @@ describe("automatic Fantasy: catch-up of a finished match never attempted", () =
     await run.sweep();
     expect(net.paths).toHaveLength(6);
     const due = db.calls.find((c) => c.name === "service_sofascore_fantasy_due")!.args;
-    expect(due).toMatchObject({ p_catchup_limit: 2, p_hours: 72, p_max_attempts: 24 });
+    expect(due).toMatchObject({ p_catchup_limit: 2, p_hours: 504 });
     const off = makeRun(fakeDb({ dueCatchUp: listed }), "sofascore", {
       SOFASCORE_FANTASY_CATCHUP_PER_TICK: "0",
     });
@@ -817,8 +831,7 @@ describe("configuration", () => {
       enabled: true,
       retriesPerTick: 6,
       catchUpPerTick: 1,
-      catchUpHours: 72,
-      maxAttempts: 24,
+      catchUpHours: 504,
       fetchAttempts: 4,
       performancesPerTick: 20,
     });
@@ -827,9 +840,9 @@ describe("configuration", () => {
         SOFASCORE_FANTASY_ENABLED: "off",
         SOFASCORE_FANTASY_RETRIES_PER_TICK: "99",
         SOFASCORE_FANTASY_CATCHUP_PER_TICK: "x",
-        SOFASCORE_FANTASY_MAX_ATTEMPTS: "0",
+        SOFASCORE_FANTASY_CATCHUP_HOURS: "0",
       }),
-    ).toMatchObject({ enabled: false, retriesPerTick: 6, catchUpPerTick: 1, maxAttempts: 24 });
+    ).toMatchObject({ enabled: false, retriesPerTick: 6, catchUpPerTick: 1, catchUpHours: 504 });
     expect([1, 3, 4, 12, 13, 30].map(retryDelayMinutes)).toEqual([15, 15, 60, 60, 360, 360]);
   });
 });
@@ -958,7 +971,7 @@ describe("automatic Fantasy: through the live tick", () => {
           { RAPIDAPI_KEY: "k" },
           { fetch: net.fetch, maxRetries: 0 },
         ),
-        environment: {},
+        environment: { SOFASCORE_STANDINGS_ENABLED: "false" },
         now: NOW,
         log: (line) => lines.push(line),
       });
@@ -981,7 +994,59 @@ describe("automatic Fantasy: through the live tick", () => {
     });
   }
 
-  test("a match in play: its lineup players are offered to the matching, nothing is recorded", async () => {
+  test("the tick that sees a match start reads its lineups too: players are offered to the matching, nothing is recorded", async () => {
+    const db = tickDb(false, { status: "scheduled", period: "pre_match" });
+    db.world.mapped.delete(STARTERS[2]);
+    const net = tickFetch();
+    const lines: string[] = [];
+    const live = {
+      ...fixtureEvent,
+      status: { code: 7, type: "inprogress", description: "2nd half" },
+    };
+    const fetch = async (input: string) => {
+      const url = new URL(input);
+      const path = url.pathname.slice(1) + url.search;
+      if (path.startsWith(SOFASCORE_LIVE_EVENTS_PATH)) {
+        net.paths.push(path);
+        return Response.json(
+          { events: [live] },
+          {
+            headers: {
+              "x-ratelimit-requests-limit": "10000",
+              "x-ratelimit-requests-remaining": "5000",
+            },
+          },
+        );
+      }
+      return net.fetch(input);
+    };
+    const outcome = await runSofascoreRefresh({
+      mode: "sofascore",
+      job: "fixtures",
+      client: db.client,
+      rapid: createRapidApiClient("sofascore", { RAPIDAPI_KEY: "k" }, { fetch, maxRetries: 0 }),
+      environment: {},
+      now: NOW,
+      log: (line) => lines.push(line),
+    });
+    expect(outcome.status).toBe(200);
+    const called = db.calls.map((c) => c.name);
+    expect(called).toContain("ingest_football_match_details");
+    // The live list, the incidents and the lineups (no statistics): the matching adds no request.
+    expect(net.paths).toHaveLength(3);
+    expect(net.paths.slice(1)).toEqual([
+      `matches/get-incidents?matchId=${EVENT}`,
+      `matches/get-lineups?matchId=${EVENT}`,
+    ]);
+    const parsed = lines.map((l) => JSON.parse(l) as Record<string, unknown>);
+    expect(parsed.filter((l) => l.event === "football_live_refresh_live_matching")).toEqual([
+      expect.objectContaining({ fixtureId: FIXTURE, eventId: EVENT, outcome: "offered" }),
+    ]);
+    expect(parsed.filter((l) => l.event === "football_live_refresh_fantasy")).toHaveLength(0);
+    expect(called).not.toContain("service_record_sofascore_fantasy_observation");
+  });
+
+  test("a match already in play reads the incidents only: no lineups, no live matching, nothing is recorded", async () => {
     const db = tickDb(false);
     db.world.mapped.delete(STARTERS[2]);
     const net = tickFetch();
@@ -1019,12 +1084,11 @@ describe("automatic Fantasy: through the live tick", () => {
     expect(outcome.status).toBe(200);
     const called = db.calls.map((c) => c.name);
     expect(called).toContain("ingest_football_match_details");
-    // The live list and the three replies of the match: the matching adds no request.
-    expect(net.paths).toHaveLength(4);
+    // The live list and the incidents only (60 s polling).
+    expect(net.paths).toHaveLength(2);
+    expect(net.paths[1]).toBe(`matches/get-incidents?matchId=${EVENT}`);
     const parsed = lines.map((l) => JSON.parse(l) as Record<string, unknown>);
-    expect(parsed.filter((l) => l.event === "football_live_refresh_live_matching")).toEqual([
-      expect.objectContaining({ fixtureId: FIXTURE, eventId: EVENT, outcome: "offered" }),
-    ]);
+    expect(parsed.filter((l) => l.event === "football_live_refresh_live_matching")).toHaveLength(0);
     expect(parsed.filter((l) => l.event === "football_live_refresh_fantasy")).toHaveLength(0);
     expect(called).not.toContain("service_record_sofascore_fantasy_observation");
   });

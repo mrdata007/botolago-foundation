@@ -3,7 +3,7 @@ import { handleFootballLiveRefreshRequest } from "./football-live-refresh.ts";
 import type { LiveRefreshRpcClient } from "./football-live-refresh.ts";
 import { createRapidApiClient } from "./rapidapi-client.ts";
 import { BOTOLA_UNIQUE_TOURNAMENT_ID, SOFASCORE_LIVE_EVENTS_PATH } from "./sofascore-fixtures.ts";
-import { runSofascoreRefresh, skipReason } from "./sofascore-live-refresh.ts";
+import { classifyCall, runSofascoreRefresh, skipReason } from "./sofascore-live-refresh.ts";
 
 // Synthetic ids and payloads only.
 const SEASON = 102220;
@@ -160,7 +160,12 @@ function run(
     client: db.client,
     rapid: rapid(fetch, minRemaining),
     // These tests are about scores: the details step has its own tests.
-    environment: { SOFASCORE_DETAILS_PER_TICK: "0", SOFASCORE_FANTASY_ENABLED: "false" },
+    environment: {
+      SOFASCORE_DETAILS_PER_TICK: "0",
+      SOFASCORE_FANTASY_ENABLED: "false",
+      // The table has its own tests (sofascore-standings.test.ts).
+      SOFASCORE_STANDINGS_ENABLED: "false",
+    },
     now: NOW,
     log: (line) => lines.push(line),
   }).then((outcome) => ({ outcome, lines }));
@@ -433,6 +438,22 @@ describe("skipReason", () => {
     ).toBe("protected_final_state");
     expect(skipReason(call({ homeScore: 1 }), fixtureState(1) as never)).toBeNull();
     expect(skipReason(call({}), undefined)).toBe("no_fixture_state");
+  });
+  test("classifyCall: a minute alone is a clock change, compared with the stored minute when known", () => {
+    const at = (minute: number | null) => call({ minute });
+    // older database: no stored minute in the snapshot
+    expect(classifyCall(at(12), fixtureState(1) as never)).toBe("clock");
+    expect(classifyCall(at(null), fixtureState(1) as never)).toBe("unchanged");
+    // stored minute known (20261013190000)
+    expect(classifyCall(at(12), fixtureState(1, { minute: 12 }) as never)).toBe("unchanged");
+    expect(classifyCall(at(13), fixtureState(1, { minute: 12 }) as never)).toBe("clock");
+    expect(classifyCall(at(null), fixtureState(1, { minute: 12 }) as never)).toBe("clock");
+    expect(classifyCall(at(null), fixtureState(1, { minute: null }) as never)).toBe("unchanged");
+    // anything else that changes is content, whatever the clock does
+    expect(
+      classifyCall(call({ minute: 13, homeScore: 1 }), fixtureState(1, { minute: 12 }) as never),
+    ).toBe("content");
+    expect(skipReason(at(13), fixtureState(1, { minute: 12 }) as never)).toBeNull();
   });
 });
 

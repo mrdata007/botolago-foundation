@@ -491,7 +491,8 @@ select extensions.throws_ok($$ select api.service_football_match_details_due('sp
   'P0002', 'MAPPING_NOT_FOUND', 'and a season BotolaGO does not know');
 
 -- ---------------------------------------------------------------------------
--- The tick keeps calling for two hours after the whistle, every 15 minutes.
+-- The tick keeps calling for two hours after the whistle, every 30 minutes
+-- (20261013110200; it was every 15 minutes).
 -- ---------------------------------------------------------------------------
 delete from app.fixtures where id in ('f7500000-0000-4000-8000-000000000002',
   'f7500000-0000-4000-8000-000000000004', 'f7500000-0000-4000-8000-000000000005');
@@ -510,8 +511,8 @@ update app_private.football_live_refresh_heartbeat
 set last_invoked_at = statement_timestamp() - interval '10 minutes' where id;
 select extensions.is(app_private.football_live_refresh_tick(), 'waiting', 'nor ten minutes later');
 update app_private.football_live_refresh_heartbeat
-set last_invoked_at = statement_timestamp() - interval '14 minutes 45 seconds' where id;
-select extensions.is(app_private.football_live_refresh_tick(), 'invoked', 'but fifteen minutes later');
+set last_invoked_at = statement_timestamp() - interval '29 minutes 45 seconds' where id;
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked', 'but thirty minutes later');
 
 select * from extensions.finish();
 rollback;

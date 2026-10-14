@@ -234,9 +234,32 @@ describe("sofascore details on the live tick", () => {
     const dbRecent = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
     const recentRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [recent] } });
     await tick("sofascore", "fixtures", dbRecent, recentRun.fetch);
-    expect(detailPaths(recentRun.paths)).toHaveLength(3);
+    // in play: the incidents only (1 request); lineups and statistics wait for full time
+    expect(detailPaths(recentRun.paths)).toEqual(["matches/get-incidents?matchId=1"]);
     expect(named(dbRecent, "ingest_football_fixture")).toHaveLength(0);
-    expect(named(dbRecent, "ingest_football_match_details")).toHaveLength(1);
+    const sent = named(dbRecent, "ingest_football_match_details");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].args.p_details).toMatchObject({ lineups: [], statistics: [] });
+
+    // changed 120 seconds ago: older than one polling interval, so not fetched again
+    const stale = event(1, LIVE, START + 3480);
+    const dbStale = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
+    const staleRun = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [stale] } });
+    await tick("sofascore", "fixtures", dbStale, staleRun.fetch);
+    expect(detailPaths(staleRun.paths)).toEqual([]);
+  });
+
+  test("a fixture that just finished reads all three replies", async () => {
+    const db = fakeDb({ mappings: mappings([1]), fixtures: [state(1)] });
+    const { fetch, paths } = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, FINISHED)] },
+    });
+    await tick("sofascore", "fixtures", db, fetch);
+    expect(detailPaths(paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+      "matches/get-statistics?matchId=1",
+    ]);
   });
 
   test("an unmapped fixture is never fetched", async () => {
@@ -486,5 +509,101 @@ describe("sofascore details backfill", () => {
     expect(outcome.status).toBe(429);
     expect(paths).toHaveLength(1);
     expect(named(db, "ingest_football_match_details")).toHaveLength(0);
+  });
+});
+
+describe("the live minute on the live tick", () => {
+  const timed = (periodStart: number | undefined) => ({
+    ...event(1, LIVE, START + 3000),
+    ...(periodStart === undefined ? {} : { time: { currentPeriodStartTimestamp: periodStart } }),
+  });
+  const run = async (periodStart: number | undefined) => {
+    const quiet = state(1, { homeScore: 1 });
+    const db = fakeDb({ mappings: mappings([1]), fixtures: [quiet] });
+    const { fetch } = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [timed(periodStart)] } });
+    const { lines } = await tick("sofascore", "fixtures", db, fetch, {
+      SOFASCORE_DETAILS_PER_TICK: "0",
+    });
+    return { db, summary: JSON.parse(lines[0]) };
+  };
+
+  test("an unchanged score is still written while the clock runs, with the minute", async () => {
+    const { db, summary } = await run(START + 3000);
+    const calls = named(db, "ingest_football_fixture");
+    expect(calls).toHaveLength(1);
+    expect((calls[0].args.p_fixture as { minute: number }).minute).toBe(11);
+    expect(summary.periodStart).toEqual([
+      { eventId: "1", period: "first_half", present: true, minute: 11 },
+    ]);
+  });
+
+  test("without the half start nothing is written and the log says it was absent", async () => {
+    const { db, summary } = await run(undefined);
+    expect(named(db, "ingest_football_fixture")).toHaveLength(0);
+    expect(summary.periodStart).toEqual([
+      { eventId: "1", period: "first_half", present: false, minute: null },
+    ]);
+  });
+
+  // A tick that only moves the clock: the provider's changeTimestamp is an hour
+  // old, so nothing but the minute differs from what is stored.
+  const clockTick = async (
+    stored: Record<string, unknown>,
+    periodStart: number | undefined,
+    over: Partial<ReturnType<typeof event>> = {},
+  ) => {
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { homeScore: 1, ...stored })],
+    });
+    const { fetch, paths } = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: {
+        events: [
+          {
+            ...event(1, LIVE, START + 100),
+            ...(periodStart === undefined
+              ? {}
+              : { time: { currentPeriodStartTimestamp: periodStart } }),
+            ...over,
+          },
+        ],
+      },
+    });
+    await tick("sofascore", "fixtures", db, fetch); // details on, default cap
+    const writes = named(db, "ingest_football_fixture");
+    return {
+      writes,
+      minutes: writes.map((c) => (c.args.p_fixture as { minute: number | null }).minute),
+      details: detailPaths(paths),
+    };
+  };
+
+  test("a clock-only write costs no details request (stored minute unknown or known)", async () => {
+    const unknown = await clockTick({}, START + 3000);
+    expect(unknown.minutes).toEqual([11]);
+    expect(unknown.details).toEqual([]);
+    const known = await clockTick({ minute: 10 }, START + 3000);
+    expect(known.minutes).toEqual([11]);
+    expect(known.details).toEqual([]);
+  });
+
+  test("a goal or a status change with the clock still reads the incidents", async () => {
+    const goal = await clockTick({ minute: 10 }, START + 3000, { homeScore: { current: 2 } });
+    expect(goal.writes).toHaveLength(1);
+    expect(goal.details).toEqual(["matches/get-incidents?matchId=1"]);
+    const status = await clockTick({ minute: 10, status: "half_time" }, START + 3000);
+    expect(status.writes).toHaveLength(1);
+    expect(status.details).toEqual(["matches/get-incidents?matchId=1"]);
+  });
+
+  test("the clock disappearing clears a stored minute instead of freezing it", async () => {
+    const cleared = await clockTick({ minute: 44 }, undefined);
+    expect(cleared.minutes).toEqual([null]);
+    expect(cleared.details).toEqual([]); // clearing the clock is not worth a request either
+  });
+
+  test("the stored minute unchanged is not a write, nor is a null that is already null", async () => {
+    expect((await clockTick({ minute: 11 }, START + 3000)).writes).toHaveLength(0);
+    expect((await clockTick({ minute: null }, undefined)).writes).toHaveLength(0);
   });
 });

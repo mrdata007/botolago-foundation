@@ -453,7 +453,7 @@ select extensions.is(pg_temp.advance(pg_temp.gw(1)) ->> 'status', 'provisional',
   'GW1 leaves live for scoring once the postponed match no longer counts');
 select extensions.ok(
   pg_temp.scoring_check() ->> 'status' = 'ok'
-  and pg_temp.scoring_check() ->> 'detail' like 'GW1: every counted match final, points due by % UTC',
+  and pg_temp.scoring_check() ->> 'detail' like 'GW1: every counted match final, core points due by % UTC',
   'fantasy_scoring now waits for the points of the two matches played: ' || (pg_temp.scoring_check() ->> 'detail'));
 
 -- ---------------------------------------------------------------------------

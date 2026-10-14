@@ -6,6 +6,8 @@ import { ui } from "@/components/ui-kit";
 import { useHideOnScroll } from "@/hooks/use-hide-on-scroll";
 import { useI18n } from "@/i18n/provider";
 import { clubMatchPalettes } from "@/lib/club-palette";
+import { liveClock } from "@/lib/live-minute";
+import { useLiveStageLabels } from "./live-stage";
 import { cn } from "@/lib/utils";
 import { FlipScore, TickingMinute } from "./FlipScore";
 import { useLiveMatches } from "./use-live-matches";
@@ -31,6 +33,7 @@ import { useLiveMatches } from "./use-live-matches";
  */
 export function LiveStrip() {
   const { t, tr, lang } = useI18n();
+  const stages = useLiveStageLabels();
   const liveQ = useLiveMatches();
   const hidden = useHideOnScroll();
 
@@ -76,7 +79,13 @@ export function LiveStrip() {
             if (!home || !away) return null;
             const hs = match.homeScore ?? 0;
             const as = match.awayScore ?? 0;
-            const minute = match.minute ? `${match.minute}′` : "";
+            const clock = liveClock({
+              stages,
+              minute: match.minute,
+              period: match.period,
+              addedTime: match.addedTime,
+            });
+            const minute = clock.minute ? `${clock.minute}′` : (clock.stage ?? "");
             const label = `${scoreTemplate
               .replace("{home}", tr(home.shortName))
               .replace("{hs}", String(hs))
@@ -123,10 +132,13 @@ export function LiveStrip() {
                     aria-hidden
                     className="live-breathe h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--ui-live)]"
                   />
-                  {match.minute ? (
+                  {minute ? (
                     <TickingMinute
                       minute={match.minute}
+                      stages={stages}
                       running={match.status === "live"}
+                      period={match.period}
+                      addedTime={match.addedTime}
                       className={ui.text.tabular}
                     />
                   ) : null}

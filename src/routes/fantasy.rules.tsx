@@ -154,9 +154,17 @@ function RulesPage() {
     {
       icon: Trophy,
       titleKey: "fantasy.rules.scoring",
-      descKey: "fantasy.rules.scoring_desc",
+      // "Points by position" is the category scale's line; under the rating rule
+      // the rating line below says it instead.
+      descKey: rules?.ratingScoring ? undefined : "fantasy.rules.scoring_desc",
       body: rules ? (
-        scoringTable ? (
+        rules.ratingScoring ? (
+          <RatingScoring
+            fromGameweek={rules.ratingScoring.fromGameweek}
+            table={scoringTable}
+            nf={nf}
+          />
+        ) : scoringTable ? (
           <ScoringTable table={scoringTable} nf={nf} />
         ) : (
           // Never a partial or invented scale: one plain line instead.
@@ -372,6 +380,37 @@ function ScoringTable({ table, nf }: { table: ScoringTableModel; nf: Intl.Number
             values={{ n: nf.format(table.fullAppearanceMinutes) }}
           />
         </RuleText>
+      ) : null}
+    </>
+  );
+}
+
+/**
+ * The rating rule (docs/backend/FANTASY_RATING_POINTS.md): from its first
+ * gameweek, the SofaScore rating rounded, 5 without one, 0 without an
+ * appearance, the captain doubled. The category scale stays below it for the
+ * gameweeks before, labelled as such.
+ */
+function RatingScoring({
+  fromGameweek,
+  table,
+  nf,
+}: {
+  fromGameweek: number;
+  table: ScoringTableModel | null;
+  nf: Intl.NumberFormat;
+}) {
+  const { t } = useI18n();
+  return (
+    <>
+      <RuleText>{t("fantasy.rules.rating_rule").replace("{n}", nf.format(fromGameweek))}</RuleText>
+      {fromGameweek > 1 && table ? (
+        <>
+          <RuleText>
+            {t("fantasy.rules.rating_previous").replace("{n}", nf.format(fromGameweek - 1))}
+          </RuleText>
+          <ScoringTable table={table} nf={nf} />
+        </>
       ) : null}
     </>
   );

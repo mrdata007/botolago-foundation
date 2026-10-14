@@ -6,6 +6,8 @@
 export const fr = {
   "fantasy.scoring.incrementalPolicy":
     "Les points et le classement sont actualisés après chaque match admissible. Ils restent provisoires pendant la journée. Les remplacements automatiques et le relais du capitaine attendent que la participation soit établie.",
+  "fantasy.scoring.closedProvisional":
+    "Points provisoires : les statistiques détaillées des matchs peuvent encore être publiées et les points peuvent changer jusqu'au verrouillage de la journée.",
   "fantasy.scoring.simpleEstimated": "Barème simplifié · données estimées",
   "fantasy.scoring.estimatesPolicy":
     "Les estimations examinées à partir des meilleures données disponibles peuvent être définitives et compter au classement. Les hypothèses sont conservées et les points restent soumis à la procédure de correction de 72 heures. Une identité ambiguë reste en attente.",
@@ -240,6 +242,8 @@ export const fr = {
   "matches.status.delayed": "Retardé",
   "matches.status.penalties": "T.a.b.",
   "matches.status.extra_time": "Prolongations",
+  "matches.stage.first_half": "1re mi-temps",
+  "matches.stage.second_half": "2e mi-temps",
   "matches.gameweek": "J.",
   "matches.vs": "vs",
   "matches.competition.botola": "Botola Pro Inwi",
@@ -786,6 +790,10 @@ export const fr = {
   "fantasy.rules.row.second_yellow_dismissal": "Expulsion sur second jaune (total)",
   "fantasy.rules.row.own_goal": "But contre son camp",
   "fantasy.rules.scoring_unavailable": "Le barème détaillé n'est pas disponible pour le moment.",
+  "fantasy.rules.rating_rule":
+    "À partir de la journée {n}, les points d’un joueur pour un match sont sa note SofaScore arrondie à l’entier le plus proche (7,5 donne 8 ; 7,4 donne 7). Un joueur entré en jeu sans note SofaScore marque 5 points, un joueur qui n’a pas joué 0. Le capitaine double ses points.",
+  "fantasy.rules.rating_previous":
+    "Jusqu’à la journée {n}, les points suivaient le barème ci-dessous.",
   "fantasy.rules.chips": "Jetons",
   "fantasy.rules.chip_window_season": "Une fois, à la journée de votre choix",
   "fantasy.rules.chip_window_range": "Une fois entre la J{from} et la J{to}",
@@ -802,7 +810,8 @@ export const fr = {
   "fantasy.onboarding.step1_body":
     "Choisissez 15 joueurs pour 100 M et alignez 11 titulaires chaque journée.",
   "fantasy.onboarding.step2_title": "Marquez des points",
-  "fantasy.onboarding.step2_body": "Buts, passes, cages inviolées, bonus… chaque action rapporte.",
+  "fantasy.onboarding.step2_body":
+    "Chaque joueur marque sa note SofaScore du match, arrondie à l’entier le plus proche.",
   "fantasy.onboarding.step3_title": "Défiez vos amis",
   "fantasy.onboarding.step3_body": "Créez une ligue privée avec un code et grimpez au classement.",
   "fantasy.onboarding.skip": "Passer",
@@ -1280,6 +1289,8 @@ export const fr = {
   "fantasy.points.event.own_goal": "But contre son camp",
   "fantasy.points.event.bonus": "Bonus",
   "fantasy.points.event.player_of_match": "Homme du match",
+  // The rating rule (docs/backend/FANTASY_RATING_POINTS.md): one line per match.
+  "fantasy.points.event.rating": "Note SofaScore",
   "fantasy.points.autosubs": "Remplacements automatiques",
   "fantasy.points.autosub_reason.goalkeeper_did_not_play": "Gardien non aligné",
   "fantasy.points.autosub_reason.outfield_did_not_play": "Joueur non aligné",
@@ -2667,11 +2678,11 @@ export const fr = {
     "Exemple : votre capitaine marque {n} pts, il vous en rapporte {double}.",
   "landing.step3_title": "Marquez des points, grimpez au classement",
   "landing.step3_body":
-    "Vos joueurs marquent des points selon leurs vrais matchs : temps de jeu, buts, passes décisives, cages inviolées.",
+    "Vos joueurs marquent leur note SofaScore de chaque match, arrondie à l’entier le plus proche.",
   "landing.scoring_label": "Extrait du barème",
-  "landing.scoring_goal_mid": "But d’un milieu",
-  "landing.scoring_assist": "Passe décisive",
-  "landing.scoring_clean_sheet": "Cage inviolée d’un défenseur",
+  "landing.scoring_rating_high": "Note SofaScore de 7,5",
+  "landing.scoring_rating_low": "Note SofaScore de 6,4",
+  "landing.scoring_no_rating": "Entré en jeu, sans note SofaScore",
   "landing.points_value": "{n} pts",
   "landing.why_title": "Pourquoi vous allez revenir",
   "landing.why1_title": "Les joueurs que vous suivez déjà",
@@ -2710,7 +2721,7 @@ export const fr = {
     "Oui. Une équipe créée maintenant entre dans la prochaine journée ouverte et marque des points à partir de celle-ci.",
   "landing.faq_points_q": "Comment marque-t-on des points ?",
   "landing.faq_points_a":
-    "Selon les vrais matchs de vos joueurs : temps de jeu, buts, passes décisives, cages inviolées… Les cartons et les buts contre son camp font perdre des points, et votre capitaine compte double.",
+    "Chaque joueur marque sa note SofaScore du match, arrondie à l’entier le plus proche (7,5 donne 8). Un joueur entré en jeu sans note marque 5 points, un joueur qui n’a pas joué 0, et votre capitaine compte double.",
   "landing.faq_account_q": "Faut-il un compte ?",
   "landing.faq_account_a":
     "Pour composer votre équipe, non. Pour l’enregistrer et entrer au classement, oui : un compte gratuit, avec une adresse e-mail à confirmer.",

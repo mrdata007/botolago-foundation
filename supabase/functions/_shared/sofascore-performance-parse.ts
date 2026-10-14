@@ -175,8 +175,34 @@ function readLineupSide(check: Check, value: unknown, path: string): RawLineupPl
 }
 
 /**
- * Lineups with per-player statistics. `fullCoverage` is true when any player
- * carries `totalPass`. On a limited match `goalAssist` is 0 for everyone and
+ * Players on the pitch for fewer minutes than this are left out of the full
+ * coverage test: SofaScore does not rate a substitute who came on very late
+ * (seen unrated at 7 minutes or less in 5 of 7 full-coverage samples). Owner
+ * decision 2026-10-12.
+ */
+export const FULL_COVERAGE_MIN_MINUTES = 8;
+
+/**
+ * Full coverage: every player who played at least FULL_COVERAGE_MIN_MINUTES
+ * has both a rating and a pass count, and at least one player did.
+ */
+export function hasFullCoverage(entries: readonly RawLineupPlayer[]): boolean {
+  const counted = entries.filter(
+    (entry) => (entry.stats?.minutesPlayed ?? 0) >= FULL_COVERAGE_MIN_MINUTES,
+  );
+  return (
+    counted.length > 0 &&
+    counted.every(
+      (entry) => entry.stats?.rating !== undefined && entry.stats?.totalPass !== undefined,
+    )
+  );
+}
+
+/**
+ * Lineups with per-player statistics. `fullCoverage` is true when every player
+ * with at least FULL_COVERAGE_MIN_MINUTES (8) minutes carries both `rating` and
+ * `totalPass` (the owner's definition of full coverage, 2026-10-12; it used to be
+ * "any player has `totalPass`"). A lineup with nobody on the pitch is not full. On a limited match `goalAssist` is 0 for everyone and
  * there is no `saves`, so `assists` is returned as null there (unknown), and
  * `saves` is null whenever the provider did not send it. A goalkeeper with no
  * `saves` value is never read as zero saves.
@@ -188,7 +214,7 @@ export function parseSofascoreLineups(raw: unknown): PerformanceLineups {
   const away = readLineupSide(check, root?.away, "away");
   check.done();
   const all = [...home, ...away];
-  const fullCoverage = all.some((entry) => entry.stats?.totalPass !== undefined);
+  const fullCoverage = hasFullCoverage(all);
   const build = (side: MatchSide, entries: RawLineupPlayer[]): PerformanceLineupPlayer[] =>
     entries.map((entry) => {
       const stats = entry.stats;
