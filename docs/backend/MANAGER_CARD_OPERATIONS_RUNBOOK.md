@@ -836,7 +836,7 @@ not production): `manager_card_status` 0.5 ms, `get_my_manager_card` 6.1 ms,
 1.1 ms, `ack_manager_card_moments` 5.3 ms. The batch read was 205 ms for 100 ids
 (median of 5, about 1 ms a team) before it was made set-based. Re-measure on
 production after the apply and record it here. The status call is the one the website makes on every page load; if
-it ever passes its budget, the website's 800 ms limit hides the section rather
+it ever passes its budget, the website's 2 s limit keeps the last good answer (or hides the section if it never had one) rather
 than slow the page.
 
 ## Account deletion
