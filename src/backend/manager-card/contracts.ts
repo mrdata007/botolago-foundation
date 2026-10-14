@@ -155,6 +155,14 @@ export const seasonSummarySchema = z.object({
   closedAt: iso.nullable(),
 });
 
+/**
+ * The edition a card is drawn in (BotolaGO+, migration 20261013100100). Cosmetic. Absent from a
+ * server without that migration, and read as absent when the code is not one this build knows:
+ * the card never fails to load because of it. Absent means the standard edition.
+ */
+export const CARD_EDITIONS = ["standard", "holo", "electric", "pixel", "chrome"] as const;
+const cardEdition = z.enum(CARD_EDITIONS).optional().catch(undefined);
+
 export const myCardSchema = z.object({
   teamId: uuid,
   name: z.string(),
@@ -198,6 +206,7 @@ export const myCardSchema = z.object({
    * not the one above: the card never fails to load because of it.
    */
   ovrChanges: z.array(ovrChangeSchema).optional().catch(undefined),
+  edition: cardEdition,
 });
 
 export const memberCardSchema = z.object({
@@ -223,6 +232,7 @@ export const memberCardSchema = z.object({
   gameweeksCounted: z.number().int().nonnegative(),
   minRated: z.number().int().positive(),
   firstRatedGameweekSeq: z.number().int().nullable(),
+  edition: cardEdition,
 });
 
 export const historyRowSchema = z.object({

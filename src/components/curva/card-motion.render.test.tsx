@@ -6,6 +6,7 @@ import { renderToString } from "react-dom/server";
 import { FIXTURES } from "@/backend/manager-card/fixtures";
 import { dictionaries } from "@/i18n/dictionaries";
 import { I18nProvider } from "@/i18n/provider";
+import { activeRenderer } from "@/components/manager-card/active-renderer";
 import { fromMyCard } from "@/components/manager-card/to-profile";
 import { motionCopy } from "@/components/manager-card/motion-copy";
 
@@ -70,7 +71,7 @@ describe("the stage's flip", () => {
   });
 
   it("keeps the card's own box and shape: the card is the same reserved box, in the stage's one width", () => {
-    expect(html).toContain("aspect-ratio:1 / 1.618");
+    expect(html).toContain(`aspect-ratio:1 / ${activeRenderer.estimateAspect(profile, "fr")}`);
     expect(html).toMatch(/data-stage-card="" class="[^"]*md:w-\[336px\]/);
   });
 

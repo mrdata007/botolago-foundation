@@ -192,15 +192,21 @@ function drawRuns(
 }
 
 /**
- * The card's own faces on the canvas: the three of the share palette, plus the card's serif (the
- * second name line) and Changa Light (the Arabic one). Instrument Serif is the card's own face,
+ * The card's own faces on the canvas: the three of the share palette, plus Éclat's serif (the
+ * second name line) and Changa Light (the Arabic one), and the shield's autograph faces. Instrument Serif is the card's own face,
  * declared by the card's stylesheet, which comes with the renderer's chunk, so it is asked for
  * here (`loadArtFonts`) as the other faces are.
  */
 const ART_SERIF = `"Instrument Serif", "Times New Roman", serif`;
+/** The shield's autograph faces: a signature script for a Latin run, Ruq'ah for an Arabic one. */
+const ART_SIGNATURE = `"Mr Dafoe", "Segoe Script", cursive`;
+const ART_RUQAA = `"Aref Ruqaa", "Noto Sans Arabic", serif`;
 function artFont(run: TextRun, size: number): string {
   if (run.face === "serif") return `400 ${size}px ${ART_SERIF}`;
   if (run.face === "displayLight") return shareFont("display", 300, size);
+  if (run.face === "signature") {
+    return ARABIC.test(run.text) ? `700 ${size}px ${ART_RUQAA}` : `400 ${size}px ${ART_SIGNATURE}`;
+  }
   return shareFont(run.face, run.weight, size);
 }
 
@@ -215,6 +221,8 @@ async function loadArtFonts(sample: string) {
   await Promise.all(
     [
       `400 40px ${ART_SERIF}`,
+      `400 40px ${ART_SIGNATURE}`,
+      `700 40px ${ART_RUQAA}`,
       shareFont("display", 300, 40),
       shareFont("body", 800, 40),
       shareFont("body", 600, 30),
