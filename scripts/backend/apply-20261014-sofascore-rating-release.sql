@@ -1,7 +1,7 @@
 -- ============================================================================
 -- BotolaGO Production V2 (tkewgajrljbwgwedqsxn)
 -- RELEASE: SofaScore football data (PR #459) and Fantasy rating points (PR #461).
--- Applies the 19 database changes of those two pull requests, in order, in ONE
+-- Applies the 20 database changes of those two pull requests, in order, in ONE
 -- transaction:
 --   20261013110000_rapidapi_call_budget.sql
 --   20261013110100_football_live_refresh_60s.sql
@@ -20,6 +20,7 @@
 --   20261013170000_fantasy_worker_schedule.sql
 --   20261013170100_ops_health_fantasy_worker.sql
 --   20261013180000_fast_fantasy_points_save.sql
+--   20261013190000_football_sofascore_snapshot_minute.sql
 --   20261014090000_fantasy_rating_points.sql
 --   20261014090100_fantasy_rating_points_save.sql
 --
@@ -56,9 +57,9 @@ begin
   if not exists (select 1 from supabase_migrations.schema_migrations where version = '20261012200100') then
     raise exception 'stop: 20261012200100 (Manager Card week one) is not applied yet; apply the earlier scripts first';
   end if;
-  if exists (select 1 from supabase_migrations.schema_migrations where version > '20261012200100') then
-    raise exception 'stop: a migration newer than 20261012200100 is already recorded: %',
-      (select string_agg(version, ', ' order by version) from supabase_migrations.schema_migrations where version > '20261012200100');
+  if exists (select 1 from supabase_migrations.schema_migrations where version in ('20261013110000', '20261013110100', '20261013110200', '20261013120000', '20261013120100', '20261013120200', '20261013140000', '20261013140100', '20261013150000', '20261013150100', '20261013160000', '20261013160100', '20261013160200', '20261013160300', '20261013170000', '20261013170100', '20261013180000', '20261013190000', '20261014090000', '20261014090100')) then
+    raise exception 'stop: part of this release is already recorded: %',
+      (select string_agg(version, ', ' order by version) from supabase_migrations.schema_migrations where version in ('20261013110000', '20261013110100', '20261013110200', '20261013120000', '20261013120100', '20261013120200', '20261013140000', '20261013140100', '20261013150000', '20261013150100', '20261013160000', '20261013160100', '20261013160200', '20261013160300', '20261013170000', '20261013170100', '20261013180000', '20261013190000', '20261014090000', '20261014090100'));
   end if;
   if exists (select 1 from cron.job where active)
     or exists (select 1 from app_private.notification_email_settings where football_live_refresh_enabled)
@@ -4536,6 +4537,88 @@ end
 $apply$;
 
 -- ---------------------------------------------------------------------------
+-- 20261013190000_football_sofascore_snapshot_minute.sql
+-- ---------------------------------------------------------------------------
+insert into supabase_migrations.schema_migrations (version, name, statements)
+values ('20261013190000', 'football_sofascore_snapshot_minute', array[$bg_20261013190000_file$-- The stored live minute on the SofaScore live snapshot.
+--
+-- api.football_sofascore_live_snapshot (last 20261011110000) returns each
+-- mapped fixture without its minute, so the live refresh cannot tell when the
+-- minute it computes differs from the one stored. When SofaScore stops sending
+-- the half's start time (time.currentPeriodStartTimestamp) the computed minute
+-- becomes null, nothing else changes, and the fixture was skipped as
+-- unchanged: the stored minute stayed frozen on the page instead of the stage
+-- label. With the stored minute in the snapshot, the refresh writes the null
+-- (api.ingest_football_fixture sets minute from the payload, so a JSON null
+-- clears it), and a minute equal to the stored one is no longer a change.
+--
+-- Same signature and grants; the only change is one more key per fixture
+-- (`minute`, integer or null). Existing readers ignore keys they do not know.
+-- Pure read, as before.
+
+create or replace function api.football_sofascore_live_snapshot()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if not app_private.is_service_request() then
+    raise exception using errcode = 'PT403', message = 'forbidden';
+  end if;
+  return jsonb_build_object(
+    'mappings', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'provider_name', m.provider_name,
+        'entity_type', m.entity_type::text,
+        'external_id', m.external_id,
+        'internal_entity_id', m.internal_entity_id,
+        'active', m.active) order by m.entity_type::text, m.external_id), '[]'::jsonb)
+      from app_private.football_provider_mappings m
+      where m.provider_name = 'sofascore' and m.active
+    ),
+    'fixtures', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', f.id,
+        'externalId', m.external_id,
+        'kickoffAt', f.kickoff_at,
+        'status', f.status::text,
+        'period', f.period::text,
+        'homeScore', f.home_score,
+        'awayScore', f.away_score,
+        'providerUpdatedAt', f.provider_updated_at,
+        'sourceSequence', f.source_sequence,
+        'finalizedAt', f.finalized_at,
+        'homeTeamId', f.home_team_id,
+        'awayTeamId', f.away_team_id,
+        'minute', f.minute) order by f.kickoff_at, f.id), '[]'::jsonb)
+      from app_private.football_provider_mappings m
+      join app.fixtures f on f.id = m.internal_entity_id
+      where m.provider_name = 'sofascore' and m.entity_type = 'fixture' and m.active
+    )
+  );
+end;
+$$;
+
+revoke all on function api.football_sofascore_live_snapshot()
+  from public, anon, authenticated, service_role;
+grant execute on function api.football_sofascore_live_snapshot() to service_role;
+
+comment on function api.football_sofascore_live_snapshot() is
+  'Service role, read only: the active SofaScore provider mappings and the current state of the fixtures mapped to SofaScore (with their internal home and away team ids and the stored live minute), for the football-live-refresh Edge Function.';
+$bg_20261013190000_file$]);
+do $apply$
+declare part text := (select statements[1] from supabase_migrations.schema_migrations where version = '20261013190000');
+begin
+  if encode(sha256(convert_to(part, 'UTF8')), 'hex') is distinct from '2c090f01fb4f032dffe752101c380735ea27f3267c791f9bf46f0afabaea7a12' then
+    raise exception 'stop: 20261013190000 is not the repository file byte for byte -- was this script cut short or changed?';
+  end if;
+  execute part;
+end
+$apply$;
+
+-- ---------------------------------------------------------------------------
 -- 20261014090000_fantasy_rating_points.sql
 -- ---------------------------------------------------------------------------
 insert into supabase_migrations.schema_migrations (version, name, statements)
@@ -5143,8 +5226,8 @@ $keep_paused$;
 do $postflight$
 declare problems text[] := '{}';
 begin
-  if (select count(*) from supabase_migrations.schema_migrations where version in ('20261013110000', '20261013110100', '20261013110200', '20261013120000', '20261013120100', '20261013120200', '20261013140000', '20261013140100', '20261013150000', '20261013150100', '20261013160000', '20261013160100', '20261013160200', '20261013160300', '20261013170000', '20261013170100', '20261013180000', '20261014090000', '20261014090100')) <> 19 then
-    problems := problems || 'not all 19 history rows are recorded'::text;
+  if (select count(*) from supabase_migrations.schema_migrations where version in ('20261013110000', '20261013110100', '20261013110200', '20261013120000', '20261013120100', '20261013120200', '20261013140000', '20261013140100', '20261013150000', '20261013150100', '20261013160000', '20261013160100', '20261013160200', '20261013160300', '20261013170000', '20261013170100', '20261013180000', '20261013190000', '20261014090000', '20261014090100')) <> 20 then
+    problems := problems || 'not all 20 history rows are recorded'::text;
   end if;
   if exists (select 1 from cron.job where active) then
     problems := problems || 'a scheduled job is active'::text;
