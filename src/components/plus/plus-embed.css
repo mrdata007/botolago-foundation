@@ -239,6 +239,10 @@
   display: flex;
   flex-direction: column;
 }
+/* beats the `.plus-embed .plus-body` reset so the stage keeps its gutter */
+.plus-embed .pl-under.plus-body {
+  padding-inline: var(--po-gutter);
+}
 /* the tab bar first, clear: it tells the reader what they get */
 .pl-under .ps-tabs {
   order: -1;
@@ -618,6 +622,9 @@
 
 /* A narrow panel (the card page's desktop column): the locked tab bar stays inside its panel. */
 @container (max-width: 300px) {
+  .plus-embed--night .pl-under.plus-body {
+    padding-inline: var(--po-space-2);
+  }
   .plus-embed--night .pl-under .ps-tabs {
     margin-inline: 0;
   }
