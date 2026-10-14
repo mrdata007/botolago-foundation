@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ChevronLeft, ChevronRight, ImageOff, Pause, Play, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageOff, Loader2, Pause, Play, X } from "lucide-react";
 import type { HomeStory } from "@/backend/home-stories/contracts";
 import { ui, UiIconButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -123,16 +123,19 @@ function StoryFrame({
           role="status"
           className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 p-6 text-center"
         >
-          {status === "error" && <ImageOff aria-hidden className="size-8" />}
-          <p className={ui.text.secondary}>
-            {status === "error"
-              ? ar
-                ? "تعذّر تحميل الصورة"
-                : "Impossible de charger le visuel"
-              : ar
-                ? "جارٍ تحميل الصورة…"
-                : "Chargement du visuel…"}
-          </p>
+          {status === "error" ? (
+            <>
+              <ImageOff aria-hidden className="size-8" />
+              <p className={ui.text.secondary}>
+                {ar ? "تعذّر تحميل الصورة" : "Impossible de charger le visuel"}
+              </p>
+            </>
+          ) : (
+            <>
+              <Loader2 aria-hidden className="size-8 animate-spin motion-reduce:animate-none" />
+              <span className="sr-only">{ar ? "جارٍ تحميل الصورة…" : "Chargement du visuel…"}</span>
+            </>
+          )}
         </div>
       )}
       <div className="absolute inset-0 flex" dir="ltr">
