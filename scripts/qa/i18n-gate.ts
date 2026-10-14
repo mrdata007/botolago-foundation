@@ -469,7 +469,12 @@ export const BASELINES: Baselines = {
   // Option A, Lane 4 (Fantasy core): FplChipsRow names each chip with a literal
   // `t("fantasy.chip.…")` branch instead of a `fantasy.chip.` template. 70 -> 69.
   // With Lanes 1, 2 and 5: 65 - 1 = 64.
-  W4: 64,
+  //
+  // Section loading (docs/engineering/SECTION_LOADING.md): the loading screen
+  // titles itself with the tapped section's `t(section.labelKey)`, read from
+  // the bar's item table exactly as BottomNav reads it, so the key is a real
+  // `TranslationKey` the compiler checks. 64 -> 65 (measured).
+  W4: 65,
 };
 
 export const LANGUAGES: GateLanguage[] = ["fr", "ar"];
