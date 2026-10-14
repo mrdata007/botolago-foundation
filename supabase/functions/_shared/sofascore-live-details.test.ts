@@ -544,4 +544,66 @@ describe("the live minute on the live tick", () => {
       { eventId: "1", period: "first_half", present: false, minute: null },
     ]);
   });
+
+  // A tick that only moves the clock: the provider's changeTimestamp is an hour
+  // old, so nothing but the minute differs from what is stored.
+  const clockTick = async (
+    stored: Record<string, unknown>,
+    periodStart: number | undefined,
+    over: Partial<ReturnType<typeof event>> = {},
+  ) => {
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { homeScore: 1, ...stored })],
+    });
+    const { fetch, paths } = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: {
+        events: [
+          {
+            ...event(1, LIVE, START + 100),
+            ...(periodStart === undefined
+              ? {}
+              : { time: { currentPeriodStartTimestamp: periodStart } }),
+            ...over,
+          },
+        ],
+      },
+    });
+    await tick("sofascore", "fixtures", db, fetch); // details on, default cap
+    const writes = named(db, "ingest_football_fixture");
+    return {
+      writes,
+      minutes: writes.map((c) => (c.args.p_fixture as { minute: number | null }).minute),
+      details: detailPaths(paths),
+    };
+  };
+
+  test("a clock-only write costs no details request (stored minute unknown or known)", async () => {
+    const unknown = await clockTick({}, START + 3000);
+    expect(unknown.minutes).toEqual([11]);
+    expect(unknown.details).toEqual([]);
+    const known = await clockTick({ minute: 10 }, START + 3000);
+    expect(known.minutes).toEqual([11]);
+    expect(known.details).toEqual([]);
+  });
+
+  test("a goal or a status change with the clock still reads the incidents", async () => {
+    const goal = await clockTick({ minute: 10 }, START + 3000, { homeScore: { current: 2 } });
+    expect(goal.writes).toHaveLength(1);
+    expect(goal.details).toEqual(["matches/get-incidents?matchId=1"]);
+    const status = await clockTick({ minute: 10, status: "half_time" }, START + 3000);
+    expect(status.writes).toHaveLength(1);
+    expect(status.details).toEqual(["matches/get-incidents?matchId=1"]);
+  });
+
+  test("the clock disappearing clears a stored minute instead of freezing it", async () => {
+    const cleared = await clockTick({ minute: 44 }, undefined);
+    expect(cleared.minutes).toEqual([null]);
+    expect(cleared.details).toEqual([]); // clearing the clock is not worth a request either
+  });
+
+  test("the stored minute unchanged is not a write, nor is a null that is already null", async () => {
+    expect((await clockTick({ minute: 11 }, START + 3000)).writes).toHaveLength(0);
+    expect((await clockTick({ minute: null }, undefined)).writes).toHaveLength(0);
+  });
 });

@@ -182,6 +182,19 @@ export interface StandingsSummary {
 }
 
 /**
+ * The time the table is observed at, for the database's STALE_UPDATE guard:
+ * SofaScore's own `updatedAtTimestamp` when it gave one, so an older (cached
+ * or out-of-order) table fetched later cannot overwrite a newer one. A stamp
+ * missing or later than `now` (a clock we cannot trust) falls back to `now`.
+ */
+export function standingsObservedAt(parsed: ParsedStandings, now: Date): string {
+  if (parsed.updatedAt === null) return now.toISOString();
+  const provider = Date.parse(parsed.updatedAt);
+  if (!Number.isFinite(provider) || provider > now.getTime()) return now.toISOString();
+  return new Date(provider).toISOString();
+}
+
+/**
  * One standings request and, in `sofascore` mode, one database call. Never
  * throws: standings must not fail the scores or the details around them.
  */
@@ -234,7 +247,7 @@ export async function runStandingsRefresh(
     const result = await client.schema("api").rpc("service_apply_sofascore_standings", {
       p_season_external_id: dependencies.seasonId,
       p_rows: payload.rows,
-      p_observed_at: now.toISOString(),
+      p_observed_at: standingsObservedAt(parsed, now),
     });
     if (result.error) {
       const code = result.error.message === "STALE_UPDATE" ? "stale" : "database_rejected";

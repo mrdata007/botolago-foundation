@@ -9,6 +9,7 @@ import {
   finishedWrittenThisTick,
   isDailyStandingsHour,
   parseStandingsRows,
+  standingsObservedAt,
   standingsPath,
 } from "./sofascore-standings.ts";
 
@@ -100,6 +101,20 @@ describe("parseStandingsRows: unknown is null, never 0", () => {
     expect(payload.rows.map((row) => row.teamExternalId)).toEqual(["101", "103"]);
     expect(payload.incomplete).toEqual(["102", "104"]);
     expect(payload.rows.every((row) => Object.values(row).every((v) => v !== null))).toBe(true);
+  });
+});
+
+describe("standingsObservedAt: the provider's update time guards against stale tables", () => {
+  const parsedAt = (stamp: number | undefined) =>
+    parseStandingsRows(table([standingRow(101, 1)], { updatedAtTimestamp: stamp }));
+  test("SofaScore's updatedAtTimestamp is the observation time, not the fetch time", () => {
+    const parsed = parsedAt(START);
+    expect(parsed).not.toBeNull();
+    expect(standingsObservedAt(parsed!, NOW)).toBe(new Date(START * 1000).toISOString());
+  });
+  test("no stamp, or a stamp later than now, falls back to now", () => {
+    expect(standingsObservedAt(parsedAt(undefined)!, NOW)).toBe(NOW.toISOString());
+    expect(standingsObservedAt(parsedAt(START + 7200)!, NOW)).toBe(NOW.toISOString());
   });
 });
 
@@ -285,6 +300,9 @@ describe("the live tick refreshes the table once after a match ends", () => {
     const args = standingsWrites(db)[0].args;
     expect(args.p_season_external_id).toBe(String(SEASON));
     expect((args.p_rows as unknown[]).length).toBe(2);
+    // the table's own update time, not the tick's: an older cached table
+    // fetched later must lose to the stored one (STALE_UPDATE)
+    expect(args.p_observed_at).toBe(new Date(START * 1000).toISOString());
     expect(outcome.body).toMatchObject({ standings: { status: "ok", trigger: "after_match" } });
   });
 
