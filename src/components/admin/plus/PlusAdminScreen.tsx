@@ -21,7 +21,6 @@ import {
 import {
   ADMIN_CARD_CLASS,
   ADMIN_LABEL_CLASS,
-  AdminBadge,
   AdminDate,
   AdminDatum,
   AdminEmptyState,
@@ -55,7 +54,7 @@ import {
   type Lang,
 } from "@/components/admin/plus/plus-presentation";
 import { formatUserDate, formatUserDateTime } from "@/components/admin/users/user-presentation";
-import { ui, UiButton, UiCard, UiInput } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiCard, UiInput } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 /**
@@ -88,6 +87,43 @@ type Notice = { tone: "info" | "alert"; text: string } | null;
 
 function errorCode(error: unknown): string {
   return mapPremiumAdminError(error).code;
+}
+
+/**
+ * A status word. Positive and negative are not drawn as the kit's coloured badge here: its green
+ * text on a green tint measures 3.9:1 at this size, under the 4.5:1 a 12px label needs. They sit on
+ * the sunken surface in the default text colour, with a coloured dot beside the word; the meaning
+ * is in the word, never in the colour alone. Caution and neutral are the kit's own.
+ */
+function StatusBadge({
+  tone,
+  children,
+}: {
+  tone: "positive" | "warning" | "neutral" | "danger";
+  children: ReactNode;
+}) {
+  if (tone === "warning") return <UiBadge tone="caution">{children}</UiBadge>;
+  if (tone === "neutral") return <UiBadge tone="neutral">{children}</UiBadge>;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-2 px-3 py-1",
+        ui.radius.full,
+        ui.text.label,
+        ui.surface.sunken,
+        ui.tone.default,
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          "h-2 w-2 shrink-0 rounded-full",
+          tone === "positive" ? "bg-[color:var(--ui-positive)]" : "bg-[color:var(--ui-negative)]",
+        )}
+      />
+      {children}
+    </span>
+  );
 }
 
 /** A titled block on the raised surface, as on the user detail page. */
@@ -259,7 +295,7 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
                     <h5 className={cn(ui.text.bodyStrong, ui.tone.default)}>
                       {productName(product.code, lang)}
                     </h5>
-                    <AdminBadge tone={product.active ? "positive" : "neutral"}>
+                    <StatusBadge tone={product.active ? "positive" : "neutral"}>
                       {product.active
                         ? rtl
                           ? "للبيع"
@@ -267,7 +303,7 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
                         : rtl
                           ? "غير معروض"
                           : "Retiré de la vente"}
-                    </AdminBadge>
+                    </StatusBadge>
                   </div>
                   <p className={cn("mt-2", ui.stat.md)} data-testid="admin-plus-product-price">
                     <bdi>{formatProductPrice(product, lang)}</bdi>
@@ -336,9 +372,9 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
         <UiCard padding="md" className="mt-3">
           <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <AdminField label={rtl ? "الوضع" : "Mode"} testId="admin-plus-setting-mode">
-              <AdminBadge tone={data.settings.mode === "off" ? "neutral" : "positive"}>
+              <StatusBadge tone={data.settings.mode === "off" ? "neutral" : "positive"}>
                 {MODE_LABELS[data.settings.mode][lang]}
-              </AdminBadge>
+              </StatusBadge>
               <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
                 {MODE_HINTS[data.settings.mode][lang]}
               </p>
@@ -347,7 +383,7 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
               label={rtl ? "الدفع عبر الموقع" : "Paiement en ligne"}
               testId="admin-plus-setting-checkout"
             >
-              <AdminBadge tone={data.settings.checkoutEnabled ? "positive" : "neutral"}>
+              <StatusBadge tone={data.settings.checkoutEnabled ? "positive" : "neutral"}>
                 {data.settings.checkoutEnabled
                   ? rtl
                     ? "مفعّل"
@@ -355,7 +391,7 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
                   : rtl
                     ? "مغلق"
                     : "Fermé"}
-              </AdminBadge>
+              </StatusBadge>
               <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
                 {data.settings.checkoutEnabled
                   ? rtl
@@ -367,7 +403,7 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
               </p>
             </AdminField>
             <AdminField label={rtl ? "الفوترة" : "Facturation"} testId="admin-plus-setting-billing">
-              <AdminBadge tone={data.settings.billingPaused ? "warning" : "positive"}>
+              <StatusBadge tone={data.settings.billingPaused ? "warning" : "positive"}>
                 {data.settings.billingPaused
                   ? rtl
                     ? "متوقفة مؤقتاً"
@@ -375,7 +411,7 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
                   : rtl
                     ? "جارية"
                     : "En marche"}
-              </AdminBadge>
+              </StatusBadge>
               <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
                 {data.settings.billingPaused
                   ? rtl
@@ -674,7 +710,7 @@ function MemberPanel({
               <AdminDatum>{member.userId}</AdminDatum>
             </p>
           </div>
-          <AdminBadge tone={member.isMember ? "positive" : "neutral"}>
+          <StatusBadge tone={member.isMember ? "positive" : "neutral"}>
             <span data-testid="admin-plus-member-status">
               {member.isMember
                 ? rtl
@@ -684,7 +720,7 @@ function MemberPanel({
                   ? "ليس عضواً الآن"
                   : "Pas membre actuellement"}
             </span>
-          </AdminBadge>
+          </StatusBadge>
         </div>
         <p className={cn("mt-2", ui.text.meta, ui.tone.muted)}>
           {rtl
@@ -714,9 +750,9 @@ function MemberPanel({
         ) : (
           <dl className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <AdminField label={rtl ? "الحالة الآن" : "État actuel"} testId="admin-plus-ent-state">
-              <AdminBadge tone={stateTone(entitlement.effectiveState)}>
+              <StatusBadge tone={stateTone(entitlement.effectiveState)}>
                 {STATE_NAMES[entitlement.effectiveState][lang]}
-              </AdminBadge>
+              </StatusBadge>
               {entitlement.effectiveState !== entitlement.state && (
                 <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
                   {rtl ? "الحالة المسجّلة: " : "État enregistré : "}
@@ -915,7 +951,7 @@ function GrantRow({
       data-live={live ? "true" : "false"}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <AdminBadge tone={status.tone}>{status.label}</AdminBadge>
+        <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
         <p className={cn(ui.text.meta, ui.tone.muted)}>
           {rtl ? "من " : "Du "}
           <AdminDate>{formatUserDate(item.startsAt, lang)}</AdminDate>
@@ -975,7 +1011,7 @@ function EventRow({ event, lang }: { event: PremiumAdminEvent; lang: Lang }) {
         <p className={cn(ui.text.bodyStrong, ui.tone.default)}>
           {EVENT_TYPE_LABELS[event.eventType][lang]}
         </p>
-        <AdminBadge tone={tone}>{OUTCOME_LABELS[event.outcome][lang]}</AdminBadge>
+        <StatusBadge tone={tone}>{OUTCOME_LABELS[event.outcome][lang]}</StatusBadge>
       </div>
       <p className={cn(ui.text.meta, ui.tone.muted)}>
         <AdminDate>{formatUserDateTime(event.occurredAt, lang)}</AdminDate>
