@@ -185,7 +185,7 @@ describe("the Face-à-face tab's table", () => {
       stored.filter((row) => clubs.includes(row.team.id)).map((row) => String(row.points)),
     ).not.toEqual(expected.map((row) => row.points));
     // And what a table worked out from the results cannot claim.
-    expect(html).toContain(fr["standings.provisional"]);
+    expect(html).not.toContain(fr["standings.provisional"]);
   });
 
   test("is left to the browser: server and first render agree while it loads", async () => {
@@ -364,10 +364,10 @@ describe("the Face-à-face note on a table worked out from the results", () => {
     computed: html.includes(fr["standings.computed"]),
   });
 
-  test("takes the season's status from the season list: provisional in play, unofficial once over", async () => {
+  test("takes the season's status from the season list: nothing said in play, unofficial once over", async () => {
     expect(notes(await tab([season]))).toEqual({
       table: true,
-      provisional: true,
+      provisional: false,
       unofficial: false,
       computed: false,
     });
@@ -427,7 +427,7 @@ describe("the Face-à-face table through a switch of language", () => {
     expect(arabicName).not.toBe(fixture.homeTeam.name);
     expect(body).toContain(escapeHtml(fixture.homeTeam.name));
     expect(body).not.toContain(arabicName);
-    expect(html).toContain(fr["standings.provisional"]);
+    expect(html).not.toContain(fr["standings.provisional"]);
   });
 
   test("never another season's table", async () => {

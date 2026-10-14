@@ -35,7 +35,7 @@ export function remainingLabel(n: number, lang: Language, t: Translate): string 
   return template.replace("{n}", formatNumber(n, lang));
 }
 
-/** "Provisoire · 2 matchs à jouer". */
+/** "2 matchs à jouer". */
 export function matchesLeftLabel(n: number, lang: Language, t: Translate): string {
   const rule = plural(n, lang);
   const template =

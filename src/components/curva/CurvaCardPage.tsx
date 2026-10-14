@@ -151,18 +151,6 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
             <p className={cn("px-4 pt-4 text-pretty", ui.text.secondary, ui.tone.muted)}>
               {rated ? copy.cardIntro : copy.cardIntroForming}
             </p>
-            {card.provisional && rated ? (
-              <p
-                className={cn(
-                  "px-4 pt-2 text-pretty",
-                  ui.text.secondary,
-                  "[font-weight:var(--ui-weight-strong)]",
-                  ui.tone.default,
-                )}
-              >
-                {fill(moments.m4.heroFreshLine, { final: cardCopy.finalRounds(card.minConfirmed) })}
-              </p>
-            ) : null}
             <ul className="mt-2 grid grid-cols-2 border-t border-[color:var(--ui-rule)]">
               {STAT_CODES.map((code, index) => (
                 <StatTile

@@ -290,7 +290,7 @@ describe("a gameweek that closed on provisional points says so (staged SofaScore
   });
 
   test("the copy exists in French and Arabic", () => {
-    expect(dictionaries.fr["fantasy.scoring.closedProvisional"]).toContain("Points provisoires");
+    expect(dictionaries.fr["fantasy.scoring.closedProvisional"]).not.toMatch(/provisoire/i);
     expect(dictionaries.ar["fantasy.scoring.closedProvisional"]?.length).toBeGreaterThan(20);
   });
 });

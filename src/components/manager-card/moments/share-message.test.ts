@@ -43,7 +43,7 @@ describe("the share message", () => {
     );
   });
 
-  it("French, provisional, with a league: « provisoire » and the league's name", () => {
+  it("French, provisional, with a league: no « provisoire », and the league's name", () => {
     const message = shareMessage(
       input("fr", {
         provisional: true,
@@ -52,7 +52,7 @@ describe("the share message", () => {
       }),
     );
     expect(message).toBe(
-      "Ma carte BotolaGO : 84 (provisoire). Et toi ? Rejoins ma ligue « Les Lions du Derb » : https://botolago.com/pronostics/ligues/rejoindre#code=ABCD",
+      "Ma carte BotolaGO : 84. Et toi ? Rejoins ma ligue « Les Lions du Derb » : https://botolago.com/pronostics/ligues/rejoindre#code=ABCD",
     );
   });
 
@@ -74,10 +74,10 @@ describe("the share message", () => {
     }
   });
 
-  it("Arabic: the provisional variants say مبدئي, the others do not", () => {
-    expect(shareMessage(input("ar", { provisional: true }))).toContain("مبدئي");
+  it("Arabic: no variant says مبدئي", () => {
+    expect(shareMessage(input("ar", { provisional: true }))).not.toContain("مبدئي");
     expect(shareMessage(input("ar", { provisional: false }))).not.toContain("مبدئي");
-    expect(shareMessage(input("ar", { provisional: true, league: { name: "x" } }))).toContain(
+    expect(shareMessage(input("ar", { provisional: true, league: { name: "x" } }))).not.toContain(
       "مبدئي",
     );
   });
