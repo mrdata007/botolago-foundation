@@ -1,8 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import type { TranslationKey } from "@/i18n/dictionaries";
-
 import { PlusDuelScreen } from "./PlusDuelScreen";
 import {
   CaptainChart,
@@ -12,15 +10,8 @@ import {
   SignedBars,
   Spark,
 } from "./plus-season-charts";
-import {
-  JOURNEES,
-  LEAGUE_SIZE,
-  RATING_CODES,
-  SEASON,
-  SEASON_RAW,
-  TRANSFER_PENALTY,
-  type RatingCode,
-} from "./plus-season-data";
+import { isMissing, RATING_CODES, TRANSFER_PENALTY } from "./plus-season-data";
+import { useSeason } from "./plus-season-context";
 import {
   Fig,
   Key,
@@ -36,9 +27,6 @@ import { ratingName, useFill, useSeasonFmt } from "./plus-season-fmt";
 
 type SeasonTab = "resume" | "points" | "decisions" | "note";
 const ID = "plus-s2";
-const S = SEASON;
-const R = SEASON_RAW;
-const J = JOURNEES;
 
 /**
  * Screen 2, « Votre saison »: four pill tabs (Résumé, Points, Décisions, Note) over one example
@@ -58,20 +46,12 @@ export function PlusSeasonScreen({
   onDuel: (open: boolean) => void;
 }) {
   const { t } = usePlusCopy();
-  const [tab, setTab] = useState<SeasonTab>("resume");
   const scroller = useRef<HTMLDivElement>(null);
 
   // Opening or closing the duel starts its screen at the top.
   useEffect(() => {
     if (scroller.current) scroller.current.scrollTop = 0;
   }, [duelOpen]);
-
-  const tabs: PlusTab<SeasonTab>[] = [
-    { key: "resume", label: t("plus.s2.tab_resume") },
-    { key: "points", label: t("plus.s2.tab_points") },
-    { key: "decisions", label: t("plus.s2.tab_decisions") },
-    { key: "note", label: t("plus.s2.tab_note") },
-  ];
 
   return (
     <>
@@ -84,19 +64,7 @@ export function PlusSeasonScreen({
             <h1 className="plus-h ps-h1" id="plus-s2-title" tabIndex={-1} ref={titleRef}>
               {t("plus.s2.title")}
             </h1>
-            <PlusTabs
-              id={ID}
-              tabs={tabs}
-              value={tab}
-              onChange={setTab}
-              label={t("plus.s2.tabs_aria")}
-            />
-            <PlusPanel id={ID} tab={tab} key={tab}>
-              {tab === "resume" ? <ResumeTab onDuel={() => onDuel(true)} /> : null}
-              {tab === "points" ? <PointsTab /> : null}
-              {tab === "decisions" ? <DecisionsTab /> : null}
-              {tab === "note" ? <NoteTab /> : null}
-            </PlusPanel>
+            <PlusSeasonTabs onDuel={() => onDuel(true)} />
           </>
         )}
       </div>
@@ -109,9 +77,38 @@ export function PlusSeasonScreen({
   );
 }
 
+/**
+ * The four tabs of « Votre saison » and the panel under them: the part the offer's step 2 and the
+ * in-app section share. It draws whatever season `useSeason()` gives it (the example by default).
+ * `onDuel` adds the way into the duel at the end of Résumé; the in-app section leaves it out (the
+ * duel opens from a league mate's card).
+ */
+export function PlusSeasonTabs({ onDuel }: { onDuel?: () => void }) {
+  const { t } = usePlusCopy();
+  const [tab, setTab] = useState<SeasonTab>("resume");
+  const tabs: PlusTab<SeasonTab>[] = [
+    { key: "resume", label: t("plus.s2.tab_resume") },
+    { key: "points", label: t("plus.s2.tab_points") },
+    { key: "decisions", label: t("plus.s2.tab_decisions") },
+    { key: "note", label: t("plus.s2.tab_note") },
+  ];
+  return (
+    <>
+      <PlusTabs id={ID} tabs={tabs} value={tab} onChange={setTab} label={t("plus.s2.tabs_aria")} />
+      <PlusPanel id={ID} tab={tab} key={tab}>
+        {tab === "resume" ? <ResumeTab onDuel={onDuel} /> : null}
+        {tab === "points" ? <PointsTab /> : null}
+        {tab === "decisions" ? <DecisionsTab /> : null}
+        {tab === "note" ? <NoteTab /> : null}
+      </PlusPanel>
+    </>
+  );
+}
+
 /* ------------------------------------------------------------------------ Résumé */
 
-function ResumeTab({ onDuel }: { onDuel: () => void }) {
+function ResumeTab({ onDuel }: { onDuel?: () => void }) {
+  const { S, raw: R, J, leagueSize } = useSeason();
   const { t, f } = usePlusCopy();
   const { num } = useSeasonFmt();
   const fill = useFill();
@@ -146,15 +143,26 @@ function ResumeTab({ onDuel }: { onDuel: () => void }) {
   return (
     <>
       <section className="ps-hero" aria-labelledby="ps-r-hl">
-        <h2 className="ps-hl" id="ps-r-hl">
-          {f("plus.s2.r_above", {
-            n: (
-              <span className="ps-big mint" style={{ display: "block" }}>
-                <Num value={above} sign />
-              </span>
-            ),
-          })}
-        </h2>
+        {isMissing(above) ? (
+          <>
+            <h2 className="ps-label" id="ps-r-hl">
+              {t("plus.s2.b_points")}
+            </h2>
+            <b className="ps-big mint">
+              <Num value={S.total} />
+            </b>
+          </>
+        ) : (
+          <h2 className="ps-hl" id="ps-r-hl">
+            {f("plus.s2.r_above", {
+              n: (
+                <span className="ps-big mint" style={{ display: "block" }}>
+                  <Num value={above} sign />
+                </span>
+              ),
+            })}
+          </h2>
+        )}
       </section>
       <ul className="ps-trio" aria-label={t("plus.s2.r_trio_aria")}>
         <li>
@@ -182,18 +190,19 @@ function ResumeTab({ onDuel }: { onDuel: () => void }) {
         </h2>
         <ul className="ps-tiles">
           {tiles.map((tile) => {
+            const known = !isMissing(tile.delta);
             const good = tile.delta >= 0;
             return (
               <li className="ps-tile" key={tile.label}>
                 <span className="ps-label">{tile.label}</span>
                 <b className="ps-mid">{tile.value}</b>
                 <span
-                  className={`ps-chip ${good ? "good" : "bad"}`}
+                  className={`ps-chip ${known ? (good ? "good" : "bad") : "plain"}`}
                   aria-label={fill("plus.s2.vs_league_aria", {
                     n: num(tile.delta, tile.d, true),
                   })}
                 >
-                  <SignTri up={good} />
+                  {known ? <SignTri up={good} /> : null}
                   {f("plus.s2.vs_league", {
                     n: <bdi dir="ltr">{num(tile.delta, tile.d, true)}</bdi>,
                   })}
@@ -203,49 +212,51 @@ function ResumeTab({ onDuel }: { onDuel: () => void }) {
           })}
         </ul>
       </section>
-      <section className="ps-duel-card" aria-labelledby="ps-r-duel">
-        <h2 className="ps-hl" id="ps-r-duel">
-          {f("plus.s2.lead_h", {
-            name: <bdi>{t("plus.s2.rival_name")}</bdi>,
-            n: <Fig>{S.total - S.rivalTotal}</Fig>,
-          })}
-        </h2>
-        <p
-          className="ps-score-line"
-          dir="ltr"
-          aria-label={fill("plus.s2.a_split", {
-            a: S.wins,
-            b: S.rivalWins,
-            name: t("plus.s2.rival_name"),
-          })}
-        >
-          <span className="a">
-            <Num value={S.wins} />
-          </span>
-          <span className="dash" aria-hidden>
-            –
-          </span>
-          <span className="b">
-            <Num value={S.rivalWins} />
-          </span>
-        </p>
-        <button type="button" className="ps-linkbtn" onClick={onDuel}>
-          {t("plus.s2.duel_open")}
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.6"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
+      {onDuel ? (
+        <section className="ps-duel-card" aria-labelledby="ps-r-duel">
+          <h2 className="ps-hl" id="ps-r-duel">
+            {f("plus.s2.lead_h", {
+              name: <bdi>{t("plus.s2.rival_name")}</bdi>,
+              n: <Fig>{S.total - S.rivalTotal}</Fig>,
+            })}
+          </h2>
+          <p
+            className="ps-score-line"
+            dir="ltr"
+            aria-label={fill("plus.s2.a_split", {
+              a: S.wins,
+              b: S.rivalWins,
+              name: t("plus.s2.rival_name"),
+            })}
           >
-            <path d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
-      </section>
+            <span className="a">
+              <Num value={S.wins} />
+            </span>
+            <span className="dash" aria-hidden>
+              –
+            </span>
+            <span className="b">
+              <Num value={S.rivalWins} />
+            </span>
+          </p>
+          <button type="button" className="ps-linkbtn" onClick={onDuel}>
+            {t("plus.s2.duel_open")}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </section>
+      ) : null}
     </>
   );
 }
@@ -253,12 +264,14 @@ function ResumeTab({ onDuel }: { onDuel: () => void }) {
 /* ------------------------------------------------------------------------- Points */
 
 function PointsTab() {
+  const { S, raw: R, J, leagueSize } = useSeason();
   const { t, f } = usePlusCopy();
   const { num, ord, j, jAxis } = useSeasonFmt();
   const fill = useFill();
   const best = S.bestWeek;
   const worst = S.worstWeek;
   const gross = S.starters + S.captainTotal;
+  const haveLeague = !isMissing(S.leagueTotal);
 
   const balance: {
     label: string;
@@ -319,7 +332,7 @@ function PointsTab() {
         <Key
           items={[
             { cls: "k-you", label: t("plus.s2.you") },
-            { cls: "k-ref", label: t("plus.s2.k_league") },
+            ...(haveLeague ? [{ cls: "k-ref", label: t("plus.s2.k_league") }] : []),
           ]}
         />
         <CumChart
@@ -339,11 +352,15 @@ function PointsTab() {
           })}
         </h2>
         <Key
-          items={[
-            { cls: "sw up", label: t("plus.s2.k_above") },
-            { cls: "sw dn", label: t("plus.s2.k_below") },
-            { cls: "k-ref", label: t("plus.s2.k_league") },
-          ]}
+          items={
+            haveLeague
+              ? [
+                  { cls: "sw up", label: t("plus.s2.k_above") },
+                  { cls: "sw dn", label: t("plus.s2.k_below") },
+                  { cls: "k-ref", label: t("plus.s2.k_league") },
+                ]
+              : [{ cls: "sw up", label: t("plus.s2.you") }]
+          }
         />
         <PointsBars
           jAxis={jAxis}
@@ -427,7 +444,7 @@ function PointsTab() {
                 <td>
                   <Fig>{row.league}</Fig>
                 </td>
-                <td className={row.gap >= 0 ? "up" : "dn"}>
+                <td className={isMissing(row.gap) ? undefined : row.gap >= 0 ? "up" : "dn"}>
                   <Fig>{num(row.gap, row.d, true)}</Fig>
                 </td>
               </tr>
@@ -468,7 +485,7 @@ function PointsTab() {
                   </th>
                   <td className="you">
                     <Fig>{v}</Fig>
-                    <small className={d >= 0 ? "up" : "dn"}>
+                    <small className={isMissing(d) ? undefined : d >= 0 ? "up" : "dn"}>
                       <Fig>{num(d, 0, true)}</Fig>
                     </small>
                   </td>
@@ -479,12 +496,12 @@ function PointsTab() {
                     <Fig>{R.leagueBest[i]}</Fig>
                   </td>
                   <td className="rk">
-                    {i > 0 && r !== prev ? (
+                    {i > 0 && !isMissing(r) && !isMissing(prev) && r !== prev ? (
                       <span className={`mv ${r < prev ? "up" : "dn"}`}>
                         <SignTri up={r < prev} />
                         <Fig>{Math.abs(r - prev)}</Fig>
                       </span>
-                    ) : i > 0 ? (
+                    ) : i > 0 && !isMissing(r) ? (
                       <span className="mv" aria-hidden>
                         =
                       </span>
@@ -506,6 +523,7 @@ function PointsTab() {
 /* ---------------------------------------------------------------------- Décisions */
 
 function DecisionsTab() {
+  const { S, raw: R, J, leagueSize } = useSeason();
   const { t, f } = usePlusCopy();
   const { num, j, jAxis } = useSeasonFmt();
   const fill = useFill();
@@ -543,70 +561,82 @@ function DecisionsTab() {
         </div>
       </section>
 
-      <section className="ps-card" aria-labelledby="ps-d-trf">
-        <h2 className="ps-hl" id="ps-d-trf">
-          {f("plus.s2.d_trf_h", {
-            n: <Fig>{num(S.net, 0, true)}</Fig>,
-            l: <Fig>{num(R.leagueNetTransfers, 0, true)}</Fig>,
-          })}
-        </h2>
-        <Key
-          items={[
-            { cls: "sw m", label: t("plus.s2.k_gain") },
-            { cls: "sw sk", label: t("plus.s2.k_loss") },
-          ]}
-        />
-        <SignedBars
-          vals={S.netByWeek}
-          labels={R.transfers.map((w) => String(w[0]))}
-          min={-8}
-          max={14}
-          ticks={[-5, 0, 10]}
-          bw={28}
-          H={170}
-          label={fill("plus.s2.a_trf", {
-            weeks: jAxisLabels.join(", "),
-            penalty: TRANSFER_PENALTY,
-          })}
-        />
-        <div className="ps-pair">
-          <div>
-            <span className="ps-label">{f("plus.s2.d_best_t", { j: <bdi>{j(bt[0])}</bdi> })}</span>
-            <b className="ps-mid mint">
-              <Fig>{num(bt[1], 0, true)}</Fig>
-            </b>
-            <span className="who">
-              <bdi>{R.bestTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
-              <bdi>{R.bestTransfer.to}</bdi>
-            </span>
+      {R.transfers.length > 0 ? (
+        <section className="ps-card" aria-labelledby="ps-d-trf">
+          <h2 className="ps-hl" id="ps-d-trf">
+            {f("plus.s2.d_trf_h", {
+              n: <Fig>{num(S.net, 0, true)}</Fig>,
+              l: <Fig>{num(R.leagueNetTransfers, 0, true)}</Fig>,
+            })}
+          </h2>
+          <Key
+            items={[
+              { cls: "sw m", label: t("plus.s2.k_gain") },
+              { cls: "sw sk", label: t("plus.s2.k_loss") },
+            ]}
+          />
+          <SignedBars
+            vals={S.netByWeek}
+            labels={R.transfers.map((w) => String(w[0]))}
+            min={-8}
+            max={14}
+            ticks={[-5, 0, 10]}
+            bw={28}
+            H={170}
+            label={fill("plus.s2.a_trf", {
+              weeks: jAxisLabels.join(", "),
+              penalty: TRANSFER_PENALTY,
+            })}
+          />
+          <div className="ps-pair">
+            <div>
+              <span className="ps-label">
+                {f("plus.s2.d_best_t", { j: <bdi>{j(bt[0])}</bdi> })}
+              </span>
+              <b className="ps-mid mint">
+                <Fig>{num(bt[1], 0, true)}</Fig>
+              </b>
+              {R.bestTransfer ? (
+                <span className="who">
+                  <bdi>{R.bestTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
+                  <bdi>{R.bestTransfer.to}</bdi>
+                </span>
+              ) : null}
+            </div>
+            <div>
+              <span className="ps-label">
+                {f("plus.s2.d_worst_t", { j: <bdi>{j(wt[0])}</bdi> })}
+              </span>
+              <b className="ps-mid sky">
+                <Fig>{num(wt[1], 0, true)}</Fig>
+              </b>
+              {R.worstTransfer ? (
+                <span className="who">
+                  <bdi>{R.worstTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
+                  <bdi>{R.worstTransfer.to}</bdi>
+                </span>
+              ) : null}
+            </div>
           </div>
-          <div>
-            <span className="ps-label">{f("plus.s2.d_worst_t", { j: <bdi>{j(wt[0])}</bdi> })}</span>
-            <b className="ps-mid sky">
-              <Fig>{num(wt[1], 0, true)}</Fig>
-            </b>
-            <span className="who">
-              <bdi>{R.worstTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
-              <bdi>{R.worstTransfer.to}</bdi>
-            </span>
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
-      <section className="ps-card" aria-labelledby="ps-d-con">
-        <h2 className="ps-hl" id="ps-d-con">
-          {f("plus.s2.d_con_h", { k: <Fig>{S.above}</Fig>, n: <Fig>{J}</Fig> })}
-        </h2>
-        <SignedBars
-          vals={S.vsLeague}
-          labels={Array.from({ length: J }, (_, i) => (i === 0 ? jAxis(1) : String(i + 1)))}
-          min={-6}
-          max={16}
-          ticks={[-5, 0, 10]}
-          H={180}
-          label={t("plus.s2.a_reg")}
-        />
-      </section>
+      {isMissing(S.above) ? null : (
+        <section className="ps-card" aria-labelledby="ps-d-con">
+          <h2 className="ps-hl" id="ps-d-con">
+            {f("plus.s2.d_con_h", { k: <Fig>{S.above}</Fig>, n: <Fig>{J}</Fig> })}
+          </h2>
+          <SignedBars
+            vals={S.vsLeague}
+            labels={Array.from({ length: J }, (_, i) => (i === 0 ? jAxis(1) : String(i + 1)))}
+            min={-6}
+            max={16}
+            ticks={[-5, 0, 10]}
+            H={180}
+            label={t("plus.s2.a_reg")}
+          />
+        </section>
+      )}
     </>
   );
 }
@@ -614,14 +644,16 @@ function DecisionsTab() {
 /* -------------------------------------------------------------------------- Note */
 
 function NoteTab() {
+  const { S, raw: R, J, leagueSize } = useSeason();
   const { t, f } = usePlusCopy();
   const { num, ord, rankOf, jAxis } = useSeasonFmt();
   const fill = useFill();
   const ovr = S.ovr;
   const delta = ovr - S.leagueOvr;
   const rank = R.ratingRank;
+  const ranked = RATING_CODES.some((c) => !isMissing(rank[c]));
   const strong = RATING_CODES.filter((c) => rank[c] <= 3).sort((a, b) => rank[a] - rank[b]);
-  const weak = RATING_CODES.filter((c) => rank[c] > LEAGUE_SIZE / 2);
+  const weak = RATING_CODES.filter((c) => rank[c] > leagueSize / 2);
   const order = [...RATING_CODES].sort((a, b) => S.contributions[b] - S.contributions[a]);
   return (
     <>
@@ -633,9 +665,9 @@ function NoteTab() {
           <Num value={ovr} />
         </b>
         <div className="ps-hero-row">
-          <span className="ps-chip rank">{rankOf(rank.OVR, LEAGUE_SIZE)}</span>
-          <span className={`ps-chip ${delta >= 0 ? "good" : "bad"}`}>
-            <SignTri up={delta >= 0} />
+          <span className="ps-chip rank">{rankOf(rank.OVR, leagueSize)}</span>
+          <span className={`ps-chip ${isMissing(delta) ? "plain" : delta >= 0 ? "good" : "bad"}`}>
+            {isMissing(delta) ? null : <SignTri up={delta >= 0} />}
             {f("plus.s2.vs_league", { n: <bdi dir="ltr">{num(delta, 0, true)}</bdi> })}
           </span>
         </div>
@@ -672,7 +704,7 @@ function NoteTab() {
                   <Num value={v} />
                 </b>
                 <span className={`ps-chip ${r <= 4 ? "rank" : "plain"}`}>
-                  {rankOf(r, LEAGUE_SIZE)}
+                  {rankOf(r, leagueSize)}
                 </span>
               </div>
               <div className="ps-stat-mid">
@@ -687,9 +719,14 @@ function NoteTab() {
                 >
                   <i
                     className="ps-fx"
-                    style={{ width: `${(v / 99) * 100}%`, ["--i" as string]: ix }}
+                    style={{
+                      width: `${isMissing(v) ? 0 : (v / 99) * 100}%`,
+                      ["--i" as string]: ix,
+                    }}
                   />
-                  <u style={{ insetInlineStart: `${(avg / 99) * 100}%` }} />
+                  {isMissing(avg) ? null : (
+                    <u style={{ insetInlineStart: `${(avg / 99) * 100}%` }} />
+                  )}
                 </div>
                 <Spark vals={R.ratings[code]} avg={avg} />
               </div>
@@ -701,26 +738,28 @@ function NoteTab() {
         })}
       </ul>
 
-      <section className="ps-card">
-        <div className="ps-tags">
-          <div className="ps-tagrow">
-            <span className="ps-tag p">{t("plus.s2.n_strong")}</span>
-            {strong.map((c) => (
-              <span className="ps-chip good" key={c}>
-                {ratingName(t, c)} · {ord(rank[c])}
-              </span>
-            ))}
+      {ranked ? (
+        <section className="ps-card">
+          <div className="ps-tags">
+            <div className="ps-tagrow">
+              <span className="ps-tag p">{t("plus.s2.n_strong")}</span>
+              {strong.map((c) => (
+                <span className="ps-chip good" key={c}>
+                  {ratingName(t, c)} · {ord(rank[c])}
+                </span>
+              ))}
+            </div>
+            <div className="ps-tagrow">
+              <span className="ps-tag n">{t("plus.s2.n_work")}</span>
+              {weak.map((c) => (
+                <span className="ps-chip bad" key={c}>
+                  {ratingName(t, c)} · {ord(rank[c])}
+                </span>
+              ))}
+            </div>
           </div>
-          <div className="ps-tagrow">
-            <span className="ps-tag n">{t("plus.s2.n_work")}</span>
-            {weak.map((c) => (
-              <span className="ps-chip bad" key={c}>
-                {ratingName(t, c)} · {ord(rank[c])}
-              </span>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section className="ps-card" aria-labelledby="ps-n-build">
         <h2 className="ps-hl" id="ps-n-build">
@@ -757,7 +796,10 @@ function NoteTab() {
                   <s />
                   <i
                     className={`ps-fx ${p ? "p" : "n end"}`}
-                    style={{ width: `${(Math.abs(c) / 6) * 50}%`, ["--i" as string]: ix }}
+                    style={{
+                      width: `${isMissing(c) ? 0 : (Math.abs(c) / 6) * 50}%`,
+                      ["--i" as string]: ix,
+                    }}
                   />
                 </span>
                 <b className={p ? "mint" : "dn"}>

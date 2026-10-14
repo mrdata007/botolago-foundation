@@ -18,6 +18,15 @@ export const LEAGUE_SIZE = 12;
 /** A paid transfer costs this many points. */
 export const TRANSFER_PENALTY = 4;
 
+/**
+ * A figure the backend does not serve yet. It flows through the arithmetic as `NaN` (so every
+ * derived figure that needs it is missing too) and the screens write it as « — » (`useSeasonFmt`).
+ * Only the member mapper (`plus-member-data.ts`) produces it; the example season has none.
+ */
+export const MISSING = Number.NaN;
+export const isMissing = (n: number | null | undefined): boolean =>
+  n === null || n === undefined || !Number.isFinite(n);
+
 export type RatingCode = "CAP" | "SEL" | "TRF" | "CON";
 export const RATING_CODES: readonly RatingCode[] = ["CAP", "SEL", "TRF", "CON"];
 
@@ -41,8 +50,10 @@ export interface SeasonRaw {
   leagueCaptain: number;
   leagueNetTransfers: number;
   transfers: readonly TransferWeek[];
-  bestTransfer: { from: string; to: string };
-  worstTransfer: { from: string; to: string };
+  bestTransfer: { from: string; to: string } | null;
+  worstTransfer: { from: string; to: string } | null;
+  /** Journées the captain scored at least as much as the best starter, when the backend counts them. */
+  bestChoiceWeeks?: number;
   rival_: {
     captain: number;
     bestStarters: number;
@@ -115,13 +126,17 @@ const std = (a: readonly number[]) => {
 };
 const argMax = (a: readonly number[]) => a.indexOf(Math.max(...a));
 const argMin = (a: readonly number[]) => a.indexOf(Math.min(...a));
-const topHalf = (ranks: readonly number[]) => ranks.filter((r) => r <= LEAGUE_SIZE / 2).length;
+const allFinite = (a: readonly number[]) => a.every(Number.isFinite);
+/** How many values pass `test`; missing (`NaN`) when any value is missing, never a wrong small count. */
+const countWhere = (a: readonly number[], test: (x: number) => boolean) =>
+  allFinite(a) ? a.filter(test).length : MISSING;
 const ovrOf = (values: readonly (number | null)[]) => {
   const v = values.filter((x): x is number => x !== null);
-  return roundHalfUp(sum(v) / v.length);
+  return v.length === 0 ? MISSING : roundHalfUp(sum(v) / v.length);
 };
 
-export function deriveSeason(raw: SeasonRaw) {
+export function deriveSeason(raw: SeasonRaw, leagueSize: number = LEAGUE_SIZE) {
+  const topHalf = (ranks: readonly number[]) => countWhere(ranks, (r) => r <= leagueSize / 2);
   const J = raw.you.length;
   const total = sum(raw.you);
   const rivalTotal = sum(raw.rival);
@@ -142,7 +157,7 @@ export function deriveSeason(raw: SeasonRaw) {
     ovrOf(RATING_CODES.map((c) => raw.ratings[c][i] ?? null)),
   );
   const leagueOvrExact = sum(RATING_CODES.map((c) => raw.leagueRating[c])) / RATING_CODES.length;
-  const lastRating = (c: RatingCode) => raw.ratings[c][J - 1]!;
+  const lastRating = (c: RatingCode) => raw.ratings[c][J - 1] ?? MISSING;
   const contributions = Object.fromEntries(
     RATING_CODES.map((c) => [c, (lastRating(c) - raw.leagueRating[c]) / RATING_CODES.length]),
   ) as Record<RatingCode, number>;
@@ -150,26 +165,44 @@ export function deriveSeason(raw: SeasonRaw) {
   const worstWeek = argMin(raw.you);
   const rivalBestWeek = argMax(raw.rival);
   const rivalWorstWeek = argMin(raw.rival);
-  const bestTransferWeek = raw.transfers.reduce((a, t) => (t[1] > a[1] ? t : a));
-  const worstTransferWeek = raw.transfers.reduce((a, t) => (t[1] < a[1] ? t : a));
+  const noWeek: TransferWeek = [MISSING, MISSING, 0, 0];
+  const bestTransferWeek = raw.transfers.reduce(
+    (a, t) => (t[1] > a[1] ? t : a),
+    raw.transfers[0] ?? noWeek,
+  );
+  const worstTransferWeek = raw.transfers.reduce(
+    (a, t) => (t[1] < a[1] ? t : a),
+    raw.transfers[0] ?? noWeek,
+  );
   const wins = lead.filter((x) => x > 0).length;
   const rivalWins = lead.filter((x) => x < 0).length;
   const bestLead = Math.max(...lead);
   const worstLead = Math.min(...lead);
   const peakLead = Math.max(...cumLead);
-  const rivalAbove = raw.rival.filter((v, i) => v > raw.leagueAvg[i]!).length;
+  const rivalAbove = countWhere(
+    raw.rival.map((v, i) => v - raw.leagueAvg[i]!),
+    (x) => x > 0,
+  );
   const rivalOvr = ovrOf(RATING_CODES.map((c) => raw.rivalRating[c]));
-  const bestChoiceWeeks = raw.bestStarter.filter((b, i) => b === raw.captain[i]).length;
+  const bestChoiceWeeks =
+    raw.bestChoiceWeeks ??
+    countWhere(
+      raw.bestStarter.map((b, i) => b - raw.captain[i]!),
+      (x) => x === 0,
+    );
   // Categories of the duel (the seven rows of « Décisions »), counted for you.
-  const categories = [
-    total > rivalTotal,
-    wins > rivalWins,
-    Math.max(...raw.you) > Math.max(...raw.rival),
-    vsLeague.filter((x) => x > 0).length > rivalAbove,
-    captainTotal > raw.rival_.captain,
-    starters > rivalStarters,
-    net > rivalNet,
+  const aboveYou = countWhere(vsLeague, (x) => x > 0);
+  const categoryPairs: [number, number][] = [
+    [total, rivalTotal],
+    [wins, rivalWins],
+    [Math.max(...raw.you), Math.max(...raw.rival)],
+    [aboveYou, rivalAbove],
+    [captainTotal, raw.rival_.captain],
+    [starters, rivalStarters],
+    [net, rivalNet],
   ];
+  const categoriesKnown = categoryPairs.every(([a, b]) => Number.isFinite(a) && Number.isFinite(b));
+  const categories = categoryPairs.map(([a, b]) => a > b);
   return {
     J,
     total,
@@ -207,13 +240,13 @@ export function deriveSeason(raw: SeasonRaw) {
     peakLeadWeek: cumLead.indexOf(peakLead),
     winsSum: sum(lead.filter((x) => x > 0)),
     lossesSum: sum(lead.filter((x) => x < 0)),
-    above: vsLeague.filter((x) => x > 0).length,
+    above: aboveYou,
     rivalAbove,
     belowWeeks: raw.you.map((v, i) => (v < raw.leagueAvg[i]! ? i + 1 : 0)).filter(Boolean),
     topHalf: topHalf(raw.youRank),
     rivalTopHalf: topHalf(raw.rivalRank),
-    under50: raw.you.filter((v) => v < 50).length,
-    rivalUnder50: raw.rival.filter((v) => v < 50).length,
+    under50: countWhere(raw.you, (v) => v < 50),
+    rivalUnder50: countWhere(raw.rival, (v) => v < 50),
     stdYou: std(raw.you),
     stdRival: std(raw.rival),
     bestWeek,
@@ -229,7 +262,7 @@ export function deriveSeason(raw: SeasonRaw) {
     rivalOvr,
     contributions,
     lastRating,
-    categoriesWon: categories.filter(Boolean).length,
+    categoriesWon: categoriesKnown ? categories.filter(Boolean).length : MISSING,
     categoryCount: categories.length,
     /** The gap to the rival, term by term (what each adds to your lead): captain, starters, penalties. */
     gapTerms: {
