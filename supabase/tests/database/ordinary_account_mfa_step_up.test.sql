@@ -141,8 +141,8 @@ select extensions.is(
    where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure
      and tgtype = 30 and tgenabled = 'O'),
   array[
-    'app.account_deletion_requests', 'app.card_edition_choices', 'app.device_registrations',
-    'app.fantasy_chip_uses',
+    'app.account_deletion_requests', 'app.card_edition_choices', 'app.card_history_visibility',
+    'app.device_registrations', 'app.fantasy_chip_uses',
     'app.fantasy_free_hit_snapshot_players', 'app.fantasy_free_hit_snapshots',
     'app.fantasy_league_memberships', 'app.fantasy_leagues', 'app.fantasy_lineup_players',
     'app.fantasy_lineups', 'app.fantasy_squad_memberships', 'app.fantasy_teams',
@@ -157,7 +157,7 @@ select extensions.is(
 select extensions.is(
   (select count(*)::integer from pg_trigger
    where tgfoid = 'app_private.refuse_unverified_mfa_actor()'::regprocedure),
-  28, 'and no other trigger uses it (none per row, none on auth or storage)'
+  29, 'and no other trigger uses it (none per row, none on auth or storage)'
 );
 
 -- ---------------------------------------------------------------------------

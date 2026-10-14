@@ -328,3 +328,36 @@ export const HOME_DEADLINE_FIRST = false;
  * Gated surfaces: `src/components/admin/player-mappings/PlayerMappingsScreen.tsx`.
  */
 export const PLAYER_MAPPING_PROPOSALS_ENABLED: boolean = true;
+
+/**
+ * BotolaGO+ (the paid membership screens) — OFF.
+ *
+ * Owner decision, 2026-10-13: the offer is built behind this switch so that merging changes
+ * nothing anyone sees. Plan: docs/plans/BOTOLAGO_PLUS_PLAN.md and BOTOLAGO_PLUS_DELIVERY_PLAN.md
+ * (lane D); screen brief: docs/product/botolago-plus-screens-brief.md.
+ *
+ * The same two-layer idea as Curva: this build constant lets the screens exist, and the database's
+ * own answer (`api.premium_status()`, lane B) decides whether they show. Until lane B lands the
+ * answer is mocked (`src/services/use-premium.ts`), so flipping this alone must not be done.
+ *
+ * Gated surfaces (keep this list current):
+ *   - `src/routes/curva.plus.tsx` and `src/routes/plus.tsx` — the offer routes (redirect when off)
+ *   - `src/routes/profile.tsx` — the Profil › BotolaGO+ section
+ *   - Curva's card page (`CurvaCardPage.tsx`) — the lock chips on the extras
+ *   - Curva's face-à-face sheet (`HeadToHeadSheet.tsx`) — the lock chip on the detailed duel
+ *   - Curva's home (`CurvaHome.tsx`) — the J-3 renewal reminder
+ */
+export const PREMIUM_BUILD = false;
+
+/**
+ * Development preview of BotolaGO+: `VITE_PREMIUM_PREVIEW=1` on a development server only.
+ * `import.meta.env.DEV` is replaced by `false` in a production build, so this is `false` there and
+ * every branch it guards is removed (same construction as `MANAGER_CARD_PREVIEW`).
+ */
+export const PREMIUM_PREVIEW: boolean =
+  typeof import.meta.env !== "undefined" &&
+  import.meta.env.DEV === true &&
+  import.meta.env.VITE_PREMIUM_PREVIEW === "1";
+
+/** The build lets BotolaGO+ exist; the (mocked, for now) status decides whether it shows. */
+export const PREMIUM_SURFACES: boolean = PREMIUM_BUILD || PREMIUM_PREVIEW;
