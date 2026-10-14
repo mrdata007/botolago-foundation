@@ -1,6 +1,7 @@
 # Fantasy lifecycle worker on a schedule we control
 
-Migrations `20261013170000_fantasy_worker_schedule` and `20261013170100_ops_health_fantasy_worker`.
+Migrations `20261013170000_fantasy_worker_schedule`, `20261013170100_ops_health_fantasy_worker` and
+`20261014180100_fantasy_worker_health_backlog` (health predicate = the scheduler's backlog).
 Edge Function `fantasy-lifecycle-worker`. Status: written and unit tested, **not applied or deployed anywhere**;
 it ships switched off.
 
@@ -100,8 +101,16 @@ How the callers use it:
   itself (`lifecycle.owner = github`) or, if another holder has it, waits (`lease_held`, verdict `waiting`).
 - **GitHub orchestrator, manual dispatch**: never defers (the owner asked), but still takes the lease.
 - **Manual worker workflow**: takes the lease, or exits with `fantasy_worker_lease_held`.
-- A database without the lease functions (this migration not applied) answers `PGRST202`: the scripts then run
-  unmanaged exactly as before.
+- A database without the lease functions (this migration not applied) answers `PGRST202`. **The scheduled Edge pass
+  refuses** (`runFantasyWorkerPass`, option `allowUnmanaged` off): it makes no other call, answers HTTP 500 with
+  `workerCode: fantasy_worker_lease_function_missing` and `missingFunction: service_fantasy_worker_lease_acquire`, and
+  logs the row. That is a deployment-parity fault (the Edge function was deployed ahead of the migration), not a state
+  to work through. The unmanaged branch is kept, not deleted: a caller that sets `allowUnmanaged: true` still runs, and
+  still under the wall-clock wrapper (`deadlineGateway`: no RPC starts after the budget). Nothing sets it today: the
+  Edge function has no request switch for it, so a scheduler-token holder cannot turn it on. The hourly orchestrator and
+  the manual worker workflow are separate, operator-owned entry points that do not go through `runFantasyWorkerPass`;
+  they keep running unmanaged on a database without the lease functions, as before, because until this migration is
+  applied they are the only workers there is.
 
 Why the schedule is kept rather than removed: the GitHub schedule is the fallback. If the database job is off,
 misconfigured, cannot reach the function, or keeps stopping on its budget, its last ok pass ages past 30 minutes,
@@ -112,6 +121,38 @@ its row locks and `lock_version` make it safe next to the worker, which already 
 
 The lease keeps two whole passes from interleaving. It is not a fence: the individual RPCs are unchanged and keep their
 own row locks, advisory locks and `lock_version`.
+
+### A write that timed out is ambiguous
+
+The Edge gateway gives each RPC `rpcTimeoutMs` (30 s). A timeout says nothing about the database: the statement may be
+queued, running or about to commit. So it is not treated as a settled failure (the RPC answered with an error and its
+transaction rolled back), which is resumable.
+
+- A timeout on a **read** (`service_fantasy_lifecycle_state`, `service_fantasy_scoring_league_page`,
+  `service_fantasy_worker_status`) or on a **lease/log call** is the plain `fantasy_worker_rpc_timeout` failure, as
+  before, and the request is aborted. An RPC name not on those lists counts as a write.
+- A timeout on a **write** throws an ambiguous timeout (`ambiguousRpcTimeout`, same code). The pass **stops**: no other
+  gameweek, no prize catch-up. In `finally` it first extends the lease a full 420 s from now (so the window holds even
+  if this instance is cut off), then waits up to `ambiguousGraceMs` (10 s) for the original request to answer. Only a
+  real HTTP answer (data or an error, status other than 0) releases the lease. If it did not answer, the request is
+  aborted as a courtesy to the client and the lease is **left to expire**. An abort is never read as a cancellation.
+- The record and the HTTP 500 name it: `workerCode: fantasy_worker_rpc_timeout`, `ambiguous: true`, `rpc`, `settled`,
+  `leaseReleased`; the same object is under `detail.ambiguous` in `app_private.fantasy_worker_runs`. The outcome stays
+  `failed` (the table only allows ok, partial, failed, lease_held).
+- Liveness: a crashed or cut-off worker frees the lease by expiry alone (at most 420 s after the last extension), as
+  before. The cost of an ambiguous timeout is that no pass can run for up to seven minutes, which is the point.
+- What this does not do: the lease is still not a database fence. A statement that outlives 420 s could still overlap a
+  later pass (the RPCs' own row locks and `lock_version` remain the guard). Whether PostgREST cancels a statement when
+  the client disconnects, and the role's `statement_timeout`, are properties of the project that were not measured here.
+
+### Prize evaluation never stops the game, but is not hidden
+
+The pass-level prize catch-up is a follow-on: a failure (or a blocked season) does not stop the game and the next pass
+retries it (the RPC is idempotent; it is asked once per pass). It is no longer silent: the pass outcome is `partial`
+(HTTP 200) with `workerCode` the prize error code (or `fantasy_prizes_blocked`), the status-only summary is in the HTTP
+body under `prizes` and in `detail.prizes`. This is the Edge counterpart of the orchestrator's `waiting` verdict for
+the same two conditions. `skipped: prizes_not_installed` (the window before the prize migration) stays `ok`. A worse
+outcome (a failed gameweek) is never replaced by the prize code.
 
 ## Bounded pass, resumable next tick
 
@@ -175,9 +216,12 @@ and no invocation.
   holders are validated; nothing from a payload, token or credential reaches a row. The function also logs one JSON line
   per pass to the Edge logs.
 - Health check `fantasy_worker` (`app_private.fantasy_worker_health`, appended by a wrapper like the earlier ones):
-  `ok` while the worker is off (the GitHub schedule owns the lifecycle then), while no gameweek is live, provisional or
-  finalizing, or while an `ok` pass is under 30 minutes old; `warn` at 30 minutes and `fail` at 90 while a gameweek is
-  live, provisional (closed or not) or finalizing. The clock starts at the latest of the last ok pass, the instant the
+  `ok` while the worker is off (the GitHub schedule owns the lifecycle then), while no gameweek has work for the worker,
+  or while an `ok` pass is under 30 minutes old; `warn` at 30 minutes and `fail` at 90 while a gameweek has work. Since
+  `20261014180100` "has work" is the scheduler's own definition (`fantasy_worker_work_pending()`: locked, live,
+  provisional (closed or not), finalizing, open past its deadline, finalized with its successor unopened or its postwork
+  owed), minus an open round past an unconfirmed deadline, which the worker leaves alone. Before it, only live,
+  provisional and finalizing counted, so a stuck locked, overdue-open or finalized-with-work-owed round read `ok`. The clock starts at the latest of the last ok pass, the instant the
   worker was switched on, and the instant the work appeared. With an interval over 15 minutes the limits are twice and
   four times the interval. A `partial`, `failed` or `lease_held` pass is not an ok pass; the detail names the last one.
   See `docs/operations/ALERTS.md`.
@@ -216,6 +260,12 @@ A pass already running keeps its lease for up to about eight minutes. To remove 
   failed pass logged and the lease freed; error text reduced to a safe code; time budget, RPC allowance and
   `maxGameweeks`; the lease semantics (one holder, expiry, the Edge holder refused while off, a holder whose lease was
   taken stops, extension every quarter, deadline); the Deno import rules.
+- Same file, SEC-01 / ASTRA-04 / ASTRA-03: a timed-out write keeps the lease and stops the pass (ordering asserted on the
+  fake server's start/end events: the lease is released only after the slow write has answered, otherwise not at all; no
+  second gameweek starts; the prize write too); the abort signal reaches the request but is not read as a stop; reads
+  and settled failures keep today's behaviour; the lease is extended and expires for a crashed holder; a missing lease
+  function is refused (pass and handler) unless `allowUnmanaged`, which keeps the time budget; prize failure and blocked
+  prizes make the pass `partial` and show in the body and the record.
 - `scripts/backend/fantasy-season-orchestrator.test.ts` ("one writer at a time"): lease taken and freed; another holder
   holds it; defers to a healthy database job (still watches); takes over when it is off or behind; manual dispatch
   never defers; runs unmanaged on a database without the functions.
@@ -224,7 +274,9 @@ A pass already running keeps its lease for up to about eight minutes. To remove 
   only, no URL, idle, invoked with the right URL/body/token, waiting, busy, interval, expired lease), what counts as
   work (fourteen cases), the lease, the status, the log and its pruning, and the health thresholds (30/90 minutes, the longer
   interval, partial not counting, switched off, no live gameweek). `ops_health_fantasy_coverage_and_scoring.test.sql`
-  lists `fantasy_worker` last.
+  lists `fantasy_worker` last. `fantasy_worker_health_backlog.test.sql` (pgTAP, 20261014180100): every backlog state
+  warns without an ok pass, the quiet states stay quiet (including an unconfirmed deadline), an ok pass keeps them ok,
+  the thresholds did not move. **Not run** (no Docker here).
 
 pgTAP and the migrations were **not** run against the real Supabase stack (no Docker here); CI's `database-quality`
 job is the authority. They were run against a throwaway PostgreSQL 16 with stand-ins for what Supabase provides (see
@@ -236,6 +288,11 @@ the lane report): the two migrations apply, and all 97 assertions of the pgTAP f
 - Edge CPU limit and non-resumable ranking (above): large seasons may need the GitHub fallback.
 - A live gameweek is re-scored every pass; 6 times the old hourly load at the default interval.
 - The lease is expiry-based, not a fence: a holder frozen for more than 420 s could overlap a successor; the RPC-level
-  locks still apply.
+  locks still apply. After an ambiguous write timeout the lease is extended to a full 420 s and left to lapse, so a
+  statement that really runs longer than that could still overlap the next pass.
+- The run record is written by one more RPC after the pass; after a stuck database the extension, the grace (10 s) and
+  the record can add up past the Edge wall-clock limit, in which case there is no row and the lease simply expires.
+- A transport failure that comes back as an error (status 0) on a write before the timeout is still reported as an
+  ordinary failure, as it always was; only the timeout is treated as ambiguous.
 - A pass in flight survives a pause until its lease ends (about eight minutes).
 - The Edge function is a second deploy target: it must be deployed from the same commit as the migration.

@@ -1,5 +1,6 @@
 -- Regression suite for 20261013170000 (the Fantasy lifecycle worker's switch, lease,
--- run log, status and tick) and 20261013170100 (the `fantasy_worker` health check).
+-- run log, status and tick) and 20261013170100 (the `fantasy_worker` health check, whose
+-- predicate 20261014180100 widens to the scheduler's backlog).
 -- docs/backend/FANTASY_WORKER_SCHEDULE.md
 --
 --   1 shape and privileges
@@ -375,11 +376,14 @@ select pg_temp.gameweek('provisional');
 update app_private.fantasy_worker_dispatch set pending_since = statement_timestamp() - interval '40 minutes',
   counting_from = statement_timestamp() - interval '40 minutes';
 select extensions.is(pg_temp.health() ->> 'status', 'warn', '7.13 provisional (closed or not) counts too');
+-- 20261014180100: the check watches the scheduler's whole backlog, so a locked round
+-- with no ok pass is held against the worker too (it was invisible before). The
+-- other backlog states are in fantasy_worker_health_backlog.test.sql.
 select pg_temp.gameweek('locked');
-select extensions.is(pg_temp.health() ->> 'status', 'ok', '7.14 locked waits for kickoff: nothing to measure yet');
+select extensions.is(pg_temp.health() ->> 'status', 'warn', '7.14 locked is work for the worker: 40 minutes without an ok pass warns');
 select pg_temp.gameweek('finalized', interval '-5 days');
-select extensions.is(pg_temp.health() ->> 'status', 'ok', '7.15 nothing live: ok');
-select extensions.alike(pg_temp.health() ->> 'detail', 'no gameweek is live, provisional or finalizing', '7.16 and it says so');
+select extensions.is(pg_temp.health() ->> 'status', 'ok', '7.15 nothing to do: ok');
+select extensions.alike(pg_temp.health() ->> 'detail', 'no gameweek has work for the worker', '7.16 and it says so');
 
 select * from extensions.finish();
 rollback;
