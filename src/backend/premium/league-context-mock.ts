@@ -2,6 +2,7 @@ import type { RepositoryContext } from "@/backend/contracts/repository";
 import { SEASON_RAW } from "@/components/plus/plus-season-data";
 
 import { mockCareer } from "./card-reads-mock";
+import { rivalSeries } from "./mock-rival";
 import {
   leagueContextMemberSchema,
   type LeagueContextMember,
@@ -53,7 +54,7 @@ const byKey = <T>(value: (key: LeagueRatingKey) => T) =>
 export function mockLeagueContext(rivalTeam: string | null): LeagueContextMember {
   const career = mockCareer();
   const total = SEASON_RAW.you.reduce((a, b) => a + b, 0);
-  const rivalTotal = SEASON_RAW.rival.reduce((a, b) => a + b, 0);
+  const rivalTotal = rivalSeries(rivalTeam).reduce((a, b) => a + b, 0);
   const gross = SEASON_RAW.transfers.reduce((a, t) => a + t[1], 0);
   const penalty = SEASON_RAW.transfers.reduce((a, t) => a + t[2], 0);
   const withRival = rivalTeam !== null;
@@ -138,7 +139,7 @@ export function mockLeagueContext(rivalTeam: string | null): LeagueContextMember
       })),
       rival: withRival
         ? {
-            score: SEASON_RAW.rival[i]!,
+            score: rivalSeries(rivalTeam)[i]!,
             rank: RIVAL_RANK[i]!,
             movement: i === 0 ? null : RIVAL_RANK[i - 1]! - RIVAL_RANK[i]!,
             captain: null,
