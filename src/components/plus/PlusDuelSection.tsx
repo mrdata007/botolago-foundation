@@ -56,18 +56,21 @@ export function PlusDuelSection({
   );
 }
 
-function Side({ side, size }: { side: DuelSide; size: number }) {
+/** The first letter of a name, for the round avatar (decoration; the name is written beside it). */
+function initialOf(name: string): string {
+  return Array.from(name.trim())[0] ?? "";
+}
+
+function Side({ side, size, own = false }: { side: DuelSide; size: number; own?: boolean }) {
   const { rankOf } = useSeasonFmt();
   return (
     <div className="pl-side">
-      <div className="pl-fig">
-        <b>
-          <Fig>{side.totalScore}</Fig>
-        </b>
-        <span className="pl-name">
-          <bdi>{side.name}</bdi>
-        </span>
-      </div>
+      <span className={own ? "pl-av pl-av--own" : "pl-av"} aria-hidden="true">
+        {initialOf(side.name)}
+      </span>
+      <span className="pl-name">
+        <bdi>{side.name}</bdi>
+      </span>
       <span className="pl-rank">{rankOf(side.rank, size)}</span>
     </div>
   );
@@ -89,8 +92,22 @@ function LockedDuel({
       headline={t("plus.in.duel_title")}
       head={
         <div className="pl-duel-head" data-testid="plus-real-duel-head">
-          {mine ? <Side side={mine} size={size} /> : <span />}
-          <Side side={other} size={size} />
+          <div className="pl-fig">
+            <b>
+              {mine ? (
+                <>
+                  <Fig>{mine.totalScore}</Fig>
+                  <i aria-hidden="true">–</i>
+                </>
+              ) : null}
+              <Fig>{other.totalScore}</Fig>
+            </b>
+            <span>{t("plus.s2.b_points")}</span>
+          </div>
+          <div className="pl-sides">
+            {mine ? <Side side={mine} size={size} own /> : <span />}
+            <Side side={other} size={size} />
+          </div>
         </div>
       }
     >

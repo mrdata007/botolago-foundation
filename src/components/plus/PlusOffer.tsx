@@ -48,7 +48,9 @@ export function PlusOffer({
   const [plan, setPlan] = useState<PremiumProductCode>("plus_yearly");
   const [requested, setStep] = useState<PlusStep>(standalone ? 3 : initialStep);
   const [duelOpen, setDuelOpen] = useState(false);
-  const [toast, setToast] = useState<{ text: string; n: number } | null>(null);
+  const [toast, setToast] = useState<{ text: string; n: number; tone: "error" | "info" } | null>(
+    null,
+  );
   const titleRef = useRef<HTMLHeadingElement>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -61,9 +63,9 @@ export function PlusOffer({
     if (premium.ready && !premium.enabled) onClose();
   }, [premium.ready, premium.enabled, onClose]);
 
-  const showToast = useCallback((text: string) => {
+  const showToast = useCallback((text: string, tone: "error" | "info" = "info") => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast((prev) => ({ text, n: (prev?.n ?? 0) + 1 }));
+    setToast((prev) => ({ text, n: (prev?.n ?? 0) + 1, tone }));
     toastTimer.current = setTimeout(() => setToast(null), TOAST_MS);
   }, []);
   useEffect(
@@ -135,11 +137,11 @@ export function PlusOffer({
   const onBuy = async () => {
     const result = await premium.startCheckout(plan);
     if (result.status === "ok") go(4);
-    else showToast(t("plus.soon"));
+    else showToast(t("plus.soon"), "error");
   };
   const onRestore = async () => {
     const result = await premium.restore();
-    if (result.status !== "ok") showToast(t("plus.s3.restore_soon"));
+    if (result.status !== "ok") showToast(t("plus.s3.restore_soon"), "error");
   };
   const onShare = () => {
     const text = t("plus.s4.share_text");
@@ -296,7 +298,13 @@ export function PlusOffer({
               ) : null}
             </section>
           </div>
-          <div className="plus-toast" role="status" aria-live="polite" data-show={toast !== null}>
+          <div
+            className="plus-toast"
+            role="status"
+            aria-live="polite"
+            data-show={toast !== null}
+            data-tone={toast?.tone}
+          >
             {toast?.text ?? ""}
           </div>
         </main>
