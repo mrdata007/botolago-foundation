@@ -12,12 +12,16 @@ import {
   EVENT_TYPE_LABELS,
   formatPrice,
   formatProductPrice,
+  grantWhereToLook,
+  MODE_BANNERS,
   MODE_HINTS,
   MODE_LABELS,
   OUTCOME_LABELS,
   premiumAdminErrorMessage,
+  needsReconnect,
   productName,
   recordedStateLabel,
+  subscriberCount,
   renewalLabel,
   SOURCE_LABELS,
   STATE_HINTS,
@@ -61,10 +65,11 @@ describe("prices come from the amount the API returned", () => {
     expect(renewalLabel(monthly, "fr")).toContain("automatique");
     expect(renewalLabel(yearly, "fr")).toContain("sans renouvellement");
   });
-  test("an unknown product is shown by its code", () => {
+  test("an unknown product reads « Autre formule », never its code", () => {
     expect(productName("plus_monthly", "fr")).toBe("Mensuel");
     expect(productName("plus_yearly", "ar")).toBe("سنوي");
-    expect(productName("plus_season", "fr")).toBe("plus_season");
+    expect(productName("plus_season", "fr")).toBe("Autre formule");
+    expect(productName("plus_season", "ar")).not.toContain("plus_season");
   });
 });
 
@@ -115,5 +120,54 @@ describe("an e-mail lookup without the user directory permission", () => {
     expect(premiumAdminErrorMessage("premium_lookup_email_not_allowed", "ar")).toContain(
       "معرّف الحساب",
     );
+  });
+});
+
+describe("the mode banner", () => {
+  test("has a sentence per mode and language, opening with the mode's own name", () => {
+    for (const mode of PREMIUM_MODES) {
+      for (const lang of ["fr", "ar"] as const) {
+        const text = MODE_BANNERS[mode].text[lang];
+        expect(text.startsWith(MODE_LABELS[mode][lang])).toBe(true);
+      }
+    }
+    expect(MODE_BANNERS.off.text.fr).toContain("même avec une offre du personnel");
+    expect(MODE_BANNERS.preview.text.fr).toContain("seuls les comptes avec une offre");
+  });
+});
+
+describe("plain language for staff", () => {
+  test("no error sentence carries a migration number", () => {
+    const codes = [
+      "premium_admin_unavailable",
+      "premium_admin_invalid_answer",
+      "premium_account_not_found",
+      "recent_auth_required",
+      "premium_lookup_invalid",
+    ];
+    for (const code of codes)
+      for (const lang of ["fr", "ar"] as const)
+        expect(premiumAdminErrorMessage(code, lang)).not.toMatch(/\d{8,}|migration|الترحيل/i);
+  });
+
+  test("only a stale sign-in offers « Se reconnecter »", () => {
+    expect(needsReconnect("recent_auth_required")).toBe(true);
+    expect(needsReconnect("premium_reason_invalid")).toBe(false);
+  });
+
+  test("the subscriber count is the accounts that are members through a subscription", () => {
+    const overview = {
+      membersByState: { active: 10, cancelling: 2, grace: 1, on_hold: 4, expired: 9 },
+      liveGrants: 3,
+    } as never;
+    expect(subscriberCount(overview)).toBe(13);
+  });
+
+  test("the where-to-look line is for the own account or another, and warns when off", () => {
+    expect(grantWhereToLook(true, "on", "fr").lead).toContain("votre carte");
+    expect(grantWhereToLook(false, "on", "fr").lead).toContain("Connectez-vous avec ce compte");
+    expect(grantWhereToLook(false, "on", "fr").off).toBeNull();
+    expect(grantWhereToLook(false, "off", "fr").off).toContain("Éteint");
+    expect(grantWhereToLook(false, "off", "ar").off).not.toBeNull();
   });
 });

@@ -328,72 +328,99 @@ export const ADMIN_CONSOLE_SCREENS = [
   },
 ] as const satisfies readonly AdminConsoleScreenContract[];
 
+export type AdminNavGroupId = "team" | "content" | "community" | "plus" | "football";
+
+/** The icon an entry is drawn with. A key, not a component: this file stays free of React. */
+export type AdminNavIcon =
+  | "staff"
+  | "approvals"
+  | "audit"
+  | "security"
+  | "stories"
+  | "news"
+  | "pepites"
+  | "prizes"
+  | "users"
+  | "plus"
+  | "data"
+  | "mapping"
+  | "players";
+
+/** The nav's groups, in display order. A group with no visible entry is not drawn. */
+export const ADMIN_CONSOLE_NAV_GROUPS = [
+  { id: "team", labels: { fr: "Équipe", ar: "الفريق" } },
+  { id: "content", labels: { fr: "Contenu", ar: "المحتوى" } },
+  { id: "community", labels: { fr: "Communauté", ar: "المجتمع" } },
+  { id: "plus", labels: { fr: "Abonnements", ar: "الاشتراكات" } },
+  { id: "football", labels: { fr: "Football", ar: "كرة القدم" } },
+] as const satisfies readonly {
+  readonly id: AdminNavGroupId;
+  readonly labels: { readonly fr: string; readonly ar: string };
+}[];
+
 // Rendered by the Admin shell, filtered on the caller's server-resolved
 // permissions: an entry here is a link, never an authority. Each target route
 // re-checks its own permission in its loader.
+//
+// The list is in display order and grouped: the shell's chips and the home
+// page's cards are both drawn from it, so a new entry appears in both on its
+// own. `hint` is the one line the home card carries under the label.
 export const ADMIN_CONSOLE_NAV_ITEMS = [
+  // Équipe
   {
     route: "/admin/staff",
     permission: "security.manage_staff",
     testId: "admin-nav-staff",
+    group: "team",
+    icon: "staff",
     labels: { fr: "Personnel", ar: "طاقم الإدارة" },
+    hint: { fr: "Rôles et accès de l’équipe", ar: "أدوار الفريق وصلاحياته" },
   },
   {
     route: "/admin/approvals",
     permission: "security.manage_staff",
     testId: "admin-nav-approvals",
+    group: "team",
+    icon: "approvals",
     labels: { fr: "Approbations", ar: "الموافقات" },
+    hint: { fr: "Demandes en attente d’une seconde personne", ar: "طلبات تنتظر موافقة شخص ثانٍ" },
   },
   {
     route: "/admin/audit",
     permission: "security.read_audit",
     testId: "admin-nav-audit",
+    group: "team",
+    icon: "audit",
     labels: { fr: "Audit", ar: "سجل الأمان" },
+    hint: { fr: "Qui a fait quoi, et quand", ar: "من فعل ماذا ومتى" },
   },
   {
     route: "/admin/security",
     permission: "security.revoke_staff",
     testId: "admin-nav-security",
+    group: "team",
+    icon: "security",
     labels: { fr: "Sécurité", ar: "الأمان" },
+    hint: { fr: "Révocation des sessions", ar: "إلغاء الجلسات" },
   },
+  // Contenu
   {
     route: "/admin/stories",
     permission: "editorial.read",
     testId: "admin-nav-stories",
+    group: "content",
+    icon: "stories",
     labels: { fr: "Stories", ar: "القصص" },
+    hint: { fr: "Les stories de l’accueil", ar: "قصص الصفحة الرئيسية" },
   },
   {
     route: "/admin/news",
     permission: "editorial.read",
     testId: "admin-nav-news",
+    group: "content",
+    icon: "news",
     labels: { fr: "Actualités", ar: "الأخبار" },
-  },
-  {
-    route: "/admin/users",
-    permission: "users.read_support",
-    testId: "admin-nav-users",
-    labels: { fr: "Utilisateurs", ar: "المستخدمون" },
-  },
-  {
-    route: "/admin/prizes",
-    permission: "prizes.manage",
-    testId: "admin-nav-prizes",
-    labels: {
-      fr: fr["prizes.admin.nav"],
-      // Written out like the other items' labels: importing the Arabic
-      // dictionary here put all of it in every page's first download, because
-      // the admin shell's loading screen stays in the main bundle.
-      // admin-console-contracts.test.ts checks it against the dictionary.
-      ar: "الجوائز",
-    },
-  },
-  // BotolaGO+ memberships: counts, the audited member read, grants. Reading needs premium.read;
-  // grant and revoke need premium.grant (recent authentication). The database checks both again.
-  {
-    route: "/admin/plus",
-    permission: "premium.read",
-    testId: "admin-nav-plus",
-    labels: { fr: "Abonnements", ar: "الاشتراكات" },
+    hint: { fr: "Articles et éditions", ar: "المقالات والإصدارات" },
   },
   // Pépites: only in a build where Pépites is on (`PEPITES_ENABLED`), like
   // its public pages.
@@ -403,13 +430,65 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
           route: "/admin/pepites",
           permission: "pepites.edit",
           testId: "admin-nav-pepites",
+          group: "content",
+          icon: "pepites",
           labels: { fr: "Pépites", ar: "Pépites" },
+          hint: { fr: "Les jeunes joueurs à suivre", ar: "اللاعبون الشباب المتابَعون" },
         },
+      ] as const)
+    : ([] as const)),
+  // Communauté
+  {
+    route: "/admin/prizes",
+    permission: "prizes.manage",
+    testId: "admin-nav-prizes",
+    group: "community",
+    icon: "prizes",
+    labels: {
+      fr: fr["prizes.admin.nav"],
+      // Written out like the other items' labels: importing the Arabic
+      // dictionary here put all of it in every page's first download, because
+      // the admin shell's loading screen stays in the main bundle.
+      // admin-console-contracts.test.ts checks it against the dictionary.
+      ar: "الجوائز",
+    },
+    hint: { fr: "Lots et gagnants", ar: "الجوائز والفائزون" },
+  },
+  {
+    route: "/admin/users",
+    permission: "users.read_support",
+    testId: "admin-nav-users",
+    group: "community",
+    icon: "users",
+    labels: { fr: "Utilisateurs", ar: "المستخدمون" },
+    hint: { fr: "Retrouver un compte, aider un utilisateur", ar: "البحث عن حساب ومساعدة مستخدم" },
+  },
+  // Abonnements: counts, the audited member read, grants. Reading needs premium.read; grant and
+  // revoke need premium.grant (recent authentication). The database checks both again. It sits
+  // next to Utilisateurs: both are about one account.
+  {
+    route: "/admin/plus",
+    permission: "premium.read",
+    testId: "admin-nav-plus",
+    group: "plus",
+    icon: "plus",
+    labels: { fr: "Abonnements", ar: "الاشتراكات" },
+    hint: {
+      fr: "Abonnés, offres du personnel, réglages",
+      ar: "المشتركون وهدايا الفريق والإعدادات",
+    },
+  },
+  // Football
+  ...(PEPITES_ENABLED
+    ? ([
         {
           route: "/admin/pepites/donnees",
           permission: "football.read_operations",
           testId: "admin-nav-pepites-data",
+          group: "football",
+          icon: "data",
           labels: { fr: "Données joueurs", ar: "بيانات اللاعبين" },
+          hint: { fr: "Fiches et statistiques des joueurs", ar: "بطاقات اللاعبين وإحصاءاتهم" },
         },
       ] as const)
     : ([] as const)),
@@ -420,7 +499,10 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     route: "/admin/football/player-mappings",
     permission: "football.read_operations",
     testId: "admin-nav-player-mappings",
+    group: "football",
+    icon: "mapping",
     labels: { fr: "Rapprochement joueurs", ar: "مطابقة اللاعبين" },
+    hint: { fr: "Relier les joueurs du fournisseur aux nôtres", ar: "ربط لاعبي المزوّد بلاعبينا" },
   },
   // SofaScore players the automatic matcher held: confirm the right player.
   // Same rule as above: reading needs football.read_operations, confirming
@@ -429,7 +511,10 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     route: "/admin/football/sofascore-players",
     permission: "football.read_operations",
     testId: "admin-nav-sofascore-players",
+    group: "football",
+    icon: "players",
     labels: { fr: "Joueurs SofaScore à confirmer", ar: "لاعبو SofaScore بانتظار التأكيد" },
+    hint: { fr: "Confirmer le bon joueur", ar: "تأكيد اللاعب الصحيح" },
   },
 ] as const satisfies readonly {
   readonly route: Exclude<
@@ -438,8 +523,29 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
   >;
   readonly permission: AdminPermission;
   readonly testId: string;
+  readonly group: AdminNavGroupId;
+  readonly icon: AdminNavIcon;
   readonly labels: { readonly fr: string; readonly ar: string };
+  readonly hint: { readonly fr: string; readonly ar: string };
 }[];
+
+export type AdminNavItem = (typeof ADMIN_CONSOLE_NAV_ITEMS)[number];
+
+/**
+ * The entries a caller may see, in group order: one `{ group, items }` per group that has at least
+ * one visible entry. Filtering is on the caller's own permissions; the target route checks again.
+ */
+export function groupAdminNavItems(permissions: readonly string[]): {
+  group: (typeof ADMIN_CONSOLE_NAV_GROUPS)[number];
+  items: AdminNavItem[];
+}[] {
+  return ADMIN_CONSOLE_NAV_GROUPS.map((group) => ({
+    group,
+    items: ADMIN_CONSOLE_NAV_ITEMS.filter(
+      (item) => item.group === group.id && permissions.includes(item.permission),
+    ),
+  })).filter((entry) => entry.items.length > 0);
+}
 
 export const ADMIN_STATE_TEST_IDS = {
   loading: "admin-access-gate",

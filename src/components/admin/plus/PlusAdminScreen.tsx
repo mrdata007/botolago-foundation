@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { Search, UserRound } from "lucide-react";
 import { useCallback, useEffect, useReducer, useRef, useState, type ReactNode } from "react";
 
 import type { RepositoryContext } from "@/backend/contracts/repository";
@@ -16,6 +16,7 @@ import {
   type PremiumAdminOverview,
   type PremiumAdminRepository,
   type PremiumGrantDurationKey,
+  type PremiumMode,
   type PremiumState,
 } from "@/backend/premium/admin";
 import {
@@ -40,8 +41,11 @@ import {
   EVENT_TYPE_LABELS,
   formatProductPrice,
   GRANT_DURATION_LABELS,
+  grantWhereToLook,
+  MODE_BANNERS,
   MODE_HINTS,
   MODE_LABELS,
+  needsReconnect,
   OUTCOME_LABELS,
   premiumAdminErrorMessage,
   productName,
@@ -54,7 +58,7 @@ import {
   type Lang,
 } from "@/components/admin/plus/plus-presentation";
 import { formatUserDate, formatUserDateTime } from "@/components/admin/users/user-presentation";
-import { ui, UiBadge, UiButton, UiCard, UiInput } from "@/components/ui-kit";
+import { ui, UiBadge, UiButton, UiCard, UiInput, UiLinkButton } from "@/components/ui-kit";
 import { cn } from "@/lib/utils";
 
 /**
@@ -88,10 +92,47 @@ type OverviewState =
   | { status: "error"; code: string };
 
 type LookupPhase = "idle" | "loading" | "ready" | "error";
-type Notice = { tone: "info" | "alert"; text: string } | null;
+type Notice = {
+  tone: "info" | "alert";
+  text: string;
+  /** The refusal's code, so a sign-in refusal can offer « Se reconnecter ». */
+  code?: string;
+  /** After a grant: where the member will find it. */
+  where?: { lead: string; off: string | null };
+} | null;
 
 function errorCode(error: unknown): string {
   return mapPremiumAdminError(error).code;
+}
+
+/**
+ * Where a signed-in refusal sends staff back: a fresh sign-in, then this page again. The same
+ * route the console's own « Se réauthentifier » uses; the database still decides what is allowed.
+ */
+function ReconnectButton({ lang }: { lang: Lang }) {
+  return (
+    <UiLinkButton
+      to="/auth/login"
+      search={{ next: "/admin/plus" }}
+      size="sm"
+      className="mt-3 w-full sm:w-auto"
+      data-testid="admin-plus-reconnect"
+    >
+      {lang === "ar" ? "إعادة تسجيل الدخول" : "Se reconnecter"}
+    </UiLinkButton>
+  );
+}
+
+/** A refusal in words, with the one way out when a fresh sign-in is the fix. */
+function ErrorNotice({ code, lang, testId }: { code: string; lang: Lang; testId?: string }) {
+  return (
+    <div>
+      <AdminNotice tone="alert" role="alert" testId={testId}>
+        {premiumAdminErrorMessage(code, lang)}
+      </AdminNotice>
+      {needsReconnect(code) && <ReconnectButton lang={lang} />}
+    </div>
+  );
 }
 
 /**
@@ -181,8 +222,12 @@ export function PlusAdminScreen({
     void loadOverview();
   }, [loadOverview]);
 
+  const ready = overview.status === "ready" ? overview.data : null;
+
   return (
     <div className="grid grid-cols-1" data-testid="admin-plus-screen">
+      {ready && <ModeBanner mode={ready.settings.mode} lang={lang} />}
+
       <Section
         headingId="admin-plus-overview-heading"
         testId="admin-plus-overview"
@@ -203,9 +248,7 @@ export function PlusAdminScreen({
         )}
         {overview.status === "error" && (
           <div data-testid="admin-plus-overview-error">
-            <AdminNotice tone="alert" role="alert">
-              {premiumAdminErrorMessage(overview.code, lang)}
-            </AdminNotice>
+            <ErrorNotice code={overview.code} lang={lang} />
             <UiButton
               variant="soft"
               size="sm"
@@ -220,7 +263,7 @@ export function PlusAdminScreen({
             </UiButton>
           </div>
         )}
-        {overview.status === "ready" && <OverviewBody data={overview.data} lang={lang} />}
+        {ready && <StatesBlock data={ready} lang={lang} />}
       </Section>
 
       <LookupSection
@@ -229,8 +272,19 @@ export function PlusAdminScreen({
         canLookupEmail={canLookupEmail}
         lang={lang}
         makeContext={makeContext}
+        mode={ready?.settings.mode ?? null}
         onChanged={loadOverview}
       />
+
+      {ready && (
+        <Section
+          headingId="admin-plus-catalog-heading"
+          testId="admin-plus-catalog"
+          heading={rtl ? "الصيغ والإعدادات" : "Formules et réglages"}
+        >
+          <CatalogBlock data={ready} lang={lang} />
+        </Section>
+      )}
     </div>
   );
 }
@@ -239,50 +293,70 @@ export function PlusAdminScreen({
 // Overview
 // ---------------------------------------------------------------------------
 
-function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }) {
+/**
+ * What the current mode means for who can see the subscription, at the top of the page: staff read
+ * it before they grant anything. The mode's name opens the sentence, so colour is never the only cue.
+ */
+function ModeBanner({ mode, lang }: { mode: PremiumMode; lang: Lang }) {
+  const banner = MODE_BANNERS[mode];
+  return (
+    <div data-testid="admin-plus-mode-banner" data-mode={mode}>
+      <AdminNotice tone={banner.tone} role="status">
+        {banner.text[lang]}
+      </AdminNotice>
+    </div>
+  );
+}
+
+function StatesBlock({ data, lang }: { data: PremiumAdminOverview; lang: Lang }) {
   const rtl = lang === "ar";
   const total = PREMIUM_STATES.reduce((sum, state) => sum + (data.membersByState[state] ?? 0), 0);
   return (
-    <div className="grid grid-cols-1 gap-6">
-      <div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="admin-plus-states">
-          {PREMIUM_STATES.map((state) => (
-            <AdminSummaryCard
-              key={state}
-              title={STATE_LABELS[state][lang]}
-              testId={`admin-plus-state-${state}`}
-            >
-              <p className={ui.stat.lg}>{data.membersByState[state] ?? 0}</p>
-              <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{STATE_HINTS[state][lang]}</p>
-            </AdminSummaryCard>
-          ))}
+    <div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-testid="admin-plus-states">
+        {PREMIUM_STATES.map((state) => (
           <AdminSummaryCard
-            title={rtl ? "منح سارية" : "Offres en cours"}
-            testId="admin-plus-live-grants"
+            key={state}
+            title={STATE_LABELS[state][lang]}
+            testId={`admin-plus-state-${state}`}
           >
-            <p className={ui.stat.lg}>{data.liveGrants}</p>
-            <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
-              {rtl
-                ? "حسابات لها منحة من الطاقم سارية الآن، إضافة إلى الاشتراكات."
-                : "Comptes avec une offre du personnel valable aujourd’hui, en plus des abonnements."}
-            </p>
+            <p className={ui.stat.lg}>{data.membersByState[state] ?? 0}</p>
+            <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>{STATE_HINTS[state][lang]}</p>
           </AdminSummaryCard>
-        </div>
-        <p className={cn("mt-3", ui.text.meta, ui.tone.muted)} data-testid="admin-plus-total">
-          {rtl ? "عدد الحسابات التي لها اشتراك: " : "Comptes ayant un abonnement : "}
-          <span className={cn(ui.stat.sm, ui.tone.default)}>{total}</span>
-          {" · "}
-          {rtl ? "آخر حدث فوترة: " : "Dernier événement de facturation : "}
-          {data.lastEventAt ? (
-            <AdminDate>{formatUserDateTime(data.lastEventAt, lang)}</AdminDate>
-          ) : rtl ? (
-            "لا شيء بعد"
-          ) : (
-            "aucun pour l’instant"
-          )}
-        </p>
+        ))}
+        <AdminSummaryCard
+          title={rtl ? "منح سارية" : "Offres en cours"}
+          testId="admin-plus-live-grants"
+        >
+          <p className={ui.stat.lg}>{data.liveGrants}</p>
+          <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
+            {rtl
+              ? "حسابات لها منحة من الطاقم سارية الآن، إضافة إلى الاشتراكات."
+              : "Comptes avec une offre du personnel valable aujourd’hui, en plus des abonnements."}
+          </p>
+        </AdminSummaryCard>
       </div>
+      <p className={cn("mt-3", ui.text.meta, ui.tone.muted)} data-testid="admin-plus-total">
+        {rtl ? "عدد الحسابات التي لها اشتراك: " : "Comptes ayant un abonnement : "}
+        <span className={cn(ui.stat.sm, ui.tone.default)}>{total}</span>
+        {" · "}
+        {rtl ? "آخر حدث فوترة: " : "Dernier événement de facturation : "}
+        {data.lastEventAt ? (
+          <AdminDate>{formatUserDateTime(data.lastEventAt, lang)}</AdminDate>
+        ) : rtl ? (
+          "لا شيء بعد"
+        ) : (
+          "aucun pour l’instant"
+        )}
+      </p>
+    </div>
+  );
+}
 
+function CatalogBlock({ data, lang }: { data: PremiumAdminOverview; lang: Lang }) {
+  const rtl = lang === "ar";
+  return (
+    <div className="grid grid-cols-1 gap-6">
       <div data-testid="admin-plus-products">
         <h4 className={cn(ui.display.header, ui.tone.default)}>
           {rtl ? "المنتجات والأسعار" : "Produits et prix"}
@@ -323,9 +397,6 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
                   <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
                     {renewalLabel(product, lang)}
                   </p>
-                  <p className={cn("mt-1", ui.text.meta, ui.tone.faint)}>
-                    <AdminDatum>{product.code}</AdminDatum>
-                  </p>
                   <div className="mt-3" data-testid="admin-plus-product-members">
                     <p className={ADMIN_LABEL_CLASS}>
                       {rtl ? "الحسابات بحسب الحالة" : "Comptes par état"}
@@ -333,8 +404,8 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
                     {data.membersByProduct === undefined ? (
                       <p className={cn("mt-1", ui.text.meta, ui.tone.muted)}>
                         {rtl
-                          ? "غير متاح قبل تطبيق الترحيل 20261013100500."
-                          : "Indisponible avant l’application de la migration 20261013100500."}
+                          ? "التفصيل بحسب الصيغة غير متاح بعد."
+                          : "Le détail par formule n’est pas encore disponible."}
                       </p>
                     ) : present.length === 0 ? (
                       <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
@@ -374,7 +445,7 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
 
       <div data-testid="admin-plus-settings">
         <h4 className={cn(ui.display.header, ui.tone.default)}>
-          {rtl ? "المفاتيح الحالية" : "Interrupteurs actuels"}
+          {rtl ? "الإعدادات الحالية" : "Réglages actuels"}
         </h4>
         <p className={cn("mt-1", ui.text.secondary, ui.tone.muted)}>
           {rtl
@@ -451,11 +522,14 @@ function LookupSection({
   canLookupEmail,
   lang,
   makeContext,
+  mode,
   onChanged,
 }: Pick<
   PlusAdminScreenProps,
   "repository" | "canGrant" | "canLookupEmail" | "lang" | "makeContext"
 > & {
+  /** The current mode, once the overview is read (it shapes the « where to look » notice). */
+  mode: PremiumMode | null;
   onChanged: () => Promise<void>;
 }) {
   const rtl = lang === "ar";
@@ -464,7 +538,10 @@ function LookupSection({
   const [phase, setPhase] = useState<LookupPhase>("idle");
   const [failure, setFailure] = useState<string | null>(null);
   const [member, setMember] = useState<PremiumAdminMember | null>(null);
+  /** The reason the shown member was read with: it starts the grant's reason, which stays editable. */
+  const [readReason, setReadReason] = useState("");
   const generation = useRef(0);
+  const reasonField = useRef<HTMLInputElement>(null);
 
   const read = useCallback(
     async (userId: string | null, email: string | null, why: string) => {
@@ -488,6 +565,7 @@ function LookupSection({
         const result = await repository.member(id, why, makeContext());
         if (issued !== generation.current) return;
         setMember(result);
+        setReadReason(why);
         setPhase("ready");
       } catch (error) {
         if (issued !== generation.current) return;
@@ -570,6 +648,25 @@ function LookupSection({
             dir="auto"
             data-testid="admin-plus-lookup-query"
           />
+          <div className="-mt-2">
+            {/* One press fills in the signed-in account's own id: no UUID to hunt for. The reason
+                is still asked, and the read is still audited. */}
+            <UiButton
+              type="button"
+              variant="soft"
+              size="sm"
+              className="w-full sm:w-auto"
+              onClick={() => {
+                const own = makeContext().actorId;
+                if (own) setQuery(own);
+                reasonField.current?.focus();
+              }}
+              data-testid="admin-plus-lookup-self"
+            >
+              <UserRound className="h-4 w-4" aria-hidden />
+              {rtl ? "حسابي" : "Mon compte"}
+            </UiButton>
+          </div>
           <UiInput
             label={rtl ? "سبب الاطلاع (مطلوب)" : "Motif de la consultation (requis)"}
             hint={
@@ -581,6 +678,7 @@ function LookupSection({
             onChange={(event) => setReason(event.target.value)}
             maxLength={500}
             autoComplete="off"
+            ref={reasonField}
             data-testid="admin-plus-lookup-reason"
           />
           <div>
@@ -607,9 +705,7 @@ function LookupSection({
 
       {phase === "error" && failure && (
         <div className="mt-4" data-testid="admin-plus-lookup-error">
-          <AdminNotice tone="alert" role="alert">
-            {premiumAdminErrorMessage(failure, lang)}
-          </AdminNotice>
+          <ErrorNotice code={failure} lang={lang} />
         </div>
       )}
 
@@ -627,6 +723,8 @@ function LookupSection({
           key={member.userId}
           member={member}
           canGrant={canGrant}
+          lookupReason={readReason}
+          mode={mode}
           lang={lang}
           repository={repository}
           makeContext={makeContext}
@@ -653,6 +751,8 @@ function LookupSection({
 function MemberPanel({
   member,
   canGrant,
+  lookupReason,
+  mode,
   lang,
   repository,
   makeContext,
@@ -660,6 +760,9 @@ function MemberPanel({
 }: {
   member: PremiumAdminMember;
   canGrant: boolean;
+  /** The reason of the lookup that showed this member; it starts the grant's reason. */
+  lookupReason: string;
+  mode: PremiumMode | null;
   lang: Lang;
   repository: PremiumAdminRepository;
   makeContext: () => RepositoryContext;
@@ -675,6 +778,8 @@ function MemberPanel({
   );
   const entitlement = member.entitlement;
   const now = Date.now();
+  // The date the offer would end, shown before confirming (the same helper the grant itself uses).
+  const grantEndsAt = premiumGrantEndsAt(duration, new Date());
   const liveGrants = member.grants.filter(
     (grant) =>
       grant.revokedAt === null &&
@@ -701,13 +806,17 @@ function MemberPanel({
             text: rtl
               ? `مُنحت العضوية حتى ${formatUserDate(result.endsAt, lang)}. سُجّل الإجراء في التدقيق.`
               : `Offre accordée jusqu’au ${formatUserDate(result.endsAt, lang)}. L’action est consignée dans l’audit.`,
+            where: grantWhereToLook(member.userId === makeContext().actorId, mode, lang),
           },
           refreshFailure,
           lang,
         ),
       );
     } catch (error) {
-      setNotice({ tone: "alert", text: premiumAdminErrorMessage(errorCode(error), lang) });
+      {
+        const code = errorCode(error);
+        setNotice({ tone: "alert", text: premiumAdminErrorMessage(code, lang), code });
+      }
     }
   };
 
@@ -730,7 +839,10 @@ function MemberPanel({
         ),
       );
     } catch (error) {
-      setNotice({ tone: "alert", text: premiumAdminErrorMessage(errorCode(error), lang) });
+      {
+        const code = errorCode(error);
+        setNotice({ tone: "alert", text: premiumAdminErrorMessage(code, lang), code });
+      }
     }
   };
 
@@ -770,8 +882,35 @@ function MemberPanel({
           testId="admin-plus-member-message"
         >
           {notice.text}
+          {notice.where && (
+            <span className="mt-2 block" data-testid="admin-plus-where-to-look">
+              {notice.where.lead}
+              <span className="mt-2 flex flex-wrap gap-2">
+                <UiLinkButton
+                  to="/profile"
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="soft"
+                  size="sm"
+                >
+                  {rtl ? "الملف الشخصي" : "Profil"}
+                </UiLinkButton>
+                <UiLinkButton
+                  to="/curva/carte"
+                  target="_blank"
+                  rel="noreferrer"
+                  variant="soft"
+                  size="sm"
+                >
+                  {rtl ? "البطاقة" : "Ma carte"}
+                </UiLinkButton>
+              </span>
+              {notice.where.off && <span className="mt-1 block">{notice.where.off}</span>}
+            </span>
+          )}
         </AdminNotice>
       )}
+      {notice?.code && needsReconnect(notice.code) && <ReconnectButton lang={lang} />}
 
       <UiCard padding="md" testId="admin-plus-entitlement">
         <h4 className={cn(ui.display.header, ui.tone.default)}>
@@ -864,6 +1003,10 @@ function MemberPanel({
                 onSelect={setDuration}
                 data-testid="admin-plus-grant-duration"
               />
+              <p className={cn(ui.text.meta, ui.tone.muted)} data-testid="admin-plus-grant-until">
+                {rtl ? "ينتهي العرض في " : "Se termine le "}
+                <AdminDate>{formatUserDate(grantEndsAt, lang)}</AdminDate>.
+              </p>
               <AdminDestructiveAction
                 actionKey={`grant:${member.userId}`}
                 state={actionState}
@@ -871,19 +1014,24 @@ function MemberPanel({
                 minimumReasonLength={PREMIUM_REASON_MIN}
                 rtl={rtl}
                 tone="primary"
+                panel="neutral"
+                initialReason={lookupReason}
                 triggerLabel={rtl ? "منح العضوية" : "Offrir l’abonnement"}
                 confirmPrompt={
                   rtl ? (
                     <>
                       منح العضوية للحساب <AdminDatum>{member.userId}</AdminDatum> لمدة{" "}
-                      {GRANT_DURATION_LABELS[duration].ar}؟ يصبح عضواً فوراً. يكفي مشرف واحد،
-                      ويُسجَّل الإجراء في التدقيق.
+                      {GRANT_DURATION_LABELS[duration].ar}، أي حتى{" "}
+                      <strong>{formatUserDate(grantEndsAt, lang)}</strong>؟ يصبح عضواً فوراً. يكفي
+                      مشرف واحد، ويُسجَّل الإجراء في التدقيق.
                     </>
                   ) : (
                     <>
                       Offrir l’abonnement au compte <AdminDatum>{member.userId}</AdminDatum> pour{" "}
-                      {GRANT_DURATION_LABELS[duration].fr} ? Il devient membre aussitôt. Une seule
-                      personne suffit ; l’action est consignée dans l’audit.
+                      {GRANT_DURATION_LABELS[duration].fr}, soit{" "}
+                      <strong>jusqu’au {formatUserDate(grantEndsAt, lang)}</strong> ? Il devient
+                      membre aussitôt. Une seule personne suffit ; l’action est consignée dans
+                      l’audit.
                     </>
                   )
                 }

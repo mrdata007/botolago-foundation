@@ -77,6 +77,13 @@ const CONFIRM_PANEL_CLASS = cn(
  * one that follows it, `--ui-on-negative`. Written white-on-negative it
  * measured 2.31:1 in dark.
  */
+/**
+ * The neutral confirm panel, for a consequential action that is not a loss (an offer to grant):
+ * the sunken surface and the hairline, no rose. It is an opt-in (`panel="neutral"`); every
+ * existing caller keeps the armed rose panel.
+ */
+const NEUTRAL_PANEL_CLASS = cn("w-full p-4", ui.radius.control, ui.surface.sunken, ui.rule.all);
+
 const DANGER_FILL = cn("bg-[color:var(--ui-negative)]", ui.tone.onNegative);
 
 interface AdminDestructiveActionProps {
@@ -101,6 +108,13 @@ interface AdminDestructiveActionProps {
   onConfirm: (reason: string) => void | Promise<void>;
   /** `primary` for a consequential-but-not-destructive action (restore). */
   tone?: "danger" | "primary";
+  /** `neutral`: a plain sunken panel instead of the rose one. Default: the rose armed panel. */
+  panel?: "armed" | "neutral";
+  /**
+   * A motive to start the confirm step with (still shown, editable, and still required to reach
+   * the floor): for a motive the operator has already given for the same account.
+   */
+  initialReason?: string;
   /** Blocks arming for a reason of the caller's own (never a substitute for authz). */
   disabled?: boolean;
   /** Preserved trigger hook. The confirm step derives its ids from `testId`. */
@@ -122,6 +136,8 @@ export function AdminDestructiveAction({
   confirmLabel,
   onConfirm,
   tone = "danger",
+  panel = "armed",
+  initialReason,
   disabled = false,
   triggerTestId,
   testId,
@@ -152,7 +168,11 @@ export function AdminDestructiveAction({
         // Disabled while any action on this surface is mid-flight, so a second
         // destructive operation cannot be started on top of the first.
         disabled={disabled || isBusy(state)}
-        onClick={() => dispatch({ type: "arm", key: actionKey })}
+        onClick={() => {
+          dispatch({ type: "arm", key: actionKey });
+          // Events are applied in order: the key is armed when the motive arrives.
+          if (initialReason) dispatch({ type: "reason", key: actionKey, value: initialReason });
+        }}
         data-testid={triggerTestId}
         data-admin-action="idle"
       >
@@ -171,7 +191,11 @@ export function AdminDestructiveAction({
 
   return (
     <div
-      className={cn(CONFIRM_PANEL_CLASS, "grid gap-3", className)}
+      className={cn(
+        panel === "neutral" ? NEUTRAL_PANEL_CLASS : CONFIRM_PANEL_CLASS,
+        "grid gap-3",
+        className,
+      )}
       role="group"
       aria-labelledby={promptId}
       data-testid={testId ? `${testId}-confirm` : undefined}

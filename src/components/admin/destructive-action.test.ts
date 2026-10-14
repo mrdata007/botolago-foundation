@@ -222,3 +222,14 @@ describe("start is inert unless something is armed", () => {
     expect(isBusy(run([{ type: "start" }]))).toBe(false);
   });
 });
+
+describe("a motive that starts the confirm step", () => {
+  test("arming then typing the same motive for the same key leaves it confirmable, for that key only", () => {
+    const state = run([
+      { type: "arm", key: "grant:a" },
+      { type: "reason", key: "grant:a", value: "Invité presse" },
+    ]);
+    expect(canConfirm(state, "grant:a", 8)).toBe(true);
+    expect(canConfirm(state, "grant:b", 8)).toBe(false);
+  });
+});

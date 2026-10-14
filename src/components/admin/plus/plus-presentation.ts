@@ -1,5 +1,6 @@
 import type {
   BillingEventType,
+  PremiumAdminOverview,
   BillingOutcome,
   PremiumAdminProduct,
   PremiumGrantDurationKey,
@@ -60,10 +61,72 @@ const PRODUCT_NAMES: Record<string, Pair> = {
   plus_yearly: { fr: "Annuel", ar: "سنوي" },
 };
 
-/** A product's name; an unknown code is shown as the code, never hidden. */
+/**
+ * A product's name. Staff never read a product code: an unknown one is « Autre formule », and the
+ * count and the price beside it still say which line it is.
+ */
 export function productName(code: string | null, lang: Lang): string {
   if (!code) return lang === "ar" ? "غير محدد" : "Non précisé";
-  return PRODUCT_NAMES[code]?.[lang] ?? code;
+  return PRODUCT_NAMES[code]?.[lang] ?? (lang === "ar" ? "صيغة أخرى" : "Autre formule");
+}
+
+/** The states in which an account is a member right now through a subscription. */
+const SUBSCRIBER_STATES: readonly PremiumState[] = ["active", "cancelling", "grace"];
+
+/** Accounts that are members through a subscription today (staff offers are counted apart). */
+export function subscriberCount(overview: PremiumAdminOverview): number {
+  return SUBSCRIBER_STATES.reduce((sum, state) => sum + (overview.membersByState[state] ?? 0), 0);
+}
+
+/**
+ * The banner at the top of the screen: what the current mode means for who sees the subscription.
+ * `tone` only picks the alert colour; the first word is the mode, so nothing rests on colour.
+ */
+export const MODE_BANNERS: Record<PremiumMode, { tone: "info" | "alert"; text: Pair }> = {
+  off: {
+    tone: "alert",
+    text: {
+      fr: "Éteint : personne ne voit l’abonnement, même avec une offre du personnel.",
+      ar: "متوقف: لا أحد يرى الاشتراك، حتى مع هدية من الفريق.",
+    },
+  },
+  preview: {
+    tone: "info",
+    text: {
+      fr: "Aperçu : seuls les comptes avec une offre le voient.",
+      ar: "معاينة: لا يراه إلا الحسابات التي لها هدية.",
+    },
+  },
+  on: {
+    tone: "info",
+    text: {
+      fr: "Ouvert : l’abonnement est visible par tout le monde.",
+      ar: "مفتوح: الاشتراك ظاهر للجميع.",
+    },
+  },
+};
+
+/** After a grant: where the new member will find it, so nobody hunts for it. */
+export function grantWhereToLook(
+  own: boolean,
+  mode: PremiumMode | null,
+  lang: Lang,
+): { lead: string; off: string | null } {
+  const lead =
+    lang === "ar"
+      ? own
+        ? "يظهر الاشتراك في الملف الشخصي وعلى بطاقتك:"
+        : "سجّل الدخول بهذا الحساب: يظهر الاشتراك في الملف الشخصي وعلى بطاقته:"
+      : own
+        ? "L’abonnement apparaît dans Profil et sur votre carte :"
+        : "Connectez-vous avec ce compte : l’abonnement apparaît dans Profil et sur sa carte :";
+  const off =
+    mode === "off"
+      ? lang === "ar"
+        ? "الوضع متوقف حاليًا: لن يظهر الاشتراك قبل أن يفتح المالك المعاينة."
+        : "Le mode est Éteint : rien n’apparaîtra tant que le propriétaire n’a pas ouvert l’aperçu."
+      : null;
+  return { lead, off };
 }
 
 export const STATE_LABELS: Record<PremiumState, Pair> = {
@@ -125,8 +188,8 @@ export const MODE_HINTS: Record<PremiumMode, Pair> = {
     ar: "لا أحد عضو، وكل القراءات تجيب « غير متاح ».",
   },
   preview: {
-    fr: "Le propriétaire et le personnel : l’adhésion compte comme en production, achats de test du personnel compris, mais rien n’est public.",
-    ar: "المالك والطاقم: تُحتسب العضوية كما في الإنتاج، بما فيها مشتريات الاختبار للطاقم، لكن لا شيء عام.",
+    fr: "Le propriétaire et le personnel : l’abonnement compte comme en production, achats de test du personnel compris, mais rien n’est public.",
+    ar: "المالك والطاقم: يُحتسب الاشتراك كما في الإنتاج، بما فيه مشتريات الاختبار للطاقم، لكن لا شيء عام.",
   },
   on: {
     fr: "Les abonnements sont ouverts à tous.",
@@ -184,7 +247,7 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
     ar: "يجب أن يتراوح السبب بين 8 و500 حرف، بلا مسافات في البداية أو النهاية.",
   },
   premium_grant_period_invalid: {
-    fr: "La durée de l’offre n’est pas acceptée (au moins une minute, au plus 400 jours).",
+    fr: "La durée de l’offre n’est pas acceptée (au plus 400 jours).",
     ar: "مدة المنحة غير مقبولة (دقيقة على الأقل و400 يوم على الأكثر).",
   },
   premium_account_not_found: {
@@ -199,14 +262,18 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
     fr: "Cette offre est déjà retirée. Actualisez le compte.",
     ar: "هذه المنحة مسحوبة بالفعل. حدّث الحساب.",
   },
+  recent_auth_required: {
+    fr: "Par sécurité, cette action demande une connexion de moins de 15 minutes. Reconnectez-vous : vous reviendrez sur cette page pour recommencer.",
+    ar: "لدواعٍ أمنية، يتطلب هذا الإجراء تسجيل دخول لم يمضِ عليه أكثر من 15 دقيقة. سجّل الدخول من جديد: ستعود إلى هذه الصفحة لتعيد المحاولة.",
+  },
   validation_failed: { fr: "La demande n’est pas valide.", ar: "الطلب غير صالح." },
   premium_admin_invalid_answer: {
     fr: "La base de données a répondu dans un format inattendu. Rien n’a été affiché pour ne pas montrer de chiffres faux.",
     ar: "أجابت قاعدة البيانات بصيغة غير متوقعة. لم يُعرض شيء حتى لا تظهر أرقام خاطئة.",
   },
   premium_admin_unavailable: {
-    fr: "Cette page attend la mise à jour de la base de données (migration 20261013100200). Elle fonctionnera dès qu’elle sera appliquée.",
-    ar: "هذه الصفحة بانتظار تحديث قاعدة البيانات (الترحيل 20261013100200). ستعمل بمجرد تطبيقه.",
+    fr: "Les abonnements ne sont pas encore prêts sur cette base de données. Prévenez l’équipe technique : la page fonctionnera dès que la mise à jour sera faite.",
+    ar: "الاشتراكات ليست جاهزة بعد على قاعدة البيانات هذه. أبلغ الفريق التقني: ستعمل الصفحة بمجرد إجراء التحديث.",
   },
   premium_lookup_ambiguous: {
     fr: "Plusieurs comptes correspondent à cette adresse. Utilisez l’identifiant du compte.",
@@ -229,4 +296,9 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
 /** One sentence for an error code, whichever layer produced it. */
 export function premiumAdminErrorMessage(code: string, lang: Lang): string {
   return PREMIUM_ERROR_MESSAGES[code]?.[lang] ?? userAdminErrorMessage(code, lang);
+}
+
+/** The refusals a fresh sign-in fixes: the screen offers « Se reconnecter » for them. */
+export function needsReconnect(code: string): boolean {
+  return code === "recent_auth_required";
 }
