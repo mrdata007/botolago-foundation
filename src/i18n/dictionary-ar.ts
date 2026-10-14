@@ -560,6 +560,7 @@ export const ar = {
   "fantasy.transfers.preview.stale": "توجد نسخة أحدث من فريقك. أعد تحميلها، فانتقالاتك محفوظة.",
   "fantasy.transfers.preview.step_up":
     "مطلوب رمز التأكيد. أدخله ثم أعد المحاولة، فانتقالاتك محفوظة.",
+  "fantasy.transfers.preview.invalid": "لم يعد هذا الانتقال ممكنًا. راجع اختياراتك.",
   "fantasy.transfers.preview.network": "لا يوجد اتصال. انتقالاتك محفوظة، أعد المحاولة.",
   "fantasy.picker.title": "اختيار لاعب",
   "fantasy.picker.search": "ابحث عن لاعب",

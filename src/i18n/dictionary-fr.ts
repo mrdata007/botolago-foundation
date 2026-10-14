@@ -585,6 +585,7 @@ export const fr = {
     "Une version plus récente de votre équipe existe. Rechargez-la : vos transferts sont conservés.",
   "fantasy.transfers.preview.step_up":
     "Un code de confirmation est demandé. Saisissez-le, puis réessayez : vos transferts sont conservés.",
+  "fantasy.transfers.preview.invalid": "Ce transfert n'est plus possible : vérifiez vos choix.",
   "fantasy.transfers.preview.network":
     "Connexion indisponible. Vos transferts sont conservés : réessayez.",
   "fantasy.picker.title": "Choisir un joueur",

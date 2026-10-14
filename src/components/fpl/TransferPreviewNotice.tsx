@@ -1,6 +1,7 @@
 import { UiAlert, UiButton } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import type { TransferPreviewPanel } from "@/services/transfers-service";
+import { previewNoticeParts } from "./transfer-preview-copy";
 
 /**
  * What the transfers screen says about the server's preview (FANT-02): that it
@@ -40,30 +41,15 @@ export function TransferPreviewNotice({
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
   }).format(issue.shortfall ?? 0);
-
-  // Literal keys, one call each: the i18n gate cannot see a key built at runtime.
-  const message =
-    issue.kind === "budget"
-      ? issue.shortfall !== null
-        ? t("fantasy.transfers.preview.budget").replace("{amount}", amount)
-        : t("fantasy.transfers.preview.budget_changed")
-      : issue.kind === "stale"
-        ? t("fantasy.transfers.preview.stale")
-        : issue.kind === "step_up"
-          ? t("fantasy.transfers.preview.step_up")
-          : issue.kind === "network"
-            ? t("fantasy.transfers.preview.network")
-            : issue.kind === "locked"
-              ? t("fantasy.transfers.error.deadline")
-              : issue.kind === "permission"
-                ? t("fantasy.error.permission")
-                : t("fantasy.transfers.preview.failed");
+  const parts = previewNoticeParts(issue, t, amount);
 
   return (
     <UiAlert tone="negative" testId="transfer-preview-error" className="mx-[var(--ui-gutter)] mt-3">
-      {/* The amount is a figure inside a sentence: isolated so it reads the same in Arabic. */}
       <p data-issue={issue.kind}>
-        <bdi>{message}</bdi>
+        {parts.before}
+        {/* The amount is a figure inside a sentence: only it is isolated, so it reads the same in Arabic. */}
+        {parts.amount !== null ? <bdi>{parts.amount}</bdi> : null}
+        {parts.after}
       </p>
       {retryable ? (
         <UiButton

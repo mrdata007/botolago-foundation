@@ -29,13 +29,17 @@ import {
 import { fantasyHead } from "@/lib/fantasy-meta";
 import { fantasyDraftsStore, type FantasyDraftKey } from "@/services/fantasy-drafts-store";
 import { runOwnedMutation, classifyRepoError } from "@/services/fantasy-mutation-controller";
-import { useFantasyOwned } from "@/services/fantasy-owned-provider";
+import { scopedFantasyKey } from "@/services/fantasy-data-source";
+import { SNAPSHOT_KIND, useFantasyOwned } from "@/services/fantasy-owned-provider";
+import type { FantasySnapshot } from "@/services/fantasy-owned-repository";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import {
   applyConfirmedTransfers,
+  canContinueTransfers,
   draftBank,
+  exceedsBudget,
   ownedSalePrice,
   previewTransfers,
   replacementBudget,
@@ -146,6 +150,14 @@ function TransfersBody() {
       kind: "transfers",
     };
   }, [isCloud, owned.userId, owned.snapshot?.teamId, owned.snapshot?.version]);
+  // The draft as it stands now, for the one place that must read it after an await.
+  const latestDraft = useRef<{ outIds: string[]; inIds: (string | null)[] }>({
+    outIds: [],
+    inIds: [],
+  });
+  useEffect(() => {
+    latestDraft.current = { outIds, inIds };
+  });
   const draftInit = useRef(false);
   useEffect(() => {
     draftInit.current = false;
@@ -333,12 +345,15 @@ function TransfersBody() {
       : localPreview;
 
   const pendingOutWithoutIn = outIds.length !== completePairs.length;
-  const canNext =
-    completePairs.length > 0 &&
-    !pendingOutWithoutIn &&
-    !locked &&
-    !preview.overBudget &&
-    (!isCloud || (!!serverPreview.data && !serverPreview.isError));
+  const canNext = canContinueTransfers({
+    completePairs: completePairs.length,
+    pendingOutWithoutIn,
+    locked,
+    overBudget: preview.overBudget,
+    isCloud,
+    hasData: !!serverPreview.data,
+    isError: serverPreview.isError,
+  });
 
   // Every reason Next is held back is said on screen (FANT-02): the preview is
   // being worked out, or why it failed. The shortfall is measured on the owner's
@@ -348,16 +363,40 @@ function TransfersBody() {
     completePairs: completePairs.length,
     pendingOutWithoutIn,
     queryEnabled: previewEnabled,
+    locked,
     isFetching: serverPreview.isFetching,
     hasData: !!serverPreview.data,
     error: serverPreview.error,
     shortfall: localPreview.bankAfter < 0 ? Math.round(-localPreview.bankAfter * 10) / 10 : null,
   });
   // Asking again never touches the draft. A stale version reloads the team first;
-  // the new version is a new question, and the draft stays where it is.
+  // the new version is a new question, and the draft stays where it is (the draft
+  // effect above carries it to the new version's key). A preview that was never
+  // asked for (no team or gameweek in the snapshot yet) is not refetched: its
+  // question needs the snapshot, so the team is reloaded instead.
+  const reloadKeepingDraft = async () => {
+    await owned.reload();
+    // The draft store is keyed by the version the draft was made on, and the reload
+    // moved the version: carry the draft to the new key so leaving the page keeps it.
+    const fresh = qc.getQueryData<FantasySnapshot>(scopedFantasyKey(owned.scope, SNAPSHOT_KIND));
+    const { outIds: draftOut, inIds: draftIn } = latestDraft.current;
+    if (!fresh || !owned.userId || draftOut.length === 0) return;
+    fantasyDraftsStore.save<TransfersDraftPayload>(
+      {
+        uid: owned.userId,
+        teamId: fresh.teamId ?? "new",
+        baseVersion: fresh.version,
+        kind: "transfers",
+      },
+      { outIds: draftOut, inIds: draftIn.filter(Boolean) as string[] },
+    );
+  };
   const retryPreview = () => {
-    if (previewPanel.state === "failed" && previewPanel.issue.kind === "stale") {
-      void owned.reload();
+    if (
+      !previewEnabled ||
+      (previewPanel.state === "failed" && previewPanel.issue.kind === "stale")
+    ) {
+      void reloadKeepingDraft();
       return;
     }
     void serverPreview.refetch();
@@ -467,7 +506,7 @@ function TransfersBody() {
     const leavingPrice = outIds.includes(originalId)
       ? (slot.player?.price ?? 0)
       : valueOut(originalId);
-    if (incoming.price > pickerBank + leavingPrice + 0.001) {
+    if (exceedsBudget(incoming.price, pickerBank + leavingPrice)) {
       toast.error(t("fpl.budget_exceeded"));
       return;
     }
@@ -667,7 +706,11 @@ function TransfersBody() {
   if (confirming) {
     return (
       <TransferConfirmScreen
-        pairs={completePairs.map((p) => ({ out: playerOf(p.outId)!, in: playerOf(p.inId)! }))}
+        pairs={completePairs.map((p) => ({
+          out: playerOf(p.outId)!,
+          outValue: valueOut(p.outId),
+          in: playerOf(p.inId)!,
+        }))}
         clubs={clubs}
         gameweek={gameweek.number}
         deadlineIso={gameweek.deadline}

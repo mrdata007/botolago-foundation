@@ -93,6 +93,7 @@ export type TransferPreviewIssueKind =
   | "network"
   | "locked"
   | "permission"
+  | "invalid"
   | "generic";
 
 export interface TransferPreviewIssue {
@@ -122,6 +123,11 @@ export function classifyPreviewFailure(
   if (e.code === "permission_denied" || e.code === "unauthenticated") {
     return { kind: "permission", shortfall: null };
   }
+  // The server looked at this transfer and said no (invalid_transfer, club_limit_exceeded,
+  // invalid_squad, player_not_eligible, chip_unavailable, ...): not a hiccup.
+  if (e.code === "validation" || e.code === "not_found") {
+    return { kind: "invalid", shortfall: null };
+  }
   return { kind: "generic", shortfall: null };
 }
 
@@ -130,11 +136,54 @@ export type TransferPreviewPanel =
   | { state: "pending" }
   | { state: "failed"; issue: TransferPreviewIssue; retryable: boolean };
 
+/** Only a failure that can pass on its own, or by the manager's action, is worth asking again. */
+function isRetryable(issue: TransferPreviewIssue): boolean {
+  switch (issue.kind) {
+    case "network":
+    case "step_up":
+    case "stale":
+    case "generic":
+      return true;
+    // Prices may simply have moved: asking again means something when no amount is known.
+    case "budget":
+      return issue.shortfall === null;
+    // A final answer (deadline, access, an invalid transfer): another try says the same.
+    case "locked":
+    case "permission":
+    case "invalid":
+      return false;
+  }
+}
+
+/**
+ * Whether "Suivant" may be pressed. One rule for the route and its tests: the
+ * draft is complete and open, it fits the budget, and (in the cloud) the
+ * server's preview is in and not failed.
+ */
+export function canContinueTransfers(input: {
+  completePairs: number;
+  pendingOutWithoutIn: boolean;
+  locked: boolean;
+  overBudget: boolean;
+  isCloud: boolean;
+  hasData: boolean;
+  isError: boolean;
+}): boolean {
+  return (
+    input.completePairs > 0 &&
+    !input.pendingOutWithoutIn &&
+    !input.locked &&
+    !input.overBudget &&
+    (!input.isCloud || (input.hasData && !input.isError))
+  );
+}
+
 /**
  * What the transfers screen says about the server's preview. `none` only when
  * there is nothing to compute or the preview is in; every other reason Next is
  * held back is `pending` or `failed`, so the button is never grey without a
- * sentence beside it.
+ * sentence beside it. A failed refetch over earlier data counts as a failure:
+ * React Query keeps the old data, and `canContinueTransfers` holds Next back.
  *
  * `shortfall` is the amount missing worked out from the owner's sale values
  * (null when the draft fits).
@@ -144,12 +193,16 @@ export function transferPreviewPanel(input: {
   completePairs: number;
   pendingOutWithoutIn: boolean;
   queryEnabled: boolean;
+  locked: boolean;
   isFetching: boolean;
   hasData: boolean;
   error: unknown;
   shortfall: number | null;
 }): TransferPreviewPanel {
   if (input.completePairs === 0 || input.pendingOutWithoutIn) return { state: "none" };
+  if (input.locked) {
+    return { state: "failed", issue: { kind: "locked", shortfall: null }, retryable: false };
+  }
   if (!input.isCloud) {
     // Local/guest: no server, the screen's own figures are all there is.
     return input.shortfall !== null && input.shortfall > 0
@@ -160,12 +213,14 @@ export function transferPreviewPanel(input: {
         }
       : { state: "none" };
   }
+  // The error comes before the data: a refetch that fails keeps the earlier answer.
+  if (input.error) {
+    if (input.isFetching) return { state: "pending" };
+    const issue = classifyPreviewFailure(input.error, input.shortfall);
+    return { state: "failed", issue, retryable: isRetryable(issue) };
+  }
   if (input.hasData) return { state: "none" };
   if (input.isFetching) return { state: "pending" };
-  if (input.error) {
-    const issue = classifyPreviewFailure(input.error, input.shortfall);
-    return { state: "failed", issue, retryable: issue.kind !== "locked" };
-  }
   // Not asked (no team or gameweek in the snapshot yet): say so rather than stay grey.
   if (!input.queryEnabled) {
     return { state: "failed", issue: { kind: "generic", shortfall: null }, retryable: true };

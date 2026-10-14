@@ -10,6 +10,7 @@ import { join } from "node:path";
 
 import { calculateSalePrice } from "@/backend/fantasy/pricing";
 import {
+  canContinueTransfers,
   classifyPreviewFailure,
   draftBank,
   exceedsBudget,
@@ -161,6 +162,7 @@ describe("why a preview did not come back (FANT-02)", () => {
     completePairs: 1,
     pendingOutWithoutIn: false,
     queryEnabled: true,
+    locked: false,
     isFetching: false,
     hasData: false,
     error: null as unknown,
@@ -216,6 +218,123 @@ describe("why a preview did not come back (FANT-02)", () => {
   });
 });
 
+describe("Next is never grey in silence (FANT-02, review)", () => {
+  const networkError = { code: "network", message: "Failed to fetch" };
+  const base = {
+    isCloud: true,
+    completePairs: 1,
+    pendingOutWithoutIn: false,
+    queryEnabled: true,
+    locked: false,
+    isFetching: false,
+    hasData: false,
+    error: null as unknown,
+    shortfall: null as number | null,
+  };
+
+  it("a refetch that fails over earlier data is a failure, not silence", () => {
+    // React Query keeps the old data when a refetch errors; Next goes grey.
+    const panel = transferPreviewPanel({ ...base, hasData: true, error: networkError });
+    expect(panel.state).toBe("failed");
+    expect(panel.state === "failed" && panel.issue.kind).toBe("network");
+    // While that error is being retried, the screen says it is working.
+    expect(
+      transferPreviewPanel({ ...base, hasData: true, error: networkError, isFetching: true }).state,
+    ).toBe("pending");
+    // A quiet background refetch over good data stays quiet, and Next stays on.
+    expect(transferPreviewPanel({ ...base, hasData: true, isFetching: true })).toEqual({
+      state: "none",
+    });
+  });
+
+  it("whenever a complete draft cannot continue, the panel has a sentence", () => {
+    const bools = [false, true];
+    const errors: unknown[] = [
+      null,
+      networkError,
+      { code: "validation", domainCode: "invalid_transfer" },
+    ];
+    let grey = 0;
+    for (const isCloud of bools)
+      for (const hasData of bools)
+        for (const queryEnabled of bools)
+          for (const locked of bools)
+            for (const isFetching of bools)
+              for (const shortfall of [null, 0.1])
+                for (const error of errors) {
+                  // The route reads the server's figures once they are in, the local ones before.
+                  const overBudget = isCloud && hasData ? false : shortfall !== null;
+                  const input = {
+                    ...base,
+                    isCloud,
+                    hasData,
+                    queryEnabled,
+                    locked,
+                    isFetching,
+                    shortfall,
+                    error,
+                  };
+                  const canNext = canContinueTransfers({
+                    completePairs: 1,
+                    pendingOutWithoutIn: false,
+                    locked,
+                    overBudget,
+                    isCloud,
+                    hasData,
+                    isError: !!error,
+                  });
+                  if (canNext) continue;
+                  grey++;
+                  expect({ input, state: transferPreviewPanel(input).state }).not.toEqual({
+                    input,
+                    state: "none",
+                  });
+                }
+    expect(grey).toBeGreaterThan(0);
+  });
+
+  it("a passed deadline is said beside Next, without a retry", () => {
+    expect(transferPreviewPanel({ ...base, locked: true, hasData: true })).toEqual({
+      state: "failed",
+      issue: { kind: "locked", shortfall: null },
+      retryable: false,
+    });
+  });
+
+  it("a server validation refusal is a final answer: its own reason, no retry", () => {
+    for (const refusal of [
+      { code: "validation", domainCode: "invalid_transfer" },
+      { code: "validation", domainCode: "club_limit_exceeded" },
+      { code: "validation", domainCode: "invalid_squad" },
+      { code: "validation", domainCode: "player_not_eligible" },
+      { code: "validation", domainCode: "chip_unavailable" },
+      { code: "not_found", message: "no such player" },
+    ]) {
+      const panel = transferPreviewPanel({ ...base, error: refusal });
+      expect(panel.state === "failed" && panel.issue.kind).toBe("invalid");
+      expect(panel.state === "failed" && panel.retryable).toBe(false);
+    }
+  });
+
+  it("only transient failures offer a retry", () => {
+    const retry = (error: unknown, shortfall: number | null = null) => {
+      const panel = transferPreviewPanel({ ...base, error, shortfall });
+      return panel.state === "failed" && panel.retryable;
+    };
+    expect(retry(networkError)).toBe(true);
+    expect(retry({ code: "mfa_required" })).toBe(true);
+    expect(retry({ code: "version_conflict" })).toBe(true);
+    expect(retry({ code: "unknown" })).toBe(true);
+    // Not transient: access refused, an answered budget shortfall, a passed deadline.
+    expect(retry({ code: "permission_denied" })).toBe(false);
+    expect(retry({ code: "unauthenticated" })).toBe(false);
+    expect(retry({ code: "validation", domainCode: "budget_exceeded" }, 0.1)).toBe(false);
+    expect(retry({ code: "gameweek_locked" })).toBe(false);
+    // Prices may simply have moved: asking again is meaningful when no amount is known.
+    expect(retry({ code: "validation", domainCode: "budget_exceeded" }, null)).toBe(true);
+  });
+});
+
 // The route is too heavy to render here, so its wiring is pinned at the source:
 // the places the audit found crediting the market price (FANT-01) and the
 // notice that must sit beside "Suivant" (FANT-02).
@@ -232,6 +351,13 @@ describe("the transfers route is wired to the owner's sale value and the notice"
 
   it("renders the preview notice and keeps the retry away from the draft", () => {
     expect(source).toContain("<TransferPreviewNotice");
+    // Next is decided by the one shared rule, and the confirmation shows the sale value.
+    expect(source).toContain("canContinueTransfers({");
+    expect(source).toContain("outValue: valueOut(p.outId)");
+    // The budget test in replace mode is the picker's, not a raw comparison.
+    expect(source).not.toContain("+ 0.001");
+    // A preview that was never asked for is not refetched (its function needs the snapshot).
+    expect(source).toMatch(/!previewEnabled \|\|[\s\S]{0,120}reloadKeepingDraft\(\)/);
     const retry = source.slice(
       source.indexOf("const retryPreview"),
       source.indexOf("// ---- Interactions"),
