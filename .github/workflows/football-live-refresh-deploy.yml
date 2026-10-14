@@ -133,4 +133,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ./node_modules/.bin/supabase functions deploy football-live-refresh --project-ref "$PROJECT_REF"
+          # --use-api bundles on Supabase's side: the runner pulls no edge-runtime
+          # image, which public.ecr.aws refused on 2026-10-14 ("Data limit exceeded").
+          ./node_modules/.bin/supabase functions deploy football-live-refresh --project-ref "$PROJECT_REF" --use-api
