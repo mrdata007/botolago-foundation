@@ -17,6 +17,7 @@ const IMPLEMENTED_ROUTES = new Set([
   "/admin/news",
   "/admin/stories",
   "/admin/prizes",
+  "/admin/plus",
   "/admin/users",
   "/admin/users/$userId",
   "/admin/pepites",
@@ -44,6 +45,7 @@ const SCREEN_ROUTE_FILES: Record<AdminConsoleRoute, string> = {
   "/admin/news": "../../routes/admin.news.tsx",
   "/admin/stories": "../../routes/admin.stories.tsx",
   "/admin/prizes": "../../routes/admin.prizes.tsx",
+  "/admin/plus": "../../routes/admin.plus.tsx",
   "/admin/users": "../../routes/admin.users.tsx",
   "/admin/users/$userId": "../../routes/admin.users.$userId.tsx",
   "/admin/pepites": "../../routes/admin.pepites.index.tsx",
@@ -204,6 +206,22 @@ describe("Frozen Admin Console contracts", () => {
     expect(prizes?.labels.fr).toBe("Lots");
     expect(prizes?.labels.ar).toBe("الجوائز");
     expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/prizes")).toBe(false);
+  });
+
+  it("links the BotolaGO+ console from the nav, gated on premium.read", () => {
+    const plus = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/plus");
+    expect(plus?.permission).toBe("premium.read");
+    expect(plus?.testId).toBe("admin-nav-plus");
+    expect(plus?.labels.fr).toBe("BotolaGO+");
+    expect(plus?.labels.ar).toBe("BotolaGO+");
+    const visibleTo = (permissions: readonly string[]) =>
+      ADMIN_CONSOLE_NAV_ITEMS.filter((item) => permissions.includes(item.permission)).map(
+        (item) => item.testId,
+      );
+    expect(visibleTo(["premium.read"])).toEqual(["admin-nav-plus"]);
+    // Granting alone does not open the page: the grant is made from the member read.
+    expect(visibleTo(["premium.grant"])).toEqual([]);
+    expect(ADMIN_CONSOLE_SCREENS.some((screen) => screen.route === "/admin/plus")).toBe(false);
   });
 
   it("points every nav entry at an implemented route file", async () => {
