@@ -63,6 +63,13 @@ export interface SeasonRaw {
     paidTransfers: number;
     captainBest: number;
   };
+  /**
+   * The card's OVR after each journée when the backend gives it (a member's own); otherwise it is
+   * the mean of the four ratings, as the example's is.
+   */
+  ovrSeries?: readonly (number | null)[];
+  /** The rival's OVR when the backend gives it; otherwise the mean of `rivalRating`. */
+  rivalOvr?: number | null;
   /** Ratings (1 to 99) after each journée; `null` before the rating exists. */
   ratings: Record<RatingCode, readonly (number | null)[]>;
   leagueRating: Record<RatingCode, number>;
@@ -154,7 +161,9 @@ export function deriveSeason(raw: SeasonRaw, leagueSize: number = LEAGUE_SIZE) {
   const rivalStarters = rivalTotal - raw.rival_.captain + raw.rival_.penalty;
   const rivalNet = raw.rival_.gross - raw.rival_.penalty;
   const ovrSeries = Array.from({ length: J }, (_, i) =>
-    ovrOf(RATING_CODES.map((c) => raw.ratings[c][i] ?? null)),
+    raw.ovrSeries
+      ? (raw.ovrSeries[i] ?? MISSING)
+      : ovrOf(RATING_CODES.map((c) => raw.ratings[c][i] ?? null)),
   );
   const leagueOvrExact = sum(RATING_CODES.map((c) => raw.leagueRating[c])) / RATING_CODES.length;
   const lastRating = (c: RatingCode) => raw.ratings[c][J - 1] ?? MISSING;
@@ -183,7 +192,10 @@ export function deriveSeason(raw: SeasonRaw, leagueSize: number = LEAGUE_SIZE) {
     raw.rival.map((v, i) => v - raw.leagueAvg[i]!),
     (x) => x > 0,
   );
-  const rivalOvr = ovrOf(RATING_CODES.map((c) => raw.rivalRating[c]));
+  const rivalOvr =
+    raw.rivalOvr !== undefined
+      ? (raw.rivalOvr ?? MISSING)
+      : ovrOf(RATING_CODES.map((c) => raw.rivalRating[c]));
   const bestChoiceWeeks =
     raw.bestChoiceWeeks ??
     countWhere(
