@@ -18,7 +18,7 @@ import {
 import { fill } from "@/components/manager-card/interpolate";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { CardGlint, type GlintHandle } from "@/components/manager-card/motion/CardGlint";
-import { cardOutline } from "@/components/manager-card/motion/outline";
+import { useCardOutline } from "@/components/manager-card/use-card-outline";
 import { TierWord } from "@/components/manager-card/tier-word";
 import type { BeatName, CardProfile, TierCode } from "@/components/manager-card/types";
 import { useCardPalette } from "@/components/manager-card/use-card-palette";
@@ -54,7 +54,10 @@ const FULL_PHONE_WIDTH = "w-[min(296px,calc(100vw-32px))]";
  * The card on a phone when the first screen has to hold what lies under it (G1). The card's height
  * is the window's small height (`svh`: with a browser's toolbars showing) less the top bar, the
  * bottom bar and what G1 draws around the card, and its width is that height over 1.618, between
- * 232 px and the 296 px of `FULL_PHONE_WIDTH` (and still 16 px from either edge).
+ * 232 px and the 296 px of `FULL_PHONE_WIDTH` (and still 16 px from either edge). The 1.618 is
+ * the first card's shape (Éclat) and is kept on purpose: the collector shield (1 : 1.366) is
+ * shorter at the same width, so every clearance measured below only grows with it, and the card
+ * keeps the widths the plan set (232 to 296 px on a phone).
  *
  * The two bars are read from their tokens (`--topbar-h`, `--bottomnav-h`) because they grow with a
  * phone's home indicator and, for the bottom bar, with Arabic's leading (76 px in French, 82 px in
@@ -98,8 +101,8 @@ const FIT_HEIGHT_WIDTH_STATS_BOX =
  * an ellipse under the reserved box so the box does not look like a hole.
  *
  * Full cards are 296 px wide on phones (never closer than 16 px to either edge) and 336 px from
- * 768 px, centred. Every card has one shape (1 : 1.618), so the box reserved before the chunk loads
- * is exactly the box the card fills.
+ * 768 px, centred. Every card has one shape (the active renderer's: 1 : 1.366 for the shield), so
+ * the box reserved before the chunk loads is exactly the box the card fills.
  *
  * G1 asks for more of a phone's height (`fitHeight`): the card, the rating line, the identity line
  * and the next-round line are one first screen, and the line has to clear the bottom bar. See
@@ -458,13 +461,14 @@ export function CardStage({
  */
 const EDGE_LAYERS = 9;
 function FlipEdge({ palette, rtl }: { palette: readonly string[]; rtl: boolean }) {
+  const outline = useCardOutline(rtl);
   const step = (FLIP_HALF_THICKNESS * 2) / (EDGE_LAYERS - 1);
   return (
     <>
       {Array.from({ length: EDGE_LAYERS }, (_, i) => {
         const z = -FLIP_HALF_THICKNESS + i * step;
         const style: CSSProperties = {
-          clipPath: cardOutline(rtl),
+          clipPath: outline,
           transform: `translateZ(${z.toFixed(2)}px)`,
           backgroundColor: palette[i % 2 === 0 ? 2 : 4] ?? palette[3] ?? "var(--ui-ink)",
         };
@@ -484,13 +488,14 @@ function FlipEdge({ palette, rtl }: { palette: readonly string[]; rtl: boolean }
 
 /** A black layer over a face, darker the more the face turns away: the turn's shading. */
 function FaceShade({ ref, rtl }: { ref: React.Ref<HTMLSpanElement>; rtl: boolean }) {
+  const outline = useCardOutline(rtl);
   return (
     <span
       ref={ref}
       aria-hidden
       data-flip-shade=""
       className="pointer-events-none absolute inset-0 z-10 bg-black opacity-0"
-      style={{ clipPath: cardOutline(rtl) }}
+      style={{ clipPath: outline }}
     />
   );
 }

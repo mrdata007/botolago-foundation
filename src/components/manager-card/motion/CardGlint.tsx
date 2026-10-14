@@ -2,13 +2,13 @@ import { useImperativeHandle, useRef, type Ref } from "react";
 
 import { prefersReducedMotion } from "@/lib/motion";
 
-import { cardOutline } from "./outline";
+import { useCardOutline } from "../use-card-outline";
 
 /**
  * A band of light that crosses the card once. Plain DOM over the card, outside its SVG and its
  * tilt tree (`tilt.ts` owns that): a clipped box holding one skewed band that moves by `transform`
  * and `opacity` on the compositor, drawn only while it plays. It never plays under reduced motion.
- * The clip is the card's cut-cornered outline (`cardOutline`), so the light never leaves the card.
+ * The clip is the card's own outline (`useCardOutline`: the renderer's), so the light never leaves the card.
  *
  * `play` is the whole interface: the entrance, the flip and the tier-up each call it when their
  * card is at the right place. `rainbow` is the Legend's full foil sweep.
@@ -24,6 +24,7 @@ const RAINBOW =
 
 export function CardGlint({ ref, rtl = false }: { ref?: Ref<GlintHandle>; rtl?: boolean }) {
   const band = useRef<HTMLSpanElement | null>(null);
+  const outline = useCardOutline(rtl);
   useImperativeHandle(
     ref,
     () => ({
@@ -51,7 +52,7 @@ export function CardGlint({ ref, rtl = false }: { ref?: Ref<GlintHandle>; rtl?: 
       aria-hidden
       data-card-glint=""
       className="pointer-events-none absolute inset-0 z-20 overflow-hidden"
-      style={{ clipPath: cardOutline(rtl) }}
+      style={{ clipPath: outline }}
     >
       <span ref={band} className="absolute inset-y-[-8%] start-0 w-[52%] opacity-0" />
     </span>

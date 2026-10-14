@@ -21,13 +21,14 @@ export const Route = createFileRoute("/curva")({
     }
   },
   head: () => ({
-    // The card's own face, fetched with the page instead of when `eclat.css` declares it.
+    // The card's own face (the autograph's signature script), fetched with the page instead of
+    // when the card's stylesheet (`shield.css`) declares it.
     links: [
       {
         rel: "preload",
         as: "font",
         type: "font/woff2",
-        href: "/fonts/instrument-serif-latin-400-normal.woff2",
+        href: "/fonts/mr-dafoe-latin-400-normal.woff2",
         crossOrigin: "anonymous",
       },
     ],

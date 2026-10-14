@@ -12,7 +12,7 @@ import { useI18n } from "@/i18n/provider";
 import { prefersReducedMotion } from "@/lib/motion";
 
 import { ManagerCard } from "../ManagerCard";
-import { cardOutline } from "../motion/outline";
+import { useCardOutline } from "../use-card-outline";
 import { CardGlint, type GlintHandle } from "../motion/CardGlint";
 import { TierWord } from "../tier-word";
 import type { BeatName, CardProfile, TierCode } from "../types";
@@ -71,6 +71,7 @@ export function TierCeremonyCard({
   const palette = useCardPalette(tier);
   const { dir } = useI18n();
   const rtl = dir === "rtl";
+  const outline = useCardOutline(rtl);
   const [phase, setPhase] = useState<"wait" | "run" | "done">("wait");
   const [impact, setImpact] = useState(false);
   const [spot, setSpot] = useState<string | undefined>(undefined);
@@ -262,7 +263,7 @@ export function TierCeremonyCard({
                 {back ?? (
                   <div
                     className="h-full w-full"
-                    style={{ backgroundColor: palette.plate, clipPath: cardOutline(rtl) }}
+                    style={{ backgroundColor: palette.plate, clipPath: outline }}
                   />
                 )}
               </div>
