@@ -12,7 +12,16 @@
 import type { CardImageArt, CardImageCrest, TextRun } from "../renderer";
 import type { CardProfile, CardStrings } from "../types";
 import { STAT_CODES } from "../types";
-import { EMBLEM_DIAMOND, EMBLEM_GLYPH, SHIELD, SWASH_ECHO, SWASH_MAIN, inset } from "./geometry";
+import {
+  EMBLEM_DIAMOND,
+  EMBLEM_GLYPH,
+  FACE_SCALE,
+  FACE_SCALE_THICK,
+  SHIELD,
+  SWASH_ECHO,
+  SWASH_MAIN,
+  inset,
+} from "./geometry";
 import { uid } from "./ids";
 import {
   fitSignature,
@@ -49,18 +58,19 @@ export function cardImage(
   const v = makeView(profile, strings);
   const { p, s, m, ar } = v;
   const id = uid();
+  const faceScale = m.thick ? FACE_SCALE_THICK : FACE_SCALE;
   // the card's x, mirrored in Arabic (the layout is drawn left to right and mirrored as a whole)
   const mx = (x: number): number => (ar ? 100 - x : x);
   const runs: TextRun[] = [];
 
   const face = `url(#${id}-face)`;
-  let art = `<defs>${shieldDefs(id, m)}<clipPath id="${id}-in"><path d="${SHIELD}" transform="${inset(0.958, 0.97)}"/></clipPath>`;
+  let art = `<defs>${shieldDefs(id, m)}<clipPath id="${id}-in"><path d="${SHIELD}" transform="${inset(faceScale[0], faceScale[1])}"/></clipPath>`;
   art += `<linearGradient id="${id}-sig" x1="0" y1="0" x2="1" y2="0">${m.sig.map((c, i) => `<stop offset="${(i / (m.sig.length - 1)).toFixed(3)}" stop-color="${c}"/>`).join("")}</linearGradient>`;
   art += `<radialGradient id="${id}-glow" cx="${mx(78)}" cy="19" r="60" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="${m.dark ? "#ffffff" : "#ffffff"}" stop-opacity="${m.dark ? 0.16 : 0.35}"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient></defs>`;
 
   // the card's thickness under its point, the frame, the face
   art += `<path d="${SHIELD}" fill="${mix(m.frame[3], "#000000", 0.55)}" transform="translate(0 1.4)"/>`;
-  art += `<path d="${SHIELD}" fill="${m.holo ? `url(#${id}-foil)` : `url(#${id}-metal)`}"/>`;
+  art += `<path d="${SHIELD}" fill="${m.checker ? `url(#${id}-chk)` : m.holo ? `url(#${id}-foil)` : `url(#${id}-metal)`}"/>`;
   art += `<g clip-path="url(#${id}-in)">`;
   art += `<rect x="0" y="0" width="100" height="136.6" fill="${face}"/>`;
   art += `<rect x="0" y="0" width="100" height="136.6" fill="url(#${id}-glow)"/>`;
@@ -77,7 +87,7 @@ export function cardImage(
   // rim, bevel, inner line
   art += `<path d="${SHIELD}" fill="none" stroke="#000000" stroke-opacity=".5" stroke-width=".35"/>`;
   art += `<path d="${SHIELD}" fill="none" stroke="#ffffff" stroke-opacity=".5" stroke-width=".25" transform="${inset(0.993, 0.996)}"/>`;
-  art += `<path d="${SHIELD}" fill="none" stroke="${m.line}" stroke-width=".4" transform="${inset(0.958, 0.97)}"/>`;
+  art += `<path d="${SHIELD}" fill="none" stroke="${m.line}" stroke-width=".4" transform="${inset(faceScale[0], faceScale[1])}"/>`;
 
   // the emblem off the side
   const ex = ar ? 100 + 2.3 - 12 : -2.3;

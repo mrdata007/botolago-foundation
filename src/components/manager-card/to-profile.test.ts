@@ -216,3 +216,29 @@ describe("clubs on the card", () => {
     expect(clubInitials(null, "", "")).toBe("CL");
   });
 });
+
+describe("the card edition (BotolaGO+)", () => {
+  const member = FIXTURES.rated.league!.members[0]!;
+  it("is set on the profile only for a paid edition, so a standard card is unchanged", () => {
+    for (const edition of ["holo", "electric", "pixel", "chrome"] as const) {
+      expect(fromMyCard({ ...own("rated"), edition }).edition).toBe(edition);
+      expect(fromMember({ ...member, edition }).edition).toBe(edition);
+      expect(fromHistoryRow(FIXTURES.rated.history[0]!, { ...own("rated"), edition }).edition).toBe(
+        edition,
+      );
+    }
+    for (const edition of ["standard", undefined] as const) {
+      expect("edition" in fromMyCard({ ...own("rated"), edition })).toBe(false);
+      expect("edition" in fromMember({ ...member, edition })).toBe(false);
+    }
+    expect(JSON.stringify(fromMyCard(own("rated")))).toBe(
+      JSON.stringify(fromMyCard({ ...own("rated"), edition: "standard" })),
+    );
+  });
+
+  it("keeps the edition through withTier, and drops it on the tier ladder's tokens", () => {
+    const paid = fromMyCard({ ...own("rated"), edition: "chrome" });
+    expect(withTier(paid, "legend").edition).toBe("chrome");
+    expect("edition" in ladderProfile(paid, "stade")).toBe(false);
+  });
+});

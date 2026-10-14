@@ -1,0 +1,40 @@
+{
+  "event": {
+    "id": 17256978,
+    "startTimestamp": 1791914400,
+    "status": {
+      "type": "finished"
+    },
+    "roundInfo": {
+      "round": 4
+    },
+    "season": {
+      "id": 102220
+    },
+    "tournament": {
+      "uniqueTournament": {
+        "id": 937
+      }
+    },
+    "homeTeam": {
+      "id": 80395,
+      "name": "RS Berkane",
+      "shortName": "RS Berkane"
+    },
+    "awayTeam": {
+      "id": 263373,
+      "name": "Renaissance Zemamra",
+      "shortName": "Renaissance Zemamra"
+    },
+    "homeScore": {
+      "current": 2,
+      "period1": 0,
+      "period2": 2
+    },
+    "awayScore": {
+      "current": 2,
+      "period1": 2,
+      "period2": 0
+    }
+  }
+}

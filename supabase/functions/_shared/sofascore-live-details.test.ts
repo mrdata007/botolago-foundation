@@ -607,3 +607,107 @@ describe("the live minute on the live tick", () => {
     expect((await clockTick({ minute: null }, undefined)).writes).toHaveLength(0);
   });
 });
+
+describe("lineups in play and statistics after the post-match window", () => {
+  const liveEvent = (score: number) => event(1, LIVE, START + 100, score);
+
+  test("a match in play without a stored lineup reads it with the incidents on a written tick", async () => {
+    // Snapshot (migration 20261014120000) says no lineup is stored; the score moved.
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { homeScore: 0, hasLineups: false })],
+    });
+    const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
+    await tick("sofascore", "fixtures", db, run.fetch);
+    expect(detailPaths(run.paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+    ]);
+  });
+
+  test("once a lineup is stored, or on a database without the flag, the incidents alone", async () => {
+    for (const over of [{ hasLineups: true }, {}]) {
+      const db = fakeDb({
+        mappings: mappings([1]),
+        fixtures: [state(1, { homeScore: 0, ...over })],
+      });
+      const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [liveEvent(1)] } });
+      await tick("sofascore", "fixtures", db, run.fetch);
+      expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
+    }
+  });
+
+  test("a provider change alone (nothing written) does not re-read missing lineups", async () => {
+    const db = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { homeScore: 1, hasLineups: false })],
+    });
+    const run = fakeFetch({
+      [SOFASCORE_LIVE_EVENTS_PATH]: { events: [event(1, LIVE, START + 3540, 1)] },
+    });
+    await tick("sofascore", "fixtures", db, run.fetch);
+    expect(detailPaths(run.paths)).toEqual(["matches/get-incidents?matchId=1"]);
+  });
+
+  test("a staged statistics pull also stores the match details, with no request of its own", async () => {
+    const finalized = new Date(NOW.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
+    const base = fakeDb({
+      mappings: mappings([1]),
+      fixtures: [state(1, { status: "finished", finalizedAt: finalized })],
+    });
+    const client = {
+      schema() {
+        const inner = base.client.schema("api");
+        return {
+          rpc(name: string, args: Record<string, unknown>) {
+            if (name === "service_sofascore_staged_due") {
+              base.calls.push({ name, args });
+              return Promise.resolve({
+                data: {
+                  due: [
+                    { fixtureId: uuid("f", 1), eventId: "1", coverage: "core", finalPull: false },
+                  ],
+                  budgetStopped: false,
+                },
+                error: null,
+              });
+            }
+            return inner.rpc(name, args);
+          },
+        };
+      },
+    } as unknown as LiveRefreshRpcClient;
+    const run = fakeFetch({ [SOFASCORE_LIVE_EVENTS_PATH]: { events: [] } });
+    const outcome = await runSofascoreRefresh({
+      mode: "sofascore",
+      job: "fixtures",
+      client,
+      rapid: rapid(run.fetch),
+      environment: {
+        SOFASCORE_FANTASY_CATCHUP_PER_TICK: "0",
+        SOFASCORE_FANTASY_RETRIES_PER_TICK: "0",
+      },
+      now: NOW,
+      log: () => {},
+    });
+    // The pull's three replies, read once.
+    expect(detailPaths(run.paths)).toEqual([
+      "matches/get-incidents?matchId=1",
+      "matches/get-lineups?matchId=1",
+      "matches/get-statistics?matchId=1",
+    ]);
+    const stored = named(base, "ingest_football_match_details");
+    expect(stored).toHaveLength(1);
+    expect(stored[0].args.p_fixture_external_id).toBe("1");
+    expect(
+      (stored[0].args.p_details as { statistics: unknown[] }).statistics.length,
+    ).toBeGreaterThan(0);
+    const begun = named(base, "begin_football_ingestion").find(
+      (c) => (c.args.p_target_scope as { scope?: string }).scope === "staged",
+    );
+    expect(begun).toBeDefined();
+    expect(
+      (outcome.body.fantasy as { stagedDetails?: { stored: number } }).stagedDetails,
+    ).toMatchObject({ stored: 1 });
+  });
+});
