@@ -531,6 +531,14 @@ export const fantasyRulesSchema = z.object({
       estimatesFinalForRankings: z.boolean().optional(),
     })
     .optional(),
+  // The rating rule (docs/backend/FANTASY_RATING_POINTS.md, migration 20261014090000):
+  // present only while it is switched on for the season.
+  ratingScoring: z
+    .object({
+      fromGameweek: z.number().int().positive(),
+      noRatingPoints: z.number().int(),
+    })
+    .optional(),
   seasonId: postgresUuidSchema,
   rulesetId: postgresUuidSchema,
   rulesetCode: z.string(),
