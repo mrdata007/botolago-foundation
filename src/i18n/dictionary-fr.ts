@@ -5,9 +5,9 @@
 // `dictionaries.ts` puts both together for the tests and the i18n gate.
 export const fr = {
   "fantasy.scoring.incrementalPolicy":
-    "Les points et le classement sont actualisés après chaque match admissible. Ils restent provisoires pendant la journée. Les remplacements automatiques et le relais du capitaine attendent que la participation soit établie.",
+    "Les points et le classement sont actualisés après chaque match admissible. Ils peuvent encore changer pendant la journée. Les remplacements automatiques et le relais du capitaine attendent que la participation soit établie.",
   "fantasy.scoring.closedProvisional":
-    "Points provisoires : les statistiques détaillées des matchs peuvent encore être publiées et les points peuvent changer jusqu'au verrouillage de la journée.",
+    "Les statistiques détaillées des matchs peuvent encore être publiées et les points peuvent changer jusqu'au verrouillage de la journée.",
   "fantasy.scoring.simpleEstimated": "Barème simplifié · données estimées",
   "fantasy.scoring.estimatesPolicy":
     "Les estimations examinées à partir des meilleures données disponibles peuvent être définitives et compter au classement. Les hypothèses sont conservées et les points restent soumis à la procédure de correction de 72 heures. Une identité ambiguë reste en attente.",
@@ -350,7 +350,7 @@ export const fr = {
   "matches.detail.no_lineups_updating":
     "Compositions pas encore reçues. Cette page se met à jour automatiquement.",
   "matches.detail.no_lineups_unavailable": "Les compositions de ce match ne sont pas disponibles.",
-  "matches.detail.lineup_provisional": "Provisoire",
+  "matches.detail.lineup_provisional": "Probable",
   "matches.detail.starting_xi": "Onze de départ",
   "matches.detail.substitutes": "Remplaçants",
   "matches.detail.captain": "Capitaine",
@@ -534,14 +534,14 @@ export const fr = {
   "fantasy.gameweek.status.open": "Ouverte",
   "fantasy.gameweek.status.locked": "Verrouillée",
   "fantasy.gameweek.status.live": "En direct",
-  "fantasy.gameweek.status.provisional": "Provisoire",
+  "fantasy.gameweek.status.provisional": "En cours",
   "fantasy.gameweek.status.finalizing": "Vérification",
   "fantasy.gameweek.status.final": "Définitive",
   "fantasy.gameweek.status.cancelled": "Annulée",
   "fantasy.gameweek.status.closed": "Clôturée",
   "fantasy.gameweek.detail.locked": "Composition verrouillée",
   "fantasy.gameweek.detail.live": "Points en cours",
-  "fantasy.gameweek.detail.provisional": "Points provisoires",
+  "fantasy.gameweek.detail.provisional": "Points susceptibles d’évoluer",
   "fantasy.gameweek.detail.finalizing": "Résultats en vérification",
   "fantasy.gameweek.detail.final": "Résultats définitifs",
   "fantasy.gameweek.detail.cancelled": "Journée annulée",
@@ -592,7 +592,7 @@ export const fr = {
   "fantasy.points.bench": "Points du banc",
   "fantasy.points.total": "Total",
   "fantasy.points.how_scored": "Comment les points sont calculés",
-  "fantasy.points.status.provisional": "Provisoire",
+  "fantasy.points.status.provisional": "En cours",
   "fantasy.points.status.live": "En direct",
   "fantasy.points.status.final": "Définitif",
   "fantasy.points.auto_subs": "Remplacements automatiques",
@@ -773,7 +773,7 @@ export const fr = {
   "fantasy.recap.footer": "botolago.com · Fantasy Botola Pro",
   "fantasy.rules.policy_title": "Comment les points sont validés",
   "fantasy.rules.provisional_desc":
-    "Pendant une journée, les points affichés sont provisoires et peuvent encore changer. Ils deviennent définitifs une fois la journée validée. Si une erreur de données est corrigée ensuite, les points et le classement sont mis à jour.",
+    "Pendant une journée, les points affichés peuvent encore changer. Ils deviennent définitifs une fois la journée validée. Si une erreur de données est corrigée ensuite, les points et le classement sont mis à jour.",
   "fantasy.rules.tiebreak": "Départages",
   "fantasy.rules.tiebreak_desc":
     "En cas d'égalité de points, la meilleure place revient au manager qui a perdu le moins de points en transferts, puis qui a fait le moins de transferts, puis qui a le meilleur score à la dernière journée, puis dont l'équipe a été créée le plus tôt.",
@@ -2115,7 +2115,7 @@ export const fr = {
   "predictions.round.state_upcoming": "À venir",
   "predictions.round.state_in_progress": "En cours",
   "predictions.round.state_completed": "Terminée",
-  "predictions.round.state_provisional": "Provisoire",
+  "predictions.round.state_provisional": "En cours",
   "predictions.fixture.until": "Jusqu'à {time}",
   "predictions.fixture.time_tbc": "Horaire à confirmer",
   "predictions.fixture.locked": "Verrouillé",
@@ -2177,10 +2177,10 @@ export const fr = {
   "predictions.board.empty": "Le classement apparaît après le premier match terminé.",
   "predictions.board.load_more": "Afficher plus",
   "predictions.board.empty_cta": "Faire mes pronostics",
-  "predictions.board.matches_left_one": "Provisoire · 1 match à jouer",
-  "predictions.board.matches_left_two": "Provisoire · 2 matchs à jouer",
-  "predictions.board.matches_left_few": "Provisoire · {n} matchs à jouer",
-  "predictions.board.matches_left_other": "Provisoire · {n} matchs à jouer",
+  "predictions.board.matches_left_one": "1 match à jouer",
+  "predictions.board.matches_left_two": "2 matchs à jouer",
+  "predictions.board.matches_left_few": "{n} matchs à jouer",
+  "predictions.board.matches_left_other": "{n} matchs à jouer",
   "predictions.board.rounds_played_one": "1 journée",
   "predictions.board.rounds_played_two": "2 journées",
   "predictions.board.rounds_played_few": "{n} journées",
@@ -2995,10 +2995,9 @@ export const fr = {
   "card.onboarding.m6.msg.league":
     "Ma carte BotolaGO : {ovr}. Et toi ? Rejoins ma ligue « {league} » : {link}",
   "card.onboarding.m6.msg.league_provisional":
-    "Ma carte BotolaGO : {ovr} (provisoire). Et toi ? Rejoins ma ligue « {league} » : {link}",
+    "Ma carte BotolaGO : {ovr}. Et toi ? Rejoins ma ligue « {league} » : {link}",
   "card.onboarding.m6.msg.plain": "Ma carte BotolaGO : {ovr}. Et toi ? {link}",
-  "card.onboarding.m6.msg.plain_provisional":
-    "Ma carte BotolaGO : {ovr} (provisoire). Et toi ? {link}",
+  "card.onboarding.m6.msg.plain_provisional": "Ma carte BotolaGO : {ovr}. Et toi ? {link}",
   "card.onboarding.m7.line": "Votre note n’est plus provisoire : {ovr} après {final}.",
   "card.onboarding.m8.up.heading": "Votre carte passe {tier}.",
   "card.onboarding.m8.up.line":

@@ -188,7 +188,6 @@ describe("in Arabic, LASTREET sits in a bdi dir=ltr", () => {
       <RatingLine
         ovr={61}
         tier="homa"
-        provisional={false}
         counted={3}
         min={3}
         formingLabel={dictionaries.ar["curva.card.tier_none"]}
@@ -344,7 +343,6 @@ describe("no HOMA and no «حومة» in any rendered card copy", () => {
             <RatingLine
               ovr={card.ovr}
               tier={card.tier}
-              provisional={card.provisional}
               counted={card.gameweeksCounted}
               min={card.minRated}
               formingLabel="x"

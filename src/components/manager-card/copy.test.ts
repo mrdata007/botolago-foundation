@@ -371,7 +371,7 @@ describe("the dictionary of the section", () => {
     expect(m.m1.introBody).toContain("{final}");
     expect(m.m9.heading).toBe("Fondateur 2026");
     expect(m.state.offlineText).toBe("Impossible de charger votre carte.");
-    expect(m.m6.msgPlainProvisional).toContain("(provisoire)");
+    expect(m.m6.msgPlainProvisional).not.toContain("provisoire");
   });
 
   it("keeps the motion words out of the Appendix A pin, and reads them in motion-copy.ts by literal calls", () => {

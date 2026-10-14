@@ -308,15 +308,14 @@ describe("HubCardBlockView", () => {
       text(await render(<HubCardBlockView card={card("forming1")} gameweek={GAMEWEEK} />)),
     ).not.toContain("Nouveau");
   });
-  it("shows the number, its tier and « Provisoire » once rated, and the next round", async () => {
+  it("shows the number and its tier, never « Provisoire », once rated, and the next round", async () => {
     const plain = text(await render(<HubCardBlockView card={card("rated")} gameweek={GAMEWEEK} />));
     expect(plain).toContain("84");
     expect(plain).toContain("OVR");
     expect(plain).toContain("PRO");
-    expect(plain).toContain("Provisoire");
+    expect(plain).not.toContain("Provisoire");
     expect(plain).toContain("J6 · date limite");
     expect(plain).not.toContain("Carte en formation");
-    // Not provisional: no pill.
     expect(
       text(await render(<HubCardBlockView card={card("cleared")} gameweek={GAMEWEEK} />)),
     ).not.toContain("Provisoire");

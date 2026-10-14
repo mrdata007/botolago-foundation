@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type JSX, type ReactNode } from "react";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
-import { ui, UiButton, UiPill, UiSheet } from "@/components/ui-kit";
+import { ui, UiButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
@@ -67,11 +67,6 @@ export function ReplaySheet({
             beat={beat ?? undefined}
             testId="replay-card"
           />
-          {view.profile.provisional && view.profile.ovr !== null ? (
-            <UiPill tone="sunken" className="px-3 py-1">
-              {words.card.provisional}
-            </UiPill>
-          ) : null}
           {view.lines.map((line, index) => (
             <p
               key={index}

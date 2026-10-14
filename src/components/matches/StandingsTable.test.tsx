@@ -270,9 +270,9 @@ describe("a table with clubs level on every figure", () => {
     }
   });
 
-  test("the notes say the table is provisional and that a shared rank decides nothing", () => {
+  test("a table still being played has no note of its own, only that a shared rank decides nothing", () => {
     const notes = inFrench(<StandingsNotes rows={firstDay} computed seasonStatus="active" />);
-    expect(notes).toContain("Classement provisoire, calculé à partir des résultats des matchs.");
+    expect(notes).not.toMatch(/provisoire|calculé/);
     expect(notes).toContain("Un même rang signale des clubs à égalité");
     // The provider's final table, one club a position: nothing to say.
     expect(
@@ -388,7 +388,7 @@ describe("a table with clubs level on every figure", () => {
       );
     // Two clubs sharing 2nd on the first day, in a table worked out from the results.
     const early = faceToFace(first, second, firstDay, true, "active");
-    expect(early).toContain("Classement provisoire, calculé à partir des résultats des matchs.");
+    expect(early).not.toContain("provisoire");
     expect(early).toContain("Un même rang signale des clubs à égalité");
     // The same results, the season over: unofficial, never final.
     expect(faceToFace(first, second, firstDay, true, "completed")).toContain(

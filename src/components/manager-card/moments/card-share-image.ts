@@ -14,7 +14,6 @@ import {
 
 import { activeRenderer } from "../active-renderer";
 import { cardStrings, type Translate } from "../copy";
-import { fillText } from "../interpolate";
 import type { CardImageArt, CardImageCrest, CardRenderer, TextRun } from "../renderer";
 import type { CardLang, CardProfile, CardStrings } from "../types";
 
@@ -26,8 +25,7 @@ import type { CardLang, CardProfile, CardStrings } from "../types";
  * The card is the renderer's `image()` art: a text-free SVG, drawn through an `Image` from a Blob
  * URL, and the text runs it left out, drawn here with `fillText` once the share fonts are loaded
  * (an SVG drawn as an image cannot use the page's web fonts). Around it: the wordmark, the
- * provisional note when the number is provisional, the caption, the name in Changa 800, the
- * number with its tier, the season, the club as a colour disc with
+ * caption, the name in Changa 800, the number with its tier, the season, the club as a colour disc with
  * its initials and the address. When the club has a crest (owner request 2026-10-10, which
  * supersedes plan 2.6's "no crest") and it loads with CORS, the crest is drawn on a light plate on
  * the card's tab and on the disc beside the name instead of the initials; a crest that cannot be
@@ -41,7 +39,6 @@ export const CARD_IMAGE_SIZE = { width: 1080, height: 1920 } as const;
 export const CARD_IMAGE_LAYOUT = {
   pad: 88,
   logo: { top: 96, width: 420 },
-  pill: { height: 64, top: 90, padding: 28, size: 30 },
   caption: { baseline: 292, size: 66, min: 44 },
   card: { top: 352, bottom: 1496 },
   name: { baseline: 1620, size: 76, min: 44 },
@@ -61,8 +58,6 @@ export interface CardShareImageModel {
   name: string;
   /** « 84 », « OVR » and « PRO »: the three parts of the rating line, each in its own direction. */
   rating: { number: string; unit: string; tier: string | null };
-  /** « Note provisoire · J7 », present only when the number is provisional. */
-  provisional: string | null;
   season: string;
   club: { initials: string; primary: string } | null;
   footer: string;
@@ -73,7 +68,7 @@ export const SHARE_FOOTER = "botolago.com";
 export interface CardShareImageInput {
   /** What the picture is of: the profile the card renders. */
   profile: CardProfile;
-  /** The latest evaluated journée (`card.throughGameweekSeq`), named by the provisional note. */
+  /** The latest evaluated journée (`card.throughGameweekSeq`); no longer written on the picture. */
   throughGameweekSeq: number | null;
   lang: CardLang;
   t: Translate;
@@ -88,7 +83,7 @@ export interface CardShareImageInput {
 export function cardShareImageModel(
   input: Omit<CardShareImageInput, "renderer"> & { renderer: CardRenderer },
 ): CardShareImageModel | null {
-  const { profile, lang, t, renderer, throughGameweekSeq } = input;
+  const { profile, lang, t, renderer } = input;
   if (profile.ovr === null) return null;
   const strings: CardStrings = cardStrings(t, lang);
   const art = renderer.image(profile, strings);
@@ -102,11 +97,6 @@ export function cardShareImageModel(
       unit: strings.ovr,
       tier: profile.tier ? strings.tiers[profile.tier] : null,
     },
-    provisional: profile.provisional
-      ? throughGameweekSeq !== null
-        ? fillText(t("card.onboarding.m6.image.provisional"), { gw: throughGameweekSeq })
-        : t("card.provisional")
-      : null,
     season: profile.season,
     club: profile.club ? { initials: profile.club.initials, primary: profile.club.primary } : null,
     footer: SHARE_FOOTER,
@@ -121,7 +111,6 @@ function sampleOf(model: CardShareImageModel): string {
     model.rating.number,
     model.rating.unit,
     model.rating.tier ?? "",
-    model.provisional ?? "",
     model.season,
     model.club?.initials ?? "",
     model.footer,
@@ -395,32 +384,6 @@ function draw(
   if (logo) {
     const w = L.logo.width;
     ctx.drawImage(logo, rtl ? width - L.pad - w : L.pad, L.logo.top, w, w / WORDMARK_RATIO);
-  }
-
-  // The provisional note, at the inline end of the same row: small, present, in words.
-  if (model.provisional) {
-    ctx.save();
-    ctx.font = shareFont(body, 800, L.pill.size);
-    ctx.direction = rtl ? "rtl" : "ltr";
-    const textWidth = ctx.measureText(model.provisional).width;
-    const pillWidth = Math.min(inner - L.logo.width - 40, textWidth + L.pill.padding * 2);
-    const pillLeft = rtl ? L.pad : width - L.pad - pillWidth;
-    ctx.fillStyle = SHARE_PALETTE.panel;
-    roundRect(ctx, pillLeft, L.pill.top, pillWidth, L.pill.height, L.pill.height / 2);
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = SHARE_PALETTE.rulePanel;
-    ctx.stroke();
-    ctx.fillStyle = SHARE_PALETTE.white;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "alphabetic";
-    ctx.fillText(
-      model.provisional,
-      pillLeft + pillWidth / 2,
-      inkCentredBaseline(ctx, model.provisional, L.pill.size, L.pill.top + L.pill.height / 2),
-      pillWidth - L.pill.padding,
-    );
-    ctx.restore();
   }
 
   // The caption, in Changa 800.

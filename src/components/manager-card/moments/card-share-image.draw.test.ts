@@ -190,21 +190,9 @@ describe("the picture", () => {
 });
 
 describe("what it says", () => {
-  it("a provisional number carries « Note provisoire · J7 » / «تقييم مبدئي · الجولة 7», in words", async () => {
-    const fr = await draw("rated", "fr");
-    expect(fr.model.provisional).toBe("Note provisoire · J7");
-    expect(find(fr.ops, "Note provisoire · J7")).toBeDefined();
-    const ar = await draw("rated", "ar");
-    expect(ar.model.provisional).toContain("تقييم مبدئي");
-    expect(ar.model.provisional).toContain("7");
-    expect(find(ar.ops, ar.model.provisional!)).toBeDefined();
-  });
-
-  it("a number that is no longer provisional has no provisional note", async () => {
+  it("a provisional number carries no provisional note, in either language", async () => {
     for (const lang of ["fr", "ar"] as const) {
-      const { ops, model } = await draw("cleared", "fr", { provisional: false });
-      void lang;
-      expect(model.provisional).toBeNull();
+      const { ops } = await draw("rated", lang);
       expect(texts(ops).some((op) => /provisoire|مبدئي/.test(op.text!))).toBe(false);
     }
   });
@@ -371,13 +359,9 @@ describe("Arabic is the French picture mirrored", () => {
     expect(inline(arName, "ar")).toBe(inline(frName, "fr"));
   });
 
-  it("the provisional note and the club disc sit at the inline end: left in Arabic, right in French", async () => {
+  it("the club disc sits at the inline end: left in Arabic, right in French", async () => {
     const fr = await draw("rated", "fr");
     const ar = await draw("rated", "ar");
-    const pill = (ops: Op[]) =>
-      ops.find((op) => op.kind === "fill" && op.paint === SHARE_PALETTE.panel)!;
-    expect(W - pill(fr.ops).right).toBe(L.pad);
-    expect(pill(ar.ops).left).toBe(L.pad);
     const disc = (ops: Op[]) =>
       ops.find((op) => op.kind === "fill" && op.right - op.left === L.disc.diameter)!;
     expect(W - disc(fr.ops).right).toBe(L.pad);
