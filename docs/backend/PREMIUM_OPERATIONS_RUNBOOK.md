@@ -83,14 +83,15 @@ checkout enabled on the web. Each step is the owner's decision, run by the owner
 
 ## What writes, and who
 
-| Writer                                                              | When                                  | Writes                                                                                 |
-| ------------------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------- |
-| `api.service_apply_billing_event` (the billing webhook, later lane) | When a provider or store notifies us  | `app_private.billing_events` (insert only), `app.premium_entitlements`                 |
-| `api.admin_grant_premium`, `api.admin_revoke_premium` (staff)       | When staff act                        | `app_private.premium_grants`, `app_private.admin_audit_events`, admin idempotency keys |
-| `api.admin_get_premium_member` (staff)                              | When staff read one member            | `app_private.admin_audit_events` (the read is audited)                                 |
-| `api.choose_card_design` (a member)                                 | When a member picks an edition        | `app.card_edition_choices` (one row per member)                                        |
-| `app_private.account_deletion_erase`                                | Hourly worker, when a deletion is due | Pseudonymises `app_private.billing_events`; the rest goes by cascade                   |
-| `app_private.premium_configure`, the owner's scripts                | When the owner runs them              | `premium_settings`, `premium_products`, `card_editions`                                |
+| Writer                                                              | When                                                           | Writes                                                                                 |
+| ------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `api.service_apply_billing_event` (the billing webhook, later lane) | When a provider or store notifies us                           | `app_private.billing_events` (insert only), `app.premium_entitlements`                 |
+| `api.admin_grant_premium`, `api.admin_revoke_premium` (staff)       | When staff act                                                 | `app_private.premium_grants`, `app_private.admin_audit_events`, admin idempotency keys |
+| `api.admin_get_premium_member` (staff)                              | When staff read one member                                     | `app_private.admin_audit_events` (the read is audited)                                 |
+| `api.choose_card_design` (a member)                                 | When a member picks an edition                                 | `app.card_edition_choices` (one row per member)                                        |
+| `api.set_card_history_visibility` (any signed-in account)           | When someone shows or hides their card history to league mates | `app.card_history_visibility` (one row per account, their own only)                    |
+| `app_private.account_deletion_erase`                                | Hourly worker, when a deletion is due                          | Pseudonymises `app_private.billing_events`; the rest goes by cascade                   |
+| `app_private.premium_configure`, the owner's scripts                | When the owner runs them                                       | `premium_settings`, `premium_products`, `card_editions`                                |
 
 There is no scheduled job. In particular there is **no expiry tick**:
 `app_private.has_premium` and `premium_effective_state` apply the dates at read
@@ -213,6 +214,81 @@ remembered; renewing brings it back. In `preview` an edition is shown only to th
 card's owner. `card.edition` is added to `api.get_my_manager_card` and to every
 card of `api.get_manager_cards`; nothing else about those answers changed.
 
+## Premium card reads: « Votre carrière » and « Face-à-face+ »
+
+Migration `20261013100400_premium_card_reads.sql`, applied by
+`scripts/backend/apply-20261013100400-premium-card-reads.sql` **after** the
+foundation. It adds one table, nine helpers and four api functions, and replaces
+nothing. It schedules no job.
+
+| Function                                              | Who                            | Answers                                                                                                             |
+| ----------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `api.get_my_card_career(p_season text)`               | Members                        | The caller's own season week by week, best and worst weeks, captain hit rate, transfer gains, season against season |
+| `api.get_card_duel(p_other_team uuid, p_season text)` | Members, against a league mate | Today's two cards; the week-by-week comparison only if the mate allows it                                           |
+| `api.set_card_history_visibility(p_visible boolean)`  | Any signed-in account          | Shows or hides the caller's card history to league mates                                                            |
+| `api.get_my_card_history_visibility()`                | Any signed-in account          | The current value (`false` until set)                                                                               |
+
+`p_season` is a Fantasy season id or its label (`2026/27`, or `2026/2027`);
+absent means the current season.
+
+**Display only, nothing computed.** The reads take what the Manager Card already
+computed (`app.manager_card_gameweeks`) and what Fantasy already stored (results,
+lineups, player points, confirmed transfers) and write nothing. The card's
+calculation is not touched. The captain figures repeat the card's CAP definition
+and the transfer gains its TRF definition (D4) in separate read-only functions
+(`app_private.card_captain_rows`, `app_private.card_transfer_rows`); the pgTAP
+test `premium_card_reads.test.sql` proves they agree with the card: the mean
+captain share equals `cap_raw` and the mean transfer gain equals `trf_raw`,
+before and after the season's last gameweek. If the card's rules change (a new
+`rules_version` with another CAP or TRF definition), these two helpers must be
+updated with them and that test is the alarm. `card_captain_rows` reads
+`cap_ignore_deadlines_before` and `card_transfer_rows` reads
+`trf_window_gameweeks` from the **active** rules row.
+
+**What a caller gets** (checked in this order: argument, off, step-up, caller,
+membership):
+
+| Situation                                               | Answer                                         |
+| ------------------------------------------------------- | ---------------------------------------------- |
+| BotolaGO+ `off`, or the Manager Card reads off          | `{"available": false}`                         |
+| `preview`, caller is not a member                       | `{"available": false}` (nothing public yet)    |
+| `on`, caller is not a member (or the membership lapsed) | `{"available": true, "locked": true}`, no data |
+| A member                                                | `{"available": true, "locked": false, ...}`    |
+
+**The privacy switch (plan Q6, law 09-08, CNDP).** `app.card_history_visibility`
+holds one row per account that ever set it; **no row means hidden**, and the
+default stays off until the lawyer answers. A duel shows the friend's
+week-by-week history only if the friend switched it on. Hidden, the answer
+carries only today's card values (what `api.get_manager_cards` already shows
+league mates), `historyVisible: false`, no weeks and no summary. A friend does
+not need to be a member, and their switch wins. To change the default for
+everyone later is a new migration (a changed column default and, if wanted, a
+backfill), not a setting.
+
+**Who is a league mate.** Both accounts are active members of the same **active
+private** league of the season compared. A public league does not count; a
+member who left or was removed does not count; an inactive league does not
+count. Anything else (unknown team, oneself, no shared league, a season not
+shared, a deleted-pending profile) is the same `PT404 card_duel_not_found`, so
+nothing says which it was.
+
+**Operations.**
+
+- Switching BotolaGO+ `off` turns all four off and keeps every privacy row.
+- The only table written is `app.card_history_visibility`, by each account for
+  itself (ordinary app traffic, like the acknowledgement of card moments). To
+  write to it directly (a support request, a lawyer's instruction) pause nothing
+  else; take the baseline read first
+  (`select count(*), count(*) filter (where visible_to_league_mates) from
+app.card_history_visibility;`) and compare after. The account erasure removes
+  the row by cascade.
+- Cost: both reads are per-caller and bounded by the season's gameweeks. The
+  best/worst weeks rank each of at most six gameweeks over that gameweek's
+  results (index `fantasy_team_gameweek_results_rank_idx`); measure on a large
+  fixture before switching on, as for the card tick.
+- Lanes that change `api.get_manager_cards`, the card tables or the Fantasy
+  results contract should rerun `premium_card_reads.test.sql`.
+
 ## Account deletion
 
 `app_private.account_deletion_erase` now:
@@ -281,6 +357,16 @@ is not in the state the script assumes. The script is rebuilt from the migration
 files by `bun scripts/backend/build-apply-premium-foundation.ts` and a test
 fails if they drift.
 
+**Then the premium card reads**, once the foundation is applied on that database
+(the script refuses otherwise): paste
+`scripts/backend/apply-20261013100400-premium-card-reads.sql`, same two steps
+(rehearsal, then `'apply'` in the `bg.premium_reads_mode` line). It replaces no
+function, so it needs no pause of automatic account deletion; it still follows
+"Before any write" (nothing else writing). Re-read after the rehearsal:
+`select to_regclass('app.card_history_visibility') is null;` must say `true`.
+It is rebuilt by `bun scripts/backend/build-apply-premium-card-reads.ts` and
+`apply-premium-card-reads-script.test.ts` fails if they drift.
+
 ## Rolling back
 
 There is no down migration (forward-only). In order of how much you want to undo:
@@ -292,7 +378,11 @@ null);`. Nobody is a member, every card is `standard`, the paywall answers
 2. **Stop money**: `select app_private.premium_configure(null, false, null);`
    stops checkout and keeps members. Members who paid keep what they paid for.
 3. **Stop writes** while you work: `(null, null, true)` as above.
-4. **Remove the objects** (not expected): a new forward migration that drops the
+4. **Remove the premium card reads** (not expected): a new forward migration that
+   drops the four api functions, the nine helpers and
+   `app.card_history_visibility`. Nothing else depends on them. Switching
+   BotolaGO+ off already hides them.
+5. **Remove the objects** (not expected): a new forward migration that drops the
    functions, the tables, the two permissions and restores
    `account_deletion_erase`, `api.get_my_manager_card` and `api.get_manager_cards`
    to their previous definitions (`20261012200100`, `20261010120200`), written
@@ -305,6 +395,13 @@ Decided by the owner on 2026-10-13: preview counts entitlements, grants need one
 admin, billing records are kept 5 years. Still open: whether to refuse deletion
 for a store subscription, and the Arabic labels of the editions (the owner will
 review them).
+
+Premium card reads: the default of the privacy switch (hidden, until the lawyer
+answers plan Q6 / the CNDP point); whether a duel whose friend keeps their history
+hidden should still show the per-journée scores that the league table already
+shows league mates (today it does not: nothing of the friend's weeks appears);
+whether a former league mate should remain comparable for a season they shared
+(today both memberships must be active now).
 
 ---
 
@@ -320,7 +417,9 @@ deletion and Manager Card paragraphs:
 > or app store notifies us, at any hour, not on a schedule. It writes
 > `app_private.billing_events` and `app.premium_entitlements`. Staff grants write
 > `app_private.premium_grants`, a member choosing a card edition writes
-> `app.card_edition_choices`, and the account erasure pseudonymises
+> `app.card_edition_choices`, an account switching its card history on or off for
+> league mates writes `app.card_history_visibility` (its own row only; the premium
+> card reads of migration 20261013100400 write nothing else), and the account erasure pseudonymises
 > `app_private.billing_events` ([PREMIUM_OPERATIONS_RUNBOOK.md](docs/backend/PREMIUM_OPERATIONS_RUNBOOK.md)).
 > Pause the billing writer before a write that touches those tables, and restore
 > it afterwards: `select app_private.premium_configure(null, null, true);` makes
