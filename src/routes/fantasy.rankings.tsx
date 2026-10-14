@@ -185,6 +185,7 @@ function RankingsPage() {
     up: t("fantasy.rank.up"),
     down: t("fantasy.rank.down"),
     same: t("fantasy.rank.same"),
+    unknown: t("fantasy.rank.unknown"),
   };
 
   return (
@@ -353,7 +354,7 @@ function RankingRow({
   /** The rank's stat step, chosen for the widest rank on the page (`rankFigure`). */
   rankStep: string;
   formatMove: (places: number) => string;
-  movementLabels: { up: string; down: string; same: string };
+  movementLabels: { up: string; down: string; same: string; unknown: string };
 }) {
   const podium = row.rank <= 3;
   return (

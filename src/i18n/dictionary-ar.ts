@@ -511,6 +511,7 @@ export const ar = {
   "fantasy.rank.up": "تقدّم",
   "fantasy.rank.down": "تراجع",
   "fantasy.rank.same": "المركز دون تغيير",
+  "fantasy.rank.unknown": "لا تتوفر بيانات عن تغيّر المركز",
   "fantasy.tab.players": "اللاعبون",
   "fantasy.gameweek.status.scheduled": "قريباً",
   "fantasy.gameweek.status.open": "مفتوحة",

@@ -11,6 +11,7 @@ import {
 } from "./fantasy-availability";
 import {
   buildGlobalRankings,
+  selectBoardPage,
   selectRankingsPage,
   type RankingsPage,
   type RankingsQuery,
@@ -210,13 +211,15 @@ async function gameweekSummary(gameweekId: string): Promise<FantasyGameweekSumma
  * carries. `managerName` is already resolved server-side (profile display name
  * for signed-in callers, team name otherwise).
  */
-function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
+export function overallStandingDto(dto: FantasyOverallStandingDto): LeagueStanding {
   return {
     managerId: dto.teamId,
     managerName: dto.managerName,
     teamName: dto.teamName,
     rank: dto.rank,
-    previousRank: dto.previousRank ?? dto.rank,
+    // FANT-04: an unknown earlier rank stays unknown. Falling back to the
+    // current rank drew "unchanged" for a board that has no history yet.
+    previousRank: dto.previousRank,
     gameweekScore: dto.gameweekPoints ?? 0,
     totalScore: dto.totalPoints,
   };
@@ -307,21 +310,53 @@ async function readAllPlayers(current: FantasyHubDto): Promise<FantasyPlayer[]> 
  * The board is read through the RPC's keyset cursor and bounded the same way
  * the player pool is: 20 pages of 100. A season larger than that is a product
  * decision (server-side paging on the route) rather than an unbounded read.
+ *
+ * With a `gameweekId` it reads that round's own board: the server ranks the
+ * round by round points with the official tie-breaks, and the rows keep the
+ * server's order, ranks and previous ranks.
  */
 async function overallBoard(
   seasonId: string,
+  gameweekId: string | null = null,
 ): Promise<{ rows: LeagueStanding[]; myRank?: LeagueStanding }> {
   const rows: LeagueStanding[] = [];
   let cursor: { rank: number; teamId: string } | null = null;
   let myRank: LeagueStanding | undefined;
   for (let page = 0; page < 20; page += 1) {
-    const result = await cloud.getOverallStandings({ seasonId, cursor, limit: 100 }, context());
+    const result = await cloud.getOverallStandings(
+      { seasonId, gameweekId, cursor, limit: 100 },
+      context(),
+    );
     rows.push(...result.items.map(overallStandingDto));
     if (result.myRank) myRank = overallStandingDto(result.myRank);
     if (!result.nextCursor) return { rows, myRank };
     cursor = result.nextCursor;
   }
   return { rows, myRank };
+}
+
+/** Gameweeks that can already have a round board: scoring has begun on them. */
+const ROUND_BOARD_STATUSES: ReadonlySet<string> = new Set([
+  "live",
+  "provisional",
+  "finalizing",
+  "finalized",
+  "corrected",
+]);
+
+/**
+ * The gameweeks to try for the round board, newest first (at most three): the
+ * round the ranking worker scored last is the one whose board is current. A
+ * gameweek that scoring has not reached has no round board, and is skipped.
+ */
+export function roundBoardGameweekIds(
+  gameweeks: ReadonlyArray<{ id: string; sequence: number; status: string }>,
+): string[] {
+  return gameweeks
+    .filter((gameweek) => ROUND_BOARD_STATUSES.has(gameweek.status))
+    .sort((a, b) => b.sequence - a.sequence)
+    .slice(0, 3)
+    .map((gameweek) => gameweek.id);
 }
 
 /** The season's gameweek list; screens that start together share one read. */
@@ -504,7 +539,8 @@ export const fantasyService = {
       managerName: standing.managerName,
       teamName: standing.teamName,
       rank: standing.rank,
-      previousRank: standing.previousRank ?? standing.rank,
+      // An unknown earlier rank stays unknown (null): the table draws a dash, not "unchanged".
+      previousRank: standing.previousRank,
       gameweekScore: standing.gameweekPoints ?? 0,
       totalScore: standing.totalPoints,
     }));
@@ -530,18 +566,31 @@ export const fantasyService = {
       return selectRankingsPage(buildGlobalRankings(), query);
     }
     const current = await hub();
+    if (query.sort === "gameweek") {
+      // FANT-04: the round board is the server's, read for one gameweek, in the
+      // server's order. The browser neither re-sorts ties nor renumbers ranks,
+      // and the previous rank is the one the round board itself holds (null
+      // when it holds none), never the overall rank.
+      const gameweeks = await gameweeksOf(current.season.id);
+      for (const gameweekId of roundBoardGameweekIds(gameweeks.items)) {
+        const { rows, myRank } = await overallBoard(current.season.id, gameweekId);
+        if (rows.length === 0) continue;
+        const page = selectBoardPage(rows, {
+          ...query,
+          meId: myRank?.managerId ?? query.meId,
+        });
+        return { ...page, myRank: page.myRank ?? myRank };
+      }
+      // No round has been ranked yet: the same empty answer as the season board.
+      return { rows: [], total: 0, podium: [] };
+    }
     const { rows, myRank } = await overallBoard(current.season.id);
     // `me` is deliberately dropped: the authoritative board already contains
     // the signed-in manager's row once they are ranked.
-    const page = selectRankingsPage(rows, {
-      ...query,
-      me: undefined,
-      meId: myRank?.managerId ?? query.meId,
-    });
-    // Prefer the board's own copy of the row: under the "gameweek" sort
-    // selectRankingsPage re-ranks, and `jumpToMe` pages by myRank.rank, so the
-    // two must agree. Fall back to the server answer when the row is not on the
-    // fetched board at all.
+    const page = selectBoardPage(rows, { ...query, meId: myRank?.managerId ?? query.meId });
+    // Prefer the board's own copy of the row: `jumpToMe` pages by myRank.rank,
+    // so the two must agree. Fall back to the server answer when the row is not
+    // on the fetched board at all.
     return { ...page, myRank: page.myRank ?? myRank };
   },
   /**

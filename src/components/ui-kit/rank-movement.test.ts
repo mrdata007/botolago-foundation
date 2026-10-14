@@ -29,3 +29,39 @@ describe("UiRankMovement on first show", () => {
     expect(html).not.toMatch(/\b(pop|roll-up|roll-down)\b/);
   });
 });
+
+/**
+ * FANT-04. No earlier rank is not "unchanged": it must not draw "=", an arrow
+ * or a zero, in either variant.
+ */
+describe("UiRankMovement without an earlier rank", () => {
+  const withUnknown = { ...labels, unknown: "No history" };
+  const render = (variant: "disc" | "quiet") =>
+    renderToStaticMarkup(
+      createElement(UiRankMovement, { rank: 4, previousRank: null, labels: withUnknown, variant }),
+    );
+
+  it("quiet: a dash, named as unknown, never an arrow, an equals sign or a number", () => {
+    const html = render("quiet");
+    expect(html).toContain("—");
+    expect(html).toContain("No history");
+    const text = html.replace(/<[^>]*>/g, "");
+    expect(text).not.toMatch(/▲|▼|=|[0-9]/);
+    expect(html).not.toContain("Same");
+  });
+
+  it("disc: a dash, never the 'unchanged' name", () => {
+    const html = render("disc");
+    expect(html).toContain("—");
+    expect(html).not.toMatch(/▲|▼/);
+    expect(html).not.toContain("Same");
+  });
+
+  it("an unchanged rank still reads as unchanged", () => {
+    const html = renderToStaticMarkup(
+      createElement(UiRankMovement, { rank: 4, previousRank: 4, labels, variant: "quiet" }),
+    );
+    expect(html.replace(/<[^>]*>/g, "")).toContain("=");
+    expect(html).toContain("Same");
+  });
+});
