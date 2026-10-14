@@ -1915,6 +1915,15 @@ export type Database = {
         Args: { p_deletion_id: string }
         Returns: Json
       }
+      service_complete_precise_home_story: {
+        Args: {
+          p_article_height: number
+          p_article_width: number
+          p_job_id: string
+          p_renderer: string
+        }
+        Returns: Json
+      }
       service_create_user_notification: {
         Args: {
           p_deep_link_entity_id?: string

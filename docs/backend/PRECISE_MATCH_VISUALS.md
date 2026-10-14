@@ -56,6 +56,11 @@ transparency. Changing/replacing source-publisher branding needs an unprotected
 region and an approved replacement layer; team crests and required lettering
 remain protected. No face, shirt, crest or text may be painted over.
 
+The existing Home viewer hides metadata credits on generated stories. Include
+any required photographic attribution in an approved unprotected part of the
+artwork; the article also receives the factual credit as media metadata. This
+change does not alter the viewer or disclose private provider/model records.
+
 Export the fixture facts with the owner-only
 `app_private.precise_match_facts(fixture_id)`. It contains home/away identities,
 scores, status, kickoff, venue and ordered goal events, including scorer names,
@@ -146,3 +151,13 @@ tests cover dual uploads, cancellation, partial failure and ambiguous commit.
 checks, claim eligibility, atomic bilingual publication, correction/revocation,
 manual covers, idempotency and pause in an isolated transaction. Existing Home
 Story tests verify that the non-match path retains its guards.
+
+Local verification on the prepared branch: 30 image/worker tests passed,
+TypeScript and targeted ESLint checks passed, and the migration/configuration
+integrity checks passed. The actual new migration and SQL scenarios also passed
+in an embedded PostgreSQL harness with minimal supporting schemas. This does
+not replace the full Supabase database suite: the local Docker image could not
+load because its storage ran out of space. Full database tests and generated
+schema parity remain required in repository CI. The new RPC type signature was
+derived from the compiled PostgreSQL function metadata; full-schema type parity
+must still be checked there. No production calls or OpenAI requests were made.

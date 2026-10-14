@@ -4,7 +4,7 @@ select extensions.lives_ok($scenario$
 do $test$
 declare
   competition uuid:=gen_random_uuid(); season uuid:=gen_random_uuid(); home uuid:=gen_random_uuid(); away uuid:=gen_random_uuid();
-  fixture uuid; source uuid; fr uuid; ar uuid; spec jsonb; frame jsonb; job jsonb; result jsonb;
+  fixture uuid; scorer uuid; goal uuid; source uuid; fr uuid; ar uuid; spec jsonb; frame jsonb; job jsonb; result jsonb;
   asset uuid; portrait uuid; manual_asset uuid; variant text; role text; path text; scenario integer;
 begin
   if has_function_privilege('anon','api.service_complete_precise_home_story(uuid,text,integer,integer)','execute')
@@ -22,6 +22,11 @@ begin
     fixture:=gen_random_uuid(); source:=gen_random_uuid(); fr:=gen_random_uuid(); ar:=gen_random_uuid();
     insert into app.fixtures(id,competition_id,season_id,home_team_id,away_team_id,kickoff_at,status,period,home_score,away_score,provider_updated_at)
       values(fixture,competition,season,home,away,now()-interval '3 hours','finished','post_match',1,1,now());
+    scorer:=gen_random_uuid(); goal:=gen_random_uuid();
+    insert into app.players(id,slug,full_name,display_name,position)
+      values(scorer,'qa-precise-scorer-'||scenario,'Verified Scorer','M. Scorer','forward');
+    insert into app.match_events(id,fixture_id,team_id,player_id,event_type,minute,added_time,sequence_number,period,idempotency_key,provider_updated_at)
+      values(goal,fixture,home,scorer,'goal',69,0,1,'second_half','qa-precise-goal-'||scenario,now());
     insert into app.stories(id,original_language) values(source,'fr');
     insert into app.article_editions(id,story_id,language,slug,title,summary,body_format,body_html,reading_time_minutes,sanitizer_version,status,visibility,published_at)
       values(fr,source,'fr','qa-precise-fr-'||scenario,'FUS — Raja : 1–1','Les deux équipes font match nul.','rich_text','<p>Un but partout.</p>',1,'test','published','public',now()),
@@ -63,6 +68,9 @@ begin
       update app.fixtures set home_score=2 where id=fixture;
       if app_private.precise_match_job_valid((select j from app_private.ai_home_story_jobs j where j.id=(job->>'id')::uuid)) then raise exception 'score correction ignored'; end if;
       update app.fixtures set home_score=1 where id=fixture;
+      update app.match_events set minute=70,event_type='own_goal' where id=goal;
+      if app_private.precise_match_job_valid((select j from app_private.ai_home_story_jobs j where j.id=(job->>'id')::uuid)) then raise exception 'scorer minute or own-goal correction ignored'; end if;
+      update app.match_events set minute=69,event_type='goal' where id=goal;
       result:=api.service_complete_precise_home_story((job->>'id')::uuid,'botolago-protected-pixels-v1',1536,1024);
       if result->>'status'<>'published' then raise exception 'precise publication failed'; end if;
       select j.article_media_asset_id,h.media_asset_id into asset,portrait from app_private.ai_home_story_jobs j
@@ -81,6 +89,9 @@ begin
       update app.fixtures set away_score=2 where id=fixture;
       if app_private.news_media_dto(asset) is not null then raise exception 'stale article scoreboard visible'; end if;
       update app.fixtures set away_score=1 where id=fixture;
+      update app.players set display_name='Corrected Scorer' where id=scorer;
+      if app_private.news_media_dto(asset) is not null then raise exception 'stale scorer lettering visible'; end if;
+      update app.players set display_name='M. Scorer' where id=scorer;
       update app_private.precise_match_visual_briefs set active=false where story_id=source;
       if app_private.news_media_dto(asset) is not null then raise exception 'revoked cover visible'; end if;
       -- Explicitly reviewed replacement can render after the original two
