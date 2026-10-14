@@ -74,6 +74,7 @@ function SampleHarness() {
             <PlusAdminScreen
               repository={repository}
               canGrant={search.reader !== "1"}
+              canLookupEmail={search.reader !== "1"}
               lang={lang}
               makeContext={() => ({
                 actorId: "5a000000-0000-4000-8000-0000000000aa",

@@ -106,3 +106,14 @@ describe("recorded states and error sentences", () => {
     expect(premiumAdminErrorMessage("something_new", "fr")).toContain("something_new");
   });
 });
+
+describe("an e-mail lookup without the user directory permission", () => {
+  test("says why, and points to the account id, in both languages", () => {
+    expect(premiumAdminErrorMessage("premium_lookup_email_not_allowed", "fr")).toContain(
+      "identifiant du compte",
+    );
+    expect(premiumAdminErrorMessage("premium_lookup_email_not_allowed", "ar")).toContain(
+      "معرّف الحساب",
+    );
+  });
+});

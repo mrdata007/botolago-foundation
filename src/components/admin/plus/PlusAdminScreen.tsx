@@ -72,6 +72,11 @@ export interface PlusAdminScreenProps {
   repository: PremiumAdminRepository;
   /** The caller holds premium.grant. The database checks it again on every grant and revoke. */
   canGrant: boolean;
+  /**
+   * The caller also holds users.read_support. Looking an account up by e-mail goes through the
+   * user directory, which checks that permission itself, so without it only an id is offered.
+   */
+  canLookupEmail: boolean;
   lang: Lang;
   /** A fresh context per call: its request id is the audit row's. */
   makeContext: () => RepositoryContext;
@@ -151,7 +156,13 @@ function Section({
   );
 }
 
-export function PlusAdminScreen({ repository, canGrant, lang, makeContext }: PlusAdminScreenProps) {
+export function PlusAdminScreen({
+  repository,
+  canGrant,
+  canLookupEmail,
+  lang,
+  makeContext,
+}: PlusAdminScreenProps) {
   const rtl = lang === "ar";
   const [overview, setOverview] = useState<OverviewState>({ status: "loading" });
 
@@ -215,6 +226,7 @@ export function PlusAdminScreen({ repository, canGrant, lang, makeContext }: Plu
       <LookupSection
         repository={repository}
         canGrant={canGrant}
+        canLookupEmail={canLookupEmail}
         lang={lang}
         makeContext={makeContext}
         onChanged={loadOverview}
@@ -436,10 +448,14 @@ function OverviewBody({ data, lang }: { data: PremiumAdminOverview; lang: Lang }
 function LookupSection({
   repository,
   canGrant,
+  canLookupEmail,
   lang,
   makeContext,
   onChanged,
-}: Pick<PlusAdminScreenProps, "repository" | "canGrant" | "lang" | "makeContext"> & {
+}: Pick<
+  PlusAdminScreenProps,
+  "repository" | "canGrant" | "canLookupEmail" | "lang" | "makeContext"
+> & {
   onChanged: () => Promise<void>;
 }) {
   const rtl = lang === "ar";
@@ -493,6 +509,12 @@ function LookupSection({
       setPhase("error");
       return;
     }
+    if (parsed.kind === "email" && !canLookupEmail) {
+      setMember(null);
+      setFailure("premium_lookup_email_not_allowed");
+      setPhase("error");
+      return;
+    }
     if (!reasonOk) return;
     void read(
       parsed.kind === "id" ? parsed.userId : null,
@@ -522,11 +544,23 @@ function LookupSection({
         >
           <UiInput
             type="search"
-            label={rtl ? "معرّف الحساب أو بريده الإلكتروني" : "Identifiant du compte ou e-mail"}
+            label={
+              canLookupEmail
+                ? rtl
+                  ? "معرّف الحساب أو بريده الإلكتروني"
+                  : "Identifiant du compte ou e-mail"
+                : rtl
+                  ? "معرّف الحساب"
+                  : "Identifiant du compte"
+            }
             hint={
-              rtl
-                ? "معرّف UUID أو البريد الكامل. البحث بالبريد يمر عبر دليل المستخدمين."
-                : "Un UUID, ou l’adresse e-mail complète. La recherche par e-mail passe par l’annuaire des utilisateurs."
+              canLookupEmail
+                ? rtl
+                  ? "معرّف UUID أو البريد الكامل. البحث بالبريد يمر عبر دليل المستخدمين."
+                  : "Un UUID, ou l’adresse e-mail complète. La recherche par e-mail passe par l’annuaire des utilisateurs."
+                : rtl
+                  ? "معرّف UUID. البحث بالبريد يتطلب صلاحية دليل المستخدمين."
+                  : "Un UUID. La recherche par e-mail demande l’accès à l’annuaire des utilisateurs."
             }
             value={query}
             onChange={(event) => setQuery(event.target.value)}

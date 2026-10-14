@@ -47,6 +47,7 @@ function AdminPlusRoute() {
         <PlusAdminScreen
           repository={repository}
           canGrant={authorized.context.permissions.includes("premium.grant")}
+          canLookupEmail={authorized.context.permissions.includes("users.read_support")}
           lang={lang}
           makeContext={makeContext}
         />

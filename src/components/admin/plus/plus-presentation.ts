@@ -216,6 +216,10 @@ const PREMIUM_ERROR_MESSAGES: Record<string, Pair> = {
     fr: "Aucun compte ne correspond à cette adresse e-mail.",
     ar: "لا يوجد حساب يطابق هذا البريد الإلكتروني.",
   },
+  premium_lookup_email_not_allowed: {
+    fr: "La recherche par e-mail demande l’accès à l’annuaire des utilisateurs. Utilisez l’identifiant du compte.",
+    ar: "البحث بالبريد الإلكتروني يتطلب صلاحية دليل المستخدمين. استعمل معرّف الحساب.",
+  },
   premium_lookup_invalid: {
     fr: "Saisissez l’identifiant du compte (UUID) ou son adresse e-mail complète.",
     ar: "أدخل معرّف الحساب (UUID) أو بريده الإلكتروني الكامل.",
