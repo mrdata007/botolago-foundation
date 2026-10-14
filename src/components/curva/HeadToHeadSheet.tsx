@@ -13,7 +13,7 @@ import { track } from "@/lib/analytics";
 import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
 
-import { CODE_CLASS, DASH, Figure, PersonName, ProvisionalBadge } from "./figures";
+import { CODE_CLASS, DASH, Figure, PersonName } from "./figures";
 import { barWidth, compareValues } from "./h2h";
 import { rowReportTargets, type PeopleRow } from "./people";
 
@@ -74,14 +74,9 @@ export function HeadToHeadSheet({
       {mine && myProfile && row && theirs && theirProfile ? (
         <div className="flex flex-col gap-5 px-4 pb-4 pt-5" data-testid="curva-h2h">
           <div className="grid grid-cols-2 gap-3">
-            <Side
-              name={mine.name}
-              provisional={mine.provisional && myOvr !== null}
-              profile={myProfile}
-            />
+            <Side name={mine.name} profile={myProfile} />
             <Side
               name={row.name}
-              provisional={theirs.provisional && theirs.ovr !== null}
               profile={theirProfile}
               report={
                 row.own ? null : (
@@ -123,12 +118,10 @@ export function HeadToHeadSheet({
 function Side({
   name,
   profile,
-  provisional,
   report,
 }: {
   name: string;
   profile: Parameters<typeof ManagerCard>[0]["profile"];
-  provisional: boolean;
   report?: ReactNode;
 }) {
   return (
@@ -142,7 +135,6 @@ function Side({
         </p>
         {report}
       </div>
-      <div className="min-h-6">{provisional ? <ProvisionalBadge /> : null}</div>
     </div>
   );
 }

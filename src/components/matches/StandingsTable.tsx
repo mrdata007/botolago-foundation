@@ -349,18 +349,14 @@ export function StandingsNotes({
   const { t } = useI18n();
   const sharedRanks = sharedPositions(rows);
   const shared = shown.some((row) => sharedRanks.has(row.position));
-  if (!computed && !shared) return null;
   const over = seasonStatus === "completed" || seasonStatus === "cancelled";
+  // A table still being played carries no note of its own: only a finished one says it is unofficial.
+  const computedNote = computed && (seasonStatus === undefined || over);
+  if (!computedNote && !shared) return null;
   return (
     <div className={cn("grid gap-1 px-1", ui.text.meta, ui.tone.muted, className)}>
-      {computed ? (
-        <p>
-          {seasonStatus === undefined
-            ? t("standings.computed")
-            : over
-              ? t("standings.unofficial")
-              : t("standings.provisional")}
-        </p>
+      {computedNote ? (
+        <p>{seasonStatus === undefined ? t("standings.computed") : t("standings.unofficial")}</p>
       ) : null}
       {shared ? <p>{t("standings.shared_rank_note")}</p> : null}
     </div>

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { CSSProperties, JSX } from "react";
 
-import { CODE_CLASS, Figure, PersonName, ProvisionalBadge } from "@/components/curva/figures";
+import { CODE_CLASS, Figure, PersonName } from "@/components/curva/figures";
 import { useCardCopy, useCurvaCopy } from "@/components/manager-card/copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import { STAT_CODES } from "@/components/manager-card/types";
@@ -353,7 +353,6 @@ function RankingRow({
           {club ? <PersonName>{club}</PersonName> : null}
           {club && entry.tier ? <span aria-hidden>·</span> : null}
           {entry.tier ? <TierWord tier={entry.tier} /> : null}
-          {entry.provisional ? <ProvisionalBadge className="px-2 py-0.5" /> : null}
         </p>
         <dl className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5" data-testid="ranking-stats">
           {STAT_CODES.map((code) => (

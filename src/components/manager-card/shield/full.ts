@@ -53,8 +53,11 @@ import {
   type ShieldView,
 } from "./view";
 
-/** Whether the face prints « BOT #… · season » (owner's layout, 2026-10-13; see the README). */
-export const SERIAL_ON_FACE = true;
+/**
+ * Whether the face prints « BOT #… » before the season. Off since 2026-10-14: the owner wants the
+ * season alone on every card (see the README).
+ */
+export const SERIAL_ON_FACE = false;
 
 /** The beats a card has something to light for. */
 export function appliedBeat(v: ShieldView, beat: BeatName | undefined): BeatName | "" {
@@ -207,11 +210,9 @@ function textBlock(v: ShieldView): string {
     : "";
   const crest = crestBlock(v);
   if (crest || founder) out += span("mc-shield__foot", crest + founder);
-  if (SERIAL_ON_FACE) {
-    const serial = s.serial(p.serial ?? "—");
-    const line = p.season ? `${serial} · ${p.season}` : serial;
-    out += span("mc-shield__serial", esc(line), ' dir="ltr"');
-  }
+  const serial = SERIAL_ON_FACE ? s.serial(p.serial ?? "—") : null;
+  const line = [serial, p.season || null].filter(Boolean).join(" · ");
+  if (line) out += span("mc-shield__serial", esc(line), ' dir="ltr"');
   return out;
 }
 

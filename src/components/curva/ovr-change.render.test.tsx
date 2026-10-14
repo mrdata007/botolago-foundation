@@ -103,7 +103,6 @@ function Harness({ acked }: { acked: string[] }) {
       <RatingLine
         ovr={change.shownOvr}
         tier={view.tier}
-        provisional={card.provisional}
         counted={card.gameweeksCounted}
         min={card.minRated}
         statsFilled={view.statsFilled}
@@ -118,7 +117,7 @@ const LANGUAGES: Language[] = ["fr", "ar"];
 
 describe("a card with an unseen rating change, drawn on the server", () => {
   for (const lang of LANGUAGES) {
-    it(`${lang}: the card's own number, the provisional pill, no glow, no chip, nothing acknowledged`, async () => {
+    it(`${lang}: the card's own number, no provisional pill, no glow, no chip, nothing acknowledged`, async () => {
       language = lang;
       const acked: string[] = [];
       const html = await render(<Harness acked={acked} />);
@@ -128,7 +127,7 @@ describe("a card with an unseen rating change, drawn on the server", () => {
       expect(html).toContain('data-stage-glow="off"');
       expect(html).toContain("opacity-0");
       expect(html).not.toContain('data-testid="curva-rating-change"');
-      expect(html).toContain(dictionaries[lang]["card.provisional"]);
+      expect(html).not.toContain(dictionaries[lang]["card.provisional"]);
       expect(acked).toEqual([]);
       language = "fr";
     });
@@ -140,7 +139,6 @@ describe("a card with an unseen rating change, drawn on the server", () => {
       <RatingLine
         ovr={62}
         tier="stade"
-        provisional
         counted={3}
         min={1}
         statsFilled={4}
@@ -161,7 +159,6 @@ describe("a card with an unseen rating change, drawn on the server", () => {
       <RatingLine
         ovr={63}
         tier="stade"
-        provisional={false}
         counted={6}
         min={1}
         statsFilled={4}
