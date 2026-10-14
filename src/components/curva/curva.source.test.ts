@@ -74,10 +74,11 @@ describe("the stage's room", () => {
     expect(home).not.toContain("264px");
   });
 
-  it("keeps the card page in one column, the card 352 px wide, so « Votre saison » under it is as wide as the page", () => {
+  it("gives a subscriber's card page one column (the card 352 px wide) and keeps everyone else's card beside the sections", () => {
     const text = code(readFileSync(join(HERE, "CurvaCardPage.tsx"), "utf8"));
+    expect(text).toContain('usePlusAccess() === "member"');
     expect(text).toContain("md:max-w-[352px]");
-    expect(text).not.toContain("md:grid-cols");
+    expect(text).toContain("md:grid-cols-[352px_minmax(0,1fr)]");
     expect(text).not.toContain("264px");
   });
 });
