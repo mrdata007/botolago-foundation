@@ -137,9 +137,9 @@ describe("the other screens", () => {
     expect(html).toMatch(/class="ps-tabs"[^>]*data-no-swipe/);
     for (const label of ["Résumé", "Points", "Décisions", "Note"]) expect(visible).toContain(label);
     // the first tab: the gap to the league and the duel in one line, every figure computed
-    expect(visible).toContain("+41 points au-dessus de la ligue");
+    expect(visible).toContain("+37 points au-dessus de la ligue");
     expect(visible).toContain("575");
-    expect(visible).toContain("616");
+    expect(visible).toContain("612");
     expect(visible).toContain("655");
     expect(visible).toContain("Vous menez Sami de 14 points");
     expect(visible).toContain("Voir le duel");
@@ -158,7 +158,7 @@ describe("the other screens", () => {
     for (const label of ["Course", "Comparaison", "Décisions", "Notes"])
       expect(visible).toContain(label);
     expect(visible).toContain("Vous menez Sami de 14 points");
-    expect(visible).toContain("616 points contre 602");
+    expect(visible).toContain("612 points contre 598");
     expect(visible).toContain("7 journées gagnées sur 11");
     // « Écart à chaque journée » is bars only; the cumulative lead is the third card's line
     expect(html.match(/class="draw l-lead"/g)).toHaveLength(1);
@@ -181,7 +181,7 @@ describe("the other screens", () => {
     expect(visible).toContain("Votre saison est ouverte");
     expect(visible).toContain("Votre carte passe au style Chrome.");
     expect(visible).toContain("Mensuel");
-    expect(visible).toContain("renouvelé le 13 novembre 2026");
+    expect(visible).toContain("se renouvelle le 13 novembre 2026");
     expect(visible).toContain("Gérer dans Profil");
     expect(visible).toContain("Ouvrir ma saison");
   });

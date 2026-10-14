@@ -165,28 +165,34 @@ function ResumeTab({ onDuel }: { onDuel?: () => void }) {
         )}
       </section>
       <ul className="ps-trio" aria-label={t("plus.s2.r_trio_aria")}>
-        <li>
-          <span className="ps-label">{t("plus.s2.r_league")}</span>
-          <b className="ps-mid">
-            <Num value={S.leagueTotal} />
-          </b>
-        </li>
+        {isMissing(S.leagueTotal) ? null : (
+          <li>
+            <span className="ps-label">{t("plus.s2.r_league")}</span>
+            <b className="ps-mid">
+              <Num value={S.leagueTotal} />
+            </b>
+          </li>
+        )}
         <li className="me">
           <span className="ps-label">{t("plus.s2.you")}</span>
           <b className="ps-mid">
             <Num value={S.total} />
           </b>
         </li>
-        <li>
-          <span className="ps-label">{t("plus.s2.r_best")}</span>
-          <b className="ps-mid">
-            <Num value={R.leaderTotal} />
-          </b>
-        </li>
+        {isMissing(R.leaderTotal) ? null : (
+          <li>
+            <span className="ps-label">{t("plus.s2.r_best")}</span>
+            <b className="ps-mid">
+              <Num value={R.leaderTotal} />
+            </b>
+          </li>
+        )}
       </ul>
       <section aria-labelledby="ps-r-vs">
         <h2 className="ps-label" id="ps-r-vs" style={{ marginBlockEnd: 12 }}>
-          {t("plus.s2.r_vs")}
+          {tiles.some((tile) => !isMissing(tile.delta))
+            ? t("plus.s2.r_vs")
+            : t("plus.s2.r_vs_alone")}
         </h2>
         <ul className="ps-tiles">
           {tiles.map((tile) => {
@@ -196,17 +202,19 @@ function ResumeTab({ onDuel }: { onDuel?: () => void }) {
               <li className="ps-tile" key={tile.label}>
                 <span className="ps-label">{tile.label}</span>
                 <b className="ps-mid">{tile.value}</b>
-                <span
-                  className={`ps-chip ${known ? (good ? "good" : "bad") : "plain"}`}
-                  aria-label={fill("plus.s2.vs_league_aria", {
-                    n: num(tile.delta, tile.d, true),
-                  })}
-                >
-                  {known ? <SignTri up={good} /> : null}
-                  {f("plus.s2.vs_league", {
-                    n: <bdi dir="ltr">{num(tile.delta, tile.d, true)}</bdi>,
-                  })}
-                </span>
+                {known ? (
+                  <span
+                    className={`ps-chip ${good ? "good" : "bad"}`}
+                    aria-label={fill("plus.s2.vs_league_aria", {
+                      n: num(tile.delta, tile.d, true),
+                    })}
+                  >
+                    <SignTri up={good} />
+                    {f("plus.s2.vs_league", {
+                      n: <bdi dir="ltr">{num(tile.delta, tile.d, true)}</bdi>,
+                    })}
+                  </span>
+                ) : null}
               </li>
             );
           })}
@@ -265,7 +273,7 @@ function ResumeTab({ onDuel }: { onDuel?: () => void }) {
 
 function PointsTab() {
   const { S, raw: R, J, leagueSize } = useSeason();
-  const { t, f } = usePlusCopy();
+  const { t, f, count } = usePlusCopy();
   const { num, ord, j, jAxis } = useSeasonFmt();
   const fill = useFill();
   const best = S.bestWeek;
@@ -320,14 +328,22 @@ function PointsTab() {
     },
   ];
 
+  /** A comparison without data is not written: the columns of the league show only with figures. */
+  const showLeagueCols = balance.some((row) => !isMissing(row.gap));
+  const showAvg = R.leagueAvg.some((v) => !isMissing(v));
+  const showBest = R.leagueBest.some((v) => !isMissing(v));
+  const showRank = R.youRank.some((v) => !isMissing(v));
+
   return (
     <>
       <section className="ps-card" aria-labelledby="ps-p-cum">
         <h2 className="ps-hl" id="ps-p-cum">
-          {f("plus.s2.p_cum_h", {
-            n: <Fig>{S.total}</Fig>,
-            d: <Fig>{num(S.total - S.leagueTotal, 0, true)}</Fig>,
-          })}
+          {haveLeague
+            ? f("plus.s2.p_cum_h", {
+                n: <Fig>{S.total}</Fig>,
+                d: <Fig>{num(S.total - S.leagueTotal, 0, true)}</Fig>,
+              })
+            : f("plus.s2.p_cum_alone", { n: <Fig>{count(S.total, "points")}</Fig> })}
         </h2>
         <Key
           items={[
@@ -427,28 +443,31 @@ function PointsTab() {
             <tr>
               <td />
               <th scope="col">{t("plus.s2.you")}</th>
-              <th scope="col">{t("plus.s2.k_league")}</th>
-              <th scope="col">{t("plus.s2.th_gap")}</th>
+              {showLeagueCols ? <th scope="col">{t("plus.s2.k_league")}</th> : null}
+              {showLeagueCols ? <th scope="col">{t("plus.s2.th_gap")}</th> : null}
             </tr>
           </thead>
           <tbody>
-            {balance.map((row) => (
-              <tr key={row.label}>
-                <th scope="row">
-                  {row.label}
-                  {row.hint ? <small>{row.hint}</small> : null}
-                </th>
-                <td className="you">
-                  <Fig>{row.you}</Fig>
-                </td>
-                <td>
-                  <Fig>{row.league}</Fig>
-                </td>
-                <td className={isMissing(row.gap) ? undefined : row.gap >= 0 ? "up" : "dn"}>
-                  <Fig>{num(row.gap, row.d, true)}</Fig>
-                </td>
-              </tr>
-            ))}
+            {balance.map((row) => {
+              const known = !isMissing(row.gap);
+              return (
+                <tr key={row.label}>
+                  <th scope="row">
+                    {row.label}
+                    {row.hint ? <small>{row.hint}</small> : null}
+                  </th>
+                  <td className="you">
+                    <Fig>{row.you}</Fig>
+                  </td>
+                  {showLeagueCols ? <td>{known ? <Fig>{row.league}</Fig> : null}</td> : null}
+                  {showLeagueCols ? (
+                    <td className={known ? (row.gap >= 0 ? "up" : "dn") : undefined}>
+                      {known ? <Fig>{num(row.gap, row.d, true)}</Fig> : null}
+                    </td>
+                  ) : null}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </section>
@@ -462,15 +481,21 @@ function PointsTab() {
             <tr>
               <td style={{ inlineSize: 52 }} />
               <th scope="col">{t("plus.s2.you")}</th>
-              <th scope="col" style={{ inlineSize: 52 }}>
-                {t("plus.s2.th_avg")}
-              </th>
-              <th scope="col" style={{ inlineSize: 52 }}>
-                {t("plus.s2.th_max")}
-              </th>
-              <th scope="col" style={{ inlineSize: 92 }}>
-                {t("plus.s2.th_rank")}
-              </th>
+              {showAvg ? (
+                <th scope="col" style={{ inlineSize: 52 }}>
+                  {t("plus.s2.th_avg")}
+                </th>
+              ) : null}
+              {showBest ? (
+                <th scope="col" style={{ inlineSize: 52 }}>
+                  {t("plus.s2.th_max")}
+                </th>
+              ) : null}
+              {showRank ? (
+                <th scope="col" style={{ inlineSize: 92 }}>
+                  {t("plus.s2.th_rank")}
+                </th>
+              ) : null}
             </tr>
           </thead>
           <tbody>
@@ -485,31 +510,37 @@ function PointsTab() {
                   </th>
                   <td className="you">
                     <Fig>{v}</Fig>
-                    <small className={isMissing(d) ? undefined : d >= 0 ? "up" : "dn"}>
-                      <Fig>{num(d, 0, true)}</Fig>
-                    </small>
+                    {isMissing(d) ? null : (
+                      <small className={d >= 0 ? "up" : "dn"}>
+                        <Fig>{num(d, 0, true)}</Fig>
+                      </small>
+                    )}
                   </td>
-                  <td>
-                    <Fig>{R.leagueAvg[i]}</Fig>
-                  </td>
-                  <td>
-                    <Fig>{R.leagueBest[i]}</Fig>
-                  </td>
-                  <td className="rk">
-                    {i > 0 && !isMissing(r) && !isMissing(prev) && r !== prev ? (
-                      <span className={`mv ${r < prev ? "up" : "dn"}`}>
-                        <SignTri up={r < prev} />
-                        <Fig>{Math.abs(r - prev)}</Fig>
-                      </span>
-                    ) : i > 0 && !isMissing(r) ? (
-                      <span className="mv" aria-hidden>
-                        =
-                      </span>
-                    ) : null}
-                    <em>
-                      <bdi>{ord(r)}</bdi>
-                    </em>
-                  </td>
+                  {showAvg ? (
+                    <td>{isMissing(R.leagueAvg[i]) ? null : <Fig>{R.leagueAvg[i]}</Fig>}</td>
+                  ) : null}
+                  {showBest ? (
+                    <td>{isMissing(R.leagueBest[i]) ? null : <Fig>{R.leagueBest[i]}</Fig>}</td>
+                  ) : null}
+                  {showRank ? (
+                    <td className="rk">
+                      {i > 0 && !isMissing(r) && !isMissing(prev) && r !== prev ? (
+                        <span className={`mv ${r < prev ? "up" : "dn"}`}>
+                          <SignTri up={r < prev} />
+                          <Fig>{Math.abs(r - prev)}</Fig>
+                        </span>
+                      ) : i > 0 && !isMissing(r) ? (
+                        <span className="mv" aria-hidden>
+                          =
+                        </span>
+                      ) : null}
+                      {isMissing(r) ? null : (
+                        <em>
+                          <bdi>{ord(r)}</bdi>
+                        </em>
+                      )}
+                    </td>
+                  ) : null}
                 </tr>
               );
             })}
@@ -524,7 +555,7 @@ function PointsTab() {
 
 function DecisionsTab() {
   const { S, raw: R, J, leagueSize } = useSeason();
-  const { t, f } = usePlusCopy();
+  const { t, f, count } = usePlusCopy();
   const { num, j, jAxis } = useSeasonFmt();
   const fill = useFill();
   const bt = S.bestTransferWeek;
@@ -534,7 +565,9 @@ function DecisionsTab() {
     <>
       <section className="ps-card" aria-labelledby="ps-d-cap">
         <h2 className="ps-hl" id="ps-d-cap">
-          {f("plus.s2.d_cap_h", { d: <Fig>{num(S.captainVsLeague, 0, true)}</Fig> })}
+          {isMissing(S.captainVsLeague)
+            ? f("plus.s2.d_cap_alone", { n: <Fig>{count(S.captainTotal, "points")}</Fig> })
+            : f("plus.s2.d_cap_h", { d: <Fig>{num(S.captainVsLeague, 0, true)}</Fig> })}
         </h2>
         <Key
           items={[
@@ -564,10 +597,12 @@ function DecisionsTab() {
       {R.transfers.length > 0 ? (
         <section className="ps-card" aria-labelledby="ps-d-trf">
           <h2 className="ps-hl" id="ps-d-trf">
-            {f("plus.s2.d_trf_h", {
-              n: <Fig>{num(S.net, 0, true)}</Fig>,
-              l: <Fig>{num(R.leagueNetTransfers, 0, true)}</Fig>,
-            })}
+            {isMissing(R.leagueNetTransfers)
+              ? f("plus.s2.d_trf_alone", { n: <Fig>{num(S.net, 0, true)}</Fig> })
+              : f("plus.s2.d_trf_h", {
+                  n: <Fig>{num(S.net, 0, true)}</Fig>,
+                  l: <Fig>{num(R.leagueNetTransfers, 0, true)}</Fig>,
+                })}
           </h2>
           <Key
             items={[
@@ -665,11 +700,15 @@ function NoteTab() {
           <Num value={ovr} />
         </b>
         <div className="ps-hero-row">
-          <span className="ps-chip rank">{rankOf(rank.OVR, leagueSize)}</span>
-          <span className={`ps-chip ${isMissing(delta) ? "plain" : delta >= 0 ? "good" : "bad"}`}>
-            {isMissing(delta) ? null : <SignTri up={delta >= 0} />}
-            {f("plus.s2.vs_league", { n: <bdi dir="ltr">{num(delta, 0, true)}</bdi> })}
-          </span>
+          {isMissing(rank.OVR) ? null : (
+            <span className="ps-chip rank">{rankOf(rank.OVR, leagueSize)}</span>
+          )}
+          {isMissing(delta) ? null : (
+            <span className={`ps-chip ${delta >= 0 ? "good" : "bad"}`}>
+              <SignTri up={delta >= 0} />
+              {f("plus.s2.vs_league", { n: <bdi dir="ltr">{num(delta, 0, true)}</bdi> })}
+            </span>
+          )}
         </div>
         <OvrChart
           jAxis={jAxis}
@@ -683,7 +722,9 @@ function NoteTab() {
         <Key
           items={[
             { cls: "k-you", label: t("plus.s2.you") },
-            { cls: "k-ref", label: fill("plus.s2.n_league", { n: S.leagueOvr }) },
+            ...(isMissing(S.leagueOvr)
+              ? []
+              : [{ cls: "k-ref", label: fill("plus.s2.n_league", { n: S.leagueOvr }) }]),
           ]}
         />
       </section>
@@ -703,9 +744,11 @@ function NoteTab() {
                 <b className="ps-stat-val">
                   <Num value={v} />
                 </b>
-                <span className={`ps-chip ${r <= 4 ? "rank" : "plain"}`}>
-                  {rankOf(r, leagueSize)}
-                </span>
+                {isMissing(r) ? null : (
+                  <span className={`ps-chip ${r <= 4 ? "rank" : "plain"}`}>
+                    {rankOf(r, leagueSize)}
+                  </span>
+                )}
               </div>
               <div className="ps-stat-mid">
                 <div
@@ -730,9 +773,11 @@ function NoteTab() {
                 </div>
                 <Spark vals={R.ratings[code]} avg={avg} />
               </div>
-              <div className="ps-stat-foot">
-                <span>{fill("plus.s2.n_league", { n: avg })}</span>
-              </div>
+              {isMissing(avg) ? null : (
+                <div className="ps-stat-foot">
+                  <span>{fill("plus.s2.n_league", { n: avg })}</span>
+                </div>
+              )}
             </li>
           );
         })}
@@ -769,46 +814,50 @@ function NoteTab() {
             <Fig>{ovr}</Fig>
           </bdi>
         </h2>
-        <div className="ps-build-head">
-          <span>{fill("plus.s2.n_league", { n: S.leagueOvr })}</span>
-          <span className="mint">
-            {t("plus.s2.you")} <Fig>{ovr}</Fig>
-          </span>
-        </div>
-        <ul className="ps-build">
-          {order.map((code, ix) => {
-            const c = S.contributions[code];
-            const p = c > 0;
-            return (
-              <li key={code}>
-                <span className="nm">
-                  <RatingIcon code={code} size={18} />
-                  {ratingName(t, code)}
-                </span>
-                <span
-                  className="ps-track"
-                  role="img"
-                  aria-label={fill("plus.s2.a_build", {
-                    name: ratingName(t, code),
-                    d: num(c, 0, true),
-                  })}
-                >
-                  <s />
-                  <i
-                    className={`ps-fx ${p ? "p" : "n end"}`}
-                    style={{
-                      width: `${isMissing(c) ? 0 : (Math.abs(c) / 6) * 50}%`,
-                      ["--i" as string]: ix,
-                    }}
-                  />
-                </span>
-                <b className={p ? "mint" : "dn"}>
-                  <Fig>{num(c, 0, true)}</Fig>
-                </b>
-              </li>
-            );
-          })}
-        </ul>
+        {isMissing(S.leagueOvr) ? null : (
+          <div className="ps-build-head">
+            <span>{fill("plus.s2.n_league", { n: S.leagueOvr })}</span>
+            <span className="mint">
+              {t("plus.s2.you")} <Fig>{ovr}</Fig>
+            </span>
+          </div>
+        )}
+        {isMissing(S.leagueOvr) ? null : (
+          <ul className="ps-build">
+            {order.map((code, ix) => {
+              const c = S.contributions[code];
+              const p = c > 0;
+              return (
+                <li key={code}>
+                  <span className="nm">
+                    <RatingIcon code={code} size={18} />
+                    {ratingName(t, code)}
+                  </span>
+                  <span
+                    className="ps-track"
+                    role="img"
+                    aria-label={fill("plus.s2.a_build", {
+                      name: ratingName(t, code),
+                      d: num(c, 0, true),
+                    })}
+                  >
+                    <s />
+                    <i
+                      className={`ps-fx ${p ? "p" : "n end"}`}
+                      style={{
+                        width: `${isMissing(c) ? 0 : (Math.abs(c) / 6) * 50}%`,
+                        ["--i" as string]: ix,
+                      }}
+                    />
+                  </span>
+                  <b className={p ? "mint" : "dn"}>
+                    <Fig>{num(c, 0, true)}</Fig>
+                  </b>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </section>
     </>
   );

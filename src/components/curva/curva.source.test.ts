@@ -69,11 +69,16 @@ describe("the Curva screens' imports", () => {
 
 describe("the stage's room", () => {
   it("gives the card's column 352 px from 768 px: the 336 px card and 8 px of the stage's padding each side", () => {
-    for (const name of ["CurvaHome.tsx", "CurvaCardPage.tsx"]) {
-      const text = code(readFileSync(join(HERE, name), "utf8"));
-      expect(text, name).toContain("md:grid-cols-[352px_minmax(0,1fr)]");
-      expect(text, name).not.toContain("264px");
-    }
+    const home = code(readFileSync(join(HERE, "CurvaHome.tsx"), "utf8"));
+    expect(home).toContain("md:grid-cols-[352px_minmax(0,1fr)]");
+    expect(home).not.toContain("264px");
+  });
+
+  it("keeps the card page in one column, the card 352 px wide, so « Votre saison » under it is as wide as the page", () => {
+    const text = code(readFileSync(join(HERE, "CurvaCardPage.tsx"), "utf8"));
+    expect(text).toContain("md:max-w-[352px]");
+    expect(text).not.toContain("md:grid-cols");
+    expect(text).not.toContain("264px");
   });
 });
 

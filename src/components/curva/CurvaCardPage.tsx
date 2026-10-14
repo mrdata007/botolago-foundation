@@ -15,6 +15,7 @@ import { fromMyCard } from "@/components/manager-card/to-profile";
 import { STAT_CODES, type LineSpec, type ReplayItem } from "@/components/manager-card/types";
 import { ui, UiButton, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { PlusEntryRows } from "@/components/plus/PlusEntry";
+import { PlusMemberRows } from "@/components/plus/PlusMemberRows";
 import { track } from "@/lib/analytics";
 import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -101,11 +102,10 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
   const rated = card.ovr !== null;
 
   return (
-    <div
-      className="pb-2 md:grid md:grid-cols-[352px_minmax(0,1fr)] md:gap-x-6 md:px-6"
-      data-testid="curva-card-page"
-    >
-      <div className="md:sticky md:top-[calc(var(--topbar-h)+16px)] md:self-start">
+    <div className="pb-2 md:px-6" data-testid="curva-card-page">
+      {/* One column at every width: the frame the page sits in is narrow on a desktop, and a
+          352 px card beside it left the sections a 240 px column. */}
+      <div className="mx-auto md:max-w-[352px]">
         <CardStage
           profile={profile}
           beat={beat}
@@ -139,13 +139,17 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         </CardStage>
       </div>
 
-      <div
-        className={cn(
-          "mt-4 flex min-w-0 flex-col gap-5 md:mt-0 md:pt-5",
-          ui.space.gutter,
-          "md:px-0",
-        )}
-      >
+      <div className={cn("mt-4 flex min-w-0 flex-col gap-5 md:pt-5", ui.space.gutter, "md:px-0")}>
+        {/* « Votre saison » (behind PREMIUM_BUILD): the analysis, blurred or clear, right under the
+            card (on a phone the next thing after it; on a desktop the first thing of the column
+            that sits beside it), and for a member the rows of « Mon abonnement ». */}
+        {PlusSeasonSlot ? (
+          <Suspense fallback={null}>
+            <PlusSeasonSlot />
+          </Suspense>
+        ) : null}
+        {PREMIUM_SURFACES ? <PlusMemberRows /> : null}
+
         <section data-testid="curva-where" aria-label={copy.cardWhere}>
           <SectionHeader title={copy.cardWhere} />
           <UiCard padding="none" className="overflow-hidden">
@@ -212,13 +216,6 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
               />
             </UiCard>
           </section>
-        ) : null}
-
-        {/* « Votre saison » (behind PREMIUM_BUILD): the analysis, blurred or clear. */}
-        {PlusSeasonSlot ? (
-          <Suspense fallback={null}>
-            <PlusSeasonSlot />
-          </Suspense>
         ) : null}
 
         {/* BotolaGO+ extras with their lock chips (behind PREMIUM_BUILD). */}
