@@ -1,0 +1,44 @@
+/* ==========================================================================
+   BotolaGO+ design tokens that do not depend on a colour: the 4px spacing scale, the radius and
+   elevation steps, and the motion durations and easing (docs/product/botolago-plus-polish-brief.md).
+   Colour-dependent tokens (--po-glow, --po-ring-*, --po-halo-*) sit with the palette in `plus.css`.
+   On :root because the member mark in Curva's header and the Profil section use them outside
+   `.plus-offer`. Every plus stylesheet imports this file; `plus-css-lint.test.ts` enforces its use.
+   ========================================================================== */
+
+:root {
+  /* spacing: multiples of 4px */
+  --po-space-1: 4px;
+  --po-space-2: 8px;
+  --po-space-3: 12px;
+  --po-space-4: 16px;
+  --po-space-5: 20px;
+  --po-space-6: 24px;
+  --po-space-7: 28px;
+  --po-space-8: 32px;
+  --po-space-10: 40px;
+  --po-space-12: 48px;
+  --po-space-14: 56px;
+  --po-space-16: 64px;
+
+  /* radius; circles stay 50%. xs is for the ends of bars and markers a few pixels wide. */
+  --po-radius-xs: 4px;
+  --po-radius-sm: 8px;
+  --po-radius-md: 16px;
+  --po-radius-lg: 24px;
+  --po-radius-pill: 999px;
+
+  /* elevation: 1 = a surface (top highlight), 2 = raised (hover, press), 3 = floating */
+  --po-shadow-1: inset 0 1px 0 rgb(255 255 255 / 0.075);
+  --po-shadow-2: inset 0 1px 0 rgb(255 255 255 / 0.075), 0 8px 24px -8px rgb(0 0 0 / 0.5);
+  --po-shadow-3: 0 0 0 1px rgb(255 255 255 / 0.14), 0 40px 80px -40px black;
+
+  /* motion */
+  --po-dur-fast: 120ms;
+  --po-dur-base: 200ms;
+  --po-dur-slow: 600ms;
+  --po-dur-lift: 180ms;
+  --po-dur-shake: 300ms;
+  --po-dur-shimmer: 1600ms;
+  --po-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
