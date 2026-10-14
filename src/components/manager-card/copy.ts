@@ -580,7 +580,7 @@ export function useCardStrings(): CardStrings {
  * The one-sentence accessible name of a card: « Carte de manager, Ali, 84 OVR, PRO, Raja CA,
  * Fondateur 2026, BOT #482913 ». A card with no rating says so, and says how far it has got
  * (« pas encore de note, 1 journée comptée sur 3 »). The renderers' `label()` returns this.
- * The « Provisoire » pill is app text beside the card, not part of the object.
+ * The label never says whether the number is provisional: that is not shown beside a rating.
  */
 export function cardLabel(profile: CardProfile, strings: CardStrings): string {
   const parts: string[] = [strings.a11y.cardOf];

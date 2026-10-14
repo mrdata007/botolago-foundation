@@ -27,19 +27,6 @@ export function PersonName({ children }: { children: ReactNode }) {
   return <bdi dir="auto">{children}</bdi>;
 }
 
-/**
- * « Provisoire » / «مبدئي»: on every surface that shows a provisional number, as text beside the
- * number (never colour alone). Outline, not sunken: a provisional number is current, not spent.
- */
-export function ProvisionalBadge({ className }: { className?: string }) {
-  const copy = useCardCopy();
-  return (
-    <UiBadge tone="outline" className={cn("shrink-0 whitespace-nowrap", className)}>
-      {copy.provisional}
-    </UiBadge>
-  );
-}
-
 /** « — »: an unknown number. Never 0. */
 export const DASH = "—";
 

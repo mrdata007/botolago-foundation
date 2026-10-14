@@ -8,7 +8,7 @@ import { ui, UiTable, UiTBody, UiTD, UiTH, UiTHead, UiTR } from "@/components/ui
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
-import { DASH, Figure, ProvisionalBadge } from "./figures";
+import { DASH, Figure } from "./figures";
 
 /**
  * « Journée / Note / Palier », newest first: the stored note after each evaluated journée. A row
@@ -61,9 +61,6 @@ export function HistoryTable({
                 <span className={cn(ui.text.secondary, ui.tone.default)}>
                   {row.tier ? <TierWord tier={row.tier} /> : DASH}
                 </span>
-                {row.provisional && row.ovr !== null ? (
-                  <ProvisionalBadge className="px-2 py-0.5" />
-                ) : null}
               </span>
             </UiTD>
           </UiTR>

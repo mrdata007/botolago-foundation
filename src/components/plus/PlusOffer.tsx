@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type TouchEvent } from "react";
 
 import type { PremiumProductCode } from "@/backend/premium/contracts";
 import { useI18n } from "@/i18n/provider";
@@ -17,6 +17,13 @@ const TOTAL = 4;
 /** Swipe and arrow keys cannot move past the plan screen; screen 4 comes only from a purchase. */
 const LAST_FREE_STEP: PlusStep = 3;
 const TOAST_MS = 2600;
+
+// Curva's card share sheet, loaded on the first tap of « Partager ma carte ».
+const ShareCardSheet = lazy(() =>
+  import("@/components/manager-card/moments/ShareCardSheet").then((m) => ({
+    default: m.ShareCardSheet,
+  })),
+);
 
 /**
  * The BotolaGO+ offer (sketch `#phone`): a quiet always-dark surface with a back button, four
@@ -40,7 +47,7 @@ export function PlusOffer({
   const { t, lang } = usePlusCopy();
   const { dir: pageDir } = useI18n();
   const premium = usePremium();
-  const { profile, example } = usePlusProfile();
+  const { profile, example, card } = usePlusProfile();
   const now = useNow();
   const standalone = mode === "standalone";
 
@@ -48,6 +55,8 @@ export function PlusOffer({
   const [plan, setPlan] = useState<PremiumProductCode>("plus_yearly");
   const [requested, setStep] = useState<PlusStep>(standalone ? 3 : initialStep);
   const [duelOpen, setDuelOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareLoaded, setShareLoaded] = useState(false);
   const [toast, setToast] = useState<{ text: string; n: number; tone: "error" | "info" } | null>(
     null,
   );
@@ -96,7 +105,8 @@ export function PlusOffer({
 
   // Arrow keys move between screens (not past the plan screen); Escape leaves.
   useEffect(() => {
-    if (standalone) return;
+    // The share sheet handles its own keys: Escape closes it, not the offer.
+    if (standalone || shareOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
       const target = event.target as HTMLElement | null;
@@ -112,7 +122,7 @@ export function PlusOffer({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [standalone, lang, step, go, onClose]);
+  }, [standalone, shareOpen, lang, step, go, onClose]);
 
   // Swipe along the reading direction, never past the plan screen.
   const touch = useRef<{ x: number; y: number } | null>(null);
@@ -144,6 +154,12 @@ export function PlusOffer({
     if (result.status !== "ok") showToast(t("plus.s3.restore_soon"), "error");
   };
   const onShare = () => {
+    // A rated card goes out as its picture, through the same sheet as Curva's.
+    if (card && card.ovr !== null) {
+      setShareLoaded(true);
+      setShareOpen(true);
+      return;
+    }
     const text = t("plus.s4.share_text");
     try {
       if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
@@ -314,6 +330,11 @@ export function PlusOffer({
           </div>
         </main>
       </div>
+      {card && shareLoaded ? (
+        <Suspense fallback={null}>
+          <ShareCardSheet open={shareOpen} onOpenChange={setShareOpen} card={card} />
+        </Suspense>
+      ) : null}
     </div>
   );
 }

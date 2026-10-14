@@ -166,7 +166,7 @@ export function ShareCardSheet({
       : null;
   const canShareFile = Boolean(file && nav?.canShare?.({ files: [file] }));
   const label = t("curva.share.label");
-  const alt = `${cardLabel(profile, strings)}${card.provisional ? `, ${t("card.provisional")}` : ""}`;
+  const alt = cardLabel(profile, strings);
 
   const pill = cn(
     "inline-flex items-center justify-center gap-2 px-4",

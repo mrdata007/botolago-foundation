@@ -113,10 +113,10 @@ for (const lang of ["fr", "ar"] as const) {
       expect(text(await render()).replace(/\s*\/\s*/g, "/")).toContain("2/4");
     });
 
-    it("shows the provisional badge once and highlights the reader's own row", async () => {
+    it("shows no provisional badge and highlights the reader's own row", async () => {
       language = lang;
       const html = await render();
-      expect(text(html).split(dictionaries[lang]["card.provisional"]).length - 1).toBe(1);
+      expect(text(html)).not.toContain(dictionaries[lang]["card.provisional"]);
       const own = html.match(/<li [^>]*data-own="true"[^>]*>/g) ?? [];
       expect(own).toHaveLength(1);
       expect(own[0]).toContain(`data-team="${SAMPLE_OWN_ID}"`);

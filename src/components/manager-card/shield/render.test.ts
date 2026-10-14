@@ -119,11 +119,11 @@ describe("the shield's full card", () => {
     const unnamed = draw({ ...rated, name: "" });
     expect(unnamed).not.toContain("mc-shield__sig");
     expect(unnamed).not.toContain("mc-shield__mono");
-    if (SERIAL_ON_FACE) {
-      expect(textOf(draw({ ...rated, serial: null }), "mc-shield__serial")).toBe(
-        "BOT #— · 2026/27",
-      );
-    }
+    expect(textOf(draw({ ...rated, serial: null }), "mc-shield__serial")).toBe(
+      SERIAL_ON_FACE ? "BOT #— · 2026/27" : "2026/27",
+    );
+    // The face shows the season, never the card's number.
+    if (!SERIAL_ON_FACE) expect(draw(rated)).not.toContain("BOT #");
     expect(draw(rated)).not.toContain("mc-shield__founder");
   });
 
