@@ -3,9 +3,9 @@
 // never downloads it; `dictionaries.ts` imports it for the tests.
 export const ar = {
   "fantasy.scoring.incrementalPolicy":
-    "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وتبقى النقاط مؤقتة خلال الجولة. تُطبَّق التبديلات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
+    "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وقد تتغير النقاط خلال الجولة. تُطبَّق التبديلات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
   "fantasy.scoring.closedProvisional":
-    "نقاط مؤقتة: قد تُنشر إحصائيات المباريات التفصيلية لاحقاً، وقد تتغير النقاط إلى أن تُقفل الجولة نهائياً.",
+    "قد تُنشر إحصائيات المباريات التفصيلية لاحقاً، وقد تتغير النقاط إلى أن تُقفل الجولة نهائياً.",
   "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
   "fantasy.scoring.estimatesPolicy":
     "يمكن اعتماد التقديرات المراجعة استناداً إلى أفضل البيانات المتاحة نهائياً واحتسابها في الترتيب. تُحفظ الافتراضات وتبقى النقاط خاضعة لإجراء التصحيح خلال 72 ساعة. تظل هوية اللاعب غير المحسومة قيد الانتظار.",
@@ -331,7 +331,7 @@ export const ar = {
   "matches.detail.no_lineups": "لم تنطلق المباراة بعد: لا توجد تشكيلات لعرضها.",
   "matches.detail.no_lineups_updating": "لم تصل التشكيلات بعد. يتم تحديث هذه الصفحة تلقائيًا.",
   "matches.detail.no_lineups_unavailable": "تشكيلات هذه المباراة غير متوفرة.",
-  "matches.detail.lineup_provisional": "مؤقتة",
+  "matches.detail.lineup_provisional": "محتملة",
   "matches.detail.starting_xi": "التشكيلة الأساسية",
   "matches.detail.substitutes": "الاحتياط",
   "matches.detail.captain": "الكابتن",
@@ -510,14 +510,14 @@ export const ar = {
   "fantasy.gameweek.status.open": "مفتوحة",
   "fantasy.gameweek.status.locked": "مغلقة",
   "fantasy.gameweek.status.live": "مباشرة",
-  "fantasy.gameweek.status.provisional": "مبدئية",
+  "fantasy.gameweek.status.provisional": "جارية",
   "fantasy.gameweek.status.finalizing": "قيد المراجعة",
   "fantasy.gameweek.status.final": "نهائية",
   "fantasy.gameweek.status.cancelled": "ملغاة",
   "fantasy.gameweek.status.closed": "انتهت المهلة",
   "fantasy.gameweek.detail.locked": "تم قفل التشكيلة",
   "fantasy.gameweek.detail.live": "النقاط قيد الاحتساب",
-  "fantasy.gameweek.detail.provisional": "نقاط مبدئية",
+  "fantasy.gameweek.detail.provisional": "قد تتغير النقاط",
   "fantasy.gameweek.detail.finalizing": "النتائج قيد المراجعة",
   "fantasy.gameweek.detail.final": "النتائج النهائية",
   "fantasy.gameweek.detail.cancelled": "تم إلغاء الجولة",
@@ -568,7 +568,7 @@ export const ar = {
   "fantasy.points.bench": "نقاط الاحتياط",
   "fantasy.points.total": "المجموع",
   "fantasy.points.how_scored": "كيف تُحتسب النقاط",
-  "fantasy.points.status.provisional": "مبدئية",
+  "fantasy.points.status.provisional": "جارية",
   "fantasy.points.status.live": "مباشرة",
   "fantasy.points.status.final": "نهائية",
   "fantasy.points.auto_subs": "استبدالات تلقائية",
@@ -741,7 +741,7 @@ export const ar = {
   "fantasy.recap.footer": "botolago.com · فانتازي البطولة الاحترافية",
   "fantasy.rules.policy_title": "كيف يتم اعتماد النقاط",
   "fantasy.rules.provisional_desc":
-    "خلال الجولة، تكون النقاط المعروضة مؤقتة وقد تتغير. تصبح نهائية بعد اعتماد الجولة. وإذا صُحّح خطأ في البيانات لاحقًا، تُحدَّث النقاط والترتيب.",
+    "خلال الجولة، قد تتغير النقاط المعروضة. تصبح نهائية بعد اعتماد الجولة. وإذا صُحّح خطأ في البيانات لاحقًا، تُحدَّث النقاط والترتيب.",
   "fantasy.rules.tiebreak": "الترجيح",
   "fantasy.rules.tiebreak_desc":
     "عند التعادل في النقاط، يتقدم من خسر أقل عدد من النقاط بسبب الانتقالات، ثم من أجرى أقل عدد من الانتقالات، ثم صاحب أعلى نقاط في آخر جولة، ثم صاحب الفريق الذي أُنشئ أولاً.",
@@ -1988,7 +1988,7 @@ export const ar = {
   "predictions.round.state_upcoming": "قادمة",
   "predictions.round.state_in_progress": "جارية",
   "predictions.round.state_completed": "منتهية",
-  "predictions.round.state_provisional": "مؤقتة",
+  "predictions.round.state_provisional": "جارية",
   "predictions.fixture.until": "حتى {time}",
   "predictions.fixture.time_tbc": "التوقيت غير مؤكد بعد",
   "predictions.fixture.locked": "مُغلق",
@@ -2046,10 +2046,10 @@ export const ar = {
   "predictions.board.empty": "يظهر الترتيب بعد انتهاء أول مباراة.",
   "predictions.board.load_more": "عرض المزيد",
   "predictions.board.empty_cta": "ضع توقعاتي",
-  "predictions.board.matches_left_one": "مؤقت · مباراة واحدة متبقية",
-  "predictions.board.matches_left_two": "مؤقت · مباراتان متبقيتان",
-  "predictions.board.matches_left_few": "مؤقت · {n} مباريات متبقية",
-  "predictions.board.matches_left_other": "مؤقت · {n} مباراة متبقية",
+  "predictions.board.matches_left_one": "مباراة واحدة متبقية",
+  "predictions.board.matches_left_two": "مباراتان متبقيتان",
+  "predictions.board.matches_left_few": "{n} مباريات متبقية",
+  "predictions.board.matches_left_other": "{n} مباراة متبقية",
   "predictions.board.rounds_played_one": "جولة واحدة",
   "predictions.board.rounds_played_two": "جولتان",
   "predictions.board.rounds_played_few": "{n} جولات",
@@ -2823,10 +2823,9 @@ export const ar = {
   "card.onboarding.m6.msg.league":
     "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ انضمّ إلى دوريي « {league} »: {link}",
   "card.onboarding.m6.msg.league_provisional":
-    "بطاقتي في BotolaGO: \u200f{ovr} (مبدئي). وأنت؟ انضمّ إلى دوريي « {league} »: {link}",
+    "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ انضمّ إلى دوريي « {league} »: {link}",
   "card.onboarding.m6.msg.plain": "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ {link}",
-  "card.onboarding.m6.msg.plain_provisional":
-    "بطاقتي في BotolaGO: \u200f{ovr} (مبدئي). وأنت؟ {link}",
+  "card.onboarding.m6.msg.plain_provisional": "بطاقتي في BotolaGO: \u200f{ovr}. وأنت؟ {link}",
   "card.onboarding.m7.line": "لم يعد تقييمك مبدئيًا: {ovr} بعد {final}.",
   "card.onboarding.m8.up.heading": "بطاقتك الآن في فئة {tier}.",
   "card.onboarding.m8.up.line": "{ovr} بعد الجولة {gw}. تتبع الفئة تقييمك جولةً بعد جولة.",
