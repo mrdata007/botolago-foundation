@@ -33,6 +33,7 @@ import { Route as AdminApprovalsRouteImport } from './routes/admin.approvals'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminNewsRouteImport } from './routes/admin.news'
 import { Route as AdminPepitesRouteImport } from './routes/admin.pepites'
+import { Route as AdminPlusRouteImport } from './routes/admin.plus'
 import { Route as AdminPrizesRouteImport } from './routes/admin.prizes'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminStaffRouteImport } from './routes/admin.staff'
@@ -57,6 +58,7 @@ import { Route as DevCurvaRankingSampleRouteImport } from './routes/dev.curva-ra
 import { Route as DevManagerCardOvrChangeSampleRouteImport } from './routes/dev.manager-card-ovr-change-sample'
 import { Route as DevManagerCardSampleRouteImport } from './routes/dev.manager-card-sample'
 import { Route as DevPlayerMappingsSampleRouteImport } from './routes/dev.player-mappings-sample'
+import { Route as DevPlusAdminSampleRouteImport } from './routes/dev.plus-admin-sample'
 import { Route as DevSofascorePlayersSampleRouteImport } from './routes/dev.sofascore-players-sample'
 import { Route as FantasyIndexRouteImport } from './routes/fantasy.index'
 import { Route as FantasyCreateRouteImport } from './routes/fantasy.create'
@@ -226,6 +228,11 @@ const AdminPepitesRoute = AdminPepitesRouteImport.update({
   path: '/pepites',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPlusRoute = AdminPlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminPrizesRoute = AdminPrizesRouteImport.update({
   id: '/prizes',
   path: '/prizes',
@@ -345,6 +352,11 @@ const DevManagerCardSampleRoute = DevManagerCardSampleRouteImport.update({
 const DevPlayerMappingsSampleRoute = DevPlayerMappingsSampleRouteImport.update({
   id: '/dev/player-mappings-sample',
   path: '/dev/player-mappings-sample',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevPlusAdminSampleRoute = DevPlusAdminSampleRouteImport.update({
+  id: '/dev/plus-admin-sample',
+  path: '/dev/plus-admin-sample',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevSofascorePlayersSampleRoute =
@@ -610,6 +622,7 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
   '/admin/pepites': typeof AdminPepitesRouteWithChildren
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -632,6 +645,7 @@ export interface FileRoutesByFullPath {
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -701,6 +715,7 @@ export interface FileRoutesByTo {
   '/admin/approvals': typeof AdminApprovalsRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -723,6 +738,7 @@ export interface FileRoutesByTo {
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -798,6 +814,7 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/news': typeof AdminNewsRouteWithChildren
   '/admin/pepites': typeof AdminPepitesRouteWithChildren
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/prizes': typeof AdminPrizesRoute
   '/admin/security': typeof AdminSecurityRoute
   '/admin/staff': typeof AdminStaffRouteWithChildren
@@ -820,6 +837,7 @@ export interface FileRoutesById {
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
   '/dev/manager-card-sample': typeof DevManagerCardSampleRoute
   '/dev/player-mappings-sample': typeof DevPlayerMappingsSampleRoute
+  '/dev/plus-admin-sample': typeof DevPlusAdminSampleRoute
   '/dev/sofascore-players-sample': typeof DevSofascorePlayersSampleRoute
   '/fantasy/create': typeof FantasyCreateRoute
   '/fantasy/fixtures': typeof FantasyFixturesRoute
@@ -896,6 +914,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/news'
     | '/admin/pepites'
+    | '/admin/plus'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -918,6 +937,7 @@ export interface FileRouteTypes {
     | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
+    | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -987,6 +1007,7 @@ export interface FileRouteTypes {
     | '/admin/approvals'
     | '/admin/audit'
     | '/admin/news'
+    | '/admin/plus'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -1009,6 +1030,7 @@ export interface FileRouteTypes {
     | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
+    | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -1083,6 +1105,7 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/news'
     | '/admin/pepites'
+    | '/admin/plus'
     | '/admin/prizes'
     | '/admin/security'
     | '/admin/staff'
@@ -1105,6 +1128,7 @@ export interface FileRouteTypes {
     | '/dev/manager-card-ovr-change-sample'
     | '/dev/manager-card-sample'
     | '/dev/player-mappings-sample'
+    | '/dev/plus-admin-sample'
     | '/dev/sofascore-players-sample'
     | '/fantasy/create'
     | '/fantasy/fixtures'
@@ -1181,6 +1205,7 @@ export interface RootRouteChildren {
   DevManagerCardOvrChangeSampleRoute: typeof DevManagerCardOvrChangeSampleRoute
   DevManagerCardSampleRoute: typeof DevManagerCardSampleRoute
   DevPlayerMappingsSampleRoute: typeof DevPlayerMappingsSampleRoute
+  DevPlusAdminSampleRoute: typeof DevPlusAdminSampleRoute
   DevSofascorePlayersSampleRoute: typeof DevSofascorePlayersSampleRoute
   JourneePublicIdRoute: typeof JourneePublicIdRoute
   MatchesMatchIdRoute: typeof MatchesMatchIdRoute
@@ -1363,6 +1388,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPepitesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/plus': {
+      id: '/admin/plus'
+      path: '/plus'
+      fullPath: '/admin/plus'
+      preLoaderRoute: typeof AdminPlusRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/prizes': {
       id: '/admin/prizes'
       path: '/prizes'
@@ -1529,6 +1561,13 @@ declare module '@tanstack/react-router' {
       path: '/dev/player-mappings-sample'
       fullPath: '/dev/player-mappings-sample'
       preLoaderRoute: typeof DevPlayerMappingsSampleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/plus-admin-sample': {
+      id: '/dev/plus-admin-sample'
+      path: '/dev/plus-admin-sample'
+      fullPath: '/dev/plus-admin-sample'
+      preLoaderRoute: typeof DevPlusAdminSampleRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/sofascore-players-sample': {
@@ -1913,6 +1952,7 @@ interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminNewsRoute: typeof AdminNewsRouteWithChildren
   AdminPepitesRoute: typeof AdminPepitesRouteWithChildren
+  AdminPlusRoute: typeof AdminPlusRoute
   AdminPrizesRoute: typeof AdminPrizesRoute
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminStaffRoute: typeof AdminStaffRouteWithChildren
@@ -1927,6 +1967,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminNewsRoute: AdminNewsRouteWithChildren,
   AdminPepitesRoute: AdminPepitesRouteWithChildren,
+  AdminPlusRoute: AdminPlusRoute,
   AdminPrizesRoute: AdminPrizesRoute,
   AdminSecurityRoute: AdminSecurityRoute,
   AdminStaffRoute: AdminStaffRouteWithChildren,
@@ -2130,6 +2171,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevManagerCardOvrChangeSampleRoute: DevManagerCardOvrChangeSampleRoute,
   DevManagerCardSampleRoute: DevManagerCardSampleRoute,
   DevPlayerMappingsSampleRoute: DevPlayerMappingsSampleRoute,
+  DevPlusAdminSampleRoute: DevPlusAdminSampleRoute,
   DevSofascorePlayersSampleRoute: DevSofascorePlayersSampleRoute,
   JourneePublicIdRoute: JourneePublicIdRoute,
   MatchesMatchIdRoute: MatchesMatchIdRoute,
