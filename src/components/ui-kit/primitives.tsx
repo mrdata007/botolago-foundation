@@ -2027,6 +2027,10 @@ export function UiTD({
  * When the rank changes while the page is open (a live refresh), the arrow
  * rolls in from the way it points and the disc pops once. Never on first
  * show, and never under reduced motion (`useJustChanged`).
+ *
+ * `previousRank === null` means the board has no earlier rank to compare with.
+ * That is not "unchanged": it draws a quiet dash, no arrow and no "=", and is
+ * named `labels.unknown` when the caller supplies one.
  */
 export function UiRankMovement({
   rank,
@@ -2039,7 +2043,7 @@ export function UiRankMovement({
   rank: number;
   previousRank: number | null;
   /** Accessible names for the three outcomes. */
-  labels: { up: string; down: string; same: string };
+  labels: { up: string; down: string; same: string; unknown?: string };
   variant?: "disc" | "quiet";
   /** How the quiet variant writes the number of places (e.g. a locale grouping). */
   formatDelta?: (places: number) => string;
@@ -2047,8 +2051,22 @@ export function UiRankMovement({
 }) {
   const moved = useJustChanged(rank);
   const roll = (up: boolean) => (moved ? (up ? "roll-up" : "roll-down") : undefined);
+  if (previousRank === null) {
+    return (
+      <span
+        className={cn(
+          variant === "quiet" ? ui.stat.sm : "inline-block w-5 text-center",
+          ui.tone.muted,
+          className,
+        )}
+      >
+        <span aria-hidden>—</span>
+        {labels.unknown ? <span className="sr-only">{labels.unknown}</span> : null}
+      </span>
+    );
+  }
   if (variant === "quiet") {
-    const delta = previousRank === null ? 0 : previousRank - rank;
+    const delta = previousRank - rank;
     if (delta === 0) {
       return (
         <span className={cn(ui.stat.sm, ui.tone.muted, className)}>
@@ -2075,7 +2093,7 @@ export function UiRankMovement({
       </span>
     );
   }
-  if (previousRank === null || previousRank === rank) {
+  if (previousRank === rank) {
     return (
       <span
         aria-label={labels.same}

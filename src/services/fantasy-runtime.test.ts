@@ -2,10 +2,20 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { playerDto, pointsDto, seasonStatsById } from "./fantasy-runtime";
+import {
+  overallStandingDto,
+  playerDto,
+  pointsDto,
+  roundBoardGameweekIds,
+  seasonStatsById,
+} from "./fantasy-runtime";
 import { dictionaries } from "@/i18n/dictionaries";
 import { fantasyPointsSchema } from "@/backend/fantasy/contracts";
-import type { FantasyPlayerDto, FantasyPlayerSeasonStatDto } from "@/backend/fantasy/contracts";
+import type {
+  FantasyOverallStandingDto,
+  FantasyPlayerDto,
+  FantasyPlayerSeasonStatDto,
+} from "@/backend/fantasy/contracts";
 
 /**
  * BG-0071 — the defect this file guards.
@@ -292,5 +302,68 @@ describe("a gameweek that closed on provisional points says so (staged SofaScore
   test("the copy exists in French and Arabic", () => {
     expect(dictionaries.fr["fantasy.scoring.closedProvisional"]).not.toMatch(/provisoire/i);
     expect(dictionaries.ar["fantasy.scoring.closedProvisional"]?.length).toBeGreaterThan(20);
+  });
+});
+
+/**
+ * FANT-04 — the cloud round board is the server's. These pin the two pieces of
+ * it that are decided in the browser: an unknown earlier rank stays unknown,
+ * and the round board is read for a gameweek that scoring has reached.
+ */
+describe("round rankings come from the server (FANT-04)", () => {
+  const dto = (overrides: Partial<FantasyOverallStandingDto> = {}): FantasyOverallStandingDto => ({
+    teamId: "00000000-0000-4000-8000-0000000000aa",
+    teamName: "Aigles",
+    managerName: "Sara",
+    rank: 7,
+    previousRank: null,
+    totalPoints: 120,
+    gameweekPoints: 55,
+    calculatedAt: "2026-10-14T10:00:00Z",
+    ...overrides,
+  });
+
+  test("an unknown earlier rank is null, not the current rank", () => {
+    expect(overallStandingDto(dto()).previousRank).toBeNull();
+  });
+
+  test("a known earlier rank and the server's rank pass through unchanged", () => {
+    const row = overallStandingDto(dto({ rank: 3, previousRank: 9 }));
+    expect(row.rank).toBe(3);
+    expect(row.previousRank).toBe(9);
+  });
+
+  test("the round board is read for the newest scored gameweeks, newest first", () => {
+    const gameweeks = [
+      { id: "gw1", sequence: 1, status: "finalized" },
+      { id: "gw2", sequence: 2, status: "finalized" },
+      { id: "gw3", sequence: 3, status: "provisional" },
+      { id: "gw4", sequence: 4, status: "open" },
+      { id: "gw5", sequence: 5, status: "scheduled" },
+    ];
+    expect(roundBoardGameweekIds(gameweeks)).toEqual(["gw3", "gw2", "gw1"]);
+  });
+
+  test("a season where scoring has not started has no round board to read", () => {
+    expect(
+      roundBoardGameweekIds([
+        { id: "gw1", sequence: 1, status: "open" },
+        { id: "gw2", sequence: 2, status: "scheduled" },
+      ]),
+    ).toEqual([]);
+  });
+
+  test("the cloud rankings read hands the board to the server-order selector, never the mock sorter", () => {
+    const source = readFileSync(join(ROOT, "src/services/fantasy-runtime.ts"), "utf8");
+    const from = source.indexOf("async getGlobalRankings");
+    const body = source.slice(from, source.indexOf("async getTopOverallStandings", from));
+    const cloudPart = body.slice(body.indexOf("const current = await hub();"));
+    expect(cloudPart).toContain("selectBoardPage");
+    expect(cloudPart).not.toContain("selectRankingsPage");
+  });
+
+  test("both dictionaries name the unknown movement", () => {
+    expect(dictionaries.fr["fantasy.rank.unknown"]).toBeTruthy();
+    expect(dictionaries.ar["fantasy.rank.unknown"]).toBeTruthy();
   });
 });

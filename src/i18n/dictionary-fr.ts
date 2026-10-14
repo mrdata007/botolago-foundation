@@ -529,6 +529,7 @@ export const fr = {
   "fantasy.rank.up": "En hausse",
   "fantasy.rank.down": "En baisse",
   "fantasy.rank.same": "Position inchangée",
+  "fantasy.rank.unknown": "Évolution non disponible",
   "fantasy.tab.players": "Joueurs",
   "fantasy.gameweek.status.scheduled": "À venir",
   "fantasy.gameweek.status.open": "Ouverte",
