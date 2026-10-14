@@ -150,8 +150,10 @@ export function deriveSeason(raw: SeasonRaw) {
   const worstWeek = argMin(raw.you);
   const rivalBestWeek = argMax(raw.rival);
   const rivalWorstWeek = argMin(raw.rival);
-  const bestTransferWeek = raw.transfers.reduce((a, t) => (t[1] > a[1] ? t : a));
-  const worstTransferWeek = raw.transfers.reduce((a, t) => (t[1] < a[1] ? t : a));
+  // Best and worst by the net gain (gain minus penalty), the figure the chart and headline use.
+  const netGain = (t: TransferWeek) => t[1] - t[2];
+  const bestTransferWeek = raw.transfers.reduce((a, t) => (netGain(t) > netGain(a) ? t : a));
+  const worstTransferWeek = raw.transfers.reduce((a, t) => (netGain(t) < netGain(a) ? t : a));
   const wins = lead.filter((x) => x > 0).length;
   const rivalWins = lead.filter((x) => x < 0).length;
   const bestLead = Math.max(...lead);

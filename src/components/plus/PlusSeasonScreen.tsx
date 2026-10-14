@@ -75,7 +75,7 @@ export function PlusSeasonScreen({
 
   return (
     <>
-      <div className="plus-body ps-body" ref={scroller} data-no-swipe>
+      <div className="plus-body ps-body" ref={scroller}>
         {duelOpen ? (
           <PlusDuelScreen titleRef={titleRef} />
         ) : (
@@ -573,7 +573,7 @@ function DecisionsTab() {
           <div>
             <span className="ps-label">{f("plus.s2.d_best_t", { j: <bdi>{j(bt[0])}</bdi> })}</span>
             <b className="ps-mid mint">
-              <Fig>{num(bt[1], 0, true)}</Fig>
+              <Fig>{num(bt[1] - bt[2], 0, true)}</Fig>
             </b>
             <span className="who">
               <bdi>{R.bestTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
@@ -583,7 +583,7 @@ function DecisionsTab() {
           <div>
             <span className="ps-label">{f("plus.s2.d_worst_t", { j: <bdi>{j(wt[0])}</bdi> })}</span>
             <b className="ps-mid sky">
-              <Fig>{num(wt[1], 0, true)}</Fig>
+              <Fig>{num(wt[1] - wt[2], 0, true)}</Fig>
             </b>
             <span className="who">
               <bdi>{R.worstTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
