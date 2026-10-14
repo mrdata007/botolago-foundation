@@ -1236,6 +1236,10 @@ export type Database = {
         Args: { p_other_team: string; p_season?: string }
         Returns: Json
       }
+      get_card_league_context: {
+        Args: { p_league?: string; p_rival_team?: string; p_season?: string }
+        Returns: Json
+      }
       get_manager_cards: { Args: { p_team_ids: string[] }; Returns: Json }
       get_my_account_standing: { Args: never; Returns: Json }
       get_my_card_career: { Args: { p_season?: string }; Returns: Json }
