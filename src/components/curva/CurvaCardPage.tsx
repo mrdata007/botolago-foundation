@@ -16,6 +16,7 @@ import { STAT_CODES, type LineSpec, type ReplayItem } from "@/components/manager
 import { ui, UiButton, UiCard, UiHeader, UiLinkButton } from "@/components/ui-kit";
 import { PlusEntryRows } from "@/components/plus/PlusEntry";
 import { PlusMemberRows } from "@/components/plus/PlusMemberRows";
+import { usePlusAccess } from "@/components/plus/plus-access";
 import { track } from "@/lib/analytics";
 import { PREMIUM_SURFACES } from "@/lib/feature-flags";
 import { cn } from "@/lib/utils";
@@ -87,6 +88,7 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
   const history = useAllHistory(null);
   const [replay, setReplay] = useState<ReplayItem | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const wide = usePlusAccess() === "member";
   const { beat, play } = useBeatPlayback();
   const motion = useMotionAllowed();
   const badge = useRatingBadge({
@@ -102,10 +104,24 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
   const rated = card.ovr !== null;
 
   return (
-    <div className="pb-2 md:px-6" data-testid="curva-card-page">
-      {/* One column at every width: the frame the page sits in is narrow on a desktop, and a
-          352 px card beside it left the sections a 240 px column. */}
-      <div className="mx-auto md:max-w-[352px]">
+    <div
+      className={cn(
+        "pb-2",
+        wide ? "md:px-6" : "md:grid md:grid-cols-[352px_minmax(0,1fr)] md:gap-x-6 md:px-6",
+      )}
+      data-testid="curva-card-page"
+      data-layout={wide ? "wide" : "split"}
+    >
+      {/* A subscriber's page is one column at every width, so « Votre saison » under the card is
+          as wide as the page (owner decision, 2026-10-14: wide for subscribers only). Everyone
+          else keeps the card beside the sections from 768 px. */}
+      <div
+        className={cn(
+          wide
+            ? "mx-auto md:max-w-[352px]"
+            : "md:sticky md:top-[calc(var(--topbar-h)+16px)] md:self-start",
+        )}
+      >
         <CardStage
           profile={profile}
           beat={beat}
@@ -138,7 +154,14 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
         </CardStage>
       </div>
 
-      <div className={cn("mt-4 flex min-w-0 flex-col gap-5 md:pt-5", ui.space.gutter, "md:px-0")}>
+      <div
+        className={cn(
+          "mt-4 flex min-w-0 flex-col gap-5 md:pt-5",
+          !wide && "md:mt-0",
+          ui.space.gutter,
+          "md:px-0",
+        )}
+      >
         {/* « Votre saison » (behind PREMIUM_BUILD): the analysis, blurred or clear, right under the
             card (on a phone the next thing after it; on a desktop the first thing of the column
             that sits beside it), and for a member the rows of « Mon abonnement ». */}
