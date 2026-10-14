@@ -15,6 +15,30 @@ import {
 import { usePlusCopy } from "./plus-copy";
 import { CARD_STYLES, editionLabel, editionOf } from "./plus-card-style";
 
+const ONLY_STANDARD: readonly CardEditionCode[] = ["standard"];
+
+/** The picker's unsaved state, with the inputs it was last reconciled against. */
+export interface PickerDraft {
+  open: boolean;
+  current: CardEditionCode;
+  picked: CardEditionCode;
+  failed: boolean;
+}
+
+/**
+ * A pick that was never saved does not outlive the sheet: while it is closed, and when it opens
+ * (the callers open it with their own state, so the sheet's own open handler never sees that), the
+ * draft starts again from the card's own style. Same draft back when nothing changed.
+ */
+export function syncDraft(
+  draft: PickerDraft,
+  open: boolean,
+  current: CardEditionCode,
+): PickerDraft {
+  if (open === draft.open && current === draft.current) return draft;
+  return { open, current, picked: current, failed: false };
+}
+
 /**
  * « Style de la carte » for a member: the card, live, in the style under the finger, and the
  * choice saved with « Enregistrer » through `api.choose_card_design`. Not the sales step: nothing
@@ -24,20 +48,37 @@ export function PlusStylePicker({
   open,
   onOpenChange,
   profile,
+  onlyStandard = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profile: CardProfile;
+  /** A former member: the paid styles are not offered, only the way back to the standard card. */
+  onlyStandard?: boolean;
 }) {
   const { t, lang } = usePlusCopy();
   const current = editionOf(profile);
-  const [picked, setPicked] = useState<CardEditionCode>(current);
-  const [failed, setFailed] = useState(false);
+  const [stored, setStored] = useState<PickerDraft>({
+    open,
+    current,
+    picked: current,
+    failed: false,
+  });
+  const draft = syncDraft(stored, open, current);
+  if (draft !== stored) setStored(draft);
+  const { picked, failed } = draft;
+  const setPicked = (next: CardEditionCode) => setStored({ ...draft, picked: next });
+  const setFailed = (next: boolean) => setStored((prev) => ({ ...prev, failed: next }));
   const choose = useChooseCardDesign();
   const refs = useRef<Partial<Record<CardEditionCode, HTMLButtonElement | null>>>({});
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const target = radioKeyTarget(CARD_STYLES, event, picked, lang === "ar");
+    const target = radioKeyTarget(
+      onlyStandard ? ONLY_STANDARD : CARD_STYLES,
+      event,
+      picked,
+      lang === "ar",
+    );
     if (target === null) return;
     event.preventDefault();
     event.stopPropagation();
@@ -60,22 +101,14 @@ export function PlusStylePicker({
     });
   };
 
-  // A fresh open starts from the card's own style, not from a choice that was never saved.
-  const onOpen = (next: boolean) => {
-    if (next) {
-      setPicked(current);
-      setFailed(false);
-    }
-    onOpenChange(next);
-  };
-
+  const styles = onlyStandard ? ONLY_STANDARD : CARD_STYLES;
   const shown: CardProfile = { ...profile, edition: undefined };
   if (picked !== "standard" && isCardEdition(picked)) shown.edition = picked;
 
   return (
     <UiSheet
       open={open}
-      onOpenChange={onOpen}
+      onOpenChange={onOpenChange}
       title={t("plus.pick.title")}
       footer={
         <div className="flex flex-col gap-2 px-4 pb-3">
@@ -106,9 +139,9 @@ export function PlusStylePicker({
           role="radiogroup"
           aria-label={t("plus.pick.title")}
           onKeyDown={onKeyDown}
-          className="grid w-full grid-cols-2 gap-2"
+          className={cn("grid w-full gap-2", onlyStandard ? "grid-cols-1" : "grid-cols-2")}
         >
-          {CARD_STYLES.map((style) => {
+          {styles.map((style) => {
             const on = style === picked;
             return (
               <button

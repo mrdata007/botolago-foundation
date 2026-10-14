@@ -3072,6 +3072,9 @@ export const ar = {
   "plus.profile.receipt_open": "عرض الإيصال",
   // plus member side (lane 2)
   "plus.hub.title": "اشتراكي",
+  "plus.hub.grant_name": "هدية من الفريق",
+  "plus.hub.grant_how":
+    "هذا الاشتراك هدية لك: لا يوجد ما تدفعه ولا ما تلغيه. يبقى اشتراكك فعّالًا حتى تاريخ انتهائه.",
   "plus.hub.season_t": "موسمك",
   "plus.hub.season_d": "نقاطك وقراراتك، جولة بعد جولة.",
   "plus.hub.duels_t": "مواجهاتك",

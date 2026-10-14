@@ -17,7 +17,7 @@ import type { TranslationKey } from "@/i18n/dictionaries";
 import { cn } from "@/lib/utils";
 import { usePremium, usePremiumReceipts } from "@/services/use-premium";
 
-import { PlusFeatureRows, PlusHubRow } from "./PlusMemberRows";
+import { PlusFeatureRows, PlusFormerStyleRow, PlusHubRow } from "./PlusMemberRows";
 import { PlusLogo } from "./PlusLogo";
 import { formatPlusDate, PLUS_NAME, usePlusCopy } from "./plus-copy";
 import { DateText, Money } from "./plus-text";
@@ -77,9 +77,7 @@ export function PlusProfileSection() {
     );
   }
 
-  const monthly = premium.productCode === "plus_monthly";
-  const yearly = premium.productCode === "plus_yearly";
-  if (premium.isMember && (monthly || yearly)) {
+  if (premium.isMember) {
     return (
       <Section>
         <SectionHeader
@@ -108,7 +106,9 @@ function MemberHub({ receipts }: { receipts: readonly PremiumReceipt[] }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
 
-  const monthly = premium.productCode === "plus_monthly";
+  // A complimentary grant is a member with no product and no payment: no price, no renewal.
+  const grant = premium.source === "grant" || premium.productCode === null;
+  const monthly = !grant && premium.productCode === "plus_monthly";
   const price = priceOf(monthly ? "plus_monthly" : "plus_yearly", premium.prices);
   const state = premium.state;
   const date = premium.periodEnd;
@@ -145,11 +145,15 @@ function MemberHub({ receipts }: { receipts: readonly PremiumReceipt[] }) {
           <UiKeyValueRow
             label={t("plus.profile.plan")}
             value={
-              <span>
-                {monthly ? t("plus.monthly.name") : t("plus.yearly.name")}
-                {" · "}
-                <Money amount={price.amountMad} />
-              </span>
+              grant ? (
+                <span>{t("plus.hub.grant_name")}</span>
+              ) : (
+                <span>
+                  {monthly ? t("plus.monthly.name") : t("plus.yearly.name")}
+                  {" · "}
+                  <Money amount={price.amountMad} />
+                </span>
+              )
             }
           />
           <UiKeyValueRow
@@ -165,7 +169,7 @@ function MemberHub({ receipts }: { receipts: readonly PremiumReceipt[] }) {
             {dateLine}
           </p>
         ) : null}
-        {state === "active" && !monthly ? (
+        {state === "active" && !monthly && !grant ? (
           <p className={cn("px-4 pb-3 text-pretty", ui.text.meta, ui.tone.muted)}>
             {t("plus.terms.yearly2")}
           </p>
@@ -203,7 +207,11 @@ function MemberHub({ receipts }: { receipts: readonly PremiumReceipt[] }) {
             data-testid="plus-manage"
           >
             <p className={cn("text-pretty", ui.text.body, ui.tone.default)}>
-              {monthly ? t("plus.hub.cancel_how") : t("plus.hub.yearly_how")}
+              {grant
+                ? t("plus.hub.grant_how")
+                : monthly
+                  ? t("plus.hub.cancel_how")
+                  : t("plus.hub.yearly_how")}
             </p>
             {CANCEL_IN_APP && state === "active" && monthly && !premium.cancelling ? (
               <UiButton variant="outline" className="w-full" onClick={() => setConfirmOpen(true)}>
@@ -264,6 +272,7 @@ function FormerOrNever({ receipts }: { receipts: readonly PremiumReceipt[] }) {
           </UiLinkButton>
         </div>
       </UiCard>
+      {former ? <PlusFormerStyleRow /> : null}
       {former ? (
         <UiCard padding="none" className="overflow-hidden">
           <button
