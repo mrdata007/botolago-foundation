@@ -3100,7 +3100,7 @@ export const fr = {
   "plus.s2.d_trf_h": "{n} net, contre {l} pour la ligue",
   "plus.s2.d_best_t": "Meilleur · {j}",
   "plus.s2.d_worst_t": "Pire · {j}",
-  "plus.s2.d_con_h": "{k} journées sur {n} au-dessus de la ligue",
+  "plus.s2.d_con_h": "Au-dessus de la ligue : {k} journées sur {n}",
   "plus.s2.n_overall": "Note globale",
   "plus.s2.n_league": "Ligue {n}",
   "plus.s2.n_strong": "Points forts",

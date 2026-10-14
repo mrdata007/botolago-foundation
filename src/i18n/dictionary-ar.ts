@@ -2926,7 +2926,7 @@ export const ar = {
   "plus.s2.d_trf_h": "صافي {n} مقابل {l} للدوري",
   "plus.s2.d_best_t": "الأفضل · {j}",
   "plus.s2.d_worst_t": "الأسوأ · {j}",
-  "plus.s2.d_con_h": "{k} جولات من {n} فوق متوسط الدوري",
+  "plus.s2.d_con_h": "فوق متوسط الدوري: {k} جولات من {n}",
   "plus.s2.n_overall": "التقييم العام",
   "plus.s2.n_league": "الدوري {n}",
   "plus.s2.n_strong": "نقاط القوة",

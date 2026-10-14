@@ -47,3 +47,18 @@ export function ratingName(t: (key: TranslationKey) => string, code: RatingCode)
       return t("card.stat_word.con");
   }
 }
+
+/**
+ * Whether a figure counts up from 0. Never for a figure the server already painted (the first
+ * render of a hydration: counting it would send it back to 0), never under reduced motion; yes for
+ * a figure that appears on the client (a tab chosen by the reader, a screen reached from step 1).
+ */
+export function shouldCountUp({
+  hydrating,
+  reducedMotion,
+}: {
+  hydrating: boolean;
+  reducedMotion: boolean;
+}): boolean {
+  return !hydrating && !reducedMotion;
+}

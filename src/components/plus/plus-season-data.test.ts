@@ -170,3 +170,12 @@ describe("the example season adds up", () => {
       expect(n).toBeGreaterThanOrEqual(11);
   });
 });
+
+describe("the count-up rule", () => {
+  it("never counts a figure the server painted, nor under reduced motion; counts one the reader brought", async () => {
+    const { shouldCountUp } = await import("./plus-season-fmt");
+    expect(shouldCountUp({ hydrating: true, reducedMotion: false })).toBe(false);
+    expect(shouldCountUp({ hydrating: false, reducedMotion: true })).toBe(false);
+    expect(shouldCountUp({ hydrating: false, reducedMotion: false })).toBe(true);
+  });
+});

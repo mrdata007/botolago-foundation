@@ -4,6 +4,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useSyncExternalStore,
   useState,
   type KeyboardEvent,
   type ReactNode,
@@ -12,7 +13,7 @@ import {
 import type { TranslationKey } from "@/i18n/dictionaries";
 import { useI18n } from "@/i18n/provider";
 
-import { useSeasonFmt } from "./plus-season-fmt";
+import { shouldCountUp, useSeasonFmt } from "./plus-season-fmt";
 import { type RatingCode } from "./plus-season-data";
 
 import "./plus-season.css";
@@ -29,6 +30,16 @@ function prefersReducedMotion(): boolean {
 }
 
 const COUNT_MS = 600;
+
+const noSubscription = () => () => undefined;
+/** True only for the render of a hydration (server snapshot), false for a render that starts on the client. */
+function useHydrating(): boolean {
+  return !useSyncExternalStore(
+    noSubscription,
+    () => true,
+    () => false,
+  );
+}
 
 /**
  * A figure that counts from 0 to its value in 600 ms (cubic ease-out) and lands on the exact final
@@ -49,10 +60,15 @@ export function Num({
   const { num } = useSeasonFmt();
   const final = num(value, decimals, sign);
   const [text, setText] = useState(final);
+  const hydrating = useHydrating();
+  const painted = useRef<boolean | null>(null);
+  if (painted.current === null) painted.current = hydrating;
   const numRef = useRef(num);
   numRef.current = num;
   useIsoLayoutEffect(() => {
-    if (prefersReducedMotion()) {
+    if (
+      !shouldCountUp({ hydrating: painted.current === true, reducedMotion: prefersReducedMotion() })
+    ) {
       setText(final);
       return;
     }

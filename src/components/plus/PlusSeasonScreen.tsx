@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { TranslationKey } from "@/i18n/dictionaries";
@@ -575,9 +576,8 @@ function DecisionsTab() {
               <Fig>{num(bt[1], 0, true)}</Fig>
             </b>
             <span className="who">
-              <bdi dir="ltr">
-                {R.bestTransfer.from} → {R.bestTransfer.to}
-              </bdi>
+              <bdi>{R.bestTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
+              <bdi>{R.bestTransfer.to}</bdi>
             </span>
           </div>
           <div>
@@ -586,9 +586,8 @@ function DecisionsTab() {
               <Fig>{num(wt[1], 0, true)}</Fig>
             </b>
             <span className="who">
-              <bdi dir="ltr">
-                {R.worstTransfer.from} → {R.worstTransfer.to}
-              </bdi>
+              <bdi>{R.worstTransfer.from}</bdi> <ArrowRight className="ps-arrow" aria-hidden />{" "}
+              <bdi>{R.worstTransfer.to}</bdi>
             </span>
           </div>
         </div>
