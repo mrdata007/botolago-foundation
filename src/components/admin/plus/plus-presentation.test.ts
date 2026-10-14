@@ -132,7 +132,7 @@ describe("the mode banner", () => {
       }
     }
     expect(MODE_BANNERS.off.text.fr).toContain("même avec une offre du personnel");
-    expect(MODE_BANNERS.preview.text.fr).toContain("seuls les comptes avec une offre");
+    expect(MODE_BANNERS.preview.text.fr).toContain("seuls les abonnés le voient (offre du personnel ou achat de test)");
   });
 });
 
