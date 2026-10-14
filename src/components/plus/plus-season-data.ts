@@ -30,7 +30,10 @@ export const isMissing = (n: number | null | undefined): boolean =>
 export type RatingCode = "CAP" | "SEL" | "TRF" | "CON";
 export const RATING_CODES: readonly RatingCode[] = ["CAP", "SEL", "TRF", "CON"];
 
-/** One journée with transfers: [journée, gross gain, penalty paid, transfers made]. */
+/**
+ * One journée with transfers: [journée, gross gain, penalty paid, transfers made]. The gain is
+ * before the penalty (the API's own gain is after it: add the penalty back before it goes here).
+ */
 export type TransferWeek = readonly [number, number, number, number];
 
 export interface SeasonRaw {
@@ -54,6 +57,15 @@ export interface SeasonRaw {
   worstTransfer: { from: string; to: string } | null;
   /** Journées the captain scored at least as much as the best starter, when the backend counts them. */
   bestChoiceWeeks?: number;
+  /** The journées the card counts for the captain (the « sur » of `bestChoiceWeeks`); default: every journée. */
+  captainWeeks?: number;
+  /**
+   * The real journée number of each entry above (`gameweekSeq`), when the season has gaps
+   * (journées 1, 2, 3, 5). The charts space by index and write these numbers; default 1 to J.
+   */
+  gameweeks?: readonly number[];
+  /** Season totals when the transfers are not listed week by week (the duel's read). */
+  transferTotals?: { gross: number; penalty: number; count: number };
   rival_: {
     captain: number;
     bestStarters: number;
@@ -153,8 +165,9 @@ export function deriveSeason(raw: SeasonRaw, leagueSize: number = LEAGUE_SIZE) {
   const vsLeague = raw.you.map((v, i) => v - raw.leagueAvg[i]!);
   const captainTotal = sum(raw.captain);
   const bestStarterTotal = sum(raw.bestStarter);
-  const gross = sum(raw.transfers.map((t) => t[1]));
-  const penalty = sum(raw.transfers.map((t) => t[2]));
+  const gross = raw.transferTotals?.gross ?? sum(raw.transfers.map((t) => t[1]));
+  const penalty = raw.transferTotals?.penalty ?? sum(raw.transfers.map((t) => t[2]));
+  const seq = raw.gameweeks ?? Array.from({ length: J }, (_, i) => i + 1);
   const netByWeek = raw.transfers.map((t) => t[1] - t[2]);
   const net = gross - penalty;
   const starters = total - captainTotal + penalty;
@@ -219,6 +232,8 @@ export function deriveSeason(raw: SeasonRaw, leagueSize: number = LEAGUE_SIZE) {
   const categories = categoryPairs.map(([a, b]) => a > b);
   return {
     J,
+    /** The journée number of each entry: `gameweekSeq`, not the position. */
+    seq,
     total,
     rivalTotal,
     leagueTotal,
@@ -236,7 +251,7 @@ export function deriveSeason(raw: SeasonRaw, leagueSize: number = LEAGUE_SIZE) {
     gross,
     penalty,
     paidTransfers: penalty / TRANSFER_PENALTY,
-    transferCount: sum(raw.transfers.map((t) => t[3])),
+    transferCount: raw.transferTotals?.count ?? sum(raw.transfers.map((t) => t[3])),
     netByWeek,
     net,
     netVsLeague: net - raw.leagueNetTransfers,

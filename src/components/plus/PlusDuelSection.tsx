@@ -2,6 +2,7 @@ import { useMemo, type ReactNode } from "react";
 
 import { useI18n } from "@/i18n/provider";
 import { useCardDuel } from "@/services/use-premium-card-reads";
+import { useLeagueContext } from "@/services/use-premium-league-context";
 
 import { PlusEmbed, PlusLockedSection } from "./PlusLockedSection";
 import { PlusDuelBody } from "./PlusDuelScreen";
@@ -37,18 +38,21 @@ export function PlusDuelSection({
   other,
   otherTeamId,
   size,
+  leagueId = null,
 }: {
   access: PlusAccess;
   mine: DuelSide | null;
   other: DuelSide;
   otherTeamId: string;
   size: number;
+  /** The private league the sheet is showing: the league figures are read for it, with the rival. */
+  leagueId?: string | null;
 }) {
   if (access === "off") return null;
   return access === "locked" ? (
     <LockedDuel mine={mine} other={other} size={size} />
   ) : (
-    <MemberDuel mine={mine} other={other} otherTeamId={otherTeamId} />
+    <MemberDuel mine={mine} other={other} otherTeamId={otherTeamId} leagueId={leagueId} />
   );
 }
 
@@ -99,26 +103,34 @@ function MemberDuel({
   mine,
   other,
   otherTeamId,
+  leagueId,
 }: {
   mine: DuelSide | null;
   other: DuelSide;
   otherTeamId: string;
+  leagueId: string | null;
 }) {
   const { t } = usePlusCopy();
   const { lang } = useI18n();
   const duel = useCardDuel(otherTeamId, true);
+  // The rival's team goes with the league: the context then carries their side. A league that
+  // fails to read leaves the duel with « — » for the league's figures, not an error panel.
+  const league = useLeagueContext(true, leagueId, otherTeamId);
+  const leagueLoading = league.isPending && league.fetchStatus !== "idle";
   const view = useMemo(
     () =>
       duel.data
-        ? duelToSeasonView(duel.data, lang === "ar" ? "ar" : "fr", {
-            you: mine?.name ?? "",
-            rival: other.name,
-          })
+        ? duelToSeasonView(
+            duel.data,
+            lang === "ar" ? "ar" : "fr",
+            { you: mine?.name ?? "", rival: other.name },
+            league.data ?? null,
+          )
         : null,
-    [duel.data, lang, mine?.name, other.name],
+    [duel.data, lang, mine?.name, other.name, league.data],
   );
   let body: ReactNode;
-  if (duel.isPending) {
+  if (duel.isPending || (duel.data && leagueLoading)) {
     body = (
       <>
         <div className="pl-skeleton" aria-hidden />

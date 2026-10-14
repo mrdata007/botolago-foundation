@@ -43,6 +43,7 @@ export function HeadToHeadSheet({
   row,
   mineRow = null,
   leagueSize = 0,
+  leagueId = null,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -52,6 +53,8 @@ export function HeadToHeadSheet({
    *  detailed duel shows clear above its lock. */
   mineRow?: PeopleRow | null;
   leagueSize?: number;
+  /** The league the rows belong to, for the detailed duel's league figures. */
+  leagueId?: string | null;
 }) {
   const { t } = useI18n();
   const copy = useCurvaCopy();
@@ -105,7 +108,7 @@ export function HeadToHeadSheet({
           {/* The detailed duel is a BotolaGO+ extra (behind PREMIUM_BUILD). */}
           {PlusDuelSlot ? (
             <Suspense fallback={null}>
-              <PlusDuelSlot mineRow={mineRow} row={row} size={leagueSize} />
+              <PlusDuelSlot mineRow={mineRow} row={row} size={leagueSize} leagueId={leagueId} />
             </Suspense>
           ) : null}
           <UiButton variant="ghost" onClick={() => onOpenChange(false)}>

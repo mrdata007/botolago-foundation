@@ -297,7 +297,7 @@ function PointsTab() {
     },
     {
       label: t("plus.s2.tile_best"),
-      hint: j(best + 1),
+      hint: j(S.seq[best] ?? Number.NaN),
       you: num(R.you[best]!),
       league: num(R.leagueAvg[best]!),
       gap: R.you[best]! - R.leagueAvg[best]!,
@@ -305,7 +305,7 @@ function PointsTab() {
     },
     {
       label: t("plus.s2.b_worst"),
-      hint: j(worst + 1),
+      hint: j(S.seq[worst] ?? Number.NaN),
       you: num(R.you[worst]!),
       league: num(R.leagueAvg[worst]!),
       gap: R.you[worst]! - R.leagueAvg[worst]!,
@@ -348,7 +348,7 @@ function PointsTab() {
         <h2 className="ps-hl" id="ps-p-bars">
           {f("plus.s2.p_bars_h", {
             pts: <Fig>{R.you[best]}</Fig>,
-            j: <bdi>{j(best + 1)}</bdi>,
+            j: <bdi>{j(S.seq[best] ?? Number.NaN)}</bdi>,
           })}
         </h2>
         <Key
@@ -364,7 +364,7 @@ function PointsTab() {
         />
         <PointsBars
           jAxis={jAxis}
-          label={fill("plus.s2.a_bars", { best: j(best + 1), pts: R.you[best]! })}
+          label={fill("plus.s2.a_bars", { best: j(S.seq[best] ?? Number.NaN), pts: R.you[best]! })}
         />
       </section>
 
@@ -481,7 +481,7 @@ function PointsTab() {
               return (
                 <tr key={i}>
                   <th scope="row">
-                    <bdi>{jAxis(i + 1)}</bdi>
+                    <bdi>{jAxis(S.seq[i] ?? Number.NaN)}</bdi>
                   </th>
                   <td className="you">
                     <Fig>{v}</Fig>
@@ -553,7 +553,7 @@ function DecisionsTab() {
           <div>
             <b className="ps-mid">
               <Fig>
-                {S.bestChoiceWeeks}/{J}
+                {S.bestChoiceWeeks}/{R.captainWeeks ?? J}
               </Fig>
             </b>
             <span className="who">{t("plus.s2.d_best_choice")}</span>
@@ -628,7 +628,7 @@ function DecisionsTab() {
           </h2>
           <SignedBars
             vals={S.vsLeague}
-            labels={Array.from({ length: J }, (_, i) => (i === 0 ? jAxis(1) : String(i + 1)))}
+            labels={S.seq.map((n, i) => (i === 0 ? jAxis(n) : String(n)))}
             min={-6}
             max={16}
             ticks={[-5, 0, 10]}

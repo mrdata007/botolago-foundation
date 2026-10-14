@@ -23,12 +23,12 @@ const f1 = (v: number) => String(+v.toFixed(1));
 const pts = (xs: number[], ys: number[]) => xs.map((x, i) => `${f1(x)},${f1(ys[i]!)}`);
 const pathOf = (p: string[]) => `M${p.join(" L")}`;
 const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0");
-const journees = (J: number) => Array.from({ length: J }, (_, i) => i + 1);
 /** A column position; a single journée sits at the start rather than dividing by zero. */
 const span = (J: number) => Math.max(J - 1, 1);
 const finite = (a: readonly number[]) => a.length > 0 && a.every(Number.isFinite);
-const axisLabels = (J: number, jAxis: (n: number) => string) =>
-  journees(J).map((n) => (n === 1 ? jAxis(1) : String(n)));
+/** The journée numbers under the columns: the first with its « J. », the others bare. Real `gameweekSeq`. */
+const axisLabels = (seq: readonly number[], jAxis: (n: number) => string) =>
+  seq.map((n, i) => (i === 0 ? jAxis(n) : String(n)));
 
 function Grid({
   Y,
@@ -182,7 +182,7 @@ export function CumChart({
   label: string;
   jAxis: (n: number) => string;
 }) {
-  const { J } = useSeason();
+  const { J, S } = useSeason();
   const id = useId();
   const H = 220;
   const T = 14;
@@ -231,7 +231,7 @@ export function CumChart({
           {b[last]}
         </text>
       ) : null}
-      <XLabels X={X} y={H - 6} labels={axisLabels(a.length, jAxis)} />
+      <XLabels X={X} y={H - 6} labels={axisLabels(S.seq, jAxis)} />
     </Svg>
   );
 }
@@ -292,7 +292,7 @@ export function PointsBars({ label, jAxis }: { label: string; jAxis: (n: number)
           {v}
         </text>
       ))}
-      <XLabels X={X} y={H - 6} labels={axisLabels(J, jAxis)} />
+      <XLabels X={X} y={H - 6} labels={axisLabels(S.seq, jAxis)} />
     </Svg>
   );
 }
@@ -370,7 +370,7 @@ export function SignedBars({
 
 /** The captain's points per journée, and what the best starter would have added on top (hatched). */
 export function CaptainChart({ label, jAxis }: { label: string; jAxis: (n: number) => string }) {
-  const { raw, J } = useSeason();
+  const { raw, J, S } = useSeason();
   const hatch = useId();
   const cap = raw.captain;
   const best = raw.bestStarter;
@@ -432,7 +432,7 @@ export function CaptainChart({ label, jAxis }: { label: string; jAxis: (n: numbe
           </g>
         );
       })}
-      <XLabels X={X} y={H - 6} labels={axisLabels(J, jAxis)} />
+      <XLabels X={X} y={H - 6} labels={axisLabels(S.seq, jAxis)} />
     </Svg>
   );
 }
@@ -496,7 +496,7 @@ export function LeadChart({ label, jAxis }: { label: string; jAxis: (n: number) 
           </g>
         ) : null,
       )}
-      <XLabels X={X} y={H - 6} labels={axisLabels(J, jAxis)} />
+      <XLabels X={X} y={H - 6} labels={axisLabels(S.seq, jAxis)} />
     </Svg>
   );
 }
@@ -544,7 +544,7 @@ export function OvrChart({ label, jAxis }: { label: string; jAxis: (n: number) =
       <XLabels
         X={X}
         y={h - 4}
-        labels={journees(J).map((n) => (n === 1 ? jAxis(1) : n === 6 || n === J ? String(n) : ""))}
+        labels={S.seq.map((n, i) => (i === 0 ? jAxis(n) : i === 5 || i === J - 1 ? String(n) : ""))}
       />
     </Svg>
   );

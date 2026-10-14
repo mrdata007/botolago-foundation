@@ -4764,6 +4764,9 @@ begin
          'admin_football_mapping_reviewer_availability',
          -- SofaScore player review list and its resolve (20261011130000).
          'admin_sofascore_player_match_queue', 'admin_resolve_sofascore_player_match',
+         -- Its link options, "link as second ID" and "create this player" (20261014170000).
+         'admin_sofascore_player_link_options', 'admin_sofascore_link_alias',
+         'admin_sofascore_create_player',
          -- Public ranking exclusions (20261011160000).
          'admin_set_public_ranking_exclusion', 'admin_list_public_ranking_exclusions',
          -- RapidAPI calls this month (20261013110000) and the SofaScore

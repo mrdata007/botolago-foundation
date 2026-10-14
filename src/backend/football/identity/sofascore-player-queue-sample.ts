@@ -1,6 +1,13 @@
 import {
   SofascoreQueueError,
+  createPlayerArgs,
+  linkOptionAction,
   parseSofascoreQueue,
+  type AliasResult,
+  type CreatePlayerInput,
+  type CreateResult,
+  type LinkOption,
+  type LinkOptions,
   type ParsedQueue,
   type QueueEntry,
   type ResolveResult,
@@ -70,6 +77,8 @@ const RAW_SAMPLE_QUEUE: readonly unknown[] = [
         position: "defender",
         shirtNumber: 4,
         mappedToSofascoreId: "811111",
+        mappedActive: true,
+        sofascoreAliasIds: [],
       },
     ],
   },
@@ -113,6 +122,7 @@ const RAW_SAMPLE_QUEUE: readonly unknown[] = [
     lastSeenAt: "2026-10-11T21:00:00Z",
     timesSeen: 12,
     candidates: [],
+    canCreate: true,
   },
   {
     sofascorePlayerId: "900005",
@@ -253,6 +263,7 @@ const RAW_SAMPLE_QUEUE: readonly unknown[] = [
     lastSeenAt: "2026-10-12T18:00:00Z",
     timesSeen: 1,
     candidates: [],
+    canCreate: true,
   },
   {
     sofascorePlayerId: "900011",
@@ -316,6 +327,62 @@ const RAW_SAMPLE_QUEUE: readonly unknown[] = [
   { name: "ligne sans identifiant", reason: "no_candidate", candidates: [] },
 ];
 
+/** Invented catalog players for the search: some in a sample club, one with a second id, one switched off. */
+const SAMPLE_CATALOG: readonly LinkOption[] = [
+  {
+    playerId: id(3),
+    fullName: "Joueur Exemple Bêta",
+    displayName: "Bêta",
+    position: "defender",
+    teamId: id(7002),
+    teamName: "Club Exemple Rabat",
+    shirtNumber: 4,
+    inClub: false,
+    sofascoreId: "811111",
+    sofascoreActive: true,
+    sofascoreAliasIds: [],
+  },
+  {
+    playerId: id(21),
+    fullName: "Joueur Exemple Kappa",
+    displayName: "Kappa",
+    position: "goalkeeper",
+    teamId: id(7004),
+    teamName: "Club Exemple Tanger",
+    shirtNumber: 16,
+    inClub: false,
+    sofascoreId: null,
+    sofascoreActive: null,
+    sofascoreAliasIds: [],
+  },
+  {
+    playerId: id(22),
+    fullName: "Joueur Exemple Omicron",
+    displayName: null,
+    position: "goalkeeper",
+    teamId: id(7004),
+    teamName: "Club Exemple Tanger",
+    shirtNumber: 30,
+    inClub: false,
+    sofascoreId: "822222",
+    sofascoreActive: true,
+    sofascoreAliasIds: ["833333"],
+  },
+  {
+    playerId: id(23),
+    fullName: "لاعب تجريبي سابع",
+    displayName: null,
+    position: "forward",
+    teamId: id(7003),
+    teamName: "نادي تجريبي فاس",
+    shirtNumber: 11,
+    inClub: false,
+    sofascoreId: "844444",
+    sofascoreActive: false,
+    sofascoreAliasIds: [],
+  },
+];
+
 export function buildSampleSofascoreQueue(): ParsedQueue {
   return parseSofascoreQueue(RAW_SAMPLE_QUEUE);
 }
@@ -325,6 +392,9 @@ export class InMemorySofascorePlayerQueueRepository implements SofascorePlayerQu
   private readonly skipped: number;
   /** Every confirmation received, in order, for a test to read. */
   readonly resolved: { sofascorePlayerId: string; playerId: string }[] = [];
+  /** Every "link as second ID" and every creation received, in order. */
+  readonly aliased: { sofascorePlayerId: string; playerId: string }[] = [];
+  readonly created: { sofascorePlayerId: string; input: CreatePlayerInput }[] = [];
 
   constructor(
     private readonly options: {
@@ -353,13 +423,80 @@ export class InMemorySofascorePlayerQueueRepository implements SofascorePlayerQu
     }
     const entry = this.entries.find((e) => e.sofascorePlayerId === sofascorePlayerId);
     if (!entry) throw new SofascoreQueueError("queue_entry_not_found", "not found");
-    const candidate = entry.candidates.find((c) => c.playerId === playerId);
+    const candidate =
+      entry.candidates.find((c) => c.playerId === playerId) ??
+      SAMPLE_CATALOG.find((c) => c.playerId === playerId);
     if (!candidate) throw new SofascoreQueueError("player_not_found", "not a candidate");
-    if (candidate.mappedToSofascoreId !== null) {
+    const mapped =
+      "mappedToSofascoreId" in candidate ? candidate.mappedToSofascoreId : candidate.sofascoreId;
+    if (mapped !== null) {
       throw new SofascoreQueueError("sofascore_mapping_conflict", "already mapped");
     }
     this.resolved.push({ sofascorePlayerId, playerId });
     this.entries = this.entries.filter((e) => e.sofascorePlayerId !== sofascorePlayerId);
     return { sofascorePlayerId, playerId, mappingId: null, alreadyResolved: false };
+  }
+
+  async listOptions(sofascorePlayerId: string, query?: string): Promise<LinkOptions> {
+    if (this.options.failListWith) {
+      throw new SofascoreQueueError(this.options.failListWith, "refused");
+    }
+    const entry = this.entries.find((e) => e.sofascorePlayerId === sofascorePlayerId);
+    if (!entry) throw new SofascoreQueueError("queue_entry_not_found", "not found");
+    const q = query?.trim().toLowerCase() ?? "";
+    if (q !== "" && (q.length < 2 || q.length > 80)) {
+      throw new SofascoreQueueError("invalid_resolution", "invalid search");
+    }
+    const players = SAMPLE_CATALOG.map((p) => ({ ...p, inClub: p.teamId === entry.teamId }))
+      .filter((p) =>
+        q === ""
+          ? p.inClub
+          : `${p.fullName ?? ""} ${p.displayName ?? ""}`.toLowerCase().includes(q),
+      )
+      .sort((a, b) => Number(b.inClub) - Number(a.inClub));
+    return { sofascorePlayerId, query: q === "" ? null : q, players, skipped: 0 };
+  }
+
+  async linkAlias(sofascorePlayerId: string, playerId: string): Promise<AliasResult> {
+    if (this.options.failResolveWith) {
+      throw new SofascoreQueueError(this.options.failResolveWith, "refused");
+    }
+    const entry = this.entries.find((e) => e.sofascorePlayerId === sofascorePlayerId);
+    if (!entry) throw new SofascoreQueueError("queue_entry_not_found", "not found");
+    const fromCandidates = entry.candidates.find((c) => c.playerId === playerId);
+    const option =
+      SAMPLE_CATALOG.find((c) => c.playerId === playerId) ??
+      (fromCandidates
+        ? {
+            sofascoreId: fromCandidates.mappedToSofascoreId,
+            sofascoreActive: fromCandidates.mappedActive,
+          }
+        : undefined);
+    if (!option) throw new SofascoreQueueError("player_not_found", "unknown player");
+    if (linkOptionAction(option) !== "alias") {
+      throw new SofascoreQueueError("sofascore_alias_needs_primary", "no active main link");
+    }
+    this.aliased.push({ sofascorePlayerId, playerId });
+    this.entries = this.entries.filter((e) => e.sofascorePlayerId !== sofascorePlayerId);
+    return {
+      sofascorePlayerId,
+      playerId,
+      primarySofascoreId: option.sofascoreId,
+      alreadyLinked: false,
+    };
+  }
+
+  async createPlayer(sofascorePlayerId: string, input: CreatePlayerInput): Promise<CreateResult> {
+    createPlayerArgs(sofascorePlayerId, input);
+    if (this.options.failResolveWith) {
+      throw new SofascoreQueueError(this.options.failResolveWith, "refused");
+    }
+    const entry = this.entries.find((e) => e.sofascorePlayerId === sofascorePlayerId);
+    if (!entry) throw new SofascoreQueueError("queue_entry_not_found", "not found");
+    if (!entry.canCreate)
+      throw new SofascoreQueueError("sofascore_create_no_club", "cannot create");
+    this.created.push({ sofascorePlayerId, input });
+    this.entries = this.entries.filter((e) => e.sofascorePlayerId !== sofascorePlayerId);
+    return { sofascorePlayerId, playerId: id(900 + this.created.length), created: true };
   }
 }
