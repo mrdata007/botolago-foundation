@@ -316,15 +316,21 @@ export function useGuestClaim(): { status: GuestClaimStatus; retry: () => void }
 
 /**
  * The matches whose pick the account may not hold yet: the phone's picks while
- * the import is under way or has failed. Their answer is unknown (the server
- * keeps an existing account pick over the phone's), so the screen must not
- * show them as empty or let a tap write over them.
+ * the import is under way, or has failed in a way another try may fix (a
+ * waiting automatic retry, or the reader's own). Their answer is unknown (the
+ * server keeps an existing account pick over the phone's), so the screen must
+ * not show them as empty or let a tap write over them. After a refusal that
+ * asking again cannot change, the hold lifts: the account's own read decides
+ * what each card shows, the phone's picks stay on the phone, and the notice
+ * still says how many were not added.
  */
 export function claimHeldFixtures(
   status: GuestClaimStatus,
   guest: GuestStoreState,
 ): ReadonlySet<string> {
-  if (status.phase !== "pending" && status.phase !== "failed") return NO_FIXTURES;
+  const holding =
+    status.phase === "pending" || (status.phase === "failed" && claimRetryable(status.code));
+  if (!holding) return NO_FIXTURES;
   return new Set(Object.keys(guest.predictions).filter((id) => !guest.notCounted.includes(id)));
 }
 const NO_FIXTURES: ReadonlySet<string> = new Set();
