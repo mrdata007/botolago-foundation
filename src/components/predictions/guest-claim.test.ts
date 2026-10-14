@@ -4,6 +4,7 @@ import { QueryClient } from "@tanstack/react-query";
 import type { MatchVoteInput, MatchVotesDto } from "@/backend/predictions/contracts";
 import type { GuestVotesState } from "@/backend/predictions/guest-votes";
 import type { ClaimGuestPredictionsDto, ClaimStatus } from "@/backend/predictions/contracts";
+import { fixturePersonalState } from "./use-predictions-round";
 import {
   emptyGuestStore,
   GuestPredictionStore,
@@ -383,6 +384,31 @@ describe("what the guest import holds back on screen (review)", () => {
     const state = guestState([fx(1), fx(2)], [fx(2)]);
     expect([...claimHeldFixtures(pending, state)]).toEqual([fx(1)]);
     expect([...claimHeldFixtures(failed, state)]).toEqual([fx(1)]);
+  });
+
+  test("a failure another try may fix keeps holding, even with no automatic retry left", () => {
+    const state = guestState([fx(1)]);
+    expect(claimHeldFixtures({ ...failed, code: "data_unavailable" }, state).size).toBe(1);
+    expect(claimHeldFixtures({ ...failed, retrying: true }, state).size).toBe(1);
+  });
+
+  test("after a refusal asking again cannot change, the hold lifts so cards stop saying 'not loaded'", () => {
+    const state = guestState([fx(1), fx(2)]);
+    for (const code of [
+      "validation_failed",
+      "predictions_invalid_payload",
+      "account_banned",
+    ] as const) {
+      expect(claimHeldFixtures({ ...failed, code }, state).size).toBe(0);
+    }
+    // The account's own read then decides what a held match shows.
+    expect(
+      fixturePersonalState(
+        "ready",
+        claimHeldFixtures({ ...failed, code: "validation_failed" }, state),
+        fx(1),
+      ),
+    ).toBe("ready");
   });
 
   test("nothing is held when idle or done", () => {

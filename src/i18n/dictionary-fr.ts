@@ -2249,7 +2249,7 @@ export const fr = {
   "predictions.claim.unsaved_other":
     "{n} pronostics faits avant la connexion ne sont pas encore sur votre compte",
   "predictions.claim.failed_body":
-    "Ils restent sur ce téléphone. Réessayez avant le coup d'envoi : un match commencé ne peut plus être ajouté.",
+    "Rien n'est perdu : vos pronostics restent sur ce téléphone. Réessayez avant le coup d'envoi : un match commencé ne peut plus être ajouté.",
   "predictions.claim.retrying": "Nouvel essai automatique en cours…",
   "predictions.personal.loading": "Chargement de vos pronostics enregistrés…",
   "predictions.personal.failed":

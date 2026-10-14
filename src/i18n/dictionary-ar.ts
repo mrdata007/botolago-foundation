@@ -2106,16 +2106,16 @@ export const ar = {
   "predictions.claim.started_few": "{n} مباريات انطلقت ولم تُضف توقعاتها",
   "predictions.claim.started_other": "{n} مباراة انطلقت ولم تُضف توقعاتها",
   "predictions.claim.pending": "جارٍ إضافة توقعاتك كزائر إلى حسابك…",
-  "predictions.claim.unsaved_one": "توقع واحد قبل تسجيل الدخول لم يُضف إلى حسابك بعد",
+  "predictions.claim.unsaved_one": "توقع واحد سجّلته قبل تسجيل الدخول لم يُضف إلى حسابك بعد",
   "predictions.claim.unsaved_two": "توقعان قبل تسجيل الدخول لم يُضافا إلى حسابك بعد",
   "predictions.claim.unsaved_few": "{n} توقعات قبل تسجيل الدخول لم تُضف إلى حسابك بعد",
-  "predictions.claim.unsaved_other": "{n} توقعًا قبل تسجيل الدخول لم تُضف إلى حسابك بعد",
+  "predictions.claim.unsaved_other": "{n} توقعًا قبل تسجيل الدخول لم يُضف إلى حسابك بعد",
   "predictions.claim.failed_body":
-    "ما زالت محفوظة على هذا الهاتف. أعد المحاولة قبل انطلاق المباراة: لا يمكن إضافة توقع مباراة بدأت.",
+    "لم يضع شيء: توقعاتك باقية على هذا الهاتف. أعد المحاولة قبل انطلاق المباراة: لا يمكن إضافة توقع مباراة بدأت.",
   "predictions.claim.retrying": "تُعاد المحاولة تلقائيًا…",
   "predictions.personal.loading": "جارٍ تحميل توقعاتك المحفوظة…",
   "predictions.personal.failed":
-    "تعذّر تحميل توقعاتك المحفوظة. عُلّق التعديل حتى لا تُستبدل نتائجك.",
+    "تعذّر تحميل توقعاتك المحفوظة. عُلّق التعديل حتى لا تُستبدل توقعاتك المحفوظة.",
   "predictions.personal.unknown_pick": "لم يُحمَّل التوقع بعد",
 
   /* Pronostics (BG-0146): leagues and invitations */
