@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   mapSofascoreQueueError,
+  type CreatePlayerInput,
   type ParsedQueue,
   type SofascorePlayerQueueRepository,
 } from "@/backend/football/identity/sofascore-player-queue";
@@ -9,7 +10,8 @@ import { SofascorePlayerQueueView, type QueueLoadState } from "./SofascorePlayer
 
 /**
  * The live screen: reads the open list through the repository it is given and
- * hands the view one way to confirm a player. The repository is the only door
+ * hands the view its actions (confirm a player, find and link any catalog
+ * player, link a second SofaScore id, create the player). The repository is the only door
  * to the database (RPC functions that re-check staff, MFA and the permission);
  * `canManage` only decides what is drawn.
  */
@@ -41,9 +43,17 @@ export function SofascorePlayerQueueScreen({
   }, [repository, version]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
-  const resolve = useMemo(
-    () => (sofascorePlayerId: string, playerId: string) =>
-      repository.resolve(sofascorePlayerId, playerId),
+  const actions = useMemo(
+    () => ({
+      resolve: (sofascorePlayerId: string, playerId: string) =>
+        repository.resolve(sofascorePlayerId, playerId),
+      linkAlias: (sofascorePlayerId: string, playerId: string) =>
+        repository.linkAlias(sofascorePlayerId, playerId),
+      createPlayer: (sofascorePlayerId: string, input: CreatePlayerInput) =>
+        repository.createPlayer(sofascorePlayerId, input),
+      listOptions: (sofascorePlayerId: string, query?: string) =>
+        repository.listOptions(sofascorePlayerId, query),
+    }),
     [repository],
   );
 
@@ -53,7 +63,7 @@ export function SofascorePlayerQueueScreen({
       state={state}
       canManage={canManage}
       onReload={reload}
-      resolve={resolve}
+      {...actions}
     />
   );
 }
