@@ -5,6 +5,7 @@ import { matchDayQuery } from "@/components/matches/match-day-query";
 import { ui } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
 import { matchDayKey } from "@/lib/match-kickoff";
+import { presentScore } from "@/lib/match-score";
 import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import { cn } from "@/lib/utils";
 import type { Match } from "@/types/domain";
@@ -34,7 +35,7 @@ export function MatchdayStrip() {
   const middle = (match: Match) =>
     match.status === "scheduled"
       ? timeFmt.format(new Date(match.kickoff))
-      : `${match.homeScore ?? 0} – ${match.awayScore ?? 0}`;
+      : presentScore(match).text;
 
   return (
     <section

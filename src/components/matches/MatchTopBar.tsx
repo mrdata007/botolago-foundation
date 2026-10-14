@@ -4,6 +4,7 @@ import { ui, UiBackButton, UiHeader, UiIconButton, UiLivePill } from "@/componen
 import { useI18n } from "@/i18n/provider";
 import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { liveClock } from "@/lib/live-minute";
+import { presentScore } from "@/lib/match-score";
 import { useLiveStageLabels } from "./live-stage";
 import { cn } from "@/lib/utils";
 import type { Club, Match } from "@/types/domain";
@@ -101,6 +102,7 @@ function CompactBar({
   const { t } = useI18n();
   const stages = useLiveStageLabels();
   const showScore = match.status === "live" || match.status === "finished";
+  const score = presentScore(match);
   const isLive = match.status === "live" && !liveUnconfirmed;
   const unconfirmed = match.status === "live" && liveUnconfirmed === true;
   const clock = liveClock({
@@ -159,9 +161,9 @@ function CompactBar({
                   ui.score.sm,
                 )}
               >
-                <bdi>{match.homeScore ?? 0}</bdi>
+                <bdi>{score.homeText}</bdi>
                 <span>–</span>
-                <bdi>{match.awayScore ?? 0}</bdi>
+                <bdi>{score.awayText}</bdi>
               </span>
             ) : null}
             {isLive ? <UiLivePill minute={clock.minute} label={clock.stage} /> : null}

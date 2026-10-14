@@ -9,6 +9,7 @@ import { isMfaStepUpError } from "@/backend/auth/step-up";
 import type { ResetInviteCodeDto } from "@/backend/predictions/contracts";
 import { mapPredictionsError } from "@/backend/predictions/errors";
 import { LeagueInviteCode } from "@/components/fantasy/LeagueInviteCode";
+import { LeagueUpdatedLine } from "@/components/fantasy/LeagueUpdatedLine";
 import { CupInfo } from "@/components/fantasy-lists/CupInfo";
 import { InviteLinkShare } from "@/components/predictions/leagues/InviteLinkShare";
 import { LeaguePredictionsStandings } from "@/components/predictions/leagues/LeaguePredictionsStandings";
@@ -58,7 +59,6 @@ import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { useManagerCardLive } from "@/services/manager-card-status";
 import { predictionsService } from "@/services/predictions";
-import { moroccoDateTimeFormat } from "@/lib/morocco-time";
 import type { League } from "@/types/fantasy";
 
 // The card's band, minis and compare link are their own chunks, requested only while the section is
@@ -182,16 +182,6 @@ function LeagueDetailBody() {
     }
   };
 
-  // BG-0100: pinned to the competition calendar, never the viewer's. A
-  // formatter without `timeZone` disagrees with every other time on the page.
-  const updated = moroccoDateTimeFormat(lang === "ar" ? "ar-MA" : "fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date());
-
   const movementLabels = {
     up: t("fantasy.rank.up"),
     down: t("fantasy.rank.down"),
@@ -264,12 +254,11 @@ function LeagueDetailBody() {
             />
           ) : tab === "league" ? (
             <>
-              <p className={cn("text-center", ui.text.meta, ui.tone.muted)}>
-                {t("fpl.last_updated")}:{" "}
-                <strong className={cn(ui.tone.default, "[font-weight:var(--ui-weight-heavy)]")}>
-                  {updated}
-                </strong>
-              </p>
+              {/* Dated by the standings themselves, never by this render. */}
+              <LeagueUpdatedLine
+                standings={standingsQ.data ?? []}
+                retrievedAt={standingsQ.dataUpdatedAt}
+              />
               {cardsOn ? (
                 // The newly rated friends, hung on a rail, and the way to « Les vôtres ».
                 <Suspense fallback={null}>

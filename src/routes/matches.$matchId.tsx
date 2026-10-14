@@ -12,6 +12,7 @@ import {
   hasLeagueTable,
   type FootballSeason,
   type FootballStandings,
+  type MatchSectionKey,
   type MatchSeason,
 } from "@/services/football";
 import { newsService } from "@/services/news";
@@ -217,7 +218,7 @@ function MatchDetailPage() {
   // open: back to the tab, restored from the back/forward cache, focus, the
   // network back. A failed refetch keeps the last read on screen (said to be
   // stale after two minutes) instead of replacing the page with an error.
-  const { freshness } = useLiveFreshness({
+  const { freshness, shownAt } = useLiveFreshness({
     match,
     updatedAt: detailQ.dataUpdatedAt,
     refetch: () => void detailQ.refetch({ cancelRefetch: false }),
@@ -252,12 +253,25 @@ function MatchDetailPage() {
   const lineups = detailQ.data?.lineups ?? [];
   const pressure = detailQ.data?.pressure ?? [];
   const absences = detailQ.data?.absences ?? [];
+  // A section whose read failed is not an empty one: its list above is empty
+  // only because nothing was read. It says so, with a retry, in its place; the
+  // score and the other sections stay (audit 2026-10-14, DATA-02).
+  const failed = (section: MatchSectionKey) =>
+    detailQ.data?.sections?.[section].status === "failed";
+  const sectionError = (message: string) => (
+    <ErrorState message={message} onRetry={() => void detailQ.refetch()} />
+  );
 
   // Above the early returns (Rules of Hooks), and fed the events whether or
   // not they are loaded yet: it seeds from the first FRESH list it sees, so a
   // goal already on the sheet — or scored while the reader was elsewhere,
-  // still missing from the cached copy they come back to — never plays.
-  const { goal, dismiss } = useGoalMoment(matchId, eventsWhenFresh(detailQ, live?.events), match);
+  // still missing from the cached copy they come back to — never plays. A
+  // timeline that failed to load is no list at all, not an empty one.
+  const { goal, dismiss } = useGoalMoment(
+    matchId,
+    eventsWhenFresh(detailQ, failed("timeline") ? undefined : live?.events),
+    match,
+  );
 
   // Both sides together, with the clash rule: a split header, a stat bar or
   // an H2H bar must never paint two independent (and possibly equal) reds.
@@ -370,6 +384,14 @@ function MatchDetailPage() {
     />
   );
   const goalClub = goal?.side === "home" ? home : goal?.side === "away" ? away : undefined;
+  const lineupsUnavailable = {
+    lineups: failed("lineups")
+      ? sectionError(t("matches.detail.section_failed.lineups"))
+      : undefined,
+    absences: failed("absences")
+      ? sectionError(t("matches.detail.section_failed.absences"))
+      : undefined,
+  };
 
   return (
     <AppShell
@@ -429,7 +451,7 @@ function MatchDetailPage() {
 
       <LiveFreshnessNote
         freshness={freshness}
-        updatedAt={detailQ.dataUpdatedAt}
+        updatedAt={shownAt}
         refreshing={detailQ.isFetching}
         onRefresh={() => void detailQ.refetch()}
       />
@@ -479,20 +501,25 @@ function MatchDetailPage() {
                   <div className="mb-4">{prediction}</div>
                 ) : null}
                 <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-                  <EventTimeline
-                    events={live.events}
-                    home={home}
-                    away={away}
-                    palettes={palettes}
-                    lineups={lineups}
-                    isLive={isLive}
-                    phase={phase}
-                    halfTime={
-                      match.halfTimeHomeScore !== undefined && match.halfTimeAwayScore !== undefined
-                        ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
-                        : undefined
-                    }
-                  />
+                  {failed("timeline") ? (
+                    sectionError(t("matches.detail.section_failed.timeline"))
+                  ) : (
+                    <EventTimeline
+                      events={live.events}
+                      home={home}
+                      away={away}
+                      palettes={palettes}
+                      lineups={lineups}
+                      isLive={isLive}
+                      phase={phase}
+                      halfTime={
+                        match.halfTimeHomeScore !== undefined &&
+                        match.halfTimeAwayScore !== undefined
+                          ? { home: match.halfTimeHomeScore, away: match.halfTimeAwayScore }
+                          : undefined
+                      }
+                    />
+                  )}
                   {wideLayout ? (
                     <LineupsView
                       lineups={lineups}
@@ -501,6 +528,7 @@ function MatchDetailPage() {
                       palettes={palettes}
                       phase={phase}
                       absences={absences}
+                      unavailable={lineupsUnavailable}
                     />
                   ) : null}
                 </div>
@@ -519,6 +547,14 @@ function MatchDetailPage() {
                 isLive={isLive}
                 phase={phase}
                 pressure={pressure}
+                unavailable={{
+                  stats: failed("statistics")
+                    ? sectionError(t("matches.detail.section_failed.stats"))
+                    : undefined,
+                  pressure: failed("pressure")
+                    ? sectionError(t("matches.detail.section_failed.pressure"))
+                    : undefined,
+                }}
               />
             )}
 
@@ -530,6 +566,7 @@ function MatchDetailPage() {
                 palettes={palettes}
                 phase={phase}
                 absences={absences}
+                unavailable={lineupsUnavailable}
               />
             )}
 
@@ -540,6 +577,11 @@ function MatchDetailPage() {
                 away={away}
                 palettes={palettes}
                 meetings={h2h}
+                meetingsUnavailable={
+                  failed("headToHead")
+                    ? sectionError(t("matches.detail.section_failed.h2h"))
+                    : undefined
+                }
               />
             )}
           </div>
@@ -592,7 +634,7 @@ function MatchDetailPage() {
 
 type HeadToHeadTabProps = { season: MatchSeason } & Pick<
   ComponentProps<typeof HeadToHead>,
-  "home" | "away" | "palettes" | "meetings"
+  "home" | "away" | "palettes" | "meetings" | "meetingsUnavailable"
 >;
 
 /**
@@ -617,7 +659,14 @@ function HeadToHeadTab({ season, ...rest }: HeadToHeadTabProps) {
  * Nothing reads it on the server either, so the server and the browser's
  * first render both hold its place (`standingsPending`), and agree.
  */
-function LeagueHeadToHeadTab({ season, home, away, palettes, meetings }: HeadToHeadTabProps) {
+function LeagueHeadToHeadTab({
+  season,
+  home,
+  away,
+  palettes,
+  meetings,
+  meetingsUnavailable,
+}: HeadToHeadTabProps) {
   const { lang } = useI18n();
   const queryClient = useQueryClient();
   // A switch of language puts the whole page back to loading (the detail is
@@ -662,6 +711,7 @@ function LeagueHeadToHeadTab({ season, home, away, palettes, meetings }: HeadToH
         if (seasonsQ.isError) void seasonsQ.refetch();
       }}
       meetings={meetings}
+      meetingsUnavailable={meetingsUnavailable}
     />
   );
 }
