@@ -175,3 +175,16 @@ describe("the fixtures", () => {
     }
   });
 });
+
+describe("the card edition (BotolaGO+) is read, and never makes a card fail to load", () => {
+  const member = FIXTURES.rated.league?.members[0] ?? rated;
+  it.each(["standard", "holo", "electric", "pixel", "chrome"])("keeps %s", (edition) => {
+    expect(myCardSchema.parse({ ...rated, edition }).edition).toBe(edition);
+    expect(memberCardSchema.parse({ ...member, edition }).edition).toBe(edition);
+  });
+  it("reads an older payload, or an edition this build does not know, as absent", () => {
+    expect(myCardSchema.parse(rated).edition).toBeUndefined();
+    expect(myCardSchema.parse({ ...rated, edition: "gold" }).edition).toBeUndefined();
+    expect(memberCardSchema.parse({ ...member, edition: 3 }).edition).toBeUndefined();
+  });
+});

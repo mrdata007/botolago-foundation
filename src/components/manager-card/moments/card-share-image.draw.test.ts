@@ -8,6 +8,7 @@ import { dictionaries, type TranslationKey } from "@/i18n/dictionaries";
 import type { Language } from "@/types/domain";
 
 import { eclatRenderer } from "../eclat";
+import { measureText, resetMeasure } from "../eclat/measure";
 import { plainRenderer } from "../plain-renderer";
 import { fromMyCard } from "../to-profile";
 import type { CardProfile } from "../types";
@@ -33,6 +34,13 @@ let canvases: { width: number; height: number }[] = [];
 beforeEach(() => {
   const g = globalThis as Record<string, unknown>;
   const saved = { document: g.document, Image: g.Image };
+  // Éclat's measure keeps the first canvas it finds for the life of the module, and test files share
+  // their modules: found under this file's recording `document`, it would lay out the card's art
+  // with the recording's widths here and in every Éclat test that runs after this file. Make it read
+  // "no canvas" (its committed table, as a server or any other test does) before the recording goes
+  // in, and forget it again afterwards (`afterEach`).
+  resetMeasure();
+  measureText("A", "d");
   recordings = [];
   canvases = [];
   g.document = {
@@ -64,6 +72,7 @@ beforeEach(() => {
   restore = () => {
     g.document = saved.document;
     g.Image = saved.Image;
+    resetMeasure();
   };
 });
 afterEach(() => restore?.());

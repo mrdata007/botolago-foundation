@@ -29,7 +29,7 @@
 --   S  rated (not provisional): a provisional_cleared moment.
 --   V  verified MFA factor, team in FS1.   W  signed in, no team.
 begin;
-select extensions.plan(65);
+select extensions.plan(69);
 
 -- A statement's outcome: 'ok', or its SQLSTATE and message. Whatever it did is undone.
 create function pg_temp.outcome(p_sql text) returns text language plpgsql as $$
@@ -421,8 +421,8 @@ select extensions.is(
     'ovrNullReason', 'tier', 'bestTier', 'nextTier', 'provisional', 'stats', 'gameweeksCounted',
     'minRated', 'minConfirmed', 'rulesVersion', 'throughGameweekSeq', 'calculatedAt',
     'firstCountedGameweekSeq', 'firstRatedGameweekSeq', 'ratingGameweeks', 'ratingGameweeksComplete',
-    'previousSeason', 'seasonClosed', 'seasons', 'createdAt', 'moments', 'ovrChanges'),
-  'M''s card has exactly the 30 keys of myCardSchema plus ovrChanges (20261012200100)');
+    'previousSeason', 'seasonClosed', 'seasons', 'createdAt', 'moments', 'ovrChanges', 'edition'),
+  'M''s card has exactly the 30 keys of myCardSchema plus ovrChanges (20261012200100) and edition (20261013100100)');
 select extensions.is(
   (select concat_ws('|',
     (select string_agg(pg_temp.keys(c -> 'stats' -> s), ',' order by s) from unnest(array['cap', 'con', 'sel', 'trf']) s),
@@ -448,9 +448,48 @@ select extensions.is(
   pg_temp.keys(pg_temp.member_of(pg_temp.usr('W'), pg_temp.tm('M')))
   || '|' || pg_temp.keys(pg_temp.member_of(pg_temp.usr('W'), pg_temp.tm('M')) -> 'stats'),
   pg_temp.want('teamId', 'name', 'club', 'serial', 'founderCohort', 'seasonLabel', 'ratingState', 'ovr',
-    'tier', 'provisional', 'stats', 'gameweeksCounted', 'minRated', 'firstRatedGameweekSeq')
+    'tier', 'provisional', 'stats', 'gameweeksCounted', 'minRated', 'firstRatedGameweekSeq', 'edition')
     || '|' || pg_temp.want('cap', 'con', 'sel', 'trf'),
-  'a member card has exactly the 14 keys of memberCardSchema and its stats exactly {cap, con, sel, trf}');
+  'a member card has exactly the 14 keys of memberCardSchema plus edition (20261013100100) and its stats exactly {cap, con, sel, trf}');
+
+-- BotolaGO+ (20261013100100): the edition each card is drawn in. Cosmetic: the only
+-- difference between a member's card and a free card is that one key.
+create function pg_temp.edition_setup(p_mode text, p_end text) returns text language sql as $$
+  select format($f$
+    select app_private.premium_configure(%L);
+    insert into app.premium_entitlements (user_id, state, product_code, source, current_period_start,
+      current_period_end, last_event_at)
+    values (%L, 'active', 'plus_monthly', 'web', statement_timestamp() - interval '5 days',
+      statement_timestamp() + %L::interval, statement_timestamp() - interval '5 days');
+    insert into app.card_edition_choices (user_id, edition_code) values (%L, 'holo')$f$,
+    p_mode, pg_temp.usr('M'), p_end, pg_temp.usr('M'))
+$$;
+create function pg_temp.edition_of(p_mode text, p_end text) returns text language sql as $$
+  select concat_ws('/',
+    pg_temp.under(pg_temp.edition_setup(p_mode, p_end), 'api.get_my_manager_card()', pg_temp.usr('M'))::jsonb #>> '{card,edition}',
+    pg_temp.under(pg_temp.edition_setup(p_mode, p_end),
+      format('api.get_manager_cards(array[%L]::uuid[])', pg_temp.tm('M')), pg_temp.usr('W'))::jsonb #>> '{cards,0,edition}')
+$$;
+select extensions.is(
+  pg_temp.edition_of('on', '20 days') || '|' || pg_temp.edition_of('on', '-1 day') || '|' || pg_temp.edition_of('off', '20 days'),
+  'holo/holo|standard/standard|standard/standard',
+  'a member''s chosen edition is on their own card and on the member card other managers read; a lapsed membership, or the switch off, shows standard everywhere');
+select extensions.is(
+  (pg_temp.under(pg_temp.edition_setup('on', '20 days'), 'api.get_my_manager_card()', pg_temp.usr('M'))::jsonb -> 'card') - 'edition',
+  pg_temp.card_of(pg_temp.usr('M')) - 'edition',
+  'membership changes nothing else on the caller''s card: figures, tier, stats and moments are the same');
+select extensions.is(
+  (pg_temp.under(pg_temp.edition_setup('on', '20 days'),
+     format('api.get_manager_cards(array[%L]::uuid[])', pg_temp.tm('M')), pg_temp.usr('W'))::jsonb -> 'cards' -> 0) - 'edition',
+  pg_temp.member_of(pg_temp.usr('W'), pg_temp.tm('M')) - 'edition',
+  'nor on the member card others read');
+select extensions.is(
+  (select jsonb_agg(c ->> 'teamId' order by o) from jsonb_array_elements(
+     pg_temp.under(pg_temp.edition_setup('on', '20 days'),
+       format('api.get_manager_cards(array[%L, %L, %L]::uuid[])', pg_temp.tm('S'), pg_temp.tm('M'), pg_temp.tm('N')),
+       pg_temp.usr('W'))::jsonb -> 'cards') with ordinality as t(c, o)),
+  jsonb_build_array(pg_temp.tm('S'), pg_temp.tm('M'), pg_temp.tm('N')),
+  'and the order of a list is the order asked, never the order of membership');
 select extensions.is(
   pg_temp.keys(pg_temp.history(pg_temp.usr('M'), 'null, null, 20') -> 'items' -> 0)
   || '|' || pg_temp.keys(pg_temp.history(pg_temp.usr('M'), 'null, null, 20')),

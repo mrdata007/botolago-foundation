@@ -133,6 +133,13 @@ async function expectNothingPastTheEdge(page: Page) {
       // SVG's rectangle is what counts, and it is checked as every other element is.
       const owner = (node as SVGElement).ownerSVGElement;
       if (owner && getComputedStyle(owner).overflow !== "visible") continue;
+      // The same for a decorative layer that clips what it holds (the tier-up burst's beams scaling
+      // up inside `.mc-burst`, the glint's band crossing the card): hidden from assistive technology
+      // and clipped to its own box, so its box is what counts, and it is checked as every other
+      // element is. Its beams' own rectangles run past the window for a few frames while they are
+      // never painted there.
+      const clip = node.parentElement?.closest('[aria-hidden="true"]');
+      if (clip && clip !== node && /hidden|clip/.test(getComputedStyle(clip).overflowX)) continue;
       const label = (node.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 24);
       out.push(
         `${node.tagName.toLowerCase()} "${label}" spans ${Math.round(box.left)}..${Math.round(box.right)} in a ${viewport}px window`,
@@ -455,12 +462,14 @@ test.describe("Arabic, motion and the number", () => {
   });
 
   for (const lang of LANGS) {
-    test(`${lang}: the card's Latin runs keep their tracking under the app's stylesheet, and its Arabic runs have none`, async ({
+    test(`${lang}: the card's Latin runs are tracked in French only, and its Arabic runs never`, async ({
       page,
     }) => {
-      // `html[dir="rtl"] * { letter-spacing: normal }` (src/styles.css) outranks a presentation
-      // attribute: the card sets its tracking as an inline style, so LASTREET, « OVR », the serial
-      // and the wordmark are tracked in the Arabic interface too, and the plaque was sized for it
+      // The shield's text is HTML, so the app's `html[dir="rtl"] * { letter-spacing: normal }`
+      // (src/styles.css, BG-0069) reaches it: LASTREET, « OVR » and the serial are tracked in the
+      // French interface and set without tracking in the Arabic one, like every other run there
+      // (the spec above checks that no text of an Arabic page is tracked). Éclat drew them in SVG,
+      // which that rule does not reach, and tracked them in both.
       await page.setViewportSize({ width: 390, height: 844 });
       await start(page, lang);
       await gotoHydrated(page, "/curva/carte?mc=homa", lang);
@@ -468,13 +477,16 @@ test.describe("Arabic, motion and the number", () => {
       await expect(stage).toHaveAttribute("data-mc-ready", "1");
       await expect(page.locator("html")).toHaveAttribute("dir", lang === "ar" ? "rtl" : "ltr");
       const runs = await stage.evaluate((root) =>
-        [...root.querySelectorAll("svg text")].map((node) => ({
-          text: node.textContent ?? "",
-          tier: node.hasAttribute("data-tier"),
-          ovrLabel: node.hasAttribute("data-ovrlabel"),
-          serial: node.getAttribute("data-meta") === "serial",
-          spacing: parseFloat(getComputedStyle(node).letterSpacing) || 0,
-        })),
+        // every element of the card that holds text of its own
+        [...root.querySelectorAll(".mc-shield span, .mc-shield bdi")]
+          .filter((node) => [...node.childNodes].some((child) => child.nodeType === 3))
+          .map((node) => ({
+            text: (node.textContent ?? "").trim(),
+            tier: node.classList.contains("mc-shield__tier"),
+            ovrLabel: node.classList.contains("mc-shield__ovrl"),
+            serial: node.classList.contains("mc-shield__serial"),
+            spacing: parseFloat(getComputedStyle(node).letterSpacing) || 0,
+          })),
       );
       const only = (pick: (run: (typeof runs)[number]) => boolean, what: string) => {
         const found = runs.filter(pick);
@@ -483,16 +495,16 @@ test.describe("Arabic, motion and the number", () => {
       };
       for (const run of only((r) => r.tier, "the tier word")) {
         expect(run.text).toBe("LASTREET");
-        expect(run.spacing, "LASTREET is tracked").toBeGreaterThan(0);
+        if (lang === "fr") expect(run.spacing, "LASTREET is tracked").toBeGreaterThan(0);
+        else expect(run.spacing, "LASTREET is not tracked in Arabic").toBe(0);
       }
       for (const run of only((r) => r.ovrLabel, "« OVR »")) {
-        expect(run.spacing, "« OVR » is tracked").toBeGreaterThan(0);
+        if (lang === "fr") expect(run.spacing, "« OVR » is tracked").toBeGreaterThan(0);
+        else expect(run.spacing, "« OVR » is not tracked in Arabic").toBe(0);
       }
       for (const run of only((r) => r.serial, "the serial")) {
-        expect(run.spacing, "the serial is tracked").toBeGreaterThan(0);
-      }
-      for (const run of only((r) => r.text === "BOTOLAGO", "the wordmark")) {
-        expect(run.spacing, "the wordmark is tracked").toBeGreaterThan(0);
+        if (lang === "fr") expect(run.spacing, "the serial is tracked").toBeGreaterThan(0);
+        else expect(run.spacing, "the serial is not tracked in Arabic").toBe(0);
       }
       // Arabic script is never tracked: spacing breaks the joins
       for (const run of runs.filter((r) => /\p{Script=Arabic}/u.test(r.text))) {
@@ -552,8 +564,9 @@ test.describe("Arabic, motion and the number", () => {
         const frames: { opacity: number; onTop: boolean }[] = [];
         (window as unknown as { __frames: typeof frames }).__frames = frames;
         const sample = () => {
+          // the card's own number (44 px and wider), not a token's in a row
           const number = [...document.querySelectorAll('[data-mc="ovr"]')].find(
-            (node) => node.getBoundingClientRect().width > 60,
+            (node) => node.getBoundingClientRect().width > 44,
           );
           if (number) {
             let opacity = 1;
@@ -605,7 +618,7 @@ test.describe("Arabic, motion and the number", () => {
  * it the card settles back to the flat stack. Under reduced motion none of it happens.
  */
 test.describe("the card's tilt and depth", () => {
-  const stageCard = (page: Page) => page.getByTestId("curva-stage").locator(".mc-eclat");
+  const stageCard = (page: Page) => page.getByTestId("curva-stage").locator(".mc-shield");
 
   async function openCard(page: Page, { reduced = false }: { reduced?: boolean } = {}) {
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -621,24 +634,24 @@ test.describe("the card's tilt and depth", () => {
   const depth = (page: Page) =>
     stageCard(page).evaluate((root) => {
       const style = (node: Element | null) => (node ? getComputedStyle(node) : null);
-      const rims = [...root.querySelectorAll(".mc-rim")];
+      // the card's thickness: a 2D offset of the outline at rest
+      const edge = root.querySelector(".mc-shield__edge");
       return {
         light: getComputedStyle(root).getPropertyValue("--mc-ax").trim(),
         inline: (root as HTMLElement).style.getPropertyValue("--mc-ax"),
         classes: root.className,
-        tilt: style(root.querySelector(".mc-eclat__tilt"))?.transform,
-        tiltStyle: style(root.querySelector(".mc-eclat__tilt"))?.transformStyle,
-        // every piece the tilt moves: the layers, the frame's and the rims' leaves (where the depth of
-        // the frame and of the walls is written), the cast shadow and the pieces lifted out of a layer
-        layers: [
-          ...root.querySelectorAll(".mc-l:not(.mc-rim), .mc-leaf, .mc-rims, .mc-cast, .mc-live"),
-        ].map((layer) => getComputedStyle(layer).transform),
+        tilt: style(root.querySelector(".mc-shield__tilt"))?.transform,
+        tiltStyle: style(root.querySelector(".mc-shield__tilt"))?.transformStyle,
+        // every layer the tilt gives a height: frame, face, art, text, number, lines, light, emblem
+        layers: [...root.querySelectorAll(".mc-sl")].map(
+          (layer) => getComputedStyle(layer).transform,
+        ),
         // a `will-change` left on anything: it keeps a layer allocated, so none is allowed at rest
         willChange: [root, ...root.querySelectorAll("*")]
           .map((node) => getComputedStyle(node).willChange)
           .filter((value) => value !== "auto"),
-        rim: rims[0] ? getComputedStyle(rims[0]).transform : null,
-        number: style(root.querySelector(".mc-l--num"))?.transform,
+        rim: edge ? getComputedStyle(edge).transform : null,
+        number: style(root.querySelector(".mc-sl--num"))?.transform,
       };
     });
 
@@ -657,7 +670,7 @@ test.describe("the card's tilt and depth", () => {
       const root = await openCard(page);
       await expectNoAnimations(page, "the card at rest, before any pointer");
 
-      // at rest: no 3D tree, every layer plain, the first rim a 2D offset (the card's thickness)
+      // at rest: no 3D tree, every layer plain, the card's thickness a 2D offset
       const rest = await depth(page);
       expect(rest.tilt).toBe("none");
       expect(rest.tiltStyle).not.toBe("preserve-3d");
@@ -665,7 +678,7 @@ test.describe("the card's tilt and depth", () => {
       expect(rest.layers.filter((transform) => transform !== "none")).toEqual([]);
       expect(rest.willChange).toEqual([]);
       expect(rest.rim).toMatch(/^matrix\(/);
-      expect(rest.classes).not.toMatch(/mc-eclat--(active|idle|settle)/);
+      expect(rest.classes).not.toMatch(/mc-shield--(active|idle|settle)/);
 
       // a mouse over the card: the light follows it, the tree is 3D, the number layer has height
       const box = (await root.boundingBox())!;
@@ -676,7 +689,7 @@ test.describe("the card's tilt and depth", () => {
         .poll(async () => translateZ((await depth(page)).number), { timeout: 4_000 })
         .toBeGreaterThan(0);
       const over = await depth(page);
-      expect(over.classes).toContain("mc-eclat--active");
+      expect(over.classes).toContain("mc-shield--active");
       expect(Number(over.inline)).toBeLessThan(0); // the pointer is on the leading half
       expect(over.tilt).toMatch(/^matrix3d\(/);
 
@@ -699,14 +712,14 @@ test.describe("the card's tilt and depth", () => {
       expect(after.layers.length).toBe(rest.layers.length);
       expect(after.layers.filter((transform) => transform !== "none")).toEqual([]);
       expect(after.willChange).toEqual([]);
-      expect(after.classes).not.toMatch(/mc-eclat--(active|settle)/);
+      expect(after.classes).not.toMatch(/mc-shield--(active|settle)/);
       await expectNoAnimations(page, "the card after the pointer has left");
     });
 
     test("a flip, a replay and a re-render do not draw the card again: its markup is set once", async ({
       page,
     }) => {
-      // every write of a card's markup (`innerHTML` with a Éclat root): React sets it again, with the
+      // every write of a card's markup (`innerHTML` with a shield root): React sets it again, with the
       // same string, whenever the prop is a new object (docs/engineering/CURVA_CARD_SPEED.md)
       await page.addInitScript(() => {
         const writes: number[] = [];
@@ -715,7 +728,7 @@ test.describe("the card's tilt and depth", () => {
         Object.defineProperty(Element.prototype, "innerHTML", {
           ...descriptor,
           set(value: string) {
-            if (String(value).includes("mc-eclat")) writes.push(performance.now());
+            if (String(value).includes("mc-shield")) writes.push(performance.now());
             descriptor.set!.call(this, value);
           },
         });
@@ -763,8 +776,8 @@ test.describe("the card's tilt and depth", () => {
     expect(after.inline).toBe("");
     expect(after.light).toBe(before.light);
     expect(after.tilt).toBe("none");
-    expect(after.classes).not.toMatch(/mc-eclat--(active|idle|settle)/);
-    // the card is not lifted under reduced motion (the tilt never mounts): the layers and the rims' group
+    expect(after.classes).not.toMatch(/mc-shield--(active|idle|settle)/);
+    // the card is not lifted under reduced motion (the tilt never mounts): every layer stays flat
     expect(after.layers.length).toBeGreaterThanOrEqual(5);
     expect(after.layers.filter((transform) => transform !== "none")).toEqual([]);
     expect(after.willChange).toEqual([]);
@@ -784,9 +797,10 @@ test.describe("the card's tilt and depth", () => {
       stageCard(page).evaluate((root) => ({
         hoverNone: matchMedia("(hover: none)").matches,
         classes: root.className,
-        frame: getComputedStyle(root.querySelector(".mc-leaf--frame")!).transform,
-        number: getComputedStyle(root.querySelector(".mc-l--num")!).transform,
-        crop: !!root.querySelector("svg.mc-l--num.mc-crop"),
+        frame: getComputedStyle(root.querySelector(".mc-sl--frame")!).transform,
+        number: getComputedStyle(root.querySelector(".mc-sl--num")!).transform,
+        // the autograph keeps its own height above the face
+        art: getComputedStyle(root.querySelector(".mc-sl--art")!).transform,
         floats: document
           .getAnimations()
           .filter((a) => a.effect instanceof KeyframeEffect && a.playState === "running").length,
@@ -804,21 +818,21 @@ test.describe("the card's tilt and depth", () => {
       await page.waitForTimeout(1500);
       const floating = await floatDepth(page);
       expect(floating.hoverNone, "the page reads a touch-only screen").toBe(true);
-      expect(floating.classes).toContain("mc-eclat--idle");
+      expect(floating.classes).toContain("mc-shield--idle");
       expect(floating.frame).toMatch(/^matrix3d\(/);
       expect(floating.number).toMatch(/^matrix3d\(/);
-      expect(floating.crop, "the number keeps its crop").toBe(true);
+      expect(floating.art, "the autograph keeps its height").toMatch(/^matrix3d\(/);
       expect(floating.floats, "the float's compositor animations run").toBeGreaterThan(0);
 
       // a tap on the card (a finger lifting is a pointerleave, a pan a pointercancel)
       await root.tap();
       await page.waitForTimeout(1000);
       const tapped = await floatDepth(page);
-      expect(tapped.classes).toContain("mc-eclat--idle");
-      expect(tapped.classes).not.toContain("mc-eclat--settle");
+      expect(tapped.classes).toContain("mc-shield--idle");
+      expect(tapped.classes).not.toContain("mc-shield--settle");
       expect(tapped.frame).toMatch(/^matrix3d\(/);
       expect(tapped.number).toMatch(/^matrix3d\(/);
-      expect(tapped.crop).toBe(true);
+      expect(tapped.art).toMatch(/^matrix3d\(/);
       expect(tapped.floats).toBeGreaterThan(0);
     });
   });
@@ -968,7 +982,7 @@ test.describe("G1 says what happens next", () => {
           // the card keeps its shape and stays between 232 and 296 px
           expect(card.width, `${where}: the card`).toBeGreaterThanOrEqual(231.5);
           expect(card.width, `${where}: the card`).toBeLessThanOrEqual(296.5);
-          expect(card.height / card.width, `${where}: the card's shape`).toBeCloseTo(1.618, 1);
+          expect(card.height / card.width, `${where}: the card's shape`).toBeCloseTo(1.366, 1);
           if (mc === "rated") {
             // the state with a number and the provisional pill on its line
             await expect(page.getByTestId("curva-rating-line"), where).toContainText(

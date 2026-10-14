@@ -9,7 +9,7 @@
 --   D  banned by staff: may still ask (a ban does not suspend the right), and
 --      is closed like A.
 begin;
-select extensions.plan(62);
+select extensions.plan(68);
 
 create function pg_temp.id(n integer) returns uuid language sql immutable as $$
   select ('ad0e0000-0000-4000-8000-' || lpad(n::text, 12, '0'))::uuid
@@ -176,6 +176,29 @@ values
   (pg_temp.id(6), null, (current_setting('test.league_a')::jsonb ->> 'leagueId')::uuid,
     current_setting('test.team_b')::uuid, 2, 40, 1, now());
 select set_config('request.jwt.claims', '', true);
+
+-- BotolaGO+ (20261013100300): A holds a monthly web membership (billed by the provider), a
+-- complimentary grant, a chosen card edition, a customer id at the payment provider and two
+-- billing events; B has one billing event of his own.
+insert into app.premium_entitlements (user_id, state, product_code, source, current_period_start,
+  current_period_end, last_event_at)
+values (pg_temp.id(21), 'active', 'plus_monthly', 'web', now() - interval '10 days',
+  now() + interval '20 days', now() - interval '10 days');
+insert into app_private.premium_grants (user_id, ends_at, reason, granted_by_principal_id)
+values (pg_temp.id(21), now() + interval '30 days', 'Press partner goodwill', pg_temp.id(31));
+insert into app.card_edition_choices (user_id, edition_code) values (pg_temp.id(21), 'holo');
+insert into app_private.billing_customers (user_id, provider, provider_customer_ref)
+values (pg_temp.id(21), 'cmi', 'cust-amina-1');
+insert into app_private.billing_events (provider_event_id, provider, source, event_type, user_id,
+  product_code, occurred_at, amount_minor, currency, signature_verified, outcome, state_before,
+  state_after, payload)
+values
+  ('del:a1', 'cmi', 'web', 'purchase', pg_temp.id(21), 'plus_monthly', now() - interval '10 days',
+    2000, 'MAD', true, 'applied', 'none', 'active', '{"email":"deletion-1@example.test","card":"**** 4242"}'),
+  ('del:a2', 'cmi', 'web', 'renewal', pg_temp.id(21), 'plus_monthly', now() - interval '5 days',
+    2000, 'MAD', true, 'applied', 'active', 'active', '{"email":"deletion-1@example.test"}'),
+  ('del:b1', 'cmi', 'web', 'purchase', pg_temp.id(22), 'plus_monthly', now() - interval '2 days',
+    2000, 'MAD', true, 'applied', 'none', 'active', '{"orderId":"b-1"}');
 
 -- ---------------------------------------------------------------------------
 -- Shape
@@ -383,6 +406,18 @@ select set_config('storage.allow_delete_query', 'true', true);
 delete from storage.objects where bucket_id = 'avatars' and name like pg_temp.id(21)::text || '/%';
 select set_config('storage.allow_delete_query', 'false', true);
 
+-- BotolaGO+: A is still billed monthly on the web, so the account does not go. The billing
+-- worker cancels it at the provider first (the state becomes cancelling) and the next
+-- hourly run erases.
+select extensions.throws_ok(
+  format($$select api.service_erase_account(%L, 1)$$, current_setting('test.request_a')),
+  'PT409', 'account_deletion_subscription_active',
+  'the account does not go while a renewing web subscription is active');
+select extensions.is(
+  (select count(*)::integer from app.profiles where id = pg_temp.id(21)), 1, 'and nothing was erased');
+update app.premium_entitlements set state = 'cancelling', cancel_requested_at = now()
+where user_id = pg_temp.id(21);
+
 select set_config('test.erased', api.service_erase_account(current_setting('test.request_a')::uuid, 1)::text, true);
 select extensions.is(
   current_setting('test.erased')::jsonb - 'requestId',
@@ -391,6 +426,30 @@ select extensions.is(
 
 select extensions.ok(not exists (select 1 from auth.users where id = pg_temp.id(21)),
   'the Auth user is gone');
+select extensions.is(
+  (select concat_ws('/',
+    (select count(*) from app.premium_entitlements where user_id = pg_temp.id(21)),
+    (select count(*) from app_private.premium_grants where user_id = pg_temp.id(21)),
+    (select count(*) from app.card_edition_choices where user_id = pg_temp.id(21)),
+    (select count(*) from app_private.billing_customers where user_id = pg_temp.id(21)))),
+  '0/0/0/0', 'A''s membership, grant, card edition and customer id went with the account');
+select extensions.is(
+  (select concat_ws('/', count(*), bool_and(user_id is null), bool_and(payload = '{}'::jsonb),
+      bool_and(erased_at is not null), count(distinct subject_pseudonym), bool_and(subject_pseudonym ~ '^erased-[0-9a-f]{16}$'),
+      sum(amount_minor), min(currency))
+   from app_private.billing_events where provider_event_id in ('del:a1', 'del:a2')),
+  '2/t/t/t/1/t/4000/MAD',
+  'A''s two billing events are kept for accounting, pseudonymised: no user, an empty payload, one shared pseudonym, amounts and currency intact');
+select extensions.is(
+  (select concat_ws('/', user_id = pg_temp.id(22), payload ->> 'orderId', subject_pseudonym is null, erased_at is null)
+   from app_private.billing_events where provider_event_id = 'del:b1'),
+  't/b-1/t/t', 'B''s billing event is untouched');
+select extensions.ok(
+  strpos(pg_catalog.pg_get_functiondef('app_private.account_deletion_erase(uuid,integer)'::regprocedure),
+    'premium_erase_user') > 0
+  and strpos(pg_catalog.pg_get_functiondef('app_private.account_deletion_erase(uuid,integer)'::regprocedure),
+    'botolago:manager-card') > 0,
+  'the erasure calls the billing pseudonymisation and still holds the Manager Card lock (the earlier patch survived)');
 select extensions.ok(not exists (select 1 from app.profiles where id = pg_temp.id(21)),
   'and the profile');
 select extensions.is(

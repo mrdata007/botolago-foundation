@@ -5,6 +5,8 @@ import { useCardCopy } from "@/components/manager-card/copy";
 import { useMotionCopy } from "@/components/manager-card/motion-copy";
 import { TierWord } from "@/components/manager-card/tier-word";
 import { STAT_CODES, type CardProfile } from "@/components/manager-card/types";
+import { cardOutline } from "@/components/manager-card/motion/outline";
+import { useCardOutline } from "@/components/manager-card/use-card-outline";
 import { useCardPalette } from "@/components/manager-card/use-card-palette";
 import { useI18n } from "@/i18n/provider";
 
@@ -34,7 +36,7 @@ const HONEYCOMB = [hex(4.33, 5), hex(0, 12.5), hex(8.66, 12.5)].join("");
 
 /**
  * The back of the card, plain DOM (the stage's « Retourner »), made of the front's own parts: the
- * cut-cornered outline and its rim stroke, the lacquer with the backlight and the honeycomb, the
+ * card's outline (the renderer's: the shield's, the cut corner before it loads) and its rim, the lacquer with the backlight and the honeycomb, the
  * club's disc and the season as on the front's tab, the name in the front's serif, the tier in its
  * pointed chip, the four statistics with a bar each, and the logo (the BotolaGO wordmark, from its path data), centred at the foot. The serial is data and is not shown. The colours are
  * the tier's material from the active renderer (`useCardPalette`), so the back is the same object
@@ -54,13 +56,17 @@ export function CardBack({ profile }: { profile: CardProfile }) {
   const palette = useCardPalette(profile.ovr === null ? null : profile.tier);
   const pattern = useId();
   const metal = palette.metal;
+  // the renderer's own outline (the shield's) once it has loaded; the cut corner until then. The
+  // plate sits inside the rim's padding, so the same percentages draw it a frame's width inside.
+  const outline = useCardOutline(rtl);
+  const cut = outline === cardOutline(rtl);
   const rim: CSSProperties = {
-    clipPath: frame(rtl, CUT),
+    clipPath: cut ? frame(rtl, CUT) : outline,
     backgroundImage: `linear-gradient(145deg, ${metal[0]}, ${metal[1]} 22%, ${metal[2]} 38%, ${metal[3]} 55%, ${metal[4]} 72%, ${metal[5]} 88%, ${metal[6]})`,
     padding: "1cqw",
   };
   const plate: CSSProperties = {
-    clipPath: frame(rtl, CUT - 0.8),
+    clipPath: cut ? frame(rtl, CUT - 0.8) : outline,
     backgroundColor: palette.plate,
     backgroundImage: `radial-gradient(110% 60% at 50% 38%, color-mix(in srgb, ${palette.glow} 30%, transparent), transparent 72%), linear-gradient(180deg, ${palette.deep}, ${palette.plate} 70%)`,
     color: palette.light,
@@ -115,7 +121,14 @@ export function CardBack({ profile }: { profile: CardProfile }) {
             <rect width="100" height="161.8" fill={`url(#${pattern})`} />
           </svg>
 
-          <div className="relative flex h-full w-full flex-col px-[8cqw] pb-[7cqw] pt-[8cqw]">
+          <div
+            className={
+              cut
+                ? "relative flex h-full w-full flex-col px-[8cqw] pb-[7cqw] pt-[8cqw]"
+                : // the shield: clear of its shoulders at the top and of its point at the foot
+                  "relative flex h-full w-full flex-col px-[9cqw] pb-[13cqw] pt-[15cqw]"
+            }
+          >
             <div className="flex items-center gap-[3cqw]">
               {profile.club ? (
                 <span
@@ -138,11 +151,17 @@ export function CardBack({ profile }: { profile: CardProfile }) {
               ) : null}
             </div>
 
-            <div className="mt-[7cqw] flex flex-col items-start gap-[3.5cqw]">
+            <div
+              className={
+                cut
+                  ? "mt-[7cqw] flex flex-col items-start gap-[3.5cqw]"
+                  : "mt-[4cqw] flex flex-col items-start gap-[2.5cqw]"
+              }
+            >
               {name ? (
                 <bdi
                   dir="auto"
-                  className="max-w-full truncate text-[11cqw] leading-none"
+                  className={`max-w-full truncate leading-none ${cut ? "text-[11cqw]" : "text-[9cqw]"}`}
                   style={{ fontFamily: '"Instrument Serif", "Times New Roman", serif' }}
                 >
                   {name}
@@ -164,7 +183,13 @@ export function CardBack({ profile }: { profile: CardProfile }) {
               ) : null}
             </div>
 
-            <dl className="my-auto grid grid-cols-2 gap-x-[6cqw] gap-y-[9cqw] pt-[6cqw]">
+            <dl
+              className={
+                cut
+                  ? "my-auto grid grid-cols-2 gap-x-[6cqw] gap-y-[9cqw] pt-[6cqw]"
+                  : "my-auto grid grid-cols-2 gap-x-[6cqw] gap-y-[4.5cqw] pt-[3cqw]"
+              }
+            >
               {STAT_CODES.map((code) => {
                 const value = profile.stats[code];
                 return (
@@ -179,7 +204,7 @@ export function CardBack({ profile }: { profile: CardProfile }) {
                       </span>
                     </dt>
                     <dd
-                      className="text-[14cqw] leading-none"
+                      className={`leading-none ${cut ? "text-[14cqw]" : "text-[11cqw]"}`}
                       style={{ ...display, color: palette.light }}
                     >
                       {value === null ? DASH : <Figure>{value}</Figure>}

@@ -386,6 +386,10 @@ export type Database = {
         Args: { p_auth_user_id: string }
         Returns: Json
       }
+      admin_get_premium_member: {
+        Args: { p_reason: string; p_request_id: string; p_user_id: string }
+        Returns: Json
+      }
       admin_get_revocation_worker_health: { Args: never; Returns: Json }
       admin_get_revocation_worker_runtime_status: { Args: never; Returns: Json }
       admin_get_session_revocation_status: {
@@ -397,6 +401,15 @@ export type Database = {
         Returns: Json
       }
       admin_get_user: { Args: { p_user_id: string }; Returns: Json }
+      admin_grant_premium: {
+        Args: {
+          p_ends_at: string
+          p_idempotency_key: string
+          p_reason: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       admin_home_stories: { Args: never; Returns: Json }
       admin_list_active_assignments: {
         Args: { p_staff_principal_id: string }
@@ -564,6 +577,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_premium_overview: { Args: never; Returns: Json }
       admin_publish_home_story: {
         Args: { p_id: string; p_published: boolean; p_version: number }
         Returns: Json
@@ -618,6 +632,14 @@ export type Database = {
           p_idempotency_key: string
           p_reason: string
           p_staff_principal_id: string
+        }
+        Returns: Json
+      }
+      admin_revoke_premium: {
+        Args: {
+          p_grant_id: string
+          p_idempotency_key: string
+          p_reason: string
         }
         Returns: Json
       }
@@ -774,6 +796,7 @@ export type Database = {
         Args: { p_choice: string; p_fixture_id: string; p_question: string }
         Returns: Json
       }
+      choose_card_design: { Args: { p_code: string }; Returns: Json }
       claim_guest_predictions: { Args: { p_items: Json }; Returns: Json }
       complete_football_ingestion: {
         Args: {
@@ -1242,6 +1265,7 @@ export type Database = {
         Returns: Json
       }
       get_my_notification_preferences: { Args: never; Returns: Json }
+      get_my_premium: { Args: never; Returns: Json }
       get_my_staff_context: { Args: never; Returns: Json }
       home_stories: { Args: never; Returns: Json }
       ingest_current_player_fixture_performance: {
@@ -1611,6 +1635,7 @@ export type Database = {
         Args: { p_language?: string; p_round_number?: number }
         Returns: Json
       }
+      premium_status: { Args: never; Returns: Json }
       preview_fantasy_catalog_activation: {
         Args: {
           p_expected_fixture_count?: number
@@ -1779,6 +1804,7 @@ export type Database = {
         Args: { p_ids: string[]; p_sent: boolean }
         Returns: undefined
       }
+      service_apply_billing_event: { Args: { p_event: Json }; Returns: Json }
       service_apply_current_player_list: {
         Args: { p_expected_plan_digest: string; p_observation_id: string }
         Returns: Json
@@ -2722,6 +2748,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      card_edition_choices: {
+        Row: {
+          chosen_at: string
+          edition_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chosen_at?: string
+          edition_code: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chosen_at?: string
+          edition_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_edition_choices_edition_code_fkey"
+            columns: ["edition_code"]
+            isOneToOne: false
+            referencedRelation: "card_editions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "card_edition_choices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      card_editions: {
+        Row: {
+          code: string
+          created_at: string
+          ends_at: string | null
+          finish: string
+          label_ar: string
+          label_fr: string
+          premium: boolean
+          sort_order: number
+          starts_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          ends_at?: string | null
+          finish: string
+          label_ar: string
+          label_fr: string
+          premium: boolean
+          sort_order?: number
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          ends_at?: string | null
+          finish?: string
+          label_ar?: string
+          label_fr?: string
+          premium?: boolean
+          sort_order?: number
+          starts_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       competition_translations: {
         Row: {
@@ -7659,6 +7763,59 @@ export type Database = {
             foreignKeyName: "predictions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      premium_entitlements: {
+        Row: {
+          cancel_requested_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          grace_until: string | null
+          last_event_at: string
+          last_provider_event_id: string | null
+          product_code: string
+          source: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_requested_at?: string | null
+          created_at?: string
+          current_period_end: string
+          current_period_start: string
+          grace_until?: string | null
+          last_event_at: string
+          last_provider_event_id?: string | null
+          product_code: string
+          source: string
+          state: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_requested_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          grace_until?: string | null
+          last_event_at?: string
+          last_provider_event_id?: string | null
+          product_code?: string
+          source?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_entitlements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
