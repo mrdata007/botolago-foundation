@@ -212,8 +212,8 @@ describe("Frozen Admin Console contracts", () => {
     const plus = ADMIN_CONSOLE_NAV_ITEMS.find((item) => item.route === "/admin/plus");
     expect(plus?.permission).toBe("premium.read");
     expect(plus?.testId).toBe("admin-nav-plus");
-    expect(plus?.labels.fr).toBe("BotolaGO+");
-    expect(plus?.labels.ar).toBe("BotolaGO+");
+    expect(plus?.labels.fr).toBe("Abonnements");
+    expect(plus?.labels.ar).toBe("الاشتراكات");
     const visibleTo = (permissions: readonly string[]) =>
       ADMIN_CONSOLE_NAV_ITEMS.filter((item) => permissions.includes(item.permission)).map(
         (item) => item.testId,

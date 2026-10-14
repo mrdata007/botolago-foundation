@@ -35,7 +35,7 @@ function AdminPlusRoute() {
     <AdminFunctionalRoute
       access={access}
       layout="hub"
-      title="BotolaGO+"
+      title={rtl ? "الاشتراكات" : "Abonnements"}
       description={
         rtl
           ? "أعداد الأعضاء، والبحث عن عضو، ومنح العضوية أو سحبها. يُسجَّل كل اطلاع وكل قرار في التدقيق."

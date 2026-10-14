@@ -818,7 +818,7 @@ function MemberPanel({
           {canGrant ? (
             <div className="grid grid-cols-1 gap-4" data-testid="admin-plus-grant-form">
               <h5 className={cn(ui.text.bodyStrong, ui.tone.default)}>
-                {rtl ? "منح عضوية مجانية" : "Offrir BotolaGO+"}
+                {rtl ? "منح عضوية مجانية" : "Offrir l’abonnement"}
               </h5>
               <AdminFilterChips
                 label={rtl ? "مدة المنحة" : "Durée de l’offre"}
@@ -841,13 +841,13 @@ function MemberPanel({
                 confirmPrompt={
                   rtl ? (
                     <>
-                      منح BotolaGO+ للحساب <AdminDatum>{member.userId}</AdminDatum> لمدة{" "}
+                      منح العضوية للحساب <AdminDatum>{member.userId}</AdminDatum> لمدة{" "}
                       {GRANT_DURATION_LABELS[duration].ar}؟ يصبح عضواً فوراً. يكفي مشرف واحد،
                       ويُسجَّل الإجراء في التدقيق.
                     </>
                   ) : (
                     <>
-                      Offrir BotolaGO+ au compte <AdminDatum>{member.userId}</AdminDatum> pour{" "}
+                      Offrir l’abonnement au compte <AdminDatum>{member.userId}</AdminDatum> pour{" "}
                       {GRANT_DURATION_LABELS[duration].fr} ? Il devient membre aussitôt. Une seule
                       personne suffit ; l’action est consignée dans l’audit.
                     </>

@@ -56,8 +56,8 @@ export function renewalLabel(product: PremiumAdminProduct, lang: Lang): string {
 }
 
 const PRODUCT_NAMES: Record<string, Pair> = {
-  plus_monthly: { fr: "BotolaGO+ mensuel", ar: "BotolaGO+ شهري" },
-  plus_yearly: { fr: "BotolaGO+ annuel", ar: "BotolaGO+ سنوي" },
+  plus_monthly: { fr: "Mensuel", ar: "شهري" },
+  plus_yearly: { fr: "Annuel", ar: "سنوي" },
 };
 
 /** A product's name; an unknown code is shown as the code, never hidden. */
@@ -129,8 +129,8 @@ export const MODE_HINTS: Record<PremiumMode, Pair> = {
     ar: "المالك والطاقم: تُحتسب العضوية كما في الإنتاج، بما فيها مشتريات الاختبار للطاقم، لكن لا شيء عام.",
   },
   on: {
-    fr: "BotolaGO+ est ouvert à tous.",
-    ar: "BotolaGO+ مفتوح للجميع.",
+    fr: "Les abonnements sont ouverts à tous.",
+    ar: "الاشتراكات مفتوحة للجميع.",
   },
 };
 

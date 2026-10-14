@@ -393,7 +393,7 @@ export const ADMIN_CONSOLE_NAV_ITEMS = [
     route: "/admin/plus",
     permission: "premium.read",
     testId: "admin-nav-plus",
-    labels: { fr: "BotolaGO+", ar: "BotolaGO+" },
+    labels: { fr: "Abonnements", ar: "الاشتراكات" },
   },
   // Pépites: only in a build where Pépites is on (`PEPITES_ENABLED`), like
   // its public pages.

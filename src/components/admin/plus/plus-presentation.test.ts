@@ -62,7 +62,8 @@ describe("prices come from the amount the API returned", () => {
     expect(renewalLabel(yearly, "fr")).toContain("sans renouvellement");
   });
   test("an unknown product is shown by its code", () => {
-    expect(productName("plus_monthly", "fr")).toContain("mensuel");
+    expect(productName("plus_monthly", "fr")).toBe("Mensuel");
+    expect(productName("plus_yearly", "ar")).toBe("سنوي");
     expect(productName("plus_season", "fr")).toBe("plus_season");
   });
 });
