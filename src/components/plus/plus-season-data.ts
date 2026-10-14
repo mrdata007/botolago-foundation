@@ -248,3 +248,9 @@ export function deriveSeason(raw: SeasonRaw) {
 
 export type Season = ReturnType<typeof deriveSeason>;
 export const SEASON: Season = deriveSeason(SEASON_RAW);
+
+/** The two managers of the example duel: the initials on the avatar and the club's short name. */
+export const SEASON_PEOPLE = {
+  you: { initials: "KB", club: "KACM" },
+  rival: { initials: "S", club: "RCA" },
+} as const;
