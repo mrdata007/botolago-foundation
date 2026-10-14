@@ -551,6 +551,16 @@ export const ar = {
   "fantasy.transfers.error.over_budget": "الرصيد لا يكفي لإتمام الانتقالات.",
   "fantasy.transfers.error.deadline": "انتهى الموعد النهائي — لا يمكن التأكيد.",
   "fantasy.transfers.error.no_changes": "لا توجد انتقالات للتأكيد.",
+  "fantasy.transfers.preview.pending": "جارٍ احتساب الانتقال…",
+  "fantasy.transfers.preview.failed": "تعذّر احتساب الانتقال. أعد المحاولة.",
+  "fantasy.transfers.preview.budget":
+    "الرصيد لا يكفي: ينقصك {amount} م لإتمام هذه الانتقالات. اختر لاعبًا أقل سعرًا.",
+  "fantasy.transfers.preview.budget_changed":
+    "تغيّرت الميزانية أو الأسعار. راجع اختياراتك ثم أعد المحاولة.",
+  "fantasy.transfers.preview.stale": "توجد نسخة أحدث من فريقك. أعد تحميلها، فانتقالاتك محفوظة.",
+  "fantasy.transfers.preview.step_up":
+    "مطلوب رمز التأكيد. أدخله ثم أعد المحاولة، فانتقالاتك محفوظة.",
+  "fantasy.transfers.preview.network": "لا يوجد اتصال. انتقالاتك محفوظة، أعد المحاولة.",
   "fantasy.picker.title": "اختيار لاعب",
   "fantasy.picker.search": "ابحث عن لاعب",
   "fantasy.picker.filter_club": "النادي",

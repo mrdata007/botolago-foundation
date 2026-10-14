@@ -12,6 +12,7 @@ import { FantasyScreenGate } from "@/components/fpl/FantasyScreenGate";
 import { PlayerActionSheet } from "@/components/fpl/PlayerActionSheet";
 import { SquadBuilderScreen, type BuilderSlot } from "@/components/fpl/SquadBuilderScreen";
 import { TransferConfirmScreen } from "@/components/fpl/TransferConfirmScreen";
+import { TransferPreviewNotice } from "@/components/fpl/TransferPreviewNotice";
 import { useFantasyScreen } from "@/components/fpl/useFantasyScreen";
 import { useNextFixtures } from "@/components/fpl/useNextFixtures";
 import { UiHeader } from "@/components/ui-kit";
@@ -32,7 +33,15 @@ import { useFantasyOwned } from "@/services/fantasy-owned-provider";
 import { fantasyService } from "@/services/fantasy-runtime";
 import { fantasyStateStore } from "@/services/fantasy-state";
 import { useManagerCardLive } from "@/services/manager-card-status";
-import { applyConfirmedTransfers, previewTransfers } from "@/services/transfers-service";
+import {
+  applyConfirmedTransfers,
+  draftBank,
+  ownedSalePrice,
+  previewTransfers,
+  replacementBudget,
+  transferNetCost,
+  transferPreviewPanel,
+} from "@/services/transfers-service";
 import { SQUAD_RULES, type FantasyPlayer } from "@/types/fantasy";
 
 // The card's hint and first-transfer line are their own chunks, requested only while the section is
@@ -163,6 +172,12 @@ function TransfersBody() {
   const completePairs = outIds
     .map((outId, index) => ({ outId, inId: inIds[index] ?? null }))
     .filter((pair): pair is { outId: string; inId: string } => !!pair.inId);
+  const previewEnabled =
+    isCloud &&
+    !!owned.snapshot?.teamId &&
+    !!owned.snapshot.currentGameweekId &&
+    completePairs.length > 0 &&
+    completePairs.length === outIds.length;
 
   // The server's figures for these transfers, keyed by the account as well as
   // the team: the auth layer forgets an outgoing account's answers by finding
@@ -199,12 +214,7 @@ function TransfersBody() {
         }),
         chip: chipsState.active,
       }),
-    enabled:
-      isCloud &&
-      !!owned.snapshot?.teamId &&
-      !!owned.snapshot.currentGameweekId &&
-      completePairs.length > 0 &&
-      completePairs.length === outIds.length,
+    enabled: previewEnabled,
     retry: false,
   });
 
@@ -276,15 +286,30 @@ function TransfersBody() {
     team.squad.find((s) => s.slot === slot.slot)?.playerId ?? null;
   const squadIdsAfter = slots.map((s) => s.player?.id).filter(Boolean) as string[];
 
+  // What a player is worth to the bank when he leaves. An owned player sells for
+  // the server's sale price (half of any rise kept), NOT his market price: the
+  // server previews and confirms with its own figures, so crediting the market
+  // price here offered replacements the server then refused (FANT-01). A player
+  // pencilled in during this draft was not bought yet; he goes back at his price.
+  const ownedIds = new Set(team.squad.map((s) => s.playerId));
+  const valueOut = (id: string) => {
+    const p = playerOf(id);
+    if (!p) return 0;
+    return ownedIds.has(id) ? ownedSalePrice(owned.snapshot?.salePrices, id, p.price) : p.price;
+  };
+
   const outPlayers = completePairs.map((p) => playerOf(p.outId)!).filter(Boolean);
   const inPlayers = completePairs.map((p) => playerOf(p.inId)!).filter(Boolean);
-  const netCost =
-    inPlayers.reduce((sum, p) => sum + p.price, 0) -
-    outPlayers.reduce((sum, p) => sum + p.price, 0);
-  // Bank for the picker: current bank plus the value freed by every player marked out (including those not yet replaced).
-  const freedValue = outIds.reduce((sum, id) => sum + (playerOf(id)?.price ?? 0), 0);
-  const committedIn = inIds.reduce((sum, id) => sum + (id ? (playerOf(id)?.price ?? 0) : 0), 0);
-  const pickerBank = Math.round((team.bank + freedValue - committedIn) * 10) / 10;
+  const netCost = transferNetCost(
+    inPlayers.map((p) => p.price),
+    outPlayers.map((p) => valueOut(p.id)),
+  );
+  // Bank for the picker: current bank plus the sale value freed by every player marked out (including those not yet replaced).
+  const pickerBank = draftBank({
+    bank: team.bank,
+    outValues: outIds.map(valueOut),
+    committedInPrices: inIds.map((id) => (id ? (playerOf(id)?.price ?? 0) : 0)),
+  });
 
   const localPreview = previewTransfers({
     team,
@@ -314,6 +339,29 @@ function TransfersBody() {
     !locked &&
     !preview.overBudget &&
     (!isCloud || (!!serverPreview.data && !serverPreview.isError));
+
+  // Every reason Next is held back is said on screen (FANT-02): the preview is
+  // being worked out, or why it failed. The shortfall is measured on the owner's
+  // sale values, the same figures the server uses.
+  const previewPanel = transferPreviewPanel({
+    isCloud,
+    completePairs: completePairs.length,
+    pendingOutWithoutIn,
+    queryEnabled: previewEnabled,
+    isFetching: serverPreview.isFetching,
+    hasData: !!serverPreview.data,
+    error: serverPreview.error,
+    shortfall: localPreview.bankAfter < 0 ? Math.round(-localPreview.bankAfter * 10) / 10 : null,
+  });
+  // Asking again never touches the draft. A stale version reloads the team first;
+  // the new version is a new question, and the draft stays where it is.
+  const retryPreview = () => {
+    if (previewPanel.state === "failed" && previewPanel.issue.kind === "stale") {
+      void owned.reload();
+      return;
+    }
+    void serverPreview.refetch();
+  };
 
   // ---- Interactions ----
   const startReplace = (playerId: string) => {
@@ -414,7 +462,11 @@ function TransfersBody() {
       toast.error(t("fpl.club_limit"));
       return;
     }
-    const leavingPrice = slot.player?.price ?? 0;
+    // A slot already marked out gives back the price of whoever is pencilled in (his
+    // sale value is in the bank already); one that is not sells at the owner's sale price.
+    const leavingPrice = outIds.includes(originalId)
+      ? (slot.player?.price ?? 0)
+      : valueOut(originalId);
     if (incoming.price > pickerBank + leavingPrice + 0.001) {
       toast.error(t("fpl.budget_exceeded"));
       return;
@@ -649,18 +701,16 @@ function TransfersBody() {
       ? t("fpl.unlimited")
       : String(team.freeTransfers);
   const pickerOut = pickerFor ? playerOf(pickerFor) : undefined;
-  const maxSquadPrice = Math.max(0, ...squadIdsAfter.map((id) => playerOf(id)?.price ?? 0));
+  const maxSquadPrice = Math.max(0, ...squadIdsAfter.map(valueOut));
   const sheetSlot = sheetFor ? slots.find((s) => originalIdOf(s) === sheetFor) : undefined;
   const sheetPlayer = sheetSlot?.player ?? (sheetFor ? (playerOf(sheetFor) ?? null) : null);
   const pickerIndex = pickerFor ? outIds.indexOf(pickerFor) : -1;
   const pickerCurrentIn = pickerIndex >= 0 ? inIds[pickerIndex] : null;
-  const pickerBudget =
-    Math.round(
-      (pickerBank +
-        (pickerIndex < 0 ? (pickerOut?.price ?? 0) : 0) +
-        (pickerCurrentIn ? (playerOf(pickerCurrentIn)?.price ?? 0) : 0)) *
-        10,
-    ) / 10;
+  const pickerBudget = replacementBudget({
+    draftBank: pickerBank,
+    leavingValue: pickerIndex < 0 && pickerFor ? valueOut(pickerFor) : 0,
+    currentInPrice: pickerCurrentIn ? (playerOf(pickerCurrentIn)?.price ?? 0) : 0,
+  });
 
   /**
    * The three-per-club rule, answered for the picker BEFORE the tap — the same
@@ -804,14 +854,24 @@ function TransfersBody() {
             render: (p) => (p.form === null ? t("fantasy.stat.none") : nf.format(p.form)),
           },
           { key: "price", label: t("fpl.current_price"), render: (p) => nf.format(p.price) },
-          { key: "sell", label: t("fpl.selling_price"), render: (p) => nf.format(p.price) },
+          {
+            key: "sell",
+            label: t("fpl.selling_price"),
+            render: (p) => nf.format(valueOut(p.id)),
+          },
           {
             key: "buy",
             label: t("fpl.purchase_price"),
             render: (p) => nf.format(owned.snapshot?.purchasePrices[p.id] ?? p.price),
           },
         ]}
-      />
+      >
+        <TransferPreviewNotice
+          panel={previewPanel}
+          onRetry={retryPreview}
+          retrying={serverPreview.isFetching}
+        />
+      </SquadBuilderScreen>
 
       {pickerFor && pickerOut ? (
         <AddPlayerScreen
@@ -825,7 +885,7 @@ function TransfersBody() {
           currentPlayerId={pickerCurrentIn}
           onPick={onPick}
           onClose={() => setPickerFor(null)}
-          replacing={{ player: pickerOut, soldPrice: pickerOut.price }}
+          replacing={{ player: pickerOut, soldPrice: valueOut(pickerOut.id) }}
           budget={pickerBudgetCard}
           noMatchClubIds={noMatchClubIds}
           gameweek={gameweek?.number ?? null}

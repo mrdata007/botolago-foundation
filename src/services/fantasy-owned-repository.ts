@@ -66,6 +66,13 @@ export interface FantasySnapshot {
   source: FantasyRepoSource;
   currentGameweekId: string | null;
   purchasePrices: Record<string, number>;
+  /**
+   * What each owned player sells for, by fantasy player id: the server's
+   * `current_sale_price` (half of any price rise kept, FANTASY_RULES_V1). Set
+   * by the V2 cloud adapter only; absent elsewhere, where the market price
+   * stands in (purchase price is the current price there).
+   */
+  salePrices?: Record<string, number>;
   activeChipCancellable: boolean;
   /** True when authenticated cloud team exists but has zero squad rows. */
   emptyCloudSquad?: boolean;
@@ -700,6 +707,9 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
     const purchasePrices = Object.fromEntries(
       team.squad.map((player) => [player.fantasyPlayerId, player.purchasePrice]),
     );
+    const salePrices = Object.fromEntries(
+      team.squad.map((player) => [player.fantasyPlayerId, player.salePrice]),
+    );
     const starterCounts = team.lineup
       .filter((player) => player.slot === "starter")
       .reduce<Record<string, number>>((counts, player) => {
@@ -739,6 +749,7 @@ export class V2CloudFantasyRepository implements FantasyOwnedRepository {
       source: "cloud",
       currentGameweekId: team.currentGameweekId,
       purchasePrices,
+      salePrices,
       activeChipCancellable: team.chips.activeCancellable,
       emptyCloudSquad: squad.length === 0,
     };
