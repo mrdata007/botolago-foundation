@@ -1,4 +1,6 @@
+import { liveClock, type LiveStageLabels } from "@/lib/live-minute";
 import { useJustChanged, useTickingMinute } from "@/lib/motion";
+import type { Match } from "@/types/domain";
 import { cn } from "@/lib/utils";
 
 /**
@@ -20,12 +22,20 @@ export function FlipScore({ value, className }: { value: number; className?: str
 export function TickingMinute({
   minute,
   running,
+  period,
+  addedTime,
+  stages,
   className,
 }: {
-  minute: number;
+  minute?: number;
+  stages?: LiveStageLabels;
   running: boolean;
+  period?: Match["period"];
+  addedTime?: number;
   className?: string;
 }) {
   const shown = useTickingMinute(minute, running);
-  return <bdi className={className}>{`${shown ?? minute}′`}</bdi>;
+  const clock = liveClock({ minute: shown ?? minute, period, addedTime, stages });
+  if (clock.minute !== undefined) return <bdi className={className}>{`${clock.minute}′`}</bdi>;
+  return clock.stage === undefined ? null : <bdi className={className}>{clock.stage}</bdi>;
 }

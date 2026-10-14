@@ -151,6 +151,8 @@ export function toMatch(match: MatchCardDto): Match {
     kickoff: match.kickoffAt,
     status: presentationStatus(match.status),
     minute: match.minute ?? undefined,
+    period: match.period,
+    addedTime: match.addedTime ?? undefined,
     homeScore: match.homeScore ?? undefined,
     awayScore: match.awayScore ?? undefined,
     halfTimeHomeScore: match.halfTimeHomeScore ?? undefined,

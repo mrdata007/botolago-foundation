@@ -482,8 +482,36 @@ describe("production watchdog", () => {
     });
     // Inside the allowance it is visible but does not page.
     expect(
-      await fantasyPoints(database(windows("provisional")), url, "secret", now, 12),
+      await fantasyPoints(database(windows("finalizing")), url, "secret", now, 12),
     ).toMatchObject({ status: "warn", detail: expect.stringContaining("escalates at 12 h") });
+    // Provisional points count as points: a provisional gameweek waiting for
+    // SofaScore's full statistics is not late for it until 21 days.
+    expect(await fantasyPoints(database(windows("provisional")), url, "secret", now)).toMatchObject(
+      {
+        status: "warn",
+        detail: expect.stringContaining("provisional points count, escalates at 504 h"),
+      },
+    );
+    expect(
+      (
+        await fantasyPoints(
+          database(windows("provisional", "2026-09-07T11:00:00+00:00")),
+          url,
+          "secret",
+          now,
+        )
+      ).status,
+    ).toBe("warn");
+    expect(
+      (
+        await fantasyPoints(
+          database(windows("provisional", "2026-09-07T10:00:00+00:00")),
+          url,
+          "secret",
+          now,
+        )
+      ).status,
+    ).toBe("fail");
     expect((await fantasyPoints(database(windows("finalized")), url, "secret", now)).status).toBe(
       "ok",
     );

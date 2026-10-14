@@ -4,8 +4,14 @@
 -- waiting for the 12 h mode selection, while every non-adaptive answer stays
 -- what 20260926003400 gave (a match without historical_performance coverage
 -- fails 12 h after the whistle).
+--
+-- The "no final points" clocks of `fantasy_scoring` (warn 1 h, fail 8 h after
+-- certification) were replaced by 20261013140000: core points missing 13 h
+-- after the whistle warn, and provisional points never warn or fail. The
+-- assertions below that concern them are updated; the full two-stage rules
+-- are in ops_health_two_stage_fantasy_stats.test.sql.
 begin;
-select extensions.plan(19);
+select extensions.plan(20);
 
 create function pg_temp.check(p_name text) returns jsonb language sql as $$
   select c from jsonb_array_elements(app_private.ops_health_checks() -> 'checks') c
@@ -41,6 +47,12 @@ insert into app.fantasy_seasons (id, fantasy_competition_id, football_season_id,
 values ('ea630000-0000-4000-8000-000000000001', 'ea600000-0000-4000-8000-000000000001',
   'ea200000-0000-4000-8000-000000000001', 'f6100000-0000-4000-8000-000000000100',
   'Adaptive health season', 'active', current_date - 10, current_date + 100);
+insert into app.players (id, slug, full_name, display_name, position)
+values ('ea800000-0000-4000-8000-000000000001', 'adp-player', 'Adaptive Player', 'ADP', 'forward');
+insert into app.fantasy_players (id, fantasy_season_id, football_player_id, football_team_id, position_id, price)
+values ('ead00000-0000-4000-8000-000000000001', 'ea630000-0000-4000-8000-000000000001',
+  'ea800000-0000-4000-8000-000000000001', md5('adp-club-1')::uuid,
+  (select id from app.fantasy_positions where code = 'FWD'), 6);
 insert into app.fantasy_gameweeks (id, fantasy_season_id, football_round_id, sequence_number, name,
   deadline_at, starts_at, ends_at, status, points_state, finalized_at)
 values ('ea700000-0000-4000-8000-000000000001', 'ea630000-0000-4000-8000-000000000001',
@@ -68,6 +80,14 @@ returns void language sql as $$
     encode(extensions.digest(clock_timestamp()::text || random()::text, 'sha256'), 'hex'), '{}'::jsonb,
     false, p_ready)
 $$;
+-- The scoring worker has published the match's (provisional) core points.
+create function pg_temp.publish() returns void language sql as $$
+  insert into app.fantasy_player_point_events (fantasy_player_id, gameweek_id, fixture_id, category, points,
+    state, scoring_version, source_sequence, source_key)
+  values ('ead00000-0000-4000-8000-000000000001', 'ea700000-0000-4000-8000-000000000001',
+    'ea900000-0000-4000-8000-000000000001', 'minutes', 2, 'provisional', 2, 1,
+    'fixture-stats:ea900000-0000-4000-8000-000000000001:player:minutes')
+$$;
 create function pg_temp.finalized(p_ago interval) returns void language sql as $$
   update app.fixtures set finalized_at = statement_timestamp() - p_ago, kickoff_at = statement_timestamp() - p_ago - interval '2 hours'
   where id = 'ea900000-0000-4000-8000-000000000001';
@@ -93,8 +113,8 @@ values ('ea630000-0000-4000-8000-000000000001', 1, 'f6200000-0000-4000-8000-0000
 select extensions.ok(app_private.fantasy_adaptive_enabled('ea700000-0000-4000-8000-000000000001'),
   'the gameweek is adaptive');
 select extensions.is(pg_temp.check('fantasy_fixture_coverage'),
-  '{"name": "fantasy_fixture_coverage", "status": "ok", "detail": "1 of 1 finished counted match(es) with complete player statistics"}'::jsonb,
-  'adaptive, 13 h after the whistle, ready observation, mode not selected yet: covered, ok');
+  '{"name": "fantasy_fixture_coverage", "status": "ok", "detail": "1 of 1 finished counted match(es) with core player statistics; info: 1 match(es) with core statistics waiting for full statistics (normal for up to 21 days after kickoff, not a fault)"}'::jsonb,
+  'adaptive, 13 h after the whistle, ready observation, mode not selected yet: covered, ok (the wait for full statistics is information)');
 
 delete from app_private.fantasy_fixture_observations;
 select pg_temp.observe(false);
@@ -138,31 +158,38 @@ select extensions.is(pg_temp.status('fantasy_fixture_coverage'), 'ok',
 delete from app_private.fantasy_fixture_scoring_modes;
 
 -- ---------------------------------------------------------------------------
--- fantasy_scoring: final points cannot exist before the 12 h selection cutoff.
--- The "no final points" clocks (warn 1 h, fail 8 h after certification) count
--- from the later of the observation and finalized_at + 12 h.
+-- fantasy_scoring: core points cannot exist before the 12 h selection cutoff.
+-- Since 20261013140000 it warns when a match's core points are still missing
+-- 12 h + 1 h (the scoring run) after the whistle, and never fails for points
+-- being provisional.
 -- ---------------------------------------------------------------------------
 delete from app_private.fantasy_fixture_observations;
 select pg_temp.finalized(interval '9 hours');
 select pg_temp.observe(true, interval '8 hours');
 select extensions.is(pg_temp.status('fantasy_scoring'), 'ok',
   'adaptive, ready 8 h ago, 9 h after the whistle: points are due after the cutoff, not late');
-select extensions.ok(pg_temp.detail('fantasy_scoring') like 'GW1: every counted match final, points due by %',
+select extensions.alike(pg_temp.detail('fantasy_scoring'), 'GW1: every counted match final, core points due by __:__ UTC',
   'and says when they are due');
 
 select pg_temp.finalized(interval '19 hours');
 delete from app_private.fantasy_fixture_observations;
 select pg_temp.observe(true, interval '18 hours');
 select extensions.is(pg_temp.status('fantasy_scoring'), 'warn',
-  '7 h past the cutoff: unscored, warns');
+  '19 h after the whistle, no core points yet: warns');
 
 select pg_temp.finalized(interval '21 hours');
 delete from app_private.fantasy_fixture_observations;
 select pg_temp.observe(true, interval '20 hours');
-select extensions.is(pg_temp.status('fantasy_scoring'), 'fail',
-  '9 h past the cutoff, still no final points: fails');
+select extensions.is(pg_temp.status('fantasy_scoring'), 'warn',
+  '21 h after the whistle, still no core points: still only a warning (it no longer fails)');
 
--- Not adaptive: the old clock, from the certification, is unchanged.
+select pg_temp.publish();
+select extensions.is(pg_temp.check('fantasy_scoring'),
+  '{"name": "fantasy_scoring", "status": "ok", "detail": "GW1 live: core points present for all 1 counted match(es); provisional points count as points"}'::jsonb,
+  'with provisional core points published it is ok, however old the match');
+delete from app.fantasy_player_point_events;
+
+-- Not adaptive: the statistics answer is unchanged.
 delete from app_private.fantasy_adaptive_policy;
 delete from app_private.fantasy_fixture_observations;
 select extensions.is(pg_temp.status('fantasy_scoring'), 'warn',

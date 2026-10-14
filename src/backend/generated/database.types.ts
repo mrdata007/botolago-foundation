@@ -582,6 +582,7 @@ export type Database = {
         Args: { p_id: string; p_published: boolean; p_version: number }
         Returns: Json
       }
+      admin_rapidapi_calls_this_month: { Args: never; Returns: Json }
       admin_reject_request: {
         Args: {
           p_approval_id: string
@@ -731,6 +732,7 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_sofascore_final_limited: { Args: never; Returns: Json }
       admin_sofascore_player_match_queue: { Args: never; Returns: Json }
       admin_start_session_revocation_worker: {
         Args: { p_synthetic_test?: boolean; p_worker_id: string }
@@ -1193,6 +1195,7 @@ export type Database = {
         Args: { p_language?: string; p_limit?: number }
         Returns: Json
       }
+      football_sofascore_catalog_snapshot: { Args: never; Returns: Json }
       football_sofascore_live_snapshot: { Args: never; Returns: Json }
       football_standings: {
         Args: {
@@ -1250,6 +1253,10 @@ export type Database = {
         Returns: Json
       }
       get_my_fantasy_points_before_live: {
+        Args: { p_gameweek_id: string; p_team_id: string }
+        Returns: Json
+      }
+      get_my_fantasy_points_before_staged: {
         Args: { p_gameweek_id: string; p_team_id: string }
         Returns: Json
       }
@@ -1774,6 +1781,10 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      service_adopt_fantasy_close_prices: {
+        Args: { p_calculation_version: number; p_gameweek_id: string }
+        Returns: Json
+      }
       service_advance_fantasy_lifecycle: {
         Args: {
           p_batch_size?: number
@@ -1813,6 +1824,22 @@ export type Database = {
         }
         Returns: Json
       }
+      service_apply_sofascore_standings: {
+        Args: {
+          p_observed_at: string
+          p_rows: Json
+          p_season_external_id: string
+        }
+        Returns: Json
+      }
+      service_begin_fantasy_close: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+        }
+        Returns: Json
+      }
       service_begin_fantasy_finalization: {
         Args: {
           p_calculation_version: number
@@ -1822,6 +1849,14 @@ export type Database = {
         Returns: Json
       }
       service_begin_fantasy_finalization_before_live: {
+        Args: {
+          p_calculation_version: number
+          p_gameweek_id: string
+          p_input_digest: string
+        }
+        Returns: Json
+      }
+      service_begin_fantasy_finalization_before_staged: {
         Args: {
           p_calculation_version: number
           p_gameweek_id: string
@@ -1895,6 +1930,10 @@ export type Database = {
           p_model: string
           p_width: number
         }
+        Returns: Json
+      }
+      service_complete_fantasy_close: {
+        Args: { p_calculation_version: number; p_gameweek_id: string }
         Returns: Json
       }
       service_complete_fantasy_gameweek: {
@@ -1973,6 +2012,10 @@ export type Database = {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
+      service_fantasy_lifecycle_state_before_staged: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
       service_fantasy_lifecycle_state_v1: {
         Args: { p_gameweek_id: string }
         Returns: Json
@@ -1985,6 +2028,23 @@ export type Database = {
         }
         Returns: Json
       }
+      service_fantasy_worker_lease_acquire: {
+        Args: { p_holder: string; p_ttl_seconds?: number }
+        Returns: Json
+      }
+      service_fantasy_worker_lease_extend: {
+        Args: { p_token: string; p_ttl_seconds?: number }
+        Returns: Json
+      }
+      service_fantasy_worker_lease_release: {
+        Args: { p_token: string }
+        Returns: Json
+      }
+      service_fantasy_worker_record_run: {
+        Args: { p_run: Json }
+        Returns: number
+      }
+      service_fantasy_worker_status: { Args: never; Returns: Json }
       service_finalize_fantasy_team_results: {
         Args: {
           p_after_team_id?: string
@@ -2146,6 +2206,10 @@ export type Database = {
         }
         Returns: Database["app"]["Enums"]["notification_delivery_status"]
       }
+      service_record_rapidapi_calls: {
+        Args: { p_calls: Json; p_job: string }
+        Returns: number
+      }
       service_record_reconciled_fantasy_observation: {
         Args: { p_dry_run?: boolean; p_fixture_id: string; p_request: Json }
         Returns: Json
@@ -2185,6 +2249,15 @@ export type Database = {
         }
         Returns: Json
       }
+      service_run_fantasy_close_price_batch: {
+        Args: {
+          p_after_player_id?: string
+          p_batch_size?: number
+          p_calculation_version: number
+          p_gameweek_id: string
+        }
+        Returns: Json
+      }
       service_run_fantasy_price_batch: {
         Args: {
           p_after_player_id?: string
@@ -2195,6 +2268,10 @@ export type Database = {
         Returns: Json
       }
       service_select_fantasy_scoring_modes: {
+        Args: { p_gameweek_id: string }
+        Returns: Json
+      }
+      service_select_fantasy_scoring_modes_before_staged: {
         Args: { p_gameweek_id: string }
         Returns: Json
       }
@@ -2213,6 +2290,22 @@ export type Database = {
       }
       service_sofascore_auto_map_players: {
         Args: { p_fixture_id: string; p_players: Json }
+        Returns: Json
+      }
+      service_sofascore_catalog_apply: {
+        Args: { p_allow_position?: boolean; p_updates: Json }
+        Returns: Json
+      }
+      service_sofascore_catalog_record_image: {
+        Args: {
+          p_byte_size?: number
+          p_entity_type: string
+          p_mime_type?: string
+          p_sha256?: string
+          p_sofascore_id: string
+          p_status: string
+          p_storage_path?: string
+        }
         Returns: Json
       }
       service_sofascore_fantasy_context: {
@@ -2240,6 +2333,14 @@ export type Database = {
           p_outcome: string
           p_status: string
         }
+        Returns: Json
+      }
+      service_sofascore_staged_due: {
+        Args: { p_budget_stop?: number; p_limit: number }
+        Returns: Json
+      }
+      service_sofascore_staged_record_pull: {
+        Args: { p_fixture_id: string; p_pull: Json }
         Returns: Json
       }
       service_stage_fantasy_catalog: {
@@ -3583,6 +3684,8 @@ export type Database = {
       }
       fantasy_gameweeks: {
         Row: {
+          closed_at: string | null
+          closed_calculation_version: number | null
           corrected_at: string | null
           created_at: string
           deadline_at: string
@@ -3601,6 +3704,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          closed_at?: string | null
+          closed_calculation_version?: number | null
           corrected_at?: string | null
           created_at?: string
           deadline_at: string
@@ -3619,6 +3724,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          closed_at?: string | null
+          closed_calculation_version?: number | null
           corrected_at?: string | null
           created_at?: string
           deadline_at?: string
@@ -7426,6 +7533,7 @@ export type Database = {
       players: {
         Row: {
           active: boolean
+          catalog_photo_path: string | null
           created_at: string
           date_of_birth: string | null
           detailed_position:
@@ -7446,6 +7554,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          catalog_photo_path?: string | null
           created_at?: string
           date_of_birth?: string | null
           detailed_position?:
@@ -7466,6 +7575,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          catalog_photo_path?: string | null
           created_at?: string
           date_of_birth?: string | null
           detailed_position?:

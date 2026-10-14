@@ -1,14 +1,18 @@
 import { describe, expect, test } from "bun:test";
 import { CurrentPerformanceError, type IncompleteFixture } from "./current-season-performances";
 import {
+  ADAPTIVE_SELECTION_GRACE_HOURS,
   assessCoverage,
   assessScoring,
   calendarSyncSchema,
+  CORE_DATA_WINDOW_HOURS,
   deadlineWatchSchema,
+  FULL_STATS_WINDOW_DAYS,
   mergeVerdict,
   orchestrateFantasySeason,
   orchestratorEnvironment,
   parseFootballDataSource,
+  PROVISIONAL_POINTS_OUTCOME,
   renderHealthSummary,
   selectWorkerTargets,
   shouldFailRun,
@@ -224,6 +228,52 @@ describe("fantasy season orchestrator", () => {
       ],
       skipped: [],
     });
+  });
+
+  test("a gameweek that closed on provisional points is still provisional: it keeps being picked up for re-scoring and the lock", () => {
+    const cal = calendar([
+      {
+        sequence: 1,
+        status: "provisional",
+        scoringInputVersion: 5,
+        nextGameweekId: id(102),
+        advancedToGameweekId: id(102),
+      },
+      { sequence: 2, status: "open", deadlineAt: "2026-10-30T18:30:00Z" },
+    ]);
+    expect(selectWorkerTargets(cal, now)).toEqual({
+      targets: [{ gameweekId: id(101), sequence: 1, reason: "in_progress", calculationVersion: 5 }],
+      skipped: [],
+    });
+  });
+
+  test("a gameweek locked after it closed, whose postwork is still owed, is re-run even though its successor is open", () => {
+    const owed = calendar([
+      {
+        sequence: 1,
+        status: "finalized",
+        scoringInputVersion: 6,
+        nextGameweekId: id(102),
+        advancedToGameweekId: id(102),
+        postworkPending: true,
+      },
+      { sequence: 2, status: "open", deadlineAt: "2026-10-30T18:30:00Z" },
+    ]);
+    expect(selectWorkerTargets(owed, now).targets).toEqual([
+      { gameweekId: id(101), sequence: 1, reason: "progression_pending", calculationVersion: 6 },
+    ]);
+    const done = calendar([
+      {
+        sequence: 1,
+        status: "finalized",
+        scoringInputVersion: 6,
+        nextGameweekId: id(102),
+        advancedToGameweekId: id(102),
+        postworkPending: false,
+      },
+      { sequence: 2, status: "open", deadlineAt: "2026-10-30T18:30:00Z" },
+    ]);
+    expect(selectWorkerTargets(done, now).targets).toEqual([]);
   });
 
   test("in-progress gameweeks (locked/live/provisional/finalizing) are always picked up", () => {
@@ -1621,5 +1671,257 @@ describe("football data source", () => {
       dataSource: "sofascore",
     });
     expect(summary.verdict).toBe("escalate");
+  });
+});
+
+// Two-stage statistics (migration 20261013140000): SofaScore publishes core
+// data at once and full statistics 5 to 16 days later. Provisional points
+// count as points, so a gameweek the worker published core points for is not
+// late for waiting on the rest.
+describe("two-stage statistics: provisional points are not late", () => {
+  const run = (outcome: string, code: string) => ({
+    gameweekId: id(101),
+    sequence: 1,
+    reason: "in_progress" as const,
+    calculationVersion: 1,
+    outcome,
+    code,
+  });
+  const windows = (endsAt: string) => ({
+    items: [{ id: id(101), sequence: 1, status: "provisional" as const, endsAt }],
+  });
+  const at = (hoursAfterEnd: number) =>
+    new Date(Date.parse("2026-09-28T00:00:00Z") + hoursAfterEnd * 3_600_000);
+
+  test("the constants mirror the database's named constants", () => {
+    expect(CORE_DATA_WINDOW_HOURS).toBe(12);
+    expect(FULL_STATS_WINDOW_DAYS).toBe(21);
+    expect(ADAPTIVE_SELECTION_GRACE_HOURS).toBe(CORE_DATA_WINDOW_HOURS);
+    expect(PROVISIONAL_POINTS_OUTCOME).toBe("points_published");
+  });
+
+  test("provisional core points published: not overdue however long the full statistics take, up to 21 days", () => {
+    const published = [run("points_published", "remaining_fixtures_pending")];
+    for (const hours of [3, 19, 24 * 5, 24 * 16, 24 * 21 - 1]) {
+      const [gap] = assessScoring(
+        windows("2026-09-28T00:00:00+00:00"),
+        published,
+        at(hours),
+        6,
+        ADAPTIVE_SELECTION_GRACE_HOURS,
+      );
+      expect(gap).toMatchObject({ sequence: 1, overdue: false, provisional: true });
+    }
+  });
+
+  test("at 21 days the exemption ends, as the database's final-limited failure does", () => {
+    const [gap] = assessScoring(
+      windows("2026-09-28T00:00:00+00:00"),
+      [run("points_published", "remaining_fixtures_pending")],
+      at(24 * 21),
+      6,
+      ADAPTIVE_SELECTION_GRACE_HOURS,
+    );
+    expect(gap).toMatchObject({ overdue: true });
+    expect(gap).not.toHaveProperty("provisional");
+  });
+
+  test("a wait with no points published still escalates after 6 h + 12 h, and a failed worker is not exempt", () => {
+    for (const published of [
+      run("waiting", "adaptive_scoring_pending"),
+      run("waiting", "football_not_final"),
+      run("failed", "fantasy_worker_failed"),
+    ]) {
+      const [early] = assessScoring(
+        windows("2026-09-28T00:00:00+00:00"),
+        [published],
+        at(8),
+        6,
+        ADAPTIVE_SELECTION_GRACE_HOURS,
+      );
+      const [late] = assessScoring(
+        windows("2026-09-28T00:00:00+00:00"),
+        [published],
+        at(19),
+        6,
+        ADAPTIVE_SELECTION_GRACE_HOURS,
+      );
+      expect(early?.overdue).toBe(published.code === "adaptive_scoring_pending" ? false : true);
+      expect(late?.overdue).toBe(true);
+      expect(late).not.toHaveProperty("provisional");
+    }
+  });
+
+  test("an unreadable window end is overdue even with points published", () => {
+    const [gap] = assessScoring(
+      windows("not a time"),
+      [run("points_published", "remaining_fixtures_pending")],
+      at(1),
+      6,
+    );
+    expect(gap).toMatchObject({ hoursSinceWindowEnd: null, overdue: true });
+  });
+});
+
+describe("one writer at a time: the lifecycle lease (docs/backend/FANTASY_WORKER_SCHEDULE.md)", () => {
+  const locked = () => calendar([{ sequence: 1, status: "locked", scoringInputVersion: 1 }]);
+
+  /** The lifecycle RPCs of one locked gameweek, plus an in-memory lease and status. */
+  function leased(
+    options: {
+      held?: string;
+      status?: unknown;
+      noLeaseFunction?: boolean;
+    } = {},
+  ) {
+    const lease = { held: options.held ?? (null as string | null), released: false };
+    const lifecycle = (name: string, args: Record<string, unknown>): unknown => {
+      switch (name) {
+        case "service_fantasy_worker_status": {
+          if (options.status instanceof Error) throw options.status;
+          return options.status;
+        }
+        case "service_fantasy_worker_lease_acquire":
+          if (options.noLeaseFunction)
+            throw rpcFailure("fantasy_orchestrator_rpc_failed", "PGRST202");
+          if (lease.held) return { acquired: false, reason: "held", holder: lease.held };
+          lease.held = String(args.p_holder);
+          return { acquired: true, token: id(990), holder: lease.held };
+        case "service_fantasy_worker_lease_release":
+          lease.released = true;
+          lease.held = null;
+          return { released: true };
+        case "service_fantasy_lifecycle_state":
+          return {
+            gameweekId: args.p_gameweek_id,
+            seasonId: id(1),
+            status: "locked",
+            lockVersion: 5,
+            sequenceNumber: 1,
+            scoringInputVersion: 1,
+          };
+        case "service_advance_fantasy_lifecycle":
+          return {
+            gameweekId: args.p_gameweek_id,
+            seasonId: id(1),
+            status: "locked",
+            lockVersion: 5,
+            sequenceNumber: 1,
+            scoringInputVersion: 1,
+            changed: false,
+            hasMore: false,
+            waitingReason: "football_not_final",
+          };
+        default:
+          throw new Error(`unexpected_rpc_${name}`);
+      }
+    };
+    return { lease, ...gateway(locked(), { lifecycle }) };
+  }
+
+  const activeStatus = {
+    enabled: true,
+    databaseWorkerActive: true,
+    workPending: true,
+    lastOkAt: "2026-09-24T21:55:00Z",
+    leaseHeld: false,
+  };
+  const ran = (calls: Array<{ name: string }>) =>
+    calls.some((call) => call.name === "service_advance_fantasy_lifecycle");
+
+  test("takes the lease around the lifecycle and frees it afterwards", async () => {
+    const { gateway: g, calls, lease } = leased();
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: false },
+    });
+    expect(ran(calls)).toBe(true);
+    expect(summary.lifecycle).toEqual({ owner: "github" });
+    expect(summary.workers).toHaveLength(1);
+    const names = calls.map((call) => call.name);
+    expect(names.indexOf("service_fantasy_worker_lease_acquire")).toBeLessThan(
+      names.indexOf("service_fantasy_lifecycle_state"),
+    );
+    expect(lease.released).toBe(true);
+    expect(
+      calls.find((call) => call.name === "service_fantasy_worker_lease_acquire")?.args,
+    ).toEqual({
+      p_holder: "github:42",
+      p_ttl_seconds: 420,
+    });
+  });
+
+  test("does not run the lifecycle while another holder (the database job) has the lease", async () => {
+    const { gateway: g, calls, lease } = leased({ held: "edge:abc123" });
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: false },
+    });
+    expect(ran(calls)).toBe(false);
+    expect(calls.some((call) => call.name === "service_fantasy_lifecycle_state")).toBe(false);
+    expect(summary.lifecycle).toEqual({ owner: "lease_held", heldBy: "edge:abc123" });
+    expect(summary.workers).toEqual([]);
+    expect(summary.verdict).toBe("waiting");
+    // The other holder's lease is not touched.
+    expect(lease.held).toBe("edge:abc123");
+    expect(lease.released).toBe(false);
+  });
+
+  test("a scheduled run leaves the lifecycle to the database job while it is on and keeping up", async () => {
+    const { gateway: g, calls } = leased({ status: activeStatus });
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: true },
+    });
+    expect(ran(calls)).toBe(false);
+    expect(calls.some((call) => call.name === "service_fantasy_worker_lease_acquire")).toBe(false);
+    expect(summary.lifecycle).toEqual({ owner: "database_worker" });
+    expect(summary.deferredGameweeks).toEqual([]);
+    // It still watches: the read-only deadline watch ran.
+    expect(calls.some((call) => call.name === "service_fantasy_deadline_watch")).toBe(true);
+    expect(summary.verdict).toBe("ok");
+  });
+
+  test("a scheduled run takes over when the database job is off or behind", async () => {
+    for (const status of [
+      { ...activeStatus, enabled: false, databaseWorkerActive: false },
+      { ...activeStatus, databaseWorkerActive: false, lastOkAt: "2026-09-24T19:00:00Z" },
+      new Error("fantasy_worker_rpc_failed"),
+    ]) {
+      const { gateway: g, calls } = leased({ status });
+      const summary = await orchestrateFantasySeason(g, {
+        now,
+        workerLease: { holder: "github:42", deferToDatabase: true },
+      });
+      expect(ran(calls)).toBe(true);
+      expect(summary.lifecycle).toEqual({ owner: "github" });
+    }
+  });
+
+  test("a manual dispatch never defers: it is the owner asking, and the lease still applies", async () => {
+    const { gateway: g, calls } = leased({ status: activeStatus });
+    await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: false },
+    });
+    expect(ran(calls)).toBe(true);
+    expect(calls.some((call) => call.name === "service_fantasy_worker_status")).toBe(false);
+  });
+
+  test("runs unmanaged, as it always did, on a database without the lease function", async () => {
+    const { gateway: g, calls } = leased({ noLeaseFunction: true });
+    const summary = await orchestrateFantasySeason(g, {
+      now,
+      workerLease: { holder: "github:42", deferToDatabase: true },
+    });
+    expect(ran(calls)).toBe(true);
+    expect(summary.lifecycle).toEqual({ owner: "github" });
+  });
+
+  test("without the option nothing about the lease is called", async () => {
+    const { gateway: g, calls } = leased();
+    const summary = await orchestrateFantasySeason(g, { now });
+    expect(calls.some((call) => call.name.includes("worker_lease"))).toBe(false);
+    expect(summary).not.toHaveProperty("lifecycle");
   });
 });

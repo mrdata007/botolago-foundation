@@ -1665,11 +1665,13 @@ select extensions.ok(
   not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname !~ '^(pg_|information_schema)' and p.proname !~ 'manager_card'
-      -- ops_health_checks calls app_private.manager_card_health() (20261010120300)
+      -- ops_health_checks calls app_private.manager_card_health() (20261010120300),
+      -- and so do the earlier versions later checks wrap (ops_health_checks_before_*)
+      and p.proname !~ '^ops_health_checks(_before_[a-z0-9_]+)?$'
       -- The BotolaGO+ premium card reads (20261013100400) read the card's history
       -- to show a member their own past: display only, they write nothing
       -- (premium_card_reads.test.sql checks that), and nothing computes from them.
-      and p.proname <> all (array['ops_health_checks',
+      and p.proname <> all (array[
         'get_my_card_career', 'get_card_duel', 'card_week_rows', 'card_captain_rows',
         'card_transfer_rows', 'card_reads_mode', 'card_resolve_season'])
       and p.prosrc ~* '(app|app_private)\.manager_card'),

@@ -343,6 +343,52 @@ describe("SofaScore-only Fantasy observation", () => {
     const b = await prepare(load("17132481"));
     expect(a.requestDigest).toBe(b.requestDigest);
   });
+
+  // docs/backend/FANTASY_RATING_POINTS.md: the rating rule scores the rating of the observation.
+  test("each row carries the SofaScore rating of the lineup reply, outside the statistics", async () => {
+    const match = load("17132481");
+    const p = await prepare(match);
+    const rows = p.request!.payload.players;
+    expect(rows.some((row) => row.rating !== null)).toBeTrue();
+    for (const row of rows) {
+      const player = match.lineups.players.find(
+        (pl) => pl.externalId === row.identity.sofascoreId,
+      )!;
+      const rating = player.stats?.rating ?? null;
+      expect(row.rating).toBe(rating === null ? null : Math.round(rating * 100) / 100);
+      expect("rating" in row.stats).toBeFalse();
+    }
+  });
+
+  test("a player SofaScore has not rated carries null, and a long rating is kept to two decimals", async () => {
+    const match = load("17132481");
+    const [first, second] = match.lineups.players.filter(
+      (pl) => (pl.stats?.minutesPlayed ?? 0) > 0,
+    );
+    const patched = withStats(
+      withStats(match, first!.externalId, { rating: null }),
+      second!.externalId,
+      { rating: 7.456 },
+    );
+    const rows = (await prepare(patched)).request!.payload.players;
+    expect(rows.find((r) => r.identity.sofascoreId === first!.externalId)!.rating).toBeNull();
+    expect(rows.find((r) => r.identity.sofascoreId === second!.externalId)!.rating).toBe(7.46);
+  });
+
+  test("a corrected rating alone changes the request digest, so it is recorded and rescored", async () => {
+    const match = load("17132481");
+    const player = match.lineups.players.find((pl) => (pl.stats?.minutesPlayed ?? 0) > 0)!;
+    const before = await prepare(match);
+    const after = await prepare(
+      withStats(match, player.externalId, { rating: (player.stats?.rating ?? 6) + 0.1 }),
+    );
+    expect(after.blockers).toEqual([]);
+    expect(after.requestDigest).not.toBe(before.requestDigest);
+    // Nothing else moved: the rows differ only by that one rating.
+    const strip = (rows: NonNullable<typeof before.request>["payload"]["players"]) =>
+      rows.map((row) => ({ ...row, rating: null }));
+    expect(strip(after.request!.payload.players)).toEqual(strip(before.request!.payload.players));
+  });
 });
 
 describe("unknown (unmapped, no candidate) substitutes", () => {

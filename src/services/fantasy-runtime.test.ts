@@ -2,8 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { playerDto, seasonStatsById } from "./fantasy-runtime";
+import { playerDto, pointsDto, seasonStatsById } from "./fantasy-runtime";
 import { dictionaries } from "@/i18n/dictionaries";
+import { fantasyPointsSchema } from "@/backend/fantasy/contracts";
 import type { FantasyPlayerDto, FantasyPlayerSeasonStatDto } from "@/backend/fantasy/contracts";
 
 /**
@@ -231,5 +232,65 @@ describe("top players of the week: unknown goals, assists and clean sheets", () 
     const source = readFileSync(join(ROOT, "src/routes/fantasy.top-players.tsx"), "utf8");
     expect(source).not.toMatch(/format\(top\.(goals|assists|cleanSheets)\)/);
     expect(source).toContain("countOrNone(nf, top.goals, t)");
+  });
+});
+
+describe("a gameweek that closed on provisional points says so (staged SofaScore statistics)", () => {
+  const uuid = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+  const payload = (over: Record<string, unknown>) =>
+    fantasyPointsSchema.parse({
+      teamId: uuid(1),
+      gameweekId: uuid(2),
+      gameweekStatus: "provisional",
+      pointsState: "provisional",
+      result: {
+        startingPoints: 20,
+        benchPoints: 4,
+        captainPoints: 2,
+        transferHit: 0,
+        chipType: null,
+        provisionalScore: 22,
+        finalScore: null,
+        state: "provisional",
+        rank: 1,
+        overallRank: 1,
+        calculationVersion: 3,
+        finalizedAt: null,
+      },
+      players: [],
+      autoSubstitutions: [],
+      ...over,
+    });
+
+  test("closed and not locked: the points screen is told", () => {
+    const view = pointsDto(7, payload({ closedAt: "2026-10-12T10:00:00Z" }), null);
+    expect(view?.authoritative?.closedProvisional).toBe(true);
+    expect(view?.authoritative?.finalized).toBe(false);
+  });
+
+  test("an ordinary provisional gameweek is not labelled closed", () => {
+    expect(pointsDto(7, payload({}), null)?.authoritative?.closedProvisional).toBe(false);
+    expect(pointsDto(7, payload({ closedAt: null }), null)?.authoritative?.closedProvisional).toBe(
+      false,
+    );
+  });
+
+  test("once locked the label goes away even though the gameweek did close", () => {
+    const view = pointsDto(
+      7,
+      payload({
+        closedAt: "2026-10-12T10:00:00Z",
+        gameweekStatus: "finalized",
+        pointsState: "final",
+      }),
+      null,
+    );
+    expect(view?.authoritative?.closedProvisional).toBe(false);
+    expect(view?.authoritative?.finalized).toBe(true);
+  });
+
+  test("the copy exists in French and Arabic", () => {
+    expect(dictionaries.fr["fantasy.scoring.closedProvisional"]).toContain("Points provisoires");
+    expect(dictionaries.ar["fantasy.scoring.closedProvisional"]?.length).toBeGreaterThan(20);
   });
 });
