@@ -3225,7 +3225,6 @@ export const fr = {
   "plus.profile.intro":
     "Les éditions de votre carte, votre carrière en détail et vos duels détaillés, sans publicité.",
   "plus.profile.discover": "Découvrir",
-  "plus.profile.resume": "Reprendre un abonnement",
   "plus.profile.plan": "Formule",
   "plus.profile.status": "Statut",
   "plus.profile.until": "Jusqu'au {date}",
@@ -3244,7 +3243,6 @@ export const fr = {
     "Bientôt : l'annulation depuis l'application n'est pas encore ouverte.",
   "plus.profile.restore": "Restaurer un achat",
   "plus.profile.receipts": "Reçus",
-  "plus.profile.receipts_empty": "Aucun paiement pour le moment.",
   "plus.profile.receipt_open": "Voir le reçu",
   // plus member side (lane 2)
   "plus.hub.title": "Mon abonnement",

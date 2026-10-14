@@ -3046,7 +3046,6 @@ export const ar = {
   "plus.reminder.cta": "إدارة",
   "plus.profile.intro": "إصدارات بطاقتك، ومسيرتك بالتفصيل، ومواجهاتك المفصّلة، بدون إعلانات.",
   "plus.profile.discover": "اكتشف",
-  "plus.profile.resume": "استئناف الاشتراك",
   "plus.profile.plan": "الباقة",
   "plus.profile.status": "الحالة",
   "plus.profile.until": "حتى {date}",
@@ -3064,7 +3063,6 @@ export const ar = {
   "plus.profile.cancel_soon": "قريبًا: الإلغاء من داخل التطبيق غير متاح بعد.",
   "plus.profile.restore": "استعادة عملية شراء",
   "plus.profile.receipts": "الإيصالات",
-  "plus.profile.receipts_empty": "لا توجد مدفوعات حتى الآن.",
   "plus.profile.receipt_open": "عرض الإيصال",
   // plus member side (lane 2)
   "plus.hub.title": "اشتراكي",
