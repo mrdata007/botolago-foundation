@@ -28,8 +28,10 @@
 --     20261012120000: by fixture, whatever held it; status `held`, attempts 0,
 --     retried on the next tick), which must reopen exactly one row;
 --   * checks the row reads `held`, 0 attempts, due now. The next Edge tick
---     retries it from the stored replies (no RapidAPI request) and records the
---     observation, or holds it again with the reason in last_outcome.
+--     retries it from the stored replies (no RapidAPI request) or, as here,
+--     where giving up dropped them, fetches the match again (catch-up, 3
+--     requests); then records the observation, or holds it again with the
+--     reason in last_outcome.
 --   It writes app_private.sofascore_fantasy_attempts only.
 -- ============================================================================
 
@@ -74,8 +76,25 @@ begin
   if a.status not in ('gave_up', 'held') then
     raise exception 'stop: the attempt is %, not gave_up or held -- nothing to reopen', a.status;
   end if;
+  -- Giving up drops the stored replies (match_data). Reopened without them, the
+  -- attempt is `held` with no replies and 0 attempts, which is exactly what
+  -- api.service_sofascore_fantasy_due (20261013150100) lists under catchUp: the
+  -- next tick fetches the match afresh (3 RapidAPI requests) with the deployed
+  -- code. Check that it will be listed, rather than assume it.
   if a.match_data is null then
-    raise exception 'stop: the attempt kept no replies; a reopened retry would have nothing to read';
+    if not exists (select 1 from app_private.football_provider_mappings m
+                    where m.provider_name = 'sofascore' and m.entity_type = 'fixture'
+                      and m.internal_entity_id = v_fixture and m.active and m.external_id = '17256978') then
+      raise exception 'stop: no stored replies, and no active SofaScore link to event 17256978 to fetch them again';
+    end if;
+    if not exists (select 1 from app.fantasy_fixture_assignments x
+                    where x.fixture_id = v_fixture and x.superseded_at is null
+                      and app_private.fantasy_adaptive_enabled(x.gameweek_id)) then
+      raise exception 'stop: no stored replies, and the fixture''s gameweek does not take automatic observations';
+    end if;
+    if f.finalized_at <= statement_timestamp() - interval '504 hours' then
+      raise exception 'stop: no stored replies, and the match is older than the 21-day fetch window';
+    end if;
   end if;
   if exists (select 1 from app_private.fantasy_fixture_observations o where o.fixture_id = v_fixture) then
     raise exception 'stop: an observation is already recorded for this fixture';
@@ -121,6 +140,6 @@ rollback;
 select case
   when (select status = 'held' and attempts = 0 from app_private.sofascore_fantasy_attempts
          where fixture_id = 'f128e41f-e72b-4340-9725-ec4f95432848')
-    then 'Reopened. The next football-live-refresh tick retries it from the stored replies.'
+    then 'Reopened. The next football-live-refresh tick fetches the match again and retries it.'
   else 'Rehearsal passed. Nothing was saved. Change rollback; to commit; and run again.'
 end as result;
