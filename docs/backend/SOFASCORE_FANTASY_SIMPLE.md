@@ -192,6 +192,36 @@ from SofaScore for a match whose details were fetched. Code:
    database's refusals, for example `held:sofascore_identity_not_reviewed`). The
    tick's answer carries a `fantasy` summary.
 
+### Own goals (since 2026-10-14)
+
+SofaScore labels an own goal `goal/ownGoal`; its `isHome` is the side the goal
+COUNTS FOR (RS Berkane 2-2 Renaissance Zemamra, 17256978: a Berkane player's own
+goal at 5', `isHome: false`, 0-1 after it). Until this fix the label was
+unknown, so that match gave up after 58 attempts with `unknown_incident` and
+`goals_do_not_add_up`. Now:
+
+- the parser reads it as `own_goal` on that side, and the replies already stored
+  with an attempt are read again the same way (`readStored`), so a held match
+  needs no new request;
+- it adds to that side's score (the goal tally must still equal the final
+  score), counts in the other side's goals conceded and against its clean
+  sheet, and is the scorer's `ownGoals`, never one of his `goals` (the database
+  recorder counts own goals for the opponent the same way);
+- it is held as `own_goal_unexplained` when its scorer is not a player of the
+  other side, or when SofaScore's own `ownGoals` figure for a player disagrees
+  with the incidents.
+
+**Reopening Berkane - Zemamra after the deploy.** `gave_up` is not retried by
+itself. `app_private.sofascore_fantasy_reopen(null, <fixture id>)` (migration
+`20261012120000`) sets one finished, finalized, unrecorded fixture back to
+`held` with 0 attempts, due now, whatever held it, unless its gameweek is
+finalizing or finalized. It is a write, so it goes through a guarded script:
+`scripts/backend/reopen-sofascore-fantasy-berkane-zemamra.sql` (deploy
+`football-live-refresh` first; run it when no match is in play; a rehearsal
+ending in `rollback`, change only that line to `commit`). The next live tick
+retries the match from its stored replies and records it, or holds it with the
+reason in `last_outcome`.
+
 ### Switches
 
 | Switch                                                    | Effect                                                                                                                                                                        |

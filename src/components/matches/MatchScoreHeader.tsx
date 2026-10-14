@@ -53,6 +53,7 @@ export function MatchScoreHeader({
   events = [],
   lineups = [],
   headingId,
+  liveUnconfirmed = false,
   ref,
 }: {
   match: Match;
@@ -66,6 +67,12 @@ export function MatchScoreHeader({
   /** Published lineups, used only to put names on those events. */
   lineups?: readonly MatchLineupDto[];
   headingId: string;
+  /**
+   * The read says live but is too old to trust (`liveFreshness` "expired",
+   * a kickoff more than 3 hours ago): the neutral "Score à confirmer" pill
+   * instead of the live one, no ticking minute, no elapsed bar.
+   */
+  liveUnconfirmed?: boolean;
   /** The header's root, which the page watches to swap in its compact bar. */
   ref?: Ref<HTMLElement>;
 }) {
@@ -73,7 +80,7 @@ export function MatchScoreHeader({
   const locale = lang === "ar" ? "ar-MA" : "fr-FR";
   // The minute keeps ticking between refreshes (at most one ahead of the data).
   const stages = useLiveStageLabels();
-  const liveMinute = useTickingMinute(match.minute, match.status === "live");
+  const liveMinute = useTickingMinute(match.minute, match.status === "live" && !liveUnconfirmed);
   const clock = liveClock({
     stages,
     minute: liveMinute,
@@ -93,7 +100,9 @@ export function MatchScoreHeader({
     month: "long",
   }).format(kickoff);
 
-  const isLive = match.status === "live";
+  // A live read too old to trust keeps its score but not the live claim.
+  const unconfirmed = match.status === "live" && liveUnconfirmed;
+  const isLive = match.status === "live" && !unconfirmed;
   const isFinished = match.status === "finished";
   const isScheduled = match.status === "scheduled";
   const isPostponed = match.status === "postponed";
@@ -119,9 +128,9 @@ export function MatchScoreHeader({
     .replace("{away}", tr(away.shortName))
     .replace("{as}", String(as));
 
-  const showScore = isLive || isFinished;
+  const showScore = isLive || unconfirmed || isFinished;
   const hasScorers = showScore && hasScoreEvents(events);
-  const showMeta = !isLive;
+  const showMeta = !isLive && !unconfirmed;
 
   return (
     <section
@@ -201,6 +210,10 @@ export function MatchScoreHeader({
               {/* The page refreshes itself while live; said once, quietly. */}
               <span className="sr-only">{t("matches.detail.live_updating")}</span>
             </>
+          ) : unconfirmed ? (
+            <span className={cn(STATUS_PILL, ui.surface.inkPlain)}>
+              {t("matches.status.unconfirmed")}
+            </span>
           ) : isFinished ? (
             <span className={cn(STATUS_PILL, ui.surface.inkPlain, justFinished && "pop")}>
               {t("matches.status.ft")}

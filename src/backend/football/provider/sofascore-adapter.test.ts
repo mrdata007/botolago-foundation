@@ -92,9 +92,16 @@ describe("Sofascore adapter, from the Phase 0 fixtures", () => {
 
   test("an unseen goal class is unknown and keeps its raw labels", () => {
     const [incident] = parseSofascoreIncidents({
-      incidents: [{ incidentType: "goal", incidentClass: "ownGoal", time: 10, isHome: true }],
+      incidents: [{ incidentType: "goal", incidentClass: "scissorKick", time: 10, isHome: true }],
     });
-    expect(incident).toMatchObject({ kind: "unknown", rawType: "goal", rawClass: "ownGoal" });
+    expect(incident).toMatchObject({ kind: "unknown", rawType: "goal", rawClass: "scissorKick" });
+  });
+
+  test("an own goal (goal/ownGoal, seen on 17256978) counts for the side SofaScore puts it on", () => {
+    const [incident] = parseSofascoreIncidents({
+      incidents: [{ incidentType: "goal", incidentClass: "ownGoal", time: 5, isHome: false }],
+    });
+    expect(incident).toMatchObject({ kind: "own_goal", side: "away", rawClass: "ownGoal" });
   });
 
   test("a rescinded incident is dropped", () => {

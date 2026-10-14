@@ -80,6 +80,20 @@ export interface StagedDependencies {
   readonly environment: Readonly<Record<string, string | undefined>>;
   readonly now: Date;
   readonly log: (line: string) => void;
+  /**
+   * Handed the three replies of every pull that read them, before anything is
+   * parsed: the live refresh stores the match details (team statistics above
+   * all, which SofaScore can publish after the post-match window) from them,
+   * with no request of its own. Whatever it does never changes the pull.
+   */
+  readonly onPulled?: (
+    pulled: { readonly fixtureId: string; readonly eventId: string },
+    replies: {
+      readonly incidents: unknown;
+      readonly lineups: unknown;
+      readonly statistics: unknown;
+    },
+  ) => void;
 }
 
 export interface StagedPullResult {
@@ -265,6 +279,11 @@ export class SofascoreStagedStats {
     }
     const requests = this.requestLog.length - before;
     this.counts.pulled += 1;
+    try {
+      this.deps.onPulled?.({ fixtureId, eventId }, replies);
+    } catch {
+      // The details are a by-product: never a reason to fail the pull.
+    }
     if (replies.lineups === null) {
       await this.recordError(fixtureId, eventId, "lineups_unavailable", requests);
       return;
