@@ -1119,54 +1119,100 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  /* the ambient motion of the full card: before the beats' rules, so a beat that plays wins */
-  .mc-shield--ed:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-sl--foil::after {
+  /*
+   * The ambient motion of the full card. It pauses while a beat plays (a mc-shield--beat-* class is on the
+   * root only for the beat's length, ManagerCard.tsx), so the one-shot beat wins: these rules come
+   * after the beats' rules with the same specificity and would otherwise override them.
+   */
+  .mc-shield--ed:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-sl--foil::after {
     animation: mc-sh-ambient 6s cubic-bezier(0.45, 0, 0.2, 1) 1.2s infinite;
   }
 
-  .mc-shield--ed-holo:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-sl--frame,
-  .mc-shield--ed-holo:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-fx--prism {
+  .mc-shield--ed-holo:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-sl--frame,
+  .mc-shield--ed-holo:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-fx--prism {
     animation: mc-sh-hue 9s linear infinite;
   }
 
-  .mc-shield--ed-holo:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-fx--spark,
-  .mc-shield--ed-electric:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-fx--spark {
+  .mc-shield--ed-holo:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-fx--spark,
+  .mc-shield--ed-electric:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-fx--spark {
     animation: mc-sh-twinkle 2.6s steps(1) infinite;
   }
 
-  .mc-shield--ed-pixel:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-sl--frame {
+  .mc-shield--ed-pixel:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-sl--frame {
     animation: mc-sh-march 1.6s steps(4) infinite;
   }
 
-  .mc-shield--ed-pixel:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-px {
+  .mc-shield--ed-pixel:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-px {
     animation: mc-sh-pixel 3.2s steps(8) infinite;
   }
 
-  .mc-shield--ed-pixel:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-px--1 {
+  .mc-shield--ed-pixel:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-px--1 {
     animation-delay: -1.1s;
   }
 
-  .mc-shield--ed-pixel:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-px--2 {
+  .mc-shield--ed-pixel:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-px--2 {
     animation-delay: -2.1s;
   }
 
-  .mc-shield--ed-chrome:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-sl--frame {
+  .mc-shield--ed-chrome:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-sl--frame {
     animation: mc-sh-sweep 5s ease-in-out infinite;
   }
 
-  .mc-shield--ed-electric:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-zap {
+  .mc-shield--ed-electric:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-zap {
     animation: mc-sh-zap 1.05s steps(1) infinite;
   }
 
-  .mc-shield--ed-electric:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-zap--2 {
+  .mc-shield--ed-electric:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-zap--2 {
     animation-delay: -0.35s;
   }
 
-  .mc-shield--ed-electric:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-zap--3 {
+  .mc-shield--ed-electric:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-zap--3 {
     animation-delay: -0.7s;
   }
 
-  .mc-shield--ed-electric:where(:not(.mc-shield--compact):not(.mc-shield--cropped)) .mc-sl--zap {
+  .mc-shield--ed-electric:where(
+      :not(.mc-shield--compact):not(.mc-shield--cropped):not([class*="mc-shield--beat-"])
+    )
+    .mc-sl--zap {
     animation: mc-sh-glow 2.4s ease-in-out infinite;
   }
 
