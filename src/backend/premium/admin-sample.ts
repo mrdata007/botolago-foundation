@@ -38,6 +38,8 @@ export interface SampleOptions {
   failWriteWith?: string;
   /** Omit the by-product counts, as a database that migration 20261013100500 has not reached does. */
   withoutByProduct?: boolean;
+  /** The mode the overview reports (default: preview). */
+  mode?: "off" | "preview" | "on";
   /** Every account is unknown. */
   empty?: boolean;
   now?: number;
@@ -81,7 +83,11 @@ export class InMemoryPremiumAdminRepository implements PremiumAdminRepository {
       list.some((g) => !g.revokedAt && Date.parse(g.endsAt) > this.now),
     ).length;
     return {
-      settings: { mode: "preview", checkoutEnabled: false, billingPaused: false },
+      settings: {
+        mode: this.options.mode ?? "preview",
+        checkoutEnabled: false,
+        billingPaused: false,
+      },
       products: [
         {
           code: "plus_monthly",

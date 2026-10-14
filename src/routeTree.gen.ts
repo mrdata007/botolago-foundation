@@ -56,6 +56,7 @@ import { Route as CurvaClassementRouteImport } from './routes/curva.classement'
 import { Route as CurvaLesVotresRouteImport } from './routes/curva.les-votres'
 import { Route as CurvaPlusRouteImport } from './routes/curva.plus'
 import { Route as CurvaSaisonsRouteImport } from './routes/curva.saisons'
+import { Route as DevAdminShellSampleRouteImport } from './routes/dev.admin-shell-sample'
 import { Route as DevCurvaRankingSampleRouteImport } from './routes/dev.curva-ranking-sample'
 import { Route as DevManagerCardEditionsRouteImport } from './routes/dev.manager-card-editions'
 import { Route as DevManagerCardOvrChangeSampleRouteImport } from './routes/dev.manager-card-ovr-change-sample'
@@ -345,6 +346,11 @@ const CurvaSaisonsRoute = CurvaSaisonsRouteImport.update({
   id: '/saisons',
   path: '/saisons',
   getParentRoute: () => CurvaRoute,
+} as any)
+const DevAdminShellSampleRoute = DevAdminShellSampleRouteImport.update({
+  id: '/dev/admin-shell-sample',
+  path: '/dev/admin-shell-sample',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DevCurvaRankingSampleRoute = DevCurvaRankingSampleRouteImport.update({
   id: '/dev/curva-ranking-sample',
@@ -661,6 +667,7 @@ export interface FileRoutesByFullPath {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/admin-shell-sample': typeof DevAdminShellSampleRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
   '/dev/manager-card-editions': typeof DevManagerCardEditionsRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
@@ -757,6 +764,7 @@ export interface FileRoutesByTo {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/admin-shell-sample': typeof DevAdminShellSampleRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
   '/dev/manager-card-editions': typeof DevManagerCardEditionsRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
@@ -859,6 +867,7 @@ export interface FileRoutesById {
   '/curva/les-votres': typeof CurvaLesVotresRoute
   '/curva/plus': typeof CurvaPlusRoute
   '/curva/saisons': typeof CurvaSaisonsRoute
+  '/dev/admin-shell-sample': typeof DevAdminShellSampleRoute
   '/dev/curva-ranking-sample': typeof DevCurvaRankingSampleRoute
   '/dev/manager-card-editions': typeof DevManagerCardEditionsRoute
   '/dev/manager-card-ovr-change-sample': typeof DevManagerCardOvrChangeSampleRoute
@@ -962,6 +971,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/plus'
     | '/curva/saisons'
+    | '/dev/admin-shell-sample'
     | '/dev/curva-ranking-sample'
     | '/dev/manager-card-editions'
     | '/dev/manager-card-ovr-change-sample'
@@ -1058,6 +1068,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/plus'
     | '/curva/saisons'
+    | '/dev/admin-shell-sample'
     | '/dev/curva-ranking-sample'
     | '/dev/manager-card-editions'
     | '/dev/manager-card-ovr-change-sample'
@@ -1159,6 +1170,7 @@ export interface FileRouteTypes {
     | '/curva/les-votres'
     | '/curva/plus'
     | '/curva/saisons'
+    | '/dev/admin-shell-sample'
     | '/dev/curva-ranking-sample'
     | '/dev/manager-card-editions'
     | '/dev/manager-card-ovr-change-sample'
@@ -1238,6 +1250,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   ClubsClubIdRoute: typeof ClubsClubIdRoute
+  DevAdminShellSampleRoute: typeof DevAdminShellSampleRoute
   DevCurvaRankingSampleRoute: typeof DevCurvaRankingSampleRoute
   DevManagerCardEditionsRoute: typeof DevManagerCardEditionsRoute
   DevManagerCardOvrChangeSampleRoute: typeof DevManagerCardOvrChangeSampleRoute
@@ -1586,6 +1599,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/curva/saisons'
       preLoaderRoute: typeof CurvaSaisonsRouteImport
       parentRoute: typeof CurvaRoute
+    }
+    '/dev/admin-shell-sample': {
+      id: '/dev/admin-shell-sample'
+      path: '/dev/admin-shell-sample'
+      fullPath: '/dev/admin-shell-sample'
+      preLoaderRoute: typeof DevAdminShellSampleRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dev/curva-ranking-sample': {
       id: '/dev/curva-ranking-sample'
@@ -2229,6 +2249,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   ClubsClubIdRoute: ClubsClubIdRoute,
+  DevAdminShellSampleRoute: DevAdminShellSampleRoute,
   DevCurvaRankingSampleRoute: DevCurvaRankingSampleRoute,
   DevManagerCardEditionsRoute: DevManagerCardEditionsRoute,
   DevManagerCardOvrChangeSampleRoute: DevManagerCardOvrChangeSampleRoute,
