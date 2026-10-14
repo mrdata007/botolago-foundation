@@ -187,3 +187,54 @@ describe("the owner's verified aliases script", () => {
     expect(aliases).toContain("app_private.sofascore_link_alias(");
   });
 });
+
+describe("production install of the match-page alias migration (20261014170100)", () => {
+  const MD = "supabase/migrations/20261014170100_sofascore_alias_match_details.sql";
+  const md = read(MD);
+  const install = read("scripts/backend/apply-20261014170100-sofascore-alias-match-details.sql");
+  const previous = read(
+    "supabase/migrations/20261014120000_football_match_details_partial_sections.sql",
+  );
+  const fnOf = (source: string) => {
+    const start = source.indexOf("create or replace function api.ingest_football_match_details(");
+    return source.slice(start, source.indexOf("\n$$;\n", start));
+  };
+
+  test("pins the exact reviewed migration bytes before executing them", () => {
+    expect(install.split("$migration$")[1]).toBe(md);
+    const expected = install.match(/encode\(sha256[\s\S]*?is distinct from '([a-f0-9]{64})'/)?.[1];
+    expect(expected).toBe(createHash("sha256").update(md).digest("hex"));
+    expect(install.indexOf("migration differs from reviewed repository bytes")).toBeLessThan(
+      install.indexOf("execute source;"),
+    );
+  });
+
+  test("requires the 20261014120000 body #473's install pins, and pins the new one", () => {
+    const pinned = read("scripts/backend/apply-live-match-details-sections.sql").match(
+      /md5\(pg_get_functiondef\(ingest\)\) <> '([0-9a-f]{32})'/,
+    )?.[1];
+    expect(pinned).toBe("d5ba5e52a6c0129bc21833dcc4945566");
+    const preflight = install.slice(0, install.indexOf("$preflight$;"));
+    expect(preflight).toContain(`is distinct from '${pinned}'`);
+    expect(install.slice(install.indexOf("do $verify$"))).toMatch(
+      /is distinct from '[0-9a-f]{32}'/,
+    );
+    expect(install).toContain("production writers are not paused and drained");
+    expect(install).toContain("data changed in a way the migration does not do");
+    expect(install.trimEnd().endsWith("rollback;")).toBe(true);
+    expect(install).not.toContain("commit;");
+  });
+
+  test("the function is #473's version byte for byte except its five player joins", () => {
+    const before = fnOf(previous);
+    const after = fnOf(md);
+    const playerJoin =
+      /left join app_private\.football_provider_mappings (player_map|related_map)\n/g;
+    expect(before.match(playerJoin)).toHaveLength(5);
+    expect(
+      before.replace(playerJoin, "left join app_private.football_player_provider_links $1\n"),
+    ).toBe(after);
+    // Team and fixture joins still read the mapping table.
+    expect(after).toContain("join app_private.football_provider_mappings team_map");
+  });
+});

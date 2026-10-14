@@ -129,9 +129,8 @@ values('20261014170000','sofascore_catalog_aliases',array[$migration$-- SofaScor
 --      Each write closes the list entry, is logged in sofascore_player_match_log with the staff user,
 --      and sets the club's held Fantasy matches to be tried again (app_private.sofascore_fantasy_reopen).
 --
--- NOT CHANGED HERE. api.ingest_football_match_details (the live match page's lineups and events) still
--- links only main ids: an alias appears there under its SofaScore name, unlinked, which costs no
--- points. It is replaced by an open pull request (#473); the alias goes into it once that is merged.
+-- NOT CHANGED HERE. api.ingest_football_match_details (the live match page's lineups and events) is
+-- made alias-aware by the next migration, 20261014170100, on top of its 20261014120000 version.
 --
 -- Applying it writes no data: no mapping, alias, player or pool entry is created, changed or removed.
 --
@@ -1443,7 +1442,7 @@ declare source text;
 begin
   select statements[1] into source from supabase_migrations.schema_migrations where version='20261014170000';
   if encode(sha256(convert_to(source,'UTF8')),'hex')
-    is distinct from '5f8d9ba668ea76edb5dffdcfd8c918598c87bb1df1cf2db2b5a197e679077fd9'
+    is distinct from '95616d8c5ca2a507a7e98ae9aeeaccdc9e2eabb81328807b25f3a4aee16400ed'
   then raise exception 'stop: migration differs from reviewed repository bytes'; end if;
   execute source;
 end $apply$;

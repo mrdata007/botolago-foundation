@@ -183,10 +183,10 @@ before) and may have **second ids** (`app_private.sofascore_player_aliases`).
 - The automatic matcher never matches or creates a player for an id that is a second id:
   it returns the player. A switched-off second id is queued as `inactive_mapping_exists`.
 - A second id is never deleted or moved; it can only be switched off (`active = false`).
-- Not yet covered: the live match page's lineups and events
-  (`api.ingest_football_match_details`) still link main ids only, so a second id shows
-  there under its SofaScore name, without a link to the player. It costs no points. It goes
-  in once the open live-details pull request (#473) is merged.
+- The live match page's lineups and events (`api.ingest_football_match_details`) link a
+  second id to the same player too (migration `20261014170100`, through the read-only view
+  `app_private.football_player_provider_links`); rows already stored follow at the next
+  delivery of their match.
 
 The owner's verified pairs of 2026-10-14 are attached once with
 `scripts/backend/attach-sofascore-verified-aliases.sql` (guarded, dry by default).

@@ -54,9 +54,8 @@
 --      Each write closes the list entry, is logged in sofascore_player_match_log with the staff user,
 --      and sets the club's held Fantasy matches to be tried again (app_private.sofascore_fantasy_reopen).
 --
--- NOT CHANGED HERE. api.ingest_football_match_details (the live match page's lineups and events) still
--- links only main ids: an alias appears there under its SofaScore name, unlinked, which costs no
--- points. It is replaced by an open pull request (#473); the alias goes into it once that is merged.
+-- NOT CHANGED HERE. api.ingest_football_match_details (the live match page's lineups and events) is
+-- made alias-aware by the next migration, 20261014170100, on top of its 20261014120000 version.
 --
 -- Applying it writes no data: no mapping, alias, player or pool entry is created, changed or removed.
 --
