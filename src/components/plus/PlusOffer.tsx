@@ -165,6 +165,11 @@ export function PlusOffer({
           ? t("plus.note.guest")
           : null;
 
+  // Nothing is drawn until the database says the feature shows for this reader: a visitor to whom
+  // it does not show (signed out, or not a member while the mode is off or preview) never sees a
+  // frame of the offer before the effect above sends them away.
+  if (!premium.ready || !premium.enabled) return null;
+
   return (
     <div className="plus-offer" data-step={step} dir={pageDir} lang={lang} data-testid="plus-offer">
       <div className="plus-stage">

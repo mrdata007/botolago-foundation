@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 
-import { useAuth } from "@/auth/AuthProvider";
+import { useOptionalAuth } from "@/auth/AuthProvider";
 import {
   isMemberState,
   type MyPremium,
@@ -56,7 +56,13 @@ export function derivePremium(
   mine: MyPremium | undefined,
   signedIn: boolean,
 ): Omit<PremiumView, "startCheckout" | "cancel" | "restore" | "ready"> {
-  const enabled = status?.enabled === true;
+  const statusEnabled = status?.enabled === true;
+  // Database mode `preview`: the status discloses nothing (`enabled: false`), and
+  // `get_my_premium` answers `available: true` for members alone. That reader, and only that
+  // reader, sees BotolaGO+ as a member. Everyone else reads exactly as before: off.
+  const previewMember =
+    !statusEnabled && signedIn && mine?.available === true && isMemberState(mine.state);
+  const enabled = statusEnabled || previewMember;
   const member = enabled && signedIn && mine?.available === true ? mine : null;
   const state: PremiumState = member ? member.state : "none";
   return {
@@ -86,8 +92,25 @@ function useOffPremium(): PremiumView {
   return OFF_VIEW;
 }
 
+/**
+ * The first answer is in: the status has answered, the session has been restored, and a signed-in
+ * reader's membership has answered. Waiting for the session matters in preview: a returning member
+ * reads as signed out until it is restored, and an offer screen that saw "ready, not a member" then
+ * would close before the membership could be asked.
+ */
+export function premiumReady(input: {
+  statusPending: boolean;
+  authLoading: boolean;
+  mineLoading: boolean;
+}): boolean {
+  return !input.statusPending && !input.authLoading && !input.mineLoading;
+}
+
 function useLivePremium(): PremiumView {
-  const { user } = useAuth();
+  const auth = useOptionalAuth();
+  // No provider (a server render without one): nothing to restore.
+  const authLoading = auth?.status === "loading";
+  const user = auth?.user ?? null;
   const userId = user?.id ?? null;
   const status = useQuery({
     queryKey: premiumKeys.status,
@@ -98,7 +121,9 @@ function useLivePremium(): PremiumView {
   const mine = useQuery({
     queryKey: premiumKeys.mine(userId),
     queryFn: ({ signal }) => premiumService.mine(signal),
-    enabled: userId !== null && status.data?.enabled === true,
+    // Also while the status says "not enabled": in preview that is how a member is discovered.
+    // Waits for the status so a database that has no functions yet is asked once, not twice.
+    enabled: userId !== null && status.data !== undefined,
     staleTime: 30_000,
     retry: false,
   });
@@ -110,7 +135,11 @@ function useLivePremium(): PremiumView {
   const restore = useCallback(() => premiumService.restore(), []);
   return useMemo(
     () => ({
-      ready: !status.isPending && !mine.isLoading,
+      ready: premiumReady({
+        statusPending: status.isPending,
+        authLoading,
+        mineLoading: mine.isLoading,
+      }),
       ...derivePremium(status.data, mine.data, userId !== null),
       startCheckout,
       cancel,
@@ -119,6 +148,7 @@ function useLivePremium(): PremiumView {
     [
       status.isPending,
       status.data,
+      authLoading,
       mine.isLoading,
       mine.data,
       userId,
@@ -132,7 +162,7 @@ function useLivePremium(): PremiumView {
 export const usePremium: () => PremiumView = PREMIUM_SURFACES ? useLivePremium : useOffPremium;
 
 function useLiveReceipts(enabled: boolean): readonly PremiumReceipt[] {
-  const { user } = useAuth();
+  const user = useOptionalAuth()?.user ?? null;
   const userId = user?.id ?? null;
   const query = useQuery({
     queryKey: premiumKeys.receipts(userId),

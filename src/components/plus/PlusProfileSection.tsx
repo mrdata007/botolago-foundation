@@ -51,7 +51,9 @@ export function PlusProfileSection() {
   const receipts = usePremiumReceipts(premium.ready && premium.enabled);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  if (premium.ready && !premium.enabled) return null;
+  // Not shown (and no skeleton) until the feature is known to show for this reader: a preview
+  // member is only discovered by the second answer, and everyone else never sees the heading.
+  if (!premium.enabled) return null;
 
   const heading = <PlusLogo label={PLUS_NAME} height={24} className="plus-logo--heading" />;
   if (!premium.ready) {

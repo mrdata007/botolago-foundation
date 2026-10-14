@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
+import { onMfaStepUpRequired } from "@/backend/auth/step-up";
 import { OFF_REPOSITORY, premiumRepositoryKind } from "@/services/premium";
 
 import { LAUNCH_PRICES, MY_PREMIUM_OFF, PREMIUM_STATUS_OFF } from "./contracts";
@@ -74,6 +75,58 @@ describe("the Supabase premium repository (finding 5)", () => {
     }));
     expect(await repository.status(context)).toEqual(PREMIUM_STATUS_OFF);
     expect(await repository.mine(context)).toEqual(MY_PREMIUM_OFF);
+  });
+
+  it("reads {available:false} (preview and not a member, or mode off) as the off answer", async () => {
+    const { repository } = fakeApi(() => ({ data: { available: false }, error: null }));
+    expect(await repository.mine(context)).toEqual(MY_PREMIUM_OFF);
+  });
+
+  it("reads a preview member's answer, without an isMember key, as a member's", async () => {
+    const { repository } = fakeApi(() => ({
+      data: { ...MINE_WIRE, isMember: true, source: "grant", editions: [], edition: "standard" },
+      error: null,
+    }));
+    expect(await repository.mine(context)).toMatchObject({ available: true, state: "active" });
+  });
+
+  it("reads PT403 mfa_required from the membership probe as off, and tells no one", async () => {
+    let heard = 0;
+    const stop = onMfaStepUpRequired(() => void heard++);
+    try {
+      const { repository } = fakeApi(() => ({
+        data: null,
+        error: { code: "PT403", message: "mfa_required" },
+      }));
+      expect(await repository.mine(context)).toEqual(MY_PREMIUM_OFF);
+      // A thrown rejection from the client, not a returned error, reads the same.
+      const throwing = new SupabasePremiumRepository({
+        rpc: () =>
+          Object.assign(Promise.reject({ code: "PT403", message: "mfa_required" }), {
+            abortSignal: () => Promise.reject({ code: "PT403", message: "mfa_required" }),
+          }),
+      } as never);
+      expect(await throwing.mine(context)).toEqual(MY_PREMIUM_OFF);
+    } finally {
+      stop();
+    }
+    expect(heard).toBe(0);
+  });
+
+  it("reads PT401 (no session) as off", async () => {
+    const { repository } = fakeApi(() => ({
+      data: null,
+      error: { code: "PT401", message: "authentication_required" },
+    }));
+    expect(await repository.mine(context)).toEqual(MY_PREMIUM_OFF);
+  });
+
+  it("throws other failures (a network error), which the screens read as off", async () => {
+    const { repository } = fakeApi(() => ({
+      data: null,
+      error: { code: "500", message: "boom" },
+    }));
+    await expect(repository.mine(context)).rejects.toThrow();
   });
 
   it("rejects a malformed answer instead of inventing a membership", async () => {
