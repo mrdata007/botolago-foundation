@@ -1,0 +1,139 @@
+name: SofaScore squad link (production, read only report)
+
+# Read-only report for the one-time link of the existing player catalog to SofaScore, from the club
+# squads (docs/backend/SOFASCORE_PLAYER_MATCHING.md, "Linking the existing catalog"). It reads
+# Production V2 with single SELECT statements (scripts/backend/sofascore-squad-link.ts sends every
+# query through assertReadOnly), fetches one `teams/get-squad` reply per mapped club (about 16
+# requests; the count is in the report), and writes NOTHING to the database. Players match on
+# club + shirt number + position, never by name. It has no apply mode and does not generate the
+# apply script: the owner makes that locally from the uploaded report.json (--emit-sql).
+#
+# The step summary opens with the counts (linked automatically once applied, need review,
+# unmatched). The full tables are in the uploaded artifact. Names are off by default: the repository
+# is public.
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_commit:
+        description: Exact reviewed main commit approved for this read-only run
+        required: true
+        type: string
+      max_requests:
+        description: Cap on SofaScore requests (one squad per club)
+        required: false
+        type: string
+        default: "40"
+      show_names:
+        description: "Put player and club names in the artifact for staff to read (never used to decide). The repository is public: leave false unless the artifact may be seen."
+        required: false
+        type: boolean
+        default: false
+
+# Shares the production lock group so a snapshot is never taken in the middle
+# of a production write.
+concurrency:
+  group: botolago-production-v2-mutation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: SofaScore squad link report (production, read only)
+    if: >-
+      github.repository == 'mrdata007/botolago-foundation' &&
+      github.ref == 'refs/heads/main' &&
+      github.actor == 'mrdata007' &&
+      github.triggering_actor == 'mrdata007' &&
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production-admin-activation
+
+    steps:
+      - name: Validate manual dispatch
+        shell: bash
+        env:
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+        run: |
+          set -euo pipefail
+          [[ "${GITHUB_EVENT_NAME:-}" == "workflow_dispatch" && "${GITHUB_REPOSITORY:-}" == "mrdata007/botolago-foundation" ]] || { echo "Owner workflow dispatch required."; exit 2; }
+          [[ "${GITHUB_REF:-}" == "refs/heads/main" ]] || { echo "Production reads may run only from main."; exit 2; }
+          [[ "${GITHUB_ACTOR:-}" == "mrdata007" && "${GITHUB_TRIGGERING_ACTOR:-}" == "mrdata007" ]] || { echo "Only the owner may dispatch this workflow."; exit 2; }
+          [[ "${GITHUB_RUN_ATTEMPT:-}" == "1" ]] || { echo "Workflow reruns are forbidden; dispatch a reviewed commit again."; exit 2; }
+          [[ "$EXPECTED_COMMIT" =~ ^[0-9a-f]{40}$ && "$EXPECTED_COMMIT" == "$GITHUB_SHA" ]] || { echo "The dispatched commit is not the reviewed main commit."; exit 2; }
+          [[ "$MAX_REQUESTS" =~ ^[0-9]{1,4}$ && "$MAX_REQUESTS" -ge 1 ]] || { echo "max_requests must be a positive number."; exit 2; }
+
+      - name: Check out the reviewed main commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.expected_commit }}
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install dependencies (no secrets in this step)
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Report (read only)
+        shell: bash
+        env:
+          RAPIDAPI_KEY: ${{ secrets.RAPIDAPI_KEY }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PRODUCTION_PROJECT_REF: ${{ vars.SUPABASE_PRODUCTION_PROJECT_REF }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+          SHOW_NAMES: ${{ inputs.show_names }}
+        run: |
+          set -uo pipefail
+          for secret_value in "${RAPIDAPI_KEY:-}" "${SUPABASE_ACCESS_TOKEN:-}"; do
+            if [[ -n "$secret_value" ]]; then
+              printf '::add-mask::%s\n' "$secret_value"
+            fi
+          done
+          out="$RUNNER_TEMP/squad-link"
+          mkdir -p "$out"
+          if [[ "${SUPABASE_PRODUCTION_PROJECT_REF:-}" != "tkewgajrljbwgwedqsxn" ]]; then
+            echo "Production project-ref guard failed." | tee "$out/run.log"
+            { echo "## SofaScore squad link: FAILED"; echo; echo "Production project-ref guard failed."; } >> "$GITHUB_STEP_SUMMARY"
+            exit 2
+          fi
+          args=(--read-production --out-dir "$out" --max-requests "$MAX_REQUESTS")
+          if [[ "${SHOW_NAMES:-}" == "true" ]]; then args+=(--show-names); fi
+          bun scripts/backend/sofascore-squad-link.ts "${args[@]}" > "$out/run.log" 2>&1
+          status=$?
+          if [[ "$status" != "0" ]]; then
+            # The reason goes to the step summary, not only to a file nobody opens.
+            {
+              echo "## SofaScore squad link (production, read only): FAILED (exit $status)"
+              echo
+              echo '```'
+              tail -n 40 "$out/run.log"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
+          {
+            echo "## SofaScore squad link (production, read only)"
+            echo
+            cat "$out/summary.md"
+            echo
+            echo "Full tables: the uploaded artifact (report.md, report.json)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report and the log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sofascore-squad-link-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/squad-link/report.json
+            ${{ runner.temp }}/squad-link/report.md
+            ${{ runner.temp }}/squad-link/summary.md
+            ${{ runner.temp }}/squad-link/run.log
+          if-no-files-found: warn
+          retention-days: 14

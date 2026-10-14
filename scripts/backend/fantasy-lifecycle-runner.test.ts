@@ -842,6 +842,171 @@ describe("adaptive fixture integration", () => {
   });
 });
 
+describe("rating gameweek (docs/backend/FANTASY_RATING_POINTS.md)", () => {
+  /** A rating snapshot: ruleset 3.0, scoring version 3, adaptive, every rating 6.0 by default. */
+  function rating(overrides: Record<number, number | null> = {}) {
+    const doc = snapshot();
+    doc.adaptive = true;
+    doc.scoringVersion = 3;
+    doc.ruleset.version = 3;
+    doc.ruleset.minor_version = 0;
+    doc.playerFixtures = doc.playerFixtures.map((p, i) => ({
+      ...p,
+      scoringMode: "simple",
+      participationKnown: true,
+      rating: i in overrides ? overrides[i]! : 6.0,
+      evidence: Object.fromEntries(
+        Object.keys(p.stats).map((field) => [
+          field,
+          {
+            state: "verified",
+            source: "sofascore",
+            observedAt: "2026-10-18T00:00:00Z",
+            references: ["sofascore:event:1"],
+          },
+        ]),
+      ),
+    }));
+    return doc;
+  }
+  // Starters 0,2,3,4,5,7,8,9,10,12,13; bench 1 (GK), 6 (DEF), 11 (MID), 14 (FWD).
+  // Player 0: 7.5 -> 8; player 2: no rating -> 5; player 3: 7.49 -> 7; captain 7: 8.5 -> 9;
+  // everyone else 6.0 -> 6. Starters 8+5+7+6+6+9+6+6+6+6+6 = 71, bench 24, hit 4.
+  const ratings = { 0: 7.5, 2: null, 3: 7.49, 7: 8.5 };
+
+  it("gives each appearing player one rating event, the rating rounded half up or 5 without one", () => {
+    const result = calculateSnapshotResults(scoringSnapshotSchema.parse(rating(ratings)));
+    const eventsOf = (i: number) =>
+      result.playerResults.find((p) => p.fantasyPlayerId === id(100 + i))!.events;
+    expect(eventsOf(0)).toEqual([
+      { category: "rating", points: 8, sourceKey: `fixture-stats:${fixtureId}:${id(200)}:rating` },
+    ]);
+    expect(eventsOf(2)[0]!.points).toBe(5);
+    expect(eventsOf(3)[0]!.points).toBe(7);
+    expect(eventsOf(7)[0]!.points).toBe(9);
+    for (const player of result.playerResults) expect(player.events.length).toBe(1);
+  });
+
+  it("doubles the captain and keeps the transfer hit", () => {
+    expect(calculateSnapshotResults(rating(ratings)).teamResults[0]).toMatchObject({
+      startingPoints: 71,
+      benchPoints: 24,
+      captainPoints: 9,
+      transferHit: 4,
+      provisionalScore: 76,
+      effectiveCaptainId: id(107),
+    });
+  });
+
+  it("applies Triple Captain and Bench Boost as before", () => {
+    const tripled = rating(ratings);
+    tripled.teams[0]!.chipType = "triple_captain";
+    expect(calculateSnapshotResults(tripled).teamResults[0]).toMatchObject({
+      captainPoints: 18,
+      provisionalScore: 85,
+    });
+    const boosted = rating(ratings);
+    boosted.teams[0]!.chipType = "bench_boost";
+    expect(calculateSnapshotResults(boosted).teamResults[0]).toMatchObject({
+      benchPoints: 24,
+      provisionalScore: 100,
+      substitutions: [],
+    });
+  });
+
+  it("gives 0 to a starter who did not play and brings on the bench", () => {
+    const doc = rating(ratings);
+    doc.playerFixtures[4]!.stats.minutes = 0;
+    const result = calculateSnapshotResults(doc);
+    expect(result.playerResults.find((p) => p.fantasyPlayerId === id(104))!.events).toEqual([]);
+    const team = result.teamResults[0]!;
+    expect(team.substitutions).toEqual([
+      { playerOutId: id(104), playerInId: id(106), reason: "outfield_did_not_play" },
+    ]);
+    expect(team).toMatchObject({ startingPoints: 71, benchPoints: 18, provisionalScore: 76 });
+  });
+
+  it("hands the armband to the vice-captain when the captain did not play", () => {
+    const doc = rating(ratings);
+    doc.playerFixtures[7]!.stats.minutes = 0;
+    const team = calculateSnapshotResults(doc).teamResults[0]!;
+    expect(team.effectiveCaptainId).toBe(id(112));
+    expect(team.substitutions[0]).toEqual({
+      playerOutId: id(107),
+      playerInId: id(106),
+      reason: "outfield_did_not_play",
+    });
+    // 71 - 9 (captain out) + 6 (bench defender in) = 68, vice-captain doubled: +6, hit -4.
+    expect(team).toMatchObject({ startingPoints: 68, captainPoints: 6, provisionalScore: 70 });
+  });
+
+  it("does not score a player whose participation is not established", () => {
+    const doc = rating(ratings);
+    delete (doc.playerFixtures[9]!.evidence as Record<string, unknown>).minutes;
+    const result = calculateSnapshotResults(doc);
+    expect(result.playerResults.find((p) => p.fantasyPlayerId === id(109))!.events).toEqual([]);
+  });
+
+  it("sums the fixtures of a double gameweek, one rating event each", () => {
+    const doc = rating(ratings);
+    doc.playerFixtures.push({ ...doc.playerFixtures[8]!, fixtureId: id(999), rating: 9.5 });
+    const result = calculateSnapshotResults(doc);
+    const rows = result.playerResults.filter((p) => p.fantasyPlayerId === id(108));
+    expect(rows.map((row) => row.events)).toEqual([
+      [
+        {
+          category: "rating",
+          points: 6,
+          sourceKey: `fixture-stats:${fixtureId}:${id(208)}:rating`,
+        },
+      ],
+      [{ category: "rating", points: 10, sourceKey: `fixture-stats:${id(999)}:${id(208)}:rating` }],
+    ]);
+    expect(result.teamResults[0]).toMatchObject({ startingPoints: 81, provisionalScore: 86 });
+  });
+
+  it("accepts ruleset 3.0 only as the reviewed rating rule", () => {
+    expect(() => calculateSnapshotResults(rating())).not.toThrow();
+    const wrongVersion = rating();
+    wrongVersion.scoringVersion = 2;
+    expect(() => calculateSnapshotResults(wrongVersion)).toThrow(
+      "fantasy_scoring_rules_unsupported",
+    );
+    const notAdaptive = rating();
+    notAdaptive.adaptive = false;
+    expect(() => calculateSnapshotResults(notAdaptive)).toThrow(
+      "fantasy_scoring_rules_unsupported",
+    );
+    const minor = rating();
+    minor.ruleset.minor_version = 1;
+    expect(() => calculateSnapshotResults(minor)).toThrow("fantasy_scoring_rules_unsupported");
+    const unknown = rating();
+    unknown.ruleset.version = 4;
+    unknown.scoringVersion = 4;
+    expect(() => calculateSnapshotResults(unknown)).toThrow("fantasy_scoring_rules_unsupported");
+  });
+
+  it("refuses a rating outside 0..10 in the snapshot", () => {
+    expect(() => scoringSnapshotSchema.parse(rating({ 0: 11 }))).toThrow();
+  });
+
+  it("leaves a v2 snapshot exactly as it was, whatever ratings it carries", () => {
+    const v2 = rating(ratings);
+    v2.scoringVersion = 2;
+    v2.ruleset.version = 2;
+    v2.ruleset.minor_version = 1;
+    const plain = rating(ratings);
+    plain.scoringVersion = 2;
+    plain.ruleset.version = 2;
+    plain.ruleset.minor_version = 1;
+    for (const p of plain.playerFixtures) delete p.rating;
+    expect(calculateSnapshotResults(v2)).toEqual(calculateSnapshotResults(plain));
+    expect(
+      calculateSnapshotResults(v2).playerResults[0]!.events.some((e) => e.category === "rating"),
+    ).toBeFalse();
+  });
+});
+
 describe("fixture-ready publication", () => {
   it("publishes team totals and all ranking scopes while leaving the gameweek open", async () => {
     const base = harness("live");
@@ -947,4 +1112,106 @@ describe("season transition reliability", () => {
       expect(result.outcome).toBe(nextStatus === "live" ? "points_published" : "finalized");
     });
   }
+});
+
+describe("RPC cost of one gameweek (docs/backend/FANTASY_WORKER_SCHEDULE.md)", () => {
+  const BATCH = 100;
+  const pages = (n: number) => Math.max(1, Math.ceil(n / BATCH));
+
+  /**
+   * The harness, with every cursor paged like a season of `teams` fantasy teams,
+   * `leagues` leagues and `players` priced players, so the worker's RPC count can
+   * be measured from the code instead of estimated.
+   */
+  function paged(teams: number, leagues: number, players: number) {
+    const { gateway, calls, state } = harness("provisional");
+    state.nextGameweekId = id(99);
+    const seen: Record<string, number> = {};
+    const nth = (name: string) => (seen[name] = (seen[name] ?? 0) + 1);
+    const paged: FantasyWorkerGateway = {
+      async rpc(name, args) {
+        const n = nth(name);
+        switch (name) {
+          case "service_get_fantasy_scoring_snapshot": {
+            const last = n >= pages(teams);
+            return { ...snapshot(), hasMore: !last, afterTeamId: last ? null : id(1000 + n) };
+          }
+          case "service_finalize_fantasy_team_results": {
+            const last = n >= pages(teams);
+            return { finalized: 1, afterTeamId: last ? null : id(1000 + n), hasMore: !last };
+          }
+          case "service_enqueue_gameweek_finalized_notifications": {
+            const last = n >= pages(teams);
+            return {
+              scanned: 1,
+              enqueued: 1,
+              skipped: 0,
+              nextCursor: id(1000 + n),
+              hasMore: !last,
+            };
+          }
+          case "service_roll_fantasy_free_transfers":
+            return { updated: n <= pages(teams) ? 1 : 0 };
+          case "service_run_fantasy_price_batch": {
+            const last = n >= pages(players);
+            return { updatedMemberships: 0, afterPlayerId: id(2000 + n), hasMore: !last };
+          }
+          case "service_prepare_next_fantasy_gameweek": {
+            const last = n >= pages(teams);
+            return {
+              prepared: 1,
+              hasMore: !last,
+              nextGameweekId: id(99),
+              status: "open",
+              alreadyAdvanced: false,
+            };
+          }
+          case "service_fantasy_scoring_league_page": {
+            const last = n >= pages(leagues);
+            const inPage = Math.min(BATCH, leagues - (n - 1) * BATCH);
+            return {
+              leagueIds: Array.from({ length: Math.max(inPage, 0) }, (_, i) => id(3000 + i)),
+              afterLeagueId: id(3000 + n),
+              hasMore: !last,
+            };
+          }
+          default:
+            return gateway.rpc(name, args);
+        }
+      },
+    };
+    return { gateway: paged, calls };
+  }
+
+  // 1 state + 2 per score page (snapshot, persist) + begin finalization + 1 per page
+  // of: team results, free-transfer roll (plus its closing empty call), notifications,
+  // next-gameweek opening; restore Free Hit; 2 per ranking (overall, then one per
+  // league); league pages; price pages; complete gameweek, postwork and the prize pass.
+  const expected = (teams: number, leagues: number, players: number) =>
+    9 + 6 * pages(teams) + pages(leagues) + 2 * leagues + pages(players);
+
+  for (const [teams, leagues, players] of [
+    [300, 20, 450],
+    [1000, 100, 450],
+    [5000, 500, 450],
+    [20000, 2000, 450],
+  ] as const) {
+    it(`finalizes ${teams} teams, ${leagues} leagues in ${expected(teams, leagues, players)} RPCs`, async () => {
+      const { gateway } = paged(teams, leagues, players);
+      const result = await runFantasyLifecycle(gateway, {
+        gameweekId,
+        calculationVersion: 1,
+        maxBatches: 10_000,
+      });
+      expect(result.outcome).toBe("finalized");
+      expect(result.calls).toBe(expected(teams, leagues, players));
+    });
+  }
+
+  it("runs out of its RPC allowance with a code the Edge pass treats as 'continue next tick'", async () => {
+    const { gateway } = paged(5000, 500, 450);
+    await expect(
+      runFantasyLifecycle(gateway, { gameweekId, calculationVersion: 1, maxBatches: 600 }),
+    ).rejects.toThrow("fantasy_worker_batch_limit");
+  });
 });

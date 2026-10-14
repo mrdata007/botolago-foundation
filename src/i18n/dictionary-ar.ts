@@ -4,6 +4,8 @@
 export const ar = {
   "fantasy.scoring.incrementalPolicy":
     "تُحدَّث النقاط والترتيب بعد كل مباراة تتوفر بياناتها اللازمة، وتبقى النقاط مؤقتة خلال الجولة. تُطبَّق التبديلات التلقائية وانتقال شارة القيادة بعد التأكد من المشاركة.",
+  "fantasy.scoring.closedProvisional":
+    "نقاط مؤقتة: قد تُنشر إحصائيات المباريات التفصيلية لاحقاً، وقد تتغير النقاط إلى أن تُقفل الجولة نهائياً.",
   "fantasy.scoring.simpleEstimated": "احتساب مبسط · بيانات تقديرية",
   "fantasy.scoring.estimatesPolicy":
     "يمكن اعتماد التقديرات المراجعة استناداً إلى أفضل البيانات المتاحة نهائياً واحتسابها في الترتيب. تُحفظ الافتراضات وتبقى النقاط خاضعة لإجراء التصحيح خلال 72 ساعة. تظل هوية اللاعب غير المحسومة قيد الانتظار.",
@@ -227,6 +229,8 @@ export const ar = {
   "matches.status.delayed": "متأخر",
   "matches.status.penalties": "ركلات ترجيح",
   "matches.status.extra_time": "وقت إضافي",
+  "matches.stage.first_half": "الشوط الأول",
+  "matches.stage.second_half": "الشوط الثاني",
   "matches.gameweek": "ج.",
   "matches.vs": "ضد",
   "matches.competition.botola": "البطولة الاحترافية إنوي",
@@ -755,6 +759,9 @@ export const ar = {
   "fantasy.rules.row.second_yellow_dismissal": "طرد بإنذار ثانٍ (المجموع)",
   "fantasy.rules.row.own_goal": "هدف في مرماه",
   "fantasy.rules.scoring_unavailable": "سلّم النقاط المفصّل غير متاح حاليًا.",
+  "fantasy.rules.rating_rule":
+    "ابتداءً من الجولة {n}، نقاط اللاعب في المباراة هي تقييمه على SofaScore مقرّباً إلى أقرب عدد صحيح (7.5 تصبح 8، و7.4 تصبح 7). اللاعب الذي شارك دون تقييم على SofaScore يحصل على 5 نقاط، ومن لم يشارك يحصل على 0. القائد يضاعف نقاطه.",
+  "fantasy.rules.rating_previous": "حتى الجولة {n}، كانت النقاط تُحتسب وفق السلّم أدناه.",
   "fantasy.rules.chips": "الرقاقات",
   "fantasy.rules.chip_window_season": "مرة واحدة، في الجولة التي تختارها",
   "fantasy.rules.chip_window_range": "مرة واحدة بين الجولتين {from} و{to}",
@@ -771,7 +778,8 @@ export const ar = {
   "fantasy.onboarding.step1_body":
     "اختر 15 لاعباً بميزانية 100 م وشكّل 11 لاعباً أساسياً في كل جولة.",
   "fantasy.onboarding.step2_title": "اجمع النقاط",
-  "fantasy.onboarding.step2_body": "أهداف، تمريرات حاسمة، شباك نظيفة، ونقاط إضافية… كل حدث يُحتسب.",
+  "fantasy.onboarding.step2_body":
+    "كل لاعب يحصل على تقييمه على SofaScore في المباراة، مقرّباً إلى أقرب عدد صحيح.",
   "fantasy.onboarding.step3_title": "تحدَّ أصدقاءك",
   "fantasy.onboarding.step3_body": "أنشئ دوري خاصاً برمز وتنافس على الصدارة.",
   "fantasy.onboarding.skip": "تخطي",
@@ -1207,6 +1215,7 @@ export const ar = {
   "fantasy.points.event.own_goal": "هدف في المرمى الخاطئ",
   "fantasy.points.event.bonus": "نقاط إضافية",
   "fantasy.points.event.player_of_match": "رجل المباراة",
+  "fantasy.points.event.rating": "تقييم SofaScore",
   "fantasy.points.autosubs": "الاستبدالات التلقائية",
   "fantasy.points.autosub_reason.goalkeeper_did_not_play": "الحارس لم يشارك",
   "fantasy.points.autosub_reason.outfield_did_not_play": "اللاعب لم يشارك",
@@ -2517,11 +2526,11 @@ export const ar = {
   "landing.step2_example": "مثال: يحصد قائدك {n} نقاط، فتحصل أنت على {double}.",
   "landing.step3_title": "اجمع النقاط وتقدّم في الترتيب",
   "landing.step3_body":
-    "يجمع لاعبوك النقاط حسب مبارياتهم الحقيقية: دقائق اللعب، الأهداف، التمريرات الحاسمة، الشباك النظيفة.",
+    "يحصل لاعبوك على تقييمهم على SofaScore في كل مباراة، مقرّباً إلى أقرب عدد صحيح.",
   "landing.scoring_label": "من نظام النقاط",
-  "landing.scoring_goal_mid": "هدف لاعب وسط",
-  "landing.scoring_assist": "تمريرة حاسمة",
-  "landing.scoring_clean_sheet": "شباك نظيفة لمدافع",
+  "landing.scoring_rating_high": "تقييم SofaScore 7.5",
+  "landing.scoring_rating_low": "تقييم SofaScore 6.4",
+  "landing.scoring_no_rating": "شارك دون تقييم SofaScore",
   "landing.points_value": "{n} نقاط",
   "landing.why_title": "لماذا ستعود في كل جولة",
   "landing.why1_title": "لاعبون تتابعهم أصلاً",
@@ -2557,7 +2566,7 @@ export const ar = {
     "نعم. الفريق الذي تنشئه الآن يدخل الجولة المفتوحة التالية ويجمع النقاط ابتداءً منها.",
   "landing.faq_points_q": "كيف تُحتسب النقاط؟",
   "landing.faq_points_a":
-    "حسب المباريات الحقيقية للاعبيك: دقائق اللعب، الأهداف، التمريرات الحاسمة، الشباك النظيفة… البطاقات والأهداف في المرمى الخاص تُفقدك نقاطاً، ونقاط قائدك تُحتسب مضاعفة.",
+    "كل لاعب يحصل على تقييمه على SofaScore في المباراة، مقرّباً إلى أقرب عدد صحيح (7.5 تصبح 8). اللاعب الذي شارك دون تقييم يحصل على 5 نقاط، ومن لم يشارك يحصل على 0، ونقاط قائدك تُحتسب مضاعفة.",
   "landing.faq_account_q": "هل أحتاج إلى حساب؟",
   "landing.faq_account_a":
     "لتكوين فريقك، لا. لحفظه ودخول الترتيب، نعم: حساب مجاني مع تأكيد بريدك الإلكتروني.",

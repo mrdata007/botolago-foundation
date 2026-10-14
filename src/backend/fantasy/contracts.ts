@@ -163,6 +163,7 @@ export const fantasyGameweekSchema = z.object({
   endsAt: z.string(),
   status: z.enum(FANTASY_GAMEWEEK_STATUSES),
   pointsState: z.enum(["provisional", "final"]),
+  closedAt: z.string().nullable().optional(),
 });
 export type FantasyGameweekDto = z.infer<typeof fantasyGameweekSchema>;
 
@@ -272,6 +273,12 @@ export const fixtureScoringSchema = z.object({
 
 export const fantasyPointsSchema = z.object({
   incrementalScoring: z.boolean().optional(),
+  /**
+   * When the gameweek closed on provisional points (staged SofaScore statistics,
+   * migration 20261013160200): the next gameweek is open but these points can
+   * still change until the gameweek is locked. Absent or null otherwise.
+   */
+  closedAt: z.string().nullable().optional(),
   fixtureScoring: z.array(fixtureScoringSchema).optional(),
   teamId: postgresUuidSchema,
   gameweekId: postgresUuidSchema,
@@ -522,6 +529,14 @@ export const fantasyRulesSchema = z.object({
       scope: z.literal("fixture"),
       lateModeUpgrade: z.literal(false),
       estimatesFinalForRankings: z.boolean().optional(),
+    })
+    .optional(),
+  // The rating rule (docs/backend/FANTASY_RATING_POINTS.md, migration 20261014090000):
+  // present only while it is switched on for the season.
+  ratingScoring: z
+    .object({
+      fromGameweek: z.number().int().positive(),
+      noRatingPoints: z.number().int(),
     })
     .optional(),
   seasonId: postgresUuidSchema,

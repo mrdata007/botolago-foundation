@@ -1665,8 +1665,9 @@ select extensions.ok(
   not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname !~ '^(pg_|information_schema)' and p.proname !~ 'manager_card'
-      -- ops_health_checks calls app_private.manager_card_health() (20261010120300)
-      and p.proname <> 'ops_health_checks'
+      -- ops_health_checks calls app_private.manager_card_health() (20261010120300),
+      -- and so do the earlier versions later checks wrap (ops_health_checks_before_*)
+      and p.proname !~ '^ops_health_checks(_before_[a-z0-9_]+)?$'
       and p.prosrc ~* '(app|app_private)\.manager_card'),
   'no function outside the card''s own reads or writes a card table: no prize, ranking or Fantasy rule reads the card');
 select extensions.ok(

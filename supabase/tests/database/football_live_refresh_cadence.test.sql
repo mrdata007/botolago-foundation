@@ -1,4 +1,5 @@
--- Regression suite for 20260924200500_football_live_refresh_cadence.
+-- Regression suite for 20260924200500_football_live_refresh_cadence, as the live
+-- tick was changed by 20261013110100 (every 60 seconds while a match is in play).
 --
 -- Every fixture is placed relative to statement_timestamp(), with odd
 -- seconds so none lands on the provider's 00:00:00 UTC placeholder.
@@ -89,7 +90,8 @@ select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
   'but five minutes later (a late pg_cron start included)');
 
 -- ---------------------------------------------------------------------------
--- In play: every 2 minutes, however late the provider says so.
+-- Not announced yet: every 2 minutes, however late the provider says so.
+-- In play: every 60 seconds.
 -- ---------------------------------------------------------------------------
 update app.fixtures set kickoff_at = statement_timestamp() - interval '2 minutes 7 seconds'
 where id = 'f5500000-0000-4000-8000-000000000003';
@@ -100,12 +102,37 @@ select pg_temp.last_call(interval '1 minute 45 seconds');
 select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
   'then every two minutes, so the kick-off itself is seen');
 select pg_temp.set_status(3, 'live_first_half');
-select pg_temp.last_call(interval '2 minutes');
+select pg_temp.last_call(interval '30 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'waiting',
+  'a match in play is not refreshed again within the minute');
+select pg_temp.last_call(interval '45 seconds');
 select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
-  'a match in play is refreshed every two minutes');
+  'a match in play is refreshed every 60 seconds (a late pg_cron start included)');
+select pg_temp.last_call(interval '60 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'and on the full minute');
 select pg_temp.set_status(3, 'half_time');
 select extensions.is(app_private.football_live_refresh_tick(), 'waiting',
   'half-time counts as in play, at the same cadence');
+select pg_temp.last_call(interval '50 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'and is refreshed every 60 seconds');
+select pg_temp.set_status(3, 'extra_time');
+select pg_temp.last_call(interval '50 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'extra time is every 60 seconds too');
+select pg_temp.set_status(3, 'penalties');
+select pg_temp.last_call(interval '50 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'and so are penalties');
+select pg_temp.set_status(3, 'delayed');
+select pg_temp.last_call(interval '50 seconds');
+select extensions.is(app_private.football_live_refresh_tick(), 'waiting',
+  'a delayed match is back to every two minutes');
+select pg_temp.last_call(interval '2 minutes');
+select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
+  'and is refreshed then');
+select pg_temp.set_status(3, 'half_time');
 
 -- ---------------------------------------------------------------------------
 -- Finished: polling stops, and the next match starts afresh.
@@ -123,7 +150,7 @@ select extensions.is(app_private.football_live_refresh_tick(), 'invoked',
 select extensions.is(
   (select count(*)::integer from net.http_request_queue
    where url = 'https://live.example.invalid/functions/v1/football-live-refresh'),
-  5, 'five provider calls in all, one per invocation');
+  10, 'ten provider calls in all, one per invocation');
 
 -- ---------------------------------------------------------------------------
 -- The ops health check notices a stalled refresh within ten minutes.

@@ -75,6 +75,14 @@ describe("copy", () => {
     }
   });
 
+  test("the shirt-based reasons are described by number and club, in both languages", () => {
+    expect(SOFASCORE_QUEUE_COPY.fr.reasons.ambiguous_shirt.body).toContain("numéro de maillot");
+    expect(SOFASCORE_QUEUE_COPY.ar.reasons.ambiguous_shirt.body).toContain("رقم القميص");
+    expect(SOFASCORE_QUEUE_COPY.fr.reasons.no_candidate.body).toContain("ce numéro");
+    expect(SOFASCORE_QUEUE_COPY.fr.reasons.no_candidate.body).not.toContain("ce nom");
+    expect(Object.keys(SOFASCORE_QUEUE_COPY.fr.reasons)).not.toContain("awaiting_second_match");
+  });
+
   test("the no_candidate explanation says the match is not held for a player who scored nothing", () => {
     expect(SOFASCORE_QUEUE_COPY.fr.reasons.no_candidate.body).toContain("n’est pas mis en attente");
   });
@@ -87,8 +95,8 @@ describe("SofascorePlayerQueueView, French", () => {
     has(html, 'dir="ltr"');
     has(html, 'lang="fr"');
     has(html, 'data-direction="ltr"');
-    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(7);
-    has(html, "7 joueurs à confirmer");
+    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(12);
+    has(html, "12 joueurs à confirmer");
     has(html, "Joueur Exemple Alpha");
   });
 
@@ -100,14 +108,14 @@ describe("SofascorePlayerQueueView, French", () => {
   });
 
   test("offers a confirm button only for selectable candidates", () => {
-    // 4 entries have a selectable candidate: Alpha has 2, Epsilon 1, Zeta 1, the Arabic one 1 = 5.
-    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(5);
+    // Selectable candidates: Alpha 2, Epsilon 1, Zeta 1, the Arabic one 1, Eta 1, Thêta 2, Mu 2, Omicron 1 = 11.
+    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(11);
     expect(count(html, /data-locked="true"/g)).toBe(1);
     has(html, "Déjà rattaché au joueur SofaScore 811111");
   });
 
   test("an entry with no candidate has an explanation and no button", () => {
-    expect(count(html, /data-testid="sofascore-queue-no-candidates"/g)).toBe(2);
+    expect(count(html, /data-testid="sofascore-queue-no-candidates"/g)).toBe(3);
     has(html, "Il n’existe pas encore de bouton pour créer un joueur");
   });
 
@@ -120,7 +128,7 @@ describe("SofascorePlayerQueueView, French", () => {
     const reader = render({ canManage: false });
     lacks(reader, "sofascore-confirm-open");
     has(reader, "sofascore-queue-reader-notice");
-    expect(count(reader, /data-testid="sofascore-queue-entry"/g)).toBe(7);
+    expect(count(reader, /data-testid="sofascore-queue-entry"/g)).toBe(12);
     lacks(html, "sofascore-queue-reader-notice");
   });
 
@@ -218,15 +226,15 @@ describe("SofascorePlayerQueueView, Arabic (right to left)", () => {
     has(html, 'dir="rtl"');
     has(html, 'lang="ar"');
     has(html, 'data-direction="rtl"');
-    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(7);
-    has(html, "7 لاعبين بانتظار التأكيد");
+    expect(count(html, /data-testid="sofascore-queue-entry"/g)).toBe(12);
+    has(html, "12 لاعبين بانتظار التأكيد");
   });
 
   test("shows the Arabic explanation of each reason and the confirm buttons", () => {
     for (const reason of SOFASCORE_QUEUE_REASONS) {
       has(html, SOFASCORE_QUEUE_COPY.ar.reasons[reason].title);
     }
-    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(5);
+    expect(count(html, /data-testid="sofascore-confirm-open"/g)).toBe(11);
     has(html, "تأكيد هذا اللاعب");
     has(html, "مرتبط أصلًا بلاعب SofaScore 811111");
   });

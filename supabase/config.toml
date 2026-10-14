@@ -408,6 +408,16 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/football-live-refresh/index.ts"
 
+# One bounded pass of the Fantasy lifecycle worker (scoring, finalization,
+# close/lock, next-gameweek postwork), woken every 10 minutes by
+# app_private.fantasy_worker_tick while a gameweek has work. Same scheduler-token
+# check as football-live-refresh; ships switched off
+# (docs/backend/FANTASY_WORKER_SCHEDULE.md). Its deno.json maps `zod`.
+[functions.fantasy-lifecycle-worker]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/fantasy-lifecycle-worker/index.ts"
+
 # Production alerts by email (app_private.ops_alert_tick / ops_alert_test).
 # Same scheduler-token check as the two above; it mails only the address
 # stored in the database.
