@@ -25,7 +25,7 @@ export interface DuelSide {
  *   - off: null;
  *   - locked: both managers' real points and league positions clear on top (the league's
  *     standings, which the free screens already load), the example duel blurred below with the
- *     lock and « Débloquer ». The paid duel read is not called;
+ *     lock and « Découvrir ». The paid duel read is not called;
  *   - member: the duel's four tabs, clear, from the duel read.
  *
  * `mine` is the reader's own side, `other` the league mate's; `otherTeamId` is the mate's team and

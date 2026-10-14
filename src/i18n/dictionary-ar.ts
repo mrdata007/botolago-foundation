@@ -3028,7 +3028,7 @@ export const ar = {
   "plus.page.back": "العودة إلى كورفا",
   "plus.in.season_title": "موسمك بالتفصيل",
   "plus.in.duel_title": "مواجهتك بالتفصيل",
-  "plus.in.unlock": "افتح",
+  "plus.in.unlock": "اكتشف",
   "plus.in.season_empty": "يظهر موسمك بعد الجولة الأولى.",
   "plus.in.duel_empty": "تظهر هذه المواجهة بعد جولة تلعبانها معًا.",
   "plus.in.duel_private": "هذا المدرب يحتفظ بسجلّه لنفسه.",

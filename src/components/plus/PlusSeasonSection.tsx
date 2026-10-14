@@ -27,7 +27,7 @@ export interface Standing {
  * (`usePlusAccess()`) and hands over the real standing:
  *   - off: null (no node, no request);
  *   - locked: the real total points and league position clear on top, the example analysis
- *     blurred below with the lock and « Débloquer ». The paid reads are not called;
+ *     blurred below with the lock and « Découvrir ». The paid reads are not called;
  *   - member: the four tabs, clear, from the member's career read.
  */
 export function PlusSeasonSection({

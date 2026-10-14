@@ -3205,7 +3205,7 @@ export const fr = {
   "plus.page.back": "Retour à Curva",
   "plus.in.season_title": "Votre saison en détail",
   "plus.in.duel_title": "Votre duel en détail",
-  "plus.in.unlock": "Débloquer",
+  "plus.in.unlock": "Découvrir",
   "plus.in.season_empty": "Votre saison apparaît après la première journée.",
   "plus.in.duel_empty": "Ce duel apparaît après une journée jouée à deux.",
   "plus.in.duel_private": "Ce manager garde son historique pour lui.",

@@ -28,7 +28,7 @@ clear and real for members. The owner decisions of 2026-10-14 are the scope.
 1. **`PlusLockedSection`**: a reusable wrapper. A clear head (the reader's real figures, passed in),
    then the analysis rendered from the **example** dataset, blurred (CSS blur 12px plus a dark
    gradient veil), inert and `aria-hidden`, with a lock, one headline that carries the context
-   (« Votre saison en détail », « Votre duel en détail ») and a mint « Débloquer » button that opens
+   (« Votre saison en détail », « Votre duel en détail ») and a mint « Découvrir » button that opens
    the existing paywall (`/curva/plus?step=3`). After a purchase the offer closes back to the page
    the reader came from, and the section is open and clear.
 2. **Card page (`CurvaCardPage`)**: a « Votre saison » section with the four tabs (Résumé, Points,
@@ -67,13 +67,22 @@ no extra DOM node. The app is exactly as today. Each integration is gated by the
 `PREMIUM_SURFACES` constant and by `usePremium().enabled`; the paid reads are enabled only for a
 member. Tested explicitly on each of the three places.
 
+## Owner decisions, 2026-10-14 (after review)
+
+- The lock button reads « Découvrir » (Arabic « اكتشف »), not « Débloquer »: that word is banned
+  card vocabulary. No `plus.in.*` string contains it.
+- Header: a member's wordmark is swapped for the BotolaGO+ logo, as built.
+- Locked previews are less blurred so they are recognisable: about 5px on the card page and the
+  duel (hero numbers a little more), 4px on the home preview. The tab bar is clear but inert, the
+  veil sits at the bottom only, and the lock chip, headline and button sit on a small frosted plate.
+
 ## Acceptance criteria
 
 Visual and functional:
 
 - Non-member, card page: real points and position clear on top; below, the lock, the headline and
-  « Débloquer »; the analysis behind is blurred and cannot be focused, clicked or read by a screen
-  reader (`inert`, `aria-hidden`). « Débloquer » opens `/curva/plus?step=3`.
+  « Découvrir »; the analysis behind is blurred and cannot be focused, clicked or read by a screen
+  reader (`inert`, `aria-hidden`). « Découvrir » opens `/curva/plus?step=3`.
 - Member, card page: the section is clear, the four tabs work, real points from the career read,
   « — » where the backend has no figure; no lock anywhere.
 - Face-à-face: same two states with the four duel tabs; a history the opponent hides shows a short

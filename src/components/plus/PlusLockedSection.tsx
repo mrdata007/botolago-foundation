@@ -64,7 +64,7 @@ export function PlusEmbed({
 /**
  * A section for members, shown to everyone else locked: a clear head (the reader's real figures,
  * from screens that already load them), then the example analysis blurred, a lock, one headline
- * that carries the context, and a mint « Débloquer » that opens the paywall (step 3 of the offer).
+ * that carries the context, and a mint « Découvrir » that opens the paywall (step 3 of the offer).
  * The offer closes back to this page, where the section is then open.
  */
 export function PlusLockedSection({
