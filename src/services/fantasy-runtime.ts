@@ -539,7 +539,8 @@ export const fantasyService = {
       managerName: standing.managerName,
       teamName: standing.teamName,
       rank: standing.rank,
-      previousRank: standing.previousRank ?? standing.rank,
+      // An unknown earlier rank stays unknown (null): the table draws a dash, not "unchanged".
+      previousRank: standing.previousRank,
       gameweekScore: standing.gameweekPoints ?? 0,
       totalScore: standing.totalPoints,
     }));

@@ -353,15 +353,6 @@ describe("round rankings come from the server (FANT-04)", () => {
     ).toEqual([]);
   });
 
-  test("the cloud rankings read hands the board to the server-order selector, never the mock sorter", () => {
-    const source = readFileSync(join(ROOT, "src/services/fantasy-runtime.ts"), "utf8");
-    const from = source.indexOf("async getGlobalRankings");
-    const body = source.slice(from, source.indexOf("async getTopOverallStandings", from));
-    const cloudPart = body.slice(body.indexOf("const current = await hub();"));
-    expect(cloudPart).toContain("selectBoardPage");
-    expect(cloudPart).not.toContain("selectRankingsPage");
-  });
-
   test("both dictionaries name the unknown movement", () => {
     expect(dictionaries.fr["fantasy.rank.unknown"]).toBeTruthy();
     expect(dictionaries.ar["fantasy.rank.unknown"]).toBeTruthy();

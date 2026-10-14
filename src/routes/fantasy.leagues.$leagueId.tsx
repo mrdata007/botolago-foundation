@@ -196,6 +196,7 @@ function LeagueDetailBody() {
     up: t("fantasy.rank.up"),
     down: t("fantasy.rank.down"),
     same: t("fantasy.rank.same"),
+    unknown: t("fantasy.rank.unknown"),
   };
   const rows = standingsQ.data ?? [];
   // The card's surfaces (plan M5): a private league's members, while the section is live. The

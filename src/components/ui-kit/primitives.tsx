@@ -2042,7 +2042,7 @@ export function UiRankMovement({
 }: {
   rank: number;
   previousRank: number | null;
-  /** Accessible names for the three outcomes. */
+  /** Accessible names for the outcomes: up, down, unchanged, and (optional) no earlier rank. */
   labels: { up: string; down: string; same: string; unknown?: string };
   variant?: "disc" | "quiet";
   /** How the quiet variant writes the number of places (e.g. a locale grouping). */
