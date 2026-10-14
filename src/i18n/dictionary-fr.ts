@@ -582,6 +582,19 @@ export const fr = {
   "fantasy.transfers.error.over_budget": "Budget insuffisant pour ces transferts.",
   "fantasy.transfers.error.deadline": "La date limite est dépassée — impossible de confirmer.",
   "fantasy.transfers.error.no_changes": "Aucun transfert à confirmer.",
+  "fantasy.transfers.preview.pending": "Calcul du transfert en cours…",
+  "fantasy.transfers.preview.failed": "Le calcul du transfert a échoué. Réessayez.",
+  "fantasy.transfers.preview.budget":
+    "Budget insuffisant : il manque {amount} M pour ces transferts. Choisissez un joueur moins cher.",
+  "fantasy.transfers.preview.budget_changed":
+    "Le budget ou les prix ont changé. Vérifiez vos choix, puis réessayez.",
+  "fantasy.transfers.preview.stale":
+    "Une version plus récente de votre équipe existe. Rechargez-la : vos transferts sont conservés.",
+  "fantasy.transfers.preview.step_up":
+    "Un code de confirmation est demandé. Saisissez-le, puis réessayez : vos transferts sont conservés.",
+  "fantasy.transfers.preview.invalid": "Ce transfert n'est plus possible : vérifiez vos choix.",
+  "fantasy.transfers.preview.network":
+    "Connexion indisponible. Vos transferts sont conservés : réessayez.",
   "fantasy.picker.title": "Choisir un joueur",
   "fantasy.picker.search": "Rechercher un joueur",
   "fantasy.picker.filter_club": "Club",

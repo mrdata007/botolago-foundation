@@ -22,6 +22,7 @@ import type { Club, Player } from "@/types/domain";
 import { SQUAD_RULES, type FantasyPlayer, type Position } from "@/types/fantasy";
 import { findClub } from "./club-lookup";
 import { pointsUnit } from "@/lib/points-unit";
+import { exceedsBudget } from "@/services/transfers-service";
 import { positionWord, transferCostLabel } from "./picker-copy";
 
 export type SortKey = "form" | "price" | "selected" | "points";
@@ -213,7 +214,7 @@ export function AddPlayerScreen({
     if (taken.has(player.id)) return "taken";
     if (openPositions && !openPositions.includes(player.position)) return "no_slot";
     if (clubLimitReached?.(player)) return "club_limit";
-    if (player.price > bank + 0.001) return "budget";
+    if (exceedsBudget(player.price, bank)) return "budget";
     return null;
   };
 

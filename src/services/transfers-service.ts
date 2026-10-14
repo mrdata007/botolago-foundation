@@ -12,6 +12,222 @@ import {
 } from "@/lib/fantasy-engine";
 import type { FantasyTeam, SquadPlayer } from "@/types/fantasy";
 
+// ---------- Sale value of an owned player ----------
+
+/** Money in the game moves in tenths: every sum is rounded the way the bank is. */
+const roundTenth = (value: number) => Math.round(value * 10) / 10;
+
+/**
+ * What the owner of a player gets when he leaves: the SERVER's sale price for
+ * that membership (`current_sale_price`, the half-profit rule of
+ * FANTASY_RULES_V1 applied by the database), not the market price. A player
+ * who has risen since he was bought sells for less than he now costs.
+ *
+ * This never works the figure out itself. When the snapshot carries no sale
+ * price for the player (the guest/local adapters, whose purchase price is the
+ * current price anyway) the market price stands in. The server previews and
+ * confirms with its own figures either way; this is for the screen's display
+ * and its affordability filter only.
+ */
+export function ownedSalePrice(
+  salePrices: Readonly<Record<string, number>> | undefined,
+  playerId: string,
+  marketPrice: number,
+): number {
+  const sale = salePrices?.[playerId];
+  return typeof sale === "number" && Number.isFinite(sale) && sale > 0 ? sale : marketPrice;
+}
+
+/** Net bank cost of the swaps: what comes in minus what the leavers sell for. */
+export function transferNetCost(inPrices: readonly number[], outValues: readonly number[]): number {
+  const sum = (values: readonly number[]) => values.reduce((total, value) => total + value, 0);
+  return sum(inPrices) - sum(outValues);
+}
+
+/**
+ * The bank the picker offers: the current bank plus the sale value of every
+ * player marked out (replaced or not yet), minus the price of every player
+ * already chosen to come in.
+ */
+export function draftBank(input: {
+  bank: number;
+  outValues: readonly number[];
+  committedInPrices: readonly number[];
+}): number {
+  return roundTenth(
+    input.bank +
+      input.outValues.reduce((total, value) => total + value, 0) -
+      input.committedInPrices.reduce((total, value) => total + value, 0),
+  );
+}
+
+/**
+ * What one replacement may cost. `leavingValue` is the sale value of the
+ * player being replaced when he is not marked out yet (his value is not in the
+ * draft bank); `currentInPrice` is the player already pencilled in for him,
+ * whose price the picker gives back.
+ */
+export function replacementBudget(input: {
+  draftBank: number;
+  leavingValue: number;
+  currentInPrice: number;
+}): number {
+  return roundTenth(input.draftBank + input.leavingValue + input.currentInPrice);
+}
+
+/**
+ * The picker's affordability test: a player who costs more than the budget
+ * (give or take float dust) is blocked on the row before the tap. One function,
+ * so the picker and the tests read the same rule.
+ */
+export function exceedsBudget(price: number, budget: number): boolean {
+  return price > budget + 0.001;
+}
+
+// ---------- Why a preview did not come back ----------
+
+export type TransferPreviewIssueKind =
+  | "budget"
+  | "stale"
+  | "step_up"
+  | "network"
+  | "locked"
+  | "permission"
+  | "invalid"
+  | "generic";
+
+export interface TransferPreviewIssue {
+  kind: TransferPreviewIssueKind;
+  /** The real amount missing, in millions, only when it is a budget refusal that we can size. */
+  shortfall: number | null;
+}
+
+/**
+ * Reads the authoritative refusal (a `FantasyRepoError`, or anything shaped
+ * like one) into a reason the screen can say. Nothing here decides whether a
+ * transfer is allowed: the server already did.
+ */
+export function classifyPreviewFailure(
+  error: unknown,
+  shortfall: number | null,
+): TransferPreviewIssue {
+  const e = (error ?? {}) as { code?: unknown; domainCode?: unknown; message?: unknown };
+  const message = typeof e.message === "string" ? e.message : "";
+  if (e.code === "mfa_required") return { kind: "step_up", shortfall: null };
+  if (e.code === "version_conflict") return { kind: "stale", shortfall: null };
+  if (e.code === "network") return { kind: "network", shortfall: null };
+  if (e.code === "gameweek_locked") return { kind: "locked", shortfall: null };
+  if (e.domainCode === "budget_exceeded" || /budget_exceeded/.test(message)) {
+    return { kind: "budget", shortfall: shortfall !== null && shortfall > 0 ? shortfall : null };
+  }
+  if (e.code === "permission_denied" || e.code === "unauthenticated") {
+    return { kind: "permission", shortfall: null };
+  }
+  // The server looked at this transfer and said no (invalid_transfer, club_limit_exceeded,
+  // invalid_squad, player_not_eligible, chip_unavailable, ...): not a hiccup.
+  if (e.code === "validation" || e.code === "not_found") {
+    return { kind: "invalid", shortfall: null };
+  }
+  return { kind: "generic", shortfall: null };
+}
+
+export type TransferPreviewPanel =
+  | { state: "none" }
+  | { state: "pending" }
+  | { state: "failed"; issue: TransferPreviewIssue; retryable: boolean };
+
+/** Only a failure that can pass on its own, or by the manager's action, is worth asking again. */
+function isRetryable(issue: TransferPreviewIssue): boolean {
+  switch (issue.kind) {
+    case "network":
+    case "step_up":
+    case "stale":
+    case "generic":
+      return true;
+    // Prices may simply have moved: asking again means something when no amount is known.
+    case "budget":
+      return issue.shortfall === null;
+    // A final answer (deadline, access, an invalid transfer): another try says the same.
+    case "locked":
+    case "permission":
+    case "invalid":
+      return false;
+  }
+}
+
+/**
+ * Whether "Suivant" may be pressed. One rule for the route and its tests: the
+ * draft is complete and open, it fits the budget, and (in the cloud) the
+ * server's preview is in and not failed.
+ */
+export function canContinueTransfers(input: {
+  completePairs: number;
+  pendingOutWithoutIn: boolean;
+  locked: boolean;
+  overBudget: boolean;
+  isCloud: boolean;
+  hasData: boolean;
+  isError: boolean;
+}): boolean {
+  return (
+    input.completePairs > 0 &&
+    !input.pendingOutWithoutIn &&
+    !input.locked &&
+    !input.overBudget &&
+    (!input.isCloud || (input.hasData && !input.isError))
+  );
+}
+
+/**
+ * What the transfers screen says about the server's preview. `none` only when
+ * there is nothing to compute or the preview is in; every other reason Next is
+ * held back is `pending` or `failed`, so the button is never grey without a
+ * sentence beside it. A failed refetch over earlier data counts as a failure:
+ * React Query keeps the old data, and `canContinueTransfers` holds Next back.
+ *
+ * `shortfall` is the amount missing worked out from the owner's sale values
+ * (null when the draft fits).
+ */
+export function transferPreviewPanel(input: {
+  isCloud: boolean;
+  completePairs: number;
+  pendingOutWithoutIn: boolean;
+  queryEnabled: boolean;
+  locked: boolean;
+  isFetching: boolean;
+  hasData: boolean;
+  error: unknown;
+  shortfall: number | null;
+}): TransferPreviewPanel {
+  if (input.completePairs === 0 || input.pendingOutWithoutIn) return { state: "none" };
+  if (input.locked) {
+    return { state: "failed", issue: { kind: "locked", shortfall: null }, retryable: false };
+  }
+  if (!input.isCloud) {
+    // Local/guest: no server, the screen's own figures are all there is.
+    return input.shortfall !== null && input.shortfall > 0
+      ? {
+          state: "failed",
+          issue: { kind: "budget", shortfall: input.shortfall },
+          retryable: false,
+        }
+      : { state: "none" };
+  }
+  // The error comes before the data: a refetch that fails keeps the earlier answer.
+  if (input.error) {
+    if (input.isFetching) return { state: "pending" };
+    const issue = classifyPreviewFailure(input.error, input.shortfall);
+    return { state: "failed", issue, retryable: isRetryable(issue) };
+  }
+  if (input.hasData) return { state: "none" };
+  if (input.isFetching) return { state: "pending" };
+  // Not asked (no team or gameweek in the snapshot yet): say so rather than stay grey.
+  if (!input.queryEnabled) {
+    return { state: "failed", issue: { kind: "generic", shortfall: null }, retryable: true };
+  }
+  return { state: "pending" };
+}
+
 // ---------- Preview (review breakdown) ----------
 
 export interface TransfersPreviewInput {

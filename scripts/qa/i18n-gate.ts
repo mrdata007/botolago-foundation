@@ -449,7 +449,12 @@ export const BASELINES: Baselines = {
   // BotolaGO+ screens (lane D): the offer's back button is the first call site of
   // `common.back`, which was unreferenced. Every `plus.*` key is referenced, so
   // the new keys add nothing. 250 -> 249 (measured).
-  W3: 249,
+  //
+  // Audit remediation A3 (FANT-02, 2026-10-14): the transfers screen's preview
+  // notice gives `fantasy.error.retry` and `fantasy.error.reload_latest` their
+  // first call sites (-2); its seven new keys are all referenced. 249 -> 247
+  // (measured with `bun scripts/qa/i18n-gate.ts`).
+  W3: 247,
   // Down six with the same deletion: both dead navs mapped over their item
   // tables with `t(item.labelKey)`, three call sites each. Every one of those
   // was a real dynamic key — the gate was right about them — and they are gone
