@@ -143,7 +143,7 @@ export function PlusOffer({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [inStory, shareOpen, lang, step, within, go, onBack, onClose]);
+  }, [shareOpen, inStory, lang, step, within, go, onBack, onClose]);
 
   // Swipe along the reading direction, never past the plan screen.
   const touch = useRef<{ x: number; y: number } | null>(null);
