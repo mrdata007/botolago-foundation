@@ -40,6 +40,7 @@ export function PlusDuelSection({
   otherTeamId,
   size,
   leagueId = null,
+  compact = false,
 }: {
   access: PlusAccess;
   mine: DuelSide | null;
@@ -48,10 +49,12 @@ export function PlusDuelSection({
   size: number;
   /** The private league the sheet is showing: the league figures are read for it, with the rival. */
   leagueId?: string | null;
+  /** The short stage (Curva's home). */
+  compact?: boolean;
 }) {
   if (access === "off") return null;
   return access === "locked" ? (
-    <LockedDuel mine={mine} other={other} otherTeamId={otherTeamId} size={size} />
+    <LockedDuel mine={mine} other={other} otherTeamId={otherTeamId} size={size} compact={compact} />
   ) : (
     <MemberDuel mine={mine} other={other} otherTeamId={otherTeamId} leagueId={leagueId} />
   );
@@ -82,16 +85,19 @@ function LockedDuel({
   other,
   otherTeamId,
   size,
+  compact,
 }: {
   mine: DuelSide | null;
   other: DuelSide;
   otherTeamId: string;
   size: number;
+  compact: boolean;
 }) {
   const { t } = usePlusCopy();
   return (
     <PlusLockedSection
-      testId="plus-duel-locked"
+      compact={compact}
+      testId={compact ? "plus-home-duel-locked" : "plus-duel-locked"}
       via="duel"
       onOpen={() => rememberDuelReturn(otherTeamId)}
       headline={t("plus.in.duel_title")}

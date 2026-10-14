@@ -3292,4 +3292,20 @@ export const fr = {
   "plus.s2.d_cap_alone": "Vos capitaines : {n}",
   "plus.s2.d_trf_alone": "{n} net",
   "plus.profile.loading": "Chargement de votre abonnement",
+  // plus curva audiences (lane 4)
+  "curva.lock.title.home": "Créez votre compte gratuit pour entrer dans la Curva",
+  "curva.lock.title.card": "Créez votre compte gratuit pour voir votre carte",
+  "curva.lock.title.people": "Créez votre compte gratuit pour retrouver vos amis dans la Curva",
+  "curva.lock.title.ranking": "Créez votre compte gratuit pour voir le classement de la Curva",
+  "curva.lock.title.seasons": "Créez votre compte gratuit pour voir vos saisons dans la Curva",
+  "curva.lock.title.plus": "Créez votre compte gratuit pour découvrir l'abonnement",
+  "curva.lock.body":
+    "Le compte est gratuit, sans achat. Votre carte, vos amis et votre classement vous y attendent.",
+  "curva.lock.create": "Créer mon compte",
+  "curva.lock.signin": "Se connecter",
+  "plus.home.season_all": "Voir toute ma saison",
+  "plus.home.rank": "Position",
+  "plus.home.duel_t": "Votre duel",
+  "plus.home.duel_trail": "{name} vous devance de {n} points",
+  "plus.home.duel_tie": "À égalité avec {name}",
 } as const satisfies Record<string, string>;

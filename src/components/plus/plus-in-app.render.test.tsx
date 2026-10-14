@@ -18,7 +18,7 @@ import { premiumCardReadsService } from "@/services/premium-card-reads";
 import { premiumCardKeys } from "@/services/use-premium-card-reads";
 
 import { PlusDuelSection } from "./PlusDuelSection";
-import { PlusHomePreview, PlusHomePreviewView } from "./PlusHomePreview";
+import { PlusHomeDuel, PlusHomeSeason } from "./PlusHomeBlocks";
 import { PlusHeaderLogo, PlusMemberMark } from "./PlusMemberMark";
 import { PlusSeasonSection } from "./PlusSeasonSection";
 import { plusAccess } from "./plus-access";
@@ -178,16 +178,8 @@ describe("« Détail du duel » in the face-à-face", () => {
   });
 });
 
-describe("Curva home preview, the member mark and the header logo", () => {
-  it("non-member: one small blurred chart that opens the card page's section", async () => {
-    const html = await render(<PlusHomePreviewView />);
-    expect(html.match(/data-testid="plus-home-preview"/g)).toHaveLength(1);
-    expect(html).toContain('href="/curva/carte#votre-saison"');
-    expect(html).toMatch(/aria-hidden="true" inert=""/);
-    expect(text(html)).toContain(fr["plus.in.season_title"]);
-  });
+describe("the member mark and the header logo", () => {
   it("feature off: nothing", async () => {
-    expect(await render(<PlusHomePreview />)).not.toContain("plus-home-preview");
     expect(await render(<PlusMemberMark />)).not.toContain("pl-mark");
   });
   it("the member's logo is the logo, with the name only in its spoken label", async () => {
@@ -242,5 +234,77 @@ describe("the words", () => {
       expect(value, k).not.toMatch(/[→←⟶➜]|->/);
       expect(value, k).not.toMatch(/\btu\b|\bton\b|\bta\b/i);
     }
+  });
+});
+
+describe("Curva's home: « Votre saison » and « Votre duel » in place", () => {
+  const mine = { name: "Moi", totalScore: 612, rank: 3 };
+  const other = { name: "Yassine", totalScore: 598, rank: 4 };
+
+  it("non-member: the season is a locked strip with the real points clear and Découvrir", async () => {
+    const html = await render(
+      <PlusHomeSeason access="locked" standing={standing} leagueId={null} leaguePending={false} />,
+    );
+    expect(html).toContain('data-testid="plus-home-season-locked"');
+    expect(html).toContain("pl-stage--compact");
+    expect(text(html)).toContain("612");
+    expect(text(html)).toContain(fr["plus.in.unlock"]);
+    expect(html).toContain('href="/curva/plus?step=3&amp;via=season"');
+    expect(html).toMatch(/class="pl-under[^"]*" aria-hidden="true" inert=""/);
+  });
+
+  it("non-member: the duel is a locked strip with the score against the rival and via=duel", async () => {
+    const html = await render(
+      <PlusHomeDuel
+        access="locked"
+        mine={mine}
+        other={other}
+        otherTeamId="t2"
+        size={5}
+        leagueId={null}
+      />,
+    );
+    expect(html).toContain('data-testid="plus-home-duel-locked"');
+    expect(text(html)).toContain("612");
+    expect(text(html)).toContain("598");
+    expect(html).toContain('href="/curva/plus?step=3&amp;via=duel"');
+  });
+
+  it("member: real and compact, no lock and no blur, a way to the full screen", async () => {
+    const client = new QueryClient();
+    client.setQueryData(premiumCardKeys.career(null), distinctCareer());
+    const html = await render(
+      <PlusHomeSeason access="member" standing={null} leagueId={null} leaguePending={false} />,
+      client,
+    );
+    const total = distinctCareer().weeks.reduce((n, w) => n + w.score, 0);
+    expect(html).toContain('data-testid="plus-home-season-member"');
+    expect(html).toContain('data-testid="plus-home-season-all"');
+    expect(text(html)).toContain(fr["plus.home.season_all"]);
+    expect(text(html)).toContain(String(total));
+    expect(html).not.toContain("pl-lock");
+    expect(html).not.toContain("inert");
+    expect(text(html)).not.toContain("—");
+    expect(html).not.toContain("NaN");
+  });
+
+  it("feature off: neither block draws anything", async () => {
+    expect(
+      await render(
+        <PlusHomeSeason access="off" standing={standing} leagueId={null} leaguePending={false} />,
+      ),
+    ).not.toContain("plus-home");
+    expect(
+      await render(
+        <PlusHomeDuel
+          access="off"
+          mine={mine}
+          other={other}
+          otherTeamId="t2"
+          size={5}
+          leagueId={null}
+        />,
+      ),
+    ).not.toContain("plus-home");
   });
 });

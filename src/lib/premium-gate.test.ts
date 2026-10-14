@@ -51,10 +51,16 @@ describe("the entry points", () => {
     expect(curva("CurvaCardPage.tsx")).toMatch(
       /PlusSeasonSlot\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/,
     );
-    expect(curva("CurvaHome.tsx")).toMatch(/PlusHomePreview\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/);
+    for (const slot of ["PlusHomeSeasonSlot", "PlusHomeDuelSlot", "PlusHomeMemberSlot"]) {
+      expect(curva("CurvaHome.tsx")).toMatch(
+        new RegExp(`${slot}\\s*=\\s*PREMIUM_SURFACES\\s*\\?\\s*lazy\\(`),
+      );
+    }
     expect(read("src/components/shell/TopBar.tsx")).toMatch(
       /PlusHeaderLogo\s*=\s*PREMIUM_SURFACES\s*\?\s*lazy\(/,
     );
-    expect(curva("CurvaHome.tsx")).toContain("PREMIUM_SURFACES ? <PlusRenewalReminder />");
+    expect(curva("CurvaHome.tsx")).toMatch(
+      /PREMIUM_SURFACES \? \([\s\S]*?<PlusRenewalReminder \/>/,
+    );
   });
 });

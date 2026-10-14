@@ -27,7 +27,7 @@ import { useOvrChangeBeat } from "./use-ovr-change";
 import { useRatingBadge } from "./use-rating-change";
 import { useStageBeat } from "./use-stage-beat";
 import { ClubBlock } from "./ClubBlock";
-import { GuestHero } from "./GuestHero";
+import { CurvaLockScreen } from "./CurvaLockScreen";
 import {
   cardView,
   isOverForming,
@@ -54,15 +54,19 @@ import { useViewEvent } from "./use-view-event";
 import { QuietHeading, STICKY_COLUMN_CLASS } from "./figures";
 
 /**
- * One small blurred preview of « Votre saison » for non-members (BotolaGO+). Loaded only when the
- * build lets BotolaGO+ exist; with it off nothing renders and nothing is requested.
+ * BotolaGO+ in place on the home (behind PREMIUM_BUILD, loaded only when the build lets it exist,
+ * so with it off nothing renders and nothing is requested): « Votre saison » by the card, « Votre
+ * duel » under the friends, and for a member the identity band with the style shortcut. A
+ * non-member sees them locked, a member real and compact.
  */
-const PlusHomePreview = PREMIUM_SURFACES
-  ? lazy(() =>
-      import("@/components/plus/PlusHomePreview").then((module) => ({
-        default: module.PlusHomePreview,
-      })),
-    )
+const PlusHomeSeasonSlot = PREMIUM_SURFACES
+  ? lazy(() => import("./PlusHomeSlots").then((module) => ({ default: module.PlusHomeSeasonSlot })))
+  : null;
+const PlusHomeDuelSlot = PREMIUM_SURFACES
+  ? lazy(() => import("./PlusHomeSlots").then((module) => ({ default: module.PlusHomeDuelSlot })))
+  : null;
+const PlusHomeMemberSlot = PREMIUM_SURFACES
+  ? lazy(() => import("./PlusHomeSlots").then((module) => ({ default: module.PlusHomeMemberSlot })))
   : null;
 
 /**
@@ -116,22 +120,15 @@ export function CurvaHomeView({
   retry: () => void;
 }): JSX.Element {
   const copy = useCurvaCopy();
+  // A visitor has no Curva: the layout already shows the lock screen; this keeps the home itself
+  // from ever drawing anything of Curva for one.
+  if (state.kind === "guest") return <CurvaLockScreen />;
   return (
     <FantasyFrame bottomNav topBar="always" className={STICKY_COLUMN_CLASS}>
       <UiPageTitle title={copy.nav} />
       {state.kind === "loading" ? <CurvaLoading /> : null}
       {state.kind === "error" ? <CurvaError retry={retry} /> : null}
       {state.kind === "unavailable" ? <CurvaUnavailable /> : null}
-      {state.kind === "guest" ? (
-        <GuestHero
-          audience="guest"
-          clubs={clubs}
-          closed={state.closed}
-          canCreate={canCreate}
-          loadingAction={loadingAction}
-          minRated={minRated}
-        />
-      ) : null}
       {state.kind === "no_team" ? (
         <NoTeamHero
           clubs={clubs}
@@ -241,6 +238,25 @@ export function OwnerHome({
       className="pb-2 md:grid md:grid-cols-[352px_minmax(0,1fr)] md:gap-x-6 md:px-6"
       data-testid="curva-owner"
     >
+      {/* A member's renewal or grace banner and identity band (with the card's style) lead the
+          home, across the full width; BotolaGO+ is behind PREMIUM_BUILD. */}
+      {PREMIUM_SURFACES ? (
+        <div
+          className={cn(
+            "flex flex-col gap-3 pt-4 empty:hidden md:col-span-2",
+            ui.space.gutter,
+            "md:px-0",
+          )}
+          data-testid="curva-plus-top"
+        >
+          <PlusRenewalReminder />
+          {PlusHomeMemberSlot ? (
+            <Suspense fallback={null}>
+              <PlusHomeMemberSlot />
+            </Suspense>
+          ) : null}
+        </div>
+      ) : null}
       <div className="empty:hidden md:col-span-2" data-hero-slot="" data-testid="curva-hero-slot">
         <MomentHero
           surface="curva"
@@ -292,8 +308,12 @@ export function OwnerHome({
           "md:px-0",
         )}
       >
-        {/* The J-3 renewal reminder of a monthly BotolaGO+ membership (behind PREMIUM_BUILD). */}
-        {PREMIUM_SURFACES ? <PlusRenewalReminder /> : null}
+        {/* « Votre saison » by the card: locked for a non-member, compact and real for a member. */}
+        {PlusHomeSeasonSlot ? (
+          <Suspense fallback={null}>
+            <PlusHomeSeasonSlot people={people} />
+          </Suspense>
+        ) : null}
         <PeopleBlock
           league={people.league}
           rows={people.rows}
@@ -304,6 +324,12 @@ export function OwnerHome({
           cardsFailed={people.cardsError}
           retryCards={people.retryCards}
         />
+        {/* « Votre duel » next to the friends: the closest rival of that league. */}
+        {PlusHomeDuelSlot ? (
+          <Suspense fallback={null}>
+            <PlusHomeDuelSlot people={people} />
+          </Suspense>
+        ) : null}
         <ClubBlock
           dto={card.club}
           club={clubBlock.club}
@@ -314,11 +340,6 @@ export function OwnerHome({
           clubById={clubBlock.clubById}
         />
         <SeasonsBlock card={card} />
-        {PlusHomePreview ? (
-          <Suspense fallback={null}>
-            <PlusHomePreview />
-          </Suspense>
-        ) : null}
         <RankingLink />
         <ThisRoundBlock
           block={block}
