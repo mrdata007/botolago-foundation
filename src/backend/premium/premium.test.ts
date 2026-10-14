@@ -105,8 +105,8 @@ describe("the mock repository", () => {
 
 describe("derivePremium", () => {
   const status = { enabled: true, checkoutEnabled: false, prices: [...LAUNCH_PRICES] };
-  it("is off and member-less while the status says off", () => {
-    const view = derivePremium(PREMIUM_STATUS_OFF, mockMine("monthly", NOW), true);
+  it("is off and member-less while the status says off and the reader is not a member", () => {
+    const view = derivePremium(PREMIUM_STATUS_OFF, mockMine("expired", NOW), true);
     expect(view).toMatchObject({ enabled: false, isMember: false, state: "none", periodEnd: null });
   });
   it("is member-less for a signed-out reader, whatever the answer", () => {

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 
-import { useAuth } from "@/auth/AuthProvider";
+import { useOptionalAuth } from "@/auth/AuthProvider";
 import {
   isMemberState,
   type MyPremium,
@@ -56,7 +56,13 @@ export function derivePremium(
   mine: MyPremium | undefined,
   signedIn: boolean,
 ): Omit<PremiumView, "startCheckout" | "cancel" | "restore" | "ready"> {
-  const enabled = status?.enabled === true;
+  const statusEnabled = status?.enabled === true;
+  // Database mode `preview`: the status discloses nothing (`enabled: false`), and
+  // `get_my_premium` answers `available: true` for members alone. That reader, and only that
+  // reader, sees BotolaGO+ as a member. Everyone else reads exactly as before: off.
+  const previewMember =
+    !statusEnabled && signedIn && mine?.available === true && isMemberState(mine.state);
+  const enabled = statusEnabled || previewMember;
   const member = enabled && signedIn && mine?.available === true ? mine : null;
   const state: PremiumState = member ? member.state : "none";
   return {
@@ -87,7 +93,7 @@ function useOffPremium(): PremiumView {
 }
 
 function useLivePremium(): PremiumView {
-  const { user } = useAuth();
+  const user = useOptionalAuth()?.user ?? null;
   const userId = user?.id ?? null;
   const status = useQuery({
     queryKey: premiumKeys.status,
@@ -98,7 +104,9 @@ function useLivePremium(): PremiumView {
   const mine = useQuery({
     queryKey: premiumKeys.mine(userId),
     queryFn: ({ signal }) => premiumService.mine(signal),
-    enabled: userId !== null && status.data?.enabled === true,
+    // Also while the status says "not enabled": in preview that is how a member is discovered.
+    // Waits for the status so a database that has no functions yet is asked once, not twice.
+    enabled: userId !== null && status.data !== undefined,
     staleTime: 30_000,
     retry: false,
   });
@@ -132,7 +140,7 @@ function useLivePremium(): PremiumView {
 export const usePremium: () => PremiumView = PREMIUM_SURFACES ? useLivePremium : useOffPremium;
 
 function useLiveReceipts(enabled: boolean): readonly PremiumReceipt[] {
-  const { user } = useAuth();
+  const user = useOptionalAuth()?.user ?? null;
   const userId = user?.id ?? null;
   const query = useQuery({
     queryKey: premiumKeys.receipts(userId),

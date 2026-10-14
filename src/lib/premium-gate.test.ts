@@ -10,17 +10,17 @@ const read = (file: string) => readFileSync(join(root, file), "utf8");
 const curva = (file: string) => read(join("src", "components", "cur" + "va", file));
 
 describe("the BotolaGO+ build flag", () => {
-  it("ships off", () => {
-    expect(read("src/lib/feature-flags.ts")).toMatch(/export const PREMIUM_BUILD = false;/);
-    expect(PREMIUM_BUILD).toBe(false);
+  it("is in the build since the owner's staff-only preview decision (2026-10-14)", () => {
+    expect(read("src/lib/feature-flags.ts")).toMatch(/export const PREMIUM_BUILD = true;/);
+    expect(PREMIUM_BUILD).toBe(true);
   });
-  it("has no development preview outside a development server", () => {
-    // Under the test runner `import.meta.env.DEV` is not true, so the preview is off too.
+  it("has no development preview outside a development server, and the build lets it exist", () => {
+    // Under the test runner `import.meta.env.DEV` is not true, so the preview is off.
     expect(PREMIUM_PREVIEW).toBe(false);
-    expect(PREMIUM_SURFACES).toBe(false);
+    expect(PREMIUM_SURFACES).toBe(true);
   });
-  it("sends every BotolaGO+ address away while the build is off, and none while it is on", () => {
-    expect(shouldRedirectFromPlus()).toBe(true);
+  it("lets the build-level gate through; the database answer is the real gate", () => {
+    expect(shouldRedirectFromPlus()).toBe(false);
     expect(shouldRedirectFromPlus(false)).toBe(true);
     expect(shouldRedirectFromPlus(true)).toBe(false);
   });
