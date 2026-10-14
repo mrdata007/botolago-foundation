@@ -280,7 +280,7 @@ Nothing here is applied or deployed. In this order, through the reviewed paths
 
 To stop: `select app_private.fantasy_worker_configure(false);` (worker only) or
 `select app_private.fantasy_automation_configure(false);` (also the Fantasy tick; the pause command before a write).
-A pass already running keeps its lease for up to about eight minutes. To remove it entirely, unschedule
+A pass already running keeps its lease for up to about nine minutes (longer lease after an ambiguous write; see the section on ambiguous timeouts). To remove it entirely, unschedule
 `fantasy-worker-tick` (`select cron.unschedule('fantasy-worker-tick');`) and delete the function.
 
 ## Tests
@@ -325,5 +325,5 @@ the lane report): the two migrations apply, and all 97 assertions of the pgTAP f
 - The run record is written by one more RPC after the pass; after a stuck database the extension, the grace (10 s) and
   the record can add up past the Edge wall-clock limit, in which case there is no row and the lease simply expires.
 - The GitHub orchestrator and the manual runner do not use the ambiguity rule (see "Open" above).
-- A pass in flight survives a pause until its lease ends (about eight minutes).
+- A pass in flight survives a pause until its lease ends (about nine minutes).
 - The Edge function is a second deploy target: it must be deployed from the same commit as the migration.
