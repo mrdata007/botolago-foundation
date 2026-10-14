@@ -10,8 +10,6 @@ import { clubStyle, type ClubPalette } from "@/lib/club-palette";
 import { cn } from "@/lib/utils";
 import type { Club } from "@/types/domain";
 import { noStatsMessage, type MatchDataPhase } from "./match-empty-states";
-import type { PressurePoint } from "./pressure-bins";
-import { PressureChart } from "./PressureChart";
 
 type Stat = MatchStatisticComparisonDto;
 
@@ -60,9 +58,8 @@ function statLabel(t: (key: TranslationKey) => string, stat: Stat): string {
 /**
  * The Stats tab (A-Stats), backed only by the provider's statistics.
  *
- * The pressure chart comes first when the provider sends a pressure index
- * (the SportsMonks add-on); expected goals are rows like any other, listed
- * after possession by their definition's order.
+ * Expected goals are rows like any other, listed after possession by their
+ * definition's order.
  *
  * One card: the two clubs over their columns, possession as a 40px split bar
  * in the two fills, then a row per statistic — the higher figure in a pill
@@ -84,7 +81,6 @@ export function StatComparison({
   palettes,
   isLive,
   phase,
-  pressure = [],
 }: {
   stats: readonly Stat[];
   home: Club;
@@ -92,8 +88,6 @@ export function StatComparison({
   palettes: { home: ClubPalette; away: ClubPalette };
   isLive: boolean;
   phase: MatchDataPhase;
-  /** The provider's pressure index, minute by minute; empty draws no chart. */
-  pressure?: readonly PressurePoint[];
 }) {
   const { t, tr, lang } = useI18n();
   const nf = useMemo(
@@ -111,13 +105,10 @@ export function StatComparison({
     />
   );
 
-  const chart = <PressureChart points={pressure} home={home} away={away} palettes={palettes} />;
-
   if (stats.length === 0) {
     return (
       <section>
         {heading}
-        {chart}
         <MatchDataState phase={phase} message={noStatsMessage(phase, t)} />
       </section>
     );
@@ -138,7 +129,6 @@ export function StatComparison({
   return (
     <section>
       {heading}
-      {chart}
       <UiCard padding="none" className={cn(ui.radius.sheet, "px-4 pb-1 pt-3.5")}>
         <div className="flex items-center justify-between gap-3">
           <span className="flex min-w-0 items-center gap-2">
