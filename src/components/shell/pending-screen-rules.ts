@@ -1,8 +1,12 @@
 /** Which frame the loading screen draws (PendingScreen.tsx). */
 
-/** The pages drawn without the app frame. */
+/**
+ * The pages drawn without the app frame: admin, auth and dev screens, and the
+ * standalone OAuth consent page (`/.lovable/oauth/consent`), which must not
+ * offer the app's navigation while it loads.
+ */
 export function pendingWithoutShell(pathname: string): boolean {
-  return /^\/(admin|auth|dev)(\/|$)/.test(pathname);
+  return /^\/(admin|auth|dev|\.lovable)(\/|$)/.test(pathname);
 }
 
 /** The detail pages drawn without the bottom bar (`hideBottomNav` in their routes). */

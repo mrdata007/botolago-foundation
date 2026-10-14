@@ -8,7 +8,7 @@
 // bar, the section's title, the bottom bar with its pill already on the new
 // tab) around the usual loading placeholders, so the tap visibly took.
 //
-// The admin and auth screens have frames of their own, so they get the
+// The admin and auth screens and the OAuth consent page have frames of their own, so they get the
 // placeholders alone; the detail pages that hide the bottom bar hide it here
 // too, so the bar does not appear for a moment and then go.
 

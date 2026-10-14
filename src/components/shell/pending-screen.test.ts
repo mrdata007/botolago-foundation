@@ -15,6 +15,7 @@ describe("pending screen frame", () => {
   test("draws no app frame on the admin and auth screens", () => {
     expect(pendingWithoutShell("/admin/users")).toBe(true);
     expect(pendingWithoutShell("/auth/login")).toBe(true);
+    expect(pendingWithoutShell("/.lovable/oauth/consent")).toBe(true);
     expect(pendingWithoutShell("/fantasy")).toBe(false);
     expect(pendingWithoutShell("/administration")).toBe(false);
   });
