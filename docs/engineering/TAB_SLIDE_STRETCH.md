@@ -66,9 +66,10 @@ frame while tapping through the bar.
   already on the new tab. The new bar now carries on the old bar's stretch from where it was, as
   the icon pop already did.
 - **Reduced motion.** Content offset stayed `0px` and the pill stayed 56 px wide throughout.
-- With section loading (#469, a separate branch; not yet run together): its loading screen is
-  drawn through `AppShell`, so it should be the frame that slides in, and the page that replaces
-  it should take no second slide, since the direction is taken once. To check once both are in.
+- With section loading (#469, now merged): run together on the test build with every new code
+  file held back so the loading screen showed, tapping Matches -> Fantasy. The loading screen's
+  frame slid in from the left (Fantasy is the earlier tab) and the Fantasy page that replaced it
+  did not slide again; no page errors, in French and Arabic.
 - The 40 px start offset sits inside `html, body { overflow-x: clip }`, so it cannot add a
   horizontal scrollbar; not separately measured.
 
