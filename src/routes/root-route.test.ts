@@ -9,7 +9,8 @@ import { Route } from "./__root";
  * Curva' only change to the root route (plan 3.2, rule 4): a `beforeLoad` that reads the
  * database's status during the server render. With the build switch off the route object must be
  * what it was before, so there is no `beforeLoad` at all. The build switch is on since the owner's
- * launch (2026-10-10), so the route now carries it.
+ * launch (2026-10-10), so the route now carries it. Section loading (2026-10-14) adds an empty
+ * `pendingComponent`, so the router's loading screen stays out of the root.
  */
 describe("the root route and the Manager Card status", () => {
   it("has the status beforeLoad, and nothing else new, while the build switch is on", () => {
@@ -22,6 +23,9 @@ describe("the root route and the Manager Card status", () => {
         "errorComponent",
         "head",
         "notFoundComponent",
+        // Shows nothing while the root is pending: the router's loading screen
+        // is for the pages inside it (docs/engineering/SECTION_LOADING.md).
+        "pendingComponent",
         "shellComponent",
       ].sort(),
     );
