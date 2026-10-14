@@ -3245,6 +3245,9 @@ export const fr = {
   "plus.profile.receipt_open": "Voir le reçu",
   // plus member side (lane 2)
   "plus.hub.title": "Mon abonnement",
+  "plus.hub.grant_name": "Offert par l'équipe",
+  "plus.hub.grant_how":
+    "Cet abonnement vous est offert : il n'y a rien à payer ni à annuler. Votre accès reste ouvert jusqu'à sa date de fin.",
   "plus.hub.season_t": "Votre saison",
   "plus.hub.season_d": "Vos points et vos décisions, journée après journée.",
   "plus.hub.duels_t": "Vos duels",

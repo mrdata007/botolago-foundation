@@ -67,11 +67,7 @@ export function PlusHubRow({
         ) : null}
       </span>
       <ChevronRight
-        className={cn(
-          "h-4.5 w-4.5 shrink-0 rtl:rotate-180",
-          ui.tone.muted,
-          expanded && "rotate-90 rtl:rotate-90",
-        )}
+        className={cn("h-4.5 w-4.5 shrink-0", ui.tone.muted, expanded && "rotate-90")}
         aria-hidden
       />
     </>
@@ -97,8 +93,17 @@ export function PlusHubRow({
   );
 }
 
-/** « Style de la carte »: a row that opens the picker. */
-export function PlusStyleRow({ ruled = false }: { ruled?: boolean }) {
+/**
+ * « Style de la carte »: a row that opens the picker. `onlyStandard` is for a former member: the
+ * paid styles are not offered, only the way back to the standard card.
+ */
+export function PlusStyleRow({
+  ruled = false,
+  onlyStandard = false,
+}: {
+  ruled?: boolean;
+  onlyStandard?: boolean;
+}) {
   const { t, text } = usePlusCopy();
   const profile = usePlusMemberCard();
   const [open, setOpen] = useState(false);
@@ -113,8 +118,28 @@ export function PlusStyleRow({ ruled = false }: { ruled?: boolean }) {
         onClick={() => setOpen(true)}
         testId="plus-hub-style"
       />
-      <PlusStylePicker open={open} onOpenChange={setOpen} profile={profile} />
+      <PlusStylePicker
+        open={open}
+        onOpenChange={setOpen}
+        profile={profile}
+        onlyStandard={onlyStandard}
+      />
     </>
+  );
+}
+
+/**
+ * A former member whose card still wears a paid style: the way back to Standard, which
+ * `api.choose_card_design` allows without a membership. Nothing when the card is already standard
+ * (or there is no card).
+ */
+export function PlusFormerStyleRow() {
+  const profile = usePlusMemberCard();
+  if (!profile || editionOf(profile) === "standard") return null;
+  return (
+    <UiCard padding="none" className="overflow-hidden" testId="plus-former-style">
+      <PlusStyleRow onlyStandard />
+    </UiCard>
   );
 }
 
