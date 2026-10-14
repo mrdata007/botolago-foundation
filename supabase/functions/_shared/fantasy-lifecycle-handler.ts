@@ -18,18 +18,31 @@
 
 import { schedulerTokenRefusal } from "./scheduler-token.ts";
 import {
+  ambiguousRpcTimeout,
+  replyShowsStatementOver,
   rpcFailure,
+  rpcMayWrite,
   runFantasyWorkerPass,
+  unconfirmedWrite,
   type FantasyWorkerGateway,
   type WorkerPassResult,
 } from "./fantasy-lifecycle-worker.ts";
 
+export interface FantasyWorkerRpcResult {
+  data?: unknown;
+  error?: { message?: string; code?: string } | null;
+  /** The HTTP status supabase-js reports; 0 when no reply came back (network error, abort). */
+  status?: number;
+}
+
+/** A request builder as supabase-js returns it: awaitable, and able to take an abort signal. */
+export interface FantasyWorkerRpcRequest extends PromiseLike<FantasyWorkerRpcResult> {
+  abortSignal?(signal: AbortSignal): PromiseLike<FantasyWorkerRpcResult>;
+}
+
 export interface FantasyWorkerRpcClient {
   schema(name: "api"): {
-    rpc(
-      name: string,
-      args: Record<string, unknown>,
-    ): PromiseLike<{ data?: unknown; error?: { message?: string; code?: string } | null }>;
+    rpc(name: string, args: Record<string, unknown>): FantasyWorkerRpcRequest;
   };
 }
 
@@ -40,6 +53,14 @@ export interface FantasyWorkerDependencies {
   readonly randomHex?: (bytes: number) => string;
   /** Per-RPC timeout; the pass budget leaves room for one more after it ends. */
   readonly rpcTimeoutMs?: number;
+  /** How long to wait for a timed-out write to answer before leaving the lease to expire. */
+  readonly ambiguousGraceMs?: number;
+  /**
+   * Run on a database without the lease function instead of refusing. For a
+   * deliberate, operator-run caller only: the scheduled Edge function never sets
+   * it (index.ts), and the request body has no such switch.
+   */
+  readonly allowUnmanaged?: boolean;
 }
 
 const MAX_REQUEST_BYTES = 4096;
@@ -96,28 +117,76 @@ export function workerLimits(environment: Readonly<Record<string, string | undef
 }
 
 function gatewayFor(client: FantasyWorkerRpcClient, timeoutMs: number): FantasyWorkerGateway {
+  type Answer =
+    | { kind: "answered"; result: FantasyWorkerRpcResult }
+    | { kind: "threw"; error: unknown };
   return {
     async rpc(name, args) {
+      const controller = new AbortController();
+      const builder = client.schema("api").rpc(name, args);
+      // Handed to the client where it can take one. It only frees the client's
+      // side: the database statement may carry on, so it is never proof of a stop.
+      const request =
+        typeof builder.abortSignal === "function"
+          ? builder.abortSignal(controller.signal)
+          : builder;
+      // Always becomes a value, so a request we stopped waiting for can never
+      // reject unobserved.
+      const answer: Promise<Answer> = Promise.resolve(request).then(
+        (result): Answer => ({ kind: "answered", result }),
+        (error): Answer => ({ kind: "threw", error }),
+      );
       let timer: ReturnType<typeof setTimeout> | undefined;
-      try {
-        const result = await Promise.race([
-          client.schema("api").rpc(name, args),
-          new Promise<never>((_, reject) => {
-            timer = setTimeout(() => reject(new Error("fantasy_worker_rpc_timeout")), timeoutMs);
-          }),
-        ]);
-        if (result.error) {
-          // Never carry SQL details, snapshots or credentials into a log or a row.
-          const message = String(result.error.message ?? "");
-          throw rpcFailure(
-            /^[a-z][a-z0-9_]{2,100}$/.test(message) ? message : "fantasy_worker_rpc_failed",
-            result.error.code,
-          );
+      const timeout = new Promise<"timeout">((resolve) => {
+        timer = setTimeout(() => resolve("timeout"), timeoutMs);
+      });
+      const first = await Promise.race([answer, timeout]);
+      if (timer) clearTimeout(timer);
+      if (first === "timeout") {
+        if (!rpcMayWrite(name)) {
+          controller.abort();
+          throw new Error("fantasy_worker_rpc_timeout");
         }
-        return result.data;
-      } finally {
-        if (timer) clearTimeout(timer);
+        // A write that may still be running: not a settled failure. The pass
+        // keeps its lease and stops (fantasy-lifecycle-worker.ts).
+        throw ambiguousRpcTimeout(name, async (graceMs) => {
+          let grace: ReturnType<typeof setTimeout> | undefined;
+          const waited = new Promise<"grace">((resolve) => {
+            grace = setTimeout(() => resolve("grace"), Math.max(0, graceMs));
+          });
+          const winner = await Promise.race([answer, waited]);
+          if (grace) clearTimeout(grace);
+          // Only a reply from the database shows the statement is over. A failure
+          // on the client's side (status 0: network, abort) or a gateway 5xx with no
+          // database error code shows nothing (replyShowsStatementOver).
+          if (
+            winner !== "grace" &&
+            winner.kind === "answered" &&
+            replyShowsStatementOver(winner.result)
+          )
+            return "answered";
+          controller.abort();
+          return "unsettled";
+        });
       }
+      // A write that failed before the timer without a conclusive reply (an
+      // exception, status 0, a bare gateway 5xx) is no more settled than a timeout.
+      const unconfirmed = unconfirmedWrite(name, first.kind === "threw" ? null : first.result);
+      if (unconfirmed) {
+        controller.abort();
+        throw unconfirmed;
+      }
+      if (first.kind === "threw") throw first.error;
+      const result = first.result;
+      if (result.error) {
+        // Never carry SQL details, snapshots or credentials into a log or a row.
+        const message = String(result.error.message ?? "");
+        throw rpcFailure(
+          /^[a-z][a-z0-9_]{2,100}$/.test(message) ? message : "fantasy_worker_rpc_failed",
+          result.error.code,
+        );
+      }
+      return result.data;
     },
   };
 }
@@ -139,6 +208,11 @@ export function runRecord(holder: string, result: WorkerPassResult) {
       deferred: result.deferred,
       ...(result.heldBy ? { heldBy: result.heldBy } : {}),
       ...(result.prizes ? { prizes: result.prizes } : {}),
+      ...(result.prizeAttention ? { prizeAttention: result.prizeAttention } : {}),
+      // A write that timed out and may still be running: which one, whether it
+      // answered afterwards, and whether the lease was freed or left to expire.
+      ...(result.ambiguous ? { ambiguous: result.ambiguous } : {}),
+      ...(result.missingFunction ? { missingFunction: result.missingFunction } : {}),
     },
   };
 }
@@ -181,7 +255,15 @@ export async function handleFantasyWorkerRequest(
 
   let result: WorkerPassResult;
   try {
-    result = await runFantasyWorkerPass(gateway, { holder, now: clock, ...limits });
+    result = await runFantasyWorkerPass(gateway, {
+      holder,
+      now: clock,
+      ...limits,
+      ...(dependencies.ambiguousGraceMs !== undefined
+        ? { ambiguousGraceMs: dependencies.ambiguousGraceMs }
+        : {}),
+      ...(dependencies.allowUnmanaged ? { allowUnmanaged: true } : {}),
+    });
   } catch (error) {
     // The lease or the work list could not be read at all (database unreachable).
     const code =
@@ -214,6 +296,9 @@ export async function handleFantasyWorkerRequest(
       calls: result.calls,
       durationMs: result.durationMs,
       recorded,
+      ...(result.ambiguous ? { ambiguous: true, rpc: result.ambiguous.rpc } : {}),
+      ...(result.missingFunction ? { missingFunction: result.missingFunction } : {}),
+      ...(result.prizeAttention ? { prizeAttention: result.prizeAttention } : {}),
     }),
   );
   return json(result.outcome === "failed" ? 500 : 200, {
@@ -225,5 +310,21 @@ export async function handleFantasyWorkerRequest(
     calls: result.calls,
     durationMs: result.durationMs,
     recorded,
+    // The same status-only summary the run record stores; never a winner or an id.
+    ...(result.prizes ? { prizes: result.prizes } : {}),
+    // A prize problem: non-blocking, and not a reason to call the pass anything but ok.
+    ...(result.prizeAttention ? { prizeAttention: result.prizeAttention } : {}),
+    // A write that timed out and may still be running: the pass stopped, and the
+    // lease was kept unless the original request had answered.
+    ...(result.ambiguous
+      ? {
+          ambiguous: true,
+          rpc: result.ambiguous.rpc,
+          leaseExtended: result.ambiguous.leaseExtended,
+          settled: result.ambiguous.settled,
+          leaseReleased: result.ambiguous.leaseReleased,
+        }
+      : {}),
+    ...(result.missingFunction ? { missingFunction: result.missingFunction } : {}),
   });
 }
