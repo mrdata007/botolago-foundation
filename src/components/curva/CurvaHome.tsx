@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useState, type JSX, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useState, type JSX, type ReactNode } from "react";
 
 import { useAuth } from "@/auth/AuthProvider";
 import type { MyCardDto } from "@/backend/manager-card/contracts";
@@ -52,6 +52,18 @@ import { useCurvaPeople } from "./use-curva-people";
 import { useCurvaScreen } from "./use-curva-screen";
 import { useViewEvent } from "./use-view-event";
 import { QuietHeading, STICKY_COLUMN_CLASS } from "./figures";
+
+/**
+ * One small blurred preview of « Votre saison » for non-members (BotolaGO+). Loaded only when the
+ * build lets BotolaGO+ exist; with it off nothing renders and nothing is requested.
+ */
+const PlusHomePreview = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("@/components/plus/PlusHomePreview").then((module) => ({
+        default: module.PlusHomePreview,
+      })),
+    )
+  : null;
 
 /**
  * G1, the section home `/curva` (plan section 4.1): who I am in the stands. The card hangs on
@@ -303,6 +315,11 @@ export function OwnerHome({
           clubById={clubBlock.clubById}
         />
         <SeasonsBlock card={card} />
+        {PlusHomePreview ? (
+          <Suspense fallback={null}>
+            <PlusHomePreview />
+          </Suspense>
+        ) : null}
         <RankingLink />
         <ThisRoundBlock
           block={block}

@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, type ReactNode } from "react";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { ManagerCard } from "@/components/manager-card/ManagerCard";
@@ -6,7 +6,6 @@ import { useCardCopy, useCurvaCopy, useMomentCopy } from "@/components/manager-c
 import { fill } from "@/components/manager-card/interpolate";
 import { fromMember, fromMyCard } from "@/components/manager-card/to-profile";
 import { STAT_CODES, type StatCode } from "@/components/manager-card/types";
-import { PlusDuelEntry } from "@/components/plus/PlusEntry";
 import { ReportNameMenu } from "@/components/report/ReportNameMenu";
 import { ui, UiButton, UiSheet } from "@/components/ui-kit";
 import { useI18n } from "@/i18n/provider";
@@ -17,6 +16,18 @@ import { cn } from "@/lib/utils";
 import { CODE_CLASS, DASH, Figure, PersonName, ProvisionalBadge } from "./figures";
 import { barWidth, compareValues } from "./h2h";
 import { rowReportTargets, type PeopleRow } from "./people";
+
+/**
+ * « Détail du duel » (BotolaGO+): blurred for non-members, clear for members. Loaded only when the
+ * build lets BotolaGO+ exist, so with it off nothing renders and nothing is requested.
+ */
+const PlusDuelSlot = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("./PlusDuelSlot").then((module) => ({
+        default: module.PlusDuelSlot,
+      })),
+    )
+  : null;
 
 /**
  * Face-à-face (G4, plan 4.4): two cards side by side, yours at the inline start, with the four
@@ -30,11 +41,17 @@ export function HeadToHeadSheet({
   onOpenChange,
   mine,
   row,
+  mineRow = null,
+  leagueSize = 0,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mine: MyCardDto | null;
   row: PeopleRow | null;
+  /** The reader's own row in the league and the league's size: the real points and positions the
+   *  detailed duel shows clear above its lock. */
+  mineRow?: PeopleRow | null;
+  leagueSize?: number;
 }) {
   const { t } = useI18n();
   const copy = useCurvaCopy();
@@ -86,7 +103,11 @@ export function HeadToHeadSheet({
             ))}
           </ul>
           {/* The detailed duel is a BotolaGO+ extra (behind PREMIUM_BUILD). */}
-          {PREMIUM_SURFACES ? <PlusDuelEntry /> : null}
+          {PlusDuelSlot ? (
+            <Suspense fallback={null}>
+              <PlusDuelSlot mineRow={mineRow} row={row} size={leagueSize} />
+            </Suspense>
+          ) : null}
           <UiButton variant="ghost" onClick={() => onOpenChange(false)}>
             {t("fpl.close")}
           </UiButton>

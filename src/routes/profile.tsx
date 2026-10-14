@@ -538,6 +538,11 @@ function IdentityCard({
               <bdi dir="ltr">{user.email}</bdi>
             </p>
           ) : null}
+          {PlusMemberMark ? (
+            <Suspense fallback={null}>
+              <PlusMemberMark className="mt-2" />
+            </Suspense>
+          ) : null}
           {club ? (
             // The supporter chip: a white pill with the club's own crest
             // disc. The board's "Supporter du …" cannot be written for every
@@ -717,6 +722,18 @@ const PlusProfileSection = PREMIUM_SURFACES
   ? lazy(() =>
       import("@/components/plus/PlusProfileSection").then((module) => ({
         default: module.PlusProfileSection,
+      })),
+    )
+  : null;
+
+/**
+ * The logo, small, for a member (Profil's hero). Nothing for anyone else, and nothing is requested
+ * while the build switch is off.
+ */
+const PlusMemberMark = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("@/components/plus/PlusMemberMark").then((module) => ({
+        default: module.PlusMemberMark,
       })),
     )
   : null;

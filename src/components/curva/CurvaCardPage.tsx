@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useState, type JSX } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type JSX } from "react";
 
 import type { MyCardDto } from "@/backend/manager-card/contracts";
 import { SectionHeader } from "@/components/common/SectionHeader";
@@ -61,6 +61,18 @@ export function CurvaCardPage(): JSX.Element {
     </FantasyFrame>
   );
 }
+
+/**
+ * « Votre saison » (BotolaGO+): blurred for non-members, clear for members. Loaded only when the
+ * build lets BotolaGO+ exist, so with it off the chunk is never requested and nothing renders.
+ */
+const PlusSeasonSlot = PREMIUM_SURFACES
+  ? lazy(() =>
+      import("./PlusSeasonSlot").then((module) => ({
+        default: module.PlusSeasonSlot,
+      })),
+    )
+  : null;
 
 /** The one line of state the card page asks WP4 for. */
 const TIER_DOWN: readonly LineSpec["kind"][] = ["tier_down"];
@@ -200,6 +212,13 @@ function CardPageBody({ card }: { card: MyCardDto }): JSX.Element {
               />
             </UiCard>
           </section>
+        ) : null}
+
+        {/* « Votre saison » (behind PREMIUM_BUILD): the analysis, blurred or clear. */}
+        {PlusSeasonSlot ? (
+          <Suspense fallback={null}>
+            <PlusSeasonSlot />
+          </Suspense>
         ) : null}
 
         {/* BotolaGO+ extras with their lock chips (behind PREMIUM_BUILD). */}
