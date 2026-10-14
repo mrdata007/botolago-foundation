@@ -29,14 +29,10 @@
 --
 -- BEFORE (AGENTS.md "One writer at a time": this is a database write)
 --   a. The pull request is merged and its database-quality job passed.
---   b. Read and note the switches, then pause the card's writers:
---        select compute_enabled, read_enabled, notify_ovr_changes from app_private.manager_card_settings;
---        select app_private.manager_card_configure(false, null);
---        select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := false);
---      or run scripts/backend/sofascore-rating-release-pause.sql, which pauses
---      every background writer, the card's included (see the runbook, "Rules
---      v4", for the order with that script). Wait until no manager-card-tick
---      run is in progress (the script checks it).
+--   b. Every background writer is paused and drained (the script checks it):
+--      scripts/backend/sofascore-rating-release-pause.sql, committed. That
+--      script refuses unless compute is on; see the runbook, "Rules v4", for
+--      the order when compute was paused after GW4.
 --
 -- HOW TO RUN
 --   1. Supabase dashboard -> project "BotolaGO Production V2" -> SQL Editor ->
@@ -47,11 +43,8 @@
 --        select version, active from app_private.manager_card_rules order by version;                  -- v3 active
 --   2. Change ONLY the final `rollback;` to `commit;` and run it once.
 --   3. Read it back: one 20261014160000 row, four rules rows, v4 the only active one.
---   4. Restore the writers, exactly as they were (or run
---      scripts/backend/sofascore-rating-release-resume.sql if the pause script
---      was used):
---        select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := true);
---        select app_private.manager_card_configure(true, null);
+--   4. Resume every writer with scripts/backend/sofascore-rating-release-resume.sql
+--      (rehearse, then commit). It switches compute back on with the others.
 --   If any check fails the script stops with a message and nothing is saved. Do
 --   not edit a check to make it pass.
 --
@@ -61,7 +54,9 @@
 --   for byte the reviewed 20261012200100 body (md5); exactly three rules rows,
 --   v1 and v2 inactive and v3 active, and the pasted v4 differs from v3 only in
 --   normalize and the CAP, SEL and TRF scales; compute is off, the tick job is
---   paused and idle, no card statement is running, and the card's lock is free.
+--   paused and idle, every other scheduled job and writer switch is off, no
+--   HTTP call is queued, no other statement is running, and the card's lock is
+--   free.
 --   After applying: the migration text is the reviewed bytes (sha256, checked
 --   before it runs); the new body is the reviewed one (md5); owner postgres,
 --   security definer, empty search_path; no API role can execute it. After
@@ -128,11 +123,25 @@ begin
   ) then
     raise exception 'stop: a manager-card-tick run is still in progress -- wait for it to finish';
   end if;
-  if exists (
-    select 1 from pg_stat_activity
-    where pid <> pg_backend_pid() and state = 'active' and query ~* 'manager_card'
-  ) then
-    raise exception 'stop: a statement mentioning the Manager Card is running -- wait for it to finish';
+  -- Every other writer is paused and drained too, not only the card's: this
+  -- is DDL and a ledger write, and AGENTS.md allows one writer per database.
+  if exists (select 1 from cron.job where active)
+    or exists (select 1 from app_private.notification_email_settings where football_live_refresh_enabled)
+    or exists (select 1 from app_private.fantasy_automation_settings where lifecycle_tick_enabled)
+    or exists (select 1 from app_private.pepites_settings where mode <> 'off')
+    or exists (select 1 from app_private.account_deletion_settings where enabled)
+    or exists (select 1 from app_private.prediction_settings where scoring_enabled)
+    or exists (select 1 from app_private.ai_home_story_settings where enabled)
+    or exists (select 1 from app_private.ai_content_settings where enabled) then
+    raise exception 'stop: background writers are not all paused -- run scripts/backend/sofascore-rating-release-pause.sql (committed) first';
+  end if;
+  if exists (select 1 from net.http_request_queue)
+    or exists (select 1 from app_private.ai_home_story_jobs where status = 'generating')
+    or exists (
+      select 1 from pg_stat_activity
+      where pid <> pg_backend_pid() and backend_type = 'client backend' and state = 'active'
+    ) then
+    raise exception 'stop: another worker has not drained -- wait a minute and run again';
   end if;
   if not pg_try_advisory_xact_lock(pg_catalog.hashtextextended('botolago:manager-card', 0)) then
     raise exception 'stop: a Manager Card calculation holds the card lock';

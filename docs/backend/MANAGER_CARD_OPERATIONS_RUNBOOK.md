@@ -551,51 +551,41 @@ ships): `select app_private.manager_card_configure(false, null);`. Cards keep
 GW4's figures meanwhile; the health check `manager_card` reports warn ("reads on
 and compute off"), which does not page.
 
-Order (AGENTS.md, "One writer at a time"). The script writes only the card's
-function, its rules table and the migration ledger, and the only writer of
-those is the card's own tick, so pausing the card is enough. Choose one of the
-two ways below.
+Order (AGENTS.md, "One writer at a time"). The script is DDL and a write to
+the migration ledger and the rules table, so every background writer in the
+database is paused and drained first, not only the card's. The script checks
+it: it refuses while any scheduled job is active, any writer switch is on
+(live refresh, Fantasy tick, Pépites, account deletion, Pronostics scoring, AI
+stories, AI articles, card compute), an HTTP call is queued, an AI story is
+generating or another statement is running. Pausing the card alone is not
+enough.
 
-**A. The card alone (simplest).**
+The pause script `scripts/backend/sofascore-rating-release-pause.sql` refuses
+unless compute is **on** and all 23 jobs are active ("maintenance baseline
+changed"); do not edit it. So:
 
-1. Note the switches:
-   `select compute_enabled, read_enabled, notify_ovr_changes from app_private.manager_card_settings;`
-   Compute must read `false` (the pause since GW4); if it is `true`, switch it
-   off first with `select app_private.manager_card_configure(false, null);`.
-2. Pause the tick by name and wait until no run is in progress:
-   `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := false);`
-3. Rehearse the script as shipped (it ends in `rollback;`). Read the last row
-   ("All checks passed"). Confirm separately that nothing was kept:
+1. If compute is already off (the pause after GW4), check that GW5 is not yet
+   evaluable, so that switching compute on for a moment can only re-evaluate
+   GW1-4 under v3 (which it already did):
+   `select sequence_number, status, points_state from app.fantasy_gameweeks g join app.fantasy_seasons s on s.id = g.fantasy_season_id where s.status = 'active' and g.sequence_number = 5;`
+   If it reads `finalized`/`corrected` with `final`, stop: never switch
+   compute on under v3 once GW5 is evaluable (most managers would get a
+   misleading "monte"). Ask for a pause script for that state instead.
+   Otherwise run `select app_private.manager_card_configure(true, null);`.
+2. Run the pause script (rehearse, then `commit;`). It switches compute off
+   again and pauses every writer and every job, `manager-card-tick` included.
+3. Rehearse the v4 script as shipped (it ends in `rollback;`). Read the last
+   row ("All checks passed"). Confirm separately that nothing was kept:
    `select count(*) from supabase_migrations.schema_migrations where version = '20261014160000';` (0) and
    `select version, active from app_private.manager_card_rules order by version;` (v3 active).
 4. Change only the last line to `commit;` and run it once. Read back: one
    `20261014160000` row, four rules rows, v4 the only active one. A second run
    refuses ("already recorded").
-5. Resume: the tick
-   `select cron.alter_job((select jobid from cron.job where jobname = 'manager-card-tick'), active := true);`
-   then compute `select app_private.manager_card_configure(true, null);`.
-
-**B. With the maintenance pause** (`scripts/backend/sofascore-rating-release-pause.sql`,
-on PR #473's branch until it merges, and `sofascore-rating-release-resume.sql`
-on `main`), when the owner pauses every background writer anyway. The pause
-script refuses unless compute is **on** and every one of the 23 jobs is
-active ("maintenance baseline changed"); do not edit it. So:
-
-1. Check that GW5 is not yet evaluable, so that switching compute on for a
-   moment can only re-evaluate GW1-4 under v3 (which it already did):
-   `select sequence_number, status, points_state from app.fantasy_gameweeks g join app.fantasy_seasons s on s.id = g.fantasy_season_id where s.status = 'active' and g.sequence_number = 5;`
-   It must not read `finalized`/`corrected` with `final`. If it does, use way
-   A instead: never switch compute on under v3 once GW5 is evaluable (most
-   managers would get a misleading "monte").
-2. `select app_private.manager_card_configure(true, null);` and right after it
-   run the pause script (rehearse, then `commit;`). It switches compute off
-   again and pauses every job, `manager-card-tick` included.
-3. Run the v4 script as in A.3 and A.4.
-4. Run `sofascore-rating-release-resume.sql` (rehearse, then `commit;`). It
+5. Run `sofascore-rating-release-resume.sql` (rehearse, then `commit;`). It
    switches compute back on (`manager_card_configure(true, null)`) with the
    other writers and resumes every job.
 
-After either way:
+Afterwards:
 
 - Watch the job log until the tick reports `evaluated` with
   `morePending: false` and `rulesVersion: 4`

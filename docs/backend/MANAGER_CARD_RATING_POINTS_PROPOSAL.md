@@ -494,10 +494,11 @@ without `normalize` is v3's calculation.
   refuses once any rules row or card exists (it is the pre-v1 tool), so it
   could not run on production again in any case. A v4-aware tier calibration
   is part of the optional later step 4.
-- **Rollout.** As section 5, with two ways to pause (the card alone, or the
-  maintenance pause `sofascore-rating-release-pause.sql` /
-  `sofascore-rating-release-resume.sql`, whose pause step expects compute on);
-  see the runbook.
+- **Rollout.** As section 5, inside the full maintenance pause
+  (`sofascore-rating-release-pause.sql` / `sofascore-rating-release-resume.sql`,
+  whose pause step expects compute on): the install is DDL, so every writer in
+  the database is paused, not only the card's, and the script checks it. See
+  the runbook.
 - **No UI or copy change.** The card's French and Arabic labels and onboarding
   text name what each stat is about ("Vos capitaines", "Votre onze de départ",
   "Elle mesurera vos choix : capitaine, titulaires, transferts, régularité")
